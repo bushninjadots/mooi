@@ -1,4 +1,4 @@
--- Tidal settings: defaults, validation, and what to say about a bad file.
+-- mooi settings: defaults, validation, and what to say about a bad file.
 -- Pure: no pleamar globals, so tests/unit runs it under plain Lua 5.4.
 -- Written in the subset Lua 5.4 and Luau share.
 
@@ -90,7 +90,7 @@ function M.validate(t)
         return out, problems, notes
     end
     if t.version ~= nil and t.version ~= M.VERSION then
-        notes[#notes + 1] = string.format("settings say version %s, this Tidal reads %d", tostring(t.version), M.VERSION)
+        notes[#notes + 1] = string.format("settings say version %s, this mooi reads %d", tostring(t.version), M.VERSION)
     end
     for _, row in ipairs(M.SCHEMA) do
         local value = get(t, row.path)

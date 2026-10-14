@@ -1,5 +1,5 @@
 language 0.4
-// Tidal Shell design tokens. Components read the semantic names, never the palette.
+// mooi design tokens. Components read the semantic names, never the palette.
 // Provisional values from the brief; contrast is checked in docs/AUDIT.md.
 library Theme {
     // ── Palette ───────────────────────────────────────────────
@@ -35,4 +35,11 @@ library Theme {
     spring m.expand = 1102, 66      // 200 ms · surface.expand
     spring m.collapse = 1722, 83    // 160 ms · surface.collapse
     spring m.confirm = 765, 55      // 240 ms · state.confirm feedback
+    spring m.reflow = 911, 60       // 220 ms · layout.reflow (lists gaining or losing items)
+
+    // ── Geometry ──────────────────────────────────────────────
+    let g.unit = 4
+    let g.radius = 10               // islands
+    let g.radius.item = 8           // tiles inside them
+    let g.spine = 48
 }

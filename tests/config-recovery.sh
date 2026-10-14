@@ -1,9 +1,9 @@
 #!/bin/sh
-# Broken and partly-wrong settings must never stop Tidal from starting.
+# Broken and partly-wrong settings must never stop mooi from starting.
 # Backs up the real settings.json and puts it back afterwards.
 set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
-dir="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/tidal"
+dir="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/mooi"
 file="$dir/settings.json"
 good="$dir/settings.known-good.json"
 backup=$(mktemp); backup_good=$(mktemp); had=false; had_good=false
@@ -16,12 +16,12 @@ restore() {
 }
 trap restore EXIT
 fail=0; n=0
-say() { pleamar --say tidal "$@" 2>&1 | tail -1; }
+say() { pleamar --say mooi "$@" 2>&1 | tail -1; }
 check() { n=$((n + 1)); got=$(say "get $1"); if [ "$got" = "$2" ]; then echo "  ok    $3"; else echo "  FAIL  $3 ($1 = '$got', expected '$2')"; fail=$((fail + 1)); fi; }
 run_with() { # settings-text
     mkdir -p "$dir"; printf '%s' "$1" > "$file"
-    pleamar --scene "$root/shell/tidal.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
-    for _ in $(seq 1 20); do sleep 0.3; say "get phase" >/dev/null 2>&1 && say "get phase" | grep -q hidden && break; done
+    pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
+    for _ in $(seq 1 20); do sleep 0.3; say "get open" >/dev/null 2>&1 && say "get open" | grep -q none && break; done
     sleep 0.4
 }
 
@@ -32,7 +32,7 @@ say quit >/dev/null; sleep 1
 
 echo "broken JSON falls back to the known-good file"
 run_with '{ "spine": { "max_workspaces": '
-check phase hidden "the shell still starts"; check cfg_error true "the error dot is shown"
+check open none "the shell still starts"; check cfg_error true "the error dot is shown"
 check ws_max 7 "known-good value kept (7)"
 say quit >/dev/null; sleep 1
 
@@ -43,9 +43,9 @@ say quit >/dev/null; sleep 1
 
 echo "safe mode ignores the file"
 mkdir -p "$dir"; printf '%s' '{ "spine": { "clock": false } }' > "$file"
-TIDAL_SAFE=1 pleamar --scene "$root/shell/tidal.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
-for _ in $(seq 1 20); do sleep 0.3; say "get phase" >/dev/null 2>&1 && break; done; sleep 0.4
-check show_clock true "defaults used under TIDAL_SAFE=1"
+MOOI_SAFE=1 pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
+for _ in $(seq 1 20); do sleep 0.3; say "get open" >/dev/null 2>&1 && break; done; sleep 0.4
+check show_clock true "defaults used under MOOI_SAFE=1"
 say quit >/dev/null; sleep 1
 
 echo; echo "$n checks, $fail failed"

@@ -1,0 +1,332 @@
+language 0.4
+import "theme/tokens.plm"
+import "ui/island.plm"
+
+// mooi — the Spine and its islands.
+//
+// State model (docs/ARCHITECTURE.md):
+//  · ONE island slot: `open` says which island holds it, so two can never be open at once.
+//    `phase` is that island's depth (compact / expanded). Opening another island while one
+//    is open hands the slot over: the old one leaves on m.exit while the new one arrives.
+//  · The slot is driven by the rules below on the render thread, so Escape and the Spine
+//    buttons work even if the logic is stuck. The logic closes it only when its window is
+//    gone or an action finished it.
+//  · Hyprland owns windows and workspaces; the system owns volume and brightness. What is
+//    shown is what they report back, never what was asked for.
+scene Mooi {
+    permissions {
+        run: "hyprctl"
+        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network"
+    }
+
+    // ── The island slot ───────────────────────────────────────
+    fact open: none | window | system = none
+    fact phase: compact | expanded = compact
+
+    // Window island
+    fact sel = 0              // selected action, 0..4
+    fact wsel = 1             // selected workspace while expanded, 1..10
+    fact arming = false       // close asked once, waiting for the confirming press
+    fact busy = false         // an action is with Hyprland; cleared by the logic
+    fact target_ok = false    // the logic has read the window the island acts on
+    fact floating = false
+    fact fullscreen = false
+    fact pinned = false
+    fact ws_target = 0
+    text tgt_class = ""
+    text tgt_title = "Reading window…"
+    text feedback = ""
+
+    // System island
+    fact srow = 0             // 0 volume · 1 brightness
+
+    // Spine
+    fact flash_ws = 0         // the workspace a window was just moved to
+    text win_icon = ""        // the focused window's icon, resolved by the logic
+    text win_letter = ""      // shown when there is no icon
+
+    // Settings (logic, from settings.json; these are the defaults)
+    fact show_clock = true
+    fact ws_max = 10
+    fact confirm_close = true
+    fact cfg_error = false
+
+    event open_window          // Spine button · `mooi toggle` · `mooi open`
+    event open_system          // Spine status button · `mooi system`
+    event activate             // a window action asked for, by index
+    event pick_ws              // a workspace asked for, by id
+    event act ->               // to the logic: run action n on the target
+    event send ->              // to the logic: move the target to workspace n
+    event ws_pick ->           // to the logic: focus workspace n
+    event vol ->               // to the logic: set the volume (0..1)
+    event bri ->               // to the logic: set the brightness (0..1)
+    event mute ->              // to the logic: toggle mute
+    event op_done              // from the logic: Hyprland confirmed it
+    event op_failed            // from the logic: it did not happen
+    event moved                // from the logic: the target went to workspace n
+
+    // ── System state, no logic needed ─────────────────────────
+    model wss max 16 { id: number; windows: number; active: bool }
+    service workspaces as ws { active: number; list: wss }
+    service clock { time: text = "--:--" }
+    service audio { volume: number; muted: bool }
+    service brightness { present: bool; level: number }
+    service battery { present: bool; percent: number; charging: bool }
+    service network { online: bool; kind: none | wired | wifi; name: text; strength: number }
+    image wicon = from win_icon, 22, 22
+
+    // ── Motion: hidden → entering → shown → exiting, per island ──
+    prop rv.window = 0 ~m.enter
+    prop rv.system = 0 ~m.enter
+    prop depth = 0 ~m.expand
+    prop fb = 0 ~m.select
+    prop pz = 0 ~m.confirm
+    layer life.window {
+        shown while open == window { rv.window: 1 ~m.enter }
+        gone                       { rv.window: 0 ~m.exit }
+    }
+    layer life.system {
+        shown while open == system { rv.system: 1 ~m.enter }
+        gone                       { rv.system: 0 ~m.exit }
+    }
+    layer size {
+        wide while open == window and phase == expanded { depth: 1 ~m.expand }
+        narrow                                          { depth: 0 ~m.collapse }
+    }
+    layer note {
+        failed for 2600ms after op_failed { fb: 1 ~m.select }
+        done for 1400ms after op_done     { fb: 1 ~m.select }
+        quiet                             { fb: 0 ~m.select }
+    }
+    layer pulse {
+        lit for 900ms after moved { pz: 1 ~m.confirm }
+        rest                      { pz: 0 ~m.confirm }
+    }
+
+    // ══ The Spine ═════════════════════════════════════════════
+    surface { size: 48, full; anchor: left; reserve: 48; level: top }
+
+    box { from: 0, 0; size: g.spine, screen.height; color: bg.primary }
+    box { from: 47, 0; size: 1, screen.height; color: border.subtle }
+
+    // Window context: the anchor the window island grows out of.
+    zone box wbtn { at: 24, 28; size: 36, 36; corner: g.radius.item; cursor: pointer; label: "Window actions"; role: toggle; checked: open == window }
+    box { at: 24, 28; size: 36, 36; corner: g.radius.item; color: mix(bg.primary, surface.elevated, max(wbtn.hover, rv.window)) }
+    box { at: 24, 28; size: 36, 36; corner: g.radius.item; stroke: 1; color: focus.ring; opacity: rv.window }
+    image wicon { at: 13, 17; size: 22, 22; opacity: 90% }
+    text "{upper(win_letter)}" { at: 24, 28; anchor: center; size: 14; weight: 700; color: fg.secondary }
+    on press wbtn { emit open_window }
+
+    line { from: 14, 56; to: 34, 56; width: 1; color: border.subtle }
+
+    // Workspaces, as Hyprland lists them (special workspaces have negative ids).
+    column wslist ~m.reflow {
+        at: 6, 66
+        gap: 4
+        for w in wss {
+            group {
+                size: 36, 30
+                show: w.id > 0 and w.index < ws_max
+                zone box pip { from: 0, 0; size: 36, 30; corner: 6; cursor: pointer; label: "Workspace {w.id}"; selected: w.active }
+                box { from: 0, 0; size: 36, 30; corner: 6; color: mix(bg.primary, surface.elevated, pip.hover * 0.8) }
+                box { from: 0, 0; size: 36, 30; corner: 6; stroke: 1; color: accent.primary; opacity: pz * (w.id == flash_ws) }
+                box { from: 0, 8; size: 2, 14; corner: 1; color: accent.primary; opacity: w.active }
+                text "{w.id}" { at: 18, 15; anchor: center; size: 12; weight: 600
+                                color: if(w.active, fg.primary, if(w.windows > 0, fg.secondary, fg.muted)) }
+                on press pip { emit ws_pick(w.id) }
+            }
+        }
+    }
+
+    // System status: the anchor the system island grows out of.
+    let sy = screen.height - 48
+    let low = battery.present and battery.percent < 15 and not battery.charging
+    zone box sbtn { at: 24, sy; size: 36, 36; corner: g.radius.item; cursor: pointer; label: "System"; role: toggle; checked: open == system }
+    box { at: 24, sy; size: 36, 36; corner: g.radius.item; color: mix(bg.primary, surface.elevated, max(sbtn.hover, rv.system)) }
+    box { at: 24, sy; size: 36, 36; corner: g.radius.item; stroke: 1; color: focus.ring; opacity: rv.system }
+    group {
+        show: battery.present
+        box { at: 23, sy - 5; size: 18, 10; corner: 2; stroke: 1.2; color: fg.secondary }
+        box { at: 33.5, sy - 5; size: 2, 4; corner: 1; color: fg.secondary }
+        box { from: 16, sy - 8; size: max(1, 14 * battery.percent / 100), 6; corner: 1
+              color: if(low, status.error, if(battery.charging, accent.primary, fg.secondary)) }
+    }
+    box { from: 14, sy + 7; size: 20, 2; corner: 1; color: surface.elevated }
+    box { from: 14, sy + 7; size: max(1, 20 * audio.volume * (1 - audio.muted)), 2; corner: 1; color: fg.secondary }
+    on press sbtn { emit open_system }
+
+    text clock.time { at: 24, screen.height - 16; anchor: center; size: 10.5; color: fg.secondary; show: show_clock }
+    ellipse { at: 24, screen.height - 76; radius: 3; color: status.error; show: cfg_error; label: "Settings invalid, using defaults" }
+
+    // ══ Window island ═════════════════════════════════════════
+    surface window_island {
+        size: 360, 260
+        anchor: top_left
+        margin: 10, 0, 0, 4
+        level: overlay
+        keyboard: exclusive while open == window
+        open: open == window or rv.window > 0.004
+
+        IslandFrame(rv.window, 340, 132 + 80 * depth) {
+            text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
+            text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
+
+            zone box xbtn { at: 322, 20; size: 24, 24; corner: 6; cursor: pointer; label: "Close panel" }
+            box { at: 322, 20; size: 24, 24; corner: 6; color: surface.elevated; opacity: xbtn.hover }
+            line { from: 317, 15; to: 327, 25; width: 1.4; color: fg.secondary }
+            line { from: 327, 15; to: 317, 25; width: 1.4; color: fg.secondary }
+            on press xbtn { open = none }
+
+            // Actions: 0 float · 1 fullscreen · 2 pin · 3 move · 4 close
+            repeat k in 0..5 {
+                group {
+                    move: 12 + k * 64, 58
+                    let on_k = pick(k, floating, fullscreen, pinned, 0, arming)
+                    let usable_k = target_ok and not busy and (k != 2 or floating)
+                    prop lit = 0 ~m.select
+                    follow lit = if(sel == k, 1, 0)
+
+                    zone box act.$k { from: 0, 0; size: 60, 48; corner: g.radius.item; cursor: pointer; active: usable_k
+                                      label: pick(k, "Float", "Fullscreen", "Pin", "Move to workspace", "Close window") }
+                    box { from: 0, 0; size: 60, 48; corner: g.radius.item
+                          color: mix(mix(surface.primary, surface.elevated, act.$k.hover), selection.bg, lit)
+                          opacity: if(usable_k, 1, 0.5) }
+                    box { from: 0, 0; size: 60, 48; corner: g.radius.item; stroke: 1
+                          color: if(k == 4 and arming, accent.secondary, focus.ring); opacity: max(lit, arming * (k == 4)) }
+                    ellipse { at: 52, 8; radius: 2.5; color: accent.primary; opacity: if(k < 3, on_k, 0) }
+
+                    group {
+                        opacity: if(usable_k, 1, 0.4)
+                        group { show: k == 0
+                            box { at: 27, 18; size: 16, 11; corner: 2; stroke: 1.3; color: fg.primary }
+                            box { at: 33, 23; size: 16, 11; corner: 2; color: surface.elevated }
+                            box { at: 33, 23; size: 16, 11; corner: 2; stroke: 1.3; color: fg.primary } }
+                        group { show: k == 1
+                            box { at: 30, 20; size: 20, 14; corner: 2; stroke: 1.3; color: fg.primary }
+                            box { at: 30, 20; size: 10, 6; corner: 1; color: fg.primary; opacity: 1 - fullscreen } }
+                        group { show: k == 2
+                            ellipse { at: 30, 15; radius: 4.5; stroke: 1.3; color: fg.primary }
+                            line { from: 30, 20; to: 30, 28; width: 1.3; color: fg.primary } }
+                        group { show: k == 3
+                            line { from: 21, 20; to: 38, 20; width: 1.3; color: fg.primary }
+                            line { from: 33, 15; to: 38, 20; width: 1.3; color: fg.primary }
+                            line { from: 33, 25; to: 38, 20; width: 1.3; color: fg.primary } }
+                        group { show: k == 4
+                            line { from: 25, 15; to: 35, 25; width: 1.4; color: if(arming, accent.secondary, fg.primary) }
+                            line { from: 35, 15; to: 25, 25; width: 1.4; color: if(arming, accent.secondary, fg.primary) } }
+                        text pick(k * 2 + on_k, "Float", "Tile", "Full", "Exit", "Pin", "Unpin", "Move", "Move", "Close", "Sure?") { at: 30, 38; anchor: center; size: 10; color: fg.secondary }
+                    }
+                    on press act.$k { sel = k; emit activate(k) }
+                }
+            }
+
+            // Expanded: move the window to a workspace.
+            group {
+                opacity: depth
+                show: depth > 0.02
+                move: 0, -8 * (1 - depth)
+                repeat j in 0..10 {
+                    group {
+                        move: 12 + mod(j, 5) * 64, 118 + floor(j / 5) * 36
+                        zone box wsb.$j { from: 0, 0; size: 60, 30; corner: 6; cursor: pointer; active: phase == expanded; label: "Workspace {j + 1}" }
+                        box { from: 0, 0; size: 60, 30; corner: 6
+                              color: mix(mix(surface.primary, surface.elevated, wsb.$j.hover), selection.bg, wsel == j + 1) }
+                        box { from: 0, 0; size: 60, 30; corner: 6; stroke: 1; color: focus.ring; opacity: wsel == j + 1 }
+                        text "{j + 1}" { at: 30, 15; anchor: center; size: 12; weight: 600
+                                         color: if(ws_target == j + 1, fg.muted, fg.primary) }
+                        box { at: 30, 25; size: 10, 2; corner: 1; color: fg.muted; show: ws_target == j + 1 }   // where it is now
+                        on press wsb.$j { wsel = j + 1; emit pick_ws(j + 1) }
+                    }
+                }
+            }
+
+            let hint_y = 120 + 80 * depth
+            let hint_k = if(busy, 3, if(phase == expanded, 2, if(arming, 1, 0)))
+            text pick(hint_k, "←→ select   ↵ apply   esc close", "↵ again to close   esc keeps it", "←→ ↵ move   esc back", "Waiting for Hyprland…") {
+                 at: 16, hint_y; anchor: left center; size: 10.5; color: if(arming, accent.secondary, fg.muted); opacity: 1 - fb }
+            text feedback { at: 16, hint_y; anchor: left center; size: 10.5; width: 310; lines: 1
+                            color: if(note.failed, status.error, status.ok); opacity: fb }
+        }
+    }
+
+    // ══ System island ═════════════════════════════════════════
+    surface system_island {
+        size: 320, 230
+        anchor: bottom_left
+        margin: 0, 0, 30, 4
+        level: overlay
+        keyboard: exclusive while open == system
+        open: open == system or rv.system > 0.004
+
+        // Its bottom sits on the surface's bottom (level with the Spine's status button)
+        // and it grows upwards; inside, y counts from the island's top.
+        let sh = 128 + 52 * brightness.present
+        group {
+            move: 0, 230 - sh
+            IslandFrame(rv.system, 300, sh, up: true) {
+                text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
+                text "{? {network.name} · }{network.strength * 100, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
+                text "Wired" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wired }
+                text "Offline" { at: 284, 20; anchor: right center; size: 10.5; color: status.error; show: not network.online }
+
+                group {
+                    move: 16, 40
+                    Level("Volume", pick(audio.muted, "{audio.volume * 100, 0} %", "Muted"), audio.volume * (1 - audio.muted), srow == 0, vol)
+                }
+                group {
+                    show: brightness.present
+                    move: 16, 92
+                    Level("Brightness", "{brightness.level * 100, 0} %", brightness.level, srow == 1, bri)
+                }
+
+                text pick(battery.charging, "{battery.percent, 0} % · on battery", "{battery.percent, 0} % · charging") { at: 16, sh - 20; anchor: left center; size: 10.5; color: if(low, status.error, fg.secondary); show: battery.present }
+                text "↑↓  ←→  m mute  esc" { at: 284, sh - 20; anchor: right center; size: 10.5; color: fg.muted }
+            }
+        }
+    }
+
+    // ── Rules: user intent → the slot ─────────────────────────
+    on open_window while open == window { open = none }
+    on open_window while open != window { open = window; phase = compact; sel = 0; arming = false; target_ok = false }
+    on open_system while open == system { open = none }
+    on open_system while open != system { open = system; phase = compact }
+
+    // Escape: the topmost thing goes first.
+    on key Escape while open == window and phase == expanded            { phase = compact }
+    on key Escape while open == window and phase == compact and arming  { arming = false }
+    on key Escape while open == window and phase == compact and not arming { open = none }
+    on key Escape while open == system                                  { open = none }
+
+    // Window island keys
+    on key Right while open == window and phase == compact { sel = mod(sel + 1, 5); arming = false }
+    on key Left while open == window and phase == compact  { sel = mod(sel - 1, 5); arming = false }
+    on key Tab while open == window and phase == compact   { sel = mod(sel + 1, 5); arming = false }
+    on key Return while open == window and phase == compact { emit activate(sel) }
+    on key space while open == window and phase == compact  { emit activate(sel) }
+
+    on key Right while open == window and phase == expanded { wsel = mod(wsel, 10) + 1 }
+    on key Left while open == window and phase == expanded  { wsel = mod(wsel - 2, 10) + 1 }
+    on key Down while open == window and phase == expanded  { wsel = mod(wsel + 4, 10) + 1 }
+    on key Up while open == window and phase == expanded    { wsel = mod(wsel - 6, 10) + 1 }
+    on key Return while open == window and phase == expanded { emit pick_ws(wsel) }
+
+    on activate(v) while v != 4 { arming = false }
+    on activate(v) while v == 3 and target_ok and not busy { phase = expanded; wsel = mod(ws_target, 10) + 1 }
+    on activate(v) while v == 4 and target_ok and not busy and confirm_close and not arming { arming = true }
+    on activate(v) while v == 4 and target_ok and not busy and (arming or not confirm_close) { arming = false; busy = true; emit act(4) }
+    on activate(v) while (v < 1.5 or (v == 2 and floating)) and target_ok and not busy { busy = true; emit act(v) }
+
+    on pick_ws(n) while target_ok and not busy and n != ws_target { busy = true; emit send(n) }
+
+    // System island keys (values come back through the services)
+    on key Down while open == system { srow = if(brightness.present, mod(srow + 1, 2), 0) }
+    on key Up while open == system   { srow = if(brightness.present, mod(srow - 1, 2), 0) }
+    on key Right while open == system and srow == 0 { emit vol(clamp(audio.volume + 0.05, 0, 1)) }
+    on key Left while open == system and srow == 0  { emit vol(clamp(audio.volume - 0.05, 0, 1)) }
+    on key Right while open == system and srow == 1 { emit bri(clamp(brightness.level + 0.05, 0.01, 1)) }
+    on key Left while open == system and srow == 1  { emit bri(clamp(brightness.level - 0.05, 0.01, 1)) }
+    on key m while open == system { emit mute }
+
+    // Safety net: an exclusive keyboard grab nobody is using goes away.
+    on idle for 30s while open != none { open = none; arming = false }
+}

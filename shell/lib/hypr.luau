@@ -1,5 +1,5 @@
 -- Hyprland adapter: the only place that knows Hyprland's command syntax.
--- Pure (builds commands, reads replies); tidal.luau runs them with `run`.
+-- Pure (builds commands, reads replies); mooi.luau runs them with `run`.
 --
 -- Verified on Hyprland 0.56.2 with a Lua config (docs/AUDIT.md):
 --   · dispatch takes Lua: `hyprctl dispatch 'hl.dsp.window.float({ … })'`;
@@ -45,7 +45,7 @@ function M.dispatch(action, address, opts)
     return nil, "unknown action " .. tostring(action)
 end
 
--- One client from `hyprctl -j clients` / `activewindow`, reduced to what Tidal uses.
+-- One client from `hyprctl -j clients` / `activewindow`, reduced to what mooi uses.
 function M.client(c)
     if type(c) ~= "table" or not M.valid_address(c.address) then return nil end
     local ws = type(c.workspace) == "table" and c.workspace.id or nil

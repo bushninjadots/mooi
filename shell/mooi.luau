@@ -1,4 +1,4 @@
--- Tidal Shell logic: settings, the island's target window, and Hyprland actions.
+-- mooi logic: settings, the island's target window, and Hyprland actions.
 -- It never draws and never decides what the user meant: the scene's rules do that.
 
 local config = require("lib/config")
@@ -20,7 +20,7 @@ local function apply(s)
 end
 
 local function load_settings()
-    if sys.ask("env", "TIDAL_SAFE") == "1" then
+    if sys.ask("env", "MOOI_SAFE") == "1" then
         settings = config.defaults()
         fact.cfg_error = false
         log("settings · safe mode: built-in defaults, settings.json not read")
@@ -100,9 +100,15 @@ local function capture()
     end)
 end
 
-on("fact:phase", function(p)
-    if p == "compact" and not fact.target_ok and not fact.busy then capture() end
-    if p == "hidden" then generation = generation + 1 end
+-- The window island closes only if it still holds the slot: the user may have
+-- opened another island meanwhile, and that one is not ours to close.
+local function close_window_island()
+    if fact.open == "window" then fact.open = "none" end
+end
+
+on("fact:open", function(v)
+    if v == "window" and not fact.target_ok and not fact.busy then capture() end
+    if v ~= "window" then generation = generation + 1 end
 end)
 
 -- ── Actions ─────────────────────────────────────────────────
@@ -120,7 +126,7 @@ local function perform(action, opts)
         if not ok then report(false, "Could not read windows from Hyprland") return end
         if not before then
             show_target(nil)
-            fact.phase = "hidden"
+            close_window_island()
             report(false, "That window is gone")
             return
         end
@@ -142,9 +148,13 @@ local function perform(action, opts)
                     end
                     if now then show_target(now) end
                     report(done, message)
+                    if done and action == "move" then
+                        fact.flash_ws = opts.workspace   -- the Spine confirms where it went
+                        emit("moved")
+                    end
                     if done and (action == "close" or action == "move") then
                         show_target(nil)
-                        fact.phase = "hidden"
+                        close_window_island()
                     elseif action == "move" then
                         fact.phase = "compact"
                     end
@@ -165,6 +175,30 @@ on("send", function(n)
     perform("move", { workspace = tonumber(n), follow = settings.island.follow_on_send })
 end)
 
+-- ── System island ───────────────────────────────────────────
+-- A dragged level asks for a new value every frame; the system is told at most
+-- every 40 ms, always the latest. What the island shows is what the services
+-- report back, so a refused change simply does not show.
+local pending = {}
+local flushing = false
+local function flush()
+    flushing = false
+    if pending.vol then sys.call("audio.volume", pending.vol) end
+    if pending.bri then sys.call("brightness.level", pending.bri) end
+    pending = {}
+end
+local function request(kind, v)
+    local n = tonumber(v)
+    if not n then return end
+    if n < 0 then n = 0 elseif n > 1 then n = 1 end
+    if kind == "bri" and n < 0.01 then n = 0.01 end   -- never a black screen from a slider
+    pending[kind] = n
+    if not flushing then flushing = true; after(40, flush) end
+end
+on("vol", function(v) request("vol", v) end)
+on("bri", function(v) request("bri", v) end)
+on("mute", function() sys.call("audio.mute") end)
+
 -- ── Spine ───────────────────────────────────────────────────
 -- The focused window's icon: Hyprland says its class, the .desktop files say the icon.
 local app_index = nil
@@ -182,4 +216,4 @@ on("ws_pick", function(id)
     if n and n > 0 then sys.call("workspaces.focus", n) end
 end)
 
-log("tidal · logic ready · settings in " .. tostring(sys.ask("files.folder")))
+log("mooi · logic ready · settings in " .. tostring(sys.ask("files.folder")))

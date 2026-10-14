@@ -1,16 +1,16 @@
-# Tidal Shell: product specification (condensed)
+# mooi: product specification (condensed)
 
-Condensed from the master brief (2026-10-14). The brief is the authority on intent. This file is the working checklist, with the decisions taken since in *italics*.
+Condensed from the master brief (2026-10-14). The project was renamed from "Tidal Shell" to **mooi** on 2026-10-14; the brief's "Tidal" pillar is called **Flow** here. The brief is the authority on intent. This file is the working checklist, with the decisions taken since in *italics*.
 
 ## Vision: fluid structure
 
-One coherent shell: surfaces emerge from meaningful anchors, change size only when useful, and move between compact and expanded states. The shell stays predictable, precise and keyboard-first. **Foundry** (precise structure), **Tidal** (continuous motion), **Workshop** (the user edits the shell itself).
+One coherent shell: surfaces emerge from meaningful anchors, change size only when useful, and move between compact and expanded states. The shell stays predictable, precise and keyboard-first. **Foundry** (precise structure), **Flow** (continuous motion), **Workshop** (the user edits the shell itself).
 
 Principles: function before decoration · motion communicates something · the keyboard is first-class · compact by default · every feature has a purpose · configuration is discoverable and reversible · customization never costs stability · performance is measured · Hyprland keeps all its functionality · degrade gracefully · no AI dependency.
 
 Avoid: generic dashboards, oversized rounded cards, decorative gradients, gratuitous glass or glow, random animation.
 
-## 1. Tides (global modes)
+## 1. Modes (global)
 
 Rest (default, minimal) · Focus (recede, contextual) · Explore (Atlas, spatial) · Workshop (edit the shell) · Ambient (quiet background info).
 

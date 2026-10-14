@@ -1,4 +1,4 @@
-# runtime state lives outside the repo (~/.local/share/pleamar/tidal); keep stray copies out
+# runtime state lives outside the repo (~/.local/share/pleamar/mooi); keep stray copies out
 settings.json
 settings.known-good.json
 *.tsv

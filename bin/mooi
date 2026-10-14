@@ -1,0 +1,168 @@
+#!/bin/sh
+# mooi — launcher and shell switch. ArchEclipse stays the shell you log into:
+# nothing here runs at login and nothing survives a logout.
+#
+#   mooi toggle            start mooi beside ArchEclipse, or toggle the window island if it runs
+#                          (Super+Alt+Space)
+#   mooi start             start mooi beside ArchEclipse (detached, restarted if it crashes)
+#   mooi takeover          mooi becomes the shell: ArchEclipse's bar is stopped until mooi ends
+#   mooi stop              stop mooi; after a takeover, ArchEclipse comes back (Super+Alt+Shift+Space)
+#   mooi status            what is running
+#   mooi run [--safe] …    foreground, for development (pleamar options after it)
+#   mooi open | system     toggle the window island · the system island
+#   mooi say CMD…          pass a command to the running scene (pleamar --say)
+#   mooi check             compile the scene and run the unit tests
+#
+# --safe / MOOI_SAFE=1 ignores settings.json. MOOI_PLEAMAR picks another pleamar binary.
+#
+# The takeover marker is $XDG_RUNTIME_DIR/mooi/takeover (tmpfs, gone at logout) and
+# holds the keeper's pid. ArchEclipse's bar.sh ends a takeover whenever it starts the
+# bar (SUPER+SHIFT+B is always a way back), and its fullscreen sync leaves the bar
+# down while a live takeover holds the desktop. A dead keeper's marker is ignored.
+set -u
+root=$(cd "$(dirname "$0")/.." && pwd)
+self="$root/bin/mooi"
+scene="$root/shell/mooi.plm"
+name=mooi
+pleamar=${MOOI_PLEAMAR:-pleamar}
+rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mooi"
+marker="$rt/takeover"
+keep_pid="$rt/keep.pid"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/mooi"
+log="$state/mooi.log"
+settings="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$name/settings.json"
+bar_sh="$HOME/.config/hypr/scripts/bar.sh"
+engine_sh="$HOME/.config/hypr/scripts/shell-engine.sh"
+mkdir -p "$rt" "$state"
+
+reduced_flag() {
+    [ "${MOOI_SAFE:-0}" = 1 ] && return 0
+    [ -r "$settings" ] && command -v jq >/dev/null 2>&1 || return 0
+    [ "$(jq -r '.motion.reduced // false' "$settings" 2>/dev/null)" = true ] && echo --reduced-motion
+    return 0
+}
+running() { "$pleamar" --say "$name" "get phase" >/dev/null 2>&1; }
+alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
+takeover_active() { [ -f "$marker" ] && alive "$(cat "$marker" 2>/dev/null)"; }
+archeclipse_running() {
+    pgrep -af -- "$HOME/.config/quickshell/archeclipse" 2>/dev/null | grep -v -F 'ipc call' | grep -q .
+}
+wait_for() { # seconds, command…
+    n=$(($1 * 10)); shift
+    while [ "$n" -gt 0 ]; do "$@" && return 0; sleep 0.1; n=$((n - 1)); done; return 1
+}
+not() { ! "$@"; }
+scene_pids() { # pleamar processes running this scene (never a shell that merely mentions it)
+    for p in $(pgrep -x pleamar 2>/dev/null); do
+        tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qF -- "--scene $scene " && echo "$p"
+    done
+}
+
+# The keeper: runs the scene, restarts it after a crash, gives up after three quick
+# deaths. A takeover it owns is undone when it ends, however it ends.
+keep() {
+    mode=$1
+    exec 8>"$rt/keep.lock"
+    flock -n 8 || { echo "mooi: already running" >&2; exit 1; }
+    echo $$ > "$keep_pid"
+    [ "$mode" = takeover ] && echo $$ > "$marker"
+    end() {
+        if [ "$mode" = takeover ] && [ "$(cat "$marker" 2>/dev/null)" = "$$" ]; then
+            rm -f "$marker"
+            archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1 8>&-
+        fi
+        rm -f "$keep_pid"
+    }
+    child=""
+    trap '[ -n "$child" ] && kill -TERM "$child" 2>/dev/null; end; exit 0' TERM INT HUP
+    : > "$log"
+    tries=0
+    while :; do
+        start=$(date +%s)
+        MOOI_MODE=$mode "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1 8>&- &
+        child=$!
+        wait "$child"; code=$?
+        [ "$code" -eq 0 ] && break
+        [ "$mode" = takeover ] && [ ! -f "$marker" ] && break   # bar.sh ended the takeover
+        if [ $(($(date +%s) - start)) -lt 10 ]; then tries=$((tries + 1)); else tries=0; fi
+        [ "$tries" -ge 3 ] && { echo "mooi-keep: died $tries times quickly, giving up" >> "$log"; break; }
+        echo "mooi-keep: exited with $code, restarting" >> "$log"
+        sleep "$tries"
+    done
+    end
+}
+
+stop_mooi() {
+    "$pleamar" --say "$name" quit >/dev/null 2>&1
+    wait_for 3 not running && return 0
+    # Hung: take the marker first so the keeper does not restart it, then end it.
+    rm -f "$marker"
+    alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
+    for p in $(scene_pids); do kill -TERM "$p" 2>/dev/null; done
+    wait_for 3 not running || for p in $(scene_pids); do kill -KILL "$p" 2>/dev/null; done
+}
+
+cmd=${1:-help}; [ $# -gt 0 ] && shift
+case "$cmd" in
+    __keep) keep "${1:-beside}" ;;
+    start)
+        running && { echo "mooi is already running"; exit 0; }
+        setsid -f "$self" __keep beside >/dev/null 2>&1 < /dev/null
+        wait_for 5 running && echo "mooi started beside ArchEclipse" || { echo "mooi did not start; see $log" >&2; exit 1; }
+        ;;
+    toggle)
+        if running; then exec "$pleamar" --say "$name" "emit open_window"; else exec "$self" start; fi ;;
+    takeover)
+        takeover_active && { echo "mooi already holds the desktop"; exit 0; }
+        [ "$("$engine_sh" get 2>/dev/null)" = marea ] && { echo "Marea is the shell engine; switch to ArchEclipse first (SUPER+CTRL+SHIFT+B)" >&2; exit 1; }
+        # Each of these must know about the marker, or the takeover would not hold
+        # (the fullscreen sync restarts the bar on every focus change) or a key would
+        # stop working (lock). See docs/SWITCHING.md.
+        for f in "$bar_sh" "$HOME/.config/hypr/scripts/quickshell-fullscreen-sync.sh" "$HOME/.config/hypr/scripts/shell-ipc.sh"; do
+            grep -q MOOI_TAKEOVER "$f" 2>/dev/null || { echo "takeover not set up: $f has no mooi guard (docs/SWITCHING.md)" >&2; exit 1; }
+        done
+        running && stop_mooi
+        rm -f "$marker"
+        setsid -f "$self" __keep takeover >/dev/null 2>&1 < /dev/null
+        # Only once mooi is up (and the marker is there) does ArchEclipse step aside.
+        if wait_for 6 takeover_active && wait_for 6 running; then
+            "$bar_sh" --kill >/dev/null 2>&1
+            echo "mooi holds the desktop · back to ArchEclipse: Super+Alt+Shift+Space or SUPER+SHIFT+B"
+        else
+            echo "mooi did not start; ArchEclipse left as it was. See $log" >&2
+            alive "$(cat "$marker" 2>/dev/null)" && kill -TERM "$(cat "$marker")" 2>/dev/null
+            rm -f "$marker"; exit 1
+        fi
+        ;;
+    stop | restore)
+        was_takeover=false; takeover_active && was_takeover=true
+        running && stop_mooi
+        alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
+        if $was_takeover || [ -f "$marker" ]; then
+            rm -f "$marker"
+            wait_for 5 archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1
+            wait_for 8 archeclipse_running && echo "ArchEclipse is back" || echo "ArchEclipse did not come back: run $bar_sh" >&2
+        else
+            echo "mooi stopped"
+        fi
+        ;;
+    status)
+        if takeover_active; then echo "mooi: takeover (keeper $(cat "$marker"))"
+        elif running; then echo "mooi: beside ArchEclipse"
+        else echo "mooi: not running"; fi
+        archeclipse_running && echo "ArchEclipse: running" || echo "ArchEclipse: not running"
+        [ -f "$marker" ] && ! takeover_active && echo "(stale takeover marker; ignored)"
+        echo "pleamar: $("$pleamar" --version 2>&1)"
+        ;;
+    run)
+        if [ "${1:-}" = --safe ]; then shift; export MOOI_SAFE=1; fi
+        # shellcheck disable=SC2046
+        exec "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) "$@" ;;
+    open) exec "$pleamar" --say "$name" "emit open_window" ;;
+    system) exec "$pleamar" --say "$name" "emit open_system" ;;
+    say)  exec "$pleamar" --say "$name" "$@" ;;
+    check)
+        "$pleamar" --check "$scene" || exit 1
+        cd "$root" && lua5.4 tests/unit/run.lua ;;
+    *) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac

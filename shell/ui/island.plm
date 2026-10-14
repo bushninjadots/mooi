@@ -1,0 +1,48 @@
+language 0.4
+import "../theme/tokens.plm"
+
+// The pieces every island shares. An island is a surface the scene declares; inside it,
+// IslandFrame draws the body that grows out of its anchor and fades its content in.
+library Island {
+    // `rv` is the island's reveal spring (0 hidden → 1 shown). At 0 the body is the
+    // anchor's own size (`aw` × `ah`), sitting where the anchor is; it grows to w × h.
+    // `up`: grows upwards from the bottom-left corner (anchors at the bottom of the Spine).
+    component IslandFrame(rv: number, w: number, h: number, up: bool = false, aw: number = 36, ah: number = 36) {
+        size: w, h
+        let iw = aw + (w - aw) * rv
+        let ih = ah + (h - ah) * rv
+        let top = if(up, h - ih, 0)
+        body {
+            color: surface.primary
+            border: 1, border.subtle
+            shadow: 0, 6 * rv, 22 * rv, 38% * rv
+            box { from: 0, top; size: iw, ih; corner: g.radius }
+        }
+        group {
+            opacity: smooth(0.45, 1, rv)
+            move: -10 * (1 - rv), 0
+            clip box { from: 0, top; size: iw, ih; corner: g.radius }
+            children
+        }
+    }
+
+    // A horizontal level (0..1) the user can drag, click or scroll. What it shows is
+    // `value`, which should be what the system reports, not what was asked for.
+    component Level(label: text, shown: text, value: number, chosen: bool, set: event, w: number = 268) {
+        size: w, 40
+        prop v = 0 ~m.select
+        follow v = value
+        prop lit = 0 ~m.select
+        follow lit = if(chosen, 1, 0)
+        box { from: -8, -4; size: w + 16, 46; corner: g.radius.item; color: selection.bg; opacity: lit * 70% }
+        text label { at: 0, 10; anchor: left center; size: 12; color: fg.primary }
+        text shown { at: w, 10; anchor: right center; size: 11; color: fg.secondary }
+        zone box track { from: 0, 22; size: w, 14; cursor: pointer; role: slider; value: value; label: label }
+        box { from: 0, 27; size: w, 4; corner: 2; color: surface.elevated }
+        box { from: 0, 27; size: max(4, w * clamp(v, 0, 1)), 4; corner: 2; color: accent.primary }
+        ellipse { at: w * clamp(v, 0, 1), 29; radius: 5 + 1.5 * track.hover; color: fg.primary }
+        on press track { emit set(clamp(local.x / w, 0, 1)) }
+        on drag track { emit set(clamp(local.x / w, 0, 1)) }
+        on scroll track { emit set(clamp(value + wheel * 0.05, 0, 1)) }
+    }
+}

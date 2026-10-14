@@ -1,39 +1,39 @@
 # Testing
 
-All commands run from the repo root.
+All commands run from the repo root. Stop any running mooi first (`bin/mooi stop`); the scripts refuse to start beside one.
 
-| Command | What | Touches the session? | Last result |
+| Command | What | Touches the session? | Last result (Pleamar 0.4.6) |
 | --- | --- | --- | --- |
-| `bin/tidal check` | compiles the scene; unit tests for `lib/config`, `lib/hypr`, `lib/apps` under Lua 5.4 | no | 18 tests, 0 failed |
-| `tests/scene.sh` | runs the real scene about 15 s; drives keys and events through `pleamar --say`; checks `phase`/`sel`/`arming`; rapid-toggle interruption; measures 4 motion tokens with `--record` | shows the Spine and island; **the island holds the keyboard while open**; no Hyprland actions | 15 + 4 checks, 0 failed |
-| `tests/integration.sh` | every island action against throwaway `kitty --class tidal-probe` windows, each verified with `hyprctl -j clients`; move to workspace 9; acting on a vanished window | **yes**: opens probe windows, moves one to workspace 9, closes them, restores focus | 16 checks, 0 failed |
+| `bin/mooi check` | compiles the scene; unit tests for `lib/config`, `lib/hypr`, `lib/apps` under Lua 5.4 | no | 18 tests, 0 failed |
+| `tests/scene.sh` | the real scene about 25 s: both islands, the slot hand-over, Escape order, rapid and mid-animation switching, 5 motion tokens via `--record`, reduced motion | shows mooi; an island holds the keyboard while open; no actions, no volume or brightness changes | 26 + 5 checks, 0 failed |
+| `tests/integration.sh` | every window action on throwaway `kitty --class mooi-probe` windows (verified with `hyprctl`), the move pulse, a vanished window; volume, mute and brightness verified with `wpctl`/`brightnessctl`, slider floor, request bursts | **yes**: probe windows, workspace 9, volume, mute and brightness changed briefly and **restored** | 23 checks, 0 failed |
+| `tests/degraded.sh` | mooi with Hyprland's IPC unreachable | shows mooi | 8 checks, 0 failed |
 | `tests/config-recovery.sh` | good, broken and partly-wrong `settings.json`, and safe mode | backs up and restores the real settings | 10 checks, 0 failed |
 
-Stop any running Tidal first (`bin/tidal stop`). The scripts refuse to start beside one.
-
-## Acceptance criteria: slice 1
+## Phase 2 acceptance
 
 | Criterion | Evidence |
 | --- | --- |
-| A Spine on the left edge that reserves its space and coexists with ArchEclipse | 48×1048 at (0,32) under the 32 px top band (`hyprctl layers`); screenshots |
-| One Island with a coherent lifecycle, opened from the keyboard (`bin/tidal open`) and the pointer | scene.sh |
-| Keyboard: ←/→/Tab select, Enter/Space apply, Esc collapses → dismisses, Esc cancels a pending close | scene.sh |
-| Interruption: rapid toggles settle in the right state with no stuck surface | scene.sh (4 toggles in 240 ms; reopen and close mid-way) |
-| Real Hyprland operations, verified by reading back | integration.sh: float, pin, fullscreen, close (with confirmation), move to workspace |
-| Honest failure | integration.sh: "That window is gone"; unit: verify() never reports an unchanged window as done |
-| Motion tokens hold their contract | scene.sh: enter 183/180, exit 134/140, expand 200/200, collapse 168/160 ms |
-| Settings: validated, recoverable, safe mode | config-recovery.sh |
-| Reduced motion | `--reduced-motion` with `--record reveal`: 0 frames mid-transition, open → closed directly |
-| Near-zero idle | 0.10–0.13 % CPU, 35 MB PSS (AUDIT.md §6) |
+| Surface states defined once, used by more than one surface | `open` slot + `IslandFrame`; window and system islands (ARCHITECTURE.md) |
+| Interruption-safe transitions | scene.sh: window → system → window in 120 ms ends clean; 4 toggles in 240 ms; reopen and close mid-way |
+| Motion tokens exist and hold | scene.sh: enter 182/180, exit 151/140, expand 201/200, collapse 161/160, system enter 190/180 ms |
+| Keyboard focus and dismissal | only the open island holds the keyboard; Esc order: confirmation → expanded → island (scene.sh) |
+| Reduced motion | scene.sh: 0 frames between open and closed |
+| Rapid and repeated interactions validated | scene.sh; integration.sh: 11 volume requests in a burst end on the last |
+| Real system state, shown as reported | integration.sh: wpctl / brightnessctl / hyprctl agree with what mooi shows |
+| Degrades without Hyprland IPC | degraded.sh |
+| Frame timing | `pleamar --report`: "smooth · 60 fps against 60 Hz", 4 of 672 frames late (0.6 %), none over 2.5 periods. The late ones are paint 7 ms + waiting for the screen, not rules (0.03 ms) |
+| Idle cost | 0.2 % CPU (no island) · 0.4 % (island open) · 24 MB PSS |
+| Supervision | keeper restarts a killed scene (tested); `bin/mooi stop` leaves no keeper or marker |
 
-## Manual checks (not automated)
+## Manual checks
 
-1. `bin/tidal run`, then click the Spine's top button: the island grows out of it. Click it again: it folds back into it.
-2. Hover the workspace numbers: they highlight. Click one: Hyprland switches to it.
-3. With a window focused, `bin/tidal open`, then Move (→ → → Enter), → to choose, Enter: the window moves and the island closes. You stay where you were.
-4. `bin/tidal run --reduced-motion`: open and close land at once, with no movement.
-5. Write `{"spine":{"clock":` into `~/.local/share/pleamar/tidal/settings.json` while it runs: an orange dot appears above the clock, and nothing else changes.
+1. Super+Alt+Space: mooi appears beside ArchEclipse. Press it again: the window island grows out of the top Spine button.
+2. Click the battery button at the bottom of the Spine: the system island grows upwards out of it, and the window island leaves.
+3. Drag the volume level and scroll over it; ↑↓ choose the row, ←→ adjust, `m` mutes.
+4. Move a window to another workspace from the window island: that workspace's number in the Spine pulses.
+5. Super+Alt+Shift+Space: mooi goes; ArchEclipse is untouched.
 
 ## Not tested yet
 
-Multi-monitor (only eDP-1 was connected), scale ≠ 1, monitor hotplug, a fullscreen app covering the Spine, crash recovery under a supervisor, input-to-visible latency, Hyprland IPC failure mid-action, and a long-session memory trend.
+Takeover end to end (blocked, see SWITCHING.md), multi-monitor (LG not connected), scale ≠ 1, hotplug, fullscreen apps over the Spine, settings changed mid-animation, input-to-visible latency, and a long-session memory trend.
