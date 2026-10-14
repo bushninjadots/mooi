@@ -1,0 +1,38 @@
+language 0.4
+// Tidal Shell design tokens. Components read the semantic names, never the palette.
+// Provisional values from the brief; contrast is checked in docs/AUDIT.md.
+library Theme {
+    // ── Palette ───────────────────────────────────────────────
+    let void = #101416
+    let steel = #22292D
+    let slate = #46545A
+    let signal = #A6F3D1
+    let heat = #FF925F
+
+    // ── Semantic roles (fg.* are the brief's text.* roles) ────
+    let bg.primary = void
+    let bg.secondary = #161B1E
+    let surface.primary = #191F22
+    let surface.elevated = steel
+    let border.subtle = #2C3539
+    let fg.primary = #E3E9EB
+    let fg.secondary = #A3B0B5
+    let fg.muted = #8A979C       // ≥ 4.5:1 on bg.primary, surface.primary and surface.elevated
+    let accent.primary = signal
+    let accent.secondary = heat
+    let status.ok = signal
+    let status.error = heat
+    let focus.ring = signal
+    let selection.bg = #2A3A36
+
+    // ── Motion tokens ─────────────────────────────────────────
+    // Critically damped: k = (6.64/T)², c = 2·6.64/T reaches 99 % at T.
+    // Measured with `tests/motion.sh` (pleamar --record), not assumed.
+    spring m.instant = 12247, 221   //  60 ms · state flips that must not lag
+    spring m.select = 3062, 111     // 120 ms · selection.change, focus.change
+    spring m.enter = 1361, 74       // 180 ms · surface.enter
+    spring m.exit = 2249, 95        // 140 ms · surface.exit (leaves faster than it arrives)
+    spring m.expand = 1102, 66      // 200 ms · surface.expand
+    spring m.collapse = 1722, 83    // 160 ms · surface.collapse
+    spring m.confirm = 765, 55      // 240 ms · state.confirm feedback
+}

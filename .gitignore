@@ -1,0 +1,6 @@
+# runtime state lives outside the repo (~/.local/share/pleamar/tidal); keep stray copies out
+settings.json
+settings.known-good.json
+*.tsv
+*.log
+.claude/settings.local.json
