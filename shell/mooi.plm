@@ -237,15 +237,26 @@ scene Mooi {
     let needle_id = if(nav_open, nav_sel, active_row + 1)
     let needle = -150 + 300 * (needle_id - 1) / arcs
 
+    // The chain. The workspace positions are not a flat ruler but a linked sequence of
+    // triangular links, each turned by its own place in one continuous helix: the twist is a
+    // property of the chain, not of movement, so it reads the same at rest and in motion
+    // (spec §2). `chain_k` is the pitch in degrees per position, `chain_A` the lateral sway
+    // in px off the rail axis, `chain_B` the vertical ripple in px, and `phi` the phase the
+    // whole helix turns by — the one value Task 3's directional wave moves.
+    let chain_k = 8
+    let chain_A = 6
+    let chain_B = 2
+    let phi = 0
+
     // ── The Mechanism's travelling parts ──────────────────────
     // The carriage (where the compositor is) and the dial (what the wheel points at), each
     // on its own spring, so either can be interrupted mid-travel and both end where the
     // state really is. Neither is ever the authority: `active_row` comes from Hyprland. The
     // needle is a third reader of that same truth, so wheel and carriage cannot disagree.
     prop trav = 158 ~m.select
-    follow trav = scale_y + active_row * g.tick
+    follow trav = scale_y + active_row * g.tick + chain_B * cos(chain_k * active_row + phi)
     prop dial_y = 158 ~m.select
-    follow dial_y = scale_y + (nav_sel - 1) * g.tick
+    follow dial_y = scale_y + (nav_sel - 1) * g.tick + chain_B * cos(chain_k * (nav_sel - 1) + phi)
     prop wheel_a = -150 ~m.dial
     follow wheel_a = needle
     prop rv.dial = 0 ~m.dial
@@ -310,10 +321,34 @@ scene Mooi {
     // wheel always does, over whatever is under it.
     zone box scale { from: 0, scale_y - g.tick_h / 2; size: g.spine, span_h
                      role: list; label: "Workspace scale" }
-    column rail {
-        at: 0, scale_y - g.tick_h / 2
-        gap: g.tick - g.tick_h
-        for w in spaces { Tick(w, bar_labels) }
+    // The links are joined before they are drawn, so a hairline runs under them and only the
+    // span between two links shows. The last position joins nothing.
+    group connective {
+        for w in spaces {
+            line { from: g.rail_x + chain_A * sin(chain_k * w.index + phi), scale_y + w.index * g.tick + chain_B * cos(chain_k * w.index + phi)
+                   to: g.rail_x + chain_A * sin(chain_k * (w.index + 1) + phi), scale_y + (w.index + 1) * g.tick + chain_B * cos(chain_k * (w.index + 1) + phi)
+                   width: 1; color: border.subtle
+                   opacity: pick(w.index < spaces.count - 1, 0, 0.4) }
+        }
+    }
+
+    // The chain itself: one triangular link per position, laid on a single continuous helix.
+    // A link sits where the helix puts it — lateral sway from `chain_A`, vertical ripple from
+    // `chain_B` — and is turned by its own place on the chain, `chain_k` degrees per position,
+    // so the twist belongs to the chain and reads the same at rest and in motion. Links
+    // alternate apex up and apex down, so consecutive links meet point to base: the joint that
+    // reads as linked rather than as a list of separate marks.
+    group chain {
+        for w in spaces {
+            group {
+                move: g.rail_x + chain_A * sin(chain_k * w.index + phi), scale_y + w.index * g.tick + chain_B * cos(chain_k * w.index + phi)
+                group {
+                    pivot: 0, 0
+                    rotate: (chain_k * w.index + phi) * 1deg
+                    Triangle(w, mod(w.index, 2) == 0)
+                }
+            }
+        }
     }
 
     // The carriage: where the compositor actually is. It rides the spine on its own spring,
