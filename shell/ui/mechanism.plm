@@ -112,6 +112,43 @@ library Mechanism {
         on press hit { emit ws_pick(w.id); nav_open = false }
     }
 
+    // Region B · one position in the chain. Where a Tick was a stroke ruled onto the spine,
+    // a Triangle is a link: a solid triangle about its own centre, its apex alternating up
+    // and down, so a column of them interlocks into one twisting chain rather than a list of
+    // marks. The element is drawn here and nothing else; the twist — each link's place on the
+    // helix — is the scene's, which wraps this in a group and turns it (docs/MECHANISM.md).
+    //   missing/empty/occupied → the fill climbs from the muted grey to the border tone
+    //   active                 → the accent: the one link that is mint
+    //   pointed                → a focus.ring outline, never the accent the active link owns
+    component Triangle(w: record, orient_up: bool) {
+        size: 24, 20
+        let here = w.active
+        let pointed = nav_open and w.id == nav_sel
+        // Geometry as arithmetic rather than `if`, as in Tick: the tone blends two names and
+        // the states stay on one line each (MECHANISM.md §1).
+        let tone = mix(mix(fg.muted, border.subtle, w.exists), accent.primary, here)
+
+        zone box hit { at: 0, 0; size: 24, 20; cursor: pointer; role: button
+                       selected: here or pointed
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+        // The link itself: a closed path is filled, so this is the solid triangle — apex up or
+        // apex down. One copy per orientation, one of them shown, so the shape needs no
+        // conditional vertex.
+        path { color: tone; show: orient_up
+               move 0, -10; line 12, 10; line -12, 10; close }
+        path { color: tone; show: not orient_up
+               move 0, 10; line 12, -10; line -12, -10; close }
+        // Pointed at: the same triangle as an outline, which a `stroke` makes of a closed path.
+        path { color: focus.ring; stroke: 1.2; opacity: pointed; show: orient_up
+               move 0, -10; line 12, 10; line -12, 10; close }
+        path { color: focus.ring; stroke: 1.2; opacity: pointed; show: not orient_up
+               move 0, 10; line 12, -10; line -12, -10; close }
+        // What just happened: a window was moved to this workspace (state.confirm).
+        box { at: 0, 0; size: 24, 3; corner: 1; color: accent.primary; opacity: pz * (w.id == flash_ws) }
+        on enter hit while nav_open { nav_sel = w.id }
+        on press hit { emit ws_pick(w.id); nav_open = false }
+    }
+
     // The plate every readout and menu sits on: one step above the rail, a hairline edge,
     // no shadow of its own — the bar is flat, and what matters is what is aligned.
     component Plate(w: number, h: number) {
