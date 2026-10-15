@@ -3,7 +3,8 @@
 # by what mooi reports, and independently with `hyprctl -j clients`.
 #
 # Touches the live session: opens a small kitty window ("mooi-probe") on the current
-# workspace and moves one to workspace 9, then closes them and gives focus back.
+# workspace and moves one to workspace 9, visits workspace 9 and comes back, then
+# closes them and gives focus back.
 set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 log=${TMPDIR:-/tmp}/mooi-integration.$$.log
@@ -21,7 +22,22 @@ check() { # what jq-field expected
     if [ "$got" = "$3" ]; then ok "$1 (hyprctl: $2 = $got · mooi: $(get feedback))"
     else bad "$1: hyprctl $2 = '$got', expected '$3' · mooi said: $(get feedback)"; fi
 }
+open_probes() { hyprctl -j clients | jq --arg c "$probe_class" '[.[] | select(.class == $c)] | length'; }
+probe_addresses() { hyprctl -j clients | jq -r --arg c "$probe_class" '.[] | select(.class == $c) | .address'; }
+probe_pids() { hyprctl -j clients | jq -r --arg c "$probe_class" '.[] | select(.class == $c) | .pid'; }
+close_probes() { # every probe left behind, gone: closing is a request, so this waits
+    for c in $(probe_addresses); do
+        hyprctl dispatch "hl.dsp.window.close({ window = \"address:$c\" })" >/dev/null
+    done
+    for _ in $(seq 1 30); do [ "$(open_probes)" -eq 0 ] && return 0; sleep 0.1; done
+    for p in $(probe_pids); do kill "$p" 2>/dev/null; done
+    for _ in $(seq 1 30); do [ "$(open_probes)" -eq 0 ] && return 0; sleep 0.1; done
+    return 1
+}
 spawn_probe() {
+    # Nothing an earlier step left behind: a second probe answers the same queries, and
+    # every check after that would be about the wrong window.
+    close_probes || bad "a $probe_class window would not go"
     hyprctl dispatch "hl.dsp.exec_cmd(\"kitty --class $probe_class sleep 300\")" >/dev/null
     for _ in $(seq 1 50); do
         addr=$(hyprctl -j clients | jq -r --arg c "$probe_class" '[.[] | select(.class == $c)] | last | .address // empty')
@@ -70,9 +86,97 @@ hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/nul
 
 echo "failure is reported honestly"
 spawn_probe; open_on_probe
-hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null; sleep 0.5
+hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null
+close_probes   # closing is a request: acting before it lands would hit the window
 act 0
 [ "$(get feedback)" = "That window is gone" ] && ok "acting on a vanished window reports it" || bad "said: $(get feedback)"
+
+echo "command membrane: results and satellite actions on a probe"
+no_stray_probes() { # nothing from an earlier step left behind to answer for the probe
+    [ "$(open_probes)" -le 1 ] || bad "$(open_probes) $probe_class windows are open; a stray one would answer for the probe"
+}
+find_probe() { # opens the membrane listing only the probe window
+    say "emit open_command" >/dev/null; sleep 0.5
+    say "text query @$probe_class" >/dev/null; sleep 0.3
+    [ "$(get res.0.kind)" = win ] && [ "$(get res.count)" = 1 ] && ok "@$probe_class finds the probe window" || bad "results: $(get res.count), first '$(get res.0.title)'"
+}
+sat() { say "emit csat_try $1" >/dev/null; sleep 0.15; wait_idle || bad "satellite $1 never finished"; sleep 0.1; }
+spawn_probe
+here=$(hyprctl -j activeworkspace | jq .id)
+[ -n "$home_addr" ] && hyprctl dispatch "hl.dsp.focus({ window = \"address:$home_addr\" })" >/dev/null; sleep 0.3
+find_probe
+say "emit crun 0" >/dev/null; sleep 0.15; wait_idle; sleep 0.2
+check "↵ on a window result focuses it" .focusHistoryID 0
+[ "$(get open)" = none ] && ok "…and the membrane closes" || bad "open = $(get open)"
+hyprctl dispatch "hl.dsp.window.move({ workspace = 9, follow = false, window = \"address:$addr\" })" >/dev/null; sleep 0.3
+say "emit open_command" >/dev/null; sleep 0.5
+say "text query 9" >/dev/null; sleep 0.3
+say "emit crun 0" >/dev/null; sleep 0.8
+[ "$(hyprctl -j activeworkspace | jq .id)" = 9 ] && ok "↵ on 'Workspace 9' goes there (hyprctl agrees)" || bad "active workspace $(hyprctl -j activeworkspace | jq .id)"
+[ "$(get open)" = none ] && ok "…and closes once Hyprland confirms" || bad "open = $(get open)"
+hyprctl dispatch "hl.dsp.focus({ workspace = $here })" >/dev/null; sleep 0.4
+find_probe
+sat 1; check "satellite Bring here (from 9 to $here)" .workspace.id "$here"
+[ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && ok "…without moving the user" || bad "workspace changed"
+sat 2; check "satellite Float" .floating true
+sat 2; check "satellite Float again tiles" .floating false
+sat 4; [ "$(get carming)" = true ] && [ -n "$(client "$addr" .address)" ] && ok "satellite Close waits for confirmation" || bad "close did not wait"
+sat 4; [ -z "$(client "$addr" .address)" ] && ok "satellite Close (window gone · mooi: $(get feedback))" || bad "window still open"
+sleep 0.3; [ "$(get res.count)" = 0 ] && ok "…and the result disappears" || bad "still $(get res.count) results"
+say "key Escape" >/dev/null; sleep 0.2
+
+echo "the Atlas moves a window, and keeps the user where they are"
+spawn_probe; open_on_probe
+here=$(hyprctl -j activeworkspace | jq .id)
+say "emit open_atlas" >/dev/null; sleep 0.8
+[ "$(get atlas_mode)" = browse ] && ok "the Atlas opens browsing" || bad "atlas_mode = $(get atlas_mode)"
+say "key m" >/dev/null; sleep 0.3
+[ "$(get atlas_mode)" = move ] && ok "m opens the move strip" || bad "atlas_mode = $(get atlas_mode)"
+if [ "$here" -ge 1 ] && [ "$here" -le 10 ]; then
+    [ "$(get atlas_ws)" = "$here" ] && ok "the strip starts on the window's workspace ($here)" || bad "atlas_ws = $(get atlas_ws)"
+fi
+for _ in $(seq 1 12); do [ "$(get atlas_ws)" = 9 ] && break; say "key Right" >/dev/null; sleep 0.2; done
+[ "$(get atlas_ws)" = 9 ] && ok "→ chooses workspace 9" || bad "atlas_ws = $(get atlas_ws)"
+say "key Return" >/dev/null; sleep 0.3; wait_idle
+check "the tile's window moved to workspace 9" .workspace.id 9
+[ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && ok "…and the user stays on workspace $here" || bad "the user was moved to $(hyprctl -j activeworkspace | jq .id)"
+[ "$(get open)" = atlas ] && ok "…and the Atlas stays open (a move is not a choice)" || bad "open = $(get open)"
+[ "$(get atlas_mode)" = browse ] && ok "…back to browsing" || bad "atlas_mode = $(get atlas_mode)"
+[ "$(get feedback)" = "Moved to workspace 9" ] && ok "…and it says what happened" || bad "said: $(get feedback)"
+[ "$(get flash_ws)" = 9 ] && ok "the Spine confirms workspace 9" || bad "flash_ws = $(get flash_ws)"
+
+# Previews: off means nothing is captured, and the choice is not written to disk here
+# (the scene runs with MOOI_SAFE=1).
+[ "$(get previews)" = true ] && ok "previews are on by default" || bad "previews = $(get previews)"
+say "key p" >/dev/null; sleep 0.6
+[ "$(get previews)" = false ] && ok "p stops the previews" || bad "previews = $(get previews)"
+[ -z "$(get atlas_tiles.0.picture)" ] && ok "…and no picture is drawn" || bad "a picture is still drawn: $(get atlas_tiles.0.picture)"
+say "key p" >/dev/null; sleep 0.6
+[ "$(get previews)" = true ] && ok "p brings them back" || bad "previews = $(get previews)"
+say "key Escape" >/dev/null; sleep 0.4
+[ "$(get open)" = none ] && ok "Esc closes the Atlas" || bad "open = $(get open)"
+hyprctl dispatch "hl.dsp.window.move({ workspace = $here, follow = false, window = \"address:$addr\" })" >/dev/null; sleep 0.3
+hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null
+
+echo "the keyboard is really handed over (real keys, not --say)"
+if command -v wtype >/dev/null 2>&1; then
+    # A throwaway window holds the focus first: a key that does not reach the island
+    # lands in it, not in whatever the user was doing.
+    spawn_probe; open_on_probe; no_stray_probes
+    say "key Escape" >/dev/null; sleep 0.3
+    say "emit open_command" >/dev/null; sleep 0.6
+    wtype "mooi"; sleep 0.4
+    [ "$(get query)" = "mooi" ] && ok "typing reaches the field (the window below says $(hyprctl -j activewindow | jq -r '.class'))" || bad "typed 'mooi', the field says '$(get query)'"
+    wtype -k Escape; sleep 0.5
+    [ "$(get open)" = none ] && ok "Esc from a real keyboard closes the membrane" || bad "open = $(get open)"
+    say "emit open_atlas" >/dev/null; sleep 0.8
+    say "text query @$probe_class" >/dev/null; sleep 0.2
+    wtype -k Escape; sleep 0.5
+    [ "$(get open)" = none ] && ok "…and it closes the Atlas too" || bad "open = $(get open)"
+    hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null; sleep 0.3
+else
+    echo "  skip  wtype is not installed: the compositor's own keyboard was not tried"
+fi
 
 echo "system island: volume, mute, brightness (restored afterwards)"
 vol_now() { wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }'; }

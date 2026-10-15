@@ -1,6 +1,7 @@
 language 0.4
 import "theme/tokens.plm"
 import "ui/island.plm"
+import "ui/mechanism.plm"
 
 // mooi — the Spine and its islands.
 //
@@ -16,11 +17,11 @@ import "ui/island.plm"
 scene Mooi {
     permissions {
         run: "hyprctl"
-        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network"
+        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "apps.launch", "thumbnails", "thumbnails.want"
     }
 
     // ── The island slot ───────────────────────────────────────
-    fact open: none | window | system = none
+    fact open: none | window | system | command | atlas = none
     fact phase: compact | expanded = compact
 
     // Window island
@@ -40,10 +41,49 @@ scene Mooi {
     // System island
     fact srow = 0             // 0 volume · 1 brightness
 
+    // Workspace Atlas (Phase 4: per-window previews, grouped by workspace)
+    fact atlas_sel = 0
+    fact atlas_busy = false
+    fact atlas_mode: browse | move = browse   // browse: ↵ focuses the tile. move: the strip picks its workspace
+    fact atlas_ws = 1         // the workspace the selected tile is being moved to
+    fact previews = true      // settings: atlas.previews — off means no picture is taken or shown
+    text atlas_target = ""    // the tile the move strip is about, from the logic
+    // The bounded workspace map, filled by the logic from the `workspaces` service
+    // (`lib/spaces`). The Mechanism's scale draws it and the Atlas's move strip draws it:
+    // it is the only place workspace state becomes rows, and it holds the positions the
+    // compositor has not made yet as well as the ones it has.
+    model spaces max 16 { id: number; windows: number; active: bool; exists: bool; name: text; monitor: text; label: text }
+    model atlas_thumbs max 40 { id: text; title: text; app: text; picture: image 400, 225; stale: bool }
+    model atlas_tiles max 40 { ws: number; address: text; title: text; app: text; picture: image 400, 225; stale: bool }
+
+    // Command membrane
+    fact cmode: list | actions = list   // results, or a window result's satellite actions
+    fact csel = 0             // selected result
+    fact asel = 0             // selected satellite action
+    fact carming = false      // satellite close asked once
+    fact max_results = 7      // settings: command.max_results
+    text query = ""
+    text cempty = "Type to search apps, windows, workspaces"
+    model res max 10 { kind: app | win | space | mooi; title: text; sub: text; icon: image 20, 20; letter: text }
+
     // Spine
     fact flash_ws = 0         // the workspace a window was just moved to
     text win_icon = ""        // the focused window's icon, resolved by the logic
     text win_letter = ""      // shown when there is no icon
+
+    // ── The Mechanism ─────────────────────────────────────────
+    // The bar's own state, beside the island slot (`open`). These two are mutually
+    // exclusive with it: one instrument of the bar's at a time.
+    fact nav_open = false     // the wheel is engaged: the scale is read as a selector
+    fact nav_sel = 1          // the position the wheel points at (a workspace id)
+    fact active_row = 0       // where the active workspace sits on the scale (the logic)
+    fact mark_open = false    // the mark's menu
+    fact bar_labels = true    // setting · bar.labels — names beside the marks
+    fact bar_wheel: step | off = step   // setting · bar.wheel — what the wheel over the scale does
+    fact theme_wallpaper = false        // setting · theme.source, as the bar shows it (the logic)
+    text nav_name = ""        // what the position under the dial is called (the logic)
+    text bar_version = "mooi" // the version line of the mark's menu (the logic)
+    text bar_path = ""        // where the settings file is, shortened (the logic)
 
     // Settings (logic, from settings.json; these are the defaults)
     fact show_clock = true
@@ -51,8 +91,67 @@ scene Mooi {
     fact confirm_close = true
     fact cfg_error = false
 
+    // ── Theme ─────────────────────────────────────────────────
+    // Three facts per semantic token, 0 to 1 each, which `theme/tokens.plm` hands to
+    // `rgb()`: the one way Pleamar lets the logic hand over a colour that did not exist
+    // when the scene was read. The values here are the brief's fixed palette; the logic
+    // paints them from the settings, and from the wallpaper's Matugen palette when
+    // `theme.source = wallpaper` — all fourteen or none, never half a theme.
+    fact theme_error = false   // the new theme did not pass; the last good one is showing
+    fact c_bg_primary_r = 0.062745
+    fact c_bg_primary_g = 0.078431
+    fact c_bg_primary_b = 0.086275
+    fact c_bg_secondary_r = 0.086275
+    fact c_bg_secondary_g = 0.105882
+    fact c_bg_secondary_b = 0.117647
+    fact c_surface_primary_r = 0.098039
+    fact c_surface_primary_g = 0.121569
+    fact c_surface_primary_b = 0.133333
+    fact c_surface_elevated_r = 0.133333
+    fact c_surface_elevated_g = 0.160784
+    fact c_surface_elevated_b = 0.176471
+    fact c_border_subtle_r = 0.172549
+    fact c_border_subtle_g = 0.207843
+    fact c_border_subtle_b = 0.223529
+    fact c_fg_primary_r = 0.890196
+    fact c_fg_primary_g = 0.913725
+    fact c_fg_primary_b = 0.921569
+    fact c_fg_secondary_r = 0.639216
+    fact c_fg_secondary_g = 0.690196
+    fact c_fg_secondary_b = 0.709804
+    fact c_fg_muted_r = 0.541176
+    fact c_fg_muted_g = 0.592157
+    fact c_fg_muted_b = 0.611765
+    fact c_accent_primary_r = 0.650980
+    fact c_accent_primary_g = 0.952941
+    fact c_accent_primary_b = 0.819608
+    fact c_accent_secondary_r = 1.000000
+    fact c_accent_secondary_g = 0.572549
+    fact c_accent_secondary_b = 0.372549
+    fact c_status_ok_r = 0.650980
+    fact c_status_ok_g = 0.952941
+    fact c_status_ok_b = 0.819608
+    fact c_status_error_r = 1.000000
+    fact c_status_error_g = 0.572549
+    fact c_status_error_b = 0.372549
+    fact c_focus_ring_r = 0.650980
+    fact c_focus_ring_g = 0.952941
+    fact c_focus_ring_b = 0.819608
+    fact c_selection_bg_r = 0.164706
+    fact c_selection_bg_g = 0.227451
+    fact c_selection_bg_b = 0.211765
+
     event open_window          // Spine button · `mooi toggle` · `mooi open`
     event open_system          // Spine status button · `mooi system`
+    event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
+    event open_atlas           // Workspace Atlas from the Spine
+    event atlas_go ->          // focus a real or empty workspace slot
+    event atlas_window ->      // focus the window preview selected in the Atlas
+    event atlas_move ->        // to the logic: move the selected window to `atlas_ws`
+    event atlas_previews ->    // to the logic: previews on or off (a setting, remembered)
+    event crun ->              // to the logic: open result n (launch, focus, switch, …)
+    event csat_try             // a satellite action asked for, by index
+    event csat ->              // to the logic: run satellite action n on result `csel`
     event activate             // a window action asked for, by index
     event pick_ws              // a workspace asked for, by id
     event act ->               // to the logic: run action n on the target
@@ -61,23 +160,34 @@ scene Mooi {
     event vol ->               // to the logic: set the volume (0..1)
     event bri ->               // to the logic: set the brightness (0..1)
     event mute ->              // to the logic: toggle mute
+    event recolor              // a fresh palette is on disk (bin/mooi theme-sync, or a matugen hook)
     event op_done              // from the logic: Hyprland confirmed it
     event op_failed            // from the logic: it did not happen
     event moved                // from the logic: the target went to workspace n
+    event bar_menu             // the mark was pressed: the bar's own menu
+    event bar_dial             // the wheel's hub was pressed: engage the selector
+    event wheel_step           // the wheel's halves: ±1 position (scene-local)
+    event toggle_labels ->     // to the logic: setting · bar.labels
+    event toggle_wheel ->      // to the logic: setting · bar.wheel
+    event toggle_theme ->      // to the logic: setting · theme.source (fixed ↔ wallpaper)
 
     // ── System state, no logic needed ─────────────────────────
     model wss max 16 { id: number; windows: number; active: bool }
     service workspaces as ws { active: number; list: wss }
+    service thumbnails { list: atlas_thumbs; capturing: bool }
     service clock { time: text = "--:--" }
     service audio { volume: number; muted: bool }
     service brightness { present: bool; level: number }
     service battery { present: bool; percent: number; charging: bool }
     service network { online: bool; kind: none | wired | wifi; name: text; strength: number }
+    service bluetooth { present: bool; powered: bool; discovering: bool }
     image wicon = from win_icon, 22, 22
 
     // ── Motion: hidden → entering → shown → exiting, per island ──
     prop rv.window = 0 ~m.enter
     prop rv.system = 0 ~m.enter
+    prop rv.command = 0 ~m.enter
+    prop rv.atlas = 0 ~m.enter
     prop depth = 0 ~m.expand
     prop fb = 0 ~m.select
     prop pz = 0 ~m.confirm
@@ -88,6 +198,14 @@ scene Mooi {
     layer life.system {
         shown while open == system { rv.system: 1 ~m.enter }
         gone                       { rv.system: 0 ~m.exit }
+    }
+    layer life.command {
+        shown while open == command { rv.command: 1 ~m.enter }
+        gone                        { rv.command: 0 ~m.exit }
+    }
+    layer life.atlas {
+        shown while open == atlas { rv.atlas: 1 ~m.enter }
+        gone                     { rv.atlas: 0 ~m.exit }
     }
     layer size {
         wide while open == window and phase == expanded { depth: 1 ~m.expand }
@@ -103,60 +221,360 @@ scene Mooi {
         rest                      { pz: 0 ~m.confirm }
     }
 
-    // ══ The Spine ═════════════════════════════════════════════
-    surface { size: 48, full; anchor: left; reserve: 48; level: top }
+    // ── The Mechanism's geometry ──────────────────────────────
+    // Where the instrument sits, from the configured span of the scale and never from what
+    // has been reported so far, so the bar does not move when the first report arrives. The
+    // wheel's head sits under the mark; the scale hangs from it; Region C follows the scale.
+    let wheel_y = 100                                  // the rotary wheel's centre
+    let scale_y = 158                                  // the first tick's centre on the spine
+    let span_h = ws_max * g.tick                       // the scale's full height
+    let keys_y = scale_y + span_h + 26                 // Region C's first key
+    let sy = screen.height - g.key_h - 22              // Region D's system key
+    let low = battery.present and battery.percent < 15 and not battery.charging
+    // The wheel: the positions are spread over a 300° arc from −150° to +150° (0° is up)
+    // and the needle stands where the bar is — or where the wheel points, engaged.
+    let arcs = max(spaces.count - 1, 1)
+    let needle_id = if(nav_open, nav_sel, active_row + 1)
+    let needle = -150 + 300 * (needle_id - 1) / arcs
+
+    // ── The Mechanism's travelling parts ──────────────────────
+    // The carriage (where the compositor is) and the dial (what the wheel points at), each
+    // on its own spring, so either can be interrupted mid-travel and both end where the
+    // state really is. Neither is ever the authority: `active_row` comes from Hyprland. The
+    // needle is a third reader of that same truth, so wheel and carriage cannot disagree.
+    prop trav = 158 ~m.select
+    follow trav = scale_y + active_row * g.tick
+    prop dial_y = 158 ~m.select
+    follow dial_y = scale_y + (nav_sel - 1) * g.tick
+    prop wheel_a = -150 ~m.dial
+    follow wheel_a = needle
+    prop rv.dial = 0 ~m.dial
+    prop rv.mark = 0 ~m.enter
+    layer life.dial {
+        shown while nav_open { rv.dial: 1 ~m.dial }
+        gone                 { rv.dial: 0 ~m.exit }
+    }
+    layer life.mark {
+        shown while mark_open { rv.mark: 1 ~m.enter }
+        gone                  { rv.mark: 0 ~m.exit }
+    }
+
+    // ══ The Mechanism · the bar ═══════════════════════════════
+    // mooi's bar, in four regions down one rail: **identity** (the mark, which opens the
+    // bar's own menu), **navigation** (the wheel's door and the scale of workspace
+    // positions, with the carriage riding it), **quick access** (search, the focused
+    // window) and **status** (the system key, the clock, the error dot). The structure,
+    // the vocabulary, and what is deliberately not here: docs/MECHANISM.md.
+    //
+    // The surface is reserved for the rail alone. What opens beside it — the wheel's
+    // readout, the mark's menu — floats over windows, and because pleamar commits the
+    // input region from what is actually painted, nothing beside the rail takes a click
+    // (verified on the running desktop: MECHANISM.md §1).
+    //
+    // The keyboard clause belongs to this, the scene's FIRST surface: pleamar reads the
+    // mode from it and the `while` from the last surface that declares one, so no island
+    // may carry one (ARCHITECTURE.md). The bar takes the keyboard only while one of its
+    // own instruments has a reason to: an island is up, the wheel is engaged, or the
+    // mark's menu is open. The one gap is the command surface in its window-actions mode:
+    // there the arrows and Enter belong to the actions, so the scene lets go of the
+    // keyboard and the `input` stops eating them (§13).
+    surface {
+        size: 320, full
+        anchor: left
+        reserve: 72
+        level: top
+        keyboard: exclusive while (open != none or nav_open or mark_open) and not (open == command and cmode == actions)
+    }
 
     box { from: 0, 0; size: g.spine, screen.height; color: bg.primary }
-    box { from: 47, 0; size: 1, screen.height; color: border.subtle }
+    box { from: g.spine - 1, 0; size: 1, screen.height; color: border.subtle }
 
-    // Window context: the anchor the window island grows out of.
-    zone box wbtn { at: 24, 28; size: 36, 36; corner: g.radius.item; cursor: pointer; label: "Window actions"; role: toggle; checked: open == window }
-    box { at: 24, 28; size: 36, 36; corner: g.radius.item; color: mix(bg.primary, surface.elevated, max(wbtn.hover, rv.window)) }
-    box { at: 24, 28; size: 36, 36; corner: g.radius.item; stroke: 1; color: focus.ring; opacity: rv.window }
-    image wicon { at: 13, 17; size: 22, 22; opacity: 90% }
-    text "{upper(win_letter)}" { at: 24, 28; anchor: center; size: 14; weight: 700; color: fg.secondary }
-    on press wbtn { emit open_window }
+    // ── Region A · identity ───────────────────────────────────
+    // The mark sits on the rail's axis, centered, so it reads as the top of the same
+    // instrument the spine belongs to.
+    Mark(bar_menu, rv.mark) { move: g.rail_x - 18, 14 }
+    Rule(48) { move: 12, 64 }
 
-    line { from: 14, 56; to: 34, 56; width: 1; color: border.subtle }
+    // ── Region B · navigation ─────────────────────────────────
+    // The heart of the bar, and one continuous instrument rather than a list: a single
+    // spine down the rail axis, the workspace positions ruled onto it as ticks, a carriage
+    // riding to the active tick, and the rotary wheel at the spine's head. Nothing here is
+    // a card and nothing here is a pill — a column of ten reads as one ruled scale.
+    //
+    // The spine. Unbroken, from the wheel's foot down past the last position.
+    line { from: g.rail_x, wheel_y + g.wheel_r; to: g.rail_x, keys_y - 34; width: 1
+           color: border.subtle; opacity: 0.55 }
 
-    // Workspaces, as Hyprland lists them (special workspaces have negative ids).
-    column wslist ~m.reflow {
-        at: 6, 66
-        gap: 4
-        for w in wss {
+    // The scale. Its zone is declared before the positions so that a position takes the
+    // press and the pointer, while the wheel still reaches the zone underneath it — the
+    // wheel always does, over whatever is under it.
+    zone box scale { from: 0, scale_y - g.tick_h / 2; size: g.spine, span_h
+                     role: list; label: "Workspace scale" }
+    column rail {
+        at: 0, scale_y - g.tick_h / 2
+        gap: g.tick - g.tick_h
+        for w in spaces { Tick(w, bar_labels) }
+    }
+
+    // The carriage: where the compositor actually is. It rides the spine on its own spring,
+    // and nothing but a report from Hyprland ever moves it. Two jaws and a block on the
+    // axis — a reading head, not a highlight.
+    box { from: 4, trav - g.carriage; size: g.spine - 8, 1; color: accent.primary; opacity: 0.8 }
+    box { from: 4, trav + g.carriage; size: g.spine - 8, 1; color: accent.primary; opacity: 0.8 }
+    box { from: 0, trav - g.carriage; size: 3, 2 * g.carriage; corner: 1; color: accent.primary }
+
+    // The rotary wheel. A real control at the spine's head: one graduation per position
+    // spread over 300° (the active one lit), a needle turning on a spring to wherever the
+    // bar is, an upper half that steps back and a lower half that steps on, and a hub that
+    // engages the selector. Restrained on purpose — a dial on an instrument, not a radial
+    // menu. Its needle and the carriage read the same fact, so they cannot disagree.
+    group {
+        move: g.rail_x, wheel_y
+        ellipse { at: 0, 0; radius: g.wheel_r; stroke: 1.2
+                  color: mix(border.subtle, accent.primary, rv.dial) }
+        ellipse { at: 0, 0; radius: g.wheel_r - 5; stroke: 1; color: border.subtle; opacity: 0.55 }
+        for w in spaces {
             group {
-                size: 36, 30
-                show: w.id > 0 and w.index < ws_max
-                zone box pip { from: 0, 0; size: 36, 30; corner: 6; cursor: pointer; label: "Workspace {w.id}"; selected: w.active }
-                box { from: 0, 0; size: 36, 30; corner: 6; color: mix(bg.primary, surface.elevated, pip.hover * 0.8) }
-                box { from: 0, 0; size: 36, 30; corner: 6; stroke: 1; color: accent.primary; opacity: pz * (w.id == flash_ws) }
-                box { from: 0, 8; size: 2, 14; corner: 1; color: accent.primary; opacity: w.active }
-                text "{w.id}" { at: 18, 15; anchor: center; size: 12; weight: 600
-                                color: if(w.active, fg.primary, if(w.windows > 0, fg.secondary, fg.muted)) }
-                on press pip { emit ws_pick(w.id) }
+                pivot: 0, 0
+                rotate: (-150 + 300 * w.index / arcs) * 1deg
+                line { from: 0, -(g.wheel_r - 4); to: 0, -g.wheel_r; width: 1
+                       color: mix(border.subtle, accent.primary, w.active) }
+            }
+        }
+        group {
+            pivot: 0, 0
+            rotate: wheel_a * 1deg
+            line { from: 0, -2.5; to: 0, -(g.wheel_r - 3); width: 1.8; color: accent.primary }
+        }
+        ellipse { at: 0, 0; radius: 2.6; color: accent.primary }
+        zone box wheel_up { from: -g.wheel_r, -g.wheel_r; size: 2 * g.wheel_r, g.wheel_r
+                            role: button; cursor: pointer; label: "Previous workspace" }
+        zone box wheel_dn { from: -g.wheel_r, 0; size: 2 * g.wheel_r, g.wheel_r
+                            role: button; cursor: pointer; label: "Next workspace" }
+        zone box wheel_hub { at: 0, 0; corner: 7; size: 14, 14
+                             role: button; cursor: pointer; label: "Workspace wheel — read the spine as a selector" }
+        on press wheel_up { emit wheel_step(-1) }
+        on press wheel_dn { emit wheel_step(1) }
+        on press wheel_hub { emit bar_dial }
+    }
+
+    // The readout: while the wheel is engaged, the plate beside the rail names what is under
+    // the needle. The active workspace keeps its own mark throughout — what is previewed and
+    // what is committed are never the same mark (MECHANISM.md §3).
+    group {
+        show: rv.dial > 0.004
+        opacity: rv.dial
+        move: g.spine + 16, dial_y - 26
+        Plate(g.plate, 52) {
+            text "SPACE" { at: 14, 15; anchor: left center; size: 9.5; weight: 700; color: fg.muted }
+            text nav_name { at: g.plate - 14, 15; anchor: right center; size: 10; color: accent.primary; width: 116; lines: 1 }
+            text "{nav_sel, 0}" { at: 14, 34; anchor: left center; size: 17; weight: 700; color: fg.primary }
+            text "←→ choose   ↵ go   esc back" { at: g.plate - 14, 35; anchor: right center; size: 9.5; color: fg.muted }
+        }
+    }
+
+    // The mark's menu: the bar's own controls, and the only settings surface this increment
+    // has. Every row writes a real setting and the logic owns it — nothing here is
+    // remembered, and nothing here is offered that does not happen.
+    group {
+        show: rv.mark > 0.004
+        opacity: rv.mark
+        move: g.spine + 8, 6
+        Plate(g.plate, 136) {
+            text "MOOI" { at: 14, 16; anchor: left center; size: 9.5; weight: 700; color: fg.muted }
+            text bar_version { at: g.plate - 14, 16; anchor: right center; size: 10; color: fg.secondary; width: 116; lines: 1 }
+            box { from: 12, 30; size: g.plate - 24, 1; color: border.subtle }
+            zone box mcolours { from: 0, 32; size: g.plate, 26; cursor: pointer; role: button; label: "Colours: fixed, or from the wallpaper" }
+            text "Colours" { at: 14, 45; anchor: left center; size: 11; color: if(mcolours.hover, accent.primary, fg.primary) }
+            text pick(theme_wallpaper, "fixed", "wallpaper") { at: g.plate - 14, 45; anchor: right center; size: 10; color: accent.primary }
+            on press mcolours { emit toggle_theme }
+            zone box mlabels { from: 0, 58; size: g.plate, 26; cursor: pointer; role: toggle; checked: bar_labels; label: "Workspace labels" }
+            text "Workspace labels" { at: 14, 71; anchor: left center; size: 11; color: if(mlabels.hover, accent.primary, fg.primary) }
+            text pick(bar_labels, "off", "on") { at: g.plate - 14, 71; anchor: right center; size: 10; color: accent.primary }
+            on press mlabels { emit toggle_labels }
+            zone box mwheel { from: 0, 84; size: g.plate, 26; cursor: pointer; role: toggle; checked: bar_wheel == step; label: "The wheel over the scale: step, or off" }
+            text "Wheel over the scale" { at: 14, 97; anchor: left center; size: 11; color: if(mwheel.hover, accent.primary, fg.primary) }
+            text pick(bar_wheel == step, "off", "step") { at: g.plate - 14, 97; anchor: right center; size: 10; color: accent.primary }
+            on press mwheel { emit toggle_wheel }
+            box { from: 12, 112; size: g.plate - 24, 1; color: border.subtle }
+            text bar_path { at: 14, 124; anchor: left center; size: 9.5; color: fg.muted; width: 132; lines: 1 }
+            text "esc" { at: g.plate - 14, 124; anchor: right center; size: 9.5; color: fg.muted }
+        }
+    }
+
+    // ── Region C · quick access ───────────────────────────────
+    // Search, the overview (the Atlas, which used to sit above the scale — Region B is
+    // navigation only now), and the focused window the window island grows from.
+    Rule(48) { move: 12, keys_y - 16 }
+    Key(g.key_w, g.key_h, rv.command, open_command, "Search — apps, windows, workspaces") {
+        move: g.rail_x - 18, keys_y
+        ellipse { at: 15, 10; radius: 5; stroke: 1.4; color: if(rv.command > 0.5, accent.primary, fg.secondary) }
+        line { from: 18.5, 13.5; to: 22, 17; width: 1.4; color: if(rv.command > 0.5, accent.primary, fg.secondary) }
+    }
+    Key(g.key_w, g.key_h, rv.atlas, open_atlas, "Workspace Atlas — every window, by workspace") {
+        move: g.rail_x - 18, keys_y + 32
+        box { at: 14.5, 8.5; size: 5, 5; corner: 1; color: if(rv.atlas > 0.5, accent.primary, fg.secondary) }
+        box { at: 21.5, 8.5; size: 5, 5; corner: 1; stroke: 1; color: fg.muted }
+        box { at: 14.5, 15.5; size: 5, 5; corner: 1; stroke: 1; color: fg.muted }
+        box { at: 21.5, 15.5; size: 5, 5; corner: 1; stroke: 1; color: fg.muted }
+    }
+    // The focused window: its own icon where the .desktop files give one, its letter
+    // otherwise. The anchor the window island grows out of.
+    Key(g.key_w, g.key_h, rv.window, open_window, "Window actions — the focused window") {
+        move: g.rail_x - 18, keys_y + 64
+        image wicon { at: 7, 1; size: 22, 22; opacity: 90% }
+        text "{upper(win_letter)}" { at: 18, 12; anchor: center; size: 13; weight: 700
+                                    color: if(rv.window > 0.5, accent.primary, fg.secondary) }
+    }
+
+    // ── Region D · status ─────────────────────────────────────
+    // The essentials, bottom-anchored on the rail: what the network is, whether Bluetooth
+    // is on, the brightness, the volume, then the system key (battery) and the clock. Every
+    // one is the same shape — a glyph on the rail axis whose geometry carries the state, no
+    // number unless the glyph needs it — and every one is a way into the system surface,
+    // which owns the controls. Nothing here is asked for: it is what the services report.
+    // A widget the machine cannot have (no backlight, no radio) is not drawn, and the ones
+    // above it close the gap (`have_bri`, `have_bt`), so the column never has a hole in it.
+    let have_bri = if(brightness.present, 1, 0)
+    let have_bt = if(bluetooth.present, 1, 0)
+    let y_vol = sy - g.sp
+    let y_bri = sy - g.sp * 2
+    let y_bt = sy - g.sp * (2 + have_bri)
+    let y_net = sy - g.sp * (2 + have_bri + have_bt)
+    let y_rule = y_net - 14
+
+    Rule(48) { move: 12, y_rule }
+
+    // Network: a signal meter for the radio (how many of its three bars are lit is the
+    // strength), a solid link for a cable, and a struck line when there is no connection.
+    group {
+        move: g.rail_x - 18, y_net
+        Status(open_system, if(network.online, 1, 0),
+               pick(network.online, "Network — no connection", "Network — {network.strength, 0} % signal")) {
+            group {
+                show: not network.online
+                box { from: 11, 15; size: 14, 2; corner: 1; color: fg.muted }
+                line { from: 9, 19; to: 27, 5; width: 1.5; color: status.error }
+            }
+            group {
+                show: network.online and network.kind == wired
+                box { from: 11, 11; size: 14, 2; corner: 1; color: accent.primary }
+                box { at: 11, 12; size: 5, 5; corner: 1; color: accent.primary }
+                box { at: 25, 12; size: 5, 5; corner: 1; color: accent.primary }
+            }
+            group {
+                show: network.online and network.kind != wired
+                box { from: 11, 13; size: 3, 5; corner: 1; color: mix(fg.muted, accent.primary, clamp(network.strength / 22, 0, 1)) }
+                box { from: 16, 10; size: 3, 8; corner: 1; color: mix(fg.muted, accent.primary, clamp((network.strength - 34) / 22, 0, 1)) }
+                box { from: 21, 7;  size: 3, 11; corner: 1; color: mix(fg.muted, accent.primary, clamp((network.strength - 67) / 22, 0, 1)) }
             }
         }
     }
 
-    // System status: the anchor the system island grows out of.
-    let sy = screen.height - 48
-    let low = battery.present and battery.percent < 15 and not battery.charging
-    zone box sbtn { at: 24, sy; size: 36, 36; corner: g.radius.item; cursor: pointer; label: "System"; role: toggle; checked: open == system }
-    box { at: 24, sy; size: 36, 36; corner: g.radius.item; color: mix(bg.primary, surface.elevated, max(sbtn.hover, rv.system)) }
-    box { at: 24, sy; size: 36, 36; corner: g.radius.item; stroke: 1; color: focus.ring; opacity: rv.system }
+    // Bluetooth: the rune, lit while the radio is on, struck while it is off, with a dot
+    // while it is scanning. Only on a machine with an adapter.
     group {
-        show: battery.present
-        box { at: 23, sy - 5; size: 18, 10; corner: 2; stroke: 1.2; color: fg.secondary }
-        box { at: 33.5, sy - 5; size: 2, 4; corner: 1; color: fg.secondary }
-        box { from: 16, sy - 8; size: max(1, 14 * battery.percent / 100), 6; corner: 1
-              color: if(low, status.error, if(battery.charging, accent.primary, fg.secondary)) }
+        show: bluetooth.present
+        move: g.rail_x - 18, y_bt
+        Status(open_system, if(bluetooth.powered, 1, 0), pick(bluetooth.powered, "Bluetooth — off", "Bluetooth — on")) {
+            group {
+                let tone = mix(fg.muted, accent.primary, bluetooth.powered)
+                path { at: 13, 5; stroke: 1.4; color: tone; move 0, 0; line 0, 16 }
+                path { at: 13, 5; stroke: 1.4; color: tone; move 0, 0; line 5, 5.5; line 0, 10.5 }
+                path { at: 13, 5; stroke: 1.4; color: tone; move 0, 16; line 5, 10.5; line 0, 10.5 }
+                line { from: 10, 4; to: 24, 18; width: 1.3; color: fg.muted; show: not bluetooth.powered }
+                ellipse { at: 26, 7; radius: 2; color: accent.secondary; show: bluetooth.discovering }
+            }
+        }
     }
-    box { from: 14, sy + 7; size: 20, 2; corner: 1; color: surface.elevated }
-    box { from: 14, sy + 7; size: max(1, 20 * audio.volume * (1 - audio.muted)), 2; corner: 1; color: fg.secondary }
-    on press sbtn { emit open_system }
 
-    text clock.time { at: 24, screen.height - 16; anchor: center; size: 10.5; color: fg.secondary; show: show_clock }
-    ellipse { at: 24, screen.height - 76; radius: 3; color: status.error; show: cfg_error; label: "Settings invalid, using defaults" }
+    // Brightness: a sun whose size and rays carry the level. Only on a machine with a backlight.
+    group {
+        show: brightness.present
+        move: g.rail_x - 18, y_bri
+        Status(open_system, if(brightness.level > 0.5, 1, 0), "Brightness — {brightness.level * 100, 0} %") {
+            group {
+                let lit = clamp(brightness.level * 1.4, 0.25, 1)
+                ellipse { at: 18, 10; radius: 2.5 + 1.6 * brightness.level; color: mix(fg.muted, fg.primary, lit) }
+                line { from: 18, 3; to: 18, 5; width: 1.2; color: fg.secondary; opacity: lit }
+                line { from: 18, 15; to: 18, 17; width: 1.2; color: fg.secondary; opacity: lit }
+                line { from: 11, 10; to: 13, 10; width: 1.2; color: fg.secondary; opacity: lit }
+                line { from: 23, 10; to: 25, 10; width: 1.2; color: fg.secondary; opacity: lit }
+                box { from: 8, 20; size: 20, 2; corner: 1; color: surface.elevated }
+                box { from: 8, 20; size: max(1, 20 * brightness.level), 2; corner: 1; color: accent.primary }
+            }
+        }
+    }
+
+    // Volume: a speaker with its level, struck while muted.
+    group {
+        move: g.rail_x - 18, y_vol
+        Status(open_system, if(audio.muted, 0, 1), pick(audio.muted, "Volume — {audio.volume * 100, 0} %", "Volume — muted")) {
+            box { from: 11, 9; size: 4, 8; corner: 1; color: mix(fg.muted, fg.secondary, 1 - audio.muted) }
+            path { at: 15, 9; color: mix(fg.muted, fg.secondary, 1 - audio.muted)
+                   move 0, 0; line 5, -4; line 5, 12; line 0, 8; close }
+            line { from: 10, 4; to: 26, 19; width: 1.5; color: status.error; show: audio.muted }
+            box { from: 8, 20; size: 20, 2; corner: 1; color: surface.elevated }
+            box { from: 8, 20; size: max(1, 20 * audio.volume * (1 - audio.muted)), 2; corner: 1; color: accent.primary }
+        }
+    }
+
+    // The system key: the battery, and the way into the surface that owns every control
+    // above. Battery only — the level bars belong to the widgets that read them.
+    Key(g.key_w, g.key_h, rv.system, open_system, "System — battery, network, Bluetooth, volume, brightness") {
+        move: g.rail_x - 18, sy
+        group {
+            show: battery.present
+            box { at: 17, 12; size: 15, 8; corner: 2; stroke: 1.1; color: fg.secondary }
+            box { at: 25.5, 12; size: 2, 3; corner: 1; color: fg.secondary }
+            box { from: 11, 9.6; size: max(1, 12 * battery.percent / 100), 5; corner: 1
+                  color: if(low, status.error, if(battery.charging, accent.primary, fg.secondary)) }
+        }
+    }
+    text clock.time { at: g.rail_x, screen.height - 16; anchor: center; size: 10.5; color: fg.secondary; show: show_clock }
+    ellipse { at: g.rail_x, y_rule - 14; radius: 3; color: status.error; show: cfg_error or theme_error
+              label: pick(cfg_error, "Theme refused, keeping the last good one", "Settings invalid, using defaults") }
+
+    // ── The Mechanism's rules ─────────────────────────────────
+    // One instrument at a time: opening one of the bar's own plates puts the island slot
+    // down, and opening an island puts the plates down (see the `open_*` rules below).
+    on bar_menu while mark_open { mark_open = false }
+    on bar_menu while not mark_open { open = none; nav_open = false; mark_open = true }
+    on bar_dial while nav_open { nav_open = false }
+    on bar_dial while not nav_open { open = none; mark_open = false; nav_sel = active_row + 1; nav_open = true }
+
+    // The spine and the wheel. A press on a position goes there; a wheel notch steps one
+    // position and goes, which is what a detented scale is for. At either end the scale
+    // stops — no silent wrap, so the pointer never jumps from 10 to 1 (setting `bar.wheel`
+    // off, and it does nothing at all). A pointer merely crossing the bar switches nothing:
+    // only a press or a notch does.
+    on scroll scale while bar_wheel == step and not nav_open { emit ws_pick(clamp(active_row + 1 - wheel, 1, ws_max)) }
+    // The wheel's halves step one position and go. Two guarded rules so the ends stop:
+    // going back from 1, or on from the last position, does nothing.
+    on wheel_step(d) while not nav_open and d < 0 and active_row > 0 { emit ws_pick(active_row) }
+    on wheel_step(d) while not nav_open and d > 0 and active_row < ws_max - 1 { emit ws_pick(active_row + 2) }
+
+    // Engaged, the wheel moves the selection without going anywhere — preview is not
+    // commit. ←↑ back, →↓ on, ↵ commits, Esc puts it down, and again the ends stop.
+    on scroll scale while nav_open { nav_sel = clamp(nav_sel - wheel, 1, ws_max) }
+    on wheel_step(d) while nav_open and d < 0 and nav_sel > 1 { nav_sel = nav_sel - 1 }
+    on wheel_step(d) while nav_open and d > 0 and nav_sel < ws_max { nav_sel = nav_sel + 1 }
+    on key Left while nav_open and nav_sel > 1 { nav_sel = nav_sel - 1 }
+    on key Up while nav_open and nav_sel > 1 { nav_sel = nav_sel - 1 }
+    on key Right while nav_open and nav_sel < ws_max { nav_sel = nav_sel + 1 }
+    on key Down while nav_open and nav_sel < ws_max { nav_sel = nav_sel + 1 }
+    on key Return while nav_open { emit ws_pick(nav_sel); nav_open = false }
+    on key space while nav_open { emit ws_pick(nav_sel); nav_open = false }
+    on key Escape while nav_open { nav_open = false }
+    on key Escape while mark_open { mark_open = false }
+    on idle for 30s while nav_open { nav_open = false }
+    on idle for 30s while mark_open { mark_open = false }
+
+    // The mark's menu asks the logic for the setting; the logic writes it, and the facts
+    // (bar_labels, bar_wheel, theme_wallpaper) come back — the bar never remembers one.
+    on toggle_labels { emit toggle_labels }
+    on toggle_wheel { emit toggle_wheel }
+    on toggle_theme { emit toggle_theme }
 
     // ══ Window island ═════════════════════════════════════════
     surface window_island {
@@ -164,7 +582,6 @@ scene Mooi {
         anchor: top_left
         margin: 10, 0, 0, 4
         level: overlay
-        keyboard: exclusive while open == window
         open: open == window or rv.window > 0.004
 
         IslandFrame(rv.window, 340, 132 + 80 * depth) {
@@ -255,27 +672,33 @@ scene Mooi {
         anchor: bottom_left
         margin: 0, 0, 30, 4
         level: overlay
-        keyboard: exclusive while open == system
         open: open == system or rv.system > 0.004
 
         // Its bottom sits on the surface's bottom (level with the Spine's status button)
         // and it grows upwards; inside, y counts from the island's top.
-        let sh = 128 + 52 * brightness.present
+        let sh = 144 + 52 * brightness.present
         group {
             move: 0, 230 - sh
             IslandFrame(rv.system, 300, sh, up: true) {
                 text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-                text "{? {network.name} · }{network.strength * 100, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
+                text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
                 text "Wired" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wired }
                 text "Offline" { at: 284, 20; anchor: right center; size: 10.5; color: status.error; show: not network.online }
 
+                // Bluetooth is a state here, not a control: the bar's rune reports it and
+                // this line names it, so a widget that only ever opens this surface never
+                // offers something the surface cannot do.
+                text pick(bluetooth.present and bluetooth.powered, "Bluetooth off", "Bluetooth on") {
+                    at: 284, 36; anchor: right center; size: 10.5; color: fg.secondary; show: bluetooth.present }
+                text "No Bluetooth" { at: 284, 36; anchor: right center; size: 10.5; color: fg.muted; show: not bluetooth.present }
+
                 group {
-                    move: 16, 40
+                    move: 16, 52
                     Level("Volume", pick(audio.muted, "{audio.volume * 100, 0} %", "Muted"), audio.volume * (1 - audio.muted), srow == 0, vol)
                 }
                 group {
                     show: brightness.present
-                    move: 16, 92
+                    move: 16, 104
                     Level("Brightness", "{brightness.level * 100, 0} %", brightness.level, srow == 1, bri)
                 }
 
@@ -285,17 +708,241 @@ scene Mooi {
         }
     }
 
+    // ══ Workspace Atlas ═══════════════════════════════════════
+    // Every window Hyprland lists, as a preview: the compositor's own picture of it
+    // where one can be had, its app and title otherwise. Choosing a tile focuses that
+    // window, so the tile is built from Hyprland's clients —the address is Hyprland's—
+    // and only the picture comes from the `thumbnails` service. The workspace a window
+    // sits on is on the tile; the map of workspace slots is `spaces`.
+    surface atlas_island {
+        size: 600, 540
+        anchor: center
+        level: overlay
+        open: open == atlas or rv.atlas > 0.004
+
+        // The board gives the move strip its room while the strip is up; the springs carry
+        // the tiles down and back, so a mode change interrupts cleanly.
+        prop bh = 430 ~m.reflow
+        follow bh = if(atlas_mode == move, 348, 430)
+        prop mv = 0 ~m.select
+        follow mv = if(atlas_mode == move, 1, 0)
+
+        IslandFrame(rv.atlas, 580, 520, centre: true, aw: 80, ah: 48) {
+            text "WORKSPACE ATLAS" { at: 20, 24; anchor: left center; size: 10; weight: 700; color: fg.secondary }
+            // What happened, in the logic's own words — never "it must have worked".
+            text feedback { at: 560, 24; anchor: right center; size: 10.5; width: 320; lines: 1
+                            color: if(note.failed, status.error, status.ok); opacity: fb }
+            text pick(atlas_mode == move, "←→ ↑↓ select   ↵ focus   m move   p previews   esc close",
+                                          "Moving — choose a workspace in the strip below") {
+                at: 20, 48; anchor: left center; size: 11; color: fg.muted; width: 540; lines: 1 }
+            text "No windows are open" {
+                at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_tiles.count == 0 }
+            text "Previews are off — p takes their pictures again" {
+                at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_tiles.count > 0 and not previews }
+            text "No preview pictures from this compositor; the windows are named only" {
+                at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_tiles.count > 0 and previews and not thumbnails.capturing }
+
+            column atlas_list {
+                at: 20, 76
+                size: 540, bh
+                view: 540, bh
+                step: 236
+                content: ceil(atlas_tiles.count / 2) * 236
+
+                grid {
+                    columns: 2
+                    gap: 12
+                    width: 540
+                    row: 224
+
+                    repeat i in 0..40 {
+                        group {
+                            show: i < atlas_tiles.count
+                            span: 1
+                            zone box atlas_window.$i { from: 0, 0; size: 264, 224; corner: g.radius.item; cursor: pointer
+                                active: not atlas_busy and atlas_mode == browse
+                                label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"
+                                role: button; selected: atlas_sel == i }
+                            box { from: 0, 0; size: 264, 224; corner: g.radius.item
+                                color: mix(surface.primary, surface.elevated, atlas_window.$i.hover) }
+                            image atlas_tiles.$i.picture { at: 8, 8; size: 248, 140; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
+                            box { from: 0, 0; size: 264, 224; corner: g.radius.item; stroke: 1.5
+                                color: if(atlas_sel == i, focus.ring, border.subtle); opacity: if(atlas_sel == i, 1, 0.7) }
+                            text atlas_tiles.$i.app { at: 12, 188; anchor: left center; size: 10; weight: 700; color: accent.primary; width: 240; lines: 1 }
+                            text atlas_tiles.$i.title { at: 12, 207; anchor: left center; size: 11; color: fg.primary; width: 240; lines: 1 }
+                            text "WS {atlas_tiles.$i.ws}" { at: 252, 188; anchor: right center; size: 10; color: fg.muted }
+                            on enter atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i }
+                            on press atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i; emit atlas_window(i) }
+                        }
+                    }
+                }
+            }
+
+            // Move mode: where the selected window should go. The strip is the bounded map
+            // `spaces` — the same `workspaces` data the Spine's numbers come from — so
+            // an empty slot can be chosen, and Hyprland creates it when the window lands.
+            group {
+                show: atlas_mode == move
+                opacity: mv
+                box { from: 0, 430; size: 580, 90; corner: g.radius; color: surface.primary }
+                box { from: 16, 430; size: 548, 1; color: border.subtle }
+                text "MOVE {atlas_target} TO" { at: 20, 448; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 430; lines: 1 }
+                text "↵ move   esc cancel" { at: 560, 448; anchor: right center; size: 10.5; color: fg.muted }
+                repeat j in 0..16 {
+                    group {
+                        show: j < ws_max
+                        move: 20 + j * 33, 462
+                        let here = spaces.$j.id == atlas_ws
+                        zone box mslot.$j { from: 0, 0; size: 32, 30; corner: 6; cursor: pointer; active: not atlas_busy
+                                            label: "Move to workspace {spaces.$j.id}"; role: button; selected: here }
+                        box { from: 0, 0; size: 32, 30; corner: 6
+                              color: mix(mix(surface.primary, surface.elevated, mslot.$j.hover), selection.bg, here) }
+                        box { from: 0, 0; size: 32, 30; corner: 6; stroke: 1; color: focus.ring; opacity: here }
+                        text "{spaces.$j.id}" { at: 16, 14; anchor: center; size: 11; weight: 600
+                                                     color: if(spaces.$j.exists, fg.primary, fg.muted) }
+                        box { at: 16, 24; size: 10, 2; corner: 1; color: fg.muted; show: spaces.$j.windows > 0 }
+                        on press mslot.$j while open == atlas and not atlas_busy { atlas_ws = spaces.$j.id; emit atlas_move }
+                    }
+                }
+            }
+        }
+    }
+
+
+    // ══ Command membrane ══════════════════════════════════════
+    // Fixed at the top centre. Compact it is a field; it grows as results arrive, and a
+    // window result opens its satellite actions inline (Tab, or the ⋯ on the row).
+    surface command_island {
+        size: 600, 560
+        anchor: top
+        margin: 10, 0, 0, 0
+        level: overlay
+        open: open == command or rv.command > 0.004
+
+        prop ch = 60 ~m.reflow
+        follow ch = 60 + if(res.count > 0, rlist.height + 10, 36) + 30
+        group {
+            move: 10, 0
+            IslandFrame(rv.command, 580, ch, centre: true, aw: 140) {
+                ellipse { at: 25, 29; radius: 6; stroke: 1.5; color: fg.secondary }
+                line { from: 29.5, 33.5; to: 34, 38; width: 1.5; color: fg.secondary }
+                input query { at: 46, 30; width: 510; size: 16; color: fg.primary; selection: selection.bg
+                              placeholder: "Search apps, windows, workspaces   @ windows   > mooi" }
+                box { from: 12, 58; size: 556, 1; color: border.subtle }
+
+                text cempty { at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: res.count == 0 }
+                column rlist ~m.reflow {
+                    at: 10, 66
+                    gap: 2
+                    for r in res { CRow(r) }
+                }
+
+                let foot = ch - 16
+                text pick(cmode == actions, "←→ choose   ↵ apply   esc back", "↑↓ select   ↵ open   tab window actions   esc close") {
+                    at: 20, foot; anchor: left center; size: 10.5; color: if(carming, accent.secondary, fg.muted); opacity: 1 - fb }
+                text feedback { at: 20, foot; anchor: left center; size: 10.5; width: 540; lines: 1
+                                color: if(note.failed, status.error, status.ok); opacity: fb }
+            }
+        }
+    }
+
+    // One result. A window's row opens to show its satellite actions.
+    component CRow(r: record) {
+        let mine = csel == r.index
+        let open_row = mine and cmode == actions and r.kind == win
+        prop lit = 0 ~m.select
+        follow lit = if(mine, 1, 0)
+        prop ex = 0 ~m.expand
+        follow ex = if(open_row, 1, 0)
+        size: 560, 44 + 46 * (csel == r.index and cmode == actions and r.kind == win)   // the list spring moves the rows below
+
+        zone box hit { from: 0, 0; size: 560, 44; corner: g.radius.item; cursor: pointer; label: "{r.title}"; selected: mine }
+        box { from: 0, 0; size: 560, 44 + 46 * ex; corner: g.radius.item; color: selection.bg; opacity: lit * 80% }
+        box { from: 0, 12; size: 2, 20; corner: 1; color: accent.primary; opacity: lit }
+        image r.icon { at: 14, 12; size: 20, 20 }
+        text "{upper(r.letter)}" { at: 24, 22; anchor: center; size: 12; weight: 700; color: fg.secondary }
+        text r.title { at: 46, 15; anchor: left center; size: 13.5; width: 420; lines: 1; color: fg.primary }
+        text r.sub { at: 46, 31; anchor: left center; size: 10.5; width: 420; lines: 1; color: fg.secondary }
+        text pick(r.kind, "App", "Window", "Workspace", "mooi") { at: 548, 22; anchor: right center; size: 10; color: fg.muted; show: r.kind != win }
+
+        zone box more { at: 538, 22; size: 28, 28; corner: 6; cursor: pointer; show: r.kind == win; label: "Actions for {r.title}" }
+        box { at: 538, 22; size: 28, 28; corner: 6; color: surface.elevated; opacity: more.hover; show: r.kind == win }
+        repeat d in 0..3 { ellipse { at: 532 + d * 6, 22; radius: 1.6; color: fg.secondary; show: r.kind == win } }
+
+        on enter hit while cmode == list { csel = r.index }
+        on press hit { csel = r.index; cmode = list; emit crun(r.index) }
+        on press more { csel = r.index; cmode = actions; asel = 0; carming = false; blur }
+
+        // Satellite actions for this window: 0 focus · 1 bring here · 2 float · 3 fullscreen · 4 close
+        group {
+            show: ex > 0.02
+            opacity: ex
+            repeat a in 0..5 {
+                group {
+                    move: 46 + a * 102, 50
+                    let on_a = mine and asel == a
+                    zone box chip.$a { from: 0, 0; size: 96, 32; corner: 6; cursor: pointer; active: cmode == actions and mine and not busy
+                                       label: pick(a, "Focus", "Bring here", "Float", "Fullscreen", "Close window") }
+                    box { from: 0, 0; size: 96, 32; corner: 6; color: mix(surface.primary, surface.elevated, max(chip.$a.hover, on_a)) }
+                    box { from: 0, 0; size: 96, 32; corner: 6; stroke: 1; opacity: on_a
+                          color: if(a == 4 and carming, accent.secondary, focus.ring) }
+                    text pick(a * 2 + if(a == 4, carming, 0), "Focus", "Focus", "Bring here", "Bring here", "Float", "Float", "Fullscreen", "Fullscreen", "Close", "Sure?") {
+                        at: 48, 16; anchor: center; size: 11; color: if(a == 4 and carming, accent.secondary, fg.primary) }
+                    on press chip.$a { asel = a; emit csat_try(a) }
+                }
+            }
+        }
+
+        on key Tab while open == command and cmode == list and mine and r.kind == win { cmode = actions; asel = 0; carming = false; blur }
+    }
+
     // ── Rules: user intent → the slot ─────────────────────────
     on open_window while open == window { open = none }
-    on open_window while open != window { open = window; phase = compact; sel = 0; arming = false; target_ok = false }
+    on open_window while open != window { open = window; phase = compact; sel = 0; arming = false; target_ok = false; nav_open = false; mark_open = false }
     on open_system while open == system { open = none }
-    on open_system while open != system { open = system; phase = compact }
+    on open_system while open != system { open = system; phase = compact; nav_open = false; mark_open = false }
+    on open_atlas while open == atlas { open = none; atlas_mode = browse }
+    on open_atlas while open != atlas { open = atlas; atlas_sel = 0; atlas_mode = browse; blur; nav_open = false; mark_open = false }
+    on open_command while open == command { open = none; blur }
+    on open_command while open != command { open = command; cmode = list; csel = 0; carming = false; blur; nav_open = false; mark_open = false; focus query }
 
     // Escape: the topmost thing goes first.
     on key Escape while open == window and phase == expanded            { phase = compact }
     on key Escape while open == window and phase == compact and arming  { arming = false }
     on key Escape while open == window and phase == compact and not arming { open = none }
     on key Escape while open == system                                  { open = none }
+    on key Escape while open == atlas and atlas_mode == move   { atlas_mode = browse }
+    on key Escape while open == atlas and atlas_mode == browse { open = none; atlas_mode = browse; blur }
+    on key Down while open == atlas and atlas_mode == browse and not atlas_busy { atlas_sel = min(atlas_sel + 2, max(atlas_tiles.count - 1, 0)); atlas_list.scroll: floor(min(atlas_sel + 2, max(atlas_tiles.count - 1, 0)) / 2) * 236 ~m.reflow }
+    on key Up while open == atlas and atlas_mode == browse and not atlas_busy   { atlas_sel = max(atlas_sel - 2, 0); atlas_list.scroll: floor(max(atlas_sel - 2, 0) / 2) * 236 ~m.reflow }
+    on key Right while open == atlas and atlas_mode == browse and not atlas_busy { atlas_sel = min(atlas_sel + 1, max(atlas_tiles.count - 1, 0)); atlas_list.scroll: floor(min(atlas_sel + 1, max(atlas_tiles.count - 1, 0)) / 2) * 236 ~m.reflow }
+    on key Left while open == atlas and atlas_mode == browse and not atlas_busy   { atlas_sel = max(atlas_sel - 1, 0); atlas_list.scroll: floor(max(atlas_sel - 1, 0) / 2) * 236 ~m.reflow }
+    on key Return while open == atlas and atlas_mode == browse and not atlas_busy { emit atlas_window(atlas_sel) }
+    on key space while open == atlas and atlas_mode == browse and not atlas_busy { emit atlas_window(atlas_sel) }
+
+    // Move mode: the strip chooses the workspace, ↵ gives the window to it.
+    on key m while open == atlas and atlas_mode == browse and not atlas_busy { atlas_mode = move }
+    on key m while open == atlas and atlas_mode == move { atlas_mode = browse }
+    on key p while open == atlas and not atlas_busy { emit atlas_previews }
+    on key Right while open == atlas and atlas_mode == move and not atlas_busy { atlas_ws = mod(atlas_ws, ws_max) + 1 }
+    on key Left while open == atlas and atlas_mode == move and not atlas_busy  { atlas_ws = mod(atlas_ws - 2, ws_max) + 1 }
+    on key Return while open == atlas and atlas_mode == move and not atlas_busy { emit atlas_move }
+    on key space while open == atlas and atlas_mode == move and not atlas_busy { emit atlas_move }
+    on key Escape while open == command and cmode == actions and carming     { carming = false }
+    on key Escape while open == command and cmode == actions and not carming { cmode = list; focus query }
+    on key Escape while open == command and cmode == list                    { open = none }
+    on key Down while open == command and cmode == list { csel = min(csel + 1, max(res.count - 1, 0)) }
+    on key Up while open == command and cmode == list   { csel = max(csel - 1, 0) }
+    on key Ctrl+n while open == command and cmode == list { csel = min(csel + 1, max(res.count - 1, 0)) }
+    on key Ctrl+p while open == command and cmode == list { csel = max(csel - 1, 0) }
+    on key Ctrl+Left while open == command and cmode == list { csel = max(csel - 1, 0) }
+    on key Ctrl+Right while open == command and cmode == list { csel = min(csel + 1, max(res.count - 1, 0)) }
+    on key Right while open == command and cmode == list and csel > 0 { csel = max(csel - 1, 0) }
+    on key Left while open == command and cmode == list and csel > 0 { csel = max(csel - 1, 0) }
+    on submit query while open == command and cmode == list { emit crun(csel) }
+    on key Down while open == command and cmode == actions { asel = mod(asel + 1, 5); carming = false }
+    on key Up while open == command and cmode == actions   { asel = mod(asel - 1, 5); carming = false }
+    on key Return while open == command and cmode == actions { emit csat_try(asel) }
 
     // Window island keys
     on key Right while open == window and phase == compact { sel = mod(sel + 1, 5); arming = false }
@@ -326,6 +973,14 @@ scene Mooi {
     on key Right while open == system and srow == 1 { emit bri(clamp(brightness.level + 0.05, 0.01, 1)) }
     on key Left while open == system and srow == 1  { emit bri(clamp(brightness.level - 0.05, 0.01, 1)) }
     on key m while open == system { emit mute }
+
+    // Command membrane keys: the field keeps whatever counts as typing; the rest arrives here.
+    on key Right while open == command and cmode == actions { asel = mod(asel + 1, 5); carming = false }
+    on key Left while open == command and cmode == actions  { asel = mod(asel - 1, 5); carming = false }
+    on key Tab while open == command and cmode == actions   { asel = mod(asel + 1, 5); carming = false }
+    on key Return while open == command and cmode == actions { emit csat_try(asel) }
+    on csat_try(v) while v == 4 and not carming and not busy        { carming = true }
+    on csat_try(v) while (v != 4 or carming) and not busy           { carming = false; busy = true; emit csat(v) }
 
     // Safety net: an exclusive keyboard grab nobody is using goes away.
     on idle for 30s while open != none { open = none; arming = false }

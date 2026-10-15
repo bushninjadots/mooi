@@ -1,0 +1,129 @@
+language 0.4
+import "../theme/tokens.plm"
+
+// The Mechanism: mooi's bar, in pieces.
+//
+// The bar is a rail with a scale of workspace positions on it, four regions, a carriage
+// that rides the scale, and a wheel the carriage answers to. Every piece here is a shape
+// and its states; nothing in this library decides anything. A piece that can be pressed
+// is *given* the event to emit (`press`) and says what it is for with `say`, so the scene
+// keeps the state and the rules keep the behaviour (docs/ARCHITECTURE.md).
+//
+// The vocabulary of the instrument, fixed here so it is the same in every region:
+//   · geometry carries the state — how tall a mark is, how heavy, how opaque — and
+//     colour only confirms it (a workspace with windows is a taller, wider mark than one
+//     the compositor has not made yet, not merely a lighter one).
+//   · the accent (accent.primary) marks *what is*, focus.ring marks *what is pointed at*,
+//     so the active workspace and the wheel's selection are never the same mark.
+//   · hairline rules and the scale's axis align the regions; nothing floats.
+library Mechanism {
+    // One key in one of the bar's regions: the hit area, the hover and on states every
+    // key shares, and a slot for whatever the key draws.
+    component Key(w: number, h: number, on: number, press: event, say: text, enabled: bool = true) {
+        size: w, h
+        zone box hit { from: 0, 0; size: w, h; corner: g.radius.key; cursor: pointer
+                       active: enabled; role: button; checked: on > 0.5; label: say }
+        box { from: 0, 0; size: w, h; corner: g.radius.key
+              color: mix(bg.primary, surface.elevated, max(hit.hover * 0.85, on)) }
+        box { from: 0, 0; size: w, h; corner: g.radius.key; stroke: 1
+              color: focus.ring; opacity: on * 0.7 }
+        children
+        on press hit while enabled { emit press }
+    }
+
+    // Region D · one status widget: a glyph on the rail axis whose geometry carries the
+    // state (how many bars are lit, how tall the sun's rays, whether the rune is on), and
+    // the whole widget is a way into the surface that owns the control. Lighter than a
+    // Key — a hairline under it when pointed at, no outline — so the status column stays
+    // quiet beside the scale.
+    component Status(press: event, on: number, say: text, enabled: bool = true) {
+        size: g.key_w, g.key_h
+        zone box hit { from: 0, 0; size: g.key_w, g.key_h; corner: g.radius.key; cursor: pointer
+                       active: enabled; role: button; checked: on > 0.5; label: say }
+        box { from: 0, 0; size: g.key_w, g.key_h; corner: g.radius.key
+              color: mix(bg.primary, surface.elevated, hit.hover * 0.85) }
+        box { from: 7, g.key_h - 1; size: g.key_w - 14, 1; color: focus.ring; opacity: hit.hover * 0.8 }
+        children
+        on press hit while enabled { emit press }
+    }
+
+    // Region A · identity. The mark is the bar's own control, and it is the instrument
+    // signing itself: a frame holding a miniature spine, its detents, and one accent
+    // position. Not a grid and not a logo — the bar's own vocabulary, small.
+    component Mark(press: event, on: number) {
+        size: 36, 36
+        let lit = max(hit.hover, on)
+        zone box hit { from: 0, 0; size: 36, 36; corner: g.radius.key; cursor: pointer
+                       role: toggle; checked: on > 0.5; label: "mooi · bar menu" }
+        box { at: 18, 18; size: 26, 26; corner: 5; stroke: 1
+              color: mix(border.subtle, accent.primary, lit) }
+        // The miniature spine, and three detents hanging off it, the middle one accent.
+        box { at: 18, 18; size: 1, 16; color: mix(border.subtle, fg.secondary, lit) }
+        box { at: 15, 12; size: 7, 1; color: mix(border.subtle, fg.secondary, lit) }
+        box { at: 15, 18; size: 11, 2; corner: 1; color: accent.primary }
+        box { at: 15, 24; size: 7, 1; color: mix(border.subtle, fg.secondary, lit) }
+        on press hit { emit press }
+    }
+
+    // Region B · one position on the spine. The continuous line is the scene's; here is
+    // what hangs off it:
+    //   missing  → the shortest, thinnest tick: a place that does not exist yet
+    //   empty    → middle length: Hyprland has it, nothing is on it
+    //   occupied → the longest and heaviest: it has windows
+    //   active   → the accent, and a detent on the axis; the carriage brackets it
+    //   pointed  → focus.ring, while the wheel has it
+    // No card and no pill: a tick hanging off the axis with a label to its right, so a
+    // column of ten reads as one ruled scale, not ten buttons.
+    component Tick(w: record, labels: bool) {
+        size: g.spine, g.tick_h
+        let here = w.active
+        let pointed = nav_open and w.id == nav_sel
+        // Geometry as arithmetic rather than `if`: a `let` takes an expression or a plain
+        // colour, and neither a conditional number nor a conditional colour is one of
+        // those (MECHANISM.md §1). The tone is a blend of two names, so the same rule
+        // holds and the states stay on one line each.
+        let len = g.tick_min + (g.tick_max - 6 - g.tick_min) * w.exists + 6 * (w.windows > 0)
+        let weight = 1 + (w.windows > 0)
+        let tone = mix(mix(fg.muted, border.subtle, w.exists), accent.primary, here)
+
+        zone box hit { from: 0, 0; size: g.spine, g.tick_h; cursor: pointer; role: button
+                       selected: here or pointed
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+        // What just happened: a window was moved to this workspace (state.confirm).
+        box { at: g.rail_x - len / 2 - 5, g.tick_h / 2; size: len + 10, 3; corner: 1
+              color: accent.primary; opacity: pz * (w.id == flash_ws) }
+        // What the wheel points at: a rule over the tick, never the accent the active tick owns.
+        box { at: g.rail_x - len / 2 - 3, g.tick_h / 2; size: len + 6, 2; corner: 1
+              color: focus.ring; opacity: pointed * 0.9 }
+        // The tick itself, hanging off the axis.
+        box { at: g.rail_x - len / 2, g.tick_h / 2; size: len, weight; corner: 1; color: tone }
+        box { at: g.rail_x - len / 2, g.tick_h / 2; size: len, weight; corner: 1; color: fg.primary
+              opacity: hit.hover * 0.55 }
+        // Where I am: a detent on the axis itself, so the active position reads on the
+        // spine and not only in the carriage.
+        box { at: g.rail_x, g.tick_h / 2; size: 3, 3; corner: 1; color: accent.primary; show: here }
+        // The label, right of the axis; a hairline reaches out to it while pointed at.
+        box { at: g.rail_x + 5.5, g.tick_h / 2; size: 11, 1; color: focus.ring; opacity: hit.hover * 0.5 }
+        text "{upper(w.label)}" { at: g.rail_x + 13, g.tick_h / 2; anchor: center; size: 11; weight: 600
+                                  show: labels
+                                  color: mix(mix(fg.muted, fg.secondary, w.exists), fg.primary, here or pointed)
+                                  opacity: 1 - 0.5 * (1 - (here or pointed or w.windows > 0)) }
+        on enter hit while nav_open { nav_sel = w.id }
+        on press hit { emit ws_pick(w.id); nav_open = false }
+    }
+
+    // The plate every readout and menu sits on: one step above the rail, a hairline edge,
+    // no shadow of its own — the bar is flat, and what matters is what is aligned.
+    component Plate(w: number, h: number) {
+        size: w, h
+        box { from: 0, 0; size: w, h; corner: g.radius; color: surface.primary }
+        box { from: 0, 0; size: w, h; corner: g.radius; stroke: 1; color: border.subtle }
+        children
+    }
+
+    // A hairline rule between two regions.
+    component Rule(w: number) {
+        size: w, 1
+        box { from: 0, 0; size: w, 1; color: border.subtle; opacity: 0.8 }
+    }
+}

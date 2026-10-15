@@ -7,12 +7,25 @@ local M = {}
 M.VERSION = 1
 
 -- One row per setting: dotted path, type, default, and limits for numbers.
+-- A row with no default is not written by `defaults()`: it is a setting the user may
+-- add (the theme's colour overrides), and leaving it out means "not set".
+-- `values` is for enums, and "colour" expects #rrggbb (lib/theme.luau owns the palette).
 M.SCHEMA = {
     { path = "spine.clock", kind = "boolean", default = true },
     { path = "spine.max_workspaces", kind = "integer", default = 10, min = 1, max = 16 },
+    -- The Mechanism (the bar): what the scale says, and what the wheel over it does.
+    { path = "bar.labels", kind = "boolean", default = true },
+    { path = "bar.wheel", kind = "enum", values = { "step", "off" }, default = "step" },
     { path = "island.confirm_close", kind = "boolean", default = true },
     { path = "island.follow_on_send", kind = "boolean", default = false },
     { path = "motion.reduced", kind = "boolean", default = false },
+    { path = "command.max_results", kind = "integer", default = 7, min = 3, max = 10 },
+    { path = "atlas.previews", kind = "boolean", default = true },
+    { path = "theme.source", kind = "enum", values = { "fixed", "wallpaper" }, default = "fixed" },
+    -- One table of token = colour: a dotted setting path cannot name a token that has a
+    -- dot in it (`theme.overrides.bg.primary` would read as four nested keys). Which
+    -- tokens exist, and which of them the user misspelled, is lib/theme.luau's business.
+    { path = "theme.overrides", kind = "colours" },
 }
 
 local function get(t, path)
@@ -37,7 +50,9 @@ end
 
 function M.defaults()
     local out = { version = M.VERSION }
-    for _, row in ipairs(M.SCHEMA) do set(out, row.path, row.default) end
+    for _, row in ipairs(M.SCHEMA) do
+        if row.default ~= nil then set(out, row.path, row.default) end
+    end
     return out
 end
 
@@ -48,6 +63,18 @@ local function check(row, value)
         if type(value) ~= "number" or value ~= math.floor(value) then return false, "expected a whole number" end
         if value < row.min or value > row.max then
             return false, string.format("expected %d to %d", row.min, row.max)
+        end
+    elseif row.kind == "enum" then
+        if type(value) ~= "string" then return false, "expected one of " .. table.concat(row.values, ", ") end
+        local known = false
+        for _, allowed in ipairs(row.values) do if value == allowed then known = true end end
+        if not known then return false, "expected one of " .. table.concat(row.values, ", ") end
+    elseif row.kind == "colours" then
+        if type(value) ~= "table" then return false, "expected a table of token = colour" end
+        for token, hex in pairs(value) do
+            if type(hex) ~= "string" or not string.match(hex, "^#%x%x%x%x%x%x$") then
+                return false, string.format("expected a colour like #A6F3D1 for %s", tostring(token))
+            end
         end
     end
     return true

@@ -68,6 +68,10 @@ Every logic decision is followed by a 600 ms block, as a demonstration of decoup
 | **An unknown address still answers `ok`** | dispatched to `0xdeadbeef` |
 | **Acting on a window on another workspace moves focus there** | float toggle on a workspace-2 window switched the active workspace; focus was restored afterwards |
 | A Pleamar layer holding the keyboard does not change `activewindow` | the island captured the right target with its keyboard held |
+| **A layer holding the keyboard keeps Hyprland from giving it to a window** | with the membrane open, `hl.dsp.focus({ window = … })` for another window changes nothing (`focusHistoryID` stays); the same dispatch right after the island lets the slot go works |
+| **A `keyboard:` clause is read once for the scene, from the first surface** | compiler (`pending_keyboard`, `scene.surface().keyboard`) and measured: with the islands each declaring `keyboard: exclusive while open == <name>`, no key reached the open island at all (typing went to the window below, Escape did nothing); one clause on the Spine (`open != none`) fixed both |
+| `thumbnails` works on Hyprland: `capturing` is true, and each report carries `id`, `title`, `app`, `picture` (a path with a version) and `stale` | the Atlas wall drew real previews; `picture` is `…/pleamar/thumbnails/<pid>/<n>.png?<version>` |
+| **A thumbnail's `id` is the compositor's own** (`18000015`), not a Hyprland address | compared the service's ids with `hyprctl -j clients` addresses |
 | `move … follow = false` keeps the user's workspace | integration test |
 | `fullscreen` in `hyprctl` JSON is a mode: 0 none, 1 maximized, 2 fullscreen | observed `2` on a fullscreen kitty |
 
@@ -77,7 +81,7 @@ Consequences: success is **never** taken from the dispatch reply. mooi reads the
 
 **Pleamar is suitable for the Spine and Islands, and the vertical slice proves it** (see TESTING.md for numbers). It has springs on a render thread that never blocks, interruption by construction, real layer-shell control, a sandboxed and permissioned logic, scriptable state checks, and a near-zero idle cost. Its costs are a young language (0.x, breaking changes allowed), a single-author upstream moving fast (five releases on the audit day), and the limits above.
 
-Not yet evaluated: `thumbnails` on Hyprland (Atlas), notification ownership hand-off, multi-monitor behaviour with the LG attached, and theme hot-swap through `rgb()` facts (Matugen).
+Evaluated since: `thumbnails` on Hyprland — `capturing` is true here (ext-image-copy-capture), pictures arrive as versioned files and the Atlas draws them (§4). Not yet evaluated: notification ownership hand-off, multi-monitor behaviour with the LG attached, and theme hot-swap through `rgb()` facts (Matugen).
 
 ## 6. Measured (slice 1, this machine)
 

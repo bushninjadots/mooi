@@ -12,6 +12,8 @@
 local M = {}
 
 M.ACTIONS = { "float", "fullscreen", "pin", "move", "close" }
+-- What the command membrane offers on any window it lists (a contextual satellite).
+M.SATELLITE = { "focus", "bring", "float", "fullscreen", "close" }
 
 function M.valid_address(a)
     return type(a) == "string" and string.match(a, "^0x%x+$") ~= nil
@@ -26,19 +28,21 @@ function M.dispatch(action, address, opts)
     opts = opts or {}
     if not M.valid_address(address) then return nil, "invalid window address" end
     local w = target(address)
-    if action == "float" then
+    if action == "focus" then
+        return 'hl.dsp.focus({ ' .. w .. ' })'
+    elseif action == "float" then
         return 'hl.dsp.window.float({ action = "toggle", ' .. w .. ' })'
     elseif action == "fullscreen" then
         return 'hl.dsp.window.fullscreen({ action = "toggle", ' .. w .. ' })'
     elseif action == "pin" then
         return 'hl.dsp.window.pin({ ' .. w .. ' })'
-    elseif action == "move" then
+    elseif action == "move" or action == "bring" then
         local ws = opts.workspace
         if type(ws) ~= "number" or ws ~= math.floor(ws) or ws < 1 or ws > 99 then
             return nil, "invalid workspace"
         end
         return string.format('hl.dsp.window.move({ workspace = %d, follow = %s, %s })',
-            ws, opts.follow and "true" or "false", w)
+            ws, (action == "move" and opts.follow) and "true" or "false", w)
     elseif action == "close" then
         return 'hl.dsp.window.close({ ' .. w .. ' })'
     end
@@ -60,6 +64,9 @@ function M.client(c)
         fullscreen_mode = tonumber(c.fullscreen) or 0,
         fullscreen = (tonumber(c.fullscreen) or 0) >= 2,
         workspace = tonumber(ws) or 0,
+        -- 0 is the window that has (or last had) focus; higher is longer ago.
+        recency = tonumber(c.focusHistoryID) or 999,
+        focused = tonumber(c.focusHistoryID) == 0,
     }
 end
 
@@ -71,6 +78,20 @@ function M.find(clients, address)
     return nil
 end
 
+-- Every window worth listing (mapped, not hidden), most recently focused first.
+function M.windows(clients)
+    local out = {}
+    if type(clients) ~= "table" then return out end
+    for _, c in ipairs(clients) do
+        if c.mapped ~= false and c.hidden ~= true then
+            local w = M.client(c)
+            if w then out[#out + 1] = w end
+        end
+    end
+    table.sort(out, function(a, b) return a.recency < b.recency end)
+    return out
+end
+
 -- Did the action happen? Compares the window before and after (after == nil: gone).
 function M.verify(action, before, after, opts)
     opts = opts or {}
@@ -79,7 +100,15 @@ function M.verify(action, before, after, opts)
         return false, before.class .. " is still open (it may be asking something)"
     end
     if after == nil then return false, "The window went away" end
-    if action == "float" then
+    if action == "focus" then
+        if after.focused then return true, "Focused " .. after.class end
+        return false, "Hyprland did not focus " .. after.class
+    elseif action == "bring" then
+        if after.workspace == opts.workspace then
+            return true, string.format("Brought %s here", after.class)
+        end
+        return false, string.format("%s is still on workspace %d", after.class, after.workspace)
+    elseif action == "float" then
         if after.floating ~= before.floating then
             return true, after.floating and "Floating" or "Tiled"
         end

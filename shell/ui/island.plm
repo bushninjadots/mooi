@@ -7,21 +7,24 @@ library Island {
     // `rv` is the island's reveal spring (0 hidden → 1 shown). At 0 the body is the
     // anchor's own size (`aw` × `ah`), sitting where the anchor is; it grows to w × h.
     // `up`: grows upwards from the bottom-left corner (anchors at the bottom of the Spine).
-    component IslandFrame(rv: number, w: number, h: number, up: bool = false, aw: number = 36, ah: number = 36) {
+    // `centre`: grows from the middle of its top edge (an island with no Spine anchor,
+    // such as the command membrane, which sits at a fixed place).
+    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36) {
         size: w, h
         let iw = aw + (w - aw) * rv
         let ih = ah + (h - ah) * rv
         let top = if(up, h - ih, 0)
+        let left = if(centre, (w - iw) / 2, 0)
         body {
             color: surface.primary
             border: 1, border.subtle
             shadow: 0, 6 * rv, 22 * rv, 38% * rv
-            box { from: 0, top; size: iw, ih; corner: g.radius }
+            box { from: left, top; size: iw, ih; corner: g.radius }
         }
         group {
             opacity: smooth(0.45, 1, rv)
-            move: -10 * (1 - rv), 0
-            clip box { from: 0, top; size: iw, ih; corner: g.radius }
+            move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0)
+            clip box { from: left, top; size: iw, ih; corner: g.radius }
             children
         }
     }

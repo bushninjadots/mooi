@@ -2,15 +2,20 @@
 # mooi — launcher and shell switch. ArchEclipse stays the shell you log into:
 # nothing here runs at login and nothing survives a logout.
 #
-#   mooi toggle            start mooi beside ArchEclipse, or toggle the window island if it runs
+#   mooi toggle            the command membrane; starts mooi beside ArchEclipse first if needed
 #                          (Super+Alt+Space)
 #   mooi start             start mooi beside ArchEclipse (detached, restarted if it crashes)
 #   mooi takeover          mooi becomes the shell: ArchEclipse's bar is stopped until mooi ends
 #   mooi stop              stop mooi; after a takeover, ArchEclipse comes back (Super+Alt+Shift+Space)
 #   mooi status            what is running
 #   mooi run [--safe] …    foreground, for development (pleamar options after it)
-#   mooi open | system     toggle the window island · the system island
+#   mooi window | system | atlas  toggle the window island (Super+Alt+W), system island, or Workspace Atlas
+#   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
+#   mooi theme-sync [--light] [image]
+#                          recolour from the wallpaper with Matugen (theme/matugen.toml.in,
+#                          theme/palette.json.hbs), using mooi's own config so nothing of
+#                          the user's theming is written; then asks a running mooi to read it
 #   mooi check             compile the scene and run the unit tests
 #
 # --safe / MOOI_SAFE=1 ignores settings.json. MOOI_PLEAMAR picks another pleamar binary.
@@ -111,7 +116,11 @@ case "$cmd" in
         wait_for 5 running && echo "mooi started beside ArchEclipse" || { echo "mooi did not start; see $log" >&2; exit 1; }
         ;;
     toggle)
-        if running; then exec "$pleamar" --say "$name" "emit open_window"; else exec "$self" start; fi ;;
+        if ! running; then
+            "$self" start >/dev/null || exit 1
+            wait_for 3 running
+        fi
+        exec "$pleamar" --say "$name" "emit open_command" ;;
     takeover)
         takeover_active && { echo "mooi already holds the desktop"; exit 0; }
         [ "$("$engine_sh" get 2>/dev/null)" = marea ] && { echo "Marea is the shell engine; switch to ArchEclipse first (SUPER+CTRL+SHIFT+B)" >&2; exit 1; }
@@ -158,11 +167,34 @@ case "$cmd" in
         if [ "${1:-}" = --safe ]; then shift; export MOOI_SAFE=1; fi
         # shellcheck disable=SC2046
         exec "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) "$@" ;;
-    open) exec "$pleamar" --say "$name" "emit open_window" ;;
+    open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
+    atlas) exec "$pleamar" --say "$name" "emit open_atlas" ;;
     say)  exec "$pleamar" --say "$name" "$@" ;;
     check)
         "$pleamar" --check "$scene" || exit 1
         cd "$root" && lua5.4 tests/unit/run.lua ;;
-    *) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+    theme-sync)
+        # Matugen is the palette generator (the brief: not Matugen *and* Wallust), and it
+        # runs with mooi's own config: one output file, no other program's colours touched.
+        light=false; [ "${1:-}" = --light ] && { light=true; shift; }
+        image=${1:-${HOME}/.cache/current_wallpaper}
+        [ -e "$image" ] || { echo "theme-sync: no image at $image (pass one, or set a wallpaper first)" >&2; exit 1; }
+        command -v matugen >/dev/null 2>&1 || { echo "theme-sync: matugen is not installed" >&2; exit 1; }
+        folder=$(dirname "$settings")
+        mkdir -p "$folder"
+        cfg="$folder/matugen.toml"
+        sed -e "s|@TPL@|$root/theme/palette.json.hbs|" -e "s|@OUT@|$folder/palette.json|" \
+            "$root/theme/matugen.toml.in" > "$cfg" || exit 1
+        mode=dark; $light && mode=light
+        # `--source-color-index 0` is what the user's own matugen-theme.sh passes, so mooi
+        # and the rest of the desktop take their colours from the same source colour of
+        # the same wallpaper; without it matugen 4.2 stops and asks.
+        matugen image "$(readlink -f "$image")" -c "$cfg" -m "$mode" --source-color-index 0 >/dev/null \
+            || { echo "theme-sync: matugen failed" >&2; exit 1; }
+        echo "palette from $(basename "$image") ($mode) → $folder/palette.json"
+        if "$pleamar" --say "$name" "emit recolor" >/dev/null 2>&1; then echo "mooi asked to read it"
+        else echo "mooi is not running; it will read the palette when it starts"; fi
+        ;;
+    *) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac
