@@ -11,25 +11,25 @@ commit to).
 
 The bar is built in `shell/mooi.plm` (`// ══ The Mechanism · the bar ══`, the first surface
 and everything down to its rules), its two reusable shapes are in `shell/ui/mechanism.plm`
-(`Key`, `Status`, `Mark`, `Slot`, `Plate`, `Rule`), and its geometry and colour come from
+(`Key`, `Status`, `Mark`, `Triangle`, `Plate`, `Rule`), and its geometry and colour come from
 `shell/theme/tokens.plm`. What is deliberately **not** here is at the end of this file.
 
 ## §1 · What the geometry may say
 
-The bar is drawn on **one rail** — a 48 px surface, `anchor: left`, `reserve: 48`,
-`level: top` — with one axis down it, `g.rail_x = 24`. The mark, the carriage, the dial and
-the status glyphs all line up on that axis, so a change in any one of them is read against
-the same line.
+The bar is drawn on **one rail** — a 72 px surface, `anchor: left`, `reserve: 72`,
+`level: top` — with one axis down it, `g.rail_x = 30`. The mark, the chain, the carriage, the
+dial and the status glyphs all line up on that axis, so a change in any one of them is read
+against the same line.
 
 The rule the whole bar is built on:
 
 > **Geometry carries state. Colour only confirms it.**
 
-A workspace's mark is as tall as the workspace is busy (`g.mark_min = 5` for a slot Hyprland
-has not made yet, up to `g.mark = 15` for one with windows); the carriage sits where the
-active workspace is; the spoke leans towards the wheel's choice; the cursor ring is where the
-pointer is. You can read the bar with the colour turned off. Colour then says two things and
-only two:
+A workspace's triangle is as solid as the workspace is busy: a slot Hyprland has not made yet
+is the quietest tone, one with windows is brighter; the carriage sits where the active
+workspace is, on the chain's curve; the spoke leans towards the wheel's choice; the cursor ring
+is where the pointer is. You can read the bar with the colour turned off. Colour then says two
+things and only two:
 
 | Token | Means |
 | --- | --- |
@@ -48,7 +48,7 @@ Two consequences the code depends on, both verified on the running desktop:
   per-widget ones live.)
 - **Nothing is placed from a value that has not arrived yet.** The scale is laid out from the
   configured span (`ws_max`), never from what the service has reported so far, so the bar does
-  not move when the first report lands (`let span_h = ws_max * g.slot`).
+  not move when the first report lands (`let span_h = ws_max * g.tick`).
 
 Two more of Pleamar's that the bar is careful about:
 
@@ -59,12 +59,12 @@ Two more of Pleamar's that the bar is careful about:
 - `path` is **one stroke per `path`** (`move` once, then `line`/`curve`, optionally `close`);
   several strokes are several `path`s. This is how the Bluetooth rune is drawn.
 
-Geometry tokens (`shell/theme/tokens.plm`): `g.spine` 48 (rail width and the surface's
-reserve) · `g.rail_x` 24 · `g.slot` 26 (pitch of one workspace position) · `g.slots_y` 132
-(where the first position sits — **below** Region B's keys and their hairline, so the scale's
-list zone never covers them) · `g.slot_h` 24 · `g.mark`/`g.mark_min` 15/5 · `g.carriage` 11 ·
-`g.key_w`/`g.key_h` 36/26 · `g.sp` 30 (pitch of one Region D status widget) · `g.plate` 196 ·
-`g.radius.key` 6.
+Geometry tokens (`shell/theme/tokens.plm`): `g.spine` 72 (rail width and the surface's
+reserve) · `g.rail_x` 30 · `g.tick` 46 (pitch of one workspace triangle) · `g.carriage` 12 ·
+`g.wheel_r` 18 · `g.key_w`/`g.key_h` 36/26 · `g.sp` 30 (pitch of one Region D status widget) ·
+`g.plate` 208 · `g.radius.key` 6. The chain's own shape is carried by three scene constants,
+not tokens: `chain_k` 8 (degrees of twist per step) · `chain_A` 6 (px of lateral sway) ·
+`chain_B` 2 (px of vertical ripple).
 
 The surface is reserved for the rail; what floats beside it — the wheel's readout, the mark's
 menu — is painted over the windows, and because pleamar commits the input region from what is
@@ -79,13 +79,26 @@ bar's own menu: colours (fixed or from the wallpaper), the scale's labels, what 
 does, and the path of the settings file. A hairline closes the region.
 
 **B · navigation.** The region the design spends the most on. Two keys of the bar's own kind
-sit above the scale they belong to — the Atlas (the overview handoff) and the wheel's door —
-then a hairline, then the **scale itself**: one `Slot` per configured workspace position,
-1–`ws_max`, drawn on the rail axis. A slot's mark height is its window count and `focus.ring`
-marks the position under the pointer; the **carriage** (three boxes riding a travelling `trav`
-spring) sits where the active workspace is. The wheel's door opens the **dial**: a spoke that
-leans towards the wheel's choice, an arc, and a plate reading `SPACE`, the workspace name and
-number, and the keys that work there. The mark's menu opens in the same place.
+sit above the mechanism they belong to — the Atlas (the overview handoff) and the wheel's door —
+then the **twisting triangular chain**: one `Triangle` (24×20) per configured workspace
+position, 1–`ws_max`, hung on the rail axis and connected top to tail by hairline links. The
+triangles alternate orientation (up, down, up, …) and each carries a twist of its own; together
+they read as a single continuous helix. The twist is **global and index-driven**: triangle *i*
+is placed at `(rail_x + chain_A·sin(chain_k·i + φ), scale_y + i·g.tick + chain_B·cos(chain_k·i
++ φ))` and rotated by `(chain_k·i + φ)°`. At rest `phi` is 0, so the whole chain is a fixed
+helix — the same picture every time you return to it. The active triangle keeps `accent.primary`
+and its apex stays true to the axis; `focus.ring` outlines the position under the pointer. The
+**carriage** (three boxes riding a travelling `trav` spring) sits where the active workspace is,
+on the chain's own curve. The wheel's door opens the **dial**: a spoke that leans towards the
+wheel's choice, an arc, and a plate reading `SPACE`, the workspace name and number, and the keys
+that work there. The mark's menu opens in the same place.
+
+While you are choosing (`nav_open`), the chain *leans* the way you move: `phi` follows the
+signed distance between the pointed position and the active one, so the whole helix turns with
+the choice and eases back to 0 as it commits. This is the directional wave — a coordinated twist
+of the whole mechanism, not a spin of one triangle. It cannot leave the chain deformed: because
+`phi` is index-anchored and returns to 0 at rest, releasing it restores the exact resting
+geometry (verified live as the chain settling back to baseline after `↵`).
 
 **C · quick access.** Two keys: search (the command membrane) and the focused window's
 actions. Above them, a hairline.
@@ -216,12 +229,12 @@ This is the bar, and the bar's own infrastructure. Not in it: any workspace **ov
 its own (Super+Tab hands off to the Atlas), the **Assemblies**, a Command Membrane rewrite
 (the bar *opens* the membrane; it does not own it), a notification manager, or replacing
 Hyprland. Global modes (Rest / Focus / Explore / Workshop / Ambient) are still only specified
-above the slot.
+above the chain.
 
 The bar's **appearance and density** work is not finished: there are no placement options
 (four were specified), no size presets, and no accent or surface choice — the rail's geometry
 and the palette's semantic tokens are the only knobs today, and the two bar settings above.
-That is the first-run stopping point: the bar is whole as a *thing* (regions, scale, wheel,
+That is the first-run stopping point: the bar is whole as a *thing* (regions, chain, wheel,
 state machine, motion, keyboard, status) and honest about its state, and appearance/density is
 the next increment rather than a half-built one.
 
