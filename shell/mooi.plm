@@ -241,12 +241,18 @@ scene Mooi {
     // triangular links, each turned by its own place in one continuous helix: the twist is a
     // property of the chain, not of movement, so it reads the same at rest and in motion
     // (spec §2). `chain_k` is the pitch in degrees per position, `chain_A` the lateral sway
-    // in px off the rail axis, `chain_B` the vertical ripple in px, and `phi` the phase the
-    // whole helix turns by — the one value Task 3's directional wave moves.
+    // in px off the rail axis, and `chain_B` the vertical ripple in px.
     let chain_k = 8
     let chain_A = 6
     let chain_B = 2
-    let phi = 0
+    // The wave: the phase the whole helix turns by. At rest it is zero, so the chain is purely
+    // index-driven (θ_i = chain_k·i); while the wheel is engaged it leans by the signed
+    // distance of the pointed position from the one the bar is on, so the chain turns the way
+    // you are moving and eases back to the index-driven helix as the change commits. One turn
+    // for the whole chain — coordinated and directional, not a spin per link — and, being a
+    // follow, it costs no timer and cannot leave the chain twisted.
+    prop phi = 0 ~m.select
+    follow phi = chain_k * 0.35 * (needle_id - 1 - active_row)
 
     // ── The Mechanism's travelling parts ──────────────────────
     // The carriage (where the compositor is) and the dial (what the wheel points at), each
