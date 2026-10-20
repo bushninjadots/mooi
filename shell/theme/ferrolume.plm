@@ -1,0 +1,94 @@
+language 0.4
+import "tokens.plm"
+
+// Ferrolume — the bar's own design system (claude.ai design system "Ferrolume"), compact.
+// Steel hull, phosphor light: a black ground, drawn strokes instead of filled boxes, two
+// signal colours with fixed roles (`phos` = state, `ember` = counter-signal) and glow only
+// where something is live.
+//
+// Every name is `fl.`-prefixed: the Theme library already owns `void`, `steel` and `heat`,
+// and one `let` per name is the rule that took the scene down once (DECISIONS D19).
+//
+// **Colour comes from the logic.** lib/ferro.luau builds the nineteen roles — Ferrolume's
+// own palette, or one derived from the wallpaper's Matugen roles with the design's contrast
+// floors held, or the Alert re-light on a critical battery — and paints three facts per role
+// (`fr_<role>_r/g/b`). The scene follows each fact with a spring (`pr_<role>_*`, ~fl.relight)
+// and the tokens below read the springs, so any change of palette — a new wallpaper, a new
+// scheme, Alert — re-lights the whole bar in one 600 ms glide instead of a cut.
+library Ferrolume {
+    // ── Colour ────────────────────────────────────────────────
+    // `ground` is the strip's black (cuts in a stroke are painted in it); `ink` is what is
+    // stamped on a signal fill; `steel_*` take the palette's hue at a whisper.
+    let fl.ground = rgb(pr_ground_r, pr_ground_g, pr_ground_b)
+    let fl.hull = rgb(pr_hull_r, pr_hull_g, pr_hull_b)
+    let fl.hull_raised = rgb(pr_hull_raised_r, pr_hull_raised_g, pr_hull_raised_b)
+    let fl.well = rgb(pr_well_r, pr_well_g, pr_well_b)
+    let fl.trace_dim = rgb(pr_trace_dim_r, pr_trace_dim_g, pr_trace_dim_b)
+    let fl.trace = rgb(pr_trace_r, pr_trace_g, pr_trace_b)
+    let fl.trace_lit = rgb(pr_trace_lit_r, pr_trace_lit_g, pr_trace_lit_b)
+    let fl.phos = rgb(pr_phos_r, pr_phos_g, pr_phos_b)
+    let fl.phos_fill = rgb(pr_phos_fill_r, pr_phos_fill_g, pr_phos_fill_b)
+    let fl.ember = rgb(pr_ember_r, pr_ember_g, pr_ember_b)
+    let fl.ember_fill = rgb(pr_ember_fill_r, pr_ember_fill_g, pr_ember_fill_b)
+    let fl.flare = rgb(pr_flare_r, pr_flare_g, pr_flare_b)
+    let fl.muted = rgb(pr_muted_r, pr_muted_g, pr_muted_b)
+    let fl.ink = rgb(pr_ink_r, pr_ink_g, pr_ink_b)
+    let fl.steel_900 = rgb(pr_steel_900_r, pr_steel_900_g, pr_steel_900_b)
+    let fl.steel_700 = rgb(pr_steel_700_r, pr_steel_700_g, pr_steel_700_b)
+    let fl.steel_500 = rgb(pr_steel_500_r, pr_steel_500_g, pr_steel_500_b)
+    let fl.steel_300 = rgb(pr_steel_300_r, pr_steel_300_g, pr_steel_300_b)
+    let fl.engrave = rgb(pr_engrave_r, pr_engrave_g, pr_engrave_b)
+
+    // ── Motion ────────────────────────────────────────────────
+    spring fl.relight = 420, 41     // 300 ms · any palette change: quick enough to feel instant, a glide not a cut
+    // The workspace instrument: one spring slides *and* turns it (the single-clock rule,
+    // D19). Damping ratio ≈ 0.8: it arrives in ~280 ms, a hair past and back — a detent (D33;
+    // it was 420 ms and read as sluggish next to iNiR's and Ryoku's 140–300 ms).
+    spring fl.helix = 520, 36
+    // The switchers' liquid highlight (D31): the head quick and true, the tail slower, so the
+    // highlight stretches toward where it goes and gathers there. iNiR's timings (its
+    // AnimatedTabIndexPair: 100 ms and 300 ms), as critically damped springs (D33); the ping on
+    // arrival eases out over ~420 ms.
+    spring fl.ws_head = 4400, 133
+    spring fl.ws_tail = 490, 44
+    spring fl.ping = 250, 32
+
+    // ── Geometry (compact) ────────────────────────────────────
+    // The strip: the rail's 12 px band, then one row of modules `bar.height` thick (30 by
+    // default: 46 px in all), the whole of it `bar.offset` down from the screen's edge. The
+    // windows leave it exactly what it takes (`st_res`, lib/style), so a thinner bar or one
+    // without the rail gives the room back.
+    let fl.inset = 12               // the bar's edge inset from the screen edge
+    let fl.gap = 10                 // between modules
+    let fl.rail_y = st_offset + 6   // the rail's text line
+    let fl.rail_base = st_offset + 12   // the rail's baseline
+    let fl.mod_h = st_height        // every module's height (bar.height)
+    // A notch hangs from the screen's edge (no rail over it): its modules sit 6 px down.
+    let fl.top = st_offset + if(st_notch, 6, if(bar_rail, 15, 8))
+    let fl.cy = fl.top + fl.mod_h / 2   // the row's centre line
+    let fl.radius = st_radius       // a bezel's corner (bar.radius)
+    let fl.cut_w = 8                // a cut in a bezel's stroke
+
+    // Type: 13 px readouts and tags, 16 px clock, 10 px codes and rail — never under 10 px
+    // (Ferrolume's `tick`). Written on each text: a text's size is a plain number.
+
+    // The workspace instrument's window: `fl.reach` pitches each side of the focus slot, so
+    // seven positions are in view and half a pitch at each end fades out.
+    let fl.pitch = 26
+    let fl.reach = 3.5
+    // · prism: steel triangular prisms on a turned shaft
+    let fl.blk_w = 22
+    let fl.prism_r = 12             // circumradius: 24 across the turning axis
+    let fl.faceh = 20.78            // r·√3 · a face seen dead-on
+    let fl.chamfer = 2
+    let fl.shaft_h = 8
+    // Degrees every block turns per workspace step — a face (120°) plus 24°, which is also the
+    // twist from one block to the next, so the three-face prisms read as one screw.
+    let fl.helix_turn = 144
+    // · dna: two strands, one rung per workspace
+    let fl.dna_amp = 11             // a strand's reach from the axis
+    let fl.dna_twist = 60           // degrees of turn per workspace: the strands cross every 1.5
+    // · cells: Ferrolume's own workspace grid
+    let fl.cell = 22
+    let fl.cell_gap = 6             // between cells: each keeps its own corner marks
+}

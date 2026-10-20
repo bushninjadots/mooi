@@ -1,0 +1,860 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+
+// The Ferrolume bar, in pieces. Each piece is a shape and its states; nothing here decides
+// anything. A piece that can be pressed is *given* the event it emits and says what it is
+// for with `say`, so the scene keeps the state and its rules keep the behaviour
+// (docs/ARCHITECTURE.md). Coordinates are the bar's own: x along the screen, y from the
+// surface's top, every module standing on `fl.top` and `fl.mod_h` tall.
+//
+// The vocabulary (Ferrolume README):
+//   · drawn, not filled — a bezel is a `trace` stroke on `hull`, with cuts in the line.
+//   · light means live — a glow appears only on what is active, hovered or urgent.
+//   · phos is state, ember is the counter-signal.
+library FerrolumeParts {
+    // A module's frame. The fill is the bar's material (`bar_surface`: 0 solid hull, 1 glass that
+    // bends what is behind it, 2 the compositor's blur behind a smoked tint, 3 clear, 4 steel —
+    // MechHousing), at the bar's opacity, frost and smoke, with its shadow; the outline (`style`,
+    // bar.frame or the module's own) is only its edge: 0 **line** — a stroke with cuts in it;
+    // 2 **corners** — four corner marks, a HUD's frame; 3 **none**. (1, a raised plate, is
+    // retired: a material, not an outline.) The edge's width and colour are the settings'
+    // (`st_owidth`, `st_ocol`: subtle, bright, accent); `lit` (0→1, a spring) lights it.
+    // An **open** side (line only) has no stroke and square corners, so two frames that abut
+    // read as one hull. (The cuts in the stroke went in D32: they read as breaks.)
+    component Frame(x: number, w: number, lit: number, style: number, open_l: bool = false, open_r: bool = false) {
+        size: w, fl.mod_h
+        let t = fl.top
+        let b = fl.top + fl.mod_h
+        let r = fl.radius
+        let mid = x + w / 2
+        // subtle trace → lit; bright trace-lit → phos; accent phos-fill → phos (chosen by weight:
+        // a `let` takes a mix of colours, not an if between them)
+        let ob = clamp(st_ocol, 0, 1)
+        let oa = clamp(st_ocol - 1, 0, 1)
+        let edge = mix(mix(mix(fl.trace, fl.trace_lit, ob), fl.phos_fill, oa), mix(fl.trace_lit, fl.phos, ob), lit)
+        let sw = st_owidth + 0.5 * lit
+
+        // The fill: solid hull; glass that bends what is behind it and smokes it so the readings
+        // stay legible (its edge splits the colours with the aberration); the compositor's blur
+        // behind a tint (frosted); or nothing (the readings then carry their own shadow).
+        // solid: machined — a little lighter at the top than at the foot, as lit metal is
+        body {
+            gradient: 0, t to 0, b, mix(fl.hull_raised, fl.hull, 0.25), mix(fl.hull, fl.ground, 0.4)
+            opacity: st_opacity
+            shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+            show: bar_surface < 0.5
+            box { from: x, t; size: w, fl.mod_h; corner: r }
+            box { from: x, t; size: r, fl.mod_h; show: open_l and style < 0.5 }
+            box { from: x + w - r, t; size: r, fl.mod_h; show: open_r and style < 0.5 }
+        }
+        line { from: x + r, t + 1.2; to: x + w - r, t + 1.2; width: 1; color: fl.steel_300; opacity: if(bar_surface < 0.5, 0.10, 0) }
+        // glass and frosted
+        body {
+            color: fl.hull
+            opacity: 0.9 * st_opacity
+            glass: 100%
+            lens: bar_surface < 1.5
+            refraction: 55%
+            dispersion: 35% + 165% * st_aberr
+            smoke: 1% * if(bar_surface < 1.5, st_smoke, st_smoke + 8)
+            frost: 1% * st_frost
+            shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+            show: bar_surface > 0.5 and bar_surface < 2.5
+            box { from: x, t; size: w, fl.mod_h; corner: r }
+            box { from: x, t; size: r, fl.mod_h; show: open_l and style < 0.5 }
+            box { from: x + w - r, t; size: r, fl.mod_h; show: open_r and style < 0.5 }
+        }
+        // glass and frost catch the light along their top edge
+        line { from: x + r, t + 1.2; to: x + w - r, t + 1.2; width: 1; color: #ffffff
+               opacity: if(bar_surface > 0.5 and bar_surface < 2.5, 0.14, 0) }
+        group {
+            show: style < 0.5
+            group {
+                glow: 8, (55% * lit) * st_glow, fl.trace_lit
+                path { stroke: sw; color: edge; show: not open_l
+                       move mid, t; line x + r, t; curve x, t + r via x, t; line x, b - r
+                       curve x + r, b via x, b; line mid, b }
+                path { stroke: sw; color: edge; show: not open_r
+                       move mid, t; line x + w - r, t; curve x + w, t + r via x + w, t; line x + w, b - r
+                       curve x + w - r, b via x + w, b; line mid, b }
+                line { from: x, t; to: mid, t; width: sw; color: edge; show: open_l }
+                line { from: x, b; to: mid, b; width: sw; color: edge; show: open_l }
+                line { from: mid, t; to: x + w, t; width: sw; color: edge; show: open_r }
+                line { from: mid, b; to: x + w, b; width: sw; color: edge; show: open_r }
+            }
+        }
+        group {
+            show: style > 1.5 and style < 2.5
+            glow: 6, (50% * lit) * st_glow, fl.trace_lit
+            path { stroke: sw + 0.1; color: edge; move x, t + 6; line x, t; line x + 6, t }
+            path { stroke: sw + 0.1; color: edge; move x + w - 6, t; line x + w, t; line x + w, t + 6 }
+            path { stroke: sw + 0.1; color: edge; move x, b - 6; line x, b; line x + 6, b }
+            path { stroke: sw + 0.1; color: edge; move x + w - 6, b; line x + w, b; line x + w, b - 6 }
+        }
+    }
+
+    // A transport slab: ember with a phos wedge cut across it and the arrows stamped in ink
+    // (Ferrolume's TransportPair, at the bar's compact size). `dir` -1 is back, +1 is on; the
+    // press emits `press(dir)`. A slab with nothing to act on is drawn off and takes no press.
+    component Slab(x: number, dir: number, usable: bool, press: event, say: text) {
+        size: 32, 20
+        let y = fl.cy - 10
+        let fwd = dir > 0
+        zone box hit { from: x, y; size: 32, 20; corner: 4; cursor: pointer; role: button
+                       active: usable; label: say }
+        group {
+            opacity: if(usable, 1, 0.28)
+            brightness: 1 + 0.14 * hit.hover - 0.1 * hit.pressed
+            glow: 8, (45% * hit.hover) * st_glow, fl.ember
+            move: 0, hit.pressed
+            box { from: x, y; size: 32, 20; corner: 4; color: fl.ember_fill }
+            path { color: fl.phos_fill; show: not fwd
+                   move x + 13, y + 20; line x + 21, y; line x + 28, y; curve x + 32, y + 4 via x + 32, y
+                   line x + 32, y + 16; curve x + 28, y + 20 via x + 32, y + 20; close }
+            path { color: fl.phos_fill; show: fwd
+                   move x + 4, y; line x + 11, y; line x + 19, y + 20; line x + 4, y + 20
+                   curve x, y + 16 via x, y + 20; line x, y + 4; curve x + 4, y via x, y; close }
+            path { color: fl.ink; show: not fwd; move x + 12, y + 5; line x + 5, y + 10; line x + 12, y + 15; close }
+            path { color: fl.ink; show: not fwd; move x + 19, y + 5; line x + 12, y + 10; line x + 19, y + 15; close }
+            path { color: fl.ink; show: fwd; move x + 20, y + 5; line x + 27, y + 10; line x + 20, y + 15; close }
+            path { color: fl.ink; show: fwd; move x + 13, y + 5; line x + 20, y + 10; line x + 13, y + 15; close }
+        }
+        on press hit { emit press(dir) }
+    }
+
+    // One workspace on the DNA instrument: a rung across the double helix, placed by the
+    // scene at its own x and the row's centre. `d` is how far it is from the focus slot (in
+    // positions), `spin` the extra turn the helix takes while it is moving, `prox` how near
+    // the slot it is.
+    //
+    // The rung follows the strands' angle at its x: `φ = 90 − d·twist + spin`, so the rung at
+    // the slot stands upright (both strands at their reach) and its neighbours lean into
+    // depth. Each strand carries a node — phos on one, ember on the other, the two signals as
+    // a base pair — sized by how many windows the workspace holds, solid when it holds any, a
+    // ring when it is empty. It is drawn in two halves around the front strand: `DnaBack`, the
+    // rung and the nodes behind the axis; `DnaRung`, the nodes in front, the chip with its
+    // number and — on the block at the slot — the capsule the rung morphs into, lit. Only
+    // `DnaRung` takes the press (`o`: inside the window).
+    component DnaBack(w: record, d: number, spin: number, prox: number, amp: number = fl.dna_amp) {
+        size: fl.pitch, fl.mod_h
+        let phi = 90 - d * fl.dna_twist + spin
+        let ya = 0 - amp * sin(phi)
+        let yb = amp * sin(phi)
+        let za = cos(phi)
+        let rn = 0.8 * (1.8 + 0.45 * min(w.windows, 4))
+        let full = w.windows > 0
+        line { from: 0, ya; to: 0, 0; width: 1.1 + 0.9 * prox; color: mix(fl.trace, fl.phos, prox) }
+        line { from: 0, 0; to: 0, yb; width: 1.1 + 0.9 * prox; color: mix(fl.trace, fl.ember, prox) }
+        ellipse { at: 0, ya; radius: rn; color: mix(fl.phos, fl.trace_dim, 0.55); show: za < 0 and full }
+        ellipse { at: 0, ya; radius: rn; stroke: 1; color: mix(fl.phos, fl.trace_dim, 0.55); show: za < 0 and not full }
+        ellipse { at: 0, yb; radius: rn; color: mix(fl.ember, fl.trace_dim, 0.55); show: za >= 0 and full }
+        ellipse { at: 0, yb; radius: rn; stroke: 1; color: mix(fl.ember, fl.trace_dim, 0.55); show: za >= 0 and not full }
+    }
+    component DnaRung(w: record, d: number, spin: number, o: number, prox: number, amp: number = fl.dna_amp) {
+        size: fl.pitch, fl.mod_h
+        let phi = 90 - d * fl.dna_twist + spin
+        let ya = 0 - amp * sin(phi)
+        let yb = amp * sin(phi)
+        let za = cos(phi)
+        let rn = 1.8 + 0.45 * min(w.windows, 4)
+        let full = w.windows > 0
+        zone box hit { at: 0, 0; size: fl.pitch - 2, fl.mod_h; cursor: pointer; role: button
+                       active: o > 0.3; selected: w.active
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+        ellipse { at: 0, ya; radius: rn; color: fl.phos; show: za >= 0 and full }
+        ellipse { at: 0, ya; radius: rn; stroke: 1.2; color: fl.phos; show: za >= 0 and not full }
+        ellipse { at: 0, yb; radius: rn; color: fl.ember; show: za < 0 and full }
+        ellipse { at: 0, yb; radius: rn; stroke: 1.2; color: fl.ember; show: za < 0 and not full }
+        // Every other rung's number, small, cut out of the rung by an outline of the hull's
+        // own colour (no chip: the rung and its nodes stay the thing you read).
+        text "{upper(w.label)}" { at: 0, 0.5; anchor: center; size: 10; family: "Share Tech Mono"
+                                  show: (hit.hover > 0.05 or (bar_labels and w.windows > 0)) and prox < 0.6
+                                  opacity: max(hit.hover, 0.85) * (1 - prox); outline: 2.5, fl.hull
+                                  color: mix(fl.muted, fl.trace_lit, hit.hover) }
+        // The capsule: the rung at the slot morphs into the workspace's own tag.
+        group {
+            show: prox > 0.02
+            opacity: prox
+            scale: 0.6 + 0.4 * prox
+            glow: 7, (80% * prox) * st_glow, fl.phos
+            box { at: 0, 0; size: 22, 14; corner: 7; color: fl.hull }
+            box { at: 0, 0; size: 22, 14; corner: 7; stroke: 1.3; color: fl.trace_lit }
+            text "{upper(w.label)}" { at: 0, 0.5; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.phos }
+        }
+        // A window was just moved here (state.confirm): the rung flashes phos.
+        box { at: 0, 0; size: 3, 2 * amp; corner: 1.5; color: fl.phos; opacity: pz * (w.id == flash_ws) }
+        on press hit { emit ws_pick(w.id) }
+    }
+
+    // One workspace on the prism instrument: a steel triangular prism turning on the bar's
+    // axis (the v8 helix, in the palette's own steel). The scene hands it `al`, the angle it
+    // is turned to; `o`, whether it is inside the window; `prox`, how near the focus slot.
+    // Only faces turning toward you are drawn, each narrowing as it turns away; one lamp above
+    // and in front lights them (`cos(mid + 45)`), so each face is its own grey with a specular
+    // band along its leading edge. The arriving face is tinted by the well, outlined in
+    // trace-lit and haloed; its label lights from engraved steel to phos.
+    component HelixBlock(w: record, al: number, o: number, prox: number) {
+        size: fl.blk_w, 2 * fl.prism_r
+        let hw = fl.blk_w / 2
+
+        zone box hit { at: 0, 0; size: fl.blk_w, fl.mod_h; cursor: pointer; role: button
+                       active: o > 0.3; selected: w.active
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+
+        group {
+            glow: 6, (85% * prox) * st_glow, fl.phos
+            repeat k in 0..3 {
+                let v1.$k = al + 120 * k
+                let v2.$k = v1.$k + 120
+                let mid.$k = v1.$k + 60
+                let ya.$k = fl.prism_r * sin(v1.$k)
+                let yb.$k = fl.prism_r * sin(v2.$k)
+                let ft.$k = min(ya.$k, yb.$k)
+                let fb.$k = max(ya.$k, yb.$k)
+                let fc.$k = (ft.$k + fb.$k) / 2
+                let fh.$k = fb.$k - ft.$k
+                let sy.$k = fh.$k / fl.faceh
+                let up.$k = cos(mid.$k) > 0.02
+                let lum.$k = max(0, cos(mid.$k + 45))
+                let ch.$k = min(fl.chamfer, fh.$k / 3)
+                let spec.$k = max(ch.$k, min(2.5, fh.$k / 4))
+                let face.$k = mix(mix(fl.steel_900, fl.steel_500, 0.10 + 0.90 * lum.$k), fl.well, 0.55 * prox)
+                let edge.$k = mix(mix(mix(fl.steel_900, fl.steel_300, 0.2 + 0.6 * lum.$k), fl.trace_lit, 0.6 * hit.hover), fl.trace_lit, prox)
+                path {
+                    color: face.$k
+                    show: up.$k
+                    move -hw + ch.$k, ft.$k
+                    line hw - ch.$k, ft.$k
+                    line hw, ft.$k + ch.$k
+                    line hw, fb.$k - ch.$k
+                    line hw - ch.$k, fb.$k
+                    line -hw + ch.$k, fb.$k
+                    line -hw, fb.$k - ch.$k
+                    line -hw, ft.$k + ch.$k
+                    close
+                }
+                path {
+                    color: mix(face.$k, fl.steel_300, 0.5 * lum.$k * lum.$k)
+                    show: up.$k and fh.$k > 6
+                    move -hw + ch.$k, ft.$k
+                    line hw - ch.$k, ft.$k
+                    line hw, ft.$k + ch.$k
+                    line hw, ft.$k + spec.$k
+                    line -hw, ft.$k + spec.$k
+                    line -hw, ft.$k + ch.$k
+                    close
+                }
+                path {
+                    stroke: 1 + 0.5 * prox
+                    color: edge.$k
+                    show: up.$k
+                    move -hw + ch.$k, ft.$k
+                    line hw - ch.$k, ft.$k
+                    line hw, ft.$k + ch.$k
+                    line hw, fb.$k - ch.$k
+                    line hw - ch.$k, fb.$k
+                    line -hw + ch.$k, fb.$k
+                    line -hw, fb.$k - ch.$k
+                    line -hw, ft.$k + ch.$k
+                    close
+                }
+                group {
+                    pivot: 0, fc.$k
+                    scale: 1, sy.$k
+                    opacity: clamp((sy.$k - 0.22) / 0.3, 0, 1)
+                    show: up.$k and sy.$k > 0.22
+                    text "{upper(w.label)}" { at: 0, fc.$k; anchor: center; size: 10; weight: 600; family: "Exo 2"
+                                              show: bar_labels and cos(mid.$k) > 0.5
+                                              color: mix(mix(fl.steel_500, fl.engrave, max(w.exists, 0.6 * lum.$k)), fl.phos, prox) }
+                    ellipse { at: hw - 4, fc.$k + 6; radius: 1.2; show: w.windows > 0 and cos(mid.$k) > 0.5
+                              color: mix(fl.phos_fill, fl.phos, prox) }
+                }
+            }
+        }
+        box { at: 0, fl.prism_r + 2; size: fl.blk_w - 6, 2; corner: 1; color: fl.phos
+              opacity: pz * (w.id == flash_ws) }
+        on press hit { emit ws_pick(w.id) }
+    }
+
+    // One workspace on the cells instrument: Ferrolume's own WorkspaceGrid cell. Empty: a dim
+    // crosshair. Occupied: a recessed square. Active: the square lit, on the well, haloed.
+    // Corner marks light under the pointer.
+    component Cell(w: record, x: number, lit: number) {
+        size: fl.cell, fl.cell
+        let c = fl.cell / 2
+        zone box hit { at: x, fl.cy; size: fl.cell + fl.cell_gap, fl.mod_h; cursor: pointer; role: button; selected: w.active
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+        let k = mix(fl.trace, fl.trace_lit, max(hit.hover, lit))
+        // the corner marks: a sight that closes on the cell under the pointer or in use
+        group {
+            opacity: max(hit.hover, lit)
+            path { stroke: 1.2; color: k; move x - c, fl.cy - c + 4; line x - c, fl.cy - c; line x - c + 4, fl.cy - c }
+            path { stroke: 1.2; color: k; move x + c - 4, fl.cy - c; line x + c, fl.cy - c; line x + c, fl.cy - c + 4 }
+            path { stroke: 1.2; color: k; move x - c, fl.cy + c - 4; line x - c, fl.cy + c; line x - c + 4, fl.cy + c }
+            path { stroke: 1.2; color: k; move x + c - 4, fl.cy + c; line x + c, fl.cy + c; line x + c, fl.cy + c - 4 }
+        }
+        // empty: a small crosshair, brightening under the pointer
+        group {
+            show: w.windows < 1 and lit < 0.05
+            let ec = mix(fl.trace_dim, fl.trace_lit, hit.hover)
+            line { from: x - 3.5, fl.cy; to: x + 3.5, fl.cy; width: 1; color: ec }
+            line { from: x, fl.cy - 3.5; to: x, fl.cy + 3.5; width: 1; color: ec }
+        }
+        // occupied, or under the highlight: a recessed square, lit on the well and haloed as the
+        // highlight covers it
+        group {
+            show: w.windows > 0 or lit > 0.05
+            glow: 7, (0.85 * lit) * st_glow, fl.phos
+            box { at: x, fl.cy; size: 16, 15; corner: 3; color: mix(fl.hull_raised, fl.well, lit); opacity: max(lit, if(w.windows > 0, 1, 0)) }
+            box { at: x, fl.cy; size: 16, 15; corner: 3; stroke: 1 + 0.4 * lit; color: mix(mix(fl.trace, fl.trace_lit, hit.hover), fl.trace_lit, lit)
+                  opacity: max(lit, if(w.windows > 0, 1, 0)) }
+        }
+        text "{upper(w.label)}" { at: x, fl.cy + 0.5; anchor: center; size: 10; family: "Share Tech Mono"
+                                  show: bar_labels and w.windows > 0 and lit < 0.5; color: fl.muted }
+        text "{upper(w.label)}" { at: x, fl.cy + 0.5; anchor: center; size: 10; weight: 700; family: "Exo 2"
+                                  show: lit >= 0.5; color: fl.phos }
+        // its windows, as pips under the cell (up to four)
+        repeat p in 0..4 {
+            ellipse { at: x - 4.5 + p * 3, fl.cy + c + 1.5; radius: 0.9; color: mix(fl.muted, fl.phos, lit); show: p < w.windows }
+        }
+        box { at: x, fl.cy + c - 1; size: fl.cell - 6, 2; corner: 1; color: fl.phos; opacity: pz * (w.id == flash_ws) }
+        on press hit { emit ws_pick(w.id) }
+    }
+
+    // The ping every switcher rings on arrival (D31): a ring at `x, y` that grows from `r0` and
+    // fades, flare going to phos, on the scene's `arr` (0 → 1 once per switch).
+    component Ping(x: number, y: number, r0: number) {
+        size: 2 * r0, 2 * r0
+        group {
+            show: arr > 0.01 and arr < 0.99
+            glow: 6, (0.9 * (1 - arr)) * st_glow, fl.flare
+            ellipse { at: x, y; radius: r0 + 10 * arr; stroke: 0.4 + 1.4 * (1 - arr); color: mix(fl.flare, fl.phos, arr); opacity: 1 - arr }
+        }
+    }
+
+    // One workspace on an everyday switcher (bar.workspaces: 3 pills · 4 segments · 5 dots ·
+    // 6 numbers) at `cx`; `wp` is the pitch, `peek` the switcher's own hover (segments open under
+    // the pointer to show each workspace's app, or its number where it has none), `lit` how much
+    // of it the travelling highlight covers (0 to 1): what it draws lit follows the highlight,
+    // not the moment the focus changed, so a switch reads as one movement.
+    component ClassicWs(w: record, cx: number, wp: number, peek: number, lit: number) {
+        size: wp, fl.mod_h
+        zone box hit { at: cx, fl.cy; size: wp, fl.mod_h; cursor: pointer; role: button; selected: w.active
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+        let occ = w.windows > 0
+        group {
+            show: ws_style > 2.5 and ws_style < 3.5
+            text "{w.id, 0}" { at: cx, fl.cy + 0.5; anchor: center; size: 11; weight: 700; family: "Exo 2"
+                               color: mix(mix(fl.engrave, fl.trace_lit, hit.hover), fl.ink, lit); show: occ or lit > 0.05 or hit.hover > 0.3 }
+            ellipse { at: cx, fl.cy; radius: 1.8; color: fl.trace; show: not occ and lit < 0.05 and hit.hover < 0.3 }
+        }
+        group {
+            show: ws_style > 3.5 and ws_style < 4.5
+            box { at: cx, fl.cy; size: wp - 4, 4 + 18 * peek; corner: 2 + 2 * peek
+                  color: if(occ, mix(fl.trace_lit, fl.well, peek), mix(fl.trace_dim, fl.hull_raised, peek)); opacity: 1 - 0.85 * lit }
+            image w.icon { at: cx - 7, fl.cy - 7; size: 14, 14; opacity: peek; show: w.iconed and peek > 0.05 }
+            text "{w.id, 0}" { at: cx, fl.cy + 0.5; anchor: center; size: 10; weight: 700; family: "Exo 2"; opacity: peek
+                               color: mix(fl.phos, fl.ink, lit); show: not w.iconed and peek > 0.05 }
+        }
+        group {
+            show: ws_style > 4.5 and ws_style < 5.5
+            opacity: 1 - lit
+            ellipse { at: cx, fl.cy; radius: 3; color: mix(fl.trace_lit, fl.phos, hit.hover); show: occ }
+            ellipse { at: cx, fl.cy; radius: 2.6; stroke: 1.2; color: mix(fl.trace, fl.trace_lit, hit.hover); show: not occ }
+        }
+        group {
+            show: ws_style > 5.5
+            text "{w.id, 0}" { at: cx, fl.cy - 1; anchor: center; size: 12; weight: 700; family: "Exo 2"
+                               color: mix(mix(if(occ, fl.engrave, fl.trace), fl.trace_lit, hit.hover), fl.phos, lit) }
+            ellipse { at: cx, fl.cy + 10; radius: 1.2; color: fl.muted; show: occ and lit < 0.5 }
+        }
+        box { at: cx, fl.cy + 13; size: 10, 2; corner: 1; color: fl.flare; opacity: pz * (w.id == flash_ws) }
+        on press hit { emit ws_pick(w.id) }
+    }
+
+    // One workspace on the compass tape at `x` (the lubber line at `tc`): its major tick, its
+    // number, a dot when it holds windows; fading toward the tape's ends.
+    component CompassMark(w: record, x: number, tc: number) {
+        size: 30, fl.mod_h
+        let o = clamp(1 - abs(x - tc) / 75, 0, 1)
+        zone box hit { at: x, fl.cy; size: 28, fl.mod_h; cursor: pointer; role: button; selected: w.active; active: o > 0.3
+                       label: "Workspace {w.id}{? · {w.name}}{? · {w.windows} windows}" }
+        group {
+            opacity: o
+            line { from: x, fl.cy + 2; to: x, fl.cy + 10; width: if(w.active, 1.6, 1.2); color: if(w.active, fl.phos, fl.trace_lit) }
+            text "{w.id, 0}" { at: x, fl.cy - 5; anchor: center; size: 11; weight: 700; family: "Exo 2"
+                               color: if(w.active, fl.phos, mix(if(w.windows > 0, fl.engrave, fl.trace), fl.trace_lit, hit.hover)) }
+            ellipse { at: x + 7, fl.cy - 9; radius: 1.3; color: fl.trace_lit; show: w.windows > 0 and not w.active }
+        }
+        on press hit { emit ws_pick(w.id) }
+    }
+
+    // One workspace on the radar at bearing `ang` from the scope's centre (`rc`): a blip that
+    // brightens as the sweep (`rs`) passes it, larger the more windows; ringed when it is the one.
+    component RadarBlip(w: record, rc: number, ang: number, rs: number) {
+        size: 8, 8
+        let r = if(w.windows > 0, 8.5, 12)
+        let bx = rc + r * cos(ang)
+        let by = fl.cy + r * sin(ang)
+        let near = clamp(1 - abs(mod(rs - ang + 540, 360) - 180) / 40, 0, 1)
+        zone box hit { at: bx, by; size: 9, 9; cursor: pointer; role: button; selected: w.active
+                       label: "Workspace {w.id}{? · {w.windows} windows}" }
+        ellipse { at: bx, by; radius: if(w.windows > 0, 1.3 + 0.35 * min(w.windows, 4), 0.9)
+                  color: if(w.windows > 0, mix(fl.trace_lit, fl.phos, near), fl.trace); opacity: if(w.windows > 0, 0.6 + 0.4 * near, 0.8) }
+        group {
+            show: w.active
+            glow: 5, (0.9) * st_glow, fl.phos
+            ellipse { at: bx, by; radius: 3.2; stroke: 1.2; color: fl.phos }
+        }
+        on press hit { emit ws_pick(w.id) }
+    }
+
+    // The mechanism (bar.surface = mech): a machined steel housing round a group, 5 px wider
+    // each side than the group so neighbouring housings meet at a seam, with a lit top lip, a
+    // shadowed foot and a bolt in each end; `style` 3 (none) leaves only the bay.
+    component MechHousing(x: number, w: number, style: number) {
+        size: w + 10, fl.mod_h
+        let t = fl.top
+        group {
+            show: style < 2.5
+            body {
+                gradient: 0, t to 0, t + fl.mod_h, fl.steel_500, fl.steel_700 22%, fl.steel_900
+                box { from: x - 5, t; size: w + 10, fl.mod_h; corner: 5 }
+            }
+            line { from: x - 1, t + 0.8; to: x + w + 1, t + 0.8; width: 1; color: fl.steel_300; opacity: 0.75 }
+            line { from: x - 1, t + fl.mod_h - 0.8; to: x + w + 1, t + fl.mod_h - 0.8; width: 1; color: fl.ground; opacity: 0.8 }
+            MechBolt(x - 1.5, fl.cy)
+            MechBolt(x + w + 1.5, fl.cy)
+        }
+    }
+    // The bay a module sits in on a mechanism: recessed, its top in shadow, its lower lip lit.
+    component MechBay(x: number, w: number, on: bool) {
+        size: w, fl.mod_h - 6
+        group {
+            show: on
+            box { from: x + 2, fl.top + 3; size: w - 4, fl.mod_h - 6; corner: 4; color: fl.ground; opacity: 0.88 }
+            line { from: x + 5, fl.top + 3.6; to: x + w - 5, fl.top + 3.6; width: 1; color: #000000; opacity: 0.9 }
+            line { from: x + 5, fl.top + fl.mod_h - 3.4; to: x + w - 5, fl.top + fl.mod_h - 3.4; width: 1; color: fl.steel_500; opacity: 0.7 }
+        }
+    }
+    // A socket-head bolt: a dark seat, the steel head lit from above, the socket in its middle.
+    // (A slot through a 2 px head read as the letter "s".)
+    component MechBolt(x: number, y: number) {
+        size: 6, 6
+        ellipse { at: x, y + 0.4; radius: 2.6; color: fl.steel_900 }
+        ellipse { at: x, y; radius: 2.1; color: fl.steel_500 }
+        ellipse { at: x, y - 0.7; radius: 1.2; color: fl.steel_300; opacity: 0.55 }
+        ellipse { at: x, y; radius: 0.8; color: fl.steel_900 }
+    }
+
+    // A readout in the glyph language: a code saying what it is (VOL, CPU, NET) over its
+    // value, at `x` from the row's centre line. `hot` turns the value ember: it needs you. The two
+    // lines sit by their letters, not their line boxes (Exo 2's sit low, Share Tech Mono's high):
+    // measured on the bar, the pair is centred on the row with 3 px clear of each edge.
+    // With no surface behind it (bar.surface = clear) a reading carries a soft dark shadow of
+    // its own, so it stays legible over any wallpaper.
+    component Readout(x: number, code: text, value: text, hot: bool = false, dim: bool = false) {
+        size: 40, 26
+        text code { at: x, fl.cy - 5.5; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted
+                    shadow: 0, 1, 3, 85% * (bar_surface > 2.5 and bar_surface < 3.5), #000000 }
+        // chromatic aberration: the value's red and cyan, pulled apart a little, under it
+        group {
+            show: st_aberr > 0.01
+            mode: screen
+            text value { at: x - 1.8 * st_aberr, fl.cy + 4; anchor: left center; size: 12; weight: 600; family: "Exo 2"
+                         color: #ff2a55; opacity: min(1, st_aberr * 2.5) * 0.75 }
+            text value { at: x + 1.8 * st_aberr, fl.cy + 4; anchor: left center; size: 12; weight: 600; family: "Exo 2"
+                         color: #2ae8ff; opacity: min(1, st_aberr * 2.5) * 0.75 }
+        }
+        text value { at: x, fl.cy + 4; anchor: left center; size: 12; weight: 600; family: "Exo 2"
+                     color: if(hot, fl.ember, if(dim, fl.muted, fl.phos))
+                     shadow: 0, 1, 4, 90% * (bar_surface > 2.5 and bar_surface < 3.5), #000000 }
+    }
+
+    // The pill a module lights under the pointer (and while what it opens is open), inside the
+    // module's own bounds, in the style of bar.pill: 0 **soft** — a raised fill on the well, a
+    // hairline, light along its top; 1 **outline** — the edge alone; 2 **underline** — a bar of
+    // light under the module that grows as it lights; 3 **glow** — the well lit from within.
+    component Pill(w: number, lit: number) {
+        size: w, fl.mod_h
+        let pr = max(3, fl.radius - 2)
+        let pt = fl.top + 3
+        let ph = fl.mod_h - 6
+        group {
+            show: st_pill < 0.5
+            box { from: 2, pt; size: w - 4, ph; corner: pr; color: mix(fl.hull_raised, fl.well, 0.5); opacity: 0.9 * lit }
+            box { from: 2, pt; size: w - 4, ph; corner: pr; stroke: 1; color: fl.trace_lit; opacity: 0.55 * lit }
+            line { from: 2 + pr, pt + 0.8; to: w - 2 - pr, pt + 0.8; width: 1; color: fl.trace_lit; opacity: 0.35 * lit }
+        }
+        group {
+            show: st_pill > 0.5 and st_pill < 1.5
+            box { from: 2, pt; size: w - 4, ph; corner: pr; stroke: st_owidth; color: fl.trace_lit; opacity: lit }
+        }
+        group {
+            show: st_pill > 1.5 and st_pill < 2.5
+            glow: 6, (70% * lit) * st_glow, fl.phos
+            box { at: w / 2, fl.top + fl.mod_h - 2; size: max(6, (w - 14) * (0.35 + 0.65 * lit)), 2; corner: 1; color: fl.phos; opacity: lit }
+        }
+        group {
+            show: st_pill > 2.5
+            glow: 8, (60% * lit) * st_glow, fl.phos
+            box { from: 2, pt; size: w - 4, ph; corner: pr; color: fl.well; opacity: lit }
+            box { from: 2, pt; size: w - 4, ph; corner: pr; stroke: 1; color: fl.trace_lit; opacity: 0.8 * lit }
+        }
+    }
+
+    // A ring gauge: the full ring in `trace`, the level in `phos-fill` from twelve o'clock
+    // round, the ember core in the middle. `hot` re-colours the level phos and haloes the core.
+    component Ring(x: number, y: number, v: number, hot: bool) {
+        size: 14, 14
+        arc { at: x, y; radius: 5.5; width: 1.4; span: 360deg; color: fl.trace_dim }
+        arc { at: x, y; radius: 5.5; width: 2.2; span: clamp(v, 0, 1) * 360deg; rotate: clamp(v, 0, 1) * 180deg
+              color: if(hot, fl.ember, fl.phos) }
+        group {
+            show: hot
+            glow: 4, (80%) * st_glow, fl.ember
+            ellipse { at: x, y; radius: 1.8; color: fl.ember_fill }
+        }
+    }
+
+    // ── The settings window's pieces ──────────────────────────
+    // Laid out the way Ryoku's settings are (D31): a rail of pages grouped by what they are for,
+    // each page a stack of titled cards — a flat sheet with a hairline edge, a `//NAME_` header
+    // closed by a rule — and in each card its rows, parted by hairlines, a stripe of light at the
+    // edge of the one under the pointer. Machined where it is touched: choices sit in a recessed
+    // track and the chosen one is a lamp, switches and sliders are metal on a groove with a neon
+    // line where they are on. Light means live, as on the bar. The card spans x 256 to 1156; a
+    // row's words start at 274 and its control ends at 1138.
+
+    // A group of pages in the rail: its name, small and quiet.
+    component SNavGroup(y: number, label: text) {
+        size: 196, 24
+        text "//" { at: 22, y + 12; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
+        text label { at: 38, y + 12; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+    }
+    // One page in the rail: its name; the chosen one sits on the well with a neon bar at its edge,
+    // and the stripe of light grows in under the pointer.
+    component SNav(y: number, label: text, on: bool, tab: number, press: event) {
+        size: 200, 32
+        zone box hit { from: 14, y; size: 200, 32; corner: 4; cursor: pointer; role: button; selected: on; label: label }
+        box { from: 14, y; size: 200, 32; corner: 4; color: mix(fl.steel_900, fl.well, 0.4); opacity: if(on, 1, 0.55 * hit.hover) }
+        group {
+            glow: 6, (if(on, 0.9, 0)) * st_glow, fl.phos
+            box { from: 14, y + 7; size: 3, 18; corner: 1; color: fl.phos; opacity: max(if(on, 1, 0), 0.6 * hit.hover) }
+        }
+        text label { at: 30 + 3 * hit.hover, y + 16; anchor: left center; size: 13; weight: 600; family: "Exo 2"
+                     color: if(on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
+        on press hit { emit press(tab) }
+    }
+
+    // A card: one titled part of a page, `h` tall from `y` (its rows are drawn over it). Its edge
+    // is lit at the left while `lit` (a page's first card, where the reading starts).
+    component SCard(y: number, h: number, label: text) {
+        size: 900, h
+        box { from: 256, y; size: 900, h; corner: 6; color: mix(fl.steel_900, fl.hull, 0.5) }
+        box { from: 256, y; size: 900, h; corner: 6; stroke: 1; color: fl.steel_700 }
+        line { from: 262, y + 0.6; to: 1150, y + 0.6; width: 1; color: fl.steel_300; opacity: 0.10 }
+        group {
+            glow: 5, (0.7) * st_glow, fl.phos
+            box { from: 256, y + 13; size: 2, 16; corner: 1; color: fl.phos }
+        }
+        text "//" { at: 274, y + 21; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace }
+        text "{upper(label)}_" { at: 292, y + 21; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.trace_lit }
+        line { from: 274, y + 40; to: 1138, y + 40; width: 1; color: fl.steel_700; opacity: 0.7 }
+    }
+
+    // A setting's row inside a card: its name and what it does under it; the control sits at the
+    // right. Hairlines part it from the row above (`rule`), and under the pointer a stripe of light
+    // grows in at the card's edge. A setting that does not apply (`on` false) fades and says why.
+    component SRow(y: number, title: text, desc: text, on: bool = true, why: text = "", dw: number = 400, rule: bool = true) {
+        size: 900, 60
+        zone box rz { from: 257, y; size: 898, 60; role: region; label: title }
+        line { from: 274, y; to: 1138, y; width: 1; color: fl.steel_700; opacity: 0.45; show: rule }
+        box { from: 257, y + 1; size: 898, 58; color: fl.phos; opacity: 0.035 * rz.hover }
+        group {
+            glow: 5, (0.7 * rz.hover) * st_glow, fl.phos
+            box { from: 257, y + 12; size: 3, 36 * rz.hover; corner: 1; color: fl.phos; opacity: rz.hover }
+        }
+        text title { at: 274 + 2 * rz.hover, y + 22; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: if(on, mix(fl.engrave, fl.phos, 0.25 * rz.hover), fl.steel_500) }
+        text desc { at: 274, y + 41; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: dw; lines: 1; show: on }
+        text why { at: 274, y + 41; anchor: left center; size: 11; family: "Exo 2"; color: fl.ember; width: dw; lines: 1; show: not on }
+    }
+    // Back to its default: a small turning arrow left of the control, there only while the setting
+    // differs from it. A press puts the default back.
+    component SRevert(x: number, y: number, show: bool, press: event, n: number) {
+        size: 24, 24
+        prop rvt = 0 ~m.select
+        follow rvt = show
+        group {
+            show: rvt > 0.02
+            opacity: rvt
+            zone box hit { at: x, y; size: 24, 24; corner: 12; cursor: pointer; role: button; label: "Back to the default"; active: show }
+            ellipse { at: x, y; radius: 11; color: fl.well; opacity: hit.hover }
+            arc { at: x, y; radius: 5.5; width: 1.4; span: 270deg; rotate: -45deg + 90deg * hit.hover; color: mix(fl.muted, fl.ember, max(hit.hover, 0.4)) }
+            path { color: mix(fl.muted, fl.ember, max(hit.hover, 0.4)); move x + 3, y - 8.5; line x + 7.5, y - 5.5; line x + 2.5, y - 2.8; close }
+            on press hit { emit press(n) }
+        }
+    }
+
+    // ── The Layout page: the bar's lists as chips ──
+    // `c` is a chip the logic placed (x, y from the zone cards' top `y0`): a module, a spacer, or a
+    // module on the shelf; `grp` 0 alone · 1 first · 2 middle · 3 last of a group. A press selects it.
+    component LChip(c: record, y0: number, press: event) {
+        size: c.w, 30
+        let y = y0 + c.y
+        zone box hit { from: c.x, y; size: c.w, 30; corner: 5; cursor: pointer; role: button; selected: c.sel; label: c.label }
+        let lit = max(if(c.sel, 1, 0), 0.5 * hit.hover)
+        group {
+            glow: 7, (if(c.sel, 0.8, 0)) * st_glow, fl.phos
+            box { from: c.x, y; size: c.w, 30; corner: 5; color: if(c.kind == 1, fl.ground, mix(fl.hull_raised, fl.well, lit)); opacity: if(c.kind == 3, 0.7, 1) }
+            box { from: c.x, y; size: c.w, 30; corner: 5; stroke: if(c.sel, 1.6, 1)
+                  color: if(c.sel, fl.phos, mix(if(c.kind == 1, fl.steel_700, fl.trace), fl.trace_lit, hit.hover)) }
+        }
+        // a spacer is drawn as the room it makes: arrows pointing out to both sides
+        group {
+            show: c.kind == 1
+            line { from: c.x + 10, y + 15; to: c.x + c.w - 10, y + 15; width: 1; color: mix(fl.trace, fl.trace_lit, lit) }
+            path { color: mix(fl.trace, fl.trace_lit, lit); move c.x + 8, y + 15; line c.x + 13, y + 11.5; line c.x + 13, y + 18.5; close }
+            path { color: mix(fl.trace, fl.trace_lit, lit); move c.x + c.w - 8, y + 15; line c.x + c.w - 13, y + 11.5; line c.x + c.w - 13, y + 18.5; close }
+        }
+        text c.label { at: c.x + c.w / 2, y + 15; anchor: center; size: 12; weight: 600; family: "Exo 2"; show: c.kind != 1
+                       color: if(c.sel, fl.phos, mix(if(c.kind == 3, fl.muted, fl.engrave), fl.trace_lit, hit.hover)) }
+        on press hit { emit press(c.idx) }
+    }
+    // A group's bracket round its chips.
+    component LGroup(g: record, y0: number) {
+        size: g.w, 36
+        box { from: g.x, y0 + g.y; size: g.w, 36; corner: 7; color: fl.ground; opacity: 0.55 }
+        box { from: g.x, y0 + g.y; size: g.w, 36; corner: 7; stroke: 1; color: fl.trace_dim }
+    }
+    // One module on the preview bar, where it really lands (to scale); a press selects it.
+    component LPrev(p: record, y0: number, press: event) {
+        size: p.w, 26
+        zone box hit { from: p.x, y0; size: max(p.w, 4), 26; corner: 3; cursor: pointer; role: button; selected: p.sel; label: p.label }
+        box { from: p.x, y0; size: max(p.w, 2), 26; corner: 3; color: if(p.sel, fl.phos_fill, mix(fl.hull_raised, fl.well, 0.6 * hit.hover)) }
+        box { from: p.x, y0; size: max(p.w, 2), 26; corner: 3; stroke: 1; color: if(p.sel, fl.phos, mix(fl.trace, fl.trace_lit, hit.hover)) }
+        text p.label { at: p.x + p.w / 2, y0 + 13; anchor: center; size: 10; family: "Share Tech Mono"; width: max(1, p.w - 4); lines: 1
+                       color: if(p.sel, fl.ink, mix(fl.muted, fl.trace_lit, hit.hover)) }
+        on press hit { emit press(p.chip) }
+    }
+
+    // The recessed track a set of choices sits in.
+    component STrack(x: number, y: number, w: number, en: bool = true) {
+        size: w, 28
+        opacity: if(en, 1, 0.35)
+        box { from: x - 2, y - 2; size: w + 4, 32; corner: 5; color: fl.ground; opacity: 0.85 }
+        box { from: x - 2, y - 2; size: w + 4, 32; corner: 5; stroke: 1; color: fl.steel_700 }
+        line { from: x + 2, y - 1; to: x + w - 2, y - 1; width: 1; color: #000000; opacity: 0.6 }
+    }
+    // One choice in a track: a lamp when it is the setting's value; a press sets it.
+    component SChoice(x: number, y: number, w: number, label: text, on: bool, press: event, n: number, en: bool = true) {
+        size: w, 28
+        opacity: if(en, 1, 0.3)
+        zone box hit { from: x, y; size: w, 28; corner: 4; cursor: pointer; role: button; selected: on; label: label; active: en }
+        line { from: x, y + 6; to: x, y + 22; width: 1; color: fl.steel_700 }
+        box { from: x + 2, y + 1; size: w - 4, 26; corner: 3; color: fl.well; opacity: if(on, 0.95, 0.5 * hit.hover) }
+        group {
+            glow: 6, (if(on, 0.9, 0)) * st_glow, fl.phos
+            box { from: x + 8, y + 23; size: w - 16, 2; corner: 1; color: fl.phos; opacity: if(on, 1, 0) }
+        }
+        text label { at: x + w / 2, y + 13; anchor: center; size: 11; weight: 600; family: "Exo 2"
+                     color: if(on, fl.phos, mix(fl.muted, fl.trace_lit, hit.hover)) }
+        on press hit { emit press(n) }
+    }
+    // A switch: a steel knob in a groove; on, it slides right and the groove lights.
+    component SToggle(x: number, y: number, on: bool, press: event, code: number, label: text, en: bool = true) {
+        size: 46, 24
+        opacity: if(en, 1, 0.3)
+        prop k = 0 ~m.select
+        follow k = on
+        zone box hit { from: x, y; size: 46, 24; corner: 5; cursor: pointer; role: toggle; checked: on; label: label; active: en }
+        box { from: x, y; size: 46, 24; corner: 5; color: fl.ground }
+        box { from: x, y; size: 46, 24; corner: 5; stroke: 1; color: mix(fl.steel_700, fl.trace_lit, hit.hover) }
+        group {
+            glow: 6, (0.9 * k) * st_glow, fl.phos
+            box { from: x + 5, y + 19; size: 36 * k, 2; corner: 1; color: fl.phos; opacity: k }
+        }
+        body {
+            gradient: 0, y + 3 to 0, y + 19, fl.steel_300, fl.steel_500 35%, fl.steel_700
+            box { from: x + 3 + 22 * k, y + 3; size: 18, 16; corner: 3 }
+        }
+        box { at: x + 12 + 22 * k, y + 11; size: 2, 8; corner: 1; color: mix(fl.steel_900, fl.phos, k) }
+        on press hit { emit press(code * 1000 + if(on, 0, 1)) }
+    }
+    // A slider: a groove, the value lit in neon up to a steel knob, ticks under it, and the number
+    // in a recessed readout. Drag, click or wheel; it sets `v` of `span` steps, and the window shows
+    // where the pointer is while it is held. `keep` names the lowest step "KEEP" (Hyprland's own).
+    component SSlider(x: number, y: number, w: number, v: number, span: number, press: event, code: number, label: text, shown: text, en: bool = true) {
+        size: w + 80, 28
+        opacity: if(en, 1, 0.3)
+        zone box hit { from: x - 8, y; size: w + 16, 28; cursor: pointer; role: slider; value: v / max(span, 1); label: label; active: en }
+        let at = round(clamp((pointer.x - x) / w, 0, 1) * span)
+        let cur = if(hit.pressed > 0.5, at, v)
+        let kx = x + w * clamp(cur / max(span, 1), 0, 1)
+        box { from: x, y + 12; size: w, 4; corner: 2; color: fl.ground }
+        box { from: x, y + 12; size: w, 4; corner: 2; stroke: 1; color: fl.steel_700 }
+        repeat t in 0..11 {
+            box { from: x + w * t / 10 - 0.5, y + 21; size: 1, if(t == 0 or t == 5 or t == 10, 4, 2); color: fl.steel_500 }
+        }
+        group {
+            glow: 6, (0.8) * st_glow, fl.phos
+            box { from: x, y + 13; size: max(0, kx - x), 2; corner: 1; color: fl.phos }
+        }
+        body {
+            gradient: 0, y + 4 to 0, y + 24, fl.steel_300, fl.steel_500 35%, fl.steel_700
+            box { at: kx, y + 14; size: 10, 20; corner: 2 }
+        }
+        box { at: kx, y + 14; size: 2, 10; corner: 1; color: mix(fl.phos, fl.flare, hit.hover) }
+        box { from: x + w + 18, y + 2; size: 62, 24; corner: 4; color: fl.ground }
+        box { from: x + w + 18, y + 2; size: 62, 24; corner: 4; stroke: 1; color: fl.steel_700 }
+        text shown { at: x + w + 49, y + 14; anchor: center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos }
+        // Only a press or a drag sets it (a rule on the pointer alone fired on every move over the
+        // window and wrote every slider it passed — found 2026-10-20).
+        on press hit { emit press(code * 1000 + round(clamp((local.x - x) / w, 0, 1) * span)) }
+        on drag hit { emit press(code * 1000 + round(clamp((local.x - x) / w, 0, 1) * span)) }
+        on scroll hit { emit press(code * 1000 + clamp(v + wheel * max(1, round(span / 40)), 0, span)) }
+    }
+    // A button: an action, not a setting — a steel plate with a chamfer.
+    component SButton(x: number, y: number, w: number, label: text, press: event, n: number, hot: bool = false, en: bool = true) {
+        size: w, 30
+        opacity: if(en, 1, 0.3)
+        zone box hit { from: x, y; size: w, 30; corner: 4; cursor: pointer; role: button; label: label; active: en }
+        path { color: if(hot, fl.ember_fill, mix(fl.steel_700, fl.steel_500, 0.4 * hit.hover))
+               move x + 6, y; line x + w, y; line x + w, y + 24; line x + w - 6, y + 30; line x, y + 30; line x, y + 6; close }
+        line { from: x + 7, y + 0.6; to: x + w - 1, y + 0.6; width: 1; color: fl.steel_300; opacity: if(hot, 0, 0.35) }
+        text label { at: x + w / 2, y + 15; anchor: center; size: 12; weight: 600; family: "Exo 2"
+                     color: if(hot, fl.ink, mix(fl.engrave, fl.phos, hit.hover)) }
+        on press hit { emit press(n) }
+    }
+    // One search result: the setting's name and what it does, and the page it lives on; a press
+    // opens that page at it.
+    component SResult(r: record, y: number, press: event) {
+        size: 900, 56
+        zone box hit { from: 256, y; size: 900, 56; corner: 6; cursor: pointer; role: button; label: "{r.title} — {r.page}" }
+        box { from: 256, y; size: 900, 56; corner: 6; color: mix(fl.steel_900, fl.hull, 0.5 + 0.3 * hit.hover) }
+        box { from: 256, y; size: 900, 56; corner: 6; stroke: 1; color: mix(fl.steel_700, fl.trace_lit, hit.hover) }
+        box { from: 257, y + 14; size: 3, 28; corner: 1; color: fl.phos; opacity: hit.hover }
+        text r.title { at: 274, y + 19; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: mix(fl.engrave, fl.phos, hit.hover) }
+        text r.desc { at: 274, y + 38; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 640; lines: 1 }
+        text "{upper(r.page)} ›" { at: 1138, y + 28; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+        on press hit { emit press(r.index) }
+    }
+
+    // A spacer or a gap on the bar in edit mode: the room it makes, hatched, and an × to take it out.
+    component EditGap(g: record, press: event) {
+        size: g.w, fl.mod_h
+        zone box hit { from: g.x + 2, fl.top; size: max(4, g.w - 4), fl.mod_h; cursor: pointer; role: button
+                       label: pick(g.fixed, "Take out this spacer", "Take out this gap") }
+        box { from: g.x + 2, fl.top + 3; size: max(4, g.w - 4), fl.mod_h - 6; corner: 4; color: fl.ground; opacity: 0.45 }
+        box { from: g.x + 2, fl.top + 3; size: max(4, g.w - 4), fl.mod_h - 6; corner: 4; stroke: 1; color: mix(fl.trace, fl.ember, hit.hover) }
+        line { from: g.x + 8, fl.cy; to: g.x + g.w - 8, fl.cy; width: 1; color: mix(fl.trace, fl.trace_lit, hit.hover); show: g.w > 40 }
+        text pick(g.fixed, "SPACER", "GAP {g.own, 0}") { at: g.x + g.w / 2, fl.cy; anchor: center; size: 10; family: "Share Tech Mono"
+                        outline: 3, fl.ground; color: mix(fl.muted, fl.ember, hit.hover); show: g.w > 56 }
+        text "×" { at: g.x + g.w - 10, fl.top + 9; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ember; opacity: hit.hover; show: g.w > 24 }
+        on press hit { emit press(g.n) }
+    }
+
+    // A module waiting on edit mode's shelf: a press picks it up, the release drops it.
+    component ShelfChip(c: record, grab: event, rel: event) {
+        size: 104, 28
+        zone box hit { from: 0, 0; size: 104, 28; corner: 5; cursor: grab; role: button; label: "Place {c.name}" }
+        box { from: 0, 0; size: 104, 28; corner: 5; color: fl.hull_raised }
+        box { from: 0, 0; size: 104, 28; corner: 5; stroke: 1; color: mix(fl.trace, fl.trace_lit, hit.hover) }
+        text c.name { at: 52, 14; anchor: center; size: 11; weight: 600; family: "Exo 2"; color: mix(fl.engrave, fl.trace_lit, hit.hover) }
+        on press hit { emit grab(c.i) }
+        on release hit { emit rel(c.i) }
+    }
+
+    // A palette style to choose: its name over the two colours it would give the bar, for the
+    // wallpaper on screen now (the settings logic asks Matugen for every style).
+    component SScheme(x: number, y: number, label: text, a: color, b: color, on: bool, press: event, n: number, en: bool = true) {
+        size: 150, 62
+        opacity: if(en, 1, 0.3)
+        zone box hit { from: x, y; size: 146, 58; corner: 6; cursor: pointer; role: button; selected: on; label: label; active: en }
+        box { from: x, y; size: 146, 58; corner: 6; color: if(on, fl.well, fl.hull) }
+        box { from: x, y; size: 146, 58; corner: 6; stroke: if(on, 2, 1); color: if(on, fl.phos, mix(fl.trace, fl.trace_lit, hit.hover)) }
+        box { from: x + 10, y + 10; size: 60, 16; corner: 3; color: a }
+        box { from: x + 74, y + 10; size: 60, 16; corner: 3; color: b }
+        text label { at: x + 10, y + 42; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(on, fl.phos, fl.engrave) }
+        on press hit { emit press(n) }
+    }
+
+    // A colour to choose: the swatch over its name.
+    component SColour(x: number, y: number, label: text, c: color, on: bool, press: event, n: number, en: bool = true) {
+        size: 88, 34
+        opacity: if(en, 1, 0.3)
+        zone box hit { from: x, y; size: 86, 32; corner: 5; cursor: pointer; role: button; selected: on; label: label; active: en }
+        box { from: x, y; size: 86, 32; corner: 5; color: c }
+        box { from: x, y; size: 86, 32; corner: 5; stroke: if(on, 2.5, 1); color: if(on, fl.phos, mix(fl.trace, fl.trace_lit, hit.hover)) }
+        text label { at: x + 43, y + 16; anchor: center; size: 11; weight: 700; family: "Exo 2"; color: #000000; opacity: 0.75 }
+        on press hit { emit press(n) }
+    }
+
+    // A key combination, drawn as the keys it is.
+    component SKeys(x: number, y: number, keys: text, live: bool) {
+        size: 220, 28
+        box { from: x, y; size: 220, 28; corner: 5; color: if(live, fl.well, fl.hull) }
+        box { from: x, y; size: 220, 28; corner: 5; stroke: 1; color: if(live, fl.flare, fl.trace) }
+        text keys { at: x + 110, y + 14; anchor: center; size: 12; weight: 600; family: "Share Tech Mono"; color: if(live, fl.flare, fl.phos); width: 210; lines: 1 }
+    }
+
+    // The plate a menu sits on: hull, a trace stroke, one cut.
+    component FlPlate(w: number, h: number) {
+        size: w, h
+        box { from: 0, 0; size: w, h; corner: 6; color: fl.hull }
+        box { from: 0, 0; size: w, h; corner: 6; stroke: 1.5; color: fl.trace }
+        box { from: w * 0.62, -3; size: fl.cut_w, 6; color: fl.ground }
+        children
+    }
+
+    // One icon of the tray: the program's own picture; a press is its click, a right press
+    // asks it for its menu, the middle button its secondary action (`cmd(4·index + k)`).
+    component TrayIcon(t: record, x: number, cmd: event) {
+        size: 22, fl.mod_h
+        zone box hit { from: x, fl.top + 3; size: 20, fl.mod_h - 6; corner: 4; cursor: pointer; role: button; label: t.title }
+        box { from: x, fl.top + 3; size: 20, fl.mod_h - 6; corner: 6; color: mix(fl.hull_raised, fl.well, 0.5); opacity: 0.9 * hit.hover }
+        box { from: x, fl.top + 3; size: 20, fl.mod_h - 6; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.55 * hit.hover }
+        // Themed (tray.style): the icon in the bar's own light — its colour drained and the phosphor
+        // laid over it — and its own colours back under the pointer.
+        group {
+            saturation: if(tray_style < 0.5, hit.hover, 1)
+            image t.icon { at: x + 2, fl.cy - 8; size: 16, 16; opacity: if(tray_style < 0.5, 0.75 + 0.25 * hit.hover, 1); show: t.glyph < 0.5
+                           tint: mix(#ffffff, fl.phos, if(tray_style < 0.5, 1 - hit.hover, 0)) }
+        }
+        // a program that names no picture: its initial, on a small plate
+        group {
+            show: t.glyph < 0.5 and t.lettered > 0.5
+            box { from: x + 3, fl.cy - 7; size: 14, 14; corner: 3; stroke: 1; color: fl.trace }
+            text t.letter { at: x + 10, fl.cy + 0.5; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.phos }
+        }
+        on press hit { emit cmd(t.index * 4) }
+        on press right hit { emit cmd(t.index * 4 + 1) }
+        on press middle hit { emit cmd(t.index * 4 + 2) }
+    }
+
+    // One notice in the side panel: who sent it, what it says, and a press to dismiss it.
+    component NoteRow(n: record, dismiss: event) {
+        size: 350, 56
+        box { from: 0, 0; size: 350, 56; corner: 4; color: fl.hull_raised }
+        box { from: 0, 6; size: 2, 44; color: if(n.urgent, fl.ember, fl.phos_fill) }
+        text "{upper(n.app)}" { at: 12, 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember; width: 300; lines: 1 }
+        text n.title { at: 12, 27; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.phos; width: 310; lines: 1 }
+        text n.body { at: 12, 44; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 310; lines: 1 }
+        zone box hit { from: 324, 4; size: 22, 22; corner: 3; cursor: pointer; role: button; label: "Dismiss {n.title}" }
+        line { from: 330, 10; to: 340, 20; width: 1.3; color: mix(fl.muted, fl.ember, hit.hover) }
+        line { from: 340, 10; to: 330, 20; width: 1.3; color: mix(fl.muted, fl.ember, hit.hover) }
+        on press hit { emit dismiss(n.index) }
+    }
+
+    // One clipboard entry: a press copies it.
+    component ClipRow(c: record, pick: event) {
+        size: 350, 26
+        zone box hit { from: 0, 0; size: 350, 26; corner: 3; cursor: pointer; role: button; label: c.text }
+        box { from: 0, 0; size: 350, 26; corner: 3; color: fl.hull_raised; opacity: 0.4 + 0.6 * hit.hover }
+        text c.text { at: 10, 13; anchor: left center; size: 11; family: "Exo 2"; width: 330; lines: 1
+                      color: mix(fl.phos, fl.trace_lit, hit.hover) }
+        on press hit { emit pick(c.index) }
+    }
+
+}

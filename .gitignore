@@ -1,6 +1,22 @@
+# scratch / exported asset work — not part of the dotfiles
+pleamar helix bar/
+
+# build / tool output
+*.zip
+*.jpg
+
 # runtime state lives outside the repo (~/.local/share/pleamar/mooi); keep stray copies out
 settings.json
 settings.known-good.json
 *.tsv
 *.log
 .claude/settings.local.json
+
+# agent tooling state (claude-flow / ruflo), not part of mooi
+.claude-flow/
+.swarm/
+ruvector.db
+
+# binaries and images that ship through Arch / Hypr ecosystem; not mooi
+*.xcf
+*.ora
