@@ -194,12 +194,16 @@ apps_sync() {
             # made (the usual case for GTK 4, whose gtk.css most setups do not have) stayed
             # after the switch went off and GTK kept mooi's colours.
             if [ ! -f "$out" ]; then put "gtk${v}_made" yes; fi
-            if [ -f "$mt" ] && grep -q "^output_path = \"~/.config/gtk-$v.0/gtk.css\"\$" "$mt"; then
+            # The user's Matugen line, however it is written: spaces around `=`, a trailing
+            # comment, `~`, `$HOME` or an absolute path. The line is kept verbatim in the state,
+            # so going back restores exactly what was there rather than mooi's idea of it.
+            if [ -f "$mt" ] && grep -q "^output_path[[:space:]]*=[[:space:]]*\".*/gtk-$v\.0/gtk\.css\"" "$mt"; then
                 # Only the first redirect keeps a copy: once mooi owns the output, $out is
                 # mooi's render, and copying it over the shadow would lose the user's own
                 # last Matugen-made gtk.css (which is what going back restores).
                 [ -z "$(get "gtk${v}_matugen")" ] && [ -f "$out" ] && cp "$out" "$shadow"
-                sed -i "s|^output_path = \"~/.config/gtk-$v.0/gtk.css\"\$|output_path = \"~/.cache/mooi/matugen-gtk-$v.0.css\"  # mooi: GTK follows mooi while it is on (was ~/.config/gtk-$v.0/gtk.css)|" "$mt"
+                [ -n "$(get "gtk${v}_mt_line")" ] || put "gtk${v}_mt_line" "$(sed -n "/^output_path[[:space:]]*=[[:space:]]*\".*\/gtk-$v\.0\/gtk\.css\"/p" "$mt" | head -1)"
+                sed -i "s|^output_path[[:space:]]*=[[:space:]]*\".*/gtk-$v\.0/gtk\.css\".*|output_path = \"~/.cache/mooi/matugen-gtk-$v.0.css\"  # mooi: GTK follows mooi while it is on (was ~/.config/gtk-$v.0/gtk.css)|" "$mt"
                 put "gtk${v}_matugen" yes
             elif [ -z "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")$(get "gtk${v}_made")" ] && [ -f "$out" ]; then
                 cp "$out" "$folder/apps-gtk-$v.0.backup.css"; put "gtk${v}_backup" yes
@@ -207,12 +211,18 @@ apps_sync() {
             render "$tpl" "$out"; did="$did gtk$v"
         elif [ -n "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")$(get "gtk${v}_made")" ]; then
             if [ "$(get "gtk${v}_matugen")" = yes ]; then
-                sed -i "s|^output_path = \"~/.cache/mooi/matugen-gtk-$v.0.css\".*|output_path = \"~/.config/gtk-$v.0/gtk.css\"|" "$mt"
+                orig=$(get "gtk${v}_mt_line")
+                if [ -n "$orig" ]; then
+                    orig_re=$(printf '%s\n' "$orig" | sed 's/[\\&|]/\\&/g')
+                    sed -i "s|^output_path[[:space:]]*=[[:space:]]*\".*/matugen-gtk-$v\.0\.css\".*|$orig_re|" "$mt"
+                else
+                    sed -i "s|^output_path = \"~/.cache/mooi/matugen-gtk-$v.0.css\".*|output_path = \"~/.config/gtk-$v.0/gtk.css\"|" "$mt"
+                fi
                 if [ -f "$shadow" ]; then cp "$shadow" "$out"; else rm -f "$out"; fi
             elif [ -n "$(get "gtk${v}_backup")" ]; then
                 cp "$folder/apps-gtk-$v.0.backup.css" "$out"
             else rm -f "$out"; fi
-            put "gtk${v}_matugen" ""; put "gtk${v}_backup" ""; put "gtk${v}_made" ""
+            put "gtk${v}_matugen" ""; put "gtk${v}_backup" ""; put "gtk${v}_made" ""; put "gtk${v}_mt_line" ""
             did="$did gtk$v(yours)"
         fi
     done

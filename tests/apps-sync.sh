@@ -145,6 +145,19 @@ sync >/dev/null
 has "the scheme path is untouched" "color_scheme_path=$C/qt5ct/colors/mooi.conf" "$C/qt5ct/qt5ct.conf"
 lacks "and the added key is gone" '^custom_palette=' "$C/qt5ct/qt5ct.conf"
 
+echo "a Matugen line with spaces, a comment and an absolute path is put back verbatim"
+cat > "$C/matugen/config.toml" <<'TOML'
+[config]
+[templates.gtk3]
+output_path   =   "/home/someone/.config/gtk-3.0/gtk.css"   # mine
+TOML
+apps false true false
+sync >/dev/null
+has "the line was redirected" '~/.cache/mooi/matugen-gtk-3.0.css' "$C/matugen/config.toml"
+apps false false false
+sync >/dev/null
+is "the user's line is back, exactly" "$(grep '^output_path' "$C/matugen/config.toml")" 'output_path   =   "/home/someone/.config/gtk-3.0/gtk.css"   # mine'
+
 echo
 echo "$n checks, $fail failed"
 [ "$fail" -eq 0 ]
