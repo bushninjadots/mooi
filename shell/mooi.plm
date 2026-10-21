@@ -3,6 +3,7 @@ import "theme/tokens.plm"
 import "ui/island.plm"
 import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
+import "ui/loom.plm"
 
 // mooi — the Spine and its islands.
 //
@@ -480,16 +481,41 @@ scene Mooi {
     fact notes_on = false
     fact note_count = 0
     fact bt_conn = 0
-    text toast_app = ""
-    text toast_title = ""
-    text toast_body = ""
     // `glyph`: 0 the program's own picture, else mooi's own glyph for what it is (1 Wi-Fi, 2 wired,
     // 3 offline, 4 Bluetooth, 5 Bluetooth off; shell/bar.luau), with `level` for the Wi-Fi arcs;
     // `letter` stands in when the program names no picture at all.
     model tray_items max 16 { key: text; title: text; icon: image 16, 16; glyph: number; level: number; letter: text; lettered: number }
-    model notes max 20 { app: text; title: text; body: text; urgent: bool; many: number; kind: number; open: bool }
     fact note_missed = 0      // notices that went away on their own, unseen (the history)
-    fact dnd_now = false      // do not disturb holds now (notifications.dnd): no toasts but urgent ones
+    fact dnd_now = false      // do not disturb holds now (notifications.dnd): only urgent signals unfold
+    // ── Signal Loom (D50): the notifications as signals (shell/signals.luau, lib/signals) ──
+    // Where they unfold from (signals.edge: the surfaces move there live), how many are out and
+    // how many wait, the cluster's length along its edge, and the look: the corners' cut, how far
+    // a signal travels as it unfolds (0 … 1), its glow, the roomier size.
+    fact loom_anchor: top_right | top_left | bottom_right | bottom_left = top_right
+    fact loom_bottom = false
+    fact loom_left = false
+    fact loom_count = 0
+    fact loom_more = 0
+    fact loom_len = 0
+    fact loom_chamfer = 8
+    fact loom_travel = 1
+    fact loom_fx = true
+    fact loom_comfy = false
+    // A slot each: a signal keeps its slot while it is out, so an update rings where it is.
+    // `tier` 0 whisper · 1 manifest · 2 intervention; `kind` 0 event · 1 conversation · 2 alert;
+    // `y`/`h` its place along the edge; `linked`: joined to the one before (same app); `pulse`
+    // goes up with each update (a thread's new message, a notice the app replaced).
+    model loom max 6 { out: bool; tier: number; kind: number; app: text; title: text; body: text; when: text; many: number; icon: image 22, 22; iconed: bool; image: image 28, 28; pictured: bool; acts: number; a1: text; a2: text; a3: text; y: number; h: number; linked: bool; pulse: number; has_default: bool }
+    // The Signal Field: the clusters (by app, then what was missed), the chosen one's notices,
+    // and every notice of the last six hours on the activity rail.
+    model fclus max 13 { app: text; title: text; many: number; when: text; critical: bool; muted: bool; missed: bool }
+    model fitems max 30 { title: text; body: text; when: text; tier: number; critical: bool; acts: number; a1: text; a2: text; a3: text; has_default: bool; missed: bool; snoozed: bool; thread: number; first: bool; image: image 28, 28; pictured: bool }
+    model frail max 60 { x: number; tier: number; cluster: number }
+    fact fld_sel = 0          // the chosen cluster
+    fact fld_item = 0         // the chosen notice in it (the keys act on it)
+    fact fld_muted = false    // the chosen cluster's app is muted
+    fact fld_lost = false     // the chosen cluster is what was missed
+    text fld_app = ""
     model clips max 14 { id: text; text: text }
     fact lv0 = 0.06
     fact lv1 = 0.06
@@ -831,8 +857,20 @@ scene Mooi {
     event set_value ->         // to the logic: one setting to one value (1000 · code + value; mooi.luau, SETTERS)
     event bar_join ->          // to the logic: merge a module into the entry before it, or split it out
     event tray_cmd ->          // to the logic: a tray icon pressed (4·index + 0 click, 1 menu, 2 middle)
-    event note_dismiss ->      // to the logic: dismiss row n (a group's header: the whole group)
-    event note_open ->         // to the logic: row n pressed (open a group out, or act on a notice)
+    event loom_open ->         // to the logic: signal n pressed (its default, or the Field at it)
+    event loom_act ->          // to the logic: 10 · signal + which of its buttons
+    event loom_dismiss ->      // to the logic: signal n dismissed (its whole thread)
+    event loom_shelve ->       // to the logic: signal n let go of; it waits in the Field
+    event loom_hover ->        // to the logic: the pointer on the cluster (1) or off it (0)
+    event loom_field           // from the logic: open the Signal Field
+    event fld_pick ->          // to the logic: cluster n chosen
+    event fld_choose ->        // to the logic: notice n chosen
+    event fld_open ->          // to the logic: notice n's default
+    event fld_act ->           // to the logic: 10 · notice + which of its buttons
+    event fld_snooze ->        // to the logic: notice n out of sight for 15 minutes
+    event fld_dismiss ->       // to the logic: notice n dismissed (a missed one forgotten)
+    event fld_dismiss_all ->   // to the logic: the chosen cluster, all of it
+    event fld_mute ->          // to the logic: the chosen cluster's app muted, or not
     event note_dnd ->          // to the logic: do not disturb on or off
     event note_clear ->        // to the logic: dismiss every notice
     event clips ->             // to the logic: read the clipboard's history
@@ -846,7 +884,6 @@ scene Mooi {
     event power ->             // to the logic: the session menu (0) or lock (1)
     event mic_mute ->          // to the logic: the microphone, muted or not
     event mic_vol ->           // to the logic: the microphone's level (0..1)
-    event toast                // from the logic: a new notice arrived
     event open_settings ->     // to the logic: start the settings program, or close it
     event edit_mode ->         // to the logic: edit mode on (1) or off (0)
     event screen_w ->          // to the logic: the bar's surface is this wide now (a new mode or scale)
@@ -1204,16 +1241,32 @@ scene Mooi {
         shown while mark_open { rv.mark: 1 ~m.enter }
         gone                  { rv.mark: 0 ~m.exit }
     }
-    // The side panel (notices, the clipboard) and the toast a new notice brings.
+    // The side panel (the clipboard).
     prop rv.side = 0 ~m.enter
     layer life.side {
-        shown while side != none { rv.side: 1 ~m.enter }
-        gone                     { rv.side: 0 ~m.exit }
+        shown while side == clips { rv.side: 1 ~m.enter }
+        gone                      { rv.side: 0 ~m.exit }
     }
-    prop toast_v = 0 ~m.enter
-    layer life.toast {
-        up for 5000ms after toast { toast_v: 1 ~m.enter }
-        down                                         { toast_v: 0 ~m.exit }
+    // Signal Loom's motion: the arm reaches out a touch under critical damping (a hint of
+    // settle, no wobble), the face opens after it, and a signal folds back faster than it came.
+    // An update rings (a quick impulse that dies away); light runs once along a new signal.
+    spring sg.ext = 900, 51       // ~240 ms
+    spring sg.unf = 700, 48       // ~280 ms
+    spring sg.ret = 1600, 80      // ~150 ms, critical
+    spring sg.pulse = 380, 18
+    spring sg.sweep = 260, 32
+    // The Signal Field unfolds the same way: its header runs out along the edge, then its body drops.
+    prop fu_a = 0 ~sg.ext
+    prop fu_b = 0 ~sg.unf
+    layer life.fld {
+        shown while side == notes { fu_a: 1 ~sg.ext; fu_b: 1 ~sg.unf after 90ms }
+        gone                      { fu_b: 0 ~sg.ret; fu_a: 0 ~sg.ret after 80ms }
+    }
+    // The loom's surface stays while its last signal folds back.
+    prop loom_tail = 0 ~sg.ret
+    layer life.loomtail {
+        on while loom_count > 0 { loom_tail: 1 ~1ms }
+        off                     { loom_tail: 0 ~1ms after 450ms }
     }
     // The audio levels (cava, 16 bands) glide on a quick spring; at rest they lie low.
     spring fl.level = 1200, 60
@@ -2877,6 +2930,15 @@ scene Mooi {
     on scroll chain while bar_wheel == invert { emit ws_pick(clamp(active_row + 1 + wheel, 1, ws_max)) }
     on key Escape while mark_open { mark_open = false }
     on key Escape while side != none { side = none }
+    on loom_field { side = notes; mark_open = false; open = none }
+    on key Down while side == notes { emit fld_pick(min(fld_sel + 1, max(fclus.count - 1, 0))) }
+    on key Up while side == notes { emit fld_pick(max(fld_sel - 1, 0)) }
+    on key Shift+Down while side == notes { emit fld_choose(min(fld_item + 1, max(fitems.count - 1, 0))) }
+    on key Shift+Up while side == notes { emit fld_choose(max(fld_item - 1, 0)) }
+    on key Return while side == notes { emit fld_open(fld_item) }
+    on key Delete while side == notes { emit fld_dismiss(fld_item) }
+    on key s while side == notes { emit fld_snooze(fld_item) }
+    on key m while side == notes { emit fld_mute }
     on idle for 30s while mark_open { mark_open = false }
     on toggle_labels { emit toggle_labels }
     on toggle_wheel { emit toggle_wheel }
@@ -3020,55 +3082,277 @@ scene Mooi {
         anchor: top_right
         margin: 4, 10, 0, 0
         level: overlay
-        open: side != none or rv.side > 0.004 or toast_v > 0.004
+        open: side == clips or rv.side > 0.004
 
         group {
             show: rv.side > 0.004
             opacity: rv.side
             move: 0, -8 * (1 - rv.side)
             FlPlate(370, 460) {
-                text pick(side == clips, "NOTICES · {note_count, 0}", "CLIPBOARD") { at: 14, 16; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                zone box nclear { from: 290, 6; size: 70, 20; cursor: pointer; role: button; label: "Clear all notices"; show: side == notes and note_count + note_missed > 0 }
-                // do not disturb, at a press: a lamp and its word
-                zone box ndnd { from: 150, 6; size: 128, 20; corner: 4; cursor: pointer; role: toggle; checked: dnd_now
-                                label: "Do not disturb"; show: side == notes and notes_on }
-                group {
-                    show: side == notes and notes_on
-                    box { from: 150, 6; size: 128, 20; corner: 4; color: if(dnd_now, fl.ember_fill, fl.hull_raised); opacity: if(dnd_now, 0.9, 0.5 + 0.5 * ndnd.hover) }
-                    text "DO NOT DISTURB" { at: 214, 16; anchor: center; size: 10; family: "Share Tech Mono"
-                                            color: if(dnd_now, fl.ink, mix(fl.muted, fl.trace_lit, ndnd.hover)) }
-                }
-                on press ndnd { emit note_dnd }
-                text "CLEAR ALL" { at: 356, 16; anchor: right center; size: 10; family: "Share Tech Mono"; show: side == notes and note_count + note_missed > 0
-                                   color: mix(fl.muted, fl.trace_lit, nclear.hover) }
-                on press nclear { emit note_clear }
+                text "CLIPBOARD" { at: 14, 16; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 box { from: 10, 30; size: 350, 1; color: fl.trace_dim }
-                text pick(notes_on, "Notices go to ArchEclipse while mooi runs beside it.", "Nothing waiting.") { at: 185, 60; anchor: center; size: 12; family: "Exo 2"
-                     color: fl.muted; show: side == notes and note_count + note_missed < 1 }
-                column {
-                    at: 10, 36
-                    gap: 6
-                    show: side == notes
-                    for n in notes { NoteRow(n, note_dismiss, note_open) }
-                }
                 column {
                     at: 10, 36
                     gap: 2
-                    show: side == clips
                     for c in clips { ClipRow(c, clip_pick) }
                 }
             }
         }
+    }
+
+    // ══ Signal Loom (D50) ═════════════════════════════════════
+    // The signals: each unfolds from the origin edge (signals.edge) as a mechanism would — a
+    // signal (the diamond) at the edge, an arm that reaches out (`lx`), a face that opens behind
+    // it (`lu`), light running once along it — and folds back the same way when it goes. A
+    // whisper is a slim line; a manifest shows who, what and (pointed at) what can be done; an
+    // intervention stays, an ember rail along it and its buttons always there. Signals from one
+    // app sit joined by a seam. The pointer on the cluster holds them; +N says how many wait.
+    // Nothing here is drawn while nothing is out: the surface closes once the last has folded.
+    surface loom_surface {
+        size: 420, 720
+        anchor: loom_anchor
+        margin: 4, 10, 10, 10
+        level: overlay
+        open: (loom_count > 0 or loom_tail > 0.004) and side != notes    // the Field open, they arrive in it
+
+        let lm_W = 420
+        let lm_H = 720
+        let lm_SEG = 380
+        let lm_oxe = if(loom_left, 6, lm_W - 6)                  // the origin edge, where signals come from
+        let lm_clx = if(loom_left, 0, lm_W - lm_SEG - 12)
+        let lm_cly = if(loom_bottom, lm_H - loom_len - 40, 0)
+        // the cluster as one zone: pointed at, nothing runs out
+        zone box zcluster { from: lm_clx, lm_cly; size: lm_SEG + 12, loom_len + 40; show: loom_count > 0 }
+        on enter zcluster { emit loom_hover(1) }
+        on leave zcluster { emit loom_hover(0) }
+
+        repeat i in 0..6 {
+            prop lx.$i = 0 ~sg.ext
+            prop lu.$i = 0 ~sg.unf
+            prop ls.$i = 0 ~sg.sweep
+            prop lp.$i = 0 ~sg.pulse
+            prop la.$i = 0 ~m.select
+            prop ly.$i = 0 ~fl.flow
+            follow ly.$i = loom.$i.y
+            on change loom.$i.out { ly.$i: loom.$i.y ~1ms }
+            on change loom.$i.pulse { impulse lp.$i 9 }
+            layer lm.$i {
+                out while loom.$i.out { lx.$i: 1 ~sg.ext; lu.$i: 1 ~sg.unf after 110ms; ls.$i: 1 ~sg.sweep after 170ms }
+                gone                  { lu.$i: 0 ~sg.ret; lx.$i: 0 ~sg.ret after 90ms; ls.$i: 0 ~1ms after 300ms }
+            }
+            let lt.$i = loom.$i.tier
+            let lwh.$i = lt.$i < 0.5
+            let lur.$i = lt.$i > 1.5
+            let lh.$i = loom.$i.h
+            let lyy.$i = if(loom_bottom, lm_H - 6 - ly.$i - lh.$i, 6 + ly.$i)
+            let lsl.$i = (1 - lx.$i) * 36 * loom_travel
+            let lw.$i = 30 + (lm_SEG - 30) * lx.$i
+            let lx0.$i = if(loom_left, 6 - lsl.$i, lm_W - 6 - lw.$i + lsl.$i)
+            let fx0.$i = if(loom_left, 6 - lsl.$i, lm_W - 6 - lm_SEG + lsl.$i)     // where the face sits, opened
+            let cin.$i = if(loom_left, 34, 12)                                  // the face's text, clear of the diamond
+            let ring.$i = clamp(lp.$i, 0, 1)
+            let dcx.$i = if(loom_left, lx0.$i + 15, lx0.$i + lw.$i - 15)
+            let dcy.$i = lyy.$i + min(lh.$i, 30) / 2
+            group {
+                show: lx.$i > 0.003
+                opacity: min(1, lx.$i * 4)
+                // joined to the signal before it: a seam along the origin edge
+                line { from: lm_oxe, if(loom_bottom, lyy.$i + lh.$i, lyy.$i - 5); to: lm_oxe, if(loom_bottom, lyy.$i + lh.$i + 5, lyy.$i)
+                       width: 2; color: fl.trace_lit; opacity: lu.$i; show: loom.$i.linked }
+                group {
+                    glow: 10, (if(lur.$i, 0.7, 0.35 * ring.$i)) * if(loom_fx, st_glow, 0), if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos))
+                    Chamfer(lx0.$i, lyy.$i, lw.$i, lh.$i, loom_chamfer, fl.hull, mix(if(lur.$i, fl.ember, fl.trace), if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos)), max(ring.$i, 0.5 * la.$i)), 0.97, if(lur.$i, 1.6, 1))
+                }
+                // an intervention's rail: ember along its inner top edge
+                box { from: lx0.$i + loom_chamfer, lyy.$i + 1; size: max(lw.$i - loom_chamfer - 2, 0), 2; color: fl.ember; show: lur.$i }
+                // the signal: a diamond at the origin, lit by its tier
+                path { color: if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos))
+                       move dcx.$i, dcy.$i - 6; line dcx.$i + 6, dcy.$i; line dcx.$i, dcy.$i + 6; line dcx.$i - 6, dcy.$i; close }
+                path { color: fl.hull
+                       move dcx.$i, dcy.$i - 2.5; line dcx.$i + 2.5, dcy.$i; line dcx.$i, dcy.$i + 2.5; line dcx.$i - 2.5, dcy.$i; close }
+                // light that runs once along a new signal, from the origin outward
+                line { from: if(loom_left, lx0.$i + lw.$i * ls.$i, lx0.$i + lw.$i * (1 - ls.$i)), lyy.$i
+                       to: if(loom_left, lx0.$i + lw.$i * ls.$i - 40, lx0.$i + lw.$i * (1 - ls.$i) + 40), lyy.$i
+                       width: 2; color: if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos)); opacity: (1 - ls.$i) * lu.$i * if(loom_fx, 1, 0); show: ls.$i > 0.01 and ls.$i < 0.99 }
+                // the face, at its opened place, seen through the arm as it opens
+                group {
+                    opacity: lu.$i
+                    clip box { from: lx0.$i, lyy.$i; size: lw.$i, lh.$i }
+                    let tx.$i = fx0.$i + cin.$i + if(loom.$i.pictured or loom.$i.iconed, 30, 0)
+                    image loom.$i.image { at: fx0.$i + cin.$i, lyy.$i + 10; size: 24, 24; show: loom.$i.pictured and not lwh.$i }
+                    image loom.$i.icon { at: fx0.$i + cin.$i + 1, lyy.$i + 11; size: 22, 22; show: loom.$i.iconed and not loom.$i.pictured and not lwh.$i }
+                    // a whisper: who, and what, on one line
+                    group {
+                        show: lwh.$i
+                        text pick(loom.$i.many > 1, "{loom.$i.app} · {loom.$i.title}", "{loom.$i.app} · {loom.$i.title} ×{loom.$i.many, 0}") { at: fx0.$i + cin.$i, lyy.$i + 15; anchor: left center; size: 11; family: "Exo 2"
+                                                                width: lm_SEG - cin.$i - 60; lines: 1; color: fl.trace_lit }
+                    }
+                    group {
+                        show: not lwh.$i
+                        text pick(lur.$i, "{loom.$i.app}", "URGENT · {loom.$i.app}") { at: tx.$i, lyy.$i + 13; anchor: left center; size: 10; family: "Share Tech Mono"
+                                                                                       width: 220; lines: 1; color: if(lur.$i, fl.ember, fl.trace_lit) }
+                        text loom.$i.title { at: tx.$i, lyy.$i + 31; anchor: left center; size: 13; weight: 600; family: "Exo 2"
+                                             width: lm_SEG - (tx.$i - fx0.$i) - 40; lines: 1; color: if(lur.$i, fl.flare, fl.phos) }
+                        text loom.$i.body { at: tx.$i, lyy.$i + 42; anchor: left top; size: 11; family: "Exo 2"; width: lm_SEG - (tx.$i - fx0.$i) - 40
+                                            lines: 1; color: fl.muted; opacity: 1 - la.$i; show: not (loom_comfy or lur.$i) }
+                        text loom.$i.body { at: tx.$i, lyy.$i + 42; anchor: left top; size: 11; family: "Exo 2"; width: lm_SEG - (tx.$i - fx0.$i) - 40
+                                            lines: 2; color: fl.muted; opacity: if(lur.$i, 1, 1 - la.$i); show: loom_comfy or lur.$i }
+                    }
+                    text loom.$i.when { at: if(loom_left, fx0.$i + lm_SEG - 34, fx0.$i + lm_SEG - 52), lyy.$i + 13; anchor: right center; size: 9; family: "Share Tech Mono"
+                                        color: fl.muted; show: not lwh.$i }
+                    // how many it stands for: a thread, or an app's notices
+                    group {
+                        show: loom.$i.many > 1 and not lwh.$i
+                        Chamfer(if(loom_left, fx0.$i + lm_SEG - 74, fx0.$i + lm_SEG - 92), lyy.$i + 22, 34, 16, 4, fl.ground, mix(fl.trace, if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos)), ring.$i))
+                        text "×{loom.$i.many, 0}" { at: if(loom_left, fx0.$i + lm_SEG - 57, fx0.$i + lm_SEG - 75), lyy.$i + 30; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.trace_lit }
+                    }
+                    // what can be done: the app's buttons (an intervention always shows them;
+                    // otherwise they come up while the signal is pointed at)
+                    group {
+                        show: not lwh.$i and loom.$i.acts > 0
+                        opacity: if(lur.$i, 1, la.$i)
+                        CutButton(tx.$i, lyy.$i + lh.$i - 26, 84, loom.$i.a1, if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos)), if(za1.$i.hover, 1, 0))
+                        group { show: loom.$i.acts > 1; CutButton(tx.$i + 90, lyy.$i + lh.$i - 26, 84, loom.$i.a2, if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos)), if(za2.$i.hover, 1, 0)) }
+                        group { show: loom.$i.acts > 2; CutButton(tx.$i + 180, lyy.$i + lh.$i - 26, 84, loom.$i.a3, if(lur.$i, fl.ember, if(lwh.$i, fl.trace_lit, fl.phos)), if(za3.$i.hover, 1, 0)) }
+                    }
+                }
+                // its zones: the face (its default, or the Field at it; right: let it wait in the
+                // Field), its buttons, and × to dismiss it (its whole thread)
+                zone box zs.$i { from: fx0.$i, lyy.$i; size: lm_SEG, lh.$i; cursor: pointer; role: button; show: loom.$i.out
+                                 label: "{loom.$i.app}: {loom.$i.title}" }
+                zone box za1.$i { from: tx.$i, lyy.$i + lh.$i - 26; size: 84, 20; cursor: pointer; role: button; label: "{loom.$i.a1}"
+                                  show: loom.$i.out and not lwh.$i and loom.$i.acts > 0 and (lur.$i or la.$i > 0.5) }
+                zone box za2.$i { from: tx.$i + 90, lyy.$i + lh.$i - 26; size: 84, 20; cursor: pointer; role: button; label: "{loom.$i.a2}"
+                                  show: loom.$i.out and not lwh.$i and loom.$i.acts > 1 and (lur.$i or la.$i > 0.5) }
+                zone box za3.$i { from: tx.$i + 180, lyy.$i + lh.$i - 26; size: 84, 20; cursor: pointer; role: button; label: "{loom.$i.a3}"
+                                  show: loom.$i.out and not lwh.$i and loom.$i.acts > 2 and (lur.$i or la.$i > 0.5) }
+                let xx.$i = if(loom_left, fx0.$i + lm_SEG - 24, fx0.$i + 6)
+                zone box zx.$i { from: xx.$i, lyy.$i + 4; size: 18, 18; cursor: pointer; role: button; label: "Dismiss {loom.$i.title}"
+                                 show: loom.$i.out and (la.$i > 0.3 or lur.$i) }
+                group {
+                    show: loom.$i.out and (la.$i > 0.02 or lur.$i)
+                    opacity: if(lur.$i, 1, la.$i)
+                    line { from: xx.$i + 5, lyy.$i + 9; to: xx.$i + 13, lyy.$i + 17; width: 1.4; color: mix(fl.muted, fl.ember, if(zx.$i.hover, 1, 0)) }
+                    line { from: xx.$i + 13, lyy.$i + 9; to: xx.$i + 5, lyy.$i + 17; width: 1.4; color: mix(fl.muted, fl.ember, if(zx.$i.hover, 1, 0)) }
+                }
+            }
+            follow la.$i = if(zs.$i.hover or za1.$i.hover or za2.$i.hover or za3.$i.hover or zx.$i.hover, 1, 0)
+            on press zs.$i { emit loom_open(i) }
+            on press right zs.$i { emit loom_shelve(i) }
+            on press za1.$i { emit loom_act(i * 10) }
+            on press za2.$i { emit loom_act(i * 10 + 1) }
+            on press za3.$i { emit loom_act(i * 10 + 2) }
+            on press zx.$i { emit loom_dismiss(i) }
+        }
+
+        // How many wait behind the signals: pressed, the Field opens.
+        let lm_moy = if(loom_bottom, lm_H - 6 - loom_len - 32, 6 + loom_len + 8)
+        let lm_mox = if(loom_left, 6, lm_W - 6 - 170)
+        zone box zmore { from: lm_mox, lm_moy; size: 170, 22; cursor: pointer; role: button; label: "{loom_more, 0} more: open the Signal Field"; show: loom_more > 0 }
         group {
-            show: toast_v > 0.004 and rv.side < 0.004
-            opacity: toast_v
-            move: 0, -8 * (1 - toast_v)
-            FlPlate(370, 70) {
-                text toast_app { at: 14, 14; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember; width: 300; lines: 1 }
-                text toast_title { at: 14, 32; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: fl.phos; width: 340; lines: 1 }
-                text toast_body { at: 14, 52; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 340; lines: 1 }
-                zone box ztoast { from: 0, 0; size: 370, 70; cursor: pointer; role: button; label: "Open the notices" }
-                on press ztoast { side = notes }
+            show: loom_more > 0 and loom_count > 0
+            Chamfer(lm_mox, lm_moy, 170, 22, 5, fl.hull, mix(fl.trace, fl.phos, if(zmore.hover, 1, 0)), 0.95)
+            text "+{loom_more, 0} WAITING · FIELD" { at: lm_mox + 85, lm_moy + 11; anchor: center; size: 9; family: "Share Tech Mono"
+                                                     color: mix(fl.trace_lit, fl.phos, if(zmore.hover, 1, 0)) }
+        }
+        on press zmore { side = notes; mark_open = false; open = none }
+    }
+
+    // ══ Signal Field (D50) ════════════════════════════════════
+    // The loom opened out, at the same edge: its header runs out along it, then its body drops.
+    // Left, the clusters (an app's notices, then what was missed); right, the chosen one's
+    // notices with what can be done; along the bottom, the activity rail (the last six hours,
+    // now at the right). Keys: ↑↓ the clusters · Shift+↑↓ the notices · Return open · Delete
+    // dismiss · S snooze · M mute the app · Esc close.
+    surface field_island {
+        size: 760, 560
+        anchor: loom_anchor
+        margin: 4, 10, 10, 10
+        level: overlay
+        open: side == notes or fu_a > 0.004
+
+        let fd_W = 740
+        let fd_H = 540
+        let fd_xo = if(loom_left, 0, 20)
+        let fd_yo = if(loom_bottom, 20, 0)
+        let fd_pw = 140 + (fd_W - 140) * fu_a
+        let fd_ph = 38 + (fd_H - 38) * fu_b
+        let fd_px = if(loom_left, fd_xo, fd_xo + fd_W - fd_pw)
+        let fd_py = if(loom_bottom, fd_yo + fd_H - fd_ph, fd_yo)
+        // the plate takes every press on it, so none reaches the window under it
+        zone box fcatch { from: fd_px, fd_py; size: fd_pw, fd_ph; show: fu_a > 0.004 }
+        group {
+            show: fu_a > 0.004
+            group {
+                glow: 14, 0.25 * if(loom_fx, st_glow, 0), fl.phos
+                Chamfer(fd_px, fd_py, fd_pw, fd_ph, loom_chamfer + 4, fl.hull, fl.trace, 0.98, 1.4)
+            }
+            group {
+                clip box { from: fd_px, fd_py; size: fd_pw, fd_ph }
+                group {
+                    move: fd_xo, fd_yo
+                    opacity: min(1, fu_a * 1.4)
+                    text "SIGNAL FIELD" { at: 18, 19; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
+                    text "{note_count, 0} WAITING" { at: 132, 19; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    // do not disturb, at a press: a lamp and its word
+                    zone box fdnd { from: 420, 9; size: 134, 20; cursor: pointer; role: toggle; checked: dnd_now; label: "Do not disturb"; show: notes_on }
+                    group {
+                        show: notes_on
+                        Chamfer(420, 9, 134, 20, 4, if(dnd_now, fl.ember_fill, fl.hull_raised), if(dnd_now, fl.ember, fl.trace), if(dnd_now, 0.95, 0.6 + 0.4 * if(fdnd.hover, 1, 0)))
+                        text "DO NOT DISTURB" { at: 487, 19; anchor: center; size: 10; family: "Share Tech Mono"; color: if(dnd_now, fl.ink, mix(fl.muted, fl.trace_lit, if(fdnd.hover, 1, 0))) }
+                    }
+                    on press fdnd { emit note_dnd }
+                    zone box fclear { from: 566, 9; size: 96, 20; cursor: pointer; role: button; label: "Clear all notices"; show: note_count + note_missed > 0 }
+                    group { show: note_count + note_missed > 0; CutButton(566, 9, 96, "Clear all", fl.ember, if(fclear.hover, 1, 0)) }
+                    on press fclear { emit note_clear }
+                    zone box fclose { from: 700, 7; size: 26, 24; cursor: pointer; role: button; label: "Close the Signal Field" }
+                    line { from: 707, 13; to: 719, 25; width: 1.5; color: mix(fl.muted, fl.ember, if(fclose.hover, 1, 0)) }
+                    line { from: 719, 13; to: 707, 25; width: 1.5; color: mix(fl.muted, fl.ember, if(fclose.hover, 1, 0)) }
+                    on press fclose { side = none }
+                    group {
+                        opacity: fu_b
+                        line { from: 12, 38; to: fd_W - 12, 38; width: 1; color: fl.trace_dim }
+                        text pick(notes_on, "Notifications go to another program while mooi runs beside it.", "Nothing waiting. Signals unfold here as they arrive.") { at: fd_W / 2, 200; anchor: center; size: 12; family: "Exo 2"; color: fl.muted; show: note_count + note_missed < 1 }
+                        // the clusters
+                        column fcl {
+                            at: 12, 48
+                            gap: 6
+                            view: 238, 404
+                            for c in fclus { FieldCluster(c, fld_sel, loom_chamfer, fld_pick) }
+                        }
+                        // the chosen cluster: its app, and what can be done with all of it
+                        group {
+                            show: fclus.count > 0
+                            text fld_app { at: 264, 58; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit; width: 250; lines: 1 }
+                            zone box fmute { from: 540, 48; size: 84, 20; cursor: pointer; role: toggle; checked: fld_muted
+                                             label: pick(fld_muted, "Mute {fld_app}: its notices whisper", "Unmute {fld_app}"); show: not fld_lost }
+                            group { show: not fld_lost and not fld_muted; CutButton(540, 48, 84, "Mute app", fl.flare, if(fmute.hover, 1, 0)) }
+                            group { show: not fld_lost and fld_muted; CutButton(540, 48, 84, "Unmute", fl.flare, 1) }
+                            on press fmute { emit fld_mute }
+                            zone box fall { from: 630, 48; size: 98, 20; cursor: pointer; role: button; label: "Dismiss all of {fld_app}" }
+                            group { show: not fld_lost; CutButton(630, 48, 98, "Dismiss all", fl.ember, if(fall.hover, 1, 0)) }
+                            group { show: fld_lost; CutButton(630, 48, 98, "Forget all", fl.ember, if(fall.hover, 1, 0)) }
+                            on press fall { emit fld_dismiss_all }
+                        }
+                        column fit {
+                            at: 262, 76
+                            gap: 6
+                            view: 468, 376
+                            for n in fitems { FieldItem(n, fld_item, loom_chamfer, fld_choose, fld_open, fld_act, fld_snooze, fld_dismiss) }
+                        }
+                        // the activity rail: the last six hours, now at the right
+                        line { from: 12, 462; to: fd_W - 12, 462; width: 1; color: fl.trace_dim }
+                        text "ACTIVITY" { at: 18, 476; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        line { from: 16, 502; to: 724, 502; width: 1; color: fl.trace }
+                        text "6 H" { at: 16, 520; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "3 H" { at: 223, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "1 H" { at: 435, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "NOW" { at: 724, 520; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        for r in frail { RailTick(r, 16, 708, 502, fld_pick) }
+                        text "↑↓ CLUSTERS · SHIFT ↑↓ NOTICES · ⏎ OPEN · DEL DISMISS · S SNOOZE · M MUTE · ESC CLOSE" { at: fd_W - 18, 476; anchor: right center; size: 8
+                             family: "Share Tech Mono"; color: fl.muted }
+                    }
+                }
             }
         }
     }

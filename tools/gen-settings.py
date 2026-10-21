@@ -39,6 +39,8 @@ SETTERS = [
     "atlas.rows", "atlas.columns", "atlas.super_tab", "atlas.overview",
     "atlas.private", "atlas.size", "atlas.dim", "atlas.zoom", "atlas.refresh",
     "atlas.gesture", "session.standalone",
+    "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
+    "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -294,6 +296,22 @@ SECTIONS = [
         ("toggle", "Follow a window you move", "Moving a window to a workspace takes you there too", "island.follow_on_send", "sv_island_follow_on_send"),
         ("card", "Comfort"),
         ("slider", "Search results", "How many results search shows", "command.max_results", 3, 10, "{sv_command_max_results + 3, 0}"),
+    ]),
+    ("Signals", "Signal Loom", "How notifications arrive, join up and unfold; Reset puts them back as they came", "SYSTEM", [
+        ("card", "Where they arrive"),
+        ("choice", "Origin", "The corner the signals unfold from; the Signal Field opens there too", "signals.edge", "sv_signals_edge",
+         ["Top right", "Top left", "Bottom right", "Bottom left"]),
+        ("slider", "At once", "How many signals show; the rest wait behind a +N", "signals.max", 1, 6, "{sv_signals_max + 1, 0}"),
+        ("slider", "Stays out", "A normal one, in seconds; a low one half as long, an urgent one until you deal with it", "signals.linger", 3, 30, "{sv_signals_linger + 3, 0} s"),
+        ("choice", "Join", "Notices from one conversation (same app and title), from one app, or never", "signals.grouping", "sv_signals_grouping",
+         ["Threads", "Apps", "Never"]),
+        ("card", "Look and motion"),
+        ("choice", "Size", "Compact segments, or roomier ones that show two lines", "signals.density", "sv_signals_density", ["Compact", "Comfortable"]),
+        ("slider", "Corner cut", "How much the segments' corners are chamfered", "signals.chamfer", 0, 14, "{sv_signals_chamfer, 0} px"),
+        ("slider", "Travel", "How far a signal slides out as it unfolds; none opens it in place", "signals.travel", 0, 100, "{sv_signals_travel, 0}%"),
+        ("toggle", "Glow", "The light along an arriving signal and an urgent one's edge (notices still come without it)", "signals.effects", "sv_signals_effects"),
+        ("card", "Privacy"),
+        ("toggle", "Hide what they say", "Pop-ups show only who it is from; the Signal Field shows the rest", "signals.private", "sv_signals_private"),
     ]),
     ("Advanced", "Advanced", "What mooi is doing, where it keeps things, and its log", "SYSTEM", [
         ("card", "Session"),

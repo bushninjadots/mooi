@@ -1,0 +1,111 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+
+// Signal Loom's pieces (D50): the chamfered plate every signal and the Field are cut from, and
+// the Field's rows. As in ui/ferrolume.plm, nothing here decides anything: a row is given the
+// events it emits, and the scene and shell/signals.luau keep the state.
+//
+// The cut: two opposite corners chamfered (top left and bottom right), so a segment reads as a
+// machined part rather than a card; `c` is how deep (signals.chamfer), 0 square.
+
+library LoomParts {
+
+    // A chamfered plate: its fill, and its edge as a line on top.
+    component Chamfer(x: number, y: number, w: number, h: number, c: number, fill: color, edge: color, op: number = 1, ew: number = 1) {
+        size: w, h
+        let k = clamp(c, 0, min(w, h) / 2)
+        path { color: fill; opacity: op
+               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        path { stroke: ew; color: edge; opacity: op
+               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+    }
+
+    // A small chamfered button in a row: its word, lit while pointed at.
+    component CutButton(x: number, y: number, w: number, word: text, tone: color, hit: number) {
+        size: w, 20
+        path { color: mix(fl.hull_raised, fl.well, hit); opacity: 0.9
+               move x + 4, y; line x + w, y; line x + w, y + 16; line x + w - 4, y + 20; line x, y + 20; line x, y + 4; close }
+        path { stroke: 1; color: mix(fl.trace, tone, hit)
+               move x + 4, y; line x + w, y; line x + w, y + 16; line x + w - 4, y + 20; line x, y + 20; line x, y + 4; close }
+        text "{upper(word)}" { at: x + w / 2, y + 10; anchor: center; size: 9; family: "Share Tech Mono"; width: w - 6; lines: 1
+                               color: mix(fl.muted, tone, max(hit, 0.35)) }
+    }
+
+    // A notice's mark on the activity rail: where it sits in the last six hours (now at the right),
+    // lit by its tier. Pressed, its cluster is chosen.
+    component RailTick(r: record, x0: number, len: number, y: number, pick: event) {
+        size: 6, 22
+        let tx = x0 + len - r.x * len
+        zone box hit { from: tx - 3, y - 11; size: 6, 22; cursor: pointer; role: button; label: "A notice, on the rail" }
+        line { from: tx, y - if(r.tier > 1.5, 11, if(r.tier > 0.5, 8, 5)); to: tx, y + if(r.tier > 1.5, 11, if(r.tier > 0.5, 8, 5)); width: if(hit.hover, 2.4, 1.5)
+               color: if(r.tier > 1.5, fl.ember, if(r.tier > 0.5, fl.phos, fl.trace_lit)) }
+        on press hit { emit pick(r.cluster) }
+    }
+
+    // A cluster in the Field's left column: one app (or what was missed), how many, how long ago;
+    // an urgent one carries an ember tick, a muted one says so. Pressed, it is chosen.
+    component FieldCluster(c: record, chosen: number, cut: number, pick: event) {
+        size: 236, 54
+        let on = chosen == c.index
+        zone box hit { from: 0, 0; size: 236, 54; cursor: pointer; role: item; selected: on
+                       label: "{c.app}: {c.many, 0}" }
+        Chamfer(0, 0, 236, 54, cut, mix(fl.hull_raised, fl.well, max(0.6 * hit.hover, if(on, 0.8, 0))), if(on, fl.phos, fl.trace), 1, if(on, 1.6, 1))
+        box { from: 0, 10; size: 3, 34; color: if(c.critical, fl.ember, if(c.missed, fl.trace, fl.phos_fill)) }
+        text c.app { at: 12, 13; anchor: left center; size: 10; family: "Share Tech Mono"; width: 150; lines: 1
+                     color: if(c.critical, fl.ember, if(c.missed, fl.muted, fl.trace_lit)) }
+        text c.when { at: 226, 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        text c.title { at: 12, 34; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: 168; lines: 1
+                       color: if(c.missed, fl.trace_lit, fl.phos) }
+        group {
+            show: c.many > 1
+            Chamfer(190, 26, 36, 16, 4, fl.ground, fl.trace)
+            text "×{c.many, 0}" { at: 208, 34; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.trace_lit }
+        }
+        text "MUTED" { at: 12, 48; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: c.muted }
+        on press hit { emit pick(c.index) }
+    }
+
+    // A notice in the Field's focus area: who and what, the whole of what it says (two lines),
+    // and what can be done with it — the app's own buttons, open (its default), snooze, dismiss.
+    // The first of a thread says how many the thread holds. Pressed, it is chosen (the keys act
+    // on the chosen one).
+    component FieldItem(n: record, chosen: number, cut: number, pick: event, open: event, act: event, snooze: event, dismiss: event) {
+        size: 468, 92
+        let on = chosen == n.index
+        let pic = n.pictured
+        let tx = if(pic, 50, 14)
+        zone box hit { from: 0, 0; size: 468, 92; cursor: pointer; role: item; selected: on; label: "{n.title}" }
+        Chamfer(0, 0, 468, 92, cut, mix(fl.hull_raised, fl.well, max(0.5 * hit.hover, if(on, 0.7, 0))), if(on, focus.ring, fl.trace), if(n.missed, 0.7, 1), if(on, 1.6, 1))
+        box { from: 0, 10; size: 3, 72; color: if(n.critical, fl.ember, if(n.missed or n.tier < 0.5, fl.trace, fl.phos_fill)) }
+        image n.image { at: 14, 12; size: 28, 28; show: pic }
+        text n.title { at: tx, 16; anchor: left center; size: 13; weight: 600; family: "Exo 2"; width: 340 - tx; lines: 1
+                       color: if(n.critical, fl.flare, if(n.missed, fl.trace_lit, fl.phos)) }
+        text n.when { at: 456, 16; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        text pick(n.missed, "THREAD · {n.thread, 0}", "MISSED") { at: 456, 30; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted
+                                                                  show: n.missed or (n.first and n.thread > 1) }
+        text pick(n.snoozed, "", "SNOOZED") { at: 380, 30; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.flare; show: n.snoozed }
+        text n.body { at: tx, 34; anchor: left top; size: 11; family: "Exo 2"; width: 420 - tx; lines: 2; color: fl.muted }
+        // its buttons: the app's own first, then what mooi offers
+        zone box b1 { from: 14, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a1}"; show: n.acts > 0 }
+        zone box b2 { from: 98, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a2}"; show: n.acts > 1 }
+        zone box b3 { from: 182, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a3}"; show: n.acts > 2 }
+        group { show: n.acts > 0; CutButton(14, 64, 80, n.a1, fl.phos, b1.hover) }
+        group { show: n.acts > 1; CutButton(98, 64, 80, n.a2, fl.phos, b2.hover) }
+        group { show: n.acts > 2; CutButton(182, 64, 80, n.a3, fl.phos, b3.hover) }
+        zone box bo { from: 270, 64; size: 54, 20; cursor: pointer; role: button; label: "Open {n.title}"; show: n.has_default }
+        group { show: n.has_default; CutButton(270, 64, 54, "Open", fl.phos, bo.hover) }
+        zone box bs { from: 330, 64; size: 62, 20; cursor: pointer; role: button; label: "Snooze {n.title} for 15 minutes"; show: not n.missed and not n.snoozed }
+        group { show: not n.missed and not n.snoozed; CutButton(330, 64, 62, "Snooze", fl.flare, bs.hover) }
+        zone box bd { from: 398, 64; size: 62, 20; cursor: pointer; role: button; label: pick(n.missed, "Dismiss {n.title}", "Forget {n.title}") }
+        group { show: not n.missed; CutButton(398, 64, 62, "Dismiss", fl.ember, bd.hover) }
+        group { show: n.missed; CutButton(398, 64, 62, "Forget", fl.ember, bd.hover) }
+        on press hit { emit pick(n.index) }
+        on press b1 { emit act(n.index * 10) }
+        on press b2 { emit act(n.index * 10 + 1) }
+        on press b3 { emit act(n.index * 10 + 2) }
+        on press bo { emit open(n.index) }
+        on press bs { emit snooze(n.index) }
+        on press bd { emit dismiss(n.index) }
+    }
+}

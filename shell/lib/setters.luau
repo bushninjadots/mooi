@@ -40,6 +40,8 @@ M.SETTERS = {
     "atlas.rows", "atlas.columns", "atlas.super_tab", "atlas.overview",
     "atlas.private", "atlas.size", "atlas.dim", "atlas.zoom", "atlas.refresh",
     "atlas.gesture", "session.standalone",
+    "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
+    "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
 }
 
 local function row_of(path)

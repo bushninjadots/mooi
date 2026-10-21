@@ -444,8 +444,7 @@ return function(ctx)
         text.foc_left = string.format("%02d:%02d", math.floor(foc.left / 60), foc.left % 60)
     end
     local function foc_toast(title, body)
-        text.toast_app = "FOCUS"; text.toast_title = title; text.toast_body = body
-        emit("toast")
+        if ctx.signal then ctx.signal("Focus", title, body) end
     end
     local function foc_stop()
         if foc.timer then cancel(foc.timer); foc.timer = nil end
@@ -493,121 +492,9 @@ return function(ctx)
     on("mic_vol", function(v) local n = tonumber(v); if n then sys.call("audio.input", math.max(0, math.min(1, n))) end end)
 
     -- ── Notifications ──────────────────────────────────────────
-    -- There is one receiver per session and the newest shell takes it. mooi takes it when it
-    -- holds the desktop (takeover) — or always, or never, by `notifications.server` — so
-    -- beside ArchEclipse the notices stay ArchEclipse's (D5).
-    local notes, missed = {}, {}
-    local newest = nil
-    local rows = {}           -- what the panel shows, row by row: { kind, ids, id }
-    local open_app = {}       -- the apps whose group is opened out
-    local hour = 12
-    local function claim()
-        local mode = ctx.settings().notifications.server
-        -- "takeover": whenever mooi holds the desktop — a takeover, or a standalone session (D48)
-        return mode == "always" or (mode == "takeover" and ctx.mode ~= "beside")
-    end
-    -- Do not disturb, now: always, while a focus block runs, or in the quiet hours.
-    local function quiet()
-        local n = ctx.settings().notifications
-        if n.dnd == "on" then return true end
-        if n.dnd == "focus" then return fact.foc_state == 1 end
-        if n.dnd == "hours" then
-            local from, to = n.quiet_from, n.quiet_to
-            if from == to then return false end
-            if from < to then return hour >= from and hour < to end
-            return hour >= from or hour < to
-        end
-        return false
-    end
-    -- The panel's rows: one per app (the newest notice, and how many it has), the rest of an
-    -- opened group under it, then the ones missed (they went away on their own, unseen).
-    local function show_notes()
-        rows = {}
-        local shown, order, by = {}, {}, {}
-        for _, n in ipairs(notes) do
-            local app = tostring(n.app or "")
-            if not by[app] then by[app] = {}; order[#order + 1] = app end
-            by[app][#by[app] + 1] = n
-        end
-        local function add(n, kind, count, ids)
-            if #shown >= 20 then return end
-            rows[#rows + 1] = { kind = kind, ids = ids, id = n.id }
-            shown[#shown + 1] = { app = tostring(n.app or ""), title = tostring(n.title or ""), body = tostring(n.body or ""),
-                                  urgent = n.urgency == "critical", many = count, kind = kind, open = open_app[tostring(n.app or "")] == true }
-        end
-        for _, app in ipairs(order) do
-            local g = by[app]
-            local ids = {}
-            for _, n in ipairs(g) do ids[#ids + 1] = n.id end
-            add(g[1], 0, #g, ids)
-            if open_app[app] then for i = 2, #g do add(g[i], 1, 1, { g[i].id }) end end
-        end
-        for i, n in ipairs(missed) do if i <= 6 then add(n, 2, 1, { n.id }) end end
-        model.notes = shown
-        fact.note_count = #notes
-        fact.note_missed = #missed
-        fact.dnd_now = quiet()
-    end
-    fact.notes_on = claim()
-    if fact.notes_on then
-        -- The panel is the notification centre: a notice stays until it is dismissed or acted on
-        -- (the toast is what passes). The history then only holds what an older run let expire.
-        sys.watch("notifications", function(list)
-            notes = type(list) == "table" and list or {}
-            show_notes()
-            local top = notes[1]
-            if top and top.id ~= newest then
-                newest = top.id
-                -- in a quiet time only what is urgent interrupts
-                if not quiet() or top.urgency == "critical" then
-                    text.toast_app = string.upper(tostring(top.app or ""))
-                    text.toast_title = tostring(top.title or "")
-                    text.toast_body = tostring(top.body or "")
-                    emit("toast")
-                end
-            elseif not top then newest = nil end
-        end)
-        -- (asked once the service runs: it starts with the watch above)
-        local kept, why = pcall(sys.call, "notifications.keep", true)
-        if not kept then log("notices · could not keep them: " .. tostring(why)) end
-        pcall(sys.watch, "notification_history", function(list)
-            missed = type(list) == "table" and list or {}
-            show_notes()
-        end)
-        sys.watch("clock", function(c)
-            local h = type(c) == "table" and tonumber(c.hour)
-            if h and h ~= hour then hour = h; fact.dnd_now = quiet() end
-        end)
-    end
-    -- A press on a notice: a group with more in it opens out (or closes); one notice does what
-    -- its app offers (its default action) and goes; a missed one is forgotten.
-    on("note_open", function(v)
-        local r = rows[math.floor(tonumber(v) or -1) + 1]
-        if not r then return end
-        if r.kind == 2 then sys.call("notifications.forget", r.id); return end
-        local n = nil
-        for _, x in ipairs(notes) do if x.id == r.id then n = x end end
-        local app = n and tostring(n.app or "") or ""
-        if r.kind == 0 and #r.ids > 1 then open_app[app] = not open_app[app]; show_notes(); return end
-        pcall(sys.call, "notifications.invoke", r.id, "default")
-        sys.call("notifications.dismiss", r.id)
-    end)
-    on("note_dismiss", function(v)
-        local r = rows[math.floor(tonumber(v) or -1) + 1]
-        if not r then return end
-        if r.kind == 2 then sys.call("notifications.forget", r.id); return end
-        for _, id in ipairs(r.ids) do sys.call("notifications.dismiss", id) end
-    end)
-    on("note_clear", function() sys.call("notifications.clear"); pcall(sys.call, "notifications.clear_history") end)
-    -- The panel's quick switch: do not disturb on, or off.
-    on("note_dnd", function()
-        local n = ctx.settings().notifications
-        n.dnd = (n.dnd == "off") and "on" or "off"
-        ctx.save()
-        show_notes()
-    end)
+    -- Signal Loom (shell/signals.luau, D50) receives and shows them; the bar's bell reads its facts.
     -- A focus block starting or ending moves the quiet time with it.
-    dnd_hook = function() if fact.notes_on then fact.dnd_now = quiet() end end
+    dnd_hook = function() if ctx.requiet then ctx.requiet() end end
 
     -- ── Edit mode ──────────────────────────────────────────────
     -- The scene says when edit mode begins and ends, and where a dragged module is: while it

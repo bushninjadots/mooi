@@ -31,6 +31,7 @@ local generation = 0    -- bumps on every open, so late replies for an old targe
 -- The bar's modules, each of which has `bar.modules.<name>.show` and `.frame` (lib/barlayout).
 local MODULES = barlayout.ORDER
 local bar = nil           -- the bar's layout and readers (shell/bar.luau), once it is running
+local loom = nil          -- Signal Loom, the notifications (shell/signals.luau), once it is running
 local outlines = {}       -- each module's outline as the layout reads it (0 line · 2 corners · 3 none)
 local profile_set = nil   -- the power profile last asked for
 local on_battery = false  -- running on the battery, not charging (the saver's "on battery")
@@ -114,6 +115,7 @@ local function apply(s)
         end)
     end
     if bar then bar.relayout() end
+    if loom then loom.apply() end
     if sync_desktop and bar_palette then sync_desktop() end
 end
 
@@ -1623,8 +1625,18 @@ on("open_settings", function()
     fact.settings_open = true
 end)
 
+-- ── Signal Loom: the notifications (shell/signals.luau, D50) ──
+loom = require("signals")({
+    settings = function() return settings end,
+    save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
+    mode = sys.ask("env", "MOOI_MODE") or "beside",
+    safe_mode = safe_mode,
+})
+
 -- ── The Ferrolume bar: layout, readers and actions (shell/bar.luau) ──
 bar = require("bar")({
+    signal = loom.signal,
+    requiet = loom.requiet,
     settings = function() return settings end,
     save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
     mode = sys.ask("env", "MOOI_MODE") or "beside",

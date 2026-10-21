@@ -196,6 +196,20 @@ M.SCHEMA = {
     { path = "notifications.dnd", kind = "enum", values = { "off", "on", "focus", "hours" }, default = "off" },
     { path = "notifications.quiet_from", kind = "integer", default = 22, min = 0, max = 23 },
     { path = "notifications.quiet_to", kind = "integer", default = 7, min = 0, max = 23 },
+    -- Signal Loom (D50): where the signals unfold from, how many at once, how long a normal one
+    -- stays out (seconds; a low one half as long, an urgent one until it is dealt with), how they
+    -- group (a thread: one app and title; an app; none), their size, the cut of their corners,
+    -- how far they travel as they unfold (0: they open in place), their glow, and whether what a
+    -- notice says shows in the pop-up or waits for the Signal Field.
+    { path = "signals.edge", kind = "enum", values = { "top_right", "top_left", "bottom_right", "bottom_left" }, default = "top_right" },
+    { path = "signals.max", kind = "integer", default = 4, min = 1, max = 6 },
+    { path = "signals.linger", kind = "integer", default = 7, min = 3, max = 30 },
+    { path = "signals.grouping", kind = "enum", values = { "thread", "app", "off" }, default = "thread" },
+    { path = "signals.density", kind = "enum", values = { "compact", "comfortable" }, default = "compact" },
+    { path = "signals.chamfer", kind = "integer", default = 8, min = 0, max = 14 },
+    { path = "signals.travel", kind = "integer", default = 100, min = 0, max = 100 },
+    { path = "signals.effects", kind = "boolean", default = true },
+    { path = "signals.private", kind = "boolean", default = false },
     -- The colours follow the wallpaper's Matugen palette unless the user says otherwise,
     -- because that is the brief's pipeline and what a desktop that already runs Matugen
     -- expects (docs/MECHANISM.md §8). `fixed` is the brief's own palette, and it is also

@@ -581,6 +581,24 @@ scene Mooi {
     fact df_atlas_gesture = 0
     fact sv_session_standalone = 0
     fact df_session_standalone = 0
+    fact sv_signals_edge = 0
+    fact df_signals_edge = 0
+    fact sv_signals_max = 0
+    fact df_signals_max = 0
+    fact sv_signals_linger = 0
+    fact df_signals_linger = 0
+    fact sv_signals_grouping = 0
+    fact df_signals_grouping = 0
+    fact sv_signals_density = 0
+    fact df_signals_density = 0
+    fact sv_signals_chamfer = 0
+    fact df_signals_chamfer = 0
+    fact sv_signals_travel = 0
+    fact df_signals_travel = 0
+    fact sv_signals_effects = 0
+    fact df_signals_effects = 0
+    fact sv_signals_private = 0
+    fact df_signals_private = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
@@ -1203,26 +1221,56 @@ scene Mooi {
     follow gy_17_c0 = 112
     prop gy_17_1 = 156 ~m.reflow
     follow gy_17_1 = 112 + 44
-    prop gc_17_0 = 112 ~m.reflow
-    follow gc_17_0 = 52 + 60
-    prop gy_17_c1 = 238 ~m.reflow
-    follow gy_17_c1 = 112 + 44 + 60 + 22
-    prop gy_17_3 = 282 ~m.reflow
-    follow gy_17_3 = 112 + 44 + 60 + 22 + 44
-    prop gy_17_4 = 342 ~m.reflow
-    follow gy_17_4 = 112 + 44 + 60 + 22 + 44 + 60
-    prop gy_17_5 = 402 ~m.reflow
-    follow gy_17_5 = 112 + 44 + 60 + 22 + 44 + 60 + 60
+    prop gy_17_2 = 216 ~m.reflow
+    follow gy_17_2 = 112 + 44 + 60
+    prop gy_17_3 = 276 ~m.reflow
+    follow gy_17_3 = 112 + 44 + 60 + 60
+    prop gy_17_4 = 336 ~m.reflow
+    follow gy_17_4 = 112 + 44 + 60 + 60 + 60
+    prop gc_17_0 = 292 ~m.reflow
+    follow gc_17_0 = 52 + 60 + 60 + 60 + 60
+    prop gy_17_c1 = 418 ~m.reflow
+    follow gy_17_c1 = 112 + 44 + 60 + 60 + 60 + 60 + 22
     prop gy_17_6 = 462 ~m.reflow
-    follow gy_17_6 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60
-    prop gc_17_1 = 290 ~m.reflow
-    follow gc_17_1 = 52 + 60 + 60 + 60 + 58
-    prop gy_17_c2 = 542 ~m.reflow
-    follow gy_17_c2 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22
-    prop gy_17_8 = 586 ~m.reflow
-    follow gy_17_8 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22 + 44
-    prop gc_17_2 = 296 ~m.reflow
-    follow gc_17_2 = 52 + 244
+    follow gy_17_6 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gy_17_7 = 522 ~m.reflow
+    follow gy_17_7 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_17_8 = 582 ~m.reflow
+    follow gy_17_8 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60
+    prop gy_17_9 = 642 ~m.reflow
+    follow gy_17_9 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60
+    prop gc_17_1 = 292 ~m.reflow
+    follow gc_17_1 = 52 + 60 + 60 + 60 + 60
+    prop gy_17_c2 = 724 ~m.reflow
+    follow gy_17_c2 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22
+    prop gy_17_11 = 768 ~m.reflow
+    follow gy_17_11 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gc_17_2 = 112 ~m.reflow
+    follow gc_17_2 = 52 + 60
+    prop gy_18_c0 = 112 ~m.reflow
+    follow gy_18_c0 = 112
+    prop gy_18_1 = 156 ~m.reflow
+    follow gy_18_1 = 112 + 44
+    prop gc_18_0 = 112 ~m.reflow
+    follow gc_18_0 = 52 + 60
+    prop gy_18_c1 = 238 ~m.reflow
+    follow gy_18_c1 = 112 + 44 + 60 + 22
+    prop gy_18_3 = 282 ~m.reflow
+    follow gy_18_3 = 112 + 44 + 60 + 22 + 44
+    prop gy_18_4 = 342 ~m.reflow
+    follow gy_18_4 = 112 + 44 + 60 + 22 + 44 + 60
+    prop gy_18_5 = 402 ~m.reflow
+    follow gy_18_5 = 112 + 44 + 60 + 22 + 44 + 60 + 60
+    prop gy_18_6 = 462 ~m.reflow
+    follow gy_18_6 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60
+    prop gc_18_1 = 290 ~m.reflow
+    follow gc_18_1 = 52 + 60 + 60 + 60 + 58
+    prop gy_18_c2 = 542 ~m.reflow
+    follow gy_18_c2 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22
+    prop gy_18_8 = 586 ~m.reflow
+    follow gy_18_8 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22 + 44
+    prop gc_18_2 = 296 ~m.reflow
+    follow gc_18_2 = 52 + 244
     // A page chosen slides in: it starts a little low and clear, and settles.
     prop pg = 1
     layer page_in {
@@ -1273,13 +1321,14 @@ scene Mooi {
         SNav(600, "Power", set_tab == 14, 14, set_pick)
         SNav(626, "Keys", set_tab == 15, 15, set_pick)
         SNav(652, "System", set_tab == 16, 16, set_pick)
-        SNav(678, "Advanced", set_tab == 17, 17, set_pick)
+        SNav(678, "Signals", set_tab == 17, 17, set_pick)
+        SNav(704, "Advanced", set_tab == 18, 18, set_pick)
         SButton(16, screen.height - 64, 200, "Edit on the bar", set_action, 1, bar_edit)
         text "CHANGES APPLY AT ONCE" { at: 18, screen.height - 18; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 540 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22 + 44 + 244 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 540 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22 + 44 + 244 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -2705,53 +2754,143 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_17_c0 - 112
-                    SCard(112, gc_17_0, "Session")
+                    SCard(112, gc_17_0, "Where they arrive")
                 }
                 group {
                     show: true
                     move: 0, gy_17_1 - 156
+                    SRow(156, "Origin", "The corner the signals unfold from; the Signal Field opens there too", true, "", 374, false)
+                    STrack(698, 172, 440)
+                    SChoice(698, 172, 110, "Top right", sv_signals_edge == 0, set_value, 307000)
+                    SChoice(808, 172, 110, "Top left", sv_signals_edge == 1, set_value, 307001)
+                    SChoice(918, 172, 110, "Bottom right", sv_signals_edge == 2, set_value, 307002)
+                    SChoice(1028, 172, 110, "Bottom left", sv_signals_edge == 3, set_value, 307003)
+                    SRevert(668, 186, sv_signals_edge != df_signals_edge, set_value, 307000 + df_signals_edge)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_2 - 216
+                    SRow(216, "At once", "How many signals show; the rest wait behind a +N", true, "", 404, true)
+                    SSlider(728, 232, 330, sv_signals_max, 5, set_value, 308, "At once", "{sv_signals_max + 1, 0}", true)
+                    SRevert(698, 246, sv_signals_max != df_signals_max, set_value, 308000 + df_signals_max)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_3 - 276
+                    SRow(276, "Stays out", "A normal one, in seconds; a low one half as long, an urgent one until you deal with it", true, "", 404, true)
+                    SSlider(728, 292, 330, sv_signals_linger, 27, set_value, 309, "Stays out", "{sv_signals_linger + 3, 0} s", true)
+                    SRevert(698, 306, sv_signals_linger != df_signals_linger, set_value, 309000 + df_signals_linger)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_4 - 336
+                    SRow(336, "Join", "Notices from one conversation (same app and title), from one app, or never", true, "", 418, true)
+                    STrack(742, 352, 396)
+                    SChoice(742, 352, 132, "Threads", sv_signals_grouping == 0, set_value, 310000)
+                    SChoice(874, 352, 132, "Apps", sv_signals_grouping == 1, set_value, 310001)
+                    SChoice(1006, 352, 132, "Never", sv_signals_grouping == 2, set_value, 310002)
+                    SRevert(712, 366, sv_signals_grouping != df_signals_grouping, set_value, 310000 + df_signals_grouping)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_c1 - 418
+                    SCard(418, gc_17_1, "Look and motion")
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_6 - 462
+                    SRow(462, "Size", "Compact segments, or roomier ones that show two lines", true, "", 550, false)
+                    STrack(874, 478, 264)
+                    SChoice(874, 478, 132, "Compact", sv_signals_density == 0, set_value, 311000)
+                    SChoice(1006, 478, 132, "Comfortable", sv_signals_density == 1, set_value, 311001)
+                    SRevert(844, 492, sv_signals_density != df_signals_density, set_value, 311000 + df_signals_density)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_7 - 522
+                    SRow(522, "Corner cut", "How much the segments' corners are chamfered", true, "", 404, true)
+                    SSlider(728, 538, 330, sv_signals_chamfer, 14, set_value, 312, "Corner cut", "{sv_signals_chamfer, 0} px", true)
+                    SRevert(698, 552, sv_signals_chamfer != df_signals_chamfer, set_value, 312000 + df_signals_chamfer)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_8 - 582
+                    SRow(582, "Travel", "How far a signal slides out as it unfolds; none opens it in place", true, "", 404, true)
+                    SSlider(728, 598, 330, sv_signals_travel, 100, set_value, 313, "Travel", "{sv_signals_travel, 0}%", true)
+                    SRevert(698, 612, sv_signals_travel != df_signals_travel, set_value, 313000 + df_signals_travel)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_9 - 642
+                    SRow(642, "Glow", "The light along an arriving signal and an urgent one's edge (notices still come without it)", true, "", 768, true)
+                    SToggle(1092, 660, sv_signals_effects, set_value, 314, "signals.effects")
+                    SRevert(1062, 672, sv_signals_effects != df_signals_effects, set_value, 314000 + df_signals_effects)
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_c2 - 724
+                    SCard(724, gc_17_2, "Privacy")
+                }
+                group {
+                    show: true
+                    move: 0, gy_17_11 - 768
+                    SRow(768, "Hide what they say", "Pop-ups show only who it is from; the Signal Field shows the rest", true, "", 768, false)
+                    SToggle(1092, 786, sv_signals_private, set_value, 315, "signals.private")
+                    SRevert(1062, 798, sv_signals_private != df_signals_private, set_value, 315000 + df_signals_private)
+                }
+            }
+            group {
+                show: set_tab == 18
+                group {
+                    show: true
+                    move: 0, gy_18_c0 - 112
+                    SCard(112, gc_18_0, "Session")
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_1 - 156
                     SRow(156, "mooi is the whole desktop", "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", true, "", 768, false)
                     SToggle(1092, 174, sv_session_standalone, set_value, 306, "session.standalone")
                     SRevert(1062, 186, sv_session_standalone != df_session_standalone, set_value, 306000 + df_session_standalone)
                 }
                 group {
                     show: true
-                    move: 0, gy_17_c1 - 238
-                    SCard(238, gc_17_1, "mooi")
+                    move: 0, gy_18_c1 - 238
+                    SCard(238, gc_18_1, "mooi")
                 }
                 group {
                     show: true
-                    move: 0, gy_17_3 - 282
+                    move: 0, gy_18_3 - 282
                     SRow(282, "Version", "The shell and Pleamar it runs on", true, "", 360, false)
                     text adv_version { at: 1138, 312; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_17_4 - 342
+                    move: 0, gy_18_4 - 342
                     SRow(342, "The bar", "Its process's share of a core, and its memory", true, "", 360, true)
                     text adv_usage { at: 1138, 372; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_17_5 - 402
+                    move: 0, gy_18_5 - 402
                     SRow(402, "Settings file", "Every setting, as JSON; mooi applies an edit at once", true, "", 360, true)
                     text bar_path { at: 1138, 432; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_17_6 - 462
+                    move: 0, gy_18_6 - 462
                     SButton(274, 476, 174, "Open settings.json", adv_act, 1)
                     SButton(458, 476, 126, "Open the log", adv_act, 2)
                     SButton(594, 476, 214, "Open the shell's folder", adv_act, 3)
                 }
                 group {
                     show: true
-                    move: 0, gy_17_c2 - 542
-                    SCard(542, gc_17_2, "Log")
+                    move: 0, gy_18_c2 - 542
+                    SCard(542, gc_18_2, "Log")
                 }
                 group {
                     show: true
-                    move: 0, gy_17_8 - 586
+                    move: 0, gy_18_8 - 586
                     box { from: 274, 590; size: 864, 232; corner: 5; color: fl.ground; opacity: 0.7 }
                     for l in adv_log { SLogLine(l, 604) }
                 }
@@ -2767,8 +2906,8 @@ scene Mooi {
         }
         // The header, over the scrolled rows: the page's name, what it is for, and its Reset.
         box { from: 233, 0; size: screen.width - 233, 96; color: mix(fl.ground, fl.steel_900, 0.6) }
-        text pick(set_tab, "Quick settings", "Colour", "Motion & effects", "The bar", "Layout", "Workspaces", "Media", "Screen frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Sound", "Power", "Keys", "System", "Advanced") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
-        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "A style sets the surface and the edges at once; change any of them and it reads Custom", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "The switcher on the bar", "The player on the bar", "A band round the screen, the bar its top edge; it can move with the music", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "What mooi is doing, where it keeps things, and its log") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
+        text pick(set_tab, "Quick settings", "Colour", "Motion & effects", "The bar", "Layout", "Workspaces", "Media", "Screen frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Sound", "Power", "Keys", "System", "Signal Loom", "Advanced") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
+        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "A style sets the surface and the edges at once; change any of them and it reads Custom", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "The switcher on the bar", "The player on the bar", "A band round the screen, the bar its top edge; it can move with the music", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
         box { from: 233, 95; size: screen.width - 233, 1; color: fl.trace_dim }
         group {
             show: not searching

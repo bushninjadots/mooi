@@ -110,7 +110,16 @@ local rows = {
     { title = "Confirm before closing", desc = "Ask once more before closing a window", tab = 16, page = "System", y = 522 },
     { title = "Follow a window you move", desc = "Moving a window to a workspace takes you there too", tab = 16, page = "System", y = 582 },
     { title = "Search results", desc = "How many results search shows", tab = 16, page = "System", y = 708 },
-    { title = "mooi is the whole desktop", desc = "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", tab = 17, page = "Advanced", y = 156 },
+    { title = "Origin", desc = "The corner the signals unfold from; the Signal Field opens there too", tab = 17, page = "Signal Loom", y = 156 },
+    { title = "At once", desc = "How many signals show; the rest wait behind a +N", tab = 17, page = "Signal Loom", y = 216 },
+    { title = "Stays out", desc = "A normal one, in seconds; a low one half as long, an urgent one until you deal with it", tab = 17, page = "Signal Loom", y = 276 },
+    { title = "Join", desc = "Notices from one conversation (same app and title), from one app, or never", tab = 17, page = "Signal Loom", y = 336 },
+    { title = "Size", desc = "Compact segments, or roomier ones that show two lines", tab = 17, page = "Signal Loom", y = 462 },
+    { title = "Corner cut", desc = "How much the segments' corners are chamfered", tab = 17, page = "Signal Loom", y = 522 },
+    { title = "Travel", desc = "How far a signal slides out as it unfolds; none opens it in place", tab = 17, page = "Signal Loom", y = 582 },
+    { title = "Glow", desc = "The light along an arriving signal and an urgent one's edge (notices still come without it)", tab = 17, page = "Signal Loom", y = 642 },
+    { title = "Hide what they say", desc = "Pop-ups show only who it is from; the Signal Field shows the rest", tab = 17, page = "Signal Loom", y = 768 },
+    { title = "mooi is the whole desktop", desc = "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", tab = 18, page = "Advanced", y = 156 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -130,7 +139,8 @@ rows.resets = {
     [14] = { "motion.saver", "power.profile" },
     [15] = { "@keys" },
     [16] = { "notifications.server", "notifications.dnd", "notifications.quiet_from", "notifications.quiet_to", "tray.style", "island.confirm_close", "island.follow_on_send", "command.max_results" },
-    [17] = { "session.standalone" },
+    [17] = { "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density", "signals.chamfer", "signals.travel", "signals.effects", "signals.private" },
+    [18] = { "session.standalone" },
 }
 rows.layout_tab = 4
 return rows
