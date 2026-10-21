@@ -1,6 +1,6 @@
 # Twisting Triangular Chain — Design Spec
 
-**Status:** Draft (approved)
+**Status:** Draft (approved) — **superseded 2026-10-16** by the renewed design and its port, then by that design's slim v4, then by its exposed v5, and now by its **horizontal v6** (docs/DECISIONS.md **D13**, **D14**, **D15** and **D16**; `pleamar helix bar/helix-v2-mooi/`)
 **Path:** Architectural (brainstorming → design → spec → plans)
 **Date:** 2026-10-15
 

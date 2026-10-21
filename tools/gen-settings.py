@@ -33,8 +33,18 @@ SETTERS = [
     "bar.height", "bar.offset",
     "apps.kitty", "apps.gtk", "apps.qt",
     "motion.speed", "motion.saver", "power.profile",
+    "notifications.dnd", "notifications.quiet_from", "notifications.quiet_to",
+    "shutter.enabled", "shutter.pointer", "shutter.edge", "shutter.density", "shutter.preview",
+    "shutter.arrange", "shutter.workspace", "shutter.behaviour", "shutter.connections",
+    "atlas.rows", "atlas.columns", "atlas.super_tab", "atlas.overview",
+    "atlas.private", "atlas.size", "atlas.dim", "atlas.zoom", "atlas.refresh",
+    "atlas.gesture",
 ]
-def code(path): return SETTERS.index(path) + 1
+# codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
+# 300 (lib/setters `apply` reads them back the same way)
+def code(path):
+    i = SETTERS.index(path) + 1
+    return i if i < 100 else i + 200
 
 MODULES = ["workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
            "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
@@ -48,7 +58,9 @@ NAMES = {"workspaces": "Workspaces", "window": "Window title", "media": "Media p
 KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("window", "Window actions", "Float, pin, fullscreen or close the focused window"),
         ("atlas", "Workspace Atlas", "Every window, grouped by workspace"),
+        ("overview", "Overview", "Every workspace zoomed out (Super+Tab too, below in System)"),
         ("system", "System controls", "Volume, brightness, network, Bluetooth"),
+        ("shutter", "Window shutter", "The focused window's controls, unfolding from its edge"),
         ("settings", "Settings", "This window"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
@@ -96,21 +108,31 @@ SECTIONS = [
         ("card", "Light"),
         ("choice", "Finish", "Matte is calm, Luminous glows, Neon burns", "theme.finish", "sv_theme_finish", [("Matte", 1), ("Luminous", 0), ("Neon", 2)]),
         ("slider", "Colourfulness", "The whole palette's colour, down or up", "theme.saturation", -50, 50, "{sv_theme_saturation - 50, 0}"),
-        ("slider", "Glow", "How strongly lit things glow", "fx.glow", 0, 160, "{sv_fx_glow, 0}%"),
-        ("slider", "Chromatic aberration", "Glass edges and readings split red from cyan", "fx.aberration", 0, 100, "{sv_fx_aberration, 0}%"),
         ("card", "Base"),
         ("choice", "Base", "What everything stands on; text stays readable on any", "bar.bg", "sv_bar_bg",
          [("Black", 0), ("Wallpaper", 1), ("Main colour", 2), ("Custom", 9)]),
         ("choice", "", "…or an industrial material", "bar.bg", "sv_bar_bg",
          [("Obsidian", 10), ("Gunmetal", 11), ("Concrete", 12), ("Titanium", 13), ("Oxide", 14), ("Alien", 15)]),
-        ("slider", "Lightness", "Darker or lighter than the base", "bar.bg_light", -10, 40, "{sv_bar_bg_light - 10, 0}", "sv_bar_bg > 0.5"),
-        ("slider", "Saturation", "From grey to richer than the base", "bar.bg_sat", 0, 150, "{sv_bar_bg_sat, 0}%", "sv_bar_bg > 0.5"),
-        ("slider", "Hue", "Turn the base round the colour wheel", "bar.bg_hue", -180, 180, "{sv_bar_bg_hue - 180, 0}°", "sv_bar_bg > 0.5"),
+        ("colourpick",),
+        ("slider", "Lightness", "Darker or lighter than the base", "bar.bg_light", -10, 40, "{sv_bar_bg_light - 10, 0}", "sv_bar_bg > 0.5 and sv_bar_bg != 9"),
+        ("slider", "Saturation", "From grey to richer than the base", "bar.bg_sat", 0, 150, "{sv_bar_bg_sat, 0}%", "sv_bar_bg > 0.5 and sv_bar_bg != 9"),
+        ("slider", "Hue", "Turn the base round the colour wheel", "bar.bg_hue", -180, 180, "{sv_bar_bg_hue - 180, 0}°", "sv_bar_bg > 0.5 and sv_bar_bg != 9"),
         ("card", "Your apps"),
         ("note", "true", "OFF, AN APP KEEPS ITS OWN COLOURS (YOUR MATUGEN SETUP); ON, IT WEARS THIS PALETTE"),
         ("toggle", "Kitty terminal", "Text, selection, cursor and the 16 terminal colours", "apps.kitty", "sv_apps_kitty"),
         ("toggle", "GTK apps", "GTK 3 and 4 (libadwaita); open windows change when reopened", "apps.gtk", "sv_apps_gtk"),
         ("toggle", "Qt apps", "Through qt5ct and qt6ct; apps change when reopened", "apps.qt", "sv_apps_qt"),
+    ]),
+    ("Motion", "Motion & effects", "How fast things move, what glows, and what goes quiet to save the battery", "LOOK", [
+        ("card", "Motion"),
+        ("slider", "Speed", "Every animation, slower or faster; the bar restarts (a second) to take it", "motion.speed", 50, 200, "{sv_motion_speed + 50, 0}%"),
+        ("toggle", "Reduce motion", "No springs or travel: things are simply there; the bar restarts to take it", "motion.reduced", "sv_motion_reduced"),
+        ("card", "Effects"),
+        ("slider", "Glow", "How strongly lit things glow", "fx.glow", 0, 160, "{sv_fx_glow, 0}%"),
+        ("slider", "Chromatic aberration", "Glass edges and readings split red from cyan", "fx.aberration", 0, 100, "{sv_fx_aberration, 0}%"),
+        ("card", "Battery saver"),
+        ("choice", "Saver", "Glow, aberration, the frame's music and the visualizer off", "motion.saver", "sv_motion_saver", ["Off", "On battery", "Always"]),
+        ("note", "saving", "SAVING NOW"),
     ]),
     ("Bar", "The bar", "A style sets the surface and the edges at once; change any of them and it reads Custom", "BAR", [
         ("card", "Shape"),
@@ -207,23 +229,85 @@ SECTIONS = [
         ("slider", "Speed", "How far a notch of the wheel scrolls", "desktop.mouse_speed", 4, 200,
          'pick(sv_desktop_mouse_speed == 0, "{(sv_desktop_mouse_speed + 4) / 100, 2}×", "KEEP")'),
     ]),
+    ("Shutter", "Window shutter", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "DESKTOP", [
+        ("card", "Shutter"),
+        ("toggle", "Window shutter", "Arrange, workspace, behaviour and connections, at the window", "shutter.enabled", "sv_shutter_enabled"),
+        ("toggle", "Super+Alt+right-click", "Opens it on the window under the pointer (right-click alone stays the app's)", "shutter.pointer", "sv_shutter_pointer", None, "sv_shutter_enabled == 1"),
+        ("choice", "Unfolds", "Beside the window where there is room, or always to its left, or inside its edge", "shutter.edge", "sv_shutter_edge", ["Where it fits", "Left", "Inside"], "sv_shutter_enabled == 1"),
+        ("choice", "Size", "Standard plates, or compact ones", "shutter.density", "sv_shutter_density", ["Standard", "Compact"], "sv_shutter_enabled == 1"),
+        ("toggle", "Open on hover", "A plate held under the pointer opens its panel", "shutter.preview", "sv_shutter_preview", None, "sv_shutter_enabled == 1"),
+        ("card", "Plates", "sv_shutter_enabled == 1"),
+        ("toggle", "Arrange", "Maximize, fullscreen, centre, size, swap, float", "shutter.arrange", "sv_shutter_arrange"),
+        ("toggle", "Workspace", "Move it, follow it, bring it here", "shutter.workspace", "sv_shutter_workspace"),
+        ("toggle", "Behaviour", "Floating, pinned, opacity, close", "shutter.behaviour", "sv_shutter_behaviour"),
+        ("toggle", "Connections", "Its folder, a terminal there, its repository, its other windows", "shutter.connections", "sv_shutter_connections"),
+    ]),
+    ("Overview", "Overview", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "DESKTOP", [
+        ("card", "Opening"),
+        ("toggle", "Super+Tab opens it", "Its own key (in Keys) always does", "atlas.super_tab", "sv_atlas_super_tab"),
+        ("toggle", "Zoom out of your workspace", "The workspace you are on shrinks into its place; off, the panel just comes down", "atlas.zoom", "sv_atlas_zoom"),
+        ("choice", "Touchpad swipe", "Swipe down to open it; down is the one way your desktop's own gestures leave free", "atlas.gesture", "sv_atlas_gesture", ["Off", "3 fingers", "4 fingers"]),
+        ("card", "Shape"),
+        ("choice", "Shape", "A grid; a strip under the bar; or a canvas to arrange them on — drag a workspace by its number", "atlas.overview", "sv_atlas_overview", ["Grid", "Strip", "Canvas"]),
+        ("slider", "Rows", "How many rows of workspaces (the canvas has one more to arrange in)", "atlas.rows", 1, 3, "{sv_atlas_rows + 1, 0}", "sv_atlas_overview != 1"),
+        ("slider", "Columns", "How many workspaces in a row (the canvas has two more)", "atlas.columns", 2, 6, "{sv_atlas_columns + 2, 0}", "sv_atlas_overview != 1"),
+        ("slider", "Size", "Each workspace, as a share of the screen; it shrinks if it would not fit", "atlas.size", 14, 24, "{sv_atlas_size + 14, 0}%", "sv_atlas_overview != 1"),
+        ("slider", "Dim behind", "How dark the desktop goes behind it", "atlas.dim", 0, 80, "{sv_atlas_dim, 0}%"),
+        ("card", "Window pictures"),
+        ("toggle", "Pictures", "Live pictures of windows in the Overview and the Atlas", "atlas.previews", "previews"),
+        ("choice", "Taken", "As it opens and after a move (smooth), or every 3 seconds too (a small hitch each time)", "atlas.refresh", "sv_atlas_refresh", ["As it opens", "Every 3 s"], "previews"),
+        ("choice", "Privacy", "Password managers and private browsing show no picture or title; or nothing does, for sharing the screen", "atlas.private", "sv_atlas_private",
+         ["Off", "Sensitive", "Everything"]),
+    ]),
+    ("Displays", "Displays", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "DESKTOP", [
+        ("card", "Monitors"),
+        ("displays",),
+    ]),
+    ("Sound", "Sound", "Where sound plays and where it listens, and each app's own volume", "SYSTEM", [
+        ("card", "Output"),
+        ("devices", "out"),
+        ("card", "Input"),
+        ("devices", "in"),
+        ("card", "Apps playing"),
+        ("note", "snd_apps.count < 1", "NOTHING IS PLAYING"),
+        ("appvols",),
+    ]),
+    ("Power", "Power", "The battery, and how hard the machine works", "SYSTEM", [
+        ("card", "Battery"),
+        ("info", "Charge", "What is left, and whether it is charging", "pw_text"),
+        ("choice", "Battery saver", "Glow, aberration, the frame's music and the visualizer off", "motion.saver", "sv_motion_saver", ["Off", "On battery", "Always"]),
+        ("note", "not pw_ppd", "POWER-PROFILES-DAEMON IS NOT RUNNING HERE, SO THERE ARE NO PROFILES TO CHOOSE"),
+        ("card", "Power profile", "pw_ppd"),
+        ("choice", "Profile", "power-profiles-daemon's: quieter and cooler, or faster", "power.profile", "sv_power_profile", ["Keep", "Saver", "Balanced", "Performance"]),
+    ]),
     ("Keys", "Keys", "mooi's keyboard shortcuts. Press Change, then the new keys", "SYSTEM", [("card", "Shortcuts"), ("keys",)]),
     ("System", "System", "Notifications, the islands and comfort", "SYSTEM", [
         ("card", "Notifications and tray"),
         ("choice", "mooi shows notifications", "When it runs alone, always, or never", "notifications.server", "note_server", ["On its own", "Always", "Never"]),
+        ("choice", "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel", "notifications.dnd", "sv_notifications_dnd",
+         ["Off", "On", "While focusing", "Quiet hours"]),
+        ("slider", "Quiet from", "The hour quiet begins", "notifications.quiet_from", 0, 23, "{sv_notifications_quiet_from, 0}:00", "sv_notifications_dnd == 3"),
+        ("slider", "Quiet until", "The hour it ends", "notifications.quiet_to", 0, 23, "{sv_notifications_quiet_to, 0}:00", "sv_notifications_dnd == 3"),
         ("choice", "Tray icons", "In the palette's colours, or as the apps draw them", "tray.style", "tray_style", ["Themed", "Original"]),
-        ("card", "Windows and the Atlas"),
-        ("toggle", "Atlas previews", "Live pictures of windows in the Atlas", "atlas.previews", "previews"),
+        ("card", "Windows"),
         ("toggle", "Confirm before closing", "Ask once more before closing a window", "island.confirm_close", "confirm_close"),
         ("toggle", "Follow a window you move", "Moving a window to a workspace takes you there too", "island.follow_on_send", "sv_island_follow_on_send"),
         ("card", "Comfort"),
         ("slider", "Search results", "How many results search shows", "command.max_results", 3, 10, "{sv_command_max_results + 3, 0}"),
-        ("toggle", "Reduce motion", "No springs or travel; applies the next time mooi starts", "motion.reduced", "sv_motion_reduced"),
+    ]),
+    ("Advanced", "Advanced", "What mooi is doing, where it keeps things, and its log", "SYSTEM", [
+        ("card", "mooi"),
+        ("info", "Version", "The shell and Pleamar it runs on", "adv_version"),
+        ("info", "The bar", "Its process's share of a core, and its memory", "adv_usage"),
+        ("info", "Settings file", "Every setting, as JSON; mooi applies an edit at once", "bar_path"),
+        ("actions", [("Open settings.json", "adv_act", 1), ("Open the log", "adv_act", 2), ("Open the shell's folder", "adv_act", 3)]),
+        ("card", "Log"),
+        ("log",),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
 
-W, H = 1180, 760    # the window
+W, H = 1180, 800    # the window
 XR = 1138           # where a row's control ends
 TX = 274            # where a row's words begin
 TOP = 112           # where a page's first card begins
@@ -263,6 +347,45 @@ def row_lines(r, y, first, reverted):
         lines.append(f'text "{r[2]}" {{ at: {TX}, {y + 14}; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }}')
         return lines, 28
     rule = "false" if first else "true"
+    if k == "devices":
+        lst = "snd_out" if r[1] == "out" else "snd_in"
+        lines.append(f'for d in {lst} {{ SDevice(d, {y + 6}, snd_pick) }}')
+        lines.append(f'text "NONE FOUND" {{ at: {TX}, {y + 24}; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: {lst}.count < 1 }}')
+        return lines, f"(12 + max(1, {lst}.count) * 44)"
+    if k == "appvols":
+        lines.append(f'for a in snd_apps {{ SAppVol(a, {y + 4}, snd_app) }}')
+        return lines, "(8 + snd_apps.count * 52)"
+    if k == "displays":
+        lines.append(f'for m in dp_list {{ SDisplay(m, {y + 6}) }}')
+        return lines, "(12 + max(1, dp_list.count) * 60)"
+    if k == "log":
+        lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
+        lines.append(f'for l in adv_log {{ SLogLine(l, {y + 18}) }}')
+        return lines, 244
+    if k == "info":
+        _, title, desc, value = r
+        lines.append(f'SRow({y}, "{title}", "{desc}", true, "", 360, {rule})')
+        lines.append(f'text {value} {{ at: {XR}, {y + 30}; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }}')
+        return lines, 60
+    if k == "actions":
+        bx = TX
+        for label, ev, n in r[1]:
+            w = 30 + len(label) * 8
+            lines.append(f'SButton({bx}, {y + 14}, {w}, "{label}", {ev}, {n})'); bx += w + 10
+        return lines, 58
+    if k == "colourpick":
+        # the custom base: hue, saturation and lightness, a row of quick picks, the colour itself
+        lines.append(f'SRow({y}, "Custom colour", "Pick the base: hue, then how rich and how light", true, "", 300, {rule})')
+        lines.append(f'box {{ from: {XR - 86}, {y + 12}; size: 86, 36; corner: 6; color: rgb(cp_r, cp_g, cp_b) }}')
+        lines.append(f'box {{ from: {XR - 86}, {y + 12}; size: 86, 36; corner: 6; stroke: 1; color: fl.trace_lit }}')
+        lines.append(f'text cp_hex {{ at: {XR - 43}, {y + 30}; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }}')
+        for n, (lab, cc, span, shown) in enumerate([("Hue", 1, 360, "{cp_h, 0}°"), ("Richness", 2, 100, "{cp_s, 0}%"), ("Lightness", 3, 60, "{cp_l, 0}%")]):
+            yy = y + 60 + n * 40
+            lines.append(f'text "{lab.upper()}" {{ at: {TX}, {yy + 14}; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }}')
+            lines.append(f'SSlider({TX + 120}, {yy}, 560, cp_{"hsl"[n]}, {span}, set_colour, {cc}, "{lab}", "{shown}", true)')
+        for n in range(8):
+            lines.append(f'SColour({TX + n * 106}, {y + 184}, "", rgb(cq{n}_r, cq{n}_g, cq{n}_b), false, set_colour, {9000 + n}, true)')
+        return lines, 228
     if k == "button":
         _, title, desc, label, ev, n = r
         n = TAB[n] if n in TAB else n
@@ -407,7 +530,8 @@ def section(i, rows, indent, page):
             INDEX.append(("Layout", "Put any module anywhere on the bar, in any order; group, hide, add spacers", i, page, y))
             continue
         cwhen = card[1] if card else "true"
-        rwhen = ("theme_wallpaper" if r[0] == "schemes" else r[1] if r[0] == "note" else (r[7] if r[0] == "slider" and len(r) > 7 else (r[6] if len(r) > 6 and r[0] not in ("slider", "button") else "true")))
+        rwhen = ("theme_wallpaper" if r[0] == "schemes" else "sv_bar_bg == 9" if r[0] == "colourpick" else r[1] if r[0] == "note" else
+                 (r[7] if r[0] == "slider" and len(r) > 7 else (r[6] if len(r) > 6 and r[0] not in ("slider", "button", "info") else "true")))
         when = rwhen if cwhen == "true" else (cwhen if rwhen == "true" else f"({cwhen}) and ({rwhen})")
         first = card is not None and not card[3]
         rl, h = row_lines(r, y, first, reverted)
@@ -422,13 +546,17 @@ def section(i, rows, indent, page):
             INDEX.append((r[1], r[2], i, page, y))
         if r[0] in ("choice", "toggle", "slider", "source") and r[3] not in resets:
             resets.append(r[3])
+        if r[0] == "colourpick" and "bar.bg_colour" not in resets:
+            resets.append("bar.bg_colour")
         if r[0] == "schemes" and "theme.scheme" not in resets:
             resets.append("theme.scheme")
         if r[0] == "keys":
             resets.append("@keys")
         if card is not None:
             card[3].append((h, rwhen))
-        above.append((h, when)); y += h
+        # a list's height is an expression; its rows' nominal places assume a short one (the
+        # props carry every row to its real place)
+        above.append((h, when)); y += h if isinstance(h, int) else 100
     close_card()
     total = place()
     body = "\n".join(indent + "    " + l for l in lines)
@@ -443,8 +571,9 @@ def generate():
     nav, ny, last = [], 136, None
     for i, (label, _, _, grp, _) in enumerate(SECTIONS):
         if grp != last:
-            nav.append(f'{ind}SNavGroup({ny + (6 if last else 0)}, "{grp}")'); ny += 30 if last else 24; last = grp
-        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 34
+            nav.append(f'{ind}SNavGroup({ny + (4 if last else 0)}, "{grp}")'); ny += 26 if last else 22; last = grp
+        # 26: an item's own height — seventeen pages and four groups clear the edit button (D44)
+        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 26
     titles = ", ".join(f'"{t}"' for _, t, _, _, _ in SECTIONS)
     subs = ", ".join(f'"{s}"' for _, _, s, _, _ in SECTIONS)
     maxs = ", ".join(f"max(0, {h} + 24 - screen.height)" for h in heights)
@@ -577,8 +706,8 @@ import "ui/ferrolume.plm"
 // paints the same palette (lib/ferro), so the window wears what the bar wears.
 scene Mooi {
     permissions {
-        run: "pleamar", "matugen"
-        services: "files", "files.write", "env"
+        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps"
+        services: "files", "files.write", "env", "audio", "audio.*", "battery"
     }
 """
 
@@ -646,7 +775,30 @@ def main():
     fact lay_fi = 0           // its outline
     fact lay_grouped = false
     fact lay_zh = 400         // how tall the zones and the shelf are, together
-""" + "".join(f"    fact lay_c{n} = true\n" for n in range(1, 9)) + "".join(f"    fact lz{z}_y = 0\n    fact lz{z}_h = 90\n    fact lz{z}_n = 0\n" for z in range(4)) + """
+    // The system pages (mooi-settings.luau reads them): sound, displays, power, the log.
+    model snd_out max 12 { name: text; on: bool; n: number }
+    model snd_in max 12 { name: text; on: bool; n: number }
+    model snd_apps max 10 { name: text; title: text; vol: number }
+    event snd_pick ->         // to the logic: output n, or input 100 + n
+    event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
+    model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
+    text pw_text = ""
+    fact pw_ppd = false       // power-profiles-daemon answers
+    fact saving = false       // the battery saver is on now
+    text adv_version = ""
+    text adv_usage = ""
+    model adv_log max 12 { line: text; warn: bool }
+    event adv_act ->          // to the logic: 1 open settings.json · 2 open the log · 3 open the shell's folder
+    // The custom base colour (bar.bg_colour) as hue, richness and lightness, and eight quick picks.
+    event set_colour ->       // to the logic: 1000 · (1 hue · 2 richness · 3 lightness) + value, or 9000 + a quick pick
+    text cp_hex = "#101418"
+    fact cp_h = 210
+    fact cp_s = 10
+    fact cp_l = 7
+    fact cp_r = 0.06
+    fact cp_g = 0.08
+    fact cp_b = 0.09
+""" + "".join(f"    fact cq{n}_r = 0.1\n    fact cq{n}_g = 0.1\n    fact cq{n}_b = 0.1\n" for n in range(8)) + "".join(f"    fact lay_c{n} = true\n" for n in range(1, 9)) + "".join(f"    fact lz{z}_y = 0\n    fact lz{z}_h = 90\n    fact lz{z}_n = 0\n" for z in range(4)) + """
 """ + "\n".join(PROPS) + """
     // A page chosen slides in: it starts a little low and clear, and settles.
     prop pg = 1
@@ -659,7 +811,7 @@ def main():
     surface settings_win {
         kind: window
         title: "mooi · settings"
-        size: 1180, 760
+        size: 1180, 800
         // the keyboard on a click (search, key capture): a window has none unless it asks
         keyboard: on_demand
         box { from: 0, 0; size: screen.width, screen.height; color: mix(fl.ground, fl.steel_900, 0.6) }

@@ -13,6 +13,11 @@ import "../theme/ferrolume.plm"
 //   · light means live — a glow appears only on what is active, hovered or urgent.
 //   · phos is state, ember is the counter-signal.
 library FerrolumeParts {
+    // the Mechanical Shutter's plates: arrange, workspace, behaviour, connections
+    figure sh_i0 = file "../icons/arrange.svg"
+    figure sh_i1 = file "../icons/workspace.svg"
+    figure sh_i2 = file "../icons/behaviour.svg"
+    figure sh_i3 = file "../icons/connections.svg"
     // A module's frame. The fill is the bar's material (`bar_surface`: 0 solid hull, 1 glass that
     // bends what is behind it, 2 the compositor's blur behind a smoked tint, 3 clear, 4 steel —
     // MechHousing), at the bar's opacity, frost and smoke, with its shadow; the outline (`style`,
@@ -536,14 +541,14 @@ library FerrolumeParts {
     // One page in the rail: its name; the chosen one sits on the well with a neon bar at its edge,
     // and the stripe of light grows in under the pointer.
     component SNav(y: number, label: text, on: bool, tab: number, press: event) {
-        size: 200, 32
-        zone box hit { from: 14, y; size: 200, 32; corner: 4; cursor: pointer; role: button; selected: on; label: label }
-        box { from: 14, y; size: 200, 32; corner: 4; color: mix(fl.steel_900, fl.well, 0.4); opacity: if(on, 1, 0.55 * hit.hover) }
+        size: 200, 26
+        zone box hit { from: 14, y; size: 200, 26; corner: 4; cursor: pointer; role: button; selected: on; label: label }
+        box { from: 14, y; size: 200, 26; corner: 4; color: mix(fl.steel_900, fl.well, 0.4); opacity: if(on, 1, 0.55 * hit.hover) }
         group {
             glow: 6, (if(on, 0.9, 0)) * st_glow, fl.phos
-            box { from: 14, y + 7; size: 3, 18; corner: 1; color: fl.phos; opacity: max(if(on, 1, 0), 0.6 * hit.hover) }
+            box { from: 14, y + 5; size: 3, 16; corner: 1; color: fl.phos; opacity: max(if(on, 1, 0), 0.6 * hit.hover) }
         }
-        text label { at: 30 + 3 * hit.hover, y + 16; anchor: left center; size: 13; weight: 600; family: "Exo 2"
+        text label { at: 30 + 3 * hit.hover, y + 13; anchor: left center; size: 13; weight: 600; family: "Exo 2"
                      color: if(on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
         on press hit { emit press(tab) }
     }
@@ -595,6 +600,51 @@ library FerrolumeParts {
             path { color: mix(fl.muted, fl.ember, max(hit.hover, 0.4)); move x + 3, y - 8.5; line x + 7.5, y - 5.5; line x + 2.5, y - 2.8; close }
             on press hit { emit press(n) }
         }
+    }
+
+    // ── The system pages' rows (Sound, Displays, Power, Advanced) ──
+    // A sound device, one of a list from `y0`: its name, a lamp on the one in use; a press makes it so.
+    component SDevice(d: record, y0: number, press: event) {
+        size: 864, 44
+        let y = y0 + d.index * 44
+        zone box hit { from: 274, y; size: 864, 40; corner: 5; cursor: pointer; role: button; selected: d.on; label: d.name }
+        box { from: 274, y; size: 864, 40; corner: 5; color: if(d.on, fl.well, fl.hull_raised); opacity: if(d.on, 0.9, 0.5 * hit.hover) }
+        box { from: 274, y; size: 864, 40; corner: 5; stroke: 1; color: if(d.on, fl.phos, mix(fl.steel_700, fl.trace_lit, hit.hover)) }
+        group {
+            glow: 6, (if(d.on, 0.9, 0)) * st_glow, fl.phos
+            ellipse { at: 294, y + 20; radius: 5; color: fl.phos; opacity: if(d.on, 1, 0) }
+        }
+        ellipse { at: 294, y + 20; radius: 5; stroke: 1.2; color: if(d.on, fl.phos, fl.trace) }
+        text d.name { at: 312, y + 20; anchor: left center; size: 13; weight: 600; family: "Exo 2"; width: 700; lines: 1
+                      color: if(d.on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
+        text "IN USE" { at: 1124, y + 20; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: d.on }
+        on press hit { emit press(d.n) }
+    }
+    // One application's volume: its name, what it plays, and a slider.
+    component SAppVol(a: record, y0: number, press: event) {
+        size: 864, 52
+        let y = y0 + a.index * 52
+        line { from: 274, y; to: 1138, y; width: 1; color: fl.steel_700; opacity: 0.45; show: a.index > 0 }
+        text a.name { at: 274, y + 18; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: fl.engrave; width: 300; lines: 1 }
+        text a.title { at: 274, y + 36; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 300; lines: 1 }
+        SSlider(728, y + 12, 330, a.vol, 100, press, a.index + 1, "Volume of {a.name}", "{a.vol, 0}%", true)
+    }
+    // A monitor, as Hyprland reports it.
+    component SDisplay(m: record, y0: number) {
+        size: 864, 56
+        let y = y0 + m.index * 60
+        box { from: 274, y; size: 864, 52; corner: 5; color: fl.ground; opacity: 0.6 }
+        box { from: 274, y; size: 864, 52; corner: 5; stroke: 1; color: if(m.focused, fl.trace_lit, fl.steel_700) }
+        text m.name { at: 292, y + 18; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.phos }
+        text m.model { at: 292, y + 37; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 380; lines: 1 }
+        text m.mode { at: 1120, y + 18; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.engrave }
+        text m.place { at: 1120, y + 37; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+    }
+    // A line of the log.
+    component SLogLine(l: record, y0: number) {
+        size: 864, 18
+        text l.line { at: 280, y0 + l.index * 18; anchor: left center; size: 10; family: "Share Tech Mono"; width: 850; lines: 1
+                      color: if(l.warn, fl.ember, fl.muted) }
     }
 
     // ── The Layout page: the bar's lists as chips ──
@@ -741,6 +791,82 @@ library FerrolumeParts {
         on press hit { emit press(r.index) }
     }
 
+    // ── The Mechanical Shutter's parts (D35) ──
+    // A plate: a compact steel tab with two clipped corners, recessed in its middle, its icon, its
+    // label and how many actions it holds. `focus` (the keyboard's) puts a mint bar at its track
+    // side; `open` (its panel is out) lights its edge and its face; none to offer, it dims.
+    // `k` is its deployment (0 → 1): it slides down the track from the anchor and out to its place.
+    component ShPlate(p: record, x: number, y: number, w: number, h: number, focus: bool, open: bool, k: number, press: event, hover: event) {
+        size: w, h
+        let c = 6
+        let lit = max(if(open, 1, 0), 0.5 * if(focus, 1, 0))
+        group {
+            opacity: k * if(p.acts > 0, 1, 0.4)
+            zone box hit { from: x, y; size: w, h; cursor: pointer; role: button; selected: open; label: "{p.label}"; active: k > 0.6 }
+            path { color: mix(fl.hull_raised, fl.well, 0.6 * max(lit, hit.hover))
+                   move x + c, y; line x + w, y; line x + w, y + h - c; line x + w - c, y + h; line x, y + h; line x, y + c; close }
+            box { from: x + 34, y + 6; size: w - 42, h - 12; corner: 2; color: fl.ground; opacity: 0.35 }
+            path { stroke: if(open, 1.5, 1); color: if(open, fl.phos, mix(fl.trace, fl.trace_lit, max(hit.hover, lit)))
+                   move x + c, y; line x + w, y; line x + w, y + h - c; line x + w - c, y + h; line x, y + h; line x, y + c; close }
+            group {
+                glow: 5, (0.8 * lit) * st_glow, fl.phos
+                box { from: x + 1, y + 7; size: 2.5, h - 14; color: fl.phos; opacity: lit }
+            }
+            figure sh_i0 { at: x + 18, y + h / 2; size: 15, 15; color: mix(fl.trace_lit, fl.phos, lit); show: p.icon == 0 }
+            figure sh_i1 { at: x + 18, y + h / 2; size: 15, 15; color: mix(fl.trace_lit, fl.phos, lit); show: p.icon == 1 }
+            figure sh_i2 { at: x + 18, y + h / 2; size: 15, 15; color: mix(fl.trace_lit, fl.phos, lit); show: p.icon == 2 }
+            figure sh_i3 { at: x + 18, y + h / 2; size: 15, 15; color: mix(fl.trace_lit, fl.phos, lit); show: p.icon == 3 }
+            text p.label { at: x + 40, y + h / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"
+                           color: if(open, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
+            text "{p.acts, 0}" { at: x + w - 9, y + h / 2; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        }
+        on press hit { emit press(p.index) }
+        on enter hit { emit hover(p.index) }
+    }
+    // A row of a plate's panel: its action and a word on what it does; a lamp for a state it shows,
+    // a › for one that opens a third level, amber for one that asks twice (and says so when armed).
+    component ShRow(r: record, x: number, y0: number, w: number, rh: number, focus: bool, press: event) {
+        size: w, rh
+        let y = y0 + r.index * rh
+        zone box hit { from: x, y; size: w, rh; cursor: pointer; role: button; label: "{r.label}" }
+        box { from: x, y + 1; size: w, rh - 2; color: if(r.kind == 2, fl.ember_fill, fl.well); opacity: max(0.55 * hit.hover, if(focus, 0.45, 0), if(r.armed, 0.8, 0)) }
+        box { from: x, y + 6; size: 2.5, rh - 12; color: if(r.kind == 2, fl.ember, fl.phos); opacity: if(focus, 1, 0) }
+        text r.label { at: x + 14, y + rh / 2 - 6; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: w - 60; lines: 1
+                       color: if(r.kind == 2, mix(fl.ember, fl.flare, max(hit.hover, if(r.armed, 1, 0))), mix(fl.engrave, fl.phos, max(hit.hover, if(focus, 1, 0)))) }
+        text r.hint { at: x + 14, y + rh / 2 + 8; anchor: left center; size: 9; family: "Share Tech Mono"; width: w - 40; lines: 1; color: fl.muted }
+        ellipse { at: x + w - 16, y + rh / 2; radius: 3.5; stroke: 1.2; color: if(r.on, fl.phos, fl.trace); show: r.toggle }
+        ellipse { at: x + w - 16, y + rh / 2; radius: 2; color: fl.phos; show: r.toggle and r.on }
+        path { stroke: 1.4; color: mix(fl.trace_lit, fl.phos, hit.hover); show: r.kind == 1
+               move x + w - 19, y + rh / 2 - 5; line x + w - 14, y + rh / 2; line x + w - 19, y + rh / 2 + 5 }
+        on press hit { emit press(r.index) }
+    }
+    // One choice of the third level.
+    component ShItem(it: record, x: number, y0: number, w: number, focus: bool, press: event) {
+        size: w, 30
+        let y = y0 + it.index * 30
+        zone box hit { from: x, y; size: w, 30; cursor: pointer; role: button; selected: it.on; label: "{it.label}" }
+        box { from: x, y + 1; size: w, 28; color: fl.well; opacity: max(0.55 * hit.hover, if(focus, 0.45, 0)) }
+        box { from: x, y + 6; size: 2.5, 18; color: fl.phos; opacity: if(focus, 1, 0) }
+        text it.label { at: x + 12, y + 15; anchor: left center; size: 11; weight: 600; family: "Exo 2"; width: w - 36; lines: 1
+                        color: if(it.on, fl.phos, mix(fl.engrave, fl.phos, max(hit.hover, if(focus, 1, 0)))) }
+        box { from: x + w - 14, y + 12; size: 6, 6; color: fl.phos; show: it.on }
+        on press hit { emit press(it.index) }
+    }
+    // A mechanism's housing (the panel, the third level): a recessed sheet with one clipped corner
+    // toward the plate it comes out of, a lit lip, its title.
+    component ShHousing(x: number, y: number, w: number, h: number, title: text, left_cut: bool) {
+        size: w, h
+        let c = 8
+        path { color: mix(fl.hull, fl.ground, 0.25)
+               move x + if(left_cut, c, 0), y; line x + w - if(left_cut, 0, c), y; line x + w, y + if(left_cut, 0, c); line x + w, y + h; line x, y + h; line x, y + if(left_cut, c, 0); close }
+        path { stroke: 1; color: fl.trace
+               move x + if(left_cut, c, 0), y; line x + w - if(left_cut, 0, c), y; line x + w, y + if(left_cut, 0, c); line x + w, y + h; line x, y + h; line x, y + if(left_cut, c, 0); close }
+        line { from: x + 12, y + 1.2; to: x + w - 12, y + 1.2; width: 1; color: fl.steel_300; opacity: 0.12 }
+        text "//" { at: x + 12, y + 15; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
+        text title { at: x + 28, y + 15; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit; width: w - 40; lines: 1 }
+        line { from: x + 10, y + 28; to: x + w - 10, y + 28; width: 1; color: fl.trace_dim }
+    }
+
     // A spacer or a gap on the bar in edit mode: the room it makes, hatched, and an × to take it out.
     component EditGap(g: record, press: event) {
         size: g.w, fl.mod_h
@@ -834,17 +960,33 @@ library FerrolumeParts {
     }
 
     // One notice in the side panel: who sent it, what it says, and a press to dismiss it.
-    component NoteRow(n: record, dismiss: event) {
+    // One row of the notices: `kind` 0 an app's newest (with how many it has: a press opens the
+    // group out), 1 another of an opened group (set in), 2 one missed (it went away unseen).
+    // A press on a single notice does what its app offers and clears it; × dismisses (a group's
+    // header: the whole group).
+    component NoteRow(n: record, dismiss: event, open: event) {
         size: 350, 56
-        box { from: 0, 0; size: 350, 56; corner: 4; color: fl.hull_raised }
-        box { from: 0, 6; size: 2, 44; color: if(n.urgent, fl.ember, fl.phos_fill) }
-        text "{upper(n.app)}" { at: 12, 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember; width: 300; lines: 1 }
-        text n.title { at: 12, 27; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.phos; width: 310; lines: 1 }
-        text n.body { at: 12, 44; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 310; lines: 1 }
-        zone box hit { from: 324, 4; size: 22, 22; corner: 3; cursor: pointer; role: button; label: "Dismiss {n.title}" }
+        let inset = if(n.kind > 0.5 and n.kind < 1.5, 14, 0)
+        zone box body { from: inset, 0; size: 318 - inset, 56; corner: 4; cursor: pointer; role: button
+                        label: pick(n.many > 1, "{n.title}", "{n.app}: {n.many} notices") }
+        box { from: inset, 0; size: 350 - inset, 56; corner: 4; color: mix(fl.hull_raised, fl.well, 0.6 * body.hover); opacity: if(n.kind > 1.5, 0.6, 1) }
+        box { from: inset, 6; size: 2, 44; color: if(n.urgent, fl.ember, if(n.kind > 1.5, fl.trace, fl.phos_fill)) }
+        text pick(n.kind > 1.5, "{upper(n.app)}", "{upper(n.app)} · MISSED") { at: inset + 12, 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(n.kind > 1.5, fl.muted, fl.ember)
+                                             width: 230; lines: 1 }
+        text n.title { at: inset + 12, 27; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(n.kind > 1.5, fl.trace_lit, fl.phos); width: 300 - inset; lines: 1 }
+        text n.body { at: inset + 12, 44; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 300 - inset; lines: 1 }
+        // how many the group holds, and whether it is opened out
+        group {
+            show: n.many > 1
+            box { from: 262, 4; size: 54, 16; corner: 8; color: if(n.open, fl.well, fl.ground) }
+            text "{n.many, 0}" { at: 284, 12; anchor: right center; size: 10; weight: 700; family: "Exo 2"; color: fl.trace_lit }
+            text pick(n.open, "MORE", "LESS") { at: 288, 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+        }
+        zone box hit { from: 324, 4; size: 22, 22; corner: 3; cursor: pointer; role: button; label: pick(n.many > 1, "Dismiss {n.title}", "Dismiss all {n.many} from {n.app}") }
         line { from: 330, 10; to: 340, 20; width: 1.3; color: mix(fl.muted, fl.ember, hit.hover) }
         line { from: 340, 10; to: 330, 20; width: 1.3; color: mix(fl.muted, fl.ember, hit.hover) }
         on press hit { emit dismiss(n.index) }
+        on press body { emit open(n.index) }
     }
 
     // One clipboard entry: a press copies it.

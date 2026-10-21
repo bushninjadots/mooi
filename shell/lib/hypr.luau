@@ -45,6 +45,33 @@ function M.dispatch(action, address, opts)
             ws, (action == "move" and opts.follow) and "true" or "false", w)
     elseif action == "close" then
         return 'hl.dsp.window.close({ ' .. w .. ' })'
+    -- The shutter's (D35), each checked on Hyprland 0.56.2 against a window read back:
+    elseif action == "maximize" then
+        return 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle", ' .. w .. ' })'
+    elseif action == "center" then
+        return 'hl.dsp.window.center({ ' .. w .. ' })'
+    elseif action == "size" then
+        local sw, sh = tonumber(opts.w), tonumber(opts.h)
+        if not sw or not sh or sw < 100 or sh < 100 or sw > 8000 or sh > 8000 then return nil, "invalid size" end
+        return string.format('hl.dsp.window.resize({ x = %d, y = %d, %s })', math.floor(sw), math.floor(sh), w)
+    elseif action == "swap" then
+        local d = opts.direction
+        if d ~= "l" and d ~= "r" and d ~= "u" and d ~= "d" then return nil, "invalid direction" end
+        return string.format('hl.dsp.window.move({ direction = "%s", %s })', d, w)
+    -- The Overview's rearranging (D45), each checked on Hyprland 0.56.2 with throwaway windows read
+    -- back: a swap with one particular window (`target`), and a floating window put at a spot of the
+    -- layout (`x`, `y`: where the monitors are laid out, not the screen's own corner).
+    elseif action == "swap_with" then
+        if not M.valid_address(opts.target) then return nil, "invalid window to swap with" end
+        return string.format('hl.dsp.window.swap({ target = "address:%s", %s })', opts.target, w)
+    elseif action == "place" then
+        local x, y = tonumber(opts.x), tonumber(opts.y)
+        if not x or not y or x ~= x or y ~= y or math.abs(x) > 100000 or math.abs(y) > 100000 then return nil, "invalid spot" end
+        return string.format('hl.dsp.window.move({ x = %d, y = %d, %s })', math.floor(x + 0.5), math.floor(y + 0.5), w)
+    elseif action == "opacity" then
+        local a = tonumber(opts.alpha)
+        if not a or a < 0.1 or a > 1 then return nil, "invalid opacity" end
+        return string.format('hl.dsp.window.set_prop({ prop = "opacity", value = "%.2f", %s })', a, w)
     end
     return nil, "unknown action " .. tostring(action)
 end
@@ -64,6 +91,11 @@ function M.client(c)
         fullscreen_mode = tonumber(c.fullscreen) or 0,
         fullscreen = (tonumber(c.fullscreen) or 0) >= 2,
         workspace = tonumber(ws) or 0,
+        -- where it is, in the compositor's logical pixels, and on which monitor (its id)
+        x = type(c.at) == "table" and tonumber(c.at[1]) or 0, y = type(c.at) == "table" and tonumber(c.at[2]) or 0,
+        w = type(c.size) == "table" and tonumber(c.size[1]) or 0, h = type(c.size) == "table" and tonumber(c.size[2]) or 0,
+        monitor = tonumber(c.monitor) or 0,
+        pid = tonumber(c.pid) or 0,
         -- 0 is the window that has (or last had) focus; higher is longer ago.
         recency = tonumber(c.focusHistoryID) or 999,
         focused = tonumber(c.focusHistoryID) == 0,
@@ -90,6 +122,18 @@ function M.windows(clients)
     end
     table.sort(out, function(a, b) return a.recency < b.recency end)
     return out
+end
+
+-- The shell a terminal window runs, from `ps -o pid=,comm= --ppid <terminal> --sort=start_time`:
+-- the newest child that is a shell. A terminal starts helpers beside it (kitty's `kitten`s), and the
+-- newest child is often one of those, in the home folder whatever the shell is in.
+M.SHELLS = { zsh = true, bash = true, fish = true, sh = true, dash = true, ksh = true, tcsh = true, nu = true, xonsh = true, elvish = true }
+function M.terminal_shell(ps_out)
+    local found = nil
+    for pid, comm in string.gmatch(tostring(ps_out or ""), "(%d+)%s+([^\n]+)") do
+        if M.SHELLS[string.match(comm, "^%-?([%w_%.]+)") or ""] then found = tonumber(pid) end
+    end
+    return found
 end
 
 -- Did the action happen? Compares the window before and after (after == nil: gone).
@@ -124,6 +168,28 @@ function M.verify(action, before, after, opts)
             return true, after.pinned and "Pinned to every workspace" or "Unpinned"
         end
         return false, "Hyprland did not change pinning"
+    elseif action == "maximize" then
+        if after.fullscreen_mode ~= before.fullscreen_mode then
+            return true, (after.fullscreen_mode == 1) and "Maximized" or "Restored"
+        end
+        return false, "Hyprland did not change it"
+    elseif action == "center" then
+        if not before.floating then return false, "Only a floating window can be centred" end
+        return true, "Centred"           -- already centred, it does not move: that is still centred
+    elseif action == "size" then
+        if math.abs(after.w - (tonumber(opts.w) or 0)) <= 2 and math.abs(after.h - (tonumber(opts.h) or 0)) <= 2 then
+            return true, string.format("%d × %d", after.w, after.h)
+        end
+        return false, string.format("It stayed %d × %d (it may hold a size of its own)", after.w, after.h)
+    elseif action == "swap" then
+        if after.x ~= before.x or after.y ~= before.y then return true, "Swapped" end
+        return false, "Nothing to swap with that way"
+    elseif action == "swap_with" then
+        if after.x ~= before.x or after.y ~= before.y then return true, "Swapped" end
+        return false, "Hyprland kept them where they were"
+    elseif action == "place" then
+        if math.abs(after.x - (tonumber(opts.x) or 0)) <= 2 and math.abs(after.y - (tonumber(opts.y) or 0)) <= 2 then return true, "Placed" end
+        return false, "It did not go there (it may not be floating)"
     elseif action == "move" then
         if after.workspace == opts.workspace then
             return true, string.format("Moved to workspace %d", opts.workspace)

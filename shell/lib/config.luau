@@ -2,6 +2,8 @@
 -- Pure: no pleamar globals, so tests/unit runs it under plain Lua 5.4.
 -- Written in the subset Lua 5.4 and Luau share.
 
+local barlayout = require("lib/barlayout")
+
 local M = {}
 
 M.VERSION = 1
@@ -11,22 +13,221 @@ M.VERSION = 1
 -- add (the theme's colour overrides), and leaving it out means "not set".
 -- `values` is for enums, and "colour" expects #rrggbb (lib/theme.luau owns the palette).
 M.SCHEMA = {
-    { path = "spine.clock", kind = "boolean", default = true },
     { path = "spine.max_workspaces", kind = "integer", default = 10, min = 1, max = 16 },
-    -- The Mechanism (the bar): what the scale says, and what the wheel over it does.
+    -- The Mechanism (the bar): what the chain's labels say, and what the wheel over it does.
     { path = "bar.labels", kind = "boolean", default = true },
-    { path = "bar.wheel", kind = "enum", values = { "step", "off" }, default = "step" },
+    { path = "bar.wheel", kind = "enum", values = { "step", "off", "invert" }, default = "step" },
+    -- The Ferrolume bar (docs/FERROLUME.md). Where the modules go — three lists, left to
+    -- right, an entry being one module or several joined with `+` (one shared frame) — and
+    -- how the bar is built: separate islands or one full panel, what the panel or the frames
+    -- are made of, a border round the full panel, and the media's visualizer.
+    { path = "bar.left", kind = "layout", default = barlayout.DEFAULT.left },
+    { path = "bar.center", kind = "layout", default = barlayout.DEFAULT.center },
+    { path = "bar.right", kind = "layout", default = barlayout.DEFAULT.right },
+    -- `notch`: each cluster hangs from the screen's top edge, the centre one a notch, the side
+    -- ones flush with the corners, joined to the edge by inner fillets.
+    { path = "bar.mode", kind = "enum", values = { "islands", "full", "notch" }, default = "islands" },
+    { path = "bar.surface", kind = "enum", values = { "solid", "glass", "blur", "clear", "mech" }, default = "solid" },
+    { path = "bar.visualizer", kind = "enum", values = { "mirror", "bars", "line", "dots", "off" }, default = "mirror" },
+    -- The instruments (dna, prism, cells) and the everyday switchers: pills (occupied plates that
+    -- merge, the active one sliding), segments (thin bars that open on hover to show each
+    -- workspace's app), dots (the active one stretched), numbers.
+    { path = "bar.workspaces", kind = "enum", values = { "dna", "prism", "cells", "pills", "segments", "dots", "numbers", "compass", "radar" }, default = "dna" },
+    -- The DNA's strands as the workspace frame's own edges, in islands mode too (in full mode
+    -- they are always the panel's).
+    { path = "bar.helix_frame", kind = "boolean", default = true },
+    -- The screen frame (ArchEclipse's Tide, in mooi): a band round the screen that the bar is
+    -- the top of, swelling with the music. How thick, whether and how it moves with the music,
+    -- how far it swells, and along which edges.
+    { path = "frame.on", kind = "boolean", default = true },
+    { path = "frame.band", kind = "integer", default = 6, min = 2, max = 16 },
+    { path = "frame.music", kind = "boolean", default = true },
+    { path = "frame.style", kind = "enum", values = { "swell", "crests", "pulse" }, default = "swell" },
+    { path = "frame.reach", kind = "integer", default = 18, min = 6, max = 40 },
+    { path = "frame.edges", kind = "enum", values = { "all", "sides", "ends" }, default = "all" },
+    -- The band's inner corners, its inner edge (a line, a neon line, or none) and how solid it is.
+    { path = "frame.radius", kind = "integer", default = 14, min = 0, max = 40 },
+    { path = "frame.edge", kind = "enum", values = { "line", "neon", "none" }, default = "line" },
+    { path = "frame.opacity", kind = "integer", default = 100, min = 30, max = 100 },
+    -- The media module: what it shows, and what it does with nothing playing.
+    { path = "media.mode", kind = "enum", values = { "full", "compact", "art", "viz" }, default = "full" },
+    { path = "media.idle", kind = "enum", values = { "collapse", "keep", "hide" }, default = "collapse" },
+    -- The outline round each island (in full mode, round the panel): a line, its four corners
+    -- only, or nothing. What the islands are made of is bar.surface; this is only their edge.
+    { path = "bar.frame", kind = "enum", values = { "line", "corners", "none" }, default = "line" },
+    { path = "bar.ground", kind = "enum", values = { "black", "tinted", "clear" }, default = "black" },
+    { path = "bar.rail", kind = "boolean", default = true },
+    { path = "bar.accents", kind = "boolean", default = true },
+    -- The look of what the bar is made of (lib/style hands these to the scene). Defaults are the
+    -- look the bar had before they existed.
+    -- Presets: one choice that sets a coherent look (lib/style). What is stored is the last one
+    -- chosen; the settings window shows "Custom" when the details no longer match it.
+    { path = "bar.style", kind = "enum", values = { "instrument", "glass", "floating", "minimal", "steel" }, default = "instrument" },
+    { path = "theme.preset", kind = "enum", values = { "phosphor", "neon_noir", "concrete", "gunmetal", "alien", "titanium" }, default = "phosphor" },
+    { path = "bar.radius", kind = "integer", default = 8, min = 0, max = 16 },
+    -- How much of the screen's width the bar spans, centred (islands, the full bar, the notch).
+    { path = "bar.width", kind = "integer", default = 100, min = 30, max = 100 },
+    -- how thick the bar's row is, and how far down from the screen's edge it sits (px)
+    { path = "bar.height", kind = "integer", default = 30, min = 24, max = 44 },
+    { path = "bar.offset", kind = "integer", default = 0, min = 0, max = 40 },
+    -- Two choices the window offers as one (lib/setters writes the settings under them): the edge
+    -- (none, corners, or a line thin / regular / bold — bar.frame and bar.outline_width) and the
+    -- frame's music (off, or how it moves — frame.music and frame.style). No default: they are
+    -- read from what is under them, and a file that has them keeps them.
+    { path = "bar.edge", kind = "enum", values = { "none", "corners", "thin", "regular", "bold" } },
+    { path = "frame.motion", kind = "enum", values = { "off", "swell", "ripples", "pulse" } },
+    { path = "bar.outline_width", kind = "integer", default = 2, min = 1, max = 3 },
+    { path = "bar.outline_colour", kind = "enum", values = { "subtle", "bright", "accent" }, default = "subtle" },
+    { path = "bar.pill", kind = "enum", values = { "soft", "outline", "underline", "glow" }, default = "soft" },
+    { path = "bar.shadow", kind = "enum", values = { "off", "soft", "medium", "strong" }, default = "off" },
+    { path = "bar.opacity", kind = "integer", default = 100, min = 20, max = 100 },
+    { path = "bar.frost", kind = "integer", default = 70, min = 0, max = 100 },
+    { path = "bar.smoke", kind = "integer", default = 38, min = 0, max = 80 },
+    -- The bar's background: black, the wallpaper's own dark, a dark of the main colour, a few
+    -- fixed tones, or `bar.bg_colour`; then shifted in lightness, saturation and hue. The text
+    -- on it is re-held to its contrast floors, so a light background darkens the text.
+    -- (the first tones stay for settings that chose them; the industrial ones are what is offered)
+    { path = "bar.bg", kind = "enum", values = { "black", "wallpaper", "accent", "graphite", "navy", "plum", "forest", "wine", "sand", "custom",
+        "obsidian", "gunmetal", "concrete", "titanium", "oxide", "alien" }, default = "black" },
+    { path = "bar.bg_colour", kind = "colour", default = "#101418" },
+    { path = "bar.bg_light", kind = "integer", default = 0, min = -10, max = 40 },
+    { path = "bar.bg_sat", kind = "integer", default = 100, min = 0, max = 150 },
+    { path = "bar.bg_hue", kind = "integer", default = 0, min = -180, max = 180 },
+    -- Effects: chromatic aberration (glass edges split their colours, readings their channels)
+    -- and how strongly lit things glow.
+    { path = "fx.aberration", kind = "integer", default = 0, min = 0, max = 100 },
+    { path = "fx.glow", kind = "integer", default = 100, min = 0, max = 160 },
+    -- Every module can be hidden, and can wear its own frame (`inherit` = bar.frame); a group
+    -- wears its first member's.
     { path = "island.confirm_close", kind = "boolean", default = true },
     { path = "island.follow_on_send", kind = "boolean", default = false },
     { path = "motion.reduced", kind = "boolean", default = false },
+    -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
+    -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,
+    -- or always.
+    { path = "motion.speed", kind = "integer", default = 100, min = 50, max = 200 },
+    { path = "motion.saver", kind = "enum", values = { "off", "battery", "always" }, default = "off" },
+    -- The system's power profile (power-profiles-daemon), or `keep` to leave it be.
+    { path = "power.profile", kind = "enum", values = { "keep", "power-saver", "balanced", "performance" }, default = "keep" },
     { path = "command.max_results", kind = "integer", default = 7, min = 3, max = 10 },
     { path = "atlas.previews", kind = "boolean", default = true },
-    { path = "theme.source", kind = "enum", values = { "fixed", "wallpaper" }, default = "fixed" },
+    -- The tray's icons: drawn in the bar's own colours (and their own on hover), or as given.
+    { path = "tray.style", kind = "enum", values = { "themed", "original" }, default = "themed" },
+    -- Your apps in mooi's palette (bin/mooi apps-sync): each off leaves the app as it was.
+    { path = "apps.kitty", kind = "boolean", default = false },
+    { path = "apps.gtk", kind = "boolean", default = false },
+    { path = "apps.qt", kind = "boolean", default = false },
+    -- The desktop around the bar (Hyprland's own look), set by mooi only while `manage` is on:
+    -- the window border's width and colour (`theme` follows the bar's palette, `keep` leaves
+    -- Hyprland's), the gaps between windows and round the screen, the corners, and dimming
+    -- the windows that are not focused. Applied live, and kept across restarts by
+    -- ~/.config/hypr/config/custom/mooi.lua reading what mooi writes.
+    { path = "desktop.manage", kind = "boolean", default = false },
+    { path = "desktop.border", kind = "integer", default = 2, min = 0, max = 8 },
+    { path = "desktop.border_colour", kind = "enum", values = { "theme", "accent", "keep" }, default = "theme" },
+    { path = "desktop.gaps_in", kind = "integer", default = 4, min = 0, max = 20 },
+    { path = "desktop.gaps_out", kind = "integer", default = 12, min = 0, max = 40 },
+    { path = "desktop.rounding", kind = "integer", default = 12, min = 0, max = 24 },
+    { path = "desktop.dim_inactive", kind = "boolean", default = false },
+    -- Windows and scrolling. `keep` leaves Hyprland's own value alone (the default for each),
+    -- so turning these on changes nothing until one is chosen.
+    { path = "desktop.layout", kind = "enum", values = { "keep", "dwindle", "master", "scrolling", "monocle" }, default = "keep" },
+    -- Numbers whose lowest value means "keep" (Hyprland's own): the column's width in % (9 keeps),
+    -- the scroll speeds in % (4 keeps), the windows' opacity in % (49 keeps).
+    { path = "desktop.column", kind = "integer", default = 9, min = 9, max = 100 },
+    { path = "desktop.column_fit", kind = "enum", values = { "keep", "fit", "center" }, default = "keep" },
+    { path = "desktop.touchpad_natural", kind = "enum", values = { "keep", "on", "off" }, default = "keep" },
+    { path = "desktop.touchpad_speed", kind = "integer", default = 4, min = 4, max = 200 },
+    { path = "desktop.mouse_natural", kind = "enum", values = { "keep", "on", "off" }, default = "keep" },
+    { path = "desktop.mouse_speed", kind = "integer", default = 4, min = 4, max = 200 },
+    { path = "desktop.blur", kind = "enum", values = { "keep", "off", "light", "medium", "heavy" }, default = "keep" },
+    { path = "desktop.opacity_active", kind = "integer", default = 49, min = 49, max = 100 },
+    { path = "desktop.opacity_inactive", kind = "integer", default = 49, min = 49, max = 100 },
+    -- Window shadows: a dark soft one, a deep one, or a neon glow in the palette's main colour.
+    { path = "desktop.shadow", kind = "enum", values = { "keep", "off", "soft", "deep", "neon" }, default = "keep" },
+    { path = "desktop.shadow_size", kind = "integer", default = 14, min = 2, max = 40 },
+    -- mooi's keys: "SUPER + ALT + Space" and the like (Hyprland's own spelling). Bound live
+    -- and by custom/mooi.lua at Hyprland's start.
+    { path = "keys.search", kind = "key", default = "SUPER + ALT + Space" },
+    { path = "keys.window", kind = "key", default = "SUPER + ALT + W" },
+    { path = "keys.stop", kind = "key", default = "SUPER + ALT + SHIFT + Space" },
+    { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
+    { path = "keys.edit", kind = "key", default = "SUPER + ALT + E" },
+    { path = "keys.atlas", kind = "key", default = "SUPER + ALT + A" },
+    { path = "keys.system", kind = "key", default = "SUPER + ALT + C" },
+    { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },
+    -- Who receives the session's notifications: mooi only while it holds the desktop
+    -- (`takeover`, so beside ArchEclipse they stay ArchEclipse's — D5), `always`, or `never`.
+    { path = "notifications.server", kind = "enum", values = { "takeover", "always", "never" }, default = "takeover" },
+    -- Do not disturb: no toasts (urgent ones still come), the notices still kept — always, while
+    -- the focus timer runs, or in quiet hours (from … to, the hour of the day).
+    -- The Mechanical Shutter (D35): on or off, Super+Alt+right-click on a window as well as its key,
+    -- where it unfolds, how big, whether a plate opens under the pointer, and which plates.
+    -- The Overview (D37): every workspace zoomed out as a miniature of its screen, a page of
+    -- rows × columns; Super+Tab opens it (beside its own key in Keys).
+    { path = "atlas.rows", kind = "integer", default = 2, min = 1, max = 3 },
+    { path = "atlas.columns", kind = "integer", default = 5, min = 2, max = 6 },
+    { path = "atlas.super_tab", kind = "boolean", default = true },
+    { path = "atlas.overview", kind = "enum", values = { "grid", "strip", "canvas" }, default = "grid" },
+    { path = "atlas.private", kind = "enum", values = { "off", "sensitive", "everything" }, default = "sensitive" },
+    -- Its look and feel (D44): each workspace's size as a share of the screen (iNiR's 18 %), how dark
+    -- the desktop goes behind it, whether the workspace you are on zooms out into its place, and how
+    -- often window pictures are taken while it is open (as it opens is the smooth one: D40).
+    { path = "atlas.size", kind = "integer", default = 18, min = 14, max = 24 },
+    { path = "atlas.dim", kind = "integer", default = 55, min = 0, max = 80 },
+    { path = "atlas.zoom", kind = "boolean", default = true },
+    { path = "atlas.refresh", kind = "enum", values = { "open", "steady" }, default = "open" },
+    -- A touchpad swipe down to open it (D45): off, or with three or four fingers.
+    { path = "atlas.gesture", kind = "enum", values = { "off", "three", "four" }, default = "off" },
+    { path = "keys.overview", kind = "key", default = "SUPER + ALT + O" },
+    { path = "shutter.enabled", kind = "boolean", default = true },
+    { path = "shutter.pointer", kind = "boolean", default = true },
+    { path = "shutter.edge", kind = "enum", values = { "auto", "left", "inside" }, default = "auto" },
+    { path = "shutter.density", kind = "enum", values = { "standard", "compact" }, default = "standard" },
+    { path = "shutter.preview", kind = "boolean", default = false },
+    { path = "shutter.arrange", kind = "boolean", default = true },
+    { path = "shutter.workspace", kind = "boolean", default = true },
+    { path = "shutter.behaviour", kind = "boolean", default = true },
+    { path = "shutter.connections", kind = "boolean", default = true },
+    { path = "notifications.dnd", kind = "enum", values = { "off", "on", "focus", "hours" }, default = "off" },
+    { path = "notifications.quiet_from", kind = "integer", default = 22, min = 0, max = 23 },
+    { path = "notifications.quiet_to", kind = "integer", default = 7, min = 0, max = 23 },
+    -- The colours follow the wallpaper's Matugen palette unless the user says otherwise,
+    -- because that is the brief's pipeline and what a desktop that already runs Matugen
+    -- expects (docs/MECHANISM.md §8). `fixed` is the brief's own palette, and it is also
+    -- what shows when no palette has been generated yet; the mark's menu is the switch.
+    { path = "theme.source", kind = "enum", values = { "fixed", "wallpaper" }, default = "wallpaper" },
     -- One table of token = colour: a dotted setting path cannot name a token that has a
     -- dot in it (`theme.overrides.bg.primary` would read as four nested keys). Which
     -- tokens exist, and which of them the user misspelled, is lib/theme.luau's business.
     { path = "theme.overrides", kind = "colours" },
+    -- How Matugen extracts the palette (bin/mooi theme-sync reads these too): the scheme
+    -- type, which of the wallpaper's five dominant colours it starts from, and the contrast.
+    -- `signal` is where the bar's second signal comes from (lib/ferro: auto picks the palette
+    -- colour that stands furthest from the phosphor).
+    { path = "theme.scheme", kind = "enum", values = { "tonal-spot", "content", "expressive", "fidelity",
+        "fruit-salad", "monochrome", "neutral", "rainbow", "vibrant", "smart" }, default = "tonal-spot" },
+    { path = "theme.color_index", kind = "integer", default = 0, min = 0, max = 4 },
+    { path = "theme.contrast", kind = "integer", default = 0, min = -1, max = 1 },
+    { path = "theme.signal", kind = "enum", values = { "auto", "tertiary", "secondary", "complement", "analogous", "triadic" }, default = "auto" },
+    -- Luminous colours glow; matte ones are quieter (less saturated, no glow from the palette).
+    -- `saturation` pushes the whole palette's colour up or down.
+    { path = "theme.finish", kind = "enum", values = { "luminous", "matte", "neon" }, default = "luminous" },
+    { path = "theme.saturation", kind = "integer", default = 0, min = -50, max = 50 },
 }
+
+for _, id in ipairs(barlayout.ORDER) do
+    M.SCHEMA[#M.SCHEMA + 1] = { path = "bar.modules." .. id .. ".show", kind = "boolean", default = true }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = "bar.modules." .. id .. ".frame", kind = "enum",
+        values = { "inherit", "line", "corners", "none" }, default = "inherit" }
+end
+
+local function copy(v)
+    if type(v) ~= "table" then return v end
+    local out = {}
+    for k, x in pairs(v) do out[k] = copy(x) end
+    return out
+end
 
 local function get(t, path)
     local node = t
@@ -51,7 +252,7 @@ end
 function M.defaults()
     local out = { version = M.VERSION }
     for _, row in ipairs(M.SCHEMA) do
-        if row.default ~= nil then set(out, row.path, row.default) end
+        if row.default ~= nil then set(out, row.path, copy(row.default)) end
     end
     return out
 end
@@ -69,6 +270,15 @@ local function check(row, value)
         local known = false
         for _, allowed in ipairs(row.values) do if value == allowed then known = true end end
         if not known then return false, "expected one of " .. table.concat(row.values, ", ") end
+    elseif row.kind == "colour" then
+        if type(value) ~= "string" or not string.match(value, "^#%x%x%x%x%x%x$") then return false, "expected a colour like #101418" end
+    elseif row.kind == "key" then
+        if type(value) ~= "string" or not string.match(value, "^[%w%s%+_]+$") or not string.match(value, "%w$") then
+            return false, "expected keys like \"SUPER + ALT + Space\""
+        end
+    elseif row.kind == "layout" then
+        local ok, why = barlayout.check_list(value, {})
+        if not ok then return false, why end
     elseif row.kind == "colours" then
         if type(value) ~= "table" then return false, "expected a table of token = colour" end
         for token, hex in pairs(value) do
@@ -109,7 +319,48 @@ end
 
 -- Validate an already-decoded table. Never fails: a bad value falls back to its
 -- default and is reported. Returns settings, problems (fatal-ish), notes (harmless).
+-- Settings written by an older mooi: the outline's old names (bezel → line, bracket → corners,
+-- plate → none: a raised plate is a material, bar.surface, not an outline), the full panel's
+-- border switch, now the outline itself, and `spine.clock`, now the clock module's own switch
+-- (`bar.modules.clock.show`) unless the file sets that too.
+local OUTLINE = { bezel = "line", bracket = "corners", plate = "none" }
+local NUMBERED = {
+    column = { keep = 9, third = 33, half = 50, two_thirds = 67, full = 100 },
+    touchpad_speed = { keep = 4, slowest = 10, slow = 30, medium = 60, normal = 100, fast = 150 },
+    mouse_speed = { keep = 4, slow = 50, normal = 100, fast = 150 },
+}
+local function migrate(t)
+    if type(t) ~= "table" then return end
+    -- the desktop's named choices of 2026-10-20, now numbers on sliders
+    if type(t.desktop) == "table" then
+        for key, map in pairs(NUMBERED) do
+            local v = t.desktop[key]
+            if type(v) == "string" and map[v] then t.desktop[key] = map[v] end
+        end
+    end
+    local spine = t.spine
+    if type(spine) == "table" and spine.clock ~= nil then
+        -- moved as it is, so a wrong type is still reported (under its new name)
+        if type(t.bar) ~= "table" then t.bar = {} end
+        if type(t.bar.modules) ~= "table" then t.bar.modules = {} end
+        if type(t.bar.modules.clock) ~= "table" then t.bar.modules.clock = {} end
+        if t.bar.modules.clock.show == nil then t.bar.modules.clock.show = spine.clock end
+        spine.clock = nil
+    end
+    local b = t.bar
+    if type(b) ~= "table" then return end
+    if OUTLINE[b.frame] then b.frame = OUTLINE[b.frame] end
+    if b.border == false and b.mode == "full" and b.frame == "line" then b.frame = "none" end
+    b.border = nil
+    if type(b.modules) == "table" then
+        for _, m in pairs(b.modules) do
+            if type(m) == "table" and OUTLINE[m.frame] then m.frame = OUTLINE[m.frame] end
+        end
+    end
+end
+
 function M.validate(t)
+    migrate(t)
     local out = M.defaults()
     local problems, notes = {}, {}
     if type(t) ~= "table" then
@@ -127,9 +378,19 @@ function M.validate(t)
                 set(out, row.path, value)
             else
                 problems[#problems + 1] = string.format("%s: %s, got %s; using %s",
-                    row.path, why, tostring(value), tostring(row.default))
+                    row.path, why, tostring(value), (type(row.default) == "table") and "the default" or tostring(row.default))
             end
         end
+    end
+    -- A module may be placed once across the three lists; a layout that places one twice is
+    -- refused whole (all three back to the default), since no single list is the wrong one.
+    local seen, ok, why = {}, true, nil
+    for _, side in ipairs({ "left", "center", "right" }) do
+        if ok then ok, why = barlayout.check_list(out.bar[side], seen) end
+    end
+    if not ok then
+        problems[#problems + 1] = "bar layout: " .. why .. "; using the default layout"
+        for _, side in ipairs({ "left", "center", "right" }) do out.bar[side] = copy(barlayout.DEFAULT[side]) end
     end
     local unknown = {}
     unknown_keys(t, "", known_paths(), unknown)

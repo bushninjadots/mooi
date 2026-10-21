@@ -19,7 +19,7 @@ One explicit state model, no loose booleans. Escape dismisses the **topmost dism
 
 ## 2. Surfaces
 
-- **Spine**: a 44–52 px rail, left by default, configurable. It holds workspaces, launcher/command, active context, status and Workshop entry, but not everything. *Slice 1: 48 px, window context, workspaces, clock.*
+- **Spine**: a 44–52 px rail, left by default, configurable. It holds workspaces, launcher/command, active context, status and Workshop entry, but not everything. *Slice 1: 48 px, window context, workspaces, clock. Built as a 72 px strip along the **top** edge instead — the later design and the master prompt that came with it ask for a horizontal bar (docs/DECISIONS.md D16) — and position, width and contents are still not configurable.*
 - **Islands**: compact contextual surfaces with an owner, compact and expanded states, activation and dismissal, keyboard navigation, focus management, edge repositioning, interruption-safe motion, and no duplicates. *Slice 1: the window satellite.*
 - **Edge Membranes**: larger surfaces unfolding from an edge (Atlas, system controls, history, Workshop) with predictable geometry, multi-monitor support and scaling.
 - **Lifecycle**: hidden → entering → compact → expanded → exiting → hidden, interruptible, with one authoritative state per surface.

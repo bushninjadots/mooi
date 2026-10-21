@@ -8,7 +8,7 @@
 | --- | --- |
 | **Super+Alt+Space** | toggle the command membrane; if mooi is not running, start it **beside** ArchEclipse first |
 | **Super+Alt+W** | toggle the window island (mooi must be running) |
-| **`bin/mooi atlas`** / Spine **A** | open or close the Workspace Atlas |
+| **`bin/mooi atlas`** / the bar's Atlas prism | open or close the Workspace Atlas |
 | **Super+Alt+Shift+Space** | stop mooi. After a takeover, also make sure ArchEclipse is back |
 | **SUPER+SHIFT+B** (unchanged) | restart ArchEclipse's bar, and now also **end any mooi takeover**: the universal way back |
 

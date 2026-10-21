@@ -1,5 +1,14 @@
 # Twisting Triangular Chain Implementation Plan
 
+> **Superseded (2026-10-16):** this plan built the first helix (fixed pitch, 72 px rail). The
+> bar was then rebuilt from the renewed design (`pleamar helix bar/helix-v2-mooi/`): the chain
+> slides to a focus slot and the readings are prisms that turn over (docs/DECISIONS.md **D13**),
+> and the whole machine was slimmed to that design's v4 — rail 76 px, pitch 38, prism radius 24
+> (**D14**) — and then exposed, that design's v5: no body, no rails, no rack (**D15**) — and
+> finally turned on its side: the bar lies along the top edge now, the rod runs along the bar and
+> the readings are a row beside the chain, that design's v6 (**D16**). Kept as the record of how
+> the first one was built; the tokens, sizes and behaviour it names are no longer the bar's.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace rectangular workspace ticks in Region B with a twisting triangular chain (one triangle per workspace, alternating up/down), forming a continuous connected vertical sequence with global index-driven helical twist on navigation changes.

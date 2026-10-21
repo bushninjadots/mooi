@@ -1251,7 +1251,13 @@ Do not let it immediately generate every feature at once. The most important mil
 
 ---
 
-# 15. WHERE MOOI STANDS AGAINST THIS BRIEF (2026-10-15)
+# 15. WHERE MOOI STANDS AGAINST THIS BRIEF (2026-10-15, bar re-audited 2026-10-16)
+
+One note before the audit: the brief's own §3.1 places the Spine on the **left edge** as an
+initial proposal, and later work asked for the opposite — the master prompt that came with the
+design's v6 says *"The Mechanism must be a horizontal desktop bar, not a vertical sidebar"*.
+mooi follows that, and D16 records the change, its reasons and the way back; everything below is
+written for the horizontal bar.
 
 The brief above is unchanged; this section is the answer to "where are we on it". One line per
 brief item, with the evidence and what is still missing. Evidence lives in `docs/AUDIT.md`
@@ -1268,15 +1274,18 @@ full run) and `docs/DECISIONS.md` (every choice, with the way back).
 | 2 Motion and interaction framework | **done** | one island slot, Escape order, `m.*` springs measured each run, reduced motion, degraded IPC | nothing outstanding |
 | 3 Command Membrane and Satellites | **done** | search + ranking + usage, app launch, inline window actions; unit/scene/live tests | settings search and "open Workshop settings" (Workshop is Phase 7) |
 | 4 Workspace Atlas | **mostly done** | window tiles with real `thumbnails` previews, bounded workspace map, focus/create, window moves, previews switch | **Strip/Grid/Spatial modes as named modes** (one Grid view exists), **multi-monitor**, drag between workspaces, per-workspace per-window dragging |
-| 5 Themes and Matugen | **first slice done** | fourteen semantic tokens as `rgb()` over logic-set facts; `lib/theme.luau` (fixed → wallpaper → overrides → completeness → contrast → apply, unit-tested); `bin/mooi theme-sync` + `theme/matugen.toml.in` + `theme/palette.json.hbs` (Matugen 4.2.0, mooi's own config, one output file); live swap proved in `tests/theme.sh` (28 checks), including a real Matugen run from the wallpaper on screen and a palette that was refused whole | light schemes, named theme packages, a Workshop editor for it, and the automatic wallpaper hook (the user's one line, D11) |
+| 5 Themes and Matugen | **first slice done** | fourteen semantic tokens as `rgb()` over logic-set facts; `lib/theme.luau` (fixed → wallpaper → overrides → completeness → contrast → apply, unit-tested); `bin/mooi theme-sync` + `theme/matugen.toml.in` + `theme/palette.json.hbs` (Matugen 4.2.0, mooi's own config, one output file); live swap proved in `tests/theme.sh` (28 checks), including a real Matugen run from the wallpaper on screen and a palette that was refused whole | light schemes, named theme packages, and a Workshop editor for it (the wallpaper hook is mooi's own `bin/mooi theme-watch`, D18) |
 | 6 Notifications and Edges | **blocked / not started** | D5 (ArchEclipse owns notifications in beside mode) | notification ownership in takeover, grouping, quiet periods, edge activation |
 | 7 Live Workshop | **not started** | — | the editor: hierarchy, inspector, preview, apply/revert, undo/redo |
 | 8 Extensions and release | **not started** | — | packaging, install/remove, release notes; also the one takeover guard (SWITCHING.md) |
 
 ## Part One — the five modes
 
-- **Rest**: implemented. The Spine is a 48 px rail, islands are closed by default, the clock is
-  the only thing awake (`0.13 %` idle CPU, AUDIT §6).
+- **Rest**: implemented. The bar is a 72 px strip along the top — the Mechanism, a chain of
+  turning blocks and their links beside a row of readings, with no panel behind them
+  (docs/MECHANISM.md) — islands are
+  closed by default, and nothing in the bar animates at rest (`0.2 %` idle CPU with no island,
+  TESTING.md).
 - **Focus / Explore / Workshop / Ambient**: **specified only**. There is no mode enum yet: each
   island is its own state and `open` owns the slot (D6). The Atlas is Explore in practice and
   the system island is Ambient-ish, but the brief's global enum is not built, and the brief's
@@ -1287,9 +1296,18 @@ full run) and `docs/DECISIONS.md` (every choice, with the way back).
 
 ## Part Two — surfaces
 
-- **Spine**: implemented (48 px, left, window context, workspaces, Atlas, status, clock).
-  Position, width and component order are **not yet configurable** (only `spine.clock` and
-  `spine.max_workspaces` are settings).
+- **Spine**: implemented — a **horizontal** bar along the top (72 px, `reserve: 72`), ported from
+  the design you handed over: the mark and its menu at the left end, a neck into the chain, the
+  chain of workspace blocks — solid prisms threaded on the chain's own barrel — that slides to a
+  focus slot, cut off by its own window, then the module row — the media reading and its
+  transport, the clock, the System door, four readings (volume, brightness, Bluetooth, network)
+  and the bar's three ways out (the focused window, the Atlas, the search) — each a prism whose
+  press turns it over, closed by an end cap that carries the error dot (docs/MECHANISM.md,
+  D16–D17). There is **no dial** any more: the machine runs from the mark to the cap with nothing
+  between the pieces. Settings: `spine.clock`, `spine.max_workspaces`, `bar.labels`, `bar.wheel`.
+  Position, width and component order are **not yet configurable** — the appearance-and-density
+  slice that comes next — and a narrower screen than the machine's 1112 px is not handled yet
+  either.
 - **Islands**: four (window, system, command, atlas), one slot, hand-over, per-island reveal
   springs, keyboard navigation, Escape order, no duplicates, interruption-safe (tested).
 - **Edge Membranes**: the Atlas is drawn as a centred membrane with an anchored growth frame
@@ -1323,9 +1341,11 @@ architecture that works first).
 
 ## Part Five — motion
 
-Tokens exist (`m.instant/select/enter/exit/expand/collapse/confirm/reflow`), are critically
-damped springs, and **all nine are measured on every scene run** (1 %→99 % of travel) plus a
-reduced-motion check. Interruption and reversal are by construction. **Gestures are not
+Tokens exist (`m.instant/select/enter/exit/expand/collapse/confirm/reflow/spin/turn`),
+are critically damped springs, and **the islands' nine transitions are measured on every scene
+run** (1 %→99 % of travel) plus a reduced-motion check; the bar's own (`m.spin` 380 ms, `m.turn`
+260 ms) are measured by hand, because the chain only moves when the
+compositor really changes workspace and the suite promises not to (STATUS.md). Interruption and reversal are by construction. **Gestures are not
 implemented**; neither is `focus.change` as a separate token (selection uses `m.select`).
 
 ## Part Six — theme
@@ -1336,10 +1356,11 @@ pipeline is built** (Phase 5 first slice): the tokens are `rgb()` over facts the
 theme changes while the shell runs; the precedence is fixed palette → wallpaper palette → user
 overrides, then completeness and WCAG contrast, then one atomic paint; a theme that fails is
 refused whole and the last good one stays. Matugen 4.2.0 supplies the wallpaper palette through
-mooi's own config (one output file, the user's theming untouched), and `theme.source` is `fixed`
-by default so nothing about the shell's identity changes unless asked. What is not there: a light
-scheme, declarative theme *packages*, a Workshop editor, and the automatic wallpaper hook — which
-is one line in the user's pipeline and theirs to add (docs/DECISIONS.md D11).
+mooi's own config (one output file, the user's theming untouched), and `theme.source` defaults to
+`wallpaper` (D18; `fixed` is the brief's palette alone). What is not there: a light
+scheme, declarative theme *packages*, and a Workshop editor — the wallpaper hook is mooi's own
+(`bin/mooi theme-watch`, D18), so there is nothing in your pipeline to add
+(docs/DECISIONS.md D11, D18).
 
 ## Part Seven — architecture
 

@@ -17,6 +17,7 @@ return function(ctx)
     local placed = {}         -- id → true for every module the last layout placed
     local env = { screen = 1920, tray = 0, battery = false, brightness = false, bluetooth = true, playing = false }
     local readers = nil       -- starts and stops the readers; defined below, once they exist
+    local dnd_hook = nil      -- do not disturb, looked at again when a focus block starts or ends
 
     -- ── Layout ─────────────────────────────────────────────────
     -- The bar's edge inset: 12 px at full width; a narrower bar (bar.width) is centred.
@@ -89,21 +90,22 @@ return function(ctx)
         run("hyprctl", { "-j", "monitors" }, function(out)
             local ok, mons = pcall(json.decode, out or "")
             if not ok or type(mons) ~= "table" then return end
+            -- Every monitor has a copy of the bar and they share one layout, so it is laid out
+            -- for the narrowest: it fits them all (a wider one shows it from its left edge). The
+            -- focused monitor's width alone left a narrower one's bar off its edge (D34).
+            local narrowest = nil
             for _, m in ipairs(mons) do
-                if m.focused or #mons == 1 then
-                    local w = math.floor((tonumber(m.width) or 1920) / (tonumber(m.scale) or 1) + 0.5)
-                    if (m.transform or 0) % 2 == 1 then w = math.floor((tonumber(m.height) or 1080) / (tonumber(m.scale) or 1) + 0.5) end
-                    if w ~= env.screen then env.screen = w; relayout() end
-                end
+                local w = math.floor((tonumber(m.width) or 1920) / (tonumber(m.scale) or 1) + 0.5)
+                if (m.transform or 0) % 2 == 1 then w = math.floor((tonumber(m.height) or 1080) / (tonumber(m.scale) or 1) + 0.5) end
+                if not m.disabled and w > 0 and (not narrowest or w < narrowest) then narrowest = w end
             end
+            if narrowest and narrowest ~= env.screen then env.screen = narrowest; relayout() end
         end)
     end
 
-    -- A new mode or scale on the monitor: the scene says what its surface measures now.
-    on("screen_w", function(v)
-        local w = math.floor(tonumber(v) or 0)
-        if w > 0 and w ~= env.screen then env.screen = w; relayout() end
-    end)
+    -- A monitor came, went, or changed its mode or scale: each copy of the bar says so (with its
+    -- own width; the last to speak would win), so Hyprland is asked for all of them again.
+    on("screen_w", function() measure() end)
 
     -- What the machine has decides what can be placed.
     sys.watch("battery", function(v)
@@ -449,6 +451,7 @@ return function(ctx)
         if foc.timer then cancel(foc.timer); foc.timer = nil end
         foc.left, foc.total = 0, 0
         fact.foc_state = 0; fact.foc_frac = 0
+        if dnd_hook then dnd_hook() end
         foc_rest_text()
     end
     local function break_minutes() return math.max(5, math.floor(fact.foc_len / 5 + 0.5)) end
@@ -458,6 +461,7 @@ return function(ctx)
         foc.total = (state == 1 and fact.foc_len or break_minutes()) * 60
         foc.left = foc.total
         fact.foc_state = state
+        if dnd_hook then dnd_hook() end
         foc_show()
         foc.timer = every(1000, function()
             foc.left = foc.left - 1
@@ -492,38 +496,117 @@ return function(ctx)
     -- There is one receiver per session and the newest shell takes it. mooi takes it when it
     -- holds the desktop (takeover) — or always, or never, by `notifications.server` — so
     -- beside ArchEclipse the notices stay ArchEclipse's (D5).
-    local notes = {}
+    local notes, missed = {}, {}
     local newest = nil
+    local rows = {}           -- what the panel shows, row by row: { kind, ids, id }
+    local open_app = {}       -- the apps whose group is opened out
+    local hour = 12
     local function claim()
         local mode = ctx.settings().notifications.server
         return mode == "always" or (mode == "takeover" and ctx.mode == "takeover")
     end
+    -- Do not disturb, now: always, while a focus block runs, or in the quiet hours.
+    local function quiet()
+        local n = ctx.settings().notifications
+        if n.dnd == "on" then return true end
+        if n.dnd == "focus" then return fact.foc_state == 1 end
+        if n.dnd == "hours" then
+            local from, to = n.quiet_from, n.quiet_to
+            if from == to then return false end
+            if from < to then return hour >= from and hour < to end
+            return hour >= from or hour < to
+        end
+        return false
+    end
+    -- The panel's rows: one per app (the newest notice, and how many it has), the rest of an
+    -- opened group under it, then the ones missed (they went away on their own, unseen).
+    local function show_notes()
+        rows = {}
+        local shown, order, by = {}, {}, {}
+        for _, n in ipairs(notes) do
+            local app = tostring(n.app or "")
+            if not by[app] then by[app] = {}; order[#order + 1] = app end
+            by[app][#by[app] + 1] = n
+        end
+        local function add(n, kind, count, ids)
+            if #shown >= 20 then return end
+            rows[#rows + 1] = { kind = kind, ids = ids, id = n.id }
+            shown[#shown + 1] = { app = tostring(n.app or ""), title = tostring(n.title or ""), body = tostring(n.body or ""),
+                                  urgent = n.urgency == "critical", many = count, kind = kind, open = open_app[tostring(n.app or "")] == true }
+        end
+        for _, app in ipairs(order) do
+            local g = by[app]
+            local ids = {}
+            for _, n in ipairs(g) do ids[#ids + 1] = n.id end
+            add(g[1], 0, #g, ids)
+            if open_app[app] then for i = 2, #g do add(g[i], 1, 1, { g[i].id }) end end
+        end
+        for i, n in ipairs(missed) do if i <= 6 then add(n, 2, 1, { n.id }) end end
+        model.notes = shown
+        fact.note_count = #notes
+        fact.note_missed = #missed
+        fact.dnd_now = quiet()
+    end
     fact.notes_on = claim()
     if fact.notes_on then
+        -- The panel is the notification centre: a notice stays until it is dismissed or acted on
+        -- (the toast is what passes). The history then only holds what an older run let expire.
         sys.watch("notifications", function(list)
             notes = type(list) == "table" and list or {}
-            local shown = {}
-            for i, n in ipairs(notes) do
-                if i > 20 then break end
-                shown[#shown + 1] = { app = n.app or "", title = n.title or "", body = n.body or "", urgent = n.urgency == "critical" }
-            end
-            model.notes = shown
-            fact.note_count = #notes
+            show_notes()
             local top = notes[1]
             if top and top.id ~= newest then
                 newest = top.id
-                text.toast_app = string.upper(tostring(top.app or ""))
-                text.toast_title = tostring(top.title or "")
-                text.toast_body = tostring(top.body or "")
-                emit("toast")
+                -- in a quiet time only what is urgent interrupts
+                if not quiet() or top.urgency == "critical" then
+                    text.toast_app = string.upper(tostring(top.app or ""))
+                    text.toast_title = tostring(top.title or "")
+                    text.toast_body = tostring(top.body or "")
+                    emit("toast")
+                end
             elseif not top then newest = nil end
         end)
+        -- (asked once the service runs: it starts with the watch above)
+        local kept, why = pcall(sys.call, "notifications.keep", true)
+        if not kept then log("notices · could not keep them: " .. tostring(why)) end
+        pcall(sys.watch, "notification_history", function(list)
+            missed = type(list) == "table" and list or {}
+            show_notes()
+        end)
+        sys.watch("clock", function(c)
+            local h = type(c) == "table" and tonumber(c.hour)
+            if h and h ~= hour then hour = h; fact.dnd_now = quiet() end
+        end)
     end
-    on("note_dismiss", function(v)
-        local n = notes[math.floor(tonumber(v) or -1) + 1]
-        if n then sys.call("notifications.dismiss", n.id) end
+    -- A press on a notice: a group with more in it opens out (or closes); one notice does what
+    -- its app offers (its default action) and goes; a missed one is forgotten.
+    on("note_open", function(v)
+        local r = rows[math.floor(tonumber(v) or -1) + 1]
+        if not r then return end
+        if r.kind == 2 then sys.call("notifications.forget", r.id); return end
+        local n = nil
+        for _, x in ipairs(notes) do if x.id == r.id then n = x end end
+        local app = n and tostring(n.app or "") or ""
+        if r.kind == 0 and #r.ids > 1 then open_app[app] = not open_app[app]; show_notes(); return end
+        pcall(sys.call, "notifications.invoke", r.id, "default")
+        sys.call("notifications.dismiss", r.id)
     end)
-    on("note_clear", function() sys.call("notifications.clear") end)
+    on("note_dismiss", function(v)
+        local r = rows[math.floor(tonumber(v) or -1) + 1]
+        if not r then return end
+        if r.kind == 2 then sys.call("notifications.forget", r.id); return end
+        for _, id in ipairs(r.ids) do sys.call("notifications.dismiss", id) end
+    end)
+    on("note_clear", function() sys.call("notifications.clear"); pcall(sys.call, "notifications.clear_history") end)
+    -- The panel's quick switch: do not disturb on, or off.
+    on("note_dnd", function()
+        local n = ctx.settings().notifications
+        n.dnd = (n.dnd == "off") and "on" or "off"
+        ctx.save()
+        show_notes()
+    end)
+    -- A focus block starting or ending moves the quiet time with it.
+    dnd_hook = function() if fact.notes_on then fact.dnd_now = quiet() end end
 
     -- ── Edit mode ──────────────────────────────────────────────
     -- The scene says when edit mode begins and ends, and where a dragged module is: while it

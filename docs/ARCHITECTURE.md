@@ -35,23 +35,23 @@ mooi is **one Pleamar scene** (`shell/mooi.plm`) with one Luau logic (`shell/moo
 | Settings | `~/.local/share/pleamar/mooi/settings.json` | The only on-disk source. JSON, versioned, schema in `lib/config.luau` |
 | Tokens | `shell/theme/tokens.plm` | Colours, geometry, motion; components use semantic names only |
 | Atlas board (`model atlas_tiles`) | logic, **from Hyprland** | One tile per window Hyprland lists (address, class, title, workspace), rebuilt while the Atlas is up; the `thumbnails` service only lends the picture, matched to a window by app and title |
-| `spaces` (the workspace map) | logic (`lib/spaces`) | The bounded 1–16 workspace slots, from the `workspaces` service; **the Mechanism's scale and the Atlas's move strip both draw it** — the one place workspace state becomes rows, holding the positions the compositor has not made yet as well as the ones it has |
+| `spaces` (the workspace map) | logic (`lib/spaces`) | The bounded 1–16 workspace slots, from the `workspaces` service; **the Mechanism's chain and the Atlas's move strip both draw it** — the one place workspace state becomes rows, holding the positions the compositor has not made yet as well as the ones it has |
 | The colour facts (`c_*_r/g/b`) | logic (`lib/theme`) | Forty-two facts: three per semantic token, 0 to 1, and `theme/tokens.plm` hands each to `rgb()`. Set together, or not at all. `palette.json` (Matugen) and `theme.*` settings are the only inputs; nothing else in the scene reads or writes them |
 | `theme_error` | logic | The new theme did not pass completeness or contrast; the last good one is on screen and the Spine's dot says so |
 | `previews` | logic, from settings (`atlas.previews`) | Preview pictures on or off. Off means they are not drawn, the frames are given back to the compositor and none is asked for again; `p` flips it and writes the setting (never in safe mode) |
-| The keyboard | **scene rules + the first surface** | `keyboard: exclusive while (open != none or nav_open or mark_open) and not (open == command and cmode == actions)`; pleamar reads the mode from the scene's first surface and the single `while` from the last one that declares a clause, so the bar carries the scene's only clause — and it lets go in the command membrane's window-actions mode, where the arrows and Enter belong to the actions (below; D8; MECHANISM.md §7) |
-| The bar's own state (`nav_open`, `nav_sel`, `mark_open`, `bar_labels`, `bar_wheel`, `active_row`, `bar_version`, `bar_path`) | scene rules, fed by the logic | The Mechanism: whether the wheel is engaged and what it previews, whether the mark's menu is open, whether the scale shows labels, what the wheel does over the scale, which workspace is active (from the `workspaces` service), and the version and path the menu names |
+| The keyboard | **scene rules + the first surface** | `keyboard: exclusive while (open != none or mark_open) and not (open == command and cmode == actions)`; pleamar reads the mode from the scene's first surface and the single `while` from the last one that declares a clause, so the bar carries the scene's only clause — and it lets go in the command membrane's window-actions mode, where the arrows and Enter belong to the actions (below; D8; MECHANISM.md §7) |
+| The bar's own state (`mark_open`, `bar_labels`, `bar_wheel`, `active_row`, `bar_version`, `bar_path`) | scene rules, fed by the logic | The Mechanism: whether the mark's menu is open, whether the blocks carry labels, whether the wheel over the chain steps a workspace, which workspace is active (from the `workspaces` service), and the version and path the menu names. The chain's own two phases (`pos`, `roll`), the module faces and the blocks' angles are read off those: no second source of truth |
 
 ## The Mechanism (the bar)
 
-The always-present rail, in one surface reserved for it: **identity** (the mark → the bar's own menu), **workspace navigation** (the Atlas key, the wheel's door, then the scale of workspace positions with the carriage riding it), **quick access** (search, the focused window) and **status** (network, Bluetooth, brightness, volume, the battery key, the clock). Everything beside the rail — the wheel's readout, the mark's menu — floats over windows, and because pleamar commits the input region from what is actually painted, nothing beside the rail takes a click (checked on the running desktop).
+The always-present strip along the **top edge**, in one surface reserved for it (56 px, `anchor: top`) — one exposed machine along it, ported from the renewed design (`pleamar helix bar/helix-v2-mooi/`, v6, the horizontal exposed helix): a matt black **body** whose surface is the bar's background (v7), a **shaft** of steel running the whole of the navigation region, the **chain** of workspace blocks threaded on that shaft — it slides along the bar so the block the compositor is on always sits at the focus slot, and the window it is seen through is a sleeve over the shaft, so the ends of the list show steel rather than a hole — a **module row** beside it of twelve slots and one frame — the media reading and its transport, the clock, the System door, the four readings (volume, brightness, Bluetooth, network) and the bar's three ways out (the focused window, the Atlas, the membrane) — and the mark at the left end, with the end cap at the right. Off the machine the desktop shows through the strip wherever there is no body, prism, shaft or cap. Everything under the strip — the mark's menu — floats over windows, and because pleamar commits the input region from what is actually painted, nothing there takes a click — nor does the strip's own empty space, measured on the running desktop. What the bar *asks of the machine* is the transport (the player's own commands) and the volume module: everything else it shows is a report.
 
 Two rules hold it together, both written out in **docs/MECHANISM.md**:
 
-* **Geometry carries state, colour only confirms.** A position's size and the carriage's travel say what is; colour agrees. `accent.primary` means *what is*, `focus.ring` means *what the pointer or the keyboard is on*, and nothing else is allowed to be loud.
-* **Preview is not commit.** The wheel and the scale may show a workspace before the compositor goes there (`nav_sel` vs `active_row`); `↵` asks `workspaces.focus` at once and never waits for an animation, and interrupted motion is simply the next state.
+* **Geometry carries state, colour only confirms.** Which way a block is turned, which position sits at the focus slot, which face of a module is toward you, how long a level bar is — those say what is; colour agrees. `accent.primary` means *what is*, `focus.ring` means *what the pointer or the keyboard is on*, and nothing else is allowed to be loud.
+* **The compositor is the only authority.** A press on a block, or a notch of the wheel over the chain, asks `workspaces.focus` at once and never waits for an animation; the chain — whose slide and roll follow `active_row` alone — moves only when the service says the workspace changed, so the block at the focus slot is always where you really are. Nothing on the bar can point somewhere you are not (the dial that could was removed in v6b), and interrupted motion is simply the next state.
 
-The scale draws the `spaces` map at fixed pitch, so a workspace the compositor has not made yet still has a position to be chosen. The status widgets read the services and each **opens the system surface**, which owns the controls — the bar never offers a control it cannot honestly drive, which is why Bluetooth is shown and never toggled (there is no documented write for it). Absent hardware closes its own gap: a widget the machine cannot have is not drawn and the ones above it move up (`have_bri`, `have_bt`).
+The chain draws the `spaces` map through `pos`, in workspace units, so a workspace the compositor has not made yet still has a position to be chosen — and the window onto it moves with you. The readings (modules) are read-only: a press turns the prism over to its next face, and the tiles report what the services say. The System door opens the surface that owns the controls — the bar never offers a control it cannot honestly drive, which is why Bluetooth is shown and never toggled (there is no documented write for it). Absent hardware closes its own gap: a module the machine cannot have is not drawn and the slots after it move along the bar (`have_clock`, `have_bri`, `have_bt`); the media reading and its transport are always drawn (a player coming and going must not move every control after them), and it is their *zones* that go quiet when there is nothing to drive (`fact.media_on`).
 
 Not here: the workspace overview, Assemblies, a rewrite of the command membrane, a notification manager, and appearance & density (placements, size presets, accent and surface choice) — the first-run stopping point.
 
@@ -82,8 +82,7 @@ only while it is open takes it away from every other instrument at once. With th
 carrying their own clauses nothing took the keyboard at all, so typing went to the window
 under the island and Escape never arrived (the harness never noticed, because
 `pleamar --say mooi "key Escape"` injects the key straight into the scene — see
-docs/AUDIT.md). The bar's clause says "while an island is up, the wheel is engaged, or the
-mark's menu is open" — and gives the keyboard up in the command membrane's window-actions
+docs/AUDIT.md). The bar's clause says "while an island is up, or the mark's menu is open" — and gives the keyboard up in the command membrane's window-actions
 mode, where the focused `input` would otherwise eat the arrows and Enter (MECHANISM.md §7).
 
 A window cannot be given the keyboard while a layer holds it: Hyprland answers the dispatches
@@ -107,13 +106,15 @@ Global modes (Rest / Focus / Explore / Workshop / Ambient) are still only specif
 | `m.expand` / `m.collapse` | 1102, 66 / 1722, 83 | 200 / 160 ms | window island depth |
 | `m.confirm` | 765, 55 | 240 ms | state.confirm: the Spine pulses the workspace a window was moved to |
 | `m.reflow` | 911, 60 | 220 ms | layout.reflow: the workspace column |
+| `m.spin` | 305, 35 | 380 ms | the chain of workspace blocks sliding and turning as one mechanism |
+| `m.turn` | 652, 51 | 260 ms | a module's prism turning to its next face |
 
-All are critically damped, which means no overshoot and the duration is time to 99 %. `tests/scene.sh` measures five of them on every run. `--reduced-motion` settles every spring at once (tested: 0 frames between open and closed).
+All are critically damped, which means no overshoot and the duration is time to 99 %. `tests/scene.sh` measures the islands' nine transitions on every run; the chain's spin and a module's turn are the bar's own and are measured by hand, because the chain only moves when the compositor really changes workspace and the suite promises never to (the numbers are in STATUS.md). `--reduced-motion` settles every spring at once (tested: 0 frames between open and closed).
 
 ## Adding an island
 
 1. Add a value to `fact open` and a reveal spring `rv.<name>` with its `layer life.<name>`.
-2. Declare `surface <name>_island` anchored next to its bar anchor, with `open: open == <name> or rv.<name> > 0.004`. **No `keyboard:` clause**: the bar's single clause (above) is the scene's, and a second declarer would silently replace its `while` condition for the whole scene.
+2. Declare `surface <name>_island` anchored to the edge it belongs to and `margin:`ed clear of the bar's strip — the window island hangs from the top left under the bar, the command island from the top centre (`margin: 84, 0, 0, …`), the System island from the bottom left, the Atlas centred — with `open: open == <name> or rv.<name> > 0.004`. **No `keyboard:` clause**: the bar's single clause (above) is the scene's, and a second declarer would silently replace its `while` condition for the whole scene.
 3. Draw it inside `IslandFrame(rv.<name>, w, h[, up: true][, centre: true])` from `ui/island.plm` (`centre` grows from the middle of the top edge, for an island with no Spine anchor).
 4. Add `on open_<name>` rules (toggle and hand-over), its keys guarded by `while open == <name>`, and an Escape rule.
 5. Add it to `tests/scene.sh`.
@@ -152,7 +153,6 @@ is read by `bin/mooi` at launch (it maps to `--reduced-motion`).
 | | |
 | --- | --- |
 | `shell/mooi.plm` | the scene: the bar (the Mechanism), the islands, the command membrane, rules |
-| `shell/ui/mechanism.plm` | the bar's pieces: `Key`, `Status`, `Mark`, `Slot`, `Plate`, `Rule` — geometry carries state, colour only confirms |
 | `shell/ui/island.plm` | shared pieces: `IslandFrame`, `Level` |
 | `shell/theme/tokens.plm` | palette, semantic colours, geometry, motion springs |
 | `shell/mooi.luau` | glue: settings, window target and verified actions (`run_action`, with the keyboard hand-over), the Atlas board and its pictures, the move strip's subject and target, preview privacy, system requests, icons |
@@ -223,14 +223,18 @@ The brief's pipeline runs in `shell/lib/theme.luau` (pure, unit-tested), in this
 | 4 · overrides | `theme.overrides` in settings | `token = "#rrggbb"`; wins over the palette, and an unknown or malformed one is ignored with a note |
 | 5 · completeness | `M.check` | All fourteen tokens, or the theme is refused |
 | 6 · contrast | `M.REQUIRED` | WCAG ratios for text on its three surfaces (4.5:1) and for the accent ring and error text (3:1); the numbers in `docs/AUDIT.md` §7 are these pairs |
-| 7 · apply | `paint()` in `mooi.luau` | The forty-two facts, written only after the checks pass — so it is atomic in effect: all or none |
-| 8 · rollback | `theme_error` | Nothing is written when a check fails; the last good theme stays on screen and the Spine's dot says the theme was refused |
+| 7 · apply | `paint()` · `paint_marks()` in `mooi.luau` | The forty-two token facts and the thirty-nine mark facts, written only after the checks pass — so it is atomic in effect: all or none |
+| 8 · marks | `M.marks` · `bar.tones` | One colour per mark on the bar: the palette role each one takes (`M.TONES`), with `bar.tones.<mark> = "#rrggbb"` over it. An unknown name or colour is ignored with a note |
+| 9 · rollback | `theme_error` | Nothing is written when a check fails; the last good theme stays on screen and the cap's dot says the theme was refused |
 
-mooi re-runs steps 3–8 whenever the settings change, a new palette file arrives (`files:palette.json`),
-or something asks it to (`pleamar --say mooi "emit recolor"`, which is what `theme-sync` does).
+mooi re-runs steps 3–9 whenever the settings change, a new palette file arrives (`files:palette.json`),
+or something asks it to (`pleamar --say mooi "emit recolor"`, which is what `theme-sync` does, and
+what `bin/mooi theme-watch` runs on every wallpaper change — with `mooi start`/`takeover` starting
+the watch beside the bar and `mooi stop` ending it).
 What a palette can touch is exactly colour: layout, motion, behaviour and workspace settings are
 not inputs to any of it, and `tests/theme.sh` checks that (settings byte-identical, other facts
-unchanged). `theme.source = fixed` by default, so the wallpaper only takes over when asked.
+unchanged). `theme.source = wallpaper` by default (D18), so the bar follows the wallpaper unless the
+user says `fixed`; with no palette generated yet the fixed palette shows and the log says why.
 
 The toolchain is a dependency of the *test*, not of the shell: with no `palette.json` and
 `source = wallpaper`, mooi says so and keeps the fixed palette.

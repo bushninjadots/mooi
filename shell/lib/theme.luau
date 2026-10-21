@@ -1,12 +1,13 @@
--- mooi's theme model: the brief's palette, a palette taken from the wallpaper
--- (Matugen), and the user's overrides, resolved into the semantic tokens the scene
--- paints — then validated (completeness and contrast) before anything is shown.
--- Pure: tests/unit runs it under Lua 5.4.
+-- mooi's theme model: the semantic tokens every island, panel and dialog paints, taken from the
+-- one palette the whole shell wears (lib/ferro: the wallpaper's or mooi's own, its finish, its
+-- background, the Alert re-light) — then the user's overrides, then validation (completeness and
+-- contrast) before anything is shown. Pure: tests/unit runs it under Lua 5.4.
 --
--- The brief's pipeline, in order (docs/BRIEF.md §7):
---   wallpaper → palette → semantic tokens → user overrides → validate → contrast → apply
--- Applied atomically by the logic: all of the tokens or none of them, and the colours
--- that were showing stay if the new theme does not pass (docs/ARCHITECTURE.md).
+-- One palette, so a colour chosen in the settings is the bar's, the islands' and the windows'
+-- borders' at once (D27). Applied atomically by the logic: all of the tokens or none of them, and
+-- the colours that were showing stay if the new theme does not pass (docs/ARCHITECTURE.md).
+
+local ferro = require("lib/ferro")
 
 local M = {}
 
@@ -22,48 +23,6 @@ M.TOKENS = {
     "accent.primary", "accent.secondary", "status.ok", "status.error",
     "focus.ring", "selection.bg",
 }
-
--- The brief's provisional palette: what mooi looks like with `theme.source = fixed`.
--- Contrast of these pairs is recorded in docs/AUDIT.md §7.
-M.FIXED = {
-    ["bg.primary"] = "#101416",
-    ["bg.secondary"] = "#161B1E",
-    ["surface.primary"] = "#191F22",
-    ["surface.elevated"] = "#22292D",
-    ["border.subtle"] = "#2C3539",
-    ["fg.primary"] = "#E3E9EB",
-    ["fg.secondary"] = "#A3B0B5",
-    ["fg.muted"] = "#8A979C",
-    ["accent.primary"] = "#A6F3D1",
-    ["accent.secondary"] = "#FF925F",
-    ["status.ok"] = "#A6F3D1",
-    ["status.error"] = "#FF925F",
-    ["focus.ring"] = "#A6F3D1",
-    ["selection.bg"] = "#2A3A36",
-}
-
--- Which Material role each token comes from, for a Matugen palette. One role each,
--- deliberately: a token that borrowed from two roles could not be blamed for being
--- unreadable. Roles are the ones Matugen 4.x publishes (theme/palette.json.hbs).
-M.FROM_MATUGEN = {
-    ["bg.primary"] = "surface_dim",
-    ["bg.secondary"] = "surface_container_low",
-    ["surface.primary"] = "surface_container",
-    ["surface.elevated"] = "surface_container_high",
-    ["border.subtle"] = "outline_variant",
-    ["fg.primary"] = "on_surface",
-    ["fg.secondary"] = "on_surface_variant",
-    ["fg.muted"] = "outline",
-    ["accent.primary"] = "primary",
-    ["accent.secondary"] = "error",
-    ["status.ok"] = "primary",
-    ["status.error"] = "error",
-    ["focus.ring"] = "primary",
-}
-
--- `selection.bg` has no role of its own: it is the background with a little of the
--- accent in it. The blend is done here, numerically, so it is validated like the rest.
-M.SELECTION_FROM = { base = "bg.primary", accent = "primary", amount = 0.18 }
 
 -- What has to stay readable, and at least this ratio (WCAG 2.1). Below it, the theme
 -- is refused whole and the previous one stays on screen.
@@ -129,28 +88,59 @@ function M.contrast(a, b)
     return (la + 0.05) / (lb + 0.05)
 end
 
--- ── The palette the wallpaper gave us ───────────────────────
--- `palette` is what theme/palette.json.hbs writes: { version, mode, colours = { role = "#…" } }.
--- Returns the tokens it can fill and what it could not say.
-function M.from_palette(palette)
-    local roles = type(palette) == "table" and palette.colours or nil
-    if type(roles) ~= "table" then return nil, "the palette has no colours" end
-    local colours, missing = {}, {}
-    for _, token in ipairs(M.TOKENS) do
-        if token ~= "selection.bg" then
-            local role = M.FROM_MATUGEN[token]
-            local c = M.hex(roles[role])
-            if c then colours[token] = c else missing[#missing + 1] = role end
+-- ── From the shell's palette ───────────────────────────────
+-- Which Ferrolume role each token is: surfaces are the hull, text is the phosphor (Ferrolume
+-- reads light on dark), the second accent is the ember, selection sits on the well.
+M.FROM_FERRO = {
+    ["bg.primary"] = "hull", ["bg.secondary"] = "hull", ["surface.primary"] = "hull",
+    ["surface.elevated"] = "hull_raised", ["border.subtle"] = "trace", ["fg.primary"] = "phos",
+    ["fg.secondary"] = "trace_lit", ["fg.muted"] = "muted", ["accent.primary"] = "phos",
+    ["accent.secondary"] = "ember", ["status.ok"] = "phos", ["status.error"] = "ember",
+    ["focus.ring"] = "trace_lit", ["selection.bg"] = "well",
+}
+
+-- The tokens from a resolved Ferrolume palette (`roles`: role → colour), every required pair
+-- held to its floor by lightness alone (a surface a step lighter than the ground can take a
+-- label below 4.5:1 otherwise). Returns the colours and the tokens it had to hold.
+function M.from_ferro(roles)
+    local colours = {}
+    for _, token in ipairs(M.TOKENS) do colours[token] = roles[M.FROM_FERRO[token]] end
+    colours["bg.primary"] = M.blend(roles.ground, roles.hull, 0.5)
+    -- Each text token against all of its surfaces at once: held one pair at a time, holding it
+    -- against one surface could undo the hold against another (a light base: 4.2:1, refused).
+    -- It moves the way its surfaces need (lighter on dark ones), against the hardest of them.
+    local needs, order = {}, {}
+    for _, pair in ipairs(M.REQUIRED) do
+        local fg = pair[1]
+        if not needs[fg] then needs[fg] = {}; order[#order + 1] = fg end
+        needs[fg][#needs[fg] + 1] = { colours[pair[2]], pair[3] }
+    end
+    local white, black = { r = 1, g = 1, b = 1 }, { r = 0, g = 0, b = 0 }
+    local names = {}
+    for _, fg in ipairs(order) do
+        local c = colours[fg]
+        local short, lum, light = false, 0, 0
+        for _, need in ipairs(needs[fg]) do
+            if M.contrast(c, need[1]) < need[2] then short = true end
+            lum = lum + M.luminance(need[1]); light = math.max(light, M.contrast(white, need[1]) - M.contrast(black, need[1]))
+        end
+        if short then
+            local up = light > 0          -- white reads better on these surfaces than black does
+            local h, s = ferro.to_hsl(c)
+            local _, _, l = ferro.to_hsl(c)
+            for _ = 1, 100 do
+                local ok = true
+                for _, need in ipairs(needs[fg]) do if M.contrast(c, need[1]) < need[2] + 0.05 then ok = false end end
+                if ok or l <= 0 or l >= 1 then break end
+                l = up and math.min(1, l + 0.01) or math.max(0, l - 0.01)
+                c = ferro.hsl(h, s, l)
+            end
+            colours[fg] = c
+            names[#names + 1] = fg
         end
     end
-    if colours["bg.primary"] and roles[M.SELECTION_FROM.accent] then
-        local accent = M.hex(roles[M.SELECTION_FROM.accent])
-        if accent then colours["selection.bg"] = M.blend(colours["bg.primary"], accent, M.SELECTION_FROM.amount) end
-    end
-    if #missing > 0 then
-        return nil, "the palette is missing " .. table.concat(missing, ", ")
-    end
-    return colours
+    table.sort(names)
+    return colours, names
 end
 
 -- ── Validation ──────────────────────────────────────────────
@@ -174,32 +164,16 @@ function M.check(colours)
 end
 
 -- ── The whole pipeline ──────────────────────────────────────
--- `theme` is the settings section ({ source, overrides }); `palette` is the Matugen
--- file or nil. Returns the tokens, where they came from, and what is wrong with them.
--- Never raises: a missing or broken palette is a note, not an error (the fixed palette
--- is what shows instead); a theme that does not pass `check` comes back with problems
--- and the caller keeps what is on screen.
-function M.resolve(theme, palette)
+-- `theme` is the settings section ({ overrides, … }); `roles` the palette lib/ferro resolved.
+-- Returns the tokens, notes, and what is wrong with them. Never raises: a theme that does not
+-- pass `check` comes back with problems and the caller keeps what is on screen.
+function M.resolve(theme, roles)
     theme = type(theme) == "table" and theme or {}
     local notes = {}
-
-    local source = theme.source or "fixed"
-    local colours = {}
-    for _, token in ipairs(M.TOKENS) do colours[token] = M.hex(M.FIXED[token]) end
-
-    if source == "wallpaper" then
-        if palette == nil then
-            notes[#notes + 1] = "no palette from the wallpaper yet; the fixed palette is showing"
-        else
-            local from_wallpaper, why = M.from_palette(palette)
-            if from_wallpaper then
-                colours = from_wallpaper
-            else
-                notes[#notes + 1] = why .. "; the fixed palette is showing"
-            end
-        end
-    end
-
+    local colours, held = M.from_ferro(roles)
+    if #held > 0 then notes[#notes + 1] = "held for contrast: " .. table.concat(held, ", ") end
+    local known = {}
+    for _, t in ipairs(M.TOKENS) do known[t] = true end
     local overrides = type(theme.overrides) == "table" and theme.overrides or {}
     local names, used = {}, {}
     for token in pairs(overrides) do
@@ -210,7 +184,7 @@ function M.resolve(theme, palette)
         local c, why = M.hex(overrides[token])
         if not c then
             notes[#notes + 1] = "override " .. token .. ": " .. why .. "; ignored"
-        elseif not M.FIXED[token] then
+        elseif not known[token] then
             notes[#notes + 1] = "override for unknown token " .. token .. "; ignored"
         else
             colours[token] = c
@@ -218,8 +192,7 @@ function M.resolve(theme, palette)
         end
     end
     if #used > 0 then notes[#notes + 1] = "user overrides: " .. table.concat(used, ", ") end
-
-    return colours, source, notes, M.check(colours)
+    return colours, notes, M.check(colours)
 end
 
 return M

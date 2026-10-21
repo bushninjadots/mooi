@@ -16,13 +16,12 @@ library Theme {
     // ── Palette (provisional, from the brief; colour facts are born with these) ──
     let void = #101416
     let steel = #22292D
-    let slate = #46545A
     let signal = #A6F3D1
     let heat = #FF925F
 
     // ── Semantic roles (fg.* are the brief's text.* roles) ────
+    // Base semantic tokens from the brief's palette (backward compatible)
     let bg.primary = rgb(c_bg_primary_r, c_bg_primary_g, c_bg_primary_b)
-    let bg.secondary = rgb(c_bg_secondary_r, c_bg_secondary_g, c_bg_secondary_b)
     let surface.primary = rgb(c_surface_primary_r, c_surface_primary_g, c_surface_primary_b)
     let surface.elevated = rgb(c_surface_elevated_r, c_surface_elevated_g, c_surface_elevated_b)
     let border.subtle = rgb(c_border_subtle_r, c_border_subtle_g, c_border_subtle_b)
@@ -39,10 +38,25 @@ library Theme {
     // (failures and the accent share `status.error` / `accent.secondary`), so it is not
     // declared here rather than declared and unused.
 
+    // Short names the islands use for the roles above.
+    let surface = surface.primary
+    let accent = accent.primary
+    let highlight = accent.primary
+    let text = fg.primary
+    let outline = border.subtle
+    let border = border.subtle
+    let hover = fg.muted
+    let selected = accent.primary
+
+    // ── Two derived materials ─────
+    // Derived from the roles, so a new palette moves them too: `plate` is the ground taken most
+    // of the way to black, `metal` the elevated surface lifted toward the text.
+    let plate = mix(bg.primary, #000000, 0.55)
+    let metal = mix(surface.elevated, fg.secondary, 0.30)
+
     // ── Motion tokens ─────────────────────────────────────────
     // Critically damped: k = (6.64/T)², c = 2·6.64/T reaches 99 % at T.
     // Measured by tests/scene.sh (`pleamar --record`), not assumed.
-    spring m.instant = 12247, 221   //  60 ms · state flips that must not lag
     spring m.select = 3062, 111     // 120 ms · selection.change, focus.change
     spring m.enter = 1361, 74       // 180 ms · surface.enter
     spring m.exit = 2249, 95        // 140 ms · surface.exit (leaves faster than it arrives)
@@ -50,32 +64,10 @@ library Theme {
     spring m.collapse = 1722, 83    // 160 ms · surface.collapse
     spring m.confirm = 765, 55      // 240 ms · state.confirm feedback
     spring m.reflow = 911, 60       // 220 ms · layout.reflow (lists gaining or losing items)
-    spring m.dial = 1102, 66        // 200 ms · the Mechanism's wheel: the dial and its plate
 
     // ── Geometry ──────────────────────────────────────────────
-    let g.unit = 4
-    let g.radius = 10               // islands
-    let g.radius.item = 8           // tiles inside them
-    let g.spine = 72                // the rail's width, and the surface's reserve
-
-    // ── The Mechanism (the bar) ───────────────────────────────
-    // The instrument is built from these, so a number changed here moves the whole bar
-    // and not one box. The scale is the 4 px grid.
-    //
-    // The bar is a gauge: one continuous spine down the rail axis, workspace positions
-    // marked as ticks crossing it, a carriage riding to the active tick, and a rotary
-    // wheel at the foot of the spine. Geometry carries the state (a tick's length is how
-    // much is there); colour only confirms it.
-    let g.rail_x = 30               // the rail's axis: the spine, ticks, carriage and wheel line up here
-    let g.tick = 46                 // pitch of one workspace position (the spine's detents)
-    let g.tick_h = 40               // a position's hit height (the pitch gives the 6 px gap)
-    let g.tick_min = 6              // the shortest tick: a position Hyprland has not created
-    let g.tick_max = 16             // the longest: a workspace with windows
-    let g.carriage = 12             // the carriage's half-height
-    let g.wheel_r = 18              // the rotary wheel's over-all radius
-    let g.key_w = 36                // a quick-access key
-    let g.key_h = 26
-    let g.sp = 30                   // pitch of one Region D status widget
-    let g.plate = 208               // the plate beside the rail (readout, mark menu)
-    let g.radius.key = 6            // keys and tick hover, inside the 8–12 px rule
+    // Corners follow the shell's rounding (bar.radius, in Appearance): islands a step rounder
+    // than the bar's modules, tiles inside them as round as the modules.
+    let g.radius = st_radius + 2    // islands
+    let g.radius.item = st_radius   // tiles inside them
 }

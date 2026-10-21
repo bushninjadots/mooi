@@ -15,17 +15,38 @@ library Island {
         let ih = ah + (h - ah) * rv
         let top = if(up, h - ih, 0)
         let left = if(centre, (w - iw) / 2, 0)
+        // machined like the bar: lighter at the top, a lit lip, a soft shadow under it
         body {
-            color: surface.primary
+            gradient: 0, top to 0, top + ih, surface.elevated, surface.primary 40%, bg.primary
             border: 1, border.subtle
             shadow: 0, 6 * rv, 22 * rv, 38% * rv
             box { from: left, top; size: iw, ih; corner: g.radius }
         }
+        line { from: left + g.radius, top + 1.5; to: left + iw - g.radius, top + 1.5; width: 1; color: fg.primary; opacity: 0.08 * rv }
         group {
             opacity: smooth(0.45, 1, rv)
             move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0)
             clip box { from: left, top; size: iw, ih; corner: g.radius }
             children
+        }
+    }
+
+    // A button's face, wherever an island has one: machined like the bar (lighter at the top, a lit
+    // lip), its edge lighting under the pointer, a neon bar under it when it is the chosen one, the
+    // second colour when it is armed (a close that asks twice). `dim`: it cannot act now.
+    component BtnFace(w: number, h: number, hover: number, lit: number, hot: number = 0, dim: bool = false) {
+        size: w, h
+        opacity: if(dim, 0.45, 1)
+        body {
+            gradient: 0, 0 to 0, h, mix(surface.elevated, fg.primary, 0.06 * hover), mix(surface.primary, selection.bg, lit)
+            box { from: 0, 0; size: w, h; corner: g.radius.item }
+        }
+        line { from: g.radius.item, 1; to: w - g.radius.item, 1; width: 1; color: fg.primary; opacity: 0.07 + 0.08 * hover }
+        box { from: 0, 0; size: w, h; corner: g.radius.item; stroke: 1
+              color: mix(mix(border.subtle, focus.ring, max(0.7 * hover, lit)), accent.secondary, hot) }
+        group {
+            glow: 6, (max(lit, hot)) * st_glow, mix(accent.primary, accent.secondary, hot)
+            box { from: w * 0.25, h - 3.5; size: w * 0.5, 2; corner: 1; color: mix(accent.primary, accent.secondary, hot); opacity: max(lit, hot) }
         }
     }
 
@@ -41,9 +62,17 @@ library Island {
         text label { at: 0, 10; anchor: left center; size: 12; color: fg.primary }
         text shown { at: w, 10; anchor: right center; size: 11; color: fg.secondary }
         zone box track { from: 0, 22; size: w, 14; cursor: pointer; role: slider; value: value; label: label }
-        box { from: 0, 27; size: w, 4; corner: 2; color: surface.elevated }
-        box { from: 0, 27; size: max(4, w * clamp(v, 0, 1)), 4; corner: 2; color: accent.primary }
-        ellipse { at: w * clamp(v, 0, 1), 29; radius: 5 + 1.5 * track.hover; color: fg.primary }
+        box { from: 0, 27; size: w, 4; corner: 2; color: bg.primary }
+        box { from: 0, 27; size: w, 4; corner: 2; stroke: 1; color: border.subtle }
+        group {
+            glow: 6, (0.7) * st_glow, accent.primary
+            box { from: 0, 28; size: max(2, w * clamp(v, 0, 1)), 2; corner: 1; color: accent.primary }
+        }
+        body {
+            gradient: 0, 20 to 0, 38, mix(surface.elevated, fg.primary, 0.25), surface.elevated
+            box { at: w * clamp(v, 0, 1), 29; size: 10, 18 + 2 * track.hover; corner: 2 }
+        }
+        box { at: w * clamp(v, 0, 1), 29; size: 2, 9; corner: 1; color: accent.primary }
         on press track { emit set(clamp(local.x / w, 0, 1)) }
         on drag track { emit set(clamp(local.x / w, 0, 1)) }
         on scroll track { emit set(clamp(value + wheel * 0.05, 0, 1)) }

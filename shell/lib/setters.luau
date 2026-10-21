@@ -1,7 +1,7 @@
 -- One setting to one value, by number: how the settings window (a program of its own,
 -- shell/mooi-settings.plm) and mooi agree on what a control means. Pure, so tests/unit runs it.
 --
--- `n = 1000 · code + v`. `code` is a place in M.SETTERS (from 1), or 100 + n / 200 + n for
+-- `n = 1000 · code + v`. `code` is a place in M.SETTERS (from 1; past 99, 200 more), or 100 + n / 200 + n for
 -- module n's `show` / `frame` (n from 0, in lib/barlayout's ORDER). `v` is an enum value's
 -- place in its list (from 0), 0 or 1 for a switch, and for a number its distance from the
 -- setting's minimum.
@@ -34,6 +34,12 @@ M.SETTERS = {
     "bar.height", "bar.offset",
     "apps.kitty", "apps.gtk", "apps.qt",
     "motion.speed", "motion.saver", "power.profile",
+    "notifications.dnd", "notifications.quiet_from", "notifications.quiet_to",
+    "shutter.enabled", "shutter.pointer", "shutter.edge", "shutter.density", "shutter.preview",
+    "shutter.arrange", "shutter.workspace", "shutter.behaviour", "shutter.connections",
+    "atlas.rows", "atlas.columns", "atlas.super_tab", "atlas.overview",
+    "atlas.private", "atlas.size", "atlas.dim", "atlas.zoom", "atlas.refresh",
+    "atlas.gesture",
 }
 
 local function row_of(path)
@@ -42,14 +48,21 @@ end
 
 -- Sets it in `settings` (in place). Returns the setting's path, or nil when `n` names nothing
 -- or a value the setting cannot take.
+-- The setting a control's code names (`list` is M.SETTERS unless a test gives its own). Settings
+-- past the 99th go on from 300, above the modules' 100 + n and 200 + n.
+function M.path(code, list)
+    list = list or M.SETTERS
+    local order = barlayout.ORDER
+    if code >= 300 then return list[code - 200] end
+    if code >= 200 then return order[code - 199] and "bar.modules." .. order[code - 199] .. ".frame" end
+    if code >= 100 then return order[code - 99] and "bar.modules." .. order[code - 99] .. ".show" end
+    return list[code]
+end
+
 function M.apply(settings, n)
     n = math.floor(tonumber(n) or -1)
     local code, v = math.floor(n / 1000), n % 1000
-    local order = barlayout.ORDER
-    local path
-    if code >= 200 and order[code - 199] then path = "bar.modules." .. order[code - 199] .. ".frame"
-    elseif code >= 100 and order[code - 99] then path = "bar.modules." .. order[code - 99] .. ".show"
-    else path = M.SETTERS[code] end
+    local path = M.path(code)
     local row = path and row_of(path)
     if not row then return nil end
     local value

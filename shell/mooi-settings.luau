@@ -42,6 +42,7 @@ end
 positions(config.defaults(), "df_")
 
 local layout                 -- the Layout page (below), rebuilt with every change
+local show_colour, show_power -- the custom colour's sliders and the Power page (below)
 local function publish(s)
     local P = setters.position
     fact.ws_style = P("bar.workspaces", s.bar.workspaces)
@@ -108,6 +109,8 @@ local function publish(s)
         fact["g_" .. id] = grouped[id] == true
     end
     if layout then layout(s) end
+    if show_colour then show_colour() end
+    if show_power then show_power() end
 end
 
 local function paint()
@@ -463,3 +466,139 @@ local function jump(n)
 end
 on("set_jump", function(v) jump(math.floor(tonumber(v) or -1)) end)
 on("submit:set_query", function() jump(0) end)
+
+-- ── Sound ──────────────────────────────────────────────────
+-- Where sound plays and listens (the `audio` service's devices; a press makes one the default),
+-- and what is playing, each with its own volume.
+local outs, ins, apps_on = {}, {}, {}
+sys.watch("audio", function(a)
+    if type(a) ~= "table" then return end
+    local function devices(list, base, keep)
+        local rows = {}
+        for i, d in ipairs(type(list) == "table" and list or {}) do
+            keep[i] = d.id
+            rows[#rows + 1] = { name = tostring(d.name or d.id or "?"), on = d.default == true, n = base + i - 1 }
+        end
+        return rows
+    end
+    outs, ins = {}, {}
+    model.snd_out = devices(a.outputs, 0, outs)
+    model.snd_in = devices(a.inputs, 100, ins)
+    apps_on = {}
+    local rows = {}
+    for _, p in ipairs(type(a.apps) == "table" and a.apps or {}) do
+        if #rows < 10 then
+            apps_on[#rows + 1] = p.id
+            rows[#rows + 1] = { name = tostring(p.name or p.binary or "?"), title = tostring(p.title or ""),
+                                vol = math.floor((tonumber(p.volume) or 0) * 100 + 0.5) }
+        end
+    end
+    model.snd_apps = rows
+end)
+on("snd_pick", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local id = (n >= 100) and ins[n - 99] or outs[n + 1]
+    if id then pcall(sys.call, "audio.default", id) end
+end)
+on("snd_app", function(v)
+    local n = math.floor(tonumber(v) or 0)
+    local id = apps_on[math.floor(n / 1000)]
+    if id then pcall(sys.call, "audio.app_volume", id, (n % 1000) / 100) end
+end)
+
+-- ── Displays ───────────────────────────────────────────────
+-- Read-only for now: what Hyprland has, every few seconds while the window is open.
+local function read_displays()
+    run("hyprctl", { "-j", "monitors" }, function(out, code)
+        local ok, list = pcall(json.decode, out or "")
+        if code ~= 0 or not ok or type(list) ~= "table" then return end
+        local rows = {}
+        for _, m in ipairs(list) do
+            rows[#rows + 1] = {
+                name = tostring(m.name or "?"),
+                model = string.format("%s %s", tostring(m.make or ""), tostring(m.model or "")),
+                mode = string.format("%d×%d @ %d Hz · ×%s", tonumber(m.width) or 0, tonumber(m.height) or 0,
+                    math.floor((tonumber(m.refreshRate) or 0) + 0.5), tostring(m.scale or 1)),
+                place = string.format("AT %d, %d%s", tonumber(m.x) or 0, tonumber(m.y) or 0, (m.transform or 0) ~= 0 and " · TURNED" or ""),
+                focused = m.focused == true,
+            }
+        end
+        model.dp_list = rows
+    end)
+end
+read_displays()
+every(5000, read_displays)
+
+-- ── Power ──────────────────────────────────────────────────
+local battery_now = nil
+function show_power()
+    local b = battery_now
+    if type(b) ~= "table" or not b.present then text.pw_text = "NO BATTERY" else
+        text.pw_text = string.format("%d%% · %s", math.floor((tonumber(b.percent) or 0) + 0.5), b.charging and "CHARGING" or "ON BATTERY")
+    end
+    local v = settings.motion.saver
+    fact.saving = v == "always" or (v == "battery" and type(b) == "table" and b.present == true and not b.charging)
+end
+sys.watch("battery", function(b) battery_now = b; show_power() end)
+run("powerprofilesctl", { "get" }, function(_, code) fact.pw_ppd = code == 0 end)
+
+-- ── Advanced ───────────────────────────────────────────────
+local home = tostring(sys.ask("env", "HOME"))
+local log_path = home .. "/.local/state/mooi/mooi.log"
+run("pleamar", { "--version" }, function(out)
+    text.adv_version = string.upper(tostring(text.bar_version) .. " · " .. string.gsub(tostring(out or ""), "%s+$", ""))
+end)
+local function read_advanced()
+    run("ps", { "-eo", "%cpu=,rss=,args=" }, function(out)
+        for line in string.gmatch(out or "", "[^\n]+") do
+            if string.find(line, "live/mooi.plm", 1, true) then
+                local cpu, rss = string.match(line, "^%s*([%d.]+)%s+(%d+)")
+                if cpu then text.adv_usage = string.format("%s%% OF A CORE · %d MB", cpu, math.floor(tonumber(rss) / 1024 + 0.5)) end
+            end
+        end
+    end)
+    run("tail", { "-n", "12", log_path }, function(out)
+        local rows = {}
+        for line in string.gmatch(out or "", "[^\n]+") do
+            local lower = string.lower(line)
+            rows[#rows + 1] = { line = line, warn = string.find(lower, "error", 1, true) ~= nil or string.find(lower, "fail", 1, true) ~= nil
+                or string.find(lower, "refused", 1, true) ~= nil }
+        end
+        model.adv_log = rows
+    end)
+end
+read_advanced()
+every(3000, read_advanced)
+on("adv_act", function(v)
+    local n = math.floor(tonumber(v) or 0)
+    local target = ({ text.bar_path, log_path, tostring(sys.ask("env", "MOOI_SHELL") or (home .. "/Projects/mooi/shell")) })[n]
+    if target then run("xdg-open", { target }) end
+end)
+
+-- ── The custom base colour ─────────────────────────────────
+-- bar.bg_colour as hue, richness and lightness; eight quick picks of the industrial kind.
+local QUICK = { "#101418", "#16181c", "#1c1f24", "#22201c", "#1d1218", "#0f1a16", "#14121f", "#1a1410" }
+function show_colour()
+    local c = ferro.hex(settings.bar.bg_colour) or ferro.hex("#101418")
+    local h, s, l = ferro.to_hsl(c)
+    fact.cp_h, fact.cp_s, fact.cp_l = math.floor(h + 0.5), math.floor(s * 100 + 0.5), math.floor(l * 100 + 0.5)
+    fact.cp_r, fact.cp_g, fact.cp_b = c.r, c.g, c.b
+    text.cp_hex = string.upper(ferro.to_hex(c))
+end
+for n, hex in ipairs(QUICK) do
+    local c = ferro.hex(hex)
+    fact["cq" .. (n - 1) .. "_r"], fact["cq" .. (n - 1) .. "_g"], fact["cq" .. (n - 1) .. "_b"] = c.r, c.g, c.b
+end
+on("set_colour", function(v)
+    local n = math.floor(tonumber(v) or 0)
+    if n >= 9000 then
+        settings.bar.bg_colour = QUICK[n - 8999] or settings.bar.bg_colour
+    else
+        local which, x = math.floor(n / 1000), n % 1000
+        local h, s, l = fact.cp_h, fact.cp_s / 100, fact.cp_l / 100
+        if which == 1 then h = x elseif which == 2 then s = x / 100 elseif which == 3 then l = x / 100 end
+        settings.bar.bg_colour = ferro.to_hex(ferro.hsl(h, s, l))
+    end
+    sys.call("files.write", FILE, settings)
+    publish(settings); paint()
+end)

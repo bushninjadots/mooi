@@ -9,7 +9,9 @@ M.ACTIONS = {
     { key = "search", cmd = "toggle", name = "Search" },
     { key = "window", cmd = "window", name = "Window actions" },
     { key = "atlas", cmd = "atlas", name = "Workspace Atlas" },
+    { key = "overview", cmd = "overview", name = "Overview" },
     { key = "system", cmd = "system", name = "System controls" },
+    { key = "shutter", cmd = "shutter", name = "Window shutter" },
     { key = "settings", cmd = "settings", name = "Settings" },
     { key = "edit", cmd = "edit", name = "Edit the bar" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
@@ -115,13 +117,39 @@ function M.look(d, pal, frame)
     return "hl.config({ " .. table.concat(parts, ", ") .. " })"
 end
 
+-- Every bind mooi asks Hyprland for: its keys, and — while the shutter is on and asks for it —
+-- Super+Alt+right-click, which opens the shutter on the window under the pointer (D35; Super with
+-- the right button alone stays Hyprland's resize, and right-click alone stays the app's).
+M.POINTER = "SUPER + ALT + mouse:273"
+M.SUPER_TAB = "SUPER + Tab"
+function M.binds(keys, shutter, atlas)
+    local out = {}
+    -- Super+Tab: the Overview, as it is in iNiR and most desktops (atlas.super_tab)
+    if type(atlas) == "table" and atlas.super_tab ~= false then out[#out + 1] = { M.SUPER_TAB, "overview" } end
+    for _, a in ipairs(M.ACTIONS) do
+        if a.key ~= "shutter" or not shutter or shutter.enabled ~= false then out[#out + 1] = { keys[a.key], a.cmd } end
+    end
+    if type(shutter) == "table" and shutter.enabled ~= false and shutter.pointer ~= false then out[#out + 1] = { M.POINTER, "shutter-here" } end
+    return out
+end
+
 -- The file custom/mooi.lua reads: a Lua table (no JSON reader there).
-function M.file(keys, d, pal, mooi, frame)
+-- A touchpad swipe that opens the Overview (D45, atlas.gesture): three or four fingers down —
+-- the one direction the desktop's own gestures leave free (sideways: workspaces; up: the special
+-- workspace and fullscreen). { fingers, direction, command } each; none while it is off.
+function M.gestures(atlas)
+    local n = type(atlas) == "table" and ({ three = 3, four = 4 })[atlas.gesture] or nil
+    return n and { { n, "down", "overview" } } or {}
+end
+function M.file(keys, d, pal, mooi, frame, shutter, atlas)
     local out = { "-- written by mooi (shell/lib/desktop.luau); read by ~/.config/hypr/config/custom/mooi.lua", "return {",
                   string.format("    mooi = %q,", mooi), "    keys = {" }
-    for _, a in ipairs(M.ACTIONS) do
-        out[#out + 1] = string.format("        { %q, %q },", keys[a.key], a.cmd)
+    for _, b in ipairs(M.binds(keys, shutter, atlas)) do
+        out[#out + 1] = string.format("        { %q, %q },", b[1], b[2])
     end
+    out[#out + 1] = "    },"
+    out[#out + 1] = "    gestures = {"
+    for _, g in ipairs(M.gestures(atlas)) do out[#out + 1] = string.format("        { %d, %q, %q },", g[1], g[2], g[3]) end
     out[#out + 1] = "    },"
     out[#out + 1] = "    look = " .. string.format("%q", M.look(d, pal, frame) or "") .. ","
     out[#out + 1] = "}"
