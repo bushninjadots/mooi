@@ -503,7 +503,8 @@ return function(ctx)
     local hour = 12
     local function claim()
         local mode = ctx.settings().notifications.server
-        return mode == "always" or (mode == "takeover" and ctx.mode == "takeover")
+        -- "takeover": whenever mooi holds the desktop — a takeover, or a standalone session (D48)
+        return mode == "always" or (mode == "takeover" and ctx.mode ~= "beside")
     end
     -- Do not disturb, now: always, while a focus block runs, or in the quiet hours.
     local function quiet()

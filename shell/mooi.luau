@@ -489,11 +489,6 @@ local function ov_per()
     if a.overview == "strip" then return math.min(math.max(#ws_rows, 1), STRIP_MAX) end
     return math.max(1, a.rows * a.columns)
 end
--- The canvas (D46) is a board with room to spare: a row and two columns more than the grid.
-local function canvas_board()
-    local a = settings.atlas
-    return math.min(a.columns + 2, 8), math.min(a.rows + 1, 4)
-end
 local function ov_shape(m)
     local a = settings.atlas
     local sc = tonumber(m.scale) or 1
@@ -502,7 +497,6 @@ local function ov_shape(m)
     local strip = a.overview == "strip"
     local rows, cols = a.rows, a.columns
     if strip then rows, cols = 1, ov_per() end
-    if a.overview == "canvas" then cols, rows = canvas_board() end
     fact.ov_canvas = a.overview == "canvas"
     local g = strip and atlas_geo.strip(w, h, cols, tonumber(fact.st_res) or 0) or atlas_geo.grid(w, h, rows, cols, tonumber(fact.st_res) or 0, a.size / 100)
     fact.ov_strip, fact.ov_rows, fact.ov_cols = strip, rows, cols
@@ -598,11 +592,23 @@ local identities = atlas_geo.identities((function()
     return ok and t or nil
 end)())
 local build_now
-local ov_ids, ov_slots = {}, {}   -- the page's workspaces and the slot each is drawn on (D46)
--- The keyboard's cell's slot, for the name field (and the menu's own, when it opens).
+local ov_ids, ov_rects = {}, {}   -- the workspaces shown and each one's rectangle in the world (D47)
+local fit_pending = false          -- the canvas opened: the next board sets the camera to show them all
+-- The camera's ways in (D47): the one that fills the screen with workspace `k` (0-based) — how it
+-- opens on the one you are on and dives into the one chosen — unless the strip or the zoom setting
+-- says it stays put; and, on the canvas, the one that shows them all.
+local function entry_cam(k)
+    local r = ov_rects[k + 1]
+    if not r or fact.ov_strip or not settings.atlas.zoom then
+        fact.ov_qx, fact.ov_qy, fact.ov_qz = fact.ov_cx, fact.ov_cy, fact.ov_cz
+        return
+    end
+    fact.ov_qx, fact.ov_qy, fact.ov_qz = atlas_geo.focus_cam(r, tonumber(fact.ov_W) or 1920)
+end
+-- The keyboard's workspace's rectangle, for the name field.
 local function ov_sel_slot()
-    local s = ov_slots[(tonumber(fact.ov_sel) or 0) + 1]
-    fact.ov_selc, fact.ov_selr = s and s.sc or 0, s and s.sr or 0
+    local r = ov_rects[(tonumber(fact.ov_sel) or 0) + 1]
+    fact.ov_nwx, fact.ov_nwy, fact.ov_nww = r and r.x or 0, r and r.y or 0, r and r.w or 0
 end
 on("fact:ov_sel", ov_sel_slot)   -- the scene's changes; the logic's own call ov_sel_slot() (a write here wakes no watcher)
 local cells_plain = {}  -- the Overview's cells as last built, each with all it knows (the search and the menus read these)
@@ -706,24 +712,40 @@ function build_now(done)
             model.sp_chips = spatial.chips
             -- The Overview (D37): a page of workspaces, rows × columns — the page the active one is
             -- on — each window placed in its workspace's cell by where it is on its monitor.
-            local per = ov_per()
-            local page = math.floor(math.max(0, atlas_active - 1) / per)
-            local cells, ids = {}, {}
-            for k = 0, per - 1 do ids[k + 1] = page * per + k + 1 end
             for _, m in ipairs(monitors) do
                 if m.focused then ov_shape(m) end
             end
-            -- every shape is drawn from slots (D46): the canvas's where they were put, the others in order
-            local slots
+            -- Which workspaces, and each one's rectangle in the world (D47): the grid's page in reading
+            -- order, its cells on the screen; the canvas's every workspace on the map and every one placed
+            -- on it, each a territory the size of the screen where it was put.
+            local per = ov_per()
+            local page = math.floor(math.max(0, atlas_active - 1) / per)
+            local cells, ids, slots, rects = {}, {}, {}, {}
             if fact.ov_canvas then
-                local scols, srows = canvas_board()
-                slots = atlas_geo.canvas_slots(ids, identities.canvas, scols, srows, settings.atlas.columns)
+                local seen = {}
+                for id = 1, #ws_rows do seen[id] = true end
+                for k in pairs(identities.canvas or {}) do seen[tonumber(k)] = true end
+                for id in pairs(seen) do ids[#ids + 1] = id end
+                table.sort(ids)
+                while #ids > 18 do table.remove(ids) end
+                page, per = 0, #ids
+                rects = atlas_geo.territories(ids, identities.canvas, fact.ov_W, fact.ov_H, 5)
             else
-                slots = {}
-                for k = 1, #ids do slots[k] = { sc = (k - 1) % math.max(fact.ov_cols, 1), sr = math.floor((k - 1) / math.max(fact.ov_cols, 1)) } end
+                for k = 0, per - 1 do ids[k + 1] = page * per + k + 1 end
+                local cols = math.max(fact.ov_cols, 1)
+                for k = 1, #ids do
+                    slots[k] = { sc = (k - 1) % cols, sr = math.floor((k - 1) / cols) }
+                    rects[k] = { x = fact.ov_gx + slots[k].sc * (fact.ov_cw + fact.ov_gap), y = fact.ov_gy + slots[k].sr * (fact.ov_ch + fact.ov_gap), w = fact.ov_cw, h = fact.ov_ch }
+                end
             end
-            ov_ids, ov_slots = ids, slots
-            local marks = atlas_geo.group_marks(identities, ids, fact.ov_cols, slots)
+            ov_ids, ov_rects = ids, rects
+            if fact.ov_canvas then
+                fact.ov_fx, fact.ov_fy, fact.ov_fz = atlas_geo.fit(rects, fact.ov_W, fact.ov_H, (tonumber(fact.st_res) or 0) + 70, 60)
+                if fit_pending then fit_pending = false; fact.ov_cx, fact.ov_cy, fact.ov_cz = fact.ov_fx, fact.ov_fy, fact.ov_fz end
+            else
+                fact.ov_cx, fact.ov_cy, fact.ov_cz, fact.ov_fx, fact.ov_fy, fact.ov_fz = 0, 0, 1, 0, 0, 1
+            end
+            local marks = atlas_geo.group_marks(identities, ids, fact.ov_cols, (not fact.ov_canvas) and slots or nil)
             local where = atlas_geo.cell_monitors(ids, ws_list, monitors)
             fact.ov_multi = where.multi
             for k, id in ipairs(ids) do
@@ -734,25 +756,30 @@ function build_now(done)
                              name = who.name, named = who.name ~= "", acc = atlas_geo.accent_index(who.accent),
                              group = g.gname, grp = g.grp, gacc = g.gacc, gname = string.upper(g.gname), gfirst = g.gfirst, glink = g.glink, hit = false,
                              mon = where[k].mon, monned = where[k].mon ~= "", elsewhere = where[k].elsewhere,
-                             sc = slots[k].sc, sr = slots[k].sr }
+                             tx = rects[k].x, ty = rects[k].y, tw = rects[k].w, th = rects[k].h,
+                             label = string.format("%02d", id) .. (who.name ~= "" and (" / " .. string.upper(who.name)) or ""),
+                             sub = (r and r.windows or 0) == 1 and "1 WINDOW" or ((r and r.windows or 0) > 0 and ((r.windows) .. " WINDOWS") or "EMPTY") }
             end
             cells_plain = cells
             model.ov_cells = cells
-            fact.ov_act = (atlas_active >= page * per + 1 and atlas_active <= page * per + per) and (atlas_active - 1 - page * per) or -1
-            local act = slots[fact.ov_act + 1]
-            fact.ov_actc, fact.ov_actr = act and act.sc or 0, act and act.sr or 0
+            fact.ov_act = -1
+            for k, id in ipairs(ids) do if id == atlas_active then fact.ov_act = k - 1 end end
+            local act = rects[fact.ov_act + 1]
+            fact.ov_awx, fact.ov_awy, fact.ov_aww, fact.ov_awh = act and act.x or 0, act and act.y or 0, act and act.w or 0, act and act.h or 0
+            entry_cam(tonumber(fact.ov_zc) or 0)
             ov_sel_slot()
             local by_id = {}
             for _, m in ipairs(monitors) do by_id[tonumber(m.id) or -1] = m end
             for i, r in ipairs(rows) do
                 local c = clients[i]
                 local m = c and by_id[c.monitor]
-                local k = (tonumber(r.ws) or 0) - 1 - page * per
-                if m and k >= 0 and k < per then
+                local k = -1
+                for j, id in ipairs(ids) do if id == tonumber(r.ws) then k = j - 1 end end
+                if m and k >= 0 then
                     local sc = tonumber(m.scale) or 1
                     local mw, mh = (tonumber(m.width) or 1920) / sc, (tonumber(m.height) or 1080) / sc
                     r.ocell = k
-                    r.sc, r.sr = slots[k + 1].sc, slots[k + 1].sr
+                    r.tx, r.ty, r.tw, r.th = rects[k + 1].x, rects[k + 1].y, rects[k + 1].w, rects[k + 1].h
                     r.mx, r.my, r.mw, r.mh = tonumber(m.x) or 0, tonumber(m.y) or 0, mw, mh   -- its monitor, for placing it (D45)
                     r.fx, r.fy = (c.x - (tonumber(m.x) or 0)) / mw, (c.y - (tonumber(m.y) or 0)) / mh
                     r.fw, r.fh = c.w / mw, c.h / mh
@@ -886,47 +913,80 @@ local function rearrange(i, px, py)
         build_tiles()
     end)
 end
--- Where a pointer at (x, y) on the panel is: the board's slot and the workspace on it (D46).
-local function under(x, y)
-    local g = { gx = fact.ov_gx, gy = fact.ov_gy, cw = fact.ov_cw, ch = fact.ov_ch, gap = fact.ov_gap, cols = fact.ov_cols, rows = fact.ov_rows }
-    local c, r = atlas_geo.slot_at(g, x, y)
-    if not c then return nil end
-    local k = atlas_geo.cell_at(ov_slots, c, r)
-    return c, r, k and (k - 1) or nil, g
+-- A point on the screen, in the world: where the camera puts it (D47).
+local function to_world(x, y)
+    local z = tonumber(fact.ov_cz) or 1
+    return x / z + (tonumber(fact.ov_cx) or 0), y / z + (tonumber(fact.ov_cy) or 0)
 end
-local function unpack_xy(v)
-    local n = math.floor(tonumber(v) or -1)
-    return math.floor(n / 100000000), math.floor(n / 10000) % 10000, n % 10000
-end
--- A carried window let go at (x, y) (`n` = 100000000 · tile + 10000 · x + y): on another workspace
--- it goes there (the marked ones with it); on its own it is placed or swapped; elsewhere, nothing.
+-- Where something was let go: the scene sets it beside the event (packed into one number it lost its
+-- last digits — the scene counts in 32-bit floats).
+local function dropped_at() return tonumber(fact.ov_px) or 0, tonumber(fact.ov_py) or 0 end
+-- Window `i` let go: on another workspace it goes there (the marked ones with it); on its own it is
+-- placed or swapped; elsewhere, nothing.
 on("ov_drop_xy", function(v)
-    local i, x, y = unpack_xy(v)
+    local i = math.floor(tonumber(v) or -1)
+    local x, y = dropped_at()
     local item = board[i + 1]
-    local c, r, k, g = under(x, y)
+    local wx, wy = to_world(x, y)
+    local k = atlas_geo.at_world(ov_rects, wx, wy)
     if not item or not k then return end
-    if k == item.ocell then
-        rearrange(i, (x - (g.gx + c * (g.cw + g.gap))) / g.cw, (y - (g.gy + r * (g.ch + g.gap))) / g.ch)
-    else
-        drop_on_cell(i, k)
-    end
+    k = k - 1
+    local r = ov_rects[k + 1]
+    if k == item.ocell then rearrange(i, (wx - r.x) / r.w, (wy - r.y) / r.h)
+    else drop_on_cell(i, k) end
 end)
--- The canvas (D46): workspace `k` carried by its number to (x, y) goes to the slot there; one
--- already on it takes the carried one's old slot. Kept in workspaces.json.
-on("ov_slot", function(v)
-    local k, x, y = unpack_xy(v)
-    local c, r = under(x, y)
+-- The canvas (D47): territory `k` set down with its corner where it was let go: kept there, to 40
+-- px of the world.
+local SNAP = 40
+on("ov_place", function(v)
+    local k = math.floor(tonumber(v) or -1)
+    local x, y = dropped_at()
     local cell = cells_plain[k + 1]
-    if not fact.ov_canvas or not c or not cell then return end
-    identities = atlas_geo.canvas_move(identities, ov_ids, ov_slots, cell.id, c, r)
+    if not fact.ov_canvas or not cell then return end
+    local wx, wy = to_world(x, y)
+    identities = atlas_geo.canvas_place(identities, cell.id, atlas_geo.snap(wx, SNAP), atlas_geo.snap(wy, SNAP))
     save_identities()
     build_tiles()
 end)
+-- A double press on the open canvas: a new workspace there — the next number after every one shown —
+-- kept on the canvas; Hyprland makes it when it is first gone to.
+on("ov_create", function(v)
+    if not fact.ov_canvas then return end
+    local wx, wy = to_world(dropped_at())
+    local top = 0
+    for _, id in ipairs(ov_ids) do top = math.max(top, id) end
+    local id = top + 1
+    if id > 99 or #ov_ids >= 18 then ov_say(false, "Eighteen workspaces is the most the canvas holds"); return end
+    local W, H = tonumber(fact.ov_W) or 1920, tonumber(fact.ov_H) or 1080
+    identities = atlas_geo.canvas_place(identities, id, atlas_geo.snap(wx - W / 2, SNAP), atlas_geo.snap(wy - H / 2, SNAP))
+    save_identities()
+    ov_say(true, string.format("Workspace %d made here · double-click it to open it", id))
+    build_tiles()
+end)
+-- The canvas's camera back to the workspace you are on, as near as it is.
+local function centre_on(k)
+    local r = ov_rects[k + 1]
+    if not r then return end
+    local z = tonumber(fact.ov_cz) or 1
+    local top = (tonumber(fact.st_res) or 0) + 70
+    fact.ov_cx = r.x + r.w / 2 - (tonumber(fact.ov_W) or 1920) / 2 / z
+    fact.ov_cy = r.y + r.h / 2 - (top + ((tonumber(fact.ov_H) or 1080) - top) / 2) / z
+end
+on("ov_here", function() centre_on(math.max(tonumber(fact.ov_act) or 0, 0)) end)
 -- ↑ ↓: the nearest workspace above or below (on the canvas as on the grid).
 on("ov_nav", function(v)
-    local k = atlas_geo.canvas_near(ov_slots, tonumber(fact.ov_sel) or 0, tonumber(v) == -1 and "up" or "down")
-    if k then fact.ov_sel, fact.ov_win = k, -1; ov_sel_slot() end
+    local k = atlas_geo.near(ov_rects, tonumber(fact.ov_sel) or 0, tonumber(v) == -1 and "up" or "down")
+    if not k then return end
+    fact.ov_sel, fact.ov_win = k, -1; ov_sel_slot()
+    -- on the canvas, one out of view is brought into it
+    if fact.ov_canvas then
+        local r, z = ov_rects[k + 1], tonumber(fact.ov_cz) or 1
+        local sx, sy = (r.x - fact.ov_cx) * z, (r.y - fact.ov_cy) * z
+        if sx < 0 or sy < 0 or sx + r.w * z > fact.ov_W or sy + r.h * z > fact.ov_H then centre_on(k) end
+    end
 end)
+-- The workspace the camera dives into as the Overview closes (a press, Enter, a window chosen).
+on("fact:ov_zc", function(v) entry_cam(tonumber(v) or 0) end)
 -- Middle-click closes a window, as in iNiR: the window island's verified close (the app may ask
 -- to save first; the board follows what Hyprland then says).
 local function close_tile(v)
@@ -940,6 +1000,29 @@ local function close_tile(v)
     end)
 end
 on("ov_close", close_tile)
+-- The canvas's action strip under a selected window: focus it, float or tile it, fullscreen, close
+-- (asked twice in the strip) — each the verified action.
+on("ov_wact", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local i, a = math.floor(n / 10), n % 10
+    local item = board[i + 1]
+    if not item or not hypr.valid_address(item.address) then return end
+    if a == 0 then
+        fact.ov_zc = item.ocell; entry_cam(item.ocell)
+        fact.open = "none"
+        run_action("focus", item.address, {}, function() end)
+    elseif a == 1 or a == 2 then
+        fact.atlas_busy = true
+        run_action(a == 1 and "float" or "fullscreen", item.address, {}, function(ok)
+            fact.atlas_busy = false
+            ov_say(ok, text.feedback)
+            build_tiles()
+        end)
+    elseif a == 3 then
+        fact.ov_win = -1
+        close_tile(i)
+    end
+end)
 -- Alt+↑ ↓: the next (or previous) window in the keyboard's cell (Enter then focuses it).
 on("ov_pick", function(v)
     local i = atlas_geo.next_window(board, fact.ov_sel, fact.ov_win, tonumber(v) == -1 and -1 or 1)
@@ -1070,7 +1153,7 @@ local function open_menu(k, tile)
     if fact.ov_canvas and next(identities.canvas or {}) then
         table.insert(menu_items, #menu_items + 1, { kind = "tidy", label = "Put every workspace back in order", danger = false })
     end
-    fact.ov_mc, fact.ov_mr = cell.sc or 0, cell.sr or 0   -- the menu opens beside its slot (D46)
+    fact.ov_mwx, fact.ov_mwy, fact.ov_mww = cell.tx or 0, cell.ty or 0, cell.tw or 0   -- beside its workspace (D47)
     text.ov_mtitle = cell.named and string.format("WORKSPACE %d · %s", cell.id, string.upper(cell.name)) or ("WORKSPACE " .. cell.id)
     show_menu()
     fact.ov_msel, fact.ov_mopen = 0, k
@@ -1165,8 +1248,9 @@ on("ov_menu_do", function(v)
     end
 end)
 on("ov_go", function(v)
-    local cell = model.ov_cells[math.floor(tonumber(v) or -1) + 1]
-    if cell then sys.call("workspaces.focus", cell.id) end
+    local k = math.floor(tonumber(v) or -1)
+    local cell = cells_plain[k + 1]
+    if cell then entry_cam(k); sys.call("workspaces.focus", cell.id) end
 end)
 -- What the Overview opens on: the monitor it is drawn on.
 on("fact:open", function(v)
@@ -1178,8 +1262,10 @@ on("fact:open", function(v)
         return
     end
     text.ov_q, fact.ov_searching = "", false
-    -- the cell to zoom out of is the workspace you are on, known now (the board comes a beat later)
-    fact.ov_zc = math.max(0, atlas_active - 1) % ov_per()
+    -- the workspace to pull back from is the one you are on (the board comes a beat later); the canvas
+    -- opens showing them all
+    fact.ov_zc = math.max(fact.ov_act, 0)
+    if fact.ov_canvas then fit_pending = true; fact.ov_cx, fact.ov_cy, fact.ov_cz = fact.ov_fx, fact.ov_fy, fact.ov_fz end
     fact.ov_sel = fact.ov_zc
     ov_sel_slot()
     run("hyprctl", { "-j", "monitors" }, function(out, code)
@@ -1469,6 +1555,7 @@ local function keys_sig(k)
     local out = {}
     for _, b in ipairs(desktop.binds(k, settings.shutter, settings.atlas)) do out[#out + 1] = tostring(b[1]) .. "=" .. b[2] end
     for _, g in ipairs(desktop.gestures(settings.atlas)) do out[#out + 1] = string.format("gesture %d %s=%s", g[1], g[2], g[3]) end
+    if settings.session.standalone then out[#out + 1] = "standalone" end   -- (D48: its keys too)
     return table.concat(out, "|")
 end
 function sync_desktop()
@@ -1476,7 +1563,7 @@ function sync_desktop()
     local d = settings.desktop
     local bin = sys.ask("env", "MOOI_BIN")
     if type(bin) ~= "string" or bin == "" then bin = tostring(sys.ask("env", "HOME")) .. "/Projects/mooi/bin/mooi" end
-    local file = desktop.file(settings.keys, d, bar_palette, bin, settings.frame, settings.shutter, settings.atlas)
+    local file = desktop.file(settings.keys, d, bar_palette, bin, settings.frame, settings.shutter, settings.atlas, settings.session)
     local ksig = keys_sig(settings.keys)
     if applied.keys == nil then
         -- The first look: the keys Hyprland really bound (custom/mooi.lua writes them down)

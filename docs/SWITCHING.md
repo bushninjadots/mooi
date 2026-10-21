@@ -1,6 +1,36 @@
 # Switching between ArchEclipse and mooi
 
-**ArchEclipse is always the shell you log into.** Nothing in Hyprland's autostart mentions mooi, and every mooi state lives in `$XDG_RUNTIME_DIR` (tmpfs, wiped at logout). A reboot or re-login always lands in ArchEclipse.
+## mooi as the whole desktop (D48)
+
+> **ArchEclipse is uninstalled on this machine (2026-10-21, D48).** mooi is the desktop whatever the
+> setting says, and the way back below needs it restored first: `tar xzf
+> ~/.local/state/mooi/archive-2026-10-21-archeclipse.tar.gz -C ~`, then the `exec.lua` / `bind.lua`
+> backups from `~/.local/state/mooi/dotfiles-backup-20261021-uninstall/` (or `git checkout` them in the
+> home repo).
+
+**Settings → Advanced → "mooi is the whole desktop"** (`session.standalone`) makes mooi the shell you log
+into. ArchEclipse stays installed and is never started:
+
+- at login `~/.config/hypr/config/custom/mooi.lua` runs `bin/mooi session`; ArchEclipse's own start
+  hook still calls `bar.sh`, which stands down while the setting is on (`bar.sh --force` starts
+  ArchEclipse anyway), and its fullscreen watcher never brings the bar back;
+- `bin/mooi session` holds the desktop like a takeover, serves notifications, and never hands back to
+  ArchEclipse; if mooi crashes three times in a row the keeper gives up **and says so in a critical
+  notification** (Super+Shift+B starts it again);
+- the keys that only reached ArchEclipse are mooi's: **Super** and **Super+A** search · **Super+R** the
+  system panel · **Super+L** notices · **Super+Shift+V** clipboard · **Super+Escape** the power menu
+  (wlogout) · **Super+Shift+R** / **Super+Ctrl+Shift+R** record the screen / an area · **Super+Shift+B**
+  (re)start mooi. Toggle bar (Super+Alt), media panel (Super+M), emoji (Super+.) and notes
+  (Super+Shift+N) have nothing in mooi yet: they are let go rather than calling a shell that is not there;
+- the lock and suspend keys and hypridle use `scripts/lock-session.sh` (ArchEclipse's lock if it runs,
+  hyprlock otherwise), and the clipboard history mooi shows is fed by `cliphist` from login.
+
+**Back to ArchEclipse:** switch the setting off — the next login is ArchEclipse's — or now:
+`bin/mooi stop` then `~/.config/hypr/scripts/bar.sh --force`.
+
+## Beside ArchEclipse (the setting off)
+
+**ArchEclipse is the shell you log into.** Every mooi state lives in `$XDG_RUNTIME_DIR` (tmpfs, wiped at logout).
 
 ## The keys
 

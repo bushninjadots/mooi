@@ -177,6 +177,10 @@ M.SCHEMA = {
     { path = "atlas.dim", kind = "integer", default = 55, min = 0, max = 80 },
     { path = "atlas.zoom", kind = "boolean", default = true },
     { path = "atlas.refresh", kind = "enum", values = { "open", "steady" }, default = "open" },
+    -- mooi as the whole desktop (D48): started at login in place of ArchEclipse's bar, the keys that
+    -- only reached ArchEclipse taken over, and nothing bringing ArchEclipse back. ArchEclipse stays
+    -- installed: switched off, it is the login shell again.
+    { path = "session.standalone", kind = "boolean", default = false },
     -- A touchpad swipe down to open it (D45): off, or with three or four fingers.
     { path = "atlas.gesture", kind = "enum", values = { "off", "three", "four" }, default = "off" },
     { path = "keys.overview", kind = "key", default = "SUPER + ALT + O" },

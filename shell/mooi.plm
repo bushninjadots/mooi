@@ -56,7 +56,7 @@ scene Mooi {
     model spaces max 16 { id: number; windows: number; active: bool; exists: bool; name: text; monitor: text; label: text; icon: image 16, 16; iconed: bool; joined: bool }
     model atlas_tiles max 40 { ws: number; address: text; title: text; app: text; picture: image 400, 225; stale: bool; col: number; row: number; sx: number; sy: number; sw: number; sh: number; svis: bool
                                   ocell: number; fx: number; fy: number; fw: number; fh: number; priv: bool; mark: bool
-                                  icon: image 48, 48; iconed: bool; hit: bool; tx: number; ty: number; tw: number; th: number }
+                                  icon: image 48, 48; iconed: bool; hit: bool; tx: number; ty: number; tw: number; th: number; floating: bool }
     fact atlas_view = 0       // 0 the windows' grid · 1 the workspaces board · 2 spatial: the monitors as they are laid out
     fact atlas_cols = 10      // the board's columns: the workspace map's length (the logic)
     fact bd_press = -1        // the board's tile under a press, and the one being carried
@@ -142,9 +142,11 @@ scene Mooi {
     fact bd_ox = 0            // where a carried window was taken, from its corner
     fact bd_oy = 0
     event ov_close ->         // to the logic: close tile n's window (middle-click, as in iNiR)
-    event ov_drop_xy ->       // to the logic: 100000000 · tile + 10000 · x + y — a carried window let go there (D45, D46)
-    event ov_place ->         // to the logic: 10000000000 · cell + 100000 · (x + 20000) + (y + 20000) — a territory set down (D47)
-    event ov_create ->        // to the logic: 10000 · x + y — a double press on the open canvas
+    event ov_drop_xy ->       // to the logic: tile n let go at (ov_px, ov_py) (D45, D47)
+    fact ov_px = 0            // where something was let go, on the screen: beside the event, not packed into it —
+    fact ov_py = 0            // the scene counts in 32-bit floats, and a packed number loses its last digits
+    event ov_place ->         // to the logic: territory n set down with its corner at (ov_px, ov_py) (D47)
+    event ov_create ->        // to the logic: a double press on the open canvas, at (ov_px, ov_py)
     event ov_wact ->          // to the logic: 10 · tile + 0 focus · 1 float · 2 fullscreen · 3 close (the canvas's action strip)
     event ov_here ->          // to the logic: the camera back to the workspace you are on
     event ov_land             // a territory set down: its windows land with it
@@ -828,6 +830,8 @@ scene Mooi {
     event note_dnd ->          // to the logic: do not disturb on or off
     event note_clear ->        // to the logic: dismiss every notice
     event clips ->             // to the logic: read the clipboard's history
+    event open_notes           // `mooi notes` (Super+L standalone): the side panel's notices, open or closed (D48)
+    event open_clips           // `mooi clipboard` (Super+Shift+V standalone): its clipboard history
     event clip_pick ->         // to the logic: copy clipboard entry n
     event caffeine ->          // to the logic: keep awake, on or off
     event record ->            // to the logic: record (1 an area, 0 the screen) or stop
@@ -912,6 +916,13 @@ scene Mooi {
     // its place in the grid as the others come in round it; going, the chosen one grows back out.
     spring fl.zoom = 430, 41        // ~320 ms
     prop ov_z = 0 ~fl.zoom
+    // the Overview's camera (D47): where it is to be while open, the workspace chosen as it closes
+    prop cam_x = 0 ~fl.zoom
+    prop cam_y = 0 ~fl.zoom
+    prop cam_z = 1 ~fl.zoom
+    follow cam_x = if(open == overview, ov_cx, ov_qx)
+    follow cam_y = if(open == overview, ov_cy, ov_qy)
+    follow cam_z = if(open == overview, ov_cz, ov_qz)
     layer life.overview {
         shown while open == overview { ov_z: 1 ~fl.zoom }
         gone                         { ov_z: 0 ~fl.zoom }
@@ -3371,12 +3382,6 @@ scene Mooi {
         // shows the world: on the canvas you pan and zoom it; in every shape it opens on the workspace
         // you are on, filling the screen, and pulls back (and dives into the one chosen as it closes).
         // No glow: it redraws with every move of the camera or a carried window.
-        prop cam_x = 0 ~fl.zoom
-        prop cam_y = 0 ~fl.zoom
-        prop cam_z = 1 ~fl.zoom
-        follow cam_x = if(open == overview, ov_cx, ov_qx)
-        follow cam_y = if(open == overview, ov_cy, ov_qy)
-        follow cam_z = if(open == overview, ov_cz, ov_qz)
         prop ov_ax = 0 ~180ms     // the active workspace's rectangle, sliding to where the focus goes
         prop ov_ay = 0 ~180ms
         follow ov_ax = ov_awx
@@ -3392,8 +3397,9 @@ scene Mooi {
 
             // ── the field: the grid's dim, or the canvas's near-black ground with its coordinate grid —
             // late, so the first of the pull-back is the desktop itself
-            box { from: 0, 0; size: ov_W, ov_H; color: #000000; opacity: if(ov_strip, ov_dim * 0.55, ov_dim) * ov_z * ov_z; show: not ov_canvas }
-            box { from: 0, 0; size: ov_W, ov_H; color: mix(bg.primary, #000000, 0.55); opacity: 0.96 * ov_z * ov_z; show: ov_canvas }
+            // (a layer that cannot be seen is not drawn: the whole screen, blended, is the costly part)
+            box { from: 0, 0; size: ov_W, ov_H; color: mix(fl.ground, #000000, 0.5); opacity: if(ov_strip, ov_dim * 0.55, ov_dim) * ov_z * ov_z; show: not ov_canvas and ov_z > 0.05 }
+            box { from: 0, 0; size: ov_W, ov_H; color: fl.ground; opacity: 0.97 * ov_z * ov_z; show: ov_canvas and ov_z > 0.05 }
             // grid lines every 240 (close), 960 or 3840 (far) of the world, quieter as it pulls back,
             // clearer while something is carried
             let ov_gs = if(cam_z > 0.25, 240, if(cam_z > 0.07, 960, 3840))
@@ -3419,7 +3425,7 @@ scene Mooi {
             // is selected (the canvas); on the canvas a drag pans, the wheel zooms where the pointer is,
             // and a double press makes a workspace there
             zone box ov_bg { from: 0, 0; size: ov_W, ov_H; role: region; label: "The open field" }
-            on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas and time - bg_last < 0.35 { emit ov_create(floor(max(local.x, 0)) * 10000 + floor(max(local.y, 0))) }
+            on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas and time - bg_last < 0.35 { ov_px = local.x; ov_py = local.y; emit ov_create(1) }
             on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 { bg_press = 1; bg_moved = 0; pan_cx = ov_cx; pan_cy = ov_cy; bg_last = time }
             on drag ov_bg while bg_press == 1 and ov_canvas and length(drag.dx, drag.dy) > 4 { bg_moved = 1; ov_cx = pan_cx - drag.dx / ov_cz; ov_cy = pan_cy - drag.dy / ov_cz; cam_x: ov_cx ~0ms; cam_y: ov_cy ~0ms }
             on release ov_bg while bg_press == 1 and bg_moved == 0 and not ov_canvas { bg_press = 0; open = none }
@@ -3435,8 +3441,16 @@ scene Mooi {
                 show: not ov_canvas
                 opacity: ov_oa
                 move: 0, ov_slide
-                box { from: ov_gx - 10, ov_gy - 10 - ov_search_h; size: ov_pw + 20, ov_ph + 44 + ov_search_h; corner: 12; color: fl.hull; opacity: 0.985 }
-                box { from: ov_gx - 10, ov_gy - 10 - ov_search_h; size: ov_pw + 20, ov_ph + 44 + ov_search_h; corner: 12; stroke: 1; color: border.subtle }
+                // machined like the islands (ui/island.plm): lighter at the top, a lit lip, a soft shadow; the
+                // corners and the opacity are the theme's (Appearance → corners, opacity)
+                body {
+                    gradient: 0, ov_gy - 10 - ov_search_h to 0, ov_gy + ov_ph + 34, surface.elevated, surface.primary 40%, bg.primary
+                    border: 1, border.subtle
+                    shadow: 0, 6, 22, 38%
+                    opacity: max(st_opacity, 0.9)
+                    box { from: ov_gx - 10, ov_gy - 10 - ov_search_h; size: ov_pw + 20, ov_ph + 44 + ov_search_h; corner: g.radius }
+                }
+                line { from: ov_gx - 10 + g.radius, ov_gy - 8.5 - ov_search_h; to: ov_gx + ov_pw + 10 - g.radius, ov_gy - 8.5 - ov_search_h; width: 1; color: fg.primary; opacity: 0.08 }
                 box { from: ov_gx + 14, ov_gy - 11 - ov_search_h; size: 56, 2; color: fl.phos }
                 box { from: ov_gx, ov_gy - 10; size: ov_pw, 1; color: border.subtle }
             }
@@ -3457,7 +3471,7 @@ scene Mooi {
                 let zc.$k = k == ov_zc and ov_z < 0.999           // the one the screen pulls back from
                 let hot.$k = bd_drag >= 0 and sp_hx >= lx.$k and sp_hx <= lx.$k + lw.$k and sp_hy >= ly.$k and sp_hy <= ly.$k + lh.$k
                 let lit.$k = hot.$k or (ov_searching and ov_cells.$k.hit) or (ov_canvas and ov_cells.$k.active)
-                let cc.$k = clamp(min(lw.$k, lh.$k) * 0.06, 3, 16)  // the clipped corners
+                let cc.$k = clamp(min(lw.$k, lh.$k) * 0.06, 3, 6 + g.radius)  // the clipped corners, as deep as the theme's rounding allows
                 group {
                     show: k < ov_cells.count
                     z: if(cdr.$k, 9, 0)
@@ -3468,14 +3482,14 @@ scene Mooi {
                     // the grid's plate
                     group {
                         show: not ov_canvas
-                        box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: 6 * ov_z; opacity: if(zc.$k, clamp(ov_z * 2 - 1, 0, 1), 1)
-                              color: if(hot.$k, mix(surface.elevated, accent.primary, 0.16), mix(surface.elevated, fg.primary, 0.05 * ovc.$k.hover)) }
-                        box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: 6 * ov_z; stroke: if(lit.$k, 2, 1); color: if(lit.$k, accent.primary, border.subtle)
+                        box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: g.radius.item * ov_z; opacity: if(zc.$k, clamp(ov_z * 2 - 1, 0, 1), 1)
+                              color: if(hot.$k, mix(surface.elevated, accent.primary, 0.16), mix(surface.elevated, fg.primary, 0.05 * ovc.$k.hover)); show: not zc.$k or ov_z > 0.5 }
+                        box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: g.radius.item * ov_z; stroke: if(lit.$k, 2, 1); color: if(lit.$k, accent.primary, border.subtle)
                               opacity: if(zc.$k, clamp(ov_z * 2 - 1, 0, 1), 1) }
                     }
                     // the canvas's territory
                     group {
-                        show: ov_canvas
+                        show: ov_canvas and (not zc.$k or ov_z > 0.5)
                         opacity: if(zc.$k, clamp(ov_z * 2 - 1, 0, 1), 1)
                         path { color: if(hot.$k, mix(surface.primary, accent.primary, 0.14), surface.primary); opacity: 0.55
                                move lx.$k + cc.$k, ly.$k; line lx.$k + lw.$k - cc.$k, ly.$k; line lx.$k + lw.$k, ly.$k + cc.$k; line lx.$k + lw.$k, ly.$k + lh.$k - cc.$k
@@ -3523,31 +3537,33 @@ scene Mooi {
                 let is.$i = clamp(min(dw.$i, dh.$i) * 0.35, 12, 44)
                 let found.$i = ov_searching and atlas_tiles.$i.hit
                 let picked.$i = ov_win == i and open == overview
+                // its fade, given to each of its parts: a group's own opacity is drawn offscreen, and forty of
+                // them the size of the screen as it pulls back cost frames (D47)
+                let to.$i = if(tk.$i == ov_zc, clamp(ov_z * 1.6 - 0.4, 0, 1), ov_oa) * if(ov_searching and not atlas_tiles.$i.hit and not car.$i, 0.25, 1)
                 group {
-                    show: i < atlas_tiles.count and tk.$i >= 0 and tk.$i < ov_cells.count
-                    z: if(car.$i, 10, if(tdr.$i or picked.$i, 9, 0))
-                    opacity: if(tk.$i == ov_zc, clamp(ov_z * 1.6 - 0.4, 0, 1), ov_oa) * if(ov_searching and not atlas_tiles.$i.hit and not car.$i, 0.25, 1)
+                    show: i < atlas_tiles.count and tk.$i >= 0 and tk.$i < ov_cells.count and to.$i > 0.01
+                    z: if(car.$i, 10, if(tdr.$i or picked.$i, 9, if(atlas_tiles.$i.floating, 2, 0)))   // floating over tiled, as Hyprland shows them
                     move: 0, if(tk.$i == ov_zc or car.$i or ov_canvas, 0, ov_slide)
                     zone box otile.$i { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: 4; cursor: grab; role: button
                                         label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}" }
-                    box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: 3; color: surface.primary }
-                    image atlas_tiles.$i.picture { at: dx.$i, dy.$i; size: dw.$i, dh.$i; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                    // a veil that lifts under the pointer, and the app's icon in the middle
-                    box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: 3; color: bg.primary
-                          opacity: if(car.$i or found.$i or picked.$i, 0.04, 0.22 - 0.16 * otile.$i.hover) }
-                    image atlas_tiles.$i.icon { at: dx.$i + dw.$i / 2 - is.$i / 2, dy.$i + dh.$i / 2 - is.$i / 2; size: is.$i, is.$i; show: atlas_tiles.$i.iconed }
-                    // near enough, its title along its top
+                    box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: max(g.radius.item - 3, 2); color: surface.primary; opacity: to.$i }
+                    // the picture, a little dimmed until it is pointed at, carried, found or picked (its opacity
+                    // over the dark backing, not a veil over it: one full-size layer fewer for every window)
+                    image atlas_tiles.$i.picture { at: dx.$i, dy.$i; size: dw.$i, dh.$i
+                                                   opacity: to.$i * if(atlas_tiles.$i.stale, 0.5, 1) * if(car.$i or found.$i or picked.$i, 1, 0.74 + 0.26 * otile.$i.hover) }
+                    image atlas_tiles.$i.icon { at: dx.$i + dw.$i / 2 - is.$i / 2, dy.$i + dh.$i / 2 - is.$i / 2; size: is.$i, is.$i; opacity: to.$i; show: atlas_tiles.$i.iconed }
+                    // on the canvas, near enough, its title along its top (the grid's cells carry their own labels)
                     group {
-                        show: dw.$i > 230
-                        box { from: dx.$i, dy.$i; size: dw.$i, 18; color: bg.primary; opacity: 0.78 }
-                        text "{atlas_tiles.$i.app} · {atlas_tiles.$i.title}" { at: dx.$i + 8, dy.$i + 9; anchor: left center; size: 10; color: fg.secondary; width: dw.$i - 16; lines: 1 }
+                        show: ov_canvas and dw.$i > 230
+                        box { from: dx.$i, dy.$i; size: dw.$i, 18; color: bg.primary; opacity: 0.78 * to.$i }
+                        text "{atlas_tiles.$i.app} · {atlas_tiles.$i.title}" { at: dx.$i + 8, dy.$i + 9; anchor: left center; size: 10; color: fg.secondary; width: dw.$i - 16; lines: 1; opacity: to.$i }
                     }
                     text "PRIVATE" { at: dx.$i + dw.$i / 2, dy.$i + dh.$i / 2 + is.$i / 2 + 9; anchor: center; size: 9; family: "Share Tech Mono"; color: fg.muted
-                                     show: atlas_tiles.$i.priv and dw.$i > 56 }
-                    box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: 3; stroke: if(car.$i or atlas_tiles.$i.mark or found.$i or picked.$i, 1.6, 1)
+                                     opacity: to.$i; show: atlas_tiles.$i.priv and dw.$i > 56 }
+                    box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: max(g.radius.item - 3, 2); opacity: to.$i; stroke: if(car.$i or atlas_tiles.$i.mark or found.$i or picked.$i, 1.6, 1)
                           color: if(car.$i or picked.$i, focus.ring, if(atlas_tiles.$i.mark, fl.ember, if(found.$i, accent.primary, mix(border.subtle, accent.primary, otile.$i.hover)))) }
                     // marked: an ember corner notch, so it reads without its colour too
-                    path { color: fl.ember; show: atlas_tiles.$i.mark
+                    path { color: fl.ember; opacity: to.$i; show: atlas_tiles.$i.mark
                            move dx.$i, dy.$i; line dx.$i + 12, dy.$i; line dx.$i, dy.$i + 12; close }
                     // picked or selected: brackets set off its corners; on the canvas, its actions under it
                     group {
@@ -3594,7 +3610,7 @@ scene Mooi {
                     on drag otile.$i while bd_press == i and bd_drag < 0 and length(drag.dx, drag.dy) > 5 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
                     on drag otile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
                     on release otile.$i while bd_drag == i { wx.$i: (sp_hx - bd_ox) / cam_z + cam_x ~0ms; wy.$i: (sp_hy - bd_oy) / cam_z + cam_y ~0ms
-                                                              emit ov_drop_xy(i * 100000000 + floor(max(sp_hx, 0)) * 10000 + floor(max(sp_hy, 0))); bd_drag = -1; bd_press = -1 }
+                                                              ov_px = sp_hx; ov_py = sp_hy; emit ov_drop_xy(i); bd_drag = -1; bd_press = -1 }
                     on release otile.$i while bd_drag < 0 and bd_press == i and not ov_canvas { bd_press = -1; ov_zc = tk.$i; emit atlas_window(i); open = none }
                     on release otile.$i while bd_drag < 0 and bd_press == i and ov_canvas { bd_press = -1; ov_win = i; ov_sel = tk.$i; ov_warm = -1 }
                     on press right otile.$i while open == overview and not atlas_busy and bd_drag < 0 { emit ov_menu_win(i) }
@@ -3606,7 +3622,7 @@ scene Mooi {
             }
 
             // ── the active workspace: in the grid a border sliding to it; on the canvas its territory is lit
-            box { from: (ov_ax - cam_x) * cam_z - 1, (ov_ay - cam_y) * cam_z - 1; size: ov_aww * cam_z + 2, ov_awh * cam_z + 2; corner: 7 * ov_z; stroke: 2; color: accent.primary
+            box { from: (ov_ax - cam_x) * cam_z - 1, (ov_ay - cam_y) * cam_z - 1; size: ov_aww * cam_z + 2, ov_awh * cam_z + 2; corner: (g.radius.item + 1) * ov_z; stroke: 2; color: accent.primary
                   show: ov_act >= 0 and not ov_canvas; opacity: if(ov_act == ov_zc and ov_z < 0.999, clamp(ov_z * 2 - 1, 0, 1), ov_oa) }
 
             // ── over each workspace: in the grid its number, name, accent, group and monitor; on the
@@ -3653,10 +3669,13 @@ scene Mooi {
                         show: ov_canvas
                         let np.$k = min(max(lw.$k * 0.6, 150), 320)
                         zone box ovh.$k { from: lx.$k, ly.$k - 26; size: np.$k, 20; cursor: move; role: button; label: "Workspace {ov_cells.$k.id} — carry it to move it" }
-                        box { from: lx.$k, ly.$k - 26; size: np.$k, 20; color: fl.hull; opacity: 0.92 }
-                        box { from: lx.$k, ly.$k - 26; size: np.$k, 20; stroke: 1; color: if(cd_drag == k or ovh.$k.hover > 0.5, accent.primary, border.subtle) }
-                        // the active one's marker, lit
-                        box { from: lx.$k, ly.$k - 26; size: 3, 20; color: if(ov_cells.$k.active, accent.primary, if(ov_cells.$k.acc == 2, fl.ember, if(ov_cells.$k.acc == 1, fl.phos, fl.trace))) }
+                        box { from: lx.$k, ly.$k - 26; size: np.$k, 20; corner: min(g.radius.item, 6); color: fl.hull; opacity: 0.92 }
+                        box { from: lx.$k, ly.$k - 26; size: np.$k, 20; corner: min(g.radius.item, 6); stroke: 1; color: if(cd_drag == k or ovh.$k.hover > 0.5, accent.primary, border.subtle) }
+                        // the active one's marker, lit (the theme's glow: none while the battery saver is on)
+                        group {
+                            glow: 6, (if(ov_cells.$k.active, 0.8, 0)) * st_glow, accent.primary
+                            box { from: lx.$k, ly.$k - 26; size: 3, 20; color: if(ov_cells.$k.active, accent.primary, if(ov_cells.$k.acc == 2, fl.ember, if(ov_cells.$k.acc == 1, fl.phos, fl.trace))) }
+                        }
                         text "{ov_cells.$k.label}" { at: lx.$k + 10, ly.$k - 16; anchor: left center; size: 10.5; weight: 600; family: "Share Tech Mono"; width: np.$k - 16; lines: 1
                                                      color: if(ov_cells.$k.active, accent.primary, fg.primary) }
                         text "{ov_cells.$k.sub}" { at: lx.$k + np.$k - 8, ly.$k - 16; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: np.$k > 190 }
@@ -3667,13 +3686,13 @@ scene Mooi {
                             text ov_cells.$k.gname { at: lx.$k, ly.$k + lh.$k + 16; anchor: left center; size: 9; family: "Share Tech Mono"
                                                      color: if(gc.$k == 2, fl.ember, if(gc.$k == 1, fl.phos, fg.secondary)); show: lw.$k > 140 }
                         }
-                        text "NEW · NOT OPENED YET" { at: lx.$k + lw.$k / 2, ly.$k + lh.$k / 2 + 30; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.muted
+                        text "NOT OPENED YET" { at: lx.$k + lw.$k / 2, ly.$k + lh.$k / 2 + 30; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.muted
                                                       show: not ov_cells.$k.exists and lw.$k > 160 }
                         on press ovh.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 { cd_press = k; cd_ox = local.x - lx.$k; cd_oy = local.y - ly.$k; sp_hx = local.x; sp_hy = local.y; ov_sel = k }
                         on drag ovh.$k while cd_press == k and cd_drag < 0 and length(drag.dx, drag.dy) > 4 { cd_drag = k; sp_hx = local.x; sp_hy = local.y }
                         on drag ovh.$k while cd_drag == k { sp_hx = local.x; sp_hy = local.y }
                         on release ovh.$k while cd_drag == k { tx.$k: (sp_hx - cd_ox) / cam_z + cam_x ~0ms; ty.$k: (sp_hy - cd_oy) / cam_z + cam_y ~0ms
-                                                               emit ov_land(k); emit ov_place(k * 10000000000 + floor(max(sp_hx - cd_ox + 20000, 0)) * 100000 + floor(max(sp_hy - cd_oy + 20000, 0)))
+                                                               ov_px = sp_hx - cd_ox; ov_py = sp_hy - cd_oy; emit ov_land(k); emit ov_place(k)
                                                                cd_drag = -1; cd_press = -1 }
                         on release ovh.$k while cd_drag < 0 and cd_press == k { cd_press = -1 }
                         on press right ovh.$k while open == overview and bd_drag < 0 { ov_sel = k; ov_win = -1; emit ov_menu_open(k) }
@@ -3705,8 +3724,13 @@ scene Mooi {
             group {
                 opacity: ov_oa
                 move: 0, ov_slide
-                box { from: srx - 10, sry - 18; size: srw + 20, 36; color: fl.hull; opacity: 0.94; show: ov_canvas }
-                box { from: srx - 10, sry - 18; size: srw + 20, 36; stroke: 1; color: border.subtle; show: ov_canvas }
+                body {
+                    gradient: 0, sry - 18 to 0, sry + 18, surface.elevated, surface.primary 40%, bg.primary
+                    border: 1, border.subtle
+                    shadow: 0, 4, 16, 34%
+                    show: ov_canvas
+                    box { from: srx - 10, sry - 18; size: srw + 20, 36; corner: g.radius.item }
+                }
                 box { from: srx + 4, sry - 19; size: 48, 2; color: fl.phos; show: ov_canvas }
                 ellipse { at: srx + 12, sry; radius: 5.5; stroke: 1.5; color: if(ov_searching, accent.primary, fg.secondary) }
                 line { from: srx + 16, sry + 4; to: srx + 20, sry + 8; width: 1.5; color: if(ov_searching, accent.primary, fg.secondary) }
@@ -3736,7 +3760,7 @@ scene Mooi {
 
             // ── the hint line: in the grid's plate, at the canvas's foot
             let hy = if(ov_canvas, ov_H - 26, ov_gy + ov_ph + 17)
-            let hx = if(ov_canvas, 24, ov_W / 2)
+            let hx = ov_W / 2
             group {
                 opacity: if(ov_canvas, ov_oa, ov_oa * ov_oa)
                 move: 0, if(ov_canvas, 0, ov_slide)
@@ -3744,16 +3768,16 @@ scene Mooi {
                      at: hx, hy; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fl.muted
                      show: not ov_said and ov_nmark == 0 and not ov_naming and not ov_canvas }
                 text "DRAG THE FIELD TO PAN · WHEEL ZOOMS · DOUBLE-CLICK THE FIELD: A NEW WORKSPACE · CARRY A NAMEPLATE TO MOVE IT · CLICK A WINDOW: ITS ACTIONS · CTRL+F FIT · ESC BACK" {
-                     at: hx, hy; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: fl.muted
+                     at: ov_W / 2 - 150, hy; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fl.muted
                      show: not ov_said and ov_nmark == 0 and not ov_naming and ov_canvas }
                 text "{ov_nmark} MARKED · CARRY ONE OF THEM, OR MENU › MOVE HERE, TO MOVE THEM ALL · ESC CLEARS" {
-                     at: hx, hy; anchor: if(ov_canvas, left center, center); size: 10; family: "Share Tech Mono"; color: fl.ember
+                     at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember
                      show: not ov_said and ov_nmark > 0 and not ov_naming }
                 text "NAME THIS WORKSPACE · ENTER KEEPS IT · EMPTY CLEARS IT · ESC LEAVES IT AS IT WAS" {
-                     at: hx, hy; anchor: if(ov_canvas, left center, center); size: 10; family: "Share Tech Mono"; color: fl.phos; show: ov_naming and not ov_naming_group }
+                     at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: ov_naming and not ov_naming_group }
                 text "NAME THE GROUP · ENTER KEEPS IT · ESC LEAVES IT" {
-                     at: hx, hy; anchor: if(ov_canvas, left center, center); size: 10; family: "Share Tech Mono"; color: fl.phos; show: ov_naming_group }
-                text ov_msg { at: hx, hy; anchor: if(ov_canvas, left center, center); size: 10.5; family: "Share Tech Mono"; color: if(ov_ok, fl.phos, fl.ember)
+                     at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: ov_naming_group }
+                text ov_msg { at: hx, hy; anchor: center; size: 10.5; family: "Share Tech Mono"; color: if(ov_ok, fl.phos, fl.ember)
                               show: ov_said and not ov_naming }
             }
 
@@ -3764,8 +3788,12 @@ scene Mooi {
                 opacity: ov_oa
                 let nvx = ov_W - 300
                 let nvy = ov_H - 40
-                box { from: nvx, nvy; size: 276, 26; color: fl.hull; opacity: 0.94 }
-                box { from: nvx, nvy; size: 276, 26; stroke: 1; color: border.subtle }
+                body {
+                    gradient: 0, nvy to 0, nvy + 26, surface.elevated, surface.primary 40%, bg.primary
+                    border: 1, border.subtle
+                    shadow: 0, 4, 16, 34%
+                    box { from: nvx, nvy; size: 276, 26; corner: g.radius.item }
+                }
                 repeat b in 0..5 {
                     let bx.$b = nvx + pick(b, 0, 36, 108, 144, 204)
                     let bw.$b = pick(b, 36, 72, 36, 60, 72)
@@ -3796,8 +3824,12 @@ scene Mooi {
             let ov_my = clamp((ov_mwy - cam_y) * cam_z, ov_top + 8, ov_H - 30 - ov_menu.count * 28 - 10)
             group {
                 show: ov_mopen >= 0 and open == overview
-                box { from: ov_mx, ov_my; size: ov_mw, 30 + ov_menu.count * 28; corner: 8; color: fl.hull }
-                box { from: ov_mx, ov_my; size: ov_mw, 30 + ov_menu.count * 28; corner: 8; stroke: 1; color: border.subtle }
+                body {
+                    gradient: 0, ov_my to 0, ov_my + 30 + ov_menu.count * 28, surface.elevated, surface.primary 40%, bg.primary
+                    border: 1, border.subtle
+                    shadow: 0, 6, 22, 38%
+                    box { from: ov_mx, ov_my; size: ov_mw, 30 + ov_menu.count * 28; corner: g.radius }
+                }
                 box { from: ov_mx + 12, ov_my - 1; size: 40, 2; color: fl.phos }
                 text ov_mtitle { at: ov_mx + 12, ov_my + 15; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: fl.muted }
                 repeat j in 0..8 {
@@ -3806,7 +3838,7 @@ scene Mooi {
                         show: j < ov_menu.count
                         zone box mrow.$j { from: ov_mx + 4, ry.$j; size: ov_mw - 8, 26; corner: 4; cursor: pointer; role: item; selected: ov_msel == j
                                            label: "{ov_menu.$j.label}" }
-                        box { from: ov_mx + 4, ry.$j; size: ov_mw - 8, 26; corner: 4; color: selection.bg; opacity: if(ov_msel == j, 0.9, 0) }
+                        box { from: ov_mx + 4, ry.$j; size: ov_mw - 8, 26; corner: g.radius.item; color: selection.bg; opacity: if(ov_msel == j, 0.9, 0) }
                         box { from: ov_mx + 4, ry.$j + 6; size: 2, 14; color: if(ov_menu.$j.danger, fl.ember, accent.primary); show: ov_msel == j }
                         text ov_menu.$j.label { at: ov_mx + 16, ry.$j + 13; anchor: left center; size: 11.5; width: ov_mw - 28; lines: 1
                                                 color: if(ov_menu.$j.danger, fl.ember, fg.primary) }
@@ -3830,8 +3862,12 @@ scene Mooi {
             group {
                 show: env_open > 0 and open == overview
                 zone box envbox { from: ov_ex, ov_ey; size: ov_ew, ov_eh; role: region; label: "Environments" }
-                box { from: ov_ex, ov_ey; size: ov_ew, ov_eh; corner: 8; color: fl.hull }
-                box { from: ov_ex, ov_ey; size: ov_ew, ov_eh; corner: 8; stroke: 1; color: border.subtle }
+                body {
+                    gradient: 0, ov_ey to 0, ov_ey + ov_eh, surface.elevated, surface.primary 40%, bg.primary
+                    border: 1, border.subtle
+                    shadow: 0, 6, 22, 38%
+                    box { from: ov_ex, ov_ey; size: ov_ew, ov_eh; corner: g.radius }
+                }
                 box { from: ov_ex + 12, ov_ey - 1; size: 48, 2; color: fl.phos }
                 text env_title { at: ov_ex + 14, ov_ey + 18; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: fl.muted; width: ov_ew - 120; lines: 1 }
                 text "ESC BACK" { at: ov_ex + ov_ew - 14, ov_ey + 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
@@ -3857,7 +3893,7 @@ scene Mooi {
                         show: j < env_rows.count and j >= ov_eoff and j < ov_eoff + ov_evis
                         zone box erow.$j { from: ov_ex + 6, ey.$j; size: ov_ew - 12, ov_erh - 4; corner: 4; cursor: pointer; role: item; selected: env_sel == j
                                            label: "{env_rows.$j.label}" }
-                        box { from: ov_ex + 6, ey.$j; size: ov_ew - 12, ov_erh - 4; corner: 4; color: selection.bg; opacity: if(env_sel == j, 0.9, 0.35 * erow.$j.hover) }
+                        box { from: ov_ex + 6, ey.$j; size: ov_ew - 12, ov_erh - 4; corner: g.radius.item; color: selection.bg; opacity: if(env_sel == j, 0.9, 0.35 * erow.$j.hover) }
                         box { from: ov_ex + 6, ey.$j + 6; size: 2, ov_erh - 16; color: if(env_rows.$j.danger, fl.ember, accent.primary); show: env_sel == j }
                         text env_rows.$j.label { at: ov_ex + 18, ey.$j + if(env_open == 1, 12, (ov_erh - 4) / 2); anchor: left center; size: 12; width: ov_ew - 40; lines: 1
                                                  color: if(env_rows.$j.danger, fl.ember, fg.primary) }
@@ -4071,6 +4107,10 @@ scene Mooi {
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,
     // Ctrl+M, Ctrl+Z, F2, Menu, Shift+F10, Escape — Enter is its submit.
+    on open_notes while side == notes { side = none }
+    on open_notes while side != notes { side = notes; mark_open = false; open = none }
+    on open_clips while side == clips { side = none }
+    on open_clips while side != clips { emit clips; side = clips; mark_open = false; open = none }
     on open_overview while open == overview { open = none }
     on open_overview while open != overview { ov_sel = ov_zc; ov_mopen = -1; ov_win = -1; ov_warm = -1; cam_x: ov_qx ~0ms; cam_y: ov_qy ~0ms; cam_z: ov_qz ~0ms
                                               open = overview; mark_open = false; focus ov_q }

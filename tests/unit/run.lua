@@ -1038,6 +1038,18 @@ test("overview gesture: off, or three or four fingers down, written beside the k
     eq(string.find(f, '{ 3, "down", "overview" }', 1, true) ~= nil, true, "in the file custom/mooi.lua reads")
 end)
 
+test("standalone: mooi as the whole desktop, written where Hyprland and the scripts read it", function()
+    local desktop = require("lib/desktop")
+    local d = config.defaults()
+    eq(d.session.standalone, false, "off until chosen: ArchEclipse stays the login shell")
+    local f = desktop.file(d.keys, d.desktop, nil, "/bin/mooi", nil, nil, { super_tab = true }, { standalone = true })
+    eq(string.find(f, "standalone = true", 1, true) ~= nil, true, "on: in the file custom/mooi.lua reads")
+    f = desktop.file(d.keys, d.desktop, nil, "/bin/mooi", nil, nil, { super_tab = true }, { standalone = false })
+    eq(string.find(f, "standalone = false", 1, true) ~= nil, true, "off: said so")
+    local s, p = config.validate({ session = { standalone = "yes" } })
+    eq(#p, 1, "a word is not a switch"); eq(s.session.standalone, false, "and is left off")
+end)
+
 test("overview rearrange: swap tiled windows, place a floating one, leave the rest to Hyprland", function()
     local atlas = require("lib/atlas")
     local tiles = { { address = "0xa", ocell = 1, fx = 0, fy = 0, fw = 0.5, fh = 1, floating = false },

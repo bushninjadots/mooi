@@ -39,7 +39,7 @@ M.SETTERS = {
     "shutter.arrange", "shutter.workspace", "shutter.behaviour", "shutter.connections",
     "atlas.rows", "atlas.columns", "atlas.super_tab", "atlas.overview",
     "atlas.private", "atlas.size", "atlas.dim", "atlas.zoom", "atlas.refresh",
-    "atlas.gesture",
+    "atlas.gesture", "session.standalone",
 }
 
 local function row_of(path)

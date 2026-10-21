@@ -38,7 +38,7 @@ SETTERS = [
     "shutter.arrange", "shutter.workspace", "shutter.behaviour", "shutter.connections",
     "atlas.rows", "atlas.columns", "atlas.super_tab", "atlas.overview",
     "atlas.private", "atlas.size", "atlas.dim", "atlas.zoom", "atlas.refresh",
-    "atlas.gesture",
+    "atlas.gesture", "session.standalone",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -248,10 +248,10 @@ SECTIONS = [
         ("toggle", "Zoom out of your workspace", "The workspace you are on shrinks into its place; off, the panel just comes down", "atlas.zoom", "sv_atlas_zoom"),
         ("choice", "Touchpad swipe", "Swipe down to open it; down is the one way your desktop's own gestures leave free", "atlas.gesture", "sv_atlas_gesture", ["Off", "3 fingers", "4 fingers"]),
         ("card", "Shape"),
-        ("choice", "Shape", "A grid; a strip under the bar; or a canvas to arrange them on — drag a workspace by its number", "atlas.overview", "sv_atlas_overview", ["Grid", "Strip", "Canvas"]),
-        ("slider", "Rows", "How many rows of workspaces (the canvas has one more to arrange in)", "atlas.rows", 1, 3, "{sv_atlas_rows + 1, 0}", "sv_atlas_overview != 1"),
-        ("slider", "Columns", "How many workspaces in a row (the canvas has two more)", "atlas.columns", 2, 6, "{sv_atlas_columns + 2, 0}", "sv_atlas_overview != 1"),
-        ("slider", "Size", "Each workspace, as a share of the screen; it shrinks if it would not fit", "atlas.size", 14, 24, "{sv_atlas_size + 14, 0}%", "sv_atlas_overview != 1"),
+        ("choice", "Shape", "A grid; a strip under the bar; or a canvas — pan, zoom, and place each workspace anywhere", "atlas.overview", "sv_atlas_overview", ["Grid", "Strip", "Canvas"]),
+        ("slider", "Rows", "How many rows of workspaces", "atlas.rows", 1, 3, "{sv_atlas_rows + 1, 0}", "sv_atlas_overview == 0"),
+        ("slider", "Columns", "How many workspaces in a row", "atlas.columns", 2, 6, "{sv_atlas_columns + 2, 0}", "sv_atlas_overview == 0"),
+        ("slider", "Size", "Each workspace, as a share of the screen; it shrinks if it would not fit", "atlas.size", 14, 24, "{sv_atlas_size + 14, 0}%", "sv_atlas_overview == 0"),
         ("slider", "Dim behind", "How dark the desktop goes behind it", "atlas.dim", 0, 80, "{sv_atlas_dim, 0}%"),
         ("card", "Window pictures"),
         ("toggle", "Pictures", "Live pictures of windows in the Overview and the Atlas", "atlas.previews", "previews"),
@@ -296,6 +296,8 @@ SECTIONS = [
         ("slider", "Search results", "How many results search shows", "command.max_results", 3, 10, "{sv_command_max_results + 3, 0}"),
     ]),
     ("Advanced", "Advanced", "What mooi is doing, where it keeps things, and its log", "SYSTEM", [
+        ("card", "Session"),
+        ("toggle", "mooi is the whole desktop", "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", "session.standalone", "sv_session_standalone"),
         ("card", "mooi"),
         ("info", "Version", "The shell and Pleamar it runs on", "adv_version"),
         ("info", "The bar", "Its process's share of a core, and its memory", "adv_usage"),

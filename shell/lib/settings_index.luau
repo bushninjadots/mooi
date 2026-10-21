@@ -92,9 +92,9 @@ local rows = {
     { title = "Super+Tab opens it", desc = "Its own key (in Keys) always does", tab = 11, page = "Overview", y = 156 },
     { title = "Zoom out of your workspace", desc = "The workspace you are on shrinks into its place; off, the panel just comes down", tab = 11, page = "Overview", y = 216 },
     { title = "Touchpad swipe", desc = "Swipe down to open it; down is the one way your desktop's own gestures leave free", tab = 11, page = "Overview", y = 276 },
-    { title = "Shape", desc = "A grid; a strip under the bar; or a canvas to arrange them on — drag a workspace by its number", tab = 11, page = "Overview", y = 402 },
-    { title = "Rows", desc = "How many rows of workspaces (the canvas has one more to arrange in)", tab = 11, page = "Overview", y = 462 },
-    { title = "Columns", desc = "How many workspaces in a row (the canvas has two more)", tab = 11, page = "Overview", y = 522 },
+    { title = "Shape", desc = "A grid; a strip under the bar; or a canvas — pan, zoom, and place each workspace anywhere", tab = 11, page = "Overview", y = 402 },
+    { title = "Rows", desc = "How many rows of workspaces", tab = 11, page = "Overview", y = 462 },
+    { title = "Columns", desc = "How many workspaces in a row", tab = 11, page = "Overview", y = 522 },
     { title = "Size", desc = "Each workspace, as a share of the screen; it shrinks if it would not fit", tab = 11, page = "Overview", y = 582 },
     { title = "Dim behind", desc = "How dark the desktop goes behind it", tab = 11, page = "Overview", y = 642 },
     { title = "Pictures", desc = "Live pictures of windows in the Overview and the Atlas", tab = 11, page = "Overview", y = 768 },
@@ -110,6 +110,7 @@ local rows = {
     { title = "Confirm before closing", desc = "Ask once more before closing a window", tab = 16, page = "System", y = 522 },
     { title = "Follow a window you move", desc = "Moving a window to a workspace takes you there too", tab = 16, page = "System", y = 582 },
     { title = "Search results", desc = "How many results search shows", tab = 16, page = "System", y = 708 },
+    { title = "mooi is the whole desktop", desc = "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", tab = 17, page = "Advanced", y = 156 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -129,7 +130,7 @@ rows.resets = {
     [14] = { "motion.saver", "power.profile" },
     [15] = { "@keys" },
     [16] = { "notifications.server", "notifications.dnd", "notifications.quiet_from", "notifications.quiet_to", "tray.style", "island.confirm_close", "island.follow_on_send", "command.max_results" },
-    [17] = {  },
+    [17] = { "session.standalone" },
 }
 rows.layout_tab = 4
 return rows

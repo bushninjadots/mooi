@@ -141,13 +141,14 @@ function M.gestures(atlas)
     local n = type(atlas) == "table" and ({ three = 3, four = 4 })[atlas.gesture] or nil
     return n and { { n, "down", "overview" } } or {}
 end
-function M.file(keys, d, pal, mooi, frame, shutter, atlas)
+function M.file(keys, d, pal, mooi, frame, shutter, atlas, session)
     local out = { "-- written by mooi (shell/lib/desktop.luau); read by ~/.config/hypr/config/custom/mooi.lua", "return {",
                   string.format("    mooi = %q,", mooi), "    keys = {" }
     for _, b in ipairs(M.binds(keys, shutter, atlas)) do
         out[#out + 1] = string.format("        { %q, %q },", b[1], b[2])
     end
     out[#out + 1] = "    },"
+    out[#out + 1] = "    standalone = " .. tostring(type(session) == "table" and session.standalone == true) .. ","
     out[#out + 1] = "    gestures = {"
     for _, g in ipairs(M.gestures(atlas)) do out[#out + 1] = string.format("        { %d, %q, %q },", g[1], g[2], g[3]) end
     out[#out + 1] = "    },"

@@ -1,7 +1,10 @@
 #!/bin/sh
-# mooi — launcher and shell switch. ArchEclipse stays the shell you log into:
-# nothing here runs at login and nothing survives a logout.
+# mooi — launcher and shell switch. Beside ArchEclipse, or — with Settings → Advanced → "mooi is the
+# whole desktop" (session.standalone) — the shell you log into, ArchEclipse left installed but never
+# started (D48; ~/.config/hypr/config/custom/mooi.lua starts `mooi session` at login).
 #
+#   mooi session           mooi is the whole desktop: like a takeover, but nothing brings ArchEclipse
+#                          back when it ends (what the login starts when standalone is on)
 #   mooi toggle            the command membrane; starts mooi beside ArchEclipse first if needed
 #                          (Super+Alt+Space)
 #   mooi start             start mooi beside ArchEclipse (detached, restarted if it crashes)
@@ -17,6 +20,8 @@
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
 #                          one under the pointer (Super+Alt+right-click)
 #   mooi settings | edit   open or close the settings window; the bar's edit mode on or off
+#   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
+#   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
 #   mooi theme-sync [--light] [image]
@@ -65,6 +70,8 @@ takeover_active() { [ -f "$marker" ] && alive "$(cat "$marker" 2>/dev/null)"; }
 archeclipse_running() {
     pgrep -af -- "$HOME/.config/quickshell/archeclipse" 2>/dev/null | grep -v -F 'ipc call' | grep -q .
 }
+# ArchEclipse may be uninstalled (D48): then there is nothing to hand the desktop back to.
+archeclipse_installed() { [ -x "$bar_sh" ] && [ -d "$HOME/.config/quickshell/archeclipse" ]; }
 wait_for() { # seconds, command…
     n=$(($1 * 10)); shift
     while [ "$n" -gt 0 ]; do "$@" && return 0; sleep 0.1; n=$((n - 1)); done; return 1
@@ -386,13 +393,16 @@ keep() {
     exec 8>"$rt/keep.lock"
     flock -n 8 || { echo "mooi: already running" >&2; exit 1; }
     echo $$ > "$keep_pid"
-    [ "$mode" = takeover ] && echo $$ > "$marker"
+    echo "$mode" > "$rt/mode"
+    # A takeover and a session both hold the desktop (the marker the scripts look for); only a
+    # takeover gives it back to ArchEclipse when it ends.
+    [ "$mode" != beside ] && echo $$ > "$marker"
     end() {
-        if [ "$mode" = takeover ] && [ "$(cat "$marker" 2>/dev/null)" = "$$" ]; then
+        if [ "$mode" != beside ] && [ "$(cat "$marker" 2>/dev/null)" = "$$" ]; then
             rm -f "$marker"
-            archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1 8>&-
+            [ "$mode" = takeover ] && archeclipse_installed && { archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1 8>&-; }
         fi
-        rm -f "$keep_pid"
+        rm -f "$keep_pid" "$rt/mode"
     }
     child=""
     trap '[ -n "$child" ] && kill -TERM "$child" 2>/dev/null; end; exit 0' TERM INT HUP
@@ -404,9 +414,15 @@ keep() {
         child=$!
         wait "$child"; code=$?
         [ "$code" -eq 0 ] && break
-        [ "$mode" = takeover ] && [ ! -f "$marker" ] && break   # bar.sh ended the takeover
+        [ "$mode" != beside ] && [ ! -f "$marker" ] && break   # bar.sh ended the takeover
         if [ $(($(date +%s) - start)) -lt 10 ]; then tries=$((tries + 1)); else tries=0; fi
-        [ "$tries" -ge 3 ] && { echo "mooi-keep: died $tries times quickly, giving up" >> "$log"; break; }
+        if [ "$tries" -ge 3 ]; then
+            echo "mooi-keep: died $tries times quickly, giving up" >> "$log"
+            # said where it will be seen: without it a standalone desktop simply has no bar
+            command -v notify-send >/dev/null 2>&1 && notify-send -u critical -a mooi "mooi stopped" \
+                "It crashed three times in a row. Super+Shift+B starts it again; the log: $log" 8>&-
+            break
+        fi
         echo "mooi-keep: exited with $code, restarting" >> "$log"
         sleep "$tries"
     done
@@ -442,6 +458,7 @@ case "$cmd" in
         exec "$pleamar" --say "$name" "emit open_command" ;;
     takeover)
         takeover_active && { echo "mooi already holds the desktop"; exit 0; }
+        archeclipse_installed || exec "$self" session
         [ "$("$engine_sh" get 2>/dev/null)" = marea ] && { echo "Marea is the shell engine; switch to ArchEclipse first (SUPER+CTRL+SHIFT+B)" >&2; exit 1; }
         # The fullscreen sync restarts ArchEclipse's bar on every focus change unless it knows
         # about the marker, so without its guard the takeover would not hold (docs/SWITCHING.md).
@@ -463,6 +480,25 @@ case "$cmd" in
             rm -f "$marker"; exit 1
         fi
         ;;
+    session)
+        # mooi as the whole desktop (D48): a takeover that never hands back to ArchEclipse
+        [ "$(cat "$rt/mode" 2>/dev/null)" = session ] && takeover_active && running && { echo "mooi is already the desktop"; theme_watch_start; exit 0; }
+        snapshot || exit 1
+        # the marker first: a takeover's keeper hands the desktop back to ArchEclipse only while it
+        # still holds it
+        rm -f "$marker"
+        running && stop_mooi
+        alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null && wait_for 3 not running
+        theme_watch_start
+        setsid -f "$self" __keep session >/dev/null 2>&1 < /dev/null
+        if wait_for 6 takeover_active && wait_for 8 running; then
+            archeclipse_running && "$bar_sh" --kill >/dev/null 2>&1
+            echo "mooi is the desktop"
+        else
+            echo "mooi did not start; see $log" >&2
+            exit 1
+        fi
+        ;;
     refresh)
         running || { echo "mooi is not running; \`mooi start\` or \`mooi takeover\`" >&2; exit 1; }
         [ -n "$(scene_pids)" ] || { echo "the running mooi is not a snapshot (started before \`refresh\` existed): \`mooi stop\`, then \`mooi start\` or \`mooi takeover\`" >&2; exit 1; }
@@ -476,24 +512,30 @@ case "$cmd" in
         theme_watch_stop; theme_watch_start
         ;;
     stop | restore)
-        was_takeover=false; takeover_active && was_takeover=true
+        # only a takeover hands the desktop back to ArchEclipse; a session simply stops
+        was_takeover=false; takeover_active && [ "$(cat "$rt/mode" 2>/dev/null)" != session ] && was_takeover=true
+        [ "$(cat "$rt/mode" 2>/dev/null)" = session ] && rm -f "$marker"
         running && stop_mooi
         theme_watch_stop
         alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
-        if $was_takeover || [ -f "$marker" ]; then
+        if { $was_takeover || [ -f "$marker" ]; } && archeclipse_installed; then
             rm -f "$marker"
             wait_for 5 archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1
             wait_for 8 archeclipse_running && echo "ArchEclipse is back" || echo "ArchEclipse did not come back: run $bar_sh" >&2
         else
+            rm -f "$marker"
             echo "mooi stopped"
         fi
         ;;
     status)
-        if takeover_active; then echo "mooi: takeover (keeper $(cat "$marker"))"
+        if takeover_active && [ "$(cat "$rt/mode" 2>/dev/null)" = session ]; then echo "mooi: the whole desktop (keeper $(cat "$marker"))"
+        elif takeover_active; then echo "mooi: takeover (keeper $(cat "$marker"))"
         elif running; then echo "mooi: beside ArchEclipse"
         else echo "mooi: not running"; fi
         theme_watching && echo "theme watch: following $(basename "$wallpaper")" || echo "theme watch: not running"
-        archeclipse_running && echo "ArchEclipse: running" || echo "ArchEclipse: not running"
+        if ! archeclipse_installed; then echo "ArchEclipse: not installed"
+        elif archeclipse_running; then echo "ArchEclipse: running"
+        else echo "ArchEclipse: not running"; fi
         [ -f "$marker" ] && ! takeover_active && echo "(stale takeover marker; ignored)"
         echo "pleamar: $("$pleamar" --version 2>&1)"
         ;;
@@ -505,6 +547,9 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
+    notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
+    clipboard) exec "$pleamar" --say "$name" "emit open_clips" ;;
+    record) exec "$pleamar" --say "$name" "emit record $([ "${1:-}" = area ] && echo 1 || echo 0)" ;;
     edit) exec "$pleamar" --say "$name" "emit edit_toggle" ;;
     atlas) exec "$pleamar" --say "$name" "emit open_atlas" ;;
     overview) exec "$pleamar" --say "$name" "emit open_overview" ;;

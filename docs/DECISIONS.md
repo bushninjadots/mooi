@@ -1134,3 +1134,92 @@ Checked live with throwaway windows and the shape switched to canvas for the tes
 restored byte for byte after): a workspace to a free slot (saved), onto another's (swapped), its
 window riding along, a window dropped on a moved workspace (Hyprland read back), Ctrl+Z, ↑ ↓, the
 menu's tidy; the grid's moves and undo unchanged. Unit tests 119, 0 failed.
+
+## D47 · 2026-10-21 · The Overview's canvas, as asked: a camera over an infinite field
+
+The person's brief (mooi · Spatial Workspace Canvas) replaced D46's board of slots: one continuous
+field, workspaces as territories anywhere on it, a camera to pan and zoom. Built in its order 01–02
+and the core of 03:
+- **A camera over a world.** Every workspace is a rectangle in a world where one unit is one screen
+  pixel; the canvas's territories are the screen at full size (so 100 % is a territory the size of
+  the screen), the grid's and the strip's are their cells (the camera held still). The camera opens
+  on the workspace you are on, filling the screen, and pulls back (to everything, on the canvas); it
+  dives into the one chosen as the Overview closes. One code path draws all three shapes; D37's
+  special-cased zoom cell is gone.
+- **The canvas.** A near-black field (the palette's ground) with a coordinate grid that quietens as it
+  pulls back and strengthens while something is carried; territories with clipped corners,
+  registration marks off them once near enough to read, a nameplate over each ("02 / HI · 1 WINDOW",
+  its group under it, the active one's marker lit) by which it is carried; windows with their
+  pictures, icons and — near enough — titles. Drag the field to pan, the wheel zooms where the
+  pointer is, a double press on the field makes a workspace there (the next number; Hyprland makes it
+  when it is first gone to), Ctrl+F fits all (F itself types into the search), Ctrl+0 goes back to
+  where you are, Ctrl+= / Ctrl+− zoom, and a navigation instrument in the corner (− · % · + · FIT ·
+  HERE). Click a window: brackets and an action strip (focus, float/tile, fullscreen, close asked
+  twice); a double press goes to it; drag it anywhere — onto another territory (moved), within its
+  own (placed or swapped, D45). Places are kept in workspaces.json (`canvas`: a territory's corner,
+  snapped to 40 px), never in Hyprland; lib/atlas `territories`, `at_world`, `fit`, `focus_cam`,
+  `near`, `canvas_place` (unit-tested). Not done from the brief: territory resizing, alignment guides,
+  the minimap, pinch (Pleamar has no pinch), middle-button pan (untested here, so not claimed).
+- **Found and fixed.** The scene counts in 32-bit floats: drop points packed into one number
+  (`tile · 10⁸ + x · 10⁴ + y`) lost their last digits — a territory set down landed thousands of
+  pixels off, and D45/D46's window drops were off by up to a few pixels; drop points now travel as
+  two facts beside the event. Floating windows were drawn under tiled ones (unreachable once a tiled
+  neighbour filled the workspace); they are over them now, as Hyprland shows them.
+- **Smoothness, measured** (pleamar --report, repeated agent gestures, this laptop's iGPU): pan 0.3 %
+  late frames, window drags 0.3–0.5 %, wheel zoom 0.3–2.5 % (frame work ≈ 6 ms of 16.7; what is late
+  is waiting on the compositor, which bisecting every part of the drawing did not move). Opening and
+  closing ~3 late frames a cycle — the same as the grid's, i.e. the full-screen surface being made;
+  a window's fade moved from its group (an offscreen layer) to its parts, its veil folded into the
+  picture's opacity, and layers that cannot be seen not drawn.
+- **Theme aware like the islands.** Corners follow Appearance's rounding (`g.radius`,
+  `g.radius.item`) everywhere — plate, cells, windows, menu, drawer, search bar, instrument,
+  nameplates, and the territories' clipped corners; the plate, menu, drawer, search bar and
+  instrument are the islands' machined body (gradient, lit lip, `border.subtle`, shadow); the active
+  marker glows by the theme's glow (none under the battery saver); the dim is the palette's ground.
+  Motion speed and reduced motion apply as to every spring. Checked by switching the rounding live.
+
+## D48 · 2026-10-21 · mooi as the whole desktop
+
+Asked for: mooi alone, no ArchEclipse. What ArchEclipse still did was inventoried before anything
+changed: its bar at login (`bar.sh`, from its own `config/exec.lua`), the bar again on every focus change
+(its fullscreen watcher), fourteen keys that only reached it over IPC (search, apps, panels, power,
+clipboard, emoji, notes, recording, overview, toggle bar), the lock and suspend keys, and — by
+default — the notifications (mooi served them only in a takeover). Everything else at login
+(wallpaper picker, desktop widgets, Polkit, theming, applets) is not ArchEclipse and stays.
+- **A setting**, Settings → Advanced → "mooi is the whole desktop" (`session.standalone`, off by default),
+  written into hypr.lua beside the keys (lib/desktop `file`) and in the key signature, so switching it
+  reloads Hyprland.
+- **`bin/mooi session`**: a keeper mode that holds the desktop (the same marker every guard knows) and
+  never hands back to ArchEclipse; it records its mode (`$rt/mode`) so `stop` and `status` tell it from a
+  takeover; a keeper that gives up after three quick crashes now says so in a critical notification
+  (before, a desktop could silently lose its bar). Notifications are served whenever mooi holds the
+  desktop (`claim`: not only in a takeover). New: `mooi notes`, `mooi clipboard`, `mooi record [area]`,
+  and the scene's `open_notes` / `open_clips`.
+- **The machine-local Hyprland side** (backups in ~/.local/state/mooi/dotfiles-backup-20261021-standalone):
+  `custom/mooi.lua` starts `mooi session` at login and takes over the ArchEclipse keys (or lets go of
+  those mooi has nothing for); `bar.sh` stands down while the setting is on (`--force` overrides) and
+  the fullscreen watcher never restarts the bar; `custom/session.lua` feeds `cliphist` at login (mooi's
+  clipboard panel showed nothing new: only an unloaded file fed it).
+
+Checked: switched on and running as `mooi session` (status "the whole desktop"); `bar.sh`, the watcher
+and focus changes all leave ArchEclipse down; a notification arrives in mooi's centre; Super+R, Super+L,
+Super+Shift+V and Super open mooi's panels for real (key presses through ydotool); the clipboard panel
+lists new copies; the login itself simulated against a stand-in `hl` (starts `mooi session`, rebinds,
+lets go). Not checked: an actual logout and login, the recorder keys (they would record), hyprlock's
+look (it would lock the screen). Unit tests 120, 0 failed.
+
+**ArchEclipse uninstalled (same day).** Not with its own `uninstall.py`: that takes every file the home
+repo tracks, the whole Hyprland config with them. Taken instead, archived first
+(~/.local/state/mooi/archive-2026-10-21-archeclipse.tar.gz; edited configs backed up in
+dotfiles-backup-20261021-uninstall): the shell (`~/.config/quickshell/archeclipse`), its installer and
+updater (`hypr/maintenance`, `dotfiles-update.sh` and its monthly timer, which would have pulled it back),
+`archeclipse-eq.service`, and the scripts only it used (`bar.sh`, the fullscreen watcher,
+`clipboard-monitor.sh`, `screenrecord.sh`). `exec.lua` no longer starts the bar, the watcher or the old
+clipboard monitor; `bind.lua` loses the keys that called it (mooi binds its own) and locks through
+`lock-session.sh`. Kept on purpose: the Hyprland config, the wallpaper picker and the desktop widgets
+(both read matugen's `colors.json`, so that template stays, under its old name), the app themes
+matugen writes, and `~/.cache/archeclipse` (zen's colours live there). `custom/mooi.lua` now holds the
+desktop when ArchEclipse is missing whatever the setting says, and `bin/mooi` hands back to it only
+when it is installed (`takeover` becomes `session` without it). Checked: Hyprland reloads with no
+errors, no key calls `qs ipc` any more, mooi's keys and "standalone" are bound, the picker and widgets
+run, matugen recolours with no error, `mooi status` says "ArchEclipse: not installed".
