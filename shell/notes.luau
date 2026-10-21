@@ -17,6 +17,7 @@ return function(ctx)
     local undo_gen = 0
     local last = nil          -- the note just forgotten, while Undo still stands
     local page = 0            -- the first row shown (the wheel moves it)
+    local sel = -1            -- the row the keys act on (an id), -1 none
 
     local function now_s() local ok, t = pcall(os.time); return ok and t or 0 end
     local function save() if not ctx.safe_mode then sys.call("files.write", FILE, pad.encode(items)) end end
@@ -49,9 +50,11 @@ return function(ctx)
         local rows = {}
         for i = page + 1, math.min(page + pad.ROW_MAX, total) do
             local n = items[i]
-            rows[#rows + 1] = { id = n.id, text = pad.one_line(n.text, pad.PREVIEW), when = pad.ago(now_s(), n.time), n = i - 1 - page }
+            rows[#rows + 1] = { id = n.id, text = pad.one_line(n.text, pad.PREVIEW), when = pad.ago(now_s(), n.time), n = i - 1 - page,
+                                pinned = n.pinned == true, sel = n.id == sel }
         end
         model.qn = rows
+        fact.qn_sel = sel
     end
 
     local function load()
@@ -101,6 +104,10 @@ return function(ctx)
         emit("qn_focus")
     end
 
+    -- The row actions, by name: a press emits them, the keys call them on the chosen row.
+    local handlers = {}
+    local function handle(name, fn) handlers[name] = fn; on(name, fn) end
+
     on("text:qn_draft", function(v)
         draft = type(v) == "string" and v or ""
         fact.qn_drafting = pad.clean(draft) ~= ""
@@ -111,17 +118,17 @@ return function(ctx)
         fact.qn_open = not fact.qn_open
         if not fact.qn_open then reset_draft() end
     end)
-    on("qn_copy", function(v)
+    handle("qn_copy", function(v)
         local n = pad.find(items, math.floor(tonumber(v) or -1))
         if not n then return end
         run("wl-copy", {}, nil, { input = n.text, output = false })
         say("COPIED")
     end)
-    on("qn_edit", function(v)
+    handle("qn_edit", function(v)
         edit(math.floor(tonumber(v) or -1))
     end)
     on("qn_cancel", function() reset_draft(); emit("qn_focus") end)
-    on("qn_del", function(v)
+    handle("qn_del", function(v)
         local id = math.floor(tonumber(v) or -1)
         local n = pad.find(items, id)
         if not n then return end
@@ -140,6 +147,43 @@ return function(ctx)
         save(); show(); say("RESTORED")
         log("notes · restored (" .. #items .. ")")
     end)
+    -- Pinned: it stays at the top, and the cap never takes it.
+    handle("qn_pin", function(v)
+        local id = math.floor(tonumber(v) or -1)
+        local pinned
+        items, pinned = pad.pin(items, id)
+        if pinned == nil then return end
+        sel = id
+        save(); show(); say(pinned and "PINNED" or "UNPINNED")
+    end)
+    -- Sent to the board: a card at the top of its first column (the note stays here too).
+    handle("qn_board", function(v)
+        local n = pad.find(items, math.floor(tonumber(v) or -1))
+        if not n or not ctx.to_board then return end
+        local title, rest = pad.split(n.text)
+        if ctx.to_board(title, rest) then say("ON THE BOARD") end
+    end)
+    -- The keys: ↑↓ choose a row (scrolling it into view), and the chosen one is what Alt+C, Alt+E,
+    -- Alt+P, Alt+B and Alt+Delete act on.
+    on("qn_nav", function(v)
+        if #items == 0 then return end
+        local at = 0
+        for i, n in ipairs(items) do if n.id == sel then at = i end end
+        at = math.max(1, math.min(#items, at + ((tonumber(v) or 0) < 0.5 and -1 or 1)))
+        sel = items[at].id
+        if at <= page then page = at - 1 elseif at > page + pad.ROW_MAX then page = at - pad.ROW_MAX end
+        show()
+    end)
+    on("qn_act", function(v)
+        if sel < 0 or not pad.find(items, sel) then return end
+        v = math.floor(tonumber(v) or 0)
+        local names = { "qn_copy", "qn_edit", "qn_pin", "qn_board", "qn_del" }
+        local ev = names[v]
+        if ev and handlers[ev] then handlers[ev](sel) end
+    end)
+    -- Closed from outside (another panel, Escape, idle) while a note was being changed: the change
+    -- is let go, so the pad opens fresh next time.
+    on("fact:qn_open", function(v) if not v then if fact.qn_editing then reset_draft() end; sel = -1; show() end end)
     on("qn_scroll", function(v)
         local d = tonumber(v) or 0
         page = math.max(0, math.min(page - d, math.max(#items - pad.ROW_MAX, 0)))

@@ -22,6 +22,7 @@
 #   mooi settings | edit   open or close the settings window; the bar's edit mode on or off
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
+#   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
@@ -593,6 +594,8 @@ case "$cmd" in
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
+    board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
+           exec "$pleamar" --say "$name" "emit open_board" ;;
     note)
         text=$(printf '%s' "$*" | tr '\n' ' ')
         [ -n "$text" ] || { echo "usage: mooi note \"what to remember\"" >&2; exit 2; }

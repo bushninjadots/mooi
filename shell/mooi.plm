@@ -4,6 +4,7 @@ import "ui/island.plm"
 import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
 import "ui/loom.plm"
+import "ui/board.plm"
 
 // mooi — the Spine and its islands.
 //
@@ -539,7 +540,53 @@ scene Mooi {
     text qn_draft = ""
     text qn_said = ""
     text qn_add_label = "ADD" // the button's word: ADD, or SAVE while a note is being changed
-    model qn max 6 { id: number; text: text; when: text; n: number }
+    model qn max 6 { id: number; text: text; when: text; n: number; pinned: bool; sel: bool }
+    fact qn_sel = -1          // the row the keys act on (an id)
+    // ── The board (D52): a Kanban board, from the pad's rail (shell/board.luau, lib/board) ──
+    // The columns and the cards in view, as the logic lays them out (content coordinates); the
+    // chosen card's details for the pane; what a carried card is over (`kb_g*` beside `kb_over` and
+    // `kb_drop`, never packed into one number) and where it would land (`kb_t*`).
+    fact kb_open = false
+    model kcols max 6 { id: number; title: text; x: number; w: number; n: number; wip: number; over: bool; sel: bool; chosen: bool; more_up: bool; more_down: bool; done: bool }
+    model kcards max 80 { id: number; col: number; x: number; y: number; w: number; h: number; title: text; note: text; noted: bool; tag: number; due: text; due_st: number; dated: bool; done: bool; sel: bool; age: text }
+    fact kb_sel = -1
+    fact kb_selcol = -1
+    fact kb_d_has = false
+    fact kb_d_tag = 0
+    fact kb_d_due_st = 0
+    fact kb_d_done = false
+    fact kb_col_wip = 0
+    fact kb_col_empty = false
+    fact kb_col_last = false
+    fact kb_cols_full = false
+    fact kb_count = 0
+    fact kb_late = 0
+    fact kb_due_today = 0
+    fact kb_archived = 0
+    fact kb_done_n = 0
+    fact kb_tagf = 0
+    fact kb_filtering = false
+    fact kb_can_undo = false
+    fact kb_saying = false
+    fact kb_drafting = false
+    fact kb_press = -1
+    fact kb_drag = -1
+    fact kb_dx = 0
+    fact kb_dy = 0
+    fact kb_gx = 0
+    fact kb_gy = 0
+    fact kb_tx = 0
+    fact kb_tw = 0
+    fact kb_ty = -1
+    text kb_d_due = ""
+    text kb_d_meta = ""
+    text kb_col_title = ""
+    text kb_said = ""
+    text kb_new = ""
+    text kb_title = ""
+    text kb_note = ""
+    text kb_search = ""
+    text kb_colname = ""
     fact lv0 = 0.06
     fact lv1 = 0.06
     fact lv2 = 0.06
@@ -905,6 +952,32 @@ scene Mooi {
     event qn_undo ->           // to the logic: put the last forgotten one back
     event qn_scroll ->         // to the logic: the wheel over the rows (± notches)
     event qn_focus             // from the logic: the input takes the caret again
+    event qn_pin ->            // to the logic: note id pinned, or let go
+    event qn_board ->          // to the logic: note id sent to the board
+    event qn_nav ->            // to the logic: the chosen row, up (0) or down (1)
+    event qn_act ->            // to the logic: on the chosen row, 1 copy · 2 edit · 3 pin · 4 board · 5 forget
+    event kb_pick ->           // to the logic: card id chosen
+    event kb_pickcol ->        // to the logic: column id chosen
+    event kb_nav ->            // to the logic: choose, 1 left · 2 right · 3 up · 4 down
+    event kb_step ->           // to the logic: the chosen card moved, 1 left · 2 right · 3 up · 4 down
+    event kb_tag ->            // to the logic: the chosen card's tag (0 … 5)
+    event kb_due ->            // to the logic: its due day, 0 none · 1 today · 2 tomorrow · 3 a week
+    event kb_over ->           // to the logic: card id carried over (kb_gx, kb_gy)
+    event kb_drop ->           // to the logic: card id let go (kb_gx, kb_gy)
+    event kb_del ->            // to the logic: the chosen card deleted
+    event kb_copy ->           // to the logic: the chosen card copied
+    event kb_archive ->        // to the logic: what is done, archived
+    event kb_undo ->           // to the logic: the last delete or archive taken back
+    event kb_addcol ->         // to the logic: a new column
+    event kb_wip ->            // to the logic: the chosen column's limit (0 none)
+    event kb_colmove ->        // to the logic: the chosen column moved, 0 left · 1 right
+    event kb_delcol ->         // to the logic: the chosen column removed (only an empty one)
+    event kb_scroll ->         // to the logic: 1000 · column + 10 · wheel + 500
+    event kb_filter ->         // to the logic: the tag filter (the same again: none)
+    event kb_clearfilter ->    // to the logic: no filter
+    event kb_focus_col         // from the logic: the column's name takes the caret
+    event kb_plus              // a column's + pressed: it is chosen and the new card's field takes the caret
+    event open_board           // from outside (`mooi board`): the board, open or closed
     event clips ->             // to the logic: read the clipboard's history
     event open_notes           // `mooi notes` (Super+L standalone): the side panel's notices, open or closed (D48)
     event open_clips           // `mooi clipboard` (Super+Shift+V standalone): its clipboard history
@@ -1300,6 +1373,20 @@ scene Mooi {
     layer life.fld {
         shown while side == notes { fu_a: 1 ~sg.ext; fu_b: 1 ~sg.unf after 90ms }
         gone                      { fu_b: 0 ~sg.ret; fu_a: 0 ~sg.ret after 80ms }
+    }
+    // The pad unfolds like the loom's Field: its head runs out from the module, then its body drops.
+    prop qu_a = 0 ~sg.ext
+    prop qu_b = 0 ~sg.unf
+    layer life.qn {
+        shown while qn_open { qu_a: 1 ~sg.ext; qu_b: 1 ~sg.unf after 80ms }
+        gone                { qu_b: 0 ~sg.ret; qu_a: 0 ~sg.ret after 70ms }
+    }
+    // The board opens from its middle: a bar across, then the board drops open around it.
+    prop bu_a = 0 ~sg.ext
+    prop bu_b = 0 ~sg.unf
+    layer life.kb {
+        shown while kb_open { bu_a: 1 ~sg.ext; bu_b: 1 ~sg.unf after 100ms }
+        gone                { bu_b: 0 ~sg.ret; bu_a: 0 ~sg.ret after 80ms }
     }
     // The loom's surface stays while its last signal folds back.
     prop loom_tail = 0 ~sg.ret
@@ -2533,7 +2620,7 @@ scene Mooi {
         move: xs_notes, 0
         opacity: pv_notes
         zone box zqn { from: 0, fl.top; size: ws_notes, fl.mod_h; cursor: pointer; role: button
-                       label: pick(qn_count > 0, "Quick notes — {qn_count, 0}; open the pad", "Quick notes — open the pad") }
+                       label: pick(qn_count > 0, "Quick notes — open the pad", "Quick notes — {qn_count, 0}; open the pad") }
         Pill(ws_notes, max(zqn.hover, if(qn_open, 1, 0)))
         let qx = 16
         let qy = fl.cy
@@ -3002,77 +3089,138 @@ scene Mooi {
     on edit_op(v) while v - floor(v / 10) * 10 == 5 { ed_sel = -1 }
     // </gen:edit>
 
-    // ── Quick notes: the dropdown (D51) ───────────────────────
-    // Under the notes module, in the bar's own surface: an input (Enter saves), the notes that
-    // were saved (a press copies one, × forgets it), and a word for what just happened.
-    let qn_w = 340
-    let qn_h = 300
+    // ── Quick notes: the dropdown (D51, D52) ──────────────────
+    // Under the notes module, in the bar's own surface, cut from the loom's chamfered plate and
+    // unfolding like it (its head runs out from the module, then its body drops). A rail down its
+    // left: the pad (here) and the board (a press opens it). The pad: an input (Enter saves), the
+    // notes — pinned first — each with pin, send to the board, change and forget (a press on the
+    // row copies it), and a word for what just happened. ↑↓ choose a row; Alt+C/E/P/B/Delete act
+    // on it.
+    let qn_w = 404
+    let qn_h = 316
     let qn_x = clamp(xs_notes + ws_notes - qn_w, 12, screen.width - qn_w - 12)
     let qn_y = st_res + 8
+    let qn_pw = 120 + (qn_w - 120) * qu_a
+    let qn_ph = 36 + (qn_h - 36) * qu_b
+    let qn_px = qn_x + qn_w - qn_pw
     group {
-        show: qn_open
-        move: qn_x, qn_y
-        box { from: 0, 0; size: qn_w, qn_h; corner: 6; color: fl.hull }
-        box { from: 0, 0; size: qn_w, qn_h; corner: 6; stroke: 1.5; color: fl.trace }
-        line { from: 12, 1; to: qn_w - 12, 1; width: 1; color: fl.phos; opacity: 0.3 }
-        text "QUICK NOTES" { at: 16, 18; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
-        text "{qn_count, 0}" { at: 286, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count <= 6 }
-        text "{qn_from, 0}–{qn_to, 0} / {qn_count, 0}" { at: 286, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count > 6 }
-        zone box qclose { from: 304, 4; size: 28, 28; corner: 5; cursor: pointer; role: button; label: "Close quick notes" }
-        line { from: 313, 12; to: 323, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
-        line { from: 323, 12; to: 313, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
-        on press qclose { qn_open = false }
-
-        // the input's well
-        box { from: 12, 32; size: 262, 32; corner: 4; color: fl.ground }
-        box { from: 12, 32; size: 262, 32; corner: 4; stroke: 1; color: fl.trace }
-        text pick(qn_editing, "Editing — Enter saves, Esc cancels", "Write a note — Enter saves") { at: 20, 48; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not qn_drafting }
-        input qn_draft { at: 20, 40; width: 244; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-        SButton(280, 33, 48, qn_add_label, qn_add, 0)
-        on qn_focus { focus qn_draft }
-
-        // the wheel moves through what is not on the six rows; the rows themselves sit on top
-        zone box qscroll { from: 12, 72; size: 316, 196; role: region; label: "Notes — scroll for more" }
-        on scroll qscroll { emit qn_scroll(wheel) }
-        // what is written: one row each, the newest at the top (a lit one is being changed)
-        for r in qn {
-            let qry = 76 + r.n * 32
-            zone box qrow { from: 12, qry; size: 316, 30; corner: 4; cursor: pointer; role: button; label: "Copy note: {r.text}" }
-            box { from: 12, qry; size: 316, 30; corner: 4; color: fl.well; opacity: if(qn_edit_id == r.id, 0.9, 0.65 * qrow.hover) }
-            box { from: 12, qry + 4; size: 3, 22; color: fl.ember; show: qn_edit_id == r.id }
-            text r.text { at: 20, qry + 15; anchor: left center; size: 11; family: "Exo 2"; width: 196; lines: 1; color: mix(fl.trace_lit, fl.phos, qrow.hover) }
-            text r.when { at: 244, qry + 15; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-            zone box qedit { from: 254, qry + 4; size: 24, 22; corner: 4; cursor: pointer; role: button; label: "Change note {r.n + 1}" }
-            line { from: 259, qry + 19; to: 270, qry + 8; width: 2; color: mix(fl.trace_lit, fl.phos, qedit.hover) }
-            line { from: 261, qry + 21; to: 272, qry + 10; width: 1; color: mix(fl.trace_lit, fl.phos, qedit.hover); opacity: 0.6 }
-            zone box qdel { from: 286, qry + 4; size: 24, 22; corner: 4; cursor: pointer; role: button; label: "Forget note {r.n + 1}" }
-            line { from: 293, qry + 10; to: 303, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
-            line { from: 303, qry + 10; to: 293, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
-            line { from: 12, qry + 30; to: 328, qry + 30; width: 1; color: fl.trace_dim; opacity: 0.6 }
-            on press qrow { emit qn_copy(r.id) }
-            on press qedit { emit qn_edit(r.id) }
-            on press qdel { emit qn_del(r.id) }
+        show: qu_a > 0.004
+        // the plate takes every press on it, so none reaches the window under it
+        zone box qcatch { from: qn_px, qn_y; size: qn_pw, qn_ph }
+        group {
+            glow: 12, 0.3 * st_glow, fl.phos
+            Chamfer(qn_px, qn_y, qn_pw, qn_ph, 10, fl.hull, fl.trace, 0.98, 1.4)
         }
-        text "No notes yet — write one above." { at: 16, 90; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; show: qn_count < 1 }
-        text pick(qn_editing, "ESC CANCELS · ENTER SAVES", "ENTER SAVES · PRESS A NOTE TO COPY · × FORGETS") {
-             at: 16, 284; anchor: left center; size: 9; family: "Share Tech Mono"; width: 270; lines: 1
-             color: fl.muted; show: not qn_saying }
-        text qn_said { at: 16, 284; anchor: left center; size: 9; family: "Share Tech Mono"; width: 270; lines: 1
-                       color: fl.ember; show: qn_saying }
-        text "UNDO" { at: 328, 284; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: qn_can_undo }
-        zone box qundo { from: 296, 272; size: 34, 22; corner: 4; cursor: pointer; role: button; label: "Put the forgotten note back"; show: qn_can_undo }
-        on press qundo { emit qn_undo }
+        group {
+            clip box { from: qn_px, qn_y; size: qn_pw, qn_ph }
+            group {
+                move: qn_x, qn_y
+                opacity: min(1, qu_a * 1.5)
+                // the rail: the pad, and the board
+                box { from: 1, 1; size: 43, qn_h - 2; color: fl.ground; opacity: 0.7 }
+                line { from: 44, 8; to: 44, qn_h - 8; width: 1; color: fl.trace_dim }
+                box { from: 2, 12; size: 3, 40; color: fl.ember }
+                path { stroke: 1.3; color: fl.phos
+                       move 15, 20; line 26, 20; line 30, 24; line 30, 38; line 15, 38; close }
+                line { from: 18, 28; to: 27, 28; width: 1; color: fl.phos }
+                line { from: 18, 32; to: 27, 32; width: 1; color: fl.phos }
+                text "PAD" { at: 22, 48; anchor: center; size: 7; family: "Share Tech Mono"; color: fl.trace_lit }
+                zone box qrail_board { from: 4, 62; size: 37, 46; cursor: pointer; role: button
+                                       label: pick(kb_count > 0, "Open the board", "Open the board — {kb_count, 0} cards") }
+                Chamfer(4, 62, 37, 46, 5, mix(fl.ground, fl.well, qrail_board.hover), mix(fl.trace_dim, fl.phos, qrail_board.hover), 0.9)
+                box { from: 13, 72; size: 5, 16; corner: 1; color: mix(fl.trace_lit, fl.phos, qrail_board.hover) }
+                box { from: 20, 72; size: 5, 11; corner: 1; color: mix(fl.trace_lit, fl.flare, qrail_board.hover) }
+                box { from: 27, 72; size: 5, 20; corner: 1; color: mix(fl.trace_lit, fl.ember, qrail_board.hover) }
+                text "BOARD" { at: 22, 100; anchor: center; size: 7; family: "Share Tech Mono"; color: mix(fl.trace_lit, fl.phos, qrail_board.hover) }
+                group {
+                    show: kb_late > 0
+                    ellipse { at: 37, 66; radius: 6; color: fl.ember_fill }
+                    text "{min(kb_late, 9), 0}" { at: 37, 66; anchor: center; size: 8; weight: 700; family: "Exo 2"; color: fl.ink }
+                }
+                on press qrail_board { kb_open = true; qn_open = false }
+
+                text "QUICK NOTES" { at: 58, 18; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
+                text "{qn_count, 0}" { at: 352, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count <= 6 }
+                text "{qn_from, 0}–{qn_to, 0} / {qn_count, 0}" { at: 352, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count > 6 }
+                zone box qclose { from: 366, 4; size: 30, 28; corner: 5; cursor: pointer; role: button; label: "Close quick notes" }
+                line { from: 376, 12; to: 386, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
+                line { from: 386, 12; to: 376, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
+                on press qclose { qn_open = false }
+
+                // the input's well
+                Chamfer(56, 32, 272, 32, 6, fl.ground, if(qn_editing, fl.ember, fl.trace), 1, if(qn_editing, 1.4, 1))
+                text pick(qn_editing, "Write a note — Enter saves", "Editing — Enter saves, Esc cancels") { at: 66, 48; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not qn_drafting }
+                input qn_draft { at: 66, 40; width: 252; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+                SButton(336, 33, 56, qn_add_label, qn_add, 0)
+                on qn_focus { focus qn_draft }
+
+                // the wheel moves through what is not on the six rows; the rows themselves sit on top
+                zone box qscroll { from: 56, 72; size: 336, 196; role: region; label: "Notes — scroll for more" }
+                on scroll qscroll { emit qn_scroll(wheel) }
+                for r in qn {
+                    let qry = 76 + r.n * 32
+                    zone box qrow { from: 56, qry; size: 336, 30; corner: 4; cursor: pointer; role: button; selected: r.sel; label: "Copy note: {r.text}" }
+                    box { from: 56, qry; size: 336, 30; corner: 4; color: fl.well; opacity: if(qn_edit_id == r.id, 0.9, max(0.65 * qrow.hover, if(r.sel, 0.5, 0))) }
+                    box { from: 56, qry; size: 336, 30; corner: 4; stroke: 1.2; color: focus.ring; show: r.sel }
+                    box { from: 56, qry + 4; size: 3, 22; color: if(qn_edit_id == r.id, fl.ember, fl.flare); show: qn_edit_id == r.id or r.pinned }
+                    text r.text { at: 64, qry + 15; anchor: left center; size: 11; family: "Exo 2"; width: 168; lines: 1; color: mix(fl.trace_lit, fl.phos, qrow.hover) }
+                    text r.when { at: 266, qry + 15; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    // pin
+                    zone box qpin { from: 272, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: toggle; checked: r.pinned; label: pick(r.pinned, "Pin note {r.n + 1}", "Unpin note {r.n + 1}") }
+                    line { from: 279, qry + 21; to: 284, qry + 15; width: 1.4; color: if(r.pinned, fl.flare, mix(fl.trace_lit, fl.phos, qpin.hover)) }
+                    ellipse { at: 287, qry + 12; radius: 3.6; color: fl.flare; show: r.pinned }
+                    ellipse { at: 287, qry + 12; radius: 3.6; stroke: 1.3; color: mix(fl.trace_lit, fl.phos, qpin.hover); show: not r.pinned }
+                    // to the board
+                    zone box qtoboard { from: 300, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Send note {r.n + 1} to the board" }
+                    box { from: 305, qry + 9; size: 4, 12; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
+                    box { from: 311, qry + 9; size: 4, 8; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
+                    box { from: 317, qry + 9; size: 4, 12; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
+                    // change
+                    zone box qedit { from: 328, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Change note {r.n + 1}" }
+                    line { from: 334, qry + 19; to: 345, qry + 8; width: 2; color: mix(fl.trace_lit, fl.phos, qedit.hover) }
+                    line { from: 336, qry + 21; to: 347, qry + 10; width: 1; color: mix(fl.trace_lit, fl.phos, qedit.hover); opacity: 0.6 }
+                    // forget
+                    zone box qdel { from: 358, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Forget note {r.n + 1}" }
+                    line { from: 366, qry + 10; to: 376, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
+                    line { from: 376, qry + 10; to: 366, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
+                    line { from: 56, qry + 30; to: 392, qry + 30; width: 1; color: fl.trace_dim; opacity: 0.6 }
+                    on press qrow { emit qn_copy(r.id) }
+                    on press qpin { emit qn_pin(r.id) }
+                    on press qtoboard { emit qn_board(r.id) }
+                    on press qedit { emit qn_edit(r.id) }
+                    on press qdel { emit qn_del(r.id) }
+                }
+                text "No notes yet — write one above." { at: 60, 90; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; show: qn_count < 1 }
+                text pick(qn_editing, "↑↓ CHOOSE · ALT+C COPY · ALT+E EDIT · ALT+P PIN · ALT+B BOARD", "ESC CANCELS · ENTER SAVES") { at: 58, 290; anchor: left center; size: 8; family: "Share Tech Mono"; width: 290; lines: 1; color: fl.muted; show: not qn_saying }
+                text qn_said { at: 58, 290; anchor: left center; size: 9; family: "Share Tech Mono"; width: 290; lines: 1
+                               color: fl.ember; show: qn_saying }
+                text "UNDO" { at: 392, 290; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: qn_can_undo }
+                zone box qundo { from: 358, 278; size: 36, 22; corner: 4; cursor: pointer; role: button; label: "Put the forgotten note back"; show: qn_can_undo }
+                on press qundo { emit qn_undo }
+            }
+        }
     }
     on change qn_open while qn_open { focus qn_draft }
     on change qn_open while not qn_open { blur }
     on key Escape while qn_open and qn_editing { emit qn_cancel }
     on key Escape while qn_open and not qn_editing { qn_open = false }
+    on key Up while qn_open { emit qn_nav(0) }
+    on key Down while qn_open { emit qn_nav(1) }
+    on key Alt+c while qn_open { emit qn_act(1) }
+    on key Alt+e while qn_open { emit qn_act(2) }
+    on key Alt+p while qn_open { emit qn_act(3) }
+    on key Alt+b while qn_open { emit qn_act(4) }
+    on key Alt+Delete while qn_open { emit qn_act(5) }
+    on key Ctrl+b while qn_open { kb_open = true; qn_open = false }
     on idle for 45s while qn_open { qn_open = false }
-    on change open while open != none { qn_open = false }
+    on change open while open != none { qn_open = false; kb_open = false }
     on change side while side != none { qn_open = false }
     on change mark_open while mark_open { qn_open = false }
     on change bar_edit while bar_edit { qn_open = false }
     on bar_menu { qn_open = false }
+    // The board, from the rail, a key or `mooi board`.
+    on open_board while kb_open { kb_open = false }
+    on open_board while not kb_open { kb_open = true; qn_open = false; side = none; open = none }
 
     // ── The bar's rules ───────────────────────────────────────
     // The mark (and a right press on search) opens mooi's settings — the shell's home, where
@@ -3509,6 +3657,253 @@ scene Mooi {
             }
         }
     }
+
+    // ══ The board (D52) ══════════════════════════════════════
+    // A Kanban board: columns of cards (shell/board.luau, lib/board; board.json). It opens from its
+    // middle — a bar across, then the board drops open around it — and is drawn only while open.
+    // Header: how many cards, how many late or due today, search, the tag filter, a new column,
+    // archive what is done, undo, close. The columns: each scrolls on its own; a card is chosen
+    // with a press and carried with a drag (a line shows where it will land; let go in Done and it
+    // is done). The pane on the right: the chosen card (title and note saved as you type, its tag,
+    // its due day, a step in any direction, copy, delete) or, with no card chosen, the chosen
+    // column (its name, its limit, its place); and always a field for a new card.
+    surface board_island {
+        size: 1240, 760
+        anchor: center
+        level: overlay
+        keyboard: exclusive while kb_open
+        open: kb_open or bu_a > 0.004
+
+        let kbl_W = 1220
+        let kbl_H = 740
+        let kbl_pw = 220 + (kbl_W - 220) * bu_a
+        let kbl_ph = 44 + (kbl_H - 44) * bu_b
+        let kbl_px = 10 + (kbl_W - kbl_pw) / 2
+        let kbl_py = 10 + (kbl_H - kbl_ph) / 2
+        let kbl_y0 = 60
+        let kbl_ch = 636
+        let bp_x = 904
+        zone box bcatch { from: kbl_px, kbl_py; size: kbl_pw, kbl_ph; show: bu_a > 0.004 }
+        group {
+            show: bu_a > 0.004
+            group {
+                glow: 22, 0.35 * st_glow, fl.phos
+                Chamfer(kbl_px, kbl_py, kbl_pw, kbl_ph, 16, fl.hull, fl.trace, 0.985, 1.5)
+            }
+            group {
+                clip box { from: kbl_px, kbl_py; size: kbl_pw, kbl_ph }
+                group {
+                    move: 10, 10
+                    opacity: min(1, bu_a * 1.3)
+                    // ── the head ──
+                    text "BOARD" { at: 20, 25; anchor: left center; size: 13; family: "Share Tech Mono"; color: fl.ember }
+                    text "{kb_count, 0} CARDS" { at: 86, 25; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    group {
+                        show: kb_late > 0
+                        Chamfer(170, 15, 66, 20, 4, fl.ember_fill, fl.ember, 0.9)
+                        text "{kb_late, 0} LATE" { at: 203, 25; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.ink }
+                    }
+                    group {
+                        show: kb_due_today > 0
+                        Chamfer(if(kb_late > 0, 242, 170), 15, 72, 20, 4, fl.ground, fl.flare, 0.9)
+                        text "{kb_due_today, 0} TODAY" { at: if(kb_late > 0, 278, 206), 25; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.flare }
+                    }
+                    // search
+                    Chamfer(330, 11, 230, 28, 6, fl.ground, fl.trace, 1)
+                    text "Search cards   Ctrl+F" { at: 342, 25; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not kb_filtering }
+                    input kb_search { at: 342, 17; width: 206; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+                    // the tag filter
+                    repeat t in 0..6 {
+                        zone box kf.$t { from: 570 + t * 26, 13; size: 24, 24; cursor: pointer; role: toggle; checked: kb_tagf == t and t > 0
+                                         label: pick(t > 0, "Every tag", "Only tag {t, 0}") }
+                        group { show: t > 0; TagDot(582 + t * 26, 25, t, kb_tagf == t, 6) }
+                        on press kf.$t { emit kb_filter(t) }
+                    }
+                    text "ALL" { at: 582, 25; anchor: center; size: 8; family: "Share Tech Mono"; color: if(kb_tagf == 0, fl.phos, fl.muted) }
+                    zone box kclear { from: 732, 13; size: 52, 24; cursor: pointer; role: button; label: "No filter"; show: kb_filtering }
+                    text "CLEAR" { at: 758, 25; anchor: center; size: 9; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, kclear.hover); show: kb_filtering }
+                    on press kclear { emit kb_clearfilter }
+                    zone box kaddcol { from: 800, 13; size: 96, 24; cursor: pointer; role: button; label: "A new column"; show: not kb_cols_full }
+                    group { show: not kb_cols_full; CutButton(800, 15, 96, "+ Column", fl.phos, kaddcol.hover) }
+                    on press kaddcol { emit kb_addcol }
+                    zone box karch { from: 904, 13; size: 150, 24; cursor: pointer; role: button; label: "Archive the {kb_done_n, 0} done cards"; show: kb_done_n > 0 }
+                    group {
+                        show: kb_done_n > 0
+                        CutButton(904, 15, 150, "Archive done", fl.flare, karch.hover)
+                        text "{kb_done_n, 0}" { at: 1046, 25; anchor: right center; size: 9; weight: 700; family: "Exo 2"; color: fl.flare }
+                    }
+                    on press karch { emit kb_archive }
+                    zone box kundo { from: 1062, 13; size: 70, 24; cursor: pointer; role: button; label: "Undo"; show: kb_can_undo }
+                    group { show: kb_can_undo; CutButton(1062, 15, 70, "Undo", fl.ember, kundo.hover) }
+                    on press kundo { emit kb_undo }
+                    zone box kclose { from: 1176, 9; size: 32, 30; cursor: pointer; role: button; label: "Close the board" }
+                    line { from: 1185, 17; to: 1199, 31; width: 1.6; color: mix(fl.muted, fl.ember, kclose.hover) }
+                    line { from: 1199, 17; to: 1185, 31; width: 1.6; color: mix(fl.muted, fl.ember, kclose.hover) }
+                    on press kclose { kb_open = false }
+                    line { from: 14, 50; to: kbl_W - 14, 50; width: 1; color: fl.trace_dim }
+
+                    group {
+                        opacity: bu_b
+                        // ── the columns ──
+                        for c in kcols { KColumn(c, kbl_y0, kbl_ch, kb_pickcol, kb_plus, kb_scroll) }
+                        text "An empty board. Write a card in the pane (Ctrl+N), or send a note from the pad." { at: 452, 340; anchor: center; size: 13; family: "Exo 2"
+                             color: fl.muted; show: kb_count < 1 and not kb_filtering }
+                        // the cards in view, clipped to the columns' bodies; one being carried is dimmed in place
+                        group {
+                            clip box { from: 0, kbl_y0 + 44; size: 900, kbl_ch - 46 }
+                            for k in kcards {
+                                group { opacity: if(kb_drag == k.id, 0.3, 1); KCard(k, 0) }
+                                zone box kc { from: k.x, k.y; size: k.w, k.h; cursor: grab; role: item; selected: k.sel; label: "{k.title}" }
+                                on press kc { kb_press = k.id; kb_dx = 0; kb_dy = 0 }
+                                on drag kc while kb_press == k.id { kb_dx = drag.dx; kb_dy = drag.dy; kb_gx = k.x + k.w / 2 + drag.dx; kb_gy = k.y + 18 + drag.dy
+                                                                    kb_drag = if(abs(drag.dx) + abs(drag.dy) > 6, k.id, kb_drag); emit kb_over(k.id) }
+                                on release kc while kb_drag == k.id { emit kb_drop(k.id); kb_drag = -1; kb_press = -1 }
+                                on release kc while kb_drag != k.id and kb_press == k.id { emit kb_pick(k.id); kb_press = -1 }
+                            }
+                            // where it will land
+                            group {
+                                show: kb_drag >= 0 and kb_ty >= 0
+                                glow: 8, 0.9 * st_glow, fl.phos
+                                box { from: kb_tx + 6, kb_ty - 1.5; size: kb_tw - 12, 3; corner: 1.5; color: fl.phos }
+                            }
+                        }
+                        // the card being carried, lifted, over everything
+                        for k in kcards {
+                            group { show: kb_drag == k.id; move: kb_dx, kb_dy; KCard(k, 1) }
+                        }
+
+                        // ── the pane ──
+                        Chamfer(bp_x, kbl_y0, 300, kbl_ch, 10, mix(fl.ground, fl.hull, 0.3), fl.trace_dim, 0.95)
+                        // a card
+                        group {
+                            show: kb_d_has
+                            text "CARD" { at: bp_x + 16, kbl_y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
+                            text "DONE" { at: bp_x + 284, kbl_y0 + 20; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: kb_d_done }
+                            text kb_d_meta { at: bp_x + 16, kbl_y0 + 38; anchor: left center; size: 8; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.muted }
+                            text "TITLE · F2" { at: bp_x + 16, kbl_y0 + 60; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            Chamfer(bp_x + 12, kbl_y0 + 68, 276, 30, 6, fl.ground, fl.trace, 1)
+                            input kb_title { at: bp_x + 22, kbl_y0 + 75; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+                            text "NOTE" { at: bp_x + 16, kbl_y0 + 112; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            Chamfer(bp_x + 12, kbl_y0 + 120, 276, 30, 6, fl.ground, fl.trace, 1)
+                            input kb_note { at: bp_x + 22, kbl_y0 + 127; width: 256; size: 12; family: "Exo 2"; color: fl.trace_lit; selection: fl.well }
+                            text "SAVED AS YOU TYPE" { at: bp_x + 284, kbl_y0 + 112; anchor: right center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+                            text "TAG · ALT+0–5" { at: bp_x + 16, kbl_y0 + 166; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            repeat t in 0..6 {
+                                zone box kt.$t { from: bp_x + 14 + t * 34, kbl_y0 + 176; size: 28, 28; cursor: pointer; role: toggle; checked: kb_d_tag == t
+                                                 label: pick(t > 0, "No tag", "Tag {t, 0}") }
+                                TagDot(bp_x + 28 + t * 34, kbl_y0 + 190, t, kb_d_tag == t, 8)
+                                on press kt.$t { emit kb_tag(t) }
+                            }
+                            text "DUE" { at: bp_x + 16, kbl_y0 + 222; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text kb_d_due { at: bp_x + 284, kbl_y0 + 222; anchor: right center; size: 9; family: "Share Tech Mono"
+                                            color: if(kb_d_due_st > 3.5, fl.ember, if(kb_d_due_st > 2.5, fl.flare, if(kb_d_due_st > 1.5, fl.phos, fl.muted))) }
+                            zone box kd0 { from: bp_x + 12, kbl_y0 + 232; size: 64, 20; cursor: pointer; role: button; label: "No due day" }
+                            zone box kd1 { from: bp_x + 80, kbl_y0 + 232; size: 64, 20; cursor: pointer; role: button; label: "Due today" }
+                            zone box kd2 { from: bp_x + 148, kbl_y0 + 232; size: 70, 20; cursor: pointer; role: button; label: "Due tomorrow" }
+                            zone box kd3 { from: bp_x + 222, kbl_y0 + 232; size: 66, 20; cursor: pointer; role: button; label: "Due in a week" }
+                            CutButton(bp_x + 12, kbl_y0 + 232, 64, "None", fl.trace_lit, kd0.hover)
+                            CutButton(bp_x + 80, kbl_y0 + 232, 64, "Today", fl.flare, kd1.hover)
+                            CutButton(bp_x + 148, kbl_y0 + 232, 70, "Tomorrow", fl.phos, kd2.hover)
+                            CutButton(bp_x + 222, kbl_y0 + 232, 66, "A week", fl.phos, kd3.hover)
+                            on press kd0 { emit kb_due(0) }
+                            on press kd1 { emit kb_due(1) }
+                            on press kd2 { emit kb_due(2) }
+                            on press kd3 { emit kb_due(3) }
+                            text "MOVE · ALT+SHIFT+ARROWS" { at: bp_x + 16, kbl_y0 + 272; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            zone box km1 { from: bp_x + 12, kbl_y0 + 282; size: 64, 20; cursor: pointer; role: button; label: "One column left" }
+                            zone box km2 { from: bp_x + 80, kbl_y0 + 282; size: 64, 20; cursor: pointer; role: button; label: "One column right" }
+                            zone box km3 { from: bp_x + 148, kbl_y0 + 282; size: 68, 20; cursor: pointer; role: button; label: "One place up" }
+                            zone box km4 { from: bp_x + 220, kbl_y0 + 282; size: 68, 20; cursor: pointer; role: button; label: "One place down" }
+                            CutButton(bp_x + 12, kbl_y0 + 282, 64, "◀ Left", fl.phos, km1.hover)
+                            CutButton(bp_x + 80, kbl_y0 + 282, 64, "Right ▶", fl.phos, km2.hover)
+                            CutButton(bp_x + 148, kbl_y0 + 282, 68, "▲ Up", fl.phos, km3.hover)
+                            CutButton(bp_x + 220, kbl_y0 + 282, 68, "▼ Down", fl.phos, km4.hover)
+                            on press km1 { emit kb_step(1) }
+                            on press km2 { emit kb_step(2) }
+                            on press km3 { emit kb_step(3) }
+                            on press km4 { emit kb_step(4) }
+                            zone box kcopy { from: bp_x + 12, kbl_y0 + 322; size: 132, 22; cursor: pointer; role: button; label: "Copy the card" }
+                            zone box kdel { from: bp_x + 156, kbl_y0 + 322; size: 132, 22; cursor: pointer; role: button; label: "Delete the card (Undo puts it back)" }
+                            CutButton(bp_x + 12, kbl_y0 + 322, 132, "Copy", fl.phos, kcopy.hover)
+                            CutButton(bp_x + 156, kbl_y0 + 322, 132, "Delete · Alt+Del", fl.ember, kdel.hover)
+                            on press kcopy { emit kb_copy }
+                            on press kdel { emit kb_del }
+                        }
+                        // the column (no card chosen)
+                        group {
+                            show: not kb_d_has
+                            text "COLUMN" { at: bp_x + 16, kbl_y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
+                            text kb_col_title { at: bp_x + 284, kbl_y0 + 20; anchor: right center; size: 10; family: "Share Tech Mono"; width: 180; lines: 1; color: fl.trace_lit }
+                            text "NAME · ENTER RENAMES" { at: bp_x + 16, kbl_y0 + 50; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            Chamfer(bp_x + 12, kbl_y0 + 58, 276, 30, 6, fl.ground, fl.trace, 1)
+                            input kb_colname { at: bp_x + 22, kbl_y0 + 65; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+                            text "LIMIT · WORK IN PROGRESS" { at: bp_x + 16, kbl_y0 + 104; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            repeat w in 0..6 {
+                                let wv.$w = pick(w, 0, 2, 3, 4, 5, 8)
+                                zone box kw.$w { from: bp_x + 12 + w * 46, kbl_y0 + 114; size: 42, 22; cursor: pointer; role: toggle; checked: kb_col_wip == wv.$w
+                                                 label: pick(w > 0, "No limit", "A limit of {wv.$w, 0}") }
+                                Chamfer(bp_x + 12 + w * 46, kbl_y0 + 114, 42, 22, 4, if(kb_col_wip == wv.$w, fl.well, fl.hull_raised), if(kb_col_wip == wv.$w, focus.ring, mix(fl.trace, fl.phos, kw.$w.hover)), 0.95)
+                                text pick(w > 0, "OFF", "{wv.$w, 0}") { at: bp_x + 33 + w * 46, kbl_y0 + 125; anchor: center; size: 9; family: "Share Tech Mono"
+                                                                       color: if(kb_col_wip == wv.$w, fl.phos, fl.trace_lit) }
+                                on press kw.$w { emit kb_wip(wv.$w) }
+                            }
+                            text "Over its limit, a column's head goes ember: a reminder to finish before starting." { at: bp_x + 16, kbl_y0 + 150; anchor: left top; size: 10; family: "Exo 2"
+                                 width: 268; lines: 2; color: fl.muted }
+                            text "PLACE" { at: bp_x + 16, kbl_y0 + 196; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            zone box kcl { from: bp_x + 12, kbl_y0 + 206; size: 132, 22; cursor: pointer; role: button; label: "Move the column left" }
+                            zone box kcr { from: bp_x + 156, kbl_y0 + 206; size: 132, 22; cursor: pointer; role: button; label: "Move the column right" }
+                            CutButton(bp_x + 12, kbl_y0 + 206, 132, "◀ Left", fl.phos, kcl.hover)
+                            CutButton(bp_x + 156, kbl_y0 + 206, 132, "Right ▶", fl.phos, kcr.hover)
+                            on press kcl { emit kb_colmove(0) }
+                            on press kcr { emit kb_colmove(1) }
+                            zone box kdc { from: bp_x + 12, kbl_y0 + 246; size: 276, 22; cursor: pointer; role: button; label: "Remove the column"; show: kb_col_empty }
+                            group { show: kb_col_empty; CutButton(bp_x + 12, kbl_y0 + 246, 276, "Remove this column", fl.ember, kdc.hover) }
+                            text "Move or archive its cards to remove it." { at: bp_x + 16, kbl_y0 + 257; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; show: not kb_col_empty }
+                            text "The last column is where work is done: a card that reaches it is stamped done." { at: bp_x + 16, kbl_y0 + 290; anchor: left top; size: 10
+                                 family: "Exo 2"; width: 268; lines: 2; color: fl.muted; show: kb_col_last }
+                            on press kdc { emit kb_delcol }
+                        }
+                        // a new card, always
+                        line { from: bp_x + 12, kbl_y0 + 520; to: bp_x + 288, kbl_y0 + 520; width: 1; color: fl.trace_dim }
+                        text "NEW CARD → {kb_col_title}" { at: bp_x + 16, kbl_y0 + 538; anchor: left center; size: 8; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.ember }
+                        Chamfer(bp_x + 12, kbl_y0 + 548, 276, 32, 6, fl.ground, mix(fl.trace, fl.phos, if(kb_drafting, 1, 0)), 1)
+                        text "Write it — Enter adds it   Ctrl+N" { at: bp_x + 22, kbl_y0 + 564; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not kb_drafting }
+                        input kb_new { at: bp_x + 22, kbl_y0 + 556; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+                        text "It goes to the top of the chosen column." { at: bp_x + 16, kbl_y0 + 596; anchor: left center; size: 9; family: "Exo 2"; color: fl.muted }
+
+                        // ── the foot: the keys, or what just happened ──
+                        text "ALT+ARROWS CHOOSE · ALT+SHIFT+ARROWS MOVE · CTRL+N NEW · CTRL+F FIND · F2 TITLE · ALT+0–5 TAG · ALT+DEL DELETE · CTRL+Z UNDO · ESC CLOSE" {
+                             at: 20, 718; anchor: left center; size: 8; family: "Share Tech Mono"; width: 1000; lines: 1; color: fl.muted }
+                        text kb_said { at: kbl_W - 20, 718; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: kb_saying }
+                    }
+                }
+            }
+        }
+    }
+    on key Escape while kb_open { kb_open = false }
+    on key Alt+Left while kb_open { emit kb_nav(1) }
+    on key Alt+Right while kb_open { emit kb_nav(2) }
+    on key Alt+Up while kb_open { emit kb_nav(3) }
+    on key Alt+Down while kb_open { emit kb_nav(4) }
+    on key Alt+Shift+Left while kb_open { emit kb_step(1) }
+    on key Alt+Shift+Right while kb_open { emit kb_step(2) }
+    on key Alt+Shift+Up while kb_open { emit kb_step(3) }
+    on key Alt+Shift+Down while kb_open { emit kb_step(4) }
+    on key Ctrl+n while kb_open { focus kb_new }
+    on key Ctrl+f while kb_open { focus kb_search }
+    on key F2 while kb_open and kb_d_has { focus kb_title }
+    on key Alt+zero while kb_open { emit kb_tag(0) }
+    on key Alt+one while kb_open { emit kb_tag(1) }
+    on key Alt+two while kb_open { emit kb_tag(2) }
+    on key Alt+three while kb_open { emit kb_tag(3) }
+    on key Alt+four while kb_open { emit kb_tag(4) }
+    on key Alt+five while kb_open { emit kb_tag(5) }
+    on key Alt+Delete while kb_open { emit kb_del }
+    on key Ctrl+z while kb_open { emit kb_undo }
+    on kb_plus(v) { emit kb_pickcol(v); focus kb_new }
+    on kb_focus_col { focus kb_colname }
+    on change kb_open while kb_open { side = none; mark_open = false }
+    on change kb_open while not kb_open { kb_drag = -1; kb_press = -1; blur }
 
     // ══ Window island ═════════════════════════════════════════
     surface window_island {

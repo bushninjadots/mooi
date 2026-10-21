@@ -1,0 +1,91 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+import "loom.plm"
+
+// The board's pieces (D52): a column and a card, cut from the same chamfered plate as the Signal
+// Loom. As everywhere in ui/, nothing here decides anything: a column is given the events it emits,
+// and the card's face is only a face — the scene keeps its zones, since carrying a card is the
+// scene's state.
+//
+// A tag is a colour of the palette, never one of its own: 1 phos, 2 ember, 3 flare, 4 between
+// phos and flare, 5 ember toward ink — mixes, so the five stay apart however few hues the
+// wallpaper gives (0: none).
+
+library BoardParts {
+
+    // A tag's colour, as a dot: hollow and struck through for none; ringed while chosen.
+    component TagDot(x: number, y: number, t: number, on: bool, r: number = 7) {
+        size: r * 2, r * 2
+        group {
+            show: t > 0.5
+            ellipse { at: x, y; radius: r; color: if(t < 1.5, fl.phos, if(t < 2.5, fl.ember, if(t < 3.5, fl.flare, if(t < 4.5, mix(fl.phos, fl.flare, 0.5), mix(fl.ember, fl.ink, 0.45))))) }
+        }
+        group {
+            show: t < 0.5
+            ellipse { at: x, y; radius: r; stroke: 1.2; color: fl.trace_lit }
+            line { from: x - r * 0.6, y + r * 0.6; to: x + r * 0.6, y - r * 0.6; width: 1.2; color: fl.trace_lit }
+        }
+        ellipse { at: x, y; radius: r + 3; stroke: 1.5; color: focus.ring; show: on }
+    }
+
+    // A column: its plate, its name and how full it is (against its limit, if it has one: over it,
+    // the name and a rail go ember), a + that writes a card into it, and the wheel over it scrolling
+    // its cards. Pressed on its head, it is chosen (the pane shows it).
+    component KColumn(c: record, y0: number, h: number, pick: event, plus: event, scroll: event) {
+        size: 200, h
+        zone box body { from: c.x, y0 + 40; size: c.w, h - 40; role: list; label: "{c.title}" }
+        zone box head { from: c.x, y0; size: c.w - 40, 40; cursor: pointer; role: tab; selected: c.chosen; label: "{c.title}: {c.n, 0} cards" }
+        Chamfer(c.x, y0, c.w, h, 10, mix(fl.ground, fl.hull, 0.45), if(c.chosen, fl.trace_lit, fl.trace_dim), 0.9, if(c.chosen, 1.4, 1))
+        // the done column carries a check before its name
+        group {
+            show: c.done
+            line { from: c.x + 13, y0 + 20; to: c.x + 17, y0 + 24; width: 1.6; color: fl.phos }
+            line { from: c.x + 17, y0 + 24; to: c.x + 24, y0 + 15; width: 1.6; color: fl.phos }
+        }
+        text c.title { at: c.x + if(c.done, 30, 14), y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; width: c.w - 110; lines: 1
+                       color: if(c.over, fl.ember, if(c.chosen, fl.phos, fl.trace_lit)) }
+        text "{c.n, 0}" { at: c.x + c.w - 44, y0 + 20; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: c.wip < 0.5 }
+        text "{c.n, 0}/{c.wip, 0}" { at: c.x + c.w - 44, y0 + 20; anchor: right center; size: 11; family: "Share Tech Mono"
+                                        color: if(c.over, fl.ember, fl.muted); show: c.wip > 0.5 }
+        group {
+            show: c.over
+            glow: 6, 0.8 * st_glow, fl.ember
+            line { from: c.x + 10, y0 + 38; to: c.x + c.w - 10, y0 + 38; width: 2; color: fl.ember }
+        }
+        line { from: c.x + 10, y0 + 39; to: c.x + c.w - 10, y0 + 39; width: 1; color: fl.trace_dim; show: not c.over }
+        zone box add { from: c.x + c.w - 36, y0 + 8; size: 26, 24; cursor: pointer; role: button; label: "A card in {c.title}" }
+        Chamfer(c.x + c.w - 36, y0 + 8, 26, 24, 4, mix(fl.hull_raised, fl.well, add.hover), mix(fl.trace, fl.phos, add.hover), 0.9)
+        line { from: c.x + c.w - 23, y0 + 14; to: c.x + c.w - 23, y0 + 26; width: 1.6; color: mix(fl.trace_lit, fl.phos, add.hover) }
+        line { from: c.x + c.w - 29, y0 + 20; to: c.x + c.w - 17, y0 + 20; width: 1.6; color: mix(fl.trace_lit, fl.phos, add.hover) }
+        // more above or below: a chevron at the edge of the view
+        line { from: c.x + c.w / 2 - 6, y0 + 50; to: c.x + c.w / 2, y0 + 45; width: 1.4; color: fl.trace_lit; show: c.more_up }
+        line { from: c.x + c.w / 2, y0 + 45; to: c.x + c.w / 2 + 6, y0 + 50; width: 1.4; color: fl.trace_lit; show: c.more_up }
+        line { from: c.x + c.w / 2 - 6, y0 + h - 10; to: c.x + c.w / 2, y0 + h - 5; width: 1.4; color: fl.trace_lit; show: c.more_down }
+        line { from: c.x + c.w / 2, y0 + h - 5; to: c.x + c.w / 2 + 6, y0 + h - 10; width: 1.4; color: fl.trace_lit; show: c.more_down }
+        on press head { emit pick(c.id) }
+        on press add { emit plus(c.id) }
+        on scroll body { emit scroll(c.id * 1000 + round(wheel * 10) + 500) }
+    }
+
+    // A card's face: its tag down the left edge, its title (two lines), its note's first line, when
+    // it is due (lit as it nears: ember late, flare today, phos soon) or that it is done, and when it
+    // last changed. `lift` is 1 while it is carried.
+    component KCard(k: record, lift: number) {
+        size: 200, 60
+        group {
+            glow: 14, 0.5 * lift * st_glow, fl.phos
+            Chamfer(k.x, k.y, k.w, k.h, 7, mix(fl.hull_raised, fl.well, max(0.35 * lift, if(k.sel, 0.45, 0))), if(k.sel or lift > 0.5, focus.ring, fl.trace),
+                    if(k.done and lift < 0.5, 0.72, 1), if(k.sel, 1.6, 1))
+        }
+        box { from: k.x + 2, k.y + 8; size: 3, k.h - 16; color: if(k.tag < 1.5, fl.phos, if(k.tag < 2.5, fl.ember, if(k.tag < 3.5, fl.flare, if(k.tag < 4.5, mix(fl.phos, fl.flare, 0.5), mix(fl.ember, fl.ink, 0.45)))))
+              show: k.tag > 0.5 }
+        text k.title { at: k.x + 13, k.y + 9; anchor: left top; size: 12; weight: 600; family: "Exo 2"; width: k.w - 26; lines: 2
+                       color: if(k.done, fl.muted, fl.phos) }
+        text k.note { at: k.x + 13, k.y + 44; anchor: left top; size: 11; family: "Exo 2"; width: k.w - 26; lines: 1; color: fl.muted; show: k.noted }
+        text k.due { at: k.x + 13, k.y + k.h - 11; anchor: left center; size: 9; family: "Share Tech Mono"; show: k.dated and not k.done
+                     color: if(k.due_st > 3.5, fl.ember, if(k.due_st > 2.5, fl.flare, if(k.due_st > 1.5, fl.phos, fl.muted))) }
+        text "DONE" { at: k.x + 13, k.y + k.h - 11; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos; show: k.done }
+        text k.age { at: k.x + k.w - 10, k.y + k.h - 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+    }
+}

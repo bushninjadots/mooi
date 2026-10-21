@@ -2,12 +2,21 @@
 -- under plain Lua 5.4 (written in the subset Lua 5.4 and Luau share); shell/notes.luau owns the
 -- file and hands the scene its rows.
 --
--- A note is { id, text, time }: `text` is what was written (kept as lines, cleaned), `time` the
--- second it was saved, `id` a number that never repeats within a file. The newest is first.
+-- A note is { id, text, time, pinned }: `text` is what was written (kept as lines, cleaned), `time`
+-- the second it was saved, `id` a number that never repeats within a file, `pinned` whether it
+-- stays at the top. Pinned notes first, then the newest.
 -- Nothing here is a document: a note is a line or two you wanted out of your head quickly, so
 -- there is one list, a cap, and no folders.
 
 local M = {}
+
+-- The order every list is kept in: pinned first, then newest, then the higher id.
+local function before(a, b)
+    if (a.pinned == true) ~= (b.pinned == true) then return a.pinned == true end
+    if a.time ~= b.time then return a.time > b.time end
+    return a.id > b.id
+end
+M.before = before
 
 M.MAX = 200              -- how many notes are kept; the oldest fall off
 M.TEXT_MAX = 4000        -- characters kept of one note
@@ -51,9 +60,15 @@ function M.add(list, text, now)
     if t == "" then return list, nil end
     local id = 0
     for _, n in ipairs(list) do if n.id > id then id = n.id end end
-    local note = { id = id + 1, text = t, time = math.floor(tonumber(now) or 0) }
+    local note = { id = id + 1, text = t, time = math.floor(tonumber(now) or 0), pinned = false }
     table.insert(list, 1, note)
-    while #list > M.MAX do table.remove(list) end
+    table.sort(list, before)
+    -- the cap takes the oldest that is not pinned
+    while #list > M.MAX do
+        local drop = #list
+        while drop > 1 and list[drop].pinned do drop = drop - 1 end
+        table.remove(list, drop)
+    end
     return list, note
 end
 
@@ -85,14 +100,30 @@ function M.restore(list, note, now)
         for _, n in ipairs(list) do if n.id > max then max = n.id end end
         id = max + 1
     end
-    local back = { id = id, text = t, time = math.floor(tonumber(note.time) or tonumber(now) or 0) }
+    local back = { id = id, text = t, time = math.floor(tonumber(note.time) or tonumber(now) or 0), pinned = note.pinned == true }
     table.insert(list, back)
-    table.sort(list, function(a, b)
-        if a.time ~= b.time then return a.time > b.time end
-        return a.id > b.id
-    end)
+    table.sort(list, before)
     while #list > M.MAX do table.remove(list) end
     return list, back
+end
+
+-- Pin a note to the top, or let it go back among the rest; says whether it is pinned now.
+function M.pin(list, id)
+    for _, n in ipairs(list or {}) do
+        if n.id == id then
+            n.pinned = not n.pinned
+            table.sort(list, before)
+            return list, n.pinned
+        end
+    end
+    return list, nil
+end
+
+-- A note as a board card: its first line the title, the rest its note.
+function M.split(text)
+    local t = M.clean(text)
+    local first, rest = string.match(t, "^([^\n]*)\n?(.*)$")
+    return first or "", rest or ""
 end
 
 function M.find(list, id)
@@ -108,11 +139,13 @@ function M.remove(list, id)
     return list, false
 end
 
--- The file read back: whatever is not a note is dropped, ids are made unique, the newest is
--- first, and the list is capped. A file written by an older mooi, or by hand, never raises.
+-- The file read back: whatever is not a note is dropped, ids are made unique (a repeated or
+-- missing one gets a new number, so no note is lost), pinned first then the newest, and the list
+-- is capped. A file written by an older mooi, or by hand, never raises.
 function M.decode(t)
     local out = {}
     local seen = {}
+    local loose = {}
     if type(t) ~= "table" then return out end
     local rows = type(t.notes) == "table" and t.notes or t
     if type(rows) ~= "table" then return out end
@@ -120,17 +153,25 @@ function M.decode(t)
         if type(n) == "table" then
             local id = tonumber(n.id)
             local text = M.clean(n.text)
-            local time = math.floor(tonumber(n.time) or 0)
-            if id and id >= 1 and id == math.floor(id) and not seen[id] and text ~= "" then
-                seen[id] = true
-                out[#out + 1] = { id = id, text = text, time = time }
+            local note = { id = id, text = text, time = math.floor(tonumber(n.time) or 0), pinned = n.pinned == true }
+            if text ~= "" then
+                if id and id >= 1 and id == math.floor(id) and not seen[id] then
+                    seen[id] = true
+                    out[#out + 1] = note
+                else
+                    loose[#loose + 1] = note
+                end
             end
         end
     end
-    table.sort(out, function(a, b)
-        if a.time ~= b.time then return a.time > b.time end
-        return a.id > b.id
-    end)
+    local max = 0
+    for id in pairs(seen) do if id > max then max = id end end
+    for _, note in ipairs(loose) do
+        max = max + 1
+        note.id = max
+        out[#out + 1] = note
+    end
+    table.sort(out, before)
     while #out > M.MAX do table.remove(out) end
     return out
 end
@@ -139,7 +180,7 @@ end
 function M.encode(list)
     local rows = {}
     for _, n in ipairs(list or {}) do
-        rows[#rows + 1] = { id = n.id, text = n.text, time = n.time }
+        rows[#rows + 1] = { id = n.id, text = n.text, time = n.time, pinned = n.pinned == true or nil }
     end
     return { version = 1, notes = rows }
 end

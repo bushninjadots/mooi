@@ -1334,3 +1334,45 @@ notes, `mooi note` saves from the terminal, `notes.json` survives a restart, cop
 scale/monitor placements (the dropdown clamps to the screen), a hand editing notes.json while the
 pad is open, and editing a note that was written with more than one line (the input is one line; it
 is flattened).
+
+## D52 · 2026-10-21 · The pad perfected, and a Kanban board from its rail
+
+**The pad (D51), reviewed.** Fixed: a file with a repeated or missing note id lost those notes on
+read (`decode` dropped them while saying it made ids unique — now they are renumbered, none lost);
+the placeholder, the footer and the module's label had their two texts the wrong way round
+(`pick(c, a, b)` is `a` while `c` is false: the empty pad said "Editing"); the dropdown let presses
+through its empty parts to the window under it (a catch zone now); closed from outside mid-edit, it
+reopened still editing (`fact:qn_open` resets it). New: **pinned notes** (first, flare-marked, never
+taken by the 200-note cap; `pinned` kept in notes.json), **send to the board** (first line the card,
+the rest its note, into the board's first column), **the keys** — ↑↓ choose a row, Alt+C copy, Alt+E
+edit, Alt+P pin, Alt+B to the board, Alt+Delete forget, Ctrl+B the board — and the look: cut from the
+loom's chamfered plate and unfolding like the Signal Field (its head runs out from the module, then
+its body drops), with **a rail** down its left — the pad, and the board (with how many of its cards
+are late).
+
+**The board.** `shell/board.luau` + `lib/board.luau` (pure, 5 tests) + `ui/board.plm`; board.json in
+mooi's data folder. Opened from the pad's rail, Ctrl+B in the pad, or `mooi board`; a surface of its
+own in the middle of the screen that opens from its middle (a bar across, then the board).
+- **Columns** (Inbox, Doing — limit 3 —, Done to start; up to six, a new one goes before Done; renamed,
+  moved, given a work-in-progress limit — over it the head goes ember —, removed only when empty).
+  The last column is where work is done: a card reaching it is stamped done, leaving it unstamps it;
+  "Archive done" moves those to the archive (kept, capped at 500).
+- **Cards**: a title, a note, one of five tags (palette colours and mixes of them, so five stay apart
+  whatever the wallpaper gives), a due day (none, today, tomorrow, a week — shown as "today",
+  "2 d late", lit ember/flare/phos as it nears), made/changed/done times. Each column scrolls on its
+  own; a card is **dragged** anywhere (a lifted copy follows the pointer, a line shows where it will
+  land — the drop is computed from coordinates passed as facts beside the event, never packed), or
+  stepped with the pane's buttons or Alt+Shift+arrows.
+- **The pane**: the chosen card (title and note **saved as you type**, half a second after the last
+  key, per card and field so switching cards never loses or misplaces a word), or the chosen column;
+  always a field for a new card (Ctrl+N), added at the top of the chosen column.
+- **Finding**: search (title and note, any case; Ctrl+F) and a tag filter; hidden cards take no room.
+- **Undo** (Ctrl+Z, ten seconds): a deleted card back in its place, an archive, a removed column.
+- **Keys**: Alt+arrows choose, Alt+Shift+arrows move, F2 the title, Alt+0–5 the tag, Alt+Delete
+  delete, Esc close. Letters are never bare keys (a focused field would lose them).
+
+Checked: both scenes compile, 138 unit tests, 0 failed; live through the agent: the board opens and
+closes, cards added from the field, tagged, dated, stepped, dragged (into Done: stamped, "DONE"),
+deleted and put back, filtered by search, a column's limit set; the pad's pin (a note pinned and
+unpinned), a note sent to the board by Alt+B, the corrected placeholder; recorded. Not checked: a
+real pointer drag by hand, six full columns of long titles, a board.json edited by hand while open.

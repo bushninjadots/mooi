@@ -1626,7 +1626,9 @@ on("open_settings", function()
 end)
 
 -- ── Quick notes: the pad behind the bar's notes module (shell/notes.luau, D51) ──
-require("notes")({ safe_mode = safe_mode })
+-- ── The board (shell/board.luau, D52): a Kanban board, opened from the pad's rail ──
+local kanban = require("board")({ safe_mode = safe_mode })
+require("notes")({ safe_mode = safe_mode, to_board = kanban.add_note })
 
 -- ── Signal Loom: the notifications (shell/signals.luau, D50) ──
 loom = require("signals")({
