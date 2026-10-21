@@ -158,17 +158,28 @@ apps_sync() {
     did=""
 
     k="$C/kitty/kitty.conf"
+    # A hand-edited `include colors-mooi.conf   ` (or a formatter that adds a space) is still
+    # mooi's include: matching the whole line used to miss it, append a second one, and leave
+    # both behind when the switch went off.
+    mooi_inc='^include[[:space:]]\{1,\}colors-mooi\.conf[[:space:]]*$'
     if on kitty && [ -f "$k" ]; then
         render "$apps_dir/kitty.conf" "$C/kitty/colors-mooi.conf"
-        if ! grep -q '^include colors-mooi.conf$' "$k"; then
-            was=$(grep -m1 '^include colors-[A-Za-z0-9_-]*\.conf$' "$k" | sed 's/^include //')
-            if [ -n "$was" ]; then sed -i "s|^include $was\$|include colors-mooi.conf|" "$k"; put kitty_was "$was"
+        if ! grep -q "$mooi_inc" "$k"; then
+            was=$(sed -n "s|^include[[:space:]]\{1,\}\(colors-[A-Za-z0-9_-]*\.conf\)[[:space:]]*\$|\1|p" "$k" | head -1)
+            if [ -n "$was" ]; then
+                was_re=$(printf '%s\n' "$was" | sed 's/\./\\./g')
+                sed -i "s|^include[[:space:]]\{1,\}$was_re[[:space:]]*\$|include colors-mooi.conf|" "$k"; put kitty_was "$was"
             else echo "include colors-mooi.conf" >> "$k"; put kitty_was "-"; fi
+        elif [ -z "$(get kitty_was)" ]; then
+            # apps.state was lost while mooi's include was already in place. Nothing records
+            # what pointed there before, so the honest fallback is "mooi put it here": the
+            # switch off takes the line out instead of leaving Kitty in mooi's palette.
+            put kitty_was "-"
         fi
         pkill -USR1 -x kitty 2>/dev/null; did="$did kitty"
     elif [ -n "$(get kitty_was)" ] && [ -f "$k" ]; then
         was=$(get kitty_was)
-        if [ "$was" = "-" ]; then sed -i '/^include colors-mooi.conf$/d' "$k"; else sed -i "s|^include colors-mooi.conf\$|include $was|" "$k"; fi
+        if [ "$was" = "-" ]; then sed -i "/$mooi_inc/d" "$k"; else sed -i "s|$mooi_inc|include $was|" "$k"; fi
         put kitty_was ""; pkill -USR1 -x kitty 2>/dev/null; did="$did kitty(yours)"
     fi
 
@@ -178,20 +189,31 @@ apps_sync() {
         tpl="$C/matugen/templates/gtk$v.css"; [ -f "$tpl" ] || tpl="$apps_dir/gtk$v.css"
         if on gtk; then
             mkdir -p "$(dirname "$shadow")" "$(dirname "$out")"
+            # A gtk.css mooi creates where there was none has nothing to put back, so the
+            # fact is recorded: turning GTK off removes it again. Without this, a file mooi
+            # made (the usual case for GTK 4, whose gtk.css most setups do not have) stayed
+            # after the switch went off and GTK kept mooi's colours.
+            if [ ! -f "$out" ]; then put "gtk${v}_made" yes; fi
             if [ -f "$mt" ] && grep -q "^output_path = \"~/.config/gtk-$v.0/gtk.css\"\$" "$mt"; then
-                [ -f "$out" ] && cp "$out" "$shadow"
+                # Only the first redirect keeps a copy: once mooi owns the output, $out is
+                # mooi's render, and copying it over the shadow would lose the user's own
+                # last Matugen-made gtk.css (which is what going back restores).
+                [ -z "$(get "gtk${v}_matugen")" ] && [ -f "$out" ] && cp "$out" "$shadow"
                 sed -i "s|^output_path = \"~/.config/gtk-$v.0/gtk.css\"\$|output_path = \"~/.cache/mooi/matugen-gtk-$v.0.css\"  # mooi: GTK follows mooi while it is on (was ~/.config/gtk-$v.0/gtk.css)|" "$mt"
                 put "gtk${v}_matugen" yes
-            elif [ -z "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")" ] && [ -f "$out" ]; then
+            elif [ -z "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")$(get "gtk${v}_made")" ] && [ -f "$out" ]; then
                 cp "$out" "$folder/apps-gtk-$v.0.backup.css"; put "gtk${v}_backup" yes
             fi
             render "$tpl" "$out"; did="$did gtk$v"
-        elif [ -n "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")" ]; then
+        elif [ -n "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")$(get "gtk${v}_made")" ]; then
             if [ "$(get "gtk${v}_matugen")" = yes ]; then
                 sed -i "s|^output_path = \"~/.cache/mooi/matugen-gtk-$v.0.css\".*|output_path = \"~/.config/gtk-$v.0/gtk.css\"|" "$mt"
-                [ -f "$shadow" ] && cp "$shadow" "$out"
-            else cp "$folder/apps-gtk-$v.0.backup.css" "$out"; fi
-            put "gtk${v}_matugen" ""; put "gtk${v}_backup" ""; did="$did gtk$v(yours)"
+                if [ -f "$shadow" ]; then cp "$shadow" "$out"; else rm -f "$out"; fi
+            elif [ -n "$(get "gtk${v}_backup")" ]; then
+                cp "$folder/apps-gtk-$v.0.backup.css" "$out"
+            else rm -f "$out"; fi
+            put "gtk${v}_matugen" ""; put "gtk${v}_backup" ""; put "gtk${v}_made" ""
+            did="$did gtk$v(yours)"
         fi
     done
 
@@ -208,16 +230,26 @@ apps_sync() {
                 [ -n "$(get "${q}_was")" ] || put "${q}_was" "${cur:--}"
                 if grep -q '^color_scheme_path=' "$qc"; then sed -i "s|^color_scheme_path=.*|color_scheme_path=$mine|" "$qc"
                 else sed -i "/^\[Appearance\]/a color_scheme_path=$mine" "$qc"; fi
-                grep -q '^custom_palette=true' "$qc" || { put "${q}_palette" "$(sed -n 's/^custom_palette=//p' "$qc" | head -1)"; sed -i 's/^custom_palette=.*/custom_palette=true/' "$qc"; }
+            fi
+            # A scheme is only used when custom_palette is on, and a qt5ct.conf may not carry
+            # the key at all: add it, and remember that it was absent ("-") so the switch off
+            # removes it again instead of leaving a setting mooi made behind.
+            if ! grep -q '^custom_palette=true' "$qc"; then
+                had=$(sed -n 's/^custom_palette=//p' "$qc" | head -1)
+                [ -n "$(get "${q}_palette")" ] || put "${q}_palette" "${had:--}"
+                if grep -q '^custom_palette=' "$qc"; then sed -i 's/^custom_palette=.*/custom_palette=true/' "$qc"
+                else sed -i '/^\[Appearance\]/a custom_palette=true' "$qc"; fi
             fi
             did="$did $q"
-        elif [ -n "$(get "${q}_was")" ]; then
+        elif [ -n "$(get "${q}_was")$(get "${q}_palette")" ]; then
             if [ "$q" = qt6ct ] && [ "$(get qt6ct_made)" = yes ]; then
                 rm -f "$qc" "$mine"; rmdir "$C/$q/colors" "$C/$q" 2>/dev/null; put qt6ct_made ""
             elif [ -f "$qc" ]; then
-                was=$(get "${q}_was"); [ "$was" = "-" ] && was=""
-                sed -i "s|^color_scheme_path=.*|color_scheme_path=$was|" "$qc"
-                pal=$(get "${q}_palette"); [ -n "$pal" ] && sed -i "s/^custom_palette=.*/custom_palette=$pal/" "$qc"
+                was=$(get "${q}_was")
+                if [ -n "$was" ]; then [ "$was" = "-" ] && was=""; sed -i "s|^color_scheme_path=.*|color_scheme_path=$was|" "$qc"; fi
+                pal=$(get "${q}_palette")
+                if [ "$pal" = "-" ]; then sed -i '/^custom_palette=/d' "$qc"
+                elif [ -n "$pal" ]; then sed -i "s/^custom_palette=.*/custom_palette=$pal/" "$qc"; fi
             fi
             put "${q}_was" ""; put "${q}_palette" ""; did="$did $q(yours)"
         fi
