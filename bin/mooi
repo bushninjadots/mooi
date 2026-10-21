@@ -487,6 +487,8 @@ case "$cmd" in
     __keep) keep "${1:-beside}" ;;
     start)
         running && { echo "mooi is already running"; theme_watch_start; exit 0; }
+        # with ArchEclipse uninstalled there is nothing to run beside: mooi is the desktop (D48)
+        archeclipse_installed || exec "$self" session
         snapshot || exit 1
         setsid -f "$self" __keep beside >/dev/null 2>&1 < /dev/null
         wait_for 5 running && echo "mooi started beside ArchEclipse" || { echo "mooi did not start; see $log" >&2; exit 1; }

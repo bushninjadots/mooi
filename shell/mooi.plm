@@ -3351,7 +3351,7 @@ scene Mooi {
                         text loom.$i.body { at: tx.$i, lyy.$i + 42; anchor: left top; size: 11; family: "Exo 2"; width: lm_SEG - (tx.$i - fx0.$i) - 40
                                             lines: 2; color: fl.muted; opacity: if(lur.$i, 1, 1 - la.$i); show: loom_comfy or lur.$i }
                     }
-                    text loom.$i.when { at: if(loom_left, fx0.$i + lm_SEG - 34, fx0.$i + lm_SEG - 52), lyy.$i + 13; anchor: right center; size: 9; family: "Share Tech Mono"
+                    text loom.$i.when { at: if(loom_left, fx0.$i + lm_SEG - 30, fx0.$i + lm_SEG - 54), lyy.$i + 13; anchor: right center; size: 9; family: "Share Tech Mono"
                                         color: fl.muted; show: not lwh.$i }
                     // how many it stands for: a thread, or an app's notices
                     group {
@@ -3379,7 +3379,7 @@ scene Mooi {
                                   show: loom.$i.out and not lwh.$i and loom.$i.acts > 1 and (lur.$i or la.$i > 0.5) }
                 zone box za3.$i { from: tx.$i + 180, lyy.$i + lh.$i - 26; size: 84, 20; cursor: pointer; role: button; label: "{loom.$i.a3}"
                                   show: loom.$i.out and not lwh.$i and loom.$i.acts > 2 and (lur.$i or la.$i > 0.5) }
-                let xx.$i = if(loom_left, fx0.$i + lm_SEG - 24, fx0.$i + 6)
+                let xx.$i = if(loom_left, fx0.$i + lm_SEG - 24, fx0.$i + lm_SEG - 50)   // beside the diamond, clear of the words
                 zone box zx.$i { from: xx.$i, lyy.$i + 4; size: 18, 18; cursor: pointer; role: button; label: "Dismiss {loom.$i.title}"
                                  show: loom.$i.out and (la.$i > 0.3 or lur.$i) }
                 group {

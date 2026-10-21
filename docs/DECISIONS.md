@@ -1278,6 +1278,21 @@ Checked: both scenes compile, every logic file parses, 127 unit tests, 0 failed;
 generator re-runs byte-identical and setter codes 307–315 reach `signals.*` with the schema's ranges.
 Not yet checked live: a notice arriving, a signal's time-out, snooze/shelve, the Field's keys.
 
+**Checked live afterwards (real `notify-send`, recorded):** a manifest unfolds (diamond, arm, face)
+and times out; a low one whispers; two from one chat thread are one signal ×2 with the app's icon;
+a download replaced under its id (`-r`) updates in place; a burst of five leaves `+N WAITING`; the
+Field's clusters, thread items, rail ticks, keys, mute/unmute and per-cluster dismiss work; an
+urgent notice's own button reaches the app (`notify-send -A` printed `open`). Fixed on the way:
+the server gives urgency as the standard's **number** (0/1/2), not a word — critical notices were
+never recognised (the old bell had the same bug); an intervention is never the one left waiting
+behind `+N`; a whisper's count is inline (its chip spilled out of the slim line); the urgent × sat
+on its words; the loom no longer pops over an open Field (they land in it); `bin/mooi start` (and
+so any toggle key while mooi is down) becomes `session` when ArchEclipse is not installed — it had
+come back "beside", where it does not claim the notices.
+**What the server does not pass, so the loom does not pretend:** expiry hints, categories and
+progress values (no progress bars, no "reminder" or "developer" layouts beyond what the words carry);
+inline reply. Snooze is mooi's (the notice stays on the server, out of sight for 15 minutes).
+
 ## D51 · 2026-10-21 · Quick notes: a pad in the bar and its dropdown
 
 A note is something you want out of your head before it is gone, so it takes one press and one
