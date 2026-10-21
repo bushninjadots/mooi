@@ -1390,7 +1390,7 @@ scene Mooi {
         show: not bar_rail or st_notch
         zone box marktab { from: max(0, bar_x0 - 12), fl.top; size: 11, fl.mod_h; cursor: pointer
                            role: toggle; checked: settings_open; label: "mooi · settings" }
-        figure i_settings { at: max(0, bar_x0 - 12) + 5.5, fl.top + fl.mod_h / 2; size: 13, fl.mod_h - 6; color: mix(fl.ember, fl.phos, max(marktab.hover, rv.mark)) }
+        figure i_settings { at: max(0, bar_x0 - 12) + (fl.mod_h - 4) / 2, fl.top + (fl.mod_h - 4) / 2; size: fl.mod_h - 4, fl.mod_h - 4; color: if(marktab.hover or rv.mark, fl.phos, fl.ink) }
         on press marktab { emit bar_menu }
     }
 
