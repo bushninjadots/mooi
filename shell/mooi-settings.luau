@@ -250,7 +250,7 @@ local NAMES = {
     notifications = "Notifications", mic = "Microphone", volume = "Volume", brightness = "Brightness",
     battery = "Battery", network = "Network", bluetooth = "Bluetooth", clock = "Clock",
     caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot", clipboard = "Clipboard",
-    power = "Session", actions = "Window actions", atlas = "Atlas", core = "Search", focus = "Focus timer",
+    power = "Session", actions = "Window actions", atlas = "Atlas", core = "Search", focus = "Focus timer", settings = "Settings",
     gap = "Spacer",
 }
 local SIDE_NAME = { left = "LEFT", center = "CENTRE", right = "RIGHT" }
@@ -326,7 +326,7 @@ function layout(s)
         if x then
             prev[#prev + 1] = { x = X0 + x * scale, w = barlayout.width(m.id, { ws_style = b.workspaces, ws_count = s.spine.max_workspaces,
                 visualizer = b.visualizer, tray = 3, playing = true, media_mode = s.media.mode, media_idle = s.media.idle }) * scale,
-                label = string.upper(NAMES[m.id]), sel = rows[i].sel, chip = i - 1 }
+                label = string.upper(NAMES[m.id] or m.id), sel = rows[i].sel, chip = i - 1 }
         end
     end
     model.lay_prev = prev
