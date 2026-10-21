@@ -1625,6 +1625,9 @@ on("open_settings", function()
     fact.settings_open = true
 end)
 
+-- ── Quick notes: the pad behind the bar's notes module (shell/notes.luau, D51) ──
+require("notes")({ safe_mode = safe_mode })
+
 -- ── Signal Loom: the notifications (shell/signals.luau, D50) ──
 loom = require("signals")({
     settings = function() return settings end,

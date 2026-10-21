@@ -50,13 +50,15 @@ def code(path):
 
 MODULES = ["workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
            "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
-           "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "atlas", "core", "focus", "settings"]
+           "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "atlas", "core", "focus", "settings",
+           "notes"]
 NAMES = {"workspaces": "Workspaces", "window": "Window title", "media": "Media player", "resources": "Resources",
          "bandwidth": "Bandwidth", "keyboard": "Keyboard layout", "weather": "Weather", "tray": "Tray",
          "notifications": "Notifications", "mic": "Microphone", "volume": "Volume", "brightness": "Brightness",
          "battery": "Battery", "network": "Network", "bluetooth": "Bluetooth", "clock": "Clock",
          "caffeine": "Keep awake", "recorder": "Screen recorder", "screenshot": "Screenshot",
-         "clipboard": "Clipboard", "power": "Session", "actions": "Window actions", "atlas": "Atlas", "core": "Search", "focus": "Focus timer", "settings": "Settings"}
+         "clipboard": "Clipboard", "power": "Session", "actions": "Window actions", "atlas": "Atlas", "core": "Search", "focus": "Focus timer", "settings": "Settings",
+         "notes": "Quick notes"}
 KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("window", "Window actions", "Float, pin, fullscreen or close the focused window"),
         ("atlas", "Workspace Atlas", "Every window, grouped by workspace"),

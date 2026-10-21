@@ -20,3 +20,6 @@ ruvector.db
 # binaries and images that ship through Arch / Hypr ecosystem; not mooi
 *.xcf
 *.ora
+
+# python tool caches
+__pycache__/

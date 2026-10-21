@@ -427,6 +427,12 @@ scene Mooi {
     fact m_settings = true
     fact fi_settings = 0
     fact g_settings = false
+    fact x_notes = 0
+    fact p_notes = false
+    fact w_notes = 0
+    fact m_notes = true
+    fact fi_notes = 0
+    fact g_notes = false
     // The focus timer (shell/bar.luau): 0 idle, 1 a focus session, 2 its break; what is left
     // of it (1 → 0), the minutes and seconds left, and the length a session will have.
     fact foc_state = 0
@@ -517,6 +523,16 @@ scene Mooi {
     fact fld_lost = false     // the chosen cluster is what was missed
     text fld_app = ""
     model clips max 14 { id: text; text: text }
+    // ── Quick notes (D51): the pad's page in the bar and its dropdown (shell/notes.luau) ──
+    // `qn_count` is what the badge says; `qn_draft` is the input's text (the logic owns the file);
+    // `qn_said` is the word under the list for a moment (“SAVED”, “COPIED”, “DELETED”).
+    fact qn_open = false
+    fact qn_count = 0
+    fact qn_drafting = false  // the input has something in it (a live text cannot be read in an expression)
+    fact qn_saying = false    // `qn_said` has a word to show
+    text qn_draft = ""
+    text qn_said = ""
+    model qn max 6 { id: number; text: text; when: text; n: number }
     fact lv0 = 0.06
     fact lv1 = 0.06
     fact lv2 = 0.06
@@ -873,6 +889,11 @@ scene Mooi {
     event fld_mute ->          // to the logic: the chosen cluster's app muted, or not
     event note_dnd ->          // to the logic: do not disturb on or off
     event note_clear ->        // to the logic: dismiss every notice
+    event qn_toggle ->         // to the logic: the notes module pressed (the pad opens or closes)
+    event qn_add ->            // to the logic: Add pressed (the draft's text)
+    event qn_copy ->           // to the logic: note id pressed (its text is copied)
+    event qn_del ->            // to the logic: note id forgotten
+    event qn_added             // from the logic: a note was saved (the input takes the caret again)
     event clips ->             // to the logic: read the clipboard's history
     event open_notes           // `mooi notes` (Super+L standalone): the side panel's notices, open or closed (D48)
     event open_clips           // `mooi clipboard` (Super+Shift+V standalone): its clipboard history
@@ -1192,6 +1213,13 @@ scene Mooi {
     prop pv_settings = 0 ~m.enter
     follow pv_settings = p_settings
     on change p_settings while p_settings { xs_settings: x_settings ~1ms; ws_settings: w_settings ~1ms }
+    prop xs_notes = 0 ~fl.flow
+    follow xs_notes = x_notes
+    prop ws_notes = 0 ~fl.flow
+    follow ws_notes = w_notes
+    prop pv_notes = 0 ~m.enter
+    follow pv_notes = p_notes
+    on change p_notes while p_notes { xs_notes: x_notes ~1ms; ws_notes: w_notes ~1ms }
     let vv = round(audio.volume * 100)
     let bb = round(battery.percent)
 
@@ -1362,7 +1390,7 @@ scene Mooi {
         // own reserve is one number, read once.
         reserve: -1
         level: top
-        keyboard: exclusive while (open != none or mark_open or side != none or bar_edit) and not (open == command and cmode == actions)
+        keyboard: exclusive while (open != none or mark_open or side != none or bar_edit or qn_open) and not (open == command and cmode == actions)
     }
 
     // ── The screen frame ──────────────────────────────────────
@@ -1485,8 +1513,8 @@ scene Mooi {
     let hx_b = frame_x + chain_span + 2
     let pt = fl.top
     let pb = fl.top + fl.mod_h
-    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings))
-    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings))
+    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes))
+    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes))
     let hc_r = if(bar_full, st_radius + 1, fl.radius)
     // the outline's colour by weight (bar.outline_colour: subtle · bright · accent)
     let ob = clamp(st_ocol, 0, 1)
@@ -1695,8 +1723,8 @@ scene Mooi {
     // On a mechanism each group is a machined housing a little wider than its group, so
     // neighbouring housings meet at a seam and the bar reads as one machine.
     for f in frames {
-        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings)
-        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)) - fx
+        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes)
+        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)) - fx
         let own = helix_edges and f.a == wsf_a        // the workspaces' island, drawn as the helix
         group {
             show: not bar_full and not st_notch and not own
@@ -1715,8 +1743,8 @@ scene Mooi {
     // The hairlines between the members of a group (and, in full mode, between groups); on a
     // mechanism a group's seam in the full panel is a vent of three slots.
     for d in dividers {
-        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)            // where the module before the divider ends
-        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings)                          // where the one after it begins
+        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)            // where the module before the divider ends
+        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes)                          // where the one after it begins
         let dx = if(d.strong, (pe + ms) / 2, ms)
         line { from: dx, fl.top + if(d.strong, 5, 8); to: dx, fl.top + fl.mod_h - if(d.strong, 5, 8); width: 1
                color: if(d.strong, fl.trace, fl.trace_dim); show: not (mech and d.strong) and (not d.strong or ms - pe < 40) }
@@ -2485,6 +2513,36 @@ scene Mooi {
         on press right zset { emit edit_mode(1) }
     }
 
+    // ── Quick notes ──────────────────────────────────────────
+    // The pad's page, and how many notes are on it (shell/notes.luau keeps them in notes.json).
+    // A press opens the dropdown under the bar — drawn below, in this same surface — where a note
+    // is written, copied or forgotten.
+    group {
+        show: p_notes
+        move: xs_notes, 0
+        opacity: pv_notes
+        zone box zqn { from: 0, fl.top; size: ws_notes, fl.mod_h; cursor: pointer; role: button
+                       label: pick(qn_count > 0, "Quick notes — {qn_count, 0}; open the pad", "Quick notes — open the pad") }
+        Pill(ws_notes, max(zqn.hover, if(qn_open, 1, 0)))
+        let qx = 16
+        let qy = fl.cy
+        let qtone = mix(fl.trace, fl.phos, max(zqn.hover, if(qn_open, 1, 0)))
+        // a page with a folded corner and two ruled lines
+        path { color: mix(fl.hull_raised, fl.well, 0.5); opacity: 0.9
+               move qx - 6, qy - 8; line qx + 3, qy - 8; line qx + 6, qy - 5; line qx + 6, qy + 8; line qx - 6, qy + 8; close }
+        path { stroke: 1.2; color: qtone
+               move qx - 6, qy - 8; line qx + 3, qy - 8; line qx + 6, qy - 5; line qx + 6, qy + 8; line qx - 6, qy + 8; close }
+        line { from: qx - 3, qy - 2; to: qx + 3, qy - 2; width: 1; color: qtone }
+        line { from: qx - 3, qy + 2; to: qx + 3, qy + 2; width: 1; color: qtone }
+        group {
+            show: qn_count > 0
+            glow: 5, (70%) * st_glow, fl.ember
+            box { at: 31, fl.cy - 6; size: 14, 11; corner: 2; color: fl.ember_fill }
+        }
+        text "{min(qn_count, 99), 0}" { at: 31, fl.cy - 5.5; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.ink; show: qn_count > 0 }
+        on press zqn { emit qn_toggle; side = none; mark_open = false; open = none }
+    }
+
     // ── Focus timer ───────────────────────────────────────────
     // A block of work, then a break (shell/bar.luau keeps the time). The ring is what is left:
     // phos while you work, ember on the break, dark at rest — light means live. Press: start or
@@ -2563,7 +2621,7 @@ scene Mooi {
     // Over the bar, where it will land: its outline at the pointer, a line through its middle.
     group {
         show: ed_drag >= 0 and ed_y <= st_res + 4 and not ed_merge
-        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)
+        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)
         box { at: ed_x, fl.cy; size: gw, fl.mod_h; corner: fl.radius; stroke: 1.4; color: fl.phos; opacity: 0.9 }
         line { from: ed_x, fl.top - 3; to: ed_x, fl.top + fl.mod_h + 3; width: 1; color: fl.flare }
     }
@@ -2885,18 +2943,30 @@ scene Mooi {
     on drag ez_settings while ed_press == 25 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 25; ed_sel = -1 }
     on release ez_settings while ed_drag == 25 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_settings while ed_drag < 0 and ed_press == 25 { ed_sel = if(ed_sel == 25, -1, 25); ed_press = -1 }
+    group {
+        show: bar_edit and p_notes
+        zone box ez_notes { from: xs_notes, fl.top; size: ws_notes, fl.mod_h; cursor: grab; role: button; label: "Move Quick notes" }
+        box { from: xs_notes + 1, fl.top + 1; size: ws_notes - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 26 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 26, 0.6, if(ed_sel == 26, 0.4, 0.2 * ez_notes.hover)) }
+        box { from: xs_notes + 1, fl.top + 1; size: ws_notes - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 26, 2, 1.2)
+              color: if(ed_sel == 26 or ed_drag == 26, fl.flare, mix(fl.trace_lit, fl.flare, ez_notes.hover)); opacity: if(ed_drag >= 0 and ed_drag != 26, 0.45, 0.85) }
+    }
+    on press ez_notes while bar_edit { ed_press = 26; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_notes while ed_press == 26 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 26; ed_sel = -1 }
+    on release ez_notes while ed_drag == 26 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_notes while ed_drag < 0 and ed_press == 26 { ed_sel = if(ed_sel == 26, -1, 26); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus, fi_settings)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus, g_settings)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus, fi_settings, fi_notes)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus, g_settings, g_notes)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
@@ -2920,6 +2990,63 @@ scene Mooi {
     on key Delete while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 5); ed_sel = -1 }
     on edit_op(v) while v - floor(v / 10) * 10 == 5 { ed_sel = -1 }
     // </gen:edit>
+
+    // ── Quick notes: the dropdown (D51) ───────────────────────
+    // Under the notes module, in the bar's own surface: an input (Enter saves), the notes that
+    // were saved (a press copies one, × forgets it), and a word for what just happened.
+    let qn_w = 340
+    let qn_h = 300
+    let qn_x = clamp(xs_notes + ws_notes - qn_w, 12, screen.width - qn_w - 12)
+    let qn_y = st_res + 8
+    group {
+        show: qn_open
+        move: qn_x, qn_y
+        box { from: 0, 0; size: qn_w, qn_h; corner: 6; color: fl.hull }
+        box { from: 0, 0; size: qn_w, qn_h; corner: 6; stroke: 1.5; color: fl.trace }
+        line { from: 12, 1; to: qn_w - 12, 1; width: 1; color: fl.phos; opacity: 0.3 }
+        text "QUICK NOTES" { at: 16, 18; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
+        text "{qn_count, 0}" { at: 286, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted }
+        zone box qclose { from: 304, 4; size: 28, 28; corner: 5; cursor: pointer; role: button; label: "Close quick notes" }
+        line { from: 313, 12; to: 323, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
+        line { from: 323, 12; to: 313, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
+        on press qclose { qn_open = false }
+
+        // the input's well
+        box { from: 12, 32; size: 262, 32; corner: 4; color: fl.ground }
+        box { from: 12, 32; size: 262, 32; corner: 4; stroke: 1; color: fl.trace }
+        text "Write a note — Enter saves" { at: 20, 48; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not qn_drafting }
+        input qn_draft { at: 20, 40; width: 244; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+        SButton(280, 33, 48, "Add", qn_add, 0)
+        on qn_added { focus qn_draft }
+
+        // what is written: one row each, the newest at the top
+        for r in qn {
+            let qry = 76 + r.n * 32
+            zone box qrow { from: 12, qry; size: 316, 30; corner: 4; cursor: pointer; role: button; label: "Copy note: {r.text}" }
+            box { from: 12, qry; size: 316, 30; corner: 4; color: fl.well; opacity: 0.65 * qrow.hover }
+            text r.text { at: 20, qry + 15; anchor: left center; size: 11; family: "Exo 2"; width: 236; lines: 1; color: mix(fl.trace_lit, fl.phos, qrow.hover) }
+            text r.when { at: 286, qry + 15; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            zone box qdel { from: 294, qry + 4; size: 24, 22; corner: 4; cursor: pointer; role: button; label: "Forget note {r.n + 1}" }
+            line { from: 301, qry + 10; to: 311, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
+            line { from: 311, qry + 10; to: 301, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
+            line { from: 12, qry + 30; to: 328, qry + 30; width: 1; color: fl.trace_dim; opacity: 0.6 }
+            on press qrow { emit qn_copy(r.id) }
+            on press qdel { emit qn_del(r.id) }
+        }
+        text "No notes yet — write one above." { at: 16, 90; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; show: qn_count < 1 }
+        text pick(qn_saying, qn_said, "ENTER SAVES · PRESS A NOTE TO COPY · × FORGETS") {
+             at: 16, 284; anchor: left center; size: 9; family: "Share Tech Mono"
+             color: pick(qn_saying, fl.ember, fl.muted) }
+    }
+    on change qn_open while qn_open { focus qn_draft }
+    on change qn_open while not qn_open { blur }
+    on key Escape while qn_open { qn_open = false }
+    on idle for 45s while qn_open { qn_open = false }
+    on change open while open != none { qn_open = false }
+    on change side while side != none { qn_open = false }
+    on change mark_open while mark_open { qn_open = false }
+    on change bar_edit while bar_edit { qn_open = false }
+    on bar_menu { qn_open = false }
 
     // ── The bar's rules ───────────────────────────────────────
     // The mark (and a right press on search) opens mooi's settings — the shell's home, where

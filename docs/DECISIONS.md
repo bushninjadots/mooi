@@ -1277,3 +1277,34 @@ not a list item.
 Checked: both scenes compile, every logic file parses, 127 unit tests, 0 failed; the settings
 generator re-runs byte-identical and setter codes 307–315 reach `signals.*` with the schema's ranges.
 Not yet checked live: a notice arriving, a signal's time-out, snooze/shelve, the Field's keys.
+
+## D51 · 2026-10-21 · Quick notes: a pad in the bar and its dropdown
+
+A note is something you want out of your head before it is gone, so it takes one press and one
+line: the bar's notes module, and a dropdown under it.
+- **The module.** `notes` (46 px, lib/barlayout): a page with a folded corner, and how many notes
+  are on it, lit like the bell. A press opens the dropdown; a press again, Escape, another panel,
+  edit mode or 45 s idle closes it. It is a module like any other — placed, grouped and hidden in
+  the Layout page, with the generated grips and the setters' 100 + n / 200 + n codes coming from
+  the one module list. The default row now carries it: the screenshot and recorder pair begins on
+  the shelf to make the room (46 px where their 60 were).
+- **The dropdown.** Drawn in the bar's own surface (no second window to place), under the module,
+  in the islands' plate: an input (focused when it opens, Enter saves), the saved notes newest
+  first — one line, how long ago, a press copies, × forgets — and a word for a moment (`SAVED`,
+  `COPIED`, `DELETED`). Six rows show; the rest wait in the file. It is theme-aware by construction:
+  `fl.*` and the shared plate, like every module.
+- **The file.** `notes.json` in mooi's data folder, `{ version = 1, notes = [ { id, text, time } ] }`,
+  newest first, capped at 200 (oldest fall off), each note cleaned (control characters, runs of
+  space, blank lines folded, cut at 4,000 characters on a character boundary) and never trusted on
+  read. A note is a line or two, not a document: no folders, no sync, no editor.
+- **The working-out is pure.** `lib/notes.luau` — cleaning, one-line previews, adding (newest first,
+  empty refused), finding, removing, decoding a hand-written or older file, encoding, and "how long
+  ago" — is plain Lua 5.4 and unit-tested (4 tests). `shell/notes.luau` owns the file, the rows and
+  the clipboard (`wl-copy` on its input), and re-reads the file if something else writes it.
+
+Checked: both scenes compile, every logic file parses, 131 unit tests, 0 failed; live: the module
+placed on the bar, a real pointer press opens the dropdown, a note written through the input's own
+text/Enter events is saved and the draft cleared, empty notes are refused, `notes.json` survives a
+restart and is copied to the clipboard, × forgets, Escape closes (`tests/notes.sh`, 15 checks). Not checked: two notes that differ only after the
+cut, a matrix of scale/monitor placements (the dropdown clamps to the screen), and a hand editing
+notes.json while the pad is open.

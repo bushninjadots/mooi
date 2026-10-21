@@ -1312,5 +1312,50 @@ test("signals: the stack, joined where one app follows itself", function()
     eq(sig.rail(0, 0, 3600), 0, "now at the start"); eq(sig.rail(0, 3600, 3600), 1, "the span at the end"); eq(sig.rail(0, 4000, 3600), nil, "past it: off")
 end)
 
+print("notes")
+local notes = require("lib/notes")
+test("notes: what is written is cleaned, never kept raw", function()
+    eq(notes.clean("  call Ana \r\n  about the \tbuild  "), "call Ana\nabout the build", "edges trimmed, lines kept")
+    eq(notes.clean(nil), "", "not a string: empty")
+    eq(notes.clean("\0\7x"), "x", "control characters made spaces")
+    eq(notes.clean("a\n\n\n\nb"), "a\n\nb", "runs of blank lines folded")
+    eq(notes.clean(string.rep("é", 3000)):sub(-3), "…", "cut, and marked as cut")
+    eq(#notes.clean(string.rep("é", 5000)), notes.TEXT_MAX + 3, "cut to the length (and the mark)")
+end)
+test("notes: a row is one line and says how long ago", function()
+    eq(notes.one_line("buy\n  milk  \nand bread"), "buy milk and bread", "one line")
+    eq(notes.one_line(nil), "", "not a string: empty")
+    eq(notes.ago(1000, 1000), "now", "now"); eq(notes.ago(1000, 941), "now", "under a minute")
+    eq(notes.ago(1000, 940), "1m", "a minute"); eq(notes.ago(10000, 1000), "2h", "hours")
+    eq(notes.ago(1000000, 1000), "11d", "days"); eq(notes.ago(10000000, 1000), "16w", "weeks")
+end)
+test("notes: adding puts the newest first, refusing the empty", function()
+    local list = {}
+    local added
+    list, added = notes.add(list, "   ", 5); eq(added, nil, "nothing written: nothing added"); eq(#list, 0, "still empty")
+    list, added = notes.add(list, "first", 10); eq(added.id, 1, "first id"); eq(list[1].text, "first", "at the top")
+    list, added = notes.add(list, "<b>second</b>", 20); eq(added.id, 2, "next id"); eq(list[1].text, "<b>second</b>", "the newest is first")
+    eq(list[2].id, 1, "the older one follows")
+    local full = {}
+    for i = 1, notes.MAX do full[i] = { id = i, text = "n" .. i, time = i } end
+    full, _ = notes.add(full, "one more", notes.MAX + 1)
+    eq(#full, notes.MAX, "the cap holds"); eq(full[1].text, "one more", "the new one is kept")
+    eq(notes.find(full, notes.MAX + 1).text, "one more", "find by id"); eq(notes.find(full, 9999), nil, "an id that is not there")
+end)
+test("notes: removing one, and a file read back is cleaned", function()
+    local list = { { id = 1, text = "a", time = 1 }, { id = 2, text = "b", time = 2 } }
+    local gone
+    list, gone = notes.remove(list, 2); eq(gone, true, "removed"); eq(#list, 1, "one left"); eq(list[1].id, 1, "the other")
+    list, gone = notes.remove(list, 2); eq(gone, false, "not there any more")
+    local back = notes.decode({ version = 1, notes = {
+        { id = 2, text = "  later  ", time = 20 }, { id = 1, text = "earlier", time = 10 },
+        { id = 2, text = "duplicate", time = 30 }, { id = 0, text = "bad id", time = 40 },
+        { id = 4, text = "   ", time = 50 }, { id = 5, text = 7, time = 60 }, "not a note" } })
+    eq(#back, 2, "only what is a note"); eq(back[1].text, "later", "newest first, cleaned"); eq(back[2].text, "earlier", "the other follows")
+    eq(notes.decode("nope")[1], nil, "not a table: nothing"); eq(notes.decode({ notes = 5 })[1], nil, "notes not a list: nothing")
+    local round = notes.decode(notes.encode(back))
+    eq(round[1].text, "later", "encode then decode keeps it"); eq(round[1].id, 2, "and its id"); eq(round[2].time, 10, "and its time")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
