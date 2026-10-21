@@ -1223,3 +1223,16 @@ desktop when ArchEclipse is missing whatever the setting says, and `bin/mooi` ha
 when it is installed (`takeover` becomes `session` without it). Checked: Hyprland reloads with no
 errors, no key calls `qs ipc` any more, mooi's keys and "standalone" are bound, the picker and widgets
 run, matugen recolours with no error, `mooi status` says "ArchEclipse: not installed".
+
+## D49 · 2026-10-21 · Settings is a bar module
+
+The way into mooi's settings was the mark: the rail's left end, or a tab at the bar's edge with the
+rail off — fixed, not placeable like everything else. It is now a module, `settings` (lib/barlayout,
+32 px), drawn as a dial: six teeth on a ring and an ember index around a hub. Pointing at it turns the
+teeth a sixth of a turn; open settings keep it turned and light the hub. Press: open or close the
+settings · right press: edit mode (arrange the bar). The mark and the tab now show only while the
+module is off the bar, so a layout without it still has a way in. The default row puts it with the
+session and search (`settings+power+core`); keep-awake moved to the shelf to make the room (the
+1920 px test). The user's own layout got it at the start of `bar.left`
+(backup: ~/.local/state/mooi/settings.before-settings-module.json). Checked: compiles, 120 tests, the
+dial on the live bar, an agent press opens and closes the settings.

@@ -125,6 +125,9 @@ scene Mooi {
     fact m_focus = true
     fact fi_focus = 0
     fact g_focus = false
+    fact m_settings = true
+    fact fi_settings = 0
+    fact g_settings = false
     fact helix_frame = true   // bar.helix_frame
     fact media_mode = 0       // media.mode · 0 full · 1 compact · 2 art · 3 viz
     fact media_idle = 0       // media.idle · 0 collapse · 1 keep · 2 hide

@@ -620,7 +620,7 @@ return function(ctx)
         mic = "Mic", volume = "Volume", brightness = "Brightness", battery = "Battery", network = "Network",
         bluetooth = "Bluetooth", clock = "Clock", caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot",
         clipboard = "Clipboard", power = "Session", actions = "Win actions", atlas = "Atlas", core = "Search",
-        focus = "Focus" }
+        focus = "Focus", settings = "Settings" }
     local editing = nil      -- the layout a drag plans from: as edit mode found it, then as last dropped
     local previewed = nil    -- the last preview shown, so a pointer that moves within one place costs nothing
     local original = nil     -- the layout as edit mode found it, for Escape

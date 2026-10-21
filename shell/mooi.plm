@@ -420,6 +420,12 @@ scene Mooi {
     fact m_focus = true
     fact fi_focus = 0
     fact g_focus = false
+    fact x_settings = 0
+    fact p_settings = false
+    fact w_settings = 0
+    fact m_settings = true
+    fact fi_settings = 0
+    fact g_settings = false
     // The focus timer (shell/bar.luau): 0 idle, 1 a focus session, 2 its break; what is left
     // of it (1 → 0), the minutes and seconds left, and the length a session will have.
     fact foc_state = 0
@@ -1142,6 +1148,13 @@ scene Mooi {
     prop pv_focus = 0 ~m.enter
     follow pv_focus = p_focus
     on change p_focus while p_focus { xs_focus: x_focus ~1ms; ws_focus: w_focus ~1ms }
+    prop xs_settings = 0 ~fl.flow
+    follow xs_settings = x_settings
+    prop ws_settings = 0 ~fl.flow
+    follow ws_settings = w_settings
+    prop pv_settings = 0 ~m.enter
+    follow pv_settings = p_settings
+    on change p_settings while p_settings { xs_settings: x_settings ~1ms; ws_settings: w_settings ~1ms }
     let vv = round(audio.volume * 100)
     let bb = round(battery.percent)
 
@@ -1360,16 +1373,20 @@ scene Mooi {
         }
 
         // The mark: the rail's own left end, and the way into the bar's menu.
-        zone box mark { from: rx0 + 6, st_offset; size: 46, 13; cursor: pointer
-                        role: toggle; checked: settings_open; label: "mooi · settings" }
-        box { from: rx0 + 8, st_offset; size: 44, 10; color: fl.ground }
-        figure i_settings { at: rx0 + 23, fl.rail_y; size: 12, 12; color: mix(fl.ember, fl.phos, max(mark.hover, rv.mark)) }
-        on press mark { emit bar_menu }
+        // Only while the Settings module is off the bar: placed, the module is the way in.
+        group {
+            show: not p_settings
+            zone box mark { from: rx0 + 6, st_offset; size: 46, 13; cursor: pointer
+                            role: toggle; checked: settings_open; label: "mooi · settings" }
+            box { from: rx0 + 8, st_offset; size: 44, 10; color: fl.ground }
+            figure i_settings { at: rx0 + 23, fl.rail_y; size: 12, 12; color: mix(fl.ember, fl.phos, max(mark.hover, rv.mark)) }
+            on press mark { emit bar_menu }
+        }
 
         // The workspace scale over the instrument, its knob on the instrument's own spring.
         group {
             show: p_workspaces
-            let sc_l = max(frame_x - 4, rx0 + 56)              // never over the mark
+            let sc_l = max(frame_x - 4, rx0 + if(p_settings, 6, 56))   // never over the mark
             let sc_x0 = sc_l + 24
             let sc_len = frame_x + ws_body - 20 - sc_x0
             let knob_x = sc_x0 + sc_len * clamp(pos / max(spaces.count - 1, 1), 0, 1)
@@ -1396,9 +1413,10 @@ scene Mooi {
                            width: ws_weather - 8; lines: 1; color: fl.muted }
         }
     }
-    // With the rail off, the mark is a tab at the bar's left edge.
+    // With the rail off, the mark is a tab at the bar's left edge (again only while the Settings
+    // module is off the bar).
     group {
-        show: not bar_rail or st_notch
+        show: (not bar_rail or st_notch) and not p_settings
         zone box marktab { from: max(0, bar_x0 - 12), fl.top; size: 11, fl.mod_h; cursor: pointer
                            role: toggle; checked: settings_open; label: "mooi · settings" }
         figure i_settings { at: max(0, bar_x0 - 12) + (fl.mod_h - 4) / 2, fl.top + (fl.mod_h - 4) / 2; size: fl.mod_h - 4, fl.mod_h - 4; color: if(marktab.hover or rv.mark, fl.phos, fl.ink) }
@@ -1414,8 +1432,8 @@ scene Mooi {
     let hx_b = frame_x + chain_span + 2
     let pt = fl.top
     let pb = fl.top + fl.mod_h
-    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus))
-    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus))
+    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings))
+    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings))
     let hc_r = if(bar_full, st_radius + 1, fl.radius)
     // the outline's colour by weight (bar.outline_colour: subtle · bright · accent)
     let ob = clamp(st_ocol, 0, 1)
@@ -1624,8 +1642,8 @@ scene Mooi {
     // On a mechanism each group is a machined housing a little wider than its group, so
     // neighbouring housings meet at a seam and the bar reads as one machine.
     for f in frames {
-        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus)
-        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus)) - fx
+        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings)
+        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)) - fx
         let own = helix_edges and f.a == wsf_a        // the workspaces' island, drawn as the helix
         group {
             show: not bar_full and not st_notch and not own
@@ -1644,8 +1662,8 @@ scene Mooi {
     // The hairlines between the members of a group (and, in full mode, between groups); on a
     // mechanism a group's seam in the full panel is a vent of three slots.
     for d in dividers {
-        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus)            // where the module before the divider ends
-        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus)                          // where the one after it begins
+        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)            // where the module before the divider ends
+        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings)                          // where the one after it begins
         let dx = if(d.strong, (pe + ms) / 2, ms)
         line { from: dx, fl.top + if(d.strong, 5, 8); to: dx, fl.top + fl.mod_h - if(d.strong, 5, 8); width: 1
                color: if(d.strong, fl.trace, fl.trace_dim); show: not (mech and d.strong) and (not d.strong or ms - pe < 40) }
@@ -2383,6 +2401,37 @@ scene Mooi {
         on press right core { emit bar_menu }
     }
 
+    // ── Settings ──────────────────────────────────────────────
+    // mooi's own settings, as a dial: six teeth on a ring and an index that turns a sixth of a
+    // turn on its spring while you point at it, and stays turned while the settings are open —
+    // the hub lit. Press: open or close the settings · right: arrange the bar (edit mode).
+    group {
+        show: p_settings
+        move: xs_settings, 0
+        opacity: pv_settings
+        zone box zset { from: 0, fl.top; size: ws_settings, fl.mod_h; cursor: pointer; role: toggle
+                        checked: settings_open; label: "mooi · settings (right-click: arrange the bar)" }
+        Pill(ws_settings, max(zset.hover, if(settings_open, 1, 0)))
+        let sd_x = ws_settings / 2
+        let sd_a = max(zset.hover, if(settings_open, 1, 0))
+        let sd_spin = 60deg * sd_a
+        let sd_tooth = mix(fl.trace, fl.trace_lit, sd_a)
+        arc { at: sd_x, fl.cy; radius: 7.6; width: 3; span: 24deg; rotate: sd_spin; color: sd_tooth }
+        arc { at: sd_x, fl.cy; radius: 7.6; width: 3; span: 24deg; rotate: sd_spin + 60deg; color: sd_tooth }
+        arc { at: sd_x, fl.cy; radius: 7.6; width: 3; span: 24deg; rotate: sd_spin + 120deg; color: sd_tooth }
+        arc { at: sd_x, fl.cy; radius: 7.6; width: 3; span: 24deg; rotate: sd_spin + 180deg; color: sd_tooth }
+        arc { at: sd_x, fl.cy; radius: 7.6; width: 3; span: 24deg; rotate: sd_spin + 240deg; color: sd_tooth }
+        arc { at: sd_x, fl.cy; radius: 7.6; width: 3; span: 24deg; rotate: sd_spin + 300deg; color: sd_tooth }
+        arc { at: sd_x, fl.cy; radius: 5; width: 1.4; span: 360deg; color: mix(fl.trace_lit, fl.phos, sd_a) }
+        group {
+            glow: 6, (0.8 * sd_a) * st_glow, fl.ember
+            arc { at: sd_x, fl.cy; radius: 2.6; width: 1.6; span: 70deg; rotate: sd_spin - 125deg; color: fl.ember }
+            ellipse { at: sd_x, fl.cy; radius: 1.3; color: mix(fl.ember_fill, fl.flare, if(settings_open, 1, 0)) }
+        }
+        on press zset { emit bar_menu }
+        on press right zset { emit edit_mode(1) }
+    }
+
     // ── Focus timer ───────────────────────────────────────────
     // A block of work, then a break (shell/bar.luau keeps the time). The ring is what is left:
     // phos while you work, ember on the break, dark at rest — light means live. Press: start or
@@ -2461,7 +2510,7 @@ scene Mooi {
     // Over the bar, where it will land: its outline at the pointer, a line through its middle.
     group {
         show: ed_drag >= 0 and ed_y <= st_res + 4 and not ed_merge
-        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus)
+        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings)
         box { at: ed_x, fl.cy; size: gw, fl.mod_h; corner: fl.radius; stroke: 1.4; color: fl.phos; opacity: 0.9 }
         line { from: ed_x, fl.top - 3; to: ed_x, fl.top + fl.mod_h + 3; width: 1; color: fl.flare }
     }
@@ -2771,18 +2820,30 @@ scene Mooi {
     on drag ez_focus while ed_press == 24 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 24; ed_sel = -1 }
     on release ez_focus while ed_drag == 24 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_focus while ed_drag < 0 and ed_press == 24 { ed_sel = if(ed_sel == 24, -1, 24); ed_press = -1 }
+    group {
+        show: bar_edit and p_settings
+        zone box ez_settings { from: xs_settings, fl.top; size: ws_settings, fl.mod_h; cursor: grab; role: button; label: "Move Settings" }
+        box { from: xs_settings + 1, fl.top + 1; size: ws_settings - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 25 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 25, 0.6, if(ed_sel == 25, 0.4, 0.2 * ez_settings.hover)) }
+        box { from: xs_settings + 1, fl.top + 1; size: ws_settings - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 25, 2, 1.2)
+              color: if(ed_sel == 25 or ed_drag == 25, fl.flare, mix(fl.trace_lit, fl.flare, ez_settings.hover)); opacity: if(ed_drag >= 0 and ed_drag != 25, 0.45, 0.85) }
+    }
+    on press ez_settings while bar_edit { ed_press = 25; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_settings while ed_press == 25 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 25; ed_sel = -1 }
+    on release ez_settings while ed_drag == 25 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_settings while ed_drag < 0 and ed_press == 25 { ed_sel = if(ed_sel == 25, -1, 25); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus, fi_settings)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus, g_settings)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
