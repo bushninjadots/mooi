@@ -1236,3 +1236,44 @@ session and search (`settings+power+core`); keep-awake moved to the shelf to mak
 1920 px test). The user's own layout got it at the start of `bar.left`
 (backup: ~/.local/state/mooi/settings.before-settings-module.json). Checked: compiles, 120 tests, the
 dial on the live bar, an agent press opens and closes the settings.
+
+## D50 · 2026-10-21 · The Signal Loom: notifications as signals, and the Field
+
+Notifications were the bar's bell: a count, a panel, and a pop-up from the server. They are now a
+module of their own — the Signal Loom — because a notice is an event with a place and a lifetime,
+not a list item.
+- **A notice is a signal with a tier.** Three tiers, all the server's own words can tell: `whisper`
+  (low urgency, or from an app you muted, or anything but an urgent one under do-not-disturb),
+  `manifest` (normal), `intervention` (critical). A whisper comes and goes thinly; a manifest
+  unfolds with what it says and offers; an intervention stays until it is dealt with. Related
+  notices are one signal — same app and title, or same app, per `signals.grouping` — the newest
+  speaks for the thread, with how many it holds.
+- **Where they unfold.** One of four corners (`signals.edge`), as chamfered segments cut from the
+  Ferrolume plate (D50's `ui/loom.plm`, `Chamfer`): up to `signals.max` at once, a `+N` for the
+  rest, each with the app's own buttons (up to three), its picture, and Open/Snooze/Dismiss. The
+  segment glides `signals.travel` from its edge, its corner is cut `signals.chamfer`, and
+  `signals.effects` lights an arrival and an urgent edge (notices still come without it).
+  `signals.density` switches compact/comfortable. `signals.linger` times a manifest out (a whisper
+  half as long); the pointer on the cluster holds them, and what ran out while held goes when it
+  leaves. `signals.private` hides the words in the pop-up; the Field still shows them.
+- **The Signal Field.** Pressing a signal (or its cluster) opens the centre: the app's clusters in
+  the left column (what was missed included, marked), the chosen cluster's notices on the right —
+  body, thread count, snoozed/missed state, the app's buttons and Open/Snooze/Dismiss/Forget. Keys:
+  ↑↓ choose a cluster, Shift+↑↓ a notice, ↵ open, Delete dismiss (Forget for a missed one), `s`
+  snooze 15 minutes, `m` mute or unmute the app (muted apps whisper); "Dismiss all" clears the
+  cluster. Its activity rail is the last six hours, each tick a notice, lit by tier. A notice dismissed
+  or acted on is gone from the server too (the server keeps them otherwise, `notifications.keep`).
+- **The bar, not the bar's bell.** `shell/signals.luau` takes the server's list (one receiver per
+  session: `notifications.server` always / while mooi holds the desktop / never), cleans it through
+  `lib/signals` and hands the scene its rows; the bar's bell reads `loom_count`/`loom_more` instead of
+  keeping its own count, and the focus timer's toast goes through the loom as a local signal (never the
+  server's). Muted apps are `signals.json` in mooi's data folder.
+- **The working-out is pure.** `lib/signals.luau` — cleaning (markup out, entities in, control
+  characters spaces, cuts on character boundaries), tiers, grouping, slot assignment, the rail's
+  positions — is plain Lua 5.4 and unit-tested (7 tests). Settings gains a Signals page (tab 17:
+  origin, at once, stays out, join, size, corner cut, travel, glow, hide what they say) with Reset;
+  Advanced moves to tab 18.
+
+Checked: both scenes compile, every logic file parses, 127 unit tests, 0 failed; the settings
+generator re-runs byte-identical and setter codes 307–315 reach `signals.*` with the schema's ranges.
+Not yet checked live: a notice arriving, a signal's time-out, snooze/shelve, the Field's keys.
