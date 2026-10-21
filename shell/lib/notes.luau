@@ -57,6 +57,44 @@ function M.add(list, text, now)
     return list, note
 end
 
+-- Change what a note says. The note keeps its id and its place; `time` moves to now, so a row
+-- says when it was last touched. An empty text is refused (a note is never blank).
+function M.update(list, id, text, now)
+    local t = M.clean(text)
+    if t == "" then return list, nil end
+    for _, n in ipairs(list or {}) do
+        if n.id == id then
+            n.text = t
+            n.time = math.floor(tonumber(now) or 0)
+            return list, n
+        end
+    end
+    return list, nil
+end
+
+-- Put a note back (the one just forgotten), where its time says it belongs. Its id is kept
+-- unless something else has taken it meanwhile.
+function M.restore(list, note, now)
+    if type(note) ~= "table" then return list, nil end
+    local t = M.clean(note.text)
+    if t == "" then return list, nil end
+    list = list or {}
+    local id = tonumber(note.id)
+    if not id or id < 1 or id ~= math.floor(id) or M.find(list, id) then
+        local max = 0
+        for _, n in ipairs(list) do if n.id > max then max = n.id end end
+        id = max + 1
+    end
+    local back = { id = id, text = t, time = math.floor(tonumber(note.time) or tonumber(now) or 0) }
+    table.insert(list, back)
+    table.sort(list, function(a, b)
+        if a.time ~= b.time then return a.time > b.time end
+        return a.id > b.id
+    end)
+    while #list > M.MAX do table.remove(list) end
+    return list, back
+end
+
 function M.find(list, id)
     for _, n in ipairs(list) do if n.id == id then return n end end
     return nil

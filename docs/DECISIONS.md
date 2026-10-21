@@ -1290,21 +1290,32 @@ line: the bar's notes module, and a dropdown under it.
   the shelf to make the room (46 px where their 60 were).
 - **The dropdown.** Drawn in the bar's own surface (no second window to place), under the module,
   in the islands' plate: an input (focused when it opens, Enter saves), the saved notes newest
-  first — one line, how long ago, a press copies, × forgets — and a word for a moment (`SAVED`,
-  `COPIED`, `DELETED`). Six rows show; the rest wait in the file. It is theme-aware by construction:
-  `fl.*` and the shared plate, like every module.
+  first — one line, how long ago, a press copies, the pencil changes one in place (the button
+  becomes Save, Escape cancels the change before it closes the pad), × forgets — and a word for a
+  moment (`SAVED`, `UPDATED`, `COPIED`, `DELETED`, `RESTORED`). A forgotten note can be put back
+  for eight seconds (Undo in the footer, `qn_undo`). Six rows show; the wheel pages through the
+  rest, the header saying which of how many. It is theme-aware by construction: `fl.*` and the
+  shared plate, like every module.
 - **The file.** `notes.json` in mooi's data folder, `{ version = 1, notes = [ { id, text, time } ] }`,
   newest first, capped at 200 (oldest fall off), each note cleaned (control characters, runs of
   space, blank lines folded, cut at 4,000 characters on a character boundary) and never trusted on
   read. A note is a line or two, not a document: no folders, no sync, no editor.
 - **The working-out is pure.** `lib/notes.luau` — cleaning, one-line previews, adding (newest first,
-  empty refused), finding, removing, decoding a hand-written or older file, encoding, and "how long
-  ago" — is plain Lua 5.4 and unit-tested (4 tests). `shell/notes.luau` owns the file, the rows and
-  the clipboard (`wl-copy` on its input), and re-reads the file if something else writes it.
+  empty refused), changing (same id and place, time moved), restoring (the id kept unless taken),
+  finding, removing, decoding a hand-written or older file, encoding, and "how long ago" — is plain
+  Lua 5.4 and unit-tested (5 tests). `shell/notes.luau` owns the file, the rows, the undo and the
+  clipboard (`wl-copy` on its input), and re-reads the file if something else writes it.
+- **From the terminal.** `mooi note "what to remember"` saves a line through the running scene's
+  own input path (nothing else touches the file), so a keybind or a script can jot one without
+  opening anything; an empty argument is refused with a usage line. The old `mooi notes` (the
+  notification panel) is untouched, and the two are told apart by the trailing word.
 
-Checked: both scenes compile, every logic file parses, 131 unit tests, 0 failed; live: the module
+Checked: both scenes compile, every logic file parses, 132 unit tests, 0 failed; live: the module
 placed on the bar, a real pointer press opens the dropdown, a note written through the input's own
-text/Enter events is saved and the draft cleared, empty notes are refused, `notes.json` survives a
-restart and is copied to the clipboard, × forgets, Escape closes (`tests/notes.sh`, 15 checks). Not checked: two notes that differ only after the
-cut, a matrix of scale/monitor placements (the dropdown clamps to the screen), and a hand editing
-notes.json while the pad is open.
+text/Enter events is saved and the draft cleared, empty notes are refused, editing keeps the count
+and changes the text, Escape cancels an edit, × forgets and Undo restores, the wheel pages seven
+notes, `mooi note` saves from the terminal, `notes.json` survives a restart, copy, and Escape closes
+(`tests/notes.sh`, 36 checks). Not checked: two notes that differ only after the cut, a matrix of
+scale/monitor placements (the dropdown clamps to the screen), a hand editing notes.json while the
+pad is open, and editing a note that was written with more than one line (the input is one line; it
+is flattened).

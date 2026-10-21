@@ -1357,5 +1357,25 @@ test("notes: removing one, and a file read back is cleaned", function()
     eq(round[1].text, "later", "encode then decode keeps it"); eq(round[1].id, 2, "and its id"); eq(round[2].time, 10, "and its time")
 end)
 
+test("notes: editing keeps the id and its place; a forgotten one comes back", function()
+    local list = { { id = 2, text = "newer", time = 20 }, { id = 1, text = "older", time = 10 } }
+    local edited
+    list, edited = notes.update(list, 1, "  older, fixed  ", 30)
+    eq(edited.id, 1, "same id"); eq(list[2].text, "older, fixed", "cleaned"); eq(list[2].time, 30, "time moves to now")
+    eq(list[1].id, 2, "its place is kept")
+    list, edited = notes.update(list, 1, "   ", 40); eq(edited, nil, "an empty edit is refused"); eq(list[2].text, "older, fixed", "unchanged")
+    local gone = { id = 1, text = "older, fixed", time = 30 }
+    list = notes.remove(list, 1)   -- as the dropdown's × does, before Undo
+    local back
+    list, back = notes.restore(list, gone, 50)
+    eq(back.id, 1, "its id is back"); eq(#list, 2, "and it is back in the list")
+    eq(list[1].id, 1, "where its time says"); eq(list[2].id, 2, "the other follows")
+    local taken = { id = 1, text = "another", time = 60 }
+    list, back = notes.restore(list, taken, 60)
+    eq(back.id, 3, "a taken id gets a new one"); eq(#list, 3, "both are kept")
+    local _, nothing = notes.restore(list, { id = 9, text = "  ", time = 1 })
+    eq(nothing, nil, "an empty one is not restored")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
