@@ -1260,6 +1260,7 @@ scene Mooi {
     figure i_window = file "icons/window.svg"
     figure i_atlas = file "icons/atlas.svg"
     figure i_music = file "icons/music.svg"
+    figure i_settings = file "icons/settings.svg"
 
     // The surface reserves the strip alone. What opens under it — the mark's menu — floats
     // over windows, and since pleamar commits the input region from what is painted, nothing
@@ -1351,10 +1352,7 @@ scene Mooi {
         zone box mark { from: rx0 + 6, st_offset; size: 46, 13; cursor: pointer
                         role: toggle; checked: settings_open; label: "mooi · settings" }
         box { from: rx0 + 8, st_offset; size: 44, 10; color: fl.ground }
-        text "MOOI" { at: rx0 + 12, fl.rail_y; anchor: left center; size: 10; family: "Share Tech Mono"
-                      color: mix(fl.ember, fl.phos, max(mark.hover, rv.mark)) }
-        path { color: mix(fl.muted, fl.phos, max(mark.hover, rv.mark))
-               move rx0 + 42, fl.rail_y - 2; line rx0 + 48, fl.rail_y - 2; line rx0 + 45, fl.rail_y + 2; close }
+        figure i_settings { at: rx0 + 23, fl.rail_y; size: 12, 12; color: mix(fl.ember, fl.phos, max(mark.hover, rv.mark)) }
         on press mark { emit bar_menu }
 
         // The workspace scale over the instrument, its knob on the instrument's own spring.
@@ -1392,7 +1390,7 @@ scene Mooi {
         show: not bar_rail or st_notch
         zone box marktab { from: max(0, bar_x0 - 12), fl.top; size: 11, fl.mod_h; cursor: pointer
                            role: toggle; checked: settings_open; label: "mooi · settings" }
-        box { from: max(0, bar_x0 - 12) + 3, fl.top + 4; size: 3, fl.mod_h - 8; corner: 1.5; color: mix(fl.ember, fl.phos, max(marktab.hover, rv.mark)) }
+        figure i_settings { at: max(0, bar_x0 - 12) + 5.5, fl.top + fl.mod_h / 2; size: 11, fl.mod_h - 8; color: mix(fl.ember, fl.phos, max(marktab.hover, rv.mark)) }
         on press marktab { emit bar_menu }
     }
 
