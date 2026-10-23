@@ -376,8 +376,8 @@ scene Nexus {
                           if(audio.muted, fl.ember, fl.phos))
                     on press nx_volhit { emit nx_mute }
                     on scroll nx_volhit { emit nx_vol(clamp(audio.volume + wheel * 0.05, 0, 1)) }
-                    box { from: 52, ny + 43; size: tw - 66, 2; color: fl.ground }
-                    box { from: 52, ny + 43; size: max(0, (tw - 66) * clamp(audio.volume, 0, 1)), 2; color: if(audio.muted, fl.ember, fl.phos) }
+                    box { from: 52, ny + 58; size: tw - 66, 2; color: fl.ground }
+                    box { from: 52, ny + 58; size: max(0, (tw - 66) * clamp(audio.volume, 0, 1)), 2; color: if(audio.muted, fl.ember, fl.phos) }
 
                     zone box nx_brihit { from: tw + 14, ny; size: tw, 84; cursor: pointer; role: slider; label: "Display brightness"
                                          value: brightness.level }
@@ -385,8 +385,8 @@ scene Nexus {
                           pick(brightness.present, "WHEEL TO SET", "NO BACKLIGHT"),
                           if(brightness.present, fl.phos, fl.muted))
                     on scroll nx_brihit { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
-                    box { from: tw + 66, ny + 43; size: tw - 66, 2; color: fl.ground; show: brightness.present }
-                    box { from: tw + 66, ny + 43; size: max(0, (tw - 66) * clamp(brightness.level, 0, 1)), 2; color: fl.phos; show: brightness.present }
+                    box { from: tw + 66, ny + 58; size: tw - 66, 2; color: fl.ground; show: brightness.present }
+                    box { from: tw + 66, ny + 58; size: max(0, (tw - 66) * clamp(brightness.level, 0, 1)), 2; color: fl.phos; show: brightness.present }
 
                     let ry = ny + 98
                     NTile(0, ry, tw, 84, "NETWORK", pick(network.online, network.name, "OFFLINE"),
