@@ -268,6 +268,8 @@ scene Nexus {
     fact nx_album_on = false
     fact nx_player_on = false
     fact nx_progress = 0
+    fact nx_notice = false
+    text nx_notice_text = ""
     text nx_user = "operator"
     text nx_host = "Arch Linux"
     text nx_session = "Hyprland"
@@ -431,7 +433,8 @@ scene Nexus {
                     line { from: 0, fy; to: cw, fy; width: 1; color: fl.trace; opacity: 0.55 }
                     text pick(bluetooth.powered, "BLUETOOTH ON", "BLUETOOTH OFF") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
                                                                                  color: if(bluetooth.powered, fl.phos, fl.muted) }
-                    text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }
+                    text "{nx_notice_text}" { at: 160, fy + 18; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: nx_notice }
                     text "ESC CLOSES" { at: cw, fy + 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
                 }
             }
