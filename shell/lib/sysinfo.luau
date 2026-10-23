@@ -46,6 +46,27 @@ function M.gpu_busy(text)
     return n / 100
 end
 
+-- Format a decoded hyprctl monitors -j response; prefer the focused output.
+function M.display_summary(monitors)
+    if type(monitors) ~= 'table' then return nil end
+    local selected, count = nil, 0
+    for _, monitor in ipairs(monitors) do
+        if type(monitor) == 'table' then
+            count = count + 1
+            if monitor.focused == true then selected = monitor end
+        end
+    end
+    if not selected then for _, monitor in ipairs(monitors) do if type(monitor) == 'table' then selected = monitor; break end end end
+    if not selected then return nil end
+    local name = type(selected.name) == 'string' and selected.name or 'Display'
+    local width, height = tonumber(selected.width), tonumber(selected.height)
+    local refresh, scale = tonumber(selected.refreshRate), tonumber(selected.scale)
+    if not width or not height or width <= 0 or height <= 0 then return nil end
+    local hz = refresh and refresh > 0 and string.format(' · %.0f Hz', refresh) or ''
+    local scale_text = scale and scale > 0 and string.format(' · %.2gx', scale) or ''
+    local suffix = count > 1 and string.format(' · +%d', count - 1) or ''
+    return string.format('%s · %dx%d%s%s%s', name, width, height, hz, scale_text, suffix), count
+end
 -- /proc/meminfo → the used fraction and the used and total GiB.
 function M.mem(text)
     local total = tonumber(string.match(text or "", "MemTotal:%s+(%d+)"))
