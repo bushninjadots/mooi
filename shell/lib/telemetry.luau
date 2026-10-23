@@ -23,7 +23,7 @@ end
 
 function M.os_release(text)
     local out = {}
-    for line in string.gmatch(text or "", "[^\\n]+") do
+    for line in string.gmatch(text or "", "[^\n]+") do
         local key, value = string.match(line, "^([A-Z_]+)=(.*)$")
         if key and value then
             value = clean(value)
@@ -44,13 +44,13 @@ function M.os_release(text)
 end
 
 function M.cpu_model(text)
-    return clean(string.match(text or "", "\\n?model name%s*:%s*([^\\n]+)"))
-        or clean(string.match(text or "", "\\n?Hardware%s*:%s*([^\\n]+)"))
+    return clean(string.match(text or "", "\n?model name%s*:%s*([^\n]+)"))
+        or clean(string.match(text or "", "\n?Hardware%s*:%s*([^\n]+)"))
 end
 
 -- Parse df -Pk output for the root mount only.
 function M.disk(text)
-    for row in string.gmatch(text or "", "[^\\n]+") do
+    for row in string.gmatch(text or "", "[^\n]+") do
         if not string.match(row, "^Filesystem%s") then
             local fs, total, used, avail, percent, mount =
                 string.match(row, "^%s*(%S+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%%%s+(%S+)")
