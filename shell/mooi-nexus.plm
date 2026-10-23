@@ -427,7 +427,45 @@ scene Nexus {
                           if(not battery.present, fl.muted, if(battery.charging, fl.flare, fl.phos)))
 
                     // ── the player ──
-                    let my0 = ry + 98
+                    // ── live system telemetry: six compact instruments ──
+                     let qtw = (cw - 28) / 3
+                     let sy0 = ry + 98
+                     let sy1 = sy0 + 70
+                     // Small, instrument-like plates: no oversized dashboard card wall.
+                     Chamfer(0, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "CPU LOAD" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_cpu_value}" { at: 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_cpu_on, fl.phos, fl.muted) }
+                     box { from: 10, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
+                     box { from: 10, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_cpu, 0, 1)), 2; color: fl.phos; show: nx_cpu_on }
+
+                     Chamfer(qtw + 14, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "MEMORY" { at: qtw + 24, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_ram_value}" { at: qtw + 24, sy0 + 31; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: if(nx_ram_on, fl.phos, fl.muted) }
+                     box { from: qtw + 24, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
+                     box { from: qtw + 24, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_ram, 0, 1)), 2; color: fl.phos; show: nx_ram_on }
+
+                     Chamfer((qtw + 14) * 2, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "CPU TEMP" { at: (qtw + 14) * 2 + 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_temp_value}" { at: (qtw + 14) * 2 + 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_temp_on, fl.flare, fl.muted) }
+                     text pick(nx_temp_on, "SENSOR ACTIVE", "NO SENSOR") { at: (qtw + 14) * 2 + 10, sy0 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+
+                     Chamfer(0, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "ROOT STORAGE" { at: 10, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_disk_value}" { at: 10, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_disk_on, fl.phos, fl.muted) }
+                     box { from: 10, sy1 + 47; size: qtw - 20, 2; color: fl.ground }
+                     box { from: 10, sy1 + 47; size: max(0, (qtw - 20) * clamp(nx_disk, 0, 1)), 2; color: fl.flare; show: nx_disk_on }
+
+                     Chamfer(qtw + 14, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "NETWORK RX" { at: qtw + 24, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_rx_value}" { at: qtw + 24, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_net_on, fl.phos, fl.muted) }
+                     text "INBOUND RATE" { at: qtw + 24, sy1 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+
+                     Chamfer((qtw + 14) * 2, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "NETWORK TX" { at: (qtw + 14) * 2 + 10, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_tx_value}" { at: (qtw + 14) * 2 + 10, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_net_on, fl.phos, fl.muted) }
+                     text "OUTBOUND RATE" { at: (qtw + 14) * 2 + 10, sy1 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+
+                     let my0 = sy1 + 74
                     Chamfer(0, my0, cw, med_h, 10, fl.hull_raised, fl.trace, 0.9, 1)
                     box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(nx_has, if(med.playing, fl.phos, fl.flare), fl.muted) }
                     text "PLAYER" { at: 16, my0 + 17; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
