@@ -318,6 +318,7 @@ scene Nexus {
     figure nx_mark = file "icons/arch.svg"
 
     event nx_about ->            // toggle the System / About view
+    event nx_diagnostics_copy ->
     event nx_identity_edit ->
     event nx_identity_save ->
     event nx_identity_cancel ->
@@ -414,6 +415,9 @@ scene Nexus {
                     text "{nx_session}" { at: cw - 72, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                     text "{clock.time}  ·  {clock.date}" { at: cw - 72, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
                     text "WORKSPACE {ws.active, 0}" { at: cw - 72, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                    zone box nx_diag_copy_btn { from: cw - 154, 130; size: 138, 22; cursor: pointer; role: button; label: "Copy system diagnostics" }
+                    CutButton(cw - 154, 131, 138, "COPY DIAGNOSTICS", fl.phos, nx_diag_copy_btn.hover)
+                    on press nx_diag_copy_btn { emit nx_diagnostics_copy }
                     text "{string.upper(string.sub(nx_identity_name, 1, 1))}" { at: cw - 39, 81; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: nx_avatar_path == "" }
                     image nx_avatar { at: cw - 60, 60; size: 42, 42; show: nx_avatar_path != "" }
                     zone box nx_avatar_edit { from: cw - 60, 60; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
