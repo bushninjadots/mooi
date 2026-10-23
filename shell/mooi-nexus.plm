@@ -15,7 +15,7 @@ import "ui/loom.plm"
 
 scene Nexus {
     permissions {
-        run: "pleamar"
+        run: "pleamar", "cat", "df", "uname", "hostname", "sensors"
         services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "files", "files.write", "env"
     }
 
@@ -258,6 +258,31 @@ scene Nexus {
     service bluetooth { present: bool; powered: bool; discovering: bool }
     service media as med { playing: bool; title: text; artist: text; album: text; length: number; position: number; rate: number; player: text }
 
+    // System facts are populated by a bounded, optional Linux collector in the logic.
+    fact nx_telemetry_on = false
+    fact nx_cpu_on = false
+    fact nx_cpu = 0
+    fact nx_ram_on = false
+    fact nx_ram = 0
+    fact nx_ram_used_gib = 0
+    fact nx_ram_total_gib = 0
+    fact nx_disk_on = false
+    fact nx_disk = 0
+    fact nx_net_on = false
+    fact nx_rx = 0
+    fact nx_tx = 0
+    fact nx_temp_on = false
+    fact nx_temp = 0
+    text nx_cpu_value = "—"
+    text nx_ram_value = "—"
+    text nx_disk_value = "—"
+    text nx_rx_value = "—"
+    text nx_tx_value = "—"
+    text nx_temp_value = "N/A"
+    text nx_distro = "Reading system…"
+    text nx_kernel = "—"
+    text nx_uptime = "—"
+    text nx_cpu_model = "—"
     fact nx_open = 0
     fact nx_pinned = false
     fact st_glow = 1
