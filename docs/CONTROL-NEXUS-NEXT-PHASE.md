@@ -48,3 +48,10 @@ Prefer kernel interfaces and small established commands with stable output. Trea
 ## Six design directions
 
 The Nexus must carry all six mooi directions without turning into a theme demo: **Spatial & Futuristic**, **Industrial & Technical**, **Organic & Fluid**, **Minimal & Elegant**, **Cyberpunk & Expressive**, and **Playful & Interactive**. These are design ingredients for one coherent interface, not six unrelated skins. The existing Ferrolume palette/tokens remain the default visual language; layouts and module density may be customised.
+
+
+## In-Nexus System Identity editor
+
+The identity header opens an editor from the avatar area. The editor provides a native Pleamar text field for the display name, save/cancel actions, and avatar/banner image-picking actions. Name changes are persisted to `settings.json`; image selection calls `zenity` and delegates import to `mooi identity avatar|banner`. The picker requires `zenity`; image imports are disabled in `MOOI_SAFE=1` mode. If the picker is unavailable, Nexus displays a notice rather than silently changing settings.
+
+Verification still required on the target Arch/Pleamar session: confirm the text field event name and focus behavior, verify `files.write` success semantics, inspect editor placement at the actual Nexus dimensions, and exercise save/cancel, unavailable-picker, unsupported-image, and safe-mode paths.
