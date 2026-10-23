@@ -414,7 +414,7 @@ scene Nexus {
                     text "{nx_album}" { at: 16, my0 + 77; anchor: left center; size: 9; family: "Share Tech Mono"; width: cw - 220; lines: 1; color: fl.muted; show: nx_album_on }
                     text "{nx_elapsed}" { at: 16, my0 + med_h - 10; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: nx_media_time_on }
                     text "{nx_duration}" { at: cw - 16, my0 + med_h - 10; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: nx_media_time_on }
-                    line { from: 16, my0 + med_h - 22; to: cw - 16, my0 + med_h - 22; width: 2; color: fl.ground }
+                    line { from: 16, my0 + med_h - 22; to: cw - 16, my0 + med_h - 22; width: 2; color: fl.ground; show: nx_media_time_on }
                     box { from: 16, my0 + med_h - 22; size: max(0, (cw - 32) * clamp(nx_progress, 0, 1)), 2
                           color: if(nx_playing, fl.phos, fl.trace); show: nx_progress > 0 }
 
