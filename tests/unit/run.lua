@@ -632,6 +632,19 @@ test("gpu_busy accepts supported DRM percentage and rejects unavailable readings
     eq(sysinfo.gpu_busy("101"), nil, "out of range")
 end)
 
+test("display_summary selects focused monitor and formats optional details", function()
+    local summary, count = sysinfo.display_summary({
+        { name = "DP-1", width = 2560, height = 1440, refreshRate = 144.0, scale = 1.25, focused = false },
+        { name = "eDP-1", width = 1920, height = 1080, refreshRate = 60.0, scale = 1.0, focused = true }
+    })
+    eq(summary, "eDP-1 · 1920x1080 · 60 Hz · 1.00x · +1", "focused display summary")
+    eq(count, 2, "display count")
+    local first = sysinfo.display_summary({ { name = "HDMI-A-1", width = 1280, height = 720 } })
+    eq(first, "HDMI-A-1 · 1280x720", "optional fields omitted")
+    eq(sysinfo.display_summary({}), nil, "empty monitor list")
+    eq(sysinfo.display_summary(nil), nil, "missing monitor list")
+    eq(sysinfo.display_summary({ { name = "bad", width = 0, height = 0 } }), nil, "invalid dimensions")
+end)
 test("mem: used fraction from MemAvailable", function()
     local f, used, total = sysinfo.mem("MemTotal:       16000000 kB\nMemFree: 1 kB\nMemAvailable:    4000000 kB\n")
     eq(f, 0.75, "fraction"); assert(math.abs(total - 15.26) < 0.01, "total GiB")
