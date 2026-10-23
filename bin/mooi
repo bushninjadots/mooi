@@ -609,6 +609,28 @@ case "$cmd" in
            exec "$pleamar" --say "$name" "emit open_board" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_nexus" ;;
+    hardware)
+        echo "MOOI HARDWARE INVENTORY"
+        echo "Kernel: $(uname -r 2>/dev/null || echo Unavailable)"
+        cpu_model=$(awk -F: '/model name[[:space:]]*:/ { sub(/^[[:space:]]+/, "", $2); print $2; exit }' /proc/cpuinfo 2>/dev/null)
+        [ -n "$cpu_model" ] || cpu_model="Unavailable"
+        echo "CPU: $cpu_model"
+        echo
+        echo "GRAPHICS"
+        if command -v lspci >/dev/null 2>&1; then
+            lspci 2>/dev/null | grep -Ei 'VGA compatible controller|3D controller|Display controller' | sed 's/^[^:]*: //' || echo "No PCI display controllers found"
+        else echo "Unavailable (install pciutils for lspci)"; fi
+        echo
+        echo "STORAGE DEVICES"
+        if command -v lsblk >/dev/null 2>&1; then
+            lsblk -dn -o NAME,SIZE,TYPE,MODEL 2>/dev/null | awk '$3 == "disk" {print}' || true
+        else echo "Unavailable (lsblk missing)"; fi
+        echo
+        echo "DISPLAYS"
+        if command -v hyprctl >/dev/null 2>&1; then
+            hyprctl monitors -j 2>/dev/null | jq -r '.[] | "\(.name): \(.width)x\(.height) @ \(.refreshRate) Hz · scale \(.scale)"' 2>/dev/null || echo "Unavailable (Hyprland monitor query failed)"
+        else echo "Unavailable (Hyprland session not detected)"; fi
+        ;;
     diagnostics)
         action=${1:-show}
         case "$action" in show|copy) ;; *) echo "usage: mooi diagnostics [show|copy]" >&2; exit 2 ;; esac
