@@ -432,6 +432,7 @@ scene Nexus {
                     CutButton(bx0 + 128, my0 + 37, 54, "Next", fl.phos, nx_next.hover)
                     on press nx_next { emit nx_media(2) }
                     text "{nx_player}" { at: cw - 16, my0 + 17; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: nx_player_on }
+                    text pick(nx_playing, "PLAYING", "PAUSED") { at: cw - 16, my0 + 33; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(nx_playing, fl.phos, fl.flare); show: nx_has }
 
                     // ── the foot ──
                     let fy = my0 + med_h + 14
