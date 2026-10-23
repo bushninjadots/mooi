@@ -25,8 +25,8 @@ shell/lib/telemetry.luau contains pure parsers for uptime, /etc/os-release, CPU 
 ## Staged implementation
 
 - **A — Parser foundation:** deterministic parsers and fixture tests; no new host permissions or UI assumptions.
-- **B — Narrow Linux collector:** collect a fixed allowlist of system facts through an explicit Pleamar-supported mechanism. Sample CPU/network deltas over time; keep static identity facts separate from live metrics; validate values and bound command time.
-- **C — Nexus telemetry surface:** add CPU/RAM/storage/network readings and an expanded System/About view using existing Ferrolume tokens, compact technical labels and no wall of oversized cards.
+- **B — Narrow Linux collector (implemented on this branch):** the Nexus logic now uses an explicit allowlist of `cat`, `df`, `uname`, `hostname` and optional `sensors` calls. It samples CPU and network counters on a two-second loop, separates static identity from live metrics, and renders missing temperature data as N/A. Verify command availability and sandbox permissions in a real Pleamar session before merging.
+- **C — First telemetry surface (implemented on this branch):** the Nexus scene adds six compact live instruments for CPU, RAM, temperature, root storage and network receive/transmit rates. The expanded System/About view is still outstanding.
 - **D — Identity personalisation:** editable display name, avatar and banner, safe image selection/copying, reset controls and persisted settings. Image paths must remain inside mooi-owned storage.
 - **E — Hardware expansion:** temperature/GPU/fan/device data behind capability checks, then richer audio routing and display details.
 - **F — verification:** run bin/mooi check, tests/nexus.sh, and a real-session smoke test for absent sensors, no battery, no media, missing tools and external display setups.
