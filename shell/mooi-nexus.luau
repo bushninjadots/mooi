@@ -13,6 +13,8 @@ local telemetry = require("lib/telemetry")
 
 local FILE = "settings.json"
 local PALETTE = "palette.json"
+local data_home = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share")
+local identity_home = data_home .. "/pleamar/mooi"
 
 local function read(name, kind)
     local ok, v
@@ -50,8 +52,8 @@ pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
     fact.nx_pinned = settings.nexus.pinned == true
     text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
-    text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar or ""
-    text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner or ""
+    text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar ~= "" and (identity_home .. "/" .. settings.nexus.identity.avatar) or ""
+    text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner ~= "" and (identity_home .. "/" .. settings.nexus.identity.banner) or ""
 end)
 
 -- The glow the plate carries follows the theme's finish, as the bar's does.
