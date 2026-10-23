@@ -26,9 +26,9 @@ shell/lib/telemetry.luau contains pure parsers for uptime, /etc/os-release, CPU 
 
 - **A — Parser foundation:** deterministic parsers and fixture tests; no new host permissions or UI assumptions.
 - **B — Narrow Linux collector (implemented on this branch):** the Nexus logic now uses an explicit allowlist of `cat`, `df`, `uname`, `hostname` and optional `sensors` calls. It samples CPU and network counters on a two-second loop, separates static identity from live metrics, and renders missing temperature data as N/A. Verify command availability and sandbox permissions in a real Pleamar session before merging.
-- **C — First telemetry surface (implemented on this branch):** the Nexus scene adds six compact live instruments for CPU, RAM, temperature, root storage and network receive/transmit rates. The expanded System/About view is still outstanding.
-- **D — Identity personalisation:** editable display name, avatar and banner, safe image selection/copying, reset controls and persisted settings. Image paths must remain inside mooi-owned storage.
-- **E — Hardware expansion:** temperature/GPU/fan/device data behind capability checks, then richer audio routing and display details.
+- **C — First telemetry surface (implemented on this branch):** the Nexus scene adds six compact live instruments for CPU, RAM, temperature, root storage and network receive/transmit rates. The first System Overview view is implemented on the follow-on branch: it displays distribution name/ID/version, kernel, uptime, CPU model, memory, root storage and network rates. GPU, display enumeration, a copyable diagnostics action, and identity personalisation remain outstanding.
+- **D — Identity personalisation (next):** editable display name, avatar and wide banner, safe image selection/copying, reset controls and persisted settings. The first About view currently uses the host/session strings as its identity. Image paths must remain inside mooi-owned storage.
+- **E — Hardware expansion:** GPU/fan/device data behind capability checks, richer audio routing and display details, plus a copyable diagnostics summary.
 - **F — verification:** run bin/mooi check, tests/nexus.sh, and a real-session smoke test for absent sensors, no battery, no media, missing tools and external display setups.
 
 ## Data-source policy
