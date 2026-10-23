@@ -269,6 +269,7 @@ scene Nexus {
     fact nx_gpu_on = false
     fact nx_gpu = 0
     text nx_gpu_value = "N/A"
+    text nx_display_value = "DISPLAY INFO N/A"
     fact nx_ram_on = false
     fact nx_ram = 0
     fact nx_ram_used_gib = 0
@@ -463,7 +464,7 @@ scene Nexus {
                     zone box nx_brihit { from: tw + 14, ny; size: tw, 84; cursor: pointer; role: slider; label: "Display brightness"
                                          value: brightness.level }
                     NTile(tw + 14, ny, tw, 84, "DISPLAY", pick(brightness.present, "{brightness.level * 100, 0}%", "N/A"),
-                          pick(brightness.present, "WHEEL TO SET", "NO BACKLIGHT"),
+                          "{nx_display_value}",
                           if(brightness.present, fl.phos, fl.muted))
                     on scroll nx_brihit { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
                     box { from: tw + 66, ny + 58; size: tw - 66, 2; color: fl.ground; show: brightness.present }
