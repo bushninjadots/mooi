@@ -447,5 +447,8 @@ scene Nexus {
         }
     }
 
+    on key Left while nx_has { emit nx_media(1) }
+    on key Right while nx_has { emit nx_media(2) }
+    on key Space while nx_has { emit nx_media(0) }
     on key Escape { emit nx_close }
 }

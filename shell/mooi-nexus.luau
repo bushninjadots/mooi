@@ -62,17 +62,12 @@ fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
 
 -- The player: the service's text fields can be drawn, but not compared, so the facts that say
 -- "there is something here" and the fields themselves are kept on this side of the boundary.
-local format_time = nexus.format_time
-
 local function clear_media()
     fact.nx_has = false
     fact.nx_playing = false
     fact.nx_progress = 0
-    fact.nx_media_time_on = false
     fact.nx_album_on = false
     fact.nx_player_on = false
-    text.nx_elapsed = ""
-    text.nx_duration = ""
     text.nx_title = ""
     text.nx_artist = ""
     text.nx_album = ""
@@ -90,11 +85,7 @@ pcall(sys.watch, "media", function(m)
 
     fact.nx_has = title ~= ""
     fact.nx_playing = m.playing == true
-    fact.nx_media_time_on = fact.nx_has and length > 0
-    local safe_position, progress = nexus.media_progress(position, length)
-    fact.nx_progress = fact.nx_has and progress or 0
-    text.nx_elapsed = fact.nx_media_time_on and format_time(safe_position) or ""
-    text.nx_duration = fact.nx_media_time_on and format_time(length) or ""
+    fact.nx_progress = (fact.nx_has and length > 0) and math.max(0, math.min(1, position / length)) or 0
     fact.nx_album_on = album ~= ""
     fact.nx_player_on = player ~= ""
     text.nx_title = title
