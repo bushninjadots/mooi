@@ -4,7 +4,7 @@ import "ui/island.plm"
 import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
 import "ui/loom.plm"
-import "ui/board.plm"
+import "ui/stash.plm"
 
 // mooi — the Spine and its islands.
 //
@@ -19,7 +19,7 @@ import "ui/board.plm"
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "cliphist", "wlogout", "hyprlock", "date", "mkdir"
+        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -260,6 +260,7 @@ scene Mooi {
     fact viz = 0              // bar.visualizer · 0 mirror · 1 bars · 2 line · 3 dots · 4 off
     fact side: none | notes | clips = none   // the side panel
     fact settings_open = false  // the settings program is running (the logic)
+    fact nexus_open = false     // Control Nexus is running (the logic)
     fact bar_edit = false       // the bar's edit mode
     fact ed_drag = -1           // the module being carried (its index), or −1
     fact ed_x = 0               // where the pointer is while it is carried
@@ -434,6 +435,18 @@ scene Mooi {
     fact m_notes = true
     fact fi_notes = 0
     fact g_notes = false
+    fact x_wallpaper = 0
+    fact p_wallpaper = false
+    fact w_wallpaper = 0
+    fact m_wallpaper = true
+    fact fi_wallpaper = 0
+    fact g_wallpaper = false
+    fact x_nexus = 0
+    fact p_nexus = false
+    fact w_nexus = 0
+    fact m_nexus = true
+    fact fi_nexus = 0
+    fact g_nexus = false
     // The focus timer (shell/bar.luau): 0 idle, 1 a focus session, 2 its break; what is left
     // of it (1 → 0), the minutes and seconds left, and the length a session will have.
     fact foc_state = 0
@@ -542,51 +555,42 @@ scene Mooi {
     text qn_add_label = "ADD" // the button's word: ADD, or SAVE while a note is being changed
     model qn max 6 { id: number; text: text; when: text; n: number; pinned: bool; sel: bool }
     fact qn_sel = -1          // the row the keys act on (an id)
-    // ── The board (D52): a Kanban board, from the pad's rail (shell/board.luau, lib/board) ──
-    // The columns and the cards in view, as the logic lays them out (content coordinates); the
-    // chosen card's details for the pane; what a carried card is over (`kb_g*` beside `kb_over` and
-    // `kb_drop`, never packed into one number) and where it would land (`kb_t*`).
-    fact kb_open = false
-    model kcols max 6 { id: number; title: text; x: number; w: number; n: number; wip: number; over: bool; sel: bool; chosen: bool; more_up: bool; more_down: bool; done: bool }
-    model kcards max 80 { id: number; col: number; x: number; y: number; w: number; h: number; title: text; note: text; noted: bool; tag: number; due: text; due_st: number; dated: bool; done: bool; sel: bool; age: text }
-    fact kb_sel = -1
-    fact kb_selcol = -1
-    fact kb_d_has = false
-    fact kb_d_tag = 0
-    fact kb_d_due_st = 0
-    fact kb_d_done = false
-    fact kb_col_wip = 0
-    fact kb_col_empty = false
-    fact kb_col_last = false
-    fact kb_cols_full = false
+    fact sys_cx = 0           // the middle of the module that last opened the system island (D53)
+    // How many cards there are and how many are late (the board's own program owns the rest): the
+    // pad's rail carries both, read from board.json by the logic (D64).
     fact kb_count = 0
     fact kb_late = 0
-    fact kb_due_today = 0
-    fact kb_archived = 0
-    fact kb_done_n = 0
-    fact kb_tagf = 0
-    fact kb_filtering = false
-    fact kb_can_undo = false
-    fact kb_saying = false
-    fact kb_drafting = false
-    fact kb_press = -1
-    fact kb_drag = -1
-    fact kb_dx = 0
-    fact kb_dy = 0
-    fact kb_gx = 0
-    fact kb_gy = 0
-    fact kb_tx = 0
-    fact kb_tw = 0
-    fact kb_ty = -1
-    text kb_d_due = ""
-    text kb_d_meta = ""
-    text kb_col_title = ""
-    text kb_said = ""
-    text kb_new = ""
-    text kb_title = ""
-    text kb_note = ""
-    text kb_search = ""
-    text kb_colname = ""
+    // ── The stash (D54): the little box on the left edge (shell/stash.luau, lib/stash) ──
+    // The rows it shows (a page at a time), where in the list that page is, and the word the
+    // panel says for a moment after a drop or a removal. The box itself opens on a press of its
+    // rail (D56), so the scene owns that; nothing here is asked of the keyboard.
+    model stash max 6 { id: number; kind: number; name: text; sub: text; n: number; url: text; picture: image 48, 48; pictured: bool }
+    // The folders as the chip row says them, in the order they were made: the same slot in
+    // both, so a press and a drop can name one by its place.
+    model stash_folders max 5 { name: text; held: number; n: number; lit: number }
+    fact stash_count = 0
+    fact stash_page = 0
+    fact stash_pages = 1
+    fact stash_from = 0
+    fact stash_to = 0
+    fact stash_empty = true
+    fact stash_saying = false
+    fact stash_here = 0        // the folder the box shows (0: everything)
+    fact stash_root = true
+    fact stash_all = 0         // how many are kept, wherever they are
+    fact stash_folders_n = 0
+    fact stash_naming = false  // the new-folder field has the caret
+    fact stash_pin = false     // the box was opened by a press and stays until it is put away
+    text stash_said = ""
+    text stash_here_name = ""
+    text stash_new = ""
+    event stash_open ->        // to the logic: item id pressed (its link or file is opened)
+    event stash_del ->         // to the logic: item id removed, with its copy
+    event stash_scroll ->      // to the logic: the wheel over the panel (± notches)
+    event stash_file ->        // to the logic: item id put away, to its next folder
+    event stash_folder ->      // to the logic: folder slot pressed (0: everything)
+    event stash_folder_del ->  // to the logic: folder slot taken away, its items home
+    event stash_blur           // from the logic: the new-folder field is done
     fact lv0 = 0.06
     fact lv1 = 0.06
     fact lv2 = 0.06
@@ -956,28 +960,8 @@ scene Mooi {
     event qn_board ->          // to the logic: note id sent to the board
     event qn_nav ->            // to the logic: the chosen row, up (0) or down (1)
     event qn_act ->            // to the logic: on the chosen row, 1 copy · 2 edit · 3 pin · 4 board · 5 forget
-    event kb_pick ->           // to the logic: card id chosen
-    event kb_pickcol ->        // to the logic: column id chosen
-    event kb_nav ->            // to the logic: choose, 1 left · 2 right · 3 up · 4 down
-    event kb_step ->           // to the logic: the chosen card moved, 1 left · 2 right · 3 up · 4 down
-    event kb_tag ->            // to the logic: the chosen card's tag (0 … 5)
-    event kb_due ->            // to the logic: its due day, 0 none · 1 today · 2 tomorrow · 3 a week
-    event kb_over ->           // to the logic: card id carried over (kb_gx, kb_gy)
-    event kb_drop ->           // to the logic: card id let go (kb_gx, kb_gy)
-    event kb_del ->            // to the logic: the chosen card deleted
-    event kb_copy ->           // to the logic: the chosen card copied
-    event kb_archive ->        // to the logic: what is done, archived
-    event kb_undo ->           // to the logic: the last delete or archive taken back
-    event kb_addcol ->         // to the logic: a new column
-    event kb_wip ->            // to the logic: the chosen column's limit (0 none)
-    event kb_colmove ->        // to the logic: the chosen column moved, 0 left · 1 right
-    event kb_delcol ->         // to the logic: the chosen column removed (only an empty one)
-    event kb_scroll ->         // to the logic: 1000 · column + 10 · wheel + 500
-    event kb_filter ->         // to the logic: the tag filter (the same again: none)
-    event kb_clearfilter ->    // to the logic: no filter
-    event kb_focus_col         // from the logic: the column's name takes the caret
-    event kb_plus              // a column's + pressed: it is chosen and the new card's field takes the caret
     event open_board           // from outside (`mooi board`): the board, open or closed
+    event board_show ->        // to the logic: start the board's program, or close it if it runs
     event clips ->             // to the logic: read the clipboard's history
     event open_notes           // `mooi notes` (Super+L standalone): the side panel's notices, open or closed (D48)
     event open_clips           // `mooi clipboard` (Super+Shift+V standalone): its clipboard history
@@ -990,6 +974,8 @@ scene Mooi {
     event mic_mute ->          // to the logic: the microphone, muted or not
     event mic_vol ->           // to the logic: the microphone's level (0..1)
     event open_settings ->     // to the logic: start the settings program, or close it
+    event open_wallpaper ->    // to the logic: start Lumen, the wallpaper studio, or close it (`mooi wallpaper`)
+    event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event edit_mode ->         // to the logic: edit mode on (1) or off (0)
     event screen_w ->          // to the logic: the bar's surface is this wide now (a new mode or scale)
     event edit_hover ->        // to the logic: a module carried over the bar (plan the layout)
@@ -1304,16 +1290,30 @@ scene Mooi {
     prop pv_notes = 0 ~m.enter
     follow pv_notes = p_notes
     on change p_notes while p_notes { xs_notes: x_notes ~1ms; ws_notes: w_notes ~1ms }
+    prop xs_wallpaper = 0 ~fl.flow
+    follow xs_wallpaper = x_wallpaper
+    prop ws_wallpaper = 0 ~fl.flow
+    follow ws_wallpaper = w_wallpaper
+    prop pv_wallpaper = 0 ~m.enter
+    follow pv_wallpaper = p_wallpaper
+    on change p_wallpaper while p_wallpaper { xs_wallpaper: x_wallpaper ~1ms; ws_wallpaper: w_wallpaper ~1ms }
+    prop xs_nexus = 0 ~fl.flow
+    follow xs_nexus = x_nexus
+    prop ws_nexus = 0 ~fl.flow
+    follow ws_nexus = w_nexus
+    prop pv_nexus = 0 ~m.enter
+    follow pv_nexus = p_nexus
+    on change p_nexus while p_nexus { xs_nexus: x_nexus ~1ms; ws_nexus: w_nexus ~1ms }
     let vv = round(audio.volume * 100)
     let bb = round(battery.percent)
 
     // The workspace instrument's window and phase. One spring slides *and* turns it (`pos`),
     // following `active_row` alone; while it moves the DNA takes an extra turn in the
     // direction of travel (`spin`, from the spring's velocity) and settles upright.
-    // The window holds every workspace when they fit (up to 2·fl.reach positions), so the
-    // instrument is never longer than what it carries; past that it scrolls (`cam`), keeping
-    // the focus inside. `chain_x` is the focus — where the active workspace is now — and the
-    // helix's phase is measured from it, so the rung there always stands upright.
+    // The window holds up to 2·fl.reach positions, so the instrument is never longer than what
+    // it carries; past that the list slides through it, the active one always on the slot.
+    // `chain_x` is the focus — it is the slot, and it stays there — and the helix's phase is
+    // measured from it, so the rung there always stands upright.
     let n_vis = clamp(spaces.count, 1, 2 * fl.reach)
     let chain_span = n_vis * fl.pitch + 12
     let frame_x = xs_workspaces + if(ws_style > 2.5, 8, 30)   // the everyday switchers carry no tag
@@ -1339,9 +1339,14 @@ scene Mooi {
         ping for 460ms after ws_arrived { arr: 1 ~fl.ping }
         calm                            { arr: 0 ~1ms }
     }
-    let half_v = (n_vis - 1) / 2
-    let cam = clamp(pos, half_v, max(spaces.count - 1 - half_v, half_v))
-    let chain_x = win_c + (pos - cam) * fl.pitch
+    // The focus slot is where the working workspace stands, in every position — not only in the
+    // middle of the list. A camera clamped to keep the window full (`cam`, [half, count−half])
+    // slid the active block off the slot at the ends of the list: at workspace 1 the seven
+    // positions drawn from 1 stood with the active at the window's left edge, and the block the
+    // bar called current was 78 px from the slot that is supposed to hold it (the scene suite's
+    // «it sits on the focus slot»). The window is a sleeve over the shaft: at either end half of
+    // it is the sleeve alone, which is what its own barrel is for (D26).
+    let chain_x = win_c
     let spin = clamp(vel(pos) * 16, -170, 170)
     // With the DNA, the edges of what holds it are the helix's strands: the full panel, or
     // (bar.helix_frame) the workspaces' own island.
@@ -1380,13 +1385,6 @@ scene Mooi {
     layer life.qn {
         shown while qn_open { qu_a: 1 ~sg.ext; qu_b: 1 ~sg.unf after 80ms }
         gone                { qu_b: 0 ~sg.ret; qu_a: 0 ~sg.ret after 70ms }
-    }
-    // The board opens from its middle: a bar across, then the board drops open around it.
-    prop bu_a = 0 ~sg.ext
-    prop bu_b = 0 ~sg.unf
-    layer life.kb {
-        shown while kb_open { bu_a: 1 ~sg.ext; bu_b: 1 ~sg.unf after 100ms }
-        gone                { bu_b: 0 ~sg.ret; bu_a: 0 ~sg.ret after 80ms }
     }
     // The loom's surface stays while its last signal folds back.
     prop loom_tail = 0 ~sg.ret
@@ -1464,6 +1462,8 @@ scene Mooi {
     figure i_atlas = file "icons/atlas.svg"
     figure i_music = file "icons/music.svg"
     figure i_settings = file "icons/settings.svg"
+    figure i_wallpaper = file "icons/wallpaper.svg"
+    figure i_arch = file "icons/arch.svg"
 
     // The surface reserves the strip alone. What opens under it — the mark's menu — floats
     // over windows, and since pleamar commits the input region from what is painted, nothing
@@ -1488,7 +1488,28 @@ scene Mooi {
         // own reserve is one number, read once.
         reserve: -1
         level: top
-        keyboard: exclusive while (open != none or mark_open or side != none or bar_edit or qn_open) and not (open == command and cmode == actions)
+        keyboard: exclusive while (open != none or mark_open or side != none or bar_edit or qn_open or stash_naming) and not (open == command and cmode == actions)
+    }
+
+    // ── A press outside a panel closes it (D55) ───────────────
+    // A layer surface does not hear what happens outside it, so a panel used to be dismissed only
+    // by its own ×, Escape or the idle timer: a press on the desktop did nothing at all, which is
+    // what "my clicks are not registering" felt like. The bar's surface is the whole screen in any
+    // case, so this plate — under everything else drawn in it — takes the presses the open
+    // panel's own controls do not. It is declared first so every panel, its rows and its buttons
+    // are above it; a press inside a panel never reaches it. The overview, the shutter and the
+    // Atlas are surfaces of their own (overlay), above this one: they never see it.
+    group {
+        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or open == atlas or stash_pin
+        zone box dismiss { from: 0, 0; size: screen.width, screen.height; role: region; label: "Close the open panel" }
+        on press dismiss while qn_open { qn_open = false }
+        on press dismiss while mark_open { mark_open = false }
+        on press dismiss while side == notes { side = none }
+        on press dismiss while open == window { open = none }
+        on press dismiss while open == system { open = none }
+        on press dismiss while open == command { open = none }
+        on press dismiss while open == atlas { open = none; atlas_mode = browse }
+        on press dismiss while stash_pin { stash_pin = false }
     }
 
     // ── The screen frame ──────────────────────────────────────
@@ -1611,8 +1632,8 @@ scene Mooi {
     let hx_b = frame_x + chain_span + 2
     let pt = fl.top
     let pb = fl.top + fl.mod_h
-    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes))
-    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes))
+    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper))
+    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper))
     let hc_r = if(bar_full, st_radius + 1, fl.radius)
     // the outline's colour by weight (bar.outline_colour: subtle · bright · accent)
     let ob = clamp(st_ocol, 0, 1)
@@ -1821,8 +1842,8 @@ scene Mooi {
     // On a mechanism each group is a machined housing a little wider than its group, so
     // neighbouring housings meet at a seam and the bar reads as one machine.
     for f in frames {
-        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes)
-        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)) - fx
+        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)
+        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - fx
         let own = helix_edges and f.a == wsf_a        // the workspaces' island, drawn as the helix
         group {
             show: not bar_full and not st_notch and not own
@@ -1841,8 +1862,8 @@ scene Mooi {
     // The hairlines between the members of a group (and, in full mode, between groups); on a
     // mechanism a group's seam in the full panel is a vent of three slots.
     for d in dividers {
-        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)            // where the module before the divider ends
-        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes)                          // where the one after it begins
+        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)            // where the module before the divider ends
+        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)                          // where the one after it begins
         let dx = if(d.strong, (pe + ms) / 2, ms)
         line { from: dx, fl.top + if(d.strong, 5, 8); to: dx, fl.top + fl.mod_h - if(d.strong, 5, 8); width: 1
                color: if(d.strong, fl.trace, fl.trace_dim); show: not (mech and d.strong) and (not d.strong or ms - pe < 40) }
@@ -2374,7 +2395,7 @@ scene Mooi {
         figure i_volume_mute { at: 13, fl.cy; size: 17, 17; color: fl.ember; show: audio.muted }
         Readout(26, "VOL", pick(audio.muted, "{vv, 0}%", "MUTE"), audio.muted)
         Ring(ws_volume - 10, fl.cy, audio.volume * (1 - audio.muted), audio.muted)
-        on press zvol { emit open_system }
+        on press zvol { sys_cx = xs_volume + ws_volume / 2; emit open_system }
         on press middle zvol { emit mute }
         on scroll zvol { emit vol(clamp(audio.volume + 0.05 * wheel, 0, 1)) }
     }
@@ -2390,7 +2411,7 @@ scene Mooi {
         figure i_sun { at: 13, fl.cy; size: 17, 17; color: mix(fl.trace, fl.phos, clamp(brightness.level * 1.3, 0.25, 1)) }
         Readout(26, "BRI", "{bl, 0}%")
         Ring(ws_brightness - 10, fl.cy, brightness.level, false)
-        on press zbri { emit open_system }
+        on press zbri { sys_cx = xs_brightness + ws_brightness / 2; emit open_system }
         on scroll zbri { emit bri(clamp(brightness.level + 0.05 * wheel, 0.01, 1)) }
     }
 
@@ -2407,7 +2428,7 @@ scene Mooi {
         figure i_bolt { at: 13, fl.cy; size: 11, 11; color: fl.flare; show: battery.charging }
         Readout(28, "BAT", "{bb, 0}%", low)
         Ring(ws_battery - 10, fl.cy, battery.percent / 100, low)
-        on press zbat { emit open_system }
+        on press zbat { sys_cx = xs_battery + ws_battery / 2; emit open_system }
     }
 
     // ── Network ───────────────────────────────────────────────
@@ -2432,7 +2453,7 @@ scene Mooi {
         figure i_ethernet { at: 13, fl.cy; size: 17, 17; color: fl.phos; show: wired_on }
         figure i_wifi_off { at: 13, fl.cy; size: 17, 17; color: fl.muted; show: not network.online }
         Readout(26, "NET", pick(if(not network.online, 0, if(wired_on, 1, 2)), "OFF", "ETH", "{ns, 0}%"), false, not network.online)
-        on press znet { emit open_system }
+        on press znet { sys_cx = xs_network + ws_network / 2; emit open_system }
     }
 
     // ── Bluetooth ─────────────────────────────────────────────
@@ -2447,7 +2468,7 @@ scene Mooi {
         figure i_bt_off { at: 13, fl.cy; size: 17, 17; color: fl.muted; show: not bluetooth.powered }
         ellipse { at: 20, fl.cy - 7; radius: 1.6; color: fl.ember; show: bluetooth.discovering }
         Readout(26, "BT", pick(if(not bluetooth.powered, 0, if(bt_conn > 0, 2, 1)), "OFF", "ON", "{bt_conn, 0} DEV"), false, not bluetooth.powered)
-        on press zbt { emit open_system }
+        on press zbt { sys_cx = xs_bluetooth + ws_bluetooth / 2; emit open_system }
     }
 
     // ── Clock ─────────────────────────────────────────────────
@@ -2641,6 +2662,43 @@ scene Mooi {
         on press zqn { emit qn_toggle; side = none; mark_open = false; open = none }
     }
 
+    // ── Wallpaper studio (D57) ───────────────────────────────
+    // Lumen's door: a framed picture. A press opens the studio (a program of its own); it is
+    // closed from inside, by Esc or the corner.
+    group {
+        show: p_wallpaper
+        move: xs_wallpaper, 0
+        opacity: pv_wallpaper
+        zone box zwp { from: 0, fl.top; size: ws_wallpaper, fl.mod_h; cursor: pointer; role: button
+                       label: "Wallpaper studio — pick a picture and grade it" }
+        Pill(ws_wallpaper, zwp.hover)
+        figure i_wallpaper { at: 8, fl.top + (fl.mod_h - 16) / 2; size: 16, 16
+                             color: mix(fl.trace, fl.phos, zwp.hover) }
+        on press zwp { emit open_wallpaper; side = none; mark_open = false; open = none }
+    }
+
+    // ── Control Nexus (D65) ──────────────────────────────────
+    // The system command centre's door: the Arch mark. A press opens the Nexus program (a
+    // full-screen overlay of its own); the same press again, Escape there or an outside press
+    // closes it. The dot is live while the program is up.
+    group {
+        show: p_nexus
+        move: xs_nexus, 0
+        opacity: pv_nexus
+        let nlit = max(znx.hover, if(nexus_open, 1, 0))
+        zone box znx { from: 0, fl.top; size: ws_nexus, fl.mod_h; cursor: pointer; role: toggle
+                       checked: nexus_open; label: "Control Nexus — the system command centre" }
+        Pill(ws_nexus, nlit)
+        figure i_arch { at: 8, fl.top + (fl.mod_h - 16) / 2; size: 16, 16
+                        color: mix(fl.trace, fl.phos, nlit) }
+        group {
+            show: nexus_open
+            glow: 5, 80% * st_glow, fl.phos
+            ellipse { at: 27, fl.cy; radius: 1.6; color: fl.phos }
+        }
+        on press znx { emit open_nexus; side = none; mark_open = false; open = none }
+    }
+
     // ── Focus timer ───────────────────────────────────────────
     // A block of work, then a break (shell/bar.luau keeps the time). The ring is what is left:
     // phos while you work, ember on the break, dark at rest — light means live. Press: start or
@@ -2719,7 +2777,7 @@ scene Mooi {
     // Over the bar, where it will land: its outline at the pointer, a line through its middle.
     group {
         show: ed_drag >= 0 and ed_y <= st_res + 4 and not ed_merge
-        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes)
+        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)
         box { at: ed_x, fl.cy; size: gw, fl.mod_h; corner: fl.radius; stroke: 1.4; color: fl.phos; opacity: 0.9 }
         line { from: ed_x, fl.top - 3; to: ed_x, fl.top + fl.mod_h + 3; width: 1; color: fl.flare }
     }
@@ -3053,18 +3111,42 @@ scene Mooi {
     on drag ez_notes while ed_press == 26 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 26; ed_sel = -1 }
     on release ez_notes while ed_drag == 26 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_notes while ed_drag < 0 and ed_press == 26 { ed_sel = if(ed_sel == 26, -1, 26); ed_press = -1 }
+    group {
+        show: bar_edit and p_wallpaper
+        zone box ez_wallpaper { from: xs_wallpaper, fl.top; size: ws_wallpaper, fl.mod_h; cursor: grab; role: button; label: "Move Wallpaper studio" }
+        box { from: xs_wallpaper + 1, fl.top + 1; size: ws_wallpaper - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 27 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 27, 0.6, if(ed_sel == 27, 0.4, 0.2 * ez_wallpaper.hover)) }
+        box { from: xs_wallpaper + 1, fl.top + 1; size: ws_wallpaper - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 27, 2, 1.2)
+              color: if(ed_sel == 27 or ed_drag == 27, fl.flare, mix(fl.trace_lit, fl.flare, ez_wallpaper.hover)); opacity: if(ed_drag >= 0 and ed_drag != 27, 0.45, 0.85) }
+    }
+    on press ez_wallpaper while bar_edit { ed_press = 27; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_wallpaper while ed_press == 27 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 27; ed_sel = -1 }
+    on release ez_wallpaper while ed_drag == 27 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_wallpaper while ed_drag < 0 and ed_press == 27 { ed_sel = if(ed_sel == 27, -1, 27); ed_press = -1 }
+    group {
+        show: bar_edit and p_nexus
+        zone box ez_nexus { from: xs_nexus, fl.top; size: ws_nexus, fl.mod_h; cursor: grab; role: button; label: "Move Control Nexus" }
+        box { from: xs_nexus + 1, fl.top + 1; size: ws_nexus - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 28 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 28, 0.6, if(ed_sel == 28, 0.4, 0.2 * ez_nexus.hover)) }
+        box { from: xs_nexus + 1, fl.top + 1; size: ws_nexus - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 28, 2, 1.2)
+              color: if(ed_sel == 28 or ed_drag == 28, fl.flare, mix(fl.trace_lit, fl.flare, ez_nexus.hover)); opacity: if(ed_drag >= 0 and ed_drag != 28, 0.45, 0.85) }
+    }
+    on press ez_nexus while bar_edit { ed_press = 28; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_nexus while ed_press == 28 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 28; ed_sel = -1 }
+    on release ez_nexus while ed_drag == 28 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_nexus while ed_drag < 0 and ed_press == 28 { ed_sel = if(ed_sel == 28, -1, 28); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus, fi_settings, fi_notes)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus, g_settings, g_notes)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
@@ -3137,7 +3219,7 @@ scene Mooi {
                     ellipse { at: 37, 66; radius: 6; color: fl.ember_fill }
                     text "{min(kb_late, 9), 0}" { at: 37, 66; anchor: center; size: 8; weight: 700; family: "Exo 2"; color: fl.ink }
                 }
-                on press qrail_board { kb_open = true; qn_open = false }
+                on press qrail_board { qn_open = false; emit board_show }
 
                 text "QUICK NOTES" { at: 58, 18; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
                 text "{qn_count, 0}" { at: 352, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count <= 6 }
@@ -3211,16 +3293,16 @@ scene Mooi {
     on key Alt+p while qn_open { emit qn_act(3) }
     on key Alt+b while qn_open { emit qn_act(4) }
     on key Alt+Delete while qn_open { emit qn_act(5) }
-    on key Ctrl+b while qn_open { kb_open = true; qn_open = false }
+    on key Ctrl+b while qn_open { qn_open = false; emit board_show }
     on idle for 45s while qn_open { qn_open = false }
-    on change open while open != none { qn_open = false; kb_open = false }
+    on change open while open != none { qn_open = false }
     on change side while side != none { qn_open = false }
     on change mark_open while mark_open { qn_open = false }
     on change bar_edit while bar_edit { qn_open = false }
     on bar_menu { qn_open = false }
-    // The board, from the rail, a key or `mooi board`.
-    on open_board while kb_open { kb_open = false }
-    on open_board while not kb_open { kb_open = true; qn_open = false; side = none; open = none }
+    // The board, from the rail, a key or `mooi board`: its own program (D64), so the bar lets go
+    // of what it is showing and of the keyboard first, and the logic starts it.
+    on open_board { qn_open = false; side = none; open = none; mark_open = false; emit board_show }
 
     // ── The bar's rules ───────────────────────────────────────
     // The mark (and a right press on search) opens mooi's settings — the shell's home, where
@@ -3245,6 +3327,532 @@ scene Mooi {
     on toggle_wheel { emit toggle_wheel }
     on toggle_theme { emit toggle_theme }
     on clip_pick { side = none }
+
+    // ══ The islands (D53): each under the module that opens it, drawn here in the bar's own surface ═
+    // (a closed full-width surface of their own kept its last picture on the screen).
+    // ── side_island (drawn in the bar's own surface, under the bar's strip: D53) ──
+    group {
+        move: 0, st_res + 6
+
+        // Under the module that opens it (D53): a strip as wide as the screen whose panel sits
+        // under the module's middle, kept on the screen; the strip's empty parts let presses through.
+        let si_ox = clamp((if(p_clipboard, xs_clipboard + ws_clipboard / 2, screen.width - 200)) - 190, 8, screen.width - 388)
+        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
+        group {
+            show: rv.side > 0.03
+            move: si_ox, 0
+
+            group {
+                show: rv.side > 0.004
+                opacity: rv.side
+                move: 0, -8 * (1 - rv.side)
+                FlPlate(370, 460) {
+                    text "CLIPBOARD" { at: 14, 16; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    box { from: 10, 30; size: 350, 1; color: fl.trace_dim }
+                    column {
+                        at: 10, 36
+                        gap: 2
+                        for c in clips { ClipRow(c, clip_pick) }
+                    }
+                }
+            }
+        }
+    }
+    // ── field_island (drawn in the bar's own surface, under the bar's strip: D53) ──
+    group {
+        move: 0, st_res + 4
+
+        // Its width is the loom's size (signals.density): compact, a narrow Field; comfortable, a
+        // wide one. It hangs under the bar's bell (signals at the top) and unfolds outward from it;
+        // with the signals at a bottom corner, or no bell on the bar, it opens from that corner.
+        let fd_W = if(loom_comfy, 740, 520)
+        let fd_H = 540
+        let fd_cw = if(loom_comfy, 238, 170)           // the clusters' column
+        let fd_iw = fd_W - fd_cw - 36                  // the notices' column
+        let fd_bell = p_notifications and not loom_bottom
+        let fd_cx = if(fd_bell, xs_notifications + ws_notifications / 2, if(loom_left, 10 + fd_W / 2, screen.width - 10 - fd_W / 2))
+        let fd_xo = clamp(fd_cx - fd_W / 2, 10, screen.width - fd_W - 10)
+        let fd_yo = if(loom_bottom, (screen.height - st_res - 4) - fd_H - 10, 0)
+        let fd_r = clamp((fd_cx - fd_xo) / fd_W, 0, 1)    // where along it the bell is: it grows from there
+        let fd_pw = 140 + (fd_W - 140) * fu_a
+        let fd_ph = 38 + (fd_H - 38) * fu_b
+        let fd_px = fd_xo + (fd_W - fd_pw) * fd_r
+        let fd_py = if(loom_bottom, fd_yo + fd_H - fd_ph, fd_yo)
+        // the plate takes every press on it, so none reaches the window under it
+        zone box fcatch { from: fd_px, fd_py; size: fd_pw, fd_ph; show: fu_a > 0.03 }
+        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
+        group {
+            show: fu_a > 0.03
+            group {
+                glow: 14, 0.25 * if(loom_fx, st_glow, 0), fl.phos
+                Chamfer(fd_px, fd_py, fd_pw, fd_ph, loom_chamfer + 4, fl.hull, fl.trace, 0.98, 1.4)
+            }
+            group {
+                clip box { from: fd_px, fd_py; size: fd_pw, fd_ph }
+                group {
+                    move: fd_xo, fd_yo
+                    opacity: min(1, fu_a * 1.4)
+                    text "SIGNAL FIELD" { at: 18, 19; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
+                    text "{note_count, 0} WAITING" { at: 132, 19; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    // do not disturb, at a press: a lamp and its word
+                    zone box fdnd { from: fd_W - 292, 9; size: 134, 20; cursor: pointer; role: toggle; checked: dnd_now; label: "Do not disturb"; show: notes_on }
+                    group {
+                        show: notes_on
+                        Chamfer(fd_W - 292, 9, 134, 20, 4, if(dnd_now, fl.ember_fill, fl.hull_raised), if(dnd_now, fl.ember, fl.trace), if(dnd_now, 0.95, 0.6 + 0.4 * if(fdnd.hover, 1, 0)))
+                        text "DO NOT DISTURB" { at: fd_W - 225, 19; anchor: center; size: 10; family: "Share Tech Mono"; color: if(dnd_now, fl.ink, mix(fl.muted, fl.trace_lit, if(fdnd.hover, 1, 0))) }
+                    }
+                    on press fdnd { emit note_dnd }
+                    zone box fclear { from: fd_W - 150, 9; size: 96, 20; cursor: pointer; role: button; label: "Clear all notices"; show: note_count + note_missed > 0 }
+                    group { show: note_count + note_missed > 0; CutButton(fd_W - 150, 9, 96, "Clear all", fl.ember, if(fclear.hover, 1, 0)) }
+                    on press fclear { emit note_clear }
+                    zone box fclose { from: fd_W - 40, 7; size: 26, 24; cursor: pointer; role: button; label: "Close the Signal Field" }
+                    line { from: fd_W - 33, 13; to: fd_W - 21, 25; width: 1.5; color: mix(fl.muted, fl.ember, if(fclose.hover, 1, 0)) }
+                    line { from: fd_W - 21, 13; to: fd_W - 33, 25; width: 1.5; color: mix(fl.muted, fl.ember, if(fclose.hover, 1, 0)) }
+                    on press fclose { side = none }
+                    group {
+                        opacity: fu_b
+                        line { from: 12, 38; to: fd_W - 12, 38; width: 1; color: fl.trace_dim }
+                        text pick(notes_on, "Notifications go to another program while mooi runs beside it.", "Nothing waiting. Signals unfold here as they arrive.") { at: fd_W / 2, 200; anchor: center; size: 12; family: "Exo 2"; color: fl.muted; width: fd_W - 40; lines: 2; show: note_count + note_missed < 1 }
+                        // the clusters
+                        column fcl {
+                            at: 12, 48
+                            gap: 6
+                            view: fd_cw, 404
+                            for c in fclus { FieldCluster(c, fld_sel, loom_chamfer, fld_pick, fd_cw - 2) }
+                        }
+                        // the chosen cluster: its app, and what can be done with all of it
+                        group {
+                            show: fclus.count > 0
+                            text fld_app { at: fd_cw + 26, 58; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit; width: fd_iw - 200; lines: 1 }
+                            zone box fmute { from: fd_W - 200, 48; size: 84, 20; cursor: pointer; role: toggle; checked: fld_muted
+                                             label: pick(fld_muted, "Mute {fld_app}: its notices whisper", "Unmute {fld_app}"); show: not fld_lost }
+                            group { show: not fld_lost and not fld_muted; CutButton(fd_W - 200, 48, 84, "Mute app", fl.flare, if(fmute.hover, 1, 0)) }
+                            group { show: not fld_lost and fld_muted; CutButton(fd_W - 200, 48, 84, "Unmute", fl.flare, 1) }
+                            on press fmute { emit fld_mute }
+                            zone box fall { from: fd_W - 110, 48; size: 98, 20; cursor: pointer; role: button; label: "Dismiss all of {fld_app}" }
+                            group { show: not fld_lost; CutButton(fd_W - 110, 48, 98, "Dismiss all", fl.ember, if(fall.hover, 1, 0)) }
+                            group { show: fld_lost; CutButton(fd_W - 110, 48, 98, "Forget all", fl.ember, if(fall.hover, 1, 0)) }
+                            on press fall { emit fld_dismiss_all }
+                        }
+                        column fit {
+                            at: fd_cw + 24, 76
+                            gap: 6
+                            view: fd_iw, 376
+                            for n in fitems { FieldItem(n, fld_item, loom_chamfer, fld_choose, fld_open, fld_act, fld_snooze, fld_dismiss, fd_iw) }
+                        }
+                        // the activity rail: the last six hours, now at the right
+                        line { from: 12, 462; to: fd_W - 12, 462; width: 1; color: fl.trace_dim }
+                        text "ACTIVITY" { at: 18, 476; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        line { from: 16, 502; to: fd_W - 16, 502; width: 1; color: fl.trace }
+                        text "6 H" { at: 16, 520; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "3 H" { at: 16 + (fd_W - 32) * 0.293, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "1 H" { at: 16 + (fd_W - 32) * 0.592, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "NOW" { at: fd_W - 16, 520; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        for r in frail { RailTick(r, 16, fd_W - 32, 502, fld_pick) }
+                        text "↑↓ CLUSTERS · SHIFT ↑↓ NOTICES · ⏎ OPEN · DEL DISMISS · S SNOOZE · M MUTE · ESC" { at: fd_W - 18, 476; anchor: right center; size: 8
+                             family: "Share Tech Mono"; color: fl.muted; show: loom_comfy }
+                        text "↑↓ · SHIFT ↑↓ · ⏎ · DEL · S · M · ESC" { at: fd_W - 18, 476; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: not loom_comfy }
+                    }
+                }
+            }
+        }
+    }
+    // ── window_island (drawn in the bar's own surface, under the bar's strip: D53) ──
+    group {
+        move: 0, st_res + 6
+
+        // Under the module that opens it (D53): a strip as wide as the screen whose panel sits
+        // under the module's middle, kept on the screen; the strip's empty parts let presses through.
+        let wi_ox = clamp((if(p_actions, xs_actions + ws_actions / 2, screen.width / 2)) - 180, 8, screen.width - 368)
+        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
+        group {
+            show: rv.window > 0.03
+            move: wi_ox, 0
+
+            IslandFrame(rv.window, 340, 132 + 80 * depth) {
+                text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
+                text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
+
+                zone box xbtn { at: 322, 20; size: 24, 24; corner: 6; cursor: pointer; label: "Close panel" }
+                group { move: 310, 8; opacity: xbtn.hover; BtnFace(24, 24, xbtn.hover, 0) }
+                line { from: 317, 15; to: 327, 25; width: 1.4; color: fg.secondary }
+                line { from: 327, 15; to: 317, 25; width: 1.4; color: fg.secondary }
+                on press xbtn { open = none }
+
+                // Actions: 0 float · 1 fullscreen · 2 pin · 3 move · 4 close
+                repeat k in 0..5 {
+                    group {
+                        move: 12 + k * 64, 58
+                        let on_k = pick(k, floating, fullscreen, pinned, 0, arming)
+                        let usable_k = target_ok and not busy and (k != 2 or floating)
+                        prop lit = 0 ~m.select
+                        follow lit = if(sel == k, 1, 0)
+
+                        zone box act.$k { from: 0, 0; size: 60, 48; corner: g.radius.item; cursor: pointer; active: usable_k
+                                          label: pick(k, "Float", "Fullscreen", "Pin", "Move to workspace", "Close window") }
+                        BtnFace(60, 48, act.$k.hover, lit, arming * (k == 4), not usable_k)
+                        ellipse { at: 52, 8; radius: 2.5; color: accent.primary; opacity: if(k < 3, on_k, 0) }
+
+                        group {
+                            opacity: if(usable_k, 1, 0.4)
+                            group { show: k == 0
+                                box { at: 27, 18; size: 16, 11; corner: 2; stroke: 1.3; color: fg.primary }
+                                box { at: 33, 23; size: 16, 11; corner: 2; color: surface.elevated }
+                                box { at: 33, 23; size: 16, 11; corner: 2; stroke: 1.3; color: fg.primary } }
+                            group { show: k == 1
+                                box { at: 30, 20; size: 20, 14; corner: 2; stroke: 1.3; color: fg.primary }
+                                box { at: 30, 20; size: 10, 6; corner: 1; color: fg.primary; opacity: 1 - fullscreen } }
+                            group { show: k == 2
+                                ellipse { at: 30, 15; radius: 4.5; stroke: 1.3; color: fg.primary }
+                                line { from: 30, 20; to: 30, 28; width: 1.3; color: fg.primary } }
+                            group { show: k == 3
+                                line { from: 21, 20; to: 38, 20; width: 1.3; color: fg.primary }
+                                line { from: 33, 15; to: 38, 20; width: 1.3; color: fg.primary }
+                                line { from: 33, 25; to: 38, 20; width: 1.3; color: fg.primary } }
+                            group { show: k == 4
+                                line { from: 25, 15; to: 35, 25; width: 1.4; color: if(arming, accent.secondary, fg.primary) }
+                                line { from: 35, 15; to: 25, 25; width: 1.4; color: if(arming, accent.secondary, fg.primary) } }
+                            text pick(k * 2 + on_k, "Float", "Tile", "Full", "Exit", "Pin", "Unpin", "Move", "Move", "Close", "Sure?") { at: 30, 38; anchor: center; size: 10; color: fg.secondary }
+                        }
+                        on press act.$k { sel = k; emit activate(k) }
+                    }
+                }
+
+                // Expanded: move the window to a workspace.
+                group {
+                    opacity: depth
+                    show: depth > 0.02
+                    move: 0, -8 * (1 - depth)
+                    repeat j in 0..10 {
+                        group {
+                            move: 12 + mod(j, 5) * 64, 118 + floor(j / 5) * 36
+                            zone box wsb.$j { from: 0, 0; size: 60, 30; corner: 6; cursor: pointer; active: phase == expanded; label: "Workspace {j + 1}" }
+                            BtnFace(60, 30, wsb.$j.hover, if(wsel == j + 1, 1, 0))
+                            text "{j + 1}" { at: 30, 15; anchor: center; size: 12; weight: 600
+                                             color: if(ws_target == j + 1, fg.muted, fg.primary) }
+                            box { at: 30, 25; size: 10, 2; corner: 1; color: fg.muted; show: ws_target == j + 1 }   // where it is now
+                            on press wsb.$j { wsel = j + 1; emit pick_ws(j + 1) }
+                        }
+                    }
+                }
+
+                let hint_y = 120 + 80 * depth
+                let hint_k = if(busy, 3, if(phase == expanded, 2, if(arming, 1, 0)))
+                text pick(hint_k, "←→ select   ↵ apply   esc close", "↵ again to close   esc keeps it", "←→ ↵ move   esc back", "Waiting for Hyprland…") {
+                     at: 16, hint_y; anchor: left center; size: 10.5; color: if(arming, accent.secondary, fg.muted); opacity: 1 - fb }
+                text feedback { at: 16, hint_y; anchor: left center; size: 10.5; width: 310; lines: 1
+                                color: if(note.failed, status.error, status.ok); opacity: fb }
+            }
+        }
+    }
+    // ── system_island (drawn in the bar's own surface, under the bar's strip: D53) ──
+    group {
+        move: 0, st_res + 6
+
+        // Under the module that opens it (D53): a strip as wide as the screen whose panel sits
+        // under the module's middle, kept on the screen; the strip's empty parts let presses through.
+        let sy_ox = clamp((if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, screen.width / 2))) - 160, 8, screen.width - 328)
+        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
+        group {
+            show: rv.system > 0.03
+            move: sy_ox, 0
+
+            // It hangs under the module that opened it and grows down from the bar; inside, y
+            // counts from the island's top.
+            let sh = 144 + 52 * brightness.present
+            group {
+                move: 0, 0
+                IslandFrame(rv.system, 300, sh) {
+                    text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
+                    text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
+                    text "Wired" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wired }
+                    text "Offline" { at: 284, 20; anchor: right center; size: 10.5; color: status.error; show: not network.online }
+
+                    // Bluetooth is a state here, not a control: the bar's rune reports it and
+                    // this line names it, so a widget that only ever opens this surface never
+                    // offers something the surface cannot do.
+                    text pick(bluetooth.present and bluetooth.powered, "Bluetooth off", "Bluetooth on") {
+                        at: 284, 36; anchor: right center; size: 10.5; color: fg.secondary; show: bluetooth.present }
+                    text "No Bluetooth" { at: 284, 36; anchor: right center; size: 10.5; color: fg.muted; show: not bluetooth.present }
+
+                    group {
+                        move: 16, 52
+                        Level("Volume", pick(audio.muted, "{audio.volume * 100, 0} %", "Muted"), audio.volume * (1 - audio.muted), srow == 0, vol)
+                    }
+                    group {
+                        show: brightness.present
+                        move: 16, 104
+                        Level("Brightness", "{brightness.level * 100, 0} %", brightness.level, srow == 1, bri)
+                    }
+
+                    text pick(battery.charging, "{battery.percent, 0} % · on battery", "{battery.percent, 0} % · charging") { at: 16, sh - 20; anchor: left center; size: 10.5; color: if(low, status.error, fg.secondary); show: battery.present }
+                    text "↑↓  ←→  m mute  esc" { at: 284, sh - 20; anchor: right center; size: 10.5; color: fg.muted }
+                }
+            }
+        }
+    }
+    // ── atlas_island (drawn in the bar's own surface, under the bar's strip: D53) ──
+    group {
+        move: 0, st_res + 6
+
+        // Under the module that opens it (D53): a strip as wide as the screen whose panel sits
+        // under the module's middle, kept on the screen; the strip's empty parts let presses through.
+        let at_ox = clamp((if(p_atlas, xs_atlas + ws_atlas / 2, screen.width / 2)) - 590, 8, screen.width - 1188)
+        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
+        group {
+            show: rv.atlas > 0.03
+            move: at_ox, 0
+
+            // The board gives the move strip its room while the strip is up; the springs carry
+            // the tiles down and back, so a mode change interrupts cleanly.
+            prop bh = 430 ~m.reflow
+            follow bh = if(atlas_mode == move, 348, 430)
+            prop mv = 0 ~m.select
+            follow mv = if(atlas_mode == move, 1, 0)
+            // The grid is 580 wide; the board takes the width of the screen's middle. The frame
+            // widens between them, centred, so the surface's own place never moves.
+            prop afw = 580 ~m.expand
+            follow afw = if(atlas_view > 0.5, 1160, 580)
+            prop afh = 520 ~m.expand
+            follow afh = if(atlas_view > 0.5, 600, 520)
+            let aox = (1180 - afw) / 2
+            let cw = min(220, 1120 / max(atlas_cols, 1))      // a board column's pitch
+
+            group {
+            move: aox, 0
+            IslandFrame(rv.atlas, afw, afh, centre: true, aw: 80, ah: 48) {
+                text "WORKSPACE ATLAS" { at: 20, 24; anchor: left center; size: 10; weight: 700; color: fg.secondary }
+                // What happened, in the logic's own words — never "it must have worked".
+                text feedback { at: 560, 24; anchor: right center; size: 10.5; width: 320; lines: 1
+                                color: if(note.failed, status.error, status.ok); opacity: fb }
+                text pick(if(atlas_mode == move, 3, if(atlas_view > 1.5, 2, if(atlas_view > 0.5, 1, 0))), "←→ ↑↓ select   ↵ focus   m move   v next view   p previews   esc close",
+                                              "drag a window to another workspace   press to focus it   v next view   esc close",
+                                              "drag a window to another monitor or onto a workspace   press a workspace to go there   v next view",
+                                              "Moving — choose a workspace in the strip below") {
+                    at: 20, 48; anchor: left center; size: 11; color: fg.muted; width: 540; lines: 1 }
+                // the two views, a press apart
+                zone box aview0 { from: afw - 280, 40; size: 84, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view < 0.5; label: "Windows" }
+                zone box aview1 { from: afw - 192, 40; size: 88, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view > 0.5 and atlas_view < 1.5; label: "Workspaces" }
+                zone box aview2 { from: afw - 100, 40; size: 80, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view > 1.5; label: "Spatial" }
+                BtnFace(84, 22, aview0.hover, if(atlas_view < 0.5, 1, 0)) { move: afw - 280, 40 }
+                BtnFace(88, 22, aview1.hover, if(atlas_view > 0.5 and atlas_view < 1.5, 1, 0)) { move: afw - 192, 40 }
+                BtnFace(80, 22, aview2.hover, if(atlas_view > 1.5, 1, 0)) { move: afw - 100, 40 }
+                text "WINDOWS" { at: afw - 238, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view < 0.5, accent.primary, fg.muted) }
+                text "WORKSPACES" { at: afw - 148, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view > 0.5 and atlas_view < 1.5, accent.primary, fg.muted) }
+                text "SPATIAL" { at: afw - 60, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view > 1.5, accent.primary, fg.muted) }
+                on press aview0 { atlas_view = 0; atlas_mode = browse }
+                on press aview1 { atlas_view = 1; atlas_mode = browse }
+                on press aview2 { atlas_view = 2; atlas_mode = browse }
+                text "No windows are open" {
+                    at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count == 0 }
+                text "Previews are off — p takes their pictures again" {
+                    at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count > 0 and not previews }
+                text "No preview pictures from this compositor; the windows are named only" {
+                    at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count > 0 and previews and not thumbnails.capturing }
+
+                column atlas_list {
+                    show: atlas_view < 0.5
+                    at: 20, 76
+                    size: 540, bh
+                    view: 540, bh
+                    step: 236
+                    content: ceil(atlas_tiles.count / 2) * 236
+
+                    grid {
+                        columns: 2
+                        gap: 12
+                        width: 540
+                        row: 224
+
+                        repeat i in 0..40 {
+                            group {
+                                show: i < atlas_tiles.count
+                                span: 1
+                                zone box atlas_window.$i { from: 0, 0; size: 264, 224; corner: g.radius.item; cursor: pointer
+                                    active: not atlas_busy and atlas_mode == browse
+                                    label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"
+                                    role: button; selected: atlas_sel == i }
+                                box { from: 0, 0; size: 264, 224; corner: g.radius.item
+                                    color: mix(surface.primary, surface.elevated, atlas_window.$i.hover) }
+                                image atlas_tiles.$i.picture { at: 8, 8; size: 248, 140; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
+                                text "PRIVATE" { at: 132, 78; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.muted; show: atlas_tiles.$i.priv }
+                                box { from: 0, 0; size: 264, 224; corner: g.radius.item; stroke: 1.5
+                                    color: if(atlas_sel == i, focus.ring, border.subtle); opacity: if(atlas_sel == i, 1, 0.7) }
+                                text atlas_tiles.$i.app { at: 12, 188; anchor: left center; size: 10; weight: 700; color: accent.primary; width: 240; lines: 1 }
+                                text atlas_tiles.$i.title { at: 12, 207; anchor: left center; size: 11; color: fg.primary; width: 240; lines: 1 }
+                                text pick(atlas_tiles.$i.ws < 0, "WS {atlas_tiles.$i.ws}", "SCRATCHPAD") { at: 252, 188; anchor: right center; size: 10; color: fg.muted }   // Hyprland numbers special workspaces below zero
+                                on enter atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i }
+                                on press atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i; emit atlas_window(i) }
+                            }
+                        }
+                    }
+                }
+
+                // ── The workspaces board ──
+                // A column per workspace (the map: the active one ringed), its windows stacked in it as
+                // small previews. A window carried.$i to another column goes to that workspace, and the
+                // column under it lights while it is carried.$i; a press without moving focuses it.
+                group {
+                    show: atlas_view > 0.5 and atlas_view < 1.5
+                    let th = (cw - 16) * 0.5625
+                    let target = clamp(floor((sp_hx - 20) / cw), 0, max(atlas_cols - 1, 0))
+                    repeat j in 0..16 {
+                        group {
+                            show: j < atlas_cols
+                            let lit.$j = if(bd_drag >= 0 and target == j, 1, 0)
+                            box { from: 20 + j * cw, 76; size: cw - 8, 504; corner: g.radius.item; color: mix(surface.primary, selection.bg, 0.5 * lit.$j) }
+                            box { from: 20 + j * cw, 76; size: cw - 8, 504; corner: g.radius.item; stroke: if(spaces.$j.active, 1.6, 1)
+                                  color: if(spaces.$j.active or lit.$j > 0.5, focus.ring, border.subtle); opacity: if(spaces.$j.active or lit.$j > 0.5, 1, 0.6) }
+                            text "{spaces.$j.id}" { at: 32 + j * cw, 92; anchor: left center; size: 13; weight: 700
+                                                    color: if(spaces.$j.active, accent.primary, fg.secondary) }
+                            text "{spaces.$j.windows} ×" { at: 12 + (j + 1) * cw - 10, 92; anchor: right center; size: 10; color: fg.muted; show: spaces.$j.windows > 0 }
+                        }
+                    }
+                    repeat i in 0..40 {
+                        let tx.$i = 24 + atlas_tiles.$i.col * cw
+                        let ty.$i = 106 + atlas_tiles.$i.row * (th + 30)
+                        let carried.$i = bd_drag == i
+                        group {
+                            show: i < atlas_tiles.count and atlas_tiles.$i.col >= 0 and atlas_tiles.$i.col < atlas_cols
+                            move: if(carried.$i, sp_hx - tx.$i - (cw - 16) / 2, 0), if(carried.$i, sp_hy - ty.$i - th / 2, 0)
+                            opacity: if(carried.$i, 0.85, 1)
+                            zone box btile.$i { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; cursor: grab
+                                                label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"; role: button }
+                            box { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; color: mix(surface.elevated, selection.bg, btile.$i.hover * 0.6) }
+                            image atlas_tiles.$i.picture { at: tx.$i + 3, ty.$i + 3; size: cw - 22, th - 3; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
+                            text "PRIVATE" { at: tx.$i + (cw - 16) / 2, ty.$i + th / 2; anchor: center; size: 9; family: "Share Tech Mono"; color: fg.muted; show: atlas_tiles.$i.priv }
+                            box { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; stroke: if(carried.$i, 1.6, 1); color: if(carried.$i, focus.ring, border.subtle) }
+                            text atlas_tiles.$i.app { at: tx.$i + 6, ty.$i + th + 12; anchor: left center; size: 10; weight: 700; color: accent.primary; width: cw - 28; lines: 1 }
+                            on press btile.$i while open == atlas and not atlas_busy { bd_press = i; bd_px = pointer.x }
+                            on drag btile.$i while bd_press == i and bd_drag < 0 and abs(pointer.x - bd_px) > 6 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
+                            on drag btile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
+                            on release btile.$i while bd_drag == i { emit atlas_drop(i * 100 + clamp(floor((local.x - 20) / cw), 0, max(atlas_cols - 1, 0))); bd_drag = -1; bd_press = -1 }
+                            on release btile.$i while bd_drag < 0 and bd_press == i { bd_press = -1; atlas_sel = i; emit atlas_window(i) }
+                        }
+                    }
+                }
+
+                // ── Spatial: the monitors as they are laid out ──
+                // Each monitor to scale, where it is; in it the windows of the workspace it shows, where
+                // they are, with their pictures; under it its workspaces. Carried to another monitor a
+                // window goes to the workspace that one shows, onto a chip to that workspace; a press on
+                // a window focuses it, on a chip goes there.
+                group {
+                    show: atlas_view > 1.5
+                    for m in sp_mons {
+                        box { from: m.x, m.y; size: m.w, m.h; corner: 6; color: bg.primary }
+                        box { from: m.x, m.y; size: m.w, m.h; corner: 6; stroke: 1.2; color: border.subtle }
+                        text "{upper(m.name)}" { at: m.x + 10, m.y + 14; anchor: left center; size: 10; weight: 700; color: fg.secondary }
+                        text "WS {m.ws}" { at: m.x + m.w - 10, m.y + 14; anchor: right center; size: 10; weight: 700; color: accent.primary }
+                    }
+                    // the monitor (or the chip) a carried window is over lights
+                    for m in sp_mons {
+                        box { from: m.x, m.y; size: m.w, m.h; corner: 6; stroke: 2; color: focus.ring
+                              show: bd_drag >= 0 and sp_hx >= m.x and sp_hx <= m.x + m.w and sp_hy >= m.y and sp_hy <= m.y + m.h }
+                    }
+                    for c in sp_chips {
+                        zone box schip { from: c.x, c.y; size: c.w, c.h; corner: 5; cursor: pointer; role: button; selected: c.active
+                                         label: "Workspace {c.ws}{? · {c.windows} windows}" }
+                        let over = bd_drag >= 0 and sp_hx >= c.x and sp_hx <= c.x + c.w and sp_hy >= c.y and sp_hy <= c.y + c.h
+                        BtnFace(c.w, c.h, max(schip.hover, if(over, 1, 0)), if(c.active, 1, 0)) { move: c.x, c.y }
+                        text "{c.ws}" { at: c.x + c.w / 2, c.y + c.h / 2; anchor: center; size: 11; weight: 700; color: if(c.active, accent.primary, fg.primary) }
+                        box { at: c.x + c.w / 2, c.y + c.h - 3; size: 8, 2; corner: 1; color: fg.muted; show: c.windows > 0 and not c.active }
+                        on press schip while open == atlas and not atlas_busy { emit sp_chip(c.index) }
+                    }
+                    repeat i in 0..40 {
+                        let scar.$i = bd_drag == i
+                        group {
+                            show: i < atlas_tiles.count and atlas_tiles.$i.svis
+                            move: if(scar.$i, sp_hx - atlas_tiles.$i.sx - atlas_tiles.$i.sw / 2, 0), if(scar.$i, sp_hy - atlas_tiles.$i.sy - atlas_tiles.$i.sh / 2, 0)
+                            opacity: if(scar.$i, 0.85, 1)
+                            zone box stile.$i { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: max(atlas_tiles.$i.sw, 6), max(atlas_tiles.$i.sh, 6); cursor: grab
+                                                label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"; role: button; selected: atlas_sel == i }
+                            box { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: atlas_tiles.$i.sw, atlas_tiles.$i.sh; corner: 3; color: surface.elevated }
+                            image atlas_tiles.$i.picture { at: atlas_tiles.$i.sx + 1, atlas_tiles.$i.sy + 1; size: atlas_tiles.$i.sw - 2, atlas_tiles.$i.sh - 2
+                                                           opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
+                            box { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: atlas_tiles.$i.sw, atlas_tiles.$i.sh; corner: 3; stroke: if(atlas_sel == i or scar.$i, 1.6, 1)
+                                  color: if(atlas_sel == i or scar.$i, focus.ring, mix(border.subtle, accent.primary, stile.$i.hover)) }
+                            box { from: atlas_tiles.$i.sx + 4, atlas_tiles.$i.sy + 4; size: min(atlas_tiles.$i.sw - 8, 120), 16; corner: 3; color: bg.primary; opacity: 0.8; show: atlas_tiles.$i.sw > 50 }
+                            text atlas_tiles.$i.app { at: atlas_tiles.$i.sx + 8, atlas_tiles.$i.sy + 12; anchor: left center; size: 10; weight: 700; color: accent.primary
+                                                      width: min(atlas_tiles.$i.sw - 14, 112); lines: 1; show: atlas_tiles.$i.sw > 50 }
+                            on press stile.$i while open == atlas and not atlas_busy { bd_press = i; bd_px = pointer.x }
+                            on drag stile.$i while bd_press == i and bd_drag < 0 and abs(pointer.x - bd_px) > 6 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
+                            on drag stile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
+                            on release stile.$i while bd_drag == i { emit sp_drop(i * 1000000 + round(clamp(local.x, 0, 999)) * 1000 + round(clamp(local.y, 0, 999))); bd_drag = -1; bd_press = -1 }
+                            on release stile.$i while bd_drag < 0 and bd_press == i { bd_press = -1; atlas_sel = i; emit atlas_window(i) }
+                        }
+                    }
+                    text "No monitors reported" { at: 20, 100; anchor: left center; size: 12; color: fg.muted; show: sp_mons.count < 1 }
+                }
+
+                // Move mode: where the selected window should go. The strip is the bounded map
+                // `spaces` — the same `workspaces` data the Spine's numbers come from — so
+                // an empty slot can be chosen, and Hyprland creates it when the window lands.
+                group {
+                    show: atlas_mode == move
+                    opacity: mv
+                    box { from: 0, 430; size: 580, 90; corner: g.radius; color: surface.primary }
+                    box { from: 16, 430; size: 548, 1; color: border.subtle }
+                    text "MOVE {atlas_target} TO" { at: 20, 448; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 430; lines: 1 }
+                    text "↵ move   esc cancel" { at: 560, 448; anchor: right center; size: 10.5; color: fg.muted }
+                    repeat j in 0..16 {
+                        group {
+                            show: j < ws_max
+                            move: 20 + j * 33, 462
+                            let here = spaces.$j.id == atlas_ws
+                            zone box mslot.$j { from: 0, 0; size: 32, 30; corner: 6; cursor: pointer; active: not atlas_busy
+                                                label: "Move to workspace {spaces.$j.id}"; role: button; selected: here }
+                            BtnFace(32, 30, mslot.$j.hover, if(here, 1, 0))
+                            text "{spaces.$j.id}" { at: 16, 14; anchor: center; size: 11; weight: 600
+                                                         color: if(spaces.$j.exists, fg.primary, fg.muted) }
+                            box { at: 16, 24; size: 10, 2; corner: 1; color: fg.muted; show: spaces.$j.windows > 0 }
+                            on press mslot.$j while open == atlas and not atlas_busy { atlas_ws = spaces.$j.id; emit atlas_move }
+                        }
+                    }
+                }
+            }
+            }
+        }
+    }
+    // ── command_island (drawn in the bar's own surface, under the bar's strip: D53) ──
+    group {
+        move: 0, st_res + 6
+
+        // Under the module that opens it (D53): a strip as wide as the screen whose panel sits
+        // under the module's middle, kept on the screen; the strip's empty parts let presses through.
+        let cm_ox = clamp((if(p_core, xs_core + ws_core / 2, screen.width / 2)) - 300, 8, screen.width - 608)
+        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
+        group {
+            show: rv.command > 0.03
+            move: cm_ox, 0
+
+            prop ch = 60 ~m.reflow
+            follow ch = 60 + if(res.count > 0, rlist.height + 10, 36) + 30
+            group {
+                move: 10, 0
+                IslandFrame(rv.command, 580, ch, centre: true, aw: 140) {
+                    ellipse { at: 25, 29; radius: 6; stroke: 1.5; color: fg.secondary }
+                    line { from: 29.5, 33.5; to: 34, 38; width: 1.5; color: fg.secondary }
+                    input query { at: 46, 30; width: 510; size: 16; color: fg.primary; selection: selection.bg
+                                  placeholder: "Search apps, windows, workspaces   @ windows   > mooi" }
+                    box { from: 12, 58; size: 556, 1; color: border.subtle }
+
+                    text cempty { at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: res.count == 0 }
+                    column rlist ~m.reflow {
+                        at: 10, 66
+                        gap: 2
+                        for r in res { CRow(r) }
+                    }
+
+                    let foot = ch - 16
+                    text pick(cmode == actions, "←→ choose   ↵ apply   esc back", "↑↓ select   ↵ open   tab window actions   esc close") {
+                        at: 20, foot; anchor: left center; size: 10.5; color: if(carming, accent.secondary, fg.muted); opacity: 1 - fb }
+                    text feedback { at: 20, foot; anchor: left center; size: 10.5; width: 540; lines: 1
+                                    color: if(note.failed, status.error, status.ok); opacity: fb }
+                }
+            }
+        }
+    }
 
     // ══ The side panel: notices, the clipboard, a toast ═══════
     // Under the bar at the right. Notices: what is waiting, newest first, each dismissable,
@@ -3378,28 +3986,7 @@ scene Mooi {
         reserve: 64 while mod(floor(st_res / 64), 2) > 0.5
     }
 
-    surface side_island {
-        size: 380, 470
-        anchor: top_right
-        margin: 4, 10, 0, 0
-        level: overlay
-        open: side == clips or rv.side > 0.004
 
-        group {
-            show: rv.side > 0.004
-            opacity: rv.side
-            move: 0, -8 * (1 - rv.side)
-            FlPlate(370, 460) {
-                text "CLIPBOARD" { at: 14, 16; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                box { from: 10, 30; size: 350, 1; color: fl.trace_dim }
-                column {
-                    at: 10, 36
-                    gap: 2
-                    for c in clips { ClipRow(c, clip_pick) }
-                }
-            }
-        }
-    }
 
     // ══ Signal Loom (D50) ═════════════════════════════════════
     // The signals: each unfolds from the origin edge (signals.edge) as a mechanism would — a
@@ -3418,7 +4005,7 @@ scene Mooi {
 
         let lm_W = 420
         let lm_H = 720
-        let lm_SEG = 380
+        let lm_SEG = if(loom_comfy, 400, 320)        // signals.density: compact, narrower
         let lm_oxe = if(loom_left, 6, lm_W - 6)                  // the origin edge, where signals come from
         let lm_clx = if(loom_left, 0, lm_W - lm_SEG - 12)
         let lm_cly = if(loom_bottom, lm_H - loom_len - 40, 0)
@@ -3565,471 +4152,228 @@ scene Mooi {
     // notices with what can be done; along the bottom, the activity rail (the last six hours,
     // now at the right). Keys: ↑↓ the clusters · Shift+↑↓ the notices · Return open · Delete
     // dismiss · S snooze · M mute the app · Esc close.
-    surface field_island {
-        size: 760, 560
-        anchor: loom_anchor
-        margin: 4, 10, 10, 10
-        level: overlay
-        open: side == notes or fu_a > 0.004
 
-        let fd_W = 740
-        let fd_H = 540
-        let fd_xo = if(loom_left, 0, 20)
-        let fd_yo = if(loom_bottom, 20, 0)
-        let fd_pw = 140 + (fd_W - 140) * fu_a
-        let fd_ph = 38 + (fd_H - 38) * fu_b
-        let fd_px = if(loom_left, fd_xo, fd_xo + fd_W - fd_pw)
-        let fd_py = if(loom_bottom, fd_yo + fd_H - fd_ph, fd_yo)
-        // the plate takes every press on it, so none reaches the window under it
-        zone box fcatch { from: fd_px, fd_py; size: fd_pw, fd_ph; show: fu_a > 0.004 }
+
+
+    // ══ The stash (D54, D56): the little box on the left edge ═════════
+    // A rail at the screen's left edge opens into a chamfered box when it is pressed, or when a
+    // file is dragged to the edge. What is let go on the box is kept: links, images, videos, any
+    // file, and plain text (shell/stash.luau copies files into mooi's own stash folder). A press
+    // opens an item, the × or a right press removes it, a drag carries it back out, the wheel
+    // pages the list. Nothing is asked of the keyboard: a press on the rail puts it out, a press
+    // on its plate (or anywhere outside it) puts it away, and a file dragged to the edge opens
+    // it for the drop alone.
+    //
+    // Why a press and not a hover (D56): a box that came out whenever the pointer crossed the
+    // screen's edge was a 336 × 558 plate over the desktop, and every press it took on its way
+    // out — or while it sat there — was a press the window underneath never saw. A press is
+    // something the person meant.
+    //
+    // The pulse: a light runs once around the border while the box is out. It is stepped by a
+    // rule, not by `time`, so the scene rests while the box is closed; the surface is its own
+    // and small, so the ~30 fps it costs while out is the box, not the whole screen.
+    surface stash_dock {
+        size: 360, full
+        anchor: left
+        level: overlay
+        reserve: -1
+        // No `keyboard:` here on purpose (D54): pleamar reads the mode from the scene's FIRST
+        // surface and the `while` from the LAST that declares one, so a clause on this surface
+        // would take the keyboard away from the islands, the pad and the board. Naming a folder
+        // is in the bar's own clause instead (`stash_naming`).
+
+        spring fl.stashbox = 1300, 62
+        prop stash_a = 0 ~fl.stashbox
+        prop stash_pulse = 0 ~1ms
+        // How long the pointer has been away from the box and the rail: 0 while it is on them.
+        // Its ~700 ms is the hysteresis that keeps a single missed frame from closing the box
+        // (and the box closing from re-opening a tick later — the flicker D54 records).
+        prop stash_away = 0 ~700ms
+
+        let sb_w = 336
+        let sb_h = 558
+        let sb_y = (screen.height - sb_h) / 2
+        let sb_x = -346 + 356 * stash_a
+        let sb_tab_h = 128
+        let sb_tab_y = (screen.height - sb_tab_h) / 2
+        // Closing is learned from the three zones' own springs (`ztab`, `zcatch`, `zstash`: over
+        // them, or not), not from `cursor.x`: a surface is told where the mouse is only while it is
+        // over it, and the mouse's place from the compositor is one more thing that can be late.
+        let hot_drop = drag.over and stash_a > 0.5   // no cursor here: the drawing must not follow the mouse
+        // The light's place along the border: top, right, bottom, left, in the box's own pixels.
+        let sb_per = 2 * (sb_w + sb_h)
+        let sb_d1 = mod(stash_pulse * sb_per, sb_per)
+        let sb_d2 = mod(stash_pulse * sb_per - 9, sb_per)
+        let sb_d3 = mod(stash_pulse * sb_per - 18, sb_per)
+        let sb_l1x = if(sb_d1 < sb_w, sb_d1, if(sb_d1 < sb_w + sb_h, sb_w, if(sb_d1 < 2 * sb_w + sb_h, 2 * sb_w + sb_h - sb_d1, 0)))
+        let sb_l1y = if(sb_d1 < sb_w, 0, if(sb_d1 < sb_w + sb_h, sb_d1 - sb_w, if(sb_d1 < 2 * sb_w + sb_h, sb_h, sb_per - sb_d1)))
+        let sb_l2x = if(sb_d2 < sb_w, sb_d2, if(sb_d2 < sb_w + sb_h, sb_w, if(sb_d2 < 2 * sb_w + sb_h, 2 * sb_w + sb_h - sb_d2, 0)))
+        let sb_l2y = if(sb_d2 < sb_w, 0, if(sb_d2 < sb_w + sb_h, sb_d2 - sb_w, if(sb_d2 < 2 * sb_w + sb_h, sb_h, sb_per - sb_d2)))
+        let sb_l3x = if(sb_d3 < sb_w, sb_d3, if(sb_d3 < sb_w + sb_h, sb_w, if(sb_d3 < 2 * sb_w + sb_h, 2 * sb_w + sb_h - sb_d3, 0)))
+        let sb_l3y = if(sb_d3 < sb_w, 0, if(sb_d3 < sb_w + sb_h, sb_d3 - sb_w, if(sb_d3 < 2 * sb_w + sb_h, sb_h, sb_per - sb_d3)))
+
+        // The rail at the edge: steel, a notch, three ticks. It is what the pointer finds.
+        //
+        // Round it, a catcher: a strip 12 px wide with nothing painted on it (opacity 0.01, the
+        // same trick as the Shutter's own catcher). A surface is given the mouse only where it
+        // has something to see, and a file dragged to the edge arrives before the box is out:
+        // without the strip the drag would pass through the empty part of the surface and the
+        // box would never learn it was coming. It is the strip, too, that takes a file let go
+        // right at the edge, before the box has finished sliding out. It keeps inside
+        // Hyprland's gaps_out (12 px), so no click meant for a window is taken.
+        zone box zstash_catch { from: 0, sb_y; size: 12, sb_h; role: region; label: "The stash's edge — drop here" }
+        box { from: 0, sb_y; size: 12, sb_h; color: fl.hull; opacity: 0.01 }
+        zone box zstash_tab { from: 0, sb_tab_y; size: 9, sb_tab_h; cursor: pointer; role: button; label: "Stash — drop files, links and pictures here" }
+        box { from: 0, sb_tab_y; size: 9, sb_tab_h; corner: 2; color: fl.hull_raised; opacity: 0.55 }
         group {
-            show: fu_a > 0.004
+            glow: 9, 0.12 * st_glow + 0.35 * st_glow * if(zstash_tab.hover, 1, 0), fl.phos
+            box { from: 2, sb_tab_y + 10; size: 3, sb_tab_h - 20; corner: 1.5
+                  color: mix(fl.trace_dim, fl.phos, max(0.34, max(zstash_tab.hover, 0.38 * stash_a))) }
+        }
+        repeat t in 0..3 {
+            line { from: 5, sb_tab_y + sb_tab_h / 2 - 9 + t * 6; to: 9, sb_tab_y + sb_tab_h / 2 - 9 + t * 6; width: 1
+                   color: mix(fl.trace_lit, fl.phos, max(zstash_tab.hover, 0.3 * stash_a)) }
+        }
+
+        // The box: a plate with a light running round it, cut from the same chamfer as the
+        // Signal Loom and the board. It slides out of the left edge.
+        group {
+            show: stash_a > 0.004
+            move: sb_x, sb_y
             group {
-                glow: 14, 0.25 * if(loom_fx, st_glow, 0), fl.phos
-                Chamfer(fd_px, fd_py, fd_pw, fd_ph, loom_chamfer + 4, fl.hull, fl.trace, 0.98, 1.4)
+                glow: 26, 0.34 * st_glow, fl.phos
+                Chamfer(0, 0, sb_w, sb_h, 16, if(hot_drop, fl.well, fl.hull), if(hot_drop, fl.phos, fl.trace), 0.985, 1.5)
             }
             group {
-                clip box { from: fd_px, fd_py; size: fd_pw, fd_ph }
+                show: stash_a > 0.35 and not saving
+                glow: 11, 0.95 * st_glow, fl.phos
+                ellipse { at: sb_l1x, sb_l1y; radius: 3.4; color: fl.phos }
+                ellipse { at: sb_l2x, sb_l2y; radius: 2.3; color: mix(fl.phos, fl.hull, 0.3) }
+                ellipse { at: sb_l3x, sb_l3y; radius: 1.6; color: mix(fl.phos, fl.hull, 0.55) }
+            }
+
+            group {
+                clip box { from: 0, 0; size: sb_w, sb_h }
+                // the whole plate takes a drop; the rows are on top of it, so they take it too
+                zone box zstash { from: 0, 0; size: sb_w, sb_h; role: region; label: "The stash — drop anything here" }
+
+                text "STASH" { at: 18, 26; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                text "{stash_count, 0}" { at: 76, 26; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                // which folder is being looked into, said in its own name
+                text stash_here_name { at: 96, 26; anchor: left center; size: 10; family: "Exo 2"; width: 150; lines: 1
+                                       color: fl.ember; show: not stash_root }
+                text "{stash_from, 0}–{stash_to, 0} / {stash_count, 0}" { at: sb_w - 18, 26; anchor: right center; size: 9; family: "Share Tech Mono"
+                                                                         color: fl.muted; show: stash_pages > 1 }
+                text "DROP ANYTHING" { at: sb_w - 18, 26; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: stash_pages <= 1 }
+                line { from: 16, 46; to: sb_w - 16, 46; width: 1; color: fl.trace_dim }
+
                 group {
-                    move: fd_xo, fd_yo
-                    opacity: min(1, fu_a * 1.4)
-                    text "SIGNAL FIELD" { at: 18, 19; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
-                    text "{note_count, 0} WAITING" { at: 132, 19; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                    // do not disturb, at a press: a lamp and its word
-                    zone box fdnd { from: 420, 9; size: 134, 20; cursor: pointer; role: toggle; checked: dnd_now; label: "Do not disturb"; show: notes_on }
-                    group {
-                        show: notes_on
-                        Chamfer(420, 9, 134, 20, 4, if(dnd_now, fl.ember_fill, fl.hull_raised), if(dnd_now, fl.ember, fl.trace), if(dnd_now, 0.95, 0.6 + 0.4 * if(fdnd.hover, 1, 0)))
-                        text "DO NOT DISTURB" { at: 487, 19; anchor: center; size: 10; family: "Share Tech Mono"; color: if(dnd_now, fl.ink, mix(fl.muted, fl.trace_lit, if(fdnd.hover, 1, 0))) }
-                    }
-                    on press fdnd { emit note_dnd }
-                    zone box fclear { from: 566, 9; size: 96, 20; cursor: pointer; role: button; label: "Clear all notices"; show: note_count + note_missed > 0 }
-                    group { show: note_count + note_missed > 0; CutButton(566, 9, 96, "Clear all", fl.ember, if(fclear.hover, 1, 0)) }
-                    on press fclear { emit note_clear }
-                    zone box fclose { from: 700, 7; size: 26, 24; cursor: pointer; role: button; label: "Close the Signal Field" }
-                    line { from: 707, 13; to: 719, 25; width: 1.5; color: mix(fl.muted, fl.ember, if(fclose.hover, 1, 0)) }
-                    line { from: 719, 13; to: 707, 25; width: 1.5; color: mix(fl.muted, fl.ember, if(fclose.hover, 1, 0)) }
-                    on press fclose { side = none }
-                    group {
-                        opacity: fu_b
-                        line { from: 12, 38; to: fd_W - 12, 38; width: 1; color: fl.trace_dim }
-                        text pick(notes_on, "Notifications go to another program while mooi runs beside it.", "Nothing waiting. Signals unfold here as they arrive.") { at: fd_W / 2, 200; anchor: center; size: 12; family: "Exo 2"; color: fl.muted; show: note_count + note_missed < 1 }
-                        // the clusters
-                        column fcl {
-                            at: 12, 48
-                            gap: 6
-                            view: 238, 404
-                            for c in fclus { FieldCluster(c, fld_sel, loom_chamfer, fld_pick) }
-                        }
-                        // the chosen cluster: its app, and what can be done with all of it
-                        group {
-                            show: fclus.count > 0
-                            text fld_app { at: 264, 58; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit; width: 250; lines: 1 }
-                            zone box fmute { from: 540, 48; size: 84, 20; cursor: pointer; role: toggle; checked: fld_muted
-                                             label: pick(fld_muted, "Mute {fld_app}: its notices whisper", "Unmute {fld_app}"); show: not fld_lost }
-                            group { show: not fld_lost and not fld_muted; CutButton(540, 48, 84, "Mute app", fl.flare, if(fmute.hover, 1, 0)) }
-                            group { show: not fld_lost and fld_muted; CutButton(540, 48, 84, "Unmute", fl.flare, 1) }
-                            on press fmute { emit fld_mute }
-                            zone box fall { from: 630, 48; size: 98, 20; cursor: pointer; role: button; label: "Dismiss all of {fld_app}" }
-                            group { show: not fld_lost; CutButton(630, 48, 98, "Dismiss all", fl.ember, if(fall.hover, 1, 0)) }
-                            group { show: fld_lost; CutButton(630, 48, 98, "Forget all", fl.ember, if(fall.hover, 1, 0)) }
-                            on press fall { emit fld_dismiss_all }
-                        }
-                        column fit {
-                            at: 262, 76
-                            gap: 6
-                            view: 468, 376
-                            for n in fitems { FieldItem(n, fld_item, loom_chamfer, fld_choose, fld_open, fld_act, fld_snooze, fld_dismiss) }
-                        }
-                        // the activity rail: the last six hours, now at the right
-                        line { from: 12, 462; to: fd_W - 12, 462; width: 1; color: fl.trace_dim }
-                        text "ACTIVITY" { at: 18, 476; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                        line { from: 16, 502; to: 724, 502; width: 1; color: fl.trace }
-                        text "6 H" { at: 16, 520; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "3 H" { at: 223, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "1 H" { at: 435, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "NOW" { at: 724, 520; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        for r in frail { RailTick(r, 16, 708, 502, fld_pick) }
-                        text "↑↓ CLUSTERS · SHIFT ↑↓ NOTICES · ⏎ OPEN · DEL DISMISS · S SNOOZE · M MUTE · ESC CLOSE" { at: fd_W - 18, 476; anchor: right center; size: 8
-                             family: "Share Tech Mono"; color: fl.muted }
+                    show: not stash_empty
+                    for r in stash {
+                        group { move: 12, 58 + r.n * 66; StashRow(r, stash_open, stash_del, stash_file) }
                     }
                 }
-            }
-        }
-    }
 
-    // ══ The board (D52) ══════════════════════════════════════
-    // A Kanban board: columns of cards (shell/board.luau, lib/board; board.json). It opens from its
-    // middle — a bar across, then the board drops open around it — and is drawn only while open.
-    // Header: how many cards, how many late or due today, search, the tag filter, a new column,
-    // archive what is done, undo, close. The columns: each scrolls on its own; a card is chosen
-    // with a press and carried with a drag (a line shows where it will land; let go in Done and it
-    // is done). The pane on the right: the chosen card (title and note saved as you type, its tag,
-    // its due day, a step in any direction, copy, delete) or, with no card chosen, the chosen
-    // column (its name, its limit, its place); and always a field for a new card.
-    surface board_island {
-        size: 1240, 760
-        anchor: center
-        level: overlay
-        keyboard: exclusive while kb_open
-        open: kb_open or bu_a > 0.004
-
-        let kbl_W = 1220
-        let kbl_H = 740
-        let kbl_pw = 220 + (kbl_W - 220) * bu_a
-        let kbl_ph = 44 + (kbl_H - 44) * bu_b
-        let kbl_px = 10 + (kbl_W - kbl_pw) / 2
-        let kbl_py = 10 + (kbl_H - kbl_ph) / 2
-        let kbl_y0 = 60
-        let kbl_ch = 636
-        let bp_x = 904
-        zone box bcatch { from: kbl_px, kbl_py; size: kbl_pw, kbl_ph; show: bu_a > 0.004 }
-        group {
-            show: bu_a > 0.004
-            group {
-                glow: 22, 0.35 * st_glow, fl.phos
-                Chamfer(kbl_px, kbl_py, kbl_pw, kbl_ph, 16, fl.hull, fl.trace, 0.985, 1.5)
-            }
-            group {
-                clip box { from: kbl_px, kbl_py; size: kbl_pw, kbl_ph }
+                // Nothing yet: a reticle and what to do.
                 group {
-                    move: 10, 10
-                    opacity: min(1, bu_a * 1.3)
-                    // ── the head ──
-                    text "BOARD" { at: 20, 25; anchor: left center; size: 13; family: "Share Tech Mono"; color: fl.ember }
-                    text "{kb_count, 0} CARDS" { at: 86, 25; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                    group {
-                        show: kb_late > 0
-                        Chamfer(170, 15, 66, 20, 4, fl.ember_fill, fl.ember, 0.9)
-                        text "{kb_late, 0} LATE" { at: 203, 25; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.ink }
-                    }
-                    group {
-                        show: kb_due_today > 0
-                        Chamfer(if(kb_late > 0, 242, 170), 15, 72, 20, 4, fl.ground, fl.flare, 0.9)
-                        text "{kb_due_today, 0} TODAY" { at: if(kb_late > 0, 278, 206), 25; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.flare }
-                    }
-                    // search
-                    Chamfer(330, 11, 230, 28, 6, fl.ground, fl.trace, 1)
-                    text "Search cards   Ctrl+F" { at: 342, 25; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not kb_filtering }
-                    input kb_search { at: 342, 17; width: 206; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                    // the tag filter
-                    repeat t in 0..6 {
-                        zone box kf.$t { from: 570 + t * 26, 13; size: 24, 24; cursor: pointer; role: toggle; checked: kb_tagf == t and t > 0
-                                         label: pick(t > 0, "Every tag", "Only tag {t, 0}") }
-                        group { show: t > 0; TagDot(582 + t * 26, 25, t, kb_tagf == t, 6) }
-                        on press kf.$t { emit kb_filter(t) }
-                    }
-                    text "ALL" { at: 582, 25; anchor: center; size: 8; family: "Share Tech Mono"; color: if(kb_tagf == 0, fl.phos, fl.muted) }
-                    zone box kclear { from: 732, 13; size: 52, 24; cursor: pointer; role: button; label: "No filter"; show: kb_filtering }
-                    text "CLEAR" { at: 758, 25; anchor: center; size: 9; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, kclear.hover); show: kb_filtering }
-                    on press kclear { emit kb_clearfilter }
-                    zone box kaddcol { from: 800, 13; size: 96, 24; cursor: pointer; role: button; label: "A new column"; show: not kb_cols_full }
-                    group { show: not kb_cols_full; CutButton(800, 15, 96, "+ Column", fl.phos, kaddcol.hover) }
-                    on press kaddcol { emit kb_addcol }
-                    zone box karch { from: 904, 13; size: 150, 24; cursor: pointer; role: button; label: "Archive the {kb_done_n, 0} done cards"; show: kb_done_n > 0 }
-                    group {
-                        show: kb_done_n > 0
-                        CutButton(904, 15, 150, "Archive done", fl.flare, karch.hover)
-                        text "{kb_done_n, 0}" { at: 1046, 25; anchor: right center; size: 9; weight: 700; family: "Exo 2"; color: fl.flare }
-                    }
-                    on press karch { emit kb_archive }
-                    zone box kundo { from: 1062, 13; size: 70, 24; cursor: pointer; role: button; label: "Undo"; show: kb_can_undo }
-                    group { show: kb_can_undo; CutButton(1062, 15, 70, "Undo", fl.ember, kundo.hover) }
-                    on press kundo { emit kb_undo }
-                    zone box kclose { from: 1176, 9; size: 32, 30; cursor: pointer; role: button; label: "Close the board" }
-                    line { from: 1185, 17; to: 1199, 31; width: 1.6; color: mix(fl.muted, fl.ember, kclose.hover) }
-                    line { from: 1199, 17; to: 1185, 31; width: 1.6; color: mix(fl.muted, fl.ember, kclose.hover) }
-                    on press kclose { kb_open = false }
-                    line { from: 14, 50; to: kbl_W - 14, 50; width: 1; color: fl.trace_dim }
+                    show: stash_empty
+                    let sb_ex = 94
+                    let sb_ey = 168
+                    let sb_ew = sb_w - 188
+                    let sb_eh = 132
+                    line { from: sb_ex, sb_ey + 14; to: sb_ex, sb_ey; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex, sb_ey; to: sb_ex + 14, sb_ey; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex + sb_ew - 14, sb_ey; to: sb_ex + sb_ew, sb_ey; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex + sb_ew, sb_ey; to: sb_ex + sb_ew, sb_ey + 14; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex, sb_ey + sb_eh - 14; to: sb_ex, sb_ey + sb_eh; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex, sb_ey + sb_eh; to: sb_ex + 14, sb_ey + sb_eh; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex + sb_ew - 14, sb_ey + sb_eh; to: sb_ex + sb_ew, sb_ey + sb_eh; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_ex + sb_ew, sb_ey + sb_eh - 14; to: sb_ex + sb_ew, sb_ey + sb_eh; width: 1.2; color: fl.trace_lit }
+                    line { from: sb_w / 2 - 10, sb_ey + sb_eh / 2; to: sb_w / 2 + 10, sb_ey + sb_eh / 2; width: 1.6; color: fl.trace_lit }
+                    line { from: sb_w / 2, sb_ey + sb_eh / 2 - 10; to: sb_w / 2, sb_ey + sb_eh / 2 + 10; width: 1.6; color: fl.trace_lit }
+                    text "NOTHING STASHED" { at: sb_w / 2, 240; anchor: center; size: 12; weight: 600; family: "Exo 2"; color: fl.trace_lit }
+                    text "Drop a link, an image, a video or any file here. It is kept in mooi's own stash, beside settings.json." {
+                         at: sb_w / 2, 264; anchor: center; size: 11; family: "Exo 2"; width: 252; lines: 3; color: fl.muted }
+                }
 
+                // ── the folders: a chip each, and the field that makes one ──
+                // Everything is the first chip; the folders follow in the order they were made,
+                // which is the order the logic keeps them in, so a press names one by its slot.
+                zone box zall { from: 12, 392; size: 48, 22; cursor: pointer; role: tab; selected: stash_root
+                                label: "Everything — {stash_all, 0} kept" }
+                Chamfer(12, 392, 48, 22, 5, mix(fl.ground, fl.well, max(zall.hover, if(stash_root, 0.9, 0))), mix(fl.trace_dim, fl.phos, max(zall.hover, if(stash_root, 1, 0))), 0.9, 1)
+                text "ALL" { at: 36, 403; anchor: center; size: 8; weight: 600; family: "Share Tech Mono";
+                             color: mix(fl.muted, fl.phos, max(zall.hover, if(stash_root, 1, 0))) }
+                on press zall { stash_naming = false; blur; emit stash_folder(0) }
+                repeat i in 0..5 {
+                    let fx = 64 + i * 52
                     group {
-                        opacity: bu_b
-                        // ── the columns ──
-                        for c in kcols { KColumn(c, kbl_y0, kbl_ch, kb_pickcol, kb_plus, kb_scroll) }
-                        text "An empty board. Write a card in the pane (Ctrl+N), or send a note from the pad." { at: 452, 340; anchor: center; size: 13; family: "Exo 2"
-                             color: fl.muted; show: kb_count < 1 and not kb_filtering }
-                        // the cards in view, clipped to the columns' bodies; one being carried is dimmed in place
-                        group {
-                            clip box { from: 0, kbl_y0 + 44; size: 900, kbl_ch - 46 }
-                            for k in kcards {
-                                group { opacity: if(kb_drag == k.id, 0.3, 1); KCard(k, 0) }
-                                zone box kc { from: k.x, k.y; size: k.w, k.h; cursor: grab; role: item; selected: k.sel; label: "{k.title}" }
-                                on press kc { kb_press = k.id; kb_dx = 0; kb_dy = 0 }
-                                on drag kc while kb_press == k.id { kb_dx = drag.dx; kb_dy = drag.dy; kb_gx = k.x + k.w / 2 + drag.dx; kb_gy = k.y + 18 + drag.dy
-                                                                    kb_drag = if(abs(drag.dx) + abs(drag.dy) > 6, k.id, kb_drag); emit kb_over(k.id) }
-                                on release kc while kb_drag == k.id { emit kb_drop(k.id); kb_drag = -1; kb_press = -1 }
-                                on release kc while kb_drag != k.id and kb_press == k.id { emit kb_pick(k.id); kb_press = -1 }
-                            }
-                            // where it will land
-                            group {
-                                show: kb_drag >= 0 and kb_ty >= 0
-                                glow: 8, 0.9 * st_glow, fl.phos
-                                box { from: kb_tx + 6, kb_ty - 1.5; size: kb_tw - 12, 3; corner: 1.5; color: fl.phos }
-                            }
-                        }
-                        // the card being carried, lifted, over everything
-                        for k in kcards {
-                            group { show: kb_drag == k.id; move: kb_dx, kb_dy; KCard(k, 1) }
-                        }
-
-                        // ── the pane ──
-                        Chamfer(bp_x, kbl_y0, 300, kbl_ch, 10, mix(fl.ground, fl.hull, 0.3), fl.trace_dim, 0.95)
-                        // a card
-                        group {
-                            show: kb_d_has
-                            text "CARD" { at: bp_x + 16, kbl_y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
-                            text "DONE" { at: bp_x + 284, kbl_y0 + 20; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: kb_d_done }
-                            text kb_d_meta { at: bp_x + 16, kbl_y0 + 38; anchor: left center; size: 8; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.muted }
-                            text "TITLE · F2" { at: bp_x + 16, kbl_y0 + 60; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            Chamfer(bp_x + 12, kbl_y0 + 68, 276, 30, 6, fl.ground, fl.trace, 1)
-                            input kb_title { at: bp_x + 22, kbl_y0 + 75; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                            text "NOTE" { at: bp_x + 16, kbl_y0 + 112; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            Chamfer(bp_x + 12, kbl_y0 + 120, 276, 30, 6, fl.ground, fl.trace, 1)
-                            input kb_note { at: bp_x + 22, kbl_y0 + 127; width: 256; size: 12; family: "Exo 2"; color: fl.trace_lit; selection: fl.well }
-                            text "SAVED AS YOU TYPE" { at: bp_x + 284, kbl_y0 + 112; anchor: right center; size: 7; family: "Share Tech Mono"; color: fl.muted }
-                            text "TAG · ALT+0–5" { at: bp_x + 16, kbl_y0 + 166; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            repeat t in 0..6 {
-                                zone box kt.$t { from: bp_x + 14 + t * 34, kbl_y0 + 176; size: 28, 28; cursor: pointer; role: toggle; checked: kb_d_tag == t
-                                                 label: pick(t > 0, "No tag", "Tag {t, 0}") }
-                                TagDot(bp_x + 28 + t * 34, kbl_y0 + 190, t, kb_d_tag == t, 8)
-                                on press kt.$t { emit kb_tag(t) }
-                            }
-                            text "DUE" { at: bp_x + 16, kbl_y0 + 222; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            text kb_d_due { at: bp_x + 284, kbl_y0 + 222; anchor: right center; size: 9; family: "Share Tech Mono"
-                                            color: if(kb_d_due_st > 3.5, fl.ember, if(kb_d_due_st > 2.5, fl.flare, if(kb_d_due_st > 1.5, fl.phos, fl.muted))) }
-                            zone box kd0 { from: bp_x + 12, kbl_y0 + 232; size: 64, 20; cursor: pointer; role: button; label: "No due day" }
-                            zone box kd1 { from: bp_x + 80, kbl_y0 + 232; size: 64, 20; cursor: pointer; role: button; label: "Due today" }
-                            zone box kd2 { from: bp_x + 148, kbl_y0 + 232; size: 70, 20; cursor: pointer; role: button; label: "Due tomorrow" }
-                            zone box kd3 { from: bp_x + 222, kbl_y0 + 232; size: 66, 20; cursor: pointer; role: button; label: "Due in a week" }
-                            CutButton(bp_x + 12, kbl_y0 + 232, 64, "None", fl.trace_lit, kd0.hover)
-                            CutButton(bp_x + 80, kbl_y0 + 232, 64, "Today", fl.flare, kd1.hover)
-                            CutButton(bp_x + 148, kbl_y0 + 232, 70, "Tomorrow", fl.phos, kd2.hover)
-                            CutButton(bp_x + 222, kbl_y0 + 232, 66, "A week", fl.phos, kd3.hover)
-                            on press kd0 { emit kb_due(0) }
-                            on press kd1 { emit kb_due(1) }
-                            on press kd2 { emit kb_due(2) }
-                            on press kd3 { emit kb_due(3) }
-                            text "MOVE · ALT+SHIFT+ARROWS" { at: bp_x + 16, kbl_y0 + 272; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            zone box km1 { from: bp_x + 12, kbl_y0 + 282; size: 64, 20; cursor: pointer; role: button; label: "One column left" }
-                            zone box km2 { from: bp_x + 80, kbl_y0 + 282; size: 64, 20; cursor: pointer; role: button; label: "One column right" }
-                            zone box km3 { from: bp_x + 148, kbl_y0 + 282; size: 68, 20; cursor: pointer; role: button; label: "One place up" }
-                            zone box km4 { from: bp_x + 220, kbl_y0 + 282; size: 68, 20; cursor: pointer; role: button; label: "One place down" }
-                            CutButton(bp_x + 12, kbl_y0 + 282, 64, "◀ Left", fl.phos, km1.hover)
-                            CutButton(bp_x + 80, kbl_y0 + 282, 64, "Right ▶", fl.phos, km2.hover)
-                            CutButton(bp_x + 148, kbl_y0 + 282, 68, "▲ Up", fl.phos, km3.hover)
-                            CutButton(bp_x + 220, kbl_y0 + 282, 68, "▼ Down", fl.phos, km4.hover)
-                            on press km1 { emit kb_step(1) }
-                            on press km2 { emit kb_step(2) }
-                            on press km3 { emit kb_step(3) }
-                            on press km4 { emit kb_step(4) }
-                            zone box kcopy { from: bp_x + 12, kbl_y0 + 322; size: 132, 22; cursor: pointer; role: button; label: "Copy the card" }
-                            zone box kdel { from: bp_x + 156, kbl_y0 + 322; size: 132, 22; cursor: pointer; role: button; label: "Delete the card (Undo puts it back)" }
-                            CutButton(bp_x + 12, kbl_y0 + 322, 132, "Copy", fl.phos, kcopy.hover)
-                            CutButton(bp_x + 156, kbl_y0 + 322, 132, "Delete · Alt+Del", fl.ember, kdel.hover)
-                            on press kcopy { emit kb_copy }
-                            on press kdel { emit kb_del }
-                        }
-                        // the column (no card chosen)
-                        group {
-                            show: not kb_d_has
-                            text "COLUMN" { at: bp_x + 16, kbl_y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
-                            text kb_col_title { at: bp_x + 284, kbl_y0 + 20; anchor: right center; size: 10; family: "Share Tech Mono"; width: 180; lines: 1; color: fl.trace_lit }
-                            text "NAME · ENTER RENAMES" { at: bp_x + 16, kbl_y0 + 50; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            Chamfer(bp_x + 12, kbl_y0 + 58, 276, 30, 6, fl.ground, fl.trace, 1)
-                            input kb_colname { at: bp_x + 22, kbl_y0 + 65; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                            text "LIMIT · WORK IN PROGRESS" { at: bp_x + 16, kbl_y0 + 104; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            repeat w in 0..6 {
-                                let wv.$w = pick(w, 0, 2, 3, 4, 5, 8)
-                                zone box kw.$w { from: bp_x + 12 + w * 46, kbl_y0 + 114; size: 42, 22; cursor: pointer; role: toggle; checked: kb_col_wip == wv.$w
-                                                 label: pick(w > 0, "No limit", "A limit of {wv.$w, 0}") }
-                                Chamfer(bp_x + 12 + w * 46, kbl_y0 + 114, 42, 22, 4, if(kb_col_wip == wv.$w, fl.well, fl.hull_raised), if(kb_col_wip == wv.$w, focus.ring, mix(fl.trace, fl.phos, kw.$w.hover)), 0.95)
-                                text pick(w > 0, "OFF", "{wv.$w, 0}") { at: bp_x + 33 + w * 46, kbl_y0 + 125; anchor: center; size: 9; family: "Share Tech Mono"
-                                                                       color: if(kb_col_wip == wv.$w, fl.phos, fl.trace_lit) }
-                                on press kw.$w { emit kb_wip(wv.$w) }
-                            }
-                            text "Over its limit, a column's head goes ember: a reminder to finish before starting." { at: bp_x + 16, kbl_y0 + 150; anchor: left top; size: 10; family: "Exo 2"
-                                 width: 268; lines: 2; color: fl.muted }
-                            text "PLACE" { at: bp_x + 16, kbl_y0 + 196; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            zone box kcl { from: bp_x + 12, kbl_y0 + 206; size: 132, 22; cursor: pointer; role: button; label: "Move the column left" }
-                            zone box kcr { from: bp_x + 156, kbl_y0 + 206; size: 132, 22; cursor: pointer; role: button; label: "Move the column right" }
-                            CutButton(bp_x + 12, kbl_y0 + 206, 132, "◀ Left", fl.phos, kcl.hover)
-                            CutButton(bp_x + 156, kbl_y0 + 206, 132, "Right ▶", fl.phos, kcr.hover)
-                            on press kcl { emit kb_colmove(0) }
-                            on press kcr { emit kb_colmove(1) }
-                            zone box kdc { from: bp_x + 12, kbl_y0 + 246; size: 276, 22; cursor: pointer; role: button; label: "Remove the column"; show: kb_col_empty }
-                            group { show: kb_col_empty; CutButton(bp_x + 12, kbl_y0 + 246, 276, "Remove this column", fl.ember, kdc.hover) }
-                            text "Move or archive its cards to remove it." { at: bp_x + 16, kbl_y0 + 257; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; show: not kb_col_empty }
-                            text "The last column is where work is done: a card that reaches it is stamped done." { at: bp_x + 16, kbl_y0 + 290; anchor: left top; size: 10
-                                 family: "Exo 2"; width: 268; lines: 2; color: fl.muted; show: kb_col_last }
-                            on press kdc { emit kb_delcol }
-                        }
-                        // a new card, always
-                        line { from: bp_x + 12, kbl_y0 + 520; to: bp_x + 288, kbl_y0 + 520; width: 1; color: fl.trace_dim }
-                        text "NEW CARD → {kb_col_title}" { at: bp_x + 16, kbl_y0 + 538; anchor: left center; size: 8; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.ember }
-                        Chamfer(bp_x + 12, kbl_y0 + 548, 276, 32, 6, fl.ground, mix(fl.trace, fl.phos, if(kb_drafting, 1, 0)), 1)
-                        text "Write it — Enter adds it   Ctrl+N" { at: bp_x + 22, kbl_y0 + 564; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not kb_drafting }
-                        input kb_new { at: bp_x + 22, kbl_y0 + 556; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                        text "It goes to the top of the chosen column." { at: bp_x + 16, kbl_y0 + 596; anchor: left center; size: 9; family: "Exo 2"; color: fl.muted }
-
-                        // ── the foot: the keys, or what just happened ──
-                        text "ALT+ARROWS CHOOSE · ALT+SHIFT+ARROWS MOVE · CTRL+N NEW · CTRL+F FIND · F2 TITLE · ALT+0–5 TAG · ALT+DEL DELETE · CTRL+Z UNDO · ESC CLOSE" {
-                             at: 20, 718; anchor: left center; size: 8; family: "Share Tech Mono"; width: 1000; lines: 1; color: fl.muted }
-                        text kb_said { at: kbl_W - 20, 718; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: kb_saying }
+                        show: stash_folders_n > i
+                        zone box zfolder.$i { from: fx, 392; size: 48, 22; cursor: pointer; role: tab
+                                              selected: stash_folders.$i.lit > 0.5
+                                              label: "Folder {stash_folders.$i.name} — {stash_folders.$i.held, 0} in it" }
+                        Chamfer(fx, 392, 48, 22, 5, mix(fl.ground, fl.well, max(zfolder.$i.hover, 0.9 * stash_folders.$i.lit)),
+                                mix(fl.trace_dim, fl.phos, max(zfolder.$i.hover, stash_folders.$i.lit)), 0.9, 1)
+                        text stash_folders.$i.name { at: fx + 24, 403; anchor: center; size: 8; weight: 600; family: "Share Tech Mono"; width: 42; lines: 1
+                                                    color: mix(fl.muted, fl.phos, max(zfolder.$i.hover, stash_folders.$i.lit)) }
+                        on press zfolder.$i { stash_naming = false; blur; emit stash_folder(i + 1) }
+                        on press right zfolder.$i { emit stash_folder_del(i + 1) }
                     }
                 }
+
+                zone box znew { from: 12, 424; size: 312, 26; cursor: text; role: region
+                                label: "New folder — type a name and press Enter" }
+                Chamfer(12, 424, 312, 26, 5, fl.ground, mix(fl.trace_dim, fl.ember, max(znew.hover, if(stash_naming, 1, 0))), 1, if(stash_naming, 1.4, 1))
+                line { from: 22, 437; to: 30, 437; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
+                line { from: 26, 433; to: 26, 441; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
+                input stash_new { at: 36, 432; width: 278; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
+                                  placeholder: "New folder — name it, then Enter" }
+                text "FOLDERS · ONE LEVEL · RIGHT PRESS A CHIP TAKES IT AWAY" { at: 12, 464; anchor: left center; size: 8
+                     family: "Share Tech Mono"; width: 312; lines: 1; color: fl.muted }
+                on press znew { stash_naming = true; focus stash_new }
+
+                line { from: 16, 476; to: sb_w - 16, 476; width: 1; color: fl.trace_dim; show: not stash_empty }
+                text "CLICK OPENS · TRAY FILES IT · DRAG A ROW OUT · × REMOVES" { at: sb_w / 2, 492; anchor: center; size: 8
+                     family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted; show: not stash_empty }
+                text pick(stash_pages > 1, "WHEEL PAGES · PRESS A FOLDER TO LOOK INSIDE", "PRESS A FOLDER TO LOOK INSIDE · THE EDGE RAIL OPENS THIS") {
+                     at: sb_w / 2, 508; anchor: center; size: 8; family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted }
+                text stash_said { at: sb_w / 2, 532; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: stash_saying }
             }
         }
+
+        // The hands (D56). The rail is a press: hovering it lights it and opens nothing, so the
+        // box can never come out over a window nobody asked it to cover. A press puts it out and
+        // pins it; a second press, a press on its plate, a press anywhere outside it (the bar's
+        // `dismiss` plate) or 45 s without a hand puts it away. A file dragged to the left edge
+        // still opens it before it arrives, and that one closes as the pointer leaves, since a
+        // drag in is not a pin. Closing is learned from the springs' own zones (`ztab`, `zcatch`,
+        // `zstash`: over them, or not), never from the compositor's cursor, which can be late.
+        //
+        // There is no `on enter zstash`: the plate's left edge slides through the rail's own 9 px
+        // on its way in and out, so a rule that opened the box on entering the plate fired while
+        // the plate was on its way out — the press that closed it opened it again in the same
+        // motion (D56). Being over the plate is read from its hover below, which is what keeps a
+        // drag-opened box out until the pointer leaves.
+        on press zstash_tab while not stash_pin { stash_pin = true; stash_a: 1; stash_away: 0 }
+        on press zstash_tab while stash_pin { stash_pin = false; stash_a: 0; stash_away: 1; blur }
+        on press zstash { stash_pin = false; stash_a: 0; stash_away: 1; blur }
+        every 80ms while drag.over and pointer.x < 26 and not stash_pin { stash_a: 1; stash_away: 0 }
+        every 100ms while zstash_tab.hover >= 0.2 or zstash_catch.hover >= 0.2 or zstash.hover >= 0.2 or drag.over or stash_naming or stash_pin { stash_away: 0 }
+        every 100ms while stash_a > 0.5 and not stash_pin and zstash_tab.hover < 0.2 and zstash_catch.hover < 0.2 and zstash.hover < 0.2 and not drag.over and not stash_naming { stash_away: 1 }
+        every 100ms while stash_a > 0.5 and stash_away > 0.9 { stash_a: 0 }
+        every 33ms while stash_a > 0.2 and not saving { stash_pulse: mod(stash_pulse + 0.0055, 1) ~1ms }
+        on idle for 45s while stash_pin { stash_pin = false; stash_a: 0; stash_away: 1 }
     }
-    on key Escape while kb_open { kb_open = false }
-    on key Alt+Left while kb_open { emit kb_nav(1) }
-    on key Alt+Right while kb_open { emit kb_nav(2) }
-    on key Alt+Up while kb_open { emit kb_nav(3) }
-    on key Alt+Down while kb_open { emit kb_nav(4) }
-    on key Alt+Shift+Left while kb_open { emit kb_step(1) }
-    on key Alt+Shift+Right while kb_open { emit kb_step(2) }
-    on key Alt+Shift+Up while kb_open { emit kb_step(3) }
-    on key Alt+Shift+Down while kb_open { emit kb_step(4) }
-    on key Ctrl+n while kb_open { focus kb_new }
-    on key Ctrl+f while kb_open { focus kb_search }
-    on key F2 while kb_open and kb_d_has { focus kb_title }
-    on key Alt+zero while kb_open { emit kb_tag(0) }
-    on key Alt+one while kb_open { emit kb_tag(1) }
-    on key Alt+two while kb_open { emit kb_tag(2) }
-    on key Alt+three while kb_open { emit kb_tag(3) }
-    on key Alt+four while kb_open { emit kb_tag(4) }
-    on key Alt+five while kb_open { emit kb_tag(5) }
-    on key Alt+Delete while kb_open { emit kb_del }
-    on key Ctrl+z while kb_open { emit kb_undo }
-    on kb_plus(v) { emit kb_pickcol(v); focus kb_new }
-    on kb_focus_col { focus kb_colname }
-    on change kb_open while kb_open { side = none; mark_open = false }
-    on change kb_open while not kb_open { kb_drag = -1; kb_press = -1; blur }
+    // The folder's name, written: Enter makes it (the logic), Escape gives the keys back to the
+    // window behind, and either way the field is done.
+    on stash_blur { stash_naming = false; blur }
+    on key Escape while stash_naming { stash_naming = false; blur }
 
     // ══ Window island ═════════════════════════════════════════
-    surface window_island {
-        size: 360, 260
-        anchor: top_left
-        margin: 84, 0, 0, 10
-        level: overlay
-        open: open == window or rv.window > 0.004
 
-        IslandFrame(rv.window, 340, 132 + 80 * depth) {
-            text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
-            text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
-
-            zone box xbtn { at: 322, 20; size: 24, 24; corner: 6; cursor: pointer; label: "Close panel" }
-            group { move: 310, 8; opacity: xbtn.hover; BtnFace(24, 24, xbtn.hover, 0) }
-            line { from: 317, 15; to: 327, 25; width: 1.4; color: fg.secondary }
-            line { from: 327, 15; to: 317, 25; width: 1.4; color: fg.secondary }
-            on press xbtn { open = none }
-
-            // Actions: 0 float · 1 fullscreen · 2 pin · 3 move · 4 close
-            repeat k in 0..5 {
-                group {
-                    move: 12 + k * 64, 58
-                    let on_k = pick(k, floating, fullscreen, pinned, 0, arming)
-                    let usable_k = target_ok and not busy and (k != 2 or floating)
-                    prop lit = 0 ~m.select
-                    follow lit = if(sel == k, 1, 0)
-
-                    zone box act.$k { from: 0, 0; size: 60, 48; corner: g.radius.item; cursor: pointer; active: usable_k
-                                      label: pick(k, "Float", "Fullscreen", "Pin", "Move to workspace", "Close window") }
-                    BtnFace(60, 48, act.$k.hover, lit, arming * (k == 4), not usable_k)
-                    ellipse { at: 52, 8; radius: 2.5; color: accent.primary; opacity: if(k < 3, on_k, 0) }
-
-                    group {
-                        opacity: if(usable_k, 1, 0.4)
-                        group { show: k == 0
-                            box { at: 27, 18; size: 16, 11; corner: 2; stroke: 1.3; color: fg.primary }
-                            box { at: 33, 23; size: 16, 11; corner: 2; color: surface.elevated }
-                            box { at: 33, 23; size: 16, 11; corner: 2; stroke: 1.3; color: fg.primary } }
-                        group { show: k == 1
-                            box { at: 30, 20; size: 20, 14; corner: 2; stroke: 1.3; color: fg.primary }
-                            box { at: 30, 20; size: 10, 6; corner: 1; color: fg.primary; opacity: 1 - fullscreen } }
-                        group { show: k == 2
-                            ellipse { at: 30, 15; radius: 4.5; stroke: 1.3; color: fg.primary }
-                            line { from: 30, 20; to: 30, 28; width: 1.3; color: fg.primary } }
-                        group { show: k == 3
-                            line { from: 21, 20; to: 38, 20; width: 1.3; color: fg.primary }
-                            line { from: 33, 15; to: 38, 20; width: 1.3; color: fg.primary }
-                            line { from: 33, 25; to: 38, 20; width: 1.3; color: fg.primary } }
-                        group { show: k == 4
-                            line { from: 25, 15; to: 35, 25; width: 1.4; color: if(arming, accent.secondary, fg.primary) }
-                            line { from: 35, 15; to: 25, 25; width: 1.4; color: if(arming, accent.secondary, fg.primary) } }
-                        text pick(k * 2 + on_k, "Float", "Tile", "Full", "Exit", "Pin", "Unpin", "Move", "Move", "Close", "Sure?") { at: 30, 38; anchor: center; size: 10; color: fg.secondary }
-                    }
-                    on press act.$k { sel = k; emit activate(k) }
-                }
-            }
-
-            // Expanded: move the window to a workspace.
-            group {
-                opacity: depth
-                show: depth > 0.02
-                move: 0, -8 * (1 - depth)
-                repeat j in 0..10 {
-                    group {
-                        move: 12 + mod(j, 5) * 64, 118 + floor(j / 5) * 36
-                        zone box wsb.$j { from: 0, 0; size: 60, 30; corner: 6; cursor: pointer; active: phase == expanded; label: "Workspace {j + 1}" }
-                        BtnFace(60, 30, wsb.$j.hover, if(wsel == j + 1, 1, 0))
-                        text "{j + 1}" { at: 30, 15; anchor: center; size: 12; weight: 600
-                                         color: if(ws_target == j + 1, fg.muted, fg.primary) }
-                        box { at: 30, 25; size: 10, 2; corner: 1; color: fg.muted; show: ws_target == j + 1 }   // where it is now
-                        on press wsb.$j { wsel = j + 1; emit pick_ws(j + 1) }
-                    }
-                }
-            }
-
-            let hint_y = 120 + 80 * depth
-            let hint_k = if(busy, 3, if(phase == expanded, 2, if(arming, 1, 0)))
-            text pick(hint_k, "←→ select   ↵ apply   esc close", "↵ again to close   esc keeps it", "←→ ↵ move   esc back", "Waiting for Hyprland…") {
-                 at: 16, hint_y; anchor: left center; size: 10.5; color: if(arming, accent.secondary, fg.muted); opacity: 1 - fb }
-            text feedback { at: 16, hint_y; anchor: left center; size: 10.5; width: 310; lines: 1
-                            color: if(note.failed, status.error, status.ok); opacity: fb }
-        }
-    }
 
     // ══ System island ═════════════════════════════════════════
-    surface system_island {
-        size: 320, 230
-        anchor: bottom_left
-        margin: 0, 0, 30, 4
-        level: overlay
-        open: open == system or rv.system > 0.004
 
-        // It sits at the bottom left of the screen, well clear of the bar's strip, and it
-        // grows upwards from that corner; inside, y counts from the island's top.
-        let sh = 144 + 52 * brightness.present
-        group {
-            move: 0, 230 - sh
-            IslandFrame(rv.system, 300, sh, up: true) {
-                text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-                text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
-                text "Wired" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wired }
-                text "Offline" { at: 284, 20; anchor: right center; size: 10.5; color: status.error; show: not network.online }
-
-                // Bluetooth is a state here, not a control: the bar's rune reports it and
-                // this line names it, so a widget that only ever opens this surface never
-                // offers something the surface cannot do.
-                text pick(bluetooth.present and bluetooth.powered, "Bluetooth off", "Bluetooth on") {
-                    at: 284, 36; anchor: right center; size: 10.5; color: fg.secondary; show: bluetooth.present }
-                text "No Bluetooth" { at: 284, 36; anchor: right center; size: 10.5; color: fg.muted; show: not bluetooth.present }
-
-                group {
-                    move: 16, 52
-                    Level("Volume", pick(audio.muted, "{audio.volume * 100, 0} %", "Muted"), audio.volume * (1 - audio.muted), srow == 0, vol)
-                }
-                group {
-                    show: brightness.present
-                    move: 16, 104
-                    Level("Brightness", "{brightness.level * 100, 0} %", brightness.level, srow == 1, bri)
-                }
-
-                text pick(battery.charging, "{battery.percent, 0} % · on battery", "{battery.percent, 0} % · charging") { at: 16, sh - 20; anchor: left center; size: 10.5; color: if(low, status.error, fg.secondary); show: battery.present }
-                text "↑↓  ←→  m mute  esc" { at: 284, sh - 20; anchor: right center; size: 10.5; color: fg.muted }
-            }
-        }
-    }
 
     // ══ Workspace Atlas ═══════════════════════════════════════
     // Every window Hyprland lists, as a preview: the compositor's own picture of it
@@ -4037,222 +4381,7 @@ scene Mooi {
     // window, so the tile is built from Hyprland's clients —the address is Hyprland's—
     // and only the picture comes from the `thumbnails` service. The workspace a window
     // sits on is on the tile; the map of workspace slots is `spaces`.
-    surface atlas_island {
-        size: 1180, 620
-        anchor: center
-        level: overlay
-        open: open == atlas or rv.atlas > 0.004
 
-        // The board gives the move strip its room while the strip is up; the springs carry
-        // the tiles down and back, so a mode change interrupts cleanly.
-        prop bh = 430 ~m.reflow
-        follow bh = if(atlas_mode == move, 348, 430)
-        prop mv = 0 ~m.select
-        follow mv = if(atlas_mode == move, 1, 0)
-        // The grid is 580 wide; the board takes the width of the screen's middle. The frame
-        // widens between them, centred, so the surface's own place never moves.
-        prop afw = 580 ~m.expand
-        follow afw = if(atlas_view > 0.5, 1160, 580)
-        prop afh = 520 ~m.expand
-        follow afh = if(atlas_view > 0.5, 600, 520)
-        let aox = (1180 - afw) / 2
-        let cw = min(220, 1120 / max(atlas_cols, 1))      // a board column's pitch
-
-        group {
-        move: aox, 0
-        IslandFrame(rv.atlas, afw, afh, centre: true, aw: 80, ah: 48) {
-            text "WORKSPACE ATLAS" { at: 20, 24; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-            // What happened, in the logic's own words — never "it must have worked".
-            text feedback { at: 560, 24; anchor: right center; size: 10.5; width: 320; lines: 1
-                            color: if(note.failed, status.error, status.ok); opacity: fb }
-            text pick(if(atlas_mode == move, 3, if(atlas_view > 1.5, 2, if(atlas_view > 0.5, 1, 0))), "←→ ↑↓ select   ↵ focus   m move   v next view   p previews   esc close",
-                                          "drag a window to another workspace   press to focus it   v next view   esc close",
-                                          "drag a window to another monitor or onto a workspace   press a workspace to go there   v next view",
-                                          "Moving — choose a workspace in the strip below") {
-                at: 20, 48; anchor: left center; size: 11; color: fg.muted; width: 540; lines: 1 }
-            // the two views, a press apart
-            zone box aview0 { from: afw - 280, 40; size: 84, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view < 0.5; label: "Windows" }
-            zone box aview1 { from: afw - 192, 40; size: 88, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view > 0.5 and atlas_view < 1.5; label: "Workspaces" }
-            zone box aview2 { from: afw - 100, 40; size: 80, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view > 1.5; label: "Spatial" }
-            BtnFace(84, 22, aview0.hover, if(atlas_view < 0.5, 1, 0)) { move: afw - 280, 40 }
-            BtnFace(88, 22, aview1.hover, if(atlas_view > 0.5 and atlas_view < 1.5, 1, 0)) { move: afw - 192, 40 }
-            BtnFace(80, 22, aview2.hover, if(atlas_view > 1.5, 1, 0)) { move: afw - 100, 40 }
-            text "WINDOWS" { at: afw - 238, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view < 0.5, accent.primary, fg.muted) }
-            text "WORKSPACES" { at: afw - 148, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view > 0.5 and atlas_view < 1.5, accent.primary, fg.muted) }
-            text "SPATIAL" { at: afw - 60, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view > 1.5, accent.primary, fg.muted) }
-            on press aview0 { atlas_view = 0; atlas_mode = browse }
-            on press aview1 { atlas_view = 1; atlas_mode = browse }
-            on press aview2 { atlas_view = 2; atlas_mode = browse }
-            text "No windows are open" {
-                at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count == 0 }
-            text "Previews are off — p takes their pictures again" {
-                at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count > 0 and not previews }
-            text "No preview pictures from this compositor; the windows are named only" {
-                at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count > 0 and previews and not thumbnails.capturing }
-
-            column atlas_list {
-                show: atlas_view < 0.5
-                at: 20, 76
-                size: 540, bh
-                view: 540, bh
-                step: 236
-                content: ceil(atlas_tiles.count / 2) * 236
-
-                grid {
-                    columns: 2
-                    gap: 12
-                    width: 540
-                    row: 224
-
-                    repeat i in 0..40 {
-                        group {
-                            show: i < atlas_tiles.count
-                            span: 1
-                            zone box atlas_window.$i { from: 0, 0; size: 264, 224; corner: g.radius.item; cursor: pointer
-                                active: not atlas_busy and atlas_mode == browse
-                                label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"
-                                role: button; selected: atlas_sel == i }
-                            box { from: 0, 0; size: 264, 224; corner: g.radius.item
-                                color: mix(surface.primary, surface.elevated, atlas_window.$i.hover) }
-                            image atlas_tiles.$i.picture { at: 8, 8; size: 248, 140; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                            text "PRIVATE" { at: 132, 78; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.muted; show: atlas_tiles.$i.priv }
-                            box { from: 0, 0; size: 264, 224; corner: g.radius.item; stroke: 1.5
-                                color: if(atlas_sel == i, focus.ring, border.subtle); opacity: if(atlas_sel == i, 1, 0.7) }
-                            text atlas_tiles.$i.app { at: 12, 188; anchor: left center; size: 10; weight: 700; color: accent.primary; width: 240; lines: 1 }
-                            text atlas_tiles.$i.title { at: 12, 207; anchor: left center; size: 11; color: fg.primary; width: 240; lines: 1 }
-                            text pick(atlas_tiles.$i.ws < 0, "WS {atlas_tiles.$i.ws}", "SCRATCHPAD") { at: 252, 188; anchor: right center; size: 10; color: fg.muted }   // Hyprland numbers special workspaces below zero
-                            on enter atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i }
-                            on press atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i; emit atlas_window(i) }
-                        }
-                    }
-                }
-            }
-
-            // ── The workspaces board ──
-            // A column per workspace (the map: the active one ringed), its windows stacked in it as
-            // small previews. A window carried.$i to another column goes to that workspace, and the
-            // column under it lights while it is carried.$i; a press without moving focuses it.
-            group {
-                show: atlas_view > 0.5 and atlas_view < 1.5
-                let th = (cw - 16) * 0.5625
-                let target = clamp(floor((sp_hx - 20) / cw), 0, max(atlas_cols - 1, 0))
-                repeat j in 0..16 {
-                    group {
-                        show: j < atlas_cols
-                        let lit.$j = if(bd_drag >= 0 and target == j, 1, 0)
-                        box { from: 20 + j * cw, 76; size: cw - 8, 504; corner: g.radius.item; color: mix(surface.primary, selection.bg, 0.5 * lit.$j) }
-                        box { from: 20 + j * cw, 76; size: cw - 8, 504; corner: g.radius.item; stroke: if(spaces.$j.active, 1.6, 1)
-                              color: if(spaces.$j.active or lit.$j > 0.5, focus.ring, border.subtle); opacity: if(spaces.$j.active or lit.$j > 0.5, 1, 0.6) }
-                        text "{spaces.$j.id}" { at: 32 + j * cw, 92; anchor: left center; size: 13; weight: 700
-                                                color: if(spaces.$j.active, accent.primary, fg.secondary) }
-                        text "{spaces.$j.windows} ×" { at: 12 + (j + 1) * cw - 10, 92; anchor: right center; size: 10; color: fg.muted; show: spaces.$j.windows > 0 }
-                    }
-                }
-                repeat i in 0..40 {
-                    let tx.$i = 24 + atlas_tiles.$i.col * cw
-                    let ty.$i = 106 + atlas_tiles.$i.row * (th + 30)
-                    let carried.$i = bd_drag == i
-                    group {
-                        show: i < atlas_tiles.count and atlas_tiles.$i.col >= 0 and atlas_tiles.$i.col < atlas_cols
-                        move: if(carried.$i, sp_hx - tx.$i - (cw - 16) / 2, 0), if(carried.$i, sp_hy - ty.$i - th / 2, 0)
-                        opacity: if(carried.$i, 0.85, 1)
-                        zone box btile.$i { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; cursor: grab
-                                            label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"; role: button }
-                        box { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; color: mix(surface.elevated, selection.bg, btile.$i.hover * 0.6) }
-                        image atlas_tiles.$i.picture { at: tx.$i + 3, ty.$i + 3; size: cw - 22, th - 3; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                        text "PRIVATE" { at: tx.$i + (cw - 16) / 2, ty.$i + th / 2; anchor: center; size: 9; family: "Share Tech Mono"; color: fg.muted; show: atlas_tiles.$i.priv }
-                        box { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; stroke: if(carried.$i, 1.6, 1); color: if(carried.$i, focus.ring, border.subtle) }
-                        text atlas_tiles.$i.app { at: tx.$i + 6, ty.$i + th + 12; anchor: left center; size: 10; weight: 700; color: accent.primary; width: cw - 28; lines: 1 }
-                        on press btile.$i while open == atlas and not atlas_busy { bd_press = i; bd_px = pointer.x }
-                        on drag btile.$i while bd_press == i and bd_drag < 0 and abs(pointer.x - bd_px) > 6 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
-                        on drag btile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
-                        on release btile.$i while bd_drag == i { emit atlas_drop(i * 100 + clamp(floor((local.x - 20) / cw), 0, max(atlas_cols - 1, 0))); bd_drag = -1; bd_press = -1 }
-                        on release btile.$i while bd_drag < 0 and bd_press == i { bd_press = -1; atlas_sel = i; emit atlas_window(i) }
-                    }
-                }
-            }
-
-            // ── Spatial: the monitors as they are laid out ──
-            // Each monitor to scale, where it is; in it the windows of the workspace it shows, where
-            // they are, with their pictures; under it its workspaces. Carried to another monitor a
-            // window goes to the workspace that one shows, onto a chip to that workspace; a press on
-            // a window focuses it, on a chip goes there.
-            group {
-                show: atlas_view > 1.5
-                for m in sp_mons {
-                    box { from: m.x, m.y; size: m.w, m.h; corner: 6; color: bg.primary }
-                    box { from: m.x, m.y; size: m.w, m.h; corner: 6; stroke: 1.2; color: border.subtle }
-                    text "{upper(m.name)}" { at: m.x + 10, m.y + 14; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-                    text "WS {m.ws}" { at: m.x + m.w - 10, m.y + 14; anchor: right center; size: 10; weight: 700; color: accent.primary }
-                }
-                // the monitor (or the chip) a carried window is over lights
-                for m in sp_mons {
-                    box { from: m.x, m.y; size: m.w, m.h; corner: 6; stroke: 2; color: focus.ring
-                          show: bd_drag >= 0 and sp_hx >= m.x and sp_hx <= m.x + m.w and sp_hy >= m.y and sp_hy <= m.y + m.h }
-                }
-                for c in sp_chips {
-                    zone box schip { from: c.x, c.y; size: c.w, c.h; corner: 5; cursor: pointer; role: button; selected: c.active
-                                     label: "Workspace {c.ws}{? · {c.windows} windows}" }
-                    let over = bd_drag >= 0 and sp_hx >= c.x and sp_hx <= c.x + c.w and sp_hy >= c.y and sp_hy <= c.y + c.h
-                    BtnFace(c.w, c.h, max(schip.hover, if(over, 1, 0)), if(c.active, 1, 0)) { move: c.x, c.y }
-                    text "{c.ws}" { at: c.x + c.w / 2, c.y + c.h / 2; anchor: center; size: 11; weight: 700; color: if(c.active, accent.primary, fg.primary) }
-                    box { at: c.x + c.w / 2, c.y + c.h - 3; size: 8, 2; corner: 1; color: fg.muted; show: c.windows > 0 and not c.active }
-                    on press schip while open == atlas and not atlas_busy { emit sp_chip(c.index) }
-                }
-                repeat i in 0..40 {
-                    let scar.$i = bd_drag == i
-                    group {
-                        show: i < atlas_tiles.count and atlas_tiles.$i.svis
-                        move: if(scar.$i, sp_hx - atlas_tiles.$i.sx - atlas_tiles.$i.sw / 2, 0), if(scar.$i, sp_hy - atlas_tiles.$i.sy - atlas_tiles.$i.sh / 2, 0)
-                        opacity: if(scar.$i, 0.85, 1)
-                        zone box stile.$i { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: max(atlas_tiles.$i.sw, 6), max(atlas_tiles.$i.sh, 6); cursor: grab
-                                            label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"; role: button; selected: atlas_sel == i }
-                        box { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: atlas_tiles.$i.sw, atlas_tiles.$i.sh; corner: 3; color: surface.elevated }
-                        image atlas_tiles.$i.picture { at: atlas_tiles.$i.sx + 1, atlas_tiles.$i.sy + 1; size: atlas_tiles.$i.sw - 2, atlas_tiles.$i.sh - 2
-                                                       opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                        box { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: atlas_tiles.$i.sw, atlas_tiles.$i.sh; corner: 3; stroke: if(atlas_sel == i or scar.$i, 1.6, 1)
-                              color: if(atlas_sel == i or scar.$i, focus.ring, mix(border.subtle, accent.primary, stile.$i.hover)) }
-                        box { from: atlas_tiles.$i.sx + 4, atlas_tiles.$i.sy + 4; size: min(atlas_tiles.$i.sw - 8, 120), 16; corner: 3; color: bg.primary; opacity: 0.8; show: atlas_tiles.$i.sw > 50 }
-                        text atlas_tiles.$i.app { at: atlas_tiles.$i.sx + 8, atlas_tiles.$i.sy + 12; anchor: left center; size: 10; weight: 700; color: accent.primary
-                                                  width: min(atlas_tiles.$i.sw - 14, 112); lines: 1; show: atlas_tiles.$i.sw > 50 }
-                        on press stile.$i while open == atlas and not atlas_busy { bd_press = i; bd_px = pointer.x }
-                        on drag stile.$i while bd_press == i and bd_drag < 0 and abs(pointer.x - bd_px) > 6 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
-                        on drag stile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
-                        on release stile.$i while bd_drag == i { emit sp_drop(i * 1000000 + round(clamp(local.x, 0, 999)) * 1000 + round(clamp(local.y, 0, 999))); bd_drag = -1; bd_press = -1 }
-                        on release stile.$i while bd_drag < 0 and bd_press == i { bd_press = -1; atlas_sel = i; emit atlas_window(i) }
-                    }
-                }
-                text "No monitors reported" { at: 20, 100; anchor: left center; size: 12; color: fg.muted; show: sp_mons.count < 1 }
-            }
-
-            // Move mode: where the selected window should go. The strip is the bounded map
-            // `spaces` — the same `workspaces` data the Spine's numbers come from — so
-            // an empty slot can be chosen, and Hyprland creates it when the window lands.
-            group {
-                show: atlas_mode == move
-                opacity: mv
-                box { from: 0, 430; size: 580, 90; corner: g.radius; color: surface.primary }
-                box { from: 16, 430; size: 548, 1; color: border.subtle }
-                text "MOVE {atlas_target} TO" { at: 20, 448; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 430; lines: 1 }
-                text "↵ move   esc cancel" { at: 560, 448; anchor: right center; size: 10.5; color: fg.muted }
-                repeat j in 0..16 {
-                    group {
-                        show: j < ws_max
-                        move: 20 + j * 33, 462
-                        let here = spaces.$j.id == atlas_ws
-                        zone box mslot.$j { from: 0, 0; size: 32, 30; corner: 6; cursor: pointer; active: not atlas_busy
-                                            label: "Move to workspace {spaces.$j.id}"; role: button; selected: here }
-                        BtnFace(32, 30, mslot.$j.hover, if(here, 1, 0))
-                        text "{spaces.$j.id}" { at: 16, 14; anchor: center; size: 11; weight: 600
-                                                     color: if(spaces.$j.exists, fg.primary, fg.muted) }
-                        box { at: 16, 24; size: 10, 2; corner: 1; color: fg.muted; show: spaces.$j.windows > 0 }
-                        on press mslot.$j while open == atlas and not atlas_busy { atlas_ws = spaces.$j.id; emit atlas_move }
-                    }
-                }
-            }
-        }
-        }
-    }
 
 
     // ══ The Overview ════════════════════════════════════════
@@ -4900,39 +5029,7 @@ scene Mooi {
     // ══ Command membrane ══════════════════════════════════════
     // Fixed at the top centre. Compact it is a field; it grows as results arrive, and a
     // window result opens its satellite actions inline (Tab, or the ⋯ on the row).
-    surface command_island {
-        size: 600, 560
-        anchor: top
-        margin: 84, 0, 0, 0
-        level: overlay
-        open: open == command or rv.command > 0.004
 
-        prop ch = 60 ~m.reflow
-        follow ch = 60 + if(res.count > 0, rlist.height + 10, 36) + 30
-        group {
-            move: 10, 0
-            IslandFrame(rv.command, 580, ch, centre: true, aw: 140) {
-                ellipse { at: 25, 29; radius: 6; stroke: 1.5; color: fg.secondary }
-                line { from: 29.5, 33.5; to: 34, 38; width: 1.5; color: fg.secondary }
-                input query { at: 46, 30; width: 510; size: 16; color: fg.primary; selection: selection.bg
-                              placeholder: "Search apps, windows, workspaces   @ windows   > mooi" }
-                box { from: 12, 58; size: 556, 1; color: border.subtle }
-
-                text cempty { at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: res.count == 0 }
-                column rlist ~m.reflow {
-                    at: 10, 66
-                    gap: 2
-                    for r in res { CRow(r) }
-                }
-
-                let foot = ch - 16
-                text pick(cmode == actions, "←→ choose   ↵ apply   esc back", "↑↓ select   ↵ open   tab window actions   esc close") {
-                    at: 20, foot; anchor: left center; size: 10.5; color: if(carming, accent.secondary, fg.muted); opacity: 1 - fb }
-                text feedback { at: 20, foot; anchor: left center; size: 10.5; width: 540; lines: 1
-                                color: if(note.failed, status.error, status.ok); opacity: fb }
-            }
-        }
-    }
 
     // One result. A window's row opens to show its satellite actions.
     component CRow(r: record) {

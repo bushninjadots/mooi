@@ -19,10 +19,12 @@
 #   mooi overview          every workspace zoomed out (Super+Tab)
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
 #                          one under the pointer (Super+Alt+right-click)
+#   mooi wallpaper         the wallpaper studio (Lumen, Super+Alt+P): pick a picture, grade it, apply it
 #   mooi settings | edit   open or close the settings window; the bar's edit mode on or off
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
+#   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
@@ -374,18 +376,24 @@ not() { ! "$@"; }
 # scene whenever its file is saved, so a desktop running the repo reloaded on every edit — half
 # a change at a time, logic errors and all (found 2026-10-19, the Atlas "glitch"). `start`,
 # `takeover` and `refresh` take a fresh snapshot; nothing else touches it.
-# The settings window is a program of its own (shell/mooi-settings.plm) and pleamar gives each
-# program the data folder of its file's name: its folder is a link to mooi's, so it reads and
-# writes mooi's settings.json. Made here, idempotently; a real folder in the way is moved aside.
+# The settings window, the wallpaper studio and the board are programs of their own (their .plm
+# files) and pleamar gives each the data folder of its file's name: those folders are links to
+# mooi's, so they read and write mooi's settings.json, palette.json, wallpapers.json and
+# board.json. Made here, idempotently; a real folder in the way is moved aside.
 settings_link() {
-    link="$(dirname "$folder")/mooi-settings"
-    [ -L "$link" ] && return 0
-    [ -e "$link" ] && mv "$link" "$link.old.$$"
-    mkdir -p "$folder" && ln -s "$folder" "$link"
+    for scene in mooi-settings mooi-wallpaper mooi-board mooi-nexus; do
+        link="$(dirname "$folder")/$scene"
+        [ -L "$link" ] && continue
+        [ -e "$link" ] && mv "$link" "$link.old.$$"
+        mkdir -p "$folder" && ln -s "$folder" "$link"
+    done
 }
 snapshot() {
     "$pleamar" --check "$src" >/dev/null || { echo "mooi: the repo's scene does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-settings.plm" >/dev/null || { echo "mooi: the settings window does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/mooi-wallpaper.plm" >/dev/null || { echo "mooi: the wallpaper studio does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/mooi-board.plm" >/dev/null || { echo "mooi: the board does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
     settings_link
     rm -rf "$live.new" && cp -r "$root/shell" "$live.new" || return 1
     pace "$live.new"
@@ -593,9 +601,13 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
+    wallpaper) running || { echo "mooi is not running; start it first" >&2; exit 1; }
+               exec "$pleamar" --say "$name" "emit open_wallpaper" ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
+    nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
+           exec "$pleamar" --say "$name" "emit open_nexus" ;;
     note)
         text=$(printf '%s' "$*" | tr '\n' ' ')
         [ -n "$text" ] || { echo "usage: mooi note \"what to remember\"" >&2; exit 2; }
@@ -614,6 +626,9 @@ case "$cmd" in
     check)
         "$pleamar" --check "$src" || exit 1
         "$pleamar" --check "$root/shell/mooi-settings.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-wallpaper.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-board.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
         # file is written in the subset Lua 5.4 and Luau share, so Lua 5.4 can parse them all.

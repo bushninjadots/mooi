@@ -1376,3 +1376,631 @@ closes, cards added from the field, tagged, dated, stepped, dragged (into Done: 
 deleted and put back, filtered by search, a column's limit set; the pad's pin (a note pinned and
 unpinned), a note sent to the board by Alt+B, the corrected placeholder; recorded. Not checked: a
 real pointer drag by hand, six full columns of long titles, a board.json edited by hand while open.
+
+## D54 · 2026-10-22 · The stash: a box on the left edge for whatever you drop on it
+
+**Asked for:** a small stashbox at the left edge of the screen that opens on hover, where links,
+images, videos and any file can be dropped, in mooi's theme, with a pulse light running around it
+while it is open.
+
+**Where it lives.** `lib/stash.luau` is the pure part (kinds, names, safe names, paging, a file read
+back; 7 unit tests in `tests/unit/run.lua`). `shell/stash.luau` owns `stash.json` and the `stash/`
+folder in mooi's data folder, and answers drops, presses and the wheel. `ui/stash.plm` draws the kind's
+mark and a row; the box itself (`stash_dock`) is a surface of its own in `shell/mooi.plm`. A 9 px rail
+sits at the vertical middle of the left edge and opens into a 336 × 558 chamfered plate when the
+pointer rests on it for 70 ms; away from the plate and the rail for 120 ms, it closes. Dragging a file
+to the left edge opens it too (`drag.over` and the pointer near the edge), because during a compositor
+drag hover events are not delivered.
+
+**Closing, told by the zones and not by the cursor.** The first cut closed the box when `cursor.x`
+was no longer inside it. That reads well until the compositor is late or wrong: on this machine the
+cursor socket reports a `cursor.y` of 110540 at the very moment the pointer is on the rail, so the
+box shut 120 ms after it opened. What a surface is told for certain is where the mouse is **while it
+is over it** — the zones' own `hover` springs — so closing asks those three and nothing else. A
+lesson worth the line: prefer what the surface is told over what somebody else reports about it.
+
+**What a drop does.** Files (and folders) are **copied** into `stash/<time>-<n>-<safe name>` and the
+item points at the copy, so moving the original does not empty the stash; the same source dropped
+again is the item it already was (it moves to the top). Links and plain text are written down only.
+Images are drawn from the copy; a video gets one frame (`ffmpeg`) after it arrives, and the row shows
+its glyph until then. A press opens the item (`xdg-open`, or the clipboard for text), a right press or
+the × removes it and its copy, a drag carries it out as a file/link/text, and the wheel pages six at a
+time. Sixty items are kept.
+
+**Most things a person drags, and that includes songs.** Kinds are link, image, video, song, file and
+text: pictures are those the desktop's own libraries know (`png jpg jpeg jfif gif webp avif apng jxl
+bmp svg ico tif tiff heic heif`), films are `mp4 mkv webm mov avi m4v mpg mpeg ogv ts m2ts flv wmv vob
+mts mxf asf f4v 3gp 3g2 divx rmvb`, and songs are `mp3 m4a m4b aac flac ogg oga opus wav wma aiff aif
+alac mka mid midi amr ac3 dts ape mp2 spx wv ra`. Everything else — a PDF, an archive, a font, a
+folder — is a file: copied, named by its extension, opened by `xdg-open`. A song or a film is asked its
+length by `ffprobe` once it has arrived, and its row says `MP3 · 3:41 · now`; a song that carries cover
+art (mp3, m4a and flac usually do) gets it as its picture, and one that does not keeps the level-meter
+glyph. `ffprobe` comes with `ffmpeg`, which the video frame already needed, and both had to be added
+to the scene's `permissions { run: … }` — a command a scene has not declared does not fail quietly:
+it raises, and it did, in the middle of `add_item`. The item is now written down and shown *before* the
+picture and the length are asked for, so a missing tool costs the row its decoration and never the
+item.
+
+**Why a surface of its own.** The pulse is a light that travels the border; it is stepped by
+`every 33ms` while the box is out, not by `time`, so the scene rests while it is closed. The box is
+its own 360-wide surface anyway: animating a full-screen surface at 30 fps would repaint the screen,
+and D37 already showed what a full-screen repaint costs (the surface is full height so the box can
+be centred from `screen.height`, but only the rail's 9 px plate and the box are painted). The surface is always mapped, but only the
+rail's 9 px plate is painted, so the rest of it passes clicks through. Nothing asks for the keyboard except while a folder is
+being named (`keyboard: exclusive while stash_naming`): hover opens the box, a press acts, leaving
+closes it, and the keys are the window's again the moment the name is done or Escape is pressed.
+
+**A Pleamar detail worth remembering.** A drop is sent to the logic only for the **topmost zone** under
+the pointer (`Event::Received(hovered.id, …)`), while `on drop zone` rules fire for every zone
+underneath. The rows sit on top of the plate, so each row's zone is named `stashrow` and the logic
+listens to `drop:zstash`, `drop:stashrow`, `drop:zstash_tab` and `drop:zstash_catch` alike. A row's
+zone is really `stashrow#r0#StashRow3633` (`describe` says so), and the platform hands the logic the
+name up to the `#` — which is what makes one handler do for every row.
+
+**Folders, one level deep.** A box holds everything; a folder is a place to put some of it. The chip
+row at the foot is the folders (`ALL` first, then the ones made, up to five) and the field under it
+makes one: a press on the field, a name, Enter. They are the panel's own, not directories in `stash/`:
+`stash.json` keeps a `folders` list and each item a `folder` id, so a file keeps its copy where it was
+put and only the row knows where it is read. The chip row is reached by slot — the order the folders
+were made in, the same order in the logic and in the model — which is why the scene can name a folder
+`zfolder.$i` and the logic answer `drop:zfolder.0` … one handler per slot, made in a `for`. Taking a
+folder away (a right press on its chip) does not take its items: they go back to the root, and the
+box goes back to `ALL` if it was inside it.
+
+**The tray, and why not a drag into a folder.** Each row has a small tray glyph beside its ×: a press
+there sends the item to the next folder, and back to the root after the last, saying where it went
+(`ALPHA`, `BACK AT THE ROOT`) and showing it on the row's line (`ALPHA · PNG · 2m`). A drag *into* a
+folder would be the obvious gesture, and it is the wrong one here: a row already carries its file out
+to other programs, so the compositor takes any press-and-move on it and the scene's own drag rules stop
+there. The tray is a press, it cannot be confused with carrying something out, and it walks the folders
+— five at most — faster than a menu would open.
+
+**Both ways.** A row carries its copy out (`carries: "{r.url}"`), so another program gets a file, a
+browser the link, a text editor the text, and mooi keeps its own copy. Dropped back on the box itself,
+that same path is recognised (`mine()`): it is not a new item, the one there is moves to the folder it
+was let go on, and nothing is copied twice. A drop on a chip goes into that chip's folder; a drop
+anywhere else on the plate goes into the folder the box is showing.
+
+**The strip at the edge.** A surface is given the mouse only where it paints something, so a file
+dragged to an empty part of the 360 px surface would pass through to whatever is under it, and the
+box would never learn it was coming. Round the rail there is therefore a 12 px strip painted at
+`opacity: 0.01` (the Shutter's trick) — invisible, inside Hyprland's 12 px `gaps_out`, so no click
+meant for a window is taken. It is what the drag enters, and what takes a file let go right at the
+edge before the box has finished sliding out. This is why the row is one zone
+covering the whole 312 px: the × is drawn, and `local.x` decides whether it was the × (remove) or the
+row (open).
+
+**A compiler limit found on the way.** In a component of a library that imports another library, a
+`let` cannot see the imported names (`fl.phos` is "nothing called"), though a drawing property can. The
+mark's tone is therefore chosen at the call site and passed in as a colour; no colour is held in a
+`let` in `ui/stash.plm`.
+
+Checked: both scenes compile (`bin/mooi check`), **148 unit tests, 0 failed**. Live, on a copy of the
+shell in `/tmp` with its own data folder (mooi itself was stopped for the tests), with the mouse
+moved by `ydotool`: the rail opens the box on hover, the box stays open while the pointer is on it and
+closes once it leaves; the pulse advances while the box is out; an image dropped back through the
+logic's own door is copied into `stash/` and shown from the copy; a link, a piece of text and a
+`.txt` are kept; a video gets its `ffmpeg` poster; the same file again says ALREADY STASHED and is not
+copied twice; a press on a text item puts it on the clipboard; the × removes the item, its copy and its
+poster; nine items page 1–6 and 7–9, clamped at both ends; and the list is the same after a restart.
+
+For the folders, with the box held open by the lab's own fact and the presses sent by name
+(`press znew`, `type stash_new SONGS`, `key Return`): a folder is made by a name and Enter — the field
+empties, the box goes into it, and `stash.json` has it; a drop while inside lands in that folder; the
+chips move between `ALL` (five items) and a folder (one), and say its name in the head; the tray walks
+item → next folder → … → root, and the row's line follows; a right press on a chip removes it and sends
+its item home; and the tray press was sent from a row (by name, with the row's press routed to `file`
+in the lab copy) and reached the logic as `stash_file`. Not checked live: a chip actually receiving a
+drop — the compositor's drag coordinates do not reach the scene in this session (the same limitation
+as the drop itself), so `drop:zfolder.N` is wired and reasoned through but not seen fire.
+
+**Not checked live:** the last inch of a real drag-and-drop. A drag started in Thunar does reach the
+surface (`drag.over` goes 1 and the box slides out at the edge), but in this session the drag's
+coordinates never reach the scene — `pointer.x/y` stay at the last ordinary position — so the drop
+lands on no zone. That is the platform's dnd path, not the scene's: the handlers were exercised with
+the same payload a compositor hands over (`text/uri-list`, `text/plain`).
+
+---
+
+## D55 · 2026-10-22 · A press outside a panel closes it; the audit of everything that opens
+
+**What prompted it.** The report was «my mouse clicks are not registering, it goes on and off», with the
+notifications, the search, the stash, the notes pad and the board named. The audit found three things,
+none of them in the input region itself — that part is sound, and `PLEAMAR_REGIONS` now says so in a
+line per surface: the bar's zones are committed where the bar draws them, and a closed surface gets
+`[]` (its plate goes, its zones with it). What was wrong was what happened to a press that landed
+*beside* what was open.
+
+**A layer surface does not hear what is outside it.** D37 onwards every panel was dismissed by its own
+×, by Escape or by the idle timer; a press on the desktop did nothing at all, which is exactly what
+«my clicks are not registering» feels like — the press is taken by the panel's plate or by the window
+and nothing happens, then the next press lands on a control and the panel closes, so the shell seems to
+answer «on and off». The bar's surface is the whole screen in any case: a plate declared **before
+everything else it draws** now takes the presses the panel's own controls do not, and closes whichever
+of `qn_open`, `kb_open`, `mark_open`, `side == notes`, `open == window/system/command` is up. Being
+declared first is the whole trick — every panel, row and button is above it, so a press inside a panel
+never reaches it; and being in the bar's surface (level `top`) it lies over the windows, so the press
+that closes a panel does not also fall through to the window under it. The overview, the shutter and
+the Atlas are surfaces of their own (level `overlay`) and are above it, so they are untouched.
+
+**The stash opened from an invisible strip.** The 12 px catcher along the left edge was there for drops
+(D54) and had picked up `on hover zstash_catch` as well: crossing the screen's edge anywhere in those
+558 px slid a 336 px plate over the desktop, and while it was out its plate took every press that was
+not on a row, chip or field. Away from it the box closed after its 700 ms, and back it came. That is
+the «opening and closing» seen earlier in the session and a dead region under the pointer in the same
+breath. Dropped: the box opens from the **visible rail** (9 px, the thickness of the plate), or from a
+drag to the edge (`drag.over`, which is what the strip is for), and a **press on the plate now closes
+it** — so no press in the box is ever swallowed. The strip still takes a file let go right at the edge.
+
+**A row that carries is a row that cannot be clicked.** A stash row was one zone with
+`carries: "{r.url}"` and `local.x` deciding whether the press was the row, the tray or the ×. The
+compositor takes any press-and-move on a zone that carries, so pressing the × and moving a pixel began
+a drag and the press was lost; the tray had the same trouble. The body (0–266) carries and opens, the
+tray (266–288) and the × (288–312) are zones of their own above it, and none of the three can be
+mistaken for another. Right press still removes from all three.
+
+**Audited and left alone.** The Signal Loom's own region is `[]` while nothing is out; the Field, the
+board and the pad each catch their own plate and no more; the search island's modes, the mark's menu and
+the islands' buttons are all above the new plate and answer as before. The board's surface is its plate
+(1240 × 760, ten pixels of margin), so a press *inside* it and outside every control is still the
+board's own background — it does not close the board, and does not reach the window either: that is a
+panel's own surface, not a gap in it.
+
+**Checked.** Both scenes compile (`bin/mooi check`), **148 unit tests, 0 failed**. Live, on a copy of the
+shell with its own data folder and Pleamar's fake pointer: a press on the battery opens the System
+island, a press at 900,700 closes it (`Press("dismiss")`, `open = none`) and another on the notes module
+opens the pad, which the same press closes (`qn_open = false`); and on the board, opened from the pad's
+rail, a press on the board's own background and one on the desktop both close it (`Press("dismiss")`,
+`kb_open = false`). The stash was checked with the real pointer: the rail opens the box on hover and
+the plate is on screen. **Not checked live:** the strip and the rail told apart by a hand, and the tray
+and the × as separate zones — the studio's own shell is on the same screen, so a synthetic press or
+hover can land on either and the evidence is ambiguous; both are `bin/mooi check` clean and reasoned
+through above.
+
+**A press can still be lost while a panel is opening.** Seen in the log while testing: the bar's sheet
+re-commits its input region as a panel's plate grows (`qu_a`, `bu_a`), and the compositor takes the
+pointer focus away and gives it back with each commit — `Focus(false) · Leave("dismiss") · Focus(true)
+· Enter("dismiss")`, twice a frame — so a press delivered inside that window lands on nothing. It is
+over in the few hundred milliseconds the plate takes to open, and it is the composer's region, not the
+scene's; the scene can only keep the plate still (it does: the plate does not move once open). Worth
+knowing before blaming a rule for a press that never arrived. A press that closes a panel does not
+reach the window beneath it: that is the trade, and it is the usual one for a popup.
+
+---
+
+## D57 · 2026-10-23 · Lumen, the wallpaper studio: a folder of your own, the live wallpaper, and a source that is never touched
+
+**Asked for:** a wallpaper editor, and the option of setting the folder it reads wallpapers from —
+and/or the wallpaper that is on the desk right now.
+
+**Where it lives.** `shell/mooi-wallpaper.plm` with `shell/mooi-wallpaper.luau`, a program of its
+own (`mooi wallpaper`, or the bar's own event), for the same reason the settings window is one: it
+holds the keyboard exclusively and declares a surface, and a second keyboard declarer in the bar's
+scene would replace its `while` (D8/D53). `bin/mooi` snapshots and checks it like the shell, and
+links its data folder to mooi's, so `wallpapers.json` and the `palette.json` it paints with are the
+shell's own. `lib/wallpaper.luau` is the pure part — the recipe, its vibes, the crop and every
+ImageMagick argument — tested under Lua 5.4; `ui/lumen.plm` draws the plates, the compact sliders,
+the vibe row and the source tiles.
+
+**The edit.** A recipe is flat numbers: exposure, contrast, fade, saturation, warmth, tint, hue,
+zoom, focus x/y, vignette and grain, plus the name of the vibe it matches (or `custom`). The picture
+is copied once into a screen-shaped base in `~/.cache/mooi/wallpaper`; every preview and the final
+still are cut from that base by `magick`, so an image four times the screen is decoded once and a
+slider redraws from the cached base. The crop keeps the point clicked on the canvas where it was, at
+the same fraction of the frame, and the preview and the applied still use the same arguments at
+different sizes. Nine vibes (Natural, Ferrolume, Dusk, Cold Signal, Sunbleach, Neon Noir, Ash, Blue
+Hour, Mono) are whole recipes; choosing one keeps the crop, because the frame is the user's. The
+recipe for every source is remembered (forty at most) so the studio reopens on the grade it was left
+with. The palette panel runs the same Matugen call the theme watcher would, dry, and shows the two
+signals the bar would wear.
+
+**Applying writes a new file, never the source.** `APPLY TO DESKTOP` renders at the monitor's real
+size, writes `wall-<time>-<hash>.jpg` in the studio's cache, and asks the wallpaper picker to set
+it (`qs ipc call wallpaper set`). The picker draws it and makes the palette, so the desktop and this
+studio relight together; the previous applied still is removed when a new one takes its place. The
+picture being edited is only ever read.
+
+**The folder.** The source wall used to read `~/.cache/wallpaper-styles/index.json`, the picker's
+cache: it was there or it was not, its folder could not be changed, and the studio had no say in
+what was offered. It now reads a folder of its own. The folder is typed into the source wall's field
+and remembered as `folder` in `wallpapers.json`; `find <folder> -maxdepth 1 -type f -printf '%T@\t%p\n'`
+lists it, `lib/wallpaper.parse_find` keeps the pictures by extension (case-insensitive; a PDF or a
+text file in the folder is not a tile) and sorts them newest first, and the list pages six by three.
+`SHUFFLE` picks from the filtered list; `FILTER` searches by name. On a first run, with no recorded
+folder, the studio takes the folder of the wallpaper on the desk, then the picker's
+`settings.json` `wallpaperDir` (so the pictures the desktop already uses are there without typing
+anything), then `~/Pictures`.
+
+**Only the page is thumbnailed.** A folder of 2,945 wallpapers (what this machine has) must not wear
+the disk: `build_hits` queues a `magick -thumbnail 282x158^ -extent` for the tiles that are about to
+be drawn and for no others, one process at a time, into
+`~/.cache/mooi/wallpaper/thumbs/<hash of path and mtime>.jpg`, and `identify` fills the tile's
+`3840 × 2160`. A tile says `DEVELOPING…` until its picture exists. Paging queues the next page and
+the queue is generation-stamped, so a folder changed while thumbnails are being made does not paint
+a stale tile. On a revisit the in-memory map answers at once.
+
+**The live wallpaper is two presses away.** `LIVE WALLPAPER'S FOLDER` scans the folder the wallpaper
+on the desk came from (`readlink` of the picker's source, or its still), and `USE THE CURRENT
+WALLPAPER` at the foot loads that picture itself. The field is the truth for `SCAN`: what is written
+in it now, whether it arrived by a key or by the text fact it is bound to.
+
+**The arrow bug this found.** In Pleamar an event reaches the logic only when it is declared
+`event name ->` ("Something that happens. With `->`, it also reaches the logic"). The studio's first
+cut had nine events without the arrow — `open_browse`, `close_browse`, `shuffle`, `use_current`,
+`apply_now`, `reset_recipe`, `close_studio` and the two new folder events — so pressing APPLY, RESET,
+CLOSE, SHUFFLE or either folder button changed nothing: the scene heard the press and emitted an
+event only the scene could hear. All nine now carry the arrow. Worth writing down because the
+mistake is invisible in the scene: `pleamar --check` is happy, the zone is painted and the press is
+delivered; only the logic never hears it.
+
+**Checked.** Both scenes compile (`bin/mooi check`), **157 unit tests, 0 failed** — three of them new:
+the picture-by-name rule and the folder path, `find`'s list (newest first, non-pictures skipped,
+junk lines ignored), and the file's new `folder` field plus the thumbnail arguments. Live, on a copy
+of the shell in `/tmp` with its own data folder (`XDG_DATA_HOME`) and its own pictures, the studio
+was driven through Pleamar's socket:
+
+- it opened on the recorded desktop (the previous `wallpapers.json` had none, so it took the live
+  wallpaper's folder): **2,945 pictures, 164 pages**, the live wallpaper's preview and base, no
+  errors;
+- setting `src_folder` to a two-picture folder and pressing the logic's own door (`emit set_folder`
+  after the field was written) gave **2 pictures, 1 page**, `src_folder` and `folder_show` showed
+  that folder, and `wallpapers.json` had `"folder": "/tmp/lumen-lab/pics"` — the `.txt` beside them
+  was not a tile;
+- the tile thumbnails appeared in the cache for that page (two new files), and `identify` reported
+  their sizes;
+- `LIVE WALLPAPER'S FOLDER` scanned back to the 2,945-picture folder and wrote it to the field;
+- `USE THE CURRENT WALLPAPER` loaded the wallpaper on the desk (`wallhaven-5ymzz7.PNG`, source and
+  preview both present);
+- clearing the field and scanning left 0 pictures on 1 page, an empty field and
+  `NO FOLDER · TYPE ONE ABOVE`, while the last good folder stayed in `wallpapers.json` for the next
+  start.
+
+The same events were then sent while the source wall was open (`open_browse`, `set_folder`,
+`folder_current`, `use_current`), with `PLEAMAR_REGIONS=1` confirming the new zones are committed
+where the wall draws them (the folder field, `SCAN` at 657–763 × 143–181, `LIVE WALLPAPER'S
+FOLDER`, the filter and every tile). **Not checked live:** a real hand's
+press on those controls — in this session Pleamar's fake pointer reports its move and click but the
+studio receives neither (the bar did in D55; here the click is logged and no zone answers), so the
+controls were exercised through the same emitted events they send; and `APPLY`, which would change
+the wallpaper on the desk, so it was left alone. `bin/mooi wallpaper` from the running shell was not
+pressed either (the studio was started directly in the lab).
+
+**Left for later:** a folder browser/dialog (the field and the two shortcuts are what there is), and
+per-monitor previews when the outputs differ in size — the studio renders at the focused monitor's
+size and the picker scales the still.
+
+---
+
+## D58 · 2026-10-23 · A folder picker in Lumen, a framed picture on the bar, and Super + Alt + P
+
+**Asked for:** a folder picker for the wallpaper studio, a bar component that opens the studio, and
+a hotkey that opens it too.
+
+**The picker.** The source wall's folder row gains `BROWSE…`, which opens a plate over the wall at
+the folder the studio is reading. It walks one level at a time: `find <folder> -mindepth 1
+-maxdepth 1 -type d -printf '%f\n'` lists the subfolders, `lib/wallpaper.parse_dirs` sorts them A→Z
+(case-insensitive: the order a person expects), and they are drawn twelve to a page with `‹ PREV` /
+`NEXT ›` and a page count. A press on a folder enters it; `↑ PARENT` goes up (`lib/wallpaper.parent`,
+`/` stays `/`); `USE THIS FOLDER` scans the folder the picker has arrived at and closes it; `CANCEL`
+closes without touching the studio's folder. `Return` chooses and `Escape` cancels, and opening the
+picker blurs the folder field, so `Return` cannot be taken by the input behind the plate. The
+picker's zones are declared after the source wall's, over a full-screen guard, so nothing behind it
+answers while it is up.
+
+**The door on the bar.** `wallpaper` joins `lib/barlayout`'s catalogue as a 32 px module, with
+`shell/icons/wallpaper.svg` (a framed picture, a horizon and a sun) and the same press treatment as
+the other doors. Its press emits `open_wallpaper`, which the shell already answers by starting
+`mooi-wallpaper.plm` (a program of its own), so the bar needs no second path to the studio. It is in
+`DEFAULT.right` beside Quick notes, which means a fresh settings file starts with it on the bar. A
+bar that was laid out before this does not lose its arrangement: the module is on the **shelf** in
+edit mode (`Super + Alt + E`), and dragging it onto the bar places it where it is let go — the same
+rule as every module, because `bar.right` is the user's, not a list the shell appends to behind
+their back. Its shelf name is in `shell/bar.luau`'s NAMES (which also gained Quick notes' name, a
+gap it had), and its Layout-page name in `shell/mooi-settings.luau`'s NAMES, which was missing
+Quick notes' name too.
+
+**The key.** `keys.wallpaper`, default `SUPER + ALT + P`, is a setting like the others: it is added
+to `lib/desktop`'s ACTIONS as `{ key = "wallpaper", cmd = "wallpaper", name = "Wallpaper studio" }`,
+so `desktop.file` writes `{ "SUPER + ALT + P", "wallpaper" }` into `hypr.lua` for Hyprland's start
+and mooi applies it live, and `bin/mooi wallpaper` is the command it runs. The settings window's
+Keys page gains the row, with the same capture and clash warning as the others, and the settings
+schema gains the field, so a settings file written before it simply gets the default.
+
+**The generator.** `tools/gen-settings.py` owns `shell/mooi-settings.plm`, `lib/settings_index.luau`
+and edit mode's per-module grips in `shell/mooi.plm`; its `MODULES`, `NAMES` and `KEYS` lists were
+updated and the tool run, rather than the four files edited by hand. The module order puts
+`wallpaper` after `notes` (index 27), so no existing edit-mode index moved, and the generated
+`pick(…)` lists carry `xs_wallpaper` / `ws_wallpaper` by themselves. The hand-written pick lists
+(the helix's frame, the frames and dividers, the drag ghost's width) were given the new module in
+the same place.
+
+**Checked.** All three scenes compile (`bin/mooi check`), **159 unit tests, 0 failed** — one new,
+which asserts the module is in the catalogue and the default bar, that the key file carries
+`{ "SUPER + ALT + P", "wallpaper" }`, that `desktop.ACTIONS` has the command, and that
+`config.defaults().keys.wallpaper` exists. The picker was driven live in a `/tmp` copy of the shell
+with its own data folder: a test folder of 14 subfolders reported `2` pages and `14 FOLDERS`; `NEXT`
+moved to page 2; entering a subfolder and choosing it read that folder; `Return` chose the folder
+the picker was in (`picking` false, the folder in `src_folder` and `wallpapers.json`); `Escape` closed
+the picker and left the source wall open.
+
+**The whole studio, driven live.** A later run pressed and typed through Pleamar's own agent
+(`press`, `drag`, `type`, `key` — which enters the zones as a hand does) in a fresh `/tmp` copy with
+four pictures, a text file and two subfolders. It confirmed: the live wallpaper's folder on first
+run and the `.txt` skipped; a tile press loading its picture and rendering a 1600 × 900 preview;
+**all twelve sliders** (exposure, contrast, fade, saturation, warmth, tint, hue, zoom, focus X/Y,
+vignette, grain) saved at the value they were set to; all nine vibes whole recipes (MONO = 0
+saturation, 8 grain); RESET back to Natural; a vibe keeping the crop; the picker's A→Z rows,
+`↑ PARENT`, `Return` choosing and `Escape` cancelling; the filter matching case-insensitively;
+`SHUFFLE`, `LIVE WALLPAPER'S FOLDER`, `USE THE CURRENT WALLPAPER`; the empty, missing and cleared
+folders reporting themselves instead of failing; only the page's thumbnails made; the palette panel
+reading a real Matugen palette from the preview; **APPLY** writing a 1920 × 1080 still (RMSE 0.0018 against
+the preview resized to the same size, i.e. what was seen is what was applied), the old still removed,
+and the folder, picture and grade restored after a restart. The real picker was then driven on the
+desktop itself: the applied still became `~/.cache/current_wallpaper`, and setting the original
+source back restored the links.
+
+**Found and fixed on the way:** the Apply button read `pick(applied, "APPLIED ✓", "APPLY TO
+DESKTOP")`, and `pick` indexes from 0 — so it said APPLIED ✓ *before* anything was applied and
+APPLY TO DESKTOP after. The two are swapped. Nothing else in the studio used `pick` this way.
+
+**And the picture itself did not show.** `image prev = from prev_file, 1, 1` (and the source's
+`srcpic`) declared the image's cell as **one pixel**, and an image is fitted into that cell and then
+stretched to the `size:` it is drawn at. The preview and the source were therefore one averaged
+pixel covering the screen — the wallpaper's colour, none of its picture — while the chrome and the
+sliders worked. The file was right all along (1600 × 900, the base 2880 × 1620), which is why the
+run of the logic and the still on disk looked correct. Both are declared `1920, 1080` now; a
+screenshot with the studio open shows the chosen picture, and choosing another tile replaces it with
+that picture's preview.
+
+**The bar and the key, live.** mooi was restarted from the repo (`bin/mooi start`, which snapshots
+and binds), the module was placed beside Quick notes in this machine's own `bar.right` (an older
+layout, so it was on the shelf), and the running bar was pressed on it: the studio opened (and
+`bin/mooi wallpaper` did the same). `hypr.loaded` gained
+`SUPER + ALT + P=wallpaper` on the restart, so the key is registered by `custom/mooi.lua`; a
+physical press of it was not made. A real hand's press (a mouse via the compositor) on the new
+controls was not made either — the agent's press is the same zone path, but not the pointer.
+
+## D60 · 2026-10-23 · Lumen reads a picture's background, and sets a matte and a backdrop
+
+**Asked for:** something has to detect the picture and its background, so its background colours
+and effects can be changed. Two things were meant ("matte and backdrop"), so both are here: a
+**matte** the picture is inset into, and a **backdrop** that fills it — black, the picture itself
+out of focus, or a colour read from the picture's own edges.
+
+**The reading.** `lib/wallpaper.edge_args(source)` is one `magick` pass over a 96 × 54 copy of the
+source; `-format` asks for `%[hex:p{x,y}]` at **eight points** — the four corners and the four edge
+midpoints — and `edge_colours` (pure, so `tests/unit` runs it under Lua) averages them into three
+colours: the corners, the edges, and all eight. Three, not one, because a picture's top edge is
+often its sky and its bottom its floor: the user chooses which belongs behind it. The read happens
+in `shell/mooi-wallpaper.luau` once per source, **before** the preview is drawn, so a recipe that
+already has a backdrop arrives in the new picture's colours and never the last picture's. The three
+hexes are published as `text.bg_hex0..2` (to read) and as nine `bg_c*_r/g/b` facts (to draw the
+swatches in the picture's own colour — a fact is the only way the logic hands a colour to a scene).
+
+**The recipe.** Four fields: `matte` 0–25 % (0 is none, the picture full-bleed, so every existing
+still renders byte-for-byte as before), `bg` 0 black / 1 the picture / 2 corners / 3 edges / 4 both,
+`bg_blur` 0–100 % and `bg_dim` 0–100 %. `M.args` composes when the matte is non-zero: the fill (a
+solid `xc:#…`, or the picture resized to cover, blurred, and dimmed) is made first at the screen's
+size, the graded picture is made at the inset size, and the two are composited centred. The same
+arguments make the preview and the still, so **APPLY carries the matte too** — the still handed to
+the wallpaper picker is the composited file, not the picture. `bg` has no slider: the BACKDROP tab's
+five swatches set it. Choosing a backdrop while the matte is 0 opens the matte to **6 %**, because a
+backdrop with no matte is hidden under the picture and a control that appears to do nothing is
+worse than one that moves the thing it names.
+
+**The tab.** `M.TABS` gains `BACKDROP` (the fifth), the dock gains the tab, and the row beside it
+is five `BGMode` swatches (`ui/lumen.plm`): each shows the colour it will use — black, a dim steel
+for the blurred picture, or the detected hex in its own swatch — with its name and hex, a lit rule
+for the one chosen, and a `toggle` zone with `selected` for the keyboard ring. The tab's three
+sliders (matte, blur, dim) come from the same field table as every other tab, so `set_value`'s
+`code * 1000 + offset` path is unchanged; `set_tab`/`step_tab` now run over `#W.TABS` instead of a
+hard-coded four.
+
+**Checked.** `bin/mooi check`: all three scenes compile (the studio now 214 properties, 79 zones)
+and **161 unit tests, 0 failed** — two new: the matte's arguments (no backdrop without a matte, a
+black fill, an inset of `1420x720!` for a 10 % matte on 1600 × 900, a `#203040` fill, the blurred
+fill's `-blur 0x7.8` and `-colorize 26%`, and the clamp), and the edge reading (eight points, the
+96 × 54 copy, corners/edges/both averaged, and fewer than eight refused). `tests/wallpaper.sh` is
+**21 checks, 0 failed** live: a framed 800 × 450 picture (a pale field in a `#204060` frame) is
+chosen; `bg_hex0` and `bg_hex1` read `#204060`; BACKDROP is tab 4; choosing CORNERS sets `bg_sel`
+to 2 and draws a new preview whose matte samples 31,64,95 with the picture still sitting white on
+it (240,240,240); APPLY renders a 1920 × 1080 still with that same matte, so the still is what the
+tab showed. The rest of the studio's live checks — the picture on screen (RMSE 0.0037), the source
+view, the folder, the sliders — still pass in the same run.
+
+## D61 · 2026-10-23 · Keying a picture's own background out, keeping its edges, and the studio's defaults
+
+**Asked for:** change the picture's background itself, not only the frame round it; keep what was
+read; and give the studio its own settings. Three pieces, one family — *the picture knows its
+background, and so does the shell*.
+
+**The key.** `key` (a switch) and `key_fuzz` 0–45 % (a slider) join the recipe. When it is on,
+`M.args` grades the picture with `-fuzz <fuzz>% -transparent <edge>`, where `<edge>` is the colour
+read from the picture's **corners** (`bg.edge`), so whatever the picture's own background is
+becomes transparent; the backdrop is composited behind it, full size when there is no matte. Unlike
+choosing a fill, keying needs **no** matte — the picture's own background is the hole the backdrop
+shows through — so the switch leaves the framing alone. The grain is applied
+`-channel RGB +channel` so it cannot eat the transparency it was keyed with. The transparency is
+made **before** the grade (warmth, saturation and a vignette move colours), so the fuzz looks for
+the colour the file actually has. The BACKDROP tab gains a `KEY OUT` toggle beside the five fills
+(`KeyToggle`, a switch with ON/OFF and a lit rule), and the fuzz becomes the tab's fourth slider
+(matte, blur, dim, fuzz — the dock's four fit at 342 px apart). The fill is whatever the backdrop
+is: black, the blurred picture, or a detected colour, so keying and the fill are one choice.
+
+**The cache.** The three colours are kept per source in `wallpapers.json` (`M.remember_edges`,
+`M.edges_of`, capped at `RECIPES_MAX` and pruned oldest-first like the recipes). Opening a picture
+draws those swatches **at once** and then reads the file again: if the colours still hold the note
+says `CACHED`, if they moved it says `READ NOW` and the new ones are kept. A recipe that uses a
+detected colour therefore never flashes the last picture's colour while ImageMagick runs.
+
+**The defaults.** `wallpaper.matte` (0–25), `wallpaper.backdrop` (`black` / `picture` / `corners` /
+`edges` / `both`), `wallpaper.key` and `wallpaper.fuzz` (0–45) join the settings schema, with
+`lib/setters` codes **appended** after the 116th so no existing control's number moved (they are
+316–319). `tools/gen-settings.py` gained a **Wallpaper** page (DESKTOP group, before Sound): the
+matte slider, the five backdrops, the key toggle, its fuzz, and a note that keying needs the edges
+read. The page was regenerated, not hand-written. A picture with no recipe of its own now opens on
+`studio_defaults()` — the settings' matte, backdrop, key and fuzz — and RESET goes there rather than
+to bare neutral; a vibe change keeps the whole backdrop (and the crop), because a vibe is the
+picture's look and the backdrop is its frame.
+
+**Found on the way: the studio had never read its settings.** `read(name, kind)` called
+`sys.ask("files.read", name, kind)` with `kind` nil; the service refuses a third argument that is
+not a string, the `pcall` swallowed the error and returned `nil`, so `settings` was always the
+defaults — the palette panel's scheme, signal and contrast were ignored too. It now calls the
+two-argument form when there is no `kind`, as `mooi-settings.luau` does. Live before the fix: a
+`settings.json` with `matte: 10` still opened at 0 %; after it, `10 % matte, black`.
+
+**Checked.** `bin/mooi check`: all three scenes compile (settings now 2005 properties, 732 zones;
+the studio 216 properties, 80 zones) and **164 unit tests, 0 failed** — three new: the key's
+arguments (the fuzz and the transparent colour, a full-size fill with no matte, no colour read →
+no key, `-channel RGB` around the grain, `KEYED` in the summary), the edge cache (kept, read back
+from the file, a colour that is not one refused, two colours refused, the oldest dropped), and the
+new settings (defaults, and codes 316–319 setting matte, backdrop, key and fuzz without moving any
+other code). `tests/wallpaper.sh` is **31 checks, 0 failed** live: a `#204060` field with a white
+subject is chosen, KEY OUT turns on, and the preview's field samples 0,0,0 while the subject stays
+240,240,240; the edges are in `wallpapers.json`; a restarted studio with `wallpaper.matte = 10`
+opens the *new* picture with a black matte (0,0,0) and the picture inset (240,240,240), and picking
+it again reports `CACHED`. The settings page itself was driven live in its own scene: the page lit,
+the four facts read their defaults, and setting 12 / corners / on / 33 wrote
+`"wallpaper": {"backdrop": "corners", "fuzz": 33, "key": true, "matte": 12}` to `settings.json`;
+a screenshot shows the page in the rail with the matte, the five backdrops, the key switch and its
+note, and no row colliding with the rail's foot. Not checked: a real hand's press on the new
+toggle (the agent's press is the same zone path), and keying a photographic background — the
+picture driven was a flat field, which is what makes the pixel check exact.
+
+## D62 · 2026-10-23 · The background is what the picture's edge is joined to, and any colour can fill it
+
+**Asked for:** not a colour match but the picture's **background parts** found and recoloured — "a
+picture with an alien in the centre and the rest white, and I should be able to change the
+background to whatever colour I want" — and a folder browser that can reach the folder the pictures
+are actually in. Two things, both about *the thing you mean, not the thing that looks like it*.
+
+**The key is a flood fill now.** D61 keyed by colour: `-fuzz <n>% -transparent <corner colour>`
+took **every** pixel near that colour, so a white eye inside the subject went with a white field.
+`M.args` now seeds a flood fill at the **eight border points** — four corners and four edge
+midpoints — with `-alpha set -fuzz <n>% -fill none -draw "alpha x,y floodfill …"`. What is filled is
+the background the edge is **joined to**; the subject's own white eye is not joined to it and stays.
+The seeds are pixels, not a colour, so keying no longer needs the edge read at all (it works on a
+picture whose corners were never read), and it is done **last** in the grade so the vignette's
+composite and the grain cannot put the transparency back.
+
+**Any colour.** `bg` gained a sixth fill, `custom` (index 5), with `bg_custom` — a `#RRGGBB`
+validated in `M.clean` (lower-cased; anything else falls back to `#808080`, so the fill is never
+nothing) and kept in the picture's recipe beside the rest. The BACKDROP tab gains a **CUSTOM**
+swatch drawn in the colour it will use (facts, as every colour in these scenes is) and a small hex
+field: type `#c02040`, press Enter, and the picture's own background becomes that. Choosing a fill
+opens the matte to 6 % only when the picture is **not** keyed — a keyed picture already has a hole,
+so it stays full-bleed.
+
+**Enter, handled where the text is.** A `submit` hands its text to the logic handler and the field's
+own text is written back *after* the scene's `on submit` has already fired, so a scene binding that
+only `emit`s reads the previous value. Enter in the folder field, the colour field and the picker's
+path is now the logic's own (`submit:src_folder`, `submit:bg_custom_hex`, `submit:pick_typed`), which
+is given the text. The picker's Return binding is gone with it: Enter in the path goes to the path,
+and choosing is the button.
+
+**The folder browser goes anywhere.** Every `find` in the studio is `find -L`, so a folder that is a
+**link** (`~/Pictures → /mnt/disk/Pictures`) is listed by the picker and read by the source wall —
+before, a link was neither a directory to `find -type d` nor walked as a start point, so the folder
+simply read as empty and could not be browsed to. The picker gains a **path field** with GO (and
+Enter): `~`, a name under home, or a whole path, taken as it is; **HOME**, **PICTURES** and
+**ROOT /** in one press; ten rows to a page to make room for them. A folder that cannot be read is
+not a dead end either — the studio shows **home** instead and says so, so a first run on a machine
+without `~/Pictures` still finds pictures. `~` expands only as `~` or `~/…`: `~other` is a name.
+
+**Checked.** `bin/mooi check`: all three scenes compile (the studio 222 properties, 85 zones) and
+**164 unit tests, 0 failed** — the key's test now reads the eight flood-fill seeds and their
+coordinates, that no `-transparent` remains, that the flood fill comes after the grain and the
+vignette, and that a custom colour reaches the fill; the custom colour's validation and `~` rules
+are new too. `tests/wallpaper.sh` is **49 checks, 0 failed** live: a creature on a `#f4f4f4` field
+with white eyes is keyed, `#c02040` is typed as the fill, and the field samples 191,32,64 while the
+eye stays 255,255,255 and the creature 16,16,16 — the property a colour key could not have; the
+colour is in `wallpapers.json`; the picker's path field goes to a typed folder, PARENT works,
+PICTURES jumps to a **symlinked** `~/Pictures`, lists the folder behind the link, enters it, and USE
+THIS FOLDER reads its picture. Not checked: a hand's typing into the two new fields (the harness
+sends the same `text` and `submit` the input does), and a photographic background — flood fill needs
+the background to be one region, which a busy photo is not.
+
+## D63 · 2026-10-23 · A palette for the backdrop, a picture that keeps its quality, and an undo
+
+**Asked for:** colours picked from **swatches**, not typed; images that do not lose quality; and the
+studio made more capable. The palette and the lossless path are one idea — *the colour you choose
+and the picture you keep are both exact* — and the undo is what makes trying things safe.
+
+**The palette.** `M.SWATCHES` is nine colours: **black** and **white** as they are, and seven of the
+shell's own roles — `ink`, `hull`, `well`, `phos`, `trace_lit`, `ember`, `flare` — resolved from the
+same `lib/ferro` palette the bar wears, so the swatches change with the wallpaper's colours and are
+always the theme's. They are handed to the scene as a `model` (`rows of r, g, b, hex`) rebuilt in
+`paint()` whenever the palette is, and drawn by a new `ColorSwatch` (the colour, a lit rule when it
+is the fill). A press sets `bg` to 5 and `bg_custom` to that hex, so the **hex field follows the
+swatch** and picking and typing are one thing; the field still takes any `#RRGGBB` of its own, and
+the five fills read from the picture are unchanged. The mode row and the palette row share the
+BACKDROP tab (the swatches sit under the modes; the sliders moved down 12 px to make the room).
+
+**Quality.** The base every preview and still is cut from is now a **lossless PNG** (it was a JPEG at
+94), resampled with **Lanczos** named rather than left to the build's default, so an edit starts from
+the picture and not from a generation of loss. The preview and the source view are JPEGs at **95
+with `-sampling-factor 4:4:4`**: full-resolution colour, so a flat fill or a hard edge stops smearing
+its hue into its neighbours the way the default 4:2:0 did. The **still that goes on the desktop is a
+PNG** — `M.args` now decides the output by its extension (`M.is_png`), so nothing is thrown away on
+the last step; thumbnails stay JPEGs at 88 and 4:4:4, because they are tiles.
+
+**Undo.** The recipe keeps a history (`hist`, `future`, at most 50 deep) that belongs to the picture
+and is cleared when another is opened. One entry is kept per **burst** of edits — the first change
+after 650 ms of quiet stores the state it started from — so UNDO goes back to before a slider's drag
+and not to its last millimetre. UNDO and REDO buttons sit beside RESET (lit only when there is
+something to take back or put forward) and `Ctrl+Z` / `Ctrl+Y` do the same; RESET is itself undoable.
+
+**Checked.** `bin/mooi check`: all three scenes compile (the studio 244 properties, 96 zones) and
+**166 unit tests, 0 failed** — the quality test reads a PNG output with no `-quality` and a
+`png:compression-level`, a JPEG preview with `4:4:4` and 95, a lossless base with Lanczos and a
+thumbnail at 88; the palette test reads nine swatches, seven of them roles, each with a name and one
+colour. `tests/wallpaper.sh` is **58 checks, 0 failed** live: on the creature whose background was
+keyed to `#c02040`, the first swatch is pressed and the field becomes `#000000` and the picture's
+background **is** black; UNDO returns the preview to 191,32,64 and REDO puts the swatch back; the
+applied still is a **PNG** at 1920 × 1080 whose matte samples **exactly** 32,64,96. `PLEAMAR_REGIONS`
+on a copy opened on BACKDROP lists the nine swatches at their places (177–537, 40 px apart) and the
+mode row above them with no overlap. Not checked: a hand's press on a swatch (the agent enters the
+same zone), and the palette after a wallpaper change — its colours come from the same `paint()` the
+bar's do, which is what the rest of the shell already relies on.
+
+## D64 · 2026-10-23 · The board is a program of its own, and a press outside it closes it
+
+**Asked for:** split the board out of the bar's scene, and make a press outside it close it.
+
+**Why split.** The board was a `surface` inside `mooi.plm`: its facts, models, plate, columns, card
+zones and key bindings lived in the bar's scene, and its keyboard clause had to be folded into the
+bar's — a second declarer *replaces* the scene's `while` condition (D8), which is how the bar once
+lost typing altogether (STATUS 2026-10-23). It was a whole application drawn inside the bar. The
+settings window and the wallpaper studio are already programs of their own for exactly this reason,
+so the board becomes one: `shell/mooi-board.plm` + `shell/mooi-board.luau`.
+
+**What moved, and what did not.** The scene keeps only the board's own drawing (it was already
+`ui/board.plm` + `shell/board.luau` + `lib/board`, none of which changed in substance) and gets its
+own full-screen surface with `keyboard: exclusive` — no clause to share. `shell/mooi.luau` loads the
+board's logic for the badge only: how many cards, how many late, from `board.json` through
+`lib/board`; a note sent from the pad is a card added to the file, which the board's watch picks up.
+`bin/mooi` links the program's data folder to mooi's (as for the studio), so `board.json` is the
+shell's one file. The bar starts the program on `board_show` — a frame later, so it has let go of
+the keyboard — and closes it by `--say mooi-board quit` on the same request (`mooi board`, the pad's
+rail, its key); the child's exit refreshes the badge, and a failure is logged with its first errors.
+
+**The outside press.** The board's scene brings its own plate: `baway`, a full-screen zone under
+everything, emits `close_board` on a press (the ×, Escape and the bar's own toggle do the same). The
+logic drops `board_in` first — so the board folds away the way it came — and runs
+`pleamar --say mooi-board quit` 240 ms later; the program ends and the compositor gives the keyboard
+back to whatever is under it. Nothing is left behind: no hidden surface holding the keyboard, no
+second scene answering to `mooi`.
+
+**Checked.** `bin/mooi check`: the bar compiles (7658 properties, 2150 zones — the board's zones are
+gone from it) and the board (127 properties, 141 zones), 166 unit tests, 0 failed.
+`tests/board.sh` is **11 checks, 0 failed** live: the bar reads mooi's `board.json` for its badge
+(3 cards), `emit open_board` starts the program and it reads the same file through the link, the
+same event closes it, a press on the desktop at 60,60 (outside the plate, where `PLEAMAR_REGIONS`
+says the surface covers the screen) **Presses baway and closes it**, the program exits by itself,
+a press at 1400,500 on its plate leaves it up, and Escape closes it.
+
+A note on the pointer: `--mouse` with a move of its own leaves every zone in this session (the
+scene gets the leave and no enter for it), so the press is sent without a move and the real pointer
+is parked where it should land (`ydotool`). The same press reached a card zone in the board before
+the change, so the zone → `emit` path is the one the scene already used.

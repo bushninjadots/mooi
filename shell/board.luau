@@ -1,6 +1,7 @@
--- The board (D52): a Kanban board, opened from the quick-notes pad's rail. The working-out is
--- lib/board (pure, tested); this file owns board.json, lays the board out for the scene, and
--- answers what a press, a drag, a key or a typed word asks for.
+-- The board (D52): a Kanban board. Since D64 it is started by its own program (mooi-board.plm and
+-- mooi-board.luau) — opened from the quick-notes pad's rail, the board's key or `mooi board`. The
+-- working-out is lib/board (pure, tested); this file owns board.json, lays the board out for the
+-- scene, and answers what a press, a drag, a key or a typed word asks for.
 --
 -- The scene draws only what can be seen: each column's cards inside its view (the wheel scrolls a
 -- column), the chosen card's details in the pane, a drop line while a card is carried. Edits in the
@@ -339,7 +340,6 @@ return function(ctx)
     end)
     on("kb_clearfilter", function() query = ""; tagf = 0; text.kb_search = ""; show() end)
 
-    on("fact:kb_open", function(v) if v then load() end end)
     pcall(sys.watch, "files:" .. FILE, function() load() end)
     run("date", { "+%z" }, function(out, code)
         local sign, h, m = string.match(tostring(out or ""), "([+-])(%d%d)(%d%d)")

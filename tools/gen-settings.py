@@ -41,6 +41,7 @@ SETTERS = [
     "atlas.gesture", "session.standalone",
     "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
+    "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -51,14 +52,14 @@ def code(path):
 MODULES = ["workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
            "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
            "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "atlas", "core", "focus", "settings",
-           "notes"]
+           "notes", "wallpaper", "nexus"]
 NAMES = {"workspaces": "Workspaces", "window": "Window title", "media": "Media player", "resources": "Resources",
          "bandwidth": "Bandwidth", "keyboard": "Keyboard layout", "weather": "Weather", "tray": "Tray",
          "notifications": "Notifications", "mic": "Microphone", "volume": "Volume", "brightness": "Brightness",
          "battery": "Battery", "network": "Network", "bluetooth": "Bluetooth", "clock": "Clock",
          "caffeine": "Keep awake", "recorder": "Screen recorder", "screenshot": "Screenshot",
          "clipboard": "Clipboard", "power": "Session", "actions": "Window actions", "atlas": "Atlas", "core": "Search", "focus": "Focus timer", "settings": "Settings",
-         "notes": "Quick notes"}
+         "notes": "Quick notes", "wallpaper": "Wallpaper studio", "nexus": "Control Nexus"}
 KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("window", "Window actions", "Float, pin, fullscreen or close the focused window"),
         ("atlas", "Workspace Atlas", "Every window, grouped by workspace"),
@@ -66,6 +67,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("system", "System controls", "Volume, brightness, network, Bluetooth"),
         ("shutter", "Window shutter", "The focused window's controls, unfolding from its edge"),
         ("settings", "Settings", "This window"),
+        ("wallpaper", "Wallpaper studio", "Grade a picture and set it on the desk, with a folder of your own"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
@@ -266,6 +268,16 @@ SECTIONS = [
     ("Displays", "Displays", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "DESKTOP", [
         ("card", "Monitors"),
         ("displays",),
+    ]),
+    ("Wallpaper", "Wallpaper studio", "How a picture with no grade of its own opens in Lumen: its matte, what fills it, and whether its own background is keyed out", "DESKTOP", [
+        ("card", "When a picture opens"),
+        ("slider", "Matte", "Inset the picture into a border; 0 leaves it full-bleed", "wallpaper.matte", 0, 25, "{sv_wallpaper_matte, 0}%"),
+        ("choice", "Backdrop", "What fills the matte: black, the picture blurred, or a colour read from its edges", "wallpaper.backdrop", "sv_wallpaper_backdrop",
+         ["Black", "Picture", "Corners", "Edges", "Both"]),
+        ("card", "The picture's own background"),
+        ("toggle", "Key it out", "The colour read from the picture's corners becomes the backdrop's, so its background is replaced, not framed", "wallpaper.key", "sv_wallpaper_key"),
+        ("slider", "Fuzz", "How much of the picture counts as that background", "wallpaper.fuzz", 0, 45, "{sv_wallpaper_fuzz, 0}%", "sv_wallpaper_key == 1"),
+        ("note", "not sv_wallpaper_key", "KEYING NEEDS THE PICTURE'S EDGES READ; LUMEN READS THEM WHEN IT OPENS A PICTURE"),
     ]),
     ("Sound", "Sound", "Where sound plays and where it listens, and each app's own volume", "SYSTEM", [
         ("card", "Output"),

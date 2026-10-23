@@ -27,7 +27,21 @@ step() { say "$@" >/dev/null; sleep 0.35; }
 start() { # extra pleamar options
     MOOI_SAFE=1 pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 60 "$@" 2> "$out/scene.log" &
     pid=$!
-    for _ in 1 2 3 4 5 6 7 8 9 10; do sleep 0.3; get open >/dev/null 2>&1 && break; done
+    # A scene that answers once is not yet a scene that is up: one still shutting down from a
+    # moment ago answers from its own socket while the new one is still binding, and every check
+    # after that is read from a shell on its way out (`Connection refused`, then "none", then a
+    # stale bar). Two answers with a beat between them is the condition wanted — the socket that
+    # is really ours keeps answering.
+    # (`say`, not `get`: `get` reads through `tail`, whose status is always 0 — the loop used to
+    # break on its first pass, before the scene had bound its socket, and every check of the
+    # window island was read from the error text.)
+    up=''
+    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        sleep 0.2
+        if say "get open" >/dev/null 2>&1; then sleep 0.2; say "get open" >/dev/null 2>&1 && up=1; fi
+        [ -n "$up" ] && break
+        up=''
+    done
 }
 
 if say "get open" >/dev/null 2>&1; then
@@ -41,10 +55,31 @@ fi
 # nothing on it to hover — over a window instead, Hyprland's focus-follows-mouse hands that
 # window the keyboard the moment the membrane's window actions let go of it.
 where=$(hyprctl cursorpos 2>/dev/null)
-restore_pointer() { [ -n "${where:-}" ] && hyprctl dispatch movecursor "${where%%,*}" "${where##*,}" >/dev/null 2>&1; }
-trap restore_pointer EXIT INT TERM
-hyprctl dispatch movecursor 1917 540 >/dev/null 2>&1 || true
+# Hyprland 0.5x's `dispatch` evaluates Lua and takes a dispatcher object; older ones take the
+# dispatcher by name. Both are tried, and the pointer only has to move once.
+park_pointer() { # x y
+    hyprctl dispatch "hl.dsp.cursor.move({x=$1, y=$2})" >/dev/null 2>&1 && return 0
+    hyprctl dispatch movecursor "$1" "$2" >/dev/null 2>&1
+}
+restore_pointer() { [ -n "${where:-}" ] && park_pointer "${where%%,*}" "${where##*,}"; }
+trap 'kill "${ka:-}" 2>/dev/null; restore_pointer' EXIT INT TERM
+park_pointer 1917 540
 sleep 0.2
+# A person's presence is compositor input; `--say "key …"` is not — it goes straight to the
+# scene. The shell's own idle net (`on idle for 30s while open != none`, the safety net for a
+# keyboard grab nobody is using) therefore closed the membrane in the middle of this run: its
+# Tab was read a beat after the panel had put itself away, and four checks after it measured a
+# closed shell. A real pointer move every few seconds is that presence, and it is what a hand
+# on the machine gives every other run.
+keepalive() {
+    while :; do
+        sleep 7
+        park_pointer 1917 540
+        park_pointer 1916 540
+    done
+}
+keepalive &
+ka=$!
 
 start --record rv.window,depth,rv.system,rv.command,rv.atlas > "$out/record.tsv"
 
@@ -159,12 +194,26 @@ else echo "  FAIL  the chain's window and its press do not agree (inside $ins, o
 # setting), which `bar_wheel` says.
 expect bar_wheel step "the wheel over the chain steps a workspace"
 controls=$(grep -P '^  (button|list|region|toggle|slider)' "$out/describe.txt" | sed -n 1,2p)
+first=$(printf '%s\n' "$controls" | sed -n 1p)
+second=$(printf '%s\n' "$controls" | sed -n 2p)
+# The mark is drawn only while the Settings module is off the bar — the module is the way into
+# the menu when it is placed, which is the default layout (`bar.right` ends in `settings+…`, and
+# the mark's group says `show: not p_settings`). So the cluster is either «mark, instrument» or,
+# with the module on the bar, the instrument first with nothing between it and the bar's left end.
 n=$((n + 1))
-case "$controls" in
-    *"«mooi · settings»"*"«Workspace chain»"*)
-        echo "  ok    the left cluster reads mark · the workspace instrument, in that order" ;;
-    *) echo "  FAIL  the left cluster is not mark · the workspace instrument: $(echo "$controls" | tr '\n' '|')"; fail=$((fail + 1)) ;;
-esac
+if [ "$(get p_settings)" = true ]; then
+    case "$first" in
+        *"«Workspace chain»"*)
+            echo "  ok    the workspace instrument is the bar's first control (the Settings module is placed, so the mark gives way to it)" ;;
+        *) echo "  FAIL  the bar's first control is not the workspace instrument: $first"; fail=$((fail + 1)) ;;
+    esac
+else
+    case "$first$second" in
+        *"«mooi · settings»"*"«Workspace chain»"*)
+            echo "  ok    the left cluster reads mark · the workspace instrument, in that order" ;;
+        *) echo "  FAIL  the left cluster is not mark · the workspace instrument: $(echo "$controls" | tr '\n' '|')"; fail=$((fail + 1)) ;;
+    esac
+fi
 
 echo "window Atlas (read-only checks; does not focus a window)"
 step "emit open_atlas"; expect open atlas "Spine action opens the Atlas"

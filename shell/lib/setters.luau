@@ -42,6 +42,8 @@ M.SETTERS = {
     "atlas.gesture", "session.standalone",
     "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
+    -- D61: the wallpaper studio's defaults, after everything above so no code moved.
+    "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
 }
 
 local function row_of(path)

@@ -108,7 +108,8 @@ return function(ctx)
 
     local function heights()
         local comfy = S().signals.density == "comfortable"
-        return { [sig.WHISPER] = 30, [sig.MANIFEST] = comfy and 80 or 64, [sig.INTERVENTION] = comfy and 118 or 104 }
+        -- compact: narrow and one line; comfortable: wide, two lines (the scene sizes the width)
+        return { [sig.WHISPER] = comfy and 32 or 28, [sig.MANIFEST] = comfy and 84 or 58, [sig.INTERVENTION] = comfy and 118 or 100 }
     end
 
     function recompute()

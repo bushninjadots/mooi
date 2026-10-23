@@ -1,0 +1,113 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+import "loom.plm"
+
+// The stash's pieces (D54): the kind's mark, and a row. Cut from the same chamfered plate as
+// the Signal Loom and the board. As everywhere in ui/, nothing here decides anything: a row
+// is given the events it emits, and carrying it out to another program is the scene's zone.
+//
+// The mark's colour is handed in rather than worked out in a `let`: a library's `let` does
+// not see the library it imports (a property does), so the tone is chosen where the row is
+// drawn and the mark only lifts it toward the light while pointed at.
+
+library StashParts {
+
+    // What a row holds, as a mark: a chain for a link, a framed picture for an image, a
+    // play triangle for a video, a folded page for a file, lines for text, a level meter for
+    // a song (a video or a song that carries its own cover is drawn as that picture instead).
+    component KindMark(kd: number, x: number, y: number, s: number, hot: number, tone: color) {
+        size: s, s
+        // link: two rings through one another
+        group {
+            show: kd < 0.5
+            ellipse { at: x + s * 0.34, y + s * 0.62; radius: s * 0.17; stroke: 1.6; color: mix(tone, fl.phos, 0.25 * hot) }
+            ellipse { at: x + s * 0.64, y + s * 0.38; radius: s * 0.17; stroke: 1.6; color: mix(tone, fl.phos, 0.25 * hot) }
+            line { from: x + s * 0.45, y + s * 0.52; to: x + s * 0.55, y + s * 0.47; width: 1.6; color: mix(tone, fl.phos, 0.25 * hot) }
+        }
+        // image: a frame with a hill and a sun
+        group {
+            show: kd > 0.5 and kd < 1.5
+            box { from: x + s * 0.18, y + s * 0.22; size: s * 0.64, s * 0.56; corner: 2; stroke: 1.4; color: mix(tone, fl.phos, 0.25 * hot) }
+            ellipse { at: x + s * 0.34, y + s * 0.36; radius: s * 0.05; color: mix(tone, fl.phos, 0.25 * hot) }
+            path { stroke: 1.4; color: mix(tone, fl.phos, 0.25 * hot)
+                   move x + s * 0.22, y + s * 0.72; line x + s * 0.4, y + s * 0.5; line x + s * 0.55, y + s * 0.64
+                   line x + s * 0.66, y + s * 0.56; line x + s * 0.78, y + s * 0.72 }
+        }
+        // video: a play in a frame
+        group {
+            show: kd > 1.5 and kd < 2.5
+            box { from: x + s * 0.18, y + s * 0.24; size: s * 0.64, s * 0.52; corner: 2; stroke: 1.4; color: mix(tone, fl.phos, 0.25 * hot) }
+            path { color: mix(tone, fl.phos, 0.25 * hot); move x + s * 0.42, y + s * 0.36; line x + s * 0.62, y + s * 0.5; line x + s * 0.42, y + s * 0.64; close }
+        }
+        // file: a page with its corner folded
+        group {
+            show: kd > 2.5 and kd < 3.5
+            path { stroke: 1.4; color: mix(tone, fl.phos, 0.25 * hot)
+                   move x + s * 0.3, y + s * 0.18; line x + s * 0.56, y + s * 0.18; line x + s * 0.7, y + s * 0.32
+                   line x + s * 0.7, y + s * 0.82; line x + s * 0.3, y + s * 0.82; close }
+            path { stroke: 1.2; color: mix(tone, fl.phos, 0.25 * hot); move x + s * 0.56, y + s * 0.18; line x + s * 0.56, y + s * 0.32; line x + s * 0.7, y + s * 0.32 }
+        }
+        // audio: a level meter, five bars
+        group {
+            show: kd > 4.5
+            box { from: x + s * 0.2, y + s * 0.5; size: s * 0.09, s * 0.28; corner: 1.5; color: mix(tone, fl.phos, 0.25 * hot) }
+            box { from: x + s * 0.35, y + s * 0.34; size: s * 0.09, s * 0.44; corner: 1.5; color: mix(tone, fl.phos, 0.25 * hot) }
+            box { from: x + s * 0.5, y + s * 0.44; size: s * 0.09, s * 0.34; corner: 1.5; color: mix(tone, fl.phos, 0.25 * hot) }
+            box { from: x + s * 0.65, y + s * 0.26; size: s * 0.09, s * 0.52; corner: 1.5; color: mix(tone, fl.phos, 0.25 * hot) }
+            box { from: x + s * 0.8, y + s * 0.42; size: s * 0.09, s * 0.36; corner: 1.5; color: mix(tone, fl.phos, 0.25 * hot) }
+        }
+        // text: four lines
+        group {
+            show: kd > 3.5 and kd < 4.5
+            line { from: x + s * 0.24, y + s * 0.3; to: x + s * 0.76, y + s * 0.3; width: 1.4; color: mix(tone, fl.phos, 0.25 * hot) }
+            line { from: x + s * 0.24, y + s * 0.44; to: x + s * 0.76, y + s * 0.44; width: 1.2; color: mix(tone, fl.phos, 0.25 * hot) }
+            line { from: x + s * 0.24, y + s * 0.58; to: x + s * 0.68, y + s * 0.58; width: 1.2; color: mix(tone, fl.phos, 0.25 * hot) }
+            line { from: x + s * 0.24, y + s * 0.72; to: x + s * 0.5, y + s * 0.72; width: 1.2; color: mix(tone, fl.phos, 0.25 * hot) }
+        }
+    }
+
+    // A row: its picture (an image, a song's cover, one frame of a video) or its kind's mark,
+    // the name, what it is — its extension and, for a song or a film, how long it runs — and
+    // how long ago. Pressed, it opens; pressed on its tray, it goes to its next folder; pressed
+    // on its ×, or with the right button anywhere, it goes. It carries its address out to
+    // another program when dragged.
+    // The body is the part that carries: the tray and the × are zones of their own above it, so
+    // pressing one of them can never start a carry instead (D55 — a whole-row carry turned a
+    // press that moved a pixel into a drag, and the press was lost).
+    component StashRow(r: record, open: event, del: event, file: event) {
+        size: 312, 60
+        let hot = stashrow.hover
+        zone box stashrow { from: 0, 0; size: 266, 60; cursor: pointer; role: item; label: r.name; carries: "{r.url}" }
+        Chamfer(0, 0, 312, 60, 9, mix(fl.hull_raised, fl.well, 0.45 * hot), mix(fl.trace_dim, fl.trace_lit, hot), 0.94, 1)
+        box { from: 2, 10; size: 2, 40; opacity: 0.85
+              color: if(r.kind < 0.5, fl.phos, if(r.kind < 1.5, fl.flare, if(r.kind < 2.5, fl.ember, if(r.kind < 3.5, fl.trace_lit, if(r.kind < 4.5, fl.muted, mix(fl.phos, fl.flare, 0.5)))))) }
+        group {
+            show: r.pictured
+            box { from: 10, 8; size: 44, 44; corner: 3; stroke: 1; color: fl.trace_dim }
+            image r.picture { at: 10, 8; size: 44, 44 }
+        }
+        group {
+            show: not r.pictured
+            KindMark(r.kind, 10, 8, 44, hot, if(r.kind < 0.5, fl.phos, if(r.kind < 1.5, fl.flare, if(r.kind < 2.5, fl.ember, if(r.kind < 3.5, fl.trace_lit, if(r.kind < 4.5, fl.muted, mix(fl.phos, fl.flare, 0.5)))))))
+        }
+        text r.name { at: 64, 20; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: 198; lines: 1
+                      color: mix(fl.trace_lit, fl.phos, hot) }
+        text r.sub { at: 64, 38; anchor: left center; size: 9; family: "Share Tech Mono"; width: 198; lines: 1; color: fl.muted }
+        // the tray: an arrow down into it, for the next folder
+        line { from: 275, 22; to: 275, 29; width: 1.3; color: mix(fl.muted, fl.phos, hot) }
+        line { from: 272, 26; to: 275, 29; width: 1.1; color: mix(fl.muted, fl.phos, hot) }
+        line { from: 278, 26; to: 275, 29; width: 1.1; color: mix(fl.muted, fl.phos, hot) }
+        path { stroke: 1.2; color: mix(fl.muted, fl.phos, hot); move 271, 33; line 271, 38; line 279, 38; line 279, 33 }
+        line { from: 294, 26; to: 302, 34; width: 1.4; color: mix(fl.muted, fl.ember, hot) }
+        line { from: 302, 26; to: 294, 34; width: 1.4; color: mix(fl.muted, fl.ember, hot) }
+        zone box stra { from: 266, 0; size: 22, 60; cursor: pointer; role: button; label: "File {r.name} in its next folder" }
+        zone box sdel { from: 288, 0; size: 24, 60; cursor: pointer; role: button; label: "Remove {r.name}" }
+        on press stashrow { emit open(r.id) }
+        on press stra { emit file(r.id) }
+        on press sdel { emit del(r.id) }
+        on press right stashrow { emit del(r.id) }
+        on press right stra { emit del(r.id) }
+        on press right sdel { emit del(r.id) }
+    }
+}

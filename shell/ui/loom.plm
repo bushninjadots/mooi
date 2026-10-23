@@ -45,22 +45,22 @@ library LoomParts {
 
     // A cluster in the Field's left column: one app (or what was missed), how many, how long ago;
     // an urgent one carries an ember tick, a muted one says so. Pressed, it is chosen.
-    component FieldCluster(c: record, chosen: number, cut: number, pick: event) {
-        size: 236, 54
+    component FieldCluster(c: record, chosen: number, cut: number, pick: event, w: number = 236) {
+        size: w, 54
         let on = chosen == c.index
-        zone box hit { from: 0, 0; size: 236, 54; cursor: pointer; role: item; selected: on
+        zone box hit { from: 0, 0; size: w, 54; cursor: pointer; role: item; selected: on
                        label: "{c.app}: {c.many, 0}" }
-        Chamfer(0, 0, 236, 54, cut, mix(fl.hull_raised, fl.well, max(0.6 * hit.hover, if(on, 0.8, 0))), if(on, fl.phos, fl.trace), 1, if(on, 1.6, 1))
+        Chamfer(0, 0, w, 54, cut, mix(fl.hull_raised, fl.well, max(0.6 * hit.hover, if(on, 0.8, 0))), if(on, fl.phos, fl.trace), 1, if(on, 1.6, 1))
         box { from: 0, 10; size: 3, 34; color: if(c.critical, fl.ember, if(c.missed, fl.trace, fl.phos_fill)) }
-        text c.app { at: 12, 13; anchor: left center; size: 10; family: "Share Tech Mono"; width: 150; lines: 1
+        text c.app { at: 12, 13; anchor: left center; size: 10; family: "Share Tech Mono"; width: w - 70; lines: 1
                      color: if(c.critical, fl.ember, if(c.missed, fl.muted, fl.trace_lit)) }
-        text c.when { at: 226, 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-        text c.title { at: 12, 34; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: 168; lines: 1
+        text c.when { at: w - 10, 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        text c.title { at: 12, 34; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: w - 66; lines: 1
                        color: if(c.missed, fl.trace_lit, fl.phos) }
         group {
             show: c.many > 1
-            Chamfer(190, 26, 36, 16, 4, fl.ground, fl.trace)
-            text "×{c.many, 0}" { at: 208, 34; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.trace_lit }
+            Chamfer(w - 46, 26, 36, 16, 4, fl.ground, fl.trace)
+            text "×{c.many, 0}" { at: w - 28, 34; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.trace_lit }
         }
         text "MUTED" { at: 12, 48; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: c.muted }
         on press hit { emit pick(c.index) }
@@ -70,36 +70,40 @@ library LoomParts {
     // and what can be done with it — the app's own buttons, open (its default), snooze, dismiss.
     // The first of a thread says how many the thread holds. Pressed, it is chosen (the keys act
     // on the chosen one).
-    component FieldItem(n: record, chosen: number, cut: number, pick: event, open: event, act: event, snooze: event, dismiss: event) {
-        size: 468, 92
+    component FieldItem(n: record, chosen: number, cut: number, pick: event, open: event, act: event, snooze: event, dismiss: event, w: number = 468) {
+        size: w, 92
         let on = chosen == n.index
         let pic = n.pictured
         let tx = if(pic, 50, 14)
-        zone box hit { from: 0, 0; size: 468, 92; cursor: pointer; role: item; selected: on; label: "{n.title}" }
-        Chamfer(0, 0, 468, 92, cut, mix(fl.hull_raised, fl.well, max(0.5 * hit.hover, if(on, 0.7, 0))), if(on, focus.ring, fl.trace), if(n.missed, 0.7, 1), if(on, 1.6, 1))
+        // mooi's buttons from the right edge; the app's own from the left, as many as there is room for
+        let xd = w - 70
+        let xs = w - 136
+        let xo = w - 196
+        let room = if(n.has_default, xo, xs) - 6
+        zone box hit { from: 0, 0; size: w, 92; cursor: pointer; role: item; selected: on; label: "{n.title}" }
+        Chamfer(0, 0, w, 92, cut, mix(fl.hull_raised, fl.well, max(0.5 * hit.hover, if(on, 0.7, 0))), if(on, focus.ring, fl.trace), if(n.missed, 0.7, 1), if(on, 1.6, 1))
         box { from: 0, 10; size: 3, 72; color: if(n.critical, fl.ember, if(n.missed or n.tier < 0.5, fl.trace, fl.phos_fill)) }
         image n.image { at: 14, 12; size: 28, 28; show: pic }
-        text n.title { at: tx, 16; anchor: left center; size: 13; weight: 600; family: "Exo 2"; width: 340 - tx; lines: 1
+        text n.title { at: tx, 16; anchor: left center; size: 13; weight: 600; family: "Exo 2"; width: w - 110 - tx; lines: 1
                        color: if(n.critical, fl.flare, if(n.missed, fl.trace_lit, fl.phos)) }
-        text n.when { at: 456, 16; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-        text pick(n.missed, "THREAD · {n.thread, 0}", "MISSED") { at: 456, 30; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted
+        text n.when { at: w - 12, 16; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        text pick(n.missed, "THREAD · {n.thread, 0}", "MISSED") { at: w - 12, 30; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted
                                                                   show: n.missed or (n.first and n.thread > 1) }
-        text pick(n.snoozed, "", "SNOOZED") { at: 380, 30; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.flare; show: n.snoozed }
-        text n.body { at: tx, 34; anchor: left top; size: 11; family: "Exo 2"; width: 420 - tx; lines: 2; color: fl.muted }
-        // its buttons: the app's own first, then what mooi offers
-        zone box b1 { from: 14, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a1}"; show: n.acts > 0 }
-        zone box b2 { from: 98, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a2}"; show: n.acts > 1 }
-        zone box b3 { from: 182, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a3}"; show: n.acts > 2 }
-        group { show: n.acts > 0; CutButton(14, 64, 80, n.a1, fl.phos, b1.hover) }
-        group { show: n.acts > 1; CutButton(98, 64, 80, n.a2, fl.phos, b2.hover) }
-        group { show: n.acts > 2; CutButton(182, 64, 80, n.a3, fl.phos, b3.hover) }
-        zone box bo { from: 270, 64; size: 54, 20; cursor: pointer; role: button; label: "Open {n.title}"; show: n.has_default }
-        group { show: n.has_default; CutButton(270, 64, 54, "Open", fl.phos, bo.hover) }
-        zone box bs { from: 330, 64; size: 62, 20; cursor: pointer; role: button; label: "Snooze {n.title} for 15 minutes"; show: not n.missed and not n.snoozed }
-        group { show: not n.missed and not n.snoozed; CutButton(330, 64, 62, "Snooze", fl.flare, bs.hover) }
-        zone box bd { from: 398, 64; size: 62, 20; cursor: pointer; role: button; label: pick(n.missed, "Dismiss {n.title}", "Forget {n.title}") }
-        group { show: not n.missed; CutButton(398, 64, 62, "Dismiss", fl.ember, bd.hover) }
-        group { show: n.missed; CutButton(398, 64, 62, "Forget", fl.ember, bd.hover) }
+        text pick(n.snoozed, "", "SNOOZED") { at: w - 88, 30; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.flare; show: n.snoozed }
+        text n.body { at: tx, 34; anchor: left top; size: 11; family: "Exo 2"; width: w - 26 - tx; lines: 2; color: fl.muted }
+        zone box b1 { from: 14, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a1}"; show: n.acts > 0 and 94 < room }
+        zone box b2 { from: 98, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a2}"; show: n.acts > 1 and 178 < room }
+        zone box b3 { from: 182, 64; size: 80, 20; cursor: pointer; role: button; label: "{n.a3}"; show: n.acts > 2 and 262 < room }
+        group { show: n.acts > 0 and 94 < room; CutButton(14, 64, 80, n.a1, fl.phos, b1.hover) }
+        group { show: n.acts > 1 and 178 < room; CutButton(98, 64, 80, n.a2, fl.phos, b2.hover) }
+        group { show: n.acts > 2 and 262 < room; CutButton(182, 64, 80, n.a3, fl.phos, b3.hover) }
+        zone box bo { from: xo, 64; size: 54, 20; cursor: pointer; role: button; label: "Open {n.title}"; show: n.has_default }
+        group { show: n.has_default; CutButton(xo, 64, 54, "Open", fl.phos, bo.hover) }
+        zone box bs { from: xs, 64; size: 62, 20; cursor: pointer; role: button; label: "Snooze {n.title} for 15 minutes"; show: not n.missed and not n.snoozed }
+        group { show: not n.missed and not n.snoozed; CutButton(xs, 64, 62, "Snooze", fl.flare, bs.hover) }
+        zone box bd { from: xd, 64; size: 62, 20; cursor: pointer; role: button; label: pick(n.missed, "Dismiss {n.title}", "Forget {n.title}") }
+        group { show: not n.missed; CutButton(xd, 64, 62, "Dismiss", fl.ember, bd.hover) }
+        group { show: n.missed; CutButton(xd, 64, 62, "Forget", fl.ember, bd.hover) }
         on press hit { emit pick(n.index) }
         on press b1 { emit act(n.index * 10) }
         on press b2 { emit act(n.index * 10 + 1) }

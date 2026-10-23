@@ -156,6 +156,7 @@ M.SCHEMA = {
     { path = "keys.atlas", kind = "key", default = "SUPER + ALT + A" },
     { path = "keys.system", kind = "key", default = "SUPER + ALT + C" },
     { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },
+    { path = "keys.wallpaper", kind = "key", default = "SUPER + ALT + P" },
     -- Who receives the session's notifications: mooi only while it holds the desktop
     -- (`takeover`, so beside ArchEclipse they stay ArchEclipse's — D5), `always`, or `never`.
     { path = "notifications.server", kind = "enum", values = { "takeover", "always", "never" }, default = "takeover" },
@@ -232,6 +233,16 @@ M.SCHEMA = {
     -- `saturation` pushes the whole palette's colour up or down.
     { path = "theme.finish", kind = "enum", values = { "luminous", "matte", "neon" }, default = "luminous" },
     { path = "theme.saturation", kind = "integer", default = 0, min = -50, max = 50 },
+    -- The wallpaper studio's defaults (D61): how a picture with no recipe of its own opens. A
+    -- matte (0 leaves it full-bleed), what fills the matte, and whether the picture's own
+    -- background — the colour read from its corners — is keyed out into the backdrop.
+    { path = "wallpaper.matte", kind = "integer", default = 0, min = 0, max = 25 },
+    { path = "wallpaper.backdrop", kind = "enum", values = { "black", "picture", "corners", "edges", "both" }, default = "black" },
+    { path = "wallpaper.key", kind = "boolean", default = false },
+    { path = "wallpaper.fuzz", kind = "integer", default = 18, min = 0, max = 45 },
+    -- Control Nexus (D65): the command centre opens from the bar's Arch mark. Pinned keeps it
+    -- open until it is closed deliberately; the live readings themselves are never persisted.
+    { path = "nexus.pinned", kind = "boolean", default = false },
 }
 
 for _, id in ipairs(barlayout.ORDER) do

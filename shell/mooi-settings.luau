@@ -251,7 +251,7 @@ local NAMES = {
     battery = "Battery", network = "Network", bluetooth = "Bluetooth", clock = "Clock",
     caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot", clipboard = "Clipboard",
     power = "Session", actions = "Window actions", atlas = "Atlas", core = "Search", focus = "Focus timer", settings = "Settings",
-    gap = "Spacer",
+    notes = "Quick notes", wallpaper = "Wallpaper studio", gap = "Spacer",
 }
 local SIDE_NAME = { left = "LEFT", center = "CENTRE", right = "RIGHT" }
 local X0, X1 = 274, 1138                     -- a card's inside, as the window draws it

@@ -134,7 +134,7 @@ wheel); on the Windows and Input sliders the lowest step is KEEP, Hyprland's own
 | `desktop.manage` · `.border` · `.border_colour` · `.gaps_in` · `.gaps_out` · `.rounding` · `.dim_inactive` | | Hyprland's window look, applied live with `hyprctl eval` (only while `manage` is on) |
 | `desktop.layout` · `.column` · `.column_fit` | `keep` `dwindle` `master` `scrolling` `monocle` · 9 (keep) · 10–100 % · `keep` `fit` `center` | Hyprland's layout, and the scrolling layout's column width and how a focused column comes into view |
 | `desktop.touchpad_natural` · `.touchpad_speed` · `.mouse_natural` · `.mouse_speed` · `.blur` | `keep` first; speeds 4 (keep) · 5–200 % | scrolling direction and speed for touchpad and mouse; window blur. `keep` writes nothing; going back to `keep` makes Hyprland re-read its own config |
-| `keys.search` … `keys.system` | `"SUPER + ALT + Space"` … | mooi's seven keys; written to `hypr.lua`, and Hyprland re-reads its config when they differ from what it last bound (`hypr.loaded`) |
+| `keys.search` … `keys.stop` | `"SUPER + ALT + Space"` … `"SUPER + ALT + P"` for the wallpaper studio | mooi's keys; written to `hypr.lua`, and Hyprland re-reads its config when they differ from what it last bound (`hypr.loaded`) |
 
 Colours follow the wallpaper: `bin/mooi theme-watch` (started with mooi) re-runs Matugen with
 the theme settings whenever `~/.cache/current_wallpaper` changes, and mooi re-lights in 300 ms.

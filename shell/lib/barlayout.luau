@@ -79,6 +79,10 @@ M.MODULES = {
     settings = { width = 32 },
     -- Quick notes (D51): the pad's page and how many are on it; a press opens the dropdown.
     notes = { width = 46 },
+    -- Lumen, the wallpaper studio (D57): a framed picture; a press opens the studio.
+    wallpaper = { width = 32 },
+    -- Control Nexus (D65): the Arch mark; a press opens the system command centre.
+    nexus = { width = 32 },
 }
 
 -- In the order the scene declares their facts, and the bar menu lists them.
@@ -86,7 +90,7 @@ M.ORDER = {
     "workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
     "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
     "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "atlas", "core", "focus", "settings",
-    "notes",
+    "notes", "wallpaper", "nexus",
 }
 
 M.DEFAULT = {
@@ -97,7 +101,7 @@ M.DEFAULT = {
     -- you are (from your address), which is the user's to choose, and quick notes takes the
     -- screenshot pair's room (D51).
     right = { "resources", "network+bluetooth", "volume+mic", "brightness+battery",
-              "tray", "notifications", "clock", "notes", "actions+atlas",
+              "tray", "notifications", "clock", "notes", "wallpaper", "nexus", "actions+atlas",
               "settings+power+core" },
 }
 

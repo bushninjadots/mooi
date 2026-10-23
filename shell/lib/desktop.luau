@@ -13,6 +13,7 @@ M.ACTIONS = {
     { key = "system", cmd = "system", name = "System controls" },
     { key = "shutter", cmd = "shutter", name = "Window shutter" },
     { key = "settings", cmd = "settings", name = "Settings" },
+    { key = "wallpaper", cmd = "wallpaper", name = "Wallpaper studio" },
     { key = "edit", cmd = "edit", name = "Edit the bar" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }

@@ -1625,10 +1625,104 @@ on("open_settings", function()
     fact.settings_open = true
 end)
 
+-- The wallpaper studio (shell/mooi-wallpaper.plm, Lumen). Its own full-screen program for the
+-- same reason: it holds the keyboard exclusively and declares a surface of its own, so it
+-- cannot share the bar's single keyboard clause. `mooi wallpaper` again, or ESC in it, ends it.
+local wallpaper_win = nil
+on("open_wallpaper", function()
+    if wallpaper_win then run("pleamar", { "--say", "mooi-wallpaper", "quit" }); return end
+    local mine
+    local said = {}
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-wallpaper.plm", "--no-hud" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if wallpaper_win == mine then wallpaper_win = nil end
+        if code ~= 0 then log("wallpaper · the studio ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+    end, { errors = true })
+    wallpaper_win = mine
+end)
+
+-- Control Nexus (shell/mooi-nexus.plm, D65): the system command centre. A program of its own
+-- for the same reason as the studio: it holds the keyboard exclusively and declares its own
+-- full-screen surface. The bar starts it from the Arch mark; `mooi nexus` again, its ×, an
+-- outside press or Escape ends it. The start waits for the bar to let go of the keyboard.
+local nexus_win = nil
+on("open_nexus", function()
+    if nexus_win then run("pleamar", { "--say", "mooi-nexus", "quit" }); return end
+    local mine
+    local said = {}
+    after(90, function()
+        if nexus_win then return end
+        mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-nexus.plm", "--no-hud" }, function(line)
+            if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+        end, function(_, code)
+            if nexus_win == mine then nexus_win = nil; fact.nexus_open = false end
+            if code ~= 0 then log("nexus · the command centre ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        end, { errors = true })
+        nexus_win = mine
+        fact.nexus_open = true
+    end)
+end)
+
+-- ── The board (D52, D64): a Kanban board, a program of its own (shell/mooi-board.plm) ──
+-- The bar no longer draws it: it starts that program (and closes it again), and keeps only what the
+-- pad's rail shows — how many cards there are and how many are late — by reading board.json through
+-- the same pure rules (lib/board). A note sent from the pad is a card added to the file, which the
+-- board's own watch picks up at once if it is up.
+local kboard = require("lib/board")
+local board_win = nil
+local board_off = 0
+local function board_read()
+    local ok, t = pcall(sys.ask, "files.read", "board.json", "json")
+    if ok and t ~= nil then return kboard.decode(t) end
+    return kboard.new()
+end
+local function board_badge()
+    local st = kboard.stats(board_read(), kboard.today(os.time(), board_off))
+    fact.kb_count = st.cards
+    fact.kb_late = st.late
+end
+local function board_add_note(title, note)
+    if safe_mode then return false end
+    local b = board_read()
+    local c = kboard.add(b, b.columns[1].id, title, note, os.time())
+    if not c then return false end
+    sys.call("files.write", "board.json", kboard.encode(b))
+    board_badge()
+    return true
+end
+run("date", { "+%z" }, function(out)
+    local sign, h, m = string.match(tostring(out or ""), "([+-])(%d%d)(%d%d)")
+    if sign then board_off = (tonumber(h) * 3600 + tonumber(m) * 60) * (sign == "-" and -1 or 1) end
+    board_badge()
+end)
+pcall(sys.watch, "files:board.json", board_badge)
+board_badge()
+
 -- ── Quick notes: the pad behind the bar's notes module (shell/notes.luau, D51) ──
--- ── The board (shell/board.luau, D52): a Kanban board, opened from the pad's rail ──
-local kanban = require("board")({ safe_mode = safe_mode })
-require("notes")({ safe_mode = safe_mode, to_board = kanban.add_note })
+require("notes")({ safe_mode = safe_mode, to_board = board_add_note })
+
+-- The board's program: started when the pad's rail, its key or `mooi board` asks for it, closed by
+-- the same again (or by a press outside it, its × or Escape in the board itself). The start waits
+-- for the bar to have let go of the keyboard (the scene closes its panels in the same instant), as
+-- a window focus waits for an island to let go.
+on("board_show", function()
+    if board_win then run("pleamar", { "--say", "mooi-board", "quit" }); return end
+    local mine
+    local said = {}
+    after(90, function()
+        if board_win then return end
+        mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-board.plm", "--no-hud" }, function(line)
+            if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+        end, function(_, code)
+            if board_win == mine then board_win = nil; board_badge() end
+            if code ~= 0 then log("board · the board ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        end, { errors = true })
+        board_win = mine
+    end)
+end)
+-- ── The stash (shell/stash.luau, D54): the box on the left edge, and what is dropped in ──
+require("stash")({ safe_mode = safe_mode })
 
 -- ── Signal Loom: the notifications (shell/signals.luau, D50) ──
 loom = require("signals")({

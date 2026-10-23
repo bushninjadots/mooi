@@ -39,7 +39,7 @@ mooi is **one Pleamar scene** (`shell/mooi.plm`) with one Luau logic (`shell/moo
 | The colour facts (`c_*_r/g/b`) | logic (`lib/theme`) | Forty-two facts: three per semantic token, 0 to 1, and `theme/tokens.plm` hands each to `rgb()`. Set together, or not at all. `palette.json` (Matugen) and `theme.*` settings are the only inputs; nothing else in the scene reads or writes them |
 | `theme_error` | logic | The new theme did not pass completeness or contrast; the last good one is on screen and the Spine's dot says so |
 | `previews` | logic, from settings (`atlas.previews`) | Preview pictures on or off. Off means they are not drawn, the frames are given back to the compositor and none is asked for again; `p` flips it and writes the setting (never in safe mode) |
-| The keyboard | **scene rules + the first surface** | `keyboard: exclusive while (open != none or mark_open) and not (open == command and cmode == actions)`; pleamar reads the mode from the scene's first surface and the single `while` from the last one that declares a clause, so the bar carries the scene's only clause — and it lets go in the command membrane's window-actions mode, where the arrows and Enter belong to the actions (below; D8; MECHANISM.md §7) |
+| The keyboard | **scene rules + the first surface** | `keyboard: exclusive while (open != none or mark_open or side != none or bar_edit or qn_open or stash_naming) and not (open == command and cmode == actions)`; pleamar reads the mode from the scene's first surface and the single `while` from the last one that declares a clause, so the bar carries the scene's only clause — and it lets go in the command membrane's window-actions mode, where the arrows and Enter belong to the actions (below; D8; MECHANISM.md §7). The settings window, the wallpaper studio and the board are **programs of their own** and hold the keyboard in their own scenes (D64), so the bar's clause no longer names them |
 | The bar's own state (`mark_open`, `bar_labels`, `bar_wheel`, `active_row`, `bar_version`, `bar_path`) | scene rules, fed by the logic | The Mechanism: whether the mark's menu is open, whether the blocks carry labels, whether the wheel over the chain steps a workspace, which workspace is active (from the `workspaces` service), and the version and path the menu names. The chain's own two phases (`pos`, `roll`), the module faces and the blocks' angles are read off those: no second source of truth |
 
 ## The Mechanism (the bar)
@@ -82,8 +82,13 @@ only while it is open takes it away from every other instrument at once. With th
 carrying their own clauses nothing took the keyboard at all, so typing went to the window
 under the island and Escape never arrived (the harness never noticed, because
 `pleamar --say mooi "key Escape"` injects the key straight into the scene — see
-docs/AUDIT.md). The bar's clause says "while an island is up, or the mark's menu is open" — and gives the keyboard up in the command membrane's window-actions
-mode, where the focused `input` would otherwise eat the arrows and Enter (MECHANISM.md §7).
+docs/AUDIT.md). The bar's clause says "while an island, the side panel, edit mode, the
+quick-notes pad or the stash's naming field is up, or the mark's menu is open" — and gives the
+keyboard up in the command membrane's window-actions mode, where the focused `input` would
+otherwise eat the arrows and Enter (MECHANISM.md §7). The settings window, the wallpaper studio
+and the board are whole programs of their own (`mooi-settings.plm`, `mooi-wallpaper.plm`,
+`mooi-board.plm`): each is its own scene with its own exclusive clause, so the bar does not name
+them at all — and before it starts one, it lets go (D64).
 
 A window cannot be given the keyboard while a layer holds it: Hyprland answers the dispatches
 but leaves the keyboard where it is. `focus` (the membrane's ↵ on a window, its Focus
@@ -94,6 +99,69 @@ with what happened, so the failure is read and not guessed. The window island's 
 here: its loan outlives the island by 300 ms.
 
 Global modes (Rest / Focus / Explore / Workshop / Ambient) are still only specified. They will be one more scene-owned enum above the slot.
+
+## The wallpaper studio (Lumen)
+
+A program of its own (`shell/mooi-wallpaper.plm`, `.luau`), like the settings window: it holds the
+keyboard exclusively and has a surface of its own, so it cannot share the bar's single keyboard
+clause (D8/D53). Its data folder is linked to mooi's by `bin/mooi`, so `wallpapers.json` is the
+shell's and `palette.json` relights the studio with the bar. `lib/wallpaper` is the pure part — the
+recipe, the vibes, the crop and the exact ImageMagick arguments — and the logic runs them. One
+picture is edited at a time through a screen-shaped base in mooi's cache; a preview is a new
+1600 × 900 file, and `APPLY` renders the screen's size and hands that still to the wallpaper picker
+(`qs ipc call wallpaper set`), which draws it and makes the palette. **The source is only ever
+read**: every edit is a new file, and the recipe per source is kept so the studio reopens on it.
+
+The source wall reads a folder, not a fixed cache: `find <folder> -maxdepth 1 -type f -printf`
+lists it, `lib/wallpaper.parse_find` keeps the pictures by extension (newest first), and only the
+tiles on the page are thumbnailed — one `magick` at a time, into `~/.cache/mooi/wallpaper/thumbs` —
+so a folder of thousands costs a page, not thousands of files. Every read is `find -L`, so a folder
+that is a link is read as the folder it points at. The folder is chosen in the studio (the field,
+the `BROWSE…` picker — a typed path, `HOME`/`PICTURES`/`ROOT`, then subfolders a level at a time —
+or the live wallpaper's own folder) and kept in `wallpapers.json`; on a first run it is whichever of
+the recorded folder, the live wallpaper's folder, the picker's `wallpaperDir`, or `~/Pictures`
+exists first, and the studio's own stills in its cache are never mistaken for a folder of pictures.
+A folder that cannot be read shows home instead of a dead end.
+
+**Quality** (D63): the base is a lossless PNG resampled with Lanczos, previews and the source view
+are JPEGs at 95 with `4:4:4` colour, and the still applied is a PNG (`M.args` writes what the
+output's extension asks for, `M.is_png`). The recipe keeps a history — one entry per burst of edits,
+cleared per picture — which is what UNDO/REDO and `Ctrl+Z`/`Ctrl+Y` walk; the backdrop's palette is
+`M.SWATCHES`, seven of the theme's roles and two neutrals, rebuilt in `paint()`.
+
+**The background key** (`M.args` with `key` on, D62) is a flood fill from the eight border points
+(`-alpha set -fuzz N% -fill none -draw "alpha x,y floodfill …"`), so it takes the background the
+picture's edge is joined to rather than every pixel of a colour, needs no colour read, and is made
+last so no composite or grain can put the transparency back. The hole is filled by the backdrop:
+black, the picture blurred, a colour read from the edges, or `bg_custom`, a `#RRGGBB` typed in the
+studio and kept in the picture's recipe. The bar's
+framed-picture module (a press emits `open_wallpaper`) and the `keys.wallpaper` key
+(`SUPER + ALT + P`, from `lib/desktop`'s actions) open the studio; both are ordinary modules/keys,
+so the settings window lists them with every other one.
+
+## The board (Kanban)
+
+A program of its own too (`shell/mooi-board.plm`, `.luau`, D64). `shell/board.luau` is still the
+board (over the pure `lib/board`: columns with limits, cards, tags, due days, undo), and
+`mooi-board.luau` paints the shell's Ferrolume roles from `palette.json`, starts that logic and
+puts the scene away again. `board.json` is mooi's own — `bin/mooi` links the program's data folder
+to the shell's, as it does for the studio and the settings window — so a note the pad sends to the
+board (a card added to the file by `shell/mooi.luau`) arrives through the board's own watch.
+
+The bar keeps only what the pad's rail shows: how many cards there are and how many are late,
+read from `board.json` through the same `lib/board` rules. It starts the program on `board_show`
+(the pad's rail, `Ctrl+Shift+B`/the pad's key, or `mooi board`) — after a frame, so the bar has
+let go of the keyboard first — and closes it by `--say mooi-board quit` on the same request; the
+program's exit is reported back, which refreshes the badge. The entrance is the one it had in the
+bar's scene (a bar across, then the board drops open around it).
+
+**Leaving.** A press on the plate under the board covers the screen: a press anywhere the board is
+not (`baway`, under every control) emits `close_board`, as do the ×, Escape and a press on the
+bar's own board button. The logic brings `board_in` down (the board folds away the way it came),
+then runs `pleamar --say mooi-board quit` 240 ms later, so the compositor gives the keyboard back
+to whatever is under it. That is what makes the outside press the *whole* screen's, not just the
+bar's: the board no longer shares the bar's scene, so it brings its own plate (the bar's plate
+still closes its own panels).
 
 ## The motion framework
 
@@ -155,7 +223,9 @@ is read by `bin/mooi` at launch (it maps to `--reduced-motion`).
 | `shell/mooi.plm` | the scene: the bar (the Mechanism), the islands, the command membrane, rules |
 | `shell/ui/island.plm` | shared pieces: `IslandFrame`, `Level` |
 | `shell/theme/tokens.plm` | palette, semantic colours, geometry, motion springs |
-| `shell/mooi.luau` | glue: settings, window target and verified actions (`run_action`, with the keyboard hand-over), the Atlas board and its pictures, the move strip's subject and target, preview privacy, system requests, icons |
+| `shell/mooi.luau` | glue: settings, window target and verified actions (`run_action`, with the keyboard hand-over), the Atlas board and its pictures, the move strip's subject and target, preview privacy, system requests, icons, the pad's badge and the board's program (start and close) |
+| `shell/mooi-board.plm` · `.luau` | the Kanban board as its own program (D64): the scene (columns, cards, the pane, keys) and the logic that paints the palette, starts `shell/board.luau` and quits it on `close_board` |
+| `shell/board.luau` · `lib/board.luau` | the board's scene-keeping and file, and the pure board rules (unit-tested) |
 | `shell/command.luau` | the command membrane: what it lists, and what choosing a result or satellite does |
 | `shell/lib/spaces.luau` | the bounded, pure workspace-slot map the bar's scale and the Atlas's move strip draw |
 | `shell/lib/theme.luau` | the pure theme model: the fixed palette, Matugen roles → semantic tokens, overrides, colour maths and contrast checks |
