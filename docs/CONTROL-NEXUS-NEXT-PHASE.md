@@ -67,3 +67,8 @@ The report deliberately excludes usernames, IP addresses, MAC addresses, serial 
 ## CPU-core and optional GPU telemetry
 
 The live collector counts numbered CPU cores from `/proc/stat` and annotates the aggregate CPU load label with the detected count. Pure parsers expose per-core cumulative counters and parse the optional DRM `gpu_busy_percent` sysfs reading; unavailable, malformed or out-of-range GPU readings stay marked unavailable. Unit tests cover both parser paths. GPU utilisation is driver-dependent; this does not imply that every Intel, AMD or NVIDIA setup exports that interface. VRAM and display topology remain future work.
+
+
+## Display intelligence
+
+Control Nexus queries `hyprctl monitors -j` through the active Hyprland session. A tested formatter prefers the focused monitor and reports its connector name, pixel resolution, refresh rate and scale when available, plus a compact count of additional displays. Missing command output, malformed JSON or invalid dimensions display as `DISPLAY INFO N/A`. This uses compositor-reported values rather than assuming a particular connector or monitor model. A full per-monitor inventory and per-output controls remain future work.
