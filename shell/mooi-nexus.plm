@@ -304,6 +304,8 @@ scene Nexus {
     text nx_identity_name = "mooi system"
     text nx_avatar_path = ""
     text nx_banner_path = ""
+    image nx_avatar = from nx_avatar_path, 42, 42
+    image nx_banner = from nx_banner_path, 640, 74
     text nx_user = "operator"
     text nx_host = "Arch Linux"
     text nx_session = "Hyprland"
