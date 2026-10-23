@@ -118,6 +118,7 @@ end)
 -- interpolated into a command. Static identity is read once, while proc counters are sampled
 -- every two seconds so rates are derived from deltas instead of repeated heavyweight polling.
 local cpu_previous, net_previous = nil, nil
+local core_previous = nil
 local function launch(command, args, done)
     local ok = pcall(run, command, args, function(out, code)
         if code == 0 and type(out) == "string" then done(out) else done(nil) end
@@ -162,6 +163,23 @@ local function sample_live()
             fact.nx_cpu_on = true
             fact.nx_cpu = value
             text.nx_cpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
+        end
+        local cores = sysinfo.cpu_cores(out)
+        local count = 0
+        for _ in pairs(cores) do count = count + 1 end
+        if count > 0 then text.nx_cpu_label = string.format("CPU LOAD · %d CORES", count) end
+        core_previous = cores
+    end)
+    -- Optional DRM interface; most but not all drivers expose this file.
+    launch("sh", { "-c", "for f in /sys/class/drm/card[0-9]/device/gpu_busy_percent; do if [ -r \"$f\" ]; then cat \"$f\"; exit 0; fi; done; exit 1" }, function(out)
+        local value = sysinfo.gpu_busy(out)
+        if value == nil then
+            fact.nx_gpu_on = false
+            text.nx_gpu_value = "N/A"
+        else
+            fact.nx_gpu_on = true
+            fact.nx_gpu = value
+            text.nx_gpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
         end
     end)
     launch("cat", { "/proc/meminfo" }, function(out)
