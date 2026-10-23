@@ -8,6 +8,8 @@ local config = require("lib/config")
 local ferro = require("lib/ferro")
 local style = require("lib/style")
 local nexus = require("lib/nexus")
+local sysinfo = require("lib/sysinfo")
+local telemetry = require("lib/telemetry")
 
 local FILE = "settings.json"
 local PALETTE = "palette.json"
@@ -102,6 +104,101 @@ pcall(sys.watch, "media", function(m)
     text.nx_album = album
     text.nx_player = player
 end)
+
+-- ── Linux system telemetry ───────────────────────────────────
+-- Fixed, allowlisted reads only. Each optional source fails closed; no display text is ever
+-- interpolated into a command. Static identity is read once, while proc counters are sampled
+-- every two seconds so rates are derived from deltas instead of repeated heavyweight polling.
+local cpu_previous, net_previous = nil, nil
+local function launch(command, args, done)
+    local ok = pcall(run, command, args, function(out, code)
+        if code == 0 and type(out) == "string" then done(out) else done(nil) end
+    end)
+    if not ok then done(nil) end
+end
+local function trim(value)
+    if type(value) ~= "string" then return nil end
+    value = value:gsub("^%s+", ""):gsub("%s+$", "")
+    return value ~= "" and value or nil
+end
+local function read_static()
+    launch("cat", { "/etc/os-release" }, function(os_text)
+        if os_text then
+            local os = telemetry.os_release(os_text)
+            text.nx_distro = os.name or "Unknown distribution"
+        else text.nx_distro = "Distribution unavailable" end
+        fact.nx_telemetry_on = true
+    end)
+    launch("uname", { "-r" }, function(out)
+        text.nx_kernel = trim(out) or "Kernel unavailable"
+    end)
+    launch("hostname", {}, function(out)
+        text.nx_host = trim(out) or env("HOSTNAME", "Host unavailable")
+    end)
+    launch("cat", { "/proc/uptime" }, function(out)
+        text.nx_uptime = telemetry.uptime(out) or "Uptime unavailable"
+    end)
+    launch("cat", { "/proc/cpuinfo" }, function(out)
+        text.nx_cpu_model = telemetry.cpu_model(out) or "CPU model unavailable"
+    end)
+end
+read_static()
+
+local function sample_live()
+    launch("cat", { "/proc/stat" }, function(out)
+        local value
+        value, cpu_previous = sysinfo.cpu(out, cpu_previous)
+        if value ~= nil then
+            fact.nx_cpu_on = true
+            fact.nx_cpu = value
+            text.nx_cpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
+        end
+    end)
+    launch("cat", { "/proc/meminfo" }, function(out)
+        local fraction, used, total = sysinfo.mem(out)
+        if fraction ~= nil and used ~= nil and total ~= nil then
+            fact.nx_ram_on = true
+            fact.nx_ram = math.max(0, math.min(1, fraction))
+            fact.nx_ram_used_gib, fact.nx_ram_total_gib = used, total
+            text.nx_ram_value = string.format("%.1f / %.1f GiB", used, total)
+        end
+    end)
+    launch("df", { "-Pk", "/" }, function(out)
+        local disk = telemetry.disk(out)
+        if disk then
+            fact.nx_disk_on = true
+            fact.nx_disk = disk.used_fraction
+            text.nx_disk_value = string.format("%d%% used", disk.percent)
+        end
+    end)
+    launch("cat", { "/proc/net/dev" }, function(out)
+        if not out then return end
+        local rx, tx = sysinfo.net(out)
+        if net_previous then
+            local rx_rate = math.max(0, (rx - net_previous.rx) / 2)
+            local tx_rate = math.max(0, (tx - net_previous.tx) / 2)
+            fact.nx_net_on = true
+            fact.nx_rx, fact.nx_tx = rx_rate, tx_rate
+            text.nx_rx_value, text.nx_tx_value = sysinfo.rate(rx_rate), sysinfo.rate(tx_rate)
+        end
+        net_previous = { rx = rx, tx = tx }
+    end)
+    launch("sensors", { "-j" }, function(out)
+        if not out then fact.nx_temp_on = false; text.nx_temp_value = "N/A"; return end
+        local ok, decoded = pcall(json.decode, out)
+        local temperature = ok and sysinfo.temp(decoded) or nil
+        if temperature then
+            fact.nx_temp_on = true
+            fact.nx_temp = temperature
+            text.nx_temp_value = string.format("%.0f°C", temperature)
+        else
+            fact.nx_temp_on = false
+            text.nx_temp_value = "N/A"
+        end
+    end)
+    after(2000, sample_live)
+end
+sample_live()
 
 -- ── The controls ────────────────────────────────────────────
 -- A wheel asks for a new level every notch; the system is told at most every 40 ms, always
