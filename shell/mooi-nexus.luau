@@ -126,6 +126,8 @@ local function read_static()
         if os_text then
             local os = telemetry.os_release(os_text)
             text.nx_distro = os.name or "Unknown distribution"
+            text.nx_os_version = os.version or ""
+            text.nx_os_id = os.id or ""
         else text.nx_distro = "Distribution unavailable" end
         fact.nx_telemetry_on = true
     end)
@@ -243,6 +245,7 @@ local function request(kind, v)
     if not flushing then flushing = true; after(40, flush) end
 end
 
+on("nx_about", function() fact.nx_about_on = not fact.nx_about_on end)
 on("nx_vol", function(v) request("vol", v) end)
 on("nx_bri", function(v) request("bri", v) end)
 on("nx_mute", function() control_call("MUTE", "audio.mute") end)
