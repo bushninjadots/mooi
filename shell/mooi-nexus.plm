@@ -301,6 +301,9 @@ scene Nexus {
     text nx_duration = ""
     fact nx_notice = false
     text nx_notice_text = ""
+    text nx_identity_name = "mooi system"
+    text nx_avatar_path = ""
+    text nx_banner_path = ""
     text nx_user = "operator"
     text nx_host = "Arch Linux"
     text nx_session = "Hyprland"
