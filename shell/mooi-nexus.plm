@@ -259,6 +259,7 @@ scene Nexus {
     service media as med { playing: bool; title: text; artist: text; album: text; length: number; position: number; rate: number; player: text }
 
     // System facts are populated by a bounded, optional Linux collector in the logic.
+    fact nx_about_on = false
     fact nx_telemetry_on = false
     fact nx_cpu_on = false
     fact nx_cpu = 0
@@ -280,6 +281,8 @@ scene Nexus {
     text nx_tx_value = "—"
     text nx_temp_value = "N/A"
     text nx_distro = "Reading system…"
+    text nx_os_version = ""
+    text nx_os_id = ""
     text nx_kernel = "—"
     text nx_uptime = "—"
     text nx_cpu_model = "—"
@@ -307,6 +310,7 @@ scene Nexus {
     text nx_player = ""
     figure nx_mark = file "icons/arch.svg"
 
+    event nx_about ->            // toggle the System / About view
     event nx_close ->           // to the logic: put the Nexus away (×, Escape, or an outside press)
     event nx_pin ->             // to the logic: pin or unpin (persisted in settings.json)
     event nx_vol ->             // to the logic: the output volume, 0 … 1
