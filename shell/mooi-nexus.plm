@@ -265,6 +265,10 @@ scene Nexus {
     fact nx_telemetry_on = false
     fact nx_cpu_on = false
     fact nx_cpu = 0
+    text nx_cpu_label = "CPU LOAD"
+    fact nx_gpu_on = false
+    fact nx_gpu = 0
+    text nx_gpu_value = "N/A"
     fact nx_ram_on = false
     fact nx_ram = 0
     fact nx_ram_used_gib = 0
@@ -482,7 +486,7 @@ scene Nexus {
                      let sy1 = sy0 + 70
                      // Small, instrument-like plates: no oversized dashboard card wall.
                      Chamfer(0, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "CPU LOAD" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_cpu_label}" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
                      text "{nx_cpu_value}" { at: 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_cpu_on, fl.phos, fl.muted) }
                      box { from: 10, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
                      box { from: 10, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_cpu, 0, 1)), 2; color: fl.phos; show: nx_cpu_on }
