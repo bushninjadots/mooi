@@ -72,7 +72,7 @@ function M.gpu_devices(text)
     local out = {}
     for line in string.gmatch(text or "", "[^\n]+") do
         if string.match(line, "VGA compatible controller") or string.match(line, "3D controller") or string.match(line, "Display controller") then
-            local name = string.match(line, "^%x+:%s*(.+)$") or string.match(line, "^%S+%s+(.+)$") or line
+            local name = string.match(line, "controller:%s*(.+)$") or string.match(line, "^%x+:%s*(.+)$") or string.match(line, "^%S+%s+(.+)$") or line
             name = string.gsub(name, "^%s+", "")
             if name ~= "" then out[#out + 1] = name end
         end
