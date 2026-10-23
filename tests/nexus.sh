@@ -98,6 +98,10 @@ bsay "emit open_nexus" >/dev/null
 if wait_up; then nexus_started=1; ok "rapid repeated activation starts Nexus once"; else bad "the Nexus program did not start"; cat "$out/bar.log"; exit 1; fi
 is "the bar marks Nexus as open" "$(bget nexus_open)" true
 is "pin defaults to off" "$(get nx_pinned)" false
+say "emit nx_pin" >/dev/null
+if wait_value nexus nx_pinned true 10; then ok "pin control turns pinning on"; else bad "pin control did not turn pinning on"; fi
+say "emit nx_pin" >/dev/null
+if wait_value nexus nx_pinned false 10; then ok "pin control turns pinning off"; else bad "pin control did not turn pinning off"; fi
 
 bsay "emit open_nexus" >/dev/null
 if wait_gone; then nexus_started=0; ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi
