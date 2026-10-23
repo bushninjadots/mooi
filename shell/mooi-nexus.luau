@@ -7,6 +7,7 @@
 local config = require("lib/config")
 local ferro = require("lib/ferro")
 local style = require("lib/style")
+local nexus = require("lib/nexus")
 
 local FILE = "settings.json"
 local PALETTE = "palette.json"
@@ -140,10 +141,8 @@ on("nx_vol", function(v) request("vol", v) end)
 on("nx_bri", function(v) request("bri", v) end)
 on("nx_mute", function() control_call("MUTE", "audio.mute") end)
 on("nx_media", function(v)
-    local n = tonumber(v) or 0
-    if n < -0.5 then control_call("PREVIOUS TRACK", "media.previous")
-    elseif n > 0.5 then control_call("NEXT TRACK", "media.next")
-    else control_call("PLAY / PAUSE", "media.toggle") end
+    local label, service = nexus.media_action(v)
+    if service then control_call(label, service) end
 end)
 
 -- Pinned: a press toggles the setting and writes it, so the Nexus opens pinned next time.
