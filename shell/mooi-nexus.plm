@@ -260,6 +260,8 @@ scene Nexus {
 
     // System facts are populated by a bounded, optional Linux collector in the logic.
     fact nx_about_on = false
+    fact nx_identity_edit_on = false
+    text nx_identity_draft = "mooi system"
     fact nx_telemetry_on = false
     fact nx_cpu_on = false
     fact nx_cpu = 0
@@ -316,6 +318,11 @@ scene Nexus {
     figure nx_mark = file "icons/arch.svg"
 
     event nx_about ->            // toggle the System / About view
+    event nx_identity_edit ->
+    event nx_identity_save ->
+    event nx_identity_cancel ->
+    event nx_identity_avatar ->
+    event nx_identity_banner ->
     event nx_close ->           // to the logic: put the Nexus away (×, Escape, or an outside press)
     event nx_pin ->             // to the logic: pin or unpin (persisted in settings.json)
     event nx_vol ->             // to the logic: the output volume, 0 … 1
@@ -409,6 +416,30 @@ scene Nexus {
                     text "WORKSPACE {ws.active, 0}" { at: cw - 72, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
                     text "{string.upper(string.sub(nx_identity_name, 1, 1))}" { at: cw - 39, 81; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: nx_avatar_path == "" }
                     image nx_avatar { at: cw - 60, 60; size: 42, 42; show: nx_avatar_path != "" }
+                    zone box nx_avatar_edit { from: cw - 60, 60; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
+                    on press nx_avatar_edit { emit nx_identity_edit }
+
+                    // ── identity editor: native Pleamar field plus safe image-picker actions ──
+                    group { show: nx_identity_edit_on
+                        Chamfer(cw - 326, 132, 310, 218, 9, fl.hull_raised, fl.trace, 1, 1)
+                        box { from: cw - 326, 132; size: 310, 3; color: fl.ember }
+                        text "IDENTITY CONFIGURATION" { at: cw - 310, 151; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos }
+                        text "DISPLAY NAME" { at: cw - 310, 174; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        input nx_identity_draft { at: cw - 310, 184; width: 278; size: 16; color: fl.phos; placeholder: "Name this system"; selection: fl.trace; active: nx_identity_edit_on }
+                        zone box nx_identity_avatar_btn { from: cw - 310, 222; size: 132, 28; cursor: pointer; role: button; label: "Choose profile avatar" }
+                        CutButton(cw - 310, 223, 132, "AVATAR IMAGE", fl.phos, nx_identity_avatar_btn.hover)
+                        on press nx_identity_avatar_btn { emit nx_identity_avatar }
+                        zone box nx_identity_banner_btn { from: cw - 168, 222; size: 136, 28; cursor: pointer; role: button; label: "Choose system banner" }
+                        CutButton(cw - 168, 223, 136, "BANNER IMAGE", fl.phos, nx_identity_banner_btn.hover)
+                        on press nx_identity_banner_btn { emit nx_identity_banner }
+                        text "PNG · JPG · WEBP · AVIF" { at: cw - 310, 267; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        zone box nx_identity_save_btn { from: cw - 166, 300; size: 74, 28; cursor: pointer; role: button; label: "Save system identity" }
+                        CutButton(cw - 166, 301, 74, "SAVE", fl.phos, nx_identity_save_btn.hover)
+                        on press nx_identity_save_btn { emit nx_identity_save }
+                        zone box nx_identity_cancel_btn { from: cw - 84, 300; size: 52, 28; cursor: pointer; role: button; label: "Cancel identity editing" }
+                        CutButton(cw - 84, 301, 52, "CLOSE", fl.ember, nx_identity_cancel_btn.hover)
+                        on press nx_identity_cancel_btn { emit nx_identity_cancel }
+                    }
 
                     // ── four instruments ──
                     zone box nx_volhit { from: 0, ny; size: tw, 84; cursor: pointer; role: slider; label: "Output volume"
