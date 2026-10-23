@@ -27,8 +27,18 @@ shell/lib/telemetry.luau contains pure parsers for uptime, /etc/os-release, CPU 
 - **A — Parser foundation:** deterministic parsers and fixture tests; no new host permissions or UI assumptions.
 - **B — Narrow Linux collector (implemented on this branch):** the Nexus logic now uses an explicit allowlist of `cat`, `df`, `uname`, `hostname` and optional `sensors` calls. It samples CPU and network counters on a two-second loop, separates static identity from live metrics, and renders missing temperature data as N/A. Verify command availability and sandbox permissions in a real Pleamar session before merging.
 - **C — First telemetry surface (implemented on this branch):** the Nexus scene adds six compact live instruments for CPU, RAM, temperature, root storage and network receive/transmit rates. The first System Overview view is implemented on the follow-on branch: it displays distribution name/ID/version, kernel, uptime, CPU model, memory, root storage and network rates. GPU, display enumeration, a copyable diagnostics action, and identity personalisation remain outstanding.
-- **D — Identity personalisation (in progress):** persistent, schema-validated display-name/avatar/banner path settings are now defined; the Nexus header uses the display name and monogram fallback. Actual image selection/rendering and an in-shell editing control remain unimplemented until Pleamar's supported text-input and image-loading primitives are confirmed. The first About view currently uses the host/session strings as its identity. Image paths must remain inside mooi-owned storage.
+- **D — Identity personalisation (first asset slice implemented):** schema-validated name/avatar/banner settings; themed header renders imported avatar and banner images via Pleamar's `image … = from text, width, height`; `mooi identity` imports supported local images into mooi-owned data storage and persists generated relative paths. The in-shell text editor and visual file picker are still outstanding. The display name can currently be set via the CLI. The first About view currently uses the host/session strings as its identity. Image paths must remain inside mooi-owned storage.
 - **E — Hardware expansion:** GPU/fan/device data behind capability checks, richer audio routing and display details, plus a copyable diagnostics summary.
+
+## System Identity CLI
+
+- `mooi identity show` — inspect the configured name and asset paths.
+- `mooi identity name "Studio Rig"` — set the display name (48 characters max).
+- `mooi identity avatar ~/Pictures/avatar.png` — import a PNG/JPEG/WebP/AVIF avatar into `$(XDG_DATA_HOME:-~/.local/share)/pleamar/mooi/identity/`.
+- `mooi identity banner ~/Pictures/banner.webp` — import a wide banner into the same local folder.
+- `mooi identity reset` — restore the default name and clear imported identity images.
+
+The CLI refuses to rewrite malformed JSON and uses temporary files before replacing settings/assets. The file picker and editor remain a separate UI task.
 - **F — verification:** run bin/mooi check, tests/nexus.sh, and a real-session smoke test for absent sensors, no battery, no media, missing tools and external display setups.
 
 ## Data-source policy
