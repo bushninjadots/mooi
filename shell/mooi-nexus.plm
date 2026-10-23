@@ -369,7 +369,7 @@ scene Nexus {
                     // ── four instruments ──
                     zone box nx_volhit { from: 0, ny; size: tw, 84; cursor: pointer; role: slider; label: "Output volume"
                                          value: audio.volume }
-                    NTile(0, ny, tw, 84, "OUTPUT", pick(audio.muted, "{audio.volume * 100, 0}%", "MUTED"),
+                    NTile(0, ny, tw, 84, "OUTPUT", pick(audio.muted, "MUTED", "{audio.volume * 100, 0}%"),
                           pick(audio.muted, "CLICK TO UNMUTE", "WHEEL TO SET · CLICK TO MUTE"),
                           if(audio.muted, fl.ember, fl.phos))
                     on press nx_volhit { emit nx_mute }
@@ -387,11 +387,11 @@ scene Nexus {
                     box { from: tw + 66, ny + 43; size: max(0, (tw - 66) * clamp(brightness.level, 0, 1)), 2; color: fl.phos; show: brightness.present }
 
                     let ry = ny + 98
-                    NTile(0, ry, tw, 84, "NETWORK", pick(network.online, "OFFLINE", network.name),
+                    NTile(0, ry, tw, 84, "NETWORK", pick(network.online, network.name, "OFFLINE"),
                           pick(if(network.online and network.kind == wifi, 2, if(network.online, 1, 0)),
                                "NO LINK", "WIRED", "WIFI · {network.strength, 0}%"),
                           if(network.online, fl.phos, fl.ember))
-                    NTile(tw + 14, ry, tw, 84, "POWER", pick(battery.present, "N/A", "{battery.percent, 0}%"),
+                    NTile(tw + 14, ry, tw, 84, "POWER", pick(battery.present, "{battery.percent, 0}%", "N/A"),
                           pick(if(not battery.present, 0, if(battery.charging, 2, 1)),
                                "NO BATTERY", "ON BATTERY", "CHARGING"),
                           if(not battery.present, fl.muted, if(battery.charging, fl.flare, fl.phos)))
@@ -429,7 +429,7 @@ scene Nexus {
                     // ── the foot ──
                     let fy = my0 + med_h + 14
                     line { from: 0, fy; to: cw, fy; width: 1; color: fl.trace; opacity: 0.55 }
-                    text pick(bluetooth.powered, "BLUETOOTH OFF", "BLUETOOTH ON") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
+                    text pick(bluetooth.powered, "BLUETOOTH ON", "BLUETOOTH OFF") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
                                                                                  color: if(bluetooth.powered, fl.phos, fl.muted) }
                     text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                     text "ESC CLOSES" { at: cw, fy + 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
