@@ -95,14 +95,36 @@ end)
 
 -- ── The controls ────────────────────────────────────────────
 -- A wheel asks for a new level every notch; the system is told at most every 40 ms, always
--- the latest. What the plate shows is what the services report back, so a refused change
--- simply does not show.
+-- the latest. The services remain the source of truth for displayed values. If a command
+-- raises an error, the footer reports which operation failed without exposing raw internals.
+local notice_serial = 0
+local function report_control_failure(label)
+    notice_serial = notice_serial + 1
+    local serial = notice_serial
+    text.nx_notice_text = label .. " FAILED"
+    fact.nx_notice = true
+    after(2600, function()
+        if notice_serial == serial then fact.nx_notice = false end
+    end)
+end
+
+local function control_call(label, service, value)
+    local ok, result
+    if value == nil then
+        ok, result = pcall(sys.call, service)
+    else
+        ok, result = pcall(sys.call, service, value)
+    end
+    if not ok or result == false then report_control_failure(label); return false end
+    return true
+end
+
 local pending = {}
 local flushing = false
 local function flush()
     flushing = false
-    if pending.vol then pcall(sys.call, "audio.volume", pending.vol) end
-    if pending.bri then pcall(sys.call, "brightness.level", pending.bri) end
+    if pending.vol ~= nil then control_call("VOLUME", "audio.volume", pending.vol) end
+    if pending.bri ~= nil then control_call("BRIGHTNESS", "brightness.level", pending.bri) end
     pending = {}
 end
 local function request(kind, v)
@@ -116,12 +138,12 @@ end
 
 on("nx_vol", function(v) request("vol", v) end)
 on("nx_bri", function(v) request("bri", v) end)
-on("nx_mute", function() pcall(sys.call, "audio.mute") end)
+on("nx_mute", function() control_call("MUTE", "audio.mute") end)
 on("nx_media", function(v)
     local n = tonumber(v) or 0
-    if n < -0.5 then pcall(sys.call, "media.previous")
-    elseif n > 0.5 then pcall(sys.call, "media.next")
-    else pcall(sys.call, "media.toggle") end
+    if n < -0.5 then control_call("PREVIOUS TRACK", "media.previous")
+    elseif n > 0.5 then control_call("NEXT TRACK", "media.next")
+    else control_call("PLAY / PAUSE", "media.toggle") end
 end)
 
 -- Pinned: a press toggles the setting and writes it, so the Nexus opens pinned next time.
