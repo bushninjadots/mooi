@@ -395,15 +395,20 @@ scene Nexus {
                     on press nx_closebtn { emit nx_close }
                     line { from: 0, 38; to: cw, 38; width: 1; color: fl.trace; opacity: 0.65 }
 
-                    // ── identity ──
+                    // ── System Identity: locally owned banner, display name and avatar ──
                     Chamfer(0, 52, cw, 74, 10, fl.hull_raised, fl.trace, 0.9, 1)
+                    image nx_banner { at: 0, 52; size: cw, 74; opacity: 0.42; show: nx_banner_path != "" }
+                    box { from: 0, 52; size: cw, 20; color: fl.phos; opacity: 0.08 }
                     box { from: 0, 68; size: 3, 42; color: fl.ember }
-                    text "OPERATOR" { at: 16, 68; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    text "{nx_user}" { at: 16, 85; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: fl.phos }
+                    Chamfer(cw - 60, 60, 42, 42, 7, fl.well, fl.trace, 0.9, 1)
+                    text "SYSTEM IDENTITY" { at: 16, 68; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    text "{nx_identity_name}" { at: 16, 85; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: fl.phos }
                     text "{nx_host}" { at: 16, 105; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                    text "{nx_session}" { at: cw - 16, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                    text "{clock.time}  ·  {clock.date}" { at: cw - 16, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
-                    text "WORKSPACE {ws.active, 0}" { at: cw - 16, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                    text "{nx_session}" { at: cw - 72, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text "{clock.time}  ·  {clock.date}" { at: cw - 72, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
+                    text "WORKSPACE {ws.active, 0}" { at: cw - 72, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                    text "{string.upper(string.sub(nx_identity_name, 1, 1))}" { at: cw - 39, 81; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: nx_avatar_path == "" }
+                    image nx_avatar { at: cw - 60, 60; size: 42, 42; show: nx_avatar_path != "" }
 
                     // ── four instruments ──
                     zone box nx_volhit { from: 0, ny; size: tw, 84; cursor: pointer; role: slider; label: "Output volume"
