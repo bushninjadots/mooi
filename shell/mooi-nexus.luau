@@ -49,6 +49,9 @@ end)
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
     fact.nx_pinned = settings.nexus.pinned == true
+    text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
+    text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar or ""
+    text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner or ""
 end)
 
 -- The glow the plate carries follows the theme's finish, as the bar's does.
