@@ -254,6 +254,14 @@ local function request(kind, v)
 end
 
 on("nx_about", function() fact.nx_about_on = not fact.nx_about_on end)
+on("nx_diagnostics_copy", function()
+    launch("mooi", { "diagnostics", "copy" }, function(out)
+        fact.nx_notice = true
+        if out and trim(out) then text.nx_notice_text = trim(out)
+        else text.nx_notice_text = "COPY FAILED — install wl-clipboard or xclip" end
+        after(3200, function() fact.nx_notice = false end)
+    end)
+end)
 
 on("text:nx_identity_draft", function(value)
     if type(value) == "string" then text.nx_identity_draft = value end
