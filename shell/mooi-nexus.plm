@@ -268,6 +268,11 @@ scene Nexus {
     fact nx_album_on = false
     fact nx_player_on = false
     fact nx_progress = 0
+    fact nx_media_time_on = false
+    text nx_elapsed = ""
+    text nx_duration = ""
+    fact nx_notice = false
+    text nx_notice_text = ""
     text nx_user = "operator"
     text nx_host = "Arch Linux"
     text nx_session = "Hyprland"
@@ -374,8 +379,8 @@ scene Nexus {
                           if(audio.muted, fl.ember, fl.phos))
                     on press nx_volhit { emit nx_mute }
                     on scroll nx_volhit { emit nx_vol(clamp(audio.volume + wheel * 0.05, 0, 1)) }
-                    box { from: 52, ny + 43; size: tw - 66, 2; color: fl.ground }
-                    box { from: 52, ny + 43; size: max(0, (tw - 66) * clamp(audio.volume, 0, 1)), 2; color: if(audio.muted, fl.ember, fl.phos) }
+                    box { from: 52, ny + 58; size: tw - 66, 2; color: fl.ground }
+                    box { from: 52, ny + 58; size: max(0, (tw - 66) * clamp(audio.volume, 0, 1)), 2; color: if(audio.muted, fl.ember, fl.phos) }
 
                     zone box nx_brihit { from: tw + 14, ny; size: tw, 84; cursor: pointer; role: slider; label: "Display brightness"
                                          value: brightness.level }
@@ -383,8 +388,8 @@ scene Nexus {
                           pick(brightness.present, "WHEEL TO SET", "NO BACKLIGHT"),
                           if(brightness.present, fl.phos, fl.muted))
                     on scroll nx_brihit { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
-                    box { from: tw + 66, ny + 43; size: tw - 66, 2; color: fl.ground; show: brightness.present }
-                    box { from: tw + 66, ny + 43; size: max(0, (tw - 66) * clamp(brightness.level, 0, 1)), 2; color: fl.phos; show: brightness.present }
+                    box { from: tw + 66, ny + 58; size: tw - 66, 2; color: fl.ground; show: brightness.present }
+                    box { from: tw + 66, ny + 58; size: max(0, (tw - 66) * clamp(brightness.level, 0, 1)), 2; color: fl.phos; show: brightness.present }
 
                     let ry = ny + 98
                     NTile(0, ry, tw, 84, "NETWORK", pick(network.online, network.name, "OFFLINE"),
@@ -399,7 +404,7 @@ scene Nexus {
                     // ── the player ──
                     let my0 = ry + 98
                     Chamfer(0, my0, cw, med_h, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                    box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(med.playing, fl.phos, fl.trace) }
+                    box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(nx_has, if(med.playing, fl.phos, fl.flare), fl.muted) }
                     text "PLAYER" { at: 16, my0 + 17; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
                     text "{nx_title}" { at: 16, my0 + 38; anchor: left center; size: 16; weight: 600; family: "Exo 2"; width: cw - 220; lines: 1
                                         color: fl.phos; show: nx_has }
@@ -407,6 +412,8 @@ scene Nexus {
                     text "{nx_artist}" { at: 16, my0 + 59; anchor: left center; size: 11; family: "Exo 2"; width: cw - 220; lines: 1; color: fl.trace_lit; show: nx_has }
                     text "Nothing is playing" { at: 16, my0 + 59; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not nx_has }
                     text "{nx_album}" { at: 16, my0 + 77; anchor: left center; size: 9; family: "Share Tech Mono"; width: cw - 220; lines: 1; color: fl.muted; show: nx_album_on }
+                    text "{nx_elapsed}" { at: 16, my0 + med_h - 10; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: nx_media_time_on }
+                    text "{nx_duration}" { at: cw - 16, my0 + med_h - 10; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: nx_media_time_on }
                     line { from: 16, my0 + med_h - 22; to: cw - 16, my0 + med_h - 22; width: 2; color: fl.ground }
                     box { from: 16, my0 + med_h - 22; size: max(0, (cw - 32) * clamp(nx_progress, 0, 1)), 2
                           color: if(nx_playing, fl.phos, fl.trace); show: nx_progress > 0 }
@@ -425,13 +432,15 @@ scene Nexus {
                     CutButton(bx0 + 128, my0 + 37, 54, "Next", fl.phos, nx_next.hover)
                     on press nx_next { emit nx_media(2) }
                     text "{nx_player}" { at: cw - 16, my0 + 17; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: nx_player_on }
+                    text pick(nx_playing, "PLAYING", "PAUSED") { at: cw - 16, my0 + 33; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(nx_playing, fl.phos, fl.flare); show: nx_has }
 
                     // ── the foot ──
                     let fy = my0 + med_h + 14
                     line { from: 0, fy; to: cw, fy; width: 1; color: fl.trace; opacity: 0.55 }
-                    text pick(bluetooth.powered, "BLUETOOTH ON", "BLUETOOTH OFF") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
-                                                                                 color: if(bluetooth.powered, fl.phos, fl.muted) }
-                    text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text pick(bluetooth.present, pick(bluetooth.powered, "BLUETOOTH ON", "BLUETOOTH OFF"), "BLUETOOTH N/A") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
+                                                                                 color: if(not bluetooth.present, fl.muted, if(bluetooth.powered, fl.phos, fl.flare)) }
+                    text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }
+                    text "{nx_notice_text}" { at: 160, fy + 18; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: nx_notice }
                     text "ESC CLOSES" { at: cw, fy + 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
                 }
             }

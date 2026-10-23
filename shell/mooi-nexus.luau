@@ -7,6 +7,7 @@
 local config = require("lib/config")
 local ferro = require("lib/ferro")
 local style = require("lib/style")
+local nexus = require("lib/nexus")
 
 local FILE = "settings.json"
 local PALETTE = "palette.json"
@@ -61,12 +62,17 @@ fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
 
 -- The player: the service's text fields can be drawn, but not compared, so the facts that say
 -- "there is something here" and the fields themselves are kept on this side of the boundary.
+local format_time = nexus.format_time
+
 local function clear_media()
     fact.nx_has = false
     fact.nx_playing = false
     fact.nx_progress = 0
+    fact.nx_media_time_on = false
     fact.nx_album_on = false
     fact.nx_player_on = false
+    text.nx_elapsed = ""
+    text.nx_duration = ""
     text.nx_title = ""
     text.nx_artist = ""
     text.nx_album = ""
@@ -84,7 +90,11 @@ pcall(sys.watch, "media", function(m)
 
     fact.nx_has = title ~= ""
     fact.nx_playing = m.playing == true
-    fact.nx_progress = (fact.nx_has and length > 0) and math.max(0, math.min(1, position / length)) or 0
+    fact.nx_media_time_on = fact.nx_has and length > 0
+    local safe_position, progress = nexus.media_progress(position, length)
+    fact.nx_progress = fact.nx_has and progress or 0
+    text.nx_elapsed = fact.nx_media_time_on and format_time(safe_position) or ""
+    text.nx_duration = fact.nx_media_time_on and format_time(length) or ""
     fact.nx_album_on = album ~= ""
     fact.nx_player_on = player ~= ""
     text.nx_title = title
@@ -95,14 +105,36 @@ end)
 
 -- ── The controls ────────────────────────────────────────────
 -- A wheel asks for a new level every notch; the system is told at most every 40 ms, always
--- the latest. What the plate shows is what the services report back, so a refused change
--- simply does not show.
+-- the latest. The services remain the source of truth for displayed values. If a command
+-- raises an error, the footer reports which operation failed without exposing raw internals.
+local notice_serial = 0
+local function report_control_failure(label)
+    notice_serial = notice_serial + 1
+    local serial = notice_serial
+    text.nx_notice_text = label .. " FAILED"
+    fact.nx_notice = true
+    after(2600, function()
+        if notice_serial == serial then fact.nx_notice = false end
+    end)
+end
+
+local function control_call(label, service, value)
+    local ok, result
+    if value == nil then
+        ok, result = pcall(sys.call, service)
+    else
+        ok, result = pcall(sys.call, service, value)
+    end
+    if not ok or result == false then report_control_failure(label); return false end
+    return true
+end
+
 local pending = {}
 local flushing = false
 local function flush()
     flushing = false
-    if pending.vol then pcall(sys.call, "audio.volume", pending.vol) end
-    if pending.bri then pcall(sys.call, "brightness.level", pending.bri) end
+    if pending.vol ~= nil then control_call("VOLUME", "audio.volume", pending.vol) end
+    if pending.bri ~= nil then control_call("BRIGHTNESS", "brightness.level", pending.bri) end
     pending = {}
 end
 local function request(kind, v)
@@ -116,12 +148,10 @@ end
 
 on("nx_vol", function(v) request("vol", v) end)
 on("nx_bri", function(v) request("bri", v) end)
-on("nx_mute", function() pcall(sys.call, "audio.mute") end)
+on("nx_mute", function() control_call("MUTE", "audio.mute") end)
 on("nx_media", function(v)
-    local n = tonumber(v) or 0
-    if n < -0.5 then pcall(sys.call, "media.previous")
-    elseif n > 0.5 then pcall(sys.call, "media.next")
-    else pcall(sys.call, "media.toggle") end
+    local label, service = nexus.media_action(v)
+    if service then control_call(label, service) end
 end)
 
 -- Pinned: a press toggles the setting and writes it, so the Nexus opens pinned next time.
