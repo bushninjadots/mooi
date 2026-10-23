@@ -20,6 +20,32 @@ function M.cpu(text, prev)
     return math.max(0, math.min(1, busy)), now
 end
 
+
+-- Per-core counters from /proc/stat. The caller compares two samples to derive usage.
+function M.cpu_cores(text)
+    local out = {}
+    for line in string.gmatch(text or "", "[^\\n]+") do
+        local name, rest = string.match(line, "^(cpu%d+)%s+(.+)$")
+        if name then
+            local fields = {}
+            for n in string.gmatch(rest, "%d+") do fields[#fields + 1] = tonumber(n) end
+            if #fields >= 4 then
+                local total, idle = 0, (fields[4] or 0) + (fields[5] or 0)
+                for i = 1, math.min(#fields, 8) do total = total + fields[i] end
+                out[name] = { total = total, idle = idle }
+            end
+        end
+    end
+    return out
+end
+
+-- DRM sysfs GPU busy percentage, where supported by the active driver.
+function M.gpu_busy(text)
+    local n = tonumber(string.match(text or "", "^%s*(%d+)%s*$"))
+    if not n or n < 0 or n > 100 then return nil end
+    return n / 100
+end
+
 -- /proc/meminfo → the used fraction and the used and total GiB.
 function M.mem(text)
     local total = tonumber(string.match(text or "", "MemTotal:%s+(%d+)"))
