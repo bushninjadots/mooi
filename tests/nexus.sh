@@ -11,7 +11,7 @@ set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 out=${TMPDIR:-/tmp}/mooi-nexus-test.$$
 mkdir -p "$out"
-fail=0; n=0; pid=''
+fail=0; n=0; pid=''; nexus_started=0
 
 say() { pleamar --say mooi-nexus "$@" 2>&1; }
 get() { say "get $1" | tail -1; }
@@ -22,9 +22,13 @@ bad() { n=$((n + 1)); fail=$((fail + 1)); echo "  FAIL  $1"; }
 is() { if [ "$2" = "$3" ]; then ok "$1 ($2)"; else bad "$1 (got '$2', expected '$3')"; fi; }
 
 cleanup() {
-    bsay quit >/dev/null 2>&1
-    say quit >/dev/null 2>&1
-    if [ -n "$pid" ]; then kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; fi
+    # Never send quit to an instance that existed before this test started.
+    if [ "$nexus_started" -eq 1 ]; then say quit >/dev/null 2>&1; fi
+    if [ -n "$pid" ]; then
+        bsay quit >/dev/null 2>&1
+        kill "$pid" 2>/dev/null
+        wait "$pid" 2>/dev/null
+    fi
     rm -rf "$out"
 }
 trap cleanup EXIT INT TERM
@@ -89,19 +93,19 @@ fi
 
 echo "open and close from the Arch-mark event"
 bsay "emit open_nexus" >/dev/null
-if wait_up; then ok "the Nexus program starts"; else bad "the Nexus program did not start"; cat "$out/bar.log"; exit 1; fi
+if wait_up; then nexus_started=1; ok "the Nexus program starts"; else bad "the Nexus program did not start"; cat "$out/bar.log"; exit 1; fi
 is "the bar marks Nexus as open" "$(bget nexus_open)" true
 is "pin defaults to off" "$(get nx_pinned)" false
 
 bsay "emit open_nexus" >/dev/null
-if wait_gone; then ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi
+if wait_gone; then nexus_started=0; ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi
 if wait_value bar nexus_open false 30; then ok "the bar clears its open state"; else bad "the bar kept a stale open state"; fi
 
 echo "reopen and close with Escape"
 bsay "emit open_nexus" >/dev/null
-if wait_up; then ok "Nexus can reopen after closing"; else bad "Nexus failed to reopen"; exit 1; fi
+if wait_up; then nexus_started=1; ok "Nexus can reopen after closing"; else bad "Nexus failed to reopen"; exit 1; fi
 say "key Escape" >/dev/null
-if wait_gone; then ok "Escape closes and exits Nexus"; else bad "Escape did not close Nexus"; fi
+if wait_gone; then nexus_started=0; ok "Escape closes and exits Nexus"; else bad "Escape did not close Nexus"; fi
 if wait_value bar nexus_open false 30; then ok "the bar clears state after Escape"; else bad "the bar kept stale state after Escape"; fi
 
 echo
