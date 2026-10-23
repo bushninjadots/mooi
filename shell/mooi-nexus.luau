@@ -254,6 +254,93 @@ local function request(kind, v)
 end
 
 on("nx_about", function() fact.nx_about_on = not fact.nx_about_on end)
+
+on("text:nx_identity_draft", function(value)
+    if type(value) == "string" then text.nx_identity_draft = value end
+end)
+
+on("nx_identity_edit", function()
+    fact.nx_identity_edit_on = true
+    text.nx_identity_draft = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
+    focus("nx_identity_draft")
+end)
+
+on("nx_identity_cancel", function()
+    fact.nx_identity_edit_on = false
+    focus()
+end)
+
+on("nx_identity_save", function()
+    local value = trim(text.nx_identity_draft)
+    if not value then
+        fact.nx_notice = true
+        text.nx_notice_text = "Enter a system name before saving"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
+    if #value > 48 or value:find("[%c]") then
+        fact.nx_notice = true
+        text.nx_notice_text = "Name must be plain text, 48 characters max"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
+    if type(settings.nexus) ~= "table" then settings.nexus = {} end
+    if type(settings.nexus.identity) ~= "table" then settings.nexus.identity = {} end
+    local previous = settings.nexus.identity.name
+    settings.nexus.identity.name = value
+    local ok = pcall(sys.call, "files.write", FILE, settings)
+    if ok then
+        text.nx_identity_name = value
+        fact.nx_identity_edit_on = false
+        focus()
+        fact.nx_notice = true
+        text.nx_notice_text = "System identity saved"
+    else
+        settings.nexus.identity.name = previous
+        fact.nx_notice = true
+        text.nx_notice_text = "Could not save identity settings"
+    end
+    after(2600, function() fact.nx_notice = false end)
+end)
+
+local function choose_identity_image(kind)
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then
+        fact.nx_notice = true
+        text.nx_notice_text = "Image import is disabled in safe mode"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
+    local ok = pcall(run, "zenity", {
+        "--file-selection",
+        "--title=Choose system " .. kind,
+        "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif"
+    }, function(path, code)
+        if code ~= 0 or not trim(path) then return end
+        launch("mooi", { "identity", kind, trim(path) }, function(out)
+            if out then
+                settings = config.parse(read(FILE), json.decode)
+                local identity = settings.nexus.identity or {}
+                text.nx_identity_name = identity.name or "mooi system"
+                text.nx_avatar_path = identity.avatar and identity.avatar ~= "" and (identity_home .. "/" .. identity.avatar) or ""
+                text.nx_banner_path = identity.banner and identity.banner ~= "" and (identity_home .. "/" .. identity.banner) or ""
+                fact.nx_notice = true
+                text.nx_notice_text = string.upper(kind) .. " IMAGE UPDATED"
+            else
+                fact.nx_notice = true
+                text.nx_notice_text = "Image import failed; check file type and mooi command"
+            end
+            after(3000, function() fact.nx_notice = false end)
+        end)
+    end)
+    if not ok then
+        fact.nx_notice = true
+        text.nx_notice_text = "Install zenity to use the image picker"
+        after(3000, function() fact.nx_notice = false end)
+    end
+end
+
+on("nx_identity_avatar", function() choose_identity_image("avatar") end)
+on("nx_identity_banner", function() choose_identity_image("banner") end)
 on("nx_vol", function(v) request("vol", v) end)
 on("nx_bri", function(v) request("bri", v) end)
 on("nx_mute", function() control_call("MUTE", "audio.mute") end)
