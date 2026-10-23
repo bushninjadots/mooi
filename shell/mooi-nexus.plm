@@ -404,7 +404,7 @@ scene Nexus {
                     // ── the player ──
                     let my0 = ry + 98
                     Chamfer(0, my0, cw, med_h, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                    box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(med.playing, fl.phos, fl.trace) }
+                    box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(nx_has, if(med.playing, fl.phos, fl.flare), fl.muted) }
                     text "PLAYER" { at: 16, my0 + 17; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
                     text "{nx_title}" { at: 16, my0 + 38; anchor: left center; size: 16; weight: 600; family: "Exo 2"; width: cw - 220; lines: 1
                                         color: fl.phos; show: nx_has }
