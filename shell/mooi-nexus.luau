@@ -91,8 +91,8 @@ pcall(sys.watch, "media", function(m)
     fact.nx_has = title ~= ""
     fact.nx_playing = m.playing == true
     fact.nx_media_time_on = fact.nx_has and length > 0
-    local safe_position = math.max(0, math.min(length, position))
-    fact.nx_progress = (fact.nx_has and length > 0) and safe_position / length or 0
+    local safe_position, progress = nexus.media_progress(position, length)
+    fact.nx_progress = fact.nx_has and progress or 0
     text.nx_elapsed = fact.nx_media_time_on and format_time(safe_position) or ""
     text.nx_duration = fact.nx_media_time_on and format_time(length) or ""
     fact.nx_album_on = album ~= ""
