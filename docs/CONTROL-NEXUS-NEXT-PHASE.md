@@ -55,3 +55,10 @@ The Nexus must carry all six mooi directions without turning into a theme demo: 
 The identity header opens an editor from the avatar area. The editor provides a native Pleamar text field for the display name, save/cancel actions, and avatar/banner image-picking actions. Name changes are persisted to `settings.json`; image selection calls `zenity` and delegates import to `mooi identity avatar|banner`. The picker requires `zenity`; image imports are disabled in `MOOI_SAFE=1` mode. If the picker is unavailable, Nexus displays a notice rather than silently changing settings.
 
 Verification still required on the target Arch/Pleamar session: confirm the text field event name and focus behavior, verify `files.write` success semantics, inspect editor placement at the actual Nexus dimensions, and exercise save/cancel, unavailable-picker, unsupported-image, and safe-mode paths.
+
+
+## Copyable diagnostics slice
+
+Control Nexus now includes a compact **COPY DIAGNOSTICS** action. It invokes `mooi diagnostics copy`, which collects a short local-only report containing distribution, kernel, hostname, desktop/session, uptime, CPU model, memory, root filesystem use, and available PCI graphics controllers. The report is copied with `wl-copy` or `xclip`; `mooi diagnostics show` prints the same report to the terminal. No network request is made. GPU discovery is optional and reports unavailable if `lspci` is missing or no PCI display device is found.
+
+The report deliberately excludes usernames, IP addresses, MAC addresses, serial numbers, process lists, and environment dumps. Verify the generated report and clipboard behavior locally before sharing diagnostics publicly.
