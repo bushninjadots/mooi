@@ -62,3 +62,8 @@ Verification still required on the target Arch/Pleamar session: confirm the text
 Control Nexus now includes a compact **COPY DIAGNOSTICS** action. It invokes `mooi diagnostics copy`, which collects a short local-only report containing distribution, kernel, hostname, desktop/session, uptime, CPU model, memory, root filesystem use, and available PCI graphics controllers. The report is copied with `wl-copy` or `xclip`; `mooi diagnostics show` prints the same report to the terminal. No network request is made. GPU discovery is optional and reports unavailable if `lspci` is missing or no PCI display device is found.
 
 The report deliberately excludes usernames, IP addresses, MAC addresses, serial numbers, process lists, and environment dumps. Verify the generated report and clipboard behavior locally before sharing diagnostics publicly.
+
+
+## CPU-core and optional GPU telemetry
+
+The live collector counts numbered CPU cores from `/proc/stat` and annotates the aggregate CPU load label with the detected count. Pure parsers expose per-core cumulative counters and parse the optional DRM `gpu_busy_percent` sysfs reading; unavailable, malformed or out-of-range GPU readings stay marked unavailable. Unit tests cover both parser paths. GPU utilisation is driver-dependent; this does not imply that every Intel, AMD or NVIDIA setup exports that interface. VRAM and display topology remain future work.
