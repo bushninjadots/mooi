@@ -673,6 +673,7 @@ case "$cmd" in
     shutter-here) exec "$pleamar" --say "$name" "emit open_shutter 1" ;;
     say)  exec "$pleamar" --say "$name" "$@" ;;
     check)
+        sh -n "$self" || exit 1
         "$pleamar" --check "$src" || exit 1
         "$pleamar" --check "$root/shell/mooi-settings.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-wallpaper.plm" || exit 1
