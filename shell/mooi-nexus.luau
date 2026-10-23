@@ -66,6 +66,9 @@ text.nx_user = env("USER", "operator")
 text.nx_host = env("HOSTNAME", "Arch Linux")
 text.nx_session = env("XDG_CURRENT_DESKTOP", "Hyprland")
 fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
+text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
+text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar ~= "" and (identity_home .. "/" .. settings.nexus.identity.avatar) or ""
+text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner ~= "" and (identity_home .. "/" .. settings.nexus.identity.banner) or ""
 
 -- The player: the service's text fields can be drawn, but not compared, so the facts that say
 -- "there is something here" and the fields themselves are kept on this side of the boundary.
