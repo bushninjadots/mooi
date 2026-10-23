@@ -22,4 +22,12 @@ function M.format_time(seconds)
     return string.format("%02d:%02d", minutes, remainder)
 end
 
+function M.media_progress(position, length)
+    local duration = math.max(0, tonumber(length) or 0)
+    local current = math.max(0, tonumber(position) or 0)
+    if duration <= 0 then return 0, 0 end
+    if current > duration then current = duration end
+    return current, current / duration
+end
+
 return M
