@@ -92,8 +92,10 @@ else
 fi
 
 echo "open and close from the Arch-mark event"
+# Two activations inside the keyboard hand-off window must still start only one Nexus.
 bsay "emit open_nexus" >/dev/null
-if wait_up; then nexus_started=1; ok "the Nexus program starts"; else bad "the Nexus program did not start"; cat "$out/bar.log"; exit 1; fi
+bsay "emit open_nexus" >/dev/null
+if wait_up; then nexus_started=1; ok "rapid repeated activation starts Nexus once"; else bad "the Nexus program did not start"; cat "$out/bar.log"; exit 1; fi
 is "the bar marks Nexus as open" "$(bget nexus_open)" true
 is "pin defaults to off" "$(get nx_pinned)" false
 

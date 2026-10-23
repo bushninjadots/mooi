@@ -1647,20 +1647,27 @@ end)
 -- full-screen surface. The bar starts it from the Arch mark; `mooi nexus` again, its ×, an
 -- outside press or Escape ends it. The start waits for the bar to let go of the keyboard.
 local nexus_win = nil
+local nexus_pending = false -- the keyboard hand-off is delayed; don't launch two scenes in that gap
 on("open_nexus", function()
     if nexus_win then run("pleamar", { "--say", "mooi-nexus", "quit" }); return end
+    -- The bar releases its keyboard before Nexus starts. Multiple clicks/events can arrive during
+    -- that short hand-off; only the first may schedule a launch.
+    if nexus_pending then return end
+    nexus_pending = true
     local mine
     local said = {}
     after(90, function()
-        if nexus_win then return end
+        if nexus_win then nexus_pending = false; return end
         mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-nexus.plm", "--no-hud" }, function(line)
             if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
         end, function(_, code)
             if nexus_win == mine then nexus_win = nil; fact.nexus_open = false end
+            nexus_pending = false
             if code ~= 0 then log("nexus · the command centre ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
         end, { errors = true })
         nexus_win = mine
         fact.nexus_open = true
+        nexus_pending = false
     end)
 end)
 
