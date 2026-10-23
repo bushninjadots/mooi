@@ -609,6 +609,26 @@ case "$cmd" in
            exec "$pleamar" --say "$name" "emit open_board" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_nexus" ;;
+    diagnostics)
+        action=${1:-show}
+        case "$action" in show|copy) ;; *) echo "usage: mooi diagnostics [show|copy]" >&2; exit 2 ;; esac
+        os_name="Unknown distribution"
+        if [ -r /etc/os-release ]; then . /etc/os-release; os_name=${PRETTY_NAME:-${NAME:-Unknown distribution}}; fi
+        cpu_model=$(awk -F: '/model name[[:space:]]*:/ { sub(/^[[:space:]]+/, "", $2); print $2; exit }' /proc/cpuinfo 2>/dev/null)
+        [ -n "$cpu_model" ] || cpu_model="Unavailable"
+        memory=$(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {if(t>0) printf "%.1f GiB used / %.1f GiB total", (t-a)/1048576, t/1048576; else print "Unavailable"}' /proc/meminfo 2>/dev/null)
+        root_disk=$(df -hP / 2>/dev/null | awk 'NR==2 {printf "%s used (%s of %s)", $5, $3, $2}')
+        [ -n "$root_disk" ] || root_disk="Unavailable"
+        uptime_text=$(uptime -p 2>/dev/null || true); [ -n "$uptime_text" ] || uptime_text="Unavailable"
+        gpu_list=$(lspci 2>/dev/null | grep -Ei 'VGA compatible controller|3D controller|Display controller' | sed 's/^[^:]*: //' | head -n 4)
+        [ -n "$gpu_list" ] || gpu_list="Unavailable (lspci missing or no PCI display device found)"
+        report=$(printf '%s\n' "MOOI SYSTEM DIAGNOSTICS" "Distribution: $os_name" "Kernel: $(uname -r 2>/dev/null || echo Unavailable)" "Hostname: $(hostname 2>/dev/null || echo Unavailable)" "Session: ${XDG_CURRENT_DESKTOP:-${XDG_SESSION_TYPE:-Unknown}}" "Uptime: $uptime_text" "CPU: $cpu_model" "Memory: $memory" "Root storage: $root_disk" "Graphics: $gpu_list")
+        if [ "$action" = show ]; then printf '%s\n' "$report"; exit 0; fi
+        if command -v wl-copy >/dev/null 2>&1; then printf '%s\n' "$report" | wl-copy || { echo "Clipboard write failed" >&2; exit 1; }
+        elif command -v xclip >/dev/null 2>&1; then printf '%s\n' "$report" | xclip -selection clipboard -in || { echo "Clipboard write failed" >&2; exit 1; }
+        else echo "No clipboard utility found; install wl-clipboard or xclip" >&2; exit 1; fi
+        echo "Diagnostics copied"
+        ;;
     identity)
         # Import images into mooi's own data folder; only generated relative paths enter settings.
         action=\${1:-help}; [ $# -gt 0 ] && shift
