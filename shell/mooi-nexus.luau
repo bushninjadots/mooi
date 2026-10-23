@@ -152,6 +152,12 @@ local function read_static()
     launch("cat", { "/proc/cpuinfo" }, function(out)
         text.nx_cpu_model = telemetry.cpu_model(out) or "CPU model unavailable"
     end)
+    launch("hyprctl", { "monitors", "-j" }, function(out)
+        if not out then text.nx_display_value = "DISPLAY INFO N/A"; return end
+        local ok, monitors = pcall(json.decode, out)
+        local summary = ok and sysinfo.display_summary(monitors) or nil
+        text.nx_display_value = summary or "DISPLAY INFO N/A"
+    end)
 end
 read_static()
 
