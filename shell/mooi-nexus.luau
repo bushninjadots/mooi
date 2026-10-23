@@ -62,10 +62,7 @@ fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
 
 -- The player: the service's text fields can be drawn, but not compared, so the facts that say
 -- "there is something here" and the fields themselves are kept on this side of the boundary.
-local function format_time(seconds)
-    local n = math.max(0, math.floor(tonumber(seconds) or 0))
-    return string.format("%02d:%02d", math.floor(n / 60), n % 60)
-end
+local format_time = nexus.format_time
 
 local function clear_media()
     fact.nx_has = false
