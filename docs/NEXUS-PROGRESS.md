@@ -77,6 +77,9 @@ Modified in this build pass:
   Bluetooth `present = true`, `powered = false`; the audio and overview views are mutually
   exclusive; no runtime errors. The write paths (cycling a device, mic level/mute, powering the
   radio) were **not** exercised, so the user's audio and Bluetooth were left untouched.
+- **Live deployment:** after `bin/mooi refresh` the Arch mark is on the real bar (`x_nexus` =
+  1097), `bin/mooi nexus` opens the program, the bar marks `nexus_open` true, the AUDIO view
+  names the real output device, and Escape ends it and clears the bar's state.
 - **Lifecycle:** a live mooi is running on this machine, so the combined test was reproduced
   in a temporary copy of `shell/` with the bar scene renamed `mooi-lab` (its own socket):
   two rapid activations start exactly one Nexus, the bar marks `nexus_open` true, the same
