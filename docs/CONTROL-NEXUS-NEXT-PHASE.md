@@ -72,3 +72,8 @@ The live collector counts numbered CPU cores from `/proc/stat` and annotates the
 ## Display intelligence
 
 Control Nexus queries `hyprctl monitors -j` through the active Hyprland session. A tested formatter prefers the focused monitor and reports its connector name, pixel resolution, refresh rate and scale when available, plus a compact count of additional displays. Missing command output, malformed JSON or invalid dimensions display as `DISPLAY INFO N/A`. This uses compositor-reported values rather than assuming a particular connector or monitor model. A full per-monitor inventory and per-output controls remain future work.
+
+
+## Hardware inventory command
+
+Added `mooi hardware`, a local read-only inventory for CPU model, PCI graphics controllers (via optional `lspci`), whole-disk devices and models (via optional `lsblk`), and connected displays reported by Hyprland. Missing tools or unavailable display data produce explanatory fallback text. Pure Lua parsers for GPU controller and whole-disk output have unit coverage. This does not read serial numbers, mount paths, partition contents, or personal files. It is a terminal inventory in this phase; a dedicated in-Nexus hardware detail view remains a later UI task.

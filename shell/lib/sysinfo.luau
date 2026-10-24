@@ -67,6 +67,30 @@ function M.display_summary(monitors)
     local suffix = count > 1 and string.format(' · +%d', count - 1) or ''
     return string.format('%s · %dx%d%s%s%s', name, width, height, hz, scale_text, suffix), count
 end
+-- PCI display-controller names from lspci text. Returns an empty list when unavailable.
+function M.gpu_devices(text)
+    local out = {}
+    for line in string.gmatch(text or "", "[^\n]+") do
+        if string.match(line, "VGA compatible controller") or string.match(line, "3D controller") or string.match(line, "Display controller") then
+            local name = string.match(line, "controller:%s*(.+)$") or string.match(line, "^%x+:%s*(.+)$") or string.match(line, "^%S+%s+(.+)$") or line
+            name = string.gsub(name, "^%s+", "")
+            if name ~= "" then out[#out + 1] = name end
+        end
+    end
+    return out
+end
+
+-- Parse `lsblk -dn -o NAME,SIZE,TYPE,MODEL`; only physical/virtual whole disks.
+function M.storage_devices(text)
+    local out = {}
+    for line in string.gmatch(text or "", "[^\n]+") do
+        local name, size, kind, model = string.match(line, "^%s*(%S+)%s+(%S+)%s+(%S+)%s*(.-)%s*$")
+        if name and kind == "disk" then
+            out[#out + 1] = { name = name, size = size, model = model ~= "" and model or "Model unavailable" }
+        end
+    end
+    return out
+end
 -- /proc/meminfo → the used fraction and the used and total GiB.
 function M.mem(text)
     local total = tonumber(string.match(text or "", "MemTotal:%s+(%d+)"))
