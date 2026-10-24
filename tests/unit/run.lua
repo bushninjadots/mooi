@@ -21,6 +21,7 @@ local nexus = require("lib/nexus")
 local telemetry = require("lib/telemetry")
 local nexusnode = require("lib/nexusnode")
 local nexusgraph = require("lib/nexusgraph")
+local nexuslayout = require("lib/nexuslayout")
 
 print("nexus")
 test("media action mapping preserves Previous, Play/Pause, and Next", function()
@@ -2345,6 +2346,78 @@ test("routing: direct is two points, degenerate is refused", function()
     eq(#nexusgraph.route({ x = 0, y = 0, w = 10, h = 10 }, { x = 50, y = 50, w = 10, h = 10 }, { style = "direct" }), 2, "two points")
     local pts, ok = nexusgraph.route({ x = 0, y = 0, w = 0, h = 0 }, { x = 5, y = 5, w = 10, h = 10 }, {})
     eq(ok, false, "degenerate refused"); eq(#pts, 0, "nothing to draw")
+end)
+
+print("nexuslayout")
+local canvas = { w = 1920, h = 892 }
+local function node(t, x, y, w, h)
+    return { type = t, x = x, y = y, w = w or 200, h = h or 120, vis = true, min = false, essential = false }
+end
+test("layout: clamp keeps the whole node on the canvas", function()
+    eq(nexuslayout.clamp(-50, -50, 200, 120, canvas), 0, "left and top")
+    eq(select(2, nexuslayout.clamp(9999, 9999, 200, 120, canvas)), 892 - 120, "bottom")
+    eq(select(1, nexuslayout.clamp(9999, 0, 2000, 120, canvas)), 0, "wider than canvas")
+end)
+test("layout: snap is nearest and grid-safe", function()
+    eq(nexuslayout.snap(13, 8), 16, "rounds up"); eq(nexuslayout.snap(11, 8), 8, "rounds down")
+    eq(nexuslayout.snap(13, 0), 13, "no grid, no change")
+end)
+test("layout: bounds use the registry", function()
+    local w, h = nexuslayout.bounds("cpu", 10, 9999)
+    eq(w, require("lib/nexusnode").get("cpu").min.w, "min width")
+    eq(h, require("lib/nexusnode").get("cpu").max.h, "max height")
+    eq(nexuslayout.bounds("ghost", 123, 45), 123, "unknown keeps what it was given")
+end)
+test("layout: overlap includes padding", function()
+    eq(nexuslayout.overlap(node("cpu", 0, 0, 100, 100), node("cpu", 90, 90, 100, 100), 0), true, "overlaps")
+    eq(nexuslayout.overlap(node("cpu", 0, 0, 100, 100), node("cpu", 110, 0, 100, 100), 8), false, "pad 8 clear at 110")
+end)
+test("layout: a free slot never overlaps and respects the canvas", function()
+    local nodes = { node("cpu", 0, 0, 210, 130), node("cpu", 0, 130, 210, 130) }
+    local x, y = nexuslayout.free_slot(nodes, "network", canvas, 8)
+    eq(x % 8, 0, "snapped x"); eq(y % 8, 0, "snapped y")
+    for _, n in ipairs(nodes) do
+        eq(nexuslayout.overlap({ x = x, y = y, w = 240, h = 150 }, n, 8), false, "clear of " .. n.x .. "," .. n.y)
+    end
+    eq(x + 240 <= canvas.w and y + 150 <= canvas.h, true, "inside")
+end)
+test("layout: fit rescales an arrangement that outgrows the canvas", function()
+    local nodes = { node("cpu", 0, 0), node("clock", 1800, 800) }
+    local fitted = nexuslayout.fit(nodes, { w = 800, h = 400 })
+    for _, n in ipairs(fitted) do
+        eq(n.x + n.w <= 800 and n.y + n.h <= 400, true, "fitted inside")
+    end
+    eq(fitted[1].type, "cpu", "order preserved")
+end)
+test("layout: tidy repacks without overlap", function()
+    local nodes = { node("cpu", 500, 500), node("memory", 510, 505), node("clock", 520, 510) }
+    local tidy = nexuslayout.tidy(nodes, canvas, 8)
+    for i = 1, #tidy do
+        for j = i + 1, #tidy do
+            eq(nexuslayout.overlap(tidy[i], tidy[j], 8), false, "no overlap " .. i .. "/" .. j)
+        end
+    end
+end)
+test("layout: focus swaps the old centre into the vacated slot and leaves the rest", function()
+    local nodes = { node("core", 830, 316, 260, 260), node("cpu", 100, 100), node("network", 600, 100) }
+    local out, ok = nexuslayout.focus(nodes, "cpu", canvas)
+    eq(ok, true, "focused")
+    eq(out[1].x, 100, "core takes the vacated slot's origin")
+    eq(out[1].y, 100, "core takes the vacated slot's origin on y")
+    eq(out[2].x + out[2].w / 2, canvas.w / 2, "cpu is centred")
+    eq(out[2].y + out[2].h / 2, canvas.h / 2, "cpu centred vertically")
+    eq(out[3].x, 600, "unrelated node untouched")
+end)
+test("layout: focus refuses an unknown or already-centred node", function()
+    local nodes = { node("core", 830, 316, 260, 260), node("cpu", 100, 100) }
+    eq(select(2, nexuslayout.focus(nodes, "ghost", canvas)), false, "unknown")
+    local out, ok = nexuslayout.focus(nodes, "core", canvas)
+    eq(ok, false, "already centre"); eq(out[1].x, 830, "unchanged")
+end)
+test("layout: keyboard move is one snapped step and stays inside", function()
+    local n = node("cpu", 8, 8)
+    eq(nexuslayout.move_step(n, 1, 0, canvas, 8), 16, "one step right")
+    eq(select(1, nexuslayout.move_step(n, -100, 0, canvas, 8)), 0, "clamped")
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))
