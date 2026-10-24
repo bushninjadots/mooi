@@ -490,6 +490,7 @@ print("barlayout")
 local barlayout = require("lib/barlayout")
 local function ctx(t)
     local c = { screen = 1920, inset = 12, gap = 10, ws_style = "dna", ws_count = 10, visualizer = "mirror",
+                playing = false, media_mode = "full", media_idle = "collapse",
                 tray = 2, battery = true, brightness = true, bluetooth = true }
     for k, v in pairs(t or {}) do c[k] = v end
     return c
@@ -616,7 +617,7 @@ test("cpu: busy fraction between two samples, nothing on the first", function()
 end)
 
 test("cpu_cores parses numbered cores without aggregate cpu", function()
-    local cores = sysinfo.cpu_cores("cpu 10 0 10 80 0 0 0 0\\ncpu0 1 0 2 7 0 0 0 0\\ncpu1 2 0 3 8 0 0 0 0\\n")
+    local cores = sysinfo.cpu_cores("cpu 10 0 10 80 0 0 0 0\ncpu0 1 0 2 7 0 0 0 0\ncpu1 2 0 3 8 0 0 0 0\n")
     eq(cores.cpu0.total, 10, "core 0 total")
     eq(cores.cpu0.idle, 7, "core 0 idle")
     eq(cores.cpu1.total, 13, "core 1 total")
@@ -625,7 +626,7 @@ test("cpu_cores parses numbered cores without aggregate cpu", function()
 end)
 
 test("gpu_busy accepts supported DRM percentage and rejects unavailable readings", function()
-    eq(sysinfo.gpu_busy("42\\n"), 0.42, "42 percent")
+    eq(sysinfo.gpu_busy("42\n"), 0.42, "42 percent")
     eq(sysinfo.gpu_busy("0"), 0, "idle")
     eq(sysinfo.gpu_busy("100"), 1, "full load")
     eq(sysinfo.gpu_busy("N/A"), nil, "missing")
@@ -646,7 +647,7 @@ test("display_summary selects focused monitor and formats optional details", fun
     eq(sysinfo.display_summary({ { name = "bad", width = 0, height = 0 } }), nil, "invalid dimensions")
 end)
 test("gpu_devices finds display controllers and tolerates missing lspci", function()
-    local found = sysinfo.gpu_devices("00:02.0 VGA compatible controller: Intel Corporation UHD Graphics\\n03:00.0 3D controller: NVIDIA Corporation Example GPU\\n04:00.0 Ethernet controller: Example Network\\n")
+    local found = sysinfo.gpu_devices("00:02.0 VGA compatible controller: Intel Corporation UHD Graphics\n03:00.0 3D controller: NVIDIA Corporation Example GPU\n04:00.0 Ethernet controller: Example Network\n")
     eq(#found, 2, "display controller count")
     eq(found[1], "Intel Corporation UHD Graphics", "integrated GPU name")
     eq(found[2], "NVIDIA Corporation Example GPU", "discrete GPU name")
@@ -654,7 +655,7 @@ test("gpu_devices finds display controllers and tolerates missing lspci", functi
 end)
 
 test("storage_devices keeps whole disks and supports models with spaces", function()
-    local found = sysinfo.storage_devices("nvme0n1 476.9G disk Samsung SSD 980\\nsda 931.5G disk External Drive\\nsda1 931.5G part External Drive\\nloop0 4G loop\\n")
+    local found = sysinfo.storage_devices("nvme0n1 476.9G disk Samsung SSD 980\nsda 931.5G disk External Drive\nsda1 931.5G part External Drive\nloop0 4G loop\n")
     eq(#found, 2, "whole disk count")
     eq(found[1].name, "nvme0n1", "disk name")
     eq(found[1].size, "476.9G", "disk size")

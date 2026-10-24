@@ -2004,3 +2004,47 @@ A note on the pointer: `--mouse` with a move of its own leaves every zone in thi
 scene gets the leave and no enter for it), so the press is sent without a move and the real pointer
 is parked where it should land (`ydotool`). The same press reached a card zone in the board before
 the change, so the zone → `emit` path is the one the scene already used.
+
+## D65 · 2026-10-24 · Control Nexus is a program of its own, opened from the Arch mark
+
+**What it is.** Control Nexus is the system command centre: one full-screen program
+(`shell/mooi-nexus.plm` + `shell/mooi-nexus.luau`) opened from a `nexus` bar module carrying the
+Arch mark. It shows real service readings and bounded local reads (distro/version, kernel,
+uptime, CPU model and load with core count, memory, root storage, network rates, temperature,
+DRM GPU busy where exposed, the focused Hyprland display), keeps the player's text fields itself,
+and is the only place that calls the system for volume, brightness and media transport. A
+**System Overview** view toggles from the header and gathers the read-only facts with
+**COPY DIAGNOSTICS**; **System Identity** edits the display name and imports avatar/banner images
+through `zenity` → `mooi identity`. A refused control is reported in the footer; a missing
+sensor says `N/A`.
+
+**Why a program, not an island.** The bar scene has one keyboard clause, and Pleamar's compiler
+takes the scene's `while` from the last surface that declares one — an island that wanted the
+keyboard would silently replace the bar's condition (D8, D52). Nexus also needs a full-screen
+outside-press layer, a free-floating plate and, later, a layout editor. The bar keeps the anchor
+and the badge (`nexus_open`); the program owns the room. `bin/mooi nexus`, the mark, ×, Escape or
+an outside press (unless pinned) close it; the logic waits 240 ms before quitting so the
+compositor gives the keyboard back to what is under it.
+
+**Shell access is an allowlist, never an interpreter.** `permissions.run` names `cat`, `df`,
+`uname`, `hostname`, `sensors`, `hyprctl`, `mooi`, `zenity` and `pleamar`; the optional GPU probe
+reads fixed `/sys/class/drm/card{0,1,2}/device/gpu_busy_percent` paths instead of running `sh`.
+`MOOI_SAFE=1` refuses identity writes as it does every other settings write. Nothing is
+interpolated into a command line, and readings are sampled on a two-second loop, not per frame.
+
+**Checked.** `bin/mooi check`: all five scenes compile, **182 unit tests, 0 failed**. In an
+isolated runtime (temporary HOME/XDG) the plate reported EndeavourOS, kernel
+`7.2.11-arch1-1`, uptime, CPU load with 12 cores, memory, 80 % root disk, `eDP-1 · 1920x1080 ·
+60 Hz · 1.00x`, GPU 13 % and 50 °C; pin and the Overview toggled; Escape ended it with no runtime
+errors. Saving an identity under `MOOI_SAFE=1` was refused and left `settings.json` untouched;
+with writes enabled the name and pinned state survived a restart. The bar-trigger lifecycle was
+reproduced in a temporary copy of `shell/` with the bar renamed `mooi-lab` (so the live mooi was
+untouched): two rapid activations started exactly one Nexus, the same trigger closed it and
+cleared the bar, and reopening worked. **Repaired on the way:** the branch consolidation had
+committed unresolved conflict markers in the Nexus scene, logic and next-phase document; the
+logic also called `env()` before declaring it, and `sysinfo.cpu_cores` split `/proc/stat` on a
+literal `\n`. Not checked: a real pointer on the new Overview controls, the Overview on screen at
+every plate width, and multi-monitor placement.
+
+**To change back.** Remove `nexus` from `DEFAULT.right`, delete `shell/mooi-nexus.*` and unwire
+`open_nexus` / `nexus_open` in `shell/mooi.luau` and `bin/mooi`.

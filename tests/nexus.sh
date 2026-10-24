@@ -103,6 +103,16 @@ if wait_value nexus nx_pinned true 10; then ok "pin control turns pinning on"; e
 say "emit nx_pin" >/dev/null
 if wait_value nexus nx_pinned false 10; then ok "pin control turns pinning off"; else bad "pin control did not turn pinning off"; fi
 
+echo "the system overview answers from local reads, and toggles"
+if wait_value nexus nx_telemetry_on true 40; then ok "the local collector reports itself ready"; else bad "the local collector never reported ready"; fi
+is "a distribution was read" "$(get nx_distro | grep -v 'Reading system' | wc -l | tr -d ' ')" 1
+is "the CPU load was sampled" "$(get nx_cpu_value | grep '%' | wc -l | tr -d ' ')" 1
+is "the root filesystem was read" "$(get nx_disk_value | grep 'used' | wc -l | tr -d ' ')" 1
+say "emit nx_about" >/dev/null
+if wait_value nexus nx_about_on true 10; then ok "the overview opens"; else bad "the overview did not open"; fi
+say "emit nx_about" >/dev/null
+if wait_value nexus nx_about_on false 10; then ok "the overview closes back to the controls"; else bad "the overview did not close"; fi
+
 bsay "emit open_nexus" >/dev/null
 if wait_gone; then nexus_started=0; ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi
 if wait_value bar nexus_open false 30; then ok "the bar clears its open state"; else bad "the bar kept a stale open state"; fi

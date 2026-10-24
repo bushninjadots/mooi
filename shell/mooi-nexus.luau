@@ -13,6 +13,13 @@ local telemetry = require("lib/telemetry")
 
 local FILE = "settings.json"
 local PALETTE = "palette.json"
+
+local function env(name, fallback)
+    local ok, v = pcall(sys.ask, "env", name)
+    if ok and type(v) == "string" and v ~= "" then return v end
+    return fallback
+end
+
 local data_home = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share")
 local identity_home = data_home .. "/pleamar/mooi"
 
@@ -23,14 +30,25 @@ local function read(name, kind)
     return ok and v or nil
 end
 
-local function env(name, fallback)
-    local ok, v = pcall(sys.ask, "env", name)
-    if ok and type(v) == "string" and v ~= "" then return v end
-    return fallback
-end
-
 local settings = config.parse(read(FILE), json.decode)
 local palette = read(PALETTE, "json")
+
+-- A text field can be drawn but not compared in the scene, so the presence facts and the
+-- avatar's initial are published here beside the paths, from the one identity the settings own.
+local function sync_identity()
+    local identity = (type(settings.nexus) == "table" and type(settings.nexus.identity) == "table")
+        and settings.nexus.identity or {}
+    local name = type(identity.name) == "string" and identity.name or "mooi system"
+    local avatar = type(identity.avatar) == "string" and identity.avatar or ""
+    local banner = type(identity.banner) == "string" and identity.banner or ""
+    text.nx_identity_name = name
+    text.nx_initial = string.upper(string.sub(name, 1, 1))
+    text.nx_avatar_path = avatar ~= "" and (identity_home .. "/" .. avatar) or ""
+    text.nx_banner_path = banner ~= "" and (identity_home .. "/" .. banner) or ""
+    fact.nx_avatar_on = avatar ~= ""
+    fact.nx_banner_on = banner ~= ""
+end
+sync_identity()
 
 -- The same roles the bar wears, from the same palette and settings; the tokens glide to them.
 local function paint()
@@ -50,10 +68,8 @@ pcall(sys.watch, "files:" .. PALETTE, function()
 end)
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
-    fact.nx_pinned = settings.nexus.pinned == true
-    text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
-    text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar ~= "" and (identity_home .. "/" .. settings.nexus.identity.avatar) or ""
-    text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner ~= "" and (identity_home .. "/" .. settings.nexus.identity.banner) or ""
+    fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
+    sync_identity()
 end)
 
 -- The glow the plate carries follows the theme's finish, as the bar's does.
@@ -66,9 +82,7 @@ text.nx_user = env("USER", "operator")
 text.nx_host = env("HOSTNAME", "Arch Linux")
 text.nx_session = env("XDG_CURRENT_DESKTOP", "Hyprland")
 fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
-text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
-text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar ~= "" and (identity_home .. "/" .. settings.nexus.identity.avatar) or ""
-text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner ~= "" and (identity_home .. "/" .. settings.nexus.identity.banner) or ""
+sync_identity()
 
 -- The player: the service's text fields can be drawn, but not compared, so the facts that say
 -- "there is something here" and the fields themselves are kept on this side of the boundary.
@@ -109,10 +123,7 @@ end)
 -- interpolated into a command. Static identity is read once, while proc counters are sampled
 -- every two seconds so rates are derived from deltas instead of repeated heavyweight polling.
 local cpu_previous, net_previous = nil, nil
-<<<<<<< HEAD
 local core_previous = nil
-=======
->>>>>>> origin/feature/nexus-telemetry-foundation
 local function launch(command, args, done)
     local ok = pcall(run, command, args, function(out, code)
         if code == 0 and type(out) == "string" then done(out) else done(nil) end
@@ -128,12 +139,11 @@ local function read_static()
     launch("cat", { "/etc/os-release" }, function(os_text)
         if os_text then
             local os = telemetry.os_release(os_text)
-            text.nx_distro = os.name or "Unknown distribution"
-<<<<<<< HEAD
+            local name = os.name or "Unknown distribution"
+            local version = os.version
+            text.nx_distro = (type(version) == "string" and version ~= "") and (name .. " · " .. version) or name
             text.nx_os_version = os.version or ""
             text.nx_os_id = os.id or ""
-=======
->>>>>>> origin/feature/nexus-telemetry-foundation
         else text.nx_distro = "Distribution unavailable" end
         fact.nx_telemetry_on = true
     end)
@@ -149,15 +159,12 @@ local function read_static()
     launch("cat", { "/proc/cpuinfo" }, function(out)
         text.nx_cpu_model = telemetry.cpu_model(out) or "CPU model unavailable"
     end)
-<<<<<<< HEAD
     launch("hyprctl", { "monitors", "-j" }, function(out)
         if not out then text.nx_display_value = "DISPLAY INFO N/A"; return end
         local ok, monitors = pcall(json.decode, out)
         local summary = ok and sysinfo.display_summary(monitors) or nil
         text.nx_display_value = summary or "DISPLAY INFO N/A"
     end)
-=======
->>>>>>> origin/feature/nexus-telemetry-foundation
 end
 read_static()
 
@@ -170,27 +177,32 @@ local function sample_live()
             fact.nx_cpu = value
             text.nx_cpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
         end
-<<<<<<< HEAD
         local cores = sysinfo.cpu_cores(out)
         local count = 0
         for _ in pairs(cores) do count = count + 1 end
         if count > 0 then text.nx_cpu_label = string.format("CPU LOAD · %d CORES", count) end
         core_previous = cores
     end)
-    -- Optional DRM interface; most but not all drivers expose this file.
-    launch("sh", { "-c", "for f in /sys/class/drm/card[0-9]/device/gpu_busy_percent; do if [ -r \"$f\" ]; then cat \"$f\"; exit 0; fi; done; exit 1" }, function(out)
-        local value = sysinfo.gpu_busy(out)
-        if value == nil then
-            fact.nx_gpu_on = false
-            text.nx_gpu_value = "N/A"
-        else
-            fact.nx_gpu_on = true
-            fact.nx_gpu = value
-            text.nx_gpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
+    -- Optional DRM interface; most but not all drivers expose this file. Fixed card paths keep
+    -- the allowlist strict (no interpreter); every attempt fails closed and the first reading wins.
+    local gpu_seen = false
+    local function read_gpu(i)
+        if i > 2 then
+            if not gpu_seen then fact.nx_gpu_on = false; text.nx_gpu_value = "N/A" end
+            return
         end
-=======
->>>>>>> origin/feature/nexus-telemetry-foundation
-    end)
+        launch("cat", { "/sys/class/drm/card" .. i .. "/device/gpu_busy_percent" }, function(out)
+            local value = sysinfo.gpu_busy(out)
+            if value ~= nil then
+                gpu_seen = true
+                fact.nx_gpu_on = true
+                fact.nx_gpu = value
+                text.nx_gpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
+            end
+            read_gpu(i + 1)
+        end)
+    end
+    read_gpu(0)
     launch("cat", { "/proc/meminfo" }, function(out)
         local fraction, used, total = sysinfo.mem(out)
         if fraction ~= nil and used ~= nil and total ~= nil then
@@ -319,13 +331,21 @@ on("nx_identity_save", function()
         after(2600, function() fact.nx_notice = false end)
         return
     end
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then
+        fact.nx_identity_edit_on = false
+        focus()
+        fact.nx_notice = true
+        text.nx_notice_text = "Safe mode: identity not saved"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
     if type(settings.nexus) ~= "table" then settings.nexus = {} end
     if type(settings.nexus.identity) ~= "table" then settings.nexus.identity = {} end
     local previous = settings.nexus.identity.name
     settings.nexus.identity.name = value
     local ok = pcall(sys.call, "files.write", FILE, settings)
     if ok then
-        text.nx_identity_name = value
+        sync_identity()
         fact.nx_identity_edit_on = false
         focus()
         fact.nx_notice = true
@@ -354,10 +374,7 @@ local function choose_identity_image(kind)
         launch("mooi", { "identity", kind, trim(path) }, function(out)
             if out then
                 settings = config.parse(read(FILE), json.decode)
-                local identity = settings.nexus.identity or {}
-                text.nx_identity_name = identity.name or "mooi system"
-                text.nx_avatar_path = identity.avatar and identity.avatar ~= "" and (identity_home .. "/" .. identity.avatar) or ""
-                text.nx_banner_path = identity.banner and identity.banner ~= "" and (identity_home .. "/" .. identity.banner) or ""
+                sync_identity()
                 fact.nx_notice = true
                 text.nx_notice_text = string.upper(kind) .. " IMAGE UPDATED"
             else

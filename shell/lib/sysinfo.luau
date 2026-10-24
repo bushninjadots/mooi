@@ -24,7 +24,7 @@ end
 -- Per-core counters from /proc/stat. The caller compares two samples to derive usage.
 function M.cpu_cores(text)
     local out = {}
-    for line in string.gmatch(text or "", "[^\\n]+") do
+    for line in string.gmatch(text or "", "[^\n]+") do
         local name, rest = string.match(line, "^(cpu%d+)%s+(.+)$")
         if name then
             local fields = {}
@@ -63,7 +63,7 @@ function M.display_summary(monitors)
     local refresh, scale = tonumber(selected.refreshRate), tonumber(selected.scale)
     if not width or not height or width <= 0 or height <= 0 then return nil end
     local hz = refresh and refresh > 0 and string.format(' · %.0f Hz', refresh) or ''
-    local scale_text = scale and scale > 0 and string.format(' · %.2gx', scale) or ''
+    local scale_text = scale and scale > 0 and string.format(' · %.2fx', scale) or ''
     local suffix = count > 1 and string.format(' · +%d', count - 1) or ''
     return string.format('%s · %dx%d%s%s%s', name, width, height, hz, scale_text, suffix), count
 end
