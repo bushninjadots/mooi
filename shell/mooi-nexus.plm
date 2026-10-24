@@ -259,6 +259,7 @@ scene Nexus {
     service media as med { playing: bool; title: text; artist: text; album: text; length: number; position: number; rate: number; player: text }
 
     // System facts are populated by a bounded, optional Linux collector in the logic.
+<<<<<<< HEAD
     fact nx_about_on = false
     fact nx_identity_edit_on = false
     text nx_identity_draft = "mooi system"
@@ -270,6 +271,11 @@ scene Nexus {
     fact nx_gpu = 0
     text nx_gpu_value = "N/A"
     text nx_display_value = "DISPLAY INFO N/A"
+=======
+    fact nx_telemetry_on = false
+    fact nx_cpu_on = false
+    fact nx_cpu = 0
+>>>>>>> origin/feature/nexus-telemetry-foundation
     fact nx_ram_on = false
     fact nx_ram = 0
     fact nx_ram_used_gib = 0
@@ -288,8 +294,11 @@ scene Nexus {
     text nx_tx_value = "—"
     text nx_temp_value = "N/A"
     text nx_distro = "Reading system…"
+<<<<<<< HEAD
     text nx_os_version = ""
     text nx_os_id = ""
+=======
+>>>>>>> origin/feature/nexus-telemetry-foundation
     text nx_kernel = "—"
     text nx_uptime = "—"
     text nx_cpu_model = "—"
@@ -487,7 +496,11 @@ scene Nexus {
                      let sy1 = sy0 + 70
                      // Small, instrument-like plates: no oversized dashboard card wall.
                      Chamfer(0, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+<<<<<<< HEAD
                      text "{nx_cpu_label}" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+=======
+                     text "CPU LOAD" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+>>>>>>> origin/feature/nexus-telemetry-foundation
                      text "{nx_cpu_value}" { at: 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_cpu_on, fl.phos, fl.muted) }
                      box { from: 10, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
                      box { from: 10, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_cpu, 0, 1)), 2; color: fl.phos; show: nx_cpu_on }

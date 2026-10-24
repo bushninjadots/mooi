@@ -109,7 +109,10 @@ end)
 -- interpolated into a command. Static identity is read once, while proc counters are sampled
 -- every two seconds so rates are derived from deltas instead of repeated heavyweight polling.
 local cpu_previous, net_previous = nil, nil
+<<<<<<< HEAD
 local core_previous = nil
+=======
+>>>>>>> origin/feature/nexus-telemetry-foundation
 local function launch(command, args, done)
     local ok = pcall(run, command, args, function(out, code)
         if code == 0 and type(out) == "string" then done(out) else done(nil) end
@@ -126,8 +129,11 @@ local function read_static()
         if os_text then
             local os = telemetry.os_release(os_text)
             text.nx_distro = os.name or "Unknown distribution"
+<<<<<<< HEAD
             text.nx_os_version = os.version or ""
             text.nx_os_id = os.id or ""
+=======
+>>>>>>> origin/feature/nexus-telemetry-foundation
         else text.nx_distro = "Distribution unavailable" end
         fact.nx_telemetry_on = true
     end)
@@ -143,12 +149,15 @@ local function read_static()
     launch("cat", { "/proc/cpuinfo" }, function(out)
         text.nx_cpu_model = telemetry.cpu_model(out) or "CPU model unavailable"
     end)
+<<<<<<< HEAD
     launch("hyprctl", { "monitors", "-j" }, function(out)
         if not out then text.nx_display_value = "DISPLAY INFO N/A"; return end
         local ok, monitors = pcall(json.decode, out)
         local summary = ok and sysinfo.display_summary(monitors) or nil
         text.nx_display_value = summary or "DISPLAY INFO N/A"
     end)
+=======
+>>>>>>> origin/feature/nexus-telemetry-foundation
 end
 read_static()
 
@@ -161,6 +170,7 @@ local function sample_live()
             fact.nx_cpu = value
             text.nx_cpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
         end
+<<<<<<< HEAD
         local cores = sysinfo.cpu_cores(out)
         local count = 0
         for _ in pairs(cores) do count = count + 1 end
@@ -178,6 +188,8 @@ local function sample_live()
             fact.nx_gpu = value
             text.nx_gpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
         end
+=======
+>>>>>>> origin/feature/nexus-telemetry-foundation
     end)
     launch("cat", { "/proc/meminfo" }, function(out)
         local fraction, used, total = sysinfo.mem(out)
