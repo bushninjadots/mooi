@@ -19,6 +19,7 @@ local apps = require("lib/apps")
 local spaces = require("lib/spaces")
 local nexus = require("lib/nexus")
 local telemetry = require("lib/telemetry")
+local nexusnode = require("lib/nexusnode")
 
 print("nexus")
 test("media action mapping preserves Previous, Play/Pause, and Next", function()
@@ -2229,6 +2230,56 @@ test("wallpaper: the picker walks folders by name", function()
     eq(l[2].path, "/p/beta", "the path is made")
     eq(l[3].name, "zebra", "then Z")
     eq(#wallpaper.parse_dirs("", "/p"), 0, "an empty folder is empty, not an error")
+end)
+
+print("nexusnode")
+test("registry: the catalogue lists connected and unavailable types", function()
+    eq(#nexusnode.TYPES, 19, "connected plus unavailable types")
+    eq(nexusnode.get("core").title, "Nexus Core", "core title")
+    eq(nexusnode.get("nope"), nil, "unknown type")
+end)
+test("registry: availability follows a real provider", function()
+    local ok, why = nexusnode.available("power", {})
+    eq(ok, false, "no battery hides power"); eq(why, "No battery provider", "reason names the provider")
+    eq(nexusnode.available("power", { battery = true }), true, "battery makes power available")
+    eq(nexusnode.available("applications", { windows = true }), false, "unavailable types stay unavailable")
+end)
+test("registry: normalisation drops duplicates and clamps sizes", function()
+    local nodes = nexusnode.normalize_nodes({
+        { type = "cpu", x = 10, y = 10, w = 10, h = 10 },
+        { type = "cpu", x = 99, y = 99, w = 200, h = 200 },
+        { type = "ghost", x = 0, y = 0, w = 100, h = 100 },
+        "nonsense",
+    })
+    eq(#nodes, 1, "duplicate and unknown dropped")
+    eq(nodes[1].w, nexusnode.get("cpu").min.w, "width clamped to minimum")
+    eq(nodes[1].h, nexusnode.get("cpu").min.h, "height clamped to minimum")
+    eq(nodes[1].vis, true, "visibility defaults on")
+    eq(nodes[1].min, false, "minimised defaults off")
+    eq(nodes[1].essential, false, "essential defaults off")
+end)
+test("registry: the default arrangement is ten anchors around the centre", function()
+    local arranged = nexusnode.default_nodes({ w = 1920, h = 892 })
+    eq(#arranged, 10, "ten default nodes")
+    eq(arranged[1].type, "core", "core comes first")
+    eq(arranged[1].x + arranged[1].w / 2, 960, "core is horizontally centred")
+    eq(arranged[1].y + arranged[1].h / 2, 446, "core is vertically centred")
+end)
+test("registry: seeds keep the core and map legacy plate modules", function()
+    local seeds = nexusnode.seed_arrangements({ modules = { "cpu", "network", "player", "output" } })
+    eq(#seeds, 3, "three shipped arrangements")
+    eq(seeds[1].name, "FULL", "first is FULL"); eq(seeds[3].name, "MINIMAL", "last is MINIMAL")
+    eq(seeds[1].nodes[1].type, "core", "a seed always keeps the core")
+    for _, n in ipairs(seeds[1].nodes) do
+        if n.type == "media" then eq(n.vis, true, "legacy player maps to media") end
+    end
+end)
+test("registry: absent providers hide their nodes", function()
+    local seeds = nexusnode.seed_arrangements({})
+    local visible = nexusnode.visible_nodes(seeds[1], { battery = false, brightness = false, media = false })
+    for _, n in ipairs(visible) do
+        eq(n.type ~= "power" and n.type ~= "display" and n.type ~= "media", true, "absent providers hide their node")
+    end
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))
