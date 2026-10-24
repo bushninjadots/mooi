@@ -23,3 +23,5 @@ ruvector.db
 
 # python tool caches
 __pycache__/
+
+.superpowers/
