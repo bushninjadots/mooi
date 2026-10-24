@@ -15,7 +15,7 @@ import "ui/loom.plm"
 
 scene Nexus {
     permissions {
-        run: "pleamar"
+        run: "pleamar", "cat", "df", "uname", "hostname", "sensors"
         services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "files", "files.write", "env"
     }
 
@@ -258,6 +258,41 @@ scene Nexus {
     service bluetooth { present: bool; powered: bool; discovering: bool }
     service media as med { playing: bool; title: text; artist: text; album: text; length: number; position: number; rate: number; player: text }
 
+    // System facts are populated by a bounded, optional Linux collector in the logic.
+    fact nx_about_on = false
+    fact nx_identity_edit_on = false
+    text nx_identity_draft = "mooi system"
+    fact nx_telemetry_on = false
+    fact nx_cpu_on = false
+    fact nx_cpu = 0
+    text nx_cpu_label = "CPU LOAD"
+    fact nx_gpu_on = false
+    fact nx_gpu = 0
+    text nx_gpu_value = "N/A"
+    text nx_display_value = "DISPLAY INFO N/A"
+    fact nx_ram_on = false
+    fact nx_ram = 0
+    fact nx_ram_used_gib = 0
+    fact nx_ram_total_gib = 0
+    fact nx_disk_on = false
+    fact nx_disk = 0
+    fact nx_net_on = false
+    fact nx_rx = 0
+    fact nx_tx = 0
+    fact nx_temp_on = false
+    fact nx_temp = 0
+    text nx_cpu_value = "—"
+    text nx_ram_value = "—"
+    text nx_disk_value = "—"
+    text nx_rx_value = "—"
+    text nx_tx_value = "—"
+    text nx_temp_value = "N/A"
+    text nx_distro = "Reading system…"
+    text nx_os_version = ""
+    text nx_os_id = ""
+    text nx_kernel = "—"
+    text nx_uptime = "—"
+    text nx_cpu_model = "—"
     fact nx_open = 0
     fact nx_pinned = false
     fact st_glow = 1
@@ -273,6 +308,11 @@ scene Nexus {
     text nx_duration = ""
     fact nx_notice = false
     text nx_notice_text = ""
+    text nx_identity_name = "mooi system"
+    text nx_avatar_path = ""
+    text nx_banner_path = ""
+    image nx_avatar = from nx_avatar_path, 42, 42
+    image nx_banner = from nx_banner_path, 640, 74
     text nx_user = "operator"
     text nx_host = "Arch Linux"
     text nx_session = "Hyprland"
@@ -282,6 +322,13 @@ scene Nexus {
     text nx_player = ""
     figure nx_mark = file "icons/arch.svg"
 
+    event nx_about ->            // toggle the System / About view
+    event nx_diagnostics_copy ->
+    event nx_identity_edit ->
+    event nx_identity_save ->
+    event nx_identity_cancel ->
+    event nx_identity_avatar ->
+    event nx_identity_banner ->
     event nx_close ->           // to the logic: put the Nexus away (×, Escape, or an outside press)
     event nx_pin ->             // to the logic: pin or unpin (persisted in settings.json)
     event nx_vol ->             // to the logic: the output volume, 0 … 1
@@ -361,15 +408,47 @@ scene Nexus {
                     on press nx_closebtn { emit nx_close }
                     line { from: 0, 38; to: cw, 38; width: 1; color: fl.trace; opacity: 0.65 }
 
-                    // ── identity ──
+                    // ── System Identity: locally owned banner, display name and avatar ──
                     Chamfer(0, 52, cw, 74, 10, fl.hull_raised, fl.trace, 0.9, 1)
+                    image nx_banner { at: 0, 52; size: cw, 74; opacity: 0.42; show: nx_banner_path != "" }
+                    box { from: 0, 52; size: cw, 20; color: fl.phos; opacity: 0.08 }
                     box { from: 0, 68; size: 3, 42; color: fl.ember }
-                    text "OPERATOR" { at: 16, 68; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    text "{nx_user}" { at: 16, 85; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: fl.phos }
+                    Chamfer(cw - 60, 60, 42, 42, 7, fl.well, fl.trace, 0.9, 1)
+                    text "SYSTEM IDENTITY" { at: 16, 68; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    text "{nx_identity_name}" { at: 16, 85; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: fl.phos }
                     text "{nx_host}" { at: 16, 105; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                    text "{nx_session}" { at: cw - 16, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                    text "{clock.time}  ·  {clock.date}" { at: cw - 16, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
-                    text "WORKSPACE {ws.active, 0}" { at: cw - 16, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                    text "{nx_session}" { at: cw - 72, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text "{clock.time}  ·  {clock.date}" { at: cw - 72, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
+                    text "WORKSPACE {ws.active, 0}" { at: cw - 72, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                    zone box nx_diag_copy_btn { from: cw - 154, 130; size: 138, 22; cursor: pointer; role: button; label: "Copy system diagnostics" }
+                    CutButton(cw - 154, 131, 138, "COPY DIAGNOSTICS", fl.phos, nx_diag_copy_btn.hover)
+                    on press nx_diag_copy_btn { emit nx_diagnostics_copy }
+                    text "{string.upper(string.sub(nx_identity_name, 1, 1))}" { at: cw - 39, 81; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: nx_avatar_path == "" }
+                    image nx_avatar { at: cw - 60, 60; size: 42, 42; show: nx_avatar_path != "" }
+                    zone box nx_avatar_edit { from: cw - 60, 60; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
+                    on press nx_avatar_edit { emit nx_identity_edit }
+
+                    // ── identity editor: native Pleamar field plus safe image-picker actions ──
+                    group { show: nx_identity_edit_on
+                        Chamfer(cw - 326, 132, 310, 218, 9, fl.hull_raised, fl.trace, 1, 1)
+                        box { from: cw - 326, 132; size: 310, 3; color: fl.ember }
+                        text "IDENTITY CONFIGURATION" { at: cw - 310, 151; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos }
+                        text "DISPLAY NAME" { at: cw - 310, 174; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        input nx_identity_draft { at: cw - 310, 184; width: 278; size: 16; color: fl.phos; placeholder: "Name this system"; selection: fl.trace; active: nx_identity_edit_on }
+                        zone box nx_identity_avatar_btn { from: cw - 310, 222; size: 132, 28; cursor: pointer; role: button; label: "Choose profile avatar" }
+                        CutButton(cw - 310, 223, 132, "AVATAR IMAGE", fl.phos, nx_identity_avatar_btn.hover)
+                        on press nx_identity_avatar_btn { emit nx_identity_avatar }
+                        zone box nx_identity_banner_btn { from: cw - 168, 222; size: 136, 28; cursor: pointer; role: button; label: "Choose system banner" }
+                        CutButton(cw - 168, 223, 136, "BANNER IMAGE", fl.phos, nx_identity_banner_btn.hover)
+                        on press nx_identity_banner_btn { emit nx_identity_banner }
+                        text "PNG · JPG · WEBP · AVIF" { at: cw - 310, 267; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        zone box nx_identity_save_btn { from: cw - 166, 300; size: 74, 28; cursor: pointer; role: button; label: "Save system identity" }
+                        CutButton(cw - 166, 301, 74, "SAVE", fl.phos, nx_identity_save_btn.hover)
+                        on press nx_identity_save_btn { emit nx_identity_save }
+                        zone box nx_identity_cancel_btn { from: cw - 84, 300; size: 52, 28; cursor: pointer; role: button; label: "Cancel identity editing" }
+                        CutButton(cw - 84, 301, 52, "CLOSE", fl.ember, nx_identity_cancel_btn.hover)
+                        on press nx_identity_cancel_btn { emit nx_identity_cancel }
+                    }
 
                     // ── four instruments ──
                     zone box nx_volhit { from: 0, ny; size: tw, 84; cursor: pointer; role: slider; label: "Output volume"
@@ -385,7 +464,7 @@ scene Nexus {
                     zone box nx_brihit { from: tw + 14, ny; size: tw, 84; cursor: pointer; role: slider; label: "Display brightness"
                                          value: brightness.level }
                     NTile(tw + 14, ny, tw, 84, "DISPLAY", pick(brightness.present, "{brightness.level * 100, 0}%", "N/A"),
-                          pick(brightness.present, "WHEEL TO SET", "NO BACKLIGHT"),
+                          "{nx_display_value}",
                           if(brightness.present, fl.phos, fl.muted))
                     on scroll nx_brihit { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
                     box { from: tw + 66, ny + 58; size: tw - 66, 2; color: fl.ground; show: brightness.present }
@@ -402,7 +481,45 @@ scene Nexus {
                           if(not battery.present, fl.muted, if(battery.charging, fl.flare, fl.phos)))
 
                     // ── the player ──
-                    let my0 = ry + 98
+                    // ── live system telemetry: six compact instruments ──
+                     let qtw = (cw - 28) / 3
+                     let sy0 = ry + 98
+                     let sy1 = sy0 + 70
+                     // Small, instrument-like plates: no oversized dashboard card wall.
+                     Chamfer(0, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "{nx_cpu_label}" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_cpu_value}" { at: 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_cpu_on, fl.phos, fl.muted) }
+                     box { from: 10, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
+                     box { from: 10, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_cpu, 0, 1)), 2; color: fl.phos; show: nx_cpu_on }
+
+                     Chamfer(qtw + 14, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "MEMORY" { at: qtw + 24, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_ram_value}" { at: qtw + 24, sy0 + 31; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: if(nx_ram_on, fl.phos, fl.muted) }
+                     box { from: qtw + 24, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
+                     box { from: qtw + 24, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_ram, 0, 1)), 2; color: fl.phos; show: nx_ram_on }
+
+                     Chamfer((qtw + 14) * 2, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "CPU TEMP" { at: (qtw + 14) * 2 + 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_temp_value}" { at: (qtw + 14) * 2 + 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_temp_on, fl.flare, fl.muted) }
+                     text pick(nx_temp_on, "SENSOR ACTIVE", "NO SENSOR") { at: (qtw + 14) * 2 + 10, sy0 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+
+                     Chamfer(0, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "ROOT STORAGE" { at: 10, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_disk_value}" { at: 10, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_disk_on, fl.phos, fl.muted) }
+                     box { from: 10, sy1 + 47; size: qtw - 20, 2; color: fl.ground }
+                     box { from: 10, sy1 + 47; size: max(0, (qtw - 20) * clamp(nx_disk, 0, 1)), 2; color: fl.flare; show: nx_disk_on }
+
+                     Chamfer(qtw + 14, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "NETWORK RX" { at: qtw + 24, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_rx_value}" { at: qtw + 24, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_net_on, fl.phos, fl.muted) }
+                     text "INBOUND RATE" { at: qtw + 24, sy1 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+
+                     Chamfer((qtw + 14) * 2, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
+                     text "NETWORK TX" { at: (qtw + 14) * 2 + 10, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "{nx_tx_value}" { at: (qtw + 14) * 2 + 10, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_net_on, fl.phos, fl.muted) }
+                     text "OUTBOUND RATE" { at: (qtw + 14) * 2 + 10, sy1 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+
+                     let my0 = sy1 + 74
                     Chamfer(0, my0, cw, med_h, 10, fl.hull_raised, fl.trace, 0.9, 1)
                     box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(nx_has, if(med.playing, fl.phos, fl.flare), fl.muted) }
                     text "PLAYER" { at: 16, my0 + 17; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }

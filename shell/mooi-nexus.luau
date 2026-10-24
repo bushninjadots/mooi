@@ -8,9 +8,13 @@ local config = require("lib/config")
 local ferro = require("lib/ferro")
 local style = require("lib/style")
 local nexus = require("lib/nexus")
+local sysinfo = require("lib/sysinfo")
+local telemetry = require("lib/telemetry")
 
 local FILE = "settings.json"
 local PALETTE = "palette.json"
+local data_home = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share")
+local identity_home = data_home .. "/pleamar/mooi"
 
 local function read(name, kind)
     local ok, v
@@ -47,6 +51,9 @@ end)
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
     fact.nx_pinned = settings.nexus.pinned == true
+    text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
+    text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar ~= "" and (identity_home .. "/" .. settings.nexus.identity.avatar) or ""
+    text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner ~= "" and (identity_home .. "/" .. settings.nexus.identity.banner) or ""
 end)
 
 -- The glow the plate carries follows the theme's finish, as the bar's does.
@@ -59,6 +66,9 @@ text.nx_user = env("USER", "operator")
 text.nx_host = env("HOSTNAME", "Arch Linux")
 text.nx_session = env("XDG_CURRENT_DESKTOP", "Hyprland")
 fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
+text.nx_identity_name = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
+text.nx_avatar_path = settings.nexus.identity and settings.nexus.identity.avatar ~= "" and (identity_home .. "/" .. settings.nexus.identity.avatar) or ""
+text.nx_banner_path = settings.nexus.identity and settings.nexus.identity.banner ~= "" and (identity_home .. "/" .. settings.nexus.identity.banner) or ""
 
 -- The player: the service's text fields can be drawn, but not compared, so the facts that say
 -- "there is something here" and the fields themselves are kept on this side of the boundary.
@@ -93,6 +103,127 @@ pcall(sys.watch, "media", function(m)
     text.nx_album = album
     text.nx_player = player
 end)
+
+-- ── Linux system telemetry ───────────────────────────────────
+-- Fixed, allowlisted reads only. Each optional source fails closed; no display text is ever
+-- interpolated into a command. Static identity is read once, while proc counters are sampled
+-- every two seconds so rates are derived from deltas instead of repeated heavyweight polling.
+local cpu_previous, net_previous = nil, nil
+local core_previous = nil
+local function launch(command, args, done)
+    local ok = pcall(run, command, args, function(out, code)
+        if code == 0 and type(out) == "string" then done(out) else done(nil) end
+    end)
+    if not ok then done(nil) end
+end
+local function trim(value)
+    if type(value) ~= "string" then return nil end
+    value = value:gsub("^%s+", ""):gsub("%s+$", "")
+    return value ~= "" and value or nil
+end
+local function read_static()
+    launch("cat", { "/etc/os-release" }, function(os_text)
+        if os_text then
+            local os = telemetry.os_release(os_text)
+            text.nx_distro = os.name or "Unknown distribution"
+            text.nx_os_version = os.version or ""
+            text.nx_os_id = os.id or ""
+        else text.nx_distro = "Distribution unavailable" end
+        fact.nx_telemetry_on = true
+    end)
+    launch("uname", { "-r" }, function(out)
+        text.nx_kernel = trim(out) or "Kernel unavailable"
+    end)
+    launch("hostname", {}, function(out)
+        text.nx_host = trim(out) or env("HOSTNAME", "Host unavailable")
+    end)
+    launch("cat", { "/proc/uptime" }, function(out)
+        text.nx_uptime = telemetry.uptime(out) or "Uptime unavailable"
+    end)
+    launch("cat", { "/proc/cpuinfo" }, function(out)
+        text.nx_cpu_model = telemetry.cpu_model(out) or "CPU model unavailable"
+    end)
+    launch("hyprctl", { "monitors", "-j" }, function(out)
+        if not out then text.nx_display_value = "DISPLAY INFO N/A"; return end
+        local ok, monitors = pcall(json.decode, out)
+        local summary = ok and sysinfo.display_summary(monitors) or nil
+        text.nx_display_value = summary or "DISPLAY INFO N/A"
+    end)
+end
+read_static()
+
+local function sample_live()
+    launch("cat", { "/proc/stat" }, function(out)
+        local value
+        value, cpu_previous = sysinfo.cpu(out, cpu_previous)
+        if value ~= nil then
+            fact.nx_cpu_on = true
+            fact.nx_cpu = value
+            text.nx_cpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
+        end
+        local cores = sysinfo.cpu_cores(out)
+        local count = 0
+        for _ in pairs(cores) do count = count + 1 end
+        if count > 0 then text.nx_cpu_label = string.format("CPU LOAD · %d CORES", count) end
+        core_previous = cores
+    end)
+    -- Optional DRM interface; most but not all drivers expose this file.
+    launch("sh", { "-c", "for f in /sys/class/drm/card[0-9]/device/gpu_busy_percent; do if [ -r \"$f\" ]; then cat \"$f\"; exit 0; fi; done; exit 1" }, function(out)
+        local value = sysinfo.gpu_busy(out)
+        if value == nil then
+            fact.nx_gpu_on = false
+            text.nx_gpu_value = "N/A"
+        else
+            fact.nx_gpu_on = true
+            fact.nx_gpu = value
+            text.nx_gpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
+        end
+    end)
+    launch("cat", { "/proc/meminfo" }, function(out)
+        local fraction, used, total = sysinfo.mem(out)
+        if fraction ~= nil and used ~= nil and total ~= nil then
+            fact.nx_ram_on = true
+            fact.nx_ram = math.max(0, math.min(1, fraction))
+            fact.nx_ram_used_gib, fact.nx_ram_total_gib = used, total
+            text.nx_ram_value = string.format("%.1f / %.1f GiB", used, total)
+        end
+    end)
+    launch("df", { "-Pk", "/" }, function(out)
+        local disk = telemetry.disk(out)
+        if disk then
+            fact.nx_disk_on = true
+            fact.nx_disk = disk.used_fraction
+            text.nx_disk_value = string.format("%d%% used", disk.percent)
+        end
+    end)
+    launch("cat", { "/proc/net/dev" }, function(out)
+        if not out then return end
+        local rx, tx = sysinfo.net(out)
+        if net_previous then
+            local rx_rate = math.max(0, (rx - net_previous.rx) / 2)
+            local tx_rate = math.max(0, (tx - net_previous.tx) / 2)
+            fact.nx_net_on = true
+            fact.nx_rx, fact.nx_tx = rx_rate, tx_rate
+            text.nx_rx_value, text.nx_tx_value = sysinfo.rate(rx_rate), sysinfo.rate(tx_rate)
+        end
+        net_previous = { rx = rx, tx = tx }
+    end)
+    launch("sensors", { "-j" }, function(out)
+        if not out then fact.nx_temp_on = false; text.nx_temp_value = "N/A"; return end
+        local ok, decoded = pcall(json.decode, out)
+        local temperature = ok and sysinfo.temp(decoded) or nil
+        if temperature then
+            fact.nx_temp_on = true
+            fact.nx_temp = temperature
+            text.nx_temp_value = string.format("%.0f°C", temperature)
+        else
+            fact.nx_temp_on = false
+            text.nx_temp_value = "N/A"
+        end
+    end)
+    after(2000, sample_live)
+end
+sample_live()
 
 -- ── The controls ────────────────────────────────────────────
 -- A wheel asks for a new level every notch; the system is told at most every 40 ms, always
@@ -137,6 +268,102 @@ local function request(kind, v)
     if not flushing then flushing = true; after(40, flush) end
 end
 
+on("nx_about", function() fact.nx_about_on = not fact.nx_about_on end)
+on("nx_diagnostics_copy", function()
+    launch("mooi", { "diagnostics", "copy" }, function(out)
+        fact.nx_notice = true
+        if out and trim(out) then text.nx_notice_text = trim(out)
+        else text.nx_notice_text = "COPY FAILED — install wl-clipboard or xclip" end
+        after(3200, function() fact.nx_notice = false end)
+    end)
+end)
+
+on("text:nx_identity_draft", function(value)
+    if type(value) == "string" then text.nx_identity_draft = value end
+end)
+
+on("nx_identity_edit", function()
+    fact.nx_identity_edit_on = true
+    text.nx_identity_draft = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
+    focus("nx_identity_draft")
+end)
+
+on("nx_identity_cancel", function()
+    fact.nx_identity_edit_on = false
+    focus()
+end)
+
+on("nx_identity_save", function()
+    local value = trim(text.nx_identity_draft)
+    if not value then
+        fact.nx_notice = true
+        text.nx_notice_text = "Enter a system name before saving"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
+    if #value > 48 or value:find("[%c]") then
+        fact.nx_notice = true
+        text.nx_notice_text = "Name must be plain text, 48 characters max"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
+    if type(settings.nexus) ~= "table" then settings.nexus = {} end
+    if type(settings.nexus.identity) ~= "table" then settings.nexus.identity = {} end
+    local previous = settings.nexus.identity.name
+    settings.nexus.identity.name = value
+    local ok = pcall(sys.call, "files.write", FILE, settings)
+    if ok then
+        text.nx_identity_name = value
+        fact.nx_identity_edit_on = false
+        focus()
+        fact.nx_notice = true
+        text.nx_notice_text = "System identity saved"
+    else
+        settings.nexus.identity.name = previous
+        fact.nx_notice = true
+        text.nx_notice_text = "Could not save identity settings"
+    end
+    after(2600, function() fact.nx_notice = false end)
+end)
+
+local function choose_identity_image(kind)
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then
+        fact.nx_notice = true
+        text.nx_notice_text = "Image import is disabled in safe mode"
+        after(2600, function() fact.nx_notice = false end)
+        return
+    end
+    local ok = pcall(run, "zenity", {
+        "--file-selection",
+        "--title=Choose system " .. kind,
+        "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif"
+    }, function(path, code)
+        if code ~= 0 or not trim(path) then return end
+        launch("mooi", { "identity", kind, trim(path) }, function(out)
+            if out then
+                settings = config.parse(read(FILE), json.decode)
+                local identity = settings.nexus.identity or {}
+                text.nx_identity_name = identity.name or "mooi system"
+                text.nx_avatar_path = identity.avatar and identity.avatar ~= "" and (identity_home .. "/" .. identity.avatar) or ""
+                text.nx_banner_path = identity.banner and identity.banner ~= "" and (identity_home .. "/" .. identity.banner) or ""
+                fact.nx_notice = true
+                text.nx_notice_text = string.upper(kind) .. " IMAGE UPDATED"
+            else
+                fact.nx_notice = true
+                text.nx_notice_text = "Image import failed; check file type and mooi command"
+            end
+            after(3000, function() fact.nx_notice = false end)
+        end)
+    end)
+    if not ok then
+        fact.nx_notice = true
+        text.nx_notice_text = "Install zenity to use the image picker"
+        after(3000, function() fact.nx_notice = false end)
+    end
+end
+
+on("nx_identity_avatar", function() choose_identity_image("avatar") end)
+on("nx_identity_banner", function() choose_identity_image("banner") end)
 on("nx_vol", function(v) request("vol", v) end)
 on("nx_bri", function(v) request("bri", v) end)
 on("nx_mute", function() control_call("MUTE", "audio.mute") end)

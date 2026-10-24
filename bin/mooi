@@ -25,6 +25,7 @@
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
+#   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
@@ -608,6 +609,74 @@ case "$cmd" in
            exec "$pleamar" --say "$name" "emit open_board" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_nexus" ;;
+    diagnostics)
+        action=${1:-show}
+        case "$action" in show|copy) ;; *) echo "usage: mooi diagnostics [show|copy]" >&2; exit 2 ;; esac
+        os_name="Unknown distribution"
+        if [ -r /etc/os-release ]; then . /etc/os-release; os_name=${PRETTY_NAME:-${NAME:-Unknown distribution}}; fi
+        cpu_model=$(awk -F: '/model name[[:space:]]*:/ { sub(/^[[:space:]]+/, "", $2); print $2; exit }' /proc/cpuinfo 2>/dev/null)
+        [ -n "$cpu_model" ] || cpu_model="Unavailable"
+        memory=$(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {if(t>0) printf "%.1f GiB used / %.1f GiB total", (t-a)/1048576, t/1048576; else print "Unavailable"}' /proc/meminfo 2>/dev/null)
+        root_disk=$(df -hP / 2>/dev/null | awk 'NR==2 {printf "%s used (%s of %s)", $5, $3, $2}')
+        [ -n "$root_disk" ] || root_disk="Unavailable"
+        uptime_text=$(uptime -p 2>/dev/null || true); [ -n "$uptime_text" ] || uptime_text="Unavailable"
+        gpu_list=$(lspci 2>/dev/null | grep -Ei 'VGA compatible controller|3D controller|Display controller' | sed 's/^[^:]*: //' | head -n 4)
+        [ -n "$gpu_list" ] || gpu_list="Unavailable (lspci missing or no PCI display device found)"
+        report=$(printf '%s\n' "MOOI SYSTEM DIAGNOSTICS" "Distribution: $os_name" "Kernel: $(uname -r 2>/dev/null || echo Unavailable)" "Hostname: $(hostname 2>/dev/null || echo Unavailable)" "Session: ${XDG_CURRENT_DESKTOP:-${XDG_SESSION_TYPE:-Unknown}}" "Uptime: $uptime_text" "CPU: $cpu_model" "Memory: $memory" "Root storage: $root_disk" "Graphics: $gpu_list")
+        if [ "$action" = show ]; then printf '%s\n' "$report"; exit 0; fi
+        if command -v wl-copy >/dev/null 2>&1; then printf '%s\n' "$report" | wl-copy || { echo "Clipboard write failed" >&2; exit 1; }
+        elif command -v xclip >/dev/null 2>&1; then printf '%s\n' "$report" | xclip -selection clipboard -in || { echo "Clipboard write failed" >&2; exit 1; }
+        else echo "No clipboard utility found; install wl-clipboard or xclip" >&2; exit 1; fi
+        echo "Diagnostics copied"
+        ;;
+    identity)
+        # Import images into mooi's own data folder; only generated relative paths enter settings.
+        action=\${1:-help}; [ $# -gt 0 ] && shift
+        [ "\${MOOI_SAFE:-0}" != 1 ] || { echo "identity settings are disabled in --safe mode" >&2; exit 1; }
+        [ -r "$settings" ] || { echo "mooi settings not found; start mooi once first: $settings" >&2; exit 1; }
+        command -v jq >/dev/null 2>&1 || { echo "identity requires jq" >&2; exit 1; }
+        jq -e . "$settings" >/dev/null 2>&1 || { echo "settings.json is not valid JSON; refusing to overwrite it" >&2; exit 1; }
+        case "$action" in
+            name)
+                value=$(printf '%s' "$*" | tr '\n' ' ')
+                [ -n "$value" ] || { echo 'usage: mooi identity name "Display name"' >&2; exit 2; }
+                [ "\${#value}" -le 48 ] || { echo "display name must be 48 characters or fewer" >&2; exit 2; }
+                case "$value" in *"$(printf '\001')"*|*"$(printf '\177')"*) echo "control characters are not allowed" >&2; exit 2 ;; esac
+                tmp="$settings.tmp.$"
+                jq --arg value "$value" '.nexus.identity.name = $value' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not update settings" >&2; exit 1; }
+                echo "System identity name set to: $value"
+                ;;
+            avatar|banner)
+                source=\${1:-}
+                [ -n "$source" ] && [ -f "$source" ] || { echo "usage: mooi identity $action /path/to/image.png" >&2; exit 2; }
+                command -v file >/dev/null 2>&1 || { echo "identity image import requires the file utility" >&2; exit 1; }
+                mime=$(file --brief --mime-type -- "$source" 2>/dev/null || true)
+                case "$mime" in image/png) ext=png ;; image/jpeg) ext=jpg ;; image/webp) ext=webp ;; image/avif) ext=avif ;; *) echo "unsupported image type: $mime (use PNG, JPEG, WebP or AVIF)" >&2; exit 2 ;; esac
+                mkdir -p "$folder/identity" || exit 1
+                relative="identity/$action.$ext"
+                dest="$folder/$relative"
+                tmpdest="$dest.tmp.$"
+                cp -- "$source" "$tmpdest" && mv "$tmpdest" "$dest" || { rm -f "$tmpdest"; echo "could not import image" >&2; exit 1; }
+                tmp="$settings.tmp.$"
+                jq --arg value "$relative" --arg action "$action" '.nexus.identity[$action] = $value' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not update settings; imported image remains at $dest" >&2; exit 1; }
+                for old in "$folder/identity/$action".*; do [ "$old" = "$dest" ] || rm -f -- "$old"; done
+                echo "$action image imported to $dest"
+                ;;
+            reset)
+                tmp="$settings.tmp.$"
+                jq '.nexus.identity = {name:"mooi system",avatar:"",banner:""}' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not reset identity settings" >&2; exit 1; }
+                rm -f "$folder"/identity/avatar.* "$folder"/identity/banner.*
+                echo "System identity reset"
+                ;;
+            show)
+                jq -r '.nexus.identity // {name:"mooi system",avatar:"",banner:""} | "Name: \(.name // "mooi system")\nAvatar: \(.avatar // "not set")\nBanner: \(.banner // "not set")"' "$settings"
+                ;;
+            *)
+                echo 'usage: mooi identity name "Display name" | avatar IMAGE | banner IMAGE | show | reset' >&2
+                exit 2
+                ;;
+        esac
+        ;;
     note)
         text=$(printf '%s' "$*" | tr '\n' ' ')
         [ -n "$text" ] || { echo "usage: mooi note \"what to remember\"" >&2; exit 2; }
@@ -624,6 +693,7 @@ case "$cmd" in
     shutter-here) exec "$pleamar" --say "$name" "emit open_shutter 1" ;;
     say)  exec "$pleamar" --say "$name" "$@" ;;
     check)
+        sh -n "$self" || exit 1
         "$pleamar" --check "$src" || exit 1
         "$pleamar" --check "$root/shell/mooi-settings.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-wallpaper.plm" || exit 1

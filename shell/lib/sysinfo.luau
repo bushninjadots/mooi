@@ -20,6 +20,53 @@ function M.cpu(text, prev)
     return math.max(0, math.min(1, busy)), now
 end
 
+
+-- Per-core counters from /proc/stat. The caller compares two samples to derive usage.
+function M.cpu_cores(text)
+    local out = {}
+    for line in string.gmatch(text or "", "[^\\n]+") do
+        local name, rest = string.match(line, "^(cpu%d+)%s+(.+)$")
+        if name then
+            local fields = {}
+            for n in string.gmatch(rest, "%d+") do fields[#fields + 1] = tonumber(n) end
+            if #fields >= 4 then
+                local total, idle = 0, (fields[4] or 0) + (fields[5] or 0)
+                for i = 1, math.min(#fields, 8) do total = total + fields[i] end
+                out[name] = { total = total, idle = idle }
+            end
+        end
+    end
+    return out
+end
+
+-- DRM sysfs GPU busy percentage, where supported by the active driver.
+function M.gpu_busy(text)
+    local n = tonumber(string.match(text or "", "^%s*(%d+)%s*$"))
+    if not n or n < 0 or n > 100 then return nil end
+    return n / 100
+end
+
+-- Format a decoded hyprctl monitors -j response; prefer the focused output.
+function M.display_summary(monitors)
+    if type(monitors) ~= 'table' then return nil end
+    local selected, count = nil, 0
+    for _, monitor in ipairs(monitors) do
+        if type(monitor) == 'table' then
+            count = count + 1
+            if monitor.focused == true then selected = monitor end
+        end
+    end
+    if not selected then for _, monitor in ipairs(monitors) do if type(monitor) == 'table' then selected = monitor; break end end end
+    if not selected then return nil end
+    local name = type(selected.name) == 'string' and selected.name or 'Display'
+    local width, height = tonumber(selected.width), tonumber(selected.height)
+    local refresh, scale = tonumber(selected.refreshRate), tonumber(selected.scale)
+    if not width or not height or width <= 0 or height <= 0 then return nil end
+    local hz = refresh and refresh > 0 and string.format(' · %.0f Hz', refresh) or ''
+    local scale_text = scale and scale > 0 and string.format(' · %.2gx', scale) or ''
+    local suffix = count > 1 and string.format(' · +%d', count - 1) or ''
+    return string.format('%s · %dx%d%s%s%s', name, width, height, hz, scale_text, suffix), count
+end
 -- /proc/meminfo → the used fraction and the used and total GiB.
 function M.mem(text)
     local total = tonumber(string.match(text or "", "MemTotal:%s+(%d+)"))

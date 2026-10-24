@@ -243,6 +243,9 @@ M.SCHEMA = {
     -- Control Nexus (D65): the command centre opens from the bar's Arch mark. Pinned keeps it
     -- open until it is closed deliberately; the live readings themselves are never persisted.
     { path = "nexus.pinned", kind = "boolean", default = false },
+    { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
+    { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
+    { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },
 }
 
 for _, id in ipairs(barlayout.ORDER) do
@@ -301,6 +304,10 @@ local function check(row, value)
         if not known then return false, "expected one of " .. table.concat(row.values, ", ") end
     elseif row.kind == "colour" then
         if type(value) ~= "string" or not string.match(value, "^#%x%x%x%x%x%x$") then return false, "expected a colour like #101418" end
+    elseif row.kind == "text" then
+        if type(value) ~= "string" or #value > row.max or string.find(value, "[%c]") then
+            return false, "expected plain text up to " .. tostring(row.max) .. " characters"
+        end
     elseif row.kind == "key" then
         if type(value) ~= "string" or not string.match(value, "^[%w%s%+_]+$") or not string.match(value, "%w$") then
             return false, "expected keys like \"SUPER + ALT + Space\""
