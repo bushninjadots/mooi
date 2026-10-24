@@ -30,4 +30,28 @@ function M.media_progress(position, length)
     return current, current / duration
 end
 
+-- Which device an audio list is using now: its name, or nil when the list is empty.
+function M.default_device(list)
+    if type(list) ~= "table" then return nil end
+    for _, device in ipairs(list) do
+        if type(device) == "table" and device.default then
+            return type(device.name) == "string" and device.name ~= "" and device.name or nil
+        end
+    end
+    return nil
+end
+
+-- The id after the current default, wrapping; nil when there is nothing to choose.
+function M.next_device(list)
+    if type(list) ~= "table" or #list == 0 then return nil end
+    local index = 0
+    for i, device in ipairs(list) do
+        if type(device) == "table" and device.default then index = i break end
+    end
+    local next_device = list[(index % #list) + 1]
+    if type(next_device) ~= "table" then return nil end
+    if type(next_device.id) ~= "string" and type(next_device.id) ~= "number" then return nil end
+    return next_device.id, next_device.name
+end
+
 return M

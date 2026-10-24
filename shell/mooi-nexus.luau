@@ -118,6 +118,24 @@ pcall(sys.watch, "media", function(m)
     text.nx_player = player
 end)
 
+-- Audio routing: the service owns the device lists; the logic keeps the last answer and names
+-- the default, so a press can cycle to the next id without the scene iterating a list.
+local routes = { out = {}, input = {} }
+local function publish_routes()
+    text.nx_out_name = nexus.default_device(routes.out) or "—"
+    text.nx_in_name = nexus.default_device(routes.input) or "—"
+end
+local function read_routes(audio)
+    if type(audio) ~= "table" then return end
+    routes.out = type(audio.outputs) == "table" and audio.outputs or {}
+    routes.input = type(audio.inputs) == "table" and audio.inputs or {}
+    publish_routes()
+end
+pcall(sys.watch, "audio", read_routes)
+local routed, initial_audio = pcall(sys.ask, "audio")
+if routed then read_routes(initial_audio) end
+publish_routes()
+
 -- ── Linux system telemetry ───────────────────────────────────
 -- Fixed, allowlisted reads only. Each optional source fails closed; no display text is ever
 -- interpolated into a command. Static identity is read once, while proc counters are sampled
@@ -280,6 +298,7 @@ local flushing = false
 local function flush()
     flushing = false
     if pending.vol ~= nil then control_call("VOLUME", "audio.volume", pending.vol) end
+    if pending.mic ~= nil then control_call("MICROPHONE", "audio.input", pending.mic) end
     if pending.bri ~= nil then control_call("BRIGHTNESS", "brightness.level", pending.bri) end
     pending = {}
 end
@@ -292,7 +311,27 @@ local function request(kind, v)
     if not flushing then flushing = true; after(40, flush) end
 end
 
-on("nx_about", function() fact.nx_about_on = not fact.nx_about_on end)
+on("nx_about", function()
+    local on = not fact.nx_about_on
+    fact.nx_about_on = on
+    if on then fact.nx_audio_on = false end
+end)
+on("nx_audio", function()
+    local on = not fact.nx_audio_on
+    fact.nx_audio_on = on
+    if on then fact.nx_about_on = false end
+end)
+on("nx_out_cycle", function()
+    local id = nexus.next_device(routes.out)
+    if id then control_call("OUTPUT", "audio.default", id) end
+end)
+on("nx_in_cycle", function()
+    local id = nexus.next_device(routes.input)
+    if id then control_call("INPUT", "audio.default", id) end
+end)
+on("nx_mic", function() control_call("MICROPHONE", "audio.input_mute") end)
+on("nx_mic_level", function(v) request("mic", v) end)
+on("nx_bt", function(v) control_call("BLUETOOTH", "bluetooth.power", tonumber(v) == 1) end)
 on("nx_diagnostics_copy", function()
     launch("mooi", { "diagnostics", "copy" }, function(out)
         fact.nx_notice = true

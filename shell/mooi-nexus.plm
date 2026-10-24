@@ -16,7 +16,7 @@ import "ui/loom.plm"
 scene Nexus {
     permissions {
         run: "pleamar", "cat", "df", "uname", "hostname", "sensors", "hyprctl", "mooi", "zenity"
-        services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "files", "files.write", "env"
+        services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env"
     }
 
     // The same facts and springs the bar wears: the logic paints them from palette.json, and
@@ -260,6 +260,7 @@ scene Nexus {
 
     // System facts are populated by a bounded, optional Linux collector in the logic.
     fact nx_about_on = false
+    fact nx_audio_on = false
     fact nx_identity_edit_on = false
     text nx_identity_draft = "mooi system"
     fact nx_telemetry_on = false
@@ -270,6 +271,8 @@ scene Nexus {
     fact nx_gpu = 0
     text nx_gpu_value = "N/A"
     text nx_display_value = "DISPLAY INFO N/A"
+    text nx_out_name = "—"
+    text nx_in_name = "—"
     fact nx_ram_on = false
     fact nx_ram = 0
     fact nx_ram_used_gib = 0
@@ -326,6 +329,12 @@ scene Nexus {
     figure nx_mark = file "icons/arch.svg"
 
     event nx_about ->            // toggle the System / About view
+    event nx_audio ->            // toggle the audio routing view
+    event nx_out_cycle ->        // to the logic: make the next output device the default
+    event nx_in_cycle ->         // to the logic: make the next input device the default
+    event nx_mic ->              // to the logic: mute or unmute the microphone
+    event nx_mic_level ->        // to the logic: the microphone level, 0 … 1
+    event nx_bt ->               // to the logic: the Bluetooth radio, 0 … 1
     event nx_diagnostics_copy ->
     event nx_identity_edit ->
     event nx_identity_save ->
@@ -423,11 +432,6 @@ scene Nexus {
                     text "{nx_session}" { at: cw - 72, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                     text "{clock.time}  ·  {clock.date}" { at: cw - 72, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
                     text "WORKSPACE {ws.active, 0}" { at: cw - 72, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                    zone box nx_diag_copy_btn { from: cw - 154, 130; size: 138, 22; cursor: pointer; role: button; label: "Copy system diagnostics"
-                                                show: not nx_identity_edit_on }
-                    group { show: not nx_identity_edit_on
-                        CutButton(cw - 154, 131, 138, "COPY DIAGNOSTICS", fl.phos, nx_diag_copy_btn.hover) }
-                    on press nx_diag_copy_btn { emit nx_diagnostics_copy }
                     text "{nx_initial}" { at: cw - 39, 81; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: not nx_avatar_on }
                     image nx_avatar { at: cw - 60, 60; size: 42, 42; show: nx_avatar_on }
                     zone box nx_avatar_edit { from: cw - 60, 60; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
@@ -455,16 +459,24 @@ scene Nexus {
                         on press nx_identity_cancel_btn { emit nx_identity_cancel }
                     }
 
-                    // ── the view switch: the live controls, or the system overview ──
-                    zone box nx_about_btn { from: 0, 130; size: 140, 22; cursor: pointer; role: button; label: "Toggle the system overview"
+                    // ── the view switch: live controls, the system overview, or audio ──
+                    zone box nx_about_btn { from: 0, 130; size: 130, 22; cursor: pointer; role: button; label: "Toggle the system overview"
                                           show: cw > 300 }
                     group { show: not nx_about_on and cw > 300
-                        CutButton(0, 131, 140, "SYSTEM OVERVIEW", fl.phos, nx_about_btn.hover) }
+                        CutButton(0, 131, 130, "SYSTEM", fl.phos, nx_about_btn.hover) }
                     group { show: nx_about_on and cw > 300
-                        CutButton(0, 131, 140, "BACK TO CONTROLS", fl.phos, nx_about_btn.hover) }
+                        CutButton(0, 131, 130, "BACK", fl.phos, nx_about_btn.hover) }
                     on press nx_about_btn { emit nx_about }
 
-                    group { show: not nx_about_on
+                    zone box nx_audio_btn { from: 138, 130; size: 110, 22; cursor: pointer; role: button; label: "Toggle audio routing"
+                                          show: cw > 300 }
+                    group { show: not nx_audio_on and cw > 300
+                        CutButton(138, 131, 110, "AUDIO", fl.phos, nx_audio_btn.hover) }
+                    group { show: nx_audio_on and cw > 300
+                        CutButton(138, 131, 110, "BACK", fl.ember, nx_audio_btn.hover) }
+                    on press nx_audio_btn { emit nx_audio }
+
+                    group { show: not nx_about_on and not nx_audio_on
                     // ── four instruments ──
                     zone box nx_volhit { from: 0, ny; size: tw, 84; cursor: pointer; role: slider; label: "Output volume"
                                          value: audio.volume }
@@ -621,6 +633,52 @@ scene Nexus {
                         CutButton(0, ny + 379, 170, "COPY DIAGNOSTICS", fl.phos, nx_about_copy.hover)
                         on press nx_about_copy { emit nx_diagnostics_copy }
                         text "NOTHING LEAVES THIS MACHINE" { at: cw, ny + 392; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    }
+
+                    // ── audio: where it plays, where it listens, and the radio ──
+                    group { show: nx_audio_on
+                        let au0 = ny + 48
+                        let au1 = au0 + 34
+                        let au2 = au1 + 34
+                        Chamfer(0, ny, cw, 210, 10, fl.hull_raised, fl.trace, 0.9, 1)
+                        box { from: 0, ny; size: 3, 30; color: fl.ember }
+                        text "AUDIO ROUTING" { at: 16, ny + 17; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.phos }
+                        text "PRESS A DEVICE ROW TO CYCLE" { at: cw - 16, ny + 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        line { from: 16, ny + 32; to: cw - 16, ny + 32; width: 1; color: fl.trace; opacity: 0.7 }
+
+                        zone box nx_out_hit { from: 0, au0 - 14; size: cw, 32; cursor: pointer; role: button; label: "Cycle output device" }
+                        text "OUTPUT" { at: 16, au0; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "{nx_out_name}" { at: cw - 16, au0; anchor: right center; size: 11; family: "Exo 2"; width: cw - 150; lines: 1; color: fl.phos }
+                        on press nx_out_hit { emit nx_out_cycle }
+
+                        zone box nx_in_hit { from: 0, au1 - 14; size: cw, 32; cursor: pointer; role: button; label: "Cycle input device" }
+                        text "INPUT" { at: 16, au1; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "{nx_in_name}" { at: cw - 16, au1; anchor: right center; size: 11; family: "Exo 2"; width: cw - 150; lines: 1; color: fl.phos }
+                        on press nx_in_hit { emit nx_in_cycle }
+
+                        zone box nx_mic_hit { from: 0, au2 - 14; size: cw, 36; cursor: pointer; role: slider; label: "Microphone volume"
+                                              value: audio.input }
+                        text "MICROPHONE" { at: 16, au2; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text pick(audio.input_muted, "MUTED", "{audio.input * 100, 0}%") { at: cw - 16, au2; anchor: right center;
+                              size: 11; weight: 600; family: "Exo 2"; color: if(audio.input_muted, fl.ember, fl.phos) }
+                        box { from: 16, au2 + 11; size: cw - 32, 2; color: fl.ground }
+                        box { from: 16, au2 + 11; size: max(0, (cw - 32) * clamp(audio.input, 0, 1)), 2; color: if(audio.input_muted, fl.ember, fl.phos) }
+                        on press nx_mic_hit { emit nx_mic }
+                        on scroll nx_mic_hit { emit nx_mic_level(clamp(audio.input + wheel * 0.05, 0, 1)) }
+                        text "WHEEL SETS · PRESS MUTES" { at: 16, au2 + 24; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.trace_lit }
+
+                        Chamfer(0, ny + 224, cw, 76, 10, fl.hull_raised, fl.trace, 0.9, 1)
+                        text "BLUETOOTH" { at: 16, ny + 240; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        text "N/A" { at: cw - 16, ny + 240; anchor: right center; size: 11; weight: 600; family: "Exo 2"; color: fl.muted; show: not bluetooth.present }
+                        text pick(bluetooth.powered, "ON", "OFF") { at: cw - 16, ny + 240; anchor: right center; size: 11; weight: 600; family: "Exo 2"
+                               color: if(bluetooth.powered, fl.phos, fl.flare); show: bluetooth.present }
+                        zone box nx_bt_hit { from: 0, ny + 254; size: cw, 34; cursor: pointer; role: toggle; checked: bluetooth.powered
+                                             label: "Toggle the Bluetooth radio"; show: bluetooth.present }
+                        text pick(bluetooth.powered, "PRESS TO POWER OFF", "PRESS TO POWER ON") { at: 16, ny + 270; anchor: left center;
+                               size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: bluetooth.present }
+                        on press nx_bt_hit { emit nx_bt(if(bluetooth.powered, 0, 1)) }
+                        text "NO ADAPTER DETECTED" { at: 16, ny + 270; anchor: left center; size: 8; family: "Share Tech Mono";
+                               color: fl.muted; show: not bluetooth.present }
                     }
                 }
             }

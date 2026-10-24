@@ -113,6 +113,15 @@ if wait_value nexus nx_about_on true 10; then ok "the overview opens"; else bad 
 say "emit nx_about" >/dev/null
 if wait_value nexus nx_about_on false 10; then ok "the overview closes back to the controls"; else bad "the overview did not close"; fi
 
+echo "the audio view answers from the sound server"
+say "emit nx_audio" >/dev/null
+if wait_value nexus nx_audio_on true 10; then ok "the audio view opens"; else bad "the audio view did not open"; fi
+is "the views are exclusive" "$(get nx_about_on)" false
+is "the microphone level is answered" "$(get audio.input | grep -E '^[0-9]+([.][0-9]+)?$' | wc -l | tr -d ' ')" 1
+is "the Bluetooth presence is answered" "$(get bluetooth.present | grep -E '^(true|false)$' | wc -l | tr -d ' ')" 1
+say "emit nx_audio" >/dev/null
+if wait_value nexus nx_audio_on false 10; then ok "the audio view closes back to the controls"; else bad "the audio view did not close"; fi
+
 bsay "emit open_nexus" >/dev/null
 if wait_gone; then nexus_started=0; ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi
 if wait_value bar nexus_open false 30; then ok "the bar clears its open state"; else bad "the bar kept a stale open state"; fi

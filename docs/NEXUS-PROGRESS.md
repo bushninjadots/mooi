@@ -4,8 +4,9 @@
 
 ## Current phase
 
-**Phase 1 complete; Phase 2 next.** Phase 0 reconnaissance is `docs/NEXUS-AUDIT.md`; the staged
-plan is `docs/CONTROL-NEXUS-NEXT-PHASE.md`.
+**Phase 1 complete; Phase 2 begun.** Phase 0 reconnaissance is `docs/NEXUS-AUDIT.md`; the staged
+plan is `docs/CONTROL-NEXUS-NEXT-PHASE.md`. The first Phase 2 increment — audio routing and the
+Bluetooth radio — is built; connecting devices and app volumes come next.
 
 ## Built
 
@@ -29,6 +30,12 @@ plan is `docs/CONTROL-NEXUS-NEXT-PHASE.md`.
   inside mooi's data folder; writes are refused under `MOOI_SAFE=1`.
 - **Persistence.** `nexus.pinned` and `nexus.identity.*` in `settings.json` (schema v1,
   validated, atomic writes).
+- **Audio routing view (Phase 2).** A second header view: press **OUTPUT** or **INPUT** to cycle
+  the default device, wheel the **MICROPHONE** row to set its level, press it to mute, and toggle
+  the **Bluetooth** radio. Device names come from the audio service (`outputs` / `inputs`), the
+  microphone level from `audio.input` / `input_muted`, and the radio from `bluetooth.present` /
+  `powered`. An absent adapter says `N/A`; a refused call is reported in the footer.
+  `lib/nexus.next_device` / `default_device` are pure and unit-tested.
 
 ## Files changed
 
@@ -39,13 +46,16 @@ New earlier: `docs/NEXUS-AUDIT.md`, `docs/NEXUS-PROGRESS.md`, `shell/mooi-nexus.
 Modified in this build pass:
 
 - `shell/mooi-nexus.plm` — resolved the merge markers left by the branch consolidation;
-  System Overview view and its toggle; identity presence facts and initial; availability-aware
-  Bluetooth footer; input declaration brought to the language's current properties; command
-  allowlist (`hyprctl`, `mooi`, `zenity`, no `sh`).
+  System Overview view and its toggle; the audio routing view and its toggle; identity presence
+  facts and initial; availability-aware Bluetooth footer; input declaration brought to the
+  language's current properties; command allowlist (`hyprctl`, `mooi`, `zenity`, no `sh`).
 - `shell/mooi-nexus.luau` — resolved merge markers; fixed `env()` being used before it was
   declared (the logic died at startup); `sync_identity()` publishes name, initial, paths and
   presence facts from one place; per-identity writes respect `MOOI_SAFE`; GPU busy read over
-  fixed `card0…card2` paths instead of a shell; distro row carries the OS version.
+  fixed `card0…card2` paths instead of a shell; distro row carries the OS version; audio
+  device names and the microphone/Bluetooth paths are read back from the services.
+- `shell/lib/nexus.luau` — `next_device` / `default_device` for routing lists.
+- `tests/unit/run.lua` — fixtures and the routing test (183 tests now).
 - `shell/lib/sysinfo.luau` — `cpu_cores` split on a literal `\n` instead of a newline; the
   display scale formats as `1.00x`.
 - `tests/unit/run.lua` — new telemetry fixtures use real newlines; the layout fixture now
@@ -55,13 +65,18 @@ Modified in this build pass:
 ## Verification
 
 - `./bin/mooi check`: **all five scenes compile** (bar, settings, wallpaper studio, board,
-  Nexus), **182 unit tests, 0 failed**.
+  Nexus), **183 unit tests, 0 failed**.
 - **Isolated run** (temporary `HOME`/`XDG`, `MOOI_SAFE=1`, no effect on the running bar):
   real readings — EndeavourOS, kernel `7.2.11-arch1-1`, uptime, CPU load with 12 cores,
   memory, 80 % root disk, `eDP-1 · 1920x1080 · 60 Hz · 1.00x`, GPU 13 %, 50 °C; pin on/off;
   Overview on/off; Escape ended the program; no runtime errors.
 - **Identity:** saving in safe mode is refused with a notice and settings are untouched;
   with writes enabled the name persists to `settings.json` and survives a restart.
+- **Audio view (isolated):** the output named `Ryzen HD Audio Controller Speaker`, the input
+  `Ryzen HD Audio Controller Digital Microphone`, `audio.input = 0` and `input_muted = false`,
+  Bluetooth `present = true`, `powered = false`; the audio and overview views are mutually
+  exclusive; no runtime errors. The write paths (cycling a device, mic level/mute, powering the
+  radio) were **not** exercised, so the user's audio and Bluetooth were left untouched.
 - **Lifecycle:** a live mooi is running on this machine, so the combined test was reproduced
   in a temporary copy of `shell/` with the bar scene renamed `mooi-lab` (its own socket):
   two rapid activations start exactly one Nexus, the bar marks `nexus_open` true, the same
@@ -74,12 +89,15 @@ Modified in this build pass:
 - The Overview's on-screen density at every plate width, and multi-monitor placement.
 - `tests/nexus.sh` end to end against the live bar: it correctly refuses while mooi runs; its
   checks were exercised by the `mooi-lab` equivalent above.
-- Power profiles (power-profiles-daemon is masked) and Bluetooth writes: still unavailable /
-  read-only, as the audit requires.
+- Power profiles (power-profiles-daemon is masked): still unavailable, as the audit requires.
+- The Phase 2 write calls (audio default, microphone level/mute, Bluetooth power) are built on
+  the documented service calls but were not fired at the live devices; only their read-back and
+  refusal paths are in place. Bluetooth device connection and the app-volume list are not built.
 
 ## Next step
 
-1. Phase 2 integrations, one at a time with read-back: audio routing and input, Bluetooth
-   writes, battery/power details, workspace and quick actions.
-2. A visual pass with a real pointer over the header, tiles, Overview and identity editor.
+1. Finish Phase 2: Bluetooth device list with connect/disconnect, app volumes, battery/power
+   details, workspace and quick actions.
+2. A visual pass with a real pointer over the header, tiles, Overview, audio view and identity
+   editor.
 3. Add paging or denser rows to the Overview before adding more hardware detail.

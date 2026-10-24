@@ -2048,3 +2048,29 @@ every plate width, and multi-monitor placement.
 
 **To change back.** Remove `nexus` from `DEFAULT.right`, delete `shell/mooi-nexus.*` and unwire
 `open_nexus` / `nexus_open` in `shell/mooi.luau` and `bin/mooi`.
+
+## D66 · 2026-10-24 · Nexus routes audio and powers the Bluetooth radio from its own view
+
+**What it adds.** A second view in Control Nexus, reached from the **AUDIO** button beside
+**SYSTEM**: press the **OUTPUT** or **INPUT** row to make the next device the default, wheel the
+**MICROPHONE** row to set its level and press it to mute, and press the Bluetooth card to power
+the radio on or off. The view and the System Overview are mutually exclusive; pressing the
+active view's button returns to the controls. Device names are the audio service's own
+(`outputs` / `inputs`), the microphone is `audio.input` / `input_muted`, and the radio is
+`bluetooth.present` / `powered`; an absent adapter reads `N/A`, an empty device list reads `—`,
+and a refused `sys.call` is reported in the footer instead of assuming success.
+
+**How it talks to the system.** `sys.call("audio.default", id)` for routing,
+`audio.input` / `audio.input_mute` for the microphone, and `bluetooth.power` for the radio; the
+scene never fabricates a device or a state. `lib/nexus.next_device` picks the id after the
+current default and wraps (the first device when none is default), and is unit-tested. The
+permission list gains `bluetooth.*`; `audio.*` was already there.
+
+**Checked.** `bin/mooi check`: all five scenes compile, **183 unit tests, 0 failed**. In an
+isolated Nexus run the view named the real output and input devices, read the microphone and
+Bluetooth state, and toggled between the audio and system views with no runtime errors. The
+write calls themselves were left unfired so the user's sound server and adapter were not
+changed; Bluetooth device connection, the device list and app volumes are not built yet.
+
+**To change back.** Remove the audio group and `nx_audio` handlers, drop `bluetooth.*` from the
+Nexus permissions, and remove the AUDIO button.

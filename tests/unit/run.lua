@@ -63,6 +63,17 @@ test("media progress handles missing or invalid duration safely", function()
     eq(position, 0, "invalid duration position"); eq(progress, 0, "invalid duration progress")
 end)
 
+test("audio routing names the default and cycles after it, wrapping", function()
+    local outs = { { id = "a", name = "Speakers" }, { id = "b", name = "Headphones", default = true },
+                   { id = "c", name = "HDMI" } }
+    eq(nexus.default_device(outs), "Headphones", "current name")
+    eq(nexus.next_device(outs), "c", "the one after the default")
+    eq(nexus.next_device({ { id = "only", name = "Only", default = true } }), "only", "one device cycles to itself")
+    eq(nexus.next_device({ { id = "x" }, { id = "y" } }), "x", "no default starts at the first")
+    eq(nexus.next_device({}), nil, "empty list"); eq(nexus.next_device(nil), nil, "nil list")
+    eq(nexus.default_device({}), nil, "no default")
+end)
+
 print("telemetry")
 test("uptime formats days, hours and minutes", function()
     eq(telemetry.uptime("93784.55 1234.00"), "1d 2h 3m", "day uptime")
