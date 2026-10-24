@@ -2074,3 +2074,314 @@ changed; Bluetooth device connection, the device list and app volumes are not bu
 
 **To change back.** Remove the audio group and `nx_audio` handlers, drop `bluetooth.*` from the
 Nexus permissions, and remove the AUDIO button.
+
+## D67 · 2026-10-24 · Nexus lists the Bluetooth devices and connects to one
+
+**What it adds.** The AUDIO view carries the devices the `bluetooth` service knows, below the
+radio card: up to five rows, in the service's own order (connected first), each with the device's
+name and `CONNECTED` / `PAIRED` / `NEW`. A press on a row calls `bluetooth.disconnect` for a
+connected device and `bluetooth.connect` for any other, with that row's address; `NO DEVICES
+KNOWN` when the service reports none. With no adapter the card still reads `N/A` and no rows are
+drawn. The model keeps up to eight records while five are drawn, because the plate's room is
+what decides the list's length, not the service's.
+
+**States as values, not presence.** A model field declared `bool` is a presence claim in the
+scene, and a row has to compare two states (`d.connected == 1`). `lib/nexus.bt_rows` therefore
+turns `paired` and `connected` into 0/1, gives a nameless device `Unknown device` to draw, keeps
+the row's address for the press, skips a record that is not a table, and stops at the model's
+cap. It is pure and unit-tested; the service's records stay on the logic side so a press uses the
+address whose name was shown.
+
+**The editor over the views.** The identity editor used to be declared before the view switch, so
+a view drawn later covered it. It now comes after every view (including the Bluetooth list) and
+carries a catcher zone over its own plate: a press inside the editor no longer reaches the view
+behind it.
+
+**Audio cycling reads back.** `sys.call("audio.default", id)` can be accepted while the sound
+server keeps its old default (WirePlumber may restore it). The press now asks the service again
+400 ms later and reports `OUTPUT SWITCH` / `INPUT SWITCH` in the footer if the name did not
+change; a list with nothing to cycle to says `NO OTHER OUTPUT` / `NO OTHER INPUT` instead of
+silently doing nothing.
+
+**Checked.** `bin/mooi check`: all five scenes compile, **184 unit tests, 0 failed** (the
+Bluetooth row mapping, its cap, its nameless row and its non-record skip). In an isolated Nexus
+run the model held the real three known devices, the first row read `Galaxy A16`, the service
+reported `present = true` / `powered = false`, and the audio view opened and closed with no
+runtime errors in the bar log. The connect/disconnect press was **not** fired, so the user's
+adapter was left as it was. `tests/nexus.sh` now launches its bar copy as `mooi-lab` with its own
+socket, so it can run beside the live mooi: **24 checks, 0 failed**, including the device count
+and the first row's name. Not checked: a real connect or disconnect (BlueZ takes seconds and the
+row keeps the service's last report until the change arrives), and a hand's press on a row.
+
+**To change back.** Remove the `btdev` model, its group and the `nx_bt_dev` event and handler;
+then `bt_rows` from `lib/nexus` and its unit test.
+
+## D68 · 2026-10-24 · Nexus mixes application streams, tightens the overview, and imports identity images again
+
+**What it adds.** A third view, **MIXER**, beside SYSTEM and AUDIO. It lists the streams the
+`audio` service reports, up to seven: the name, what it is playing (when the stream says),
+its percentage or `MUTED`, `PLAYING` / `PAUSED`, and a volume bar. The wheel moves the stream
+in 5 % steps and a press mutes or unmutes it; `NO AUDIO STREAMS` when the server reports none.
+The **System Overview** keeps the same facts but draws them on 22 px rows instead of 27, and
+the room that frees carries three readings that were already collected: **CPU LOAD**,
+**TEMPERATURE** and **NETWORK** (RX ↓ · TX ↑). `lib/nexus.app_rows` clamps a stream's volume,
+keeps its id for the press, names an unnamed stream, skips a non-record and is unit-tested.
+
+**Identity was never importing anything.** In `bin/mooi` four parameter expansions had been
+written `\${…}` — the action (`${1:-help}`), the `MOOI_SAFE` guard, the name-length test and
+the image argument. The backslash made each one a literal, so `action` never matched a case and
+every `mooi identity` command printed its usage; the safe-mode guard and the 48-character test
+were broken in the same way. They are shell expansions again. The editor also now checks what
+`files.write` returns, not only whether `sys.call` threw: a refused write is reported as a
+failure rather than announced as saved.
+
+**The scene could not run `mooi`.** The image picker and **COPY DIAGNOSTICS** run `mooi …` by
+name. `bin/mooi` sets `MOOI_BIN` to an absolute path for Hyprland's bindings, but Pleamar's
+`run:` permissions name the command, and an absolute path is refused unless that exact path is
+declared. The launcher now puts `$root/bin` first on `PATH` before it runs the scene, so the
+keeper, the bar and every program it starts resolve `mooi` by name; `tests/nexus.sh` does the
+same for its temporary bar.
+
+**Checked.** `bin/mooi check`: all five scenes compile, **185 unit tests, 0 failed**. In an
+isolated run (writes enabled) the identity header read the imported name, `nx_avatar_on` and
+`nx_banner_on` were true, the editor's save persisted `Studio Rig 3`, a `mooi identity avatar`
+run while the scene was up changed the path the scene watched, and a diagnostics copy reached
+the clipboard. `tests/nexus.sh`: **29 checks, 0 failed**, including the mixer view and the
+Bluetooth list. The live session was restarted on the new snapshot: the scene's `PATH` carries
+`bin/mooi`, `bin/mooi nexus` opened, the Nexus read the three known Bluetooth devices
+(`Galaxy A16` first), the mixer and overview opened with the real state, the views stayed
+exclusive, and Escape closed it and cleared the bar. A playing stream then gave the mixer a real
+row (`kew`, 78 %, `PLAYING`) with no runtime errors. Not checked: a real hand on the mixer rows
+or the identity editor, the zenity dialog itself, and a visual pass on the denser overview.
+
+**To change back.** Remove the MIXER view, its model, events and handlers; restore the overview
+row spacing and the three extra rows; the identity fix stays (the escaped expansions were a bug).
+
+## D69 · 2026-10-24 · Nexus steps under the image picker and keeps its editor's presses
+
+**The picker's window.** `zenity --file-selection` is an ordinary toplevel, and the Nexus is a
+full-screen layer surface at `level: overlay` holding the keyboard. The picker's dialog would
+be drawn under the plate and could not be typed into. While `nx_picking` is true the surface
+drops to `background` and gives the keyboard up (`keyboard: exclusive while nx_picking == 0`),
+and the plate is hidden; the fact goes false when zenity answers (or fails to start), and the
+plate is drawn again. The `nx_picking` fact also gates the outside-press layer, so the press
+that dismisses the dialog is not read as a press outside the Nexus.
+
+**The editor catches its own presses.** The identity editor is drawn last, after every view and
+the Bluetooth rows, and carries a catcher zone over its plate, so a press on a field, a button
+or the plate itself never reaches the view drawn underneath.
+
+## D70 · 2026-10-24 · A replaced identity image gets a new file name
+
+**The picture was read once per path.** Pleamar's `image … = from text` reads the file the text
+names; an import that overwrote `identity/avatar.jpg` left the text unchanged, and the plate
+kept the old decode. A settings watch that saw the same path did not help either: the path had
+not changed. The user could import a new picture and still see the old one, or nothing.
+
+**The import owns a fresh name.** `bin/mooi identity avatar|banner` now writes
+`identity/avatar-<epoch>-<pid>.<ext>` (and the same for `banner`), removes the previous file of
+that kind (both the old canonical `avatar.*` and the versioned names) and points settings at the
+new name. Every import therefore changes the text the scene reads, and the scene's existing
+watch loads the new picture while the Nexus is up. `remove` and `reset` clear both spellings.
+
+**Checked.** `bin/mooi check`: five scenes compile, **185 unit tests, 0 failed**.
+`tests/nexus.sh`: **38 checks, 0 failed**, including a second import writing a different file
+name, the imported file existing, and the first one being gone. Live, with the Nexus up: a
+`.jpg` avatar replaced by another `.jpg` changed on the plate without a restart; the same for a
+`.jpg` banner, then the originals restored and shown again. The whole picker path was driven
+through the real dialog (`zenity` → `mooi identity avatar`): the dialog appeared above the
+Nexus, the chosen file imported, `AVATAR IMAGE UPDATED` appeared, and the new avatar was drawn
+with the editor still open. The face's own `mooi` resolution still comes from `bin/mooi`'s
+`PATH` (D68); an absolute command path is refused by Pleamar's `run:` allowlist.
+
+**To change back.** Import to the canonical `identity/avatar.<ext>` name again and keep the
+scene from expecting a replacement; the old picture will then need a restart to appear.
+
+## D71 · 2026-10-24 · Nexus shows the workspaces and reads the battery's health from UPower
+
+**SPACES.** A fifth header view beside SYSTEM, AUDIO, MIXER and POWER. It draws the first ten
+workspaces the compositor reports, two rows of five: the zero-padded id, the window count, and
+`CURRENT` or `SHOW`. A press asks `workspaces.focus` for that block's id; the view closes to the
+controls only through the header, and the move is the service's to confirm (the Nexus re-reads
+the list on its watch). A block sends its **turn**, not the record's value: a copied block cannot
+carry a record field out through its press, the same reason the Bluetooth rows send an index, so
+the logic keeps the rows it drew and indexes them. `lib/nexus.ws_rows` maps the service's boolean
+`active` to 0/1, zero-pads the label, skips a record without a numeric id, and is unit-tested.
+The header hides MIXER, SPACES and POWER progressively as the plate unfolds (`cw > 354 / 460 /
+570`), so five tabs never run off a narrow plate.
+
+**Battery detail.** The `battery` service carries only `present`, `percent` and `charging`, so
+health and the predicted time come from UPower's local report: `upower -e` finds the battery
+device, `upower -i` is read for `capacity` (health against design capacity) and
+`time to empty` / `time to full`. The collector runs at start and again when the battery service
+reports a change. `lib/telemetry.upower` accepts this locale's decimal comma, reads hours or
+minutes, and returns nothing it cannot find: a desktop, a missing `upower`, or a battery with no
+prediction keeps `HEALTH N/A` / `TIME N/A` (or `ON AC · FULL` when it is charged and the tool
+says so). POWER shows the health and the time above uptime. LOCK was already in that view; the
+four session actions keep their two-press arming.
+
+**The real pointer.** Earlier synthetic passes used `ydotool click 1`, which is not the left
+button (0xC0 is), so they reached nothing and the "unchecked hand" was a test-harness mistake.
+With `0xC0` the pointer opened the identity editor, opened the zenity picker, closed the Nexus
+with its ×, and showed a workspace with a block. The Nexus's press routing needed no change. The
+agent's `press name#k` can address the wrong copy of a repeated zone; a block press was verified
+with the pointer, not that form.
+
+**Checked.** `bin/mooi check`: five scenes compile, **188 unit tests, 0 failed** (workspace rows
+and two UPower fixtures). `tests/nexus.sh`: **45 checks, 0 failed**, including the SPACES view
+opening/closing, the workspace model count and first id, and `HEALTH 81%` / a time line read
+from UPower on this machine. Live: the SPACES view drew two workspaces (`01`, `02`), pressing the
+current one was reported with no failure, and a pointer press on the other moved the focus to 02
+(the session was left on workspace 2). POWER drew `HEALTH 81%` and `ON AC · FULL` and the four
+session rows at their boxes. Not fired: LOCK (it would lock the session) and the other three
+session actions (they only arm). Not checked: a real discharging prediction on battery, and the
+SPACES grid with more than ten workspaces.
+
+**To change back.** Remove the SPACES fact, view, model, event and helper; remove the UPower
+collector, its permission and its two texts; POWER returns to its earlier height.
+
+## D72 · 2026-10-24 · Nexus instruments are the user's to arrange, and the banner fills its band
+
+**Instrument layout.** The six live plates (CPU, memory, temperature, root storage, RX, TX) are
+now a catalogue the user can arrange. A new **INSTRUMENT LAYOUT** button in the System Overview
+opens a panel with one row per instrument: `ON`/`OFF`, and `↑`/`↓` to move it. The plate reads
+one fact per instrument for whether it is drawn and one for its slot, so a plate that is put
+away leaves no hole: the rest close up, and the media player follows the last row. Turning an
+instrument on appends it at the end. `RESTORE ALL` returns the catalogue order.
+
+The saved setting is the list of instruments that are **on**, in order — `nexus.modules` in
+`settings.json`. It is checked by a new `ids` kind in `lib/config.luau` (a list of up to eight
+ids of letters, digits and `_`), and it has **no default**: a settings file that never carried
+one keeps drawing everything, and an empty list is a plate with nothing on it rather than a file
+that gets silently refilled. `lib/nexus.modules` takes a saved table as authoritative and drops
+strangers and repeats; `layout_action` and `module_rows` are pure and unit-tested. The panel
+always lists all six rows in catalogue order (so an empty plate can be filled again) while the
+plate itself follows the saved order; a row's press sends its catalogue place, as the workspace
+blocks and Bluetooth rows do, because a copy cannot hand a text out through its press.
+
+**The banner, properly sized.** `image … from text, w, h` fixes the *shape of the cell* and the
+picture is fitted inside it before the cell is stretched, so a 16:9 photograph dropped into the
+plate's 9.8:1 band came out as a 149-pixel thumbnail with empty space around it. The plate no
+longer draws the imported file directly. `mooi-nexus.luau` makes one band copy —
+`identity/<name>-band.jpg`, 1456×148, cover-cropped with `magick` (centre, `-resize …^` then
+`-extent`) — keeps it beside the imported file, and draws that. The imported picture is never
+modified; the copy is cached by its name, so it is made once per import, and a new import (which
+already gets a new file name, D70) gets a new copy. If the crop cannot be made (no ImageMagick,
+a refused command) the original path stays and the plate draws what it drew before rather than
+pretending. `magick` joins the scene's `run:` allowlist, and the band is still `N/A`-honest: no
+banner means no image.
+
+**What firing the writes found.** With a real `mpv` stream in the mixer, pressing MUTE did
+nothing. `lib/nexus.app_rows` kept a stream's id only when it was text, but PulseAudio and
+PipeWire report a numeric id, so every row's handle became `""` and the handler returned before
+speaking to the sound server. Numeric ids are now kept, and the row's mute/volume work: the
+stream read `MUTE: yes` in `pactl`, the service read muted, and three wheel notches moved 63 % to
+58 % in both. The Bluetooth write was fired too: the radio was rfkill-soft-blocked, so the
+Nexus's power-on was refused (`BLUETOOTH FAILED`); unblocked, the Nexus powered it on and off
+again and the connect press reached BlueZ (it answered `br-connection-busy`), but no device was
+reachable, so a successful connect/disconnect is still unproven. LOCK and the other session
+actions remain unfired.
+
+**SPACES labels.** `pick(i, …)` chooses by place, not by truth, so `pick(w.active, "CURRENT",
+"SHOW")` said `CURRENT` on every *other* workspace. Both the label and the block's agent name are
+now `pick(w.active, "SHOW", "CURRENT")`; pressing a block moved the session to workspace 1 and
+back, with the flags following the compositor.
+
+**Checked.** `bin/mooi check`: five scenes compile, **193 unit tests, 0 failed** (layout
+defaults, actions, rows and slots; numeric stream ids; battery detail text). `tests/nexus.sh`:
+**58 checks, 0 failed**, including a banner imported through `mooi identity` and drawn as a
+`-band.jpg`, and layout hide/reorder/restore in the temporary environment. A discharging
+fixture (a fake `upower` in an isolated run) drew `HEALTH 81%` and `2H 18M LEFT` on POWER.
+Live: banner band drawn and filling the header; layout panel opened, reordered and saved; mixer
+mute and volume verified against `pactl`; radio powered on and off through the Nexus; SPACES
+switched workspaces. Not checked: a successful Bluetooth connect/disconnect (no reachable
+device), more than ten workspaces live (it needs eleven occupied workspaces; the cap is
+unit-tested), LOCK and the session actions, and a pointer pass on the new panel.
+
+**To change back.** Remove `nexus.modules` from the schema and the layout block from the logic;
+drop the facts, events, panel and `NInstrument` gating. For the banner, remove `sync_banner`, the
+`magick` permission and the band copy files under `identity/`, and restore the image declaration
+to the drawn size.
+
+## D73 · 2026-10-24 · The layout is the whole plate, and it can have names
+
+**A catalogue of eleven, in three bands.** D72's panel arranged the six live instruments; the
+four control cards and the media player were fixed. Now `lib/nexus.MODULES` holds all eleven,
+each with a **band** whose shape it takes: `tiles` (OUTPUT, DISPLAY, NETWORK, POWER — two
+columns), `instruments` (the six live plates — three columns) and `player` (the full width). The
+catalogue is fixed; a saved layout only says which of them are on and in what order. Moving a
+module steps to the next module of its own band, so a card cannot be dropped into the instrument
+grid and the player cannot leave its full-width row; a press on a disabled row's arrows does
+nothing. The scene draws the cards from `nx_mod_slot_*` (0 … 1), the instruments from the same
+facts (0 … 5) and the player last, with a count per band, so hiding one closes the gap in its own
+band and leaves the others where they are.
+
+**Three named layouts, and room for six.** A settings file now carries `nexus.layouts` — an
+array of `{ name, modules }` — and `nexus.layout`, the name showing. A fresh file gets **FULL**
+(every module), **FOCUS** (the four cards, CPU, memory, root storage and the player) and
+**MINIMAL** (OUTPUT, DISPLAY and the player); the panel draws one chip per layout and a press
+switches to it, writing the name and the set before the plate changes. **SAVE AS** snapshots the
+current arrangement under a trimmed, upper-cased name (one to sixteen characters, no repeats,
+never more than six), and **DELETE** removes the showing layout and falls back to the first,
+refusing to remove the last one. Both rules live in `lib/nexus.layouts`, `layout_named`,
+`layout_add` and `layout_remove`, which are pure and unit-tested. A named layout holds module
+ids, not whatever else a catalogue might gain: `M.modules` drops strangers and repeats on the
+way in, so an edited or older file cannot put a module on the plate that does not exist.
+
+**Schema and migration.** `nexus.layouts` is checked by a new `layouts` kind (at most six, a
+plain unique name each, ids of letters, digits and `_`), and `nexus.layout` is text with a
+default of `FULL`. Neither has a default for the array itself: no array, or an unusable one,
+falls back to the three the plate ships with, so an empty plate is a choice rather than a file
+that keeps refilling itself. A file carrying only D72's `nexus.modules` is read once as a
+**CUSTOM** layout at the front of the list and *is what shows* — `lib/nexus.layout_state` decides
+that, because the settings' defaults otherwise supply `FULL` beside a file that never named a
+layout, and the user's arrangement would be kept in the panel but hidden on the plate. The first
+save writes `nexus.layouts`, sets `nexus.layout` and clears `nexus.modules`, so the migration
+cannot run twice. Under `MOOI_SAFE` the switch lasts for the session and the footer says it was
+not saved.
+
+**Checked.** `bin/mooi check`: five scenes compile, **195 unit tests, 0 failed** (the eleven
+modules and their bands, a move that cannot leave its band, the named layouts' defaults, names,
+limits and validation, the migration choosing CUSTOM). `tests/nexus.sh`: **66 checks, 0 failed**,
+including all eleven modules and three chips at start, a card put away and a plate moved within
+its band, MINIMAL leaving two cards and the player, and FULL coming back. Live: the panel drew
+the three chips with FOCUS current, MINIMAL emptied the plate to OUTPUT, DISPLAY and the player
+(`LAYOUT: MINIMAL` in the footer), and the edited FOCUS order and the current name were in
+`settings.json`. Not checked: SAVE AS and DELETE pressed by hand, a seventh layout refused on
+screen, and the panel at a narrow plate.
+
+## D74 · 2026-10-24 · The banner grows a fastfetch summary and the shell's palette
+
+**A taller band.** The identity header was 74 px, enough for a name, a host and a clock. It is
+now 114 px (the plate 720), so it can carry a system summary beneath the name without crowding
+it. The banner copy is cover-cropped to the band's new shape — 1456×228 — and its file name
+carries the height (`<name>-228-band.jpg`), so an older 148-tall crop is never stretched into the
+new band; a fresh import was already getting a new name (D70). Everything under the header moved
+with it: the view switch to 170, the views to 198, both panels by +44.
+
+**What it says.** Two monospaced lines, composed in `mooi-nexus.luau` rather than drawn as twelve
+cells: `OS`, `KERNEL`, `UPTIME`, `CPU`, `MEMORY` and `ROOT`, each cell padded to a fixed width so
+the columns stay still as readings arrive. The CPU drops its `with …` suffix (and an Intel
+`N-Core Processor`), because the fastfetch line has one column for it. One text per line also
+keeps the plate's text count down; the layout panel already draws a lot of text, and the plate's
+text budget is not unlimited. Below them a **PALETTE** strip draws fourteen of the shell's own
+roles — ground, hull, hull raised, well, trace dim, trace, trace lit, phos, phos fill, ember,
+ember fill, flare, muted, steel 300 — as small chamfered swatches from the same tokens every card
+paints, so a wallpaper change re-lights them with the rest of the plate. Both the summary and the
+strip are left out on a narrow plate (`cw > 520` and `cw > 460`).
+
+**The layout panel and an open view.** While testing this the layout panel was found to lose all
+of its text when a view (SYSTEM, AUDIO, …) was open in the same frame: its fills and zones drew,
+its rows and title did not. The same panel drew correctly when opened from the controls. Since
+the LAYOUTS button lives in the overview, the panel now takes the plate over: it closes any open
+view first and shows itself 60 ms later, on the next turn of the loop, which renders correctly.
+That is a workaround for a Pleamar text-culling quirk, not a design rule; the panel also stays at
+its old y (132), which overlaps the taller banner's lower edge and the switch row while it is up.
+
+**Checked.** `bin/mooi check`: five scenes compile, **195 unit tests, 0 failed**. `tests/nexus.sh`:
+**66 checks, 0 failed**, including the `-228-band.jpg` copy. Isolated captures: the header draws
+the two summary lines (`OS EndeavourOS`, `KERNEL 7.2.11-arch1-1`, `UPTIME 3h 6m`,
+`CPU AMD Ryzen 5 7430U`, `MEMORY 10.3 / 15.0 GiB`, `ROOT 80% used`), the fourteen swatches, and
+the banner copy fills the band; the layout panel opened from the overview now draws its rows.
+Not checked: a real photograph in the 6.4:1 band (gradients were used), the header at the widths
+where the summary is left out, and the panel's overlap with the switch row on a narrow plate.

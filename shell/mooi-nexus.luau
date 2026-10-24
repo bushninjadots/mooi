@@ -466,3 +466,193 @@ on("nx_close", function()
     fact.nx_open = 0
     after(240, function() run("pleamar", { "--say", "mooi-nexus", "quit" }) end)
 end)
+
+-- ── Node model (D90+) ─────────────────────────────────────
+-- Every module is a node that can be moved, focused, and rearranged.
+-- The node registry maps module ids to definitions; node state tracks
+-- position, visibility, and expansion.
+
+-- Node registry: module id → {x, y, expanded, visible, scale}
+-- Initially populated from layout; users can drag to reposition.
+local node_registry = {}
+
+-- Which node is focused at center (0-indexed, -1 when none)
+fact.nx_node_focus = -1
+
+-- Distance field for reorganizing nodes around center
+fact.nx_focus_distance = 0
+
+-- Which layout variant: 0=circuit, 1=spiral, 2=focus, 3=minimal
+fact.nx_layout_variant = 0
+
+-- Number of modules/nodes in the workspace
+fact.nx_node_count = 6
+
+-- Global node visibility toggle
+fact.nx_node_visible = true
+
+-- Whether nodes are in expanded layout
+fact.nx_node_expanded = false
+
+-- Number of active connections between nodes
+fact.nx_connection_count = 0
+
+-- Connection mode: 0=circuit, 1=radial, 2=hierarchical
+fact.nx_connection_mode = 0
+
+-- Whether connections are visible
+fact.nx_connection_visible = true
+
+-- Whether connection animation is running
+fact.nx_cable_animating = false
+
+-- The node currently focused at center (its id, or false when none)
+fact.nx_node_focus_id = false
+
+-- Module library state
+fact.nx_module_count = 6
+fact.nx_module_selected = 0
+fact.nx_module_hide = false
+fact.nx_module_minimize = false
+fact.nx_module_restore = false
+
+-- Profile banner and view modes
+fact.nx_banner_title = 0
+fact.nx_banner_tagline = 0
+fact.nx_view_mode = 0
+fact.nx_view_saved = false
+fact.nx_minimode = false
+
+-- Live system integrations
+fact.nx_integration_ram = false
+fact.nx_integration_cpu = false
+fact.nx_integration_gpu = false
+fact.nx_integration_disk = false
+fact.nx_integration_network = false
+fact.nx_integration_telemetry = false
+fact.nx_integration_refresh = 0
+fact.nx_integration_error = false
+fact.nx_integration_lastupdate = 0
+
+-- Visual polish
+fact.nx_reduced_motion = false
+fact.nx_connection_width = 2
+fact.nx_node_radius = 16
+fact.nx_node_selected = false
+fact.nx_undo_pending = false
+fact.nx_redo_pending = false
+fact.nx_keyboard_focus = -1
+fact.nx_motion_enabled = true
+
+-- Focus a node at center, reorganizing surrounding nodes
+local function focus_node(node_id)
+    fact.nx_node_focus = node_id
+    fact.nx_node_focus_id = node_id
+    fact.nx_layout_variant = 2 -- focus layout
+    -- Reorganize surrounding nodes in a spiral or circuit pattern
+    -- This is handled by the scene's draw logic based on nx_layout_variant
+end
+
+-- Cycle through layout variants
+local function cycle_layout_variant()
+    fact.nx_layout_variant = fact.nx_layout_variant + 1
+    if fact.nx_layout_variant > 3 then
+        fact.nx_layout_variant = 0
+    end
+end
+
+-- Toggle node visibility
+local function toggle_node_visibility()
+    fact.nx_node_visible = not fact.nx_node_visible
+end
+
+-- Expand/collapse nodes
+local function toggle_node_expand()
+    fact.nx_node_expanded = not fact.nx_node_expanded
+end
+
+-- Add a module as a node
+local function add_node(module_id, x, y)
+    node_registry[module_id] = {x = x or 0, y = y or 0, expanded = false, visible = true, scale = 1}
+    fact.nx_node_count = fact.nx_node_count + 1
+end
+
+-- Remove a node
+local function remove_node(module_id)
+    node_registry[module_id] = nil
+    fact.nx_node_count = math.max(0, fact.nx_node_count - 1)
+end
+
+-- Update node position
+local function set_node_position(module_id, x, y)
+    if node_registry[module_id] then
+        node_registry[module_id].x = x
+        node_registry[module_id].y = y
+    end
+end
+
+-- Get node position
+local function get_node_position(module_id)
+    if node_registry[module_id] then
+        return node_registry[module_id].x, node_registry[module_id].y
+    end
+    return 0, 0
+end
+
+-- Select a node (keyboard focus)
+local function select_node(module_id)
+    fact.nx_keyboard_focus = module_id
+    focus_node(module_id)
+end
+
+-- Deselect keyboard focus
+local function deselect_node()
+    fact.nx_keyboard_focus = -1
+    fact.nx_node_focus = -1
+end
+
+-- Undo pending action
+local function set_undo_pending(state)
+    fact.nx_undo_pending = state
+end
+
+-- Redo pending action
+local function set_redo_pending(state)
+    fact.nx_redo_pending = state
+end
+
+-- Toggle reduced motion
+local function toggle_reduced_motion()
+    fact.nx_reduced_motion = not fact.nx_reduced_motion
+end
+
+-- Integrate system data
+local function update_integration_ram(enabled)
+    fact.nx_integration_ram = enabled
+    fact.nx_integration_lastupdate = os.time()
+end
+
+local function update_integration_cpu(enabled)
+    fact.nx_integration_cpu = enabled
+    fact.nx_integration_lastupdate = os.time()
+end
+
+local function update_integration_gpu(enabled)
+    fact.nx_integration_gpu = enabled
+    fact.nx_integration_lastupdate = os.time()
+end
+
+local function update_integration_disk(enabled)
+    fact.nx_integration_disk = enabled
+    fact.nx_integration_lastupdate = os.time()
+end
+
+local function update_integration_network(enabled)
+    fact.nx_integration_network = enabled
+    fact.nx_integration_lastupdate = os.time()
+end
+
+local function update_integration_telemetry(enabled)
+    fact.nx_integration_telemetry = enabled
+    fact.nx_integration_lastupdate = os.time()
+end

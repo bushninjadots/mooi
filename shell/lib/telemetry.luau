@@ -66,6 +66,39 @@ function M.disk(text)
     return nil
 end
 
+-- UPower's human report (`upower -i …`): the battery's health (full charge against design
+-- capacity), its state, and the time it predicts. Locale decimal commas appear on this machine
+-- ("30,1302 Wh"), so both separators are accepted. No battery, or no report, returns nil.
+function M.upower(text)
+    if type(text) ~= "string" or text == "" then return nil end
+    local function number(value)
+        if not value then return nil end
+        return tonumber((value:gsub(",", ".")))
+    end
+    local health = number(string.match(text, "capacity:%s*([%d.,]+)%%"))
+    local state = clean(string.match(text, "\n%s*state:%s*([%w-]+)"))
+    -- Lua patterns have no alternation: each direction and unit is asked for plainly.
+    local direction, value, unit
+    for _, d in ipairs({ "empty", "full" }) do
+        value, unit = string.match(text, "time to " .. d .. ":%s*([%d.,]+)%s*(hour)")
+        if value then direction = d; break end
+    end
+    if not direction then
+        for _, d in ipairs({ "empty", "full" }) do
+            value, unit = string.match(text, "time to " .. d .. ":%s*([%d.,]+)%s*(minute)")
+            if value then direction = d; break end
+        end
+    end
+    local minutes
+    local amount = number(value)
+    if direction and amount then
+        minutes = math.floor((unit == "hour" and amount * 60 or amount) + 0.5)
+    end
+    if health and (health < 0 or health > 100) then health = nil end
+    if not health and not state and not minutes then return nil end
+    return { health = health, state = state, direction = minutes and direction or nil, minutes = minutes }
+end
+
 function M.identity(os_text, kernel_text, hostname_text, uptime_text, cpuinfo_text)
     local os = M.os_release(os_text)
     return { distro = os.name, distro_id = os.id, distro_version = os.version,

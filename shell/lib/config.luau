@@ -246,6 +246,12 @@ M.SCHEMA = {
     { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
     { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },
+    -- The Nexus layout that is showing, and the named layouts it can switch between. No default
+    -- for the list, so a file that never had one gets the plate's own three; `modules` is the
+    -- single-layout form of D72, kept readable so it can be migrated.
+    { path = "nexus.layout", kind = "text", default = "FULL", max = 16 },
+    { path = "nexus.layouts", kind = "layouts" },
+    { path = "nexus.modules", kind = "ids", max = 11 },
 }
 
 for _, id in ipairs(barlayout.ORDER) do
@@ -315,6 +321,35 @@ local function check(row, value)
     elseif row.kind == "layout" then
         local ok, why = barlayout.check_list(value, {})
         if not ok then return false, why end
+    elseif row.kind == "ids" then
+        if type(value) ~= "table" then return false, "expected a list of module ids" end
+        if #value > (row.max or 8) then return false, "expected at most " .. tostring(row.max or 8) .. " ids" end
+        for _, id in ipairs(value) do
+            if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_]+$") then
+                return false, "expected ids like \"cpu\""
+            end
+        end
+    elseif row.kind == "layouts" then
+        if type(value) ~= "table" then return false, "expected a list of named layouts" end
+        if #value > 6 then return false, "expected at most 6 layouts" end
+        local names = {}
+        for _, layout in ipairs(value) do
+            if type(layout) ~= "table" then return false, "expected { name, modules }" end
+            local name = layout.name
+            if type(name) ~= "string" or name == "" or #name > 16 or name:find("[%c]") then
+                return false, "expected a layout name up to 16 characters"
+            end
+            if names[name] then return false, "two layouts are called " .. name end
+            names[name] = true
+            if type(layout.modules) ~= "table" or #layout.modules > 11 then
+                return false, "expected the layout's module ids"
+            end
+            for _, id in ipairs(layout.modules) do
+                if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_]+$") then
+                    return false, "expected ids like \"cpu\""
+                end
+            end
+        end
     elseif row.kind == "colours" then
         if type(value) ~= "table" then return false, "expected a table of token = colour" end
         for token, hex in pairs(value) do

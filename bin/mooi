@@ -48,6 +48,13 @@
 set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 self="$root/bin/mooi"
+# The scene's own commands are written as `mooi …` (the identity image import and the
+# diagnostics copy). Pleamar runs them by name, not by path, so the launcher's own bin is on
+# PATH for the keeper and for everything the scene starts.
+case ":$PATH:" in
+    *":$root/bin:"*) ;;
+    *) PATH="$root/bin:$PATH"; export PATH ;;
+esac
 src="$root/shell/mooi.plm"                      # the repo's scene: development, `check`, the tests
 live="${XDG_STATE_HOME:-$HOME/.local/state}/mooi/live"
 scene="$live/mooi.plm"                          # what the keeper runs: a snapshot (see `snapshot`)
@@ -653,8 +660,8 @@ case "$cmd" in
         ;;
     identity)
         # Import images into mooi's own data folder; only generated relative paths enter settings.
-        action=\${1:-help}; [ $# -gt 0 ] && shift
-        [ "\${MOOI_SAFE:-0}" != 1 ] || { echo "identity settings are disabled in --safe mode" >&2; exit 1; }
+        action=${1:-help}; [ $# -gt 0 ] && shift
+        [ "${MOOI_SAFE:-0}" != 1 ] || { echo "identity settings are disabled in --safe mode" >&2; exit 1; }
         [ -r "$settings" ] || { echo "mooi settings not found; start mooi once first: $settings" >&2; exit 1; }
         command -v jq >/dev/null 2>&1 || { echo "identity requires jq" >&2; exit 1; }
         jq -e . "$settings" >/dev/null 2>&1 || { echo "settings.json is not valid JSON; refusing to overwrite it" >&2; exit 1; }
@@ -662,39 +669,50 @@ case "$cmd" in
             name)
                 value=$(printf '%s' "$*" | tr '\n' ' ')
                 [ -n "$value" ] || { echo 'usage: mooi identity name "Display name"' >&2; exit 2; }
-                [ "\${#value}" -le 48 ] || { echo "display name must be 48 characters or fewer" >&2; exit 2; }
+                [ "${#value}" -le 48 ] || { echo "display name must be 48 characters or fewer" >&2; exit 2; }
                 case "$value" in *"$(printf '\001')"*|*"$(printf '\177')"*) echo "control characters are not allowed" >&2; exit 2 ;; esac
                 tmp="$settings.tmp.$"
                 jq --arg value "$value" '.nexus.identity.name = $value' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not update settings" >&2; exit 1; }
                 echo "System identity name set to: $value"
                 ;;
             avatar|banner)
-                source=\${1:-}
+                source=${1:-}
                 [ -n "$source" ] && [ -f "$source" ] || { echo "usage: mooi identity $action /path/to/image.png" >&2; exit 2; }
                 command -v file >/dev/null 2>&1 || { echo "identity image import requires the file utility" >&2; exit 1; }
                 mime=$(file --brief --mime-type -- "$source" 2>/dev/null || true)
                 case "$mime" in image/png) ext=png ;; image/jpeg) ext=jpg ;; image/webp) ext=webp ;; image/avif) ext=avif ;; *) echo "unsupported image type: $mime (use PNG, JPEG, WebP or AVIF)" >&2; exit 2 ;; esac
                 mkdir -p "$folder/identity" || exit 1
-                relative="identity/$action.$ext"
+                # A new name for every import: a scene's image is read by its path, so reusing
+                # avatar.jpg would leave the plate showing the picture it already had (D70).
+                relative="identity/$action-$(date +%s)-$$.$ext"
                 dest="$folder/$relative"
                 tmpdest="$dest.tmp.$"
                 cp -- "$source" "$tmpdest" && mv "$tmpdest" "$dest" || { rm -f "$tmpdest"; echo "could not import image" >&2; exit 1; }
                 tmp="$settings.tmp.$"
                 jq --arg value "$relative" --arg action "$action" '.nexus.identity[$action] = $value' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not update settings; imported image remains at $dest" >&2; exit 1; }
-                for old in "$folder/identity/$action".*; do [ "$old" = "$dest" ] || rm -f -- "$old"; done
+                for old in "$folder/identity/$action".* "$folder/identity/$action"-*; do [ "$old" = "$dest" ] || rm -f -- "$old"; done
                 echo "$action image imported to $dest"
+                ;;
+            remove)
+                what=${1:-}
+                case "$what" in avatar|banner) ;; *) echo "usage: mooi identity remove avatar|banner" >&2; exit 2 ;; esac
+                tmp="$settings.tmp.$"
+                jq --arg action "$what" '.nexus.identity[$action] = ""' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not update settings" >&2; exit 1; }
+                rm -f "$folder/identity/$what".* "$folder/identity/$what"-*
+                echo "$what image removed"
                 ;;
             reset)
                 tmp="$settings.tmp.$"
                 jq '.nexus.identity = {name:"mooi system",avatar:"",banner:""}' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not reset identity settings" >&2; exit 1; }
-                rm -f "$folder"/identity/avatar.* "$folder"/identity/banner.*
+                rm -f "$folder"/identity/avatar.* "$folder"/identity/avatar-* \
+                      "$folder"/identity/banner.* "$folder"/identity/banner-*
                 echo "System identity reset"
                 ;;
             show)
                 jq -r '.nexus.identity // {name:"mooi system",avatar:"",banner:""} | "Name: \(.name // "mooi system")\nAvatar: \(.avatar // "not set")\nBanner: \(.banner // "not set")"' "$settings"
                 ;;
             *)
-                echo 'usage: mooi identity name "Display name" | avatar IMAGE | banner IMAGE | show | reset' >&2
+                echo 'usage: mooi identity name "Display name" | avatar IMAGE | banner IMAGE | remove avatar|banner | show | reset' >&2
                 exit 2
                 ;;
         esac
