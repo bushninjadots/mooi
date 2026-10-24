@@ -2313,5 +2313,39 @@ test("graph: unavailable endpoints never draw", function()
     end
 end)
 
+print("nexusgraph routing")
+local function inside(pt, r, pad)
+    return pt.x > r.x - pad and pt.x < r.x + r.w + pad and pt.y > r.y - pad and pt.y < r.y + r.h + pad
+end
+test("routing: ports sit on the side facing the other node", function()
+    local x, y, side = nexusgraph.port({ x = 0, y = 0, w = 100, h = 100 }, { x = 300, y = 50 })
+    eq(side, "e", "east side"); eq(x, 100, "on the edge"); eq(y, 50, "at the target's height")
+    x, y, side = nexusgraph.port({ x = 0, y = 0, w = 100, h = 100 }, { x = 50, y = -300 })
+    eq(side, "n", "north side"); eq(y, 0, "on the top edge")
+end)
+test("routing: a circuit route is orthogonal, clear of both nodes, and deterministic", function()
+    local a = { x = 100, y = 100, w = 200, h = 140 }
+    local b = { x = 700, y = 400, w = 220, h = 130 }
+    local p1 = nexusgraph.route(a, b, { style = "circuit", clearance = 12 })
+    local p2 = nexusgraph.route(a, b, { style = "circuit", clearance = 12 })
+    eq(#p1, #p2, "same point count")
+    for i = 1, #p1 do eq(p1[i].x, p2[i].x, "x stable " .. i); eq(p1[i].y, p2[i].y, "y stable " .. i) end
+    eq(p1[1].x >= a.x and p1[1].x <= a.x + a.w, true, "starts on a")
+    eq(p1[#p1].x >= b.x and p1[#p1].x <= b.x + b.w, true, "ends on b")
+    for i = 2, #p1 do
+        eq(p1[i].x == p1[i - 1].x or p1[i].y == p1[i - 1].y, true, "segment " .. i .. " is orthogonal")
+    end
+    for i = 2, #p1 do
+        local mx, my = (p1[i].x + p1[i - 1].x) / 2, (p1[i].y + p1[i - 1].y) / 2
+        eq(inside({ x = mx, y = my }, a, 11), false, "segment " .. i .. " leaves a")
+        eq(inside({ x = mx, y = my }, b, 11), false, "segment " .. i .. " leaves b")
+    end
+end)
+test("routing: direct is two points, degenerate is refused", function()
+    eq(#nexusgraph.route({ x = 0, y = 0, w = 10, h = 10 }, { x = 50, y = 50, w = 10, h = 10 }, { style = "direct" }), 2, "two points")
+    local pts, ok = nexusgraph.route({ x = 0, y = 0, w = 0, h = 0 }, { x = 5, y = 5, w = 10, h = 10 }, {})
+    eq(ok, false, "degenerate refused"); eq(#pts, 0, "nothing to draw")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
