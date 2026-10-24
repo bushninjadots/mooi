@@ -567,7 +567,11 @@ scene Nexus {
                     // ── the foot ──
                     let fy = my0 + med_h + 14
                     line { from: 0, fy; to: cw, fy; width: 1; color: fl.trace; opacity: 0.55 }
+<<<<<<< HEAD
                     text pick(bluetooth.powered, "BLUETOOTH OFF", "BLUETOOTH ON") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
+=======
+                    text pick(bluetooth.present, pick(bluetooth.powered, "BLUETOOTH ON", "BLUETOOTH OFF"), "BLUETOOTH N/A") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
+>>>>>>> origin/polish/nexus-bluetooth-availability
                                                                                  color: if(not bluetooth.present, fl.muted, if(bluetooth.powered, fl.phos, fl.flare)) }
                     text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }
                     text "{nx_notice_text}" { at: 160, fy + 18; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: nx_notice }
