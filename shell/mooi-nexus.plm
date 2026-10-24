@@ -318,20 +318,6 @@ scene Nexus {
     fact nx_avatar_on = false
     fact nx_banner_on = false
 
-    // ── Node model facts (D90+) ──
-    // Design specification node model state
-    text "NX_NODE_COUNT" { at: 0, 0; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.phos }
-    text "NX_NODE_FOCUS" { at: 0, 18; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-    text "NX_LAYOUT_VARIANT" { at: 0, 36; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-    text "NX_CONNECTION_COUNT" { at: 0, 54; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-    text "NX_NODE_VISIBLE" { at: 0, 72; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.phos }
-    text "NX_NODE_EXPANDED" { at: 0, 90; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-    text "NX_MODULE_COUNT" { at: 0, 108; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-    text "NX_VIEW_MODE" { at: 0, 126; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-    text "NX_INTEGRATION_RAM" { at: 0, 144; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.phos }
-    text "NX_INTEGRATION_CPU" { at: 0, 162; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.phos }
-    text "NX_INTEGRATION_GPU" { at: 0, 180; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.phos }
-    text "NX_INTEGRATION_DISK" { at: 0, 198; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.phos }
     image nx_avatar = from nx_avatar_path, 42, 42
     image nx_banner = from nx_banner_path, 640, 74
     text nx_user = "operator"

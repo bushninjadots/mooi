@@ -2385,3 +2385,23 @@ the two summary lines (`OS EndeavourOS`, `KERNEL 7.2.11-arch1-1`, `UPTIME 3h 6m`
 the banner copy fills the band; the layout panel opened from the overview now draws its rows.
 Not checked: a real photograph in the 6.4:1 band (gradients were used), the header at the widths
 where the summary is left out, and the panel's overlap with the switch row on a narrow plate.
+
+## D75 · 2026-10-24 · The D90 node scaffolding is deleted, not built upon
+
+`shell/mooi-nexus.luau` carried a `Node model (D90+)` block from line 470 to the end of the
+file: a `node_registry` that was never seeded, `focus_node`/`add_node`/`remove_node` and a
+dozen siblings that were never called, and `nx_node_*`, `nx_connection_*`, `nx_view_mode` and
+`nx_integration_*` facts that no scene rule read. The plate drew their names as literal text
+at `0,0` — `NX_NODE_COUNT`, `NX_LAYOUT_VARIANT`, `NX_INTEGRATION_DISK` — so the only visible
+effect of the whole block was a debug label column. The scene also declared the avatar and
+banner images a second time in the same block; those two declarations stay, because the real
+banner draws that named image and deleting it would remove the picture.
+
+No decision ever ratified D90; the block was scaffolding for this redesign. The node model
+starts from the approved spec (`docs/superpowers/specs/2026-10-24-control-nexus-design.md`)
+instead, and the dead names are gone so a later reader cannot mistake them for a foundation.
+Two smaller cleanups ride along: the duplicate startup `sync_identity()` call is removed, and
+the debug text column is deleted.
+
+**Checked.** `bin/mooi check`: five scenes compile, 195 unit tests, 0 failed. `tests/nexus.sh`:
+66 checks, 0 failed. Grep for the deleted names returns nothing.
