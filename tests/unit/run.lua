@@ -20,6 +20,7 @@ local spaces = require("lib/spaces")
 local nexus = require("lib/nexus")
 local telemetry = require("lib/telemetry")
 local nexusnode = require("lib/nexusnode")
+local nexusgraph = require("lib/nexusgraph")
 
 print("nexus")
 test("media action mapping preserves Previous, Play/Pause, and Next", function()
@@ -2279,6 +2280,36 @@ test("registry: absent providers hide their nodes", function()
     local visible = nexusnode.visible_nodes(seeds[1], { battery = false, brightness = false, media = false })
     for _, n in ipairs(visible) do
         eq(n.type ~= "power" and n.type ~= "display" and n.type ~= "media", true, "absent providers hide their node")
+    end
+end)
+
+print("nexusgraph")
+test("graph: every authored edge connects known node types", function()
+    local nxnode = require("lib/nexusnode")
+    for _, e in ipairs(nexusgraph.EDGES) do
+        eq(nxnode.get(e.from) ~= nil, true, "known source " .. tostring(e.from))
+        eq(nxnode.get(e.to) ~= nil, true, "known target " .. tostring(e.to))
+        eq(type(e.meaning), "string", "meaning for " .. e.id)
+    end
+end)
+test("graph: instantiation keeps only edges whose endpoints exist", function()
+    local edges = nexusgraph.instantiate({ core = true, system = true, storage = true })
+    local ids = {}
+    for _, e in ipairs(edges) do ids[e.id] = true end
+    eq(ids["core-system"], true, "trunk kept")
+    eq(ids["storage-system"], true, "satellite kept")
+    eq(ids["storage-files"], nil, "files absent, edge absent")
+    eq(ids["cpu-system"], nil, "cpu absent, edge absent")
+    eq(nexusgraph.count(edges), 3, "exactly the three edges with both ends")
+end)
+test("graph: unavailable endpoints never draw", function()
+    local all = {}
+    for _, t in ipairs(require("lib/nexusnode").TYPES) do
+        if t.status ~= "unavailable" then all[t.id] = true end
+    end
+    local edges = nexusgraph.instantiate(all)
+    for _, e in ipairs(edges) do
+        eq(e.to ~= "applications" and e.to ~= "files", true, "unavailable target not drawn")
     end
 end)
 
