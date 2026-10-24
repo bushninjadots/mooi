@@ -6,7 +6,7 @@ local barlayout = require("lib/barlayout")
 
 local M = {}
 
-M.VERSION = 1
+M.VERSION = 2
 
 -- One row per setting: dotted path, type, default, and limits for numbers.
 -- A row with no default is not written by `defaults()`: it is a setting the user may
@@ -252,6 +252,24 @@ M.SCHEMA = {
     { path = "nexus.layout", kind = "text", default = "FULL", max = 16 },
     { path = "nexus.layouts", kind = "layouts" },
     { path = "nexus.modules", kind = "ids", max = 11 },
+    -- The node workspace (D76): arrangements hold every node's geometry, the centre, the
+    -- edge look and the appearance, so switching one is a whole-state change. Unknown fields
+    -- inside an arrangement are refused with it: a half-applied layout is worse than a default.
+    { path = "nexus.arrangements", kind = "arrangements", default = {} },
+    { path = "nexus.focus", kind = "text", default = "core", max = 24 },
+    { path = "nexus.mode", kind = "enum", values = { "circuit", "minimal" }, default = "circuit" },
+    { path = "nexus.banner.mode", kind = "enum", values = { "full", "compact", "strip", "hidden" }, default = "compact" },
+    { path = "nexus.appearance.accent", kind = "enum", values = { "phos", "flare", "ember", "trace_lit" }, default = "phos" },
+    { path = "nexus.appearance.brightness", kind = "integer", default = 100, min = 60, max = 140 },
+    { path = "nexus.appearance.contrast", kind = "integer", default = 100, min = 60, max = 140 },
+    { path = "nexus.appearance.opacity", kind = "integer", default = 100, min = 40, max = 100 },
+    { path = "nexus.appearance.glow", kind = "integer", default = 60, min = 0, max = 100 },
+    { path = "nexus.appearance.grid", kind = "boolean", default = true },
+    { path = "nexus.appearance.motion", kind = "boolean", default = true },
+    { path = "nexus.edge.style", kind = "enum", values = { "circuit", "curved", "direct" }, default = "circuit" },
+    { path = "nexus.edge.width", kind = "integer", default = 1, min = 1, max = 2 },
+    { path = "nexus.edge.animation", kind = "boolean", default = true },
+    { path = "nexus.edge.labels", kind = "boolean", default = true },
 }
 
 for _, id in ipairs(barlayout.ORDER) do
@@ -293,6 +311,81 @@ function M.defaults()
         if row.default ~= nil then set(out, row.path, copy(row.default)) end
     end
     return out
+end
+
+-- An arrangement is the whole workspace state, so it is checked as a unit: one bad node
+-- refuses the list and the defaults stand in, rather than a layout half-applied.
+local ARRANGEMENT_MODES = { circuit = true, minimal = true }
+local ARRANGEMENT_BANNERS = { full = true, compact = true, strip = true, hidden = true }
+local EDGE_STYLES = { circuit = true, curved = true, direct = true }
+local ACCENT_ROLES = { phos = true, flare = true, ember = true, trace_lit = true }
+
+local function finite_number(v)
+    return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
+end
+
+local function plain_name(v, max)
+    return type(v) == "string" and #v > 0 and #v <= max and not v:find("[%c]")
+end
+
+local function check_appearance(a)
+    if type(a) ~= "table" then return false, "expected an appearance table" end
+    if a.accent ~= nil and not ACCENT_ROLES[a.accent] then return false, "expected an accent role" end
+    local numbers = {
+        { "brightness", 60, 140 }, { "contrast", 60, 140 },
+        { "opacity", 40, 100 }, { "glow", 0, 100 },
+    }
+    for _, n in ipairs(numbers) do
+        local v = a[n[1]]
+        if v ~= nil and (not finite_number(v) or v ~= math.floor(v) or v < n[2] or v > n[3]) then
+            return false, "expected " .. n[1] .. " from " .. n[2] .. " to " .. n[3]
+        end
+    end
+    for _, key in ipairs({ "grid", "motion" }) do
+        if a[key] ~= nil and type(a[key]) ~= "boolean" then return false, "expected " .. key .. " to be true or false" end
+    end
+    return true
+end
+
+local function check_arrangement(a)
+    if type(a) ~= "table" then return false, "expected { name, mode, nodes }" end
+    if not plain_name(a.name, 16) then return false, "expected an arrangement name up to 16 characters" end
+    if not ARRANGEMENT_MODES[a.mode] then return false, "expected mode circuit or minimal" end
+    if not plain_name(a.focus or "", 24) then return false, "expected a focus id up to 24 characters" end
+    if not ARRANGEMENT_BANNERS[a.banner] then return false, "expected banner full, compact, strip or hidden" end
+    if type(a.nodes) ~= "table" then return false, "expected the arrangement's nodes" end
+    if #a.nodes > 16 then return false, "expected at most 16 nodes" end
+    for _, n in ipairs(a.nodes) do
+        if type(n) ~= "table" then return false, "expected { type, x, y, w, h }" end
+        if type(n.type) ~= "string" or #n.type > 24 or not string.match(n.type, "^[%w_]+$") then
+            return false, "expected a node type id"
+        end
+        if not finite_number(n.x) or not finite_number(n.y) then return false, "expected numeric node origins" end
+        if n.x < -4000 or n.x > 4000 or n.y < -4000 or n.y > 4000 then return false, "node origin out of range" end
+        if not finite_number(n.w) or not finite_number(n.h) then return false, "expected numeric node sizes" end
+        if n.w < 40 or n.w > 1200 or n.h < 40 or n.h > 1200 then return false, "node size out of range" end
+        for _, key in ipairs({ "vis", "min", "essential" }) do
+            if type(n[key]) ~= "boolean" then return false, "expected " .. key .. " to be true or false" end
+        end
+    end
+    if a.edges ~= nil then
+        local e = a.edges
+        if type(e) ~= "table" then return false, "expected an edges table" end
+        if e.hidden ~= nil then
+            if type(e.hidden) ~= "table" or #e.hidden > 24 then return false, "expected at most 24 hidden edges" end
+            for _, id in ipairs(e.hidden) do
+                if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_%-]+$") then return false, "expected edge ids" end
+            end
+        end
+        if e.style ~= nil and not EDGE_STYLES[e.style] then return false, "expected an edge style" end
+        if e.width ~= nil and e.width ~= 1 and e.width ~= 2 then return false, "expected an edge width of 1 or 2" end
+        if e.animation ~= nil and type(e.animation) ~= "boolean" then return false, "expected animation to be true or false" end
+    end
+    if a.appearance ~= nil then
+        local ok, why = check_appearance(a.appearance)
+        if not ok then return false, why end
+    end
+    return true
 end
 
 local function check(row, value)
@@ -349,6 +442,16 @@ local function check(row, value)
                     return false, "expected ids like \"cpu\""
                 end
             end
+        end
+    elseif row.kind == "arrangements" then
+        if type(value) ~= "table" then return false, "expected a list of arrangements" end
+        if #value > 8 then return false, "expected at most 8 arrangements" end
+        local names = {}
+        for _, a in ipairs(value) do
+            local ok, why = check_arrangement(a)
+            if not ok then return false, why end
+            if names[a.name] then return false, "two arrangements are called " .. a.name end
+            names[a.name] = true
         end
     elseif row.kind == "colours" then
         if type(value) ~= "table" then return false, "expected a table of token = colour" end
