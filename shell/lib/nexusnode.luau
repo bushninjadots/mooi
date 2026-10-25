@@ -184,6 +184,44 @@ function M.default_nodes(canvas)
     return out
 end
 
+-- Every type the workspace can draw today, in reading order. DENSE lays all of them on a
+-- grid so the whole machine fits one screen without hiding anything behind a panel.
+M.DENSE_ORDER = {
+    "core", "system", "cpu", "memory", "thermal", "storage", "network",
+    "audio", "display", "workspaces", "media", "clock", "power",
+}
+
+-- A grid of compact cards: six columns of 300 px, rows of 168, every card inside its cell.
+-- Sizes come from the catalogue, capped to the cell, so no type is drawn smaller than its
+-- own minimum just because the arrangement is dense.
+function M.dense_nodes(canvas)
+    canvas = canvas or {}
+    local cw = number(canvas.w, 1920)
+    local cell_w, cell_h, gap = 300, 168, 14
+    local cols = math.max(2, math.floor((cw - gap) / (cell_w + gap)))
+    local out = {}
+    for i, id in ipairs(M.DENSE_ORDER) do
+        local def = by_id[id]
+        if def then
+            local col = (i - 1) % cols
+            local row = math.floor((i - 1) / cols)
+            local w = math.min(cell_w, math.max(def.min.w, def.size.w))
+            local h = math.min(cell_h, math.max(def.min.h, def.size.h))
+            out[#out + 1] = {
+                type = id,
+                x = gap + col * (cell_w + gap) + math.floor((cell_w - w) / 2),
+                y = gap + row * (cell_h + gap),
+                w = w,
+                h = h,
+                vis = true,
+                min = false,
+                essential = def.essential,
+            }
+        end
+    end
+    return out
+end
+
 -- The plate's ids that still mean something in the node world. RX and TX were two
 -- readings of one Network node; CPU, Memory and Thermal survive as nodes even though
 -- the default arrangement folds them into System.
@@ -210,7 +248,8 @@ local function edges_default()
 end
 
 local function appearance_default()
-    return { accent = "phos", brightness = 100, contrast = 100, opacity = 100, glow = 60, grid = true, motion = true }
+    return { accent = "phos", brightness = 100, contrast = 100, opacity = 100, glow = 60,
+             grid = true, motion = true, clear = false }
 end
 
 local function arrangement(name, mode, banner, nodes)
@@ -287,12 +326,17 @@ function M.seed_arrangements(legacy)
         end
     end
 
+    local dense = arrangement("DENSE", "circuit", "strip", M.dense_nodes())
+    -- DENSE is the see-through one: the wallpaper is the backdrop and only the cards are drawn
+    dense.appearance.clear = true
+
     return {
         arrangement("FULL", "circuit", "full", full),
         arrangement("FOCUS", "circuit", "compact", focus_nodes),
         -- Not MINIMAL: that is the mode's name, and two chips reading MINIMAL on the same
         -- header meant two different things (D82).
         arrangement("BARE", "minimal", "strip", minimal_nodes),
+        dense,
     }
 end
 
@@ -377,6 +421,7 @@ function M.normalize_arrangements(list)
                     glow = clamp(number(look.glow, 60), 0, 100),
                     grid = look.grid ~= false,
                     motion = look.motion ~= false,
+                    clear = look.clear == true,
                 },
             }
         end
@@ -456,6 +501,7 @@ function M.copy_arrangements(list)
                     glow = look.glow or 60,
                     grid = look.grid ~= false,
                     motion = look.motion ~= false,
+                    clear = look.clear == true,
                 },
             }
         end

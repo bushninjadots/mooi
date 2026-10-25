@@ -98,6 +98,43 @@ function M.route(a, b, opts)
     if opts.style == "direct" then
         return { { x = x1, y = y1 }, { x = x2, y = y2 } }, true
     end
+    if opts.style == "curved" then
+        -- Curved routing: use bezier-like smooth curves
+        local points = {}
+        push(points, x1, y1)
+        -- Calculate control points for smooth curve
+        local dx = x2 - x1
+        local dy = y2 - y1
+        local dist = math.sqrt(dx * dx + dy * dy)
+        -- Control point offset based on distance
+        local offset = math.min(dist * 0.3, 60)
+        -- Determine control points based on port directions
+        local cx1, cy1 = x1, y1
+        local cx2, cy2 = x2, y2
+        if s1 == "e" then cx1 = x1 + offset
+        elseif s1 == "w" then cx1 = x1 - offset
+        elseif s1 == "n" then cy1 = y1 - offset
+        elseif s1 == "s" then cy1 = y1 + offset end
+        if s2 == "e" then cx2 = x2 + offset
+        elseif s2 == "w" then cx2 = x2 - offset
+        elseif s2 == "n" then cy2 = y2 - offset
+        elseif s2 == "s" then cy2 = y2 + offset end
+        -- Generate bezier curve points (simplified to 8 segments for performance)
+        local segments = 8
+        for i = 1, segments do
+            local t = i / segments
+            local mt = 1 - t
+            local px = mt * mt * mt * x1 + 3 * mt * mt * t * cx1 + 3 * mt * t * t * cx2 + t * t * t * x2
+            local py = mt * mt * mt * y1 + 3 * mt * mt * t * cy1 + 3 * mt * t * t * cy2 + t * t * t * y2
+            push(points, px, py)
+        end
+        push(points, x2, y2)
+        if #points < 2 then
+            push(points, x1, y1 + (step > 0 and step or 1))
+        end
+        return points, true
+    end
+    -- Default circuit (orthogonal) routing
     local points = {}
     push(points, x1, y1)
     if x1 ~= x2 and y1 ~= y2 then

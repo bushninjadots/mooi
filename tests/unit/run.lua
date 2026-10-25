@@ -2330,7 +2330,7 @@ test("registry: the default arrangement is ten anchors around the centre", funct
 end)
 test("registry: seeds keep the core and map legacy plate modules", function()
     local seeds = nexusnode.seed_arrangements({ modules = { "cpu", "network", "player", "output" } })
-    eq(#seeds, 3, "three shipped arrangements")
+    eq(#seeds, 4, "four shipped arrangements, DENSE the last")
     eq(seeds[1].name, "FULL", "first is FULL"); eq(seeds[3].name, "BARE", "last is BARE, not the mode's name")
     eq(seeds[1].nodes[1].type, "core", "a seed always keeps the core")
     for _, n in ipairs(seeds[1].nodes) do

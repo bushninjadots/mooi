@@ -99,9 +99,49 @@ local arrs, active_i, sel, last_arr_count = {}, 1, 0, nil
 local mix, spaces = {}, {}
 
 -- What the connection layer is doing: the hovered node, the hovered trace and the picked one.
+-- A short history per node type, one sample on every two-second reading: twelve samples is
+-- twenty-four seconds of the machine, which is what a card's monitor strip draws (D84).
+local HIST_LEN = 12
+local hist = {}
+
+local function series_value(id)
+    if id == "core" then return nil end
+    if id == "system" or id == "cpu" then return fact.nx_cpu_on and fact.nx_cpu or nil end
+    if id == "memory" then return fact.nx_ram_on and fact.nx_ram or nil end
+    if id == "gpu" then return fact.nx_gpu_on and fact.nx_gpu or nil end
+    if id == "thermal" then return fact.nx_temp_on and math.min(1, (fact.nx_temp or 0) / 100) or nil end
+    if id == "storage" then return fact.nx_disk_on and fact.nx_disk or nil end
+    if id == "network" then
+        if not fact.nx_net_on then return nil end
+        return math.min(1, ((fact.nx_rx or 0) + (fact.nx_tx or 0)) / 1048576)
+    end
+    if id == "audio" then return live.volume end
+    if id == "display" then return live.bright_on and live.bright or nil end
+    if id == "power" then return live.power_on and (live.power / 100) or nil end
+    return nil
+end
+
+local function sample_history()
+    for _, id in ipairs(nexusnode.DENSE_ORDER) do
+        local v = series_value(id)
+        if v ~= nil then
+            local ring = hist[id]
+            if not ring then ring = {}; hist[id] = ring end
+            for k = 1, HIST_LEN - 1 do ring[k] = ring[k + 1] end
+            ring[HIST_LEN] = math.max(0, math.min(1, v))
+        end
+    end
+end
+
 -- The picked trace is kept by its id, because a republish can reorder the drawn list.
-local hover_node, hover_edge, picked_edge = 0, 0, nil
+-- Hover is the scene's own now (D84): a pointer crossing a node or a trace changes a
+-- fact in the scene and nothing else, so lighting a trace costs no logic round trip.
+local picked_edge = nil
 local drawn_edges = {}
+-- Signal markers: animated dots moving along active edges
+local signal_markers = {}
+local SIGNAL_SPEED_BASE = 0.02 -- base progress per frame
+local animation_frame_scheduled = false
 -- The module library's search, kept here because a text field can be drawn but not
 -- compared in the scene; the filtered rows are what the library panel receives.
 local lib_query = ""
@@ -167,12 +207,13 @@ local function start_morph(from)
     -- Reduced motion is a setting, not a suggestion: the arrangement changes in one step.
     if fact.nx_motion == false then morph = nil; publish(); return end
     morph = { from = from, t = 0 }
+    -- Twenty steps at 16ms = 320ms total, adaptive to frame rate
     local function step()
         if not morph then return end
-        morph.t = math.min(1, morph.t + 0.125)
+        morph.t = math.min(1, morph.t + 0.05)
         if morph.t >= 1 then morph = nil end
         publish()
-        if morph then after(40, step) end
+        if morph then after(16, step) end
     end
     step()
 end
@@ -492,7 +533,28 @@ end
 -- Coalesced: sweeping the pointer across the canvas raises an enter and a leave per node and
 -- per trace, and each one used to rebuild every row, edge and library entry. The scene can only
 -- draw once per frame, so one build per frame is all any of them can be seen to do.
+-- Dirty tracking: flags to skip rebuilding sections that haven't changed.
 local publish_queued = false
+local dirty_nodes = false
+local dirty_edges = false
+local dirty_library = false
+local dirty_ui = false
+
+-- Persistent caches for optimization
+local edge_cache = {}
+local edge_cache_key = function(from, to, style)
+    return string.format("%d:%d:%d:%d:%d:%d:%s",
+        math.floor(from.x), math.floor(from.y), math.floor(from.w), math.floor(from.h),
+        math.floor(to.x), math.floor(to.y), math.floor(to.w), math.floor(to.h), style)
+end
+local lib_last_key = ""
+local lib_cached = {}
+
+local function mark_dirty_nodes() dirty_nodes = true end
+local function mark_dirty_edges() dirty_edges = true end
+local function mark_dirty_library() dirty_library = true end
+local function mark_dirty_ui() dirty_ui = true end
+local function mark_dirty_all() dirty_nodes = true; dirty_edges = true; dirty_library = true; dirty_ui = true end
 
 local function build()
     local a = node_list()
@@ -511,61 +573,68 @@ local function build()
     end
 
     local rows, removed = {}, {}
-    if a then
-        for i, node in ipairs(a.nodes) do
-            local def = nexusnode.get(node.type)
-            local ok = nexusnode.available(node.type, p)
-            if ok and def then
-                if node.vis and (mode ~= "minimal" or node.essential) then
-                    local value, note, bar, baron, tone, _accent, sub, bar2, bar2on, bar2l =
-                        content(node, def, shown)
-                    local detail = detail_rows(node)
-                    -- Only the rows that fit the node it is drawn in: the detail body starts at
-                    -- rail + 92 and a row is 26 px tall, so a card of 260 shows five and a
-                    -- card of 420 shows every one it has. A row cut by the frame is worse than
-                    -- a row not shown.
-                    local px, py, pw, ph = node.x, node.y, node.w, node.h
-                    if morph then
-                        local step = nexuslayout.blend(morph.from[node.type] or node, node, morph.t)
-                        px, py, pw, ph = step.x, step.y, step.w, step.h
+    if dirty_nodes or dirty_edges or dirty_library or dirty_ui then
+        if a then
+            for i, node in ipairs(a.nodes) do
+                local def = nexusnode.get(node.type)
+                local ok = nexusnode.available(node.type, p)
+                if ok and def then
+                    if node.vis and (mode ~= "minimal" or node.essential) then
+                        local value, note, bar, baron, tone, _accent, sub, bar2, bar2on, bar2l =
+                            content(node, def, shown)
+                        local detail = detail_rows(node)
+                        -- Only the rows that fit the node it is drawn in: the detail body starts at
+                        -- rail + 92 and a row is 26 px tall, so a card of 260 shows five and a
+                        -- card of 420 shows every one it has. A row cut by the frame is worse than
+                        -- a row not shown.
+                        local px, py, pw, ph = node.x, node.y, node.w, node.h
+                        if morph then
+                            local step = nexuslayout.blend(morph.from[node.type] or node, node, morph.t)
+                            px, py, pw, ph = step.x, step.y, step.w, step.h
+                        end
+                        -- The overview keeps its COPY DIAGNOSTICS button at the foot of the card, so
+                        -- its rows stop above it instead of running under the plate.
+                        local reserve = def.id == "system" and 56 or 0
+                        local rows_fit = math.floor((math.min(ph, node.h) - 30 - 104 - 14 - reserve) / 26) + 1
+                        if rows_fit < 0 then rows_fit = 0 end
+                        if rows_fit > #detail then rows_fit = #detail end
+                        local ring = hist[def.id]
+                        local entry = {
+                            id = i, key = def.id, title = def.title, ser = ring ~= nil,
+                            value = value, note = note,
+                            x = px, y = py, w = pw, h = ph,
+                            tone = tone, bar = math.max(0, math.min(1, bar)), baron = baron,
+                            sub = str(sub, ""), bar2 = math.max(0, math.min(1, bar2)), bar2on = bar2on, bar2l = bar2l,
+                            mini = node.min == true, sel = i == sel, focus = node.type == focus,
+                            minw = def.min.w, minh = def.min.h, maxw = def.max.w, maxh = def.max.h,
+                            kind = KINDS[def.id] or 0, rows = rows_fit, endsel = false,
+                        }
+                        for k = 1, 8 do
+                            entry["r" .. k .. "l"] = detail[k] and detail[k].label or ""
+                            entry["r" .. k .. "v"] = detail[k] and detail[k].value or ""
+                        end
+                        for k = 1, HIST_LEN do
+                            entry["s" .. k] = ring and (ring[k] or 0) or 0
+                        end
+                        rows[#rows + 1] = entry
+                    elseif not node.vis then
+                        removed[#removed + 1] = { id = i, slot = #removed + 1, key = def.id, title = def.title }
                     end
-                    -- The overview keeps its COPY DIAGNOSTICS button at the foot of the card, so
-                    -- its rows stop above it instead of running under the plate.
-                    local reserve = def.id == "system" and 56 or 0
-                    local rows_fit = math.floor((math.min(ph, node.h) - 30 - 104 - 14 - reserve) / 26) + 1
-                    if rows_fit < 0 then rows_fit = 0 end
-                    if rows_fit > #detail then rows_fit = #detail end
-                    local entry = {
-                        id = i, key = def.id, title = def.title,
-                        value = value, note = note,
-                        x = px, y = py, w = pw, h = ph,
-                        tone = tone, bar = math.max(0, math.min(1, bar)), baron = baron,
-                        sub = str(sub, ""), bar2 = math.max(0, math.min(1, bar2)), bar2on = bar2on, bar2l = bar2l,
-                        mini = node.min == true, sel = i == sel, focus = node.type == focus,
-                        minw = def.min.w, minh = def.min.h, maxw = def.max.w, maxh = def.max.h,
-                        kind = KINDS[def.id] or 0, rows = rows_fit, endsel = false,
-                    }
-                    for k = 1, 8 do
-                        entry["r" .. k .. "l"] = detail[k] and detail[k].label or ""
-                        entry["r" .. k .. "v"] = detail[k] and detail[k].value or ""
-                    end
-                    rows[#rows + 1] = entry
-                elseif not node.vis then
-                    removed[#removed + 1] = { id = i, slot = #removed + 1, key = def.id, title = def.title }
                 end
             end
         end
-    end
 
-    if sel > 0 then
-        local holds = false
-        for _, r in ipairs(rows) do if r.id == sel then holds = true break end end
-        if not holds then sel = 0 end
+        if sel > 0 then
+            local holds = false
+            for _, r in ipairs(rows) do if r.id == sel then holds = true break end end
+            if not holds then sel = 0 end
+        end
     end
 
     -- The connection layer: only edges whose two ends are on the canvas, routed once here
     -- so the scene draws the same path every frame instead of solving it. A hidden edge is
     -- one the user put away; a dim one is unrelated to the focused node.
+    -- Edge route cache: keyed by a signature of from/to positions and style.
     local by_type = {}
     for _, r in ipairs(rows) do by_type[r.key] = r end
     local types = {}
@@ -575,42 +644,54 @@ local function build()
         for _, id in ipairs(a.edges.hidden) do hidden[id] = true end
     end
     local style = a and a.edges and a.edges.style or "circuit"
+    local show_trunk = a and a.edges and a.edges.show_trunk ~= false
     local edges, sel_index = {}, 0
     drawn_edges = {}
     for _, edge in ipairs(nexusgraph.instantiate(types)) do
         local from, to = by_type[edge.from], by_type[edge.to]
         if from and to and not hidden[edge.id] then
-            local active = edge_live(edge.activity)
-            if mode ~= "minimal" or active then
-                local pts = nexusgraph.route(
-                    { x = from.x, y = from.y, w = from.w, h = from.h },
-                    { x = to.x, y = to.y, w = to.w, h = to.h },
-                    { style = style, clearance = 12, step = 12 })
-                if #pts >= 2 then
-                    local id = #edges + 1
-                    drawn_edges[id] = edge.id
-                    local hot = (hover_node > 0 and (from.id == hover_node or to.id == hover_node))
-                        or picked_edge == edge.id
-                        or hover_edge == id
-                    local mid = pts[math.max(1, math.floor((#pts + 1) / 2))]
-                    local row = {
-                        id = id, key = edge.id,
-                        from_id = from.id, to_id = to.id,
-                        n = #pts, trunk = edge.kind == "trunk",
-                        hot = hot, dim = focus ~= "core" and edge.from ~= focus and edge.to ~= focus,
-                        active = active,
-                        label = edge.label, meaning = edge.meaning,
-                        mx = mid.x, my = mid.y,
-                        x1 = pts[1].x, y1 = pts[1].y,
-                        x2 = pts[2].x, y2 = pts[2].y,
-                        x3 = (pts[3] or pts[#pts]).x, y3 = (pts[3] or pts[#pts]).y,
-                        x4 = (pts[4] or pts[#pts]).x, y4 = (pts[4] or pts[#pts]).y,
-                    }
-                    edges[#edges + 1] = row
-                    if edge.id == picked_edge then
-                        sel_index = id
-                        from.endsel = true
-                        to.endsel = true
+            -- Skip trunk edges if core bus is hidden
+            if not (edge.kind == "trunk" and not show_trunk) then
+                local active = edge_live(edge.activity)
+                if mode ~= "minimal" or active then
+                    local key = edge_cache_key(from, to, style)
+                    local pts = edge_cache[key]
+                    if not pts or dirty_edges then
+                        pts = nexusgraph.route(
+                            { x = from.x, y = from.y, w = from.w, h = from.h },
+                            { x = to.x, y = to.y, w = to.w, h = to.h },
+                            { style = style, clearance = 12, step = 12 })
+                        edge_cache[key] = pts
+                    end
+                    if #pts >= 2 then
+                        local id = #edges + 1
+                        drawn_edges[id] = edge.id
+                        local mid = pts[math.max(1, math.floor((#pts + 1) / 2))]
+                        local row = {
+                            id = id, key = edge.id,
+                            from_id = from.id, to_id = to.id,
+                            n = #pts, trunk = edge.kind == "trunk",
+                            dim = focus ~= "core" and edge.from ~= focus and edge.to ~= focus,
+                            active = active,
+                            label = edge.label, meaning = edge.meaning,
+                            mx = mid.x, my = mid.y,
+                            x1 = pts[1].x, y1 = pts[1].y,
+                            x2 = pts[2].x, y2 = pts[2].y,
+                            x3 = (pts[3] or pts[#pts]).x, y3 = (pts[3] or pts[#pts]).y,
+                            x4 = (pts[4] or pts[#pts]).x, y4 = (pts[4] or pts[#pts]).y,
+                            x5 = (pts[5] or pts[#pts]).x, y5 = (pts[5] or pts[#pts]).y,
+                            x6 = (pts[6] or pts[#pts]).x, y6 = (pts[6] or pts[#pts]).y,
+                            x7 = (pts[7] or pts[#pts]).x, y7 = (pts[7] or pts[#pts]).y,
+                            x8 = (pts[8] or pts[#pts]).x, y8 = (pts[8] or pts[#pts]).y,
+                            x9 = (pts[9] or pts[#pts]).x, y9 = (pts[9] or pts[#pts]).y,
+                            x10 = (pts[10] or pts[#pts]).x, y10 = (pts[10] or pts[#pts]).y,
+                        }
+                        edges[#edges + 1] = row
+                        if edge.id == picked_edge then
+                            sel_index = id
+                            from.endsel = true
+                            to.endsel = true
+                        end
                     end
                 end
             end
@@ -618,36 +699,96 @@ local function build()
     end
     if picked_edge and #edges == 0 then picked_edge = nil end
 
+    -- Signal markers: animate along active edges
+    local markers = {}
+    local look = a and a.appearance or {}
+    local speed_mult = tonumber(look.edge_speed) or 1
+    local signal_speed = SIGNAL_SPEED_BASE * speed_mult
+    local has_active = false
+    if fact.nx_motion ~= false then
+        for _, row in ipairs(edges) do
+            if row.active then
+                has_active = true
+                local marker = signal_markers[row.key]
+                if not marker then
+                    marker = { progress = 0, direction = 1 }
+                    signal_markers[row.key] = marker
+                end
+                marker.progress = marker.progress + signal_speed * marker.direction
+                if marker.progress >= 1 then marker.progress = 1; marker.direction = -1 end
+                if marker.progress <= 0 then marker.progress = 0; marker.direction = 1 end
+                -- Calculate position along the path
+                local pts = { {x = row.x1, y = row.y1}, {x = row.x2, y = row.y2} }
+                if row.n >= 3 then pts[3] = {x = row.x3, y = row.y3} end
+                if row.n >= 4 then pts[4] = {x = row.x4, y = row.y4} end
+                if row.n >= 5 then pts[5] = {x = row.x5, y = row.y5} end
+                if row.n >= 6 then pts[6] = {x = row.x6, y = row.y6} end
+                if row.n >= 7 then pts[7] = {x = row.x7, y = row.y7} end
+                if row.n >= 8 then pts[8] = {x = row.x8, y = row.y8} end
+                if row.n >= 9 then pts[9] = {x = row.x9, y = row.y9} end
+                if row.n >= 10 then pts[10] = {x = row.x10, y = row.y10} end
+                -- Interpolate position
+                local total_len = #pts - 1
+                local seg_idx = math.floor(marker.progress * total_len) + 1
+                local seg_t = (marker.progress * total_len) % 1
+                local p1 = pts[math.min(seg_idx, #pts)]
+                local p2 = pts[math.min(seg_idx + 1, #pts)]
+                local mx = p1.x + (p2.x - p1.x) * seg_t
+                local my = p1.y + (p2.y - p1.y) * seg_t
+                markers[#markers + 1] = { edge_id = row.id, x = mx, y = my }
+            else
+                signal_markers[row.key] = nil
+            end
+        end
+    end
+    model.nx_signal_markers = markers
+
+    -- Continue animation loop if there are active edges
+    if has_active and fact.nx_motion ~= false then
+        after(16, function()
+            mark_dirty_ui()
+            publish()
+        end)
+    end
+
     -- The module library (S5): every type the catalogue declares, with the reason it is not
     -- drawing right now. `state` is 0 on canvas, 1 removed from this arrangement —the row
     -- carries the node index the restore event takes— 2 not connected on this machine, and
     -- 3 available but not part of this arrangement, which the row offers to add.
+    -- Library memoization: only rebuild when query, mode, or availability changes.
     local library = {}
-    if a then
-        local at = {}
-        for i, node in ipairs(a.nodes) do at[node.type] = { index = i, node = node } end
-        for code, def in ipairs(nexusnode.TYPES) do
-            local ok, why = nexusnode.available(def.id, p)
-            local entry = at[def.id]
-            local state, note = 0, "ON CANVAS"
-            if not ok then
-                state, note = 2, str(why, "NOT CONNECTED")
-            elseif not entry then
-                state, note = 3, "PRESS TO ADD IT"
-            elseif not entry.node.vis then
-                state, note = 1, "REMOVED FROM THE LAYOUT"
-            elseif mode == "minimal" and not entry.node.essential then
-                note = "ESSENTIAL ONLY"
-            end
-            local haystack = string.lower(def.title .. " " .. def.category)
-            if lib_query == "" or string.find(haystack, lib_query, 1, true) then
-                library[#library + 1] = {
-                    slot = #library + 1, id = entry and entry.index or 0, code = code,
-                    key = def.id, title = def.title, category = string.upper(def.category),
-                    state = state, note = note, tone = ACCENT_TONE[def.accent] or 1,
-                }
+    local current_lib_key = lib_query .. ":" .. mode .. ":" .. tostring(p.battery) .. tostring(p.brightness)
+    if dirty_library or current_lib_key ~= lib_last_key then
+        lib_last_key = current_lib_key
+        if a then
+            local at = {}
+            for i, node in ipairs(a.nodes) do at[node.type] = { index = i, node = node } end
+            for code, def in ipairs(nexusnode.TYPES) do
+                local ok, why = nexusnode.available(def.id, p)
+                local entry = at[def.id]
+                local state, note = 0, "ON CANVAS"
+                if not ok then
+                    state, note = 2, str(why, "NOT CONNECTED")
+                elseif not entry then
+                    state, note = 3, "PRESS TO ADD IT"
+                elseif not entry.node.vis then
+                    state, note = 1, "REMOVED FROM THE LAYOUT"
+                elseif mode == "minimal" and not entry.node.essential then
+                    note = "ESSENTIAL ONLY"
+                end
+                local haystack = string.lower(def.title .. " " .. def.category)
+                if lib_query == "" or string.find(haystack, lib_query, 1, true) then
+                    library[#library + 1] = {
+                        slot = #library + 1, id = entry and entry.index or 0, code = code,
+                        key = def.id, title = def.title, category = string.upper(def.category),
+                        state = state, note = note, tone = ACCENT_TONE[def.accent] or 1,
+                    }
+                end
             end
         end
+        lib_cached = library
+    else
+        library = lib_cached
     end
 
     -- The traces the user put away, with the meaning the graph gives each one, so the
@@ -704,10 +845,9 @@ local function build()
     fact.nx_edge_sel = sel_index
     fact.nx_edges_hidden = hidden_count
     fact.nx_edge_width = a and a.edges and a.edges.width or 1
+    fact.nx_clear = a and type(a.appearance) == "table" and a.appearance.clear == true or false
     fact.nx_edge_labels = not (type(settings.nexus) == "table" and settings.nexus.edge
         and settings.nexus.edge.labels == false)
-    fact.nx_hover = hover_node
-    fact.nx_hover_edge = hover_edge
     fact.nx_arrangement_count = #arrs
     fact.nx_node_count = shown
     fact.nx_node_total = total
@@ -744,6 +884,9 @@ local function build()
     fact.nx_opacity = tonumber(look.opacity) or 100
     fact.nx_edge_style = STYLE_INDEX[style] or 1
     fact.nx_motion = look.motion ~= false
+    local speed = tonumber(look.edge_speed) or 1
+    fact.nx_edge_speed = speed
+    fact.nx_show_trunk = a and a.edges and a.edges.show_trunk ~= false
     text.nx_accent_name = string.upper(str(look.accent, "phos"))
     local picked_row = nil
     for _, r in ipairs(rows) do
@@ -778,6 +921,16 @@ local function build()
         and settings.nexus.panel or {}
     fact.nx_panel_x = math.max(0, math.min(4096, math.floor(tonumber(panel.x) or 0)))
     fact.nx_panel_y = math.max(0, math.min(4096, math.floor(tonumber(panel.y) or 0)))
+
+    -- Clear edge cache when layout changed (check before resetting flags)
+    local layout_changed = dirty_edges
+    if layout_changed then edge_cache = {} end
+
+    -- Reset dirty flags after successful build
+    dirty_nodes = false
+    dirty_edges = false
+    dirty_library = false
+    dirty_ui = false
 end
 
 -- The one publish everything asks for. A second ask inside the same frame is dropped: the
@@ -793,6 +946,7 @@ end
 
 local function touch(write)
     if write then save() end
+    mark_dirty_all()
     publish()
 end
 
@@ -816,6 +970,7 @@ on("nx_select", function(v)
     local i = index_of(v)
     if not i then return end
     sel = (sel == i) and 0 or i
+    mark_dirty_ui()
     publish()
 end)
 
@@ -830,6 +985,8 @@ on("nx_drop", function(v)
     local y = tonumber(fact.nx_gy) or node.y
     remember()
     if nexuslayout.place(node, x, y, canvas, 8) then
+        mark_dirty_nodes()
+        mark_dirty_edges()
         touch(true)
     else
         table.remove(past)
@@ -844,7 +1001,14 @@ on("nx_resize", function(v)
     remember()
     local changed = nexuslayout.resize(node, tonumber(fact.nx_rw) or node.w, tonumber(fact.nx_rh) or node.h, 8)
     local moved = nexuslayout.place(node, node.x, node.y, canvas, 0)
-    if changed or moved then touch(true) else table.remove(past); publish() end
+    if changed or moved then
+        mark_dirty_nodes()
+        mark_dirty_edges()
+        touch(true)
+    else
+        table.remove(past)
+        publish()
+    end
 end)
 
 on("nx_min", function(v)
@@ -852,6 +1016,7 @@ on("nx_min", function(v)
     if not i then return end
     remember()
     node.min = not node.min
+    mark_dirty_nodes()
     touch(true)
 end)
 
@@ -869,10 +1034,13 @@ on("nx_focus_node", function(v)
         a.nodes = out
         a.focus = node.type
         sel = i
+        mark_dirty_nodes()
+        mark_dirty_edges()
         touch(true)
         start_morph(from)
     else
         a.focus = node.type
+        mark_dirty_ui()
         touch(true)
     end
 end)
@@ -899,6 +1067,8 @@ on("nx_remove", function(v)
         a.focus = fallback
     end
     if sel == i then sel = 0 end
+    mark_dirty_nodes()
+    mark_dirty_edges()
     touch(true)
 end)
 
@@ -910,6 +1080,8 @@ on("nx_restore", function(v)
     remember()
     if nexuslayout.restore(a.nodes, i, canvas, 8) then
         sel = i
+        mark_dirty_nodes()
+        mark_dirty_edges()
         touch(true)
     end
 end)
@@ -956,6 +1128,9 @@ on("nx_lib_add", function(v)
             if not node.vis then
                 remember()
                 node.vis = true
+                mark_dirty_nodes()
+                mark_dirty_edges()
+                mark_dirty_library()
                 touch(true)
             end
             sel = i
@@ -979,6 +1154,9 @@ on("nx_lib_add", function(v)
     node.essential = def.essential
     a.nodes[#a.nodes + 1] = node
     sel = #a.nodes
+    mark_dirty_nodes()
+    mark_dirty_edges()
+    mark_dirty_library()
     touch(true)
     start_morph(from)
     notify(def.title .. " ADDED")
@@ -990,6 +1168,7 @@ on("text:nx_lib_query", function(value)
     if type(value) ~= "string" then return end
     lib_query = string.lower((value:gsub("^%s+", ""):gsub("%s+$", "")))
     lib_page = 0
+    mark_dirty_library()
     publish()
 end)
 
@@ -1148,6 +1327,9 @@ on("nx_look", function()
         look.glow = math.floor(clamp((tonumber(look.glow) or 60) + val, 0, 100))
     elseif key == 5 then
         look.grid = not (look.grid ~= false)
+    elseif key == 11 then
+        -- the clear field: no plate at all, the wallpaper behind the cards (D84)
+        look.clear = not (look.clear == true)
     elseif key == 9 then
         look.motion = not (look.motion ~= false)
     elseif key == 10 then
@@ -1163,6 +1345,17 @@ on("nx_look", function()
         if type(settings.nexus) ~= "table" then settings.nexus = {} end
         if type(settings.nexus.edge) ~= "table" then settings.nexus.edge = {} end
         settings.nexus.edge.labels = not (settings.nexus.edge.labels ~= false)
+    elseif key == 12 then
+        -- edge animation speed: 0.5x, 1x, 2x
+        local speeds = { 0.5, 1, 2 }
+        local current = tonumber(look.edge_speed) or 1
+        local idx = 1
+        for i, s in ipairs(speeds) do if math.abs(s - current) < 0.1 then idx = i; break end end
+        look.edge_speed = speeds[((idx - 1 + math.floor(val)) % #speeds) + 1]
+    elseif key == 13 then
+        -- core bus visibility toggle
+        if type(a.edges) ~= "table" then a.edges = {} end
+        a.edges.show_trunk = not (a.edges.show_trunk == false)
     else
         return
     end
@@ -1259,21 +1452,6 @@ on("nx_tidy", function()
     touch(true)
 end)
 
--- RESTORE CENTRE: the core goes back to the middle. The node that was there takes the
--- slot the core left, exactly as a focus swap does.
-on("nx_hover_node", function(v)
-    local i = math.floor(tonumber(v) or 0)
-    if i == hover_node then return end
-    hover_node = i
-    publish()
-end)
-on("nx_hover_edge", function(v)
-    local i = math.floor(tonumber(v) or 0)
-    if i == hover_edge then return end
-    hover_edge = i
-    publish()
-end)
-
 -- A picked trace highlights the two endpoints; a press on the same trace puts it down.
 on("nx_edge_pick", function(v)
     local i = math.floor(tonumber(v) or 0)
@@ -1300,6 +1478,8 @@ on("nx_edges_restore", function()
     touch(true)
 end)
 
+-- RESTORE CENTRE: the core goes back to the middle. The node that was there takes the
+-- slot the core left, exactly as a focus swap does.
 on("nx_restore_centre", function()
     local a = node_list()
     local canvas = canvas_of()
@@ -1669,6 +1849,7 @@ local function sample_live()
             text.nx_temp_value = "N/A"
         end
     end)
+    sample_history()
     publish()
     after(2000, sample_live)
 end

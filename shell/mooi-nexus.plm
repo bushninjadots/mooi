@@ -263,14 +263,20 @@ scene Nexus {
         x: number; y: number; w: number; h: number; tone: number; bar: number; baron: bool;
         mini: bool; sel: bool; focus: bool; minw: number; minh: number; maxw: number; maxh: number;
         kind: number; rows: number; endsel: bool;
-        sub: text; bar2: number; bar2on: bool; bar2l: text;
+        sub: text; bar2: number; bar2on: bool; bar2l: text; ser: bool;
+        s1: number; s2: number; s3: number; s4: number; s5: number; s6: number;
+        s7: number; s8: number; s9: number; s10: number; s11: number; s12: number;
         r1l: text; r1v: text; r2l: text; r2v: text; r3l: text; r3v: text; r4l: text; r4v: text;
         r5l: text; r5v: text; r6l: text; r6v: text; r7l: text; r7v: text; r8l: text; r8v: text }
     // The traces: authored in lib/nexusgraph, routed in the logic, drawn here. A row is
-    // four points at most, so the scene draws three segments and never solves a path.
+    // up to 10 points for curved edges, so the scene draws up to 9 segments and never solves a path.
     model nx_edges max 24 { id: number; key: text; from_id: number; to_id: number; n: number; trunk: bool;
         hot: bool; dim: bool; active: bool; label: text; meaning: text; mx: number; my: number;
-        x1: number; y1: number; x2: number; y2: number; x3: number; y3: number; x4: number; y4: number }
+        x1: number; y1: number; x2: number; y2: number; x3: number; y3: number; x4: number; y4: number;
+        x5: number; y5: number; x6: number; y6: number; x7: number; y7: number; x8: number; y8: number;
+        x9: number; y9: number; x10: number; y10: number }
+    // Signal markers: animated dots moving along active edges
+    model nx_signal_markers max 24 { edge_id: number; x: number; y: number }
     model nx_removed max 16 { id: number; slot: number; key: text; title: text }
     // The module library: every type the catalogue declares, the state it is in and why.
     model nx_lib max 24 { slot: number; id: number; code: number; key: text; title: text; category: text; state: number; note: text; tone: number }
@@ -371,7 +377,10 @@ scene Nexus {
     fact nx_edge_width = 1
     fact nx_edge_labels = true
     fact nx_edge_sel = 0
+    fact nx_edge_speed = 1
+    fact nx_show_trunk = true
     fact nx_hover = 0
+    fact nx_clear = false
     fact nx_hover_edge = 0
 
     // ── The shell's surfaces (S5) ────────────────────────────
@@ -479,8 +488,6 @@ scene Nexus {
     event nx_cycle_sel ->        // to the logic: Tab, the next node on the canvas
     event nx_tidy ->             // to the logic: repack the arrangement on the grid
     event nx_restore_centre ->   // to the logic: put the core back at the centre
-    event nx_hover_node ->       // to the logic: the node the pointer is over (0 leaves)
-    event nx_hover_edge ->       // to the logic: the trace the pointer is over (0 leaves)
     event nx_edge_pick ->        // to the logic: pick a trace, or put it down
     event nx_edge_hide ->        // to the logic: hide the picked trace
     event nx_edges_restore ->    // to the logic: bring every hidden trace back
@@ -594,9 +601,14 @@ scene Nexus {
             if(nx_accent == 1, pr_phos_b, if(nx_accent == 2, pr_flare_b, if(nx_accent == 3, pr_ember_b, pr_trace_lit_b))))
         let ac_soft = mix(fl.trace, ac, 0.6)
         let glow_amt = nx_glow / 100
+        // How solid the plate is. It is applied to the fills one by one rather than to the
+        // whole group: a group opacity of its own makes the renderer keep the entire
+        // 1920-wide scene in an offscreen layer and repaint all of it whenever anything
+        // moves, which cost ~100 ms a frame — the whole program's lag (D86).
+        let nx_fill = clamp(nx_opacity / 100, 0.25, 1)
 
         group {
-            opacity: nx_a * nx_opacity / 100
+            move: 0, (1 - nx_a) * 16
             show: nx_a > 0.004
 
             // The canvas the logic has to know before it can clamp, fit or restore onto it:
@@ -613,6 +625,7 @@ scene Nexus {
                 gradient: 0, 0 to 0, head, fl.hull_raised, fl.hull
                 rim: 5%
                 border: 1, fl.trace
+                opacity: nx_fill
                 box { from: 0, 0; size: sw, head }
             }
             box { from: 0, head - 1; size: sw, 1; color: fl.trace; opacity: 0.7 }
@@ -786,6 +799,7 @@ scene Nexus {
                 body {
                     gradient: 0, head to 0, head + banner, fl.hull_raised, fl.hull
                     rim: 4%
+                    opacity: nx_fill
                     box { from: 0, head; size: sw, banner }
                 }
                 image nx_banner { at: 0, head; size: sw, banner; opacity: 0.34; show: nx_banner_on }
@@ -883,11 +897,16 @@ scene Nexus {
                 // shaded so the field reads as a volume and not as a rectangle
                 body {
                     gradient: 0, cy to 0, cy + ch, fl.hull_raised, fl.ground
+                    opacity: nx_fill
                     box { from: 0, cy; size: sw, ch }
+                    show: not nx_clear
                 }
-                repeat v in 0..3 {
+                group {
+                    show: not nx_clear
+                    repeat v in 0..3 {
                     box { from: 0, cy + v * 7; size: sw, 7; color: fl.ground; opacity: 0.14 - v * 0.03 }
                     box { from: 0, cy + ch - (v + 1) * 7; size: sw, 7; color: fl.ground; opacity: 0.14 - v * 0.03 }
+                    }
                 }
 
                 // the measured field: 36 px minor, 180 px major, both under everything
@@ -926,8 +945,8 @@ scene Nexus {
                 for e in nx_edges {
                     let px1 = cx + if(nx_drag == e.from_id, e.x1 + nx_dx, e.x1)
                     let py1 = cy + if(nx_drag == e.from_id, e.y1 + nx_dy, e.y1)
-                    let px4 = cx + if(nx_drag == e.to_id, e.x4 + nx_dx, e.x4)
-                    let py4 = cy + if(nx_drag == e.to_id, e.y4 + nx_dy, e.y4)
+                    let last_x = if(e.n == 2, cx + e.x2, if(e.n == 3, cx + e.x3, if(e.n == 4, cx + e.x4, if(e.n == 5, cx + e.x5, if(e.n == 6, cx + e.x6, if(e.n == 7, cx + e.x7, if(e.n == 8, cx + e.x8, if(e.n == 9, cx + e.x9, cx + e.x10))))))))
+                    let last_y = if(e.n == 2, cy + e.y2, if(e.n == 3, cy + e.y3, if(e.n == 4, cy + e.y4, if(e.n == 5, cy + e.y5, if(e.n == 6, cy + e.y6, if(e.n == 7, cy + e.y7, if(e.n == 8, cy + e.y8, if(e.n == 9, cy + e.y9, cy + e.y10))))))))
                     let lx = min(cx + e.mx + 4, max(cx + 4, cx + cw - 168))
                     group {
                         opacity: if(e.dim, 0.2, 1)
@@ -937,17 +956,50 @@ scene Nexus {
                                opacity: 0.5; show: e.n >= 2 }
                         line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: nx_edge_width + 3; color: fl.ground
                                opacity: 0.5; show: e.n >= 3 }
-                        line { from: cx + e.x3, cy + e.y3; to: px4, py4; width: nx_edge_width + 3; color: fl.ground
+                        line { from: cx + e.x3, cy + e.y3; to: cx + e.x4, cy + e.y4; width: nx_edge_width + 3; color: fl.ground
                                opacity: 0.5; show: e.n >= 4 }
-                        line { from: px1, py1; to: cx + e.x2, cy + e.y2; width: if(e.hot, 2.4, nx_edge_width)
-                               color: if(e.hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 2 }
-                        line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: if(e.hot, 2.4, nx_edge_width)
-                               color: if(e.hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 3 }
-                        line { from: cx + e.x3, cy + e.y3; to: px4, py4; width: if(e.hot, 2.4, nx_edge_width)
-                               color: if(e.hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 4 }
-                        // the elbow, a joint rather than a kink
+                        line { from: cx + e.x4, cy + e.y4; to: cx + e.x5, cy + e.y5; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 5 }
+                        line { from: cx + e.x5, cy + e.y5; to: cx + e.x6, cy + e.y6; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 6 }
+                        line { from: cx + e.x6, cy + e.y6; to: cx + e.x7, cy + e.y7; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 7 }
+                        line { from: cx + e.x7, cy + e.y7; to: cx + e.x8, cy + e.y8; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 8 }
+                        line { from: cx + e.x8, cy + e.y8; to: cx + e.x9, cy + e.y9; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 9 }
+                        line { from: cx + e.x9, cy + e.y9; to: cx + e.x10, cy + e.y10; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 10 }
+                        // hot is decided here, from the node the pointer is on: a hovered node
+                        // lights its traces without asking the logic, so it cannot feel late.
+                        let hot = nx_hover > 0 and (e.from_id == nx_hover or e.to_id == nx_hover)
+                        line { from: px1, py1; to: cx + e.x2, cy + e.y2; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 2 }
+                        line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 3 }
+                        line { from: cx + e.x3, cy + e.y3; to: cx + e.x4, cy + e.y4; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 4 }
+                        line { from: cx + e.x4, cy + e.y4; to: cx + e.x5, cy + e.y5; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 5 }
+                        line { from: cx + e.x5, cy + e.y5; to: cx + e.x6, cy + e.y6; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 6 }
+                        line { from: cx + e.x6, cy + e.y6; to: cx + e.x7, cy + e.y7; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 7 }
+                        line { from: cx + e.x7, cy + e.y7; to: cx + e.x8, cy + e.y8; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 8 }
+                        line { from: cx + e.x8, cy + e.y8; to: cx + e.x9, cy + e.y9; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 9 }
+                        line { from: cx + e.x9, cy + e.y9; to: last_x, last_y; width: if(hot, 2.4, nx_edge_width)
+                               color: if(hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 10 }
+                        // the elbow, a joint rather than a kink (only for circuit style)
                         box { at: cx + e.x2, cy + e.y2; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 3 }
                         box { at: cx + e.x3, cy + e.y3; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 4 }
+                        box { at: cx + e.x4, cy + e.y4; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 5 }
+                        box { at: cx + e.x5, cy + e.y5; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 6 }
+                        box { at: cx + e.x6, cy + e.y6; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 7 }
+                        box { at: cx + e.x7, cy + e.y7; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 8 }
+                        box { at: cx + e.x8, cy + e.y8; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 9 }
+                        box { at: cx + e.x9, cy + e.y9; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 10 }
                         // a live signal leaves a mark where the trace turns
                         group {
                             show: e.active
@@ -957,11 +1009,11 @@ scene Nexus {
                         }
                         // the label sits on a short rule, so it belongs to the trace
                         line { from: cx + e.mx + 8, cy + e.my - 3; to: cx + e.mx + 34, cy + e.my - 3; width: 1
-                               color: fl.trace; opacity: if(e.hot, 0.65, 0.34)
-                               show: nx_edge_labels and (e.trunk or e.hot) and nx_hover_edge != e.id }
+                               color: fl.trace; opacity: if(hot, 0.65, 0.34)
+                               show: nx_edge_labels and (e.trunk or hot) and nx_hover_edge != e.id }
                         text e.label { at: cx + e.mx + 9, cy + e.my - 9; anchor: left center; size: 8; family: "Share Tech Mono"
-                                       color: if(e.hot, ac, mix(fl.muted, fl.trace_lit, 0.55))
-                                       show: nx_edge_labels and (e.trunk or e.hot) and nx_hover_edge != e.id }
+                                       color: if(hot, ac, mix(fl.muted, fl.trace_lit, 0.55))
+                                       show: nx_edge_labels and (e.trunk or hot) and nx_hover_edge != e.id }
                         // hover inspection: what this connection means, in its own plate
                         group {
                             show: nx_hover_edge == e.id
@@ -976,21 +1028,68 @@ scene Nexus {
                         zone box nx_edge_hit1 { from: min(px1, cx + e.x2) - 4, min(py1, cy + e.y2) - 4
                                                 size: abs(cx + e.x2 - px1) + 8, abs(cy + e.y2 - py1) + 8
                                                 cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 2 }
-                        on enter nx_edge_hit1 { emit nx_hover_edge(e.id) }
-                        on leave nx_edge_hit1 { emit nx_hover_edge(0) }
+                        on enter nx_edge_hit1 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit1 { nx_hover_edge = 0 }
                         on press nx_edge_hit1 { emit nx_edge_pick(e.id) }
                         zone box nx_edge_hit2 { from: min(cx + e.x2, cx + e.x3) - 4, min(cy + e.y2, cy + e.y3) - 4
                                                 size: abs(e.x3 - e.x2) + 8, abs(e.y3 - e.y2) + 8
                                                 cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 3 }
-                        on enter nx_edge_hit2 { emit nx_hover_edge(e.id) }
-                        on leave nx_edge_hit2 { emit nx_hover_edge(0) }
+                        on enter nx_edge_hit2 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit2 { nx_hover_edge = 0 }
                         on press nx_edge_hit2 { emit nx_edge_pick(e.id) }
-                        zone box nx_edge_hit3 { from: min(cx + e.x3, px4) - 4, min(cy + e.y3, py4) - 4
-                                                size: abs(px4 - (cx + e.x3)) + 8, abs(py4 - (cy + e.y3)) + 8
+                        zone box nx_edge_hit3 { from: min(cx + e.x3, cx + e.x4) - 4, min(cy + e.y3, cy + e.y4) - 4
+                                                size: abs(e.x4 - e.x3) + 8, abs(e.y4 - e.y3) + 8
                                                 cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 4 }
-                        on enter nx_edge_hit3 { emit nx_hover_edge(e.id) }
-                        on leave nx_edge_hit3 { emit nx_hover_edge(0) }
+                        on enter nx_edge_hit3 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit3 { nx_hover_edge = 0 }
                         on press nx_edge_hit3 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit4 { from: min(cx + e.x4, cx + e.x5) - 4, min(cy + e.y4, cy + e.y5) - 4
+                                                size: abs(e.x5 - e.x4) + 8, abs(e.y5 - e.y4) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 5 }
+                        on enter nx_edge_hit4 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit4 { nx_hover_edge = 0 }
+                        on press nx_edge_hit4 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit5 { from: min(cx + e.x5, cx + e.x6) - 4, min(cy + e.y5, cy + e.y6) - 4
+                                                size: abs(e.x6 - e.x5) + 8, abs(e.y6 - e.y5) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 6 }
+                        on enter nx_edge_hit5 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit5 { nx_hover_edge = 0 }
+                        on press nx_edge_hit5 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit6 { from: min(cx + e.x6, cx + e.x7) - 4, min(cy + e.y6, cy + e.y7) - 4
+                                                size: abs(e.x7 - e.x6) + 8, abs(e.y7 - e.y6) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 7 }
+                        on enter nx_edge_hit6 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit6 { nx_hover_edge = 0 }
+                        on press nx_edge_hit6 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit7 { from: min(cx + e.x7, cx + e.x8) - 4, min(cy + e.y7, cy + e.y8) - 4
+                                                size: abs(e.x8 - e.x7) + 8, abs(e.y8 - e.y7) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 8 }
+                        on enter nx_edge_hit7 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit7 { nx_hover_edge = 0 }
+                        on press nx_edge_hit7 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit8 { from: min(cx + e.x8, cx + e.x9) - 4, min(cy + e.y8, cy + e.y9) - 4
+                                                size: abs(e.x9 - e.x8) + 8, abs(e.y9 - e.y8) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 9 }
+                        on enter nx_edge_hit8 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit8 { nx_hover_edge = 0 }
+                        on press nx_edge_hit8 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit9 { from: min(cx + e.x9, last_x) - 4, min(cy + e.y9, last_y) - 4
+                                                size: abs(last_x - (cx + e.x9)) + 8, abs(last_y - (cy + e.y9)) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 10 }
+                        on enter nx_edge_hit9 { nx_hover_edge = e.id }
+                        on leave nx_edge_hit9 { nx_hover_edge = 0 }
+                        on press nx_edge_hit9 { emit nx_edge_pick(e.id) }
+                    }
+                }
+
+                // ── signal markers: animated dots on active edges ──
+                for m in nx_signal_markers {
+                    let px = cx + m.x
+                    let py = cy + m.y
+                    group {
+                        glow: 8, 0.5 * glow_amt, ac
+                        box { at: px, py; size: 5, 5; corner: 3; color: ac; opacity: 0.95 }
+                        box { at: px, py; size: 9, 9; corner: 5; stroke: 1; color: ac; opacity: 0.4 }
                     }
                 }
 
@@ -1045,6 +1144,7 @@ scene Nexus {
                             rim: 6%
                             border: if(n.sel or n.focus, 1.4, 1), mix(fl.trace, tone, 0.3 + nx_frame.hover * 0.25 + if(n.sel, 0.35, 0) + if(n.focus, 0.3, 0))
                             shadow: 0, if(n.focus, 12, 0), if(n.focus, 28, 0), if(n.focus, 0.42, 0), fl.ink
+                            opacity: nx_fill
                             path { move nx + 10, ny; line nx + nw - 10, ny; line nx + nw, ny + 10
                                    line nx + nw, ny + nh - 10; line nx + nw - 10, ny + nh
                                    line nx + 10, ny + nh; line nx, ny + nh - 10; line nx, ny + 10; close }
@@ -1083,9 +1183,27 @@ scene Nexus {
                             text n.note { at: nx + 14, ny + rail + 48; anchor: left center; size: 7.5; family: "Share Tech Mono"
                                           width: max(40, nw - 28); lines: 1; color: fl.muted }
                             // the second line: the number that sits beside the reading
-                            text n.sub { at: nx + 14, ny + nh - 31; anchor: left center; size: 7; family: "Share Tech Mono"
-                                         width: max(40, nw - 28); lines: 1; color: fl.trace_lit
-                                         opacity: 0.75; show: nh >= 112 }
+                            text n.sub { at: nx + 14, ny + nh - (if(n.ser and nh >= 136, 44, 31)); anchor: left center
+                                         size: 7; family: "Share Tech Mono"; width: max(40, nw - 28); lines: 1
+                                         color: fl.trace_lit; opacity: 0.75; show: nh >= 112 }
+                            // the card's own monitor: the last twelve readings as a line
+                            group {
+                                show: n.ser and nh >= 136
+                                path { stroke: 1.2; color: tone; opacity: 0.7
+                                    move nx + 14, ny + nh - 22 - n.s1 * 12
+                                    line nx + 14 + (nw - 28) * 1 / 11, ny + nh - 22 - n.s2 * 12
+                                    line nx + 14 + (nw - 28) * 2 / 11, ny + nh - 22 - n.s3 * 12
+                                    line nx + 14 + (nw - 28) * 3 / 11, ny + nh - 22 - n.s4 * 12
+                                    line nx + 14 + (nw - 28) * 4 / 11, ny + nh - 22 - n.s5 * 12
+                                    line nx + 14 + (nw - 28) * 5 / 11, ny + nh - 22 - n.s6 * 12
+                                    line nx + 14 + (nw - 28) * 6 / 11, ny + nh - 22 - n.s7 * 12
+                                    line nx + 14 + (nw - 28) * 7 / 11, ny + nh - 22 - n.s8 * 12
+                                    line nx + 14 + (nw - 28) * 8 / 11, ny + nh - 22 - n.s9 * 12
+                                    line nx + 14 + (nw - 28) * 9 / 11, ny + nh - 22 - n.s10 * 12
+                                    line nx + 14 + (nw - 28) * 10 / 11, ny + nh - 22 - n.s11 * 12
+                                    line nx + 14 + (nw - 28) * 11 / 11, ny + nh - 22 - n.s12 * 12
+                                }
+                            }
                             box { from: nx + 14, ny + nh - 17; size: max(0, nw - 28), 4; corner: 1; color: fl.ground; opacity: 0.85 }
                             box { from: nx + 14, ny + nh - 17; size: max(0, (nw - 28) * clamp(n.bar, 0, 1)), 4; corner: 1
                                   color: tone; opacity: 0.9; show: n.baron }
@@ -1103,9 +1221,11 @@ scene Nexus {
                             line { from: nx + 11, ny + rail + 18; to: nx + 11, ny + nh - 16; width: 1
                                    color: tone; opacity: 0.16 }
                             text n.value { at: nx + 18, ny + rail + 32; anchor: left center; size: 28; weight: 700; family: "Exo 2"
-                                           width: max(60, nw - 36); lines: 1; color: mix(fl.hull, tone, 0.97) }
+                                           width: if(n.ser, max(60, (nw - 36) * 0.44), max(60, nw - 36)); lines: 1
+                                           color: mix(fl.hull, tone, 0.97) }
                             text n.note { at: nx + 18, ny + rail + 60; anchor: left center; size: 8.5; family: "Share Tech Mono"
-                                          width: max(60, nw - 36); lines: 1; color: fl.trace_lit }
+                                          width: if(n.ser, max(60, (nw - 36) * 0.44), max(60, nw - 36)); lines: 1
+                                          color: fl.trace_lit }
                             box { from: nx + 18, ny + rail + 74; size: max(0, nw - 36), 4; corner: 1; color: fl.ground; opacity: 0.85 }
                             box { from: nx + 18, ny + rail + 74; size: max(0, (nw - 36) * clamp(n.bar, 0, 1)), 4; corner: 1
                                   color: tone; opacity: 0.9; show: n.baron }
@@ -1120,6 +1240,35 @@ scene Nexus {
                             box { from: nx + 84, ny + rail + 87; size: max(0, (nw - 102) * clamp(n.bar2, 0, 1)), 2
                                   color: tone; opacity: 0.65; show: n.bar2on }
 
+
+                            // ── the monitor: the last twelve readings, drawn where the card
+                            //    has room for them, with a floor and a scale to read them by
+                            group {
+                                show: n.ser
+                                let mx0 = nx + 18 + (nw - 36) * 0.46
+                                let mw = (nw - 36) * 0.54
+                                let my0 = ny + rail + 20
+                                let mh = 48
+                                box { from: mx0, my0 + mh; size: mw, 1; color: tone; opacity: 0.25 }
+                                box { from: mx0, my0; size: 1, mh; color: tone; opacity: 0.16 }
+                                box { from: mx0, my0 + mh / 2; size: mw, 1; color: fl.trace; opacity: 0.1 }
+                                path { stroke: 1.6; color: tone
+                                    move mx0, my0 + mh - n.s1 * mh
+                                    line mx0 + mw * 1 / 11, my0 + mh - n.s2 * mh
+                                    line mx0 + mw * 2 / 11, my0 + mh - n.s3 * mh
+                                    line mx0 + mw * 3 / 11, my0 + mh - n.s4 * mh
+                                    line mx0 + mw * 4 / 11, my0 + mh - n.s5 * mh
+                                    line mx0 + mw * 5 / 11, my0 + mh - n.s6 * mh
+                                    line mx0 + mw * 6 / 11, my0 + mh - n.s7 * mh
+                                    line mx0 + mw * 7 / 11, my0 + mh - n.s8 * mh
+                                    line mx0 + mw * 8 / 11, my0 + mh - n.s9 * mh
+                                    line mx0 + mw * 9 / 11, my0 + mh - n.s10 * mh
+                                    line mx0 + mw * 10 / 11, my0 + mh - n.s11 * mh
+                                    line mx0 + mw * 11 / 11, my0 + mh - n.s12 * mh
+                                }
+                                text "LAST 24 S" { at: mx0 + mw, my0 - 8; anchor: right center; size: 5.8
+                                     family: "Share Tech Mono"; color: fl.muted }
+                            }
                             // the readings: a rule under each pair, the value in the signal
                             line { from: nx + 18, ny + rail + 92; to: nx + nw - 18, ny + rail + 92; width: 1;
                                    color: tone; opacity: 0.22; show: n.rows >= 1 }
@@ -1267,8 +1416,8 @@ scene Nexus {
                         // the frame's own gesture: press to select, drag to move
                         on press nx_frame { nx_press = n.id; nx_dx = 0; nx_dy = 0; nx_menu = 0 }
                         // hovering a node lights the traces that reach it
-                        on enter nx_frame { emit nx_hover_node(n.id) }
-                        on leave nx_frame { emit nx_hover_node(0) }
+                        on enter nx_frame { nx_hover = n.id }
+                        on leave nx_frame { nx_hover = 0 }
                         on drag nx_frame while nx_press == n.id and not nx_pinned {
                             nx_cw = cw; nx_ch = ch
                             nx_gx = clamp(n.x + drag.dx, 0, max(0, cw - n.w))
@@ -1318,6 +1467,7 @@ scene Nexus {
                             rim: 6%
                             border: 1, mix(fl.trace, ac, 0.45)
                             shadow: 0, 10, 26, 0.5, fl.ink
+                            opacity: nx_fill
                             path { move mx + 8, my; line mx + 156 - 8, my; line mx + 156, my + 8
                                    line mx + 156, my + 146 - 8; line mx + 156 - 8, my + 146
                                    line mx + 8, my + 146; line mx, my + 146 - 8; line mx, my + 8; close }
@@ -1389,6 +1539,7 @@ scene Nexus {
                         rim: 6%
                         border: 1, mix(fl.trace, ac, 0.5)
                         shadow: 0, 12, 30, 0.5, fl.ink
+                        opacity: nx_fill
                         path { move ex + 8, ey; line ex + 260 - 8, ey; line ex + 260, ey + 8
                                line ex + 260, ey + ph - 8; line ex + 260 - 8, ey + ph
                                line ex + 8, ey + ph; line ex, ey + ph - 8; line ex, ey + 8; close }
@@ -1447,6 +1598,7 @@ scene Nexus {
                 body {
                     gradient: 0, sh - foot to 0, sh, fl.hull_raised, fl.hull
                     rim: 4%
+                    opacity: nx_fill
                     box { from: 0, sh - foot; size: sw, foot }
                 }
                 box { from: 0, sh - foot; size: sw, 1; color: fl.trace; opacity: 0.65 }
@@ -1508,6 +1660,7 @@ scene Nexus {
                     rim: 5%
                     border: 1, mix(fl.trace, ac, 0.4)
                     shadow: 0, 14, 34, 0.5, fl.ink
+                    opacity: nx_fill
                     path { move panel_x + 10, panel_y; line panel_x + panel_w - 10, panel_y
                            line panel_x + panel_w, panel_y + 10; line panel_x + panel_w, panel_y + panel_h - 10
                            line panel_x + panel_w - 10, panel_y + panel_h; line panel_x + 10, panel_y + panel_h
@@ -1776,6 +1929,10 @@ scene Nexus {
                     zone box nx_motion_toggle { from: px0 + 110, py0 + 164; size: 104, 26; cursor: pointer; role: toggle
                                                 checked: nx_motion; label: "Animate layout changes" }
                     NButton(px0 + 110, py0 + 164, 104, 26, "MOTION", nx_motion, ac, nx_motion_toggle.hover)
+                    zone box nx_clear_toggle { from: px0, py0 + 196; size: 104, 26; cursor: pointer; role: toggle
+                                               checked: nx_clear; label: "Draw the cards over the wallpaper, with no plate behind them" }
+                    NButton(px0, py0 + 196, 104, 26, "CLEAR", nx_clear, ac, nx_clear_toggle.hover)
+                    on press nx_clear_toggle { nx_look_key = 11; nx_look_val = 1; emit nx_look }
                     on press nx_motion_toggle { nx_look_key = 9; nx_look_val = 1; emit nx_look }
                     zone box nx_labels_toggle { from: px0 + 220, py0 + 164; size: pwi - 220, 26; cursor: pointer; role: toggle
                                                 checked: nx_edge_labels; label: "Show trace labels" }
@@ -1800,6 +1957,20 @@ scene Nexus {
                     group { show: nx_edge_width == 2
                         NButton(px0 + pwi - 110, py0 + 214, 110, 26, "2 PX", 1, ac, nx_width_toggle.hover) }
                     on press nx_width_toggle { nx_look_key = 6; nx_look_val = 1; emit nx_look }
+                    zone box nx_speed_toggle { from: px0, py0 + 250; size: pwi - 118, 26; cursor: pointer; role: button
+                                               label: "Change signal marker speed" }
+                    NButton(px0, py0 + 250, pwi - 118, 26, "SPEED", 0, ac, nx_speed_toggle.hover)
+                    text "0.5X" { at: px0 + pwi - 126, py0 + 263; anchor: right center; size: 7; weight: 700
+                                    family: "Share Tech Mono"; color: ac; show: nx_edge_speed == 0.5 }
+                    text "1X" { at: px0 + pwi - 126, py0 + 263; anchor: right center; size: 7; weight: 700
+                                    family: "Share Tech Mono"; color: ac; show: nx_edge_speed == 1 }
+                    text "2X" { at: px0 + pwi - 126, py0 + 263; anchor: right center; size: 7; weight: 700
+                                    family: "Share Tech Mono"; color: ac; show: nx_edge_speed == 2 }
+                    on press nx_speed_toggle { nx_look_key = 12; nx_look_val = 1; emit nx_look }
+                    zone box nx_trunk_toggle { from: px0, py0 + 286; size: pwi - 118, 26; cursor: pointer; role: toggle
+                                               checked: nx_show_trunk; label: "Show the core bus traces" }
+                    NButton(px0, py0 + 286, pwi - 118, 26, "CORE BUS", nx_show_trunk, ac, nx_trunk_toggle.hover)
+                    on press nx_trunk_toggle { nx_look_key = 13; nx_look_val = 1; emit nx_look }
                     text "APPEARANCE IS SAVED WITH THE ARRANGEMENT" { at: px0, panel_y + panel_h - 18; anchor: left center
                          size: 6.5; family: "Share Tech Mono"; color: fl.muted }
                 }
@@ -1881,6 +2052,7 @@ scene Nexus {
                     rim: 5%
                     border: 1, mix(fl.trace, fl.ember, 0.4)
                     shadow: 0, 14, 34, 0.5, fl.ink
+                    opacity: nx_fill
                     path { move ix + 10, iy; line ix + iw - 10, iy; line ix + iw, iy + 10
                            line ix + iw, iy + 236 - 10; line ix + iw - 10, iy + 236
                            line ix + 10, iy + 236; line ix, iy + 236 - 10; line ix, iy + 10; close }
