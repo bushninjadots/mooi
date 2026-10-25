@@ -298,6 +298,12 @@ scene Nexus {
     text nx_cpu_model = "—"
     fact nx_open = 0
     fact nx_pinned = false
+    // The node model (D76): the arrangement the logic seeded and what it can draw. S2 reads them.
+    fact nx_arrangement_count = 0
+    fact nx_node_count = 0
+    fact nx_focus: core | system | cpu | memory | gpu | thermal | storage | network | audio | display | workspaces | media | clock | power | applications | projects | notifications | quickactions | files = core
+    fact nx_mode: circuit | minimal = circuit
+    fact nx_banner_mode: full | compact | strip | hidden = compact
     fact st_glow = 1
     // The player's own fields, kept by the logic: a text field can be drawn and interpolated, but
     // it is not a number the scene can compare, so what is there to show arrives as facts.

@@ -8,6 +8,7 @@ local config = require("lib/config")
 local ferro = require("lib/ferro")
 local style = require("lib/style")
 local nexus = require("lib/nexus")
+local nexusnode = require("lib/nexusnode")
 local sysinfo = require("lib/sysinfo")
 local telemetry = require("lib/telemetry")
 
@@ -66,10 +67,68 @@ pcall(sys.watch, "files:" .. PALETTE, function()
     palette = read(PALETTE, "json")
     paint()
 end)
+local present = { battery = false, brightness = false }
+local last_arr_count
+
+local function sync_model()
+    local p = {
+        battery = present.battery,
+        brightness = present.brightness,
+        media = fact.nx_has == true,
+        gpu = fact.nx_gpu_on == true,
+        sensors = fact.nx_temp_on == true,
+    }
+    local arrangements = nexusnode.normalize_arrangements((settings.nexus and settings.nexus.arrangements) or {})
+    local seeded = false
+    if #arrangements == 0 then
+        arrangements = nexusnode.seed_arrangements(settings.nexus or {})
+        seeded = true
+    end
+    if #arrangements == 0 then
+        arrangements = nexusnode.seed_arrangements({})
+        seeded = true
+    end
+    local active = arrangements[1]
+    fact.nx_arrangement_count = #arrangements
+    local visible = nexusnode.visible_nodes(active, p) or {}
+    fact.nx_node_count = #visible
+    fact.nx_focus = (active and active.focus) or "core"
+    fact.nx_mode = (active and active.mode) or "circuit"
+    fact.nx_banner_mode = (active and active.banner) or "compact"
+    last_arr_count = #arrangements
+    if seeded and tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
+        if type(settings.nexus) ~= "table" then settings.nexus = {} end
+        settings.nexus.arrangements = arrangements
+        settings.nexus.focus = fact.nx_focus
+        settings.nexus.mode = fact.nx_mode
+        settings.nexus.banner = { mode = fact.nx_banner_mode }
+        local ok = pcall(sys.call, "files.write", FILE, settings)
+        if not ok then
+            fact.nx_notice = true
+            text.nx_notice_text = "Could not save the Nexus model"
+            after(2600, function() fact.nx_notice = false end)
+        end
+    end
+end
+
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
     fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
     sync_identity()
+    local count = (type(settings.nexus) == "table" and type(settings.nexus.arrangements) == "table")
+        and #settings.nexus.arrangements or 0
+    if last_arr_count ~= count then
+        sync_model()
+    end
+end)
+
+pcall(sys.watch, "battery", function(b)
+    present.battery = type(b) == "table" and b.present == true
+    sync_model()
+end)
+pcall(sys.watch, "brightness", function(b)
+    present.brightness = type(b) == "table" and b.present == true
+    sync_model()
 end)
 
 -- The glow the plate carries follows the theme's finish, as the bar's does.
@@ -262,9 +321,11 @@ local function sample_live()
             text.nx_temp_value = "N/A"
         end
     end)
+    sync_model()
     after(2000, sample_live)
 end
 sample_live()
+sync_model()
 
 -- ── The controls ────────────────────────────────────────────
 -- A wheel asks for a new level every notch; the system is told at most every 40 ms, always

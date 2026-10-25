@@ -1,6 +1,36 @@
 # mooi · Control Nexus — progress
 
-*Updated 2026-10-24.*
+*Updated 2026-10-25.*
+
+## S1 · Node model foundation (branch `nexus/s1-model`)
+
+The first stage of the Control Nexus model is built and runs:
+
+- `shell/lib/nexusnode.luau` — the node registry (19 types with sizes, limits,
+  providers and default flags), the three arrangements (**FULL**, **FOCUS**,
+  **MINIMAL**), legacy `nexus.modules` seeding, normalization, and
+  provider-filtered visibility.
+- `shell/lib/nexusgraph.luau` — the instantiated node graph and orthogonal
+  circuit/direct routing with ports. Curved routing is S4.
+- `shell/lib/nexuslayout.luau` — pure layout: snap, clamp, bounds, overlap,
+  free slot, fit, tidy and focus swap.
+- `shell/lib/config.luau` — schema v2 with validated `nexus.arrangements`,
+  `nexus.focus`, `nexus.mode` and `nexus.banner.mode`; the legacy keys stay.
+- `shell/mooi-nexus.luau` / `.plm` — seeds or loads the model at start and
+  publishes `nx_arrangement_count`, `nx_node_count`, `nx_focus`, `nx_mode` and
+  `nx_banner_mode`; follows battery, brightness, media, GPU and thermal
+  presence, and writes the seeded arrangement once (`MOOI_SAFE=1` refuses).
+
+**Verification.** `bin/mooi check` → **221 unit tests, 0 failed**, all five
+scenes compile. `tests/nexus.sh` → the four new model checks pass; the run is
+**68 checks, 33 failed**, exactly the 33 inherited plate assertions that were
+already failing at the start of S1 (they name features this branch does not
+carry). No new failure.
+
+**Not visible yet.** The plate still draws the Phase-3 controls; the node model
+is data only.
+
+**Next.** S2 workspace shell.
 
 ## Current phase
 

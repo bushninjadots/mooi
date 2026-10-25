@@ -147,6 +147,13 @@ is "every module starts on" "$(get nx_mod_count)" 6
 is "every control card starts on" "$(get nx_tile_count)" 4
 is "the player starts on" "$(get nx_mod_on_player)" 1
 is "three named layouts start" "$(get nxlayout.count)" 3
+is "three arrangements are seeded" "$(get nx_arrangement_count)" 3
+case "$(get nx_node_count)" in
+    8|9|10) ok "the default arrangement has 8 to 10 anchors" ;;
+    *) bad "default arrangement has $(get nx_node_count) nodes" ;;
+esac
+is "the centre starts on the core" "$(get nx_focus)" core
+is "the mode starts as circuit" "$(get nx_mode)" circuit
 say "emit nx_layout" >/dev/null
 if wait_value nexus nx_layout_on true 10; then ok "the layout panel opens"; else bad "the layout panel did not open"; fi
 say "emit nx_mod_toggle 1" >/dev/null
