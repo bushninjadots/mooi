@@ -33,6 +33,13 @@ end
 local settings = config.parse(read(FILE), json.decode)
 local palette = read(PALETTE, "json")
 
+-- A settings write can fail either by raising or by returning false. Keep that distinction
+-- in one place so the UI never reports a change that wasn't persisted.
+local function save_settings()
+    local ok, result = pcall(sys.call, "files.write", FILE, settings)
+    return ok and result ~= false
+end
+
 -- A text field can be drawn but not compared in the scene, so the presence facts and the
 -- avatar's initial are published here beside the paths, from the one identity the settings own.
 local function sync_identity()
@@ -382,7 +389,7 @@ on("nx_identity_save", function()
     if type(settings.nexus.identity) ~= "table" then settings.nexus.identity = {} end
     local previous = settings.nexus.identity.name
     settings.nexus.identity.name = value
-    local ok = pcall(sys.call, "files.write", FILE, settings)
+    local ok = save_settings()
     if ok then
         sync_identity()
         fact.nx_identity_edit_on = false
@@ -447,9 +454,9 @@ on("nx_pin", function()
     local pinned = not settings.nexus.pinned
     settings.nexus.pinned = pinned
     if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
-        local ok = pcall(sys.call, "files.write", FILE, settings)
-        if not ok then
+        if not save_settings() then
             settings.nexus.pinned = not pinned
+            report_control_failure("PIN SETTING")
             return
         end
     end
