@@ -1550,8 +1550,10 @@ scene Mooi {
     // ── The telemetry rail ────────────────────────────────────
     group {
         show: bar_rail and not st_notch
-        repeat k in 0..160 {
-            ellipse { at: rx0 + 28 + k * 12, fl.rail_y; radius: 0.8; color: fl.trace_dim; show: rx0 + 28 + k * 12 < rx1 - 28 }
+        // Keep the rail texture sparse enough to be cheap on every frame. The 16 px
+        // pitch still spans a 1920 px display, while avoiding 40 always-present ellipses.
+        repeat k in 0..120 {
+            ellipse { at: rx0 + 28 + k * 16, fl.rail_y; radius: 0.8; color: fl.trace_dim; show: rx0 + 28 + k * 16 < rx1 - 28 }
         }
         line { from: rx0 + 4, fl.rail_base; to: rx1 - 4, fl.rail_base; width: 1.2; color: fl.trace }
         ellipse { at: rx0, fl.rail_base; radius: 2.6; color: fl.ground }
