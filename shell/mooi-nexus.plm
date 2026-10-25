@@ -381,7 +381,7 @@ scene Nexus {
         on press nx_away while not nx_pinned { emit nx_close }
 
         let nw0 = min(780, screen.width - 48)
-        let nh0 = min(660, screen.height - 82)
+        let nh0 = min(700, screen.height - 82)
         let pw = 260 + (nw0 - 260) * nx_a
         let ph = 44 + (nh0 - 44) * nx_b
         let px = screen.width - 24 - pw
@@ -463,9 +463,9 @@ scene Nexus {
                     zone box nx_about_btn { from: 0, 130; size: 130, 22; cursor: pointer; role: button; label: "Toggle the system overview"
                                           show: cw > 300 }
                     group { show: not nx_about_on and cw > 300
-                        CutButton(0, 131, 130, "SYSTEM", fl.phos, nx_about_btn.hover) }
+                        CutButton(0, 131, 130, "OVERVIEW", fl.phos, nx_about_btn.hover) }
                     group { show: nx_about_on and cw > 300
-                        CutButton(0, 131, 130, "BACK", fl.phos, nx_about_btn.hover) }
+                        CutButton(0, 131, 130, "OVERVIEW", fl.phos, max(nx_about_btn.hover, if(nx_about_on, 1, 0))) }
                     on press nx_about_btn { emit nx_about }
 
                     zone box nx_audio_btn { from: 138, 130; size: 110, 22; cursor: pointer; role: button; label: "Toggle audio routing"
@@ -473,8 +473,13 @@ scene Nexus {
                     group { show: not nx_audio_on and cw > 300
                         CutButton(138, 131, 110, "AUDIO", fl.phos, nx_audio_btn.hover) }
                     group { show: nx_audio_on and cw > 300
-                        CutButton(138, 131, 110, "BACK", fl.ember, nx_audio_btn.hover) }
+                        CutButton(138, 131, 110, "AUDIO", fl.ember, max(nx_audio_btn.hover, if(nx_audio_on, 1, 0))) }
                     on press nx_audio_btn { emit nx_audio }
+
+                    // A quiet right-side label tells the user which layer is currently open.
+                    text "LIVE CONTROLS" { at: cw, 142; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: not nx_about_on and not nx_audio_on }
+                    text "SYSTEM OVERVIEW" { at: cw, 142; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.phos; show: nx_about_on }
+                    text "AUDIO ROUTING" { at: cw, 142; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.ember; show: nx_audio_on }
 
                     group { show: not nx_about_on and not nx_audio_on
                     // ── four instruments ──
@@ -510,8 +515,11 @@ scene Nexus {
                     // ── the player ──
                     // ── live system telemetry: six compact instruments ──
                      let qtw = (cw - 28) / 3
-                     let sy0 = ry + 98
+                     let sy0 = ry + 104
                      let sy1 = sy0 + 70
+                     // Resource readings are grouped as a distinct instrument bank.
+                     text "RESOURCE TELEMETRY" { at: 0, sy0 - 10; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                     text "LOCAL METRICS" { at: cw, sy0 - 10; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
                      // Small, instrument-like plates: no oversized dashboard card wall.
                      Chamfer(0, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
                      text "{nx_cpu_label}" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }

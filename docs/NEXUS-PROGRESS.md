@@ -1,8 +1,10 @@
 # mooi · Control Nexus — progress
 
-*Updated 2026-10-24.*
+*Updated 2026-10-25.*
 
 ## Current phase
+
+**Visual refinement pass in progress on `work/control-nexus-visual-refinement`.** This pass is intentionally limited to hierarchy, spacing and clear view labels before expanding feature scope. Runtime verification is pending; the source edits have not yet been compiled locally.
 
 **Phase 1 complete; Phase 2 begun.** Phase 0 reconnaissance is `docs/NEXUS-AUDIT.md`; the staged
 plan is `docs/CONTROL-NEXUS-NEXT-PHASE.md`. The first Phase 2 increment — audio routing and the
@@ -96,6 +98,14 @@ Modified in this build pass:
 - The Phase 2 write calls (audio default, microphone level/mute, Bluetooth power) are built on
   the documented service calls but were not fired at the live devices; only their read-back and
   refusal paths are in place. Bluetooth device connection and the app-volume list are not built.
+
+## Visual refinement pass — 2026-10-25
+
+- Increased the panel's target height from 660 to 700 px (still clamped to the available screen height) to give the existing footer and lower content breathing room.
+- Made the view labels stable: `OVERVIEW` and `AUDIO` keep their names while the selected state uses the existing accent treatment, instead of changing the active tab to the ambiguous label `BACK`.
+- Added a low-key right-aligned current-view label (`LIVE CONTROLS`, `SYSTEM OVERVIEW`, or `AUDIO ROUTING`) so the header row communicates context.
+- Separated the six live readings with a restrained `RESOURCE TELEMETRY / LOCAL METRICS` section label and a little extra vertical gap. This preserves the compact instrument style rather than adding large cards.
+- **Not yet verified:** Pleamar compilation, exact text fit, the panel's lower edge at different display heights, pointer states and screenshots on the actual desktop. Do not treat this pass as runtime-tested until those checks run.
 
 ## Next step
 
