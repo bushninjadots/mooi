@@ -296,6 +296,10 @@ scene Nexus {
     text nx_kernel = "—"
     text nx_uptime = "—"
     text nx_cpu_model = "—"
+    fact nx_model_ready = false
+    fact nx_model_nodes = 0
+    fact nx_model_links = 0
+    text nx_model_summary = "NODE MODEL · INITIALIZING"
     fact nx_open = 0
     fact nx_pinned = false
     fact st_glow = 1
@@ -406,7 +410,7 @@ scene Nexus {
                     // ── the head ──
                     figure nx_mark { at: 0, 7; size: 24, 24; color: fl.phos }
                     text "CONTROL NEXUS" { at: 34, 13; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.phos }
-                    text "SYSTEM COMMAND CENTRE" { at: 34, 30; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text "{nx_model_summary}" { at: 34, 30; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(nx_model_ready, fl.muted, fl.ember) }
                     zone box nx_pinbtn { from: cw - 112, 0; size: 84, 28; cursor: pointer; role: toggle; checked: nx_pinned
                                           label: "Pin Control Nexus open" }
                     box { from: cw - 112, 0; size: 84, 28; corner: 4; color: fl.well; opacity: if(nx_pinned, 0.7, 0.25 * nx_pinbtn.hover) }
