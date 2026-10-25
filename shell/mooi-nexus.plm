@@ -465,7 +465,7 @@ scene Nexus {
                     group { show: not nx_about_on and cw > 300
                         CutButton(0, 131, 130, "OVERVIEW", fl.phos, nx_about_btn.hover) }
                     group { show: nx_about_on and cw > 300
-                        CutButton(0, 131, 130, "OVERVIEW", fl.phos, nx_about_btn.hover) }
+                        CutButton(0, 131, 130, "OVERVIEW", fl.phos, max(nx_about_btn.hover, if(nx_about_on, 1, 0))) }
                     on press nx_about_btn { emit nx_about }
 
                     zone box nx_audio_btn { from: 138, 130; size: 110, 22; cursor: pointer; role: button; label: "Toggle audio routing"
@@ -473,7 +473,7 @@ scene Nexus {
                     group { show: not nx_audio_on and cw > 300
                         CutButton(138, 131, 110, "AUDIO", fl.phos, nx_audio_btn.hover) }
                     group { show: nx_audio_on and cw > 300
-                        CutButton(138, 131, 110, "AUDIO", fl.ember, nx_audio_btn.hover) }
+                        CutButton(138, 131, 110, "AUDIO", fl.ember, max(nx_audio_btn.hover, if(nx_audio_on, 1, 0))) }
                     on press nx_audio_btn { emit nx_audio }
 
                     // A quiet right-side label tells the user which layer is currently open.
