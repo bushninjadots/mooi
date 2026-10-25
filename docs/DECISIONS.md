@@ -2405,3 +2405,64 @@ the debug text column is deleted.
 
 **Checked.** `bin/mooi check`: five scenes compile, 195 unit tests, 0 failed. `tests/nexus.sh`:
 66 checks, 0 failed. Grep for the deleted names returns nothing.
+
+## D76 · 2026-10-25 · The Nexus is a full window drawn from the node model
+
+The plate was right-anchored under the bar, 260–780 px wide, and its eleven modules were
+hand-placed blocks in the scene. S2 replaces that with the surface the spec asks for: one
+full-window overlay with a 44 px header, the identity banner at one of four heights, the node
+canvas and a 30 px status strip. The header carries the workspace's own controls only —
+`CIRCUIT`/`MINIMAL`, the arrangement chips, `VIEWS`, `TIDY`, `LOCK` and `×`.
+
+Nothing in the canvas is hardcoded. The logic publishes `model nx_nodes` (one row per node the
+machine can support: type, title, reading, note, bar, position, size limits, tone, selection,
+focus, minimized) and the scene draws the rows, the same way the Atlas draws `atlas_tiles`.
+A press, a drag, a resize or a key comes back as an event with the node's arrangement index;
+the proposed geometry travels in the facts beside it (`nx_gx`/`nx_gy`, `nx_rw`/`nx_rh`,
+`nx_cw`/`nx_ch`), the way the board's card drop does. The logic snaps to the 8 px grid, clamps
+into the canvas, records the arrangement and writes the settings once per gesture — never per
+frame.
+
+`PIN` changes meaning with the surface: there is no outside left to press, so the toggle now
+locks the arrangement against drag and resize, and the label follows (`LOCK` / `LOCKED`). The
+scaffolding's old "stay open" meaning had nothing left to hold.
+
+`VIEWS` is deliberately temporary. It keeps the plate's panels reachable — SYSTEM (the overview,
+COPY DIAGNOSTICS and the list of nodes removed from this arrangement), AUDIO (routing, the
+microphone, the output level, Bluetooth), MIXER (one row per stream, wheel for the level, press
+to mute) and SPACES (the compositor's workspaces) — until S3's detail bodies make them part of a
+node instead. The drawer is scene state (`nx_drawer`, `nx_tab`), so nothing about it reaches
+the settings file.
+
+**Checked.** `bin/mooi check`: five scenes compile, 231 unit tests, 0 failed. `tests/nexus.sh`:
+60 checks, 0 failed — including seeded arrangements, a snapped drop, minimize/restore, removal
+and restoration, focus at centre, MINIMAL, arrangement switching, the four banner heights, TIDY
+and a drawer tab, all through the isolated lab runtime. The inherited plate assertions this
+branch never carried (the D72 layout panel, and the mixer/spaces/power views) were replaced by
+these node checks rather than left failing.
+
+## D77 · 2026-10-25 · Detail bodies replace the VIEWS drawer, and the layout has an undo
+
+S2 kept the plate's panels reachable in a temporary drawer. S3 moves each panel to the node
+that owns it and deletes the drawer, so nothing is reachable in two places. A focused node now
+shows its **detail body** in the middle: the System node carries the overview's eight rows and
+COPY DIAGNOSTICS; Audio carries output, input, microphone, Bluetooth and up to four application
+streams with the same press/wheel controls; Display answers the wheel with the backlight;
+Workspaces is the SPACES list; Media carries the transport; Core, CPU, Memory, GPU, Thermal,
+Storage, Network, Clock and Power show four labelled readings each. The rows are published by
+the logic (`r1l`…`r8l`, `r1v`…`r8v`, with a `rows` count), so the scene stays a renderer and an
+absent provider still says `N/A` rather than a guess.
+
+`RESTORE CENTRE` appears in the header whenever the middle is not the core, and the focus swap
+is unchanged: the node already at the centre inherits the vacated slot.
+
+The layout gains an undo history: `nexusnode.remember/undo/redo` keep up to twenty deep-copied
+arrangements, taken before every edit that moves, resizes, focuses, removes, restores, retimes
+or repacks a node. `Ctrl+Z` steps back, `Ctrl+Shift+Z` forward, and any new edit clears the
+forward list. A step is a whole arrangement, so undoing a focus swap also returns the node it
+displaced.
+
+**Checked.** `bin/mooi check`: five scenes compile, 233 unit tests, 0 failed. `tests/nexus.sh`:
+72 checks, 0 failed — the detail rows for System (8) and Audio (4), RESTORE CENTRE, a drop
+undone and redone by position, the stream and workspace lists, and every earlier workspace
+check through the isolated lab runtime.

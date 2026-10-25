@@ -244,10 +244,11 @@ scene Nexus {
     fact st_height = 30
     fact st_radius = 8
     fact st_res = 46
-
-    // ── The Nexus (D65) ──────────────────────────────────────
-    // Its own state: open is the entrance and the way out; pinned keeps it while a press lands
-    // outside it. The readings below are services; the controls call the system through the logic.
+    // ── The workspace (D76) ──────────────────────────────────
+    // The plate's eleven modules are catalogue nodes now. The logic publishes one row per
+    // node that can be drawn; the scene paints the rows and hands a press, a drag or a key
+    // back as an event. Node coordinates are canvas-relative, so changing the banner's
+    // height never moves a node.
     model nws max 16 { id: number; windows: number; active: bool }
     service workspaces as ws { active: number; list: nws }
     service clock { time: text = "--:--"; date: text; weekday: number }
@@ -258,9 +259,18 @@ scene Nexus {
     service bluetooth { present: bool; powered: bool; discovering: bool }
     service media as med { playing: bool; title: text; artist: text; album: text; length: number; position: number; rate: number; player: text }
 
+    model nx_nodes max 16 { id: number; key: text; title: text; value: text; note: text;
+        x: number; y: number; w: number; h: number; tone: number; bar: number; baron: bool;
+        mini: bool; sel: bool; focus: bool; minw: number; minh: number; maxw: number; maxh: number;
+        kind: number; rows: number;
+        r1l: text; r1v: text; r2l: text; r2v: text; r3l: text; r3v: text; r4l: text; r4v: text;
+        r5l: text; r5v: text; r6l: text; r6v: text; r7l: text; r7v: text; r8l: text; r8v: text }
+    model nx_removed max 16 { id: number; slot: number; key: text; title: text }
+    model nx_arrs max 8 { id: number; name: text; active: bool }
+    model nx_mix max 8 { id: number; sid: number; name: text; note: text; level: number; muted: bool }
+    model nx_ws max 10 { id: number; slot: number; label: text; windows: number; active: number }
+
     // System facts are populated by a bounded, optional Linux collector in the logic.
-    fact nx_about_on = false
-    fact nx_audio_on = false
     fact nx_identity_edit_on = false
     text nx_identity_draft = "mooi system"
     fact nx_telemetry_on = false
@@ -298,12 +308,46 @@ scene Nexus {
     text nx_cpu_model = "—"
     fact nx_open = 0
     fact nx_pinned = false
-    // The node model (D76): the arrangement the logic seeded and what it can draw. S2 reads them.
+
+    // What the workspace is showing: the arrangement, the selection, the mode and every
+    // number a rule branches on. A text field can be drawn but not compared, so anything
+    // conditional arrives as a fact.
     fact nx_arrangement_count = 0
     fact nx_node_count = 0
+    fact nx_node_total = 0
+    fact nx_removed_count = 0
+    fact nx_mix_count = 0
+    fact nx_ws_count = 0
     fact nx_focus: core | system | cpu | memory | gpu | thermal | storage | network | audio | display | workspaces | media | clock | power | applications | projects | notifications | quickactions | files = core
     fact nx_mode: circuit | minimal = circuit
     fact nx_banner_mode: full | compact | strip | hidden = compact
+    fact nx_sel = 0
+    fact nx_cw = 0
+    fact nx_ch = 0
+    fact nx_grid = true
+    fact nx_app_sid = 0
+    fact nx_app_lvl = 0
+    text nx_status = ""
+    text nx_arrangement_name = "FULL"
+    text nx_focus_name = "Nexus Core"
+    text nx_mode_name = "CIRCUIT"
+    text nx_banner_name = "COMPACT"
+
+    // The gestures the scene owns while a node is being carried or resized. The logic reads
+    // the proposed geometry from the facts beside the event, the way the board does.
+    fact nx_press = 0
+    fact nx_drag = 0
+    fact nx_dx = 0
+    fact nx_dy = 0
+    fact nx_gx = 0
+    fact nx_gy = 0
+    fact nx_rz = 0
+    fact nx_rw = 0
+    fact nx_rh = 0
+    fact nx_menu = 0
+    fact nx_undo_depth = 0
+    fact nx_redo_depth = 0
+
     fact st_glow = 1
     // The player's own fields, kept by the logic: a text field can be drawn and interpolated, but
     // it is not a number the scene can compare, so what is there to show arrives as facts.
@@ -335,8 +379,6 @@ scene Nexus {
     text nx_player = ""
     figure nx_mark = file "icons/arch.svg"
 
-    event nx_about ->            // toggle the System / About view
-    event nx_audio ->            // toggle the audio routing view
     event nx_out_cycle ->        // to the logic: make the next output device the default
     event nx_in_cycle ->         // to the logic: make the next input device the default
     event nx_mic ->              // to the logic: mute or unmute the microphone
@@ -348,29 +390,54 @@ scene Nexus {
     event nx_identity_cancel ->
     event nx_identity_avatar ->
     event nx_identity_banner ->
-    event nx_close ->           // to the logic: put the Nexus away (×, Escape, or an outside press)
-    event nx_pin ->             // to the logic: pin or unpin (persisted in settings.json)
-    event nx_vol ->             // to the logic: the output volume, 0 … 1
-    event nx_mute ->            // to the logic: mute or unmute the output
-    event nx_bri ->             // to the logic: the backlight, 0 … 1
-    event nx_media ->           // to the logic: 1 previous · 0 play/pause · 2 next
+    event nx_close ->            // to the logic: put the Nexus away (× or Escape)
+    event nx_pin ->              // to the logic: lock the arrangement (persisted in settings.json)
+    event nx_vol ->              // to the logic: the output volume, 0 … 1
+    event nx_mute ->             // to the logic: mute or unmute the output
+    event nx_bri ->              // to the logic: the backlight, 0 … 1
+    event nx_media ->            // to the logic: 1 previous · 0 play/pause · 2 next
+    // The node workspace: every one of these carries a node's arrangement index.
+    event nx_select ->           // to the logic: the pressed node
+    event nx_drop ->             // to the logic: let go (nx_gx, nx_gy, nx_cw, nx_ch)
+    event nx_resize ->           // to the logic: the grip let go (nx_rw, nx_rh)
+    event nx_min ->              // to the logic: minimize or restore the node's body
+    event nx_focus_node ->       // to the logic: bring the node to the centre
+    event nx_remove ->           // to the logic: remove it from the layout
+    event nx_restore ->          // to the logic: put a removed node back
+    event nx_move ->             // to the logic: 1 left · 2 right · 3 up · 4 down
+    event nx_mode_switch ->      // to the logic: 0 circuit · 1 minimal
+    event nx_banner_cycle ->     // to the logic: full → compact → strip → hidden
+    event nx_arrangement ->      // to the logic: show the arrangement at this index
+    event nx_cycle_sel ->        // to the logic: Tab, the next node on the canvas
+    event nx_tidy ->             // to the logic: repack the arrangement on the grid
+    event nx_restore_centre ->   // to the logic: put the core back at the centre
+    event nx_undo ->             // to the logic: step back one layout edit
+    event nx_redo ->             // to the logic: step forward again
+    event nx_app_mute ->         // to the logic: mute the stream with this id
+    event nx_app_vol ->          // to the logic: set the stream's level (nx_app_sid, nx_app_lvl)
+    event nx_ws_focus ->         // to the logic: go to the workspace with this id
 
-    // A card: its code, its reading, and a line that says what the reading is or why it is absent.
-    component NTile(x: number, y: number, w: number, h: number, code: text, value: text, note: text, tone: color) {
-        size: w, h
-        Chamfer(x, y, w, h, 10, fl.hull_raised, fl.trace, 0.9, 1)
-        text code { at: x + 14, y + 17; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-        text value { at: x + 14, y + 43; anchor: left center; size: 22; weight: 700; family: "Exo 2"; width: w - 28; lines: 1; color: tone }
-        text note { at: x + 14, y + h - 15; anchor: left center; size: 9; family: "Share Tech Mono"; width: w - 28; lines: 1; color: fl.trace_lit }
+    // A drawer row: a label on the left, the system's own answer on the right.
+    component NRow(x: number, y: number, w: number, label: text, value: text, tone: color) {
+        size: w, 22
+        text label { at: x, y; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+        text value { at: x + w, y; anchor: right center; size: 10; family: "Exo 2"; width: w - 120; lines: 1; color: tone }
     }
 
-    // The entrance: a strip under the mark, unfolding left and down into the full plate.
+    // A chip: one state, one press. The header's mode switch and the arrangements share it.
+    component NChip(x: number, y: number, w: number, word: text, on: number, tone: color) {
+        size: w, 20
+        box { from: x, y; size: w, 20; corner: 3; color: mix(fl.ground, tone, 0.16); opacity: if(on, 0.9, 0.45) }
+        box { from: x, y; size: w, 20; corner: 3; stroke: 1; color: if(on, tone, fl.trace); opacity: if(on, 0.9, 0.55) }
+        text word { at: x + w / 2, y + 10; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
+                    color: if(on, tone, fl.muted) }
+    }
+
+    // The entrance settles rather than appears.
     spring nx.ext = 900, 51
-    spring nx.unf = 700, 48
     prop nx_a = 0 ~nx.ext
-    prop nx_b = 0 ~nx.unf
-    on change nx_open while nx_open { nx_a: 1 ~nx.ext; nx_b: 1 ~nx.unf after 80ms }
-    on change nx_open while not nx_open { nx_a: 0 ~nx.ext; nx_b: 0 ~nx.unf }
+    on change nx_open while nx_open { nx_a: 1 ~nx.ext }
+    on change nx_open while not nx_open { nx_a: 0 ~nx.ext }
 
     surface nexus {
         size: full, full
@@ -381,319 +448,362 @@ scene Nexus {
         // of its own before it starts this program (D65).
         keyboard: exclusive
 
-        // A press anywhere outside the plate closes it, unless it is pinned. The plate itself
-        // catches its own presses first, so a control never reaches this.
-        zone box nx_away { from: 0, 0; size: screen.width, screen.height; role: region
-                           label: "Close Control Nexus"; show: nx_a > 0.004 }
-        on press nx_away while not nx_pinned { emit nx_close }
+        let sw = screen.width
+        let sh = screen.height
+        let head = 44
+        let foot = 30
+        let banner = if(nx_banner_mode == full, 114, if(nx_banner_mode == compact, 74, if(nx_banner_mode == strip, 44, 0)))
+        let cy = head + banner
+        let ch = max(140, sh - cy - foot)
+        let cx = 20
+        let cw = max(320, sw - 40)
+        let rail = 26
 
-        let nw0 = min(780, screen.width - 48)
-        let nh0 = min(660, screen.height - 82)
-        let pw = 260 + (nw0 - 260) * nx_a
-        let ph = 44 + (nh0 - 44) * nx_b
-        let px = screen.width - 24 - pw
-        let py = 49
-        let cw = pw - 52
-        let tw = (cw - 14) / 2
-        let med_h = 118
-        let ny = 158
-        zone box nx_catch { from: px, py; size: pw, ph; show: nx_a > 0.004 }
         group {
+            opacity: nx_a
             show: nx_a > 0.004
-            group {
-                glow: 26, 0.42 * st_glow, fl.phos
-                Chamfer(px, py, pw, ph, 18, fl.hull, fl.trace, 0.985, 1.5)
+
+            // ── the header: the workspace's own controls, never the desktop's ──
+            Chamfer(0, 0, sw, head, 0, fl.hull, fl.trace, 0.99, 1)
+            box { from: 0, head - 2; size: sw, 2; color: fl.trace; opacity: 0.6 }
+            figure nx_mark { at: 14, 11; size: 22, 22; color: fl.phos }
+            text "CONTROL NEXUS" { at: 44, 15; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.phos }
+            text "{nx_mode_name} · {nx_arrangement_name}" { at: 44, 31; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+
+            zone box nx_mode_circuit { from: 196, 12; size: 76, 20; cursor: pointer; role: toggle; checked: nx_mode == circuit
+                                       label: "Show the full circuit" }
+            NChip(196, 12, 76, "CIRCUIT", nx_mode == circuit, fl.phos)
+            on press nx_mode_circuit { emit nx_mode_switch(0) }
+            zone box nx_mode_minimal { from: 278, 12; size: 76, 20; cursor: pointer; role: toggle; checked: nx_mode == minimal
+                                       label: "Show only the essential nodes" }
+            NChip(278, 12, 76, "MINIMAL", nx_mode == minimal, fl.flare)
+            on press nx_mode_minimal { emit nx_mode_switch(1) }
+
+            // the arrangements, in the order the settings file holds them
+            for a in nx_arrs {
+                zone box nx_arr_chip { from: 372 + (a.id - 1) * 84, 12; size: 78, 20; cursor: pointer; role: toggle
+                                       checked: a.active; label: "Show the {a.name} arrangement"; show: sw > 1080 }
+                NChip(372 + (a.id - 1) * 84, 12, 78, a.name, a.active, fl.phos)
+                on press nx_arr_chip { emit nx_arrangement(a.id) }
             }
+
+            // RESTORE CENTRE: only offered while something else is in the middle
+            zone box nx_centre { from: sw - 316, 11; size: 78, 22; cursor: pointer; role: button
+                                 label: "Put the core back at the centre"; show: nx_focus != core }
+            box { from: sw - 316, 11; size: 78, 22; corner: 3; color: mix(fl.ground, fl.phos, 0.16); opacity: 0.5; show: nx_focus != core }
+            box { from: sw - 316, 11; size: 78, 22; corner: 3; stroke: 1; color: fl.trace; opacity: 0.7; show: nx_focus != core }
+            text "CENTRE" { at: sw - 277, 22; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
+                           color: mix(fl.muted, fl.phos, nx_centre.hover); show: nx_focus != core }
+            on press nx_centre { emit nx_restore_centre }
+
+            zone box nx_tidy { from: sw - 230, 11; size: 70, 22; cursor: pointer; role: button; label: "Tidy the arrangement" }
+            box { from: sw - 230, 11; size: 70, 22; corner: 3; color: fl.ground; opacity: 0.45 }
+            box { from: sw - 230, 11; size: 70, 22; corner: 3; stroke: 1; color: fl.trace; opacity: 0.6 }
+            text "TIDY" { at: sw - 195, 22; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
+                          color: mix(fl.muted, fl.phos, nx_tidy.hover) }
+            on press nx_tidy { emit nx_tidy }
+
+            // LOCK holds the arrangement still: drag and resize are refused while it is on
+            zone box nx_pinbtn { from: sw - 152, 11; size: 86, 22; cursor: pointer; role: toggle; checked: nx_pinned
+                                 label: "Lock the arrangement against drag and resize" }
+            box { from: sw - 152, 11; size: 86, 22; corner: 3; color: fl.well; opacity: if(nx_pinned, 0.7, 0.25 * nx_pinbtn.hover) }
+            box { from: sw - 152, 11; size: 86, 22; corner: 3; stroke: 1; color: if(nx_pinned, fl.phos, fl.trace); opacity: 0.8 }
+            text pick(nx_pinned, "LOCKED", "LOCK") { at: sw - 109, 22; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
+                                                     color: if(nx_pinned, fl.phos, mix(fl.muted, fl.phos, nx_pinbtn.hover)) }
+            on press nx_pinbtn { emit nx_pin }
+
+            zone box nx_closebtn { from: sw - 58, 8; size: 30, 28; cursor: pointer; role: button; label: "Close Control Nexus" }
+            line { from: sw - 46, 17; to: sw - 32, 31; width: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover) }
+            line { from: sw - 32, 17; to: sw - 46, 31; width: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover) }
+            on press nx_closebtn { emit nx_close }
+
+            // ── the identity banner: one mode at a time, the setting is the truth ──
             group {
-                clip box { from: px, py; size: pw, ph }
+                show: banner > 0
+                Chamfer(0, head, sw, banner, 0, fl.hull_raised, fl.trace, 0.96, 1)
+                image nx_banner { at: 0, head; size: sw, banner; opacity: 0.38; show: nx_banner_on }
+                box { from: 0, head; size: sw, 2; color: fl.phos; opacity: 0.22 }
+                box { from: 0, head; size: 3, banner; color: fl.ember; opacity: 0.9 }
+                Chamfer(20, head + 16, 42, 42, 8, fl.well, fl.trace, 0.92, 1)
+                text "{nx_initial}" { at: 41, head + 37; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: not nx_avatar_on }
+                image nx_avatar { at: 20, head + 16; size: 42, 42; show: nx_avatar_on }
+                zone box nx_avatar_edit { from: 20, head + 16; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
+                on press nx_avatar_edit { emit nx_identity_edit }
+                text "{nx_identity_name}" { at: 76, head + 27; anchor: left center; size: 17; weight: 600; family: "Exo 2"; color: fl.phos; width: 320; lines: 1 }
+                text "{nx_host}" { at: 76, head + 47; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit; show: banner > 60 }
+                text "{nx_session} SESSION" { at: 76, head + 64; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: banner > 100 }
+                text "{clock.time}  ·  {clock.date}" { at: sw - 300, head + 27; anchor: right center; size: 14; weight: 600; family: "Share Tech Mono"; color: fl.flare }
+                text "WORKSPACE {ws.active, 0}" { at: sw - 300, head + 47; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit; show: banner > 60 }
+                text "{nx_distro}" { at: sw - 300, head + 64; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 240; lines: 1; show: banner > 100 }
+                zone box nx_banner_hit { from: sw - 192, head + banner - 26; size: 172, 18; cursor: pointer; role: button; label: "Change the banner height" }
+                text "BANNER {nx_banner_name}" { at: sw - 28, head + banner - 17; anchor: right center; size: 8; family: "Share Tech Mono"
+                                                 color: mix(fl.muted, fl.phos, nx_banner_hit.hover) }
+                on press nx_banner_hit { emit nx_banner_cycle }
+            }
+
+            // ── the canvas: every node the logic says can be drawn ──
+            group {
+                clip box { from: 0, cy; size: sw, ch }
+
                 group {
-                    move: px + 26, py + 18
-                    opacity: min(1, nx_a * 1.3)
-
-                    // ── the head ──
-                    figure nx_mark { at: 0, 7; size: 24, 24; color: fl.phos }
-                    text "CONTROL NEXUS" { at: 34, 13; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.phos }
-                    text "SYSTEM COMMAND CENTRE" { at: 34, 30; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                    zone box nx_pinbtn { from: cw - 112, 0; size: 84, 28; cursor: pointer; role: toggle; checked: nx_pinned
-                                          label: "Pin Control Nexus open" }
-                    box { from: cw - 112, 0; size: 84, 28; corner: 4; color: fl.well; opacity: if(nx_pinned, 0.7, 0.25 * nx_pinbtn.hover) }
-                    box { from: cw - 112, 0; size: 84, 28; corner: 4; stroke: 1; color: if(nx_pinned, fl.phos, fl.trace); opacity: 0.9 }
-                    text pick(nx_pinned, "PINNED", "PIN") { at: cw - 70, 14; anchor: center; size: 9; weight: 700; family: "Share Tech Mono"
-                                                            color: if(nx_pinned, fl.phos, mix(fl.muted, fl.phos, nx_pinbtn.hover)) }
-                    on press nx_pinbtn { emit nx_pin }
-                    zone box nx_closebtn { from: cw - 24, 0; size: 24, 28; cursor: pointer; role: button; label: "Close Control Nexus" }
-                    line { from: cw - 16, 6; to: cw - 4, 18; width: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover) }
-                    line { from: cw - 4, 6; to: cw - 16, 18; width: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover) }
-                    on press nx_closebtn { emit nx_close }
-                    line { from: 0, 38; to: cw, 38; width: 1; color: fl.trace; opacity: 0.65 }
-
-                    // ── System Identity: locally owned banner, display name and avatar ──
-                    Chamfer(0, 52, cw, 74, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                    image nx_banner { at: 0, 52; size: cw, 74; opacity: 0.42; show: nx_banner_on }
-                    box { from: 0, 52; size: cw, 20; color: fl.phos; opacity: 0.08 }
-                    box { from: 0, 68; size: 3, 42; color: fl.ember }
-                    Chamfer(cw - 60, 60, 42, 42, 7, fl.well, fl.trace, 0.9, 1)
-                    text "SYSTEM IDENTITY" { at: 16, 68; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    text "{nx_identity_name}" { at: 16, 85; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: fl.phos }
-                    text "{nx_host}" { at: 16, 105; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                    text "{nx_session}" { at: cw - 72, 68; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                    text "{clock.time}  ·  {clock.date}" { at: cw - 72, 84; anchor: right center; size: 11; weight: 600; family: "Share Tech Mono"; color: fl.flare }
-                    text "WORKSPACE {ws.active, 0}" { at: cw - 72, 104; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                    text "{nx_initial}" { at: cw - 39, 81; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: not nx_avatar_on }
-                    image nx_avatar { at: cw - 60, 60; size: 42, 42; show: nx_avatar_on }
-                    zone box nx_avatar_edit { from: cw - 60, 60; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
-                    on press nx_avatar_edit { emit nx_identity_edit }
-
-                    // ── identity editor: native Pleamar field plus safe image-picker actions ──
-                    group { show: nx_identity_edit_on
-                        Chamfer(cw - 326, 132, 310, 218, 9, fl.hull_raised, fl.trace, 1, 1)
-                        box { from: cw - 326, 132; size: 310, 3; color: fl.ember }
-                        text "IDENTITY CONFIGURATION" { at: cw - 310, 151; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos }
-                        text "DISPLAY NAME" { at: cw - 310, 174; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        input nx_identity_draft { at: cw - 310, 184; width: 278; size: 16; color: fl.phos; placeholder: "Name this system"; selection: fl.trace }
-                        zone box nx_identity_avatar_btn { from: cw - 310, 222; size: 132, 28; cursor: pointer; role: button; label: "Choose profile avatar" }
-                        CutButton(cw - 310, 223, 132, "AVATAR IMAGE", fl.phos, nx_identity_avatar_btn.hover)
-                        on press nx_identity_avatar_btn { emit nx_identity_avatar }
-                        zone box nx_identity_banner_btn { from: cw - 168, 222; size: 136, 28; cursor: pointer; role: button; label: "Choose system banner" }
-                        CutButton(cw - 168, 223, 136, "BANNER IMAGE", fl.phos, nx_identity_banner_btn.hover)
-                        on press nx_identity_banner_btn { emit nx_identity_banner }
-                        text "PNG · JPG · WEBP · AVIF" { at: cw - 310, 267; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        zone box nx_identity_save_btn { from: cw - 166, 300; size: 74, 28; cursor: pointer; role: button; label: "Save system identity" }
-                        CutButton(cw - 166, 301, 74, "SAVE", fl.phos, nx_identity_save_btn.hover)
-                        on press nx_identity_save_btn { emit nx_identity_save }
-                        zone box nx_identity_cancel_btn { from: cw - 84, 300; size: 52, 28; cursor: pointer; role: button; label: "Cancel identity editing" }
-                        CutButton(cw - 84, 301, 52, "CLOSE", fl.ember, nx_identity_cancel_btn.hover)
-                        on press nx_identity_cancel_btn { emit nx_identity_cancel }
+                    show: nx_grid
+                    repeat gx in 0..30 {
+                        line { from: cx + gx * 72, cy; to: cx + gx * 72, cy + ch; width: 1; color: fl.trace_dim; opacity: 0.16 }
                     }
-
-                    // ── the view switch: live controls, the system overview, or audio ──
-                    zone box nx_about_btn { from: 0, 130; size: 130, 22; cursor: pointer; role: button; label: "Toggle the system overview"
-                                          show: cw > 300 }
-                    group { show: not nx_about_on and cw > 300
-                        CutButton(0, 131, 130, "SYSTEM", fl.phos, nx_about_btn.hover) }
-                    group { show: nx_about_on and cw > 300
-                        CutButton(0, 131, 130, "BACK", fl.phos, nx_about_btn.hover) }
-                    on press nx_about_btn { emit nx_about }
-
-                    zone box nx_audio_btn { from: 138, 130; size: 110, 22; cursor: pointer; role: button; label: "Toggle audio routing"
-                                          show: cw > 300 }
-                    group { show: not nx_audio_on and cw > 300
-                        CutButton(138, 131, 110, "AUDIO", fl.phos, nx_audio_btn.hover) }
-                    group { show: nx_audio_on and cw > 300
-                        CutButton(138, 131, 110, "BACK", fl.ember, nx_audio_btn.hover) }
-                    on press nx_audio_btn { emit nx_audio }
-
-                    group { show: not nx_about_on and not nx_audio_on
-                    // ── four instruments ──
-                    zone box nx_volhit { from: 0, ny; size: tw, 84; cursor: pointer; role: slider; label: "Output volume"
-                                         value: audio.volume }
-                    NTile(0, ny, tw, 84, "OUTPUT", pick(audio.muted, "MUTED", "{audio.volume * 100, 0}%"),
-                          pick(audio.muted, "CLICK TO UNMUTE", "WHEEL TO SET · CLICK TO MUTE"),
-                          if(audio.muted, fl.ember, fl.phos))
-                    on press nx_volhit { emit nx_mute }
-                    on scroll nx_volhit { emit nx_vol(clamp(audio.volume + wheel * 0.05, 0, 1)) }
-                    box { from: 52, ny + 58; size: tw - 66, 2; color: fl.ground }
-                    box { from: 52, ny + 58; size: max(0, (tw - 66) * clamp(audio.volume, 0, 1)), 2; color: if(audio.muted, fl.ember, fl.phos) }
-
-                    zone box nx_brihit { from: tw + 14, ny; size: tw, 84; cursor: pointer; role: slider; label: "Display brightness"
-                                         value: brightness.level }
-                    NTile(tw + 14, ny, tw, 84, "DISPLAY", pick(brightness.present, "{brightness.level * 100, 0}%", "N/A"),
-                          "{nx_display_value}",
-                          if(brightness.present, fl.phos, fl.muted))
-                    on scroll nx_brihit { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
-                    box { from: tw + 66, ny + 58; size: tw - 66, 2; color: fl.ground; show: brightness.present }
-                    box { from: tw + 66, ny + 58; size: max(0, (tw - 66) * clamp(brightness.level, 0, 1)), 2; color: fl.phos; show: brightness.present }
-
-                    let ry = ny + 98
-                    NTile(0, ry, tw, 84, "NETWORK", pick(network.online, network.name, "OFFLINE"),
-                          pick(if(network.online and network.kind == wifi, 2, if(network.online, 1, 0)),
-                               "NO LINK", "WIRED", "WIFI · {network.strength, 0}%"),
-                          if(network.online, fl.phos, fl.ember))
-                    NTile(tw + 14, ry, tw, 84, "POWER", pick(battery.present, "{battery.percent, 0}%", "N/A"),
-                          pick(if(not battery.present, 0, if(battery.charging, 2, 1)),
-                               "NO BATTERY", "ON BATTERY", "CHARGING"),
-                          if(not battery.present, fl.muted, if(battery.charging, fl.flare, fl.phos)))
-
-                    // ── the player ──
-                    // ── live system telemetry: six compact instruments ──
-                     let qtw = (cw - 28) / 3
-                     let sy0 = ry + 98
-                     let sy1 = sy0 + 70
-                     // Small, instrument-like plates: no oversized dashboard card wall.
-                     Chamfer(0, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "{nx_cpu_label}" { at: 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                     text "{nx_cpu_value}" { at: 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_cpu_on, fl.phos, fl.muted) }
-                     box { from: 10, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
-                     box { from: 10, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_cpu, 0, 1)), 2; color: fl.phos; show: nx_cpu_on }
-
-                     Chamfer(qtw + 14, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "MEMORY" { at: qtw + 24, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                     text "{nx_ram_value}" { at: qtw + 24, sy0 + 31; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: if(nx_ram_on, fl.phos, fl.muted) }
-                     box { from: qtw + 24, sy0 + 47; size: qtw - 20, 2; color: fl.ground }
-                     box { from: qtw + 24, sy0 + 47; size: max(0, (qtw - 20) * clamp(nx_ram, 0, 1)), 2; color: fl.phos; show: nx_ram_on }
-
-                     Chamfer((qtw + 14) * 2, sy0, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "CPU TEMP" { at: (qtw + 14) * 2 + 10, sy0 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                     text "{nx_temp_value}" { at: (qtw + 14) * 2 + 10, sy0 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_temp_on, fl.flare, fl.muted) }
-                     text pick(nx_temp_on, "SENSOR ACTIVE", "NO SENSOR") { at: (qtw + 14) * 2 + 10, sy0 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
-
-                     Chamfer(0, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "ROOT STORAGE" { at: 10, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                     text "{nx_disk_value}" { at: 10, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_disk_on, fl.phos, fl.muted) }
-                     box { from: 10, sy1 + 47; size: qtw - 20, 2; color: fl.ground }
-                     box { from: 10, sy1 + 47; size: max(0, (qtw - 20) * clamp(nx_disk, 0, 1)), 2; color: fl.flare; show: nx_disk_on }
-
-                     Chamfer(qtw + 14, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "NETWORK RX" { at: qtw + 24, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                     text "{nx_rx_value}" { at: qtw + 24, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_net_on, fl.phos, fl.muted) }
-                     text "INBOUND RATE" { at: qtw + 24, sy1 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
-
-                     Chamfer((qtw + 14) * 2, sy1, qtw, 62, 7, fl.hull_raised, fl.trace, 0.88, 1)
-                     text "NETWORK TX" { at: (qtw + 14) * 2 + 10, sy1 + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                     text "{nx_tx_value}" { at: (qtw + 14) * 2 + 10, sy1 + 31; anchor: left center; size: 17; weight: 700; family: "Exo 2"; color: if(nx_net_on, fl.phos, fl.muted) }
-                     text "OUTBOUND RATE" { at: (qtw + 14) * 2 + 10, sy1 + 49; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted }
-
-                     let my0 = sy1 + 74
-                    Chamfer(0, my0, cw, med_h, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                    box { from: 0, my0 + 18; size: 3, med_h - 36; color: if(nx_has, if(med.playing, fl.phos, fl.flare), fl.muted) }
-                    text "PLAYER" { at: 16, my0 + 17; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    text "{nx_title}" { at: 16, my0 + 38; anchor: left center; size: 16; weight: 600; family: "Exo 2"; width: cw - 220; lines: 1
-                                        color: fl.phos; show: nx_has }
-                    text "No media session" { at: 16, my0 + 38; anchor: left center; size: 16; weight: 600; family: "Exo 2"; color: fl.muted; show: not nx_has }
-                    text "{nx_artist}" { at: 16, my0 + 59; anchor: left center; size: 11; family: "Exo 2"; width: cw - 220; lines: 1; color: fl.trace_lit; show: nx_has }
-                    text "Nothing is playing" { at: 16, my0 + 59; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not nx_has }
-                    text "{nx_album}" { at: 16, my0 + 77; anchor: left center; size: 9; family: "Share Tech Mono"; width: cw - 220; lines: 1; color: fl.muted; show: nx_album_on }
-                    text "{nx_elapsed}" { at: 16, my0 + med_h - 10; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: nx_media_time_on }
-                    text "{nx_duration}" { at: cw - 16, my0 + med_h - 10; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: nx_media_time_on }
-                    line { from: 16, my0 + med_h - 22; to: cw - 16, my0 + med_h - 22; width: 2; color: fl.ground }
-                    box { from: 16, my0 + med_h - 22; size: max(0, (cw - 32) * clamp(nx_progress, 0, 1)), 2
-                          color: if(nx_playing, fl.phos, fl.trace); show: nx_progress > 0 }
-
-                    let bx0 = cw - 196
-                    zone box nx_prev { from: bx0, my0 + 34; size: 54, 26; cursor: pointer; role: button; label: "Previous track"; show: nx_has }
-                    CutButton(bx0, my0 + 37, 54, "Prev", fl.phos, nx_prev.hover)
-                    on press nx_prev { emit nx_media(1) }
-                    zone box nx_play { from: bx0 + 62, my0 + 34; size: 58, 26; cursor: pointer; role: button; label: "Play or pause"; show: nx_has }
-                    group { show: not med.playing
-                        CutButton(bx0 + 62, my0 + 37, 58, "Play", fl.phos, nx_play.hover) }
-                    group { show: med.playing
-                        CutButton(bx0 + 62, my0 + 37, 58, "Pause", fl.flare, nx_play.hover) }
-                    on press nx_play { emit nx_media(0) }
-                    zone box nx_next { from: bx0 + 128, my0 + 34; size: 54, 26; cursor: pointer; role: button; label: "Next track"; show: nx_has }
-                    CutButton(bx0 + 128, my0 + 37, 54, "Next", fl.phos, nx_next.hover)
-                    on press nx_next { emit nx_media(2) }
-                    text "{nx_player}" { at: cw - 16, my0 + 17; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: nx_player_on }
-                    text pick(nx_playing, "PLAYING", "PAUSED") { at: cw - 16, my0 + 33; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(nx_playing, fl.phos, fl.flare); show: nx_has }
-
-                    // ── the foot ──
-                    let fy = my0 + med_h + 14
-                    line { from: 0, fy; to: cw, fy; width: 1; color: fl.trace; opacity: 0.55 }
-                    text "BLUETOOTH N/A" { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
-                                           color: fl.muted; show: not bluetooth.present }
-                    text pick(bluetooth.powered, "BLUETOOTH ON", "BLUETOOTH OFF") { at: 0, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"
-                                                                                 color: if(bluetooth.powered, fl.phos, fl.flare); show: bluetooth.present }
-                    text "WHEEL · VOLUME / BRIGHTNESS" { at: 160, fy + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }
-                    text "{nx_notice_text}" { at: 160, fy + 18; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: nx_notice }
-                    text "ESC CLOSES" { at: cw, fy + 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                    }
-
-                    // ── the system overview: what this machine is, from local reads only ──
-                    group { show: nx_about_on
-                        let ar0 = ny + 48
-                        let ar1 = ar0 + 27
-                        let ar2 = ar1 + 27
-                        let ar3 = ar2 + 27
-                        let ar4 = ar3 + 27
-                        let ar5 = ar4 + 27
-                        let ar6 = ar5 + 27
-                        let ar7 = ar6 + 27
-                        Chamfer(0, ny, cw, 272, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                        box { from: 0, ny; size: 3, 30; color: fl.ember }
-                        text "SYSTEM OVERVIEW" { at: 16, ny + 17; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.phos }
-                        text "LOCAL · READ ONLY" { at: cw - 16, ny + 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        line { from: 16, ny + 32; to: cw - 16, ny + 32; width: 1; color: fl.trace; opacity: 0.7 }
-                        text "DISTRIBUTION" { at: 16, ar0; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_distro}" { at: cw - 16, ar0; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "KERNEL" { at: 16, ar1; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_kernel}" { at: cw - 16, ar1; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "UPTIME" { at: 16, ar2; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_uptime}" { at: cw - 16, ar2; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "CPU" { at: 16, ar3; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_cpu_model}" { at: cw - 16, ar3; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "MEMORY" { at: 16, ar4; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_ram_value}" { at: cw - 16, ar4; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "ROOT STORAGE" { at: 16, ar5; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_disk_value}" { at: cw - 16, ar5; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "DISPLAYS" { at: 16, ar6; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_display_value}" { at: cw - 16, ar6; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: if(nx_telemetry_on, fl.phos, fl.muted) }
-                        text "GRAPHICS" { at: 16, ar7; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_gpu_value}" { at: cw - 16, ar7; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: if(nx_gpu_on, fl.flare, fl.muted) }
-
-                        Chamfer(0, ny + 286, cw, 76, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                        text "HOST" { at: 16, ny + 302; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_host}" { at: cw - 16, ny + 302; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "SESSION" { at: 16, ny + 324; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_session}" { at: cw - 16, ny + 324; anchor: right center; size: 11; family: "Exo 2"; width: cw - 180; lines: 1; color: fl.phos }
-                        text "WORKSPACE {ws.active, 0}  ·  {clock.time}  ·  {clock.date}" { at: 16, ny + 346; anchor: left center; size: 9; family: "Share Tech Mono"; width: cw - 32; lines: 1; color: fl.trace_lit }
-
-                        zone box nx_about_copy { from: 0, ny + 378; size: 170, 26; cursor: pointer; role: button; label: "Copy system diagnostics" }
-                        CutButton(0, ny + 379, 170, "COPY DIAGNOSTICS", fl.phos, nx_about_copy.hover)
-                        on press nx_about_copy { emit nx_diagnostics_copy }
-                        text "NOTHING LEAVES THIS MACHINE" { at: cw, ny + 392; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    }
-
-                    // ── audio: where it plays, where it listens, and the radio ──
-                    group { show: nx_audio_on
-                        let au0 = ny + 48
-                        let au1 = au0 + 34
-                        let au2 = au1 + 34
-                        Chamfer(0, ny, cw, 210, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                        box { from: 0, ny; size: 3, 30; color: fl.ember }
-                        text "AUDIO ROUTING" { at: 16, ny + 17; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.phos }
-                        text "PRESS A DEVICE ROW TO CYCLE" { at: cw - 16, ny + 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        line { from: 16, ny + 32; to: cw - 16, ny + 32; width: 1; color: fl.trace; opacity: 0.7 }
-
-                        zone box nx_out_hit { from: 0, au0 - 14; size: cw, 32; cursor: pointer; role: button; label: "Cycle output device" }
-                        text "OUTPUT" { at: 16, au0; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_out_name}" { at: cw - 16, au0; anchor: right center; size: 11; family: "Exo 2"; width: cw - 150; lines: 1; color: fl.phos }
-                        on press nx_out_hit { emit nx_out_cycle }
-
-                        zone box nx_in_hit { from: 0, au1 - 14; size: cw, 32; cursor: pointer; role: button; label: "Cycle input device" }
-                        text "INPUT" { at: 16, au1; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "{nx_in_name}" { at: cw - 16, au1; anchor: right center; size: 11; family: "Exo 2"; width: cw - 150; lines: 1; color: fl.phos }
-                        on press nx_in_hit { emit nx_in_cycle }
-
-                        zone box nx_mic_hit { from: 0, au2 - 14; size: cw, 36; cursor: pointer; role: slider; label: "Microphone volume"
-                                              value: audio.input }
-                        text "MICROPHONE" { at: 16, au2; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text pick(audio.input_muted, "MUTED", "{audio.input * 100, 0}%") { at: cw - 16, au2; anchor: right center;
-                              size: 11; weight: 600; family: "Exo 2"; color: if(audio.input_muted, fl.ember, fl.phos) }
-                        box { from: 16, au2 + 11; size: cw - 32, 2; color: fl.ground }
-                        box { from: 16, au2 + 11; size: max(0, (cw - 32) * clamp(audio.input, 0, 1)), 2; color: if(audio.input_muted, fl.ember, fl.phos) }
-                        on press nx_mic_hit { emit nx_mic }
-                        on scroll nx_mic_hit { emit nx_mic_level(clamp(audio.input + wheel * 0.05, 0, 1)) }
-                        text "WHEEL SETS · PRESS MUTES" { at: 16, au2 + 24; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.trace_lit }
-
-                        Chamfer(0, ny + 224, cw, 76, 10, fl.hull_raised, fl.trace, 0.9, 1)
-                        text "BLUETOOTH" { at: 16, ny + 240; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                        text "N/A" { at: cw - 16, ny + 240; anchor: right center; size: 11; weight: 600; family: "Exo 2"; color: fl.muted; show: not bluetooth.present }
-                        text pick(bluetooth.powered, "ON", "OFF") { at: cw - 16, ny + 240; anchor: right center; size: 11; weight: 600; family: "Exo 2"
-                               color: if(bluetooth.powered, fl.phos, fl.flare); show: bluetooth.present }
-                        zone box nx_bt_hit { from: 0, ny + 254; size: cw, 34; cursor: pointer; role: toggle; checked: bluetooth.powered
-                                             label: "Toggle the Bluetooth radio"; show: bluetooth.present }
-                        text pick(bluetooth.powered, "PRESS TO POWER OFF", "PRESS TO POWER ON") { at: 16, ny + 270; anchor: left center;
-                               size: 8; family: "Share Tech Mono"; color: fl.trace_lit; show: bluetooth.present }
-                        on press nx_bt_hit { emit nx_bt(if(bluetooth.powered, 0, 1)) }
-                        text "NO ADAPTER DETECTED" { at: 16, ny + 270; anchor: left center; size: 8; family: "Share Tech Mono";
-                               color: fl.muted; show: not bluetooth.present }
+                    repeat gy in 0..14 {
+                        line { from: cx, cy + gy * 72; to: cx + cw, cy + gy * 72; width: 1; color: fl.trace_dim; opacity: 0.16 }
                     }
                 }
+
+                text "No nodes in this arrangement. Press VIEWS to bring one back." { at: cx, cy + ch / 2; anchor: left center; size: 12; family: "Exo 2"
+                     color: fl.muted; show: nx_node_count < 1 }
+
+                for n in nx_nodes {
+                    let nw = if(nx_rz == n.id, nx_rw, n.w)
+                    let nh = if(nx_rz == n.id, nx_rh, n.h)
+                    let ny = cy + n.y
+                    let nx = cx + n.x
+                    group {
+                        move: if(nx_drag == n.id, nx_dx, 0), if(nx_drag == n.id, nx_dy, 0)
+                        glow: 16, if(n.focus, 0.5, 0.2) * st_glow, if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember)))
+                        Chamfer(nx, ny, nw, nh, 10,
+                                mix(fl.hull_raised, fl.well, if(n.focus, 0.45, 0)),
+                                if(n.sel, fl.phos, if(n.focus, fl.trace_lit, fl.trace)),
+                                if(n.mini, 0.9, 0.98), if(n.sel, 1.6, 1))
+                        box { from: nx + 1, ny + 1; size: max(0, nw - 2), rail - 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); opacity: 0.09 }
+                        box { from: nx + 1, ny + 1; size: 3, rail - 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
+                        text n.title { at: nx + 14, ny + 13; anchor: left center; size: 10; weight: 700; family: "Exo 2"
+                                       width: max(40, nw - 62); lines: 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
+                        text pick(n.focus, "CENTRE", n.key) { at: nx + nw - 52, ny + 13; anchor: right center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+                        box { from: nx + nw - 26, ny + 10; size: 6, 6; corner: 3; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); opacity: 0.9 }
+
+                        // the compact body: one reading, no detail rows
+                        group {
+                            show: not n.mini and not n.focus
+                            text n.value { at: nx + 14, ny + rail + 26; anchor: left center; size: 19; weight: 700; family: "Exo 2"
+                                           width: max(40, nw - 28); lines: 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
+                            text n.note { at: nx + 14, ny + nh - 30; anchor: left center; size: 8; family: "Share Tech Mono"
+                                          width: max(40, nw - 28); lines: 1; color: fl.muted }
+                            box { from: nx + 14, ny + nh - 16; size: max(0, nw - 28), 3; corner: 1; color: fl.ground }
+                            box { from: nx + 14, ny + nh - 16; size: max(0, (nw - 28) * clamp(n.bar, 0, 1)), 3; corner: 1
+                                  color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); show: n.baron }
+                        }
+
+                        // the detail body: what a focused node shows in the middle
+                        group {
+                            show: n.focus and not n.mini
+                            text n.value { at: nx + 18, ny + rail + 34; anchor: left center; size: 26; weight: 700; family: "Exo 2"
+                                           width: max(60, nw - 36); lines: 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
+                            text n.note { at: nx + 18, ny + rail + 62; anchor: left center; size: 9; family: "Share Tech Mono"
+                                          width: max(60, nw - 36); lines: 1; color: fl.trace_lit }
+                            box { from: nx + 18, ny + rail + 76; size: max(0, nw - 36), 3; corner: 1; color: fl.ground }
+                            box { from: nx + 18, ny + rail + 76; size: max(0, (nw - 36) * clamp(n.bar, 0, 1)), 3; corner: 1
+                                  color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); show: n.baron }
+
+                            text n.r1l { at: nx + 18, ny + rail + 104; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 1 }
+                            text n.r1v { at: nx + nw - 18, ny + rail + 104; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 1 }
+                            text n.r2l { at: nx + 18, ny + rail + 130; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 2 }
+                            text n.r2v { at: nx + nw - 18, ny + rail + 130; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 2 }
+                            text n.r3l { at: nx + 18, ny + rail + 156; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 3 }
+                            text n.r3v { at: nx + nw - 18, ny + rail + 156; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 3 }
+                            text n.r4l { at: nx + 18, ny + rail + 182; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 4 }
+                            text n.r4v { at: nx + nw - 18, ny + rail + 182; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 4 }
+                            text n.r5l { at: nx + 18, ny + rail + 208; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 5 }
+                            text n.r5v { at: nx + nw - 18, ny + rail + 208; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 5 }
+                            text n.r6l { at: nx + 18, ny + rail + 234; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 6 }
+                            text n.r6v { at: nx + nw - 18, ny + rail + 234; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 6 }
+                            text n.r7l { at: nx + 18, ny + rail + 260; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 7 }
+                            text n.r7v { at: nx + nw - 18, ny + rail + 260; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 7 }
+                            text n.r8l { at: nx + 18, ny + rail + 286; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 8 }
+                            text n.r8v { at: nx + nw - 18, ny + rail + 286; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 8 }
+
+                            // SYSTEM: the overview's own action still lives here
+                            group {
+                                show: n.kind == 1
+                                zone box nx_about_copy { from: nx + 18, ny + nh - 48; size: 168, 26; cursor: pointer; role: button; label: "Copy system diagnostics" }
+                                CutButton(nx + 18, ny + nh - 47, 168, "COPY DIAGNOSTICS", fl.phos, nx_about_copy.hover)
+                                on press nx_about_copy { emit nx_diagnostics_copy }
+                            }
+
+                            // AUDIO: routing, microphone, radio, and the streams below them
+                            group {
+                                show: n.kind == 8
+                                zone box nx_out_hit { from: nx + 12, ny + rail + 92; size: nw - 24, 26; cursor: pointer; role: button; label: "Cycle output device" }
+                                on press nx_out_hit { emit nx_out_cycle }
+                                zone box nx_in_hit { from: nx + 12, ny + rail + 118; size: nw - 24, 26; cursor: pointer; role: button; label: "Cycle input device" }
+                                on press nx_in_hit { emit nx_in_cycle }
+                                zone box nx_mic_hit { from: nx + 12, ny + rail + 144; size: nw - 24, 26; cursor: pointer; role: slider; label: "Microphone volume"; value: audio.input }
+                                on press nx_mic_hit { emit nx_mic }
+                                on scroll nx_mic_hit { emit nx_mic_level(clamp(audio.input + wheel * 0.05, 0, 1)) }
+                                zone box nx_bt_hit { from: nx + 12, ny + rail + 170; size: nw - 24, 26; cursor: pointer; role: toggle
+                                                     checked: bluetooth.powered; label: "Toggle the Bluetooth radio" }
+                                on press nx_bt_hit { emit nx_bt(if(bluetooth.powered, 0, 1)) }
+
+                                text "APPLICATION STREAMS" { at: nx + 18, ny + rail + 212; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                                text "NONE PLAYING" { at: nx + 18, ny + rail + 234; anchor: left center; size: 9; family: "Exo 2"; color: fl.muted; show: nx_mix_count < 1 }
+                                for m in nx_mix {
+                                    text m.name { at: nx + 18, ny + rail + 234 + (m.id - 1) * 22; anchor: left center; size: 9; family: "Exo 2"
+                                                  width: max(40, nw - 120); lines: 1; color: if(m.muted, fl.ember, fl.phos); show: m.id < 5 }
+                                    text pick(m.muted, "{m.level * 100, 0}%", "MUTED") { at: nx + nw - 18, ny + rail + 234 + (m.id - 1) * 22
+                                          anchor: right center; size: 8; family: "Share Tech Mono"; color: if(m.muted, fl.ember, fl.trace_lit); show: m.id < 5 }
+                                    zone box nx_mix_hit { from: nx + 12, ny + rail + 224 + (m.id - 1) * 22; size: nw - 24, 20; cursor: pointer
+                                                          role: button; label: "Mute {m.name}"; show: m.id < 5 }
+                                    on press nx_mix_hit { emit nx_app_mute(m.sid) }
+                                    on scroll nx_mix_hit { nx_app_sid = m.sid; nx_app_lvl = clamp(m.level + wheel * 0.05, 0, 1); emit nx_app_vol }
+                                }
+                            }
+
+                            // DISPLAY: the backlight answers the wheel over its own row
+                            group {
+                                show: n.kind == 9
+                                zone box nx_bri_hit { from: nx + 12, ny + rail + 92; size: nw - 24, 26; cursor: pointer; role: slider
+                                                      label: "Display brightness"; value: brightness.level; show: brightness.present }
+                                on scroll nx_bri_hit { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
+                            }
+
+                            // MEDIA: transport, if a player owns the session
+                            group {
+                                show: n.kind == 11 and nx_has
+                                zone box nx_prev { from: nx + 18, ny + nh - 46; size: 64, 26; cursor: pointer; role: button; label: "Previous track" }
+                                CutButton(nx + 18, ny + nh - 45, 64, "Prev", fl.phos, nx_prev.hover)
+                                on press nx_prev { emit nx_media(1) }
+                                zone box nx_play { from: nx + 90, ny + nh - 46; size: 64, 26; cursor: pointer; role: button; label: "Play or pause" }
+                                group { show: not med.playing
+                                    CutButton(nx + 90, ny + nh - 45, 64, "Play", fl.phos, nx_play.hover) }
+                                group { show: med.playing
+                                    CutButton(nx + 90, ny + nh - 45, 64, "Pause", fl.flare, nx_play.hover) }
+                                on press nx_play { emit nx_media(0) }
+                                zone box nx_next { from: nx + 162, ny + nh - 46; size: 64, 26; cursor: pointer; role: button; label: "Next track" }
+                                CutButton(nx + 162, ny + nh - 45, 64, "Next", fl.phos, nx_next.hover)
+                                on press nx_next { emit nx_media(2) }
+                            }
+
+                            // WORKSPACES: the compositor's own grid, one press to go there
+                            group {
+                                show: n.kind == 10
+                                text "NO WORKSPACES REPORTED" { at: nx + 18, ny + rail + 104; anchor: left center; size: 9; family: "Exo 2"
+                                     color: fl.muted; show: nx_ws_count < 1 }
+                                for s in nx_ws {
+                                    zone box nx_ws_hit { from: nx + 12, ny + rail + 92 + (s.slot - 1) * 24; size: nw - 24, 22
+                                                         cursor: pointer; role: button; label: "Go to workspace {s.label}"; show: s.slot < 9 }
+                                    text s.label { at: nx + 18, ny + rail + 103 + (s.slot - 1) * 24; anchor: left center; size: 12; weight: 700
+                                                   family: "Exo 2"; color: if(s.active > 0, fl.phos, fl.muted); show: s.slot < 9 }
+                                    text pick(s.active, "GO THERE", "CURRENT") { at: nx + nw - 18, ny + rail + 103 + (s.slot - 1) * 24
+                                          anchor: right center; size: 8; family: "Share Tech Mono"; color: if(s.active > 0, fl.phos, fl.trace_lit); show: s.slot < 9 }
+                                    on press nx_ws_hit { emit nx_ws_focus(s.id) }
+                                }
+                            }
+                        }
+
+                        // the frame: press to select, drag to move, grip to resize
+                        zone box nx_frame { from: nx, ny; size: nw, nh; cursor: grab; role: item; selected: n.sel
+                                            label: "{n.title}: {n.value}" }
+                        on press nx_frame { nx_press = n.id; nx_dx = 0; nx_dy = 0; nx_menu = 0 }
+                        on drag nx_frame while nx_press == n.id and not nx_pinned {
+                            nx_cw = cw; nx_ch = ch
+                            nx_gx = clamp(n.x + drag.dx, 0, max(0, cw - n.w))
+                            nx_gy = clamp(n.y + drag.dy, 0, max(0, ch - n.h))
+                            nx_dx = nx_gx - n.x; nx_dy = nx_gy - n.y
+                            nx_drag = if(abs(drag.dx) + abs(drag.dy) > 4, n.id, nx_drag)
+                        }
+                        on release nx_frame while nx_drag == n.id { emit nx_drop(n.id); nx_drag = 0; nx_press = 0 }
+                        on release nx_frame while nx_drag != n.id and nx_press == n.id { emit nx_select(n.id); nx_press = 0 }
+
+                        zone box nx_menu_hit { from: nx + nw - 18, ny + 4; size: 14, 12; cursor: pointer; role: button
+                                               label: "Actions for {n.title}" }
+                        text "···" { at: nx + nw - 11, ny + 10; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        on press nx_menu_hit { nx_menu = if(nx_menu == n.id, 0, n.id) }
+
+                        group {
+                            show: not n.mini
+                            zone box nx_grip { from: nx + nw - 16, ny + nh - 16; size: 16, 16; cursor: pointer; role: item
+                                               label: "Resize {n.title}" }
+                            line { from: nx + nw - 12, ny + nh - 4; to: nx + nw - 4, ny + nh - 12; width: 1.4; color: fl.trace }
+                            line { from: nx + nw - 7, ny + nh - 4; to: nx + nw - 4, ny + nh - 7; width: 1.4; color: fl.trace }
+                            on press nx_grip { nx_rz = n.id; nx_rw = n.w; nx_rh = n.h }
+                            on drag nx_grip while nx_rz == n.id and not nx_pinned {
+                                nx_cw = cw; nx_ch = ch
+                                nx_rw = clamp(n.w + drag.dx, n.minw, min(n.maxw, max(0, cw - n.x)))
+                                nx_rh = clamp(n.h + drag.dy, n.minh, min(n.maxh, max(0, ch - n.y)))
+                            }
+                            on release nx_grip while nx_rz == n.id { emit nx_resize(n.id); nx_rz = 0 }
+                        }
+                    }
+                }
+
+                // the node menu, above every frame, clamped so it never leaves the canvas
+                for n in nx_nodes {
+                    let mx = clamp(cx + n.x + n.w - 132, 8, max(8, sw - 140))
+                    let my = clamp(cy + n.y + 30, cy + 4, max(cy + 4, cy + ch - 104))
+                    group {
+                        show: nx_menu == n.id
+                        glow: 14, 0.4 * st_glow, fl.phos
+                        Chamfer(mx, my, 128, 100, 8, fl.hull, fl.phos, 1, 1)
+                        box { from: mx, my; size: 128, 2; color: fl.phos }
+                        text n.title { at: mx + 10, my + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos; width: 108; lines: 1 }
+                        zone box nx_act_focus { from: mx, my + 28; size: 128, 22; cursor: pointer; role: button; label: "Focus {n.title} at the centre" }
+                        text "FOCUS AT CENTRE" { at: mx + 10, my + 39; anchor: left center; size: 8; family: "Share Tech Mono"
+                                                 color: mix(fl.muted, fl.phos, nx_act_focus.hover) }
+                        on press nx_act_focus { emit nx_focus_node(n.id); nx_menu = 0 }
+                        zone box nx_act_min { from: mx, my + 50; size: 128, 22; cursor: pointer; role: button; label: "Minimize or restore {n.title}" }
+                        text pick(n.mini, "RESTORE BODY", "MINIMIZE") { at: mx + 10, my + 61; anchor: left center; size: 8; family: "Share Tech Mono"
+                                                                         color: mix(fl.muted, fl.phos, nx_act_min.hover) }
+                        on press nx_act_min { emit nx_min(n.id); nx_menu = 0 }
+                        zone box nx_act_remove { from: mx, my + 72; size: 128, 24; cursor: pointer; role: button; label: "Remove {n.title} from the layout" }
+                        text "REMOVE FROM LAYOUT" { at: mx + 10, my + 84; anchor: left center; size: 8; family: "Share Tech Mono"
+                                                    color: mix(fl.muted, fl.ember, nx_act_remove.hover) }
+                        on press nx_act_remove { emit nx_remove(n.id); nx_menu = 0 }
+                    }
+                }
+            }
+
+            // ── the status strip: what is showing, and what the machine is doing ──
+            Chamfer(0, sh - foot, sw, foot, 0, fl.hull, fl.trace, 0.99, 1)
+            box { from: 0, sh - foot; size: sw, 1; color: fl.trace; opacity: 0.6 }
+            text "{nx_focus_name} AT CENTRE" { at: 20, sh - foot / 2; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+            text "{nx_node_count, 0} NODES · {nx_node_total, 0} IN LAYOUT · {nx_arrangement_count, 0} ARRANGEMENTS" {
+                at: 240, sh - foot / 2; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            text "{nx_status}" { at: sw / 2, sh - foot / 2; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+            text "TAB SELECTS · ARROWS MOVE · ENTER FOCUS · ESC CLOSES" { at: sw - 20, sh - foot / 2; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }
+            text "{nx_notice_text}" { at: sw - 20, sh - foot / 2; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: nx_notice }
+
+            // ── the identity editor, unchanged in purpose, now a panel of the shell ──
+            group {
+                show: nx_identity_edit_on
+                Chamfer(sw - 340, cy + 12, 320, 218, 10, fl.hull, fl.trace, 1, 1.2)
+                box { from: sw - 340, cy + 12; size: 320, 3; color: fl.ember }
+                text "IDENTITY CONFIGURATION" { at: sw - 324, cy + 31; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos }
+                text "DISPLAY NAME" { at: sw - 324, cy + 54; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                input nx_identity_draft { at: sw - 324, cy + 64; width: 288; size: 16; color: fl.phos; placeholder: "Name this system"; selection: fl.trace }
+                zone box nx_identity_avatar_btn { from: sw - 324, cy + 102; size: 136, 28; cursor: pointer; role: button; label: "Choose profile avatar" }
+                CutButton(sw - 324, cy + 103, 136, "AVATAR IMAGE", fl.phos, nx_identity_avatar_btn.hover)
+                on press nx_identity_avatar_btn { emit nx_identity_avatar }
+                zone box nx_identity_banner_btn { from: sw - 178, cy + 102; size: 140, 28; cursor: pointer; role: button; label: "Choose system banner" }
+                CutButton(sw - 178, cy + 103, 140, "BANNER IMAGE", fl.phos, nx_identity_banner_btn.hover)
+                on press nx_identity_banner_btn { emit nx_identity_banner }
+                text "PNG · JPG · WEBP · AVIF" { at: sw - 324, cy + 147; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                zone box nx_identity_save_btn { from: sw - 176, cy + 180; size: 76, 28; cursor: pointer; role: button; label: "Save system identity" }
+                CutButton(sw - 176, cy + 181, 76, "SAVE", fl.phos, nx_identity_save_btn.hover)
+                on press nx_identity_save_btn { emit nx_identity_save }
+                zone box nx_identity_cancel_btn { from: sw - 92, cy + 180; size: 56, 28; cursor: pointer; role: button; label: "Cancel identity editing" }
+                CutButton(sw - 92, cy + 181, 56, "CLOSE", fl.ember, nx_identity_cancel_btn.hover)
+                on press nx_identity_cancel_btn { emit nx_identity_cancel }
             }
         }
     }
 
-    on key Left while nx_has { emit nx_media(1) }
-    on key Right while nx_has { emit nx_media(2) }
-    on key Space while nx_has { emit nx_media(0) }
-    on key Escape { emit nx_close }
+    // Escape resolves in the order the spec gives it: cancel a drag, else close the drawer,
+    // else close Nexus. Tab walks the canvas; arrows move the selected node one grid step.
+    on key Escape while nx_menu > 0 { nx_menu = 0 }
+    on key Escape while nx_menu < 1 and nx_drag > 0 { nx_drag = 0; nx_press = 0 }
+    on key Escape while nx_menu < 1 and nx_drag < 1 { emit nx_close }
+    on key Ctrl+z { emit nx_undo }
+    on key Ctrl+Shift+z { emit nx_redo }
+    on key Tab { emit nx_cycle_sel }
+    on key Delete while nx_sel > 0 { emit nx_remove(nx_sel) }
+    on key Return while nx_sel > 0 { emit nx_focus_node(nx_sel) }
+    on key Left while nx_sel > 0 and not nx_pinned { emit nx_move(1) }
+    on key Right while nx_sel > 0 and not nx_pinned { emit nx_move(2) }
+    on key Up while nx_sel > 0 and not nx_pinned { emit nx_move(3) }
+    on key Down while nx_sel > 0 and not nx_pinned { emit nx_move(4) }
 }

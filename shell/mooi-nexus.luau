@@ -9,6 +9,7 @@ local ferro = require("lib/ferro")
 local style = require("lib/style")
 local nexus = require("lib/nexus")
 local nexusnode = require("lib/nexusnode")
+local nexuslayout = require("lib/nexuslayout")
 local sysinfo = require("lib/sysinfo")
 local telemetry = require("lib/telemetry")
 
@@ -67,49 +68,582 @@ pcall(sys.watch, "files:" .. PALETTE, function()
     palette = read(PALETTE, "json")
     paint()
 end)
+-- ── The node workspace (D76) ───────────────────────────────
+-- The plate's eleven modules are catalogue nodes now. The logic owns the arrangement,
+-- its geometry and the selection; the scene draws the rows published here and sends a
+-- press, a drag or a key back as an event. Facts carry what a rule can compare; text
+-- fields carry what it only draws. Nothing here invents a reading: an absent provider
+-- leaves its node out of the model, and the module library can say why.
 local present = { battery = false, brightness = false }
-local last_arr_count
+local live = {
+    volume = 0, muted = false, input = 0, input_muted = false,
+    bright = 0, bright_on = false,
+    power = 0, power_on = false, charging = false,
+    net_on = false, net_name = "", net_kind = "none",
+    bt_on = false, bt_present = false,
+    ws = 1, time = "--:--", date = "",
+}
+local arrs, active_i, sel, last_arr_count = {}, 1, 0, nil
+local mix, spaces = {}, {}
 
-local function sync_model()
-    local p = {
+-- The layout's own undo: snapshots of the arrangements taken before each edit, and the
+-- steps a redo can walk forward again. Any new edit clears the forward list.
+local past, future = {}, {}
+local function remember()
+    nexusnode.remember(past, arrs)
+    future = {}
+end
+
+-- Defined with the controls below; the mixer's handlers are declared before it, so the
+-- name is reserved here rather than reached for as a global at press time.
+local report_control_failure
+
+local function node_list() return arrs[active_i] end
+
+local function present_set()
+    return {
         battery = present.battery,
         brightness = present.brightness,
         media = fact.nx_has == true,
         gpu = fact.nx_gpu_on == true,
         sensors = fact.nx_temp_on == true,
     }
-    local arrangements = nexusnode.normalize_arrangements((settings.nexus and settings.nexus.arrangements) or {})
+end
+
+local function safe_write()
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return false end
+    local ok = pcall(sys.call, "files.write", FILE, settings)
+    if not ok then
+        fact.nx_notice = true
+        text.nx_notice_text = "Could not save the Nexus layout"
+        after(2600, function() fact.nx_notice = false end)
+    end
+    return ok
+end
+
+-- One write per gesture, never per frame: the scene sends a drop or a resize release,
+-- and the arrangement on disk is the one the model was published from.
+local function save()
+    if type(settings.nexus) ~= "table" then settings.nexus = {} end
+    local a = node_list()
+    settings.nexus.arrangements = arrs
+    if a then
+        settings.nexus.arrangement = a.name
+        settings.nexus.focus = a.focus
+        settings.nexus.mode = a.mode
+        settings.nexus.banner = { mode = a.banner }
+    end
+    return safe_write()
+end
+
+local function str(value, fallback)
+    if type(value) == "string" and value ~= "" then return value end
+    return fallback
+end
+
+local function choose()
+    arrs = nexusnode.normalize_arrangements((type(settings.nexus) == "table" and settings.nexus.arrangements) or {})
     local seeded = false
-    if #arrangements == 0 then
-        arrangements = nexusnode.seed_arrangements(settings.nexus or {})
+    if #arrs == 0 then
+        arrs = nexusnode.seed_arrangements(type(settings.nexus) == "table" and settings.nexus or {})
         seeded = true
     end
-    if #arrangements == 0 then
-        arrangements = nexusnode.seed_arrangements({})
+    if #arrs == 0 then
+        arrs = nexusnode.seed_arrangements({})
         seeded = true
     end
-    local active = arrangements[1]
-    fact.nx_arrangement_count = #arrangements
-    local visible = nexusnode.visible_nodes(active, p) or {}
-    fact.nx_node_count = #visible
-    fact.nx_focus = (active and active.focus) or "core"
-    fact.nx_mode = (active and active.mode) or "circuit"
-    fact.nx_banner_mode = (active and active.banner) or "compact"
-    last_arr_count = #arrangements
-    if seeded and tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
-        if type(settings.nexus) ~= "table" then settings.nexus = {} end
-        settings.nexus.arrangements = arrangements
-        settings.nexus.focus = fact.nx_focus
-        settings.nexus.mode = fact.nx_mode
-        settings.nexus.banner = { mode = fact.nx_banner_mode }
-        local ok = pcall(sys.call, "files.write", FILE, settings)
-        if not ok then
-            fact.nx_notice = true
-            text.nx_notice_text = "Could not save the Nexus model"
-            after(2600, function() fact.nx_notice = false end)
+    active_i = 1
+    local want = type(settings.nexus) == "table" and settings.nexus.arrangement or nil
+    if type(want) == "string" then
+        for i, a in ipairs(arrs) do
+            if a.name == want then active_i = i; break end
         end
     end
+    last_arr_count = #arrs
+    return seeded
 end
+
+-- The compact body of a node: one reading, one line saying what it is, and a bar when
+-- the reading has a range. A node with no provider is never published at all.
+local function content(node, def, total)
+    local tone, value, note, bar, baron = 1, "—", "", 0, false
+    local t = node.type
+    if t == "core" then
+        value = string.upper((node_list() and node_list().mode) or "circuit")
+        note = string.format("%d NODES", total)
+    elseif t == "system" then
+        value = str(text.nx_cpu_value, "—")
+        note = str(text.nx_cpu_label, "SYSTEM")
+        bar, baron = fact.nx_cpu or 0, fact.nx_cpu_on == true
+        if not baron then tone = 0 end
+    elseif t == "cpu" then
+        value = str(text.nx_cpu_value, "—")
+        note = str(text.nx_cpu_label, "PROCESSOR LOAD")
+        bar, baron = fact.nx_cpu or 0, fact.nx_cpu_on == true
+        if not baron then tone = 0 end
+    elseif t == "memory" then
+        value = str(text.nx_ram_value, "—")
+        note = "OF TOTAL MEMORY"
+        bar, baron = fact.nx_ram or 0, fact.nx_ram_on == true
+        if not baron then tone = 0 end
+    elseif t == "gpu" then
+        value = str(text.nx_gpu_value, "N/A")
+        note = "GRAPHICS LOAD"
+        bar, baron = fact.nx_gpu or 0, fact.nx_gpu_on == true
+        if not baron then tone = 0 end
+    elseif t == "thermal" then
+        value = str(text.nx_temp_value, "N/A")
+        note = "THERMAL SENSOR"
+        tone = (fact.nx_temp_on == true) and 2 or 0
+    elseif t == "storage" then
+        value = str(text.nx_disk_value, "—")
+        note = "ROOT FILESYSTEM"
+        bar, baron, tone = fact.nx_disk or 0, fact.nx_disk_on == true, 2
+        if not baron then tone = 0 end
+    elseif t == "network" then
+        value = live.net_on and (live.net_kind == "wifi" and "WIFI" or "WIRED") or "OFFLINE"
+        note = "IN " .. str(text.nx_rx_value, "—") .. "  ·  OUT " .. str(text.nx_tx_value, "—")
+        tone = live.net_on and 2 or 3
+    elseif t == "audio" then
+        value = live.muted and "MUTED" or string.format("%d%%", math.floor(live.volume * 100 + 0.5))
+        note = str(text.nx_out_name, "OUTPUT DEVICE")
+        bar, baron = live.volume, true
+        tone = live.muted and 3 or 1
+    elseif t == "display" then
+        value = live.bright_on and string.format("%d%%", math.floor(live.bright * 100 + 0.5)) or "N/A"
+        note = str(text.nx_display_value, "DISPLAY")
+        bar, baron = live.bright, live.bright_on
+        if not baron then tone = 0 end
+    elseif t == "workspaces" then
+        value = string.format("%d", live.ws)
+        note = "CURRENT WORKSPACE"
+        tone = 1
+    elseif t == "media" then
+        value = str(text.nx_title, "No media session")
+        note = str(text.nx_artist, "NOTHING IS PLAYING")
+        bar, baron = fact.nx_progress or 0, fact.nx_has == true
+        if not baron then tone = 0 end
+    elseif t == "clock" then
+        value = str(live.time, "--:--")
+        note = str(live.date, "")
+        tone = 2
+    elseif t == "power" then
+        value = live.power_on and string.format("%d%%", math.floor(live.power + 0.5)) or "N/A"
+        note = not live.power_on and "NO BATTERY" or (live.charging and "CHARGING" or "ON BATTERY")
+        bar, baron = live.power / 100, live.power_on
+        tone = not live.power_on and 0 or (live.charging and 2 or 1)
+    end
+    return value, note, bar, baron, tone, def.accent
+end
+
+-- The detail body of a node: the rows a focused frame draws under its reading. They are
+-- the same numbers the plate carried in its old views, moved to the node that owns them,
+-- and each one says `N/A` rather than guessing when its provider is absent.
+local KINDS = {
+    core = 0, system = 1, cpu = 2, memory = 3, gpu = 4, thermal = 5, storage = 6,
+    network = 7, audio = 8, display = 9, workspaces = 10, media = 11, clock = 12, power = 13,
+}
+
+local function detail_rows(node)
+    local t = node.type
+    local out = {}
+    local function row(label, value)
+        out[#out + 1] = { label = label, value = str(value, "N/A") }
+    end
+    if t == "core" then
+        row("MODE", string.upper(node_list() and node_list().mode or "circuit"))
+        row("FOCUS", str(text.nx_focus_name, "Core"))
+        row("NODES", string.format("%d ON CANVAS", fact.nx_node_count or 0))
+        row("LAYOUT", str(text.nx_arrangement_name, "—"))
+    elseif t == "system" then
+        row("DISTRIBUTION", text.nx_distro)
+        row("KERNEL", text.nx_kernel)
+        row("UPTIME", text.nx_uptime)
+        row("CPU", text.nx_cpu_model)
+        row("MEMORY", text.nx_ram_value)
+        row("ROOT STORAGE", text.nx_disk_value)
+        row("DISPLAYS", text.nx_display_value)
+        row("GRAPHICS", text.nx_gpu_value)
+    elseif t == "cpu" then
+        row("LOAD", text.nx_cpu_value)
+        row("CORES", text.nx_cpu_label)
+        row("MEMORY", text.nx_ram_value)
+        row("UPTIME", text.nx_uptime)
+    elseif t == "memory" then
+        row("USED", text.nx_ram_value)
+        row("LOAD", text.nx_cpu_value)
+        row("TEMPERATURE", text.nx_temp_value)
+        row("UPTIME", text.nx_uptime)
+    elseif t == "gpu" then
+        row("LOAD", text.nx_gpu_value)
+        row("TEMPERATURE", text.nx_temp_value)
+        row("DISPLAYS", text.nx_display_value)
+        row("KERNEL", text.nx_kernel)
+    elseif t == "thermal" then
+        row("TEMPERATURE", text.nx_temp_value)
+        row("LOAD", text.nx_cpu_value)
+        row("MEMORY", text.nx_ram_value)
+        row("UPTIME", text.nx_uptime)
+    elseif t == "storage" then
+        row("ROOT STORAGE", text.nx_disk_value)
+        row("MEMORY", text.nx_ram_value)
+        row("UPTIME", text.nx_uptime)
+        row("HOST", text.nx_host)
+    elseif t == "network" then
+        row("LINK", live.net_on and (live.net_kind == "wifi" and "WIFI" or "WIRED") or "OFFLINE")
+        row("RECEIVE", text.nx_rx_value)
+        row("SEND", text.nx_tx_value)
+        row("HOST", text.nx_host)
+    elseif t == "audio" then
+        row("OUTPUT", text.nx_out_name)
+        row("INPUT", text.nx_in_name)
+        row("MICROPHONE", live.input_muted and "MUTED" or string.format("%d%%", math.floor(live.input * 100 + 0.5)))
+        row("BLUETOOTH", live.bt_present and (live.bt_on and "ON" or "OFF") or "N/A")
+    elseif t == "display" then
+        row("BRIGHTNESS", live.bright_on and string.format("%d%%", math.floor(live.bright * 100 + 0.5)) or "N/A")
+        row("DISPLAYS", text.nx_display_value)
+        row("GRAPHICS", text.nx_gpu_value)
+        row("KERNEL", text.nx_kernel)
+    elseif t == "media" then
+        row("TITLE", text.nx_title)
+        row("ARTIST", text.nx_artist)
+        row("ALBUM", text.nx_album)
+        row("PLAYER", text.nx_player)
+    elseif t == "clock" then
+        row("TIME", live.time)
+        row("DATE", live.date)
+        row("UPTIME", text.nx_uptime)
+        row("HOST", text.nx_host)
+    elseif t == "power" then
+        row("CHARGE", live.power_on and string.format("%d%%", math.floor(live.power + 0.5)) or "N/A")
+        row("STATE", not live.power_on and "NO BATTERY" or (live.charging and "CHARGING" or "ON BATTERY"))
+        row("LOAD", text.nx_cpu_value)
+        row("TEMPERATURE", text.nx_temp_value)
+    end
+    return out
+end
+
+local function publish()
+    local a = node_list()
+    local p = present_set()
+    local mode = a and a.mode or "circuit"
+    local focus = a and a.focus or "core"
+    local shown, total = 0, 0
+    if a then
+        for _, node in ipairs(a.nodes) do
+            local ok = nexusnode.available(node.type, p)
+            if ok then
+                total = total + 1
+                if node.vis and (mode ~= "minimal" or node.essential) then shown = shown + 1 end
+            end
+        end
+    end
+
+    local rows, removed = {}, {}
+    if a then
+        for i, node in ipairs(a.nodes) do
+            local def = nexusnode.get(node.type)
+            local ok = nexusnode.available(node.type, p)
+            if ok and def then
+                if node.vis and (mode ~= "minimal" or node.essential) then
+                    local value, note, bar, baron, tone = content(node, def, shown)
+                    local detail = detail_rows(node)
+                    local entry = {
+                        id = i, key = def.id, title = def.title,
+                        value = value, note = note,
+                        x = node.x, y = node.y, w = node.w, h = node.h,
+                        tone = tone, bar = math.max(0, math.min(1, bar)), baron = baron,
+                        mini = node.min == true, sel = i == sel, focus = node.type == focus,
+                        minw = def.min.w, minh = def.min.h, maxw = def.max.w, maxh = def.max.h,
+                        kind = KINDS[def.id] or 0, rows = #detail,
+                    }
+                    for k = 1, 8 do
+                        entry["r" .. k .. "l"] = detail[k] and detail[k].label or ""
+                        entry["r" .. k .. "v"] = detail[k] and detail[k].value or ""
+                    end
+                    rows[#rows + 1] = entry
+                elseif not node.vis then
+                    removed[#removed + 1] = { id = i, slot = #removed + 1, key = def.id, title = def.title }
+                end
+            end
+        end
+    end
+
+    if sel > 0 then
+        local holds = false
+        for _, r in ipairs(rows) do if r.id == sel then holds = true break end end
+        if not holds then sel = 0 end
+    end
+
+    local chips = {}
+    for i, item in ipairs(arrs) do
+        chips[#chips + 1] = { id = i, name = item.name, active = i == active_i }
+    end
+
+    local streams = {}
+    for i, row in ipairs(mix) do
+        local sid = tonumber(row.id) or 0
+        streams[#streams + 1] = {
+            id = i,
+            sid = sid,
+            name = str(row.name, "STREAM"),
+            note = str(row.title, ""),
+            level = tonumber(row.volume) or 0,
+            muted = row.muted == 1,
+        }
+    end
+
+    local blocks = {}
+    for i, block in ipairs(spaces) do
+        blocks[i] = { id = block.id, slot = i, label = block.label, windows = block.windows, active = block.active }
+    end
+
+    model.nx_nodes = rows
+    model.nx_removed = removed
+    model.nx_arrs = chips
+    model.nx_mix = streams
+    model.nx_ws = blocks
+    fact.nx_mix_count = #streams
+    fact.nx_ws_count = #blocks
+    fact.nx_arrangement_count = #arrs
+    fact.nx_node_count = shown
+    fact.nx_node_total = total
+    fact.nx_removed_count = #removed
+    fact.nx_undo_depth = #past
+    fact.nx_redo_depth = #future
+    fact.nx_sel = sel
+    fact.nx_focus = focus
+    fact.nx_mode = mode
+    fact.nx_banner_mode = a and a.banner or "compact"
+    fact.nx_grid = a and a.appearance and a.appearance.grid ~= false or false
+    text.nx_arrangement_name = a and a.name or "—"
+    text.nx_banner_name = string.upper(a and a.banner or "compact")
+    local focus_def = nexusnode.get(focus)
+    text.nx_focus_name = focus_def and focus_def.title or "Core"
+    text.nx_mode_name = string.upper(mode)
+
+    local bits = {}
+    if fact.nx_cpu_on then bits[#bits + 1] = "LOAD " .. str(text.nx_cpu_value, "—") end
+    if fact.nx_ram_on then bits[#bits + 1] = "MEM " .. str(text.nx_ram_value, "—") end
+    if fact.nx_temp_on then bits[#bits + 1] = str(text.nx_temp_value, "—") end
+    if fact.nx_net_on then
+        bits[#bits + 1] = "IN " .. str(text.nx_rx_value, "—") .. " · OUT " .. str(text.nx_tx_value, "—")
+    end
+    text.nx_status = #bits > 0 and table.concat(bits, "   ·   ") or "NO LIVE READINGS"
+end
+
+local function touch(write)
+    if write then save() end
+    publish()
+end
+
+local function canvas_of()
+    local w = tonumber(fact.nx_cw) or 0
+    local h = tonumber(fact.nx_ch) or 0
+    if w <= 0 or h <= 0 then return nil end
+    return { w = w, h = h }
+end
+
+local function index_of(value)
+    local i = math.floor(tonumber(value) or 0)
+    local a = node_list()
+    if not a or not a.nodes[i] then return nil, nil end
+    return i, a.nodes[i]
+end
+
+-- A node press with no drag: select it. The same press on the selected node clears it,
+-- so a click on empty canvas and a second click agree about what is selected.
+on("nx_select", function(v)
+    local i = index_of(v)
+    if not i then return end
+    sel = (sel == i) and 0 or i
+    publish()
+end)
+
+-- A drag that moved: the scene has already clamped to the canvas and published the
+-- proposed origin, so the logic snaps and records once, on release.
+on("nx_drop", function(v)
+    local i, node = index_of(v)
+    local canvas = canvas_of()
+    if not i or not canvas then return end
+    sel = i
+    local x = tonumber(fact.nx_gx) or node.x
+    local y = tonumber(fact.nx_gy) or node.y
+    remember()
+    if nexuslayout.place(node, x, y, canvas, 8) then
+        touch(true)
+    else
+        table.remove(past)
+        publish()
+    end
+end)
+
+on("nx_resize", function(v)
+    local i, node = index_of(v)
+    local canvas = canvas_of()
+    if not i or not canvas then return end
+    remember()
+    local changed = nexuslayout.resize(node, tonumber(fact.nx_rw) or node.w, tonumber(fact.nx_rh) or node.h, 8)
+    local moved = nexuslayout.place(node, node.x, node.y, canvas, 0)
+    if changed or moved then touch(true) else table.remove(past); publish() end
+end)
+
+on("nx_min", function(v)
+    local i, node = index_of(v)
+    if not i then return end
+    remember()
+    node.min = not node.min
+    touch(true)
+end)
+
+-- Focus at centre: the chosen node takes the middle at its detail size and the node
+-- that was there inherits the vacated slot; every other node keeps its position.
+on("nx_focus_node", function(v)
+    local i, node = index_of(v)
+    local canvas = canvas_of()
+    local a = node_list()
+    if not i or not canvas or not a then return end
+    remember()
+    local out, ok = nexuslayout.focus(a.nodes, node.type, canvas)
+    if ok then
+        a.nodes = out
+        a.focus = node.type
+        sel = i
+        touch(true)
+    else
+        a.focus = node.type
+        touch(true)
+    end
+end)
+
+-- Removal is layout-only: the node keeps its slot and its services, and the drawer's
+-- REMOVED list can put it back where it was.
+on("nx_remove", function(v)
+    local i, node = index_of(v)
+    local a = node_list()
+    if not i or not a then return end
+    remember()
+    node.vis = false
+    if a.focus == node.type then
+        local fallback = "core"
+        local holds = false
+        for _, other in ipairs(a.nodes) do
+            if other.vis and other.type == "core" then holds = true end
+        end
+        if not holds then
+            for _, other in ipairs(a.nodes) do
+                if other.vis then fallback = other.type; break end
+            end
+        end
+        a.focus = fallback
+    end
+    if sel == i then sel = 0 end
+    touch(true)
+end)
+
+on("nx_restore", function(v)
+    local i = math.floor(tonumber(v) or 0)
+    local canvas = canvas_of()
+    local a = node_list()
+    if not a or not canvas or not a.nodes[i] then return end
+    remember()
+    if nexuslayout.restore(a.nodes, i, canvas, 8) then
+        sel = i
+        touch(true)
+    end
+end)
+
+-- The keys' way about: 1 left · 2 right · 3 up · 4 down, one snapped step at a time.
+on("nx_move", function(v)
+    local step = math.floor(tonumber(v) or 0)
+    local canvas = canvas_of()
+    local _, node = index_of(sel)
+    if not canvas or not node then return end
+    local dx = (step == 1 and -1) or (step == 2 and 1) or 0
+    local dy = (step == 3 and -1) or (step == 4 and 1) or 0
+    local x, y = nexuslayout.move_step(node, dx, dy, canvas, 8)
+    if nexuslayout.place(node, x, y, canvas, 8) then touch(true) end
+end)
+
+on("nx_mode_switch", function(v)
+    local mode = tonumber(v) == 1 and "minimal" or "circuit"
+    local a = node_list()
+    remember()
+    if a then a.mode = mode end
+    fact.nx_mode = mode
+    touch(true)
+end)
+
+local BANNERS = { "full", "compact", "strip", "hidden" }
+on("nx_banner_cycle", function()
+    local a = node_list()
+    local current = fact.nx_banner_mode or "compact"
+    local next_banner = "compact"
+    for i, mode in ipairs(BANNERS) do
+        if mode == current then next_banner = BANNERS[(i % #BANNERS) + 1]; break end
+    end
+    remember()
+    if a then a.banner = next_banner end
+    fact.nx_banner_mode = next_banner
+    touch(true)
+end)
+
+on("nx_arrangement", function(v)
+    local i = math.floor(tonumber(v) or 0)
+    if not arrs[i] then return end
+    active_i = i
+    sel = 0
+    touch(true)
+end)
+
+on("nx_tidy", function()
+    local a = node_list()
+    local canvas = canvas_of()
+    if not a or not canvas then return end
+    remember()
+    a.nodes = nexuslayout.tidy(a.nodes, canvas, 8)
+    touch(true)
+end)
+
+-- RESTORE CENTRE: the core goes back to the middle. The node that was there takes the
+-- slot the core left, exactly as a focus swap does.
+on("nx_restore_centre", function()
+    local a = node_list()
+    local canvas = canvas_of()
+    if not a or not canvas then return end
+    for i, node in ipairs(a.nodes) do
+        if node.vis and node.type == "core" then
+            remember()
+            local out, ok = nexuslayout.focus(a.nodes, "core", canvas)
+            if ok then a.nodes = out end
+            a.focus = "core"
+            sel = i
+            touch(true)
+            return
+        end
+    end
+end)
+
+-- Ctrl+Z and Ctrl+Shift+Z walk the layout history; each step is a whole arrangement, so a
+-- focus swap and the slot it moved are undone together.
+on("nx_undo", function()
+    local restored, ok = nexusnode.undo(past, future, arrs)
+    if not ok then return end
+    arrs = restored
+    if not arrs[active_i] then active_i = 1 end
+    sel = 0
+    save()
+    publish()
+end)
+on("nx_redo", function()
+    local restored, ok = nexusnode.redo(past, future, arrs)
+    if not ok then return end
+    arrs = restored
+    if not arrs[active_i] then active_i = 1 end
+    sel = 0
+    save()
+    publish()
+end)
 
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
@@ -118,17 +652,94 @@ pcall(sys.watch, "files:" .. FILE, function()
     local count = (type(settings.nexus) == "table" and type(settings.nexus.arrangements) == "table")
         and #settings.nexus.arrangements or 0
     if last_arr_count ~= count then
-        sync_model()
+        choose()
+        publish()
     end
 end)
 
+-- Presence and the readings a compact body shows come from the same services the plate
+-- always used; each watcher only republishes the model, never writes the settings.
 pcall(sys.watch, "battery", function(b)
     present.battery = type(b) == "table" and b.present == true
-    sync_model()
+    live.power_on = present.battery
+    live.power = type(b) == "table" and (tonumber(b.percent) or 0) or 0
+    live.charging = type(b) == "table" and b.charging == true
+    publish()
 end)
 pcall(sys.watch, "brightness", function(b)
     present.brightness = type(b) == "table" and b.present == true
-    sync_model()
+    live.bright_on = present.brightness
+    live.bright = type(b) == "table" and (tonumber(b.level) or 0) or 0
+    publish()
+end)
+pcall(sys.watch, "network", function(n)
+    if type(n) ~= "table" then return end
+    live.net_on = n.online == true
+    live.net_name = str(n.name, "")
+    live.net_kind = str(n.kind, "none")
+    publish()
+end)
+pcall(sys.watch, "bluetooth", function(b)
+    if type(b) ~= "table" then return end
+    live.bt_present = b.present == true
+    live.bt_on = b.powered == true
+    publish()
+end)
+pcall(sys.watch, "clock", function(c)
+    if type(c) ~= "table" then return end
+    live.time = str(c.time, "--:--")
+    live.date = str(c.date, "")
+    publish()
+end)
+pcall(sys.watch, "workspaces", function(w)
+    if type(w) ~= "table" then return end
+    if tonumber(w.active) then live.ws = math.floor(tonumber(w.active)) end
+    spaces = nexus.ws_rows(w.list, 10)
+    publish()
+end)
+
+-- The keyboard walks the nodes that are on the canvas, in the arrangement's own order,
+-- and wraps, so Tab never strands the selection on a removed node.
+on("nx_cycle_sel", function()
+    local a = node_list()
+    local p = present_set()
+    if not a then return end
+    local mode = a.mode or "circuit"
+    local order = {}
+    for i, node in ipairs(a.nodes) do
+        if node.vis and nexusnode.available(node.type, p) and (mode ~= "minimal" or node.essential) then
+            order[#order + 1] = i
+        end
+    end
+    if #order == 0 then return end
+    local next_sel = order[1]
+    for _, i in ipairs(order) do
+        if i > sel then next_sel = i; break end
+    end
+    sel = next_sel
+    publish()
+end)
+
+-- The mixer's two writes: a press mutes a stream, a wheel sets its level. The scene keeps
+-- the stream id beside the event because a service call needs both the id and the level.
+on("nx_app_mute", function(v)
+    local id = math.floor(tonumber(v) or 0)
+    if id <= 0 then return end
+    local ok = pcall(sys.call, "audio.app_mute", id)
+    if not ok then report_control_failure("STREAM MUTE") end
+end)
+on("nx_app_vol", function()
+    local id = math.floor(tonumber(fact.nx_app_sid) or 0)
+    local level = tonumber(fact.nx_app_lvl)
+    if id <= 0 or not level then return end
+    local ok = pcall(sys.call, "audio.app_volume", id, math.max(0, math.min(1, level)))
+    if not ok then report_control_failure("STREAM VOLUME") end
+end)
+on("nx_ws_focus", function(v)
+    local id = math.floor(tonumber(v) or 0)
+    if id <= 0 then return end
+    local ok = pcall(sys.call, "workspaces.focus", id)
+    if not ok then report_control_failure("WORKSPACE") end
 end)
 
 -- The glow the plate carries follows the theme's finish, as the bar's does.
@@ -187,7 +798,13 @@ local function read_routes(audio)
     if type(audio) ~= "table" then return end
     routes.out = type(audio.outputs) == "table" and audio.outputs or {}
     routes.input = type(audio.inputs) == "table" and audio.inputs or {}
+    live.volume = tonumber(audio.volume) or live.volume
+    live.muted = audio.muted == true
+    live.input = tonumber(audio.input) or live.input
+    live.input_muted = audio.input_muted == true
+    mix = nexus.app_rows(audio.apps, 7)
     publish_routes()
+    publish()
 end
 pcall(sys.watch, "audio", read_routes)
 local routed, initial_audio = pcall(sys.ask, "audio")
@@ -321,18 +938,23 @@ local function sample_live()
             text.nx_temp_value = "N/A"
         end
     end)
-    sync_model()
+    publish()
     after(2000, sample_live)
 end
+
+-- Seed before the first publish, so the model the scene receives on start is the one the
+-- settings file will carry from then on.
+local seeded = choose()
+publish()
+if seeded then save() end
 sample_live()
-sync_model()
 
 -- ── The controls ────────────────────────────────────────────
 -- A wheel asks for a new level every notch; the system is told at most every 40 ms, always
 -- the latest. The services remain the source of truth for displayed values. If a command
 -- raises an error, the footer reports which operation failed without exposing raw internals.
 local notice_serial = 0
-local function report_control_failure(label)
+function report_control_failure(label)
     notice_serial = notice_serial + 1
     local serial = notice_serial
     text.nx_notice_text = label .. " FAILED"
@@ -371,16 +993,6 @@ local function request(kind, v)
     if not flushing then flushing = true; after(40, flush) end
 end
 
-on("nx_about", function()
-    local on = not fact.nx_about_on
-    fact.nx_about_on = on
-    if on then fact.nx_audio_on = false end
-end)
-on("nx_audio", function()
-    local on = not fact.nx_audio_on
-    fact.nx_audio_on = on
-    if on then fact.nx_about_on = false end
-end)
 on("nx_out_cycle", function()
     local id = nexus.next_device(routes.out)
     if id then control_call("OUTPUT", "audio.default", id) end

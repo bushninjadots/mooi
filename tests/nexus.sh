@@ -127,57 +127,102 @@ say "emit nx_pin" >/dev/null
 if wait_value nexus nx_pinned false 10; then ok "pin control turns pinning off"; else bad "pin control did not turn pinning off"; fi
 
 if [ "$banner_ok" -eq 1 ]; then
-    echo "the identity banner is drawn as a band copy"
+    echo "the imported identity banner is drawn"
     if wait_value nexus nx_banner_on true 20; then ok "the imported banner is drawn"; else bad "the imported banner was not drawn"; fi
-    band=''
-    for _ in $(seq 1 30); do
-        band=$(get nx_banner_path)
-        case "$band" in *-228-band.jpg) break ;; esac
-        sleep 0.2
-    done
-    case "$band" in
-        *-228-band.jpg) ok "the plate draws a band copy, not the photograph" ;;
-        *) bad "the plate did not make a band copy (path '$band')" ;;
+    banner_path=$(get nx_banner_path)
+    case "$banner_path" in
+        "$out"/*) ok "the banner is read from mooi's own data folder" ;;
+        *) bad "the banner path is outside the data folder ('$banner_path')" ;;
     esac
-    if [ -f "$band" ]; then ok "the band copy is in mooi's data folder"; else bad "the band copy is missing"; fi
+    if [ -f "$banner_path" ]; then ok "the imported banner is where the plate reads it"; else bad "the imported banner is missing"; fi
 fi
 
-echo "the layout hides, reorders and restores every module"
-is "every module starts on" "$(get nx_mod_count)" 6
-is "every control card starts on" "$(get nx_tile_count)" 4
-is "the player starts on" "$(get nx_mod_on_player)" 1
-is "three named layouts start" "$(get nxlayout.count)" 3
+echo "the workspace starts from three arrangements"
 is "three arrangements are seeded" "$(get nx_arrangement_count)" 3
+is "the showing arrangement is named" "$(get nx_arrangement_name)" FULL
 case "$(get nx_node_count)" in
     8|9|10) ok "the default arrangement has 8 to 10 anchors" ;;
     *) bad "default arrangement has $(get nx_node_count) nodes" ;;
 esac
 is "the centre starts on the core" "$(get nx_focus)" core
 is "the mode starts as circuit" "$(get nx_mode)" circuit
-say "emit nx_layout" >/dev/null
-if wait_value nexus nx_layout_on true 10; then ok "the layout panel opens"; else bad "the layout panel did not open"; fi
-say "emit nx_mod_toggle 1" >/dev/null
-if wait_value nexus nx_mod_on_display 0 10; then ok "a card can be put away"; else bad "the card was not put away"; fi
-is "the cards close the gap" "$(get nx_tile_count)" 3
-say "emit nx_mod_up 9" >/dev/null
-if wait_value nexus nx_mod_slot_tx 4 10; then ok "a plate can be moved earlier in its band"; else bad "the plate did not move"; fi
-is "the plate it passed takes its place" "$(get nx_mod_slot_rx)" 5
-say "emit nx_mod_toggle 1" >/dev/null
-if wait_value nexus nx_tile_count 4 10; then ok "a hidden card can be turned back on"; else bad "the card did not come back"; fi
-say "emit nx_mod_reset" >/dev/null
-if wait_value nexus nx_mod_slot_cpu 0 10; then ok "the catalogue order comes back"; else bad "the order was not restored"; fi
-is "the instruments are all back" "$(get nx_mod_count)" 6
-is "the player is back" "$(get nx_mod_on_player)" 1
+is "the banner starts full" "$(get nx_banner_mode)" full
 
-echo "a named layout switches the plate and comes back"
-say "emit nx_layout_pick 2" >/dev/null
-if wait_value nexus nx_tile_count 2 10; then ok "MINIMAL keeps two cards"; else bad "MINIMAL did not apply"; fi
-is "MINIMAL leaves the instruments out" "$(get nx_mod_count)" 0
-is "MINIMAL keeps the player" "$(get nx_mod_on_player)" 1
-say "emit nx_layout_pick 0" >/dev/null
-if wait_value nexus nx_mod_count 6 10; then ok "FULL comes back"; else bad "FULL did not come back"; fi
-say "emit nx_layout" >/dev/null
-if wait_value nexus nx_layout_on false 10; then ok "the layout panel closes"; else bad "the layout panel did not close"; fi
+echo "the node field publishes one row per drawable node"
+is "the model holds the canvas rows" "$(get nx_nodes.count)" "$(get nx_node_count)"
+is "the first row carries a whole-pixel x" "$(get nx_nodes.0.x | grep -E '^-?[0-9]+$' | wc -l | tr -d ' ')" 1
+is "the first row carries a reading" "$(get nx_nodes.0.value | grep -v '^$' | wc -l | tr -d ' ')" 1
+is "the first row carries its size limits" "$(get nx_nodes.0.minw | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
+
+echo "a node is selected, moved and put back"
+say "emit nx_cycle_sel" >/dev/null
+if wait_value nexus nx_sel 1 10; then ok "Tab selects the first node"; else bad "Tab did not select a node"; fi
+say "fact nx_cw 1600" >/dev/null
+say "fact nx_ch 900" >/dev/null
+say "fact nx_gx 304" >/dev/null
+say "fact nx_gy 208" >/dev/null
+say "emit nx_drop 1" >/dev/null
+if wait_value nexus nx_nodes.0.x 304 10; then ok "a dropped node keeps its snapped x"; else bad "the drop did not move the node (x $(get nx_nodes.0.x))"; fi
+is "a dropped node keeps its snapped y" "$(get nx_nodes.0.y)" 208
+say "emit nx_min 1" >/dev/null
+if wait_value nexus nx_nodes.0.mini true 10; then ok "a node's body can be minimized"; else bad "the body did not minimize"; fi
+say "emit nx_min 1" >/dev/null
+if wait_value nexus nx_nodes.0.mini false 10; then ok "a minimized node restores its body"; else bad "the body did not come back"; fi
+
+echo "a node is removed from the layout and restored"
+before=$(get nx_node_count)
+say "emit nx_remove 1" >/dev/null
+if wait_value nexus nx_removed_count 1 10; then ok "the node leaves the canvas"; else bad "the node was not removed"; fi
+is "the canvas is one node lighter" "$(get nx_node_count)" "$((before - 1))"
+is "the drawer names what was removed" "$(get nx_removed.0.title)" "Nexus Core"
+say "emit nx_restore 1" >/dev/null
+if wait_value nexus nx_removed_count 0 10; then ok "the removed node goes back"; else bad "the node was not restored"; fi
+is "the canvas count comes back" "$(get nx_node_count)" "$before"
+
+echo "focus swaps the centre and the mode hides what is not essential"
+say "emit nx_focus_node 2" >/dev/null
+if wait_value nexus nx_focus system 10; then ok "a node can take the centre"; else bad "the focus did not move"; fi
+is "the status strip names the centre" "$(get nx_focus_name)" "System"
+say "emit nx_mode_switch 1" >/dev/null
+if wait_value nexus nx_mode minimal 10; then ok "MINIMAL applies"; else bad "MINIMAL did not apply"; fi
+is "MINIMAL draws only the essential nodes" "$(get nx_node_count)" 4
+say "emit nx_mode_switch 0" >/dev/null
+if wait_value nexus nx_mode circuit 10; then ok "CIRCUIT comes back"; else bad "CIRCUIT did not come back"; fi
+
+echo "arrangements and the banner switch from the header"
+say "emit nx_arrangement 3" >/dev/null
+if wait_value nexus nx_arrangement_name MINIMAL 10; then ok "the third arrangement shows"; else bad "the arrangement did not switch"; fi
+say "emit nx_arrangement 1" >/dev/null
+if wait_value nexus nx_arrangement_name FULL 10; then ok "the first arrangement comes back"; else bad "the arrangement did not come back"; fi
+say "emit nx_banner_cycle" >/dev/null
+if wait_value nexus nx_banner_mode compact 10; then ok "the banner steps down to compact"; else bad "the banner did not step"; fi
+is "the banner's name follows" "$(get nx_banner_name)" "COMPACT"
+say "emit nx_banner_cycle" >/dev/null
+if wait_value nexus nx_banner_mode strip 10; then ok "the banner steps to the strip"; else bad "the banner did not reach the strip"; fi
+say "emit nx_banner_cycle" >/dev/null
+if wait_value nexus nx_banner_mode hidden 10; then ok "the banner can be hidden"; else bad "the banner did not hide"; fi
+say "emit nx_banner_cycle" >/dev/null
+if wait_value nexus nx_banner_mode full 10; then ok "the banner wraps to full"; else bad "the banner did not wrap"; fi
+
+echo "tidy keeps every node on the canvas"
+say "fact nx_cw 1600" >/dev/null
+say "fact nx_ch 900" >/dev/null
+say "emit nx_tidy" >/dev/null
+sleep 0.4
+fits=1
+for i in 0 1 2 3 4 5 6 7 8 9; do
+    x=$(get "nx_nodes.$i.x")
+    [ -z "$x" ] && continue
+    w=$(get "nx_nodes.$i.w")
+    [ $((x + w)) -le 1600 ] 2>/dev/null || fits=0
+done
+if [ "$fits" -eq 1 ]; then ok "no node outgrows the canvas after TIDY"; else bad "a node sits outside the canvas after TIDY"; fi
+
+echo "safe mode leaves the settings file alone"
+if command -v jq >/dev/null 2>&1; then
+    saved=$(jq -r '(.nexus.arrangements // []) | length' "$out/data/pleamar/mooi/settings.json" 2>/dev/null)
+    is "no arrangement was written under MOOI_SAFE=1" "${saved:-0}" 0
+fi
 
 echo "the system overview answers from local reads, and toggles"
 if wait_value nexus nx_telemetry_on true 40; then ok "the local collector reports itself ready"; else bad "the local collector never reported ready"; fi
@@ -186,71 +231,43 @@ cpu=''
 for _ in $(seq 1 30); do cpu=$(get nx_cpu_value); case "$cpu" in *%) break ;; esac; sleep 0.2; done
 is "the CPU load was sampled" "$(printf '%s' "$cpu" | grep '%' | wc -l | tr -d ' ')" 1
 is "the root filesystem was read" "$(get nx_disk_value | grep 'used' | wc -l | tr -d ' ')" 1
-say "emit nx_about" >/dev/null
-if wait_value nexus nx_about_on true 10; then ok "the overview opens"; else bad "the overview did not open"; fi
-say "emit nx_about" >/dev/null
-if wait_value nexus nx_about_on false 10; then ok "the overview closes back to the controls"; else bad "the overview did not close"; fi
+echo "the focused node carries its detail body"
+say "emit nx_focus_node 2" >/dev/null
+if wait_value nexus nx_focus system 10; then ok "the system node takes the centre"; else bad "the system node did not focus"; fi
+is "the detail body publishes its rows" "$(get nx_nodes.1.rows)" 8
+is "the first row is labelled" "$(get nx_nodes.1.r1l)" "DISTRIBUTION"
+is "the second row carries a reading" "$(get nx_nodes.1.r2v | grep -v '^$' | wc -l | tr -d ' ')" 1
 
-echo "the audio view answers from the sound server"
-say "emit nx_audio" >/dev/null
-if wait_value nexus nx_audio_on true 10; then ok "the audio view opens"; else bad "the audio view did not open"; fi
-is "the views are exclusive" "$(get nx_about_on)" false
+echo "RESTORE CENTRE puts the core back, and the keys walk the history"
+say "emit nx_restore_centre" >/dev/null
+if wait_value nexus nx_focus core 10; then ok "RESTORE CENTRE re-focuses the core"; else bad "the core did not come back to the centre"; fi
+say "fact nx_cw 1600" >/dev/null
+say "fact nx_ch 900" >/dev/null
+home_x=$(get nx_nodes.0.x)
+is "the core is back on the canvas" "$(get nx_nodes.0.focus)" true
+say "fact nx_gx 416" >/dev/null
+say "fact nx_gy 320" >/dev/null
+say "emit nx_drop 1" >/dev/null
+if wait_value nexus nx_nodes.0.x 416 10; then ok "a second drop records a new position"; else bad "the second drop did not land"; fi
+say "emit nx_undo" >/dev/null
+if wait_value nexus nx_nodes.0.x "$home_x" 10; then ok "Ctrl+Z puts the node back"; else bad "undo did not restore the position (x $(get nx_nodes.0.x))"; fi
+say "emit nx_redo" >/dev/null
+if wait_value nexus nx_nodes.0.x 416 10; then ok "Ctrl+Shift+Z brings the drop back"; else bad "redo did not restore the drop"; fi
+
+echo "the audio detail body answers from the sound server"
+say "emit nx_focus_node 5" >/dev/null
+if wait_value nexus nx_nodes.4.r1l "OUTPUT" 10; then ok "the audio node publishes its routing rows"; else bad "the audio rows were not published"; fi
+is "the detail body stops at four rows" "$(get nx_nodes.4.rows)" 4
 is "the microphone level is answered" "$(get audio.input | grep -E '^[0-9]+([.][0-9]+)?$' | wc -l | tr -d ' ')" 1
 is "the Bluetooth presence is answered" "$(get bluetooth.present | grep -E '^(true|false)$' | wc -l | tr -d ' ')" 1
-bt_count=$(get btdev.count)
-is "the Bluetooth device list is filled" "$(printf '%s' "$bt_count" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
-if [ "${bt_count:-0}" -gt 0 ] 2>/dev/null; then
-    is "the first Bluetooth row carries a name" "$(get btdev.0.name | grep -v '^$' | wc -l | tr -d ' ')" 1
-fi
-say "emit nx_audio" >/dev/null
-if wait_value nexus nx_audio_on false 10; then ok "the audio view closes back to the controls"; else bad "the audio view did not close"; fi
+is "the stream list is answered" "$(printf '%s' "$(get nx_mix.count)" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
 
-echo "the application mixer reads the sound server's streams"
-say "emit nx_mixer" >/dev/null
-if wait_value nexus nx_mixer_on true 10; then ok "the mixer opens"; else bad "the mixer did not open"; fi
-is "the audio view is closed" "$(get nx_audio_on)" false
-is "the overview is closed" "$(get nx_about_on)" false
-streams=$(get nxapp.count)
-is "the stream list is filled" "$(printf '%s' "$streams" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
-if [ "${streams:-0}" -gt 0 ] 2>/dev/null; then
-    is "the first stream row carries a name" "$(get nxapp.0.name | grep -v '^$' | wc -l | tr -d ' ')" 1
-fi
-say "emit nx_mixer" >/dev/null
-if wait_value nexus nx_mixer_on false 10; then ok "the mixer closes back to the controls"; else bad "the mixer did not close"; fi
-
-echo "the workspace view lists the compositor's workspaces"
-say "emit nx_spaces" >/dev/null
-if wait_value nexus nx_spaces_on true 10; then ok "the workspace view opens"; else bad "the workspace view did not open"; fi
-is "the mixer is closed" "$(get nx_mixer_on)" false
-ws_count=$(get nxws.count)
-is "the workspace list is filled" "$(printf '%s' "$ws_count" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
-if [ "${ws_count:-0}" -gt 0 ] 2>/dev/null; then
-    is "the first workspace carries an id" "$(get nxws.0.id | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
-fi
-say "emit nx_spaces" >/dev/null
-if wait_value nexus nx_spaces_on false 10; then ok "the workspace view closes back to the controls"; else bad "the workspace view did not close"; fi
-
-echo "the power view reads the battery and arms without acting"
-say "emit nx_power" >/dev/null
-if wait_value nexus nx_power_on true 10; then ok "the power view opens"; else bad "the power view did not open"; fi
-is "the mixer is closed" "$(get nx_mixer_on)" false
-is "the battery presence is answered" "$(get battery.present | grep -E '^(true|false)$' | wc -l | tr -d ' ')" 1
-if [ "$(get battery.present)" = true ]; then
-    health=''
-    for _ in $(seq 1 30); do
-        health=$(get nx_battery_health)
-        case "$health" in "HEALTH "[0-9]*%) break ;; esac
-        sleep 0.2
-    done
-    is "the battery health was read from UPower" "$(printf '%s' "$health" | grep -E '^HEALTH [0-9]+%$' | wc -l | tr -d ' ')" 1
-    is "the battery time is answered or explained" "$(get nx_battery_time | grep -v '^$' | wc -l | tr -d ' ')" 1
-fi
-say "emit nx_suspend" >/dev/null
-if wait_value nexus nx_armed 1 10; then ok "a session action arms on the first press"; else bad "the session action did not arm"; fi
-sleep 3.2
-is "the armed action expires without acting" "$(get nx_armed)" 0
-say "emit nx_power" >/dev/null
-if wait_value nexus nx_power_on false 10; then ok "the power view closes back to the controls"; else bad "the power view did not close"; fi
+echo "the workspaces detail body lists the compositor's workspaces"
+say "emit nx_focus_node 7" >/dev/null
+if wait_value nexus nx_nodes.6.kind 10 10; then ok "the workspaces node takes the centre"; else bad "the workspaces node did not focus"; fi
+is "the workspace list is answered" "$(printf '%s' "$(get nx_ws.count)" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
+say "emit nx_restore_centre" >/dev/null
+if wait_value nexus nx_focus core 10; then ok "the core can take the centre back"; else bad "the core did not return"; fi
 
 bsay "emit open_nexus" >/dev/null
 if wait_gone; then nexus_started=0; ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi

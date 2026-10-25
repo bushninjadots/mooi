@@ -173,4 +173,57 @@ function M.move_step(node, dx, dy, canvas, grid)
     return M.clamp(x, y, node.w, node.h, canvas)
 end
 
+-- ── arrangement operations ───────────────────────────────────
+-- A drop, a resize and a restore all end the same way: the node in the arrangement
+-- holds snapped, clamped numbers, and the caller decides when to persist. Each
+-- returns whether anything changed, so a no-op never costs a settings write.
+
+-- Move a node to a canvas position. The scene clamps too, so an off-canvas drop
+-- from a narrow window cannot put the node somewhere it can never be grabbed again.
+function M.place(node, x, y, canvas, grid)
+    if type(node) ~= "table" or not canvas then return false end
+    local px, py = M.clamp(M.snap(tonumber(x) or node.x, grid), M.snap(tonumber(y) or node.y, grid),
+        node.w, node.h, canvas)
+    if px == node.x and py == node.y then return false end
+    node.x, node.y = px, py
+    return true
+end
+
+-- Resize within the type's min/max. Snapping happens before the bounds so the grip
+-- cannot step a node past its own limit.
+function M.resize(node, w, h, grid)
+    if type(node) ~= "table" then return false end
+    local nw, nh = M.bounds(node.type, tonumber(w) or node.w, tonumber(h) or node.h)
+    nw, nh = M.bounds(node.type, M.snap(nw, grid), M.snap(nh, grid))
+    if nw == node.w and nh == node.h then return false end
+    node.w, node.h = nw, nh
+    return true
+end
+
+-- A removed node keeps its slot in the arrangement, so removing never shifts the
+-- indices the scene holds. Restoring re-hides nothing: a node that would land on
+-- a neighbour goes to the first free slot instead.
+function M.restore(nodes, index, canvas, grid)
+    if type(nodes) ~= "table" or not canvas then return false end
+    local node = nodes[index]
+    if type(node) ~= "table" or node.vis then return false end
+    local others = {}
+    for i, other in ipairs(nodes) do
+        if i ~= index and other.vis then others[#others + 1] = other end
+    end
+    local clash = false
+    for _, other in ipairs(others) do
+        if M.overlap(node, other, 0) then
+            clash = true
+            break
+        end
+    end
+    if clash then
+        node.x, node.y = M.free_slot(others, node.type, canvas, grid)
+    end
+    node.x, node.y = M.clamp(node.x, node.y, node.w, node.h, canvas)
+    node.vis = true
+    return true
+end
+
 return M

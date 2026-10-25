@@ -27,10 +27,68 @@ scenes compile. `tests/nexus.sh` → the four new model checks pass; the run is
 already failing at the start of S1 (they name features this branch does not
 carry). No new failure.
 
-**Not visible yet.** The plate still draws the Phase-3 controls; the node model
-is data only.
+## S2 · Workspace shell (branch `nexus/s1-model`)
 
-**Next.** S2 workspace shell.
+The model is on screen now, and the plate's hand-placed blocks are gone:
+
+- **Surface.** One full-window overlay: a 44 px header (mark, `CONTROL NEXUS`, the mode,
+  `CIRCUIT`/`MINIMAL`, the arrangement chips, `VIEWS`, `TIDY`, `LOCK`, `×`), the identity banner
+  at `FULL 114` / `COMPACT 74` / `STRIP 44` / `HIDDEN 0`, the canvas and a 30 px status strip.
+- **Nodes.** `model nx_nodes` carries one row per drawable node — title, reading, note, bar,
+  tone, position, size limits, selection, focus, minimized — and the scene draws the rows.
+  A press selects, a drag past 4 px moves (snapped to 8 px, clamped to the canvas), the corner
+  grip resizes within the type's min/max, and the menu offers **FOCUS AT CENTRE**, **MINIMIZE**
+  and **REMOVE FROM LAYOUT**. `Tab` walks the nodes, the arrows move one step, `Enter` focuses,
+  `Delete` removes, `Escape` cancels a drag, then closes the drawer, then closes Nexus.
+- **Arrangements.** The header chips switch FULL / FOCUS / MINIMAL; the mode switch applies
+  MINIMAL's essential-only filter; the banner chip cycles the four heights; `TIDY` repacks on
+  the grid. Every gesture writes the settings once, and `MOOI_SAFE=1` refuses the write.
+- **VIEWS drawer (temporary).** SYSTEM (overview, COPY DIAGNOSTICS and the arrangement's removed
+  nodes with **RESTORE**), AUDIO (routing, microphone, output level, Bluetooth), MIXER (one row
+  per stream, wheel for the level, press to mute) and SPACES (the compositor's workspaces).
+- **PIN** now locks the arrangement against drag and resize: a full-window surface has no
+  outside left to press (D76).
+
+**Verification.** `bin/mooi check` → **231 unit tests, 0 failed**, five scenes compile.
+`tests/nexus.sh` → **60 checks, 0 failed** in the isolated lab runtime: seeded arrangements, a
+snapped drop, minimize/restore, remove/restore, focus at centre, MINIMAL, arrangement switching,
+the four banner heights, TIDY, both drawer tabs and the safe-mode refusal. The script's
+inherited assertions for the D72 layout panel and the mixer/spaces/power views — features this
+branch does not carry — were replaced by the node checks.
+
+**Not checked.** A real pointer dragging a node (the facts were driven directly), a real
+pointer on the resize grip and the node menu, and a visual pass at 1366×768 and 2560×1440.
+
+## S3 · Centre focus (branch `nexus/s1-model`)
+
+The node in the middle is a detail body now, and the temporary drawer is gone:
+
+- **Detail bodies.** A focused node draws its reading, its bar and up to eight labelled rows,
+  published by the logic (`rows`, `r1l`…`r8l`, `r1v`…`r8v`). System carries the overview's
+  eight rows and **COPY DIAGNOSTICS**; Audio carries output, input, microphone, Bluetooth and
+  up to four application streams with the plate's own press/wheel controls; Display answers the
+  wheel with the backlight; Workspaces lists the compositor's spaces; Media carries the
+  transport; Core, CPU, Memory, GPU, Thermal, Storage, Network, Clock and Power show four
+  readings each. A missing provider reads `N/A`.
+- **RESTORE CENTRE.** The header offers it whenever the middle is not the core; the node that
+  was centred inherits the vacated slot, as the focus swap already did.
+- **Undo.** `Ctrl+Z` and `Ctrl+Shift+Z` walk up to twenty deep-copied arrangements, recorded
+  before every move, resize, focus, removal, restore, mode or banner change, and TIDY. A step is
+  a whole arrangement, so a focus swap undoes together with the slot it displaced.
+- **The VIEWS drawer is deleted.** Every panel it held now lives in its own node's detail body
+  (D77), so nothing is reachable in two places.
+
+**Verification.** `bin/mooi check` → **233 unit tests, 0 failed**, five scenes compile.
+`tests/nexus.sh` → **72 checks, 0 failed**: the System detail's eight rows, the Audio detail's
+four routing rows, RESTORE CENTRE, a drop undone and redone by position, and the stream and
+workspace lists, alongside every S2 check.
+
+**Not checked.** The detail controls from a real pointer (cycling the output device, muting a
+stream, the brightness wheel), a media transport press against a live player, and the detail
+body at 1366×768, where the rows and the transport share less room.
+
+**Next.** S4 connections: the authored graph, routing, hover inspection, isolation and edge
+counts, so the canvas shows how the nodes relate.
 
 ## Current phase
 

@@ -231,15 +231,47 @@ function M.seed_arrangements(legacy)
     legacy = type(legacy) == "table" and legacy or {}
     local full = M.default_nodes()
 
-    if type(legacy.modules) == "table" then
-        local keep = { core = true, system = true, clock = true }
-        for _, id in ipairs(legacy.modules) do
-            local mapped = LEGACY[id]
-            if mapped then keep[mapped] = true end
+    -- Determine which legacy modules to keep visible.
+    -- If layouts are provided, they take complete precedence over the modules list.
+    -- If no layouts, fall back to the modules list (or default if neither exist).
+    -- The layouts may contain either old plate ids (mapped through LEGACY) or new node ids directly.
+    local have_layouts = type(legacy.layouts) == "table"
+    local have_modules = type(legacy.modules) == "table"
+    local keep = { core = true, system = true, clock = true }
+    -- A file that never knew the plate (a fresh install, or a hand-written one) hides
+    -- nothing: every anchor the machine can support belongs on the canvas. Only a file
+    -- that recorded what was showing gets to keep some nodes off it.
+    if not have_layouts and not have_modules then
+        for _, node in ipairs(full) do keep[node.type] = true end
+    end
+
+    local function apply_modules(module_ids)
+        -- Reset to defaults, then apply the given module ids
+        keep = { core = true, system = true, clock = true }
+        for _, id in ipairs(module_ids) do
+            -- Try LEGACY mapping first (old plate ids), then use id directly (new node ids)
+            local mapped = LEGACY[id] or id
+            if type(mapped) == "string" and #mapped > 0 then
+                keep[mapped] = true
+            end
         end
-        for _, node in ipairs(full) do
-            node.vis = keep[node.type] == true
+    end
+
+    if have_layouts then
+        -- Use the last layout's modules; the modules list is ignored when layouts exist
+        local last_layout = nil
+        if #legacy.layouts > 0 then
+            last_layout = legacy.layouts[#legacy.layouts]
         end
+        if type(last_layout) == "table" and type(last_layout.modules) == "table" then
+            apply_modules(last_layout.modules)
+        end
+    elseif have_modules then
+        -- No layouts: use the modules list as before
+        apply_modules(legacy.modules)
+    end
+    for _, node in ipairs(full) do
+        node.vis = keep[node.type] == true
     end
 
     local focus_keep = { core = true, system = true, network = true, audio = true, storage = true, workspaces = true }
@@ -251,7 +283,8 @@ function M.seed_arrangements(legacy)
     local minimal_keep = { core = true, system = true, clock = true }
     local minimal_nodes = {}
     for _, node in ipairs(M.default_nodes()) do
-        if minimal_keep[node.type] then minimal_nodes[#minimal_nodes + 1] = node end
+        if minimal_keep[node.type] then minimal_nodes[#minimal_nodes + 1] = node
+        end
     end
 
     return {
@@ -324,6 +357,107 @@ function M.normalize_arrangements(list)
         end
     end
     return out, dropped
+end
+
+-- seed_write: migrate a v1 settings file to v2, returning (write, backup).
+-- partial/broken/missing files are left alone or seeded as appropriate.
+-- A valid v1 file is migrated and the v1 file is backed up as settings.v1.bak.
+-- Returns (false, false) if the file should not be touched.
+function M.seed_write(filename, version, v1_valid)
+    -- v1_valid: whether a v1 backup already exists
+    -- filename: the settings file name (without path)
+    -- version: the target v2 schema version
+    if filename == "partial" or filename == "broken" then
+        -- partial or broken files: leave alone
+        return false, false
+    end
+    if filename == "missing" then
+        -- missing file: seed with v2 defaults, no backup needed
+        return true, false
+    end
+    -- valid v1 file: migrate and create backup unless backup already exists
+    if version == 1 then
+        if v1_valid then
+            -- backup already exists, never overwrite
+            return true, false
+        end
+        -- valid v1 file, create backup
+        return true, true
+    end
+    -- v2 file: no v1 backup needed
+    return true, false
+end
+
+-- ── undo history ───────────────────────────────────────────
+-- The logic edits arrangements in place, so a step back needs a copy taken before the
+-- edit. Snapshots keep only what an arrangement is made of, and the list is bounded:
+-- twenty steps is the spec's limit, and an unbounded history is a leak with a nicer name.
+M.UNDO_LIMIT = 20
+
+local function copy_nodes(nodes)
+    local out = {}
+    for i, node in ipairs(nodes or {}) do
+        local one = {}
+        for key, value in pairs(node) do one[key] = value end
+        out[i] = one
+    end
+    return out
+end
+
+function M.copy_arrangements(list)
+    local out = {}
+    for i, a in ipairs(list or {}) do
+        if type(a) == "table" then
+            local hidden = {}
+            for j, id in ipairs(type(a.edges) == "table" and a.edges.hidden or {}) do hidden[j] = id end
+            local look = type(a.appearance) == "table" and a.appearance or {}
+            out[i] = {
+                name = a.name,
+                mode = a.mode,
+                banner = a.banner,
+                focus = a.focus,
+                nodes = copy_nodes(a.nodes),
+                edges = {
+                    hidden = hidden,
+                    style = type(a.edges) == "table" and a.edges.style or "circuit",
+                    width = type(a.edges) == "table" and a.edges.width or 1,
+                    animation = type(a.edges) ~= "table" or a.edges.animation ~= false,
+                },
+                appearance = {
+                    accent = look.accent or "phos",
+                    brightness = look.brightness or 100,
+                    contrast = look.contrast or 100,
+                    opacity = look.opacity or 100,
+                    glow = look.glow or 60,
+                    grid = look.grid ~= false,
+                    motion = look.motion ~= false,
+                },
+            }
+        end
+    end
+    return out
+end
+
+-- Push the state the edit is about to change. The oldest step falls off the end.
+function M.remember(past, list, limit)
+    limit = limit or M.UNDO_LIMIT
+    past[#past + 1] = M.copy_arrangements(list)
+    while #past > limit do table.remove(past, 1) end
+    return past
+end
+
+-- Step back: the current state moves to the redo list and the last snapshot comes back.
+function M.undo(past, future, list)
+    if #past == 0 then return list, false end
+    future[#future + 1] = M.copy_arrangements(list)
+    return table.remove(past), true
+end
+
+function M.redo(past, future, list)
+    if #future == 0 then return list, false end
+    past[#past + 1] = M.copy_arrangements(list)
+    while #past > M.UNDO_LIMIT do table.remove(past, 1) end
+    return table.remove(future), true
 end
 
 -- What the canvas may draw right now. Visibility is a separate decision the renderer

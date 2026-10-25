@@ -2316,12 +2316,118 @@ test("registry: seeds keep the core and map legacy plate modules", function()
         if n.type == "media" then eq(n.vis, true, "legacy player maps to media") end
     end
 end)
+test("registry: seeds follow the showing legacy layout", function()
+    local seeds = nexusnode.seed_arrangements({
+        layout = "MINIMAL",
+        layouts = {
+            { name = "FULL", modules = { "output", "display", "network", "power", "cpu",
+                "memory", "temp", "storage", "rx", "tx", "player" } },
+            { name = "MINIMAL", modules = { "output", "player" } },
+        },
+    })
+    local vis = {}
+    for _, n in ipairs(seeds[1].nodes) do vis[n.type] = n.vis end
+    eq(vis.audio, true, "output maps to audio")
+    eq(vis.media, true, "player maps to media")
+    eq(vis.core, true, "core stays visible")
+    eq(vis.display, false, "a module the layout leaves out stays hidden")
+    eq(vis.power, false, "an unused control stays hidden")
+end)
+test("registry: the legacy layouts win over the single module list", function()
+    local seeds = nexusnode.seed_arrangements({
+        modules = { "cpu" },
+        layouts = { { name = "CUSTOM", modules = { "power" } } },
+    })
+    local vis = {}
+    for _, n in ipairs(seeds[1].nodes) do vis[n.type] = n.vis end
+    eq(vis.power, true, "power maps to the power node")
+    eq(vis.cpu, nil, "the older single list is not used when layouts exist")
+end)
+test("registry: normalisation resolves focus and drops bad arrangements", function()
+    local node = { type = "core", x = 0, y = 0, w = 300, h = 200, vis = true, min = false, essential = true }
+    local out, dropped = nexusnode.normalize_arrangements({
+        { name = "ONE", mode = "circuit", banner = "full", focus = "ghost",
+            nodes = { { type = "system", x = "left", y = {}, w = "wide", h = 10, vis = true } } },
+        { name = "ONE", mode = "circuit", banner = "full", focus = "core", nodes = { node } },
+        { name = "TWO", mode = "minimal", banner = "strip", nodes = { node } },
+    })
+    eq(#out, 2, "duplicate name and the invalid entry leave two")
+    eq(dropped, 1, "the duplicate is counted")
+    eq(out[1].focus, "system", "unknown focus falls to the first node")
+    eq(out[1].nodes[1].x, 0, "a non-numeric origin becomes zero")
+    eq(out[1].nodes[1].w, nexusnode.get("system").size.w, "a non-numeric size takes the type default")
+    eq(out[2].focus, "core", "a missing focus prefers the core")
+end)
+test("registry: normalisation caps arrangements and drops unknown nodes", function()
+    local many = {}
+    for i = 1, 9 do
+        many[i] = { name = "N" .. i, mode = "circuit", banner = "compact", focus = "core",
+            nodes = { { type = "ghost", x = 0, y = 0, w = 100, h = 100, vis = true },
+                { type = "core", x = 10, y = 10, w = 300, h = 200, vis = true },
+                { type = "core", x = 20, y = 20, w = 300, h = 200, vis = true } } }
+    end
+    local out, dropped = nexusnode.normalize_arrangements(many)
+    eq(#out, 8, "eight arrangements are kept")
+    eq(dropped, 1, "the ninth is counted")
+    eq(#out[1].nodes, 1, "unknown and duplicate nodes are dropped")
+end)
+test("registry: a settings file with problems is never seed-written", function()
+    eq(nexusnode.seed_write("partial", 1, false), false, "a partial file is left alone")
+    eq(nexusnode.seed_write("broken", 1, false), false, "a broken file is left alone")
+    eq(nexusnode.seed_write("missing", nil, false), true, "a missing file is seeded")
+    local write, backup = nexusnode.seed_write("ok", 1, false)
+    eq(write, true, "a valid v1 file is migrated")
+    eq(backup, true, "the v1 file is backed up once")
+    write, backup = nexusnode.seed_write("ok", 2, false)
+    eq(write, true, "a v2 file may be seeded")
+    eq(backup, false, "a v2 file needs no v1 backup")
+    write, backup = nexusnode.seed_write("ok", 1, true)
+    eq(backup, false, "an existing backup is never overwritten")
+end)
+test("registry: a fresh file shows every anchor, a saved one shows only its modules", function()
+    local fresh = nexusnode.seed_arrangements({})
+    for _, n in ipairs(fresh[1].nodes) do
+        eq(n.vis, true, "a fresh FULL keeps " .. n.type)
+    end
+    local saved = nexusnode.seed_arrangements({ modules = { "network" } })
+    local vis = {}
+    for _, n in ipairs(saved[1].nodes) do vis[n.type] = n.vis end
+    eq(vis.network, true, "the saved module shows")
+    eq(vis.audio, false, "a module the file left out stays hidden")
+    eq(vis.core, true, "the core never hides")
+end)
 test("registry: absent providers hide their nodes", function()
     local seeds = nexusnode.seed_arrangements({})
     local visible = nexusnode.visible_nodes(seeds[1], { battery = false, brightness = false, media = false })
     for _, n in ipairs(visible) do
         eq(n.type ~= "power" and n.type ~= "display" and n.type ~= "media", true, "absent providers hide their node")
     end
+end)
+
+test("registry: undo snapshots are copies, bounded and reversible", function()
+    local list = nexusnode.seed_arrangements({})
+    local past, future = {}, {}
+    nexusnode.remember(past, list)
+    list[1].nodes[1].x = 400
+    local back, ok = nexusnode.undo(past, future, list)
+    eq(ok, true, "a step back is taken")
+    eq(back[1].nodes[1].x ~= 400, true, "the snapshot kept the old position")
+    eq(list[1].nodes[1].x, 400, "the live arrangement is untouched by the copy")
+    local forward, again = nexusnode.redo(past, future, back)
+    eq(again, true, "a step forward is taken")
+    eq(forward[1].nodes[1].x, 400, "redo restores the edited position")
+    eq(select(2, nexusnode.undo({}, {}, list)), false, "nothing to undo")
+    eq(select(2, nexusnode.redo({}, {}, list)), false, "nothing to redo")
+end)
+test("registry: the undo history stops at twenty steps", function()
+    local list = nexusnode.seed_arrangements({})
+    local past = {}
+    for i = 1, 25 do
+        list[1].nodes[1].x = i
+        nexusnode.remember(past, list)
+    end
+    eq(#past, nexusnode.UNDO_LIMIT, "the oldest steps fall off")
+    eq(past[#past][1].nodes[1].x, 25, "the newest snapshot is the state at that edit")
 end)
 
 print("nexusgraph")
@@ -2458,6 +2564,42 @@ test("layout: keyboard move is one snapped step and stays inside", function()
     local n = node("cpu", 8, 8)
     eq(nexuslayout.move_step(n, 1, 0, canvas, 8), 16, "one step right")
     eq(select(1, nexuslayout.move_step(n, -100, 0, canvas, 8)), 0, "clamped")
+end)
+test("layout: place snaps the drop and keeps the node on canvas", function()
+    local n = node("cpu", 0, 0)
+    eq(nexuslayout.place(n, 13, 21, canvas, 8), true, "moved")
+    eq(n.x, 16, "snapped x"); eq(n.y, 24, "snapped y")
+    eq(nexuslayout.place(n, 16, 24, canvas, 8), false, "a no-op is not a change")
+    nexuslayout.place(n, 9999, -40, canvas, 8)
+    eq(n.x, canvas.w - n.w, "clamped right"); eq(n.y, 0, "clamped top")
+end)
+test("layout: resize stays inside the type's bounds and the grid", function()
+    local def = require("lib/nexusnode").get("cpu")
+    local n = node("cpu", 0, 0, 210, 130)
+    nexuslayout.resize(n, 10, 9999, 8)
+    eq(n.w, def.min.w, "clamped to the minimum width")
+    eq(n.h, def.max.h, "clamped to the maximum height")
+    nexuslayout.resize(n, 240, 160, 8)
+    eq(n.w, 240, "a legal size is kept"); eq(n.h, 160, "a legal height is kept")
+    eq(nexuslayout.resize(n, 240, 160, 8), false, "unchanged size is not a change")
+end)
+test("layout: restore un-hides into its own slot when it is free", function()
+    local nodes = { node("core", 800, 300, 260, 260), node("cpu", 0, 0, 210, 130) }
+    nodes[2].vis = false
+    eq(nexuslayout.restore(nodes, 2, canvas, 8), true, "restored")
+    eq(nodes[2].vis, true, "visible again")
+    eq(nodes[2].x, 0, "kept its slot"); eq(nodes[2].y, 0, "kept its slot")
+    eq(nexuslayout.restore(nodes, 2, canvas, 8), false, "already visible")
+    eq(nexuslayout.restore(nodes, 9, canvas, 8), false, "unknown index")
+end)
+test("layout: a restore that would land on a neighbour takes a free slot", function()
+    local nodes = { node("core", 0, 0, 260, 260), node("cpu", 0, 0, 210, 130) }
+    nodes[2].vis = false
+    nexuslayout.restore(nodes, 2, canvas, 8)
+    eq(nodes[2].vis, true, "restored")
+    eq(nexuslayout.overlap(nodes[1], nodes[2], 0), false, "clear of the node that kept the slot")
+    eq(nodes[2].x % 8, 0, "snapped")
+    eq(nodes[2].x + nodes[2].w <= canvas.w, true, "on canvas")
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))
