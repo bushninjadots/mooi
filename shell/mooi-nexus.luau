@@ -30,15 +30,15 @@ local function read(name, kind)
     return ok and v or nil
 end
 
+local settings = config.parse(read(FILE), json.decode)
+local palette = read(PALETTE, "json")
+
 -- A settings write can fail either by raising or by returning false. Keep that distinction
 -- in one place so the UI never reports a change that wasn't persisted.
 local function save_settings()
     local ok, result = pcall(sys.call, "files.write", FILE, settings)
     return ok and result ~= false
 end
-
-local settings = config.parse(read(FILE), json.decode)
-local palette = read(PALETTE, "json")
 
 -- A text field can be drawn but not compared in the scene, so the presence facts and the
 -- avatar's initial are published here beside the paths, from the one identity the settings own.
