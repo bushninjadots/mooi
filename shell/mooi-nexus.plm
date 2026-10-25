@@ -262,9 +262,14 @@ scene Nexus {
     model nx_nodes max 16 { id: number; key: text; title: text; value: text; note: text;
         x: number; y: number; w: number; h: number; tone: number; bar: number; baron: bool;
         mini: bool; sel: bool; focus: bool; minw: number; minh: number; maxw: number; maxh: number;
-        kind: number; rows: number;
+        kind: number; rows: number; endsel: bool;
         r1l: text; r1v: text; r2l: text; r2v: text; r3l: text; r3v: text; r4l: text; r4v: text;
         r5l: text; r5v: text; r6l: text; r6v: text; r7l: text; r7v: text; r8l: text; r8v: text }
+    // The traces: authored in lib/nexusgraph, routed in the logic, drawn here. A row is
+    // four points at most, so the scene draws three segments and never solves a path.
+    model nx_edges max 24 { id: number; key: text; from_id: number; to_id: number; n: number; trunk: bool;
+        hot: bool; dim: bool; active: bool; label: text; meaning: text; mx: number; my: number;
+        x1: number; y1: number; x2: number; y2: number; x3: number; y3: number; x4: number; y4: number }
     model nx_removed max 16 { id: number; slot: number; key: text; title: text }
     model nx_arrs max 8 { id: number; name: text; active: bool }
     model nx_mix max 8 { id: number; sid: number; name: text; note: text; level: number; muted: bool }
@@ -347,6 +352,14 @@ scene Nexus {
     fact nx_menu = 0
     fact nx_undo_depth = 0
     fact nx_redo_depth = 0
+    fact nx_morph = 0
+    fact nx_edge_count = 0
+    fact nx_edges_hidden = 0
+    fact nx_edge_width = 1
+    fact nx_edge_labels = true
+    fact nx_edge_sel = 0
+    fact nx_hover = 0
+    fact nx_hover_edge = 0
 
     fact st_glow = 1
     // The player's own fields, kept by the logic: a text field can be drawn and interpolated, but
@@ -411,6 +424,11 @@ scene Nexus {
     event nx_cycle_sel ->        // to the logic: Tab, the next node on the canvas
     event nx_tidy ->             // to the logic: repack the arrangement on the grid
     event nx_restore_centre ->   // to the logic: put the core back at the centre
+    event nx_hover_node ->       // to the logic: the node the pointer is over (0 leaves)
+    event nx_hover_edge ->       // to the logic: the trace the pointer is over (0 leaves)
+    event nx_edge_pick ->        // to the logic: pick a trace, or put it down
+    event nx_edge_hide ->        // to the logic: hide the picked trace
+    event nx_edges_restore ->    // to the logic: bring every hidden trace back
     event nx_undo ->             // to the logic: step back one layout edit
     event nx_redo ->             // to the logic: step forward again
     event nx_app_mute ->         // to the logic: mute the stream with this id
@@ -555,6 +573,49 @@ scene Nexus {
                     }
                 }
 
+                // ── the traces: trunk under satellites, drawn before the nodes so a node
+                //    always sits on top of its own connection ──
+                for e in nx_edges {
+                    let px1 = cx + if(nx_drag == e.from_id, e.x1 + nx_dx, e.x1)
+                    let py1 = cy + if(nx_drag == e.from_id, e.y1 + nx_dy, e.y1)
+                    let px4 = cx + if(nx_drag == e.to_id, e.x4 + nx_dx, e.x4)
+                    let py4 = cy + if(nx_drag == e.to_id, e.y4 + nx_dy, e.y4)
+                    group {
+                        opacity: if(e.dim, 0.22, 1)
+                        line { from: px1, py1; to: cx + e.x2, cy + e.y2; width: if(e.hot, 2, nx_edge_width)
+                               color: if(e.hot, fl.phos, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 2 }
+                        line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: if(e.hot, 2, nx_edge_width)
+                               color: if(e.hot, fl.phos, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 3 }
+                        line { from: cx + e.x3, cy + e.y3; to: px4, py4; width: if(e.hot, 2, nx_edge_width)
+                               color: if(e.hot, fl.phos, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 4 }
+                        // a live signal leaves a mark where the trace turns
+                        box { from: cx + e.mx - 3, cy + e.my - 3; size: 6, 6; corner: 3; color: fl.phos; opacity: 0.85; show: e.active }
+                        text e.label { at: cx + e.mx + 9, cy + e.my - 9; anchor: left center; size: 7; family: "Share Tech Mono"
+                                       color: if(e.hot, fl.phos, fl.muted); show: nx_edge_labels and (e.trunk or e.hot) and nx_hover_edge != e.id }
+                        // hover inspection: what this connection means
+                        text e.meaning { at: cx + e.mx + 9, cy + e.my + 10; anchor: left center; size: 7; family: "Share Tech Mono"
+                                         color: fl.trace_lit; show: nx_hover_edge == e.id }
+
+                        zone box nx_edge_hit1 { from: min(px1, cx + e.x2) - 4, min(py1, cy + e.y2) - 4
+                                                size: abs(cx + e.x2 - px1) + 8, abs(cy + e.y2 - py1) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 2 }
+                        on enter nx_edge_hit1 { emit nx_hover_edge(e.id) }
+                        on leave nx_edge_hit1 { emit nx_hover_edge(0) }
+                        on press nx_edge_hit1 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit2 { from: min(cx + e.x2, cx + e.x3) - 4, min(cy + e.y2, cy + e.y3) - 4
+                                                size: abs(e.x3 - e.x2) + 8, abs(e.y3 - e.y2) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 3 }
+                        on enter nx_edge_hit2 { emit nx_hover_edge(e.id) }
+                        on leave nx_edge_hit2 { emit nx_hover_edge(0) }
+                        on press nx_edge_hit2 { emit nx_edge_pick(e.id) }
+                        zone box nx_edge_hit3 { from: min(cx + e.x3, px4) - 4, min(cy + e.y3, py4) - 4
+                                                size: abs(px4 - (cx + e.x3)) + 8, abs(py4 - (cy + e.y3)) + 8
+                                                cursor: pointer; role: button; label: "Trace {e.label}"; show: e.n >= 4 }
+                        on enter nx_edge_hit3 { emit nx_hover_edge(e.id) }
+                        on leave nx_edge_hit3 { emit nx_hover_edge(0) }
+                        on press nx_edge_hit3 { emit nx_edge_pick(e.id) }
+                    }
+                }
                 text "No nodes in this arrangement. Press VIEWS to bring one back." { at: cx, cy + ch / 2; anchor: left center; size: 12; family: "Exo 2"
                      color: fl.muted; show: nx_node_count < 1 }
 
@@ -568,7 +629,7 @@ scene Nexus {
                         glow: 16, if(n.focus, 0.5, 0.2) * st_glow, if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember)))
                         Chamfer(nx, ny, nw, nh, 10,
                                 mix(fl.hull_raised, fl.well, if(n.focus, 0.45, 0)),
-                                if(n.sel, fl.phos, if(n.focus, fl.trace_lit, fl.trace)),
+                                if(n.endsel, fl.flare, if(n.sel, fl.phos, if(n.focus, fl.trace_lit, fl.trace))),
                                 if(n.mini, 0.9, 0.98), if(n.sel, 1.6, 1))
                         box { from: nx + 1, ny + 1; size: max(0, nw - 2), rail - 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); opacity: 0.09 }
                         box { from: nx + 1, ny + 1; size: 3, rail - 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
@@ -699,6 +760,9 @@ scene Nexus {
                         zone box nx_frame { from: nx, ny; size: nw, nh; cursor: grab; role: item; selected: n.sel
                                             label: "{n.title}: {n.value}" }
                         on press nx_frame { nx_press = n.id; nx_dx = 0; nx_dy = 0; nx_menu = 0 }
+                        // hovering a node lights the traces that reach it
+                        on enter nx_frame { emit nx_hover_node(n.id) }
+                        on leave nx_frame { emit nx_hover_node(0) }
                         on drag nx_frame while nx_press == n.id and not nx_pinned {
                             nx_cw = cw; nx_ch = ch
                             nx_gx = clamp(n.x + drag.dx, 0, max(0, cw - n.w))
@@ -758,10 +822,35 @@ scene Nexus {
             }
 
             // ── the status strip: what is showing, and what the machine is doing ──
+            // A picked trace opens this: what it means, and the way to put it away.
+            for e in nx_edges {
+                let ex = clamp(cx + e.mx + 12, cx + 8, max(cx + 8, cx + cw - 240))
+                let ey = clamp(cy + e.my - 54, cy + 8, max(cy + 8, cy + ch - 130))
+                group {
+                    show: nx_edge_sel == e.id
+                    glow: 16, 0.4 * st_glow, fl.phos
+                    Chamfer(ex, ey, 228, 120, 8, fl.hull, fl.phos, 1, 1.2)
+                    box { from: ex, ey; size: 228, 2; color: fl.phos }
+                    text e.label { at: ex + 12, ey + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos; width: 204; lines: 1 }
+                    text e.meaning { at: ex + 12, ey + 36; anchor: left top; size: 9; family: "Exo 2"; width: 204; lines: 2; color: fl.trace_lit }
+                    zone box nx_edge_hidebtn { from: ex + 12, ey + 66; size: 100, 24; cursor: pointer; role: button; label: "Hide this trace" }
+                    CutButton(ex + 12, ey + 67, 100, "HIDE TRACE", fl.ember, nx_edge_hidebtn.hover)
+                    on press nx_edge_hidebtn { emit nx_edge_hide }
+                    zone box nx_edge_closebtn { from: ex + 120, ey + 66; size: 96, 24; cursor: pointer; role: button; label: "Close the trace menu" }
+                    CutButton(ex + 120, ey + 67, 96, "CLOSE", fl.phos, nx_edge_closebtn.hover)
+                    on press nx_edge_closebtn { emit nx_edge_pick(0) }
+                    text "RESTORE FULL NETWORK · {nx_edges_hidden, 0} HIDDEN" { at: ex + 12, ey + 104; anchor: left center; size: 7
+                         family: "Share Tech Mono"; color: fl.muted; show: nx_edges_hidden > 0 }
+                    zone box nx_edge_restorebtn { from: ex + 8, ey + 92; size: 214, 20; cursor: pointer; role: button
+                                                 label: "Bring every hidden trace back"; show: nx_edges_hidden > 0 }
+                    on press nx_edge_restorebtn { emit nx_edges_restore }
+                }
+            }
+
             Chamfer(0, sh - foot, sw, foot, 0, fl.hull, fl.trace, 0.99, 1)
             box { from: 0, sh - foot; size: sw, 1; color: fl.trace; opacity: 0.6 }
             text "{nx_focus_name} AT CENTRE" { at: 20, sh - foot / 2; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.phos }
-            text "{nx_node_count, 0} NODES · {nx_node_total, 0} IN LAYOUT · {nx_arrangement_count, 0} ARRANGEMENTS" {
+            text "{nx_node_count, 0} NODES · {nx_edge_count, 0} TRACES · {nx_edges_hidden, 0} HIDDEN" {
                 at: 240, sh - foot / 2; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
             text "{nx_status}" { at: sw / 2, sh - foot / 2; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
             text "TAB SELECTS · ARROWS MOVE · ENTER FOCUS · ESC CLOSES" { at: sw - 20, sh - foot / 2; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }

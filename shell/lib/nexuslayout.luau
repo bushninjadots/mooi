@@ -165,6 +165,23 @@ function M.focus(nodes, id, canvas)
     return out, true
 end
 
+-- One step of a move between two arrangements. Rounded, because a node is drawn and
+-- dragged in whole pixels; the scene reads the same numbers the arrangement will hold
+-- when the step reaches one.
+function M.blend(a, b, t)
+    if type(a) ~= "table" or type(b) ~= "table" then return b end
+    t = math.max(0, math.min(1, tonumber(t) or 1))
+    local function mix(key, fallback)
+        local from = tonumber(a[key]) or fallback
+        local to = tonumber(b[key]) or fallback
+        return math.floor(from + (to - from) * t + 0.5)
+    end
+    return {
+        x = mix("x", 0), y = mix("y", 0),
+        w = mix("w", 200), h = mix("h", 120),
+    }
+end
+
 -- One keyboard nudge, snapped and clamped.
 function M.move_step(node, dx, dy, canvas, grid)
     grid = tonumber(grid) or 0

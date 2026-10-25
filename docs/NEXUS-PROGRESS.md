@@ -87,8 +87,35 @@ workspace lists, alongside every S2 check.
 stream, the brightness wheel), a media transport press against a live player, and the detail
 body at 1366×768, where the rows and the transport share less room.
 
-**Next.** S4 connections: the authored graph, routing, hover inspection, isolation and edge
-counts, so the canvas shows how the nodes relate.
+## S4 · Connections (branch `nexus/s1-model`)
+
+The canvas now shows how the nodes relate:
+
+- **Traces.** The authored graph in `lib/nexusgraph` is instantiated against the nodes on the
+  canvas, filtered by the arrangement's hidden list and the mode, routed in the logic (style,
+  12 px clearance, 12 px grid) and published as `model nx_edges` — four points, label, meaning
+  and a midpoint per trace. The scene draws three segments and never solves a path; during a
+  drag the dragged node's end of the trace follows the pointer.
+- **Hover inspects.** A node's traces light when the pointer is on it; a trace shows its label
+  and meaning on hover. **A press picks** a trace: both endpoints take a flare rim and a small
+  panel offers `HIDE TRACE`, `CLOSE` and `RESTORE FULL NETWORK`. Hidden traces persist in the
+  arrangement's `edges.hidden` and undo.
+- **Focus isolates.** Outside the core, unrelated traces recede to 22 %; the focused node's own
+  edges stay lit. In MINIMAL only activity-bearing traces draw.
+- **Activity.** A trace whose provider is reporting carries a phosphor mark at its turn.
+- **Morph.** Arrangement switches (and focus swaps, RESTORE CENTRE, undo/redo) move nodes over
+  ~320 ms in eight whole-pixel steps instead of cutting (D78).
+
+**Verification.** `bin/mooi check` → **234 unit tests, 0 failed**, five scenes compile.
+`tests/nexus.sh` → **88 checks, 0 failed**: 8 traces from the authored graph, hover, pick,
+endpoint marks, hide and restore, four unrelated traces receding from a focused node, and the
+morph settling after a switch.
+
+**Not checked.** Hovering a trace and a node with a real pointer, the trace popover at a narrow
+width, and the signal marks against a busy machine (the providers were live but at idle).
+
+**Next.** S5 library and customization: the module library with honest unavailable cards, node
+settings, appearance, identity editing and arrangement management.
 
 ## Current phase
 

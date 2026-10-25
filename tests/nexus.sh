@@ -192,6 +192,7 @@ if wait_value nexus nx_mode circuit 10; then ok "CIRCUIT comes back"; else bad "
 echo "arrangements and the banner switch from the header"
 say "emit nx_arrangement 3" >/dev/null
 if wait_value nexus nx_arrangement_name MINIMAL 10; then ok "the third arrangement shows"; else bad "the arrangement did not switch"; fi
+if wait_value nexus nx_morph 0 30; then ok "the switch settles instead of cutting"; else bad "the morph never finished"; fi
 say "emit nx_arrangement 1" >/dev/null
 if wait_value nexus nx_arrangement_name FULL 10; then ok "the first arrangement comes back"; else bad "the arrangement did not come back"; fi
 say "emit nx_banner_cycle" >/dev/null
@@ -224,6 +225,40 @@ if command -v jq >/dev/null 2>&1; then
     is "no arrangement was written under MOOI_SAFE=1" "${saved:-0}" 0
 fi
 
+echo "the connection layer draws the authored graph"
+is "the model holds the drawn traces" "$(get nx_edges.count)" "$(get nx_edge_count)"
+case "$(get nx_edge_count)" in
+    5|6|7|8|9|10) ok "the default arrangement has 5 to 10 traces" ;;
+    *) bad "the default arrangement has $(get nx_edge_count) traces" ;;
+esac
+is "the first trace has at least two points" "$(get nx_edges.0.n > /dev/null 2>&1; get nx_edges.0.n | grep -E '^[2-4]$' | wc -l | tr -d ' ')" 1
+is "the first trace carries whole-pixel points" "$(get nx_edges.0.x1 | grep -E '^-?[0-9]+$' | wc -l | tr -d ' ')" 1
+say "emit nx_hover_edge 1" >/dev/null
+if wait_value nexus nx_hover_edge 1 10; then ok "hovering a trace names it"; else bad "hover did not reach the trace"; fi
+is "the hovered trace is lit" "$(get nx_edges.0.hot)" true
+say "emit nx_hover_edge 0" >/dev/null
+say "emit nx_edge_pick 1" >/dev/null
+if wait_value nexus nx_edge_sel 1 10; then ok "a press picks the trace"; else bad "the trace was not picked"; fi
+is "both endpoints are marked" "$(get nx_nodes.$(get nx_edges.0.from_id).endsel 2>/dev/null | wc -l | tr -d ' ')" 1
+before_edges=$(get nx_edge_count)
+say "emit nx_edge_hide" >/dev/null
+if wait_value nexus nx_edges_hidden 1 10; then ok "the picked trace can be hidden"; else bad "the trace was not hidden"; fi
+is "the canvas is one trace lighter" "$(get nx_edge_count)" "$((before_edges - 1))"
+say "emit nx_edges_restore" >/dev/null
+if wait_value nexus nx_edges_hidden 0 10; then ok "RESTORE FULL NETWORK brings it back"; else bad "the trace did not come back"; fi
+is "the trace count comes back" "$(get nx_edge_count)" "$before_edges"
+
+echo "focus isolates the focused node's own traces"
+say "emit nx_focus_node 2" >/dev/null
+if wait_value nexus nx_focus system 10; then ok "the system node takes the centre"; else bad "the system node did not focus"; fi
+dimmed=0
+for i in 0 1 2 3 4 5 6 7 8 9; do
+    [ "$(get nx_edges.$i.dim)" = true ] && dimmed=$((dimmed + 1))
+done
+if [ "$dimmed" -gt 0 ]; then ok "unrelated traces recede ($dimmed dimmed)"; else bad "no trace receded from the focused node"; fi
+say "emit nx_restore_centre" >/dev/null
+if wait_value nexus nx_focus core 10; then ok "the core takes the centre back"; else bad "the core did not return"; fi
+
 echo "the system overview answers from local reads, and toggles"
 if wait_value nexus nx_telemetry_on true 40; then ok "the local collector reports itself ready"; else bad "the local collector never reported ready"; fi
 is "a distribution was read" "$(get nx_distro | grep -v 'Reading system' | wc -l | tr -d ' ')" 1
@@ -243,6 +278,8 @@ say "emit nx_restore_centre" >/dev/null
 if wait_value nexus nx_focus core 10; then ok "RESTORE CENTRE re-focuses the core"; else bad "the core did not come back to the centre"; fi
 say "fact nx_cw 1600" >/dev/null
 say "fact nx_ch 900" >/dev/null
+# the focus swap morphs; read the settled position, not a frame of the move
+wait_value nexus nx_morph 0 30 >/dev/null 2>&1
 home_x=$(get nx_nodes.0.x)
 is "the core is back on the canvas" "$(get nx_nodes.0.focus)" true
 say "fact nx_gx 416" >/dev/null

@@ -2466,3 +2466,47 @@ displaced.
 72 checks, 0 failed — the detail rows for System (8) and Audio (4), RESTORE CENTRE, a drop
 undone and redone by position, the stream and workspace lists, and every earlier workspace
 check through the isolated lab runtime.
+
+## D78 · 2026-10-25 · An arrangement switch is a move, not a cut
+
+Switching arrangements used to publish the destination positions in one frame. `nexuslayout.blend`
+now mixes a node's old and new rectangle in whole pixels, and the logic steps that mix eight
+times at 40 ms (320 ms, as the spec asks) while publishing each step. The arrangement itself is
+already at the destination, so a drag or a drop taken mid-move lands on the real geometry rather
+than a displayed one. Focus swaps, RESTORE CENTRE and undo/redo use the same move, which is why
+a focus change no longer snaps the two nodes it trades places with.
+
+The morph runs entirely in the published model: no scene prop per node, no per-frame routing.
+Edges read the morphed positions because they are routed from the same rows.
+
+**Checked.** `bin/mooi check`: 234 unit tests (including `blend`'s rounding, clamping and
+endpoints), five scenes compile. `tests/nexus.sh`: `nx_morph` returns to zero after an
+arrangement switch, so the move finishes rather than sticking.
+
+## D79 · 2026-10-25 · The connection layer is routed once, drawn many frames
+
+Edges are authored in `lib/nexusgraph`, instantiated against the nodes actually on the canvas,
+given their style and the arrangement's hidden list, and routed — all in the logic — into
+`model nx_edges`: at most four points per trace, plus the label, the meaning and a midpoint.
+The scene draws three segments per trace and never solves a path, so the frame cost of a busy
+canvas is lines, not geometry.
+
+- **Hover inspects.** Entering a node lights every trace that reaches it; entering a trace shows
+  its meaning beside it. Both are facts (`nx_hover`, `nx_hover_edge`), so the scene compares
+  rather than guesses.
+- **A press picks a trace.** Its two endpoint nodes take a flare rim (`endsel`), and a small
+  panel offers `HIDE TRACE`, `CLOSE` and, when anything is hidden, `RESTORE FULL NETWORK`.
+  Hidden traces live in the arrangement's `edges.hidden`, so the choice persists and undoes.
+- **Focus isolates.** While a node other than the core holds the centre, traces that do not
+  reach it draw at 22 % opacity; the focused node's own edges stay lit.
+- **Activity.** An edge whose provider is reporting (CPU, memory, GPU, thermal, power, storage,
+  network, playback) carries a phosphor mark at its midpoint. In MINIMAL only those edges draw,
+  which is the spec's "no decorative traces".
+
+Per-edge hiding is the one interaction that needed a popover: a trace is a line, and a line
+cannot carry a menu button without becoming a node.
+
+**Checked.** `bin/mooi check`: 234 unit tests, five scenes compile. `tests/nexus.sh`: 8 traces
+drawn from the authored graph, hover lights the trace, a press picks it, both endpoints are
+marked, hiding drops the count and RESTORE FULL NETWORK brings it back, and four unrelated
+traces recede from a focused node — 88 checks, 0 failed.

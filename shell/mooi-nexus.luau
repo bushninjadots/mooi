@@ -10,6 +10,7 @@ local style = require("lib/style")
 local nexus = require("lib/nexus")
 local nexusnode = require("lib/nexusnode")
 local nexuslayout = require("lib/nexuslayout")
+local nexusgraph = require("lib/nexusgraph")
 local sysinfo = require("lib/sysinfo")
 local telemetry = require("lib/telemetry")
 
@@ -86,6 +87,11 @@ local live = {
 local arrs, active_i, sel, last_arr_count = {}, 1, 0, nil
 local mix, spaces = {}, {}
 
+-- What the connection layer is doing: the hovered node, the hovered trace and the picked one.
+-- The picked trace is kept by its id, because a republish can reorder the drawn list.
+local hover_node, hover_edge, picked_edge = 0, 0, nil
+local drawn_edges = {}
+
 -- The layout's own undo: snapshots of the arrangements taken before each edit, and the
 -- steps a redo can walk forward again. Any new edit clears the forward list.
 local past, future = {}, {}
@@ -94,11 +100,55 @@ local function remember()
     future = {}
 end
 
+-- Switching an arrangement moves every node to its new slot; 320 ms of steps makes it a
+-- move rather than a cut, and the arrangement itself is already the destination, so a
+-- drag taken mid-flight lands on the real position.
+local morph = nil
+
+-- publish is defined with the model below; the morph steps are declared first, so the
+-- name is reserved rather than reached for as a global.
+local publish
+
+local function positions(a)
+    local map = {}
+    if a then
+        for _, node in ipairs(a.nodes) do
+            map[node.type] = { x = node.x, y = node.y, w = node.w, h = node.h }
+        end
+    end
+    return map
+end
+
+local function start_morph(from)
+    if not from or next(from) == nil then return end
+    morph = { from = from, t = 0 }
+    local function step()
+        if not morph then return end
+        morph.t = math.min(1, morph.t + 0.125)
+        if morph.t >= 1 then morph = nil end
+        publish()
+        if morph then after(40, step) end
+    end
+    step()
+end
+
 -- Defined with the controls below; the mixer's handlers are declared before it, so the
 -- name is reserved here rather than reached for as a global at press time.
 local report_control_failure
 
 local function node_list() return arrs[active_i] end
+
+local function edge_live(activity)
+    if activity == "cpu" then return fact.nx_cpu_on == true end
+    if activity == "memory" then return fact.nx_ram_on == true end
+    if activity == "gpu" then return fact.nx_gpu_on == true end
+    if activity == "thermal" then return fact.nx_temp_on == true end
+    if activity == "power" then return live.power_on end
+    if activity == "storage" then return fact.nx_disk_on == true end
+    if activity == "network" then return fact.nx_net_on == true end
+    if activity == "media" then return fact.nx_has == true end
+    return false
+end
 
 local function present_set()
     return {
@@ -323,7 +373,7 @@ local function detail_rows(node)
     return out
 end
 
-local function publish()
+function publish()
     local a = node_list()
     local p = present_set()
     local mode = a and a.mode or "circuit"
@@ -348,14 +398,19 @@ local function publish()
                 if node.vis and (mode ~= "minimal" or node.essential) then
                     local value, note, bar, baron, tone = content(node, def, shown)
                     local detail = detail_rows(node)
+                    local px, py, pw, ph = node.x, node.y, node.w, node.h
+                    if morph then
+                        local step = nexuslayout.blend(morph.from[node.type] or node, node, morph.t)
+                        px, py, pw, ph = step.x, step.y, step.w, step.h
+                    end
                     local entry = {
                         id = i, key = def.id, title = def.title,
                         value = value, note = note,
-                        x = node.x, y = node.y, w = node.w, h = node.h,
+                        x = px, y = py, w = pw, h = ph,
                         tone = tone, bar = math.max(0, math.min(1, bar)), baron = baron,
                         mini = node.min == true, sel = i == sel, focus = node.type == focus,
                         minw = def.min.w, minh = def.min.h, maxw = def.max.w, maxh = def.max.h,
-                        kind = KINDS[def.id] or 0, rows = #detail,
+                        kind = KINDS[def.id] or 0, rows = #detail, endsel = false,
                     }
                     for k = 1, 8 do
                         entry["r" .. k .. "l"] = detail[k] and detail[k].label or ""
@@ -374,6 +429,61 @@ local function publish()
         for _, r in ipairs(rows) do if r.id == sel then holds = true break end end
         if not holds then sel = 0 end
     end
+
+    -- The connection layer: only edges whose two ends are on the canvas, routed once here
+    -- so the scene draws the same path every frame instead of solving it. A hidden edge is
+    -- one the user put away; a dim one is unrelated to the focused node.
+    local by_type = {}
+    for _, r in ipairs(rows) do by_type[r.key] = r end
+    local types = {}
+    for key in pairs(by_type) do types[key] = true end
+    local hidden = {}
+    if a and type(a.edges) == "table" and type(a.edges.hidden) == "table" then
+        for _, id in ipairs(a.edges.hidden) do hidden[id] = true end
+    end
+    local style = a and a.edges and a.edges.style or "circuit"
+    local edges, sel_index = {}, 0
+    drawn_edges = {}
+    for _, edge in ipairs(nexusgraph.instantiate(types)) do
+        local from, to = by_type[edge.from], by_type[edge.to]
+        if from and to and not hidden[edge.id] then
+            local active = edge_live(edge.activity)
+            if mode ~= "minimal" or active then
+                local pts = nexusgraph.route(
+                    { x = from.x, y = from.y, w = from.w, h = from.h },
+                    { x = to.x, y = to.y, w = to.w, h = to.h },
+                    { style = style, clearance = 12, step = 12 })
+                if #pts >= 2 then
+                    local id = #edges + 1
+                    drawn_edges[id] = edge.id
+                    local hot = (hover_node > 0 and (from.id == hover_node or to.id == hover_node))
+                        or picked_edge == edge.id
+                        or hover_edge == id
+                    local mid = pts[math.max(1, math.floor((#pts + 1) / 2))]
+                    local row = {
+                        id = id, key = edge.id,
+                        from_id = from.id, to_id = to.id,
+                        n = #pts, trunk = edge.kind == "trunk",
+                        hot = hot, dim = focus ~= "core" and edge.from ~= focus and edge.to ~= focus,
+                        active = active,
+                        label = edge.label, meaning = edge.meaning,
+                        mx = mid.x, my = mid.y,
+                        x1 = pts[1].x, y1 = pts[1].y,
+                        x2 = pts[2].x, y2 = pts[2].y,
+                        x3 = (pts[3] or pts[#pts]).x, y3 = (pts[3] or pts[#pts]).y,
+                        x4 = (pts[4] or pts[#pts]).x, y4 = (pts[4] or pts[#pts]).y,
+                    }
+                    edges[#edges + 1] = row
+                    if edge.id == picked_edge then
+                        sel_index = id
+                        from.endsel = true
+                        to.endsel = true
+                    end
+                end
+            end
+        end
+    end
+    if picked_edge and #edges == 0 then picked_edge = nil end
 
     local chips = {}
     for i, item in ipairs(arrs) do
@@ -400,17 +510,31 @@ local function publish()
 
     model.nx_nodes = rows
     model.nx_removed = removed
+    model.nx_edges = edges
     model.nx_arrs = chips
     model.nx_mix = streams
     model.nx_ws = blocks
     fact.nx_mix_count = #streams
     fact.nx_ws_count = #blocks
+    local hidden_count = 0
+    if a and type(a.edges) == "table" and type(a.edges.hidden) == "table" then
+        hidden_count = #a.edges.hidden
+    end
+    fact.nx_edge_count = #edges
+    fact.nx_edge_sel = sel_index
+    fact.nx_edges_hidden = hidden_count
+    fact.nx_edge_width = a and a.edges and a.edges.width or 1
+    fact.nx_edge_labels = not (type(settings.nexus) == "table" and settings.nexus.edge
+        and settings.nexus.edge.labels == false)
+    fact.nx_hover = hover_node
+    fact.nx_hover_edge = hover_edge
     fact.nx_arrangement_count = #arrs
     fact.nx_node_count = shown
     fact.nx_node_total = total
     fact.nx_removed_count = #removed
     fact.nx_undo_depth = #past
     fact.nx_redo_depth = #future
+    fact.nx_morph = morph and 1 or 0
     fact.nx_sel = sel
     fact.nx_focus = focus
     fact.nx_mode = mode
@@ -503,6 +627,7 @@ on("nx_focus_node", function(v)
     local canvas = canvas_of()
     local a = node_list()
     if not i or not canvas or not a then return end
+    local from = positions(a)
     remember()
     local out, ok = nexuslayout.focus(a.nodes, node.type, canvas)
     if ok then
@@ -510,6 +635,7 @@ on("nx_focus_node", function(v)
         a.focus = node.type
         sel = i
         touch(true)
+        start_morph(from)
     else
         a.focus = node.type
         touch(true)
@@ -590,10 +716,12 @@ end)
 
 on("nx_arrangement", function(v)
     local i = math.floor(tonumber(v) or 0)
-    if not arrs[i] then return end
+    if not arrs[i] or i == active_i then return end
+    local from = positions(node_list())
     active_i = i
     sel = 0
     touch(true)
+    start_morph(from)
 end)
 
 on("nx_tidy", function()
@@ -607,18 +735,59 @@ end)
 
 -- RESTORE CENTRE: the core goes back to the middle. The node that was there takes the
 -- slot the core left, exactly as a focus swap does.
+on("nx_hover_node", function(v)
+    local i = math.floor(tonumber(v) or 0)
+    if i == hover_node then return end
+    hover_node = i
+    publish()
+end)
+on("nx_hover_edge", function(v)
+    local i = math.floor(tonumber(v) or 0)
+    if i == hover_edge then return end
+    hover_edge = i
+    publish()
+end)
+
+-- A picked trace highlights the two endpoints; a press on the same trace puts it down.
+on("nx_edge_pick", function(v)
+    local i = math.floor(tonumber(v) or 0)
+    local id = i > 0 and drawn_edges[i] or nil
+    picked_edge = (id and id ~= picked_edge) and id or nil
+    publish()
+end)
+on("nx_edge_hide", function()
+    local a = node_list()
+    if not a or not picked_edge then return end
+    if type(a.edges) ~= "table" then a.edges = { hidden = {} } end
+    if type(a.edges.hidden) ~= "table" then a.edges.hidden = {} end
+    remember()
+    a.edges.hidden[#a.edges.hidden + 1] = picked_edge
+    picked_edge = nil
+    touch(true)
+end)
+on("nx_edges_restore", function()
+    local a = node_list()
+    if not a or type(a.edges) ~= "table" then return end
+    remember()
+    a.edges.hidden = {}
+    picked_edge = nil
+    touch(true)
+end)
+
 on("nx_restore_centre", function()
     local a = node_list()
     local canvas = canvas_of()
     if not a or not canvas then return end
     for i, node in ipairs(a.nodes) do
         if node.vis and node.type == "core" then
+            local from = positions(a)
             remember()
             local out, ok = nexuslayout.focus(a.nodes, "core", canvas)
             if ok then a.nodes = out end
             a.focus = "core"
             sel = i
             touch(true)
+            start_morph(from)
             return
         end
     end
@@ -627,6 +796,7 @@ end)
 -- Ctrl+Z and Ctrl+Shift+Z walk the layout history; each step is a whole arrangement, so a
 -- focus swap and the slot it moved are undone together.
 on("nx_undo", function()
+    local from = positions(node_list())
     local restored, ok = nexusnode.undo(past, future, arrs)
     if not ok then return end
     arrs = restored
@@ -634,8 +804,10 @@ on("nx_undo", function()
     sel = 0
     save()
     publish()
+    start_morph(from)
 end)
 on("nx_redo", function()
+    local from = positions(node_list())
     local restored, ok = nexusnode.redo(past, future, arrs)
     if not ok then return end
     arrs = restored
@@ -643,6 +815,7 @@ on("nx_redo", function()
     sel = 0
     save()
     publish()
+    start_morph(from)
 end)
 
 pcall(sys.watch, "files:" .. FILE, function()
