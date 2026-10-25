@@ -158,7 +158,20 @@ language §3 describes is built rather than sketched:
   arrangement with `nexuslayout.fit` through the new `nx_canvas` event. Below 720×420 the
   strip and header are all that remain, as §4 asks.
 
-**Verification.** `bin/mooi check` → **234 unit tests, 0 failed**, five scenes compile.
+**Speed (D82).** The Nexus used to start without `--stall 0`, so it ran in pleamar's
+600 ms-per-decision demonstration mode while the rest of the shell was instant; the spawn
+passes it now (a mode switch answers in ~25 ms over the socket), and `publish()` coalesces a
+burst of hover events into one build per frame instead of one per event. Frame cost with
+twelve nodes under `--no-vsync`: 0.15–0.21 ms of CPU per frame in the steady blocks.
+
+**Panel (D82).** The docked plate is carried by its head: a drag puts it anywhere on the
+surface and the drop is kept in `nexus.panel.x/y`, so it opens there next time; a press
+without a drag puts it back on the right edge. The third shipped arrangement is `BARE`
+instead of `MINIMAL` — the mode already owns that word — and a saved copy that still has the
+shipped shape is renamed once on load. With no portrait, the banner is engraved with the
+same 24/96 px rule as the grid instead of reading as a flat band.
+
+**Verification.** `bin/mooi check` → **235 unit tests, 0 failed**, five scenes compile.
 `tests/nexus.sh` → **126 checks, 0 failed**, including the library's 19 rows and their
 reasons, a removed node appearing as `BACK` and returning, an `ADD` row putting a new type on
 the canvas and undo taking it off, the paged library (19 of 19 modules over two pages, and a

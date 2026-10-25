@@ -2585,3 +2585,33 @@ nineteen rows were drawn, with no way to see the rest.
 Checked: 234 unit tests; 126 checks in `tests/nexus.sh` (the add and its undo, the page size,
 the catalogue count, and a press before the first page); screenshots at 1920×1050, 1366×738
 and 720×390; 0.15–0.19 ms of CPU per frame at twelve nodes under `--no-vsync`.
+
+## D82 · 2026-10-25 · The Nexus answers as fast as the bar, and the panel can be carried
+
+Four things, one of them a bug that made the whole workspace feel broken.
+
+- **The spawn dropped the shell's own flag.** The bar launches the Nexus with
+  `pleamar --scene … --no-hud` and missed `--stall 0`, so the Nexus ran in pleamar's
+  demonstration mode: the logic blocks 600 ms after every decision. Every press, hover and
+  key was answered half a second late while the bar itself was instant. The spawn now passes
+  `--stall 0` like every other surface mooi opens. Measured after the change: a mode switch
+  answered over the socket in 25 ms, the same round trip that took the stall before.
+- **One publish per frame.** A pointer sweeping the canvas raises an enter and a leave per
+  node and per trace, and each one rebuilt every row, edge and library entry. `publish()` is
+  now a request: the build runs once, 16 ms later, and every request inside that window is
+  dropped, because the scene can only draw one of them.
+- **The panel is carried by its head.** `nx_panel_head` is a drag zone over the panel's title
+  and grip; the drop lands in `nexus.panel.x/y` and the panel opens there next time. A press
+  without a drag puts it back on the right edge (`nx_panel_dock`). Two integers in the
+  settings schema, zero meaning "dock it", and the scene clamps whatever it is given.
+- **Two chips said MINIMAL.** The mode and the third arrangement shared the word. The shipped
+  arrangement is `BARE` now; `rename_shipped` moves a saved copy only when it still has the
+  shape it shipped with, and also the "which one is showing" name, so a file that never
+  touched it is migrated once and a file the user made their own keeps the name they chose.
+- **The band is engraved when there is no portrait.** Instead of a flat dark plate, a clipped
+  rule every 24 px with a lit one every 96 — the same measured language as the grid, drawn
+  only when there is no banner image.
+
+Checked: 235 unit tests (including the rename and its refusal to rename an edited copy);
+126 checks in `tests/nexus.sh`; the panel dragged to (320, 260) and docked again by a press;
+the engraved band and the `BARE` chip read at 1920×1050.

@@ -247,13 +247,21 @@ local function choose()
         arrs = nexusnode.seed_arrangements({})
         seeded = true
     end
+    -- A file written before the third arrangement was renamed keeps its own copy of the old
+    -- name, in the list and in "which one is showing"; both move to BARE the once.
+    local renamed = nexusnode.rename_shipped(arrs)
     active_i = 1
     local want = type(settings.nexus) == "table" and settings.nexus.arrangement or nil
     if type(want) == "string" then
+        if want == "MINIMAL" and renamed > 0 then
+            want = "BARE"
+            settings.nexus.arrangement = "BARE"
+        end
         for i, a in ipairs(arrs) do
             if a.name == want then active_i = i; break end
         end
     end
+    if renamed > 0 then seeded = true end
     last_arr_count = #arrs
     return seeded
 end
@@ -418,7 +426,12 @@ local function detail_rows(node)
     return out
 end
 
-function publish()
+-- Coalesced: sweeping the pointer across the canvas raises an enter and a leave per node and
+-- per trace, and each one used to rebuild every row, edge and library entry. The scene can only
+-- draw once per frame, so one build per frame is all any of them can be seen to do.
+local publish_queued = false
+
+local function build()
     local a = node_list()
     local p = present_set()
     local mode = a and a.mode or "circuit"
@@ -683,6 +696,24 @@ function publish()
         bits[#bits + 1] = "IN " .. str(text.nx_rx_value, "—") .. " · OUT " .. str(text.nx_tx_value, "—")
     end
     text.nx_status = #bits > 0 and table.concat(bits, "   ·   ") or "NO LIVE READINGS"
+
+    -- The panel's remembered corner. Absent or nonsense reads as "dock it", which is also
+    -- what a press on the panel's head asks for.
+    local panel = type(settings.nexus) == "table" and type(settings.nexus.panel) == "table"
+        and settings.nexus.panel or {}
+    fact.nx_panel_x = math.max(0, math.min(4096, math.floor(tonumber(panel.x) or 0)))
+    fact.nx_panel_y = math.max(0, math.min(4096, math.floor(tonumber(panel.y) or 0)))
+end
+
+-- The one publish everything asks for. A second ask inside the same frame is dropped: the
+-- build that is already queued will read the state this one would have read.
+function publish()
+    if publish_queued then return end
+    publish_queued = true
+    after(16, function()
+        publish_queued = false
+        build()
+    end)
 end
 
 local function touch(write)
@@ -814,6 +845,25 @@ local function notify(message)
     text.nx_notice_text = message
     after(2800, function() fact.nx_notice = false end)
 end
+
+-- The panel's own place: carried by its head, kept in the settings, and put back by a press
+-- on the same head. The scene clamps to the screen; the logic only keeps what it was given.
+local function set_panel_at(x, y)
+    if type(settings.nexus) ~= "table" then settings.nexus = {} end
+    settings.nexus.panel = {
+        x = math.max(0, math.min(4096, math.floor(tonumber(x) or 0))),
+        y = math.max(0, math.min(4096, math.floor(tonumber(y) or 0))),
+    }
+    touch(true)
+end
+
+on("nx_panel_move", function()
+    set_panel_at(fact.nx_panel_gx, fact.nx_panel_gy)
+end)
+
+on("nx_panel_dock", function()
+    set_panel_at(0, 0)
+end)
 
 -- The library's ADD row: a type the arrangement simply did not carry yet. The node takes
 -- the first grid slot that clears the others, so a press on the fifth library row never

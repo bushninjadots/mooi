@@ -1658,7 +1658,10 @@ on("open_nexus", function()
     local said = {}
     after(90, function()
         if nexus_win then nexus_pending = false; return end
-        mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-nexus.plm", "--no-hud" }, function(line)
+        -- --stall 0: the default holds the logic for 600 ms after every decision to prove the
+        -- renderer is decoupled, which is a demonstration, not a desktop. The bar runs the
+        -- same way, so a press in the Nexus answers as fast as a press in the bar.
+        mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-nexus.plm", "--no-hud", "--stall", "0" }, function(line)
             if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
         end, function(_, code)
             if nexus_win == mine then nexus_win = nil; fact.nexus_open = false end

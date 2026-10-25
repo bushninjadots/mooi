@@ -290,8 +290,33 @@ function M.seed_arrangements(legacy)
     return {
         arrangement("FULL", "circuit", "full", full),
         arrangement("FOCUS", "circuit", "compact", focus_nodes),
-        arrangement("MINIMAL", "minimal", "strip", minimal_nodes),
+        -- Not MINIMAL: that is the mode's name, and two chips reading MINIMAL on the same
+        -- header meant two different things (D82).
+        arrangement("BARE", "minimal", "strip", minimal_nodes),
     }
+end
+
+-- The third shipped arrangement used to be called MINIMAL, the same word as the mode, so the
+-- header said MINIMAL twice and meant two things. A saved copy that still has the shape it
+-- shipped with is renamed once; one the user has made their own keeps the name they gave it.
+-- Returns how many were renamed, which is also "this file should be written again".
+function M.rename_shipped(list)
+    local renamed = 0
+    if type(list) ~= "table" then return renamed end
+    for _, a in ipairs(list) do
+        if type(a) == "table" and a.name == "MINIMAL" and a.mode == "minimal" and a.banner == "strip" then
+            local types = {}
+            for _, node in ipairs(type(a.nodes) == "table" and a.nodes or {}) do
+                types[#types + 1] = node.type
+            end
+            table.sort(types)
+            if #types == 3 and types[1] == "clock" and types[2] == "core" and types[3] == "system" then
+                a.name = "BARE"
+                renamed = renamed + 1
+            end
+        end
+    end
+    return renamed
 end
 
 -- Read back what a hand-edited or older settings file contains. Invalid entries are

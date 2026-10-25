@@ -191,7 +191,7 @@ if wait_value nexus nx_mode circuit 10; then ok "CIRCUIT comes back"; else bad "
 
 echo "arrangements and the banner switch from the header"
 say "emit nx_arrangement 3" >/dev/null
-if wait_value nexus nx_arrangement_name MINIMAL 10; then ok "the third arrangement shows"; else bad "the arrangement did not switch"; fi
+if wait_value nexus nx_arrangement_name BARE 10; then ok "the third arrangement shows"; else bad "the arrangement did not switch"; fi
 if wait_value nexus nx_morph 0 30; then ok "the switch settles instead of cutting"; else bad "the morph never finished"; fi
 say "emit nx_arrangement 1" >/dev/null
 if wait_value nexus nx_arrangement_name FULL 10; then ok "the first arrangement comes back"; else bad "the arrangement did not come back"; fi

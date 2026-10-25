@@ -370,6 +370,15 @@ scene Nexus {
     // The panel docked on the right, the appearance the appearance panel edits, and the
     // selected node's own line, so the node panel says what it is acting on.
     fact nx_panel: none | library | node | look | layout = none
+    // Where the panel was dragged to. Zero means "where it docks itself": the right edge
+    // under the banner. The logic keeps it, so it is the same place next time it opens.
+    fact nx_panel_x = 0
+    fact nx_panel_y = 0
+    fact nx_panel_dx = 0
+    fact nx_panel_dy = 0
+    fact nx_panel_gx = 0
+    fact nx_panel_gy = 0
+    fact nx_panel_carry = 0
     fact nx_lib_count = 0
     fact nx_lib_total = 19
     fact nx_lib_page = 1
@@ -451,6 +460,8 @@ scene Nexus {
     event nx_restore ->          // to the logic: put a removed node back
     event nx_lib_add ->          // to the logic: add a library type to this arrangement (catalogue index)
     event nx_lib_page ->         // to the logic: turn a page of the library (-1 back, 1 on)
+    event nx_panel_move ->       // to the logic: keep the panel where it was dropped (nx_panel_gx/gy)
+    event nx_panel_dock ->       // to the logic: put the panel back on its default edge
     event nx_move ->             // to the logic: 1 left · 2 right · 3 up · 4 down
     event nx_move_fast ->        // to the logic: the same, four steps (Shift+arrow)
     event nx_cycle_sel_back ->   // to the logic: Shift+Tab, the previous node on the canvas
@@ -737,6 +748,19 @@ scene Nexus {
                 // words stop and the portrait begins. No picture, no veil — the plate's own
                 // gradient is the backdrop then, and a flat dark band would only flatten it.
                 box { from: 0, head; size: sw, banner; color: fl.ground; opacity: 0.32; show: nx_banner_on }
+                // with no portrait the band is engraved instead: a rule every 24 px, a lit one
+                // every 96, clipped to the band, so an empty banner still reads as a plate
+                clip box { from: 0, head; size: sw, banner; show: not nx_banner_on and banner > 0 }
+                repeat h in 0..80 {
+                    let hx = h * 24
+                    line { from: hx, head; to: hx, head + banner; width: 1; color: fl.trace
+                           opacity: 0.06; show: not nx_banner_on and hx < sw }
+                }
+                repeat h4 in 0..20 {
+                    let hx4 = h4 * 96
+                    line { from: hx4, head; to: hx4, head + banner; width: 1; color: fl.trace
+                           opacity: 0.1; show: not nx_banner_on and hx4 < sw }
+                }
                 box { from: 0, head; size: sw, 1; color: ac; opacity: 0.4 }
                 box { from: 0, head + banner - 1; size: sw, 1; color: fl.trace; opacity: 0.55 }
                 box { from: 0, head; size: 3, banner; color: fl.ember }
@@ -1411,9 +1435,12 @@ scene Nexus {
             // The module library, the selected node's settings, the appearance, and the
             // arrangements live on the same plate, so the shell has one place to look.
             let panel_w = if(tiny, sw - 20, min(376, sw - 48))
-            let panel_x = sw - panel_w - if(tiny, 10, 20)
-            let panel_y = cy + 12
             let panel_h = min(ch - 24, if(tiny, ch - 20, 512))
+            // the dock: right edge under the banner, unless the panel was carried somewhere
+            let dock_x = if(nx_panel_x > 0, min(nx_panel_x, max(0, sw - panel_w)), sw - panel_w - if(tiny, 10, 20))
+            let dock_y = if(nx_panel_y > 0, min(nx_panel_y, max(0, sh - panel_h)), cy + 12)
+            let panel_x = clamp(dock_x + nx_panel_dx, 0, max(0, sw - panel_w))
+            let panel_y = clamp(dock_y + nx_panel_dy, 0, max(0, sh - panel_h))
             let px0 = panel_x + 16
             let pwi = panel_w - 32
             let py0 = panel_y + 92
@@ -1433,7 +1460,30 @@ scene Nexus {
                 box { from: panel_x, panel_y; size: panel_w, 2; color: ac }
                 NCorner(panel_x + 6, panel_y + 6, panel_w - 12, panel_h - 12, 10, ac, 0.3)
 
-                // the panel's own head: what it is, and the way out
+                // the panel's own head: what it is, the grip that carries it, and the way out
+                zone box nx_panel_head { from: panel_x + 10, panel_y + 8; size: panel_w - 56, 42
+                                          cursor: pointer; role: button
+                                          label: "Drag the panel by its head; a press puts it back on the right" }
+                repeat gd in 0..1 {
+                    repeat ge in 0..2 {
+                        box { at: panel_x + panel_w - 47 + gd * 5, panel_y + 15 + ge * 5
+                              size: 2, 2; corner: 1; color: mix(fl.muted, ac, 0.35 + nx_panel_head.hover * 0.65) }
+                    }
+                }
+                on press nx_panel_head { nx_panel_carry = 1; nx_panel_dx = 0; nx_panel_dy = 0 }
+                on drag nx_panel_head while nx_panel_carry == 1 {
+                    nx_panel_gx = clamp(dock_x + drag.dx, 0, max(0, sw - panel_w))
+                    nx_panel_gy = clamp(dock_y + drag.dy, 0, max(0, sh - panel_h))
+                    nx_panel_dx = nx_panel_gx - dock_x
+                    nx_panel_dy = nx_panel_gy - dock_y
+                }
+                on release nx_panel_head while nx_panel_carry == 1 and abs(nx_panel_dx) + abs(nx_panel_dy) > 4 {
+                    emit nx_panel_move; nx_panel_carry = 0; nx_panel_dx = 0; nx_panel_dy = 0
+                }
+                on release nx_panel_head while nx_panel_carry == 1 and abs(nx_panel_dx) + abs(nx_panel_dy) <= 4 {
+                    emit nx_panel_dock; nx_panel_carry = 0; nx_panel_dx = 0; nx_panel_dy = 0
+                }
+
                 text "MODULE LIBRARY" { at: px0, panel_y + 26; anchor: left center; size: 11; weight: 700; family: "Exo 2"
                                         color: ac; show: nx_panel == library }
                 text "NODE SETTINGS" { at: px0, panel_y + 26; anchor: left center; size: 11; weight: 700; family: "Exo 2"

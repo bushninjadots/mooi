@@ -2310,7 +2310,7 @@ end)
 test("registry: seeds keep the core and map legacy plate modules", function()
     local seeds = nexusnode.seed_arrangements({ modules = { "cpu", "network", "player", "output" } })
     eq(#seeds, 3, "three shipped arrangements")
-    eq(seeds[1].name, "FULL", "first is FULL"); eq(seeds[3].name, "MINIMAL", "last is MINIMAL")
+    eq(seeds[1].name, "FULL", "first is FULL"); eq(seeds[3].name, "BARE", "last is BARE, not the mode's name")
     eq(seeds[1].nodes[1].type, "core", "a seed always keeps the core")
     for _, n in ipairs(seeds[1].nodes) do
         if n.type == "media" then eq(n.vis, true, "legacy player maps to media") end
@@ -2332,6 +2332,19 @@ test("registry: seeds follow the showing legacy layout", function()
     eq(vis.core, true, "core stays visible")
     eq(vis.display, false, "a module the layout leaves out stays hidden")
     eq(vis.power, false, "an unused control stays hidden")
+end)
+test("registry: the old third arrangement is renamed once, and only when it is unchanged", function()
+    local seeds = nexusnode.seed_arrangements({})
+    local bare = seeds[3]
+    eq(bare.name, "BARE", "the seed carries the new name")
+    local copy = { name = "MINIMAL", mode = bare.mode, banner = bare.banner, nodes = bare.nodes }
+    eq(nexusnode.rename_shipped({ copy }), 1, "a shipped-shaped MINIMAL is renamed")
+    eq(copy.name, "BARE", "and takes the new name")
+    -- one the user has made their own keeps the name they gave it
+    local mine = { name = "MINIMAL", mode = "minimal", banner = "strip", nodes = { { type = "core" } } }
+    eq(nexusnode.rename_shipped({ mine }), 0, "an edited MINIMAL is left alone")
+    eq(mine.name, "MINIMAL", "with its own name")
+    eq(nexusnode.rename_shipped(nil), 0, "nothing to rename is not an error")
 end)
 test("registry: the legacy layouts win over the single module list", function()
     local seeds = nexusnode.seed_arrangements({

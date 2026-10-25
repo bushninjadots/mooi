@@ -266,6 +266,10 @@ M.SCHEMA = {
     { path = "nexus.appearance.glow", kind = "integer", default = 60, min = 0, max = 100 },
     { path = "nexus.appearance.grid", kind = "boolean", default = true },
     { path = "nexus.appearance.motion", kind = "boolean", default = true },
+    -- Where the docked panel was carried to, in surface pixels. Zero on both axes means the
+    -- panel docks itself, which is what a file that never carried it gets.
+    { path = "nexus.panel.x", kind = "integer", default = 0, min = 0, max = 4096 },
+    { path = "nexus.panel.y", kind = "integer", default = 0, min = 0, max = 4096 },
     { path = "nexus.edge.style", kind = "enum", values = { "circuit", "curved", "direct" }, default = "circuit" },
     { path = "nexus.edge.width", kind = "integer", default = 1, min = 1, max = 2 },
     { path = "nexus.edge.animation", kind = "boolean", default = true },
