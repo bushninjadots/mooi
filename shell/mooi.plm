@@ -1904,7 +1904,7 @@ scene Mooi {
             let x_last = chain_x + (spaces.count - 1 - pos) * fl.pitch
             line { from: max(frame_x, x_first - 12), fl.cy; to: min(frame_x + chain_span, x_last + 12), fl.cy
                    width: 1; color: fl.trace_dim; show: not helix_edges }
-            // The strands: sampled every 4 px, drawn twice — the halves behind the axis first,
+            // The strands: sampled every 6 px to keep the helix smooth with fewer segments, drawn twice —
             // the halves in front after the rungs. With the helix as the panel's edges they run
             // a little wider (the ramps into the straight), and nothing fades at the ends.
             repeat k in 0..35 {
