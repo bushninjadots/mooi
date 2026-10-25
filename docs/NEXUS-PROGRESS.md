@@ -117,6 +117,53 @@ width, and the signal marks against a busy machine (the providers were live but 
 **Next.** S5 library and customization: the module library with honest unavailable cards, node
 settings, appearance, identity editing and arrangement management.
 
+## S5 · Library, appearance and the visual language (branch `nexus/s1-model`)
+
+The shell's surfaces and the customisation the spec puts in S5 are in, and the visual
+language §3 describes is built rather than sketched:
+
+- **Chrome.** The header is a machined rail: a gradient hull with a lit lower edge, the Arch
+  mark in its own plate, the wordmark over a live status line, `CIRCUIT │ MINIMAL` as one
+  segmented switch, the arrangement chips beside it while they fit, and `LIB NODE LOOK ARR
+  TIDY LOCK CENTRE ×` on the right. The banner is four heights of one portrait: image under a
+  graded scrim, avatar plate with corner brackets, name, operator/host, session and distro,
+  clock and workspace at the right end, and a measured tick along its lower edge. The canvas
+  is a graphite field with 36/180 px grid, edge veils, corner marks and its own measurements.
+  The status strip names the centre, the counts, the last refused press and the keys.
+- **Frames.** Every node is a body with a gradient face, rim, border and shadow; a rail with
+  the node's index, name and state dot; port nubs on both flanks; a compact body with the
+  reading, its note and a ticked bar; and, at the centre, the detail body with ruled rows and
+  its own controls. Selection draws corner brackets, focus adds the glow, hover lifts the
+  border — all from one zone declared before the drawing, so the frame lights as a whole.
+- **Panel (S5).** One docked plate with four faces, one press apart: **LIBRARY** (all 19
+  catalogue types with `ON`, `BACK` or `N/A` and the reason, filterable, press to focus or
+  restore), **NODE** (the selection's size presets S/M/L/DETAIL, focus, minimize, reset,
+  remove, and the keys), **LOOK** (accent role, glow, brightness, contrast through the
+  palette, surface opacity, grid, motion, trace labels, route style and thickness) and
+  **ARRANGE** (switch, NEW, COPY, DELETE, rename, mode, band height, identity).
+- **Appearance is roles, never hex.** The accent is an `rgb()` of the palette's own springs;
+  brightness and contrast transform the published roles, so a theme change still reaches
+  everything; glow scales the scene's glows; opacity is the surface group's.
+- **Traces.** Each trace is a shadow pass and a lit pass with joint marks, a label on a short
+  rule and a hover plate for its meaning. The picked-trace card lists what was put away and
+  brings back one trace at a time (`nx_edge_show`), not only the whole network.
+- **Responsive.** `tight` drops the arrangement chips, `small` keeps the acting controls only,
+  and `tiny` folds the banner to its strip, hides the status strip, swaps the mode switch for
+  one button, shrinks the gutters, and keeps the panel one press away. A shrink also fits the
+  arrangement with `nexuslayout.fit` through the new `nx_canvas` event. Below 720×420 the
+  strip and header are all that remain, as §4 asks.
+
+**Verification.** `bin/mooi check` → **234 unit tests, 0 failed**, five scenes compile.
+`tests/nexus.sh` → **117 checks, 0 failed**, including the library's 19 rows and their
+reasons, a removed node appearing as `BACK` and returning, a hidden trace listed and restored
+by its slot, the grid/accent/glow/labels/route controls, a size preset and RESET NODE, NEW and
+COPY and DELETE on the arrangements, and Escape putting the panel away without closing the
+workspace.
+
+**Not checked.** The panel, the header and the banner with a real pointer at 1920, 1366 and
+720 widths; the library's search field from a keyboard; the identity editor beside the docked
+panel; a node being resized by its grip with the new brackets drawn.
+
 ## Current phase
 
 **Phase 1 complete; Phase 2 complete; Phase 3 started.** Phase 0 reconnaissance is

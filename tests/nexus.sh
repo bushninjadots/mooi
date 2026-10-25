@@ -306,6 +306,91 @@ is "the workspace list is answered" "$(printf '%s' "$(get nx_ws.count)" | grep -
 say "emit nx_restore_centre" >/dev/null
 if wait_value nexus nx_focus core 10; then ok "the core can take the centre back"; else bad "the core did not return"; fi
 
+echo "the module library names what is on the canvas, removed, or not connected"
+is "the catalogue is published in full" "$(get nx_lib.count)" 19
+is "the first library row is on the canvas" "$(get nx_lib.0.state)" 0
+is "an unconnected module is marked" "$(get nx_lib.18.state)" 2
+is "an unconnected module says why" "$(get nx_lib.18.note | grep -c .)" 1
+say "emit nx_remove 1" >/dev/null
+wait_value nexus nx_removed_count 1 10 >/dev/null
+lib_row=''
+for i in $(seq 0 18); do
+    if [ "$(get nx_lib.$i.state)" = 1 ]; then lib_row=$i; break; fi
+done
+is "a removed node appears in the library" "$(printf '%s' "$lib_row" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
+say "emit nx_restore 1" >/dev/null
+if wait_value nexus nx_removed_count 0 10; then ok "the library puts the node back"; else bad "the node did not come back"; fi
+
+echo "the trace menu lists what was put away, and gives it back one at a time"
+say "emit nx_edge_pick 1" >/dev/null
+if wait_value nexus nx_edge_sel 1 10; then ok "a trace is picked before hiding it"; else bad "the trace was not picked"; fi
+say "emit nx_edge_hide" >/dev/null
+if wait_value nexus nx_hidden_count 1 10; then ok "the hidden trace is listed"; else bad "the hidden trace was not listed"; fi
+is "the put-away list names it" "$(get nx_hidden.0.label | grep -c .)" 1
+say "emit nx_edge_show 1" >/dev/null
+if wait_value nexus nx_hidden_count 0 10; then ok "one trace comes back by its slot"; else bad "the trace did not come back"; fi
+
+echo "the appearance panel changes what the scene draws"
+say "fact nx_look_key 5" >/dev/null
+say "fact nx_look_val 1" >/dev/null
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_grid false 10; then ok "the grid can be turned off"; else bad "the grid did not change"; fi
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_grid true 10; then ok "the grid comes back"; else bad "the grid stayed off"; fi
+say "fact nx_look_key 1" >/dev/null
+say "fact nx_look_val 1" >/dev/null
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_accent 2 10; then ok "the accent role steps to FLARE"; else bad "the accent did not change"; fi
+is "the accent's name follows" "$(get nx_accent_name)" FLARE
+say "fact nx_look_key 4" >/dev/null
+say "fact nx_look_val -20" >/dev/null
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_glow 40 10; then ok "the glow is bounded and applied"; else bad "the glow did not change ($(get nx_glow))"; fi
+say "fact nx_look_key 7" >/dev/null
+say "fact nx_look_val 1" >/dev/null
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_edge_style 2 10; then ok "the edge style steps to CURVED"; else bad "the edge style did not change"; fi
+say "fact nx_look_key 8" >/dev/null
+say "fact nx_look_val 1" >/dev/null
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_edge_labels false 10; then ok "trace labels can be turned off"; else bad "the labels did not change"; fi
+say "emit nx_look" >/dev/null
+if wait_value nexus nx_edge_labels true 10; then ok "the labels come back"; else bad "the labels stayed off"; fi
+
+echo "a node's size preset and its reset"
+say "emit nx_focus_node 3" >/dev/null
+row=''
+for i in $(seq 0 9); do
+    if [ "$(get nx_nodes.$i.id)" = 3 ]; then row=$i; break; fi
+done
+if wait_value nexus "nx_nodes.$row.focus" true 10; then ok "a node is selected through the centre"; else bad "the node was not focused"; fi
+before_w=$(get "nx_nodes.$row.w")
+say "emit nx_node_preset 3" >/dev/null
+sleep 0.5
+after_w=$(get "nx_nodes.$row.w")
+if [ -n "$after_w" ] && [ "$after_w" != "$before_w" ]; then ok "a size preset resizes the node ($before_w → $after_w)"; else bad "the size preset did nothing"; fi
+say "emit nx_node_reset" >/dev/null
+sleep 0.5
+reset_w=$(get "nx_nodes.$row.w")
+if [ -n "$reset_w" ] && [ "$reset_w" != "$after_w" ]; then ok "RESET NODE returns the type's size ($reset_w)"; else bad "the reset did not change the size"; fi
+
+echo "arrangements can be added, copied and deleted"
+say "emit nx_arr_new" >/dev/null
+if wait_value nexus nx_arrangement_count 4 10; then ok "a new arrangement is kept"; else bad "the arrangement was not added"; fi
+is "the new arrangement has its own name" "$(get nx_arrangement_name)" LAYOUT
+say "emit nx_arr_dup" >/dev/null
+if wait_value nexus nx_arrangement_count 5 10; then ok "the arrangement can be copied"; else bad "the copy was not made"; fi
+say "emit nx_arr_del" >/dev/null
+if wait_value nexus nx_arrangement_count 4 10; then ok "an arrangement can be deleted"; else bad "the delete did nothing"; fi
+say "emit nx_arr_del" >/dev/null
+if wait_value nexus nx_arrangement_count 3 10; then ok "the list comes back to three"; else bad "the list did not shrink back"; fi
+
+echo "Escape closes the docked panel before the workspace"
+say "fact nx_panel library" >/dev/null
+is "the panel can be opened" "$(get nx_panel)" library
+say "key Escape" >/dev/null
+if wait_value nexus nx_panel none 10; then ok "Escape puts the panel away"; else bad "Escape left the panel open"; fi
+if say "get nx_open" >/dev/null 2>&1; then ok "the workspace stays open when the panel closes"; else bad "Escape closed the whole workspace"; fi
 bsay "emit open_nexus" >/dev/null
 if wait_gone; then nexus_started=0; ok "the same trigger closes the program"; else bad "the same trigger left Nexus running"; fi
 if wait_value bar nexus_open false 30; then ok "the bar clears its open state"; else bad "the bar kept a stale open state"; fi

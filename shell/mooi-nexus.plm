@@ -271,6 +271,11 @@ scene Nexus {
         hot: bool; dim: bool; active: bool; label: text; meaning: text; mx: number; my: number;
         x1: number; y1: number; x2: number; y2: number; x3: number; y3: number; x4: number; y4: number }
     model nx_removed max 16 { id: number; slot: number; key: text; title: text }
+    // The module library: every type the catalogue declares, the state it is in and why.
+    model nx_lib max 24 { slot: number; id: number; key: text; title: text; category: text; state: number; note: text; tone: number }
+    // The traces the user put away, one row each so any of them can come back alone.
+    model nx_hidden max 24 { id: number; key: text; label: text; meaning: text }
+    // The panel's own tab strip is a fact, so Escape and the header and the strip agree.
     model nx_arrs max 8 { id: number; name: text; active: bool }
     model nx_mix max 8 { id: number; sid: number; name: text; note: text; level: number; muted: bool }
     model nx_ws max 10 { id: number; slot: number; label: text; windows: number; active: number }
@@ -361,6 +366,29 @@ scene Nexus {
     fact nx_hover = 0
     fact nx_hover_edge = 0
 
+    // ── The shell's surfaces (S5) ────────────────────────────
+    // The panel docked on the right, the appearance the appearance panel edits, and the
+    // selected node's own line, so the node panel says what it is acting on.
+    fact nx_panel: none | library | node | look | layout = none
+    fact nx_lib_count = 0
+    fact nx_hidden_count = 0
+    fact nx_sel_on = 0
+    fact nx_sel_kind = 0
+    text nx_sel_title = "NO NODE SELECTED"
+    text nx_sel_note = "PRESS A NODE"
+    text nx_lib_query = ""
+    text nx_arr_draft = "FULL"
+    fact nx_accent = 1
+    fact nx_glow = 60
+    fact nx_bright = 100
+    fact nx_contrast = 100
+    fact nx_opacity = 100
+    fact nx_edge_style = 1
+    fact nx_motion = true
+    text nx_accent_name = "PHOS"
+    fact nx_look_key = 0
+    fact nx_look_val = 0
+
     fact st_glow = 1
     // The player's own fields, kept by the logic: a text field can be drawn and interpolated, but
     // it is not a number the scene can compare, so what is there to show arrives as facts.
@@ -434,6 +462,15 @@ scene Nexus {
     event nx_app_mute ->         // to the logic: mute the stream with this id
     event nx_app_vol ->          // to the logic: set the stream's level (nx_app_sid, nx_app_lvl)
     event nx_ws_focus ->         // to the logic: go to the workspace with this id
+    event nx_look ->             // to the logic: appearance control (nx_look_key, nx_look_val)
+    event nx_node_preset ->      // to the logic: 1 S · 2 M · 3 L · 4 detail, for the selection
+    event nx_node_reset ->       // to the logic: the selected node's shipped size and slot
+    event nx_edge_show ->        // to the logic: bring back the hidden trace in this slot
+    event nx_arr_new ->          // to the logic: keep the current arrangement under a new name
+    event nx_arr_dup ->          // to the logic: a copy of the current arrangement
+    event nx_arr_rename ->       // to the logic: name the current arrangement (nx_arr_draft)
+    event nx_arr_del ->          // to the logic: drop the current arrangement
+    event nx_canvas ->           // to the logic: the canvas the scene is drawing on settled
 
     // A drawer row: a label on the left, the system's own answer on the right.
     component NRow(x: number, y: number, w: number, label: text, value: text, tone: color) {
@@ -449,6 +486,43 @@ scene Nexus {
         box { from: x, y; size: w, 20; corner: 3; stroke: 1; color: if(on, tone, fl.trace); opacity: if(on, 0.9, 0.55) }
         text word { at: x + w / 2, y + 10; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
                     color: if(on, tone, fl.muted) }
+    }
+
+    // A caption with a rule running to its right: the panels and the canvas use it to group
+    // what is under it without a box around everything.
+    component NCaption(x: number, y: number, w: number, word: text, tone: color) {
+        size: w, 12
+        text "{upper(word)}" { at: x, y; anchor: left center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: tone }
+        box { from: x + min(w - 40, 104), y - 0.5; size: max(0, w - min(w - 40, 104)), 1; color: tone; opacity: 0.16 }
+    }
+
+    // A cut-corner plate with a word: the shell's one button, lit when it is the current
+    // state and lifted when it is pointed at.
+    component NButton(x: number, y: number, w: number, h: number, word: text, lit: number, tone: color, hot: number) {
+        size: w, h
+        let k = 4
+        path { color: mix(fl.hull_raised, tone, 0.05 + hot * 0.12); opacity: 0.96
+               move x + k, y; line x + w - k, y; line x + w, y + k; line x + w, y + h - k
+               line x + w - k, y + h; line x + k, y + h; line x, y + h - k; line x, y + k; close }
+        path { stroke: 1; color: mix(fl.trace, tone, 0.25 + hot * 0.45 + lit * 0.3)
+               move x + k, y; line x + w - k, y; line x + w, y + k; line x + w, y + h - k
+               line x + w - k, y + h; line x + k, y + h; line x, y + h - k; line x, y + k; close }
+        text "{upper(word)}" { at: x + w / 2, y + h / 2 + 0.5; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
+                              width: w - 10; lines: 1; color: mix(fl.muted, tone, 0.2 + hot * 0.5 + lit * 0.65) }
+        box { from: x + 6, y + h - 2; size: max(0, w - 12), 1.5; color: tone; opacity: 0.2 + lit * 0.7 }
+    }
+
+    // Four L-shaped brackets: the mark of a selected or centred frame.
+    component NCorner(x: number, y: number, w: number, h: number, len: number, tone: color, op: number) {
+        size: w, h
+        line { from: x, y; to: x + len, y; width: 2; color: tone; opacity: op }
+        line { from: x, y; to: x, y + len; width: 2; color: tone; opacity: op }
+        line { from: x + w, y; to: x + w - len, y; width: 2; color: tone; opacity: op }
+        line { from: x + w, y; to: x + w, y + len; width: 2; color: tone; opacity: op }
+        line { from: x, y + h; to: x + len, y + h; width: 2; color: tone; opacity: op }
+        line { from: x, y + h; to: x, y + h - len; width: 2; color: tone; opacity: op }
+        line { from: x + w, y + h; to: x + w - len, y + h; width: 2; color: tone; opacity: op }
+        line { from: x + w, y + h; to: x + w, y + h - len; width: 2; color: tone; opacity: op }
     }
 
     // The entrance settles rather than appears.
@@ -468,94 +542,253 @@ scene Nexus {
 
         let sw = screen.width
         let sh = screen.height
-        let head = 44
-        let foot = 30
-        let banner = if(nx_banner_mode == full, 114, if(nx_banner_mode == compact, 74, if(nx_banner_mode == strip, 44, 0)))
+        // Three sizes of the same shell: tight drops the banner's extra lines, small keeps
+        // only the controls that act on the workspace, tiny folds the banner to its strip and
+        // gives the canvas the status strip's room.
+        let tiny = sw < 760 or sh < 500
+        let small = sw < 1060
+        let tight = sw < 1360
+        let head = if(tiny, 38, 46)
+        let foot = if(tiny, 0, 32)
+        let banner_want = if(nx_banner_mode == full, 118, if(nx_banner_mode == compact, 78, if(nx_banner_mode == strip, 46, 0)))
+        let banner = if(tiny and banner_want > 0, 46, banner_want)
         let cy = head + banner
         let ch = max(140, sh - cy - foot)
-        let cx = 20
-        let cw = max(320, sw - 40)
-        let rail = 26
+        let cx = if(tiny, 8, 20)
+        let cw = max(300, sw - cx * 2)
+        let rail = if(tiny, 24, 30)
+        // The shell's accent is the appearance's accent role: one colour, chosen in LOOK.
+        // A colour named from the roles by number, so the accent follows the palette's own
+        // springs: the appearance panel picks a role, never a hex.
+        let ac = rgb(
+            if(nx_accent == 1, pr_phos_r, if(nx_accent == 2, pr_flare_r, if(nx_accent == 3, pr_ember_r, pr_trace_lit_r))),
+            if(nx_accent == 1, pr_phos_g, if(nx_accent == 2, pr_flare_g, if(nx_accent == 3, pr_ember_g, pr_trace_lit_g))),
+            if(nx_accent == 1, pr_phos_b, if(nx_accent == 2, pr_flare_b, if(nx_accent == 3, pr_ember_b, pr_trace_lit_b))))
+        let ac_soft = mix(fl.trace, ac, 0.6)
+        let glow_amt = nx_glow / 100
 
         group {
-            opacity: nx_a
+            opacity: nx_a * nx_opacity / 100
             show: nx_a > 0.004
 
-            // ── the header: the workspace's own controls, never the desktop's ──
-            Chamfer(0, 0, sw, head, 0, fl.hull, fl.trace, 0.99, 1)
-            box { from: 0, head - 2; size: sw, 2; color: fl.trace; opacity: 0.6 }
-            figure nx_mark { at: 14, 11; size: 22, 22; color: fl.phos }
-            text "CONTROL NEXUS" { at: 44, 15; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.phos }
-            text "{nx_mode_name} · {nx_arrangement_name}" { at: 44, 31; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            // The canvas the logic has to know before it can clamp, fit or restore onto it:
+            // sent once the entrance has settled, and again whenever the screen changes size.
+            on change cw { nx_cw = cw; nx_ch = ch; emit nx_canvas }
+            on change ch { nx_cw = cw; nx_ch = ch; emit nx_canvas }
+            on change nx_a while nx_a > 0.96 { nx_cw = cw; nx_ch = ch; emit nx_canvas }
 
-            zone box nx_mode_circuit { from: 196, 12; size: 76, 20; cursor: pointer; role: toggle; checked: nx_mode == circuit
-                                       label: "Show the full circuit" }
-            NChip(196, 12, 76, "CIRCUIT", nx_mode == circuit, fl.phos)
-            on press nx_mode_circuit { emit nx_mode_switch(0) }
-            zone box nx_mode_minimal { from: 278, 12; size: 76, 20; cursor: pointer; role: toggle; checked: nx_mode == minimal
-                                       label: "Show only the essential nodes" }
-            NChip(278, 12, 76, "MINIMAL", nx_mode == minimal, fl.flare)
-            on press nx_mode_minimal { emit nx_mode_switch(1) }
+            // ── the header: the workspace's own controls, never the desktop's ──
+            // A machined rail: a gradient hull, a lit lower edge, the mark in its own plate,
+            // the wordmark, the mode as a segmented switch, the arrangements beside it, and
+            // the acting controls on the right, all on one line at every width.
+            body {
+                gradient: 0, 0 to 0, head, fl.hull_raised, fl.hull
+                rim: 5%
+                border: 1, fl.trace
+                box { from: 0, 0; size: sw, head }
+            }
+            box { from: 0, head - 1; size: sw, 1; color: fl.trace; opacity: 0.7 }
+            box { from: 0, head - 4; size: sw, 1; color: ac; opacity: 0.16 }
+
+            let act_y = if(tiny, 6, 10)
+            let act_h = if(tiny, 24, 26)
+            let x_close = sw - 12 - 30
+            let x_lock = if(small, x_close, x_close - 8 - 58)
+            let x_tidy = if(small, x_close, x_lock - 8 - 54)
+            let x_centre = if(small, x_close, x_tidy - 8 - 70)
+            let x_arr = (if(small, x_close, x_centre)) - 8 - 50
+            let x_node = x_arr - 8 - 54
+            let x_look = x_node - 8 - 48
+            let x_lib = x_look - 8 - 44
+            // the arrangement chips only where they fit between the mode switch and the panels
+            let chips_fit = 372 + nx_arrangement_count * 84 < x_lib
+
+            // the mark, lit from its own plate
+            Chamfer(12, if(tiny, 4, 8), 30, act_h, 6, fl.well, mix(fl.trace, ac, 0.5), 1, 1)
+            box { from: 12, if(tiny, 4, 8); size: 30, 2; color: ac; opacity: 0.9 }
+            figure nx_mark { at: 27, if(tiny, 4, 8) + act_h / 2; size: 16, 16; color: ac }
+
+            text "CONTROL NEXUS" { at: 52, 16; anchor: left center; size: 11; weight: 700
+                                  family: "Exo 2"; color: mix(fl.ink, ac, 0.92); show: not tiny }
+            text "CONTROL NEXUS" { at: 52, 15; anchor: left center; size: 9.5; weight: 700
+                                  family: "Exo 2"; color: mix(fl.ink, ac, 0.92); show: tiny }
+            group {
+                show: not tiny
+                box { at: 54, 27; size: 3, 3; corner: 2; color: ac; opacity: 0.9 }
+                text "{nx_arrangement_name}  /  {nx_mode_name}  /  {nx_node_count, 0} NODES" {
+                    at: 62, 28; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+            }
+
+            // the mode as one segmented control: two wells, the current one lit. At the
+            // narrowest width it becomes one button that swaps them, which still fits.
+            group {
+                show: not tiny
+                Chamfer(196, act_y - 1, 152, act_h + 2, 4, fl.ground, fl.trace, 0.5, 1)
+                zone box nx_mode_circuit { from: 198, act_y; size: 74, act_h; cursor: pointer; role: toggle; checked: nx_mode == circuit
+                                           label: "Show the full circuit" }
+                NButton(198, act_y, 74, act_h, "CIRCUIT", nx_mode == circuit, ac, nx_mode_circuit.hover)
+                on press nx_mode_circuit { emit nx_mode_switch(0) }
+                zone box nx_mode_minimal { from: 274, act_y; size: 72, act_h; cursor: pointer; role: toggle; checked: nx_mode == minimal
+                                           label: "Show only the essential nodes" }
+                NButton(274, act_y, 72, act_h, "MINIMAL", nx_mode == minimal, fl.flare, nx_mode_minimal.hover)
+                on press nx_mode_minimal { emit nx_mode_switch(1) }
+            }
+            group {
+                show: tiny
+                zone box nx_mode_toggle { from: 196, act_y; size: 64, act_h; cursor: pointer; role: toggle
+                                          checked: nx_mode == minimal; label: "Switch between CIRCUIT and MINIMAL" }
+                NButton(196, act_y, 64, act_h, "MODE", 1, ac, nx_mode_toggle.hover)
+                on press nx_mode_toggle { emit nx_mode_switch(if(nx_mode == circuit, 1, 0)) }
+            }
 
             // the arrangements, in the order the settings file holds them
             for a in nx_arrs {
-                zone box nx_arr_chip { from: 372 + (a.id - 1) * 84, 12; size: 78, 20; cursor: pointer; role: toggle
-                                       checked: a.active; label: "Show the {a.name} arrangement"; show: sw > 1080 }
-                NChip(372 + (a.id - 1) * 84, 12, 78, a.name, a.active, fl.phos)
+                let ax = 364 + (a.id - 1) * 84
+                zone box nx_arr_chip { from: ax, act_y; size: 78, act_h; cursor: pointer; role: toggle
+                                       checked: a.active; label: "Show the {a.name} arrangement"; show: chips_fit }
+                NButton(ax, act_y, 78, act_h, a.name, a.active, ac, nx_arr_chip.hover)
                 on press nx_arr_chip { emit nx_arrangement(a.id) }
             }
 
+            // the panels: one docked surface, four faces
+            zone box nx_pane_lib { from: x_lib, act_y; size: 44, act_h; cursor: pointer; role: tab
+                                   selected: nx_panel == library; label: "Open the module library" }
+            NButton(x_lib, act_y, 44, act_h, "LIB", nx_panel == library, ac, nx_pane_lib.hover)
+            on press nx_pane_lib { nx_panel = if(nx_panel == library, none, library) }
+
+            zone box nx_pane_node { from: x_node, act_y; size: 54, act_h; cursor: pointer; role: tab
+                                    selected: nx_panel == node; label: "Open the selected node's settings" }
+            NButton(x_node, act_y, 54, act_h, "NODE", nx_panel == node, ac, nx_pane_node.hover)
+            on press nx_pane_node { nx_panel = if(nx_panel == node, none, node) }
+
+            zone box nx_pane_look { from: x_look, act_y; size: 48, act_h; cursor: pointer; role: tab
+                                    selected: nx_panel == look; label: "Open the appearance panel" }
+            NButton(x_look, act_y, 48, act_h, "LOOK", nx_panel == look, ac, nx_pane_look.hover)
+            on press nx_pane_look { nx_panel = if(nx_panel == look, none, look) }
+
+            zone box nx_pane_layout { from: x_arr, act_y; size: 50, act_h; cursor: pointer; role: tab
+                                      selected: nx_panel == layout; label: "Open the arrangement panel" }
+            NButton(x_arr, act_y, 50, act_h, "ARR", nx_panel == layout, fl.flare, nx_pane_layout.hover)
+            on press nx_pane_layout { nx_panel = if(nx_panel == layout, none, layout) }
+
             // RESTORE CENTRE: only offered while something else is in the middle
-            zone box nx_centre { from: sw - 316, 11; size: 78, 22; cursor: pointer; role: button
-                                 label: "Put the core back at the centre"; show: nx_focus != core }
-            box { from: sw - 316, 11; size: 78, 22; corner: 3; color: mix(fl.ground, fl.phos, 0.16); opacity: 0.5; show: nx_focus != core }
-            box { from: sw - 316, 11; size: 78, 22; corner: 3; stroke: 1; color: fl.trace; opacity: 0.7; show: nx_focus != core }
-            text "CENTRE" { at: sw - 277, 22; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
-                           color: mix(fl.muted, fl.phos, nx_centre.hover); show: nx_focus != core }
+            zone box nx_centre { from: x_centre, act_y; size: 70, act_h; cursor: pointer; role: button
+                                 label: "Put the core back at the centre"; show: not small and nx_focus != core }
+            NButton(x_centre, act_y, 70, act_h, "CENTRE", 0, ac, nx_centre.hover)
             on press nx_centre { emit nx_restore_centre }
 
-            zone box nx_tidy { from: sw - 230, 11; size: 70, 22; cursor: pointer; role: button; label: "Tidy the arrangement" }
-            box { from: sw - 230, 11; size: 70, 22; corner: 3; color: fl.ground; opacity: 0.45 }
-            box { from: sw - 230, 11; size: 70, 22; corner: 3; stroke: 1; color: fl.trace; opacity: 0.6 }
-            text "TIDY" { at: sw - 195, 22; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
-                          color: mix(fl.muted, fl.phos, nx_tidy.hover) }
+            zone box nx_tidy { from: x_tidy, act_y; size: 54, act_h; cursor: pointer; role: button
+                               label: "Tidy the arrangement"; show: not small }
+            NButton(x_tidy, act_y, 54, act_h, "TIDY", 0, ac, nx_tidy.hover)
             on press nx_tidy { emit nx_tidy }
 
             // LOCK holds the arrangement still: drag and resize are refused while it is on
-            zone box nx_pinbtn { from: sw - 152, 11; size: 86, 22; cursor: pointer; role: toggle; checked: nx_pinned
-                                 label: "Lock the arrangement against drag and resize" }
-            box { from: sw - 152, 11; size: 86, 22; corner: 3; color: fl.well; opacity: if(nx_pinned, 0.7, 0.25 * nx_pinbtn.hover) }
-            box { from: sw - 152, 11; size: 86, 22; corner: 3; stroke: 1; color: if(nx_pinned, fl.phos, fl.trace); opacity: 0.8 }
-            text pick(nx_pinned, "LOCKED", "LOCK") { at: sw - 109, 22; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"
-                                                     color: if(nx_pinned, fl.phos, mix(fl.muted, fl.phos, nx_pinbtn.hover)) }
+            zone box nx_pinbtn { from: x_lock, act_y; size: 58, act_h; cursor: pointer; role: toggle; checked: nx_pinned
+                                 label: "Lock the arrangement against drag and resize"; show: not small }
+            group { show: nx_pinned
+                NButton(x_lock, act_y, 58, act_h, "LOCKED", 1, ac, nx_pinbtn.hover) }
+            group { show: not nx_pinned
+                NButton(x_lock, act_y, 58, act_h, "LOCK", 0, ac, nx_pinbtn.hover) }
             on press nx_pinbtn { emit nx_pin }
 
-            zone box nx_closebtn { from: sw - 58, 8; size: 30, 28; cursor: pointer; role: button; label: "Close Control Nexus" }
-            line { from: sw - 46, 17; to: sw - 32, 31; width: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover) }
-            line { from: sw - 32, 17; to: sw - 46, 31; width: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover) }
+            zone box nx_closebtn { from: x_close, if(tiny, 3, 6); size: 30, act_h + 4; cursor: pointer; role: button
+                                   label: "Close Control Nexus" }
+            path { stroke: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover)
+                   move x_close + 11, if(tiny, 3, 6) + act_h / 2 - 5
+                   line x_close + 19, if(tiny, 3, 6) + act_h / 2 + 3 }
+            path { stroke: 1.6; color: mix(fl.muted, fl.ember, nx_closebtn.hover)
+                   move x_close + 19, if(tiny, 3, 6) + act_h / 2 - 5
+                   line x_close + 11, if(tiny, 3, 6) + act_h / 2 + 3 }
             on press nx_closebtn { emit nx_close }
 
             // ── the identity banner: one mode at a time, the setting is the truth ──
+            // Four heights of one portrait: the image (when there is one) under a scrim, the
+            // avatar in its own plate, the name and what the machine is, and the clock at the
+            // right end. Every line but the name is gated on the band's height.
             group {
                 show: banner > 0
-                Chamfer(0, head, sw, banner, 0, fl.hull_raised, fl.trace, 0.96, 1)
-                image nx_banner { at: 0, head; size: sw, banner; opacity: 0.38; show: nx_banner_on }
-                box { from: 0, head; size: sw, 2; color: fl.phos; opacity: 0.22 }
-                box { from: 0, head; size: 3, banner; color: fl.ember; opacity: 0.9 }
-                Chamfer(20, head + 16, 42, 42, 8, fl.well, fl.trace, 0.92, 1)
-                text "{nx_initial}" { at: 41, head + 37; anchor: center; size: 19; weight: 700; family: "Exo 2"; color: fl.phos; show: not nx_avatar_on }
-                image nx_avatar { at: 20, head + 16; size: 42, 42; show: nx_avatar_on }
-                zone box nx_avatar_edit { from: 20, head + 16; size: 42, 42; cursor: pointer; role: button; label: "Edit system identity" }
+                let av = if(banner > 100, 56, if(banner > 60, 44, 30))
+                let avy = head + (banner - av) / 2
+                let avx = if(tiny, 10, 24)
+                let tx = avx + av + 16
+
+                body {
+                    gradient: 0, head to 0, head + banner, fl.hull_raised, fl.hull
+                    rim: 4%
+                    box { from: 0, head; size: sw, banner }
+                }
+                image nx_banner { at: 0, head; size: sw, banner; opacity: 0.34; show: nx_banner_on }
+                // the scrim: a veil over the picture, heavier where the words are
+                box { from: 0, head; size: sw, banner; color: fl.ground; opacity: 0.18 }
+                box { from: 0, head; size: min(720, sw * 0.55), banner; color: fl.ground; opacity: 0.34 }
+                box { from: 0, head; size: sw, 1; color: ac; opacity: 0.4 }
+                box { from: 0, head + banner - 1; size: sw, 1; color: fl.trace; opacity: 0.55 }
+                box { from: 0, head; size: 3, banner; color: fl.ember }
+                // a measured tick along the band's lower edge, a scale rather than a border
+                repeat t in 0..26 {
+                    box { from: 40 + t * 56, head + banner - 5; size: 1, 3; color: fl.trace; opacity: 0.3; show: not tiny }
+                }
+
+                // the avatar: an engraved plate, lit at its corners
+                Chamfer(avx, avy, av, av, 7, fl.well, ac_soft, 1, 1)
+                NCorner(avx + 3, avy + 3, av - 6, av - 6, 7, ac, 0.45)
+                image nx_avatar { at: avx, avy; size: av, av; show: nx_avatar_on }
+                text "{nx_initial}" { at: avx + av / 2, avy + av / 2 + 1; anchor: center; size: 22; weight: 700
+                                      family: "Exo 2"; color: mix(fl.well, ac, 0.85); show: not nx_avatar_on and banner > 100 }
+                text "{nx_initial}" { at: avx + av / 2, avy + av / 2 + 1; anchor: center; size: 15; weight: 700
+                                      family: "Exo 2"; color: mix(fl.well, ac, 0.85); show: not nx_avatar_on and banner <= 100 }
+                zone box nx_avatar_edit { from: avx, avy; size: av, av; cursor: pointer; role: button
+                                          label: "Edit system identity" }
                 on press nx_avatar_edit { emit nx_identity_edit }
-                text "{nx_identity_name}" { at: 76, head + 27; anchor: left center; size: 17; weight: 600; family: "Exo 2"; color: fl.phos; width: 320; lines: 1 }
-                text "{nx_host}" { at: 76, head + 47; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit; show: banner > 60 }
-                text "{nx_session} SESSION" { at: 76, head + 64; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: banner > 100 }
-                text "{clock.time}  ·  {clock.date}" { at: sw - 300, head + 27; anchor: right center; size: 14; weight: 600; family: "Share Tech Mono"; color: fl.flare }
-                text "WORKSPACE {ws.active, 0}" { at: sw - 300, head + 47; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit; show: banner > 60 }
-                text "{nx_distro}" { at: sw - 300, head + 64; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 240; lines: 1; show: banner > 100 }
-                zone box nx_banner_hit { from: sw - 192, head + banner - 26; size: 172, 18; cursor: pointer; role: button; label: "Change the banner height" }
-                text "BANNER {nx_banner_name}" { at: sw - 28, head + banner - 17; anchor: right center; size: 8; family: "Share Tech Mono"
-                                                 color: mix(fl.muted, fl.phos, nx_banner_hit.hover) }
+
+                // the name: the one line every height keeps
+                text "{nx_identity_name}" { at: tx, head + if(banner > 100, 36, if(banner > 60, 26, 15)); anchor: left center
+                                             size: 20; weight: 700; family: "Exo 2"; color: mix(fl.hull, fl.engrave, 0.92)
+                                             width: max(120, sw - tx - 420); lines: 1; show: banner > 100 }
+                text "{nx_identity_name}" { at: tx, head + if(banner > 60, 25, 14); anchor: left center
+                                             size: 15; weight: 700; family: "Exo 2"; color: mix(fl.hull, fl.engrave, 0.92)
+                                             width: max(100, sw - tx - 340); lines: 1; show: banner <= 100 and banner > 46 }
+                text "{nx_identity_name}" { at: tx, head + 23; anchor: left center; size: 12; weight: 700; family: "Exo 2"
+                                             color: mix(fl.hull, fl.engrave, 0.92); width: max(80, sw - tx - 300); lines: 1
+                                             show: banner <= 46 }
+                text "OPERATOR  {nx_user}  ·  HOST  {nx_host}" { at: tx, head + 58; anchor: left center; size: 8.5
+                     family: "Share Tech Mono"; color: fl.trace_lit; width: max(100, sw - tx - 420); lines: 1; show: banner > 100 }
+                text "{nx_session}  ·  {nx_distro}" { at: tx, head + 78; anchor: left center; size: 8
+                     family: "Share Tech Mono"; color: fl.muted; width: max(100, sw - tx - 420); lines: 1; show: banner > 100 }
+                text "{nx_user}  ·  {nx_host}" { at: tx, head + 45; anchor: left center; size: 8; family: "Share Tech Mono"
+                     color: fl.trace_lit; width: max(80, sw - tx - 340); lines: 1; show: banner > 46 and banner <= 100 }
+                text "{nx_session}" { at: tx, head + 38; anchor: left center; size: 7.5; family: "Share Tech Mono"
+                     color: fl.muted; width: max(60, sw - tx - 300); lines: 1; show: banner <= 46 }
+
+                // the right end: the clock, the date and the workspace it belongs to
+                text "{clock.time}" { at: sw - 24, head + if(banner > 100, 40, if(banner > 60, 30, 15)); anchor: right center
+                                       size: 26; weight: 600; family: "Share Tech Mono"; color: mix(fl.hull, ac, 0.9)
+                                       show: banner > 100 }
+                text "{clock.time}" { at: sw - 24, head + if(banner > 60, 26, 14); anchor: right center
+                                       size: 16; weight: 600; family: "Share Tech Mono"; color: mix(fl.hull, ac, 0.9)
+                                       show: banner <= 100 and banner > 46 }
+                text "{clock.time}" { at: sw - 24, head + 23; anchor: right center; size: 12; weight: 600
+                                       family: "Share Tech Mono"; color: mix(fl.hull, ac, 0.9); show: banner <= 46 }
+                text "{clock.date}" { at: sw - 24, head + 66; anchor: right center; size: 8.5; family: "Share Tech Mono"
+                                       color: fl.muted; show: banner > 100 }
+                text "WS {ws.active, 0}" { at: sw - 24, head + 86; anchor: right center; size: 8; family: "Share Tech Mono"
+                                            color: fl.trace_lit; show: banner > 100 }
+                box { from: sw - 152, head + 28; size: 1, 62; color: fl.trace; opacity: 0.4; show: banner > 100 }
+                text "WORKSPACE" { at: sw - 136, head + 40; anchor: left center; size: 7.5; family: "Share Tech Mono"
+                                    color: fl.muted; show: banner > 100 }
+                text "{ws.active, 0}" { at: sw - 136, head + 62; anchor: left center; size: 22; weight: 700
+                                        family: "Exo 2"; color: fl.trace_lit; show: banner > 100 }
+                text "{ws.active, 0}" { at: sw - 120, head + 47; anchor: right center; size: 14; weight: 700
+                                        family: "Exo 2"; color: fl.trace_lit; show: banner > 46 and banner <= 100 }
+                text "WS" { at: sw - 136, head + 47; anchor: left center; size: 7.5; family: "Share Tech Mono"
+                            color: fl.muted; show: banner > 46 and banner <= 100 }
+
+                // the band's own height control, where the band is tall enough to hold it
+                zone box nx_banner_hit { from: sw - 168, head + banner - 22; size: 144, 16; cursor: pointer; role: button
+                                         label: "Change the banner height"; show: banner > 100 }
+                text "BANNER {nx_banner_name}" { at: sw - 28, head + banner - 13; anchor: right center; size: 7
+                                                 family: "Share Tech Mono"; color: mix(fl.muted, ac, nx_banner_hit.hover)
+                                                 show: banner > 100 }
                 on press nx_banner_hit { emit nx_banner_cycle }
             }
 
@@ -563,15 +796,47 @@ scene Nexus {
             group {
                 clip box { from: 0, cy; size: sw, ch }
 
+                // the ground: graphite falling from the banner into the strip, its edges
+                // shaded so the field reads as a volume and not as a rectangle
+                body {
+                    gradient: 0, cy to 0, cy + ch, fl.hull_raised, fl.ground
+                    box { from: 0, cy; size: sw, ch }
+                }
+                repeat v in 0..3 {
+                    box { from: 0, cy + v * 7; size: sw, 7; color: fl.ground; opacity: 0.14 - v * 0.03 }
+                    box { from: 0, cy + ch - (v + 1) * 7; size: sw, 7; color: fl.ground; opacity: 0.14 - v * 0.03 }
+                }
+
+                // the measured field: 36 px minor, 180 px major, both under everything
                 group {
                     show: nx_grid
-                    repeat gx in 0..30 {
-                        line { from: cx + gx * 72, cy; to: cx + gx * 72, cy + ch; width: 1; color: fl.trace_dim; opacity: 0.16 }
+                    repeat gx in 0..46 {
+                        line { from: cx + gx * 36, cy; to: cx + gx * 36, cy + ch; width: 1; color: fl.trace_dim; opacity: 0.08 }
                     }
-                    repeat gy in 0..14 {
-                        line { from: cx, cy + gy * 72; to: cx + cw, cy + gy * 72; width: 1; color: fl.trace_dim; opacity: 0.16 }
+                    repeat gy in 0..28 {
+                        line { from: cx, cy + gy * 36; to: cx + cw, cy + gy * 36; width: 1; color: fl.trace_dim; opacity: 0.08 }
+                    }
+                    repeat mx in 0..10 {
+                        line { from: cx + mx * 180, cy; to: cx + mx * 180, cy + ch; width: 1; color: fl.trace; opacity: 0.1 }
+                    }
+                    repeat my in 0..6 {
+                        line { from: cx, cy + my * 180; to: cx + cw, cy + my * 180; width: 1; color: fl.trace; opacity: 0.1 }
                     }
                 }
+
+                // the field's own corner marks, and what it measures
+                line { from: cx, cy; to: cx + 20, cy; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx, cy; to: cx, cy + 20; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx + cw, cy; to: cx + cw - 20, cy; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx + cw, cy; to: cx + cw, cy + 20; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx, cy + ch; to: cx + 20, cy + ch; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx, cy + ch; to: cx, cy + ch - 20; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx + cw, cy + ch; to: cx + cw - 20, cy + ch; width: 1; color: fl.trace; opacity: 0.55 }
+                line { from: cx + cw, cy + ch; to: cx + cw, cy + ch - 20; width: 1; color: fl.trace; opacity: 0.55 }
+                text "NX FIELD   {cw, 0} × {ch, 0}" { at: cx + 2, cy + ch - 8; anchor: left center; size: 6.5
+                     family: "Share Tech Mono"; color: fl.muted; opacity: 0.55; show: not tiny }
+                text "GRID 36 / 180" { at: cx + cw - 2, cy + ch - 8; anchor: right center; size: 6.5
+                     family: "Share Tech Mono"; color: fl.muted; opacity: 0.55; show: nx_grid and not tiny }
 
                 // ── the traces: trunk under satellites, drawn before the nodes so a node
                 //    always sits on top of its own connection ──
@@ -580,21 +845,49 @@ scene Nexus {
                     let py1 = cy + if(nx_drag == e.from_id, e.y1 + nx_dy, e.y1)
                     let px4 = cx + if(nx_drag == e.to_id, e.x4 + nx_dx, e.x4)
                     let py4 = cy + if(nx_drag == e.to_id, e.y4 + nx_dy, e.y4)
+                    let lx = min(cx + e.mx + 4, max(cx + 4, cx + cw - 168))
                     group {
-                        opacity: if(e.dim, 0.22, 1)
-                        line { from: px1, py1; to: cx + e.x2, cy + e.y2; width: if(e.hot, 2, nx_edge_width)
-                               color: if(e.hot, fl.phos, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 2 }
-                        line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: if(e.hot, 2, nx_edge_width)
-                               color: if(e.hot, fl.phos, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 3 }
-                        line { from: cx + e.x3, cy + e.y3; to: px4, py4; width: if(e.hot, 2, nx_edge_width)
-                               color: if(e.hot, fl.phos, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 4 }
+                        opacity: if(e.dim, 0.2, 1)
+                        // the trace's own shadow, then the trace: two passes make the line
+                        // sit in the field instead of on it
+                        line { from: px1, py1; to: cx + e.x2, cy + e.y2; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 2 }
+                        line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 3 }
+                        line { from: cx + e.x3, cy + e.y3; to: px4, py4; width: nx_edge_width + 3; color: fl.ground
+                               opacity: 0.5; show: e.n >= 4 }
+                        line { from: px1, py1; to: cx + e.x2, cy + e.y2; width: if(e.hot, 2.4, nx_edge_width)
+                               color: if(e.hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 2 }
+                        line { from: cx + e.x2, cy + e.y2; to: cx + e.x3, cy + e.y3; width: if(e.hot, 2.4, nx_edge_width)
+                               color: if(e.hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 3 }
+                        line { from: cx + e.x3, cy + e.y3; to: px4, py4; width: if(e.hot, 2.4, nx_edge_width)
+                               color: if(e.hot, ac, if(e.trunk, fl.trace, fl.trace_dim)); show: e.n >= 4 }
+                        // the elbow, a joint rather than a kink
+                        box { at: cx + e.x2, cy + e.y2; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 3 }
+                        box { at: cx + e.x3, cy + e.y3; size: 3, 3; color: fl.hull; stroke: 1; opacity: 0.75; show: e.n >= 4 }
                         // a live signal leaves a mark where the trace turns
-                        box { from: cx + e.mx - 3, cy + e.my - 3; size: 6, 6; corner: 3; color: fl.phos; opacity: 0.85; show: e.active }
+                        group {
+                            show: e.active
+                            glow: 10, 0.6 * glow_amt, ac
+                            box { at: cx + e.mx, cy + e.my; size: 7, 7; corner: 4; color: ac; opacity: 0.92 }
+                            box { at: cx + e.mx, cy + e.my; size: 13, 13; corner: 7; stroke: 1; color: ac; opacity: 0.3 }
+                        }
+                        // the label sits on a short rule, so it belongs to the trace
+                        line { from: cx + e.mx + 8, cy + e.my - 3; to: cx + e.mx + 34, cy + e.my - 3; width: 1
+                               color: fl.trace; opacity: if(e.hot, 0.55, 0.22)
+                               show: nx_edge_labels and (e.trunk or e.hot) and nx_hover_edge != e.id }
                         text e.label { at: cx + e.mx + 9, cy + e.my - 9; anchor: left center; size: 7; family: "Share Tech Mono"
-                                       color: if(e.hot, fl.phos, fl.muted); show: nx_edge_labels and (e.trunk or e.hot) and nx_hover_edge != e.id }
-                        // hover inspection: what this connection means
-                        text e.meaning { at: cx + e.mx + 9, cy + e.my + 10; anchor: left center; size: 7; family: "Share Tech Mono"
-                                         color: fl.trace_lit; show: nx_hover_edge == e.id }
+                                       color: if(e.hot, ac, fl.muted); show: nx_edge_labels and (e.trunk or e.hot) and nx_hover_edge != e.id }
+                        // hover inspection: what this connection means, in its own plate
+                        group {
+                            show: nx_hover_edge == e.id
+                            Chamfer(lx, cy + e.my + 2, 164, 38, 6, fl.hull, ac, 0.97, 1)
+                            box { from: lx, cy + e.my + 2; size: 164, 2; color: ac }
+                            text e.label { at: lx + 10, cy + e.my + 14; anchor: left center; size: 7.5; weight: 700
+                                           family: "Share Tech Mono"; color: ac }
+                            text e.meaning { at: lx + 10, cy + e.my + 28; anchor: left center; size: 7.5; family: "Share Tech Mono"
+                                             width: 146; lines: 1; color: fl.trace_lit }
+                        }
 
                         zone box nx_edge_hit1 { from: min(px1, cx + e.x2) - 4, min(py1, cy + e.y2) - 4
                                                 size: abs(cx + e.x2 - px1) + 8, abs(cy + e.y2 - py1) + 8
@@ -616,68 +909,143 @@ scene Nexus {
                         on press nx_edge_hit3 { emit nx_edge_pick(e.id) }
                     }
                 }
-                text "No nodes in this arrangement. Press VIEWS to bring one back." { at: cx, cy + ch / 2; anchor: left center; size: 12; family: "Exo 2"
-                     color: fl.muted; show: nx_node_count < 1 }
+
+                // the empty field: an invitation, not a blank canvas
+                group {
+                    show: nx_node_count < 1
+                    Chamfer(cx + cw / 2 - 176, cy + ch / 2 - 62, 352, 124, 10, fl.hull, fl.trace, 0.94, 1)
+                    NCorner(cx + cw / 2 - 170, cy + ch / 2 - 56, 340, 112, 12, ac, 0.4)
+                    text "THE FIELD IS EMPTY" { at: cx + cw / 2, cy + ch / 2 - 26; anchor: center; size: 15; weight: 700
+                                                family: "Exo 2"; color: fl.trace_lit }
+                    text "Every module is in the library. Bring one back to begin." { at: cx + cw / 2, cy + ch / 2 - 2;
+                         anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
+                    zone box nx_empty_lib { from: cx + cw / 2 - 86, cy + ch / 2 + 22; size: 172, 26; cursor: pointer
+                                            role: button; label: "Open the module library" }
+                    NButton(cx + cw / 2 - 86, cy + ch / 2 + 22, 172, 26, "OPEN THE LIBRARY", 0, ac, nx_empty_lib.hover)
+                    on press nx_empty_lib { nx_panel = library }
+                }
 
                 for n in nx_nodes {
                     let nw = if(nx_rz == n.id, nx_rw, n.w)
                     let nh = if(nx_rz == n.id, nx_rh, n.h)
                     let ny = cy + n.y
                     let nx = cx + n.x
+                    // The category tone, as a colour the palette already owns: a signal role
+                    // rather than a hex, so the frame follows the wallpaper with everything else.
+                    let tone = rgb(
+                        if(n.tone < 0.5, pr_muted_r, if(n.tone < 1.5, pr_phos_r, if(n.tone < 2.5, pr_flare_r, pr_ember_r))),
+                        if(n.tone < 0.5, pr_muted_g, if(n.tone < 1.5, pr_phos_g, if(n.tone < 2.5, pr_flare_g, pr_ember_g))),
+                        if(n.tone < 0.5, pr_muted_b, if(n.tone < 1.5, pr_phos_b, if(n.tone < 2.5, pr_flare_b, pr_ember_b))))
                     group {
                         move: if(nx_drag == n.id, nx_dx, 0), if(nx_drag == n.id, nx_dy, 0)
-                        glow: 16, if(n.focus, 0.5, 0.2) * st_glow, if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember)))
-                        Chamfer(nx, ny, nw, nh, 10,
-                                mix(fl.hull_raised, fl.well, if(n.focus, 0.45, 0)),
-                                if(n.endsel, fl.flare, if(n.sel, fl.phos, if(n.focus, fl.trace_lit, fl.trace))),
-                                if(n.mini, 0.9, 0.98), if(n.sel, 1.6, 1))
-                        box { from: nx + 1, ny + 1; size: max(0, nw - 2), rail - 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); opacity: 0.09 }
-                        box { from: nx + 1, ny + 1; size: 3, rail - 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
-                        text n.title { at: nx + 14, ny + 13; anchor: left center; size: 10; weight: 700; family: "Exo 2"
-                                       width: max(40, nw - 62); lines: 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
-                        text pick(n.focus, "CENTRE", n.key) { at: nx + nw - 52, ny + 13; anchor: right center; size: 7; family: "Share Tech Mono"; color: fl.muted }
-                        box { from: nx + nw - 26, ny + 10; size: 6, 6; corner: 3; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); opacity: 0.9 }
+                        glow: 18, if(n.focus, 0.55, if(n.sel, 0.32, 0.16)) * st_glow * glow_amt, tone
 
-                        // the compact body: one reading, no detail rows
+                        // the frame's whole face is the hit area: the controls inside are
+                        // declared after it, so they still take their own presses
+                        zone box nx_frame { from: nx, ny; size: nw, nh; cursor: grab; role: item; selected: n.sel
+                                            label: "{n.title}: {n.value}" }
+
+                        // the housing: a plate lit from above, its edge carrying the node's
+                        // signal, a shadow under it so it sits over the field
+                        body {
+                            gradient: nx, ny to nx, ny + nh * 0.45, mix(fl.hull_raised, tone, 0.05 + nx_frame.hover * 0.04), mix(fl.hull, fl.well, if(n.focus, 0.18, 0))
+                            rim: 6%
+                            border: if(n.sel or n.focus, 1.4, 1), mix(fl.trace, tone, 0.3 + nx_frame.hover * 0.25 + if(n.sel, 0.35, 0) + if(n.focus, 0.3, 0))
+                            shadow: 0, if(n.focus, 12, 7), if(n.focus, 28, 16), if(n.focus, 0.42, 0.26), fl.ink
+                            path { move nx + 10, ny; line nx + nw - 10, ny; line nx + nw, ny + 10
+                                   line nx + nw, ny + nh - 10; line nx + nw - 10, ny + nh
+                                   line nx + 10, ny + nh; line nx, ny + nh - 10; line nx, ny + 10; close }
+                        }
+
+                        // the rail: a band of the node's own colour, its lower edge drawn
+                        box { from: nx + 1, ny + 1; size: max(0, nw - 2), rail; color: tone; opacity: 0.06 + nx_frame.hover * 0.04 }
+                        box { from: nx + 1, ny + rail + 0.5; size: max(0, nw - 2), 1; color: tone; opacity: 0.32 }
+                        box { from: nx, ny + 9; size: 2.5, rail - 8; color: tone; opacity: 0.95 }
+
+
+                        // the index, the name and its state
+                        text "N{n.id}" { at: nx + 11, ny + rail / 2; anchor: left center; size: 6.5; family: "Share Tech Mono"
+                                         color: mix(fl.muted, tone, 0.55) }
+                        text n.title { at: nx + 34, ny + rail / 2; anchor: left center; size: 9.5; weight: 700; family: "Exo 2"
+                                       width: max(40, nw - 96); lines: 1; color: mix(fl.muted, tone, 0.95) }
+                        text pick(n.focus, "CENTRE", n.key) { at: nx + nw - 44, ny + rail / 2; anchor: right center
+                                                             size: 6.5; family: "Share Tech Mono"
+                                                             color: mix(fl.muted, tone, if(n.focus, 0.9, 0.35)) }
+                        box { from: nx + nw - 23, ny + rail / 2 - 4; size: 8, 8; corner: 4; color: fl.flare
+                              opacity: 0.9; show: n.endsel }
+                        box { from: nx + nw - 22, ny + rail / 2 - 3; size: 6, 6; corner: 3; color: tone
+                              opacity: 0.9; show: not n.endsel }
+
+                        // port nubs: where this node's traces leave it
+                        box { from: nx - 1, ny + nh / 2 - 6; size: 3, 12; corner: 1; color: fl.hull; stroke: 1; opacity: 0.9 }
+                        box { from: nx - 1, ny + nh / 2 - 6; size: 2, 12; color: tone; opacity: 0.55 }
+                        box { from: nx + nw - 2, ny + nh / 2 - 6; size: 3, 12; corner: 1; color: fl.hull; stroke: 1; opacity: 0.9 }
+                        box { from: nx + nw - 1, ny + nh / 2 - 6; size: 2, 12; color: tone; opacity: 0.55 }
+
+                        // the compact body: one reading, what it is, and its bar
                         group {
                             show: not n.mini and not n.focus
-                            text n.value { at: nx + 14, ny + rail + 26; anchor: left center; size: 19; weight: 700; family: "Exo 2"
-                                           width: max(40, nw - 28); lines: 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
-                            text n.note { at: nx + 14, ny + nh - 30; anchor: left center; size: 8; family: "Share Tech Mono"
+                            text n.value { at: nx + 14, ny + rail + 26; anchor: left center; size: 20; weight: 700; family: "Exo 2"
+                                           width: max(40, nw - 28); lines: 1; color: mix(fl.hull, tone, 0.96) }
+                            text n.note { at: nx + 14, ny + rail + 48; anchor: left center; size: 7.5; family: "Share Tech Mono"
                                           width: max(40, nw - 28); lines: 1; color: fl.muted }
-                            box { from: nx + 14, ny + nh - 16; size: max(0, nw - 28), 3; corner: 1; color: fl.ground }
-                            box { from: nx + 14, ny + nh - 16; size: max(0, (nw - 28) * clamp(n.bar, 0, 1)), 3; corner: 1
-                                  color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); show: n.baron }
+                            box { from: nx + 14, ny + nh - 17; size: max(0, nw - 28), 4; corner: 1; color: fl.ground; opacity: 0.85 }
+                            box { from: nx + 14, ny + nh - 17; size: max(0, (nw - 28) * clamp(n.bar, 0, 1)), 4; corner: 1
+                                  color: tone; opacity: 0.9; show: n.baron }
+                            box { from: nx + 14 + max(0, (nw - 28) * clamp(n.bar, 0, 1)) - 2, ny + nh - 20
+                                  size: 2, 10; color: mix(fl.hull, tone, 0.7); show: n.baron }
+                            repeat t in 0..4 {
+                                box { from: nx + 14 + (nw - 28) * (t + 1) / 5, ny + nh - 17; size: 1, 4; color: fl.hull; opacity: 0.45 }
+                            }
                         }
 
                         // the detail body: what a focused node shows in the middle
                         group {
                             show: n.focus and not n.mini
-                            text n.value { at: nx + 18, ny + rail + 34; anchor: left center; size: 26; weight: 700; family: "Exo 2"
-                                           width: max(60, nw - 36); lines: 1; color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))) }
-                            text n.note { at: nx + 18, ny + rail + 62; anchor: left center; size: 9; family: "Share Tech Mono"
+                            text n.value { at: nx + 18, ny + rail + 32; anchor: left center; size: 28; weight: 700; family: "Exo 2"
+                                           width: max(60, nw - 36); lines: 1; color: mix(fl.hull, tone, 0.97) }
+                            text n.note { at: nx + 18, ny + rail + 60; anchor: left center; size: 8.5; family: "Share Tech Mono"
                                           width: max(60, nw - 36); lines: 1; color: fl.trace_lit }
-                            box { from: nx + 18, ny + rail + 76; size: max(0, nw - 36), 3; corner: 1; color: fl.ground }
-                            box { from: nx + 18, ny + rail + 76; size: max(0, (nw - 36) * clamp(n.bar, 0, 1)), 3; corner: 1
-                                  color: if(n.tone < 0.5, fl.muted, if(n.tone < 1.5, fl.phos, if(n.tone < 2.5, fl.flare, fl.ember))); show: n.baron }
+                            box { from: nx + 18, ny + rail + 74; size: max(0, nw - 36), 4; corner: 1; color: fl.ground; opacity: 0.85 }
+                            box { from: nx + 18, ny + rail + 74; size: max(0, (nw - 36) * clamp(n.bar, 0, 1)), 4; corner: 1
+                                  color: tone; opacity: 0.9; show: n.baron }
+                            repeat t in 0..9 {
+                                box { from: nx + 18 + (nw - 36) * (t + 1) / 10, ny + rail + 74; size: 1, 4; color: fl.hull; opacity: 0.4 }
+                            }
 
-                            text n.r1l { at: nx + 18, ny + rail + 104; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 1 }
-                            text n.r1v { at: nx + nw - 18, ny + rail + 104; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 1 }
-                            text n.r2l { at: nx + 18, ny + rail + 130; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 2 }
-                            text n.r2v { at: nx + nw - 18, ny + rail + 130; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 2 }
-                            text n.r3l { at: nx + 18, ny + rail + 156; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 3 }
-                            text n.r3v { at: nx + nw - 18, ny + rail + 156; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 3 }
-                            text n.r4l { at: nx + 18, ny + rail + 182; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 4 }
-                            text n.r4v { at: nx + nw - 18, ny + rail + 182; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 4 }
-                            text n.r5l { at: nx + 18, ny + rail + 208; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 5 }
-                            text n.r5v { at: nx + nw - 18, ny + rail + 208; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 5 }
-                            text n.r6l { at: nx + 18, ny + rail + 234; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 6 }
-                            text n.r6v { at: nx + nw - 18, ny + rail + 234; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 6 }
-                            text n.r7l { at: nx + 18, ny + rail + 260; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 7 }
-                            text n.r7v { at: nx + nw - 18, ny + rail + 260; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 7 }
-                            text n.r8l { at: nx + 18, ny + rail + 286; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 8 }
-                            text n.r8v { at: nx + nw - 18, ny + rail + 286; anchor: right center; size: 11; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: fl.phos; show: n.rows >= 8 }
-
+                            // the readings: a rule under each pair, the value in the signal
+                            line { from: nx + 18, ny + rail + 92; to: nx + nw - 18, ny + rail + 92; width: 1;
+                                   color: tone; opacity: 0.22; show: n.rows >= 1 }
+                            text n.r1l { at: nx + 18, ny + rail + 104; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 1 }
+                            text n.r1v { at: nx + nw - 18, ny + rail + 104; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 1 }
+                            line { from: nx + 18, ny + rail + 118; to: nx + nw - 18, ny + rail + 118; width: 1
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 2 }
+                            text n.r2l { at: nx + 18, ny + rail + 130; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 2 }
+                            text n.r2v { at: nx + nw - 18, ny + rail + 130; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 2 }
+                            line { from: nx + 18, ny + rail + 144; to: nx + nw - 18, ny + rail + 144; width: 1
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 3 }
+                            text n.r3l { at: nx + 18, ny + rail + 156; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 3 }
+                            text n.r3v { at: nx + nw - 18, ny + rail + 156; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 3 }
+                            line { from: nx + 18, ny + rail + 170; to: nx + nw - 18, ny + rail + 170; width: 1
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 4 }
+                            text n.r4l { at: nx + 18, ny + rail + 182; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 4 }
+                            text n.r4v { at: nx + nw - 18, ny + rail + 182; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 4 }
+                            line { from: nx + 18, ny + rail + 196; to: nx + nw - 18, ny + rail + 196; width: 1
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 5 }
+                            text n.r5l { at: nx + 18, ny + rail + 208; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 5 }
+                            text n.r5v { at: nx + nw - 18, ny + rail + 208; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 5 }
+                            line { from: nx + 18, ny + rail + 222; to: nx + nw - 18, ny + rail + 222; width: 1
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 6 }
+                            text n.r6l { at: nx + 18, ny + rail + 234; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 6 }
+                            text n.r6v { at: nx + nw - 18, ny + rail + 234; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 6 }
+                            line { from: nx + 18, ny + rail + 248; to: nx + nw - 18, ny + rail + 248; width: 1
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 7 }
+                            text n.r7l { at: nx + 18, ny + rail + 260; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 7 }
+                            text n.r7v { at: nx + nw - 18, ny + rail + 260; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 7 }
+                            line { from: nx + 18, ny + rail + 274; to: nx + nw - 18, ny + rail + 274; width: 1;
+                                   color: fl.trace; opacity: 0.12; show: n.rows >= 8 }
+                            text n.r8l { at: nx + 18, ny + rail + 286; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 8 }
+                            text n.r8v { at: nx + nw - 18, ny + rail + 286; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 8 }
                             // SYSTEM: the overview's own action still lives here
                             group {
                                 show: n.kind == 1
@@ -756,9 +1124,13 @@ scene Nexus {
                             }
                         }
 
-                        // the frame: press to select, drag to move, grip to resize
-                        zone box nx_frame { from: nx, ny; size: nw, nh; cursor: grab; role: item; selected: n.sel
-                                            label: "{n.title}: {n.value}" }
+                        // the selected frame wears its brackets, over its own controls
+                        group {
+                            show: n.sel or n.focus
+                            NCorner(nx - 4, ny - 4, nw + 8, nh + 8, 12, if(n.endsel, fl.flare, tone), if(n.sel, 0.85, 0.45))
+                        }
+
+                        // the frame's own gesture: press to select, drag to move
                         on press nx_frame { nx_press = n.id; nx_dx = 0; nx_dy = 0; nx_menu = 0 }
                         // hovering a node lights the traces that reach it
                         on enter nx_frame { emit nx_hover_node(n.id) }
@@ -773,17 +1145,23 @@ scene Nexus {
                         on release nx_frame while nx_drag == n.id { emit nx_drop(n.id); nx_drag = 0; nx_press = 0 }
                         on release nx_frame while nx_drag != n.id and nx_press == n.id { emit nx_select(n.id); nx_press = 0 }
 
-                        zone box nx_menu_hit { from: nx + nw - 18, ny + 4; size: 14, 12; cursor: pointer; role: button
+                        zone box nx_menu_hit { from: nx + nw - 20, ny + 2; size: 18, rail - 3; cursor: pointer; role: button
                                                label: "Actions for {n.title}" }
-                        text "···" { at: nx + nw - 11, ny + 10; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        repeat d in 0..2 {
+                            box { at: nx + nw - 14 + d * 4, ny + rail / 2; size: 2, 2; corner: 1
+                                  color: mix(fl.muted, tone, nx_menu_hit.hover * 0.9) }
+                        }
                         on press nx_menu_hit { nx_menu = if(nx_menu == n.id, 0, n.id) }
 
                         group {
                             show: not n.mini
-                            zone box nx_grip { from: nx + nw - 16, ny + nh - 16; size: 16, 16; cursor: pointer; role: item
+                            zone box nx_grip { from: nx + nw - 18, ny + nh - 18; size: 18, 18; cursor: pointer; role: item
                                                label: "Resize {n.title}" }
-                            line { from: nx + nw - 12, ny + nh - 4; to: nx + nw - 4, ny + nh - 12; width: 1.4; color: fl.trace }
-                            line { from: nx + nw - 7, ny + nh - 4; to: nx + nw - 4, ny + nh - 7; width: 1.4; color: fl.trace }
+                            line { from: nx + nw - 14, ny + nh - 4; to: nx + nw - 4, ny + nh - 14; width: 1.4
+                                   color: mix(fl.trace, tone, nx_grip.hover * 0.8) }
+                            line { from: nx + nw - 8, ny + nh - 4; to: nx + nw - 4, ny + nh - 8; width: 1.4
+                                   color: mix(fl.trace, tone, nx_grip.hover * 0.8) }
+                            box { at: nx + nw - 5, ny + nh - 5; size: 2, 2; color: tone; opacity: 0.8 }
                             on press nx_grip { nx_rz = n.id; nx_rw = n.w; nx_rh = n.h }
                             on drag nx_grip while nx_rz == n.id and not nx_pinned {
                                 nx_cw = cw; nx_ch = ch
@@ -795,100 +1173,570 @@ scene Nexus {
                     }
                 }
 
-                // the node menu, above every frame, clamped so it never leaves the canvas
                 for n in nx_nodes {
-                    let mx = clamp(cx + n.x + n.w - 132, 8, max(8, sw - 140))
-                    let my = clamp(cy + n.y + 30, cy + 4, max(cy + 4, cy + ch - 104))
+                    let mx = clamp(cx + n.x + n.w - 156, 8, max(8, sw - 164))
+                    let my = clamp(cy + n.y + rail + 6, cy + 4, max(cy + 4, cy + ch - 152))
                     group {
                         show: nx_menu == n.id
-                        glow: 14, 0.4 * st_glow, fl.phos
-                        Chamfer(mx, my, 128, 100, 8, fl.hull, fl.phos, 1, 1)
-                        box { from: mx, my; size: 128, 2; color: fl.phos }
-                        text n.title { at: mx + 10, my + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos; width: 108; lines: 1 }
-                        zone box nx_act_focus { from: mx, my + 28; size: 128, 22; cursor: pointer; role: button; label: "Focus {n.title} at the centre" }
-                        text "FOCUS AT CENTRE" { at: mx + 10, my + 39; anchor: left center; size: 8; family: "Share Tech Mono"
-                                                 color: mix(fl.muted, fl.phos, nx_act_focus.hover) }
+                        glow: 16, 0.35 * st_glow * glow_amt, ac
+                        body {
+                            gradient: mx, my to mx, my + 146, fl.hull_raised, fl.hull
+                            rim: 6%
+                            border: 1, mix(fl.trace, ac, 0.45)
+                            shadow: 0, 10, 26, 0.5, fl.ink
+                            path { move mx + 8, my; line mx + 156 - 8, my; line mx + 156, my + 8
+                                   line mx + 156, my + 146 - 8; line mx + 156 - 8, my + 146
+                                   line mx + 8, my + 146; line mx, my + 146 - 8; line mx, my + 8; close }
+                        }
+                        box { from: mx, my; size: 152, 2; color: ac }
+                        text "N{n.id}  ·  {n.title}" { at: mx + 12, my + 16; anchor: left center; size: 8; weight: 700
+                                                      family: "Share Tech Mono"; color: ac; width: 128; lines: 1 }
+                        line { from: mx + 10, my + 28; to: mx + 146, my + 28; width: 1; color: ac; opacity: 0.25 }
+
+                        zone box nx_act_focus { from: mx, my + 30; size: 156, 24; cursor: pointer; role: button
+                                                label: "Focus {n.title} at the centre" }
+                        box { from: mx + 1, my + 31; size: 154, 22; color: ac; opacity: nx_act_focus.hover * 0.12 }
+                        box { from: mx + 6, my + 41; size: 3, 3; corner: 2; color: ac; opacity: 0.6 }
+                        text "FOCUS AT CENTRE" { at: mx + 16, my + 42; anchor: left center; size: 8; family: "Share Tech Mono"
+                                                 color: mix(fl.muted, ac, nx_act_focus.hover) }
                         on press nx_act_focus { emit nx_focus_node(n.id); nx_menu = 0 }
-                        zone box nx_act_min { from: mx, my + 50; size: 128, 22; cursor: pointer; role: button; label: "Minimize or restore {n.title}" }
-                        text pick(n.mini, "RESTORE BODY", "MINIMIZE") { at: mx + 10, my + 61; anchor: left center; size: 8; family: "Share Tech Mono"
-                                                                         color: mix(fl.muted, fl.phos, nx_act_min.hover) }
+
+                        zone box nx_act_min { from: mx, my + 54; size: 156, 24; cursor: pointer; role: button
+                                              label: "Minimize or restore {n.title}" }
+                        box { from: mx + 1, my + 55; size: 154, 22; color: ac; opacity: nx_act_min.hover * 0.12 }
+                        box { from: mx + 6, my + 65; size: 3, 3; corner: 2; color: ac; opacity: 0.6 }
+                        text pick(n.mini, "RESTORE BODY", "MINIMIZE") { at: mx + 16, my + 66; anchor: left center; size: 8
+                                                                       family: "Share Tech Mono"; color: mix(fl.muted, ac, nx_act_min.hover) }
                         on press nx_act_min { emit nx_min(n.id); nx_menu = 0 }
-                        zone box nx_act_remove { from: mx, my + 72; size: 128, 24; cursor: pointer; role: button; label: "Remove {n.title} from the layout" }
-                        text "REMOVE FROM LAYOUT" { at: mx + 10, my + 84; anchor: left center; size: 8; family: "Share Tech Mono"
+
+                        zone box nx_act_config { from: mx, my + 78; size: 156, 24; cursor: pointer; role: button
+                                                 label: "Open the settings for {n.title}" }
+                        box { from: mx + 1, my + 79; size: 154, 22; color: ac; opacity: nx_act_config.hover * 0.12 }
+                        box { from: mx + 6, my + 89; size: 3, 3; corner: 2; color: ac; opacity: 0.6 }
+                        text "NODE SETTINGS" { at: mx + 16, my + 90; anchor: left center; size: 8; family: "Share Tech Mono"
+                                               color: mix(fl.muted, ac, nx_act_config.hover) }
+                        on press nx_act_config while nx_sel != n.id { emit nx_select(n.id); nx_panel = node; nx_menu = 0 }
+                        on press nx_act_config while nx_sel == n.id { nx_panel = node; nx_menu = 0 }
+
+                        line { from: mx + 10, my + 106; to: mx + 146, my + 106; width: 1; color: fl.trace; opacity: 0.18 }
+                        zone box nx_act_remove { from: mx, my + 110; size: 156, 26; cursor: pointer; role: button
+                                                 label: "Remove {n.title} from the layout" }
+                        box { from: mx + 1, my + 111; size: 154, 24; color: fl.ember; opacity: nx_act_remove.hover * 0.14 }
+                        box { from: mx + 6, my + 123; size: 3, 3; corner: 2; color: fl.ember; opacity: 0.7 }
+                        text "REMOVE FROM LAYOUT" { at: mx + 16, my + 124; anchor: left center; size: 8; family: "Share Tech Mono"
                                                     color: mix(fl.muted, fl.ember, nx_act_remove.hover) }
                         on press nx_act_remove { emit nx_remove(n.id); nx_menu = 0 }
+
+                        zone box nx_act_close { from: mx + 128, my + 4; size: 24, 20; cursor: pointer; role: button
+                                                label: "Close the node menu" }
+                        line { from: mx + 136, my + 9; to: mx + 143, my + 16; width: 1.2
+                               color: mix(fl.muted, ac, nx_act_close.hover) }
+                        line { from: mx + 143, my + 9; to: mx + 136, my + 16; width: 1.2
+                               color: mix(fl.muted, ac, nx_act_close.hover) }
+                        on press nx_act_close { nx_menu = 0 }
+                    }
+                }
+
+            }
+
+            // ── the status strip: what is showing, and what the machine is doing ──
+            // ── a picked trace: what it means, and what to do with it ──
+            // The card also lists the traces that were put away, so a single hidden line can
+            // come back without restoring the whole network.
+            for e in nx_edges {
+                let ex = clamp(cx + e.mx + 12, cx + 8, max(cx + 8, cx + cw - 268))
+                let ph = 146 + min(nx_hidden_count, 3) * 22 + if(nx_hidden_count > 0, 20, 0)
+                let ey = clamp(cy + e.my - 60, cy + 8, max(cy + 8, cy + ch - ph - 8))
+                group {
+                    show: nx_edge_sel == e.id
+                    glow: 18, 0.35 * st_glow * glow_amt, ac
+                    body {
+                        gradient: ex, ey to ex, ey + ph, fl.hull_raised, fl.hull
+                        rim: 6%
+                        border: 1, mix(fl.trace, ac, 0.5)
+                        shadow: 0, 12, 30, 0.5, fl.ink
+                        path { move ex + 8, ey; line ex + 260 - 8, ey; line ex + 260, ey + 8
+                               line ex + 260, ey + ph - 8; line ex + 260 - 8, ey + ph
+                               line ex + 8, ey + ph; line ex, ey + ph - 8; line ex, ey + 8; close }
+                    }
+                    box { from: ex, ey; size: 256, 2; color: ac }
+                    text "CONNECTION" { at: ex + 12, ey + 15; anchor: left center; size: 6.5; family: "Share Tech Mono"
+                                        color: fl.muted }
+                    text e.label { at: ex + 12, ey + 34; anchor: left center; size: 13; weight: 700; family: "Exo 2"
+                                   color: ac; width: 236; lines: 1 }
+                    text e.meaning { at: ex + 12, ey + 52; anchor: left center; size: 8; family: "Share Tech Mono"
+                                     width: 236; lines: 1; color: fl.trace_lit }
+                    line { from: ex + 10, ey + 64; to: ex + 250, ey + 64; width: 1; color: fl.trace; opacity: 0.2 }
+
+                    zone box nx_edge_hidebtn { from: ex + 10, ey + 72; size: 116, 24; cursor: pointer; role: button
+                                               label: "Hide this trace" }
+                    CutButton(ex + 10, ey + 73, 116, "HIDE TRACE", fl.ember, nx_edge_hidebtn.hover)
+                    on press nx_edge_hidebtn { emit nx_edge_hide }
+                    zone box nx_edge_closebtn { from: ex + 134, ey + 72; size: 116, 24; cursor: pointer; role: button
+                                                label: "Close the trace menu" }
+                    CutButton(ex + 134, ey + 73, 116, "CLOSE", ac, nx_edge_closebtn.hover)
+                    on press nx_edge_closebtn { emit nx_edge_pick(0) }
+
+                    // what was put away, one line each
+                    group {
+                        show: nx_hidden_count > 0
+                        line { from: ex + 10, ey + 106; to: ex + 250, ey + 106; width: 1; color: fl.trace; opacity: 0.16 }
+                        text "PUT AWAY  ·  {nx_hidden_count, 0}" { at: ex + 12, ey + 120; anchor: left center; size: 6.5
+                             family: "Share Tech Mono"; color: fl.muted }
+                        for h in nx_hidden {
+                            let hy = ey + 132 + (h.id - 1) * 22
+                            zone box nx_edge_back { from: ex + 10, hy; size: 240, 20; cursor: pointer; role: button
+                                                    label: "Bring the {h.label} trace back"; show: h.id < 4 }
+                            box { from: ex + 10, hy; size: 240, 20; color: ac; opacity: nx_edge_back.hover * 0.14; show: h.id < 4 }
+                            box { at: ex + 17, hy + 10; size: 3, 3; corner: 2; color: ac; opacity: 0.6; show: h.id < 4 }
+                            text h.label { at: ex + 28, hy + 10; anchor: left center; size: 7.5; family: "Share Tech Mono"
+                                           color: mix(fl.muted, fl.trace_lit, 0.5 + nx_edge_back.hover * 0.5); show: h.id < 4 }
+                            text "RESTORE" { at: ex + 242, hy + 10; anchor: right center; size: 7; family: "Share Tech Mono"
+                                             color: mix(fl.trace, ac, 0.4 + nx_edge_back.hover * 0.6); show: h.id < 4 }
+                            on press nx_edge_back { emit nx_edge_show(h.id) }
+                        }
+                        zone box nx_edge_restorebtn { from: ex + 10, ey + 132 + min(nx_hidden_count, 3) * 22
+                                                     size: 240, 18; cursor: pointer; role: button
+                                                     label: "Bring every hidden trace back" }
+                        text "RESTORE FULL NETWORK" { at: ex + 12, ey + 141 + min(nx_hidden_count, 3) * 22; anchor: left center
+                                                       size: 6.5; family: "Share Tech Mono"
+                                                       color: mix(fl.muted, ac, 0.3 + nx_edge_restorebtn.hover * 0.7) }
+                        on press nx_edge_restorebtn { emit nx_edges_restore }
                     }
                 }
             }
 
             // ── the status strip: what is showing, and what the machine is doing ──
-            // A picked trace opens this: what it means, and the way to put it away.
-            for e in nx_edges {
-                let ex = clamp(cx + e.mx + 12, cx + 8, max(cx + 8, cx + cw - 240))
-                let ey = clamp(cy + e.my - 54, cy + 8, max(cy + 8, cy + ch - 130))
-                group {
-                    show: nx_edge_sel == e.id
-                    glow: 16, 0.4 * st_glow, fl.phos
-                    Chamfer(ex, ey, 228, 120, 8, fl.hull, fl.phos, 1, 1.2)
-                    box { from: ex, ey; size: 228, 2; color: fl.phos }
-                    text e.label { at: ex + 12, ey + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos; width: 204; lines: 1 }
-                    text e.meaning { at: ex + 12, ey + 36; anchor: left top; size: 9; family: "Exo 2"; width: 204; lines: 2; color: fl.trace_lit }
-                    zone box nx_edge_hidebtn { from: ex + 12, ey + 66; size: 100, 24; cursor: pointer; role: button; label: "Hide this trace" }
-                    CutButton(ex + 12, ey + 67, 100, "HIDE TRACE", fl.ember, nx_edge_hidebtn.hover)
-                    on press nx_edge_hidebtn { emit nx_edge_hide }
-                    zone box nx_edge_closebtn { from: ex + 120, ey + 66; size: 96, 24; cursor: pointer; role: button; label: "Close the trace menu" }
-                    CutButton(ex + 120, ey + 67, 96, "CLOSE", fl.phos, nx_edge_closebtn.hover)
-                    on press nx_edge_closebtn { emit nx_edge_pick(0) }
-                    text "RESTORE FULL NETWORK · {nx_edges_hidden, 0} HIDDEN" { at: ex + 12, ey + 104; anchor: left center; size: 7
-                         family: "Share Tech Mono"; color: fl.muted; show: nx_edges_hidden > 0 }
-                    zone box nx_edge_restorebtn { from: ex + 8, ey + 92; size: 214, 20; cursor: pointer; role: button
-                                                 label: "Bring every hidden trace back"; show: nx_edges_hidden > 0 }
-                    on press nx_edge_restorebtn { emit nx_edges_restore }
+            group {
+                show: not tiny
+                let mid = sh - foot / 2
+                body {
+                    gradient: 0, sh - foot to 0, sh, fl.hull_raised, fl.hull
+                    rim: 4%
+                    box { from: 0, sh - foot; size: sw, foot }
                 }
+                box { from: 0, sh - foot; size: sw, 1; color: fl.trace; opacity: 0.65 }
+                box { from: 0, sh - foot; size: 3, foot; color: ac; opacity: 0.85 }
+
+                // where the centre is
+                box { at: 22, mid; size: 5, 5; corner: 3; color: ac }
+                text "CENTRE" { at: 34, mid; anchor: left center; size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_focus_name}" { at: 78, mid; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: ac }
+                box { from: 190, sh - foot + 9; size: 1, foot - 18; color: fl.trace; opacity: 0.3 }
+
+                // what there is
+                text "NODES" { at: 202, mid; anchor: left center; size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_node_count, 0}" { at: 236, mid; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
+                text "TRACES" { at: 262, mid; anchor: left center; size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_edge_count, 0}" { at: 302, mid; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
+                group {
+                    show: nx_edges_hidden > 0
+                    text "AWAY" { at: 328, mid; anchor: left center; size: 6.5; family: "Share Tech Mono"; color: fl.ember }
+                    text "{nx_edges_hidden, 0}" { at: 358, mid; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                }
+                group {
+                    show: nx_morph > 0
+                    box { at: 400, mid; size: 4, 4; corner: 2; color: ac; opacity: 0.8 }
+                    text "MORPH" { at: 410, mid; anchor: left center; size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+                }
+
+                // what the machine is doing, in the middle where it can be read at a glance
+                box { from: sw / 2 - 128, sh - foot + 8; size: 1, foot - 16; color: fl.trace; opacity: 0.22 }
+                text "{nx_status}" { at: sw / 2, mid; anchor: center; size: 7.5; family: "Share Tech Mono"; color: fl.trace_lit }
+
+                // the keys, or the last thing that was refused
+                text "TAB SELECTS · ARROWS MOVE · ENTER FOCUS · ESC CLOSES" { at: sw - 20, mid; anchor: right center
+                     size: 7; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice and sw > 1180 }
+                text "{nx_mode_name} · {nx_accent_name} · EDGE {nx_edge_style, 0}/3" { at: sw - 20, mid; anchor: right center
+                     size: 7; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice and sw <= 1180 }
+                text "{nx_notice_text}" { at: sw - 20, mid; anchor: right center; size: 7; weight: 700; family: "Share Tech Mono"
+                     color: fl.ember; show: nx_notice }
             }
 
-            Chamfer(0, sh - foot, sw, foot, 0, fl.hull, fl.trace, 0.99, 1)
-            box { from: 0, sh - foot; size: sw, 1; color: fl.trace; opacity: 0.6 }
-            text "{nx_focus_name} AT CENTRE" { at: 20, sh - foot / 2; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.phos }
-            text "{nx_node_count, 0} NODES · {nx_edge_count, 0} TRACES · {nx_edges_hidden, 0} HIDDEN" {
-                at: 240, sh - foot / 2; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-            text "{nx_status}" { at: sw / 2, sh - foot / 2; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-            text "TAB SELECTS · ARROWS MOVE · ENTER FOCUS · ESC CLOSES" { at: sw - 20, sh - foot / 2; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: not nx_notice }
-            text "{nx_notice_text}" { at: sw - 20, sh - foot / 2; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: nx_notice }
+            // ── the panel: one docked surface, four faces (S5) ──
+            // The module library, the selected node's settings, the appearance, and the
+            // arrangements live on the same plate, so the shell has one place to look.
+            let panel_w = if(tiny, sw - 20, min(376, sw - 48))
+            let panel_x = sw - panel_w - if(tiny, 10, 20)
+            let panel_y = cy + 12
+            let panel_h = min(ch - 24, if(tiny, ch - 20, 512))
+            let px0 = panel_x + 16
+            let pwi = panel_w - 32
+            let py0 = panel_y + 92
 
-            // ── the identity editor, unchanged in purpose, now a panel of the shell ──
+            group {
+                show: nx_panel != none
+                body {
+                    gradient: panel_x, panel_y to panel_x, panel_y + panel_h, fl.hull_raised, fl.hull
+                    rim: 5%
+                    border: 1, mix(fl.trace, ac, 0.4)
+                    shadow: 0, 14, 34, 0.5, fl.ink
+                    path { move panel_x + 10, panel_y; line panel_x + panel_w - 10, panel_y
+                           line panel_x + panel_w, panel_y + 10; line panel_x + panel_w, panel_y + panel_h - 10
+                           line panel_x + panel_w - 10, panel_y + panel_h; line panel_x + 10, panel_y + panel_h
+                           line panel_x, panel_y + panel_h - 10; line panel_x, panel_y + 10; close }
+                }
+                box { from: panel_x, panel_y; size: panel_w, 2; color: ac }
+                NCorner(panel_x + 6, panel_y + 6, panel_w - 12, panel_h - 12, 10, ac, 0.3)
+
+                // the panel's own head: what it is, and the way out
+                text "MODULE LIBRARY" { at: px0, panel_y + 26; anchor: left center; size: 11; weight: 700; family: "Exo 2"
+                                        color: ac; show: nx_panel == library }
+                text "NODE SETTINGS" { at: px0, panel_y + 26; anchor: left center; size: 11; weight: 700; family: "Exo 2"
+                                       color: ac; show: nx_panel == node }
+                text "APPEARANCE" { at: px0, panel_y + 26; anchor: left center; size: 11; weight: 700; family: "Exo 2"
+                                    color: ac; show: nx_panel == look }
+                text "ARRANGEMENTS" { at: px0, panel_y + 26; anchor: left center; size: 11; weight: 700; family: "Exo 2"
+                                      color: ac; show: nx_panel == layout }
+                text "CONTROL NEXUS  ·  {nx_arrangement_name}  ·  {nx_mode_name}" { at: px0, panel_y + 41; anchor: left center
+                     size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+
+                zone box nx_panel_close { from: panel_x + panel_w - 34, panel_y + 12; size: 22, 22; cursor: pointer
+                                          role: button; label: "Close the panel" }
+                line { from: panel_x + panel_w - 27, panel_y + 18; to: panel_x + panel_w - 19, panel_y + 26; width: 1.4
+                       color: mix(fl.muted, fl.ember, nx_panel_close.hover) }
+                line { from: panel_x + panel_w - 19, panel_y + 18; to: panel_x + panel_w - 27, panel_y + 26; width: 1.4
+                       color: mix(fl.muted, fl.ember, nx_panel_close.hover) }
+                on press nx_panel_close { nx_panel = none }
+
+                // the tabs, so the four faces are one press apart
+                zone box nx_tab_lib { from: px0, panel_y + 54; size: 78, 22; cursor: pointer; role: tab
+                                      selected: nx_panel == library; label: "The module library" }
+                NButton(px0, panel_y + 54, 78, 22, "LIBRARY", nx_panel == library, ac, nx_tab_lib.hover)
+                on press nx_tab_lib { nx_panel = library }
+                zone box nx_tab_node { from: px0 + 82, panel_y + 54; size: 70, 22; cursor: pointer; role: tab
+                                       selected: nx_panel == node; label: "The selected node's settings" }
+                NButton(px0 + 82, panel_y + 54, 70, 22, "NODE", nx_panel == node, ac, nx_tab_node.hover)
+                on press nx_tab_node { nx_panel = node }
+                zone box nx_tab_look { from: px0 + 156, panel_y + 54; size: 70, 22; cursor: pointer; role: tab
+                                       selected: nx_panel == look; label: "The appearance" }
+                NButton(px0 + 156, panel_y + 54, 70, 22, "LOOK", nx_panel == look, ac, nx_tab_look.hover)
+                on press nx_tab_look { nx_panel = look }
+                zone box nx_tab_layout { from: px0 + 230, panel_y + 54; size: 82, 22; cursor: pointer; role: tab
+                                         selected: nx_panel == layout; label: "The arrangements" }
+                NButton(px0 + 230, panel_y + 54, 82, 22, "ARRANGE", nx_panel == layout, fl.flare, nx_tab_layout.hover)
+                on press nx_tab_layout { nx_panel = layout }
+                line { from: px0, panel_y + 84; to: panel_x + panel_w - 16, panel_y + 84; width: 1; color: ac; opacity: 0.22 }
+
+                // ── LIBRARY: every module, what it is doing, and one press ──
+                group {
+                    show: nx_panel == library
+                    NCaption(px0, py0 + 2, pwi, "filter", fl.muted)
+                    input nx_lib_query { at: px0, py0 + 14; width: pwi; size: 13; color: fl.trace_lit
+                                         family: "Share Tech Mono"; placeholder: "Module name or category"; selection: ac }
+                    for r in nx_lib {
+                        let ry = py0 + 42 + (r.slot - 1) * 28
+                        group {
+                            show: r.slot < 11
+                            box { from: px0, ry; size: pwi, 26; corner: 3; color: fl.ground
+                                  opacity: if(r.state == 0, 0.28, 0.14) }
+                            box { from: px0, ry; size: 2, 26; color: if(r.state == 2, fl.muted, if(r.state == 1, fl.ember, fl.trace_lit)) }
+                            text r.title { at: px0 + 12, ry + 9; anchor: left center; size: 9.5; weight: 700; family: "Exo 2"
+                                           width: pwi - 24; lines: 1
+                                           color: if(r.state == 2, fl.muted, if(r.state == 1, mix(fl.muted, fl.ember, 0.7), fl.trace_lit)) }
+                            text "{r.category}  ·  {r.note}" { at: px0 + 12, ry + 20; anchor: left center; size: 6; family: "Share Tech Mono"
+                                  width: pwi - 24; lines: 1; color: if(r.state == 2, fl.muted, fl.trace) }
+                            text pick(r.state, "ON", "BACK", "N/A") { at: px0 + pwi - 8, ry + 13; anchor: right center; size: 6.5
+                                  weight: 700; family: "Share Tech Mono"
+                                  color: if(r.state == 2, fl.muted, if(r.state == 1, fl.ember, fl.trace_lit)) }
+                            zone box nx_lib_row { from: px0, ry; size: pwi, 26; cursor: pointer; role: button
+                                                  label: "{r.title}, {r.note}"
+                                                  show: r.state != 2 }
+                            box { from: px0, ry; size: pwi, 26; corner: 3; stroke: 1; color: ac
+                                  opacity: nx_lib_row.hover * 0.5; show: r.state != 2 }
+                            on press nx_lib_row while r.state == 1 { emit nx_restore(r.id) }
+                            on press nx_lib_row while r.state == 0 { emit nx_focus_node(r.id) }
+                        }
+                    }
+                    text "{nx_lib_count, 0} MODULES  ·  PRESS TO BRING ONE FORWARD" { at: px0, panel_y + panel_h - 18
+                         anchor: left center; size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+                }
+
+                // ── NODE: the selection's size, its slot and its fate ──
+                group {
+                    show: nx_panel == node
+                    text "{nx_sel_title}" { at: px0, py0 + 22; anchor: left center; size: 19; weight: 700; family: "Exo 2"
+                                            width: pwi; lines: 1; color: mix(fl.hull, ac, 0.9) }
+                    text "{nx_sel_note}  ·  NODE {nx_sel, 0}" { at: px0, py0 + 42; anchor: left center; size: 7.5
+                          family: "Share Tech Mono"; color: fl.muted }
+                    group {
+                        show: nx_sel_on < 1
+                        text "NOTHING IS SELECTED" { at: px0, py0 + 76; anchor: left center; size: 9; family: "Share Tech Mono"
+                                                     color: fl.ember }
+                        text "Press a node on the field, or Tab to walk them." { at: px0, py0 + 94; anchor: left center
+                             size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                    }
+                    group {
+                        show: nx_sel_on > 0
+                        NCaption(px0, py0 + 64, pwi, "size preset", fl.muted)
+                        zone box nx_pre_s { from: px0, py0 + 74; size: 78, 28; cursor: pointer; role: button
+                                            label: "Small size" }
+                        NButton(px0, py0 + 74, 78, 28, "S", 0, ac, nx_pre_s.hover)
+                        on press nx_pre_s { emit nx_node_preset(1) }
+                        zone box nx_pre_m { from: px0 + 84, py0 + 74; size: 78, 28; cursor: pointer; role: button
+                                            label: "Medium size" }
+                        NButton(px0 + 84, py0 + 74, 78, 28, "M", 0, ac, nx_pre_m.hover)
+                        on press nx_pre_m { emit nx_node_preset(2) }
+                        zone box nx_pre_l { from: px0 + 168, py0 + 74; size: 78, 28; cursor: pointer; role: button
+                                            label: "Large size" }
+                        NButton(px0 + 168, py0 + 74, 78, 28, "L", 0, ac, nx_pre_l.hover)
+                        on press nx_pre_l { emit nx_node_preset(3) }
+                        zone box nx_pre_d { from: px0 + 252, py0 + 74; size: 78, 28; cursor: pointer; role: button
+                                            label: "The size it takes at the centre" }
+                        NButton(px0 + 252, py0 + 74, 78, 28, "DETAIL", 0, fl.flare, nx_pre_d.hover)
+                        on press nx_pre_d { emit nx_node_preset(4) }
+
+                        NCaption(px0, py0 + 120, pwi, "actions", fl.muted)
+                        zone box nx_act2_focus { from: px0, py0 + 130; size: pwi, 30; cursor: pointer; role: button
+                                                 label: "Focus the selected node at the centre" }
+                        NButton(px0, py0 + 130, pwi, 30, "FOCUS AT CENTRE", 0, ac, nx_act2_focus.hover)
+                        on press nx_act2_focus { emit nx_focus_node(nx_sel) }
+                        zone box nx_act2_min { from: px0, py0 + 166; size: pwi, 30; cursor: pointer; role: button
+                                               label: "Minimize or restore the selected node" }
+                        NButton(px0, py0 + 166, pwi, 30, "MINIMIZE / RESTORE", 0, ac, nx_act2_min.hover)
+                        on press nx_act2_min { emit nx_min(nx_sel) }
+                        zone box nx_act2_reset { from: px0, py0 + 202; size: 164, 30; cursor: pointer; role: button
+                                                 label: "Reset the node's size and slot" }
+                        NButton(px0, py0 + 202, 164, 30, "RESET NODE", 0, fl.flare, nx_act2_reset.hover)
+                        on press nx_act2_reset { emit nx_node_reset }
+                        zone box nx_act2_remove { from: px0 + 172, py0 + 202; size: pwi - 172, 30; cursor: pointer; role: button
+                                                  label: "Remove the node from the layout" }
+                        NButton(px0 + 172, py0 + 202, pwi - 172, 30, "REMOVE", 0, fl.ember, nx_act2_remove.hover)
+                        on press nx_act2_remove { emit nx_remove(nx_sel) }
+
+                        NCaption(px0, py0 + 252, pwi, "the keys", fl.muted)
+                        text "TAB WALKS THE FIELD · ARROWS MOVE ONE STEP · ENTER CENTRES · DELETE REMOVES" {
+                            at: px0, py0 + 268; anchor: left top; size: 7; family: "Share Tech Mono"; width: pwi; lines: 2
+                            color: fl.muted }
+                        text "CTRL+Z STEPS BACK · CTRL+SHIFT+Z FORWARD" { at: px0, py0 + 290; anchor: left top; size: 7
+                             family: "Share Tech Mono"; width: pwi; lines: 1; color: fl.muted }
+                    }
+                }
+
+                // ── LOOK: the appearance, as roles and numbers, never a hex ──
+                group {
+                    show: nx_panel == look
+                    NCaption(px0, py0 + 2, pwi, "accent role", fl.muted)
+                    zone box nx_look_phos { from: px0, py0 + 12; size: 78, 26; cursor: pointer; role: toggle
+                                            checked: nx_accent == 1; label: "Phosphor accent" }
+                    NButton(px0, py0 + 12, 78, 26, "PHOS", nx_accent == 1, fl.phos, nx_look_phos.hover)
+                    on press nx_look_phos { nx_look_key = 1; nx_look_val = 0; emit nx_look }
+                    zone box nx_look_flare { from: px0 + 84, py0 + 12; size: 78, 26; cursor: pointer; role: toggle
+                                             checked: nx_accent == 2; label: "Amber accent" }
+                    NButton(px0 + 84, py0 + 12, 78, 26, "FLARE", nx_accent == 2, fl.flare, nx_look_flare.hover)
+                    on press nx_look_flare { nx_look_key = 1; nx_look_val = 1; emit nx_look }
+                    zone box nx_look_ember { from: px0 + 168, py0 + 12; size: 78, 26; cursor: pointer; role: toggle
+                                             checked: nx_accent == 3; label: "Ember accent" }
+                    NButton(px0 + 168, py0 + 12, 78, 26, "EMBER", nx_accent == 3, fl.ember, nx_look_ember.hover)
+                    on press nx_look_ember { nx_look_key = 1; nx_look_val = 2; emit nx_look }
+                    zone box nx_look_trace { from: px0 + 252, py0 + 12; size: 78, 26; cursor: pointer; role: toggle
+                                             checked: nx_accent == 4; label: "Trace accent" }
+                    NButton(px0 + 252, py0 + 12, 78, 26, "TRACE", nx_accent == 4, fl.trace_lit, nx_look_trace.hover)
+                    on press nx_look_trace { nx_look_key = 1; nx_look_val = 3; emit nx_look }
+
+                    NCaption(px0, py0 + 50, pwi, "light", fl.muted)
+                    text "GLOW" { at: px0, py0 + 72; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                    text "{nx_glow, 0}%" { at: px0 + pwi - 62, py0 + 72; anchor: center; size: 8.5; weight: 700
+                                           family: "Share Tech Mono"; color: fl.trace_lit }
+                    zone box nx_glow_dn { from: px0 + pwi - 118, py0 + 62; size: 30, 20; cursor: pointer; role: button
+                                          label: "Less glow" }
+                    NButton(px0 + pwi - 118, py0 + 62, 30, 20, "-", 0, ac, nx_glow_dn.hover)
+                    on press nx_glow_dn { nx_look_key = 4; nx_look_val = -10; emit nx_look }
+                    zone box nx_glow_up { from: px0 + pwi - 24, py0 + 62; size: 30, 20; cursor: pointer; role: button
+                                          label: "More glow" }
+                    NButton(px0 + pwi - 24, py0 + 62, 30, 20, "+", 0, ac, nx_glow_up.hover)
+                    on press nx_glow_up { nx_look_key = 4; nx_look_val = 10; emit nx_look }
+
+                    text "BRIGHTNESS" { at: px0, py0 + 100; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                    text "{nx_bright, 0}%" { at: px0 + pwi - 62, py0 + 100; anchor: center; size: 8.5; weight: 700
+                                             family: "Share Tech Mono"; color: fl.trace_lit }
+                    zone box nx_bri_dn { from: px0 + pwi - 118, py0 + 90; size: 30, 20; cursor: pointer; role: button
+                                         label: "Dimmer" }
+                    NButton(px0 + pwi - 118, py0 + 90, 30, 20, "-", 0, ac, nx_bri_dn.hover)
+                    on press nx_bri_dn { nx_look_key = 2; nx_look_val = -10; emit nx_look }
+                    zone box nx_bri_up { from: px0 + pwi - 24, py0 + 90; size: 30, 20; cursor: pointer; role: button
+                                         label: "Brighter" }
+                    NButton(px0 + pwi - 24, py0 + 90, 30, 20, "+", 0, ac, nx_bri_up.hover)
+                    on press nx_bri_up { nx_look_key = 2; nx_look_val = 10; emit nx_look }
+
+                    text "SURFACE OPACITY" { at: px0, py0 + 128; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                    text "{nx_opacity, 0}%" { at: px0 + pwi - 62, py0 + 128; anchor: center; size: 8.5; weight: 700
+                                              family: "Share Tech Mono"; color: fl.trace_lit }
+                    zone box nx_op_dn { from: px0 + pwi - 118, py0 + 118; size: 30, 20; cursor: pointer; role: button
+                                        label: "More transparent" }
+                    NButton(px0 + pwi - 118, py0 + 118, 30, 20, "-", 0, ac, nx_op_dn.hover)
+                    on press nx_op_dn { nx_look_key = 10; nx_look_val = -10; emit nx_look }
+                    zone box nx_op_up { from: px0 + pwi - 24, py0 + 118; size: 30, 20; cursor: pointer; role: button
+                                        label: "More solid" }
+                    NButton(px0 + pwi - 24, py0 + 118, 30, 20, "+", 0, ac, nx_op_up.hover)
+                    on press nx_op_up { nx_look_key = 10; nx_look_val = 10; emit nx_look }
+
+                    NCaption(px0, py0 + 154, pwi, "field", fl.muted)
+                    zone box nx_grid_toggle { from: px0, py0 + 164; size: 104, 26; cursor: pointer; role: toggle
+                                              checked: nx_grid; label: "Show the measured grid" }
+                    NButton(px0, py0 + 164, 104, 26, "GRID", nx_grid, ac, nx_grid_toggle.hover)
+                    on press nx_grid_toggle { nx_look_key = 5; nx_look_val = 1; emit nx_look }
+                    zone box nx_motion_toggle { from: px0 + 110, py0 + 164; size: 104, 26; cursor: pointer; role: toggle
+                                                checked: nx_motion; label: "Animate layout changes" }
+                    NButton(px0 + 110, py0 + 164, 104, 26, "MOTION", nx_motion, ac, nx_motion_toggle.hover)
+                    on press nx_motion_toggle { nx_look_key = 9; nx_look_val = 1; emit nx_look }
+                    zone box nx_labels_toggle { from: px0 + 220, py0 + 164; size: pwi - 220, 26; cursor: pointer; role: toggle
+                                                checked: nx_edge_labels; label: "Show trace labels" }
+                    NButton(px0 + 220, py0 + 164, pwi - 220, 26, "LABELS", nx_edge_labels, ac, nx_labels_toggle.hover)
+                    on press nx_labels_toggle { nx_look_key = 8; nx_look_val = 1; emit nx_look }
+
+                    NCaption(px0, py0 + 204, pwi, "traces", fl.muted)
+                    zone box nx_style_toggle { from: px0, py0 + 214; size: pwi - 118, 26; cursor: pointer; role: button
+                                               label: "Change how traces are routed" }
+                    NButton(px0, py0 + 214, pwi - 118, 26, "ROUTE", 0, ac, nx_style_toggle.hover)
+                    text "CIRCUIT" { at: px0 + pwi - 126, py0 + 227; anchor: right center; size: 7; weight: 700
+                                     family: "Share Tech Mono"; color: ac; show: nx_edge_style == 1 }
+                    text "CURVED" { at: px0 + pwi - 126, py0 + 227; anchor: right center; size: 7; weight: 700
+                                    family: "Share Tech Mono"; color: ac; show: nx_edge_style == 2 }
+                    text "DIRECT" { at: px0 + pwi - 126, py0 + 227; anchor: right center; size: 7; weight: 700
+                                    family: "Share Tech Mono"; color: ac; show: nx_edge_style == 3 }
+                    on press nx_style_toggle { nx_look_key = 7; nx_look_val = 1; emit nx_look }
+                    zone box nx_width_toggle { from: px0 + pwi - 110, py0 + 214; size: 110, 26; cursor: pointer; role: button
+                                               label: "Change the thickness of traces" }
+                    group { show: nx_edge_width == 1
+                        NButton(px0 + pwi - 110, py0 + 214, 110, 26, "1 PX", 1, ac, nx_width_toggle.hover) }
+                    group { show: nx_edge_width == 2
+                        NButton(px0 + pwi - 110, py0 + 214, 110, 26, "2 PX", 1, ac, nx_width_toggle.hover) }
+                    on press nx_width_toggle { nx_look_key = 6; nx_look_val = 1; emit nx_look }
+                    text "APPEARANCE IS SAVED WITH THE ARRANGEMENT" { at: px0, panel_y + panel_h - 18; anchor: left center
+                         size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+                }
+
+                // ── ARRANGE: the arrangements, their names and the band ──
+                group {
+                    show: nx_panel == layout
+                    NCaption(px0, py0 + 2, pwi, "arrangements", fl.muted)
+                    for a in nx_arrs {
+                        let ay = py0 + 12 + (a.id - 1) * 26
+                        group {
+                            box { from: px0, ay; size: pwi, 24; corner: 3; color: fl.ground
+                                  opacity: if(a.active, 0.4, 0.16) }
+                            box { from: px0, ay; size: 2, 24; color: if(a.active, fl.flare, fl.trace) }
+                            text a.name { at: px0 + 12, ay + 12; anchor: left center; size: 9; weight: 700; family: "Exo 2"
+                                          width: pwi - 90; lines: 1; color: if(a.active, fl.flare, fl.trace_lit) }
+                            text pick(a.active, "SHOW", "ON") { at: px0 + pwi - 8, ay + 12; anchor: right center; size: 6.5
+                                  family: "Share Tech Mono"; color: if(a.active, fl.flare, fl.muted) }
+                            zone box nx_arr_pick { from: px0, ay; size: pwi, 24; cursor: pointer; role: tab
+                                                   selected: a.active; label: "Show the {a.name} arrangement" }
+                            on press nx_arr_pick { emit nx_arrangement(a.id) }
+                        }
+                    }
+                    let ah = py0 + 22 + nx_arrangement_count * 26
+                    zone box nx_arr_add { from: px0, ah; size: 104, 26; cursor: pointer; role: button
+                                          label: "Keep this arrangement under a new name" }
+                    NButton(px0, ah, 104, 26, "NEW", 0, ac, nx_arr_add.hover)
+                    on press nx_arr_add { emit nx_arr_new }
+                    zone box nx_arr_dup { from: px0 + 110, ah; size: 104, 26; cursor: pointer; role: button
+                                          label: "Duplicate this arrangement" }
+                    NButton(px0 + 110, ah, 104, 26, "COPY", 0, ac, nx_arr_dup.hover)
+                    on press nx_arr_dup { emit nx_arr_dup }
+                    zone box nx_arr_del { from: px0 + 220, ah; size: pwi - 220, 26; cursor: pointer; role: button
+                                          label: "Delete this arrangement" }
+                    NButton(px0 + 220, ah, pwi - 220, 26, "DELETE", 0, fl.ember, nx_arr_del.hover)
+                    on press nx_arr_del { emit nx_arr_del }
+
+                    NCaption(px0, ah + 38, pwi, "rename", fl.muted)
+                    input nx_arr_draft { at: px0, ah + 50; width: pwi - 76; size: 13; color: fl.trace_lit
+                                         family: "Share Tech Mono"; placeholder: "Arrangement name"; selection: ac }
+                    zone box nx_arr_name_btn { from: px0 + pwi - 68, ah + 42; size: 68, 24; cursor: pointer; role: button
+                                               label: "Apply the arrangement name" }
+                    NButton(px0 + pwi - 68, ah + 42, 68, 24, "APPLY", 0, ac, nx_arr_name_btn.hover)
+                    on press nx_arr_name_btn { emit nx_arr_rename }
+
+                    NCaption(px0, ah + 82, pwi, "mode", fl.muted)
+                    zone box nx_mode_c2 { from: px0, ah + 92; size: 104, 26; cursor: pointer; role: toggle
+                                          checked: nx_mode == circuit; label: "Show the full circuit" }
+                    NButton(px0, ah + 92, 104, 26, "CIRCUIT", nx_mode == circuit, ac, nx_mode_c2.hover)
+                    on press nx_mode_c2 { emit nx_mode_switch(0) }
+                    zone box nx_mode_m2 { from: px0 + 110, ah + 92; size: 104, 26; cursor: pointer; role: toggle
+                                          checked: nx_mode == minimal; label: "Show only the essential nodes" }
+                    NButton(px0 + 110, ah + 92, 104, 26, "MINIMAL", nx_mode == minimal, fl.flare, nx_mode_m2.hover)
+                    on press nx_mode_m2 { emit nx_mode_switch(1) }
+
+                    NCaption(px0, ah + 132, pwi, "band", fl.muted)
+                    zone box nx_banner_btn2 { from: px0, ah + 142; size: 150, 26; cursor: pointer; role: button
+                                              label: "Change the banner height" }
+                    NButton(px0, ah + 142, 76, 26, "BANNER", 0, ac, nx_banner_btn2.hover)
+                    text "{nx_banner_name}" { at: px0 + 112, ah + 155; anchor: center; size: 7.5; weight: 700
+                                              family: "Share Tech Mono"; color: fl.trace_lit }
+                    on press nx_banner_btn2 { emit nx_banner_cycle }
+                    zone box nx_identity_btn2 { from: px0 + 156, ah + 142; size: pwi - 156, 26; cursor: pointer; role: button
+                                                label: "Edit the system identity" }
+                    NButton(px0 + 156, ah + 142, pwi - 156, 26, "IDENTITY", 0, fl.flare, nx_identity_btn2.hover)
+                    on press nx_identity_btn2 { emit nx_identity_edit }
+                }
+            }
+            // ── the identity editor: the banner's fields, on the panel's own plate ──
             group {
                 show: nx_identity_edit_on
-                Chamfer(sw - 340, cy + 12, 320, 218, 10, fl.hull, fl.trace, 1, 1.2)
-                box { from: sw - 340, cy + 12; size: 320, 3; color: fl.ember }
-                text "IDENTITY CONFIGURATION" { at: sw - 324, cy + 31; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos }
-                text "DISPLAY NAME" { at: sw - 324, cy + 54; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                input nx_identity_draft { at: sw - 324, cy + 64; width: 288; size: 16; color: fl.phos; placeholder: "Name this system"; selection: fl.trace }
-                zone box nx_identity_avatar_btn { from: sw - 324, cy + 102; size: 136, 28; cursor: pointer; role: button; label: "Choose profile avatar" }
-                CutButton(sw - 324, cy + 103, 136, "AVATAR IMAGE", fl.phos, nx_identity_avatar_btn.hover)
+                let ix = max(12, sw - 356 - if(nx_panel == none, 0, panel_w + 12))
+                let iw = 336
+                let iy = cy + 12
+                body {
+                    gradient: ix, iy to ix, iy + 236, fl.hull_raised, fl.hull
+                    rim: 5%
+                    border: 1, mix(fl.trace, fl.ember, 0.4)
+                    shadow: 0, 14, 34, 0.5, fl.ink
+                    path { move ix + 10, iy; line ix + iw - 10, iy; line ix + iw, iy + 10
+                           line ix + iw, iy + 236 - 10; line ix + iw - 10, iy + 236
+                           line ix + 10, iy + 236; line ix, iy + 236 - 10; line ix, iy + 10; close }
+                }
+                box { from: ix, iy; size: iw - 2, 2; color: fl.ember }
+                text "IDENTITY" { at: ix + 16, iy + 24; anchor: left center; size: 11; weight: 700; family: "Exo 2"
+                                 color: mix(fl.hull, fl.ember, 0.85) }
+                text "THE BANNER'S NAME AND PICTURES" { at: ix + 16, iy + 39; anchor: left center; size: 6.5
+                                                       family: "Share Tech Mono"; color: fl.muted }
+                NCaption(ix + 16, iy + 56, iw - 32, "display name", fl.muted)
+                input nx_identity_draft { at: ix + 16, iy + 68; width: iw - 32; size: 15; color: fl.trace_lit
+                                          family: "Exo 2"; placeholder: "Name this system"; selection: ac }
+                line { from: ix + 16, iy + 84; to: ix + iw - 16, iy + 84; width: 1; color: ac; opacity: 0.3 }
+
+                zone box nx_identity_avatar_btn { from: ix + 16, iy + 96; size: 148, 30; cursor: pointer; role: button
+                                                   label: "Choose profile avatar" }
+                NButton(ix + 16, iy + 96, 148, 30, "AVATAR", 0, ac, nx_identity_avatar_btn.hover)
                 on press nx_identity_avatar_btn { emit nx_identity_avatar }
-                zone box nx_identity_banner_btn { from: sw - 178, cy + 102; size: 140, 28; cursor: pointer; role: button; label: "Choose system banner" }
-                CutButton(sw - 178, cy + 103, 140, "BANNER IMAGE", fl.phos, nx_identity_banner_btn.hover)
+                zone box nx_identity_banner_btn { from: ix + 172, iy + 96; size: iw - 188, 30; cursor: pointer; role: button
+                                                   label: "Choose system banner" }
+                NButton(ix + 172, iy + 96, iw - 188, 30, "BANNER", 0, ac, nx_identity_banner_btn.hover)
                 on press nx_identity_banner_btn { emit nx_identity_banner }
-                text "PNG · JPG · WEBP · AVIF" { at: sw - 324, cy + 147; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                zone box nx_identity_save_btn { from: sw - 176, cy + 180; size: 76, 28; cursor: pointer; role: button; label: "Save system identity" }
-                CutButton(sw - 176, cy + 181, 76, "SAVE", fl.phos, nx_identity_save_btn.hover)
+                text "PNG · JPG · WEBP · AVIF  ·  48 CHARACTERS AT MOST" { at: ix + 16, iy + 142; anchor: left center
+                     size: 6.5; family: "Share Tech Mono"; color: fl.muted }
+
+                NCaption(ix + 16, iy + 160, iw - 32, "band", fl.muted)
+                zone box nx_identity_banner_height { from: ix + 16, iy + 170; size: iw - 32, 26; cursor: pointer; role: button
+                                                      label: "Change the banner height" }
+                NButton(ix + 16, iy + 170, iw - 32, 26, "BAND HEIGHT", 0, fl.flare, nx_identity_banner_height.hover)
+                on press nx_identity_banner_height { emit nx_banner_cycle }
+
+                zone box nx_identity_save_btn { from: ix + 16, iy + 204; size: 150, 24; cursor: pointer; role: button
+                                                label: "Save system identity" }
+                NButton(ix + 16, iy + 204, 150, 24, "SAVE IDENTITY", 0, ac, nx_identity_save_btn.hover)
                 on press nx_identity_save_btn { emit nx_identity_save }
-                zone box nx_identity_cancel_btn { from: sw - 92, cy + 180; size: 56, 28; cursor: pointer; role: button; label: "Cancel identity editing" }
-                CutButton(sw - 92, cy + 181, 56, "CLOSE", fl.ember, nx_identity_cancel_btn.hover)
+                zone box nx_identity_cancel_btn { from: ix + 174, iy + 204; size: iw - 190, 24; cursor: pointer; role: button
+                                                  label: "Cancel identity editing" }
+                NButton(ix + 174, iy + 204, iw - 190, 24, "CLOSE", 0, fl.ember, nx_identity_cancel_btn.hover)
                 on press nx_identity_cancel_btn { emit nx_identity_cancel }
             }
         }
     }
 
-    // Escape resolves in the order the spec gives it: cancel a drag, else close the drawer,
-    // else close Nexus. Tab walks the canvas; arrows move the selected node one grid step.
-    on key Escape while nx_menu > 0 { nx_menu = 0 }
-    on key Escape while nx_menu < 1 and nx_drag > 0 { nx_drag = 0; nx_press = 0 }
-    on key Escape while nx_menu < 1 and nx_drag < 1 { emit nx_close }
+    // Escape resolves in the order the spec gives it (§4): the identity editor, else the
+    // docked panel, else the node menu, else an active drag, else the selection, else Nexus.
+    // Tab walks the canvas; arrows move the selected node one grid step.
+    on key Escape while nx_identity_edit_on { emit nx_identity_cancel }
+    on key Escape while not nx_identity_edit_on and nx_panel != none { nx_panel = none }
+    on key Escape while nx_menu > 0 and nx_panel == none { nx_menu = 0 }
+    on key Escape while nx_menu < 1 and nx_panel == none and nx_drag > 0 { nx_drag = 0; nx_press = 0 }
+    on key Escape while nx_menu < 1 and nx_panel == none and nx_drag < 1 and nx_sel > 0 { emit nx_select(nx_sel) }
+    on key Escape while nx_menu < 1 and nx_panel == none and nx_drag < 1 and nx_sel < 1 { emit nx_close }
     on key Ctrl+z { emit nx_undo }
     on key Ctrl+Shift+z { emit nx_redo }
-    on key Tab { emit nx_cycle_sel }
+    on key Tab while not nx_identity_edit_on and nx_panel == none { emit nx_cycle_sel }
     on key Delete while nx_sel > 0 { emit nx_remove(nx_sel) }
     on key Return while nx_sel > 0 { emit nx_focus_node(nx_sel) }
     on key Left while nx_sel > 0 and not nx_pinned { emit nx_move(1) }

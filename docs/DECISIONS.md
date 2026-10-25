@@ -2510,3 +2510,44 @@ cannot carry a menu button without becoming a node.
 drawn from the authored graph, hover lights the trace, a press picks it, both endpoints are
 marked, hiding drops the count and RESTORE FULL NETWORK brings it back, and four unrelated
 traces recede from a focused node — 88 checks, 0 failed.
+
+## D80 · 2026-10-25 · The Nexus is drawn as a machined instrument, and customised on one plate
+
+The shell's surfaces were flat chamfers and thin labels. They are now built from the design
+system the spec asks for, with `body` plates (gradient face, rim, border, shadow) instead of
+one-colour paths, and one accent colour chosen from the palette's roles rather than `fl.phos`
+everywhere.
+
+- **One accent.** The appearance's accent role is read as `rgb()` of the four role springs, so
+  the header, the traces, the brackets, the panel and the status strip share one signal colour
+  and it still follows the wallpaper. Brightness and contrast are applied to the published
+  roles in the logic, which is the only way to change every surface without a hex in the
+  markup; glow scales the existing glows; opacity is the surface group's.
+- **Frames read as hardware.** A node is a rail with its index, name and state, port nubs on
+  both flanks, a reading with its note and a ticked bar, and a centred detail body with ruled
+  rows. Its whole face is one zone declared before the drawing, so hover, selection and focus
+  light the frame as one object; the controls inside are declared after it and keep their
+  presses.
+- **One docked panel** carries S5's four faces — LIBRARY, NODE, LOOK, ARRANGE — instead of four
+  surfaces. The header's tabs, the panel's tabs and Escape all address the same fact
+  (`nx_panel`), so opening, switching and putting it away behave the same from anywhere.
+- **The library is honest.** It lists the whole catalogue with `ON`, `BACK` (removed, restorable
+  by the node index it carries) or `N/A` and the provider's reason. It never offers an
+  unavailable module a press. Appearance and arrangements are edited in enums and bounded
+  numbers, validated by `config`'s existing kinds, and saved with the arrangement; nothing in
+  the scene writes a setting.
+- **A hidden trace can come back alone.** `model nx_hidden` lists what the arrangement put
+  away, labelled from the authored graph, and `nx_edge_show` removes one slot. RESTORE FULL
+  NETWORK stays for the whole list.
+- **The shell is responsive in three steps.** `tight` drops the arrangement chips when they
+  would collide with the panel buttons, `small` keeps only the controls that act on the
+  workspace, and `tiny` folds the banner to its strip, hides the status strip, replaces the
+  mode switch with one button and shrinks the gutters. The canvas is published to the logic
+  once the entrance settles and on every resize, and a shrink runs `nexuslayout.fit` — so the
+  arrangement follows a smaller screen without a pan/zoom mode.
+
+**Checked.** `bin/mooi check`: 234 unit tests, five scenes compile. `tests/nexus.sh`: 117
+checks, 0 failed — the library's rows and reasons, a removed node restored from it, a hidden
+trace listed and restored by slot, the grid, accent, glow, labels and route controls, a size
+preset and RESET NODE, NEW/COPY/DELETE on the arrangements, and Escape closing the panel
+before the workspace.

@@ -54,14 +54,25 @@ end
 sync_identity()
 
 -- The same roles the bar wears, from the same palette and settings; the tokens glide to them.
+-- The appearance's brightness and contrast are applied here, to the roles themselves, so a
+-- change reaches every surface the scene draws without a hex anywhere in the markup.
+local look_bright, look_contrast = 1, 1
+
+local function painted(v)
+    v = 0.5 + (v * look_bright - 0.5) * look_contrast
+    if v < 0 then return 0 end
+    if v > 1 then return 1 end
+    return v
+end
+
 local function paint()
     local out = ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
     if not out then return end
     for _, role in ipairs(ferro.ROLES) do
         local c = out[role]
-        fact["fr_" .. role .. "_r"] = c.r
-        fact["fr_" .. role .. "_g"] = c.g
-        fact["fr_" .. role .. "_b"] = c.b
+        fact["fr_" .. role .. "_r"] = painted(c.r)
+        fact["fr_" .. role .. "_g"] = painted(c.g)
+        fact["fr_" .. role .. "_b"] = painted(c.b)
     end
 end
 paint()
@@ -91,6 +102,25 @@ local mix, spaces = {}, {}
 -- The picked trace is kept by its id, because a republish can reorder the drawn list.
 local hover_node, hover_edge, picked_edge = 0, 0, nil
 local drawn_edges = {}
+-- The module library's search, kept here because a text field can be drawn but not
+-- compared in the scene; the filtered rows are what the library panel receives.
+local lib_query = ""
+-- Which arrangement name the rename field was last seeded with.
+local draft_for = nil
+
+-- Appearance is stored by role name, because a role name is what the scene's tokens read;
+-- the scene gets the place in the list and picks the colour itself.
+local ACCENTS = { "phos", "flare", "ember", "trace_lit" }
+local ACCENT_INDEX = { phos = 1, flare = 2, ember = 3, trace_lit = 4 }
+local ACCENT_TONE = { phos = 1, trace_lit = 1, flare = 2, ember = 3 }
+local STYLES = { "circuit", "curved", "direct" }
+local STYLE_INDEX = { circuit = 1, curved = 2, direct = 3 }
+
+local function clamp(v, low, high)
+    if v < low then return low end
+    if v > high then return high end
+    return v
+end
 
 -- The layout's own undo: snapshots of the arrangements taken before each edit, and the
 -- steps a redo can walk forward again. Any new edit clears the forward list.
@@ -121,6 +151,8 @@ end
 
 local function start_morph(from)
     if not from or next(from) == nil then return end
+    -- Reduced motion is a setting, not a suggestion: the arrangement changes in one step.
+    if fact.nx_motion == false then morph = nil; publish(); return end
     morph = { from = from, t = 0 }
     local function step()
         if not morph then return end
@@ -485,6 +517,50 @@ function publish()
     end
     if picked_edge and #edges == 0 then picked_edge = nil end
 
+    -- The module library (S5): every type the catalogue declares, with the reason it is not
+    -- drawing right now. `state` is 0 on canvas, 1 removed from this arrangement —the row
+    -- carries the node index the restore event takes— and 2 not connected on this machine.
+    local library = {}
+    if a then
+        local at = {}
+        for i, node in ipairs(a.nodes) do at[node.type] = { index = i, node = node } end
+        for _, def in ipairs(nexusnode.TYPES) do
+            local ok, why = nexusnode.available(def.id, p)
+            local entry = at[def.id]
+            local state, note = 0, "ON CANVAS"
+            if not ok then
+                state, note = 2, str(why, "NOT CONNECTED")
+            elseif not entry then
+                state, note = 2, "NOT IN THIS ARRANGEMENT"
+            elseif not entry.node.vis then
+                state, note = 1, "REMOVED FROM THE LAYOUT"
+            elseif mode == "minimal" and not entry.node.essential then
+                note = "ESSENTIAL ONLY"
+            end
+            local haystack = string.lower(def.title .. " " .. def.category)
+            if lib_query == "" or string.find(haystack, lib_query, 1, true) then
+                library[#library + 1] = {
+                    slot = #library + 1, id = entry and entry.index or 0, key = def.id,
+                    title = def.title, category = string.upper(def.category), state = state,
+                    note = note, tone = ACCENT_TONE[def.accent] or 1,
+                }
+            end
+        end
+    end
+
+    -- The traces the user put away, with the meaning the graph gives each one, so the
+    -- connection layer can offer them back one at a time and not only all at once.
+    local put_away = {}
+    if a and type(a.edges) == "table" and type(a.edges.hidden) == "table" then
+        for slot, id in ipairs(a.edges.hidden) do
+            local label, meaning = id, "hidden trace"
+            for _, edge in ipairs(nexusgraph.EDGES) do
+                if edge.id == id then label, meaning = edge.label, edge.meaning; break end
+            end
+            put_away[#put_away + 1] = { id = slot, key = id, label = label, meaning = meaning }
+        end
+    end
+
     local chips = {}
     for i, item in ipairs(arrs) do
         chips[#chips + 1] = { id = i, name = item.name, active = i == active_i }
@@ -510,6 +586,8 @@ function publish()
 
     model.nx_nodes = rows
     model.nx_removed = removed
+    model.nx_lib = library
+    model.nx_hidden = put_away
     model.nx_edges = edges
     model.nx_arrs = chips
     model.nx_mix = streams
@@ -532,6 +610,8 @@ function publish()
     fact.nx_node_count = shown
     fact.nx_node_total = total
     fact.nx_removed_count = #removed
+    fact.nx_lib_count = #library
+    fact.nx_hidden_count = #put_away
     fact.nx_undo_depth = #past
     fact.nx_redo_depth = #future
     fact.nx_morph = morph and 1 or 0
@@ -540,7 +620,34 @@ function publish()
     fact.nx_mode = mode
     fact.nx_banner_mode = a and a.banner or "compact"
     fact.nx_grid = a and a.appearance and a.appearance.grid ~= false or false
+    local look = a and a.appearance or {}
+    local bright = clamp((tonumber(look.brightness) or 100) / 100, 0.6, 1.4)
+    local contrast = clamp((tonumber(look.contrast) or 100) / 100, 0.6, 1.4)
+    if bright ~= look_bright or contrast ~= look_contrast then
+        look_bright, look_contrast = bright, contrast
+        paint()
+    end
+    fact.nx_accent = ACCENT_INDEX[look.accent or "phos"] or 1
+    fact.nx_glow = tonumber(look.glow) or 60
+    fact.nx_bright = tonumber(look.brightness) or 100
+    fact.nx_contrast = tonumber(look.contrast) or 100
+    fact.nx_opacity = tonumber(look.opacity) or 100
+    fact.nx_edge_style = STYLE_INDEX[style] or 1
+    fact.nx_motion = look.motion ~= false
+    text.nx_accent_name = string.upper(str(look.accent, "phos"))
+    local picked_row = nil
+    for _, r in ipairs(rows) do
+        if r.id == sel then picked_row = r; break end
+    end
+    fact.nx_sel_on = picked_row and 1 or 0
+    fact.nx_sel_kind = picked_row and picked_row.kind or 0
+    text.nx_sel_title = picked_row and picked_row.title or "NO NODE SELECTED"
+    text.nx_sel_note = picked_row and string.format("%d × %d", picked_row.w, picked_row.h) or "PRESS A NODE"
     text.nx_arrangement_name = a and a.name or "—"
+    if draft_for ~= (a and a.name) then
+        draft_for = a and a.name or nil
+        text.nx_arr_draft = a and a.name or ""
+    end
     text.nx_banner_name = string.upper(a and a.banner or "compact")
     local focus_def = nexusnode.get(focus)
     text.nx_focus_name = focus_def and focus_def.title or "Core"
@@ -677,6 +784,216 @@ on("nx_restore", function(v)
         sel = i
         touch(true)
     end
+end)
+
+-- One place for the strip's short messages, so a refused press always says why.
+local function notify(message)
+    fact.nx_notice = true
+    text.nx_notice_text = message
+    after(2800, function() fact.nx_notice = false end)
+end
+
+-- The module library's search field. The rows are filtered here, because a text field
+-- can be drawn in the scene but not compared there.
+on("text:nx_lib_query", function(value)
+    if type(value) ~= "string" then return end
+    lib_query = string.lower((value:gsub("^%s+", ""):gsub("%s+$", "")))
+    publish()
+end)
+
+-- The size presets of a node: S, M, L and the detail size it takes at the centre. The
+-- type's own limits still decide, so a preset never draws outside what the catalogue says.
+local function preset_size(def, preset)
+    if preset == 1 then return def.min.w, def.min.h end
+    if preset == 3 then return def.max.w, def.max.h end
+    if preset == 4 then return def.detail.w, def.detail.h end
+    return def.size.w, def.size.h
+end
+
+on("nx_node_preset", function(v)
+    local i, node = index_of(sel)
+    local a = node_list()
+    local canvas = canvas_of()
+    if not i or not a then return end
+    local def = nexusnode.get(node.type)
+    if not def then return end
+    local w, h = preset_size(def, math.floor(tonumber(v) or 2))
+    local from = positions(a)
+    remember()
+    node.w, node.h = nexuslayout.bounds(node.type, w, h)
+    if canvas then nexuslayout.place(node, node.x, node.y, canvas, 0) end
+    touch(true)
+    start_morph(from)
+end)
+
+-- RESET NODE: the type's shipped size and the slot the default arrangement gives it.
+on("nx_node_reset", function()
+    local i, node = index_of(sel)
+    local a = node_list()
+    if not i or not a then return end
+    local canvas = canvas_of() or { w = 1440, h = 860 }
+    local home
+    for _, d in ipairs(nexusnode.default_nodes(canvas)) do
+        if d.type == node.type then home = d; break end
+    end
+    if not home then return end
+    local from = positions(a)
+    remember()
+    node.w, node.h = home.w, home.h
+    nexuslayout.place(node, home.x, home.y, canvas, 8)
+    touch(true)
+    start_morph(from)
+end)
+
+-- One hidden trace back: the panel lists them by slot, so a press restores only that one.
+on("nx_edge_show", function(v)
+    local slot = math.floor(tonumber(v) or 0)
+    local a = node_list()
+    if not a or type(a.edges) ~= "table" or type(a.edges.hidden) ~= "table" then return end
+    if not a.edges.hidden[slot] then return end
+    remember()
+    table.remove(a.edges.hidden, slot)
+    picked_edge = nil
+    touch(true)
+end)
+
+-- The arrangement's own management. A new one is the current arrangement under another
+-- name; adding, duplicating, renaming and deleting all go through the same memory, so
+-- Ctrl+Z takes back a delete as easily as a drag.
+local function arrangement_name(base)
+    local used = {}
+    for _, item in ipairs(arrs) do used[item.name] = true end
+    if not used[base] then return base end
+    for n = 2, 9 do
+        local suffix = " " .. n
+        local candidate = string.sub(base, 1, 16 - #suffix) .. suffix
+        if not used[candidate] then return candidate end
+    end
+    return nil
+end
+
+local function add_arrangement(copy)
+    if #arrs >= 8 then notify("EIGHT ARRANGEMENTS AT MOST"); return end
+    remember()
+    local name = arrangement_name(copy.name or "LAYOUT")
+    if not name then notify("NO ROOM FOR ANOTHER NAME"); return end
+    copy.name = name
+    arrs[#arrs + 1] = copy
+    active_i = #arrs
+    sel = 0
+    touch(true)
+end
+
+on("nx_arr_new", function()
+    local a = node_list()
+    if not a then return end
+    local copy = nexusnode.copy_arrangements({ a })[1]
+    if not copy then return end
+    copy.name = "LAYOUT"
+    add_arrangement(copy)
+end)
+
+on("nx_arr_dup", function()
+    local a = node_list()
+    if not a then return end
+    local copy = nexusnode.copy_arrangements({ a })[1]
+    if not copy then return end
+    copy.name = string.sub(a.name, 1, 12) .. " 2"
+    add_arrangement(copy)
+end)
+
+on("nx_arr_rename", function()
+    local a = node_list()
+    if not a then return end
+    local draft = type(text.nx_arr_draft) == "string" and text.nx_arr_draft or ""
+    draft = string.upper((draft:gsub("^%s+", ""):gsub("%s+$", "")))
+    if draft == "" then notify("NAME THE ARRANGEMENT FIRST"); return end
+    if #draft > 16 then notify("SIXTEEN CHARACTERS AT MOST"); return end
+    if draft == a.name then return end
+    for _, item in ipairs(arrs) do
+        if item.name == draft then notify("THAT NAME IS ALREADY USED"); return end
+    end
+    remember()
+    a.name = draft
+    touch(true)
+end)
+
+on("nx_arr_del", function()
+    if #arrs <= 1 then notify("ONE ARRANGEMENT MUST STAY"); return end
+    remember()
+    table.remove(arrs, active_i)
+    if active_i > #arrs then active_i = #arrs end
+    sel = 0
+    touch(true)
+end)
+
+-- Appearance is one key and one number: accent, brightness, contrast, glow, grid, edge
+-- width, edge style, edge labels, motion and surface opacity. Values are enums and bounded
+-- numbers, never colours, so a theme change still reaches every surface.
+on("nx_look", function()
+    local a = node_list()
+    if not a then return end
+    if type(a.appearance) ~= "table" then a.appearance = {} end
+    local look = a.appearance
+    local key = math.floor(tonumber(fact.nx_look_key) or 0)
+    local val = tonumber(fact.nx_look_val) or 0
+    if key == 1 then
+        local at = ACCENT_INDEX[look.accent or "phos"] or 1
+        look.accent = ACCENTS[((at - 1 + math.floor(val)) % #ACCENTS) + 1]
+    elseif key == 2 then
+        look.brightness = math.floor(clamp((tonumber(look.brightness) or 100) + val, 60, 140))
+    elseif key == 3 then
+        look.contrast = math.floor(clamp((tonumber(look.contrast) or 100) + val, 60, 140))
+    elseif key == 4 then
+        look.glow = math.floor(clamp((tonumber(look.glow) or 60) + val, 0, 100))
+    elseif key == 5 then
+        look.grid = not (look.grid ~= false)
+    elseif key == 9 then
+        look.motion = not (look.motion ~= false)
+    elseif key == 10 then
+        look.opacity = math.floor(clamp((tonumber(look.opacity) or 100) + val, 40, 100))
+    elseif key == 6 then
+        if type(a.edges) ~= "table" then a.edges = {} end
+        a.edges.width = (tonumber(a.edges.width) == 2) and 1 or 2
+    elseif key == 7 then
+        if type(a.edges) ~= "table" then a.edges = {} end
+        local at = STYLE_INDEX[a.edges.style or "circuit"] or 1
+        a.edges.style = STYLES[((at - 1 + math.floor(val)) % #STYLES) + 1]
+    elseif key == 8 then
+        if type(settings.nexus) ~= "table" then settings.nexus = {} end
+        if type(settings.nexus.edge) ~= "table" then settings.nexus.edge = {} end
+        settings.nexus.edge.labels = not (settings.nexus.edge.labels ~= false)
+    else
+        return
+    end
+    remember()
+    touch(true)
+end)
+
+-- The canvas the scene is drawing on, published when it first settles and whenever the
+-- screen changes size. Only a shrink moves anything: `fit` leaves a canvas that still
+-- holds the arrangement alone, so opening on a bigger screen never rearranges the work.
+local last_canvas = nil
+on("nx_canvas", function()
+    local canvas = canvas_of()
+    if not canvas then return end
+    local a = node_list()
+    local changed = false
+    if a and last_canvas and (last_canvas.w ~= canvas.w or last_canvas.h ~= canvas.h) then
+        local fitted = nexuslayout.fit(a.nodes, canvas)
+        if fitted ~= a.nodes then
+            a.nodes = fitted
+            changed = true
+        end
+    end
+    last_canvas = canvas
+    publish()
+end)
+
+-- The rename field keeps what was typed; the logic only reseeds it when the arrangement
+-- itself changed, so a refused name is not wiped out from under the cursor.
+on("text:nx_arr_draft", function(value)
+    if type(value) == "string" then text.nx_arr_draft = value end
 end)
 
 -- The keys' way about: 1 left · 2 right · 3 up · 4 down, one snapped step at a time.
