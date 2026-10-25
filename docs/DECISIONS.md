@@ -2551,3 +2551,37 @@ checks, 0 failed — the library's rows and reasons, a removed node restored fro
 trace listed and restored by slot, the grid, accent, glow, labels and route controls, a size
 preset and RESET NODE, NEW/COPY/DELETE on the arrangements, and Escape closing the panel
 before the workspace.
+
+## D81 · 2026-10-25 · The library adds a module, and pages by the room the panel has
+
+The module library shipped as a list of what is drawing, what was put away and what the
+machine cannot show. Two gaps showed up once it was on screen: a type the arrangement never
+carried read `N/A` with "not in this arrangement" and could not be reached at all — CPU,
+Memory, Thermal and GPU were permanently outside a fresh FULL — and only the first ten of
+nineteen rows were drawn, with no way to see the rest.
+
+- **`ADD`, not `N/A`.** The library's third state is now its own: available but absent from
+  this arrangement. `nx_lib_add` takes the catalogue index the row carries, seeds the type
+  from the default ratios, and asks `nexuslayout.free_slot` for the first grid slot that
+  clears every other node — so a press never lands on the clock. It goes through `remember()`
+  like a drag, and undo takes the node off again. A type that is present but hidden is only
+  brought back rather than duplicated.
+- **Rows page by fit.** `nx_lib_page_size` follows the canvas height the logic already knows
+  (ten, eight, six or four), and the scene reads the same fact for its row window, so the
+  logic and the drawing cannot disagree about where a page ends. The footer states
+  "19 OF 19 MODULES" — filtered count of the whole — and a pair of arrows, each lit only when
+  there is a page that way.
+- **A drawn control is a shown control.** At `small` the header computed `CENTRE`, `TIDY` and
+  `LOCK` onto the close mark's x while only the zones carried `show`, so three button plates
+  stacked there. The fix is structural, not cosmetic: components are wrapped in the group
+  that shows them, and the right-hand steps are measured from the last button actually drawn.
+  `LOCK` now survives every width because it is the one control that changes what a press
+  does; `TIDY`, `CENTRE` and the arrangement chips need the room and are gated on it.
+- **The banner's veil covers the picture.** Two veils, one of them `sw * 0.55` wide, left a
+  visible vertical seam where the words stopped. One even veil at 0.32, drawn only when there
+  is an image, keeps the portrait readable and lets the plate's own gradient be the backdrop
+  when there is none.
+
+Checked: 234 unit tests; 126 checks in `tests/nexus.sh` (the add and its undo, the page size,
+the catalogue count, and a press before the first page); screenshots at 1920×1050, 1366×738
+and 720×390; 0.15–0.19 ms of CPU per frame at twelve nodes under `--no-vsync`.

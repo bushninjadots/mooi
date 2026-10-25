@@ -136,11 +136,16 @@ language §3 describes is built rather than sketched:
   its own controls. Selection draws corner brackets, focus adds the glow, hover lifts the
   border — all from one zone declared before the drawing, so the frame lights as a whole.
 - **Panel (S5).** One docked plate with four faces, one press apart: **LIBRARY** (all 19
-  catalogue types with `ON`, `BACK` or `N/A` and the reason, filterable, press to focus or
-  restore), **NODE** (the selection's size presets S/M/L/DETAIL, focus, minimize, reset,
-  remove, and the keys), **LOOK** (accent role, glow, brightness, contrast through the
-  palette, surface opacity, grid, motion, trace labels, route style and thickness) and
-  **ARRANGE** (switch, NEW, COPY, DELETE, rename, mode, band height, identity).
+  catalogue types with `ON`, `BACK`, `ADD` or `N/A` and the reason, in a real filter field,
+  press to focus, restore or add), **NODE** (the selection's size presets S/M/L/DETAIL,
+  focus, minimize, reset, remove, and the keys), **LOOK** (accent role, glow, brightness,
+  contrast through the palette, surface opacity, grid, motion, trace labels, route style and
+  thickness) and **ARRANGE** (switch, NEW, COPY, DELETE, rename, mode, band height, identity).
+- **The library adds, not only returns.** `ADD` is a type the arrangement never carried —
+  `nx_lib_add` appends it at the first grid slot that clears every other node, lifts the
+  canvas to ten nodes in the live test, and undoes like any other edit. Rows page by the room
+  the panel has (ten at 1920, eight at 1366, four at 720), so the catalogue is reachable at
+  every width instead of the first ten entries only.
 - **Appearance is roles, never hex.** The accent is an `rgb()` of the palette's own springs;
   brightness and contrast transform the published roles, so a theme change still reaches
   everything; glow scales the scene's glows; opacity is the surface group's.
@@ -154,15 +159,25 @@ language §3 describes is built rather than sketched:
   strip and header are all that remain, as §4 asks.
 
 **Verification.** `bin/mooi check` → **234 unit tests, 0 failed**, five scenes compile.
-`tests/nexus.sh` → **117 checks, 0 failed**, including the library's 19 rows and their
-reasons, a removed node appearing as `BACK` and returning, a hidden trace listed and restored
-by its slot, the grid/accent/glow/labels/route controls, a size preset and RESET NODE, NEW and
-COPY and DELETE on the arrangements, and Escape putting the panel away without closing the
-workspace.
+`tests/nexus.sh` → **126 checks, 0 failed**, including the library's 19 rows and their
+reasons, a removed node appearing as `BACK` and returning, an `ADD` row putting a new type on
+the canvas and undo taking it off, the paged library (19 of 19 modules over two pages, and a
+press before the first page staying on it), a hidden trace listed and restored by its slot,
+the grid/accent/glow/labels/route controls, a size preset and RESET NODE, NEW and COPY and
+DELETE on the arrangements, and Escape putting the panel away without closing the workspace.
 
-**Not checked.** The panel, the header and the banner with a real pointer at 1920, 1366 and
-720 widths; the library's search field from a keyboard; the identity editor beside the docked
-panel; a node being resized by its grip with the new brackets drawn.
+**Checked on screen.** The scene was rendered at 1920×1050, 1366×738 and 720×390 and the
+screenshots read: the banner has one even veil and no seam, the grid is legible without
+competing with the nodes, the library's field, its `ADD` rows and its page control draw, the
+header keeps `LOCK` and drops `TIDY`/`CENTRE`/the chips at 720 instead of stacking buttons on
+the close mark, and the panel fits four rows at that width. Frame cost with twelve nodes and
+`--no-vsync`: 0.15–0.19 ms of CPU per frame in the steady blocks (2.4 ms in the first block,
+~1 ms while nodes were being added). Pleamar does not report GPU time, so this is the CPU
+side only.
+
+**Not checked.** A press, a hover and a drag with a real pointer at each width; the library's
+search field from a keyboard; the identity editor beside the docked panel; a node being
+resized by its grip with the new brackets drawn.
 
 ## Current phase
 

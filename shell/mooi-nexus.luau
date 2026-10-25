@@ -105,6 +105,19 @@ local drawn_edges = {}
 -- The module library's search, kept here because a text field can be drawn but not
 -- compared in the scene; the filtered rows are what the library panel receives.
 local lib_query = ""
+-- The library shows a page at a time; the rest are one press away rather than lost. How
+-- many rows a page holds follows the room the panel has on this screen, so a short band
+-- gets four rows and a tall one gets ten, and no row is ever cut by the panel's foot.
+local lib_page = 0
+
+local function lib_page_size()
+    local ch = tonumber(fact.nx_ch) or 0
+    if ch <= 0 then return 10 end
+    if ch < 380 then return 4 end
+    if ch < 520 then return 6 end
+    if ch < 660 then return 8 end
+    return 10
+end
 -- Which arrangement name the rename field was last seeded with.
 local draft_for = nil
 
@@ -519,19 +532,20 @@ function publish()
 
     -- The module library (S5): every type the catalogue declares, with the reason it is not
     -- drawing right now. `state` is 0 on canvas, 1 removed from this arrangement —the row
-    -- carries the node index the restore event takes— and 2 not connected on this machine.
+    -- carries the node index the restore event takes— 2 not connected on this machine, and
+    -- 3 available but not part of this arrangement, which the row offers to add.
     local library = {}
     if a then
         local at = {}
         for i, node in ipairs(a.nodes) do at[node.type] = { index = i, node = node } end
-        for _, def in ipairs(nexusnode.TYPES) do
+        for code, def in ipairs(nexusnode.TYPES) do
             local ok, why = nexusnode.available(def.id, p)
             local entry = at[def.id]
             local state, note = 0, "ON CANVAS"
             if not ok then
                 state, note = 2, str(why, "NOT CONNECTED")
             elseif not entry then
-                state, note = 2, "NOT IN THIS ARRANGEMENT"
+                state, note = 3, "PRESS TO ADD IT"
             elseif not entry.node.vis then
                 state, note = 1, "REMOVED FROM THE LAYOUT"
             elseif mode == "minimal" and not entry.node.essential then
@@ -540,9 +554,9 @@ function publish()
             local haystack = string.lower(def.title .. " " .. def.category)
             if lib_query == "" or string.find(haystack, lib_query, 1, true) then
                 library[#library + 1] = {
-                    slot = #library + 1, id = entry and entry.index or 0, key = def.id,
-                    title = def.title, category = string.upper(def.category), state = state,
-                    note = note, tone = ACCENT_TONE[def.accent] or 1,
+                    slot = #library + 1, id = entry and entry.index or 0, code = code,
+                    key = def.id, title = def.title, category = string.upper(def.category),
+                    state = state, note = note, tone = ACCENT_TONE[def.accent] or 1,
                 }
             end
         end
@@ -610,7 +624,15 @@ function publish()
     fact.nx_node_count = shown
     fact.nx_node_total = total
     fact.nx_removed_count = #removed
+    local per_page = lib_page_size()
+    local pages = math.max(1, math.ceil(#library / per_page))
+    if lib_page > pages - 1 then lib_page = pages - 1 end
+    if lib_page < 0 then lib_page = 0 end
+    fact.nx_lib_page_size = per_page
     fact.nx_lib_count = #library
+    fact.nx_lib_total = #nexusnode.TYPES
+    fact.nx_lib_page = lib_page + 1
+    fact.nx_lib_pages = pages
     fact.nx_hidden_count = #put_away
     fact.nx_undo_depth = #past
     fact.nx_redo_depth = #future
@@ -793,11 +815,64 @@ local function notify(message)
     after(2800, function() fact.nx_notice = false end)
 end
 
+-- The library's ADD row: a type the arrangement simply did not carry yet. The node takes
+-- the first grid slot that clears the others, so a press on the fifth library row never
+-- lands on top of the clock. Types already in the arrangement are only brought back.
+on("nx_lib_add", function(v)
+    local code = math.floor(tonumber(v) or 0)
+    local def = nexusnode.TYPES[code]
+    local a = node_list()
+    local canvas = canvas_of()
+    if not def or not a or not canvas then return end
+    local ok, why = nexusnode.available(def.id, present_set())
+    if not ok then notify(string.upper(str(why, "NOT CONNECTED"))); return end
+    for i, node in ipairs(a.nodes) do
+        if node.type == def.id then
+            if not node.vis then
+                remember()
+                node.vis = true
+                touch(true)
+            end
+            sel = i
+            notify(def.title .. " IS ON THE CANVAS")
+            publish()
+            return
+        end
+    end
+    if #a.nodes >= 16 then notify("SIXTEEN NODES AT MOST"); return end
+    local template
+    for _, node in ipairs(nexusnode.default_nodes(canvas)) do
+        if node.type == def.id then template = node; break end
+    end
+    remember()
+    local from = positions(a)
+    local x, y = nexuslayout.free_slot(a.nodes, def.id, canvas, 8)
+    local node = template or { type = def.id, w = def.size.w, h = def.size.h, min = false }
+    node.x, node.y = x, y
+    node.vis = true
+    node.min = false
+    node.essential = def.essential
+    a.nodes[#a.nodes + 1] = node
+    sel = #a.nodes
+    touch(true)
+    start_morph(from)
+    notify(def.title .. " ADDED")
+end)
+
 -- The module library's search field. The rows are filtered here, because a text field
 -- can be drawn in the scene but not compared there.
 on("text:nx_lib_query", function(value)
     if type(value) ~= "string" then return end
     lib_query = string.lower((value:gsub("^%s+", ""):gsub("%s+$", "")))
+    lib_page = 0
+    publish()
+end)
+
+-- A page of the library, forward or back. A press past either end stays put.
+on("nx_lib_page", function(v)
+    local step = tonumber(v) or 0
+    lib_page = lib_page + (step > 0 and 1 or -1)
+    if lib_page < 0 then lib_page = 0 end
     publish()
 end)
 
@@ -996,17 +1071,26 @@ on("text:nx_arr_draft", function(value)
     if type(value) == "string" then text.nx_arr_draft = value end
 end)
 
--- The keys' way about: 1 left · 2 right · 3 up · 4 down, one snapped step at a time.
-on("nx_move", function(v)
-    local step = math.floor(tonumber(v) or 0)
+-- The keys' way about: 1 left · 2 right · 3 up · 4 down, one snapped step at a time; with
+-- Shift held the same key is four steps, as §5.4 asks. One move is one undo entry either way.
+local function shift_node(direction, times)
     local canvas = canvas_of()
     local _, node = index_of(sel)
     if not canvas or not node then return end
-    local dx = (step == 1 and -1) or (step == 2 and 1) or 0
-    local dy = (step == 3 and -1) or (step == 4 and 1) or 0
-    local x, y = nexuslayout.move_step(node, dx, dy, canvas, 8)
-    if nexuslayout.place(node, x, y, canvas, 8) then touch(true) end
-end)
+    local dx = (direction == 1 and -1) or (direction == 2 and 1) or 0
+    local dy = (direction == 3 and -1) or (direction == 4 and 1) or 0
+    if dx == 0 and dy == 0 then return end
+    remember()
+    local moved = false
+    for _ = 1, math.max(1, times) do
+        local x, y = nexuslayout.move_step(node, dx, dy, canvas, 8)
+        if nexuslayout.place(node, x, y, canvas, 8) then moved = true end
+    end
+    if moved then touch(true) else table.remove(past); publish() end
+end
+
+on("nx_move", function(v) shift_node(math.floor(tonumber(v) or 0), 1) end)
+on("nx_move_fast", function(v) shift_node(math.floor(tonumber(v) or 0), 4) end)
 
 on("nx_mode_switch", function(v)
     local mode = tonumber(v) == 1 and "minimal" or "circuit"
@@ -1188,9 +1272,9 @@ pcall(sys.watch, "workspaces", function(w)
     publish()
 end)
 
--- The keyboard walks the nodes that are on the canvas, in the arrangement's own order,
--- and wraps, so Tab never strands the selection on a removed node.
-on("nx_cycle_sel", function()
+-- Tab walks the nodes that are on the canvas, in the arrangement's own order and, with
+-- Shift, backwards. Both directions wrap, so the selection never strands on a removed node.
+local function walk_selection(back)
     local a = node_list()
     local p = present_set()
     if not a then return end
@@ -1202,13 +1286,23 @@ on("nx_cycle_sel", function()
         end
     end
     if #order == 0 then return end
-    local next_sel = order[1]
-    for _, i in ipairs(order) do
-        if i > sel then next_sel = i; break end
+    local next_sel = order[#order]
+    if not back then
+        next_sel = order[1]
+        for _, i in ipairs(order) do
+            if i > sel then next_sel = i; break end
+        end
+    else
+        for k = #order, 1, -1 do
+            if order[k] < sel then next_sel = order[k]; break end
+        end
     end
     sel = next_sel
     publish()
-end)
+end
+
+on("nx_cycle_sel", function() walk_selection(false) end)
+on("nx_cycle_sel_back", function() walk_selection(true) end)
 
 -- The mixer's two writes: a press mutes a stream, a wheel sets its level. The scene keeps
 -- the stream id beside the event because a service call needs both the id and the level.

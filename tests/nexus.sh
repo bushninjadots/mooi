@@ -321,6 +321,32 @@ is "a removed node appears in the library" "$(printf '%s' "$lib_row" | grep -E '
 say "emit nx_restore 1" >/dev/null
 if wait_value nexus nx_removed_count 0 10; then ok "the library puts the node back"; else bad "the node did not come back"; fi
 
+echo "the library adds a module the arrangement does not carry yet"
+add_code=''
+for i in $(seq 0 18); do
+    if [ "$(get nx_lib.$i.state)" = 3 ]; then add_code=$(get nx_lib.$i.code); break; fi
+done
+is "a library row offers to add a missing module" "$(printf '%s' "$add_code" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1
+before=$(get nx_node_count)
+say "emit nx_lib_add $add_code" >/dev/null
+if wait_value nexus nx_node_count $((before + 1)) 10; then ok "the pressed module joins the canvas"; else bad "the module was not added"; fi
+added=''
+for i in $(seq 0 18); do
+    if [ "$(get nx_lib.$i.code)" = "$add_code" ]; then added=$(get nx_lib.$i.state); fi
+done
+is "the added module reads as on the canvas" "$added" 0
+say "emit nx_undo" >/dev/null
+if wait_value nexus nx_node_count "$before" 10; then ok "undo takes the added module back off"; else bad "undo did not remove the module"; fi
+is "the whole catalogue is counted" "$(get nx_lib_total)" 19
+is "nineteen modules take two pages" "$(get nx_lib_pages)" 2
+say "emit nx_lib_page 1" >/dev/null
+if wait_value nexus nx_lib_page 2 10; then ok "the library turns to its second page"; else bad "the page did not turn"; fi
+say "emit nx_lib_page -1" >/dev/null
+if wait_value nexus nx_lib_page 1 10; then ok "and back to the first"; else bad "the page did not turn back"; fi
+say "emit nx_lib_page -1" >/dev/null
+sleep 0.3
+is "a page before the first stays on the first" "$(get nx_lib_page)" 1
+
 echo "the trace menu lists what was put away, and gives it back one at a time"
 say "emit nx_edge_pick 1" >/dev/null
 if wait_value nexus nx_edge_sel 1 10; then ok "a trace is picked before hiding it"; else bad "the trace was not picked"; fi
@@ -364,15 +390,28 @@ for i in $(seq 0 9); do
     if [ "$(get nx_nodes.$i.id)" = 3 ]; then row=$i; break; fi
 done
 if wait_value nexus "nx_nodes.$row.focus" true 10; then ok "a node is selected through the centre"; else bad "the node was not focused"; fi
+# The focus travels over ~320 ms and the logic is blocked while it settles, so the preset is
+# measured against the width the node has come to rest at, not the one it had mid-morph.
+wait_value nexus nx_morph 0 20 >/dev/null
 before_w=$(get "nx_nodes.$row.w")
 say "emit nx_node_preset 3" >/dev/null
-sleep 0.5
-after_w=$(get "nx_nodes.$row.w")
-if [ -n "$after_w" ] && [ "$after_w" != "$before_w" ]; then ok "a size preset resizes the node ($before_w → $after_w)"; else bad "the size preset did nothing"; fi
+after_w=$before_w
+i=0
+while [ "$i" -lt 20 ]; do
+    try=$(get "nx_nodes.$row.w")
+    if printf '%s' "$try" | grep -Eq '^[0-9]+$' && [ "$try" != "$before_w" ]; then after_w=$try; break; fi
+    i=$((i + 1)); sleep 0.2
+done
+if [ "$after_w" != "$before_w" ]; then ok "a size preset resizes the node ($before_w → $after_w)"; else bad "the size preset did nothing"; fi
 say "emit nx_node_reset" >/dev/null
-sleep 0.5
-reset_w=$(get "nx_nodes.$row.w")
-if [ -n "$reset_w" ] && [ "$reset_w" != "$after_w" ]; then ok "RESET NODE returns the type's size ($reset_w)"; else bad "the reset did not change the size"; fi
+reset_w=$after_w
+i=0
+while [ "$i" -lt 20 ]; do
+    try=$(get "nx_nodes.$row.w")
+    if printf '%s' "$try" | grep -Eq '^[0-9]+$' && [ "$try" != "$after_w" ]; then reset_w=$try; break; fi
+    i=$((i + 1)); sleep 0.2
+done
+if [ "$reset_w" != "$after_w" ]; then ok "RESET NODE returns the type's size ($reset_w)"; else bad "the reset did not change the size"; fi
 
 echo "arrangements can be added, copied and deleted"
 say "emit nx_arr_new" >/dev/null
