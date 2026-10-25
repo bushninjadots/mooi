@@ -2615,3 +2615,37 @@ Four things, one of them a bug that made the whole workspace feel broken.
 Checked: 235 unit tests (including the rename and its refusal to rename an edited copy);
 126 checks in `tests/nexus.sh`; the panel dragged to (320, 260) and docked again by a press;
 the engraved band and the `BARE` chip read at 1920×1050.
+
+## D83 · 2026-10-25 · Every node says more, and says it inside its own frame
+
+The workspace drew the same four readings the old plate had, and a card could only ever show
+those four rows. This adds the numbers the machine was already willing to give, and makes the
+frame decide how much of them to show.
+
+- **Three more files, read on the same two-second clock.** `/proc/loadavg` for the three
+  averages and how many tasks are runnable, `/sys/…/cpu0/cpufreq/scaling_cur_freq` for the
+  package clock, and the rest of `/proc/meminfo` — available memory and swap — beside the used
+  figure it already had. `df` also gives back the filesystem's device and what is free, so the
+  storage node names `/dev/nvme0n1p2` rather than "the root filesystem".
+- **Six to eight rows, never more than fit.** Each type's body now has six to eight labelled
+  readings. The logic publishes only the rows that fit the height the card is drawn at
+  (`rail + 92`, then 26 px a row), so a compact card shows two and a detail card shows all
+  eight, and no row is ever cut in half by the frame. The overview reserves the strip its
+  COPY DIAGNOSTICS button sits in.
+- **A second line and a second bar.** Every card carries a `sub` line under its note — free
+  memory, the package clock, the SSID, what is on the other end of the input — and a focused
+  card draws a second, thinner bar under the primary one with its own label: memory beside
+  load, the microphone beside the output, the swap and the temperature where they belong.
+- **The header is an instrument.** Where the header has room (over 1500 px, past the
+  arrangement chips) it carries LOAD, MEM, TEMP and NET with their numbers and bars. They read
+  the same facts the nodes do, so the header cannot disagree with the canvas.
+- **Everything else follows.** The system node's own rows gained the load average and the
+  runnable count; the CPU node its clock and model; the storage node its device and free
+  space; the memory node what is available and what is swapped; the clock its kernel and load;
+  the media node whether it is playing.
+
+Checked: 238 unit tests (`mem_detail`, `loadavg` and `clock_ghz` have their own), **128 checks**
+in `tests/nexus.sh` — a focused card opens its whole body at the detail size and keeps only
+one row at the size the catalogue ships, and the last audio row is STREAMS. On screen at
+1920×1050: the header cluster reads load, memory, temperature and traffic; the Storage card at
+DETAIL shows five rows inside its frame; the System card shows its sub line and both bars.

@@ -100,6 +100,42 @@ function M.mem(text)
     return used / total, used / 1048576, total / 1048576
 end
 
+-- /proc/meminfo in full: what is in use, what is still available, and the swap beside it.
+-- `mem` keeps the three numbers the plate's bars need; this is what the node's readings show.
+function M.mem_detail(text)
+    text = text or ""
+    local total = tonumber(string.match(text, "MemTotal:%s+(%d+)"))
+    local avail = tonumber(string.match(text, "MemAvailable:%s+(%d+)"))
+    if not total or not avail or total == 0 then return nil end
+    local swap_total = tonumber(string.match(text, "SwapTotal:%s+(%d+)")) or 0
+    local swap_free = tonumber(string.match(text, "SwapFree:%s+(%d+)")) or 0
+    return {
+        used_gib = (total - avail) / 1048576,
+        total_gib = total / 1048576,
+        available_gib = avail / 1048576,
+        swap_used_gib = math.max(0, swap_total - swap_free) / 1048576,
+        swap_total_gib = swap_total / 1048576,
+    }
+end
+
+-- /proc/loadavg: the three averages, and how many tasks are runnable of how many exist.
+function M.loadavg(text)
+    local one, five, fifteen = string.match(text or "", "([%d%.]+)%s+([%d%.]+)%s+([%d%.]+)")
+    local running, total = string.match(text or "", "(%d+)/(%d+)")
+    if not one then return nil end
+    return {
+        one = tonumber(one), five = tonumber(five), fifteen = tonumber(fifteen),
+        running = tonumber(running) or 0, total = tonumber(total) or 0,
+    }
+end
+
+-- A cpufreq file is in kHz; the node shows it in GHz with two decimals.
+function M.clock_ghz(text)
+    local khz = tonumber(string.match(text or "", "^%s*(%d+)"))
+    if not khz or khz <= 0 then return nil end
+    return khz / 1000000
+end
+
 -- /proc/net/dev → bytes received and sent, summed over every interface but loopback.
 function M.net(text)
     local rx, tx = 0, 0

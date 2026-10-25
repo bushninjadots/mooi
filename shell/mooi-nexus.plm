@@ -263,6 +263,7 @@ scene Nexus {
         x: number; y: number; w: number; h: number; tone: number; bar: number; baron: bool;
         mini: bool; sel: bool; focus: bool; minw: number; minh: number; maxw: number; maxh: number;
         kind: number; rows: number; endsel: bool;
+        sub: text; bar2: number; bar2on: bool; bar2l: text;
         r1l: text; r1v: text; r2l: text; r2v: text; r3l: text; r3v: text; r4l: text; r4v: text;
         r5l: text; r5v: text; r6l: text; r6v: text; r7l: text; r7v: text; r8l: text; r8v: text }
     // The traces: authored in lib/nexusgraph, routed in the logic, drawn here. A row is
@@ -305,8 +306,15 @@ scene Nexus {
     fact nx_temp_on = false
     fact nx_temp = 0
     text nx_cpu_value = "—"
+    text nx_cpu_clock = "—"
     text nx_ram_value = "—"
+    text nx_ram_avail = "—"
+    text nx_swap = "—"
+    text nx_load = "—"
+    text nx_tasks = "—"
     text nx_disk_value = "—"
+    text nx_disk_free = "—"
+    text nx_disk_fs = "—"
     text nx_rx_value = "—"
     text nx_tx_value = "—"
     text nx_temp_value = "N/A"
@@ -674,6 +682,43 @@ scene Nexus {
                 on press nx_arr_chip { emit nx_arrangement(a.id) }
             }
 
+            // ── the header's own instrument cluster ──
+            // Four readings the workspace is about, on one line where the header has room for
+            // them: load, memory, temperature and traffic, each with the bar its number fills.
+            // They are the same facts the nodes read, so the header and the canvas never
+            // disagree about what the machine is doing.
+            let tel_x = 364 + nx_arrangement_count * 84 + 30
+            let tel_fit = sw > 1500 and not tiny and not small
+            group {
+                show: tel_fit
+                repeat t in 0..3 {
+                    box { from: tel_x + t * 78, act_y + 3; size: 1, act_h - 6; color: fl.trace; opacity: 0.22 }
+                }
+                text "LOAD" { at: tel_x + 8, act_y + 9; anchor: left center; size: 5.8; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_cpu * 100, 0}%" { at: tel_x + 70, act_y + 9; anchor: right center; size: 9.5; weight: 700
+                                              family: "Exo 2"; color: mix(fl.muted, ac, 0.9) }
+                box { from: tel_x + 8, act_y + 17; size: 62, 2; color: fl.ground; opacity: 0.9 }
+                box { from: tel_x + 8, act_y + 17; size: 62 * clamp(nx_cpu, 0, 1), 2; color: ac; show: nx_cpu_on }
+
+                text "MEM" { at: tel_x + 86, act_y + 9; anchor: left center; size: 5.8; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_ram * 100, 0}%" { at: tel_x + 148, act_y + 9; anchor: right center; size: 9.5; weight: 700
+                                              family: "Exo 2"; color: mix(fl.muted, fl.trace_lit, 0.9) }
+                box { from: tel_x + 86, act_y + 17; size: 62, 2; color: fl.ground; opacity: 0.9 }
+                box { from: tel_x + 86, act_y + 17; size: 62 * clamp(nx_ram, 0, 1), 2; color: fl.trace_lit; show: nx_ram_on }
+
+                text "TEMP" { at: tel_x + 164, act_y + 9; anchor: left center; size: 5.8; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_temp, 0}°C" { at: tel_x + 226, act_y + 9; anchor: right center; size: 9.5; weight: 700
+                                             family: "Exo 2"; color: mix(fl.muted, fl.ember, 0.9) }
+                box { from: tel_x + 164, act_y + 17; size: 62, 2; color: fl.ground; opacity: 0.9 }
+                box { from: tel_x + 164, act_y + 17; size: 62 * clamp(nx_temp / 100, 0, 1), 2; color: fl.ember; show: nx_temp_on }
+
+                text "NET" { at: tel_x + 242, act_y + 9; anchor: left center; size: 5.8; family: "Share Tech Mono"; color: fl.muted }
+                text "{nx_rx_value}" { at: tel_x + 304, act_y + 9; anchor: right center; size: 9.5; weight: 700
+                                         family: "Share Tech Mono"; color: mix(fl.muted, fl.flare, 0.9) }
+                box { from: tel_x + 242, act_y + 17; size: 62, 2; color: fl.ground; opacity: 0.9 }
+                box { from: tel_x + 242, act_y + 17; size: 62 * clamp(nx_rx / 1048576, 0, 1), 2; color: fl.flare; show: nx_net_on }
+            }
+
             // the panels: one docked surface, four faces
             zone box nx_pane_lib { from: x_lib, act_y; size: 44, act_h; cursor: pointer; role: tab
                                    selected: nx_panel == library; label: "Open the module library" }
@@ -1037,6 +1082,10 @@ scene Nexus {
                                            width: max(40, nw - 28); lines: 1; color: mix(fl.hull, tone, 0.96) }
                             text n.note { at: nx + 14, ny + rail + 48; anchor: left center; size: 7.5; family: "Share Tech Mono"
                                           width: max(40, nw - 28); lines: 1; color: fl.muted }
+                            // the second line: the number that sits beside the reading
+                            text n.sub { at: nx + 14, ny + nh - 31; anchor: left center; size: 7; family: "Share Tech Mono"
+                                         width: max(40, nw - 28); lines: 1; color: fl.trace_lit
+                                         opacity: 0.75; show: nh >= 112 }
                             box { from: nx + 14, ny + nh - 17; size: max(0, nw - 28), 4; corner: 1; color: fl.ground; opacity: 0.85 }
                             box { from: nx + 14, ny + nh - 17; size: max(0, (nw - 28) * clamp(n.bar, 0, 1)), 4; corner: 1
                                   color: tone; opacity: 0.9; show: n.baron }
@@ -1063,40 +1112,47 @@ scene Nexus {
                             repeat t in 0..9 {
                                 box { from: nx + 18 + (nw - 36) * (t + 1) / 10, ny + rail + 74; size: 1, 4; color: fl.hull; opacity: 0.4 }
                             }
+                            // the bar beside it: the node's other number, on the same scale
+                            text n.bar2l { at: nx + 18, ny + rail + 88; anchor: left center; size: 5.8; family: "Share Tech Mono"
+                                           width: 64; lines: 1; color: fl.trace_lit; opacity: 0.7; show: n.bar2on }
+                            box { from: nx + 84, ny + rail + 87; size: max(0, nw - 102), 2; color: fl.ground
+                                  opacity: 0.85; show: n.bar2on }
+                            box { from: nx + 84, ny + rail + 87; size: max(0, (nw - 102) * clamp(n.bar2, 0, 1)), 2
+                                  color: tone; opacity: 0.65; show: n.bar2on }
 
                             // the readings: a rule under each pair, the value in the signal
                             line { from: nx + 18, ny + rail + 92; to: nx + nw - 18, ny + rail + 92; width: 1;
                                    color: tone; opacity: 0.22; show: n.rows >= 1 }
                             text n.r1l { at: nx + 18, ny + rail + 104; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 1 }
-                            text n.r1v { at: nx + nw - 18, ny + rail + 104; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 1 }
+                            text n.r1v { at: nx + nw - 18, ny + rail + 104; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 1 }
                             line { from: nx + 18, ny + rail + 118; to: nx + nw - 18, ny + rail + 118; width: 1
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 2 }
                             text n.r2l { at: nx + 18, ny + rail + 130; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 2 }
-                            text n.r2v { at: nx + nw - 18, ny + rail + 130; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 2 }
+                            text n.r2v { at: nx + nw - 18, ny + rail + 130; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 2 }
                             line { from: nx + 18, ny + rail + 144; to: nx + nw - 18, ny + rail + 144; width: 1
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 3 }
                             text n.r3l { at: nx + 18, ny + rail + 156; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 3 }
-                            text n.r3v { at: nx + nw - 18, ny + rail + 156; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 3 }
+                            text n.r3v { at: nx + nw - 18, ny + rail + 156; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 3 }
                             line { from: nx + 18, ny + rail + 170; to: nx + nw - 18, ny + rail + 170; width: 1
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 4 }
                             text n.r4l { at: nx + 18, ny + rail + 182; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 4 }
-                            text n.r4v { at: nx + nw - 18, ny + rail + 182; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 4 }
+                            text n.r4v { at: nx + nw - 18, ny + rail + 182; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 4 }
                             line { from: nx + 18, ny + rail + 196; to: nx + nw - 18, ny + rail + 196; width: 1
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 5 }
                             text n.r5l { at: nx + 18, ny + rail + 208; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 5 }
-                            text n.r5v { at: nx + nw - 18, ny + rail + 208; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 5 }
+                            text n.r5v { at: nx + nw - 18, ny + rail + 208; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 5 }
                             line { from: nx + 18, ny + rail + 222; to: nx + nw - 18, ny + rail + 222; width: 1
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 6 }
                             text n.r6l { at: nx + 18, ny + rail + 234; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 6 }
-                            text n.r6v { at: nx + nw - 18, ny + rail + 234; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 6 }
+                            text n.r6v { at: nx + nw - 18, ny + rail + 234; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 6 }
                             line { from: nx + 18, ny + rail + 248; to: nx + nw - 18, ny + rail + 248; width: 1
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 7 }
                             text n.r7l { at: nx + 18, ny + rail + 260; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 7 }
-                            text n.r7v { at: nx + nw - 18, ny + rail + 260; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 7 }
+                            text n.r7v { at: nx + nw - 18, ny + rail + 260; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 7 }
                             line { from: nx + 18, ny + rail + 274; to: nx + nw - 18, ny + rail + 274; width: 1;
                                    color: fl.trace; opacity: 0.12; show: n.rows >= 8 }
                             text n.r8l { at: nx + 18, ny + rail + 286; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: n.rows >= 8 }
-                            text n.r8v { at: nx + nw - 18, ny + rail + 286; anchor: right center; size: 10.5; family: "Exo 2"; width: max(60, nw - 180); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 8 }
+                            text n.r8v { at: nx + nw - 18, ny + rail + 286; anchor: right center; size: 10.5; family: "Exo 2"; width: max(70, nw - 118); lines: 1; color: mix(fl.hull, tone, 0.9); show: n.rows >= 8 }
                             // SYSTEM: the overview's own action still lives here
                             group {
                                 show: n.kind == 1

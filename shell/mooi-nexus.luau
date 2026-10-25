@@ -270,6 +270,15 @@ end
 -- the reading has a range. A node with no provider is never published at all.
 local function content(node, def, total)
     local tone, value, note, bar, baron = 1, "—", "", 0, false
+    -- The second line of a card and the second bar of a focused one: the same reading said
+    -- another way, or the number that sits beside it. Empty means "this one has only one".
+    local sub, bar2, bar2on, bar2l = "", 0, false, ""
+    local function beside(label, fraction, on)
+        bar2, bar2on, bar2l = fraction or 0, on == true, label
+    end
+    local function pct(fraction)
+        return string.format("%d%%", math.floor((fraction or 0) * 100 + 0.5))
+    end
     local t = node.type
     if t == "core" then
         value = string.upper((node_list() and node_list().mode) or "circuit")
@@ -335,8 +344,42 @@ local function content(node, def, total)
         note = not live.power_on and "NO BATTERY" or (live.charging and "CHARGING" or "ON BATTERY")
         bar, baron = live.power / 100, live.power_on
         tone = not live.power_on and 0 or (live.charging and 2 or 1)
+        sub = fact.nx_temp_on == true and str(text.nx_temp_value, "") or ""
+        beside("TEMPERATURE", fact.nx_temp or 0, fact.nx_temp_on)
     end
-    return value, note, bar, baron, tone, def.accent
+
+    -- The second line under the note, and the bar beside the reading. Both are filled in
+    -- here, after the switch, because each is a fact about the node rather than its reading.
+    if t == "core" then
+        sub = string.format("%d TRACES  ·  %d STEPS BACK", fact.nx_edge_count or 0, fact.nx_undo_depth or 0)
+    elseif t == "system" or t == "cpu" then
+        sub = string.format("MEM %s  ·  %s", pct(fact.nx_ram), str(text.nx_temp_value, "—"))
+        beside("MEMORY", fact.nx_ram or 0, fact.nx_ram_on)
+    elseif t == "memory" then
+        sub = str(text.nx_ram_avail, "")
+        beside("CPU", fact.nx_cpu or 0, fact.nx_cpu_on)
+    elseif t == "thermal" then
+        sub = "LOAD " .. str(text.nx_cpu_value, "—")
+        beside("MEMORY", fact.nx_ram or 0, fact.nx_ram_on)
+    elseif t == "storage" then
+        sub = str(text.nx_disk_free, "")
+    elseif t == "network" then
+        sub = live.net_on and str(live.net_name, "") or "NO LINK"
+    elseif t == "audio" then
+        sub = str(text.nx_in_name, "")
+        beside("MICROPHONE", live.input or 0, not live.input_muted)
+    elseif t == "display" then
+        sub = str(text.nx_gpu_value, "")
+    elseif t == "workspaces" then
+        sub = string.format("%d WORKSPACES", fact.nx_ws_count or 0)
+    elseif t == "media" then
+        sub = str(text.nx_album, "")
+    elseif t == "clock" then
+        sub = str(text.nx_host, "") .. "  ·  " .. str(text.nx_uptime, "")
+    elseif t == "gpu" then
+        sub = str(text.nx_display_value, "")
+    end
+    return value, note, bar, baron, tone, def.accent, sub, bar2, bar2on, bar2l
 end
 
 -- The detail body of a node: the rows a focused frame draws under its reading. They are
@@ -358,22 +401,30 @@ local function detail_rows(node)
         row("FOCUS", str(text.nx_focus_name, "Core"))
         row("NODES", string.format("%d ON CANVAS", fact.nx_node_count or 0))
         row("LAYOUT", str(text.nx_arrangement_name, "—"))
+        row("TRACES", string.format("%d DRAWN  ·  %d HIDDEN", fact.nx_edge_count or 0, fact.nx_edges_hidden or 0))
+        row("HISTORY", string.format("%d BACK  ·  %d FORWARD", fact.nx_undo_depth or 0, fact.nx_redo_depth or 0))
     elseif t == "system" then
         row("DISTRIBUTION", text.nx_distro)
         row("KERNEL", text.nx_kernel)
         row("UPTIME", text.nx_uptime)
         row("CPU", text.nx_cpu_model)
+        row("LOAD AVERAGE", text.nx_load)
+        row("RUNNABLE", text.nx_tasks)
         row("MEMORY", text.nx_ram_value)
         row("ROOT STORAGE", text.nx_disk_value)
-        row("DISPLAYS", text.nx_display_value)
-        row("GRAPHICS", text.nx_gpu_value)
     elseif t == "cpu" then
         row("LOAD", text.nx_cpu_value)
+        row("CLOCK", text.nx_cpu_clock)
         row("CORES", text.nx_cpu_label)
+        row("AVERAGES", text.nx_load)
+        row("RUNNABLE", text.nx_tasks)
+        row("MODEL", text.nx_cpu_model)
+        row("TEMPERATURE", text.nx_temp_value)
         row("MEMORY", text.nx_ram_value)
-        row("UPTIME", text.nx_uptime)
     elseif t == "memory" then
         row("USED", text.nx_ram_value)
+        row("AVAILABLE", text.nx_ram_avail)
+        row("SWAP", text.nx_swap)
         row("LOAD", text.nx_cpu_value)
         row("TEMPERATURE", text.nx_temp_value)
         row("UPTIME", text.nx_uptime)
@@ -382,18 +433,23 @@ local function detail_rows(node)
         row("TEMPERATURE", text.nx_temp_value)
         row("DISPLAYS", text.nx_display_value)
         row("KERNEL", text.nx_kernel)
+        row("MEMORY", text.nx_ram_value)
     elseif t == "thermal" then
         row("TEMPERATURE", text.nx_temp_value)
         row("LOAD", text.nx_cpu_value)
+        row("CLOCK", text.nx_cpu_clock)
         row("MEMORY", text.nx_ram_value)
         row("UPTIME", text.nx_uptime)
     elseif t == "storage" then
         row("ROOT STORAGE", text.nx_disk_value)
+        row("FREE", text.nx_disk_free)
+        row("FILESYSTEM", text.nx_disk_fs)
         row("MEMORY", text.nx_ram_value)
         row("UPTIME", text.nx_uptime)
         row("HOST", text.nx_host)
     elseif t == "network" then
         row("LINK", live.net_on and (live.net_kind == "wifi" and "WIFI" or "WIRED") or "OFFLINE")
+        row("NETWORK", live.net_name)
         row("RECEIVE", text.nx_rx_value)
         row("SEND", text.nx_tx_value)
         row("HOST", text.nx_host)
@@ -402,26 +458,33 @@ local function detail_rows(node)
         row("INPUT", text.nx_in_name)
         row("MICROPHONE", live.input_muted and "MUTED" or string.format("%d%%", math.floor(live.input * 100 + 0.5)))
         row("BLUETOOTH", live.bt_present and (live.bt_on and "ON" or "OFF") or "N/A")
+        row("STREAMS", string.format("%d PLAYING", fact.nx_mix_count or 0))
     elseif t == "display" then
         row("BRIGHTNESS", live.bright_on and string.format("%d%%", math.floor(live.bright * 100 + 0.5)) or "N/A")
         row("DISPLAYS", text.nx_display_value)
         row("GRAPHICS", text.nx_gpu_value)
         row("KERNEL", text.nx_kernel)
+        row("LOAD", text.nx_cpu_value)
     elseif t == "media" then
         row("TITLE", text.nx_title)
         row("ARTIST", text.nx_artist)
         row("ALBUM", text.nx_album)
         row("PLAYER", text.nx_player)
+        row("STATE", fact.nx_playing and "PLAYING" or "PAUSED")
     elseif t == "clock" then
         row("TIME", live.time)
         row("DATE", live.date)
         row("UPTIME", text.nx_uptime)
         row("HOST", text.nx_host)
+        row("LOAD", text.nx_load)
+        row("KERNEL", text.nx_kernel)
     elseif t == "power" then
         row("CHARGE", live.power_on and string.format("%d%%", math.floor(live.power + 0.5)) or "N/A")
         row("STATE", not live.power_on and "NO BATTERY" or (live.charging and "CHARGING" or "ON BATTERY"))
         row("LOAD", text.nx_cpu_value)
         row("TEMPERATURE", text.nx_temp_value)
+        row("UPTIME", text.nx_uptime)
+        row("HOST", text.nx_host)
     end
     return out
 end
@@ -454,21 +517,33 @@ local function build()
             local ok = nexusnode.available(node.type, p)
             if ok and def then
                 if node.vis and (mode ~= "minimal" or node.essential) then
-                    local value, note, bar, baron, tone = content(node, def, shown)
+                    local value, note, bar, baron, tone, _accent, sub, bar2, bar2on, bar2l =
+                        content(node, def, shown)
                     local detail = detail_rows(node)
+                    -- Only the rows that fit the node it is drawn in: the detail body starts at
+                    -- rail + 92 and a row is 26 px tall, so a card of 260 shows five and a
+                    -- card of 420 shows every one it has. A row cut by the frame is worse than
+                    -- a row not shown.
                     local px, py, pw, ph = node.x, node.y, node.w, node.h
                     if morph then
                         local step = nexuslayout.blend(morph.from[node.type] or node, node, morph.t)
                         px, py, pw, ph = step.x, step.y, step.w, step.h
                     end
+                    -- The overview keeps its COPY DIAGNOSTICS button at the foot of the card, so
+                    -- its rows stop above it instead of running under the plate.
+                    local reserve = def.id == "system" and 56 or 0
+                    local rows_fit = math.floor((math.min(ph, node.h) - 30 - 104 - 14 - reserve) / 26) + 1
+                    if rows_fit < 0 then rows_fit = 0 end
+                    if rows_fit > #detail then rows_fit = #detail end
                     local entry = {
                         id = i, key = def.id, title = def.title,
                         value = value, note = note,
                         x = px, y = py, w = pw, h = ph,
                         tone = tone, bar = math.max(0, math.min(1, bar)), baron = baron,
+                        sub = str(sub, ""), bar2 = math.max(0, math.min(1, bar2)), bar2on = bar2on, bar2l = bar2l,
                         mini = node.min == true, sel = i == sel, focus = node.type == focus,
                         minw = def.min.w, minh = def.min.h, maxw = def.max.w, maxh = def.max.h,
-                        kind = KINDS[def.id] or 0, rows = #detail, endsel = false,
+                        kind = KINDS[def.id] or 0, rows = rows_fit, endsel = false,
                     }
                     for k = 1, 8 do
                         entry["r" .. k .. "l"] = detail[k] and detail[k].label or ""
@@ -1538,6 +1613,26 @@ local function sample_live()
             fact.nx_ram_used_gib, fact.nx_ram_total_gib = used, total
             text.nx_ram_value = string.format("%.1f / %.1f GiB", used, total)
         end
+        -- the same file, read for what the plate used to leave out: what is free, and swap
+        local m = sysinfo.mem_detail(out)
+        if m then
+            text.nx_ram_avail = string.format("%.1f GiB FREE", m.available_gib)
+            text.nx_swap = m.swap_total_gib > 0
+                and string.format("%.1f / %.1f GiB", m.swap_used_gib, m.swap_total_gib) or "NONE"
+        end
+    end)
+    -- the scheduler's own three averages, and how many tasks are waiting
+    launch("cat", { "/proc/loadavg" }, function(out)
+        local l = sysinfo.loadavg(out)
+        if l then
+            text.nx_load = string.format("%.2f  %.2f  %.2f", l.one, l.five, l.fifteen)
+            text.nx_tasks = string.format("%d OF %d RUNNABLE", l.running, l.total)
+        end
+    end)
+    -- one core's clock stands for the package; the file is four bytes of kHz
+    launch("cat", { "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq" }, function(out)
+        local ghz = sysinfo.clock_ghz(out)
+        text.nx_cpu_clock = ghz and string.format("%.2f GHz", ghz) or "N/A"
     end)
     launch("df", { "-Pk", "/" }, function(out)
         local disk = telemetry.disk(out)
@@ -1545,6 +1640,8 @@ local function sample_live()
             fact.nx_disk_on = true
             fact.nx_disk = disk.used_fraction
             text.nx_disk_value = string.format("%d%% used", disk.percent)
+            text.nx_disk_free = string.format("%.0f GiB FREE", disk.available_kib / 1048576)
+            text.nx_disk_fs = str(disk.filesystem, "—")
         end
     end)
     launch("cat", { "/proc/net/dev" }, function(out)

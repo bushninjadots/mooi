@@ -269,6 +269,7 @@ is "the root filesystem was read" "$(get nx_disk_value | grep 'used' | wc -l | t
 echo "the focused node carries its detail body"
 say "emit nx_focus_node 2" >/dev/null
 if wait_value nexus nx_focus system 10; then ok "the system node takes the centre"; else bad "the system node did not focus"; fi
+wait_value nexus nx_morph 0 30 >/dev/null
 is "the detail body publishes its rows" "$(get nx_nodes.1.rows)" 8
 is "the first row is labelled" "$(get nx_nodes.1.r1l)" "DISTRIBUTION"
 is "the second row carries a reading" "$(get nx_nodes.1.r2v | grep -v '^$' | wc -l | tr -d ' ')" 1
@@ -294,7 +295,15 @@ if wait_value nexus nx_nodes.0.x 416 10; then ok "Ctrl+Shift+Z brings the drop b
 echo "the audio detail body answers from the sound server"
 say "emit nx_focus_node 5" >/dev/null
 if wait_value nexus nx_nodes.4.r1l "OUTPUT" 10; then ok "the audio node publishes its routing rows"; else bad "the audio rows were not published"; fi
-is "the detail body stops at four rows" "$(get nx_nodes.4.rows)" 4
+# at the detail size all five of the audio body's rows fit inside the card
+wait_value nexus nx_morph 0 30 >/dev/null
+say "emit nx_node_preset 4" >/dev/null
+wait_value nexus nx_morph 0 30 >/dev/null
+if wait_value nexus nx_nodes.4.rows 5 15; then ok "the detail size opens the whole body"; else bad "the rows did not open (got $(get nx_nodes.4.rows))"; fi
+is "and the last of them is the streams" "$(get nx_nodes.4.r5l)" "STREAMS"
+# back at the size the catalogue ships, only one of them still fits inside the card
+say "emit nx_node_reset" >/dev/null
+if wait_value nexus nx_nodes.4.rows 1 15; then ok "a card keeps only the rows it has room for"; else bad "the rows did not close (got $(get nx_nodes.4.rows))"; fi
 is "the microphone level is answered" "$(get audio.input | grep -E '^[0-9]+([.][0-9]+)?$' | wc -l | tr -d ' ')" 1
 is "the Bluetooth presence is answered" "$(get bluetooth.present | grep -E '^(true|false)$' | wc -l | tr -d ' ')" 1
 is "the stream list is answered" "$(printf '%s' "$(get nx_mix.count)" | grep -E '^[0-9]+$' | wc -l | tr -d ' ')" 1

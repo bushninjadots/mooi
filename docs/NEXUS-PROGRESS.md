@@ -158,6 +158,14 @@ language §3 describes is built rather than sketched:
   arrangement with `nexuslayout.fit` through the new `nx_canvas` event. Below 720×420 the
   strip and header are all that remain, as §4 asks.
 
+**More of everything (D83).** Each card now carries a second line under its note (free memory,
+the package clock, the SSID, the input device) and a focused card a second, thinner bar beside
+its primary one. The bodies grew to six to eight labelled rows — load averages and runnable
+tasks, the CPU clock and model, available memory and swap, the root filesystem's device and
+free space — and the logic publishes only the rows that fit the card's height, so nothing is
+cut by the frame. Where the header has room it now carries LOAD / MEM / TEMP / NET with their
+numbers and bars, from the same facts the nodes read.
+
 **Speed (D82).** The Nexus used to start without `--stall 0`, so it ran in pleamar's
 600 ms-per-decision demonstration mode while the rest of the shell was instant; the spawn
 passes it now (a mode switch answers in ~25 ms over the socket), and `publish()` coalesces a
@@ -171,8 +179,8 @@ instead of `MINIMAL` — the mode already owns that word — and a saved copy th
 shipped shape is renamed once on load. With no portrait, the banner is engraved with the
 same 24/96 px rule as the grid instead of reading as a flat band.
 
-**Verification.** `bin/mooi check` → **235 unit tests, 0 failed**, five scenes compile.
-`tests/nexus.sh` → **126 checks, 0 failed**, including the library's 19 rows and their
+**Verification.** `bin/mooi check` → **238 unit tests, 0 failed**, five scenes compile.
+`tests/nexus.sh` → **128 checks, 0 failed**, including the library's 19 rows and their
 reasons, a removed node appearing as `BACK` and returning, an `ADD` row putting a new type on
 the canvas and undo taking it off, the paged library (19 of 19 modules over two pages, and a
 press before the first page staying on it), a hidden trace listed and restored by its slot,
