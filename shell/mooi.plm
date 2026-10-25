@@ -1904,19 +1904,19 @@ scene Mooi {
             let x_last = chain_x + (spaces.count - 1 - pos) * fl.pitch
             line { from: max(frame_x, x_first - 12), fl.cy; to: min(frame_x + chain_span, x_last + 12), fl.cy
                    width: 1; color: fl.trace_dim; show: not helix_edges }
-            // The strands: sampled every 4 px, drawn twice — the halves behind the axis first,
+            // The strands: sampled every 6 px to keep the helix smooth with fewer segments, drawn twice —
             // the halves in front after the rungs. With the helix as the panel's edges they run
             // a little wider (the ramps into the straight), and nothing fades at the ends.
-            repeat k in 0..53 {
-                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 4
-                let xm.$k = x0.$k + 2
+            repeat k in 0..35 {
+                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 6
+                let xm.$k = x0.$k + 3
                 let e0.$k = if(helix_edges, clamp((x0.$k - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k) / 14, 0, 1), 1)
-                let e1.$k = if(helix_edges, clamp((x0.$k + 4 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 4) / 14, 0, 1), 1)
+                let e1.$k = if(helix_edges, clamp((x0.$k + 6 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 6) / 14, 0, 1), 1)
                 let w0.$k = e0.$k * e0.$k * (3 - 2 * e0.$k)
                 let w1.$k = e1.$k * e1.$k * (3 - 2 * e1.$k)
                 let p0.$k = 90 - (x0.$k - chain_x) / fl.pitch * fl.dna_twist + spin
-                let p1.$k = p0.$k - 4 / fl.pitch * fl.dna_twist
-                let z.$k = cos(p0.$k - 2 / fl.pitch * fl.dna_twist)
+                let p1.$k = p0.$k - 6 / fl.pitch * fl.dna_twist
+                let z.$k = cos(p0.$k - 3 / fl.pitch * fl.dna_twist)
                 let fade.$k = if(helix_edges, 1, clamp(min(xm.$k - frame_x, frame_x + chain_span - xm.$k) / 18, 0, 1) * clamp(min(xm.$k - x_first + 0.5 * fl.pitch, x_last + 0.5 * fl.pitch - xm.$k) / 10, 0, 1))
                 let on.$k = x0.$k < if(helix_edges, hx_b, frame_x + chain_span)
                 let ya0.$k = mix(pt, fl.cy - amp * sin(p0.$k), w0.$k)
@@ -1925,9 +1925,9 @@ scene Mooi {
                 let yb1.$k = mix(pb, fl.cy + amp * sin(p1.$k), w1.$k)
                 let ca.$k = mix(fl.trace, mix(fl.phos, fl.trace_dim, 0.6), w0.$k)
                 let cb.$k = mix(fl.trace, mix(fl.ember, fl.trace_dim, 0.6), w0.$k)
-                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 4, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
                        width: if(helix_edges, 1.3, 0.8); color: ca.$k; opacity: fade.$k; show: on.$k and (z.$k < 0 or w0.$k < 0.5) }
-                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 4, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
                        width: if(helix_edges, 1.3, 0.8); color: cb.$k; opacity: fade.$k; show: on.$k and (z.$k >= 0 or w0.$k < 0.5) }
             }
             for w in spaces {
@@ -1937,25 +1937,25 @@ scene Mooi {
                         opacity: clamp(min(ax - frame_x, frame_x + chain_span - ax) / 18, 0, 1)
                         DnaBack(w, d, spin, clamp(1 - abs(d), 0, 1), amp) }
             }
-            repeat k in 0..53 {
-                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 4
-                let xm.$k = x0.$k + 2
+            repeat k in 0..35 {
+                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 6
+                let xm.$k = x0.$k + 3
                 let e0.$k = if(helix_edges, clamp((x0.$k - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k) / 14, 0, 1), 1)
-                let e1.$k = if(helix_edges, clamp((x0.$k + 4 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 4) / 14, 0, 1), 1)
+                let e1.$k = if(helix_edges, clamp((x0.$k + 6 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 6) / 14, 0, 1), 1)
                 let w0.$k = e0.$k * e0.$k * (3 - 2 * e0.$k)
                 let w1.$k = e1.$k * e1.$k * (3 - 2 * e1.$k)
                 let p0.$k = 90 - (x0.$k - chain_x) / fl.pitch * fl.dna_twist + spin
-                let p1.$k = p0.$k - 4 / fl.pitch * fl.dna_twist
-                let z.$k = cos(p0.$k - 2 / fl.pitch * fl.dna_twist)
+                let p1.$k = p0.$k - 6 / fl.pitch * fl.dna_twist
+                let z.$k = cos(p0.$k - 3 / fl.pitch * fl.dna_twist)
                 let fade.$k = if(helix_edges, 1, clamp(min(xm.$k - frame_x, frame_x + chain_span - xm.$k) / 18, 0, 1) * clamp(min(xm.$k - x_first + 0.5 * fl.pitch, x_last + 0.5 * fl.pitch - xm.$k) / 10, 0, 1))
                 let on.$k = x0.$k < if(helix_edges, hx_b, frame_x + chain_span) and w0.$k >= 0.5
                 let ya0.$k = mix(pt, fl.cy - amp * sin(p0.$k), w0.$k)
                 let ya1.$k = mix(pt, fl.cy - amp * sin(p1.$k), w1.$k)
                 let yb0.$k = mix(pb, fl.cy + amp * sin(p0.$k), w0.$k)
                 let yb1.$k = mix(pb, fl.cy + amp * sin(p1.$k), w1.$k)
-                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 4, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
                        width: 1 + 1.2 * z.$k; color: mix(fl.trace, fl.phos, 0.35 + 0.65 * z.$k); opacity: fade.$k; show: on.$k and z.$k >= 0 }
-                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 4, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
                        width: 1 - 1.2 * z.$k; color: mix(fl.trace, fl.ember, 0.35 - 0.65 * z.$k); opacity: fade.$k; show: on.$k and z.$k < 0 }
             }
             for w in spaces {
