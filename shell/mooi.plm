@@ -2671,7 +2671,8 @@ scene Mooi {
         zone box zwp { from: 0, fl.top; size: ws_wallpaper, fl.mod_h; cursor: pointer; role: button
                        label: "Wallpaper studio — pick a picture and grade it" }
         Pill(ws_wallpaper, zwp.hover)
-        figure i_wallpaper { at: 8, fl.top + (fl.mod_h - 16) / 2; size: 16, 16
+        // a figure's `at` is its centre (D84), so the picture sits in the middle of its pill
+        figure i_wallpaper { at: ws_wallpaper / 2, fl.cy; size: 17, 17
                              color: mix(fl.trace, fl.phos, zwp.hover) }
         on press zwp { emit open_wallpaper; side = none; mark_open = false; open = none }
     }
