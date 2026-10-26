@@ -57,8 +57,9 @@ scene Desk {
 
         let sw = screen.width
         let sh = screen.height
-        // where along its travel the picture is, 0 … 1 each way
-        let px = clamp(if(mode == 1, wsx, if(mode == 2, 0.5 + cxp, if(mode == 3, wsx + cxp * 0.4, 0.5))), 0, 1)
+        // where along its travel the picture is, 0 … 1 each way; with both, the workspaces take
+        // 0.6 of it and the pointer 0.4 round that, so neither is cut off at the row's ends
+        let px = clamp(if(mode == 1, wsx, if(mode == 2, 0.5 + cxp, if(mode == 3, 0.5 + (wsx - 0.5) * 0.6 + cxp * 0.4, 0.5))), 0, 1)
         let py = clamp(0.5 + if(mode >= 2, cyp * 0.8, 0), 0, 1)
         let ww = sw * (1 + over)
         let wh = sh * (1 + over)
@@ -79,7 +80,7 @@ scene Desk {
 
         let fw = screen.width
         let fh = screen.height
-        let qx = clamp(if(mode == 1, wsx, if(mode == 2, 0.5 + cxp, if(mode == 3, wsx + cxp * 0.4, 0.5))), 0, 1)
+        let qx = clamp(if(mode == 1, wsx, if(mode == 2, 0.5 + cxp, if(mode == 3, 0.5 + (wsx - 0.5) * 0.6 + cxp * 0.4, 0.5))), 0, 1)
         let qy = clamp(0.5 + if(mode >= 2, cyp * 0.8, 0), 0, 1)
         // the subject travels round the middle of the picture's travel, further by `depth`
         let tx = 0.5 + (qx - 0.5) * (1 + depth)

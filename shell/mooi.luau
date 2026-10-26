@@ -1656,11 +1656,15 @@ function desk_sync()
     if desk_win then return end
     local mine
     local started = os.time()
-    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-desk.plm", "--no-hud", "--stall", "0" }, nil, function(_, code)
+    local said = {}
+    -- spawn's line callback is required (nil is an error, which kept the desk from ever starting)
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-desk.plm", "--no-hud", "--stall", "0" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
         if desk_win ~= mine then return end
         desk_win = nil
         if os.time() - started < 5 then desk_tries = desk_tries + 1 else desk_tries = 0 end
-        if code ~= 0 then log("desk · ended (" .. tostring(code) .. ")") end
+        if code ~= 0 then log("desk · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
         if desk_tries < 5 then after(1000 * (desk_tries + 1), desk_sync) end
     end, { errors = true })
     desk_win = mine

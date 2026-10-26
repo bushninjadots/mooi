@@ -2830,3 +2830,30 @@ test notices from two apps gave 3 WAITING · 2 APPS · 1 URGENT and a two-segmen
 were cleared. **Not checked:** SHOT (it needs a hand to choose a region), the board's due pill
 (the seeded date was written in the wrong unit), the board at a larger size (its geometry is fixed
 in the logic and the scene; a resizable board is a follow-up).
+
+---
+
+## D87 · 2026-10-26 · The desk actually starts; "both" parallax no longer clips; the studio's button
+
+**The desk never ran.** `desk_sync` called `spawn(cmd, args, nil, on_exit)`; pleamar's `spawn`
+needs a function for its line callback, so every call raised "error converting Lua nil to
+function" (mooi.log) and the desk stayed off with `desk.on` set. It now passes a line callback that
+keeps the first error lines for the exit log. The bar's screen recorder made the same call
+(`bar.luau`, wf-recorder) and gets the same fix — that one goes live at the bar's next restart,
+since `bar.luau` is a cached module.
+
+**Both, clipped.** With parallax "both" the picture's place was `wsx + pointer · 0.4`, clamped to
+0…1, so on the first or last workspace of the row half the pointer's travel was cut off (measured:
+36 px for a full sweep, 72 expected). It is now `0.5 + (wsx − 0.5) · 0.6 + pointer · 0.4`: the
+workspaces take 0.6 of the travel and the pointer 0.4 round it, never clipped.
+
+**Checked live:** the desk starts with the bar; turning `desk.on` off ends it and on again starts it
+(settings.json edited and restored byte-identical); workspace 3 → 5 moves the picture 36 px, as the
+row (5 long, strength 94) predicts, 31 px of it in the first 250 ms; the settings codes 320–324
+name desk.on/parallax/strength/depth/cutout. Not checked: the cutout and depth (no Lumen cutout for
+the current picture).
+
+**The wallpaper studio's button** placed its figure with top-left maths (`at: 8, top + (h−16)/2`)
+though `at` is a figure's centre (D84), so it sat half off its pill and high. It is centred now, and
+`icons/wallpaper.svg` is redrawn in the Nexus mark's round-cap stroke: a framed picture with a
+studio sparkle.

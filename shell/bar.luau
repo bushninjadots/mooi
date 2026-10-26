@@ -372,7 +372,7 @@ return function(ctx)
                 run("mkdir", { "-p", home .. "/Videos" }, function()
                     args[#args + 1] = "-f"; args[#args + 1] = home .. "/Videos/mooi_" .. t .. ".mp4"
                     local mine
-                    mine = spawn("wf-recorder", args, nil, function()
+                    mine = spawn("wf-recorder", args, function() end, function()
                         if rec == mine then rec = nil; fact.recording = false; log("bar · recording saved in ~/Videos") end
                     end)
                     rec = mine
