@@ -69,6 +69,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("shutter", "Window shutter", "The focused window's controls, unfolding from its edge"),
         ("settings", "Settings", "This window"),
         ("wallpaper", "Wallpaper studio", "Grade a picture and set it on the desk, with a folder of your own"),
+        ("player", "Music player", "Your library, the queue and lyrics on a turntable"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 

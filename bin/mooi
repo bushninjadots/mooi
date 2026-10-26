@@ -24,6 +24,7 @@
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
+#   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
@@ -389,7 +390,7 @@ not() { ! "$@"; }
 # mooi's, so they read and write mooi's settings.json, palette.json, wallpapers.json and
 # board.json. Made here, idempotently; a real folder in the way is moved aside.
 settings_link() {
-    for scene in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk; do
+    for scene in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk mooi-player; do
         link="$(dirname "$folder")/$scene"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -403,6 +404,7 @@ snapshot() {
     "$pleamar" --check "$root/shell/mooi-board.plm" >/dev/null || { echo "mooi: the board does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-desk.plm" >/dev/null || { echo "mooi: the desk does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/mooi-player.plm" >/dev/null || { echo "mooi: the music player does not compile; the running one is kept" >&2; return 1; }
     settings_link
     rm -rf "$live.new" && cp -r "$root/shell" "$live.new" || return 1
     pace "$live.new"
@@ -613,6 +615,8 @@ case "$cmd" in
     wallpaper) running || { echo "mooi is not running; start it first" >&2; exit 1; }
                exec "$pleamar" --say "$name" "emit open_wallpaper" ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
+    player) running || { echo "mooi is not running; start it first" >&2; exit 1; }
+            exec "$pleamar" --say "$name" "emit open_player" ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
@@ -741,6 +745,7 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-board.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-player.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
         # file is written in the subset Lua 5.4 and Luau share, so Lua 5.4 can parse them all.

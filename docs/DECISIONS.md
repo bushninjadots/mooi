@@ -2857,3 +2857,27 @@ the current picture).
 though `at` is a figure's centre (D84), so it sat half off its pill and high. It is centred now, and
 `icons/wallpaper.svg` is redrawn in the Nexus mark's round-cap stroke: a framed picture with a
 studio sparkle.
+
+---
+
+## D88 · 2026-10-26 · The music player is finished and on the bar
+
+**Asked for:** finish the player. **Done:** the program (shell/mooi-player.*, written over D87's
+evening) is now started by the bar: `open_player` in mooi.luau (spawned like the studio, the
+media module's centre written to `player-anchor.json` first), a left press on the media module's
+track or pill (the right press is play/pause; the wheel, the slabs and the visualiser keep theirs),
+`mooi player`, and `keys.player` = Super+Alt+M (free on this desktop; on the Keys page). bin/mooi
+links its data folder to mooi's and checks it on refresh. **Cover colours:** `player.colours`
+(shell | cover, in the schema) and a COVER chip; the cover goes through Matugen with source colour
+0 and the shell's scheme and contrast, once per cover. The player's permissions lacked `matugen`,
+which made the first try silently do nothing.
+
+**mpd was wedged.** `mpc` timed out: mpd's main loop had stopped accepting (6 connections queued on
+a backlog of 5) after its auto-detected ALSA output, through the alsa-pipewire bridge, looked for a
+"PCM" mixer that does not exist. ~/.config/mpd/mpd.conf now has a native `pipewire` output with a
+software mixer (backup ~/.local/state/mooi/mpd.conf.before-2026-10-26); mpd was restarted.
+
+**Checked live** (agent commands on the running player): it opens from `mooi player` under the
+media module; the library (728 artists), search ("free bird" → the song), LRCLIB's synced lyrics,
+full screen, the source switch; play/pause at low volume with the record turning 200°/s and the
+tonearm following progress; COVER relit the accent from a blue cover and back.

@@ -1,4 +1,4 @@
-# mooi · the music player (plan)
+# mooi · the music player
 
 **Asked for (2026-10-26):** a press on the bar's media module opens mooi's own music player, and it
 looks super cool. **Chosen:** your mpd library first, plus a remote for any other player; a large
@@ -83,3 +83,11 @@ Space play/pause · ←/→ seek 5 s (Shift: 30 s) · ↑/↓ volume · N/P next
 - Seek and volume through MPRIS depend on the player supporting them (`playerctl` reports when not).
 - Pleamar cannot decode audio itself: the waveform is a picture made by ffmpeg, the visualiser is
   cava listening to the output.
+
+## Status (2026-10-26, D88)
+
+Built and live: steps 1–5 and the colour option. A press on the bar's media module, `mooi player`
+or Super+Alt+M opens it under the media module (`player-anchor.json`, written by the bar); the
+right press, the wheel and the slabs stay the transport. COVER in the header switches
+`player.colours` between the shell's palette and the album cover's (Matugen, dry run, kept per
+cover). Not done: a choice of ring bands, a source preference (it opens on whatever is playing).

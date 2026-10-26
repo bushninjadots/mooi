@@ -1644,6 +1644,26 @@ on("open_wallpaper", function()
     wallpaper_win = mine
 end)
 
+-- The music player (shell/mooi-player.plm, D88): mpd's library and a remote for any other
+-- player, a program of its own (it holds the keyboard). The media module's press or `mooi player`
+-- opens it; the same again, Esc or its × closes it.
+local player_win = nil
+on("open_player", function()
+    if player_win then run("pleamar", { "--say", "mooi-player", "quit" }); return end
+    -- where the media module sits, so the panel hangs under it (-1: it is not on the bar)
+    local cx = (tonumber(fact.x_media) or 0) + (tonumber(fact.w_media) or 0) / 2
+    pcall(sys.call, "files.write", "player-anchor.json", { x = fact.p_media and cx or -1 })
+    local mine
+    local said = {}
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-player.plm", "--no-hud", "--stall", "0" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if player_win == mine then player_win = nil end
+        if code ~= 0 then log("player · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+    end, { errors = true })
+    player_win = mine
+end)
+
 -- The desk (shell/mooi-desk.plm, D85): mooi's own drawing of the wallpaper, travelling with the
 -- workspaces or the pointer, and the picture's cutout over the desktop widgets. A program of its
 -- own with two click-through surfaces; it runs while `desk.on` is set, is started again if it

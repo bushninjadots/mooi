@@ -1,0 +1,919 @@
+language 0.4
+import "theme/tokens.plm"
+import "theme/ferrolume.plm"
+import "ui/loom.plm"
+
+// mooi's music player (docs/PLAYER.md): a program of its own, opened from the bar's media module.
+// Your mpd library first — the queue, seek, volume, shuffle and repeat through mpc — and a remote
+// for whatever else plays (MPRIS). Its face is a turntable: the cover is the record's label and
+// turns with it, the tonearm's angle is the song's progress (carry it to seek), and cava's bands
+// ring the record. shell/mooi-player.luau reads mpd and paints the shell's colours.
+
+scene Player {
+    permissions {
+        run: "mpc", "matugen", "ffmpeg", "playerctl", "cava", "curl", "pleamar", "magick", "mkdir", "cat"
+        services: "media", "media.*", "audio", "audio.*", "files", "files.write", "env"
+    }
+
+    // The same facts and springs the bar wears: the logic paints them from palette.json.
+    fact fr_ground_r = 0.000000
+    fact fr_ground_g = 0.000000
+    fact fr_ground_b = 0.000000
+    fact fr_hull_r = 0.015686
+    fact fr_hull_g = 0.035294
+    fact fr_hull_b = 0.031373
+    fact fr_hull_raised_r = 0.027451
+    fact fr_hull_raised_g = 0.074510
+    fact fr_hull_raised_b = 0.066667
+    fact fr_well_r = 0.019608
+    fact fr_well_g = 0.164706
+    fact fr_well_b = 0.145098
+    fact fr_trace_dim_r = 0.121569
+    fact fr_trace_dim_g = 0.219608
+    fact fr_trace_dim_b = 0.200000
+    fact fr_trace_r = 0.239216
+    fact fr_trace_g = 0.415686
+    fact fr_trace_b = 0.376471
+    fact fr_trace_lit_r = 0.423529
+    fact fr_trace_lit_g = 0.788235
+    fact fr_trace_lit_b = 0.682353
+    fact fr_phos_r = 0.498039
+    fact fr_phos_g = 0.811765
+    fact fr_phos_b = 0.713725
+    fact fr_phos_fill_r = 0.090196
+    fact fr_phos_fill_g = 0.603922
+    fact fr_phos_fill_b = 0.533333
+    fact fr_ember_r = 0.878431
+    fact fr_ember_g = 0.482353
+    fact fr_ember_b = 0.180392
+    fact fr_ember_fill_r = 0.823529
+    fact fr_ember_fill_g = 0.411765
+    fact fr_ember_fill_b = 0.117647
+    fact fr_flare_r = 0.956863
+    fact fr_flare_g = 0.713725
+    fact fr_flare_b = 0.235294
+    fact fr_muted_r = 0.352941
+    fact fr_muted_g = 0.541176
+    fact fr_muted_b = 0.494118
+    fact fr_ink_r = 0.015686
+    fact fr_ink_g = 0.129412
+    fact fr_ink_b = 0.113725
+    fact fr_steel_900_r = 0.082353
+    fact fr_steel_900_g = 0.098039
+    fact fr_steel_900_b = 0.105882
+    fact fr_steel_700_r = 0.164706
+    fact fr_steel_700_g = 0.192157
+    fact fr_steel_700_b = 0.203922
+    fact fr_steel_500_r = 0.290196
+    fact fr_steel_500_g = 0.329412
+    fact fr_steel_500_b = 0.349020
+    fact fr_steel_300_r = 0.545098
+    fact fr_steel_300_g = 0.592157
+    fact fr_steel_300_b = 0.611765
+    fact fr_engrave_r = 0.603922
+    fact fr_engrave_g = 0.650980
+    fact fr_engrave_b = 0.670588
+    prop pr_ground_r = 0.000000 ~fl.relight
+    follow pr_ground_r = fr_ground_r
+    prop pr_ground_g = 0.000000 ~fl.relight
+    follow pr_ground_g = fr_ground_g
+    prop pr_ground_b = 0.000000 ~fl.relight
+    follow pr_ground_b = fr_ground_b
+    prop pr_hull_r = 0.015686 ~fl.relight
+    follow pr_hull_r = fr_hull_r
+    prop pr_hull_g = 0.035294 ~fl.relight
+    follow pr_hull_g = fr_hull_g
+    prop pr_hull_b = 0.031373 ~fl.relight
+    follow pr_hull_b = fr_hull_b
+    prop pr_hull_raised_r = 0.027451 ~fl.relight
+    follow pr_hull_raised_r = fr_hull_raised_r
+    prop pr_hull_raised_g = 0.074510 ~fl.relight
+    follow pr_hull_raised_g = fr_hull_raised_g
+    prop pr_hull_raised_b = 0.066667 ~fl.relight
+    follow pr_hull_raised_b = fr_hull_raised_b
+    prop pr_well_r = 0.019608 ~fl.relight
+    follow pr_well_r = fr_well_r
+    prop pr_well_g = 0.164706 ~fl.relight
+    follow pr_well_g = fr_well_g
+    prop pr_well_b = 0.145098 ~fl.relight
+    follow pr_well_b = fr_well_b
+    prop pr_trace_dim_r = 0.121569 ~fl.relight
+    follow pr_trace_dim_r = fr_trace_dim_r
+    prop pr_trace_dim_g = 0.219608 ~fl.relight
+    follow pr_trace_dim_g = fr_trace_dim_g
+    prop pr_trace_dim_b = 0.200000 ~fl.relight
+    follow pr_trace_dim_b = fr_trace_dim_b
+    prop pr_trace_r = 0.239216 ~fl.relight
+    follow pr_trace_r = fr_trace_r
+    prop pr_trace_g = 0.415686 ~fl.relight
+    follow pr_trace_g = fr_trace_g
+    prop pr_trace_b = 0.376471 ~fl.relight
+    follow pr_trace_b = fr_trace_b
+    prop pr_trace_lit_r = 0.423529 ~fl.relight
+    follow pr_trace_lit_r = fr_trace_lit_r
+    prop pr_trace_lit_g = 0.788235 ~fl.relight
+    follow pr_trace_lit_g = fr_trace_lit_g
+    prop pr_trace_lit_b = 0.682353 ~fl.relight
+    follow pr_trace_lit_b = fr_trace_lit_b
+    prop pr_phos_r = 0.498039 ~fl.relight
+    follow pr_phos_r = fr_phos_r
+    prop pr_phos_g = 0.811765 ~fl.relight
+    follow pr_phos_g = fr_phos_g
+    prop pr_phos_b = 0.713725 ~fl.relight
+    follow pr_phos_b = fr_phos_b
+    prop pr_phos_fill_r = 0.090196 ~fl.relight
+    follow pr_phos_fill_r = fr_phos_fill_r
+    prop pr_phos_fill_g = 0.603922 ~fl.relight
+    follow pr_phos_fill_g = fr_phos_fill_g
+    prop pr_phos_fill_b = 0.533333 ~fl.relight
+    follow pr_phos_fill_b = fr_phos_fill_b
+    prop pr_ember_r = 0.878431 ~fl.relight
+    follow pr_ember_r = fr_ember_r
+    prop pr_ember_g = 0.482353 ~fl.relight
+    follow pr_ember_g = fr_ember_g
+    prop pr_ember_b = 0.180392 ~fl.relight
+    follow pr_ember_b = fr_ember_b
+    prop pr_ember_fill_r = 0.823529 ~fl.relight
+    follow pr_ember_fill_r = fr_ember_fill_r
+    prop pr_ember_fill_g = 0.411765 ~fl.relight
+    follow pr_ember_fill_g = fr_ember_fill_g
+    prop pr_ember_fill_b = 0.117647 ~fl.relight
+    follow pr_ember_fill_b = fr_ember_fill_b
+    prop pr_flare_r = 0.956863 ~fl.relight
+    follow pr_flare_r = fr_flare_r
+    prop pr_flare_g = 0.713725 ~fl.relight
+    follow pr_flare_g = fr_flare_g
+    prop pr_flare_b = 0.235294 ~fl.relight
+    follow pr_flare_b = fr_flare_b
+    prop pr_muted_r = 0.352941 ~fl.relight
+    follow pr_muted_r = fr_muted_r
+    prop pr_muted_g = 0.541176 ~fl.relight
+    follow pr_muted_g = fr_muted_g
+    prop pr_muted_b = 0.494118 ~fl.relight
+    follow pr_muted_b = fr_muted_b
+    prop pr_ink_r = 0.015686 ~fl.relight
+    follow pr_ink_r = fr_ink_r
+    prop pr_ink_g = 0.129412 ~fl.relight
+    follow pr_ink_g = fr_ink_g
+    prop pr_ink_b = 0.113725 ~fl.relight
+    follow pr_ink_b = fr_ink_b
+    prop pr_steel_900_r = 0.082353 ~fl.relight
+    follow pr_steel_900_r = fr_steel_900_r
+    prop pr_steel_900_g = 0.098039 ~fl.relight
+    follow pr_steel_900_g = fr_steel_900_g
+    prop pr_steel_900_b = 0.105882 ~fl.relight
+    follow pr_steel_900_b = fr_steel_900_b
+    prop pr_steel_700_r = 0.164706 ~fl.relight
+    follow pr_steel_700_r = fr_steel_700_r
+    prop pr_steel_700_g = 0.192157 ~fl.relight
+    follow pr_steel_700_g = fr_steel_700_g
+    prop pr_steel_700_b = 0.203922 ~fl.relight
+    follow pr_steel_700_b = fr_steel_700_b
+    prop pr_steel_500_r = 0.290196 ~fl.relight
+    follow pr_steel_500_r = fr_steel_500_r
+    prop pr_steel_500_g = 0.329412 ~fl.relight
+    follow pr_steel_500_g = fr_steel_500_g
+    prop pr_steel_500_b = 0.349020 ~fl.relight
+    follow pr_steel_500_b = fr_steel_500_b
+    prop pr_steel_300_r = 0.545098 ~fl.relight
+    follow pr_steel_300_r = fr_steel_300_r
+    prop pr_steel_300_g = 0.592157 ~fl.relight
+    follow pr_steel_300_g = fr_steel_300_g
+    prop pr_steel_300_b = 0.611765 ~fl.relight
+    follow pr_steel_300_b = fr_steel_300_b
+    prop pr_engrave_r = 0.603922 ~fl.relight
+    follow pr_engrave_r = fr_engrave_r
+    prop pr_engrave_g = 0.650980 ~fl.relight
+    follow pr_engrave_g = fr_engrave_g
+    prop pr_engrave_b = 0.670588 ~fl.relight
+    follow pr_engrave_b = fr_engrave_b
+
+    // The islands' semantic tokens, which theme/tokens defines over these facts.
+    fact c_bg_primary_r = 0.062745
+    fact c_bg_primary_g = 0.078431
+    fact c_bg_primary_b = 0.086275
+    fact c_bg_secondary_r = 0.086275
+    fact c_bg_secondary_g = 0.105882
+    fact c_bg_secondary_b = 0.117647
+    fact c_surface_primary_r = 0.098039
+    fact c_surface_primary_g = 0.121569
+    fact c_surface_primary_b = 0.133333
+    fact c_surface_elevated_r = 0.133333
+    fact c_surface_elevated_g = 0.160784
+    fact c_surface_elevated_b = 0.176471
+    fact c_border_subtle_r = 0.172549
+    fact c_border_subtle_g = 0.207843
+    fact c_border_subtle_b = 0.223529
+    fact c_fg_primary_r = 0.890196
+    fact c_fg_primary_g = 0.913725
+    fact c_fg_primary_b = 0.921569
+    fact c_fg_secondary_r = 0.639216
+    fact c_fg_secondary_g = 0.690196
+    fact c_fg_secondary_b = 0.709804
+    fact c_fg_muted_r = 0.541176
+    fact c_fg_muted_g = 0.592157
+    fact c_fg_muted_b = 0.611765
+    fact c_accent_primary_r = 0.650980
+    fact c_accent_primary_g = 0.952941
+    fact c_accent_primary_b = 0.819608
+    fact c_accent_secondary_r = 1.000000
+    fact c_accent_secondary_g = 0.572549
+    fact c_accent_secondary_b = 0.372549
+    fact c_status_ok_r = 0.650980
+    fact c_status_ok_g = 0.952941
+    fact c_status_ok_b = 0.819608
+    fact c_status_error_r = 1.000000
+    fact c_status_error_g = 0.572549
+    fact c_status_error_b = 0.372549
+    fact c_focus_ring_r = 0.650980
+    fact c_focus_ring_g = 0.952941
+    fact c_focus_ring_b = 0.819608
+    fact c_selection_bg_r = 0.164706
+    fact c_selection_bg_g = 0.227451
+    fact c_selection_bg_b = 0.211765
+    // What theme/ferrolume reads for its geometry; the studio uses the colour, not the bar's
+    // strip, so these are only the values the tokens are defined against.
+    fact st_offset = 0
+    fact st_notch = false
+    fact bar_rail = true
+    fact st_height = 30
+    fact st_radius = 8
+    fact st_res = 46
+    fact st_glow = 1
+
+    // ── The player (docs/PLAYER.md) ─────────────────────────────
+    // What mpd (or another player, in remote) is doing, as the logic reads it with mpc.
+    fact pl_open = 0
+    fact pl_cx = -1
+    fact pl_top = 48
+    fact src: library | remote = library
+    fact mpd_on = false
+    fact has_remote = false
+    fact pstate: stopped | playing | paused = stopped
+    fact progress = 0
+    fact vol = 50
+    fact vol_on = true
+    fact rnd = false
+    fact rpt = false
+    fact sgl = false
+    fact has_song = false
+    fact cover_on = false
+    fact cover_tint = false
+    text t_title = ""
+    text t_artist = ""
+    text t_album = ""
+    text t_meta = ""
+    text t_elapsed = "0:00"
+    text t_total = "0:00"
+    text t_cover = ""
+    text t_remote = ""
+    text t_status = ""
+    image cover = from t_cover, 480, 480
+    // the queue's page: nine rows, the playing one lit
+    model queue max 9 { pos: number; title: text; artist: text; time: text; current: bool; n: number }
+    fact q_count = 0
+    fact q_page = 0
+    fact q_pages = 1
+    fact pane: queue | library | lyrics | players = queue
+    // the library's page: what level it is at (0 artists · 1 albums · 2 songs · 3 a search)
+    model librows max 9 { name: text; sub: text; n: number; k: number; song: bool }
+    fact lib_count = 0
+    fact lib_page = 0
+    fact lib_pages = 1
+    fact lib_level = 0
+    text lib_where = "ARTISTS"
+    text lib_query = ""
+    // the search has the caret: the letter keys stand down (they would take the letters)
+    fact typing = false
+    // the waveform (a picture ffmpeg makes once per song), and full screen
+    text t_wave = ""
+    fact wave_on = false
+    image wave = from t_wave, 720, 96
+    fact full = false
+    // the lyrics: the lines round the one being sung (the lit one third from the top)
+    model lyr max 9 { text: text; cur: bool; dist: number; t: number; n: number }
+    fact lyr_on = false
+    fact lyr_synced = false
+    text lyr_note = ""
+    // cava's 48 bands (the ring round the record)
+    fact nv0 = 0.03
+    fact nv1 = 0.03
+    fact nv2 = 0.03
+    fact nv3 = 0.03
+    fact nv4 = 0.03
+    fact nv5 = 0.03
+    fact nv6 = 0.03
+    fact nv7 = 0.03
+    fact nv8 = 0.03
+    fact nv9 = 0.03
+    fact nv10 = 0.03
+    fact nv11 = 0.03
+    fact nv12 = 0.03
+    fact nv13 = 0.03
+    fact nv14 = 0.03
+    fact nv15 = 0.03
+    fact nv16 = 0.03
+    fact nv17 = 0.03
+    fact nv18 = 0.03
+    fact nv19 = 0.03
+    fact nv20 = 0.03
+    fact nv21 = 0.03
+    fact nv22 = 0.03
+    fact nv23 = 0.03
+    // while the arm is carried, the angle it is at (degrees from its rest)
+    fact arm_drag = false
+    fact arm_at = 0
+
+    event pl_toggle ->       // to the logic: play / pause
+    event pl_next ->
+    event pl_prev ->
+    event pl_seek ->         // to the logic: the fraction of the song × 1000
+    event pl_vol ->          // to the logic: the volume 0 … 100
+    event pl_rnd ->
+    event pl_rpt ->
+    event pl_sgl ->
+    event pl_play ->         // to the logic: play the queue's song at this position
+    event pl_del ->          // to the logic: take the song at this position out of the queue
+    event pl_qpage ->        // to the logic: -1 / 1 a page of the queue
+    event pl_clear ->        // to the logic: empty the queue
+    event pl_src ->          // to the logic: 0 the library (mpd) · 1 the remote (whatever else plays)
+    event pl_close ->
+    event pl_pane ->         // to the logic: 0 the queue · 1 the library · 2 the lyrics
+    event lib_open ->        // to the logic: go into the row (an artist, an album) or play it (a song)
+    event lib_play ->        // to the logic: the row, now (the queue becomes it)
+    event lib_add ->         // to the logic: the row, added to the queue
+    event lib_back ->        // to the logic: up a level
+    event lib_page ->        // to the logic: -1 / 1 a page
+    event lyr_seek ->        // to the logic: go to this line (its time × 10)
+    event pl_tint ->         // to the logic: colours from the album cover, or the shell's again
+    event pl_full ->         // to the logic: full screen, or back to the panel
+    event lyr_scroll ->      // to the logic: the wheel over plain (unsynced) lyrics
+
+    spring pl.ext = 900, 51
+    spring pl.level = 1200, 60
+    spring pl.coast = 30, 11      // the record coasting to a stop, and spinning up
+    spring pl.arm = 160, 26
+    prop pl_a = 0 ~pl.ext
+    on change pl_open while pl_open { pl_a: 1 ~pl.ext }
+    on change pl_open while not pl_open { pl_a: 0 ~pl.ext }
+    // 33⅓ rpm is 200° a second; paused, the platter slows to a stop rather than freezing
+    prop spd = 0 ~pl.coast
+    follow spd = if(pstate == playing, 200, 0)
+    prop vang = 0
+    spin vang by spd
+    // the progress glides between the logic's readings
+    prop prg = 0 ~500ms
+    follow prg = progress
+    // the tonearm: parked while stopped, on the record otherwise, following the song (or the hand)
+    prop arm = 0 ~pl.arm
+    follow arm = if(arm_drag, arm_at, if(pstate == stopped, 0, 20 + 20 * clamp(progress, 0, 1)))
+    prop vp0 = 0.03 ~pl.level
+    follow vp0 = nv0
+    prop vp1 = 0.03 ~pl.level
+    follow vp1 = nv1
+    prop vp2 = 0.03 ~pl.level
+    follow vp2 = nv2
+    prop vp3 = 0.03 ~pl.level
+    follow vp3 = nv3
+    prop vp4 = 0.03 ~pl.level
+    follow vp4 = nv4
+    prop vp5 = 0.03 ~pl.level
+    follow vp5 = nv5
+    prop vp6 = 0.03 ~pl.level
+    follow vp6 = nv6
+    prop vp7 = 0.03 ~pl.level
+    follow vp7 = nv7
+    prop vp8 = 0.03 ~pl.level
+    follow vp8 = nv8
+    prop vp9 = 0.03 ~pl.level
+    follow vp9 = nv9
+    prop vp10 = 0.03 ~pl.level
+    follow vp10 = nv10
+    prop vp11 = 0.03 ~pl.level
+    follow vp11 = nv11
+    prop vp12 = 0.03 ~pl.level
+    follow vp12 = nv12
+    prop vp13 = 0.03 ~pl.level
+    follow vp13 = nv13
+    prop vp14 = 0.03 ~pl.level
+    follow vp14 = nv14
+    prop vp15 = 0.03 ~pl.level
+    follow vp15 = nv15
+    prop vp16 = 0.03 ~pl.level
+    follow vp16 = nv16
+    prop vp17 = 0.03 ~pl.level
+    follow vp17 = nv17
+    prop vp18 = 0.03 ~pl.level
+    follow vp18 = nv18
+    prop vp19 = 0.03 ~pl.level
+    follow vp19 = nv19
+    prop vp20 = 0.03 ~pl.level
+    follow vp20 = nv20
+    prop vp21 = 0.03 ~pl.level
+    follow vp21 = nv21
+    prop vp22 = 0.03 ~pl.level
+    follow vp22 = nv22
+    prop vp23 = 0.03 ~pl.level
+    follow vp23 = nv23
+
+    // A round control: a ring, lit while on, a glyph drawn by the caller.
+    component PRound(x: number, y: number, r: number, lit: number, tone: color, hot: number) {
+        size: r * 2, r * 2
+        group {
+            glow: 10, 45% * lit, tone
+            ellipse { at: x, y; radius: r; color: mix(fl.hull_raised, tone, 0.06 + hot * 0.12 + lit * 0.2) }
+        }
+        ellipse { at: x, y; radius: r; stroke: 1.3; color: mix(fl.trace, tone, 0.3 + hot * 0.5 + lit * 0.5) }
+    }
+
+    // A word that is a switch: lit while on.
+    component PChip(x: number, y: number, w: number, word: text, on: bool, hot: number) {
+        size: w, 22
+        box { from: x, y; size: w, 22; corner: 11; color: mix(fl.hull_raised, fl.phos, if(on, 0.22, 0) + hot * 0.1) }
+        box { from: x, y; size: w, 22; corner: 11; stroke: 1; color: if(on, fl.phos, mix(fl.trace, fl.phos, hot * 0.6)) }
+        text word { at: x + w / 2, y + 11; anchor: center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: if(on, fl.phos, fl.muted) }
+    }
+
+    surface player {
+        size: full, full
+        anchor: top
+        reserve: -1
+        level: overlay
+        keyboard: exclusive
+
+        let sw = screen.width
+        let sh = screen.height
+        let pw = min(sw - 20, 1200)
+        let ph = 624
+        let px = clamp(if(pl_cx > 0, pl_cx - pw / 2, (sw - pw) / 2), 10, sw - pw - 10)
+        let py = pl_top
+        // the turntable's plinth, the record and the tonearm's pivot (lib/player: the arm sets
+        // down on the outer groove at 20° and reaches the label at 40°)
+        let rcx = 230
+        let rcy = 64 + (ph - 84) / 2
+        let rr = 162
+        let rl = 64
+        let apx = rcx + 190
+        let apy = rcy - 144
+        let alen = 284
+        // the middle column and the pane
+        let mx = 470
+        let mw = 330
+        let qx = 830
+        let qw = pw - qx - 18
+
+        group {
+            show: pl_a > 0.004 and not full
+            zone box away { from: 0, 0; size: sw, sh; label: "Close the player"; agent: hidden }
+            on press away { emit pl_close }
+
+            group {
+                move: px, py - (1 - pl_a) * 16
+                scale: 0.97 + 0.03 * pl_a
+                opacity: min(1, pl_a * 1.4)
+                zone box body { from: 0, 0; size: pw, ph; agent: hidden }
+
+                // the plate, and the cover's light behind it all, out of focus
+                group {
+                    glow: 22, 30% * st_glow, fl.phos
+                    Chamfer(0, 0, pw, ph, 14, fl.hull, mix(fl.trace, fl.phos, 0.35), 1, 1.4)
+                }
+                group {
+                    show: cover_on
+                    clip box { from: 2, 2; size: pw - 4, ph - 4 }
+                    group {
+                        blur: 40
+                        opacity: 0.28
+                        image cover { at: -60, -260; size: pw + 120, pw + 120 }
+                    }
+                }
+
+                // ── the head ──
+                text "PLAYER" { at: 24, 26; anchor: left center; size: 12; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                zone box zsrc0 { from: 108, 14; size: 92, 24; cursor: pointer; role: tab; selected: src == library; label: "Your library (mpd)" }
+                PChip(108, 15, 92, "LIBRARY", src == library, zsrc0.hover)
+                on press zsrc0 { emit pl_src(0) }
+                zone box zsrc1 { from: 206, 14; size: 116, 24; cursor: pointer; role: tab; selected: src == remote; label: "Whatever else is playing" }
+                PChip(206, 15, 116, "ELSEWHERE", src == remote, zsrc1.hover)
+                on press zsrc1 { emit pl_src(1) }
+                ellipse { at: 314, 19; radius: 3; color: fl.flare; show: has_remote and src != remote }
+                text t_status { at: 340, 26; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 400; lines: 1 }
+                zone box zfull { from: pw - 104, 13; size: 54, 24; cursor: pointer; role: button; label: "Full screen" }
+                PChip(pw - 104, 14, 54, "FULL", false, zfull.hover)
+                on press zfull { emit pl_full }
+                zone box zcol { from: pw - 178, 13; size: 66, 24; cursor: pointer; role: toggle; checked: cover_tint
+                                label: "Colours from the album cover" }
+                PChip(pw - 178, 14, 66, "COVER", cover_tint, zcol.hover)
+                on press zcol { emit pl_tint }
+                zone box zclose { from: pw - 44, 10; size: 30, 30; cursor: pointer; role: button; label: "Close the player" }
+                line { from: pw - 35, 19; to: pw - 23, 31; width: 1.5; color: mix(fl.muted, fl.ember, zclose.hover) }
+                line { from: pw - 23, 19; to: pw - 35, 31; width: 1.5; color: mix(fl.muted, fl.ember, zclose.hover) }
+                on press zclose { emit pl_close }
+                box { from: 18, 48; size: pw - 36, 1; color: fl.trace_dim; opacity: 0.8 }
+
+                // ── the turntable ──
+                // the plinth: a cut plate of brushed steel, a strobe dot ring at its edge
+                Chamfer(rcx - rr - 30, 64, 2 * rr + 60 + 40, ph - 84, 10, mix(fl.hull_raised, fl.steel_900, 0.5), fl.trace_dim, 1, 1)
+                repeat k in 0..72 {
+                    ellipse { at: rcx + sin(k * 5) * (rr + 14), rcy - cos(k * 5) * (rr + 14); radius: 0.9
+                              color: fl.steel_500; opacity: 0.6 }
+                }
+                // the visualiser: 24 bands twice round the record, each a bar reaching out
+                repeat k in 0..48 {
+                    let vv = clamp(pick(mod(k, 24), vp0, vp1, vp2, vp3, vp4, vp5, vp6, vp7, vp8, vp9, vp10, vp11,
+                                        vp12, vp13, vp14, vp15, vp16, vp17, vp18, vp19, vp20, vp21, vp22, vp23), 0.03, 1)
+                    line { from: rcx + sin(k * 7.5) * (rr + 20), rcy - cos(k * 7.5) * (rr + 20)
+                           to: rcx + sin(k * 7.5) * (rr + 22 + vv * 26), rcy - cos(k * 7.5) * (rr + 22 + vv * 26)
+                           width: 3; color: mix(fl.phos, fl.flare, vv * 0.6); opacity: if(pstate == playing, 0.35 + vv * 0.6, 0.15) }
+                }
+                // the record: black vinyl, its grooves, a sheen that stays where the light is
+                ellipse { at: rcx, rcy; radius: rr; color: #08090a }
+                repeat g in 0..14 {
+                    ellipse { at: rcx, rcy; radius: rl + 8 + g * (rr - rl - 12) / 13; stroke: 0.7; color: #1c1f22; opacity: 0.9 }
+                }
+                ellipse { at: rcx, rcy; radius: rr; stroke: 1.5; color: fl.steel_700 }
+                group {
+                    mask: radial rcx, rcy radius rr - 2 to rr
+                    path { color: #ffffff; opacity: 0.045
+                           move rcx, rcy; line rcx + rr * 1.2, rcy - rr * 0.6; line rcx + rr * 1.2, rcy - rr * 0.1; close }
+                    path { color: #ffffff; opacity: 0.045
+                           move rcx, rcy; line rcx - rr * 1.2, rcy + rr * 0.6; line rcx - rr * 1.2, rcy + rr * 0.1; close }
+                }
+                // the label: the cover, round, turning with the record
+                group {
+                    pivot: rcx, rcy
+                    rotate: vang * 1deg
+                    mask: radial rcx, rcy radius rl - 1 to rl
+                    box { from: rcx - rl, rcy - rl; size: rl * 2, rl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                    image cover { at: rcx - rl, rcy - rl; size: rl * 2, rl * 2; show: cover_on }
+                    // a mark on the label, so the turn can be seen even on a plain cover
+                    box { from: rcx - 2, rcy - rl + 4; size: 4, 10; corner: 2; color: fl.engrave; opacity: 0.5; show: not cover_on }
+                }
+                ellipse { at: rcx, rcy; radius: rl; stroke: 1; color: #000000; opacity: 0.5 }
+                ellipse { at: rcx, rcy; radius: 5; color: fl.steel_300 }
+                ellipse { at: rcx, rcy; radius: 2; color: fl.steel_700 }
+                // the tonearm: its base, the arm, the head; dragged, it seeks
+                ellipse { at: apx, apy; radius: 22; color: fl.steel_700 }
+                ellipse { at: apx, apy; radius: 22; stroke: 1; color: fl.steel_300; opacity: 0.6 }
+                ellipse { at: apx, apy; radius: 9; color: fl.steel_500 }
+                group {
+                    pivot: apx, apy
+                    rotate: arm * 1deg
+                    line { from: apx, apy; to: apx, apy + alen - 30; width: 4; color: fl.steel_300 }
+                    line { from: apx, apy + alen - 30; to: apx - 10, apy + alen; width: 4; color: fl.steel_300 }
+                    box { from: apx - 20, apy + alen - 6; size: 22, 14; corner: 2; color: fl.steel_500 }
+                    box { from: apx - 18, apy + alen + 6; size: 4, 4; color: fl.phos; opacity: if(pstate == playing, 1, 0.3) }
+                    // the counterweight behind the pivot
+                    box { from: apx - 9, apy - 50; size: 18, 24; corner: 3; color: fl.steel_500 }
+                }
+                // the arm's head is the handle: carried, the angle is read from the pointer
+                zone box zarm { from: apx - 60, apy + 150; size: 120, 160; cursor: grab; role: slider; label: "The tonearm — carry it to seek"
+                                value: progress; show: has_song and src == library }
+                on press zarm { arm_drag = true; arm_at = arm }
+                on drag zarm while arm_drag { arm_at = clamp(atan2(apx - local.x, local.y - apy), 20, 40) }
+                on release zarm while arm_drag { arm_drag = false; emit pl_seek(round((arm_at - 20) / 20 * 1000)) }
+
+                // ── the track ──
+                text pick(has_song, "NOTHING IS PLAYING", t_title) { at: mx, 96; anchor: left center; size: 21; weight: 700; family: "Exo 2"
+                      width: mw; lines: 2; color: fl.engrave }
+                text t_artist { at: mx, 146; anchor: left center; size: 13; family: "Exo 2"; width: mw; lines: 1; color: fl.phos }
+                text t_album { at: mx, 168; anchor: left center; size: 10.5; family: "Exo 2"; width: mw; lines: 1; color: fl.trace_lit }
+                text t_meta { at: mx, 188; anchor: left center; size: 8; family: "Share Tech Mono"; width: mw; lines: 1; color: fl.muted }
+                text "START mpd, OR PLAY SOMETHING ELSEWHERE" { at: mx, 146; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted
+                      show: not has_song and not mpd_on and src == library }
+
+                // the time: a bar to seek along, with the played part lit
+                zone box zseek { from: mx - 4, 204; size: mw + 8, 50; cursor: pointer; role: slider; label: "Seek"; value: progress; show: has_song }
+                group {
+                    show: wave_on
+                    image wave { at: mx, 206; size: mw, 30; tint: fl.trace; opacity: 0.55 }
+                    group {
+                        clip box { from: mx, 200; size: mw * clamp(prg, 0, 1), 40 }
+                        image wave { at: mx, 206; size: mw, 30; tint: fl.phos; opacity: 0.95 }
+                    }
+                }
+                box { from: mx, 238; size: mw, 6; corner: 3; color: fl.ground }
+                group {
+                    glow: 8, 45% * st_glow, fl.phos
+                    box { from: mx, 238; size: mw * clamp(prg, 0, 1), 6; corner: 3; color: fl.phos; show: has_song }
+                }
+                ellipse { at: mx + mw * clamp(prg, 0, 1), 241; radius: 6 + zseek.hover * 2; color: fl.engrave; show: has_song }
+                text t_elapsed { at: mx, 262; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                text t_total { at: mx + mw, 262; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                on press zseek { emit pl_seek(round(clamp((local.x - mx) / mw, 0, 1) * 1000)) }
+                on drag zseek { emit pl_seek(round(clamp((local.x - mx) / mw, 0, 1) * 1000)) }
+
+                // the transport: shuffle, previous, play, next, repeat
+                let tcx = mx + mw / 2
+                let tcy = 330
+                zone box zrnd { from: tcx - 156, tcy - 16; size: 32, 32; cursor: pointer; role: toggle; checked: rnd; label: "Shuffle" }
+                PRound(tcx - 140, tcy, 16, if(rnd, 1, 0), fl.phos, zrnd.hover)
+                line { from: tcx - 148, tcy - 5; to: tcx - 132, tcy + 5; width: 1.4; color: if(rnd, fl.phos, fl.muted) }
+                line { from: tcx - 148, tcy + 5; to: tcx - 132, tcy - 5; width: 1.4; color: if(rnd, fl.phos, fl.muted) }
+                on press zrnd { emit pl_rnd }
+                zone box zprev { from: tcx - 98, tcy - 22; size: 44, 44; cursor: pointer; role: button; label: "Previous" }
+                PRound(tcx - 76, tcy, 22, 0, fl.phos, zprev.hover)
+                path { color: mix(fl.engrave, fl.phos, zprev.hover); move tcx - 70, tcy - 8; line tcx - 82, tcy; line tcx - 70, tcy + 8; close }
+                box { from: tcx - 85, tcy - 8; size: 2.5, 16; color: mix(fl.engrave, fl.phos, zprev.hover) }
+                on press zprev { emit pl_prev }
+                zone box zplay { from: tcx - 34, tcy - 34; size: 68, 68; cursor: pointer; role: button; label: pick(pstate == playing, "Play", "Pause") }
+                PRound(tcx, tcy, 34, if(pstate == playing, 1, 0.4), fl.phos, zplay.hover)
+                path { color: fl.phos; show: pstate != playing; move tcx - 9, tcy - 14; line tcx + 15, tcy; line tcx - 9, tcy + 14; close }
+                box { from: tcx - 11, tcy - 13; size: 7, 26; corner: 2; color: fl.phos; show: pstate == playing }
+                box { from: tcx + 4, tcy - 13; size: 7, 26; corner: 2; color: fl.phos; show: pstate == playing }
+                on press zplay { emit pl_toggle }
+                zone box znext { from: tcx + 54, tcy - 22; size: 44, 44; cursor: pointer; role: button; label: "Next" }
+                PRound(tcx + 76, tcy, 22, 0, fl.phos, znext.hover)
+                path { color: mix(fl.engrave, fl.phos, znext.hover); move tcx + 70, tcy - 8; line tcx + 82, tcy; line tcx + 70, tcy + 8; close }
+                box { from: tcx + 82.5, tcy - 8; size: 2.5, 16; color: mix(fl.engrave, fl.phos, znext.hover) }
+                on press znext { emit pl_next }
+                zone box zrpt { from: tcx + 124, tcy - 16; size: 32, 32; cursor: pointer; role: toggle; checked: rpt; label: "Repeat" }
+                PRound(tcx + 140, tcy, 16, if(rpt, 1, 0), fl.phos, zrpt.hover)
+                arc { at: tcx + 140, tcy; radius: 6; width: 1.4; span: 300deg; color: if(rpt, fl.phos, fl.muted) }
+                on press zrpt { emit pl_rpt }
+
+                // the volume, and the single-song switch
+                text "VOLUME" { at: mx, 404; anchor: left center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                zone box zvol { from: mx + 60, 394; size: mw - 110, 22; cursor: pointer; role: slider; label: "Volume"; value: vol / 100; show: vol_on }
+                box { from: mx + 60, 402; size: mw - 110, 5; corner: 2.5; color: fl.ground }
+                box { from: mx + 60, 402; size: (mw - 110) * clamp(vol / 100, 0, 1), 5; corner: 2.5; color: fl.trace_lit; show: vol_on }
+                ellipse { at: mx + 60 + (mw - 110) * clamp(vol / 100, 0, 1), 404.5; radius: 6 + zvol.hover; color: fl.engrave; show: vol_on }
+                text pick(vol_on, "N/A", "{vol, 0}%") { at: mx + mw, 404; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
+                on press zvol { emit pl_vol(round(clamp((local.x - mx - 60) / (mw - 110), 0, 1) * 100)) }
+                on drag zvol { emit pl_vol(round(clamp((local.x - mx - 60) / (mw - 110), 0, 1) * 100)) }
+                on scroll zvol { emit pl_vol(clamp(vol + wheel * 3, 0, 100)) }
+                zone box zsgl { from: mx, 436; size: 96, 22; cursor: pointer; role: toggle; checked: sgl; label: "Stop after this song" }
+                PChip(mx, 436, 96, "SINGLE", sgl, zsgl.hover)
+                on press zsgl { emit pl_sgl }
+                text "SPACE PLAY · ← → SEEK · ↑ ↓ VOLUME · N P · S SHUFFLE · R REPEAT · ESC" { at: mx, ph - 26; anchor: left center; size: 7
+                     family: "Share Tech Mono"; color: fl.trace; width: mw + 40; lines: 1 }
+
+                // ── the pane: the queue ──
+                Chamfer(qx, 64, qw, ph - 84, 10, mix(fl.hull_raised, fl.ground, 0.4), fl.trace_dim, 0.95, 1)
+                // the pane's tabs
+                zone box ztq { from: qx + 12, 72; size: 70, 24; cursor: pointer; role: tab; selected: pane == queue; label: "The queue" }
+                PChip(qx + 12, 73, 70, "QUEUE", pane == queue, ztq.hover)
+                on press ztq { emit pl_pane(0) }
+                zone box ztl { from: qx + 86, 72; size: 78, 24; cursor: pointer; role: tab; selected: pane == library; label: "Your library" }
+                PChip(qx + 86, 73, 78, "LIBRARY", pane == library, ztl.hover)
+                on press ztl { emit pl_pane(1) }
+                zone box zty { from: qx + 168, 72; size: 72, 24; cursor: pointer; role: tab; selected: pane == lyrics; label: "The lyrics" }
+                PChip(qx + 168, 73, 72, "LYRICS", pane == lyrics, zty.hover)
+                on press zty { emit pl_pane(2) }
+
+                group {
+                    show: pane == queue
+                text "{q_count, 0} SONGS" { at: qx + qw - 80, 84; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    zone box zqclear { from: qx + qw - 70, 74; size: 56, 20; cursor: pointer; role: button; label: "Empty the queue"; show: q_count > 0 }
+                text "CLEAR" { at: qx + qw - 42, 84; anchor: center; size: 8; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, zqclear.hover); show: q_count > 0 }
+                on press zqclear { emit pl_clear }
+                zone box zqscroll { from: qx, 100; size: qw, 9 * 48; role: list; label: "The queue — the wheel pages it" }
+                on scroll zqscroll { emit pl_qpage(if(wheel > 0, -1, 1)) }
+                for q in queue {
+                    let qy = 100 + q.n * 48
+                    zone box zq { from: qx + 8, qy; size: qw - 44, 44; cursor: pointer; role: item; selected: q.current; label: "Play {q.title}" }
+                    box { from: qx + 8, qy; size: qw - 16, 44; corner: 6; color: if(q.current, mix(fl.well, fl.phos, 0.12), fl.well)
+                          opacity: if(q.current, 0.9, 0.5 * zq.hover) }
+                    box { from: qx + 8, qy + 8; size: 3, 28; corner: 1.5; color: fl.phos; show: q.current }
+                    text "{q.pos + 1, 0}" { at: qx + 30, qy + 22; anchor: center; size: 8; family: "Share Tech Mono"; color: if(q.current, fl.phos, fl.muted) }
+                    text q.title { at: qx + 48, qy + 15; anchor: left center; size: 10.5; weight: 600; family: "Exo 2"; width: qw - 130; lines: 1
+                                   color: if(q.current, fl.phos, fl.engrave) }
+                    text q.artist { at: qx + 48, qy + 31; anchor: left center; size: 8.5; family: "Exo 2"; width: qw - 130; lines: 1; color: fl.muted }
+                    text q.time { at: qx + qw - 40, qy + 22; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    zone box zqdel { from: qx + qw - 34, qy + 11; size: 22, 22; cursor: pointer; role: button; label: "Take {q.title} out" }
+                    line { from: qx + qw - 28, qy + 17; to: qx + qw - 18, qy + 27; width: 1.2; color: mix(fl.trace, fl.ember, zqdel.hover) }
+                    line { from: qx + qw - 18, qy + 17; to: qx + qw - 28, qy + 27; width: 1.2; color: mix(fl.trace, fl.ember, zqdel.hover) }
+                    on press zq { emit pl_play(q.pos) }
+                    on press zqdel { emit pl_del(q.pos) }
+                }
+                text pick(src == remote, "THE QUEUE IS EMPTY", "ANOTHER PLAYER KEEPS ITS OWN QUEUE") { at: qx + qw / 2, 200; anchor: center; size: 10; family: "Share Tech Mono"
+                     color: fl.muted; show: q_count < 1 or src == remote }
+                text "PAGE {q_page + 1, 0} / {q_pages, 0}" { at: qx + qw / 2, ph - 34; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted
+                     show: q_pages > 1 and src == library }
+                }
+
+                // ── the lyrics: the line being sung lit, the ones round it fading ──
+                group {
+                    show: pane == lyrics
+                    text lyr_note { at: qx + 16, 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit
+                                    width: qw - 32; lines: 1 }
+                    zone box zlyr { from: qx, 130; size: qw, 9 * 46; role: list; label: "The lyrics" }
+                    on scroll zlyr { emit lyr_scroll(wheel) }
+                    for l in lyr {
+                        let lyy = 150 + l.n * 46
+                        zone box zline { from: qx + 8, lyy - 20; size: qw - 16, 40; cursor: pointer; role: item; label: "Go to: {l.text}"; show: lyr_synced }
+                        box { from: qx + 8, lyy - 20; size: qw - 16, 40; corner: 6; color: fl.well; opacity: 0.35 * zline.hover }
+                        group {
+                            show: l.cur
+                            glow: 12, 50% * st_glow, fl.phos
+                            text l.text { at: qx + qw / 2, lyy; anchor: center; align: center; size: 14; weight: 700; family: "Exo 2"; width: qw - 30; lines: 2
+                                          color: fl.phos }
+                        }
+                        text l.text { at: qx + qw / 2, lyy; anchor: center; align: center; size: 11; family: "Exo 2"; width: qw - 30; lines: 2
+                                      color: mix(fl.engrave, fl.muted, clamp(l.dist / 4, 0, 1)); opacity: clamp(1 - l.dist * 0.16, 0.25, 1); show: not l.cur }
+                        on press zline { emit lyr_seek(l.t) }
+                    }
+                    text "♪" { at: qx + qw / 2, 260; anchor: center; size: 30; family: "Exo 2"; color: fl.trace_dim; show: not lyr_on }
+                }
+
+                // ── the library: artists → albums → songs, and a search ──
+                group {
+                    show: pane == library
+                    zone box zlback { from: qx + 12, 104; size: 30, 26; cursor: pointer; role: button; label: "Up a level"; show: lib_level > 0 }
+                    group { show: lib_level > 0
+                        PRound(qx + 27, 117, 13, 0, fl.phos, zlback.hover)
+                        path { color: mix(fl.engrave, fl.phos, zlback.hover); move qx + 30, 111; line qx + 23, 117; line qx + 30, 123; close } }
+                    on press zlback { emit lib_back }
+                    text lib_where { at: if(lib_level > 0, qx + 48, qx + 16), 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
+                                     width: qw - 150; lines: 1; color: fl.trace_lit }
+                    text "{lib_count, 0}" { at: qx + qw - 16, 117; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    zone box zlfind { from: qx + 12, 136; size: qw - 24, 28; cursor: text; role: region; label: "Search every song" }
+                    Chamfer(qx + 12, 136, qw - 24, 28, 6, fl.ground, mix(fl.trace_dim, fl.phos, zlfind.hover), 1, 1)
+                    ellipse { at: qx + 27, 150; radius: 4.5; stroke: 1.2; color: fl.trace_lit }
+                    line { from: qx + 30.5, 153.5; to: qx + 35, 158; width: 1.2; color: fl.trace_lit }
+                    input lib_query { at: qx + 42, 143; width: qw - 70; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
+                                      placeholder: "Search songs, artists, albums…" }
+                    on press zlfind { typing = true; focus lib_query }
+                    zone box zlscroll { from: qx, 170; size: qw, 9 * 44; role: list; label: "The library — the wheel pages it" }
+                    on scroll zlscroll { emit lib_page(if(wheel > 0, -1, 1)) }
+                    for r in librows {
+                        let ly = 172 + r.n * 44
+                        zone box zl { from: qx + 8, ly; size: qw - 88, 40; cursor: pointer; role: item; label: pick(r.song, "Open {r.name}", "Play {r.name}") }
+                        box { from: qx + 8, ly; size: qw - 16, 40; corner: 6; color: fl.well; opacity: 0.25 + 0.4 * zl.hover }
+                        // what it is: a disc for an album or an artist, a note for a song
+                        ellipse { at: qx + 26, ly + 20; radius: 9; stroke: 1.2; color: fl.trace_lit; show: not r.song }
+                        ellipse { at: qx + 26, ly + 20; radius: 2; color: fl.trace_lit; show: not r.song }
+                        box { from: qx + 24, ly + 12; size: 2, 14; color: fl.phos; show: r.song }
+                        ellipse { at: qx + 22, ly + 26; radius: 3.5; color: fl.phos; show: r.song }
+                        text r.name { at: qx + 44, ly + 13; anchor: left center; size: 10.5; weight: 600; family: "Exo 2"; width: qw - 140; lines: 1
+                                      color: mix(fl.engrave, fl.phos, zl.hover) }
+                        text r.sub { at: qx + 44, ly + 28; anchor: left center; size: 8; family: "Exo 2"; width: qw - 140; lines: 1; color: fl.muted }
+                        zone box zlplay { from: qx + qw - 76, ly + 8; size: 28, 24; cursor: pointer; role: button; label: "Play {r.name} now" }
+                        PRound(qx + qw - 62, ly + 20, 12, 0, fl.phos, zlplay.hover)
+                        path { color: mix(fl.engrave, fl.phos, zlplay.hover); move qx + qw - 66, ly + 14; line qx + qw - 57, ly + 20; line qx + qw - 66, ly + 26; close }
+                        zone box zladd { from: qx + qw - 44, ly + 8; size: 28, 24; cursor: pointer; role: button; label: "Add {r.name} to the queue" }
+                        PRound(qx + qw - 30, ly + 20, 12, 0, fl.trace_lit, zladd.hover)
+                        line { from: qx + qw - 36, ly + 20; to: qx + qw - 24, ly + 20; width: 1.5; color: mix(fl.engrave, fl.trace_lit, zladd.hover) }
+                        line { from: qx + qw - 30, ly + 14; to: qx + qw - 30, ly + 26; width: 1.5; color: mix(fl.engrave, fl.trace_lit, zladd.hover) }
+                        on press zl { emit lib_open(r.k) }
+                        on press zlplay { emit lib_play(r.k) }
+                        on press zladd { emit lib_add(r.k) }
+                    }
+                    text "PAGE {lib_page + 1, 0} / {lib_pages, 0}" { at: qx + qw / 2, ph - 34; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted
+                         show: lib_pages > 1 }
+                    text "NOTHING FOUND" { at: qx + qw / 2, 240; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: lib_count < 1 }
+                }
+            }
+        }
+    }
+
+    // ══ Full screen: the cover over everything, a large record, the lyrics beside it ══
+    surface stage {
+        size: full, full
+        anchor: top
+        reserve: -1
+        level: overlay
+        let fw = screen.width
+        let fh = screen.height
+        let fr = min(fh * 0.34, 360)
+        let frl = fr * 0.4
+        let fcx = fw * 0.3
+        let fcy = fh * 0.47
+        let fpx = fcx + fr * 1.17
+        let fpy = fcy - fr * 0.89
+        let flen = fr * 1.75
+        let flx = fw * 0.56
+        let flw = fw - flx - 80
+        group {
+            show: full and pl_a > 0.004
+            opacity: pl_a
+            box { from: 0, 0; size: fw, fh; color: #000000 }
+            group {
+                show: cover_on
+                blur: 60
+                opacity: 0.55
+                image cover { at: -fw * 0.1, -fw * 0.3; size: fw * 1.2, fw * 1.2 }
+            }
+            box { from: 0, 0; size: fw, fh; color: fl.ground; opacity: 0.45 }
+            zone box fbody { from: 0, 0; size: fw, fh; agent: hidden }
+
+            // the record, large
+            repeat k in 0..48 {
+                let fvv = clamp(pick(mod(k, 24), vp0, vp1, vp2, vp3, vp4, vp5, vp6, vp7, vp8, vp9, vp10, vp11,
+                                     vp12, vp13, vp14, vp15, vp16, vp17, vp18, vp19, vp20, vp21, vp22, vp23), 0.03, 1)
+                line { from: fcx + sin(k * 7.5) * (fr + 24), fcy - cos(k * 7.5) * (fr + 24)
+                       to: fcx + sin(k * 7.5) * (fr + 28 + fvv * 60), fcy - cos(k * 7.5) * (fr + 28 + fvv * 60)
+                       width: 5; color: mix(fl.phos, fl.flare, fvv * 0.6); opacity: if(pstate == playing, 0.35 + fvv * 0.6, 0.15) }
+            }
+            ellipse { at: fcx, fcy; radius: fr; color: #08090a }
+            repeat g in 0..22 {
+                ellipse { at: fcx, fcy; radius: frl + 10 + g * (fr - frl - 14) / 21; stroke: 0.8; color: #1c1f22; opacity: 0.9 }
+            }
+            ellipse { at: fcx, fcy; radius: fr; stroke: 2; color: fl.steel_700 }
+            group {
+                mask: radial fcx, fcy radius fr - 2 to fr
+                path { color: #ffffff; opacity: 0.05
+                       move fcx, fcy; line fcx + fr * 1.2, fcy - fr * 0.6; line fcx + fr * 1.2, fcy - fr * 0.1; close }
+                path { color: #ffffff; opacity: 0.05
+                       move fcx, fcy; line fcx - fr * 1.2, fcy + fr * 0.6; line fcx - fr * 1.2, fcy + fr * 0.1; close }
+            }
+            group {
+                pivot: fcx, fcy
+                rotate: vang * 1deg
+                mask: radial fcx, fcy radius frl - 1 to frl
+                box { from: fcx - frl, fcy - frl; size: frl * 2, frl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                image cover { at: fcx - frl, fcy - frl; size: frl * 2, frl * 2; show: cover_on }
+            }
+            ellipse { at: fcx, fcy; radius: 8; color: fl.steel_300 }
+            ellipse { at: fpx, fpy; radius: 32; color: fl.steel_700 }
+            ellipse { at: fpx, fpy; radius: 13; color: fl.steel_500 }
+            group {
+                pivot: fpx, fpy
+                rotate: arm * 1deg
+                line { from: fpx, fpy; to: fpx, fpy + flen - 44; width: 6; color: fl.steel_300 }
+                line { from: fpx, fpy + flen - 44; to: fpx - 15, fpy + flen; width: 6; color: fl.steel_300 }
+                box { from: fpx - 29, fpy + flen - 8; size: 32, 20; corner: 3; color: fl.steel_500 }
+                box { from: fpx - 13, fpy - 72; size: 26, 34; corner: 4; color: fl.steel_500 }
+            }
+
+            // the track and the lyrics
+            text pick(has_song, "NOTHING IS PLAYING", t_title) { at: flx, fh * 0.14; anchor: left center; size: 34; weight: 700; family: "Exo 2"
+                  width: flw; lines: 1; color: fl.engrave }
+            text t_artist { at: flx, fh * 0.14 + 40; anchor: left center; size: 18; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+            text t_album { at: flx, fh * 0.14 + 66; anchor: left center; size: 13; family: "Exo 2"; width: flw; lines: 1; color: fl.trace_lit }
+            for l in lyr {
+                let fly = fh * 0.3 + l.n * 52
+                zone box fzline { from: flx - 10, fly - 22; size: flw + 20, 44; cursor: pointer; role: item; label: "Go to: {l.text}"; show: lyr_synced }
+                group {
+                    show: l.cur
+                    glow: 18, 55%, fl.phos
+                    text l.text { at: flx, fly; anchor: left center; size: 26; weight: 700; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+                }
+                text l.text { at: flx, fly; anchor: left center; size: 17; family: "Exo 2"; width: flw; lines: 1
+                              color: mix(fl.engrave, fl.muted, clamp(l.dist / 4, 0, 1)); opacity: clamp(1 - l.dist * 0.17, 0.2, 1); show: not l.cur }
+                on press fzline { emit lyr_seek(l.t) }
+            }
+            text lyr_note { at: flx, fh * 0.3 - 40; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
+
+            // the waveform and the transport along the foot
+            let fsx = flx
+            let fsw = flw
+            let fsy = fh - 150
+            group {
+                show: wave_on
+                image wave { at: fsx, fsy - 40; size: fsw, 44; tint: fl.trace; opacity: 0.5 }
+                group {
+                    clip box { from: fsx, fsy - 46; size: fsw * clamp(prg, 0, 1), 56 }
+                    image wave { at: fsx, fsy - 40; size: fsw, 44; tint: fl.phos; opacity: 0.95 }
+                }
+            }
+            box { from: fsx, fsy + 8; size: fsw, 6; corner: 3; color: fl.ground; opacity: 0.8 }
+            box { from: fsx, fsy + 8; size: fsw * clamp(prg, 0, 1), 6; corner: 3; color: fl.phos; show: has_song }
+            text t_elapsed { at: fsx, fsy + 30; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit }
+            text t_total { at: fsx + fsw, fsy + 30; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted }
+            zone box fzseek { from: fsx - 4, fsy - 44; size: fsw + 8, 64; cursor: pointer; role: slider; label: "Seek"; value: progress; show: has_song }
+            on press fzseek { emit pl_seek(round(clamp((local.x - fsx) / fsw, 0, 1) * 1000)) }
+            on drag fzseek { emit pl_seek(round(clamp((local.x - fsx) / fsw, 0, 1) * 1000)) }
+            let ftx = fsx + fsw / 2
+            let fty = fh - 66
+            zone box fzprev { from: ftx - 110, fty - 26; size: 52, 52; cursor: pointer; role: button; label: "Previous" }
+            PRound(ftx - 84, fty, 26, 0, fl.phos, fzprev.hover)
+            path { color: fl.engrave; move ftx - 77, fty - 10; line ftx - 91, fty; line ftx - 77, fty + 10; close }
+            on press fzprev { emit pl_prev }
+            zone box fzplay { from: ftx - 40, fty - 40; size: 80, 80; cursor: pointer; role: button; label: "Play / pause" }
+            PRound(ftx, fty, 40, if(pstate == playing, 1, 0.4), fl.phos, fzplay.hover)
+            path { color: fl.phos; show: pstate != playing; move ftx - 11, fty - 17; line ftx + 18, fty; line ftx - 11, fty + 17; close }
+            box { from: ftx - 13, fty - 16; size: 8, 32; corner: 2; color: fl.phos; show: pstate == playing }
+            box { from: ftx + 5, fty - 16; size: 8, 32; corner: 2; color: fl.phos; show: pstate == playing }
+            on press fzplay { emit pl_toggle }
+            zone box fznext { from: ftx + 58, fty - 26; size: 52, 52; cursor: pointer; role: button; label: "Next" }
+            PRound(ftx + 84, fty, 26, 0, fl.phos, fznext.hover)
+            path { color: fl.engrave; move ftx + 77, fty - 10; line ftx + 91, fty; line ftx + 77, fty + 10; close }
+            on press fznext { emit pl_next }
+            zone box fzback { from: fw - 150, 30; size: 120, 30; cursor: pointer; role: button; label: "Back to the panel" }
+            PChip(fw - 150, 34, 120, "ESC · PANEL", false, fzback.hover)
+            on press fzback { emit pl_full }
+        }
+    }
+
+    on key Escape while typing { typing = false; blur }
+    on key Escape while not typing and full { emit pl_full }
+    on key Escape while not typing and not full { emit pl_close }
+    on key f while not typing { emit pl_full }
+    on key space while not typing { emit pl_toggle }
+    on key Left while not typing { emit pl_seek(-5) }
+    on key Right while not typing { emit pl_seek(-6) }
+    on key Shift+Left while not typing { emit pl_seek(-7) }
+    on key Shift+Right while not typing { emit pl_seek(-8) }
+    on key Up while not typing { emit pl_vol(clamp(vol + 5, 0, 100)) }
+    on key Down while not typing { emit pl_vol(clamp(vol - 5, 0, 100)) }
+    on key n while not typing { emit pl_next }
+    on key p while not typing { emit pl_prev }
+    on key s while not typing { emit pl_rnd }
+    on key r while not typing { emit pl_rpt }
+    on key q while not typing { emit pl_pane(0) }
+    on key l while not typing { emit pl_pane(1) }
+    on key y while not typing { emit pl_pane(2) }
+    on key slash while not typing { emit pl_pane(1); typing = true; focus lib_query }
+    on submit lib_query { typing = false; blur }
+}

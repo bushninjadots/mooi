@@ -157,6 +157,7 @@ M.SCHEMA = {
     { path = "keys.system", kind = "key", default = "SUPER + ALT + C" },
     { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },
     { path = "keys.wallpaper", kind = "key", default = "SUPER + ALT + P" },
+    { path = "keys.player", kind = "key", default = "SUPER + ALT + M" },
     -- Who receives the session's notifications: mooi only while it holds the desktop
     -- (`takeover`, so beside ArchEclipse they stay ArchEclipse's — D5), `always`, or `never`.
     { path = "notifications.server", kind = "enum", values = { "takeover", "always", "never" }, default = "takeover" },
@@ -261,6 +262,8 @@ M.SCHEMA = {
     { path = "desk.strength", kind = "integer", default = 45, min = 0, max = 100 },
     { path = "desk.cutout", kind = "boolean", default = true },
     { path = "desk.depth", kind = "boolean", default = true },
+    -- The music player (D88): its colours from the shell's palette, or from the album cover.
+    { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
     { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
     { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },

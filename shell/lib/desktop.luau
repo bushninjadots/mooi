@@ -14,6 +14,7 @@ M.ACTIONS = {
     { key = "shutter", cmd = "shutter", name = "Window shutter" },
     { key = "settings", cmd = "settings", name = "Settings" },
     { key = "wallpaper", cmd = "wallpaper", name = "Wallpaper studio" },
+    { key = "player", cmd = "player", name = "Music player" },
     { key = "edit", cmd = "edit", name = "Edit the bar" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
