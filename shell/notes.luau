@@ -40,8 +40,10 @@ return function(ctx)
         text.qn_add_label = "ADD"
     end
 
+    local query = ""
     local function show()
-        local total = #items
+        local list = pad.filter(items, query)
+        local total = #list
         page = math.max(0, math.min(page, math.max(total - pad.ROW_MAX, 0)))
         fact.qn_page = page
         fact.qn_from = total > 0 and page + 1 or 0
@@ -49,10 +51,14 @@ return function(ctx)
         fact.qn_count = total
         local rows = {}
         for i = page + 1, math.min(page + pad.ROW_MAX, total) do
-            local n = items[i]
-            rows[#rows + 1] = { id = n.id, text = pad.one_line(n.text, pad.PREVIEW), when = pad.ago(now_s(), n.time), n = i - 1 - page,
-                                pinned = n.pinned == true, sel = n.id == sel }
+            local n = list[i]
+            -- the first line is the note's name, the rest one quiet line under it (D86)
+            local first, rest = pad.split(n.text)
+            rows[#rows + 1] = { id = n.id, text = pad.one_line(first, pad.PREVIEW), more = pad.one_line(rest, pad.PREVIEW), two = rest ~= "",
+                                when = pad.ago(now_s(), n.time), n = i - 1 - page,
+                                pinned = n.pinned == true, sel = n.id == sel, tag = n.tag or 0, done = n.done == true }
         end
+        fact.qn_searching = query ~= ""
         model.qn = rows
         fact.qn_sel = sel
     end
@@ -114,6 +120,17 @@ return function(ctx)
     end)
     on("submit:qn_draft", function() add() end)
     on("qn_add", function() add() end)
+    -- D86: a note's colour (its stripe, pressed), its tick, and the search
+    on("qn_tag", function(v)
+        local id = math.floor(tonumber(v) or -1)
+        items = pad.tag(items, id); save(); show()
+    end)
+    on("qn_done", function(v)
+        local id = math.floor(tonumber(v) or -1)
+        local _, done = pad.done(items, id)
+        if done ~= nil then save(); show(); say(done and "DONE" or "OPEN AGAIN") end
+    end)
+    on("text:qn_query", function(v) query = tostring(v or ""); page = 0; show() end)
     on("qn_toggle", function()
         fact.qn_open = not fact.qn_open
         if not fact.qn_open then reset_draft() end
@@ -166,11 +183,12 @@ return function(ctx)
     -- The keys: ↑↓ choose a row (scrolling it into view), and the chosen one is what Alt+C, Alt+E,
     -- Alt+P, Alt+B and Alt+Delete act on.
     on("qn_nav", function(v)
-        if #items == 0 then return end
+        local list = pad.filter(items, query)   -- the rows that are shown, searched or not
+        if #list == 0 then return end
         local at = 0
-        for i, n in ipairs(items) do if n.id == sel then at = i end end
-        at = math.max(1, math.min(#items, at + ((tonumber(v) or 0) < 0.5 and -1 or 1)))
-        sel = items[at].id
+        for i, n in ipairs(list) do if n.id == sel then at = i end end
+        at = math.max(1, math.min(#list, at + ((tonumber(v) or 0) < 0.5 and -1 or 1)))
+        sel = list[at].id
         if at <= page then page = at - 1 elseif at > page + pad.ROW_MAX then page = at - pad.ROW_MAX end
         show()
     end)

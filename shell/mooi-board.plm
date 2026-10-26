@@ -377,6 +377,14 @@ scene Board {
                     // ── the head ──
                     text "BOARD" { at: 20, 25; anchor: left center; size: 13; family: "Share Tech Mono"; color: fl.ember }
                     text "{kb_count, 0} CARDS" { at: 86, 25; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    // D86: how much of the board is done, as a meter under the name
+                    box { from: 20, 38; size: 140, 3; corner: 1.5; color: fl.ground }
+                    group {
+                        glow: 5, 0.6 * st_glow, fl.phos
+                        box { from: 20, 38; size: 140 * kb_done_n / max(1, kb_count), 3; corner: 1.5; color: fl.phos; show: kb_count > 0 }
+                    }
+                    text "{kb_done_n * 100 / max(1, kb_count), 0}% DONE" { at: 166, 39; anchor: left center; size: 7; family: "Share Tech Mono"
+                                                                           color: fl.trace_lit; show: kb_count > 0 }
                     group {
                         show: kb_late > 0
                         Chamfer(170, 15, 66, 20, 4, fl.ember_fill, fl.ember, 0.9)

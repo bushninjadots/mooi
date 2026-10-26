@@ -27,6 +27,7 @@ return function(ctx)
     local scroll = 0
     local seq = 0
     local said_gen = 0
+    local kind_sel, query = 0, ""   -- the chips and the search (D86)
 
     local function now_s() local ok, t = pcall(os.time); return ok and t or 0 end
     local function save() if not ctx.safe_mode then sys.call("files.write", FILE, st.encode(items, folders)) end end
@@ -43,6 +44,9 @@ return function(ctx)
     local function show()
         -- 0 is everything (the root among it), a folder is what was put there
         local list = here == 0 and items or st.in_folder(items, here)
+        list = st.filter(list, kind_sel, query)
+        fact.stash_kind = kind_sel
+        fact.stash_searching = query ~= ""
         local names = {}
         for _, f in ipairs(folders) do names[f.id] = f.name end
         local rows, p, from, to, total, pages = st.page(list, page, now_s(), nil, names)
@@ -256,6 +260,52 @@ return function(ctx)
     -- The chips: a press goes in (or back out to everything, slot 0), and a right press takes
     -- the folder away — its items go back to the root, so nothing is lost with it. The chips
     -- are reached by their slot, which is the order they were made in, the same in both.
+    -- ── D86: more ways in, and ways to find what is there ──
+    -- The chips: everything, pictures, links, files, text. The search: by name, as it is typed.
+    on("stash_kind", function(v)
+        local n = math.floor(tonumber(v) or 0)
+        kind_sel = (n >= 0 and n <= 4) and n or 0
+        page = 0; show()
+    end)
+    on("text:stash_query", function(v) query = tostring(v or ""); page = 0; show() end)
+
+    -- PASTE: what is on the clipboard — file paths, links or text — goes in as if it were dropped.
+    -- A picture on the clipboard is only bytes there; SHOT or a drop takes pictures.
+    on("stash_paste", function()
+        run("wl-paste", { "--list-types" }, function(types, code)
+            if code ~= 0 then say("THE CLIPBOARD IS EMPTY"); return end
+            types = tostring(types or "")
+            local want = string.find(types, "text/uri-list", 1, true) and "text/uri-list"
+                or ((string.find(types, "text/plain", 1, true) or string.find(types, "UTF8_STRING", 1, true)) and "text/plain")
+            if not want then
+                say(string.find(types, "image/", 1, true) and "A PICTURE · DROP IT OR USE SHOT" or "NOTHING TO STASH")
+                return
+            end
+            run("wl-paste", { "--no-newline", "--type", want }, function(out, c2)
+                if c2 ~= 0 or not out or out == "" then say("THE CLIPBOARD IS EMPTY"); return end
+                received(out, here)
+            end)
+        end)
+    end)
+
+    -- SHOT: the box steps aside, a region is chosen (slurp) and its picture goes straight into the
+    -- stash folder (grim), so it is a file of the stash's own from the start.
+    on("stash_shot", function()
+        if dir == "" or ctx.safe_mode then say("NO STASH FOLDER"); return end
+        after(320, function()
+            run("slurp", {}, function(geo, code)
+                geo = tostring(geo or ""):gsub("%s+$", "")
+                if code ~= 0 or geo == "" then say("NO REGION CHOSEN"); return end
+                seq = seq + 1
+                local dst = dir .. "/" .. now_s() .. "-" .. seq .. "-shot.png"
+                run("grim", { "-g", geo, dst }, function(_, c2)
+                    if c2 ~= 0 then say("COULD NOT TAKE THE SHOT"); return end
+                    add_item({ kind = 1, name = "Shot " .. os.date("%H:%M"), detail = "PNG", url = dst, src = dst }, "SHOT STASHED", here)
+                end)
+            end)
+        end)
+    end)
+
     on("stash_folder", function(v)
         here = slot_folder(v)
         page = 0

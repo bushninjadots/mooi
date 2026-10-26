@@ -54,6 +54,23 @@ library BoardParts {
             line { from: c.x + 10, y0 + 38; to: c.x + c.w - 10, y0 + 38; width: 2; color: fl.ember }
         }
         line { from: c.x + 10, y0 + 39; to: c.x + c.w - 10, y0 + 39; width: 1; color: fl.trace_dim; show: not c.over }
+        // D86: how full it is, as segments against its limit (a column without one shows none)
+        group {
+            show: c.wip > 0.5 and not c.over
+            repeat q in 0..8 {
+                box { from: c.x + 14 + q * ((c.w - 28) / max(1, min(8, c.wip))), y0 + 34
+                      size: max(2, (c.w - 28) / max(1, min(8, c.wip)) - 3), 2.5; corner: 1
+                      color: if(q < c.n, fl.phos, fl.trace_dim); opacity: if(q < min(8, c.wip), 0.9, 0) }
+            }
+        }
+        // an empty column says what it is for, rather than being a dark hole
+        group {
+            show: c.n < 0.5
+            path { stroke: 1; color: fl.trace_dim
+                   move c.x + 12, y0 + 52; line c.x + c.w - 12, y0 + 52; line c.x + c.w - 12, y0 + 130; line c.x + 12, y0 + 130; close }
+            text pick(c.done, "NOTHING HERE YET", "FINISHED CARDS LAND HERE") { at: c.x + c.w / 2, y0 + 82; anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
+            text "+ ADDS A CARD · OR DRAG ONE IN" { at: c.x + c.w / 2, y0 + 100; anchor: center; size: 7.5; family: "Share Tech Mono"; color: fl.trace }
+        }
         zone box add { from: c.x + c.w - 36, y0 + 8; size: 26, 24; cursor: pointer; role: button; label: "A card in {c.title}" }
         Chamfer(c.x + c.w - 36, y0 + 8, 26, 24, 4, mix(fl.hull_raised, fl.well, add.hover), mix(fl.trace, fl.phos, add.hover), 0.9)
         line { from: c.x + c.w - 23, y0 + 14; to: c.x + c.w - 23, y0 + 26; width: 1.6; color: mix(fl.trace_lit, fl.phos, add.hover) }
@@ -75,15 +92,28 @@ library BoardParts {
         size: 200, 60
         group {
             glow: 14, 0.5 * lift * st_glow, fl.phos
-            Chamfer(k.x, k.y, k.w, k.h, 7, mix(fl.hull_raised, fl.well, max(0.35 * lift, if(k.sel, 0.45, 0))), if(k.sel or lift > 0.5, focus.ring, fl.trace),
+            Chamfer(k.x, k.y, k.w, k.h, 7, mix(fl.hull_raised, fl.well, max(0.35 * lift, if(k.sel, 0.45, 0.1))), if(k.sel or lift > 0.5, focus.ring, fl.trace),
                     if(k.done and lift < 0.5, 0.72, 1), if(k.sel, 1.6, 1))
         }
-        box { from: k.x + 2, k.y + 8; size: 3, k.h - 16; color: if(k.tag < 1.5, fl.phos, if(k.tag < 2.5, fl.ember, if(k.tag < 3.5, fl.flare, if(k.tag < 4.5, mix(fl.phos, fl.flare, 0.5), mix(fl.ember, fl.ink, 0.45)))))
-              show: k.tag > 0.5 }
+        // a highlight along the top edge: the plate catches the light
+        box { from: k.x + 8, k.y + 1; size: k.w - 16, 1; color: fl.steel_300; opacity: 0.12 }
+        group {
+            show: k.tag > 0.5
+            glow: 6, 0.6 * st_glow, if(k.tag < 1.5, fl.phos, if(k.tag < 2.5, fl.ember, if(k.tag < 3.5, fl.flare, if(k.tag < 4.5, mix(fl.phos, fl.flare, 0.5), mix(fl.ember, fl.ink, 0.45)))))
+            box { from: k.x + 2, k.y + 8; size: 3, k.h - 16; corner: 1.5; color: if(k.tag < 1.5, fl.phos, if(k.tag < 2.5, fl.ember, if(k.tag < 3.5, fl.flare, if(k.tag < 4.5, mix(fl.phos, fl.flare, 0.5), mix(fl.ember, fl.ink, 0.45))))) }
+        }
+        // the due date as a pill: ember late, flare today, phos soon
+        group {
+            show: k.dated and not k.done
+            box { from: k.x + 9, k.y + k.h - 19; size: 78, 15; corner: 7.5
+                  color: if(k.due_st > 3.5, fl.ember, if(k.due_st > 2.5, fl.flare, if(k.due_st > 1.5, fl.phos, fl.trace))); opacity: 0.16 }
+            box { from: k.x + 9, k.y + k.h - 19; size: 78, 15; corner: 7.5; stroke: 1
+                  color: if(k.due_st > 3.5, fl.ember, if(k.due_st > 2.5, fl.flare, if(k.due_st > 1.5, fl.phos, fl.trace))); opacity: 0.7 }
+        }
         text k.title { at: k.x + 13, k.y + 9; anchor: left top; size: 12; weight: 600; family: "Exo 2"; width: k.w - 26; lines: 2
                        color: if(k.done, fl.muted, fl.phos) }
         text k.note { at: k.x + 13, k.y + 44; anchor: left top; size: 11; family: "Exo 2"; width: k.w - 26; lines: 1; color: fl.muted; show: k.noted }
-        text k.due { at: k.x + 13, k.y + k.h - 11; anchor: left center; size: 9; family: "Share Tech Mono"; show: k.dated and not k.done
+        text k.due { at: k.x + 48, k.y + k.h - 11.5; anchor: center; size: 8.5; family: "Share Tech Mono"; show: k.dated and not k.done
                      color: if(k.due_st > 3.5, fl.ember, if(k.due_st > 2.5, fl.flare, if(k.due_st > 1.5, fl.phos, fl.muted))) }
         text "DONE" { at: k.x + 13, k.y + k.h - 11; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos; show: k.done }
         text k.age { at: k.x + k.w - 10, k.y + k.h - 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }

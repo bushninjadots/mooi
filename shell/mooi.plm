@@ -19,7 +19,7 @@ import "ui/stash.plm"
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe"
+        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -529,6 +529,10 @@ scene Mooi {
     // The Signal Field: the clusters (by app, then what was missed), the chosen one's notices,
     // and every notice of the last six hours on the activity rail.
     model fclus max 13 { app: text; title: text; many: number; when: text; critical: bool; muted: bool; missed: bool }
+    // D86: the Field's summary strip — each app's share of what waits, and the counts it says
+    model fshare max 8 { part: number; critical: bool; sel: bool }
+    fact fld_apps = 0
+    fact fld_urgent = 0
     model fitems max 30 { title: text; body: text; when: text; tier: number; critical: bool; acts: number; a1: text; a2: text; a3: text; has_default: bool; missed: bool; snoozed: bool; thread: number; first: bool; image: image 28, 28; pictured: bool }
     model frail max 60 { x: number; tier: number; cluster: number }
     fact fld_sel = 0          // the chosen cluster
@@ -553,7 +557,9 @@ scene Mooi {
     text qn_draft = ""
     text qn_said = ""
     text qn_add_label = "ADD" // the button's word: ADD, or SAVE while a note is being changed
-    model qn max 6 { id: number; text: text; when: text; n: number; pinned: bool; sel: bool }
+    model qn max 6 { id: number; text: text; more: text; two: bool; when: text; n: number; pinned: bool; sel: bool; tag: number; done: bool }
+    fact qn_searching = false
+    text qn_query = ""
     fact qn_sel = -1          // the row the keys act on (an id)
     fact sys_cx = 0           // the middle of the module that last opened the system island (D53)
     // How many cards there are and how many are late (the board's own program owns the rest): the
@@ -584,12 +590,19 @@ scene Mooi {
     text stash_said = ""
     text stash_here_name = ""
     text stash_new = ""
+    // D86: the box's chips (0 everything · 1 pictures · 2 links · 3 files · 4 text) and its search.
+    fact stash_kind = 0
+    fact stash_searching = false
+    text stash_query = ""
     event stash_open ->        // to the logic: item id pressed (its link or file is opened)
     event stash_del ->         // to the logic: item id removed, with its copy
     event stash_scroll ->      // to the logic: the wheel over the panel (± notches)
     event stash_file ->        // to the logic: item id put away, to its next folder
     event stash_folder ->      // to the logic: folder slot pressed (0: everything)
     event stash_folder_del ->  // to the logic: folder slot taken away, its items home
+    event stash_kind ->        // to the logic: which kind the box shows (0 everything … 4 text)
+    event stash_paste ->       // to the logic: stash what is on the clipboard
+    event stash_shot ->        // to the logic: stash a screenshot of a chosen region
     event stash_blur           // from the logic: the new-folder field is done
     fact lv0 = 0.06
     fact lv1 = 0.06
@@ -949,6 +962,8 @@ scene Mooi {
     event note_clear ->        // to the logic: dismiss every notice
     event qn_toggle ->         // to the logic: the notes module pressed (the pad opens or closes)
     event qn_add ->            // to the logic: Add pressed (the draft's text)
+    event qn_tag ->            // to the logic: note id's colour, the next one round (D86)
+    event qn_done ->           // to the logic: note id ticked off, or open again
     event qn_copy ->           // to the logic: note id pressed (its text is copied)
     event qn_edit ->           // to the logic: note id chosen for changing
     event qn_cancel ->         // to the logic: stop changing it (Escape, or the button)
@@ -3162,8 +3177,8 @@ scene Mooi {
     // notes — pinned first — each with pin, send to the board, change and forget (a press on the
     // row copies it), and a word for what just happened. ↑↓ choose a row; Alt+C/E/P/B/Delete act
     // on it.
-    let qn_w = 404
-    let qn_h = 316
+    let qn_w = 468
+    let qn_h = 404
     let qn_x = clamp(xs_notes + ws_notes - qn_w, 12, screen.width - qn_w - 12)
     let qn_y = st_res + 8
     let qn_pw = 120 + (qn_w - 120) * qu_a
@@ -3206,62 +3221,89 @@ scene Mooi {
                 on press qrail_board { qn_open = false; emit board_show }
 
                 text "QUICK NOTES" { at: 58, 18; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
-                text "{qn_count, 0}" { at: 352, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count <= 6 }
-                text "{qn_from, 0}–{qn_to, 0} / {qn_count, 0}" { at: 352, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count > 6 }
-                zone box qclose { from: 366, 4; size: 30, 28; corner: 5; cursor: pointer; role: button; label: "Close quick notes" }
-                line { from: 376, 12; to: 386, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
-                line { from: 386, 12; to: 376, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
+                // the search, beside the name: what is typed narrows the rows
+                zone box qfind { from: 168, 6; size: qn_w - 290, 24; cursor: text; role: region; label: "Search the notes" }
+                Chamfer(168, 6, qn_w - 290, 24, 5, fl.ground, mix(fl.trace_dim, fl.phos, max(qfind.hover, if(qn_searching, 1, 0))), 1, 1)
+                ellipse { at: 180, 17; radius: 4; stroke: 1.2; color: mix(fl.trace_lit, fl.phos, qfind.hover) }
+                line { from: 183, 20; to: 187, 24; width: 1.2; color: mix(fl.trace_lit, fl.phos, qfind.hover) }
+                input qn_query { at: 193, 11; width: qn_w - 330; size: 10.5; family: "Exo 2"; color: fl.phos; selection: fl.well; placeholder: "Search…" }
+                on press qfind { focus qn_query }
+                text "{qn_count, 0}" { at: qn_w - 52, 18; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: qn_count <= 6 }
+                text "{qn_from, 0}–{qn_to, 0}/{qn_count, 0}" { at: qn_w - 52, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: qn_count > 6 }
+                zone box qclose { from: qn_w - 42, 4; size: 30, 28; corner: 5; cursor: pointer; role: button; label: "Close quick notes" }
+                line { from: qn_w - 32, 12; to: qn_w - 22, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
+                line { from: qn_w - 22, 12; to: qn_w - 32, 22; width: 1.4; color: mix(fl.muted, fl.ember, qclose.hover) }
                 on press qclose { qn_open = false }
 
                 // the input's well
-                Chamfer(56, 32, 272, 32, 6, fl.ground, if(qn_editing, fl.ember, fl.trace), 1, if(qn_editing, 1.4, 1))
-                text pick(qn_editing, "Write a note — Enter saves", "Editing — Enter saves, Esc cancels") { at: 66, 48; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not qn_drafting }
-                input qn_draft { at: 66, 40; width: 252; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                SButton(336, 33, 56, qn_add_label, qn_add, 0)
+                Chamfer(56, 38, qn_w - 136, 34, 6, fl.ground, if(qn_editing, fl.ember, mix(fl.trace, fl.phos, 0.3)), 1, if(qn_editing, 1.4, 1))
+                text pick(qn_editing, "Write a note — the first line is its name · Enter saves", "Editing — Enter saves, Esc cancels") { at: 66, 55; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted
+                     width: qn_w - 160; lines: 1; show: not qn_drafting }
+                input qn_draft { at: 66, 47; width: qn_w - 156; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+                SButton(qn_w - 72, 39, 60, qn_add_label, qn_add, 0)
                 on qn_focus { focus qn_draft }
 
                 // the wheel moves through what is not on the six rows; the rows themselves sit on top
-                zone box qscroll { from: 56, 72; size: 336, 196; role: region; label: "Notes — scroll for more" }
+                zone box qscroll { from: 56, 80; size: qn_w - 68, 270; role: region; label: "Notes — scroll for more" }
                 on scroll qscroll { emit qn_scroll(wheel) }
                 for r in qn {
-                    let qry = 76 + r.n * 32
-                    zone box qrow { from: 56, qry; size: 336, 30; corner: 4; cursor: pointer; role: button; selected: r.sel; label: "Copy note: {r.text}" }
-                    box { from: 56, qry; size: 336, 30; corner: 4; color: fl.well; opacity: if(qn_edit_id == r.id, 0.9, max(0.65 * qrow.hover, if(r.sel, 0.5, 0))) }
-                    box { from: 56, qry; size: 336, 30; corner: 4; stroke: 1.2; color: focus.ring; show: r.sel }
-                    box { from: 56, qry + 4; size: 3, 22; color: if(qn_edit_id == r.id, fl.ember, fl.flare); show: qn_edit_id == r.id or r.pinned }
-                    text r.text { at: 64, qry + 15; anchor: left center; size: 11; family: "Exo 2"; width: 168; lines: 1; color: mix(fl.trace_lit, fl.phos, qrow.hover) }
-                    text r.when { at: 266, qry + 15; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    let qry = 82 + r.n * 45
+                    let qbx = qn_w - 124
+                    zone box qrow { from: 92, qry; size: qbx - 96, 41; corner: 4; cursor: pointer; role: button; selected: r.sel; label: "Copy note: {r.text}" }
+                    Chamfer(56, qry, qn_w - 68, 41, 6, mix(fl.hull_raised, fl.well, if(qn_edit_id == r.id, 0.9, max(0.55 * qrow.hover, if(r.sel, 0.45, 0.12)))),
+                            if(r.sel, focus.ring, mix(fl.trace_dim, fl.trace, qrow.hover)), 0.95, if(r.sel, 1.3, 1))
+                    // the colour: a stripe down the row's edge; a press gives it the next
+                    zone box qtag { from: 56, qry; size: 12, 41; cursor: pointer; role: button; label: "Colour note {r.n + 1}" }
+                    group {
+                        glow: 6, 50% * if(r.tag > 0, 1, 0), pick(r.tag, fl.trace_dim, fl.phos, fl.flare, fl.ember, fl.trace_lit)
+                        box { from: 58, qry + 6; size: 3 + qtag.hover * 2, 29; corner: 1.5; color: pick(r.tag, fl.trace_dim, fl.phos, fl.flare, fl.ember, fl.trace_lit)
+                              opacity: if(r.tag > 0, 1, 0.5 + 0.5 * qtag.hover) }
+                    }
+                    // the tick
+                    zone box qdone { from: 68, qry + 10; size: 20, 20; cursor: pointer; role: toggle; checked: r.done; label: pick(r.done, "Tick note {r.n + 1} off", "Open note {r.n + 1} again") }
+                    box { from: 71, qry + 13; size: 14, 14; corner: 3; stroke: 1.3; color: if(r.done, fl.phos, mix(fl.trace_lit, fl.phos, qdone.hover)) }
+                    box { from: 71, qry + 13; size: 14, 14; corner: 3; color: fl.phos; opacity: 0.25; show: r.done }
+                    line { from: 74, qry + 20; to: 77, qry + 23; width: 1.6; color: fl.phos; show: r.done }
+                    line { from: 77, qry + 23; to: 82, qry + 16; width: 1.6; color: fl.phos; show: r.done }
+                    // pinned: a small flare mark by the name
+                    text r.text { at: 96, qry + if(r.two, 14, 20); anchor: left center; size: 11.5; weight: 600; family: "Exo 2"; width: qbx - 140; lines: 1
+                                  color: if(r.done, fl.muted, mix(fl.engrave, fl.phos, qrow.hover)) }
+                    text r.more { at: 96, qry + 29; anchor: left center; size: 9; family: "Exo 2"; width: qbx - 140; lines: 1; color: fl.muted
+                                  opacity: if(r.done, 0.6, 1) }
+                    text r.when { at: qbx - 6, qry + 20; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                     // pin
-                    zone box qpin { from: 272, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: toggle; checked: r.pinned; label: pick(r.pinned, "Pin note {r.n + 1}", "Unpin note {r.n + 1}") }
-                    line { from: 279, qry + 21; to: 284, qry + 15; width: 1.4; color: if(r.pinned, fl.flare, mix(fl.trace_lit, fl.phos, qpin.hover)) }
-                    ellipse { at: 287, qry + 12; radius: 3.6; color: fl.flare; show: r.pinned }
-                    ellipse { at: 287, qry + 12; radius: 3.6; stroke: 1.3; color: mix(fl.trace_lit, fl.phos, qpin.hover); show: not r.pinned }
+                    zone box qpin { from: qbx, qry + 9; size: 26, 22; corner: 4; cursor: pointer; role: toggle; checked: r.pinned; label: pick(r.pinned, "Pin note {r.n + 1}", "Unpin note {r.n + 1}") }
+                    line { from: qbx + 7, qry + 26; to: qbx + 12, qry + 20; width: 1.4; color: if(r.pinned, fl.flare, mix(fl.trace_lit, fl.phos, qpin.hover)) }
+                    ellipse { at: qbx + 15, qry + 17; radius: 3.6; color: fl.flare; show: r.pinned }
+                    ellipse { at: qbx + 15, qry + 17; radius: 3.6; stroke: 1.3; color: mix(fl.trace_lit, fl.phos, qpin.hover); show: not r.pinned }
                     // to the board
-                    zone box qtoboard { from: 300, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Send note {r.n + 1} to the board" }
-                    box { from: 305, qry + 9; size: 4, 12; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
-                    box { from: 311, qry + 9; size: 4, 8; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
-                    box { from: 317, qry + 9; size: 4, 12; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
+                    zone box qtoboard { from: qbx + 28, qry + 9; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Send note {r.n + 1} to the board" }
+                    box { from: qbx + 33, qry + 14; size: 4, 12; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
+                    box { from: qbx + 39, qry + 14; size: 4, 8; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
+                    box { from: qbx + 45, qry + 14; size: 4, 12; corner: 1; color: mix(fl.trace_lit, fl.phos, qtoboard.hover) }
                     // change
-                    zone box qedit { from: 328, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Change note {r.n + 1}" }
-                    line { from: 334, qry + 19; to: 345, qry + 8; width: 2; color: mix(fl.trace_lit, fl.phos, qedit.hover) }
-                    line { from: 336, qry + 21; to: 347, qry + 10; width: 1; color: mix(fl.trace_lit, fl.phos, qedit.hover); opacity: 0.6 }
+                    zone box qedit { from: qbx + 56, qry + 9; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Change note {r.n + 1}" }
+                    line { from: qbx + 62, qry + 24; to: qbx + 73, qry + 13; width: 2; color: mix(fl.trace_lit, fl.phos, qedit.hover) }
+                    line { from: qbx + 64, qry + 26; to: qbx + 75, qry + 15; width: 1; color: mix(fl.trace_lit, fl.phos, qedit.hover); opacity: 0.6 }
                     // forget
-                    zone box qdel { from: 358, qry + 4; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Forget note {r.n + 1}" }
-                    line { from: 366, qry + 10; to: 376, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
-                    line { from: 376, qry + 10; to: 366, qry + 20; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
-                    line { from: 56, qry + 30; to: 392, qry + 30; width: 1; color: fl.trace_dim; opacity: 0.6 }
+                    zone box qdel { from: qbx + 86, qry + 9; size: 26, 22; corner: 4; cursor: pointer; role: button; label: "Forget note {r.n + 1}" }
+                    line { from: qbx + 94, qry + 15; to: qbx + 104, qry + 25; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
+                    line { from: qbx + 104, qry + 15; to: qbx + 94, qry + 25; width: 1.3; color: mix(fl.trace_lit, fl.ember, qdel.hover) }
                     on press qrow { emit qn_copy(r.id) }
+                    on press qtag { emit qn_tag(r.id) }
+                    on press qdone { emit qn_done(r.id) }
                     on press qpin { emit qn_pin(r.id) }
                     on press qtoboard { emit qn_board(r.id) }
                     on press qedit { emit qn_edit(r.id) }
                     on press qdel { emit qn_del(r.id) }
                 }
-                text "No notes yet — write one above." { at: 60, 90; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; show: qn_count < 1 }
-                text pick(qn_editing, "↑↓ CHOOSE · ALT+C COPY · ALT+E EDIT · ALT+P PIN · ALT+B BOARD", "ESC CANCELS · ENTER SAVES") { at: 58, 290; anchor: left center; size: 8; family: "Share Tech Mono"; width: 290; lines: 1; color: fl.muted; show: not qn_saying }
-                text qn_said { at: 58, 290; anchor: left center; size: 9; family: "Share Tech Mono"; width: 290; lines: 1
+                text pick(qn_searching, "No notes yet — write one above.", "No note says that.") { at: qn_w / 2 + 22, 160; anchor: center; size: 12; family: "Exo 2"; color: fl.muted; show: qn_count < 1 }
+                line { from: 56, qn_h - 34; to: qn_w - 12, qn_h - 34; width: 1; color: fl.trace_dim }
+                text pick(qn_editing, "↑↓ · ALT+C COPY · ALT+E EDIT · ALT+P PIN · ALT+B BOARD · STRIPE: COLOUR · BOX: DONE", "ESC CANCELS · ENTER SAVES") { at: 58, qn_h - 18; anchor: left center; size: 8; family: "Share Tech Mono"; width: qn_w - 120; lines: 1; color: fl.muted; show: not qn_saying }
+                text qn_said { at: 58, qn_h - 18; anchor: left center; size: 9; family: "Share Tech Mono"; width: qn_w - 120; lines: 1
                                color: fl.ember; show: qn_saying }
-                text "UNDO" { at: 392, 290; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: qn_can_undo }
-                zone box qundo { from: 358, 278; size: 36, 22; corner: 4; cursor: pointer; role: button; label: "Put the forgotten note back"; show: qn_can_undo }
+                text "UNDO" { at: qn_w - 12, qn_h - 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: qn_can_undo }
+                zone box qundo { from: qn_w - 48, qn_h - 30; size: 36, 22; corner: 4; cursor: pointer; role: button; label: "Put the forgotten note back"; show: qn_can_undo }
                 on press qundo { emit qn_undo }
             }
         }
@@ -3396,32 +3438,66 @@ scene Mooi {
                     group {
                         opacity: fu_b
                         line { from: 12, 38; to: fd_W - 12, 38; width: 1; color: fl.trace_dim }
-                        text pick(notes_on, "Notifications go to another program while mooi runs beside it.", "Nothing waiting. Signals unfold here as they arrive.") { at: fd_W / 2, 200; anchor: center; size: 12; family: "Exo 2"; color: fl.muted; width: fd_W - 40; lines: 2; show: note_count + note_missed < 1 }
+                        // ── the summary: what waits, from how many, how urgent; and each app's share ──
+                        group {
+                            show: note_count + note_missed > 0
+                            text "{note_count, 0} WAITING" { at: 18, 52; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                            text "{fld_apps, 0} APPS" { at: 112, 52; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "{fld_urgent, 0} URGENT" { at: 184, 52; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"
+                                                           color: if(fld_urgent > 0, fl.ember, fl.muted) }
+                            text "{note_missed, 0} MISSED" { at: 272, 52; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                            // the share bar: one segment per app, the chosen one lit, an urgent one in ember
+                            row {
+                                at: 360, 48
+                                gap: 2
+                                for p in fshare {
+                                    box { size: max(4, (fd_W - 380 - 16) * p.part), 8; corner: 2
+                                          color: if(p.critical, fl.ember, if(p.sel, fl.phos, fl.trace)); opacity: if(p.sel, 1, 0.65) }
+                                }
+                            }
+                        }
+                        // nothing waiting: a quiet scope, its rings still
+                        group {
+                            show: note_count + note_missed < 1
+                            let fq_x = fd_W / 2
+                            let fq_y = 200
+                            ellipse { at: fq_x, fq_y; radius: 70; stroke: 1; color: fl.trace_dim }
+                            ellipse { at: fq_x, fq_y; radius: 46; stroke: 1; color: fl.trace_dim }
+                            ellipse { at: fq_x, fq_y; radius: 22; stroke: 1.2; color: mix(fl.trace, fl.phos, 0.4) }
+                            line { from: fq_x - 84, fq_y; to: fq_x + 84, fq_y; width: 1; color: fl.trace_dim; opacity: 0.6 }
+                            line { from: fq_x, fq_y - 84; to: fq_x, fq_y + 84; width: 1; color: fl.trace_dim; opacity: 0.6 }
+                            group {
+                                glow: 8, 60% * st_glow, fl.phos
+                                ellipse { at: fq_x, fq_y; radius: 3.5; color: fl.phos }
+                            }
+                            text pick(notes_on, "Notifications go to another program while mooi runs beside it.", "ALL QUIET") { at: fq_x, fq_y + 108; anchor: center; size: 13; weight: 700; family: "Exo 2"; color: fl.trace_lit; width: fd_W - 40; lines: 2 }
+                            text "Signals unfold here as they arrive." { at: fq_x, fq_y + 130; anchor: center; size: 10.5; family: "Exo 2"; color: fl.muted; show: notes_on }
+                        }
                         // the clusters
                         column fcl {
-                            at: 12, 48
+                            at: 12, 70
                             gap: 6
-                            view: fd_cw, 404
+                            view: fd_cw, 382
                             for c in fclus { FieldCluster(c, fld_sel, loom_chamfer, fld_pick, fd_cw - 2) }
                         }
                         // the chosen cluster: its app, and what can be done with all of it
                         group {
                             show: fclus.count > 0
-                            text fld_app { at: fd_cw + 26, 58; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit; width: fd_iw - 200; lines: 1 }
-                            zone box fmute { from: fd_W - 200, 48; size: 84, 20; cursor: pointer; role: toggle; checked: fld_muted
+                            text fld_app { at: fd_cw + 26, 80; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit; width: fd_iw - 200; lines: 1 }
+                            zone box fmute { from: fd_W - 200, 70; size: 84, 20; cursor: pointer; role: toggle; checked: fld_muted
                                              label: pick(fld_muted, "Mute {fld_app}: its notices whisper", "Unmute {fld_app}"); show: not fld_lost }
-                            group { show: not fld_lost and not fld_muted; CutButton(fd_W - 200, 48, 84, "Mute app", fl.flare, if(fmute.hover, 1, 0)) }
-                            group { show: not fld_lost and fld_muted; CutButton(fd_W - 200, 48, 84, "Unmute", fl.flare, 1) }
+                            group { show: not fld_lost and not fld_muted; CutButton(fd_W - 200, 70, 84, "Mute app", fl.flare, if(fmute.hover, 1, 0)) }
+                            group { show: not fld_lost and fld_muted; CutButton(fd_W - 200, 70, 84, "Unmute", fl.flare, 1) }
                             on press fmute { emit fld_mute }
-                            zone box fall { from: fd_W - 110, 48; size: 98, 20; cursor: pointer; role: button; label: "Dismiss all of {fld_app}" }
-                            group { show: not fld_lost; CutButton(fd_W - 110, 48, 98, "Dismiss all", fl.ember, if(fall.hover, 1, 0)) }
-                            group { show: fld_lost; CutButton(fd_W - 110, 48, 98, "Forget all", fl.ember, if(fall.hover, 1, 0)) }
+                            zone box fall { from: fd_W - 110, 70; size: 98, 20; cursor: pointer; role: button; label: "Dismiss all of {fld_app}" }
+                            group { show: not fld_lost; CutButton(fd_W - 110, 70, 98, "Dismiss all", fl.ember, if(fall.hover, 1, 0)) }
+                            group { show: fld_lost; CutButton(fd_W - 110, 70, 98, "Forget all", fl.ember, if(fall.hover, 1, 0)) }
                             on press fall { emit fld_dismiss_all }
                         }
                         column fit {
-                            at: fd_cw + 24, 76
+                            at: fd_cw + 24, 98
                             gap: 6
-                            view: fd_iw, 376
+                            view: fd_iw, 354
                             for n in fitems { FieldItem(n, fld_item, loom_chamfer, fld_choose, fld_open, fld_act, fld_snooze, fld_dismiss, fd_iw) }
                         }
                         // the activity rail: the last six hours, now at the right
@@ -4175,7 +4251,7 @@ scene Mooi {
         prop stash_away = 0 ~700ms
 
         let sb_w = 336
-        let sb_h = 558
+        let sb_h = 614
         let sb_y = (screen.height - sb_h) / 2
         let sb_x = -346 + 356 * stash_a
         let sb_tab_h = 128
@@ -4251,10 +4327,39 @@ scene Mooi {
                 text "DROP ANYTHING" { at: sb_w - 18, 26; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: stash_pages <= 1 }
                 line { from: 16, 46; to: sb_w - 16, 46; width: 1; color: fl.trace_dim }
 
+                // ── D86: the ways in that are not a drop, and the ways to find what is here ──
+                zone box zspaste { from: 12, 56; size: 72, 26; cursor: pointer; role: button; label: "Stash what is on the clipboard" }
+                Chamfer(12, 56, 72, 26, 5, mix(fl.hull_raised, fl.well, zspaste.hover), mix(fl.trace, fl.phos, zspaste.hover), 0.95, 1)
+                text "PASTE" { at: 48, 69; anchor: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, zspaste.hover) }
+                on press zspaste { emit stash_paste }
+                zone box zsshot { from: 90, 56; size: 66, 26; cursor: pointer; role: button; label: "Stash a screenshot of a region" }
+                Chamfer(90, 56, 66, 26, 5, mix(fl.hull_raised, fl.well, zsshot.hover), mix(fl.trace, fl.ember, zsshot.hover), 0.95, 1)
+                text "SHOT" { at: 123, 69; anchor: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: mix(fl.engrave, fl.ember, zsshot.hover) }
+                on press zsshot { stash_pin = false; stash_a: 0; stash_away: 1; emit stash_shot }
+                zone box zsfind { from: 162, 56; size: sb_w - 174, 26; cursor: text; role: region; label: "Search the stash" }
+                Chamfer(162, 56, sb_w - 174, 26, 5, fl.ground, mix(fl.trace_dim, fl.phos, max(zsfind.hover, if(stash_searching, 1, 0))), 1, 1)
+                ellipse { at: 175, 68; radius: 4; stroke: 1.2; color: mix(fl.trace_lit, fl.phos, zsfind.hover) }
+                line { from: 178, 71; to: 182, 75; width: 1.2; color: mix(fl.trace_lit, fl.phos, zsfind.hover) }
+                input stash_query { at: 188, 62; width: sb_w - 212; size: 10.5; family: "Exo 2"; color: fl.phos; selection: fl.well
+                                    placeholder: "Search…" }
+                on press zsfind { stash_naming = true; focus stash_query }
+                // the chips: what kind of thing the box shows
+                repeat k in 0..5 {
+                    let skw = (sb_w - 24 - 4 * 4) / 5
+                    let skx.$k = 12 + k * (skw + 4)
+                    zone box zskind.$k { from: skx.$k, 88; size: skw, 20; cursor: pointer; role: tab; selected: stash_kind == k
+                                         label: pick(k, "Everything", "Pictures and videos", "Links", "Files and songs", "Text") }
+                    Chamfer(skx.$k, 88, skw, 20, 4, mix(fl.ground, fl.well, max(zskind.$k.hover * 0.6, if(stash_kind == k, 0.9, 0))),
+                            mix(fl.trace_dim, fl.phos, max(zskind.$k.hover, if(stash_kind == k, 1, 0))), 0.9, 1)
+                    text pick(k, "ALL", "PICTURES", "LINKS", "FILES", "TEXT") { at: skx.$k + skw / 2, 98; anchor: center; size: 7.2; weight: 700
+                         family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, max(zskind.$k.hover, if(stash_kind == k, 1, 0))) }
+                    on press zskind.$k { emit stash_kind(k) }
+                }
+
                 group {
                     show: not stash_empty
                     for r in stash {
-                        group { move: 12, 58 + r.n * 66; StashRow(r, stash_open, stash_del, stash_file) }
+                        group { move: 12, 118 + r.n * 66; StashRow(r, stash_open, stash_del, stash_file) }
                     }
                 }
 
@@ -4262,7 +4367,7 @@ scene Mooi {
                 group {
                     show: stash_empty
                     let sb_ex = 94
-                    let sb_ey = 168
+                    let sb_ey = 196
                     let sb_ew = sb_w - 188
                     let sb_eh = 132
                     line { from: sb_ex, sb_ey + 14; to: sb_ex, sb_ey; width: 1.2; color: fl.trace_lit }
@@ -4275,53 +4380,53 @@ scene Mooi {
                     line { from: sb_ex + sb_ew, sb_ey + sb_eh - 14; to: sb_ex + sb_ew, sb_ey + sb_eh; width: 1.2; color: fl.trace_lit }
                     line { from: sb_w / 2 - 10, sb_ey + sb_eh / 2; to: sb_w / 2 + 10, sb_ey + sb_eh / 2; width: 1.6; color: fl.trace_lit }
                     line { from: sb_w / 2, sb_ey + sb_eh / 2 - 10; to: sb_w / 2, sb_ey + sb_eh / 2 + 10; width: 1.6; color: fl.trace_lit }
-                    text "NOTHING STASHED" { at: sb_w / 2, 240; anchor: center; size: 12; weight: 600; family: "Exo 2"; color: fl.trace_lit }
+                    text pick(stash_kind > 0 or stash_searching, "NOTHING STASHED", "NOTHING LIKE THAT HERE") { at: sb_w / 2, 268; anchor: center; size: 12; weight: 600; family: "Exo 2"; color: fl.trace_lit }
                     text "Drop a link, an image, a video or any file here. It is kept in mooi's own stash, beside settings.json." {
-                         at: sb_w / 2, 264; anchor: center; size: 11; family: "Exo 2"; width: 252; lines: 3; color: fl.muted }
+                         at: sb_w / 2, 292; anchor: center; size: 11; family: "Exo 2"; width: 252; lines: 3; color: fl.muted }
                 }
 
                 // ── the folders: a chip each, and the field that makes one ──
                 // Everything is the first chip; the folders follow in the order they were made,
                 // which is the order the logic keeps them in, so a press names one by its slot.
-                zone box zall { from: 12, 392; size: 48, 22; cursor: pointer; role: tab; selected: stash_root
+                zone box zall { from: 12, 458; size: 48, 22; cursor: pointer; role: tab; selected: stash_root
                                 label: "Everything — {stash_all, 0} kept" }
-                Chamfer(12, 392, 48, 22, 5, mix(fl.ground, fl.well, max(zall.hover, if(stash_root, 0.9, 0))), mix(fl.trace_dim, fl.phos, max(zall.hover, if(stash_root, 1, 0))), 0.9, 1)
-                text "ALL" { at: 36, 403; anchor: center; size: 8; weight: 600; family: "Share Tech Mono";
+                Chamfer(12, 458, 48, 22, 5, mix(fl.ground, fl.well, max(zall.hover, if(stash_root, 0.9, 0))), mix(fl.trace_dim, fl.phos, max(zall.hover, if(stash_root, 1, 0))), 0.9, 1)
+                text "ALL" { at: 36, 469; anchor: center; size: 8; weight: 600; family: "Share Tech Mono";
                              color: mix(fl.muted, fl.phos, max(zall.hover, if(stash_root, 1, 0))) }
                 on press zall { stash_naming = false; blur; emit stash_folder(0) }
                 repeat i in 0..5 {
                     let fx = 64 + i * 52
                     group {
                         show: stash_folders_n > i
-                        zone box zfolder.$i { from: fx, 392; size: 48, 22; cursor: pointer; role: tab
+                        zone box zfolder.$i { from: fx, 458; size: 48, 22; cursor: pointer; role: tab
                                               selected: stash_folders.$i.lit > 0.5
                                               label: "Folder {stash_folders.$i.name} — {stash_folders.$i.held, 0} in it" }
-                        Chamfer(fx, 392, 48, 22, 5, mix(fl.ground, fl.well, max(zfolder.$i.hover, 0.9 * stash_folders.$i.lit)),
+                        Chamfer(fx, 458, 48, 22, 5, mix(fl.ground, fl.well, max(zfolder.$i.hover, 0.9 * stash_folders.$i.lit)),
                                 mix(fl.trace_dim, fl.phos, max(zfolder.$i.hover, stash_folders.$i.lit)), 0.9, 1)
-                        text stash_folders.$i.name { at: fx + 24, 403; anchor: center; size: 8; weight: 600; family: "Share Tech Mono"; width: 42; lines: 1
+                        text stash_folders.$i.name { at: fx + 24, 469; anchor: center; size: 8; weight: 600; family: "Share Tech Mono"; width: 42; lines: 1
                                                     color: mix(fl.muted, fl.phos, max(zfolder.$i.hover, stash_folders.$i.lit)) }
                         on press zfolder.$i { stash_naming = false; blur; emit stash_folder(i + 1) }
                         on press right zfolder.$i { emit stash_folder_del(i + 1) }
                     }
                 }
 
-                zone box znew { from: 12, 424; size: 312, 26; cursor: text; role: region
+                zone box znew { from: 12, 490; size: 312, 26; cursor: text; role: region
                                 label: "New folder — type a name and press Enter" }
-                Chamfer(12, 424, 312, 26, 5, fl.ground, mix(fl.trace_dim, fl.ember, max(znew.hover, if(stash_naming, 1, 0))), 1, if(stash_naming, 1.4, 1))
-                line { from: 22, 437; to: 30, 437; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
-                line { from: 26, 433; to: 26, 441; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
-                input stash_new { at: 36, 432; width: 278; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
+                Chamfer(12, 490, 312, 26, 5, fl.ground, mix(fl.trace_dim, fl.ember, max(znew.hover, if(stash_naming, 1, 0))), 1, if(stash_naming, 1.4, 1))
+                line { from: 22, 503; to: 30, 503; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
+                line { from: 26, 499; to: 26, 507; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
+                input stash_new { at: 36, 498; width: 278; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
                                   placeholder: "New folder — name it, then Enter" }
-                text "FOLDERS · ONE LEVEL · RIGHT PRESS A CHIP TAKES IT AWAY" { at: 12, 464; anchor: left center; size: 8
+                text "FOLDERS · ONE LEVEL · RIGHT PRESS A CHIP TAKES IT AWAY" { at: 12, 530; anchor: left center; size: 8
                      family: "Share Tech Mono"; width: 312; lines: 1; color: fl.muted }
                 on press znew { stash_naming = true; focus stash_new }
 
-                line { from: 16, 476; to: sb_w - 16, 476; width: 1; color: fl.trace_dim; show: not stash_empty }
-                text "CLICK OPENS · TRAY FILES IT · DRAG A ROW OUT · × REMOVES" { at: sb_w / 2, 492; anchor: center; size: 8
+                line { from: 16, 542; to: sb_w - 16, 542; width: 1; color: fl.trace_dim; show: not stash_empty }
+                text "CLICK OPENS · TRAY FILES IT · DRAG A ROW OUT · × REMOVES" { at: sb_w / 2, 558; anchor: center; size: 8
                      family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted; show: not stash_empty }
                 text pick(stash_pages > 1, "WHEEL PAGES · PRESS A FOLDER TO LOOK INSIDE", "PRESS A FOLDER TO LOOK INSIDE · THE EDGE RAIL OPENS THIS") {
-                     at: sb_w / 2, 508; anchor: center; size: 8; family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted }
-                text stash_said { at: sb_w / 2, 532; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: stash_saying }
+                     at: sb_w / 2, 574; anchor: center; size: 8; family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted }
+                text stash_said { at: sb_w / 2, 598; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: stash_saying }
             }
         }
 

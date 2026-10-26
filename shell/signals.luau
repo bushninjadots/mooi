@@ -216,6 +216,17 @@ return function(ctx)
                 end
             end
         end
+        -- D86: the Field's summary — how many apps, how many urgent, and each app's share of
+        -- what is waiting, for the strip under the title
+        local urgent, total, share = 0, 0, {}
+        for _, g in ipairs(by_app) do total = total + g.count end
+        for i, g in ipairs(by_app) do
+            for _, n in ipairs(g.items) do if n.urgency == "critical" then urgent = urgent + 1 end end
+            if #share < 8 then share[#share + 1] = { part = total > 0 and g.count / total or 0, critical = g.critical, sel = field.sel == i - 1 } end
+        end
+        model.fshare = share
+        fact.fld_apps = #by_app
+        fact.fld_urgent = urgent
         model.fclus = crows
         model.fitems = irows
         model.frail = rail

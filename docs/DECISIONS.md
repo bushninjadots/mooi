@@ -2793,3 +2793,40 @@ Lumen's KEY preview on a line-art picture; APPLY made the cutout, the plate and 
 and in customise mode. **Not checked:** the desk on the live desktop (it is off until switched on),
 the parallax's feel on a real workspace switch, `rembg` (not installed), the settings window's new
 rows on screen.
+
+---
+
+## D86 · 2026-10-26 · The stash, the notes, the Signal Field and the board, better in use and to look at
+
+**Asked for:** the stash box, the notifications centre, the notes and the Kanban board improved in
+every way, visually included; and every part themed from the wallpaper.
+
+- **Stash.** Ways in that are not a drop: PASTE stashes what is on the clipboard (file paths, links
+  or text, read with `wl-paste`; a picture on the clipboard is only bytes there, so SHOT or a drop
+  takes pictures) and SHOT stashes a region chosen with `slurp`, taken by `grim` straight into the
+  stash folder. Ways to find things: chips (all, pictures, links, files, text) and a search, both
+  `lib/stash.filter` (tested). The box is taller for the new row.
+- **Notes.** A colour per note (its stripe, pressed: none → phos → flare → ember → trace), a tick
+  (a ticked note sinks below the open ones, dimmed), a search in the header (↑↓ walk what it
+  shows), and two-line rows: the first line is the note's name, the rest a quiet line under it.
+  `lib/notes` keeps `tag` and `done` in notes.json (tested). The pad is 468 × 404.
+- **Signal Field.** A summary strip — waiting, apps, urgent, missed — with a bar of each app's
+  share (the chosen one lit, an urgent one ember); nothing waiting is a still scope, ALL QUIET.
+- **Board.** How much is done as a meter in the head, a column's limit as segments under its name,
+  an empty column that says what it is for, cards with a lit tag edge, a top highlight and the due
+  date as a pill.
+- **Theming.** Every program with chrome paints from palette.json and re-lights when it changes
+  (the bar, the Nexus, Lumen, the settings window, the board); the desk draws only pictures. Hard
+  hexes left are shadows, the aberration fringe and Lumen's initial text values.
+
+**Found on the way.** `bin/mooi refresh` hot-reloads the bar's scene, but logic modules it
+`require`s stay as they were loaded: the Field's new counts read 0 until the bar was restarted.
+Logic changes in bar modules need the keeper's restart.
+
+**Checked.** 265 unit tests; scenes compile. Lab bar: the stash's chips (LINKS left two of five),
+search ("coffee" → one), PASTE (a text item from the clipboard); the pad's colours, ticks and the
+ticked note sinking; the board's meter, WIP segments and empty column. Live, after a restart: three
+test notices from two apps gave 3 WAITING · 2 APPS · 1 URGENT and a two-segment share bar; they
+were cleared. **Not checked:** SHOT (it needs a hand to choose a region), the board's due pill
+(the seeded date was written in the wrong unit), the board at a larger size (its geometry is fixed
+in the logic and the scene; a resizable board is a follow-up).

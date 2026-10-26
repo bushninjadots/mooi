@@ -10,9 +10,11 @@
 
 local M = {}
 
--- The order every list is kept in: pinned first, then newest, then the higher id.
+-- The order every list is kept in: pinned first, then what is still to do (a ticked note sinks
+-- below the open ones, D86), then newest, then the higher id.
 local function before(a, b)
     if (a.pinned == true) ~= (b.pinned == true) then return a.pinned == true end
+    if (a.done == true) ~= (b.done == true) then return b.done == true end
     if a.time ~= b.time then return a.time > b.time end
     return a.id > b.id
 end
@@ -22,6 +24,7 @@ M.MAX = 200              -- how many notes are kept; the oldest fall off
 M.TEXT_MAX = 4000        -- characters kept of one note
 M.ROW_MAX = 6            -- rows the dropdown shows; the rest wait in notes.json
 M.PREVIEW = 96           -- one-line preview's length
+M.TAGS = 5               -- a note's colour: 0 none, 1 phos, 2 flare, 3 ember, 4 trace (D86)
 
 -- Cut at `n`, never in the middle of a character: back off to the start of one, then mark it.
 local function cut(s, n)
@@ -119,6 +122,34 @@ function M.pin(list, id)
     return list, nil
 end
 
+-- A note's colour, the next one round (none → phos → flare → ember → trace → none); says the new one.
+function M.tag(list, id)
+    local n = M.find(list or {}, id)
+    if not n then return list, nil end
+    n.tag = ((tonumber(n.tag) or 0) + 1) % M.TAGS
+    return list, n.tag
+end
+
+-- Tick a note off, or open it again; a ticked note sinks below the open ones. Says whether it is done.
+function M.done(list, id)
+    local n = M.find(list or {}, id)
+    if not n then return list, nil end
+    n.done = not n.done
+    table.sort(list, before)
+    return list, n.done
+end
+
+-- The notes whose text has `query` in it (any case); every note when it is empty.
+function M.filter(list, query)
+    local q = string.lower(tostring(query or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+    if q == "" then return list or {} end
+    local out = {}
+    for _, n in ipairs(list or {}) do
+        if string.find(string.lower(n.text or ""), q, 1, true) then out[#out + 1] = n end
+    end
+    return out
+end
+
 -- A note as a board card: its first line the title, the rest its note.
 function M.split(text)
     local t = M.clean(text)
@@ -153,7 +184,10 @@ function M.decode(t)
         if type(n) == "table" then
             local id = tonumber(n.id)
             local text = M.clean(n.text)
-            local note = { id = id, text = text, time = math.floor(tonumber(n.time) or 0), pinned = n.pinned == true }
+            local tag = math.floor(tonumber(n.tag) or 0)
+            if tag < 0 or tag >= M.TAGS then tag = 0 end
+            local note = { id = id, text = text, time = math.floor(tonumber(n.time) or 0), pinned = n.pinned == true,
+                           tag = tag, done = n.done == true }
             if text ~= "" then
                 if id and id >= 1 and id == math.floor(id) and not seen[id] then
                     seen[id] = true
@@ -180,7 +214,8 @@ end
 function M.encode(list)
     local rows = {}
     for _, n in ipairs(list or {}) do
-        rows[#rows + 1] = { id = n.id, text = n.text, time = n.time, pinned = n.pinned == true or nil }
+        rows[#rows + 1] = { id = n.id, text = n.text, time = n.time, pinned = n.pinned == true or nil,
+                            tag = (n.tag and n.tag > 0) and n.tag or nil, done = n.done == true or nil }
     end
     return { version = 1, notes = rows }
 end

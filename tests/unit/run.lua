@@ -2846,6 +2846,36 @@ test("config: the hub, the centre's face and the desk survive a reload", functio
     eq(s.nexus.hub.order[1], "gauges", "order"); eq(s.nexus.hub.hidden[1], "places", "hidden"); eq(s.nexus.hub.side[1], "gauges", "side")
 end)
 
+test("stash: the chips and the search narrow the box without changing the list", function()
+    local st = require("lib/stash")
+    local list = { { kind = 1, name = "sunset.png", detail = "PNG", url = "/s/sunset.png" },
+                   { kind = 0, name = "github.com", detail = "/mooi", url = "https://github.com/mooi" },
+                   { kind = 4, name = "remember the milk", detail = "TEXT", url = "remember the milk" },
+                   { kind = 2, name = "clip.mp4", detail = "MP4", url = "/s/clip.mp4" } }
+    eq(#st.filter(list, 0, ""), 4, "everything")
+    eq(#st.filter(list, 1, ""), 2, "pictures and videos")
+    eq(st.filter(list, 2, "")[1].name, "github.com", "links")
+    eq(#st.filter(list, 0, "MILK"), 1, "search ignores case")
+    eq(#st.filter(list, 1, "sun"), 1, "both at once")
+    eq(#list, 4, "the list is untouched")
+end)
+
+test("notes: a colour, a tick and a search, kept in the file", function()
+    local nt = require("lib/notes")
+    local list = {}
+    list = nt.add(list, "milk", 10); list = nt.add(list, "call mum", 20); list = nt.add(list, "fix the bike", 30)
+    local _, tag = nt.tag(list, 1); eq(tag, 1, "first colour")
+    for _ = 1, 4 do nt.tag(list, 1) end
+    eq(nt.find(list, 1).tag, 0, "round to none")
+    local _, done = nt.done(list, 3); eq(done, true, "ticked")
+    eq(list[#list].id, 3, "a ticked note sinks below the open ones")
+    eq(#nt.filter(list, "CALL"), 1, "search ignores case"); eq(#nt.filter(list, ""), 3, "empty search is every note")
+    nt.tag(list, 2)
+    local back = nt.decode(nt.encode(list))
+    eq(nt.find(back, 2).tag, 1, "the colour is kept"); eq(nt.find(back, 3).done, true, "the tick is kept")
+    eq(nt.decode({ notes = { { id = 1, text = "x", tag = 99 } } })[1].tag, 0, "a colour out of range is none")
+end)
+
 local desk = require("lib/desk")
 print("desk")
 test("desk: the settings are read whatever the file holds", function()

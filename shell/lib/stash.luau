@@ -280,6 +280,25 @@ end
 -- The rows the panel shows: the page brought into range, and each row's place on it. A
 -- picture is the video's poster, a song's cover, or an image's own file; otherwise the row
 -- draws a glyph.
+-- The box's filter (the chips): 0 everything, 1 pictures and videos, 2 links, 3 files and songs,
+-- 4 text; and a search, by name and detail, case-insensitive. Pure: the list is not changed.
+M.KINDS = { [1] = { [1] = true, [2] = true }, [2] = { [0] = true }, [3] = { [3] = true, [5] = true }, [4] = { [4] = true } }
+function M.filter(list, kind, query)
+    local want = M.KINDS[tonumber(kind) or 0]
+    local q = string.lower(tostring(query or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+    if not want and q == "" then return list or {} end
+    local out = {}
+    for _, it in ipairs(list or {}) do
+        local ok = not want or want[it.kind] == true
+        if ok and q ~= "" then
+            local hay = string.lower(tostring(it.name or "") .. " " .. tostring(it.detail or "") .. " " .. tostring(it.url or ""))
+            ok = string.find(hay, q, 1, true) ~= nil
+        end
+        if ok then out[#out + 1] = it end
+    end
+    return out
+end
+
 function M.page(list, page, now, size, names)
     size = size or M.ROW_MAX
     local total = #(list or {})
