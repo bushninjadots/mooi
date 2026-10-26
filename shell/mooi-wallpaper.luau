@@ -9,6 +9,7 @@
 local config = require("lib/config")
 local ferro = require("lib/ferro")
 local W = require("lib/wallpaper")
+local desk = require("lib/desk")
 
 local HOME = tostring(sys.ask("env", "HOME"))
 local CACHE = HOME .. "/.cache/mooi/wallpaper"
@@ -196,6 +197,7 @@ local vibe_rows = {}
 for i, p in ipairs(W.PRESETS) do vibe_rows[i] = { id = p.id, name = p.name, hint = p.hint } end
 model.vibes = vibe_rows
 
+local publish_desk
 local function publish()
     local id = W.matches(recipe)
     local name, hint, sel = "CUSTOM", "your own grade", -1
@@ -231,6 +233,7 @@ local function publish()
         end
     end
     model.sliders = rows
+    if publish_desk then publish_desk() end
 end
 
 -- ── Rendering ────────────────────────────────────────────────
@@ -281,6 +284,8 @@ end
 -- without the grade) is remade only when the frame itself changed. Every render is stamped with
 -- the request it answered, so a slow one that finishes after a newer one is never shown.
 local function screen() return { w = screen_w, h = screen_h } end
+-- The DESK tab's preview of the cutout (defined with the desk, below).
+local cut_preview
 local busy, want = false, {}
 local req_gen, shown_gen = 0, 0
 local compare_key = nil
@@ -327,6 +332,7 @@ local function start(kind, gen)
                 if not draft and gen == req_gen then
                     fact.loading = false
                     palette_from(out)
+                    if cut_preview then cut_preview(out) end
                     if compare_key ~= W.frame_key(recipe) then want.compare = gen end
                 end
             end
@@ -761,6 +767,7 @@ local function set_tab(n)
     publish()
 end
 
+local desk_layers
 local function apply()
     if applying or not base then return end
     applying = true
@@ -785,6 +792,7 @@ local function apply()
             text.status = how
             if old and old ~= out then run("rm", { "-f", old }) end
             save_now()
+            if desk_layers then desk_layers(out) end
         end
         run("qs", { "-p", PICKER, "ipc", "call", "wallpaper", "set", out }, function(_, qcode)
             if qcode == 0 then applied("APPLIED · THE DESKTOP IS WEARING IT"); return end
@@ -828,6 +836,139 @@ local function close()
     if srcview then run("rm", { "-f", srcview }) end
     run("pleamar", { "--say", "mooi-wallpaper", "quit" })
 end
+
+-- ── The desk (D85) ─────────────────────────────────────────────
+-- The DESK tab: the cutout (how the subject is found, its region, its edge) is the recipe's, so
+-- it is kept per picture; the desk itself (on, what moves it, how far, depth) is the shell's, in
+-- settings.json — re-read just before it is written, so nothing the settings window changed in
+-- the meantime is put back.
+local DESKF = "desk.json"
+local has_ai = false
+pcall(run, "rembg", { "--help" }, function(_, code) has_ai = code == 0; fact.has_ai = has_ai end)
+
+function publish_desk()
+    local d = desk.normalize(settings.desk)
+    fact.desk_on = d.on
+    fact.desk_par = desk.PARALLAX_INDEX[d.parallax] or 0
+    fact.desk_depth = d.depth
+    fact.desk_cut = d.cutout
+    fact.desk_str = d.strength
+    text.desk_str_l = tostring(d.strength) .. "%"
+    fact.cut_mode = recipe.cut
+    text.cut_name = W.CUT_NAMES[recipe.cut + 1] or "OFF"
+    fact.reg_x0, fact.reg_y0 = math.min(recipe.rx0, recipe.rx1), math.min(recipe.ry0, recipe.ry1)
+    fact.reg_x1, fact.reg_y1 = math.max(recipe.rx0, recipe.rx1), math.max(recipe.ry0, recipe.ry1)
+end
+
+local function save_desk(change)
+    local fresh = config.parse(read("settings.json"), json.decode)
+    local d = desk.normalize(fresh.desk)
+    change(d)
+    fresh.desk = d
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then sys.call("files.write", "settings.json", fresh) end
+    settings = fresh
+    publish_desk()
+end
+
+-- The preview's cutout, over the dimmed preview, while SHOW CUTOUT is on.
+local cut_gen = 0
+cut_preview = function(prev)
+    if not fact.cut_show or recipe.cut == 0 or not prev then text.cut_prev = ""; fact.has_cut_prev = false; return end
+    cut_gen = cut_gen + 1
+    local g = cut_gen
+    local mask = CACHE .. "/cutmask-preview.png"
+    local outp = CACHE .. "/cutprev-" .. tostring(g % 2) .. ".png"
+    local function finish_mask(src)
+        run("magick", W.mask_args(recipe, src, mask, W.PREVIEW_W, W.PREVIEW_H), function(_, code)
+            if code ~= 0 or g ~= cut_gen then return end
+            run("magick", W.cutout_args(prev, mask, outp), function(_, c2)
+                if c2 == 0 and g == cut_gen then text.cut_prev = outp; fact.has_cut_prev = true end
+            end)
+        end)
+    end
+    if recipe.cut == 4 then
+        if not has_ai then text.status = "AI CUTOUT NEEDS REMBG · pipx install \"rembg[cli]\""; return end
+        local seg = CACHE .. "/cutseg-preview.png"
+        text.status = "FINDING THE SUBJECT…"
+        run("rembg", { "i", prev, seg }, function(_, code)
+            if code == 0 and g == cut_gen then finish_mask(seg) end
+        end)
+    else
+        finish_mask(prev)
+    end
+end
+
+-- On APPLY: the still the desktop wears, its cutout, and — for a subject-shaped cutout — the plate,
+-- written to desk.json beside the settings, where the desk reads them.
+desk_layers = function(still)
+    if recipe.cut == 0 then
+        sys.call("files.write", DESKF, { still = still, cutout = "", plate = "", at = os.time() })
+        return
+    end
+    local stamp = tostring(os.time())
+    local base_png = CACHE .. "/desk-maskbase.png"
+    local mask = CACHE .. "/desk-mask.png"
+    local cut = CACHE .. "/desk-cut-" .. stamp .. ".png"
+    local plate = CACHE .. "/desk-plate-" .. stamp .. ".png"
+    local old = read(DESKF, "json")
+    text.status = "CUTTING THE SUBJECT OUT FOR THE DESK…"
+    local function done(with_plate)
+        sys.call("files.write", DESKF, { still = still, cutout = cut, plate = with_plate and plate or "", at = os.time() })
+        if type(old) == "table" then
+            for _, f in ipairs({ old.cutout, old.plate }) do
+                if type(f) == "string" and f ~= "" and f ~= cut and f ~= plate then run("rm", { "-f", f }) end
+            end
+        end
+        text.status = "APPLIED · THE CUTOUT IS ON THE DESK" .. (desk.normalize(settings.desk).on and "" or " (TURN THE DESK ON TO SEE IT)")
+    end
+    local function from_mask()
+        run("magick", W.cutout_args(still, mask, cut), function(_, c1)
+            if c1 ~= 0 then text.status = "COULD NOT CUT THE SUBJECT OUT"; return end
+            if recipe.cut == 2 then done(false); return end
+            run("magick", W.plate_args(still, mask, plate), function(_, c2) done(c2 == 0) end)
+        end)
+    end
+    run("magick", W.args(W.maskable(recipe), base, base_png, screen_w, screen_h, base_dims.w, base_dims.h, backdrop(), screen()), function(_, c0)
+        if c0 ~= 0 then text.status = "COULD NOT CUT THE SUBJECT OUT"; return end
+        if recipe.cut == 4 then
+            if not has_ai then text.status = "AI CUTOUT NEEDS REMBG · pipx install \"rembg[cli]\""; return end
+            local seg = CACHE .. "/desk-seg.png"
+            run("rembg", { "i", base_png, seg }, function(_, c)
+                if c ~= 0 then text.status = "REMBG COULD NOT FIND A SUBJECT"; return end
+                run("magick", W.mask_args(recipe, seg, mask, screen_w, screen_h), function(_, cm) if cm == 0 then from_mask() end end)
+            end)
+        else
+            run("magick", W.mask_args(recipe, base_png, mask, screen_w, screen_h), function(_, cm) if cm == 0 then from_mask() end end)
+        end
+    end)
+end
+
+on("set_cut", function(n)
+    recipe.cut = clamp(round(tonumber(n) or 0), 0, 4)
+    if recipe.cut > 0 and not fact.cut_show then fact.cut_show = true end
+    changed()
+    publish_desk()
+end)
+on("cut_show_toggle", function()
+    fact.cut_show = not fact.cut_show
+    if fact.cut_show then cut_preview(text.prev_file) else text.cut_prev = ""; fact.has_cut_prev = false end
+end)
+on("desk_toggle", function() save_desk(function(d) d.on = not d.on end) end)
+on("desk_parallax", function(n)
+    local id = desk.PARALLAX[(tonumber(n) or 0) + 1]
+    if id then save_desk(function(d) d.parallax = id end) end
+end)
+on("desk_depth_toggle", function() save_desk(function(d) d.depth = not d.depth end) end)
+on("desk_cut_toggle", function() save_desk(function(d) d.cutout = not d.cutout end) end)
+on("set_desk", function(raw)
+    local v = clamp((math.floor(tonumber(raw) or 0)) % 1000, 0, 100)
+    -- a drag sends a run of values; the file is written when the run settles
+    fact.desk_str = v
+    text.desk_str_l = tostring(v) .. "%"
+    save_gen = save_gen + 1
+    local g = save_gen
+    after(400, function() if save_gen == g then save_desk(function(d) d.strength = v end) end end)
+end)
 
 -- ── The hands and the keys ───────────────────────────────────
 on("set_value", function(raw)
@@ -888,6 +1029,18 @@ end)
 -- the distance on release (`pan_dx`, `pan_dy`, screen pixels); the crop follows and the scene's
 -- offset is let go when the next preview arrives, so the picture does not jump back first.
 on("pan_done", function()
+    if fact.tab == 5 and (recipe.cut == 2 or recipe.cut == 3) then
+        -- in the DESK tab with a region, a drag draws the region instead of moving the picture
+        local x0, y0 = tonumber(fact.rg_x0) or 0, tonumber(fact.rg_y0) or 0
+        local x1, y1 = tonumber(fact.rg_x1) or 0, tonumber(fact.rg_y1) or 0
+        fact.pan_dx, fact.pan_dy = 0, 0
+        if math.abs(x1 - x0) < 12 or math.abs(y1 - y0) < 12 then return end
+        recipe.rx0 = clamp(round(x0 / screen_w * 100), 0, 100); recipe.rx1 = clamp(round(x1 / screen_w * 100), 0, 100)
+        recipe.ry0 = clamp(round(y0 / screen_h * 100), 0, 100); recipe.ry1 = clamp(round(y1 / screen_h * 100), 0, 100)
+        changed()
+        publish_desk()
+        return
+    end
     local dx, dy = tonumber(fact.pan_dx) or 0, tonumber(fact.pan_dy) or 0
     if not base or (dx == 0 and dy == 0) then fact.pan_dx = 0; fact.pan_dy = 0; return end
     recipe.fx, recipe.fy = W.pan(recipe, base_dims.w, base_dims.h, screen_w, screen_h,

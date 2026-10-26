@@ -310,21 +310,50 @@ scene Nexus {
     fact nx_hub_edit = false
     fact nx_hub_edit_y = -1
     fact nx_hub_wide = false
-    fact nx_hy_tiles = 102
-    fact nx_hy_levels = 216
-    fact nx_hy_media = 296
-    fact nx_hy_gauges = 368
-    fact nx_hy_spaces = 432
-    fact nx_hy_places = 466
-    fact nx_hon_tiles = true
-    fact nx_hon_levels = true
+    // Each section's place (its top-left inside the plate), width, whether it takes room, and
+    // whether it runs lengthways in the rail.
+    fact nx_hy_tiles = 0
+    fact nx_hx_tiles = 16
+    fact nx_hw_tiles = 476
+    fact nx_hon_tiles = false
+    fact nx_hs_tiles = false
+    fact nx_hy_levels = 0
+    fact nx_hx_levels = 16
+    fact nx_hw_levels = 476
+    fact nx_hon_levels = false
+    fact nx_hs_levels = false
+    fact nx_hy_media = 0
+    fact nx_hx_media = 16
+    fact nx_hw_media = 476
     fact nx_hon_media = false
-    fact nx_hon_gauges = true
-    fact nx_hon_spaces = true
-    fact nx_hon_places = true
+    fact nx_hs_media = false
+    fact nx_hy_viz = 0
+    fact nx_hx_viz = 16
+    fact nx_hw_viz = 476
+    fact nx_hon_viz = false
+    fact nx_hs_viz = false
+    fact nx_hy_gauges = 0
+    fact nx_hx_gauges = 16
+    fact nx_hw_gauges = 476
+    fact nx_hon_gauges = false
+    fact nx_hs_gauges = false
+    fact nx_hy_spaces = 0
+    fact nx_hx_spaces = 16
+    fact nx_hw_spaces = 476
+    fact nx_hon_spaces = false
+    fact nx_hs_spaces = false
+    fact nx_hy_places = 0
+    fact nx_hx_places = 16
+    fact nx_hw_places = 476
+    fact nx_hon_places = false
+    fact nx_hs_places = false
+    fact nx_hub_main_w = 476
+    fact nx_hub_rail = false
+    // The desk's switch, for the PARALLAX tile (settings.json `desk.on`).
+    fact nx_desk_on = false
     // One row per section in the user's order, for the customise controls drawn over them.
-    model nx_hsec max 6 { id: number; name: text; y: number; h: number; on: bool; stub: bool; hidden: bool;
-        first: bool; last: bool; shown: bool }
+    model nx_hsec max 7 { id: number; name: text; x: number; y: number; w: number; h: number; on: bool; stub: bool;
+        side: bool; hidden: bool; first: bool; last: bool; shown: bool }
     // The core's face at the centre of the workspace (`nexus.centre`).
     fact nx_centre: core | identity | player | both = core
 
@@ -551,6 +580,7 @@ scene Nexus {
     figure ic_rec = file "icons/recorder.svg"
     figure ic_pow = file "icons/power.svg"
     figure ic_arr = file "icons/arrange.svg"
+    figure ic_wall = file "icons/wallpaper.svg"
     shader field = file "shaders/nexus-field.wgsl"
 
     event nx_out_cycle ->        // to the logic: make the next output device the default
@@ -616,6 +646,7 @@ scene Nexus {
     event nx_hub_move ->         // to the logic: section * 10 + 1 up, + 2 down
     event nx_hub_toggle ->       // to the logic: hide the section, or show it again
     event nx_hub_reset ->        // to the logic: every section back, in the shipped order
+    event nx_hub_side ->         // to the logic: run the section lengthways in the rail, or back
     event nx_centre_set ->       // to the logic: the core's face (0 reactor · 1 identity · 2 player · 3 both)
 
     // A drawer row: a label on the left, the system's own answer on the right.
@@ -686,13 +717,144 @@ scene Nexus {
         box { from: x, y + h + 1; size: w, 1; color: tone; opacity: 0.25 }
     }
 
+    // ── The hub's pieces (D85) ──────────────────────────────
+    // A section's engraved name, with the spine's node beside it and a rule running to its right.
+    component NHCap(w: number, name: text, tone: color, rail: bool) {
+        size: w, 12
+        ellipse { at: if(rail, -7, -9), -8; radius: 2.6; color: tone; opacity: 0.9 }
+        ellipse { at: if(rail, -7, -9), -8; radius: 5; stroke: 1; color: tone; opacity: 0.3 }
+        text name { at: 0, -8; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: mix(fl.muted, tone, 0.55) }
+        box { from: 92, -8.5; size: max(0, w - 92), 1; color: tone; opacity: 0.14 }
+    }
+
+    // A switch: a cut plate, lit along its left edge while on; the glyph is drawn over it by the
+    // caller (a figure cannot be handed to a component).
+    component NTile(x: number, y: number, w: number, h: number, label: text, state: text, lit: bool, tone: color,
+                    press: event, n: number, en: bool = true) {
+        size: w, h
+        opacity: if(en, 1, 0.4)
+        zone box hit { from: x, y; size: w, h; cursor: pointer; role: toggle; checked: lit; label: label; active: en }
+        let k = 7
+        path { color: mix(mix(fl.hull_raised, fl.well, 0.4), tone, if(lit, 0.2, 0) + hit.hover * 0.09); opacity: 0.96
+               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        path { stroke: 1; color: mix(fl.trace, tone, if(lit, 0.8, 0.15 + hit.hover * 0.5))
+               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        group {
+            show: lit
+            glow: 6, 50%, tone
+            box { from: x + 1, y + k + 2; size: 2.5, h - k * 2 - 4; corner: 1; color: tone }
+        }
+        box { from: x + 10, y + 10; size: 22, 22; corner: 4; color: fl.hull; opacity: 0.7 }
+        text "{upper(label)}" { at: x + 10, y + h - 21; anchor: left center; size: 7.2; weight: 700; family: "Share Tech Mono"
+                                width: w - 14; lines: 1; color: fl.engrave }
+        text state { at: x + 10, y + h - 10; anchor: left center; size: 6.4; family: "Share Tech Mono"; width: w - 14; lines: 1
+                     color: if(lit, tone, fl.muted) }
+        on press hit { emit press(n) }
+    }
+
+    // A gauge: a ring round the reading, its name, and the last twelve readings as a trace.
+    component NGauge(t: record, x: number, y: number, w: number, h: number, ac: color) {
+        size: w, h
+        let lit = if(t.on, 1, 0)
+        let r = clamp(h / 2 - 12, 12, 22)
+        let rx = x + r + 10
+        let ry = y + h / 2
+        let sx = rx + r + 10
+        let sw0 = max(10, x + w - 8 - sx)
+        Chamfer(x, y, w, h, 7, mix(fl.hull_raised, fl.well, 0.4), mix(fl.trace, if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)), 0.25 * lit), 0.5 + lit * 0.2, 1)
+        arc { at: rx, ry; radius: r; width: 4; span: 360deg; color: fl.hull; opacity: 0.9 }
+        group {
+            glow: 6, 45%, if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac))
+            arc { at: rx, ry; radius: r; width: 4; span: t.bar * 360deg; rotate: t.bar * 180deg; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)); show: t.on }
+        }
+        text t.value { at: rx, ry + 0.5; anchor: center; size: 9; weight: 700; family: "Exo 2"
+                       color: if(t.on, mix(fl.engrave, if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)), 0.7), fl.muted) }
+        text t.label { at: sx, y + 13; anchor: left center; size: 6.8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+        group {
+            show: t.on
+            path { stroke: 1.2; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)); opacity: 0.85
+                   move sx, y + h - 10 - t.s1 * (h - 34)
+                   line sx + sw0 * 1 / 11, y + h - 10 - t.s2 * (h - 34)
+                   line sx + sw0 * 2 / 11, y + h - 10 - t.s3 * (h - 34)
+                   line sx + sw0 * 3 / 11, y + h - 10 - t.s4 * (h - 34)
+                   line sx + sw0 * 4 / 11, y + h - 10 - t.s5 * (h - 34)
+                   line sx + sw0 * 5 / 11, y + h - 10 - t.s6 * (h - 34)
+                   line sx + sw0 * 6 / 11, y + h - 10 - t.s7 * (h - 34)
+                   line sx + sw0 * 7 / 11, y + h - 10 - t.s8 * (h - 34)
+                   line sx + sw0 * 8 / 11, y + h - 10 - t.s9 * (h - 34)
+                   line sx + sw0 * 9 / 11, y + h - 10 - t.s10 * (h - 34)
+                   line sx + sw0 * 10 / 11, y + h - 10 - t.s11 * (h - 34)
+                   line sx + sw0, y + h - 10 - t.s12 * (h - 34) }
+            ellipse { at: sx + sw0, y + h - 10 - t.s12 * (h - 34); radius: 1.8; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)) }
+        }
+        box { from: sx, y + h - 9; size: sw0, 1; color: fl.trace; opacity: 0.35 }
+    }
+
+    // A level along the column: an icon well (drawn by the caller), the track, a glowing knob.
+    component NHLevel(x: number, y: number, w: number, v: number, dim: bool, tone: color, press: event, word: text) {
+        size: w, 26
+        zone box hit { from: x - 6, y; size: w + 12, 26; cursor: pointer; role: slider; label: word; value: v }
+        box { from: x, y + 11; size: w, 5; corner: 2.5; color: fl.hull; opacity: 0.95 }
+        group {
+            glow: 6, 40%, tone
+            box { from: x, y + 11; size: w * clamp(v, 0, 1), 5; corner: 2.5; color: if(dim, fl.muted, tone); opacity: 0.95 }
+        }
+        ellipse { at: x + w * clamp(v, 0, 1), y + 13.5; radius: 6 + hit.hover; color: mix(fl.engrave, tone, 0.35) }
+        ellipse { at: x + w * clamp(v, 0, 1), y + 13.5; radius: 2.4; color: fl.hull }
+        on press hit { emit press(clamp((local.x - x) / w, 0, 1)) }
+        on drag hit { emit press(clamp((local.x - x) / w, 0, 1)) }
+        on scroll hit { emit press(clamp(v + wheel * 0.05, 0, 1)) }
+    }
+
+    // The same level standing up, for the rail: the track rises from the foot.
+    component NVLevel(x: number, y: number, h: number, v: number, dim: bool, tone: color, press: event, word: text) {
+        size: 30, h
+        zone box hit { from: x - 8, y - 4; size: 30, h + 8; cursor: pointer; role: slider; label: word; value: v }
+        box { from: x + 4, y; size: 6, h; corner: 3; color: fl.hull; opacity: 0.95 }
+        group {
+            glow: 6, 40%, tone
+            box { from: x + 4, y + h * (1 - clamp(v, 0, 1)); size: 6, h * clamp(v, 0, 1); corner: 3; color: if(dim, fl.muted, tone) }
+        }
+        ellipse { at: x + 7, y + h * (1 - clamp(v, 0, 1)); radius: 6.5 + hit.hover; color: mix(fl.engrave, tone, 0.35) }
+        ellipse { at: x + 7, y + h * (1 - clamp(v, 0, 1)); radius: 2.4; color: fl.hull }
+        text "{v * 100, 0}" { at: x + 7, y + h + 13; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: mix(fl.muted, tone, 0.7) }
+        on press hit { emit press(clamp(1 - (local.y - y) / h, 0, 1)) }
+        on drag hit { emit press(clamp(1 - (local.y - y) / h, 0, 1)) }
+        on scroll hit { emit press(clamp(v + wheel * 0.05, 0, 1)) }
+    }
+
+    // The visualiser mirrored about its middle (along the column), or running down the rail with
+    // its bands reaching out either side of a spine.
+    component NVizWide(x: number, y: number, w: number, h: number, tone: color, lit: number) {
+        size: w, h
+        let bw = w / 24
+        box { from: x, y + h / 2 - 0.5; size: w, 1; color: tone; opacity: 0.3 }
+        repeat k in 0..24 {
+            let v = clamp(pick(k, nvp0, nvp1, nvp2, nvp3, nvp4, nvp5, nvp6, nvp7, nvp8, nvp9, nvp10, nvp11,
+                               nvp12, nvp13, nvp14, nvp15, nvp16, nvp17, nvp18, nvp19, nvp20, nvp21, nvp22, nvp23), 0.03, 1)
+            box { from: x + k * bw + bw * 0.16, y + h / 2 - max(1, v * h / 2); size: bw * 0.68, max(2, v * h); corner: 1.5
+                  color: mix(tone, fl.flare, v * 0.55); opacity: 0.3 + lit * 0.6 }
+        }
+    }
+    component NVizTall(x: number, y: number, w: number, h: number, tone: color, lit: number) {
+        size: w, h
+        let bh = h / 24
+        box { from: x + w / 2 - 0.5, y; size: 1, h; color: tone; opacity: 0.3 }
+        repeat k in 0..24 {
+            let v = clamp(pick(k, nvp0, nvp1, nvp2, nvp3, nvp4, nvp5, nvp6, nvp7, nvp8, nvp9, nvp10, nvp11,
+                               nvp12, nvp13, nvp14, nvp15, nvp16, nvp17, nvp18, nvp19, nvp20, nvp21, nvp22, nvp23), 0.03, 1)
+            box { from: x + w / 2 - max(1, v * w / 2), y + k * bh + bh * 0.18; size: max(2, v * w), bh * 0.64; corner: 1.5
+                  color: mix(tone, fl.flare, v * 0.55); opacity: 0.3 + lit * 0.6 }
+        }
+    }
+
     // The entrance settles rather than appears.
     spring nx.ext = 900, 51
     prop nx_a = 0 ~nx.ext
     on change nx_open while nx_open {
         nx_a: 1 ~nx.ext
-        hh_p: nx_hub_h ~1ms; hy_tiles: nx_hy_tiles ~1ms; hy_levels: nx_hy_levels ~1ms; hy_media: nx_hy_media ~1ms
-        hy_gauges: nx_hy_gauges ~1ms; hy_spaces: nx_hy_spaces ~1ms; hy_places: nx_hy_places ~1ms
+        hh_p: nx_hub_h ~1ms; hw_p: nx_hub_w ~1ms
+        hy_tiles: nx_hy_tiles ~1ms; hx_tiles: nx_hx_tiles ~1ms; hy_levels: nx_hy_levels ~1ms; hx_levels: nx_hx_levels ~1ms; hy_media: nx_hy_media ~1ms; hx_media: nx_hx_media ~1ms; hy_viz: nx_hy_viz ~1ms; hx_viz: nx_hx_viz ~1ms; hy_gauges: nx_hy_gauges ~1ms; hx_gauges: nx_hx_gauges ~1ms; hy_spaces: nx_hy_spaces ~1ms; hx_spaces: nx_hx_spaces ~1ms; hy_places: nx_hy_places ~1ms; hx_places: nx_hx_places ~1ms
     }
     on change nx_open while not nx_open { nx_a: 0 ~nx.ext }
 
@@ -774,18 +936,36 @@ scene Nexus {
     // The hub's column glides when a section moves, hides or comes back; it opens already in place.
     prop hh_p = 520 ~nx.move
     follow hh_p = nx_hub_h
-    prop hy_tiles = 102 ~nx.move
+    prop hw_p = 508 ~nx.move
+    follow hw_p = nx_hub_w
+    prop hy_tiles = 0 ~nx.move
     follow hy_tiles = nx_hy_tiles
-    prop hy_levels = 216 ~nx.move
+    prop hx_tiles = 16 ~nx.move
+    follow hx_tiles = nx_hx_tiles
+    prop hy_levels = 0 ~nx.move
     follow hy_levels = nx_hy_levels
-    prop hy_media = 296 ~nx.move
+    prop hx_levels = 16 ~nx.move
+    follow hx_levels = nx_hx_levels
+    prop hy_media = 0 ~nx.move
     follow hy_media = nx_hy_media
-    prop hy_gauges = 368 ~nx.move
+    prop hx_media = 16 ~nx.move
+    follow hx_media = nx_hx_media
+    prop hy_viz = 0 ~nx.move
+    follow hy_viz = nx_hy_viz
+    prop hx_viz = 16 ~nx.move
+    follow hx_viz = nx_hx_viz
+    prop hy_gauges = 0 ~nx.move
     follow hy_gauges = nx_hy_gauges
-    prop hy_spaces = 432 ~nx.move
+    prop hx_gauges = 16 ~nx.move
+    follow hx_gauges = nx_hx_gauges
+    prop hy_spaces = 0 ~nx.move
     follow hy_spaces = nx_hy_spaces
-    prop hy_places = 466 ~nx.move
+    prop hx_spaces = 16 ~nx.move
+    follow hx_spaces = nx_hx_spaces
+    prop hy_places = 0 ~nx.move
     follow hy_places = nx_hy_places
+    prop hx_places = 16 ~nx.move
+    follow hx_places = nx_hx_places
 
     // Each slot's own springs: where its node is drawn while it travels, and how present
     // it is (a node leaving or arriving fades in place). They start at the canvas's
@@ -980,7 +1160,7 @@ scene Nexus {
         // the places one press away. CUSTOMISE puts the controls for all of that on the plate.
         // It hangs under the mark and leaves the desktop visible around it; a press anywhere
         // outside puts it away, as the bar's islands do.
-        let hw = if(sw < nx_hub_w + 40, sw - 20, nx_hub_w)
+        let hw = if(sw < nx_hub_w + 40, sw - 20, hw_p)
         let hx = clamp(if(nx_hub_cx > 0, nx_hub_cx - hw / 2, (sw - hw) / 2), 10, sw - hw - 10)
         let hy = nx_top
         let hmx = clamp(if(nx_hub_cx > 0, nx_hub_cx, sw / 2) - hx, 24, hw - 24)
@@ -1180,7 +1360,7 @@ scene Nexus {
                 group {
                     show: hedit and nx_hub_edit_y >= 0
                     let hey = nx_hub_edit_y
-                    let ecw = (hw - 24 - 4 * 4) / 5
+                    let ecw = (hw - 32 - 4 * 4) / 5
                     Chamfer(12, hey, hw - 24, 62, 6, mix(fl.well, ac, 0.06), mix(fl.trace, ac, 0.6), 0.95, 1)
                     text "CUSTOMISE · THE FACE ON TOP" { at: 20, hey + 11; anchor: left center; size: 6.6; weight: 700
                                                         family: "Share Tech Mono"; color: ac }
@@ -1201,7 +1381,7 @@ scene Nexus {
                     zone box nx_he_5 { from: 16 + (ecw + 4) * 4, hey + 18; size: ecw, 20; cursor: pointer; role: tab; selected: nx_hub_hero == minimal; label: "Minimal face" }
                     NChip(16 + (ecw + 4) * 4, hey + 18, ecw, "MINIMAL", if(nx_hub_hero == minimal, 1, 0), ac)
                     on press nx_he_5 { emit nx_hub_hero(5) }
-                    let ebw = (hw - 24 - 2 * 6) / 3
+                    let ebw = (hw - 32 - 2 * 6) / 3
                     zone box nx_he_size { from: 16, hey + 42; size: ebw - 4, 16; cursor: pointer; role: toggle; checked: nx_hub_wide
                                           label: "Wide or compact plate" }
                     NChip(16, hey + 42, ebw - 4, pick(nx_hub_wide, "WIDTH · COMPACT", "WIDTH · WIDE"), 0, ac)
@@ -1215,303 +1395,246 @@ scene Nexus {
                     on press nx_he_done { emit nx_hub_edit }
                 }
 
-                // ── SWITCHES: eight tiles, lit while on ──
-                // row 1: network, Bluetooth, sound, microphone · row 2: quiet, awake, record, power
+                // ── the spine: a lit bus down the plate's margin (and the rail's), each section's
+                //    caption a node on it ──
+                group {
+                    show: not hedit
+                    box { from: 7, hband + 6; size: 1.5, max(0, hh - hband - 22); color: ac; opacity: 0.22 }
+                    box { from: nx_hub_main_w + 16 + 5.5, hband + 6; size: 1.5, max(0, hh - hband - 22); color: ac; opacity: 0.16
+                          show: nx_hub_rail }
+                }
+
+                // ── SWITCHES: ten tiles, five across (two across in the rail), lit while on ──
                 group {
                     show: nx_hon_tiles
-                    move: 0, hy_tiles
-                    let htile_y = 0
-                    let htx0 = 12 + 0 * (htw + 6)
-                    let hty0 = htile_y + 0
-                    let htx1 = 12 + 1 * (htw + 6)
-                    let hty1 = htile_y + 0
-                    let htx2 = 12 + 2 * (htw + 6)
-                    let hty2 = htile_y + 0
-                    let htx3 = 12 + 3 * (htw + 6)
-                    let hty3 = htile_y + 0
-                    let htx4 = 12 + 0 * (htw + 6)
-                    let hty4 = htile_y + 56
-                    let htx5 = 12 + 1 * (htw + 6)
-                    let hty5 = htile_y + 56
-                    let htx6 = 12 + 2 * (htw + 6)
-                    let hty6 = htile_y + 56
-                    let htx7 = 12 + 3 * (htw + 6)
-                    let hty7 = htile_y + 56
-                // NETWORK — its link; a press opens the system island (Wi-Fi, Bluetooth, sound)
-                zone box nx_t_net { from: htx0, hty0; size: htw, 50; cursor: pointer; role: button
-                                    label: "Network — open the system controls" }
-                Chamfer(htx0, hty0, htw, 50, 6, mix(fl.well, ac, if(network.online, 0.16, 0) + nx_t_net.hover * 0.08),
-                        if(network.online, mix(fl.trace, ac, 0.7), fl.trace), 0.95, 1)
-                figure ic_wifi { at: htx0 + 16, hty0 + 16; size: 14, 14; color: ac; show: network.online and network.kind == wifi }
-                figure ic_eth { at: htx0 + 16, hty0 + 16; size: 14, 14; color: ac; show: network.online and network.kind != wifi }
-                figure ic_wifi_off { at: htx0 + 16, hty0 + 16; size: 14, 14; color: fl.ember; show: not network.online }
-                text "NETWORK" { at: htx0 + 10, hty0 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(network.online, "OFFLINE", "{upper(network.name)}") { at: htx0 + 10, hty0 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; width: htw - 16; lines: 1; color: if(network.online, ac, fl.ember) }
-                repeat q in 0..4 {
-                    box { from: htx0 + htw - 30 + q * 5, hty0 + 20 - q * 3; size: 3, 4 + q * 3
-                          color: ac; opacity: if(network.online and network.strength > q * 25, 0.9, 0.18); show: network.kind == wifi }
-                }
-                on press nx_t_net { emit nx_hub_act(11) }
-                // BLUETOOTH
-                zone box nx_t_bt { from: htx1, hty1; size: htw, 50; cursor: pointer; role: toggle; checked: bluetooth.powered
-                                   label: "Bluetooth"; show: bluetooth.present }
-                Chamfer(htx1, hty1, htw, 50, 6, mix(fl.well, ac, if(bluetooth.powered, 0.16, 0) + nx_t_bt.hover * 0.08),
-                        if(bluetooth.powered, mix(fl.trace, ac, 0.7), fl.trace), if(bluetooth.present, 0.95, 0.45), 1)
-                figure ic_bt { at: htx1 + 16, hty1 + 16; size: 14, 14; color: ac; show: bluetooth.powered }
-                figure ic_bt_off { at: htx1 + 16, hty1 + 16; size: 14, 14; color: fl.muted; show: not bluetooth.powered }
-                text "BLUETOOTH" { at: htx1 + 10, hty1 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(bluetooth.powered, "OFF", "ON") { at: htx1 + 10, hty1 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; color: if(bluetooth.powered, ac, fl.muted) }
-                on press nx_t_bt { emit nx_bt(if(bluetooth.powered, 0, 1)) }
-                // SOUND
-                zone box nx_t_snd { from: htx2, hty2; size: htw, 50; cursor: pointer; role: toggle; checked: not audio.muted
-                                    label: "Mute or unmute the output" }
-                Chamfer(htx2, hty2, htw, 50, 6, mix(fl.well, if(audio.muted, fl.ember, ac), 0.16 + nx_t_snd.hover * 0.08),
-                        mix(fl.trace, if(audio.muted, fl.ember, ac), 0.7), 0.95, 1)
-                figure ic_vol { at: htx2 + 16, hty2 + 16; size: 14, 14; color: ac; show: not audio.muted }
-                figure ic_vol_off { at: htx2 + 16, hty2 + 16; size: 14, 14; color: fl.ember; show: audio.muted }
-                text "SOUND" { at: htx2 + 10, hty2 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(audio.muted, "{audio.volume * 100, 0}%", "MUTED") { at: htx2 + 10, hty2 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; color: if(audio.muted, fl.ember, ac) }
-                on press nx_t_snd { emit nx_mute }
-                // MICROPHONE
-                zone box nx_t_mic { from: htx3, hty3; size: htw, 50; cursor: pointer; role: toggle; checked: not audio.input_muted
-                                    label: "Mute or unmute the microphone" }
-                Chamfer(htx3, hty3, htw, 50, 6, mix(fl.well, if(audio.input_muted, fl.ember, ac), 0.16 + nx_t_mic.hover * 0.08),
-                        mix(fl.trace, if(audio.input_muted, fl.ember, ac), 0.7), 0.95, 1)
-                figure ic_mic { at: htx3 + 16, hty3 + 16; size: 14, 14; color: ac; show: not audio.input_muted }
-                figure ic_mic_off { at: htx3 + 16, hty3 + 16; size: 14, 14; color: fl.ember; show: audio.input_muted }
-                text "MIC" { at: htx3 + 10, hty3 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(audio.input_muted, "LIVE", "MUTED") { at: htx3 + 10, hty3 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; color: if(audio.input_muted, fl.ember, ac) }
-                on press nx_t_mic { emit nx_mic }
-                // DO NOT DISTURB (the bar's: only urgent signals unfold)
-                zone box nx_t_dnd { from: htx4, hty4; size: htw, 50; cursor: pointer; role: toggle; checked: nx_dnd
-                                    label: "Do not disturb" }
-                Chamfer(htx4, hty4, htw, 50, 6, mix(fl.well, fl.flare, if(nx_dnd, 0.18, 0) + nx_t_dnd.hover * 0.08),
-                        if(nx_dnd, mix(fl.trace, fl.flare, 0.75), fl.trace), 0.95, 1)
-                figure ic_bell { at: htx4 + 16, hty4 + 16; size: 14, 14; color: if(nx_dnd, fl.flare, fl.muted) }
-                line { from: htx4 + 9, hty4 + 23; to: htx4 + 23, hty4 + 9; width: 1.4; color: fl.flare; show: nx_dnd }
-                text "QUIET" { at: htx4 + 10, hty4 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(nx_dnd, "OFF", "ON") { at: htx4 + 10, hty4 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; color: if(nx_dnd, fl.flare, fl.muted) }
-                on press nx_t_dnd { emit nx_hub_act(1) }
-                // KEEP AWAKE (the bar's caffeine: no idle lock, no sleep)
-                zone box nx_t_caf { from: htx5, hty5; size: htw, 50; cursor: pointer; role: toggle; checked: nx_caffeine
-                                    label: "Keep the machine awake" }
-                Chamfer(htx5, hty5, htw, 50, 6, mix(fl.well, fl.flare, if(nx_caffeine, 0.18, 0) + nx_t_caf.hover * 0.08),
-                        if(nx_caffeine, mix(fl.trace, fl.flare, 0.75), fl.trace), 0.95, 1)
-                figure ic_caf { at: htx5 + 16, hty5 + 16; size: 14, 14; color: if(nx_caffeine, fl.flare, fl.muted) }
-                text "AWAKE" { at: htx5 + 10, hty5 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(nx_caffeine, "IDLE", "HELD") { at: htx5 + 10, hty5 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; color: if(nx_caffeine, fl.flare, fl.muted) }
-                on press nx_t_caf { emit nx_hub_act(2) }
-                // RECORD the screen (again: stop)
-                zone box nx_t_rec { from: htx6, hty6; size: htw, 50; cursor: pointer; role: toggle; checked: nx_rec
-                                    label: "Record the screen" }
-                Chamfer(htx6, hty6, htw, 50, 6, mix(fl.well, fl.ember, if(nx_rec, 0.22, 0) + nx_t_rec.hover * 0.08),
-                        if(nx_rec, fl.ember, fl.trace), 0.95, 1)
-                figure ic_rec { at: htx6 + 16, hty6 + 16; size: 14, 14; color: if(nx_rec, fl.ember, fl.muted) }
-                text "RECORD" { at: htx6 + 10, hty6 + 33; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text pick(nx_rec, "READY", "● LIVE") { at: htx6 + 10, hty6 + 43; anchor: left center; size: 6.4
-                      family: "Share Tech Mono"; color: if(nx_rec, fl.ember, fl.muted) }
-                on press nx_t_rec { emit nx_hub_act(3) }
-                // POWER: the session menu; its right half locks at once
-                zone box nx_t_pow { from: htx7, hty7; size: htw / 2, 50; cursor: pointer; role: button; label: "Power: the session menu" }
-                zone box nx_t_lock { from: htx7 + htw / 2, hty7; size: htw / 2, 50; cursor: pointer; role: button; label: "Lock the screen" }
-                Chamfer(htx7, hty7, htw, 50, 6, mix(fl.well, fl.ember, max(nx_t_pow.hover, nx_t_lock.hover) * 0.12),
-                        mix(fl.trace, fl.ember, max(nx_t_pow.hover, nx_t_lock.hover) * 0.7), 0.95, 1)
-                box { from: htx7 + htw / 2, hty7 + 8; size: 1, 34; color: fl.trace; opacity: 0.5 }
-                figure ic_pow { at: htx7 + htw / 4, hty7 + 19; size: 14, 14; color: mix(fl.muted, fl.ember, nx_t_pow.hover) }
-                text "POWER" { at: htx7 + htw / 4, hty7 + 38; anchor: center; size: 6.4; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                text "LOCK" { at: htx7 + htw * 3 / 4, hty7 + 38; anchor: center; size: 6.4; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                box { from: htx7 + htw * 3 / 4 - 5, hty7 + 18; size: 10, 8; corner: 1.5; color: mix(fl.muted, ac, nx_t_lock.hover) }
-                arc { at: htx7 + htw * 3 / 4, hty7 + 18; radius: 3.5; width: 1.4; span: 180deg; color: mix(fl.muted, ac, nx_t_lock.hover) }
-                on press nx_t_pow { emit nx_hub_act(4) }
-                on press nx_t_lock { emit nx_hub_act(5) }
+                    move: hx_tiles, hy_tiles
+                    NHCap(nx_hw_tiles, "SWITCHES", ac, nx_hs_tiles)
+                    let tcols = if(nx_hs_tiles, 2, 5)
+                    let tgw = (nx_hw_tiles - (tcols - 1) * 8) / tcols
+                    let tgh = if(nx_hs_tiles, 56, 58)
+                    // a tile's corner, by its place in the grid (k from 0)
+                    let tx0 = 0
+                    let ty0 = 0
+                    let tx1 = if(nx_hs_tiles, tgw + 8, 1 * (tgw + 8))
+                    let ty1 = 0
+                    let tx2 = if(nx_hs_tiles, 0, 2 * (tgw + 8))
+                    let ty2 = if(nx_hs_tiles, tgh + 8, 0)
+                    let tx3 = if(nx_hs_tiles, tgw + 8, 3 * (tgw + 8))
+                    let ty3 = if(nx_hs_tiles, tgh + 8, 0)
+                    let tx4 = if(nx_hs_tiles, 0, 4 * (tgw + 8))
+                    let ty4 = if(nx_hs_tiles, 2 * (tgh + 8), 0)
+                    let tx5 = if(nx_hs_tiles, tgw + 8, 0)
+                    let ty5 = if(nx_hs_tiles, 2 * (tgh + 8), tgh + 8)
+                    let tx6 = if(nx_hs_tiles, 0, 1 * (tgw + 8))
+                    let ty6 = if(nx_hs_tiles, 3 * (tgh + 8), tgh + 8)
+                    let tx7 = if(nx_hs_tiles, tgw + 8, 2 * (tgw + 8))
+                    let ty7 = if(nx_hs_tiles, 3 * (tgh + 8), tgh + 8)
+                    let tx8 = if(nx_hs_tiles, 0, 3 * (tgw + 8))
+                    let ty8 = if(nx_hs_tiles, 4 * (tgh + 8), tgh + 8)
+                    let tx9 = if(nx_hs_tiles, tgw + 8, 4 * (tgw + 8))
+                    let ty9 = if(nx_hs_tiles, 4 * (tgh + 8), tgh + 8)
 
+                    NTile(tx0, ty0, tgw, tgh, "Network", pick(network.online, "OFFLINE", "{upper(network.name)}"), network.online, ac, nx_hub_act, 11)
+                    NTile(tx1, ty1, tgw, tgh, "Bluetooth", pick(bluetooth.powered, "OFF", "ON"), bluetooth.powered, ac, nx_bt, if(bluetooth.powered, 0, 1), bluetooth.present)
+                    NTile(tx2, ty2, tgw, tgh, "Sound", pick(audio.muted, "{audio.volume * 100, 0}%", "MUTED"), not audio.muted, if(audio.muted, fl.ember, ac), nx_mute, 0)
+                    NTile(tx3, ty3, tgw, tgh, "Mic", pick(audio.input_muted, "LIVE", "MUTED"), not audio.input_muted, if(audio.input_muted, fl.ember, ac), nx_mic, 0)
+                    NTile(tx4, ty4, tgw, tgh, "Parallax", pick(nx_desk_on, "OFF", "DESK ON"), nx_desk_on, fl.trace_lit, nx_hub_act, 12)
+                    NTile(tx5, ty5, tgw, tgh, "Quiet", pick(nx_dnd, "OFF", "ON"), nx_dnd, fl.flare, nx_hub_act, 1)
+                    NTile(tx6, ty6, tgw, tgh, "Awake", pick(nx_caffeine, "IDLE", "HELD"), nx_caffeine, fl.flare, nx_hub_act, 2)
+                    NTile(tx7, ty7, tgw, tgh, "Record", pick(nx_rec, "READY", "● LIVE"), nx_rec, fl.ember, nx_hub_act, 3)
+                    NTile(tx8, ty8, tgw, tgh, "Clipboard", "HISTORY", false, ac, nx_hub_act, 13)
+                    NTile(tx9, ty9, tgw / 2 - 2, tgh, "Power", "MENU", false, fl.ember, nx_hub_act, 4)
+                    NTile(tx9 + tgw / 2 + 2, ty9, tgw / 2 - 2, tgh, "Lock", "NOW", false, fl.ember, nx_hub_act, 5)
+                    // the glyphs, in each tile's well
+                    figure ic_wifi { at: tx0 + 21, ty0 + 21; size: 13, 13; color: ac; show: network.online and network.kind == wifi }
+                    figure ic_eth { at: tx0 + 21, ty0 + 21; size: 13, 13; color: ac; show: network.online and network.kind != wifi }
+                    figure ic_wifi_off { at: tx0 + 21, ty0 + 21; size: 13, 13; color: fl.ember; show: not network.online }
+                    repeat q in 0..4 {
+                        box { from: tx0 + tgw - 26 + q * 5, ty0 + 24 - q * 3; size: 3, 4 + q * 3
+                              color: ac; opacity: if(network.online and network.strength > q * 25, 0.9, 0.18); show: network.kind == wifi }
+                    }
+                    figure ic_bt { at: tx1 + 21, ty1 + 21; size: 13, 13; color: ac; show: bluetooth.powered }
+                    figure ic_bt_off { at: tx1 + 21, ty1 + 21; size: 13, 13; color: fl.muted; show: not bluetooth.powered }
+                    figure ic_vol { at: tx2 + 21, ty2 + 21; size: 13, 13; color: ac; show: not audio.muted }
+                    figure ic_vol_off { at: tx2 + 21, ty2 + 21; size: 13, 13; color: fl.ember; show: audio.muted }
+                    figure ic_mic { at: tx3 + 21, ty3 + 21; size: 13, 13; color: ac; show: not audio.input_muted }
+                    figure ic_mic_off { at: tx3 + 21, ty3 + 21; size: 13, 13; color: fl.ember; show: audio.input_muted }
+                    figure ic_wall { at: tx4 + 21, ty4 + 21; size: 13, 13; color: if(nx_desk_on, fl.trace_lit, fl.muted) }
+                    figure ic_bell { at: tx5 + 21, ty5 + 21; size: 13, 13; color: if(nx_dnd, fl.flare, fl.muted) }
+                    line { from: tx5 + 15, ty5 + 27; to: tx5 + 27, ty5 + 15; width: 1.4; color: fl.flare; show: nx_dnd }
+                    figure ic_caf { at: tx6 + 21, ty6 + 21; size: 13, 13; color: if(nx_caffeine, fl.flare, fl.muted) }
+                    figure ic_rec { at: tx7 + 21, ty7 + 21; size: 13, 13; color: if(nx_rec, fl.ember, fl.muted) }
+                    figure ic_clip { at: tx8 + 21, ty8 + 21; size: 13, 13; color: mix(fl.muted, ac, 0.5) }
+                    figure ic_pow { at: tx9 + 21, ty9 + 21; size: 13, 13; color: mix(fl.muted, fl.ember, 0.6) }
                 }
 
-                // ── LEVELS: a press or a drag sets them, the wheel nudges them ──
+                // ── LEVELS: along the column, or standing up in the rail ──
                 group {
                     show: nx_hon_levels
-                    move: 0, hy_levels
-                    let hlev_y = 0
-                let ltx = 40
-                let ltw = hw - 40 - 58
-                // output volume
-                figure ic_vol { at: 22, hlev_y + 10; size: 13, 13; color: mix(fl.muted, ac, 0.7) }
-                box { from: ltx, hlev_y + 9; size: ltw, 3; corner: 1.5; color: fl.well; opacity: 0.95 }
-                box { from: ltx, hlev_y + 9; size: ltw * clamp(audio.volume, 0, 1), 3; corner: 1.5
-                      color: if(audio.muted, fl.muted, ac); opacity: 0.95 }
-                box { from: ltx + ltw * clamp(audio.volume, 0, 1) - 1.5, hlev_y + 4; size: 3, 13; corner: 1
-                      color: mix(fl.engrave, ac, 0.4 + nx_hub_vol.hover * 0.6) }
-                text "{audio.volume * 100, 0}%" { at: hw - 14, hlev_y + 10; anchor: right center; size: 9
-                      weight: 700; family: "Share Tech Mono"; color: if(audio.muted, fl.muted, mix(fl.muted, ac, 0.8)) }
-                zone box nx_hub_vol { from: ltx - 6, hlev_y; size: ltw + 12, 20; cursor: pointer; role: slider
-                                      label: "Output volume"; value: audio.volume }
-                on press nx_hub_vol { emit nx_vol(clamp((local.x - ltx) / ltw, 0, 1)) }
-                on drag nx_hub_vol { emit nx_vol(clamp((local.x - ltx) / ltw, 0, 1)) }
-                on scroll nx_hub_vol { emit nx_vol(clamp(audio.volume + wheel * 0.05, 0, 1)) }
-                // microphone level
-                figure ic_mic { at: 22, hlev_y + 34; size: 13, 13; color: mix(fl.muted, ac, 0.7) }
-                box { from: ltx, hlev_y + 33; size: ltw, 3; corner: 1.5; color: fl.well; opacity: 0.95 }
-                box { from: ltx, hlev_y + 33; size: ltw * clamp(audio.input, 0, 1), 3; corner: 1.5
-                      color: if(audio.input_muted, fl.muted, fl.trace_lit); opacity: 0.95 }
-                box { from: ltx + ltw * clamp(audio.input, 0, 1) - 1.5, hlev_y + 28; size: 3, 13; corner: 1
-                      color: mix(fl.engrave, fl.trace_lit, 0.4 + nx_hub_micl.hover * 0.6) }
-                text "{audio.input * 100, 0}%" { at: hw - 14, hlev_y + 34; anchor: right center; size: 9; weight: 700
-                      family: "Share Tech Mono"; color: if(audio.input_muted, fl.muted, mix(fl.muted, fl.trace_lit, 0.8)) }
-                zone box nx_hub_micl { from: ltx - 6, hlev_y + 24; size: ltw + 12, 20; cursor: pointer; role: slider
-                                       label: "Microphone level"; value: audio.input }
-                on press nx_hub_micl { emit nx_mic_level(clamp((local.x - ltx) / ltw, 0, 1)) }
-                on drag nx_hub_micl { emit nx_mic_level(clamp((local.x - ltx) / ltw, 0, 1)) }
-                on scroll nx_hub_micl { emit nx_mic_level(clamp(audio.input + wheel * 0.05, 0, 1)) }
-                // backlight, where the machine has one
-                group {
-                    show: brightness.present
-                    figure ic_sun { at: 22, hlev_y + 58; size: 13, 13; color: mix(fl.muted, fl.flare, 0.7) }
-                    box { from: ltx, hlev_y + 57; size: ltw, 3; corner: 1.5; color: fl.well; opacity: 0.95 }
-                    box { from: ltx, hlev_y + 57; size: ltw * clamp(brightness.level, 0, 1), 3; corner: 1.5; color: fl.flare; opacity: 0.9 }
-                    box { from: ltx + ltw * clamp(brightness.level, 0, 1) - 1.5, hlev_y + 52; size: 3, 13; corner: 1
-                          color: mix(fl.engrave, fl.flare, 0.4 + nx_hub_bri.hover * 0.6) }
-                    text "{brightness.level * 100, 0}%" { at: hw - 14, hlev_y + 58; anchor: right center; size: 9; weight: 700
-                          family: "Share Tech Mono"; color: mix(fl.muted, fl.flare, 0.8) }
-                    zone box nx_hub_bri { from: ltx - 6, hlev_y + 48; size: ltw + 12, 20; cursor: pointer; role: slider
-                                          label: "Display brightness"; value: brightness.level }
-                    on press nx_hub_bri { emit nx_bri(clamp((local.x - ltx) / ltw, 0.01, 1)) }
-                    on drag nx_hub_bri { emit nx_bri(clamp((local.x - ltx) / ltw, 0.01, 1)) }
-                    on scroll nx_hub_bri { emit nx_bri(clamp(brightness.level + wheel * 0.05, 0.01, 1)) }
-                }
-
+                    move: hx_levels, hy_levels
+                    NHCap(nx_hw_levels, "LEVELS", ac, nx_hs_levels)
+                    group {
+                        show: not nx_hs_levels
+                        let lvw = nx_hw_levels - 34 - 46
+                        figure ic_vol { at: 9, 13; size: 13, 13; color: mix(fl.muted, ac, 0.7) }
+                        NHLevel(30, 0, lvw, audio.volume, audio.muted, ac, nx_vol, "Output volume")
+                        text "{audio.volume * 100, 0}%" { at: nx_hw_levels, 13; anchor: right center; size: 9.5; weight: 700
+                              family: "Share Tech Mono"; color: if(audio.muted, fl.muted, mix(fl.muted, ac, 0.8)) }
+                        figure ic_mic { at: 9, 43; size: 13, 13; color: mix(fl.muted, fl.trace_lit, 0.7) }
+                        NHLevel(30, 30, lvw, audio.input, audio.input_muted, fl.trace_lit, nx_mic_level, "Microphone level")
+                        text "{audio.input * 100, 0}%" { at: nx_hw_levels, 43; anchor: right center; size: 9.5; weight: 700
+                              family: "Share Tech Mono"; color: if(audio.input_muted, fl.muted, mix(fl.muted, fl.trace_lit, 0.8)) }
+                        group {
+                            show: brightness.present
+                            figure ic_sun { at: 9, 73; size: 13, 13; color: mix(fl.muted, fl.flare, 0.7) }
+                            NHLevel(30, 60, lvw, brightness.level, false, fl.flare, nx_bri, "Display brightness")
+                            text "{brightness.level * 100, 0}%" { at: nx_hw_levels, 73; anchor: right center; size: 9.5; weight: 700
+                                  family: "Share Tech Mono"; color: mix(fl.muted, fl.flare, 0.8) }
+                        }
+                    }
+                    group {
+                        show: nx_hs_levels
+                        let lvh = if(brightness.present, 150, 96)
+                        let lvc = if(brightness.present, 3, 2)
+                        let lvs = (nx_hw_levels - 30) / max(1, lvc - 1)
+                        figure ic_vol { at: 7, 8; size: 12, 12; color: mix(fl.muted, ac, 0.7) }
+                        NVLevel(0, 20, lvh, audio.volume, audio.muted, ac, nx_vol, "Output volume")
+                        figure ic_mic { at: 7 + lvs, 8; size: 12, 12; color: mix(fl.muted, fl.trace_lit, 0.7) }
+                        NVLevel(lvs, 20, lvh, audio.input, audio.input_muted, fl.trace_lit, nx_mic_level, "Microphone level")
+                        group {
+                            show: brightness.present
+                            figure ic_sun { at: 7 + 2 * lvs, 8; size: 12, 12; color: mix(fl.muted, fl.flare, 0.7) }
+                            NVLevel(2 * lvs, 20, lvh, brightness.level, false, fl.flare, nx_bri, "Display brightness")
+                        }
+                    }
                 }
 
                 // ── NOW PLAYING: only while a player owns the session (and not under a player face) ──
                 group {
                     show: nx_hon_media
-                    move: 0, hy_media
-                    let hmed_y = 0
-                    let hmed_h = 64
-                    Chamfer(12, hmed_y, hw - 24, hmed_h, 8, mix(fl.well, ac, if(med.playing, 0.08, 0)), mix(fl.trace, ac, if(med.playing, 0.5, 0)), 0.9, 1)
-                    Chamfer(20, hmed_y + 8, 48, 48, 6, fl.hull, mix(fl.trace, ac, 0.5), 1, 1)
-                    image nx_cover { at: 22, hmed_y + 10; size: 44, 44; show: nx_art_on and nx_has }
-                    figure ic_music { at: 44, hmed_y + 32; size: 20, 20; color: if(med.playing, ac, fl.muted); show: not (nx_art_on and nx_has) }
-                    text pick(nx_has, "NOTHING PLAYING", nx_title) { at: 80, hmed_y + 17; anchor: left center; size: 10.5; weight: 700; family: "Exo 2"
-                                    width: hw - 80 - 128; lines: 1; color: fl.engrave }
-                    text pick(nx_has, "THIS SECTION SHOWS WHILE A PLAYER RUNS", nx_artist) { at: 80, hmed_y + 32; anchor: left center; size: 7.5
-                                     family: "Share Tech Mono"; width: hw - 80 - 128; lines: 1; color: fl.muted }
-                    NViz(80, hmed_y + 38, hw - 80 - 128, 8, ac, if(nx_playing, 1, 0))
-                    box { from: 80, hmed_y + 49; size: hw - 80 - 128, 2; color: fl.trace; opacity: 0.5 }
-                    box { from: 80, hmed_y + 49; size: (hw - 80 - 128) * clamp(nx_progress, 0, 1), 2; color: ac; opacity: 0.9 }
-                    text "{nx_elapsed}  /  {nx_duration}" { at: 80, hmed_y + 57; anchor: left center; size: 6.2
+                    move: hx_media, hy_media
+                    NHCap(nx_hw_media, "NOW PLAYING", ac, nx_hs_media)
+                    let mdw = nx_hw_media
+                    let mside = nx_hs_media
+                    let mart = if(mside, mdw - 24, 58)
+                    let mtx = if(mside, 0, 74)
+                    let mty = if(mside, mart + 30, 14)
+                    Chamfer(0, 0, mdw, if(mside, 236, 78), 9, mix(fl.well, ac, if(med.playing, 0.08, 0)), mix(fl.trace, ac, if(med.playing, 0.5, 0.1)), 0.92, 1)
+                    Chamfer(if(mside, 12, 9), 9, mart, mart, 7, fl.hull, mix(fl.trace, ac, 0.5), 1, 1)
+                    image nx_cover { at: if(mside, 14, 11), 11; size: mart - 4, mart - 4; show: nx_art_on and nx_has }
+                    figure ic_music { at: if(mside, 12, 9) + mart / 2, 9 + mart / 2; size: 20, 20; color: if(med.playing, ac, fl.muted)
+                                      show: not (nx_art_on and nx_has) }
+                    text pick(nx_has, "NOTHING PLAYING", nx_title) { at: mtx + 12, mty; anchor: left center; size: 10.5; weight: 700
+                          family: "Exo 2"; width: if(mside, mdw - 24, mdw - 74 - 130); lines: 1; color: fl.engrave }
+                    text pick(nx_has, "SHOWN WHILE A PLAYER RUNS", "{upper(nx_artist)}") { at: mtx + 12, mty + 15; anchor: left center; size: 7.2
+                          family: "Share Tech Mono"; width: if(mside, mdw - 24, mdw - 74 - 130); lines: 1; color: fl.muted }
+                    box { from: mtx + 12, if(mside, mty + 30, 60); size: if(mside, mdw - 24, mdw - 74 - 130), 2; color: fl.trace; opacity: 0.5 }
+                    box { from: mtx + 12, if(mside, mty + 30, 60); size: if(mside, mdw - 24, mdw - 74 - 130) * clamp(nx_progress, 0, 1), 2
+                          color: ac; opacity: 0.9 }
+                    text "{nx_elapsed} / {nx_duration}" { at: mtx + 12, if(mside, mty + 42, 69); anchor: left center; size: 6.2
                           family: "Share Tech Mono"; color: fl.muted; show: nx_media_time_on and nx_has }
                     group {
                         show: nx_has
-                        zone box nx_hub_mprev { from: hw - 120, hmed_y + 20; size: 30, 24; cursor: pointer; role: button; label: "Previous track" }
-                        NButton(hw - 120, hmed_y + 20, 30, 24, "‹‹", 0, ac, nx_hub_mprev.hover)
+                        let mbx = if(mside, mdw / 2 - 52, mdw - 122)
+                        let mby = if(mside, mty + 52, 25)
+                        zone box nx_hub_mprev { from: mbx, mby + 2; size: 30, 24; cursor: pointer; role: button; label: "Previous track" }
+                        NButton(mbx, mby + 2, 30, 24, "‹‹", 0, ac, nx_hub_mprev.hover)
                         on press nx_hub_mprev { emit nx_media(1) }
-                        zone box nx_hub_mplay { from: hw - 86, hmed_y + 18; size: 38, 28; cursor: pointer; role: button
+                        zone box nx_hub_mplay { from: mbx + 34, mby; size: 38, 28; cursor: pointer; role: button
                                                 label: pick(med.playing, "Play", "Pause") }
                         group { show: not med.playing
-                            NButton(hw - 86, hmed_y + 18, 38, 28, "▶", 0, ac, nx_hub_mplay.hover) }
+                            NButton(mbx + 34, mby, 38, 28, "▶", 0, ac, nx_hub_mplay.hover) }
                         group { show: med.playing
-                            NButton(hw - 86, hmed_y + 18, 38, 28, "❚❚", 1, ac, nx_hub_mplay.hover) }
+                            NButton(mbx + 34, mby, 38, 28, "❚❚", 1, ac, nx_hub_mplay.hover) }
                         on press nx_hub_mplay { emit nx_media(0) }
-                        zone box nx_hub_mnext { from: hw - 44, hmed_y + 20; size: 30, 24; cursor: pointer; role: button; label: "Next track" }
-                        NButton(hw - 44, hmed_y + 20, 30, 24, "››", 0, ac, nx_hub_mnext.hover)
+                        zone box nx_hub_mnext { from: mbx + 76, mby + 2; size: 30, 24; cursor: pointer; role: button; label: "Next track" }
+                        NButton(mbx + 76, mby + 2, 30, 24, "››", 0, ac, nx_hub_mnext.hover)
                         on press nx_hub_mnext { emit nx_media(2) }
                     }
                 }
 
-                // ── MACHINE: four gauges with their last twelve readings ──
+                // ── VISUALISER: mirrored along the column, or running down the rail ──
+                group {
+                    show: nx_hon_viz
+                    move: hx_viz, hy_viz
+                    NHCap(nx_hw_viz, "VISUALISER", ac, nx_hs_viz)
+                    Chamfer(0, 0, nx_hw_viz, if(nx_hs_viz, 300, 58), 8, fl.well, mix(fl.trace, ac, if(nx_playing, 0.45, 0.12)), 0.75, 1)
+                    group { show: not nx_hs_viz
+                        NVizWide(10, 6, nx_hw_viz - 20, 46, ac, if(nx_playing, 1, 0)) }
+                    group { show: nx_hs_viz
+                        NVizTall(8, 10, nx_hw_viz - 16, 280, ac, if(nx_playing, 1, 0)) }
+                    text "NOTHING PLAYING" { at: nx_hw_viz / 2, if(nx_hs_viz, 150, 29); anchor: center; size: 7; family: "Share Tech Mono"
+                                             color: fl.muted; show: not nx_playing }
+                }
+
+                // ── MACHINE: four ring gauges across, or stacked in the rail ──
                 group {
                     show: nx_hon_gauges
-                    move: 0, hy_gauges
-                    let hgau_y = 0
-                for t in nx_tel {
-                    let gx0 = 12 + (t.id - 1) * (hgw + 6)
-                    let lit = if(t.on, 1, 0)
-                    let sw0 = hgw - 16
-                    Chamfer(gx0, hgau_y, hgw, 56, 6, fl.well, fl.trace, 0.42 + lit * 0.18, 1)
-                    box { from: gx0, hgau_y + 6; size: 2, 44; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)); opacity: 0.25 + lit * 0.65 }
-                    text t.label { at: gx0 + 9, hgau_y + 11; anchor: left center; size: 6.6; weight: 700
-                                   family: "Share Tech Mono"; color: fl.muted }
-                    text t.value { at: gx0 + hgw - 8, hgau_y + 13; anchor: right center; size: 12; weight: 700
-                                   family: "Exo 2"; color: if(t.on, mix(fl.engrave, if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)), 0.75), fl.muted) }
-                    group {
-                        show: t.on
-                        path { stroke: 1.1; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)); opacity: 0.85
-                               move gx0 + 8, hgau_y + 46 - t.s1 * 18
-                               line gx0 + 8 + sw0 * 1 / 11, hgau_y + 46 - t.s2 * 18
-                               line gx0 + 8 + sw0 * 2 / 11, hgau_y + 46 - t.s3 * 18
-                               line gx0 + 8 + sw0 * 3 / 11, hgau_y + 46 - t.s4 * 18
-                               line gx0 + 8 + sw0 * 4 / 11, hgau_y + 46 - t.s5 * 18
-                               line gx0 + 8 + sw0 * 5 / 11, hgau_y + 46 - t.s6 * 18
-                               line gx0 + 8 + sw0 * 6 / 11, hgau_y + 46 - t.s7 * 18
-                               line gx0 + 8 + sw0 * 7 / 11, hgau_y + 46 - t.s8 * 18
-                               line gx0 + 8 + sw0 * 8 / 11, hgau_y + 46 - t.s9 * 18
-                               line gx0 + 8 + sw0 * 9 / 11, hgau_y + 46 - t.s10 * 18
-                               line gx0 + 8 + sw0 * 10 / 11, hgau_y + 46 - t.s11 * 18
-                               line gx0 + 8 + sw0, hgau_y + 46 - t.s12 * 18 }
-                        ellipse { at: gx0 + 8 + sw0, hgau_y + 46 - t.s12 * 18; radius: 1.6; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)) }
+                    move: hx_gauges, hy_gauges
+                    NHCap(nx_hw_gauges, "MACHINE", ac, nx_hs_gauges)
+                    let gcw = if(nx_hs_gauges, nx_hw_gauges, (nx_hw_gauges - 3 * 8) / 4)
+                    for t in nx_tel {
+                        NGauge(t, if(nx_hs_gauges, 0, (t.id - 1) * (gcw + 8)), if(nx_hs_gauges, (t.id - 1) * 75, 0),
+                               gcw, if(nx_hs_gauges, 67, 70), ac)
                     }
-                    box { from: gx0 + 8, hgau_y + 50; size: sw0, 1.5; color: fl.trace; opacity: 0.4 }
-                    box { from: gx0 + 8, hgau_y + 50; size: sw0 * t.bar, 1.5; color: if(t.tone == 3, fl.ember, if(t.tone == 2, fl.flare, ac)); opacity: 0.9 * lit }
                 }
 
-                }
-
-                // ── WORKSPACES: one cell each, a press goes there ──
+                // ── WORKSPACES: a row of cells, or a grid of two in the rail ──
                 group {
                     show: nx_hon_spaces
-                    move: 0, hy_spaces
-                    let hsp_y = 0
-                group {
+                    move: hx_spaces, hy_spaces
+                    NHCap(nx_hw_spaces, "WORKSPACES", ac, nx_hs_spaces)
                     let ncell = max(1, nx_ws_count)
-                    let cw0 = min(38, (hw - 24 - (ncell - 1) * 4) / ncell)
-                    text "SPACES" { at: 12, hsp_y + 13; anchor: left center; size: 6.6; weight: 700; family: "Share Tech Mono"; color: fl.muted }
-                    text "NO WORKSPACES REPORTED" { at: 64, hsp_y + 13; anchor: left center; size: 8; family: "Share Tech Mono"
+                    let scw = if(nx_hs_spaces, (nx_hw_spaces - 8) / 2, min(46, (nx_hw_spaces - (ncell - 1) * 6) / ncell))
+                    text "NO WORKSPACES REPORTED" { at: 0, 13; anchor: left center; size: 8; family: "Share Tech Mono"
                                                     color: fl.muted; show: nx_ws_count < 1 }
-                    for s in nx_ws {
-                        let wx = 64 + (s.slot - 1) * (cw0 + 4)
-                        let on_ws = s.active > 0
-                        zone box nx_hub_ws { from: wx, hsp_y; size: cw0, 26; cursor: pointer; role: button
-                                             selected: on_ws; label: "Go to workspace {s.label}" }
-                        Chamfer(wx, hsp_y, cw0, 26, 4, mix(fl.well, ac, if(on_ws, 0.22, nx_hub_ws.hover * 0.12)),
+                    for c in nx_ws {
+                        let wx = if(nx_hs_spaces, mod(c.slot - 1, 2) * (scw + 8), (c.slot - 1) * (scw + 6))
+                        let wy = if(nx_hs_spaces, floor((c.slot - 1) / 2) * 40, 0)
+                        let on_ws = c.active > 0
+                        zone box nx_hub_ws { from: wx, wy; size: scw, 32; cursor: pointer; role: button
+                                             selected: on_ws; label: "Go to workspace {c.label}" }
+                        Chamfer(wx, wy, scw, 32, 6, mix(fl.well, ac, if(on_ws, 0.24, nx_hub_ws.hover * 0.12)),
                                 if(on_ws, ac, mix(fl.trace, ac, nx_hub_ws.hover * 0.6)), 0.95, 1)
-                        text s.label { at: wx + cw0 / 2, hsp_y + 12; anchor: center; size: 10; weight: 700; family: "Exo 2"
-                                       width: cw0 - 4; lines: 1; color: if(on_ws, ac, mix(fl.muted, fl.engrave, if(s.windows > 0, 0.6, 0))) }
-                        box { from: wx + cw0 / 2 - min(s.windows, 4) * 2.5, hsp_y + 21; size: min(s.windows, 4) * 5 - 2, 1.5
-                              color: if(on_ws, ac, fl.trace_lit); opacity: 0.8; show: s.windows > 0 }
-                        on press nx_hub_ws { emit nx_ws_focus(s.id) }
+                        group {
+                            show: on_ws
+                            glow: 8, 45%, ac
+                            box { from: wx + 8, wy + 29; size: scw - 16, 2; corner: 1; color: ac }
+                        }
+                        text c.label { at: wx + scw / 2, wy + 14; anchor: center; size: 11; weight: 700; family: "Exo 2"
+                                       width: scw - 4; lines: 1; color: if(on_ws, ac, mix(fl.muted, fl.engrave, if(c.windows > 0, 0.6, 0))) }
+                        repeat d in 0..4 {
+                            ellipse { at: wx + scw / 2 - 7.5 + d * 5, wy + 25; radius: 1.3; color: if(on_ws, ac, fl.trace_lit)
+                                      opacity: if(c.windows > d, 0.85, 0) }
+                        }
+                        on press nx_hub_ws { emit nx_ws_focus(c.id) }
                     }
                 }
 
-                }
-
-                // ── SHORTCUTS: places one press away ──
+                // ── SHORTCUTS: places one press away, across or stacked ──
                 group {
                     show: nx_hon_places
-                    move: 0, hy_places
-                    let hsc_y = 0
-                let hsw = (hw - 24 - 4 * 5) / 5
-                zone box nx_s_wall { from: 12, hsc_y; size: hsw, 24; cursor: pointer; role: button; label: "Open the wallpaper studio" }
-                NButton(12, hsc_y, hsw, 24, "WALLPAPER", 0, ac, nx_s_wall.hover)
-                on press nx_s_wall { emit nx_hub_act(7) }
-                zone box nx_s_notes { from: 12 + (hsw + 5), hsc_y; size: hsw, 24; cursor: pointer; role: button; label: "Open the notices" }
-                NButton(12 + (hsw + 5), hsc_y, hsw, 24, "NOTICES", 0, ac, nx_s_notes.hover)
-                on press nx_s_notes { emit nx_hub_act(8) }
-                zone box nx_s_board { from: 12 + (hsw + 5) * 2, hsc_y; size: hsw, 24; cursor: pointer; role: button; label: "Open the board" }
-                NButton(12 + (hsw + 5) * 2, hsc_y, hsw, 24, "BOARD", 0, ac, nx_s_board.hover)
-                on press nx_s_board { emit nx_hub_act(9) }
-                zone box nx_s_over { from: 12 + (hsw + 5) * 3, hsc_y; size: hsw, 24; cursor: pointer; role: button; label: "Open the overview" }
-                NButton(12 + (hsw + 5) * 3, hsc_y, hsw, 24, "OVERVIEW", 0, ac, nx_s_over.hover)
-                on press nx_s_over { emit nx_hub_act(10) }
-                zone box nx_hub_diag { from: 12 + (hsw + 5) * 4, hsc_y; size: hsw, 24; cursor: pointer; role: button
-                                       label: "Copy system diagnostics" }
-                NButton(12 + (hsw + 5) * 4, hsc_y, hsw, 24, "COPY DIAG", 0, ac, nx_hub_diag.hover)
-                on press nx_hub_diag { emit nx_diagnostics_copy }
+                    move: hx_places, hy_places
+                    NHCap(nx_hw_places, "SHORTCUTS", ac, nx_hs_places)
+                    let pcw = if(nx_hs_places, nx_hw_places, (nx_hw_places - 4 * 6) / 5)
+                    let pch = if(nx_hs_places, 34, 30)
+                    let pdx = if(nx_hs_places, 0, pcw + 6)
+                    let pdy = if(nx_hs_places, pch + 6, 0)
+                    zone box nx_s_wall { from: 0, 0; size: pcw, pch; cursor: pointer; role: button; label: "Open the wallpaper studio" }
+                    NButton(0, 0, pcw, pch, "WALLPAPER", 0, ac, nx_s_wall.hover)
+                    on press nx_s_wall { emit nx_hub_act(7) }
+                    zone box nx_s_notes { from: pdx, pdy; size: pcw, pch; cursor: pointer; role: button; label: "Open the notes" }
+                    NButton(pdx, pdy, pcw, pch, "NOTES", 0, ac, nx_s_notes.hover)
+                    on press nx_s_notes { emit nx_hub_act(8) }
+                    zone box nx_s_board { from: pdx * 2, pdy * 2; size: pcw, pch; cursor: pointer; role: button; label: "Open the board" }
+                    NButton(pdx * 2, pdy * 2, pcw, pch, "BOARD", 0, ac, nx_s_board.hover)
+                    on press nx_s_board { emit nx_hub_act(9) }
+                    zone box nx_s_over { from: pdx * 3, pdy * 3; size: pcw, pch; cursor: pointer; role: button; label: "Open the overview" }
+                    NButton(pdx * 3, pdy * 3, pcw, pch, "OVERVIEW", 0, ac, nx_s_over.hover)
+                    on press nx_s_over { emit nx_hub_act(10) }
+                    zone box nx_hub_diag { from: pdx * 4, pdy * 4; size: pcw, pch; cursor: pointer; role: button; label: "Copy system diagnostics" }
+                    NButton(pdx * 4, pdy * 4, pcw, pch, "COPY DIAG", 0, ac, nx_hub_diag.hover)
+                    on press nx_hub_diag { emit nx_diagnostics_copy }
                 }
 
                 // ── customising: each section dimmed under its own controls, and the hidden
@@ -1519,39 +1642,45 @@ scene Nexus {
                 group {
                     show: hedit
                     for r in nx_hsec {
+                        let sx0 = r.x
                         let sy = r.y
+                        let srw = r.w
                         group {
                             show: r.shown
                             // the section's presses are held while it is being arranged
-                            zone box nx_hs_guard { from: 8, sy - 3; size: hw - 16, r.h + 6; agent: hidden }
-                            box { from: 8, sy - 3; size: hw - 16, r.h + 6; corner: 5; color: fl.hull; opacity: if(r.stub, 0.0, 0.66) }
-                            box { from: 8, sy - 3; size: hw - 16, r.h + 6; corner: 5; stroke: 1
+                            let stop = if(r.stub, 0, 18)
+                            zone box nx_hs_guard { from: sx0 - 6, sy - stop; size: srw + 12, r.h + stop + 4; agent: hidden }
+                            box { from: sx0 - 6, sy - stop; size: srw + 12, r.h + stop + 4; corner: 6; color: fl.hull; opacity: if(r.stub, 0.0, 0.66) }
+                            box { from: sx0 - 6, sy - stop; size: srw + 12, r.h + stop + 4; corner: 6; stroke: 1
                                   color: if(r.stub, fl.trace, mix(fl.trace, ac, 0.7)); opacity: 0.8 }
-                            group {
-                                show: r.stub
-                                text pick(r.hidden, "{r.name}  ·  NOT DRAWN UNDER A PLAYER FACE", "{r.name}  ·  HIDDEN") { at: 18, sy + 12; anchor: left center
-                                      size: 7; weight: 700; family: "Share Tech Mono"; color: fl.muted }
-                            }
+                            text pick(r.hidden, "{r.name}  ·  NOT DRAWN UNDER A PLAYER FACE", "{r.name}  ·  HIDDEN") { at: sx0 + 4, sy + 12; anchor: left center
+                                  size: 7; weight: 700; family: "Share Tech Mono"; color: fl.muted; show: r.stub }
                             group {
                                 show: not r.stub
-                                Chamfer(12, sy - 1, 96, 18, 4, fl.hull_raised, mix(fl.trace, ac, 0.7), 1, 1)
-                                text r.name { at: 20, sy + 8; anchor: left center; size: 6.6; weight: 700; family: "Share Tech Mono"; color: ac }
+                                Chamfer(sx0 - 2, sy - 16, 96, 16, 4, fl.hull_raised, mix(fl.trace, ac, 0.7), 1, 1)
+                                text r.name { at: sx0 + 6, sy - 8; anchor: left center; size: 6.6; weight: 700; family: "Share Tech Mono"; color: ac }
                             }
-                            // ▲ ▼ ◉ at the section's top right
-                            zone box nx_hs_up { from: hw - 92, sy + 1; size: 24, 20; cursor: pointer; role: button
+                            // ▲ ▼ ⇄ ◉ at the section's top right
+                            let cbx = sx0 + srw - 114
+                            let cby = if(r.stub, sy + 3, sy - 16)
+                            zone box nx_hs_up { from: cbx, cby; size: 26, 18; cursor: pointer; role: button
                                                 label: "Move {r.name} up"; active: not r.first }
-                            NButton(hw - 92, sy + 1, 24, 20, "▲", 0, ac, nx_hs_up.hover * if(r.first, 0, 1))
+                            NButton(cbx, cby, 26, 18, "▲", 0, ac, nx_hs_up.hover * if(r.first, 0, 1))
                             on press nx_hs_up { emit nx_hub_move(r.id * 10 + 1) }
-                            zone box nx_hs_dn { from: hw - 64, sy + 1; size: 24, 20; cursor: pointer; role: button
+                            zone box nx_hs_dn { from: cbx + 29, cby; size: 26, 18; cursor: pointer; role: button
                                                 label: "Move {r.name} down"; active: not r.last }
-                            NButton(hw - 64, sy + 1, 24, 20, "▼", 0, ac, nx_hs_dn.hover * if(r.last, 0, 1))
+                            NButton(cbx + 29, cby, 26, 18, "▼", 0, ac, nx_hs_dn.hover * if(r.last, 0, 1))
                             on press nx_hs_dn { emit nx_hub_move(r.id * 10 + 2) }
-                            zone box nx_hs_eye { from: hw - 36, sy + 1; size: 24, 20; cursor: pointer; role: toggle; checked: not r.hidden
+                            zone box nx_hs_lane { from: cbx + 58, cby; size: 26, 18; cursor: pointer; role: toggle; checked: r.side
+                                                  label: pick(r.side, "Run {r.name} lengthways in the rail", "Bring {r.name} back to the column") }
+                            NButton(cbx + 58, cby, 26, 18, "⇄", if(r.side, 1, 0), fl.trace_lit, nx_hs_lane.hover)
+                            on press nx_hs_lane { emit nx_hub_side(r.id) }
+                            zone box nx_hs_eye { from: cbx + 87, cby; size: 26, 18; cursor: pointer; role: toggle; checked: not r.hidden
                                                  label: pick(r.hidden, "Hide {r.name}", "Show {r.name}") }
                             group { show: not r.hidden
-                                NButton(hw - 36, sy + 1, 24, 20, "◉", 1, ac, nx_hs_eye.hover) }
+                                NButton(cbx + 87, cby, 26, 18, "◉", 1, ac, nx_hs_eye.hover) }
                             group { show: r.hidden
-                                NButton(hw - 36, sy + 1, 24, 20, "○", 0, fl.muted, nx_hs_eye.hover) }
+                                NButton(cbx + 87, cby, 26, 18, "○", 0, fl.muted, nx_hs_eye.hover) }
                             on press nx_hs_eye { emit nx_hub_toggle(r.id) }
                         }
                     }

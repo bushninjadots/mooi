@@ -389,7 +389,7 @@ not() { ! "$@"; }
 # mooi's, so they read and write mooi's settings.json, palette.json, wallpapers.json and
 # board.json. Made here, idempotently; a real folder in the way is moved aside.
 settings_link() {
-    for scene in mooi-settings mooi-wallpaper mooi-board mooi-nexus; do
+    for scene in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk; do
         link="$(dirname "$folder")/$scene"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -402,6 +402,7 @@ snapshot() {
     "$pleamar" --check "$root/shell/mooi-wallpaper.plm" >/dev/null || { echo "mooi: the wallpaper studio does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-board.plm" >/dev/null || { echo "mooi: the board does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/mooi-desk.plm" >/dev/null || { echo "mooi: the desk does not compile; the running one is kept" >&2; return 1; }
     settings_link
     rm -rf "$live.new" && cp -r "$root/shell" "$live.new" || return 1
     pace "$live.new"
@@ -739,6 +740,7 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-wallpaper.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-board.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
         # file is written in the subset Lua 5.4 and Luau share, so Lua 5.4 can parse them all.

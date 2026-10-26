@@ -42,6 +42,7 @@ SETTERS = [
     "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
+    "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -93,6 +94,7 @@ SECTIONS = [
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("note", "sv_theme_preset > 5.5", "CUSTOM — CHANGED ON THE COLOUR PAGE"),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
+        ("toggle", "Parallax desk", "The wallpaper travels with your workspaces, and Lumen's cutout sits over the widgets", "desk.on", "sv_desk_on"),
         ("card", "Bar"),
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
         ("choice", "Style", "Instrument, glass, floating, minimal or machined steel", "bar.style", "sv_bar_style", STYLES),
@@ -278,6 +280,13 @@ SECTIONS = [
         ("toggle", "Key it out", "The colour read from the picture's corners becomes the backdrop's, so its background is replaced, not framed", "wallpaper.key", "sv_wallpaper_key"),
         ("slider", "Fuzz", "How much of the picture counts as that background", "wallpaper.fuzz", 0, 45, "{sv_wallpaper_fuzz, 0}%", "sv_wallpaper_key == 1"),
         ("note", "not sv_wallpaper_key", "KEYING NEEDS THE PICTURE'S EDGES READ; LUMEN READS THEM WHEN IT OPENS A PICTURE"),
+        ("card", "The desk · parallax and cutout"),
+        ("toggle", "Parallax desk", "mooi draws the wallpaper so it can travel, and lays Lumen's cutout over your widgets (also a tile in Control Nexus)", "desk.on", "sv_desk_on"),
+        ("choice", "Moves with", "The workspaces as you switch, the pointer, both, or nothing (the cutout still sits over the widgets)", "desk.parallax", "sv_desk_parallax",
+         ["Still", "Workspaces", "Pointer", "Both"], "sv_desk_on == 1"),
+        ("slider", "Strength", "How far the picture travels", "desk.strength", 0, 100, "{sv_desk_strength, 0}%", "sv_desk_on == 1"),
+        ("toggle", "Depth", "The cut-out subject travels further than the picture behind it", "desk.depth", "sv_desk_depth", [], "sv_desk_on == 1"),
+        ("toggle", "Over the widgets", "Lay the cutout made in Lumen (DESK tab) over the desktop widgets", "desk.cutout", "sv_desk_cutout", [], "sv_desk_on == 1"),
     ]),
     ("Sound", "Sound", "Where sound plays and where it listens, and each app's own volume", "SYSTEM", [
         ("card", "Output"),

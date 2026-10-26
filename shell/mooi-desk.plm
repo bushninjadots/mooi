@@ -1,0 +1,98 @@
+language 0.4
+
+// mooi's desk (D85): the wallpaper drawn by mooi so it can move, and the picture's subject laid
+// over the desktop widgets. Two surfaces and no zones, so every click goes through to the desk:
+//   · `back` on the background layer, over the picker's own wallpaper: the picture drawn a little
+//     larger than the screen, travelling as the workspaces change and/or as the pointer moves;
+//   · `fore` on the bottom layer, over the widgets and under every window: the cutout Lumen made
+//     when the picture was applied, travelling with the picture — further, when it has depth.
+// shell/mooi-desk.luau decides what is drawn (lib/desk), the scene only moves it.
+
+scene Desk {
+    permissions {
+        run: "readlink", "pleamar"
+        services: "workspaces", "files", "env"
+    }
+
+    // The two slots the picture changes through, the cutout, and what each holds.
+    text wall_a = ""
+    text wall_b = ""
+    text cut_path = ""
+    image wa = from wall_a, 2112, 1188
+    image wb = from wall_b, 2112, 1188
+    image cut = from cut_path, 2112, 1188
+    fact slot = 0
+    fact has_a = false
+    fact has_b = false
+    fact has_cut = false
+    // What moves it: 0 nothing · 1 the workspaces · 2 the pointer · 3 both; how far (the share of
+    // the screen the picture is drawn larger by); how much further the subject travels.
+    fact mode = 1
+    fact over = 0.045
+    fact depth = 0.55
+    fact moving = true
+    fact ws_frac = 0
+    // false while the wallpaper is a video or an animation: the picker plays it, the desk steps aside
+    fact drawable = true
+
+    // A slow, heavy glide between workspaces; a lighter drift after the pointer.
+    spring dk.glide = 90, 19
+    spring dk.drift = 140, 24
+    spring dk.fade = 300, 40
+    prop wsx = 0 ~dk.glide
+    follow wsx = ws_frac
+    prop cxp = 0 ~dk.drift
+    follow cxp = if(mode >= 2 and moving, clamp(cursor.x / max(1, screen.width), 0, 1) - 0.5, 0)
+    prop cyp = 0 ~dk.drift
+    follow cyp = if(mode >= 2 and moving, clamp(cursor.y / max(1, screen.height), 0, 1) - 0.5, 0)
+    prop fa = 1 ~dk.fade
+    follow fa = if(slot == 0, 1, 0)
+
+    surface back {
+        size: full, full
+        anchor: top
+        reserve: -1
+        level: background
+        keyboard: none
+
+        let sw = screen.width
+        let sh = screen.height
+        // where along its travel the picture is, 0 … 1 each way
+        let px = clamp(if(mode == 1, wsx, if(mode == 2, 0.5 + cxp, if(mode == 3, wsx + cxp * 0.4, 0.5))), 0, 1)
+        let py = clamp(0.5 + if(mode >= 2, cyp * 0.8, 0), 0, 1)
+        let ww = sw * (1 + over)
+        let wh = sh * (1 + over)
+        group {
+            show: mode > 0 and drawable and (has_a or has_b)
+            box { from: 0, 0; size: sw, sh; color: #000000 }
+            image wa { at: -over * sw * px, -over * sh * py; size: ww, wh; opacity: fa; show: has_a }
+            image wb { at: -over * sw * px, -over * sh * py; size: ww, wh; opacity: 1 - fa; show: has_b }
+        }
+    }
+
+    surface fore {
+        size: full, full
+        anchor: top
+        reserve: -1
+        level: bottom
+        keyboard: none
+
+        let fw = screen.width
+        let fh = screen.height
+        let qx = clamp(if(mode == 1, wsx, if(mode == 2, 0.5 + cxp, if(mode == 3, wsx + cxp * 0.4, 0.5))), 0, 1)
+        let qy = clamp(0.5 + if(mode >= 2, cyp * 0.8, 0), 0, 1)
+        // the subject travels round the middle of the picture's travel, further by `depth`
+        let tx = 0.5 + (qx - 0.5) * (1 + depth)
+        let ty = 0.5 + (qy - 0.5) * (1 + depth)
+        group {
+            show: has_cut and mode > 0 and drawable
+            image cut { at: -over * fw * tx, -over * fh * ty; size: fw * (1 + over), fh * (1 + over) }
+        }
+        // with no parallax the picker draws the picture, at the screen's own size, and the
+        // subject is laid exactly over it
+        group {
+            show: has_cut and (mode == 0 or not drawable)
+            image cut { at: 0, 0; size: fw, fh }
+        }
+    }
+}

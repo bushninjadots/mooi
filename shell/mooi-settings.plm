@@ -616,6 +616,16 @@ scene Mooi {
     fact df_wallpaper_key = 0
     fact sv_wallpaper_fuzz = 0
     fact df_wallpaper_fuzz = 0
+    fact sv_desk_on = 0
+    fact df_desk_on = 0
+    fact sv_desk_parallax = 0
+    fact df_desk_parallax = 0
+    fact sv_desk_strength = 0
+    fact df_desk_strength = 0
+    fact sv_desk_depth = 0
+    fact df_desk_depth = 0
+    fact sv_desk_cutout = 0
+    fact df_desk_cutout = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
@@ -824,28 +834,30 @@ scene Mooi {
     follow gy_0_2 = 112 + 44 + 60
     prop gy_0_3 = 244 ~m.reflow
     follow gy_0_3 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0)
-    prop gc_0_0 = 200 ~m.reflow
-    follow gc_0_0 = 52 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60
-    prop gy_0_c1 = 326 ~m.reflow
-    follow gy_0_c1 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22
-    prop gy_0_5 = 370 ~m.reflow
-    follow gy_0_5 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44
+    prop gy_0_4 = 304 ~m.reflow
+    follow gy_0_4 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60
+    prop gc_0_0 = 260 ~m.reflow
+    follow gc_0_0 = 52 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60
+    prop gy_0_c1 = 386 ~m.reflow
+    follow gy_0_c1 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22
     prop gy_0_6 = 430 ~m.reflow
-    follow gy_0_6 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60
+    follow gy_0_6 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44
     prop gy_0_7 = 490 ~m.reflow
-    follow gy_0_7 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60
-    prop gy_0_8 = 518 ~m.reflow
-    follow gy_0_8 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0)
+    follow gy_0_7 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60
+    prop gy_0_8 = 550 ~m.reflow
+    follow gy_0_8 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60
     prop gy_0_9 = 578 ~m.reflow
-    follow gy_0_9 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60
+    follow gy_0_9 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0)
+    prop gy_0_10 = 638 ~m.reflow
+    follow gy_0_10 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60
     prop gc_0_1 = 320 ~m.reflow
     follow gc_0_1 = 52 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60
-    prop gy_0_c2 = 660 ~m.reflow
-    follow gy_0_c2 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22
-    prop gy_0_11 = 704 ~m.reflow
-    follow gy_0_11 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44
+    prop gy_0_c2 = 720 ~m.reflow
+    follow gy_0_c2 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22
     prop gy_0_12 = 764 ~m.reflow
-    follow gy_0_12 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60
+    follow gy_0_12 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44
+    prop gy_0_13 = 824 ~m.reflow
+    follow gy_0_13 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60
     prop gc_0_2 = 172 ~m.reflow
     follow gc_0_2 = 52 + 60 + 60
     prop gy_1_c0 = 112 ~m.reflow
@@ -1184,6 +1196,20 @@ scene Mooi {
     follow gy_13_6 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0)
     prop gc_13_1 = 200 ~m.reflow
     follow gc_13_1 = 52 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0)
+    prop gy_13_c2 = 512 ~m.reflow
+    follow gy_13_c2 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22
+    prop gy_13_8 = 556 ~m.reflow
+    follow gy_13_8 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44
+    prop gy_13_9 = 616 ~m.reflow
+    follow gy_13_9 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60
+    prop gy_13_10 = 676 ~m.reflow
+    follow gy_13_10 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0)
+    prop gy_13_11 = 736 ~m.reflow
+    follow gy_13_11 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0)
+    prop gy_13_12 = 796 ~m.reflow
+    follow gy_13_12 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0)
+    prop gc_13_2 = 352 ~m.reflow
+    follow gc_13_2 = 52 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0)
     prop gy_14_c0 = 112 ~m.reflow
     follow gy_14_c0 = 112
     prop gy_14_1 = 156 ~m.reflow
@@ -1366,7 +1392,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 600 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22 + 44 + 244 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 600 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 22 + 44 + 244 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -1411,75 +1437,82 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_0_c1 - 326
-                    SCard(326, gc_0_1, "Bar")
+                    move: 0, gy_0_4 - 304
+                    SRow(304, "Parallax desk", "The wallpaper travels with your workspaces, and Lumen's cutout sits over the widgets", true, "", 768, true)
+                    SToggle(1092, 322, sv_desk_on, set_value, 320, "desk.on")
+                    SRevert(1062, 334, sv_desk_on != df_desk_on, set_value, 320000 + df_desk_on)
                 }
                 group {
                     show: true
-                    move: 0, gy_0_5 - 370
-                    SRow(370, "Layout", "Islands, one bar, or pieces hanging from the top", true, "", 418, false)
-                    STrack(742, 386, 396)
-                    SChoice(742, 386, 132, "Islands", sv_bar_mode == 0, set_value, 1000)
-                    SChoice(874, 386, 132, "Full bar", sv_bar_mode == 1, set_value, 1001)
-                    SChoice(1006, 386, 132, "Notch", sv_bar_mode == 2, set_value, 1002)
-                    SRevert(712, 400, sv_bar_mode != df_bar_mode, set_value, 1000 + df_bar_mode)
+                    move: 0, gy_0_c1 - 386
+                    SCard(386, gc_0_1, "Bar")
                 }
                 group {
                     show: true
                     move: 0, gy_0_6 - 430
-                    SRow(430, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, true)
-                    STrack(668, 446, 470)
-                    SChoice(668, 446, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
-                    SChoice(762, 446, 94, "Glass", sv_bar_style == 1, set_value, 65001)
-                    SChoice(856, 446, 94, "Floating", sv_bar_style == 2, set_value, 65002)
-                    SChoice(950, 446, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
-                    SChoice(1044, 446, 94, "Steel", sv_bar_style == 4, set_value, 65004)
-                    SRevert(638, 460, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
-                }
-                group {
-                    show: sv_bar_style > 4.5
-                    move: 0, gy_0_7 - 490
-                    text "CUSTOM — CHANGED ON THE BAR PAGE" { at: 274, 504; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    SRow(430, "Layout", "Islands, one bar, or pieces hanging from the top", true, "", 418, false)
+                    STrack(742, 446, 396)
+                    SChoice(742, 446, 132, "Islands", sv_bar_mode == 0, set_value, 1000)
+                    SChoice(874, 446, 132, "Full bar", sv_bar_mode == 1, set_value, 1001)
+                    SChoice(1006, 446, 132, "Notch", sv_bar_mode == 2, set_value, 1002)
+                    SRevert(712, 460, sv_bar_mode != df_bar_mode, set_value, 1000 + df_bar_mode)
                 }
                 group {
                     show: true
-                    move: 0, gy_0_8 - 518
-                    SRow(518, "Thickness", "How tall the bar is", true, "", 404, true)
-                    SSlider(728, 534, 330, sv_bar_height, 20, set_value, 76, "Thickness", "{sv_bar_height + 24, 0} px", true)
-                    SRevert(698, 548, sv_bar_height != df_bar_height, set_value, 76000 + df_bar_height)
+                    move: 0, gy_0_7 - 490
+                    SRow(490, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, true)
+                    STrack(668, 506, 470)
+                    SChoice(668, 506, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
+                    SChoice(762, 506, 94, "Glass", sv_bar_style == 1, set_value, 65001)
+                    SChoice(856, 506, 94, "Floating", sv_bar_style == 2, set_value, 65002)
+                    SChoice(950, 506, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
+                    SChoice(1044, 506, 94, "Steel", sv_bar_style == 4, set_value, 65004)
+                    SRevert(638, 520, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
+                }
+                group {
+                    show: sv_bar_style > 4.5
+                    move: 0, gy_0_8 - 550
+                    text "CUSTOM — CHANGED ON THE BAR PAGE" { at: 274, 564; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: true
                     move: 0, gy_0_9 - 578
-                    SRow(578, "Arrange the bar", "Put any module anywhere, in any order", true, "", 400, true)
-                    SButton(958, 593, 180, "Open Layout", set_pick, 4)
+                    SRow(578, "Thickness", "How tall the bar is", true, "", 404, true)
+                    SSlider(728, 594, 330, sv_bar_height, 20, set_value, 76, "Thickness", "{sv_bar_height + 24, 0} px", true)
+                    SRevert(698, 608, sv_bar_height != df_bar_height, set_value, 76000 + df_bar_height)
                 }
                 group {
                     show: true
-                    move: 0, gy_0_c2 - 660
-                    SCard(660, gc_0_2, "Workspaces")
+                    move: 0, gy_0_10 - 638
+                    SRow(638, "Arrange the bar", "Put any module anywhere, in any order", true, "", 400, true)
+                    SButton(958, 653, 180, "Open Layout", set_pick, 4)
                 }
                 group {
                     show: true
-                    move: 0, gy_0_11 - 704
-                    SRow(704, "Switcher", "Everyday", true, "", 374, false)
-                    STrack(698, 720, 440)
-                    SChoice(698, 720, 110, "Pills", ws_style == 3, set_value, 7003)
-                    SChoice(808, 720, 110, "Segments", ws_style == 4, set_value, 7004)
-                    SChoice(918, 720, 110, "Dots", ws_style == 5, set_value, 7005)
-                    SChoice(1028, 720, 110, "Numbers", ws_style == 6, set_value, 7006)
-                    SRevert(668, 734, sv_bar_workspaces != df_bar_workspaces, set_value, 7000 + df_bar_workspaces)
+                    move: 0, gy_0_c2 - 720
+                    SCard(720, gc_0_2, "Workspaces")
                 }
                 group {
                     show: true
                     move: 0, gy_0_12 - 764
-                    SRow(764, "", "…or an instrument", true, "", 344, true)
-                    STrack(668, 780, 470)
-                    SChoice(668, 780, 94, "DNA", ws_style == 0, set_value, 7000)
-                    SChoice(762, 780, 94, "Prisms", ws_style == 1, set_value, 7001)
-                    SChoice(856, 780, 94, "Grid", ws_style == 2, set_value, 7002)
-                    SChoice(950, 780, 94, "Compass", ws_style == 7, set_value, 7007)
-                    SChoice(1044, 780, 94, "Radar", ws_style == 8, set_value, 7008)
+                    SRow(764, "Switcher", "Everyday", true, "", 374, false)
+                    STrack(698, 780, 440)
+                    SChoice(698, 780, 110, "Pills", ws_style == 3, set_value, 7003)
+                    SChoice(808, 780, 110, "Segments", ws_style == 4, set_value, 7004)
+                    SChoice(918, 780, 110, "Dots", ws_style == 5, set_value, 7005)
+                    SChoice(1028, 780, 110, "Numbers", ws_style == 6, set_value, 7006)
+                    SRevert(668, 794, sv_bar_workspaces != df_bar_workspaces, set_value, 7000 + df_bar_workspaces)
+                }
+                group {
+                    show: true
+                    move: 0, gy_0_13 - 824
+                    SRow(824, "", "…or an instrument", true, "", 344, true)
+                    STrack(668, 840, 470)
+                    SChoice(668, 840, 94, "DNA", ws_style == 0, set_value, 7000)
+                    SChoice(762, 840, 94, "Prisms", ws_style == 1, set_value, 7001)
+                    SChoice(856, 840, 94, "Grid", ws_style == 2, set_value, 7002)
+                    SChoice(950, 840, 94, "Compass", ws_style == 7, set_value, 7007)
+                    SChoice(1044, 840, 94, "Radar", ws_style == 8, set_value, 7008)
                 }
             }
             group {
@@ -2620,6 +2653,50 @@ scene Mooi {
                     show: not sv_wallpaper_key
                     move: 0, gy_13_6 - 462
                     text "KEYING NEEDS THE PICTURE'S EDGES READ; LUMEN READS THEM WHEN IT OPENS A PICTURE" { at: 274, 476; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                }
+                group {
+                    show: true
+                    move: 0, gy_13_c2 - 512
+                    SCard(512, gc_13_2, "The desk · parallax and cutout")
+                }
+                group {
+                    show: true
+                    move: 0, gy_13_8 - 556
+                    SRow(556, "Parallax desk", "mooi draws the wallpaper so it can travel, and lays Lumen's cutout over your widgets (also a tile in Control Nexus)", true, "", 768, false)
+                    SToggle(1092, 574, sv_desk_on, set_value, 320, "desk.on")
+                    SRevert(1062, 586, sv_desk_on != df_desk_on, set_value, 320000 + df_desk_on)
+                }
+                group {
+                    show: sv_desk_on == 1
+                    move: 0, gy_13_9 - 616
+                    SRow(616, "Moves with", "The workspaces as you switch, the pointer, both, or nothing (the cutout still sits over the widgets)", true, "", 374, true)
+                    STrack(698, 632, 440)
+                    SChoice(698, 632, 110, "Still", sv_desk_parallax == 0, set_value, 321000)
+                    SChoice(808, 632, 110, "Workspaces", sv_desk_parallax == 1, set_value, 321001)
+                    SChoice(918, 632, 110, "Pointer", sv_desk_parallax == 2, set_value, 321002)
+                    SChoice(1028, 632, 110, "Both", sv_desk_parallax == 3, set_value, 321003)
+                    SRevert(668, 646, sv_desk_parallax != df_desk_parallax, set_value, 321000 + df_desk_parallax)
+                }
+                group {
+                    show: sv_desk_on == 1
+                    move: 0, gy_13_10 - 676
+                    SRow(676, "Strength", "How far the picture travels", true, "", 404, true)
+                    SSlider(728, 692, 330, sv_desk_strength, 100, set_value, 322, "Strength", "{sv_desk_strength, 0}%", true)
+                    SRevert(698, 706, sv_desk_strength != df_desk_strength, set_value, 322000 + df_desk_strength)
+                }
+                group {
+                    show: sv_desk_on == 1
+                    move: 0, gy_13_11 - 736
+                    SRow(736, "Depth", "The cut-out subject travels further than the picture behind it", true, "", 768, true)
+                    SToggle(1092, 754, sv_desk_depth, set_value, 323, "desk.depth")
+                    SRevert(1062, 766, sv_desk_depth != df_desk_depth, set_value, 323000 + df_desk_depth)
+                }
+                group {
+                    show: sv_desk_on == 1
+                    move: 0, gy_13_12 - 796
+                    SRow(796, "Over the widgets", "Lay the cutout made in Lumen (DESK tab) over the desktop widgets", true, "", 768, true)
+                    SToggle(1092, 814, sv_desk_cutout, set_value, 324, "desk.cutout")
+                    SRevert(1062, 826, sv_desk_cutout != df_desk_cutout, set_value, 324000 + df_desk_cutout)
                 }
             }
             group {

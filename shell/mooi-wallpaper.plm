@@ -16,7 +16,7 @@ import "ui/lumen.plm"
 
 scene Lumen {
     permissions {
-        run: "magick", "matugen", "qs", "awww", "pleamar", "hyprctl", "find", "readlink", "mkdir", "rm"
+        run: "magick", "matugen", "qs", "awww", "rembg", "pleamar", "hyprctl", "find", "readlink", "mkdir", "rm"
         services: "files", "files.write", "env"
     }
 
@@ -312,6 +312,29 @@ scene Lumen {
     fact typing = false
     // H: the studio's chrome out of the way, the picture on its own.
     fact chrome_off = false
+    // The DESK tab (D85): the cutout (the recipe's) and the desk's own settings (the shell's).
+    fact cut_mode = 0
+    fact cut_show = false
+    fact has_ai = false
+    fact has_cut_prev = false
+    text cut_prev = ""
+    text cut_name = "OFF"
+    image cutpic = from cut_prev, 1600, 900
+    fact reg_x0 = 25
+    fact reg_y0 = 20
+    fact reg_x1 = 75
+    fact reg_y1 = 100
+    // the region being drawn, in screen pixels, while the hand is down
+    fact rg_x0 = 0
+    fact rg_y0 = 0
+    fact rg_x1 = 0
+    fact rg_y1 = 0
+    fact desk_on = false
+    fact desk_par = 1
+    fact desk_depth = true
+    fact desk_cut = true
+    fact desk_str = 45
+    text desk_str_l = "45%"
 
     text src_name = ""
     text src_meta = ""
@@ -394,6 +417,13 @@ scene Lumen {
     event frame_reset ->      // to the logic: no zoom, centred, unturned, unmirrored
     event save_copy ->        // to the logic: keep the edit in ~/Pictures/Lumen
     event sel_step ->         // to the logic: the next or previous tile on the source wall
+    event set_cut ->          // to the logic: the cutout's way (0 off … 4 the model)
+    event cut_show_toggle ->  // to the logic: show the cutout over the dimmed preview
+    event desk_toggle ->      // to the logic: the desk on or off (settings.json)
+    event desk_parallax ->    // to the logic: 0 still · 1 workspaces · 2 pointer · 3 both
+    event desk_depth_toggle ->  // to the logic: the subject travels further than the picture
+    event desk_cut_toggle ->  // to the logic: the cutout over the widgets, or not
+    event set_desk ->         // to the logic: the parallax strength (slider code * 1000 + value)
     event pick_bg ->          // to the logic: backdrop 0 black, 1 the picture, 2–4 a colour, 5 typed
     event pick_swatch ->      // to the logic: a colour from the palette, by its place in it
     event use_bg_custom ->    // to the logic: take the colour in the field as the backdrop
@@ -418,6 +448,26 @@ scene Lumen {
             image prev { at: pan_dx, pan_dy; size: screen.width, screen.height; show: has_preview and not comparing }
             image srcpic { at: pan_dx, pan_dy; size: screen.width, screen.height; show: has_source and comparing }
             box { from: 0, 0; size: screen.width, screen.height; color: #000000; opacity: 0.08 }
+            // the DESK tab's cutout preview: the picture dimmed, the subject lit over it
+            group {
+                show: tab == 5 and cut_show and has_cut_prev and not comparing
+                box { from: 0, 0; size: screen.width, screen.height; color: #000000; opacity: 0.62 }
+                group {
+                    glow: 10, 55%, fl.phos
+                    image cutpic { at: pan_dx, pan_dy; size: screen.width, screen.height }
+                }
+            }
+            // the region, while one is used: the one kept, and the one being drawn
+            group {
+                show: tab == 5 and (cut_mode == 2 or cut_mode == 3) and not chrome_off
+                box { from: screen.width * reg_x0 / 100, screen.height * reg_y0 / 100
+                      size: screen.width * (reg_x1 - reg_x0) / 100, screen.height * (reg_y1 - reg_y0) / 100
+                      corner: 2; stroke: 1.5; color: fl.ember; opacity: if(canvas.pressed > 0.5, 0.3, 0.9) }
+                box { from: min(rg_x0, rg_x1), min(rg_y0, rg_y1); size: abs(rg_x1 - rg_x0), abs(rg_y1 - rg_y0)
+                      corner: 2; stroke: 2; color: fl.phos; show: canvas.pressed > 0.5 }
+                text "REGION · WHAT IS INSIDE SITS OVER THE WIDGETS" { at: screen.width * reg_x0 / 100 + 8, screen.height * reg_y0 / 100 + 14
+                     anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.ember; shadow: 0, 1, 6, 80%, #000000 }
+            }
 
             // The whole screen is the crop's target: a press puts the subject where it is,
             // the wheel zooms. Under the chrome, so a control never moves the focus.
@@ -493,6 +543,7 @@ scene Lumen {
             Tab(296, screen.height - 230, 104, "FRAME", set_tab, 2, tab == 2)
             Tab(408, screen.height - 230, 104, "FX", set_tab, 3, tab == 3)
             Tab(520, screen.height - 230, 130, "BACKDROP", set_tab, 4, tab == 4)
+            Tab(658, screen.height - 230, 90, "DESK", set_tab, 5, tab == 5)
 
             zone box cmp { from: dr - 404, screen.height - 230; size: 128, 30; cursor: pointer; role: button; label: "Hold to see the source" }
             Plate(dr - 404, screen.height - 230, 128, 30, 6, mix(fl.hull_raised, fl.well, 0.5 * cmp.hover + if(comparing, 0.5, 0)), if(comparing, fl.phos, fl.trace), 0.95)
@@ -553,6 +604,30 @@ scene Lumen {
                                                 sw_sel == s.index, pick_swatch, s.index) }
             }
 
+
+            // ── The desk ────────────────────────────────────────
+            // How the subject is found, and whether it is shown; then the desk itself — on, what
+            // moves the picture, depth, the subject over the widgets — and how far it travels.
+            group {
+                show: tab == 5
+                text "CUTOUT" { at: 72, screen.height - 207; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                Button(72, screen.height - 198, 58, 26, "OFF", fl.phos, cut_mode == 0, set_cut, 0)
+                Button(134, screen.height - 198, 58, 26, "KEY", fl.phos, cut_mode == 1, set_cut, 1)
+                Button(196, screen.height - 198, 82, 26, "REGION", fl.phos, cut_mode == 2, set_cut, 2)
+                Button(282, screen.height - 198, 104, 26, "KEY+REGION", fl.phos, cut_mode == 3, set_cut, 3)
+                Button(390, screen.height - 198, 50, 26, "AI", fl.phos, cut_mode == 4, set_cut, 4, has_ai)
+                Button(450, screen.height - 198, 104, 26, pick(cut_show, "SHOW CUT", "HIDE CUT"), fl.trace_lit, cut_show, cut_show_toggle, 0, cut_mode > 0)
+                text "DESK" { at: 580, screen.height - 207; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                Button(580, screen.height - 198, 96, 26, pick(desk_on, "DESK OFF", "DESK ON"), fl.ember, desk_on, desk_toggle, 0)
+                Button(686, screen.height - 198, 58, 26, "STILL", fl.phos, desk_par == 0, desk_parallax, 0)
+                Button(748, screen.height - 198, 96, 26, "WORKSPACES", fl.phos, desk_par == 1, desk_parallax, 1)
+                Button(848, screen.height - 198, 74, 26, "POINTER", fl.phos, desk_par == 2, desk_parallax, 2)
+                Button(926, screen.height - 198, 58, 26, "BOTH", fl.phos, desk_par == 3, desk_parallax, 3)
+                Button(994, screen.height - 198, 76, 26, "DEPTH", fl.trace_lit, desk_depth, desk_depth_toggle, 0)
+                Button(1074, screen.height - 198, 112, 26, "OVER WIDGETS", fl.trace_lit, desk_cut, desk_cut_toggle, 0)
+                Slider(72 + 2 * colw, screen.height - 140, colw - 100, "Parallax strength", desk_str, 100, set_desk, 0, desk_str_l)
+                text pick(cut_mode == 2 or cut_mode == 3, "THE CUTOUT IS MADE ON APPLY · KEY: A FLAT BACKGROUND · AI: PHOTOS (REMBG)", "DRAG ON THE PICTURE TO DRAW THE REGION · THE CUTOUT IS MADE ON APPLY") { at: 72 + 3 * colw, screen.height - 128; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; width: colw - 20; lines: 3 }
+            }
 
             for s in sliders { Slider(72 + s.index * colw, screen.height - 140, colw - 100, s.label, s.v, s.span, set_value, s.code, s.shown) }
 
@@ -648,8 +723,14 @@ scene Lumen {
     }
 
     // ── What the hands do ───────────────────────────────────────
-    on press canvas { typing = false; blur }
-    on drag canvas { pan_dx = drag.dx; pan_dy = drag.dy }
+    // One rule per trigger: in the DESK tab with a region, the same hand draws the region instead
+    // of moving the picture (the logic reads which, on release).
+    on press canvas { typing = false; blur; rg_x0 = pointer.x; rg_y0 = pointer.y; rg_x1 = pointer.x; rg_y1 = pointer.y }
+    on drag canvas {
+        pan_dx = if(tab == 5 and (cut_mode == 2 or cut_mode == 3), 0, drag.dx)
+        pan_dy = if(tab == 5 and (cut_mode == 2 or cut_mode == 3), 0, drag.dy)
+        rg_x1 = rg_x0 + drag.dx; rg_y1 = rg_y0 + drag.dy
+    }
     on release canvas { emit pan_done }
     on scroll canvas { zoom_px = pointer.x; zoom_py = pointer.y; emit zoom_at(wheel) }
     on press hex_take { typing = true; focus bg_custom_hex }

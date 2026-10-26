@@ -55,7 +55,20 @@ M.FIELDS = {
     -- tab's toggle sets it. `bg_custom` is the colour mode 5 fills with (D62).
     { key = "key",        label = "Key background", min = 0, max = 1,   def = 0,   unit = "",  signed = false, tab = -1 },
     { key = "key_fuzz",   label = "Key fuzz",    min = 0,    max = 45,  def = 18,  unit = "%", signed = false, tab = 4 },
+    -- The desk's cutout (D85): the part of the picture laid over the desktop widgets. `cut` 0 none,
+    -- 1 the key (a flat background, seeded from the top and the sides, so a subject standing on
+    -- the bottom edge keeps its dark parts), 2 a region drawn on the picture, 3 the key inside the
+    -- region, 4 a segmentation model (rembg, when it is installed). The region is in percent of
+    -- the frame.
+    { key = "cut",        label = "Cutout",      min = 0,    max = 4,   def = 0,   unit = "",  signed = false, tab = -1 },
+    { key = "cut_fuzz",   label = "Cutout fuzz", min = 0,    max = 45,  def = 18,  unit = "%", signed = false, tab = 5 },
+    { key = "cut_soft",   label = "Edge",        min = 0,    max = 40,  def = 6,   unit = "",  signed = false, tab = 5 },
+    { key = "rx0",        label = "Region left", min = 0,    max = 100, def = 25,  unit = "%", signed = false, tab = -1 },
+    { key = "ry0",        label = "Region top",  min = 0,    max = 100, def = 20,  unit = "%", signed = false, tab = -1 },
+    { key = "rx1",        label = "Region right", min = 0,   max = 100, def = 75,  unit = "%", signed = false, tab = -1 },
+    { key = "ry1",        label = "Region foot", min = 0,    max = 100, def = 100, unit = "%", signed = false, tab = -1 },
 }
+M.CUT_NAMES = { "OFF", "KEY", "REGION", "KEY IN REGION", "AI" }
 M.BG_INDEX = { black = 0, picture = 1, corners = 2, edges = 3, both = 4, custom = 5 }
 M.BG_NAME = { "black", "picture", "corners", "edges", "both", "custom" }
 M.CUSTOM_DEF = "#808080"
@@ -76,7 +89,7 @@ M.SWATCHES = {
 }
 M.BY = {}
 for i, f in ipairs(M.FIELDS) do f.index = i - 1; M.BY[f.key] = f end
-M.TABS = { "TONE", "COLOUR", "FRAME", "FX", "BACKDROP" }
+M.TABS = { "TONE", "COLOUR", "FRAME", "FX", "BACKDROP", "DESK" }
 
 -- The vibes. `values` is what differs from neutral; the rest of the recipe stays as it is when
 -- a vibe is chosen (the crop is the user's, not the look's).
@@ -363,6 +376,80 @@ function M.args(r, source, out, w, h, bw, bh, bg, screen)
     end
     a[#a + 1] = out
     return a
+end
+
+-- ── The desk's cutout (D85) ──────────────────────────────────────
+-- Made when a picture is applied with a cutout: a mask from the still without its finish (the
+-- vignette and the grain would break a key), then the still itself through that mask, and the
+-- plate — the still with the subject's place filled by the picture out of focus — for a subject
+-- that travels further than the picture behind it.
+
+-- The recipe the mask is read from: the same frame and grade, no vignette and no grain.
+function M.maskable(r)
+    r = M.clean(r)
+    r.vignette, r.grain = 0, 0
+    return r
+end
+
+-- The key's seeds: the top edge and the upper half of the sides — never the bottom, where a
+-- standing subject meets the frame.
+local function seeds(w, h)
+    local x1, y1 = math.max(0, w - 1), math.max(0, h - 1)
+    local pts = { { 0, 0 }, { math.floor(w / 4), 0 }, { math.floor(w / 2), 0 }, { math.floor(w * 3 / 4), 0 }, { x1, 0 },
+                  { 0, math.floor(h / 4) }, { x1, math.floor(h / 4) }, { 0, math.floor(h / 2) }, { x1, math.floor(h / 2) } }
+    local d = {}
+    for i, p in ipairs(pts) do d[i] = string.format("alpha %d,%d floodfill", p[1], p[2]) end
+    return table.concat(d, " ")
+end
+
+-- The mask (white is the subject) from the unfinished still `base` at `w × h`, for cut modes 1–3.
+-- Mode 4 (the model) makes its own and is only feathered here: pass its output as `base`.
+function M.mask_args(r, base, out, w, h)
+    r = M.clean(r)
+    w, h = round(tonumber(w) or 0), round(tonumber(h) or 0)
+    if r.cut == 0 or w < 1 or h < 1 or type(base) ~= "string" or type(out) ~= "string" then return nil end
+    local a = {}
+    local x0, y0 = round(w * math.min(r.rx0, r.rx1) / 100), round(h * math.min(r.ry0, r.ry1) / 100)
+    local x1, y1 = round(w * math.max(r.rx0, r.rx1) / 100), round(h * math.max(r.ry0, r.ry1) / 100)
+    if r.cut == 4 then
+        a = { base, "-alpha", "extract" }
+    elseif r.cut == 2 then
+        a = { "-size", string.format("%dx%d", w, h), "xc:black", "-fill", "white",
+              "-draw", string.format("rectangle %d,%d %d,%d", x0, y0, x1, y1) }
+    else
+        a = { base, "-alpha", "set", "-fuzz", string.format("%d%%", r.cut_fuzz), "-fill", "none",
+              "-draw", seeds(w, h), "-alpha", "extract" }
+        if r.cut == 3 then
+            a[#a + 1] = "("; a[#a + 1] = "-size"; a[#a + 1] = string.format("%dx%d", w, h); a[#a + 1] = "xc:black"
+            a[#a + 1] = "-fill"; a[#a + 1] = "white"
+            a[#a + 1] = "-draw"; a[#a + 1] = string.format("rectangle %d,%d %d,%d", x0, y0, x1, y1)
+            a[#a + 1] = ")"; a[#a + 1] = "-compose"; a[#a + 1] = "multiply"; a[#a + 1] = "-composite"
+        end
+    end
+    -- a region's edge is a long straight cut, so it is softened more than a keyed outline
+    local soft = r.cut == 2 and math.max(r.cut_soft, 8) or r.cut_soft * 0.25
+    if soft > 0 then a[#a + 1] = "-blur"; a[#a + 1] = string.format("0x%.2f", soft) end
+    a[#a + 1] = "-strip"; a[#a + 1] = out
+    return a
+end
+
+-- The cutout: the finished still through the mask.
+function M.cutout_args(still, mask, out)
+    if type(still) ~= "string" or type(mask) ~= "string" or type(out) ~= "string" then return nil end
+    -- what the mask leaves out is made black as well as clear, so the file keeps only the subject
+    return { still, "-alpha", "off", "(", mask, ")", "-compose", "copy_opacity", "-composite",
+             "-background", "black", "-alpha", "background",
+             "-strip", "-define", "png:compression-level=6", out }
+end
+
+-- The plate: the still, with the subject's place (the mask, widened) filled by the picture out of
+-- focus. Only the thin band the subject's travel uncovers is ever seen, and it reads as depth.
+function M.plate_args(still, mask, out)
+    if type(still) ~= "string" or type(mask) ~= "string" or type(out) ~= "string" then return nil end
+    return { still,
+             "(", "+clone", "-resize", "25%", "-blur", "0x7", "-resize", "400%", ")",
+             "(", mask, "-morphology", "dilate", "disk:12", "-blur", "0x6", ")",
+             "-compose", "over", "-composite", "-strip", "-define", "png:compression-level=4", out }
 end
 
 -- Whether an output name is a PNG, whose pixels are kept exactly.

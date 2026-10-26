@@ -2739,3 +2739,57 @@ workers, PICTURES in the picker. Deployed with `bin/mooi refresh`; the new mark 
 **Not checked:** APPLY and SAVE A COPY for real (they write to the desktop and to ~/Pictures),
 the `awww` fallback, a real mouse drag on the picture (the agent's hand was used), the hub faces
 on a narrow screen, and the visualiser with a player that sends a whole `data:` cover.
+
+---
+
+## D85 · 2026-10-26 · The desk: a parallax wallpaper and a cutout over the widgets; the hub gets a rail
+
+**Asked for:** a really good parallax option for the wallpaper (one that can be turned off from
+the settings and from quick settings), a cutout so the desktop widgets sit behind the picture or
+part of it, a better backdrop and studio settings; and for the compact Nexus: less cramped, more
+inventive, with modules that can run lengthways down the side.
+
+**The desk (`shell/mooi-desk.plm`, `lib/desk`, 3 tests).** The wallpaper is drawn by the picker on
+the background layer and the widgets sit on the bottom layer above it, and neither is mooi's.
+So mooi draws it itself, as a program the bar keeps running while `desk.on` is set: a background
+surface over the picker's, the picture a little larger than the screen (`strength` up to a tenth)
+travelling with the workspaces (a slow, heavy spring over a row at least four long), the pointer
+(`cursor.x/y`, a lighter drift) or both; and a click-through bottom-layer surface, created after
+the widgets so it stacks above them and under every window, holding the cutout. With **depth** the
+subject travels 1.55× as far as the picture behind it; so that it is not seen twice, Lumen also
+makes a **plate** — the still with the subject's place filled by the picture out of focus (a
+quarter-size blur through the widened mask), of which only the uncovered band is ever seen. The
+desk follows `~/.cache/current_wallpaper_source` (what the picker draws) every 2 s and uses
+Lumen's layers only while they belong to that picture (`desk.json`); a video or GIF wallpaper is
+left to the picker. Motion saving and reduced motion keep it still.
+
+**The cutout (Lumen's DESK tab).** KEY floods the background from the top and the upper sides
+only — never the foot, where a standing subject meets the frame (seeding from all eight points
+took the black hair and dress of a portrait away); REGION is a box drawn by dragging on the
+picture; KEY + REGION is the key inside the box; AI uses `rembg` when it is installed (a photo's
+subject cannot be keyed). The mask comes from the still without vignette or grain. APPLY then
+writes the cutout and the plate beside the still. The tab also carries the desk's switches (on,
+still / workspaces / pointer / both, depth, over the widgets, strength), written to settings.json
+read fresh just before. Settings window: a Quick-page switch and a Desk card on the Wallpaper page;
+Control Nexus: a PARALLAX tile.
+
+**Settings that did not stick.** `lib/config` validates against a schema and drops what it does
+not name: D84's `nexus.hub` and `nexus.centre` were written and then stripped at the next read, so
+neither survived a restart. They are in the schema now with `desk.*`, and a test reloads them.
+
+**The hub (`lib/nexushub` rewritten, 10 tests).** A hero across the top, then a main column (476
+or 584 px) and, when anything is sent there, a 164 px rail beside it. Every section has an upright
+form for the rail: tiles two across, levels as standing sliders, the player as a cover over its
+track, the visualiser as bands either side of a spine (a new section, shipped hidden), the
+machine as stacked ring gauges, the workspaces as a grid of two. CUSTOMISE adds ⇄ to each section;
+▲ ▼ move within its own column. The look: an engraved caption with a node on a lit spine down the
+margin for every section, ten tiles with a lit edge (PARALLAX and CLIPBOARD added), ring gauges
+with traces, thicker glowing levels, a mirrored visualiser, workspace cells with window dots.
+
+**Checked.** `bin/mooi check`: 263 unit tests, 0 failed; six scenes compile. Lab copies: the desk
+ran with a region cutout (its surfaces above `desktop-widgets` and the visualiser, below windows);
+Lumen's KEY preview on a line-art picture; APPLY made the cutout, the plate and desk.json in ~4 s
+(the lab's hand-off to the picker was stubbed; those files were then deleted); the hub with a rail
+and in customise mode. **Not checked:** the desk on the live desktop (it is off until switched on),
+the parallax's feel on a real workspace switch, `rembg` (not installed), the settings window's new
+rows on screen.

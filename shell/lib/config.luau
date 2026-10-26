@@ -245,6 +245,22 @@ M.SCHEMA = {
     -- `view` is how it opens: the compact hub under the mark, or the full-screen workspace.
     { path = "nexus.pinned", kind = "boolean", default = false },
     { path = "nexus.view", kind = "enum", values = { "hub", "full" }, default = "hub" },
+    -- The core's face at the centre, and the hub's own arrangement (D84, lib/nexushub): the hero,
+    -- the plate's width, the sections' order and the hidden ones (no default for the lists, so a
+    -- file that never had them gets the shipped order).
+    { path = "nexus.centre", kind = "enum", values = { "core", "identity", "player", "both" }, default = "core" },
+    { path = "nexus.hub.hero", kind = "enum", values = { "identity", "player", "reactor", "both", "minimal" }, default = "identity" },
+    { path = "nexus.hub.size", kind = "enum", values = { "compact", "wide" }, default = "compact" },
+    { path = "nexus.hub.order", kind = "ids", max = 12 },
+    { path = "nexus.hub.hidden", kind = "ids", max = 12 },
+    { path = "nexus.hub.side", kind = "ids", max = 12 },
+    -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
+    -- cutout over the desktop widgets.
+    { path = "desk.on", kind = "boolean", default = false },
+    { path = "desk.parallax", kind = "enum", values = { "off", "workspaces", "pointer", "both" }, default = "workspaces" },
+    { path = "desk.strength", kind = "integer", default = 45, min = 0, max = 100 },
+    { path = "desk.cutout", kind = "boolean", default = true },
+    { path = "desk.depth", kind = "boolean", default = true },
     { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
     { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },

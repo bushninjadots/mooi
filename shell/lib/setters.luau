@@ -44,6 +44,8 @@ M.SETTERS = {
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
     -- D61: the wallpaper studio's defaults, after everything above so no code moved.
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
+    -- D85: the desk (mooi's own wallpaper: parallax, and the cutout over the widgets).
+    "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
 }
 
 local function row_of(path)

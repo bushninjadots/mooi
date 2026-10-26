@@ -1469,6 +1469,7 @@ end)
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
     fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
+    fact.nx_desk_on = type(settings.desk) == "table" and settings.desk.on == true
     sync_identity()
     local count = (type(settings.nexus) == "table" and type(settings.nexus.arrangements) == "table")
         and #settings.nexus.arrangements or 0
@@ -2155,9 +2156,12 @@ local hub = nexushub.normalize(type(settings.nexus) == "table" and settings.nexu
 local hub_editing = false
 
 local function publish_hub()
-    local l = nexushub.layout(hub, { backlight = live.bright_on, media = fact.nx_has == true, editing = hub_editing })
+    local l = nexushub.layout(hub, { backlight = live.bright_on, media = fact.nx_has == true, editing = hub_editing,
+                                     spaces = #spaces })
     fact.nx_hub_w = l.w
     fact.nx_hub_h = l.h
+    fact.nx_hub_main_w = l.main_w
+    fact.nx_hub_rail = l.rail_w > 0
     fact.nx_hub_hero = l.hero
     fact.nx_hub_hero_h = l.hero_h
     fact.nx_hub_edit_y = l.edit_y
@@ -2166,15 +2170,20 @@ local function publish_hub()
     local rows = {}
     for k, r in ipairs(l.rows) do
         fact["nx_hy_" .. r.id] = r.y
+        fact["nx_hx_" .. r.id] = r.x
+        fact["nx_hw_" .. r.id] = r.w
         fact["nx_hon_" .. r.id] = r.on
-        rows[k] = { id = nexushub.SECTION_INDEX[r.id], name = r.name, y = r.y, h = r.h, on = r.on, stub = r.stub,
-                    hidden = nexushub.is_hidden(hub, r.id), first = r.first, last = r.last, shown = r.h > 0 }
+        fact["nx_hs_" .. r.id] = r.side
+        rows[k] = { id = nexushub.SECTION_INDEX[r.id], name = r.name, x = r.x, y = r.y, w = r.w, h = r.h, on = r.on,
+                    stub = r.stub, side = r.side, hidden = nexushub.is_hidden(hub, r.id), first = r.first, last = r.last,
+                    shown = r.h > 0 }
     end
     model.nx_hsec = rows
 end
 
 hub_wants_player = function()
     if hub.hero == "player" or hub.hero == "both" then return true end
+    if not nexushub.is_hidden(hub, "viz") then return true end
     return not nexushub.is_hidden(hub, "media") and fact.nx_has == true
 end
 
@@ -2186,7 +2195,7 @@ end
 -- A change is kept at once (a refused write still shows; it is just not kept).
 local function keep_hub()
     if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    settings.nexus.hub = { hero = hub.hero, size = hub.size, order = hub.order, hidden = hub.hidden }
+    settings.nexus.hub = { hero = hub.hero, size = hub.size, order = hub.order, hidden = hub.hidden, side = hub.side }
     if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" and not save_settings() then
         report_control_failure("HUB LAYOUT")
     end
@@ -2225,6 +2234,12 @@ on("nx_hub_toggle", function(v)
 end)
 on("nx_hub_reset", function()
     hub = nexushub.normalize({ hero = hub.hero, size = hub.size })
+    keep_hub()
+end)
+on("nx_hub_side", function(v)
+    local s = nexushub.SECTIONS[math.floor(tonumber(v) or 0)]
+    if not s then return end
+    hub = nexushub.toggle_side(hub, s.id)
     keep_hub()
 end)
 publish_hub()
@@ -2271,9 +2286,28 @@ local HUB_SWITCH = { [1] = "emit note_dnd", [2] = "emit caffeine", [3] = "emit r
 local HUB_OPEN = {
     [4] = { "say", "emit power 0" }, [5] = { "say", "emit power 1" }, [6] = { "settings" },
     [7] = { "wallpaper" }, [8] = { "notes" }, [9] = { "board" }, [10] = { "overview" }, [11] = { "system" },
+    [13] = { "clipboard" },
 }
+-- The desk's switch (D85): the parallax and the cutout over the widgets, kept in settings.json,
+-- which the bar watches — it starts the desk, and the desk ends itself when it is turned off. The
+-- file is read again just before it is written, so nothing changed elsewhere is put back.
+local function desk_state()
+    fact.nx_desk_on = type(settings.desk) == "table" and settings.desk.on == true
+end
+desk_state()
 on("nx_hub_act", function(v)
     local n = math.floor(tonumber(v) or 0)
+    if n == 12 then
+        local fresh = config.parse(read(FILE), json.decode)
+        if type(fresh.desk) ~= "table" then fresh.desk = {} end
+        fresh.desk.on = not (fresh.desk.on == true)
+        if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
+            if not pcall(sys.call, "files.write", FILE, fresh) then report_control_failure("PARALLAX"); return end
+        end
+        settings.desk = fresh.desk
+        desk_state()
+        return
+    end
     if HUB_SWITCH[n] then
         launch("pleamar", { "--say", "mooi", HUB_SWITCH[n] }, function() after(150, hub_states) end)
         return

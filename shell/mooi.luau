@@ -255,12 +255,14 @@ apply_theme("first read")
 -- When the file changes (the settings window writes it), what Matugen is asked for may have
 -- changed too: the palette is extracted again only then.
 local extract   -- re-runs Matugen; defined with the bar's controls, below
+local desk_sync -- starts or lets go of the desk (D85); defined with the programs, below
 local function extraction(t) return tostring(t.scheme) .. "/" .. tostring(t.color_index) .. "/" .. tostring(t.contrast) end
 sys.watch("files:" .. FILE, function()
     local before = extraction(settings.theme)
     load_settings()
     if extraction(settings.theme) ~= before then extract() end
     apply_theme("settings changed")
+    if desk_sync then desk_sync() end
 end)
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
@@ -1641,6 +1643,29 @@ on("open_wallpaper", function()
     end, { errors = true })
     wallpaper_win = mine
 end)
+
+-- The desk (shell/mooi-desk.plm, D85): mooi's own drawing of the wallpaper, travelling with the
+-- workspaces or the pointer, and the picture's cutout over the desktop widgets. A program of its
+-- own with two click-through surfaces; it runs while `desk.on` is set, is started again if it
+-- ends while it is still wanted (a little later each time it fails at once), and ends itself
+-- when the setting is turned off.
+local desk_win, desk_tries = nil, 0
+function desk_sync()
+    local want = type(settings.desk) == "table" and settings.desk.on == true
+    if not want then desk_tries = 0; return end
+    if desk_win then return end
+    local mine
+    local started = os.time()
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-desk.plm", "--no-hud", "--stall", "0" }, nil, function(_, code)
+        if desk_win ~= mine then return end
+        desk_win = nil
+        if os.time() - started < 5 then desk_tries = desk_tries + 1 else desk_tries = 0 end
+        if code ~= 0 then log("desk · ended (" .. tostring(code) .. ")") end
+        if desk_tries < 5 then after(1000 * (desk_tries + 1), desk_sync) end
+    end, { errors = true })
+    desk_win = mine
+end
+after(1500, desk_sync)
 
 -- Control Nexus (shell/mooi-nexus.plm, D65): the system command centre. A program of its own
 -- for the same reason as the studio: it holds the keyboard exclusively and declares its own
