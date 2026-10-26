@@ -3,12 +3,16 @@
 -- Lua 5.4, and shell/mooi-wallpaper.luau is what runs the arguments.
 --
 -- A recipe is flat numbers:
---   exposure -50..50 · contrast -50..50 · fade 0..100 · saturation 0..200 · warmth -100..100
---   tint -100..100 · hue -180..180 · zoom 100..200 · fx 0..100 · fy 0..100
---   vignette 0..100 · grain 0..100
--- `zoom` and `fx`/`fy` are the crop: a zoom of 200 keeps half the picture, and the point at
--- fraction fx/fy of the frame stays at that fraction of the frame (click the picture to put
--- the subject there). The picture itself is never touched: the output is a new file.
+--   exposure -50..50 · contrast -50..50 · midtones -50..50 · fade 0..100 · saturation 0..200
+--   warmth -100..100 · tint -100..100 · hue -180..180 · zoom 100..400 · fx 0..100 · fy 0..100
+--   vignette 0..100 · grain 0..100 · sharpen 0..100 · soften 0..100 · fit 0/1 · rotate 0..3
+--   flip 0..3, and the backdrop's matte, fill and key
+-- The frame: at zoom 100 the crop is the largest screen-shaped part of the (turned) picture —
+-- all of it when `fit` is on, the picture then shown whole on the backdrop — and a zoom of 200
+-- keeps half of that. `fx`/`fy` say where the crop sits in the room it can move in (0 left/top,
+-- 100 right/bottom), so a tall picture can be framed on its top or its foot. Dragging the picture
+-- pans it (`M.pan`) and the wheel zooms round the pointer (`M.zoom_at`). The picture itself is
+-- never touched: the output is a new file.
 
 local M = {}
 
@@ -20,16 +24,25 @@ M.RECIPES_MAX = 40                     -- remembered sources; the oldest is forg
 M.FIELDS = {
     { key = "exposure",   label = "Exposure",   min = -50,  max = 50,  def = 0,   unit = "",  signed = true,  tab = 0 },
     { key = "contrast",   label = "Contrast",   min = -50,  max = 50,  def = 0,   unit = "",  signed = true,  tab = 0 },
+    { key = "midtones",   label = "Midtones",   min = -50,  max = 50,  def = 0,   unit = "",  signed = true,  tab = 0 },
     { key = "fade",       label = "Fade",       min = 0,    max = 100, def = 0,   unit = "%", signed = false, tab = 0 },
     { key = "saturation", label = "Saturation", min = 0,    max = 200, def = 100, unit = "%", signed = false, tab = 1 },
     { key = "warmth",     label = "Warmth",     min = -100, max = 100, def = 0,   unit = "",  signed = true,  tab = 1 },
     { key = "tint",       label = "Tint",       min = -100, max = 100, def = 0,   unit = "",  signed = true,  tab = 1 },
     { key = "hue",        label = "Hue",        min = -180, max = 180, def = 0,   unit = "°", signed = true,  tab = 1 },
-    { key = "zoom",       label = "Zoom",       min = 100,  max = 200, def = 100, unit = "%", signed = false, tab = 2 },
+    { key = "zoom",       label = "Zoom",       min = 100,  max = 400, def = 100, unit = "%", signed = false, tab = 2 },
     { key = "fx",         label = "Focus X",    min = 0,    max = 100, def = 50,  unit = "%", signed = false, tab = 2 },
     { key = "fy",         label = "Focus Y",    min = 0,    max = 100, def = 50,  unit = "%", signed = false, tab = 2 },
     { key = "vignette",   label = "Vignette",   min = 0,    max = 100, def = 0,   unit = "%", signed = false, tab = 3 },
     { key = "grain",      label = "Grain",      min = 0,    max = 100, def = 0,   unit = "%", signed = false, tab = 3 },
+    { key = "sharpen",    label = "Sharpen",    min = 0,    max = 100, def = 0,   unit = "%", signed = false, tab = 3 },
+    { key = "soften",     label = "Soften",     min = 0,    max = 100, def = 0,   unit = "%", signed = false, tab = 3 },
+    -- The frame's switches (no slider; the FRAME tab's chips set them): `fit` 0 fills the screen
+    -- and crops, 1 shows the whole picture on the backdrop; `rotate` quarter turns clockwise;
+    -- `flip` 1 mirrors left to right, 2 top to bottom, 3 both.
+    { key = "fit",        label = "Fit",        min = 0,    max = 1,   def = 0,   unit = "",  signed = false, tab = -1 },
+    { key = "rotate",     label = "Rotate",     min = 0,    max = 3,   def = 0,   unit = "",  signed = false, tab = -1 },
+    { key = "flip",       label = "Flip",       min = 0,    max = 3,   def = 0,   unit = "",  signed = false, tab = -1 },
     -- The backdrop (D60): a matte round the picture, and what fills it — black, a blurred copy
     -- of the picture, or one of the three colours read from its edges. `bg` has no slider;
     -- the backdrop tab's swatches set it.
@@ -136,8 +149,8 @@ function M.matches(r)
     r = M.clean(r)
     for _, p in ipairs(M.PRESETS) do
         local same = true
-        for k in pairs({ exposure = 1, contrast = 1, fade = 1, saturation = 1, warmth = 1, tint = 1,
-                         hue = 1, vignette = 1, grain = 1 }) do
+        for k in pairs({ exposure = 1, contrast = 1, midtones = 1, fade = 1, saturation = 1, warmth = 1, tint = 1,
+                         hue = 1, vignette = 1, grain = 1, sharpen = 1, soften = 1 }) do
             if r[k] ~= M.preset(p.id)[k] then same = false; break end
         end
         if same then return p.id end
@@ -162,7 +175,10 @@ function M.summary(r)
     local name = "CUSTOM"
     for _, p in ipairs(M.PRESETS) do if p.id == id then name = p.name end end
     local parts = { name }
+    if r.fit > 0 then parts[#parts + 1] = "FIT" end
     if r.zoom ~= 100 then parts[#parts + 1] = r.zoom .. "% ZOOM" end
+    if r.rotate > 0 then parts[#parts + 1] = (r.rotate * 90) .. "°" end
+    if r.flip > 0 then parts[#parts + 1] = r.flip == 1 and "MIRRORED" or (r.flip == 2 and "FLIPPED" or "MIRRORED · FLIPPED") end
     if r.vignette > 0 then parts[#parts + 1] = "VIGNETTE " .. r.vignette end
     if r.key > 0 then parts[#parts + 1] = "KEYED" end
     return table.concat(parts, " · ")
@@ -172,25 +188,53 @@ end
 -- Append the base's crop and the grade, from `source`, at `w × h`: the crop keeps the point at
 -- (fx, fy) of the frame where it was, and the result is resized to the output. Every argument is
 -- one argv entry; nothing goes through a shell.
-local function grade(a, r, source, w, h, bw, bh, key)
+local function grade(a, r, source, w, h, bw, bh, key, tw, th)
     a[#a + 1] = source
     a[#a + 1] = "-auto-orient"
+    -- Turned and mirrored first, so the crop is taken from the picture as it will be seen.
+    if r.rotate > 0 then a[#a + 1] = "-rotate"; a[#a + 1] = tostring(r.rotate * 90); a[#a + 1] = "+repage" end
+    if r.flip == 1 or r.flip == 3 then a[#a + 1] = "-flop" end
+    if r.flip == 2 or r.flip == 3 then a[#a + 1] = "-flip" end
 
-    -- The crop is cut from the base in the base's own pixels (the caller knows how big it is).
+    -- The crop is cut from the base in the base's own pixels (the caller knows how big it is),
+    -- in the shape of the screen (`tw × th`; the output's own shape when the caller has none).
     bw, bh = tonumber(bw), tonumber(bh)
-    if r.zoom > 100 and bw and bh and bw > 0 and bh > 0 then
-        local ox, oy, cw, ch = M.crop(r, bw, bh)
-        a[#a + 1] = "-crop"
-        a[#a + 1] = string.format("%dx%d+%d+%d", cw, ch, ox, oy)
-        a[#a + 1] = "+repage"
+    local cw0, ch0
+    if bw and bh and bw > 0 and bh > 0 then
+        local ow, oh = M.oriented(r, bw, bh)
+        local ox, oy, cw, ch = M.crop(r, ow, oh, tw or w, th or h)
+        cw0, ch0 = cw, ch
+        if ox ~= 0 or oy ~= 0 or cw ~= ow or ch ~= oh then
+            a[#a + 1] = "-crop"
+            a[#a + 1] = string.format("%dx%d+%d+%d", cw, ch, ox, oy)
+            a[#a + 1] = "+repage"
+        end
     end
 
+    -- filled, the crop is the screen's shape and is stretched exactly onto it; fitted, the
+    -- picture keeps its own shape inside the box and the backdrop shows round it (its size is
+    -- worked out here, so the key below seeds on the picture's own edge)
+    if r.fit > 0 and cw0 and ch0 then
+        local k = math.min(w / cw0, h / ch0)
+        w, h = math.max(1, round(cw0 * k)), math.max(1, round(ch0 * k))
+    end
     a[#a + 1] = "-resize"
     a[#a + 1] = string.format("%dx%d!", w, h)
 
+    if r.soften > 0 then
+        a[#a + 1] = "-blur"; a[#a + 1] = string.format("0x%.2f", r.soften * 0.06 * math.max(w, h) / 1600)
+    end
+    if r.sharpen > 0 then
+        a[#a + 1] = "-unsharp"; a[#a + 1] = string.format("0x%.2f+%.2f+0.02", 0.6 + r.sharpen * 0.012, r.sharpen / 40)
+    end
+
     if r.saturation ~= 100 or r.hue ~= 0 then
+        -- -modulate's hue is 100 for none and 0 or 200 for half a turn either way
         a[#a + 1] = "-modulate"
-        a[#a + 1] = string.format("100,%d,%.2f", r.saturation, 100 + r.hue / 3.6)
+        a[#a + 1] = string.format("100,%d,%.2f", r.saturation, 100 + r.hue / 1.8)
+    end
+    if r.midtones ~= 0 then
+        a[#a + 1] = "-gamma"; a[#a + 1] = string.format("%.3f", 2 ^ (r.midtones / 50))
     end
     local exposure = r.exposure * 0.5
     if exposure ~= 0 or r.contrast ~= 0 then
@@ -210,24 +254,6 @@ local function grade(a, r, source, w, h, bw, bh, key)
         a[#a + 1] = "-fill"; a[#a + 1] = "#8a8a8a"
         a[#a + 1] = "-colorize"; a[#a + 1] = string.format("%.1f%%", r.fade * 0.14)
     end
-    if r.vignette > 0 then
-        local s = 0.9 * r.vignette / 100
-        a[#a + 1] = "("
-        a[#a + 1] = "-size"; a[#a + 1] = string.format("%dx%d", w, h)
-        a[#a + 1] = "radial-gradient:white-black"
-        a[#a + 1] = "-level"; a[#a + 1] = "45%,100%"
-        a[#a + 1] = "-evaluate"; a[#a + 1] = "multiply"; a[#a + 1] = string.format("%.3f", s)
-        a[#a + 1] = "-evaluate"; a[#a + 1] = "add"; a[#a + 1] = string.format("%d%%", round((1 - s) * 100))
-        a[#a + 1] = ")"
-        a[#a + 1] = "-compose"; a[#a + 1] = "multiply"; a[#a + 1] = "-composite"
-    end
-    if r.grain > 0 then
-        -- Colour channels only: a keyed picture's transparency has to survive its grain.
-        a[#a + 1] = "-channel"; a[#a + 1] = "RGB"
-        a[#a + 1] = "-attenuate"; a[#a + 1] = string.format("%.3f", 0.05 + r.grain * 0.0045)
-        a[#a + 1] = "+noise"; a[#a + 1] = "Gaussian"
-        a[#a + 1] = "+channel"
-    end
     if key then
         -- Keyed out last (D62), so no composite or grain can put the transparency back. A flood
         -- fill from the eight border points takes the background the picture's edge is connected
@@ -246,25 +272,56 @@ local function grade(a, r, source, w, h, bw, bh, key)
     end
 end
 
+-- The frame's own finish, over the whole still (picture, matte and backdrop alike): the vignette
+-- darkens the screen's edges, and the grain is on everything the eye sees.
+local function finish(a, r, w, h)
+    if r.vignette > 0 then
+        local s = 0.9 * r.vignette / 100
+        a[#a + 1] = "("
+        a[#a + 1] = "-size"; a[#a + 1] = string.format("%dx%d", w, h)
+        a[#a + 1] = "radial-gradient:white-black"
+        a[#a + 1] = "-level"; a[#a + 1] = "45%,100%"
+        a[#a + 1] = "-evaluate"; a[#a + 1] = "multiply"; a[#a + 1] = string.format("%.3f", s)
+        a[#a + 1] = "-evaluate"; a[#a + 1] = "add"; a[#a + 1] = string.format("%d%%", round((1 - s) * 100))
+        a[#a + 1] = ")"
+        a[#a + 1] = "-compose"; a[#a + 1] = "multiply"; a[#a + 1] = "-composite"
+    end
+    if r.grain > 0 then
+        -- Colour channels only: a keyed picture's transparency has to survive its grain.
+        a[#a + 1] = "-channel"; a[#a + 1] = "RGB"
+        a[#a + 1] = "-attenuate"; a[#a + 1] = string.format("%.3f", 0.05 + r.grain * 0.0045)
+        a[#a + 1] = "+noise"; a[#a + 1] = "Gaussian"
+        a[#a + 1] = "+channel"
+    end
+end
+
 -- `bg` is the backdrop (D60): `mode` 0 black, 1 the picture blurred and dimmed, 2–4 one of the
 -- colours read from the picture (`hex`), 5 the colour typed in the studio (`bg_custom`); `blur`
 -- and `dim` are its effects. A matte of 0 hides the backdrop, but a keyed picture still needs one
 -- behind it.
-function M.args(r, source, out, w, h, bw, bh, bg)
+-- `screen` ({ w, h }, optional) is the monitor the still is for: a preview is drawn squashed to
+-- 16 : 9 and stretched back onto the screen, so the crop is cut in the screen's shape, not the
+-- preview's.
+function M.args(r, source, out, w, h, bw, bh, bg, screen)
     r = M.clean(r)
     w, h = round(tonumber(w) or M.PREVIEW_W), round(tonumber(h) or M.PREVIEW_H)
     if type(source) ~= "string" or source == "" or type(out) ~= "string" or out == "" then return nil end
     local a = {}
     local m = round(math.min(w, h) * r.matte / 100)
     local key = r.key > 0
+    local sx = type(screen) == "table" and (tonumber(screen.w) or w) / w or 1
+    local sy = type(screen) == "table" and (tonumber(screen.h) or h) / h or 1
 
-    if m > 0 or key then
+    if m > 0 or key or r.fit > 0 then
         local iw, ih = math.max(1, w - 2 * m), math.max(1, h - 2 * m)
         a[#a + 1] = "("
         if bg and tonumber(bg.mode) == 1 then
             -- The picture itself, filling the screen and softened: the matte is the same picture
             -- out of focus, not a colour chosen beside it.
             a[#a + 1] = source; a[#a + 1] = "-auto-orient"
+            if r.rotate > 0 then a[#a + 1] = "-rotate"; a[#a + 1] = tostring(r.rotate * 90); a[#a + 1] = "+repage" end
+            if r.flip == 1 or r.flip == 3 then a[#a + 1] = "-flop" end
+            if r.flip == 2 or r.flip == 3 then a[#a + 1] = "-flip" end
             a[#a + 1] = "-resize"; a[#a + 1] = string.format("%dx%d^", w, h)
             a[#a + 1] = "-gravity"; a[#a + 1] = "center"
             a[#a + 1] = "-crop"; a[#a + 1] = string.format("%dx%d+0+0", w, h); a[#a + 1] = "+repage"
@@ -282,12 +339,16 @@ function M.args(r, source, out, w, h, bw, bh, bg)
         end
         a[#a + 1] = ")"
         a[#a + 1] = "("
-        grade(a, r, source, iw, ih, bw, bh, key)
+        grade(a, r, source, iw, ih, bw, bh, key, iw * sx, ih * sy)
         a[#a + 1] = ")"
+        -- `-compose` is a setting that outlives its parentheses: the vignette's multiply would
+        -- otherwise multiply the picture into the backdrop (black on black)
+        a[#a + 1] = "-compose"; a[#a + 1] = "over"
         a[#a + 1] = "-gravity"; a[#a + 1] = "center"; a[#a + 1] = "-composite"
     else
-        grade(a, r, source, w, h, bw, bh)
+        grade(a, r, source, w, h, bw, bh, false, w * sx, h * sy)
     end
+    finish(a, r, w, h)
 
     -- The output is written the way its extension asks (D63). A still that goes on the desktop is
     -- a PNG and lossless; a preview is a JPEG, and it keeps all of its colour detail: `4:4:4`
@@ -338,33 +399,107 @@ function M.edge_colours(out)
     return { avg(1, 4), avg(5, 8), avg(1, 8) }
 end
 
--- The crop rectangle for a base of `bw × bh` pixels: x, y, width, height in whole pixels.
-function M.crop(r, bw, bh)
+-- The picture's size once it is turned: a quarter turn swaps its sides.
+function M.oriented(r, bw, bh)
+    if (tonumber(r and r.rotate) or 0) % 2 == 1 then return bh, bw end
+    return bw, bh
+end
+
+-- The crop rectangle for a (turned) picture of `bw × bh` pixels shown in a frame of `tw × th`
+-- (only its shape counts; without one the crop keeps the picture's): x, y, width, height in
+-- whole pixels. At zoom 100 it is the largest part of the picture in the frame's shape — the
+-- whole picture when `fit` is on — and a zoom of z keeps 1/z of that, placed by fx/fy.
+function M.crop(r, bw, bh, tw, th)
     r = M.clean(r)
     bw, bh = round(tonumber(bw) or 0), round(tonumber(bh) or 0)
     if bw < 1 or bh < 1 then return 0, 0, 1, 1 end
-    if r.zoom <= 100 then return 0, 0, bw, bh end
-    local cw = math.max(1, round(bw / (r.zoom / 100)))
-    local ch = math.max(1, round(bh / (r.zoom / 100)))
+    local fw, fh = bw, bh
+    tw, th = tonumber(tw), tonumber(th)
+    if r.fit == 0 and tw and th and tw > 0 and th > 0 then
+        local want = tw / th
+        if bw / bh > want then fw = bh * want else fh = bw / want end
+    end
+    local z = r.zoom / 100
+    local cw = clamp(round(fw / z), 1, bw)
+    local ch = clamp(round(fh / z), 1, bh)
     local ox = round((bw - cw) * r.fx / 100)
     local oy = round((bh - ch) * r.fy / 100)
     return clamp(ox, 0, bw - cw), clamp(oy, 0, bh - ch), cw, ch
 end
 
--- The base arguments: the source, cropped to cover `bw × bh` and centred. This is made once per
--- source, then every preview and the final come off it.
+-- Where the crop sits, as fx/fy, for a top-left corner at `ox, oy`; a side with no room to move
+-- keeps the value it had.
+local function place(r, bw, bh, cw, ch, ox, oy)
+    local fx, fy = r.fx, r.fy
+    if bw > cw then fx = clamp(round(ox / (bw - cw) * 100), 0, 100) end
+    if bh > ch then fy = clamp(round(oy / (bh - ch) * 100), 0, 100) end
+    return fx, fy
+end
+
+-- A drag of the picture by `dx, dy` (fractions of the frame: half the screen to the right is
+-- 0.5): the picture follows the hand, so the crop moves the other way. Returns the new fx, fy.
+function M.pan(r, bw, bh, tw, th, dx, dy)
+    r = M.clean(r)
+    local ow, oh = M.oriented(r, tonumber(bw) or 0, tonumber(bh) or 0)
+    local ox, oy, cw, ch = M.crop(r, ow, oh, tw, th)
+    return place(r, ow, oh, cw, ch, ox - (tonumber(dx) or 0) * cw, oy - (tonumber(dy) or 0) * ch)
+end
+
+-- The wheel at `px, py` (fractions of the frame): the zoom changes to `zoom` and the point of the
+-- picture under the pointer stays under it. Returns zoom, fx, fy.
+function M.zoom_at(r, bw, bh, tw, th, px, py, zoom)
+    r = M.clean(r)
+    local f = M.BY.zoom
+    local ow, oh = M.oriented(r, tonumber(bw) or 0, tonumber(bh) or 0)
+    local ox, oy, cw, ch = M.crop(r, ow, oh, tw, th)
+    px, py = clamp(tonumber(px) or 0.5, 0, 1), clamp(tonumber(py) or 0.5, 0, 1)
+    local ax, ay = ox + px * cw, oy + py * ch
+    local nr = M.clean(r)
+    nr.zoom = clamp(round(tonumber(zoom) or r.zoom), f.min, f.max)
+    local _, _, nw, nh = M.crop(nr, ow, oh, tw, th)
+    local fx, fy = place(nr, ow, oh, nw, nh, ax - px * nw, ay - py * nh)
+    return nr.zoom, fx, fy
+end
+
+-- The part of a recipe that decides the frame (not the grade): the compare view is remade only
+-- when this changes.
+function M.frame_key(r)
+    r = M.clean(r)
+    return table.concat({ r.zoom, r.fx, r.fy, r.fit, r.rotate, r.flip, r.matte, r.bg, r.bg_blur, r.bg_dim,
+                          r.key, r.key_fuzz, r.bg_custom }, ":")
+end
+
+-- The recipe with its grade taken away and its frame kept: what the compare view shows.
+function M.ungraded(r)
+    r = M.clean(r)
+    local n = M.neutral()
+    for _, k in ipairs({ "zoom", "fx", "fy", "fit", "rotate", "flip", "matte", "bg", "bg_blur", "bg_dim",
+                         "key", "key_fuzz" }) do n[k] = r[k] end
+    n.bg_custom = r.bg_custom
+    return n
+end
+
+-- The base arguments: the whole source, in its own shape, scaled so it covers `bw × bh` (never
+-- more than M.BASE_MAX on a side, so a panorama does not become a wall of pixels). This is made
+-- once per source, then every preview and the final come off it — nothing is cropped away here,
+-- so the frame can reach any part of the picture.
+M.BASE_MAX = 7680
 function M.base_args(source, out, bw, bh)
     if type(source) ~= "string" or source == "" or type(out) ~= "string" or out == "" then return nil end
     bw, bh = round(tonumber(bw) or 0), round(tonumber(bh) or 0)
     if bw < 1 or bh < 1 then return nil end
     -- Lossless (D63): the base is what every preview and the still are cut from, so a JPEG here
     -- would be one more generation of loss under every edit. Lanczos is named rather than left to
-    -- the build's default, so an upscaled base is the sharpest it can be.
-    return { source, "-auto-orient",
-             "-filter", "Lanczos",
-             "-resize", string.format("%dx%d^", bw, bh),
-             "-gravity", "center", "-crop", string.format("%dx%d+0+0", bw, bh), "+repage",
-             "-strip", "-define", "png:compression-level=6", out }
+    -- the build's default, so an upscaled base is the sharpest it can be. An `.mpc` out is
+    -- ImageMagick's own memory-mapped cache, which the next command reads without decoding.
+    local a = { source .. "[0]", "-auto-orient",
+                "-filter", "Lanczos",
+                "-resize", string.format("%dx%d^", bw, bh),
+                "-resize", string.format("%dx%d>", M.BASE_MAX, M.BASE_MAX),
+                "-strip" }
+    if M.is_png(out) then a[#a + 1] = "-define"; a[#a + 1] = "png:compression-level=6" end
+    a[#a + 1] = out
+    return a
 end
 
 -- A short, stable name for a source path (the base's file name).

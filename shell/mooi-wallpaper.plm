@@ -16,7 +16,7 @@ import "ui/lumen.plm"
 
 scene Lumen {
     permissions {
-        run: "magick", "matugen", "qs", "pleamar", "hyprctl", "find", "readlink", "mkdir", "rm"
+        run: "magick", "matugen", "qs", "awww", "pleamar", "hyprctl", "find", "readlink", "mkdir", "rm"
         services: "files", "files.write", "env"
     }
 
@@ -294,6 +294,24 @@ scene Lumen {
     fact swatch_count = 0
     fact can_undo = 0
     fact can_redo = 0
+    // The frame (lib/wallpaper): fill or fit, the quarter turns, the mirrors, the zoom.
+    fact fit_on = false
+    fact rot = 0
+    fact flip_h = false
+    fact flip_v = false
+    fact zoom_now = 100
+    // The picture carried by the hand: the scene moves the preview while it is dragged, the logic
+    // moves the crop on release and lets the offset go when the next preview is drawn.
+    fact pan_dx = 0
+    fact pan_dy = 0
+    // Where the wheel turned, so the zoom keeps that point under the pointer.
+    fact zoom_px = 960
+    fact zoom_py = 540
+    // A field has the caret: the single-letter keys stand down (a letter rule would otherwise take
+    // the letter from the field — `a` in a colour would apply the wallpaper).
+    fact typing = false
+    // H: the studio's chrome out of the way, the picture on its own.
+    fact chrome_off = false
 
     text src_name = ""
     text src_meta = ""
@@ -368,8 +386,14 @@ scene Lumen {
     event apply_now ->        // to the logic: render and apply
     event reset_recipe ->     // to the logic: the picture as it is
     event close_studio ->     // to the logic: save, tidy the cache and quit
-    event set_focus ->        // to the logic: x * 10000 + y, in screen pixels
-    event zoom_step ->        // to the logic: the wheel's notches
+    event pan_done ->         // to the logic: the picture was dragged by pan_dx, pan_dy
+    event zoom_at ->          // to the logic: the wheel's notches, at zoom_px, zoom_py
+    event set_fit ->          // to the logic: fill the screen, or fit the whole picture
+    event rotate_step ->      // to the logic: -1 a quarter turn back, 1 forward
+    event flip_toggle ->      // to the logic: 1 mirror left to right, 2 top to bottom
+    event frame_reset ->      // to the logic: no zoom, centred, unturned, unmirrored
+    event save_copy ->        // to the logic: keep the edit in ~/Pictures/Lumen
+    event sel_step ->         // to the logic: the next or previous tile on the source wall
     event pick_bg ->          // to the logic: backdrop 0 black, 1 the picture, 2–4 a colour, 5 typed
     event pick_swatch ->      // to the logic: a colour from the palette, by its place in it
     event use_bg_custom ->    // to the logic: take the colour in the field as the backdrop
@@ -391,33 +415,28 @@ scene Lumen {
             move: 0, (1 - enter) * 12
 
             // ── The picture ─────────────────────────────────────
-            image prev { at: 0, 0; size: screen.width, screen.height; show: has_preview and not comparing }
-            image srcpic { at: 0, 0; size: screen.width, screen.height; show: has_source and comparing }
+            image prev { at: pan_dx, pan_dy; size: screen.width, screen.height; show: has_preview and not comparing }
+            image srcpic { at: pan_dx, pan_dy; size: screen.width, screen.height; show: has_source and comparing }
             box { from: 0, 0; size: screen.width, screen.height; color: #000000; opacity: 0.08 }
 
             // The whole screen is the crop's target: a press puts the subject where it is,
             // the wheel zooms. Under the chrome, so a control never moves the focus.
-            zone box canvas { from: 0, 0; size: screen.width, screen.height; cursor: crosshair; role: region
-                              label: "The picture: press to set the crop's focus"; show: not browsing }
+            zone box canvas { from: 0, 0; size: screen.width, screen.height; cursor: grab; role: region
+                              label: "The picture: drag to move it, the wheel zooms"; show: not browsing }
             // These keep presses on the chrome from reaching the picture underneath.
-            zone box top_guard { from: 0, 0; size: screen.width, 118; role: region; label: "The studio header" }
-            zone box rail_guard { from: screen.width - 444, 118; size: 444, 660; role: region; label: "The vibes and the palette" }
-            zone box dock_guard { from: 36, screen.height - 260; size: screen.width - 72, 260; role: region; label: "The grade dock" }
+            zone box top_guard { from: 0, 0; size: screen.width, 118; role: region; label: "The studio header"; show: not chrome_off }
+            zone box rail_guard { from: screen.width - 444, 118; size: 444, 660; role: region; label: "The vibes and the palette"; show: not chrome_off }
+            zone box dock_guard { from: 36, screen.height - 260; size: screen.width - 72, 260; role: region; label: "The grade dock"; show: not chrome_off }
 
-            // The frame's thirds and the focus point, while FRAME is the tab.
+            // The frame's thirds and its middle, while FRAME is the tab or the picture is carried.
             group {
-                show: tab == 2
-                repeat i in 1..2 {
-                    line { from: screen.width * i / 3, 0; to: screen.width * i / 3, screen.height; width: 1; color: fl.phos; opacity: 0.13 }
-                    line { from: 0, screen.height * i / 3; to: screen.width, screen.height * i / 3; width: 1; color: fl.phos; opacity: 0.13 }
+                show: (tab == 2 or canvas.pressed > 0.5) and not chrome_off
+                repeat i in 1..3 {
+                    line { from: screen.width * i / 3, 0; to: screen.width * i / 3, screen.height; width: 1; color: fl.phos; opacity: 0.16 }
+                    line { from: 0, screen.height * i / 3; to: screen.width, screen.height * i / 3; width: 1; color: fl.phos; opacity: 0.16 }
                 }
-                line { from: screen.width * fx / 100 - 26, screen.height * fy / 100; to: screen.width * fx / 100 - 9, screen.height * fy / 100; width: 1; color: fl.ember }
-                line { from: screen.width * fx / 100 + 9, screen.height * fy / 100; to: screen.width * fx / 100 + 26, screen.height * fy / 100; width: 1; color: fl.ember }
-                line { from: screen.width * fx / 100, screen.height * fy / 100 - 26; to: screen.width * fx / 100, screen.height * fy / 100 - 9; width: 1; color: fl.ember }
-                line { from: screen.width * fx / 100, screen.height * fy / 100 + 9; to: screen.width * fx / 100, screen.height * fy / 100 + 26; width: 1; color: fl.ember }
-                box { at: screen.width * fx / 100, screen.height * fy / 100; size: 4, 4; corner: 2; color: fl.ember }
-                text "FOCUS {fx, 0} % · {fy, 0} %" { at: screen.width * fx / 100 + 34, screen.height * fy / 100 + 1; anchor: left center
-                                                   size: 8; family: "Share Tech Mono"; color: fl.ember; shadow: 0, 1, 6, 60%, #000000 }
+                line { from: screen.width / 2 - 14, screen.height / 2; to: screen.width / 2 + 14, screen.height / 2; width: 1; color: fl.ember; opacity: 0.7 }
+                line { from: screen.width / 2, screen.height / 2 - 14; to: screen.width / 2, screen.height / 2 + 14; width: 1; color: fl.ember; opacity: 0.7 }
             }
 
             // While the picture loads, or when it could not be read.
@@ -429,6 +448,9 @@ scene Lumen {
                                            color: fl.phos; shadow: 0, 1, 6, 70%, #000000; show: comparing }
             box { from: 0, 0; size: screen.width, 2; color: fl.ember; opacity: if(loading, 0.9, 0) }
 
+            // ── The chrome: hidden with H, so the picture can be seen on its own ──
+            group {
+                show: not chrome_off
             // ── The header ──────────────────────────────────────
             Plate(48, 36, 318, 66, 8, mix(fl.hull, fl.ground, 0.35), fl.trace_dim, 0.9)
             text "LUMEN" { at: 68, 59; anchor: left center; size: 25; weight: 700; family: "Exo 2"; color: fl.phos
@@ -442,7 +464,8 @@ scene Lumen {
             text status { at: 392, 94; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember
                           width: 900; lines: 1; shadow: 0, 1, 6, 70%, #000000 }
 
-            Button(screen.width - 518, 44, 150, 38, "SOURCES", fl.trace_lit, false, open_browse, 0)
+            Button(screen.width - 652, 44, 140, 38, "SOURCES", fl.trace_lit, false, open_browse, 0)
+            Button(screen.width - 504, 44, 140, 38, "SAVE A COPY", fl.trace_lit, false, save_copy, 0, not loading)
             Button(screen.width - 356, 44, 96, 38, "ESC · CLOSE", fl.trace_lit, false, close_studio, 0)
             Button(screen.width - 248, 44, 200, 38, pick(applied, "APPLY TO DESKTOP", "APPLIED ✓"), if(applied, fl.phos, fl.ember), true, apply_now, 0, not loading)
 
@@ -459,15 +482,44 @@ scene Lumen {
             Swatch(screen.width - 402, 702, 56, 56, rgb(pal_ember_r, pal_ember_g, pal_ember_b), "COUNTER · EMBER", pal_ember)
 
             // ── The grade dock ──────────────────────────────────
-            Plate(48, screen.height - 248, screen.width - 492, 200, 10, mix(fl.hull, fl.ground, 0.42), fl.trace_dim, 0.9)
+            // Its columns are measured from its width, so a slider's value never sits on the next
+            // slider, and the history and compare controls keep the right end of the tab row.
+            let dw = screen.width - 492
+            let dr = 48 + dw - 24
+            let colw = (dw - 48) / 4
+            Plate(48, screen.height - 248, dw, 200, 10, mix(fl.hull, fl.ground, 0.42), fl.trace_dim, 0.9)
             Tab(72, screen.height - 230, 104, "TONE", set_tab, 0, tab == 0)
             Tab(184, screen.height - 230, 104, "COLOUR", set_tab, 1, tab == 1)
             Tab(296, screen.height - 230, 104, "FRAME", set_tab, 2, tab == 2)
             Tab(408, screen.height - 230, 104, "FX", set_tab, 3, tab == 3)
             Tab(520, screen.height - 230, 130, "BACKDROP", set_tab, 4, tab == 4)
 
-            text vibe_name { at: 556, screen.height - 222; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.phos; show: tab < 4 }
-            text vibe_hint { at: 556, screen.height - 206; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 560; lines: 1; show: tab < 4 }
+            zone box cmp { from: dr - 404, screen.height - 230; size: 128, 30; cursor: pointer; role: button; label: "Hold to see the source" }
+            Plate(dr - 404, screen.height - 230, 128, 30, 6, mix(fl.hull_raised, fl.well, 0.5 * cmp.hover + if(comparing, 0.5, 0)), if(comparing, fl.phos, fl.trace), 0.95)
+            text "HOLD · SOURCE" { at: dr - 340, screen.height - 215; anchor: center; size: 9; weight: 600; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, max(cmp.hover, if(comparing, 1, 0))) }
+            Button(dr - 268, screen.height - 230, 84, 30, "UNDO", fl.trace_lit, false, undo_recipe, 0, can_undo > 0)
+            Button(dr - 176, screen.height - 230, 84, 30, "REDO", fl.trace_lit, false, redo_recipe, 0, can_redo > 0)
+            Button(dr - 84, screen.height - 230, 84, 30, "RESET", fl.trace_lit, false, reset_recipe, 0)
+
+            // the look the grade is, under the tabs (the frame and the backdrop use this row)
+            text "VIBE · {vibe_name}" { at: 72, screen.height - 188; anchor: left center; size: 11; weight: 600; family: "Exo 2"; color: fl.phos
+                                       show: tab == 0 or tab == 1 or tab == 3 }
+            text vibe_hint { at: 72 + 260, screen.height - 188; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted
+                             width: 560; lines: 1; show: tab == 0 or tab == 1 or tab == 3 }
+
+            // ── The frame's switches ────────────────────────────
+            group {
+                show: tab == 2
+                Button(72, screen.height - 198, 92, 26, "FILL", fl.phos, not fit_on, set_fit, 0)
+                Button(170, screen.height - 198, 92, 26, "FIT", fl.phos, fit_on, set_fit, 0)
+                Button(286, screen.height - 198, 92, 26, "↺ 90°", fl.trace_lit, false, rotate_step, -1)
+                Button(384, screen.height - 198, 92, 26, "↻ 90°", fl.trace_lit, false, rotate_step, 1)
+                Button(500, screen.height - 198, 110, 26, "MIRROR ⇆", fl.phos, flip_h, flip_toggle, 1)
+                Button(616, screen.height - 198, 110, 26, "FLIP ⇅", fl.phos, flip_v, flip_toggle, 2)
+                Button(750, screen.height - 198, 130, 26, "RESET FRAME", fl.trace_lit, false, frame_reset, 0)
+                text "ZOOM {zoom_now, 0}%  ·  TURNED {rot * 90, 0}°" { at: 900, screen.height - 185; anchor: left center; size: 9
+                     family: "Share Tech Mono"; color: fl.engrave }
+            }
 
             // ── The backdrop ────────────────────────────────────
             // The matte's fill: black, the picture itself blurred, one of the three colours read
@@ -487,7 +539,10 @@ scene Lumen {
                 input bg_custom_hex { at: 1356, screen.height - 192; width: 88; size: 10; family: "Share Tech Mono"; color: fl.phos
                                         placeholder: "#RRGGBB"; selection: fl.well
                                         label: "The colour the CUSTOM backdrop fills with — press Enter to use it" }
-                text bg_note { at: 690, screen.height - 215; anchor: left center; size: 8
+                // the field is taken through this zone, so the studio knows a colour is being typed
+                zone box hex_take { from: 1350, screen.height - 198; size: 100, 24; cursor: text; role: region
+                                    label: "Type a backdrop colour"; show: not typing }
+                text bg_note { at: 72, screen.height - 207; anchor: left center; size: 8
                                 family: "Share Tech Mono"; color: fl.trace }
 
                 // The palette (D63): the shell's own colours, a press to fill with one, and the same
@@ -498,22 +553,14 @@ scene Lumen {
                                                 sw_sel == s.index, pick_swatch, s.index) }
             }
 
-            zone box cmp { from: screen.width - 716, screen.height - 230; size: 140, 30; cursor: pointer; role: button; label: "Hold to see the source" }
-            Plate(screen.width - 716, screen.height - 230, 140, 30, 6, mix(fl.hull_raised, fl.well, 0.5 * cmp.hover), fl.trace, 0.95)
-            text "HOLD · SOURCE" { at: screen.width - 646, screen.height - 215; anchor: center; size: 9; weight: 600; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, cmp.hover) }
-            Button(screen.width - 564, screen.height - 230, 96, 30, "RESET", fl.trace_lit, false, reset_recipe, 0)
-            Button(690, screen.height - 230, 96, 30, "UNDO", fl.trace_lit, false, undo_recipe, 0, can_undo > 0)
-            Button(794, screen.height - 230, 96, 30, "REDO", fl.trace_lit, false, redo_recipe, 0, can_redo > 0)
 
-            for s in sliders { Slider(72 + s.index * 342, screen.height - 140, 270, s.label, s.v, s.span, set_value, s.code, s.shown) }
+            for s in sliders { Slider(72 + s.index * colw, screen.height - 140, colw - 100, s.label, s.v, s.span, set_value, s.code, s.shown) }
 
-            text "← → TABS · 1–9 VIBES · A APPLY · R RESET · ESC CLOSES" { at: 72, screen.height - 72; anchor: left center
-                                                                          size: 8; family: "Share Tech Mono"; color: fl.trace }
-            text "HOLD COMPARE FOR THE SOURCE" { at: screen.width - 72, screen.height - 72; anchor: right center
-                                                 size: 8; family: "Share Tech Mono"; color: fl.trace }
-            text "CLICK THE PICTURE TO PUT THE FOCUS THERE · THE WHEEL ZOOMS" { at: screen.width / 2, screen.height - 274; anchor: center
-                                                                                size: 9; family: "Share Tech Mono"; color: fl.ember
-                                                                                shadow: 0, 1, 8, 70%, #000000; show: tab == 2 }
+            text "DRAG THE PICTURE TO MOVE IT · WHEEL ZOOMS · ← → TABS · 1–9 VIBES · H HIDES THE STUDIO · C COMPARES · F FITS · A APPLIES · CTRL+S SAVES A COPY · ESC CLOSES" { at: 72, screen.height - 72; anchor: left center
+                 size: 8; family: "Share Tech Mono"; color: fl.trace; width: dw - 48; lines: 1 }
+            }
+            text "H · SHOW THE STUDIO" { at: screen.width - 48, screen.height - 36; anchor: right center; size: 9
+                                         family: "Share Tech Mono"; color: fl.phos; shadow: 0, 1, 6, 80%, #000000; show: chrome_off }
 
             // ── The source wall ─────────────────────────────────
             group {
@@ -601,8 +648,12 @@ scene Lumen {
     }
 
     // ── What the hands do ───────────────────────────────────────
-    on press canvas { emit set_focus(round(pointer.x) * 10000 + round(pointer.y)) }
-    on scroll canvas { emit zoom_step(wheel) }
+    on press canvas { typing = false; blur }
+    on drag canvas { pan_dx = drag.dx; pan_dy = drag.dy }
+    on release canvas { emit pan_done }
+    on scroll canvas { zoom_px = pointer.x; zoom_py = pointer.y; emit zoom_at(wheel) }
+    on press hex_take { typing = true; focus bg_custom_hex }
+    on submit bg_custom_hex { typing = false; blur }
     on press cmp { comparing = true }
     on release cmp { comparing = false }
     on press bx { emit close_browse }
@@ -611,26 +662,34 @@ scene Lumen {
     on open_picker { blur }
 
 
-    on key Escape while picking { emit pick_cancel }
-    on key Escape while browsing and not picking { emit close_browse }
-    on key Escape while not browsing { emit close_studio }
-    on key a while not browsing { emit apply_now }
-    on key r while not browsing { emit reset_recipe }
-    on key Ctrl+z while not browsing { emit undo_recipe }
-    on key Ctrl+y while not browsing { emit redo_recipe }
-    on key Left while not browsing { emit step_tab(-1) }
-    on key Right while not browsing { emit step_tab(1) }
-    on key Up while not browsing { emit vibe_step(-1) }
-    on key Down while not browsing { emit vibe_step(1) }
-    on key one while not browsing { emit pick_vibe(0) }
-    on key two while not browsing { emit pick_vibe(1) }
-    on key three while not browsing { emit pick_vibe(2) }
-    on key four while not browsing { emit pick_vibe(3) }
-    on key five while not browsing { emit pick_vibe(4) }
-    on key six while not browsing { emit pick_vibe(5) }
-    on key seven while not browsing { emit pick_vibe(6) }
-    on key eight while not browsing { emit pick_vibe(7) }
-    on key nine while not browsing { emit pick_vibe(8) }
+    // While a colour is typed, Escape only leaves the field and no letter or digit is a shortcut.
+    on key Escape while typing { typing = false; blur }
+    on key Escape while picking and not typing { emit pick_cancel }
+    on key Escape while browsing and not picking and not typing { emit close_browse }
+    on key Escape while not browsing and not typing { emit close_studio }
+    on key a while not browsing and not typing { emit apply_now }
+    on key r while not browsing and not typing { emit reset_recipe }
+    on key h while not browsing and not typing { toggle chrome_off }
+    on key c while not browsing and not typing { toggle comparing }
+    on key f while not browsing and not typing { emit set_fit }
+    on key Ctrl+s while not browsing { emit save_copy }
+    on key Ctrl+z while not browsing and not typing { emit undo_recipe }
+    on key Ctrl+y while not browsing and not typing { emit redo_recipe }
+    on key Left while not browsing and not typing { emit step_tab(-1) }
+    on key Right while not browsing and not typing { emit step_tab(1) }
+    on key Up while not browsing and not typing { emit vibe_step(-1) }
+    on key Down while not browsing and not typing { emit vibe_step(1) }
+    on key Up while browsing and not picking { emit sel_step(-1) }
+    on key Down while browsing and not picking { emit sel_step(1) }
+    on key one while not browsing and not typing { emit pick_vibe(0) }
+    on key two while not browsing and not typing { emit pick_vibe(1) }
+    on key three while not browsing and not typing { emit pick_vibe(2) }
+    on key four while not browsing and not typing { emit pick_vibe(3) }
+    on key five while not browsing and not typing { emit pick_vibe(4) }
+    on key six while not browsing and not typing { emit pick_vibe(5) }
+    on key seven while not browsing and not typing { emit pick_vibe(6) }
+    on key eight while not browsing and not typing { emit pick_vibe(7) }
+    on key nine while not browsing and not typing { emit pick_vibe(8) }
     on submit src_query { emit pick_source(sel) }
     // The two text fields' Enter is handled in the logic (`submit:src_folder`,
     // `submit:bg_custom_hex`, `submit:pick_typed`), which is given the text itself.

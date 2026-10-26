@@ -165,21 +165,141 @@ function M.focus(nodes, id, canvas)
     return out, true
 end
 
--- One step of a move between two arrangements. Rounded, because a node is drawn and
--- dragged in whole pixels; the scene reads the same numbers the arrangement will hold
--- when the step reaches one.
-function M.blend(a, b, t)
-    if type(a) ~= "table" or type(b) ~= "table" then return b end
-    t = math.max(0, math.min(1, tonumber(t) or 1))
-    local function mix(key, fallback)
-        local from = tonumber(a[key]) or fallback
-        local to = tonumber(b[key]) or fallback
-        return math.floor(from + (to - from) * t + 0.5)
+-- ORBIT: the chosen node in the middle at its detail size, every other node a card of one
+-- size on a ring around it. The ring is the canvas's own frame — a row along the top, a
+-- row along the bottom, a column down each side — and the cards are spread evenly along it
+-- in RING_ORDER, read clockwise from the left: the person's things on the left (audio,
+-- clock), the network and the hardware across the top and the right, what is playing and
+-- the workspaces along the bottom. Nodes in `skip` (not drawable now) keep their places and
+-- take no room. A canvas too small to hold the ring falls back to TIDY's reading order.
+M.RING_ORDER = {
+    "audio", "clock", "core", "network", "cpu", "memory", "gpu", "thermal",
+    "system", "power", "storage", "display", "media", "workspaces",
+}
+local ring_rank = {}
+for i, id in ipairs(M.RING_ORDER) do ring_rank[id] = i end
+
+-- The ring's slots, clockwise, starting from the left column's middle.
+local function ring_slots(canvas, sw, sh, gap, cols)
+    cols = math.max(1, math.min(cols, math.floor((canvas.w - gap) / (sw + gap))))
+    local stepx = (canvas.w - sw - 2 * gap) / math.max(1, cols - 1)
+    local inner_top, inner_bottom = gap + sh + gap, canvas.h - gap - sh - gap
+    local rows = math.max(0, math.floor((inner_bottom - inner_top + gap) / (sh + gap)))
+    local stepy = rows > 0 and (inner_bottom - inner_top - sh) / math.max(1, rows - 1) or 0
+    local function side_y(k)
+        if rows == 1 then return (inner_top + inner_bottom - sh) / 2 end
+        return inner_top + k * stepy
     end
-    return {
-        x = mix("x", 0), y = mix("y", 0),
-        w = mix("w", 200), h = mix("h", 120),
-    }
+    local top, right, bottom, left = {}, {}, {}, {}
+    for k = 0, cols - 1 do
+        top[#top + 1] = { x = gap + k * stepx, y = gap }
+        bottom[#bottom + 1] = { x = canvas.w - gap - sw - k * stepx, y = canvas.h - gap - sh }
+    end
+    for k = 0, rows - 1 do
+        right[#right + 1] = { x = canvas.w - gap - sw, y = side_y(k) }
+        left[#left + 1] = { x = gap, y = side_y(rows - 1 - k) }
+    end
+    -- clockwise from the top-left corner, then turned to start at the left side's middle
+    local ring = {}
+    for _, part in ipairs({ top, right, bottom, left }) do
+        for _, p in ipairs(part) do ring[#ring + 1] = p end
+    end
+    local start = #top + #right + #bottom + math.floor(#left / 2) + 1
+    local out = {}
+    for k = 0, #ring - 1 do out[#out + 1] = ring[((start - 1 + k) % #ring) + 1] end
+    return out, cols, rows
+end
+
+function M.orbit(nodes, id, canvas, skip)
+    skip = skip or {}
+    canvas = { w = finite(canvas and canvas.w, 1880), h = finite(canvas and canvas.h, 860) }
+    local gap = 16
+    -- tall enough for a card's monitor (the scene draws it from 176) where the canvas allows
+    local sh = canvas.h >= 820 and 176 or 140
+    local function card_w(cols) return math.floor(math.max(220, math.min(300, (canvas.w - (cols + 1) * gap) / cols))) end
+
+    local out, centre, sats = {}, nil, {}
+    for i, n in ipairs(nodes) do
+        local copy = {}
+        for k, v in pairs(n) do copy[k] = v end
+        out[i] = copy
+        if copy.vis ~= false and not skip[copy.type] then
+            if copy.type == id then centre = copy else sats[#sats + 1] = copy end
+        end
+    end
+    if not centre then return nodes, false end
+    table.sort(sats, function(a, b)
+        local ra, rb = ring_rank[a.type] or 99, ring_rank[b.type] or 99
+        if ra ~= rb then return ra < rb end
+        return a.type < b.type
+    end)
+
+    -- the fewest columns whose ring still holds every card, so the ring is full rather than
+    -- gapped; wider cards for a short ring, never wider than 300
+    local slots, sw
+    for cols = 3, 7 do
+        sw = card_w(cols)
+        slots = ring_slots(canvas, sw, sh, gap, cols)
+        if #slots >= #sats then break end
+    end
+    -- the middle: what the ring leaves, never more than the type's detail size
+    local def = nexusnode.get(id)
+    local room_w = canvas.w - 2 * (gap + sw + gap) - 2 * gap
+    local room_h = canvas.h - 2 * (gap + sh + gap) - 2 * gap
+    if #slots < #sats or room_w < 240 or room_h < 160 then
+        return M.tidy(nodes, canvas, 8), true
+    end
+    local dw = math.floor(math.min(def and def.detail.w or centre.w, room_w))
+    local dh = math.floor(math.min(def and def.detail.h or centre.h, room_h))
+    centre.w, centre.h = dw, dh
+    centre.min = false
+    centre.x = math.floor((canvas.w - dw) / 2)
+    centre.y = math.floor((canvas.h - dh) / 2)
+
+    -- spread evenly along the ring, the first card on the left side's middle
+    local n = #sats
+    for k, node in ipairs(sats) do
+        local slot = slots[math.floor((k - 1) * #slots / n) + 1]
+        node.w, node.h = sw, sh
+        node.x, node.y = math.floor(slot.x), math.floor(slot.y)
+        node.min = false
+    end
+    return out, true
+end
+
+-- Where a dropped node lands. The drop itself when it clears every other drawn box (the
+-- caller leaves the node's own box out); otherwise the nearest grid position that does,
+-- searched ring by ring outward from the drop, so a card let go on top of another slides
+-- to the closest free room beside it. A canvas with no room within reach keeps the drop:
+-- an overlap is allowed, it is just never the default.
+function M.nearest_free(boxes, w, h, x, y, canvas, grid, pad)
+    grid = math.max(tonumber(grid) or 8, 8)
+    pad = tonumber(pad) or 8
+    local function clear(px, py)
+        local box = { x = px, y = py, w = w, h = h }
+        for _, other in ipairs(boxes) do
+            if M.overlap(box, other, pad) then return false end
+        end
+        return true
+    end
+    local sx, sy = M.clamp(M.snap(x, grid), M.snap(y, grid), w, h, canvas)
+    if clear(sx, sy) then return sx, sy, false end
+    for r = 1, 48 do
+        local bx, by, bd
+        for dy = -r, r do
+            for dx = -r, r do
+                if math.max(math.abs(dx), math.abs(dy)) == r then
+                    local px, py = M.clamp(sx + dx * grid, sy + dy * grid, w, h, canvas)
+                    if clear(px, py) then
+                        local d = (px - sx) * (px - sx) + (py - sy) * (py - sy)
+                        if not bd or d < bd then bx, by, bd = px, py, d end
+                    end
+                end
+            end
+        end
+        if bd then return bx, by, true end
+    end
+    return sx, sy, false
 end
 
 -- One keyboard nudge, snapped and clamped.

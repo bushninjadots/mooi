@@ -242,7 +242,9 @@ M.SCHEMA = {
     { path = "wallpaper.fuzz", kind = "integer", default = 18, min = 0, max = 45 },
     -- Control Nexus (D65): the command centre opens from the bar's Arch mark. Pinned keeps it
     -- open until it is closed deliberately; the live readings themselves are never persisted.
+    -- `view` is how it opens: the compact hub under the mark, or the full-screen workspace.
     { path = "nexus.pinned", kind = "boolean", default = false },
+    { path = "nexus.view", kind = "enum", values = { "hub", "full" }, default = "hub" },
     { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
     { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },

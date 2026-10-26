@@ -1463,7 +1463,7 @@ scene Mooi {
     figure i_music = file "icons/music.svg"
     figure i_settings = file "icons/settings.svg"
     figure i_wallpaper = file "icons/wallpaper.svg"
-    figure i_arch = file "icons/arch.svg"
+    figure i_nexus = file "icons/nexus.svg"
 
     // The surface reserves the strip alone. What opens under it — the mark's menu — floats
     // over windows, and since pleamar commits the input region from what is painted, nothing
@@ -2673,13 +2673,13 @@ scene Mooi {
         zone box znx { from: 0, fl.top; size: ws_nexus, fl.mod_h; cursor: pointer; role: toggle
                        checked: nexus_open; label: "Control Nexus — the system command centre" }
         Pill(ws_nexus, nlit)
-        figure i_arch { at: 8, fl.top + (fl.mod_h - 16) / 2; size: 16, 16
-                        color: mix(fl.trace, fl.phos, nlit) }
+        // the mark: a core in its orbit, lit while the Nexus is up, and a rule under it
         group {
-            show: nexus_open
-            glow: 5, 80% * st_glow, fl.phos
-            ellipse { at: 27, fl.cy; radius: 1.6; color: fl.phos }
+            glow: 3, 35% * st_glow * if(nexus_open, 1, 0), fl.phos
+            figure i_nexus { at: ws_nexus / 2, fl.cy - if(nexus_open, 1, 0); size: 17, 17
+                             color: mix(mix(fl.trace_lit, fl.engrave, 0.25), mix(fl.phos, fl.engrave, 0.35), nlit) }
         }
+        box { from: ws_nexus / 2 - 6, fl.top + fl.mod_h - 4; size: 12, 2; corner: 1; color: fl.phos; opacity: if(nexus_open, 0.95, 0) }
         on press znx { emit open_nexus; side = none; mark_open = false; open = none }
     }
 

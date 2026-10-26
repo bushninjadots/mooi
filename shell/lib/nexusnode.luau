@@ -31,7 +31,7 @@ end
 -- library-only until one exists.
 M.TYPES = {
     kind("core", "Nexus Core", "system", "phos", nil,
-        260, 260, 200, 200, 520, 520, 420, 420, true),
+        260, 260, 200, 120, 520, 520, 420, 420, true),
     kind("system", "System", "system", "phos", nil,
         240, 160, 200, 110, 520, 360, 620, 420, true),
     kind("cpu", "CPU", "system", "phos", nil,
@@ -72,6 +72,23 @@ M.TYPES = {
 
 local by_id = {}
 for _, def in ipairs(M.TYPES) do by_id[def.id] = def end
+
+-- Every type the scene can draw has a fixed slot: its place among the connected types, in
+-- catalogue order. A slot carries its own springs in the scene, so switching arrangements
+-- moves each node from where it was to where it goes, and a node that leaves or arrives
+-- fades in place instead of the list shifting under it.
+M.SLOTS = {}
+local slot_of = {}
+for _, def in ipairs(M.TYPES) do
+    if def.status ~= UNAVAILABLE then
+        M.SLOTS[#M.SLOTS + 1] = def
+        slot_of[def.id] = #M.SLOTS
+    end
+end
+
+function M.slot(id)
+    return slot_of[id]
+end
 
 function M.get(id)
     return by_id[id]

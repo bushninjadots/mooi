@@ -41,6 +41,11 @@ local state = W.state(read(FILE, "json"))
 local screen_w, screen_h = 1920, 1080
 local base_w, base_h = 2880, 1620
 local source, base, srcview, recipe = nil, nil, nil, W.neutral()
+-- The base's real size (it keeps the picture's shape), and the proxy: the same picture small
+-- enough to grade in a few tens of milliseconds, which is what a drag is drawn from.
+local base_dims = { w = 0, h = 0 }
+local proxy, proxy_dims = nil, { w = 0, h = 0 }
+local DRAFT_W, DRAFT_H = 960, 540
 local current_source = nil
 local query = ""
 local sources, filtered = nil, {}
@@ -78,9 +83,8 @@ end
 
 local scan_gen = 0
 local thumbs, thumb_queued, thumb_queue = {}, {}, {}
-local thumb_busy = false
+local thumb_running, THUMB_WORKERS = 0, 3
 local preview_n, previews = 0, {}
-local rendering, queued = false, false
 local applying = false
 local pal_busy, pal_pending = false, nil
 local save_gen = 0
@@ -214,6 +218,11 @@ local function publish()
     fact.can_undo = #hist > 0
     fact.can_redo = #future > 0
     fact.fx, fact.fy = recipe.fx, recipe.fy
+    fact.fit_on = recipe.fit > 0
+    fact.rot = recipe.rotate
+    fact.flip_h = recipe.flip % 2 == 1
+    fact.flip_v = recipe.flip >= 2
+    fact.zoom_now = recipe.zoom
     local rows = {}
     for _, f in ipairs(W.FIELDS) do
         if f.tab == fact.tab then
@@ -267,28 +276,93 @@ local function palette_from(file)
     end)
 end
 
-local function render_preview()
-    if not base then return end
-    if rendering then queued = true; return end
-    rendering = true
-    fact.loading = true
+-- One render at a time, the newest request first. A draft (the proxy, small) answers a drag at
+-- once; the full preview (the base) follows when the edits settle; the compare view (the frame
+-- without the grade) is remade only when the frame itself changed. Every render is stamped with
+-- the request it answered, so a slow one that finishes after a newer one is never shown.
+local function screen() return { w = screen_w, h = screen_h } end
+local busy, want = false, {}
+local req_gen, shown_gen = 0, 0
+local compare_key = nil
+local settle_gen = 0
+local pan_pending = false
+local pump
+
+local function rm_cache(path)
+    if not path then return end
+    run("rm", { "-f", path, (path:gsub("%.mpc$", ".cache")) })
+end
+
+local function start(kind, gen)
+    busy = true
+    if kind == "compare" then
+        local key = W.frame_key(recipe)
+        local out = CACHE .. "/source-" .. W.hash(source or "") .. "-" .. tostring(gen % 2) .. ".jpg"
+        run("magick", W.args(W.ungraded(recipe), base, out, W.PREVIEW_W, W.PREVIEW_H, base_dims.w, base_dims.h, backdrop(), screen()), function(_, code)
+            busy = false
+            if code == 0 then srcview = out; text.src_file = out; compare_key = key end
+            pump()
+        end)
+        return
+    end
+    local draft = kind == "draft" and proxy ~= nil
     local out = next_preview()
-    run("magick", W.args(recipe, base, out, W.PREVIEW_W, W.PREVIEW_H, base_w, base_h, backdrop()), function(_, code)
-        rendering = false
+    local args = draft
+        and W.args(recipe, proxy, out, DRAFT_W, DRAFT_H, proxy_dims.w, proxy_dims.h, backdrop(), screen())
+        or W.args(recipe, base, out, W.PREVIEW_W, W.PREVIEW_H, base_dims.w, base_dims.h, backdrop(), screen())
+    if draft then
+        -- a draft is a quick JPEG; the full preview keeps its colour detail (lib/wallpaper)
+        args[#args - 1] = "82"
+    end
+    run("magick", args, function(_, code)
+        busy = false
         if code == 0 then
-            text.prev_file = out
-            fact.has_preview = true
-            fact.loading = false
-            fact.failed = false
-            text.status = "PREVIEW · " .. W.summary(recipe)
-            if not queued then palette_from(out) end
+            if gen >= shown_gen then
+                shown_gen = gen
+                text.prev_file = out
+                fact.has_preview = true
+                fact.failed = false
+                if pan_pending then pan_pending = false; fact.pan_dx = 0; fact.pan_dy = 0 end
+                text.status = (draft and "DRAFT · " or "PREVIEW · ") .. W.summary(recipe)
+                if not draft and gen == req_gen then
+                    fact.loading = false
+                    palette_from(out)
+                    if compare_key ~= W.frame_key(recipe) then want.compare = gen end
+                end
+            end
         else
             fact.loading = false
             fact.failed = true
             text.status = "COULD NOT RENDER THE PREVIEW"
         end
-        if queued then queued = false; render_preview() end
+        pump()
     end)
+end
+
+pump = function()
+    if busy or not base then return end
+    -- the newest full render beats a draft; a draft beats the compare view
+    if want.full then local g = want.full; want.full = nil; want.draft = nil; start("full", g); return end
+    if want.draft then local g = want.draft; want.draft = nil; start("draft", g); return end
+    if want.compare then local g = want.compare; want.compare = nil; start("compare", g); return end
+end
+
+-- `quick`: a draft now and the full preview once nothing has changed for a moment.
+local function render_preview(quick)
+    if not base then return end
+    req_gen = req_gen + 1
+    fact.loading = true
+    if quick and proxy then
+        want.draft = req_gen
+        settle_gen = settle_gen + 1
+        local g = settle_gen
+        after(260, function()
+            if g == settle_gen then want.full = req_gen; pump() end
+        end)
+    else
+        want.full = req_gen
+    end
+    pump()
 end
 
 -- ── A picture ────────────────────────────────────────────────
@@ -327,10 +401,12 @@ local function load_source(path, close_after, retried)
     publish()
     save_soon()
 
-    local old_base, old_view = base, srcview
-    srcview = nil
+    local old_base, old_view, old_proxy = base, srcview, proxy
+    srcview, proxy, base = nil, nil, nil
+    compare_key = nil
+    want = {}
     text.src_file = ""
-    local b = CACHE .. "/base-" .. W.hash(path) .. ".png"
+    local b = CACHE .. "/base-" .. W.hash(path) .. ".mpc"
     local args = W.base_args(path, b, base_w, base_h)
     run("magick", args, function(out, code)
         if code ~= 0 then
@@ -344,29 +420,33 @@ local function load_source(path, close_after, retried)
             end
             return
         end
-        base = b
-        if old_base and old_base ~= b then run("rm", { "-f", old_base }) end
+        if old_base and old_base ~= b then rm_cache(old_base) end
+        if old_proxy then rm_cache(old_proxy) end
+        if old_view then run("rm", { "-f", old_view }) end
         fact.has_source = true
         identify(path)
-        -- The source view is made in the preview's shape (16 : 9), so the screen's own stretch puts
-        -- it back at the monitor's proportions; the base itself keeps the screen's shape, for apply.
-        local v = CACHE .. "/source-" .. W.hash(path) .. ".jpg"
-        run("magick", { b, "-filter", "Lanczos", "-resize", "1600x900!", "-strip",
-                         "-sampling-factor", "4:4:4", "-quality", "95", v }, function(_, vcode)
-            if vcode == 0 then
-                srcview = v
-                if old_view and old_view ~= v then run("rm", { "-f", old_view }) end
-                text.src_file = v
-            else
-                -- The compare view falls back to the base (squashed only on a non-16 : 9 monitor).
-                text.src_file = b
-            end
-        end)
         if close_after then fact.browsing = false end
-        -- The backdrop's colours are read before the preview is drawn: a recipe that already has a
-        -- backdrop must land in the picture's own colours, not the last picture's. Last time's
-        -- colours are drawn at once; the read then says whether they still hold.
-        detect_background(path, W.edges_of(state, path), render_preview)
+        -- The base keeps the picture's shape, so its size is read rather than assumed; the proxy is
+        -- made from it at a draft's scale. The backdrop's colours are read before the preview is
+        -- drawn: a recipe that already has a backdrop must land in the picture's own colours, not
+        -- the last picture's.
+        run("magick", { "identify", "-format", "%w %h", b }, function(out2)
+            local w, h = tostring(out2 or ""):match("(%d+)%s+(%d+)")
+            if source ~= path then return end
+            base_dims = { w = tonumber(w) or base_w, h = tonumber(h) or base_h }
+            base = b
+            local px = CACHE .. "/proxy-" .. W.hash(path) .. ".mpc"
+            local f = math.min(1, 1440 / math.max(1, base_w))
+            run("magick", { b, "-resize", string.format("%.4f%%", f * 100), px }, function(_, pcode)
+                if pcode ~= 0 or source ~= path then return end
+                run("magick", { "identify", "-format", "%w %h", px }, function(out3)
+                    local pw, ph = tostring(out3 or ""):match("(%d+)%s+(%d+)")
+                    if source ~= path or not pw then return end
+                    proxy, proxy_dims = px, { w = tonumber(pw), h = tonumber(ph) }
+                end)
+            end)
+            detect_background(path, W.edges_of(state, path), function() render_preview(false) end)
+        end)
     end)
 end
 
@@ -389,33 +469,29 @@ end
 local build_hits
 
 local function pump_thumbs()
-    if thumb_busy or #thumb_queue == 0 then return end
-    local job = table.remove(thumb_queue, 1)
-    if job.gen ~= scan_gen then pump_thumbs(); return end
-    if thumbs[job.path] then pump_thumbs(); return end
-    thumb_busy = true
-    local out = CACHE .. "/thumbs/" .. W.hash(job.path .. ":" .. tostring(job.mtime)) .. ".jpg"
-    run("magick", W.thumb_args(job.path, out, 282, 158), function(_, code)
-        if job.gen ~= scan_gen then
-            thumb_busy = false
-            pump_thumbs()
-            return
+    while thumb_running < THUMB_WORKERS and #thumb_queue > 0 do
+        local job = table.remove(thumb_queue, 1)
+        if job.gen == scan_gen and not thumbs[job.path] then
+            thumb_running = thumb_running + 1
+            local out = CACHE .. "/thumbs/" .. W.hash(job.path .. ":" .. tostring(job.mtime)) .. ".jpg"
+            run("magick", W.thumb_args(job.path, out, 282, 158), function(_, code)
+                if job.gen ~= scan_gen or code ~= 0 then
+                    thumb_running = thumb_running - 1
+                    pump_thumbs()
+                    return
+                end
+                thumbs[job.path] = out
+                job.entry.thumb, job.entry.ready = out, 1
+                run("magick", { "identify", "-format", "%w %h", job.path .. "[0]" }, function(meta)
+                    local w, h = tostring(meta or ""):match("(%d+)%s+(%d+)")
+                    if w and job.gen == scan_gen then job.entry.dims = w .. "×" .. h end
+                    thumb_running = thumb_running - 1
+                    if job.gen == scan_gen then build_hits() end
+                    pump_thumbs()
+                end)
+            end)
         end
-        if code ~= 0 then
-            thumb_busy = false
-            pump_thumbs()
-            return
-        end
-        thumbs[job.path] = out
-        job.entry.thumb, job.entry.ready = out, 1
-        run("magick", { "identify", "-format", "%w %h", job.path .. "[0]" }, function(meta)
-            local w, h = tostring(meta or ""):match("(%d+)%s+(%d+)")
-            if w and job.gen == scan_gen then job.entry.dims = w .. "×" .. h end
-            thumb_busy = false
-            if job.gen == scan_gen then build_hits() end
-            pump_thumbs()
-        end)
-    end)
+    end
 end
 
 function build_hits()
@@ -427,7 +503,8 @@ function build_hits()
     fact.hit_count = #filtered
     fact.pages = math.max(1, math.ceil(#filtered / 18))
     fact.page = clamp(fact.page, 0, fact.pages - 1)
-    fact.sel = 0
+    -- a page rebuilt because a thumbnail arrived keeps the tile that is lit
+    fact.sel = clamp(fact.sel, 0, math.max(0, math.min(18, #filtered - fact.page * 18) - 1))
     local rows = {}
     local start = fact.page * 18
     for i = 1, math.min(18, #filtered - start) do
@@ -529,6 +606,7 @@ local function show_picker_dirs()
     text.pick_count = #pick_all == 0 and "NO SUBFOLDERS" or (#pick_all .. " FOLDERS")
 end
 
+local enter_picker
 local function read_picker_dirs(path, fallback)
     pick_all = {}
     show_picker_dirs()
@@ -545,7 +623,7 @@ local function read_picker_dirs(path, fallback)
     end)
 end
 
-local function enter_picker(path, fallback)
+function enter_picker(path, fallback)
     pick_path = W.folder_path(path, HOME)
     if pick_path == "" then pick_path = HOME end
     fact.pick_page = 0
@@ -632,7 +710,7 @@ local function changed(restored)
     publish()
     if source then W.remember(state, source, recipe, os.time()) end
     save_soon()
-    render_preview()
+    render_preview(true)
 end
 
 local function undo_recipe()
@@ -691,26 +769,52 @@ local function apply()
     -- Lossless (D63): this is the picture the desktop wears, so nothing is thrown away getting it
     -- there (the preview is the JPEG that trades detail for speed, and it is not the one applied).
     local out = CACHE .. "/wall-" .. os.time() .. "-" .. W.hash(source or "") .. ".png"
-    run("magick", W.args(recipe, base, out, screen_w, screen_h, base_w, base_h, backdrop()), function(_, code)
+    run("magick", W.args(recipe, base, out, screen_w, screen_h, base_dims.w, base_dims.h, backdrop(), screen()), function(_, code)
         if code ~= 0 then
             applying = false
             fact.loading = false
             text.status = "COULD NOT RENDER THE STILL"
             return
         end
-        run("qs", { "-p", PICKER, "ipc", "call", "wallpaper", "set", out }, function(_, qcode)
+        local function applied(how)
             applying = false
             fact.loading = false
-            if qcode == 0 then
-                local old = state.applied and state.applied.file
-                state.applied = { source = source, file = out, at = os.time() }
-                fact.applied = true
-                text.status = "APPLIED · THE DESKTOP IS WEARING IT"
-                if old and old ~= out then run("rm", { "-f", old }) end
-                save_now()
-            else
-                text.status = "COULD NOT APPLY · IS THE WALLPAPER PICKER RUNNING?"
-            end
+            local old = state.applied and state.applied.file
+            state.applied = { source = source, file = out, at = os.time() }
+            fact.applied = true
+            text.status = how
+            if old and old ~= out then run("rm", { "-f", old }) end
+            save_now()
+        end
+        run("qs", { "-p", PICKER, "ipc", "call", "wallpaper", "set", out }, function(_, qcode)
+            if qcode == 0 then applied("APPLIED · THE DESKTOP IS WEARING IT"); return end
+            -- the picker is not running: the wallpaper daemon itself takes the still (the palette
+            -- then waits for the picker, which is what makes it)
+            run("awww", { "img", out, "--transition-type", "fade", "--transition-duration", "0.6" }, function(_, acode)
+                if acode == 0 then applied("APPLIED WITH AWWW · THE PICKER WAS NOT RUNNING, SO THE PALETTE WAITS")
+                else
+                    applying = false
+                    fact.loading = false
+                    text.status = "COULD NOT APPLY · START THE WALLPAPER PICKER (qs-wallpaperpicker) OR AWWW"
+                end
+            end)
+        end)
+    end)
+end
+
+-- SAVE A COPY: the same still the desktop would get, kept in ~/Pictures/Lumen under the picture's
+-- own name, so an edit can be used anywhere (the source is still never written).
+local function save_copy()
+    if applying or not base then return end
+    applying = true
+    text.status = "SAVING A COPY…"
+    local dir = HOME .. "/Pictures/Lumen"
+    local name = base_name(source or "wallpaper"):gsub("%.[%w]+$", "")
+    local out = dir .. "/" .. name .. "-lumen-" .. os.date("%Y%m%d-%H%M%S") .. ".png"
+    run("mkdir", { "-p", dir }, function()
+        run("magick", W.args(recipe, base, out, screen_w, screen_h, base_dims.w, base_dims.h, backdrop(), screen()), function(_, code)
+            applying = false
+            text.status = code == 0 and ("SAVED · ~/Pictures/Lumen/" .. base_name(out)) or "COULD NOT SAVE THE COPY"
         end)
     end)
 end
@@ -719,7 +823,8 @@ local function close()
     if source then W.remember(state, source, recipe, os.time()) end
     save_now()
     for _, f in ipairs(previews) do run("rm", { "-f", f }) end
-    if base then run("rm", { "-f", base }) end
+    if base then rm_cache(base) end
+    if proxy then rm_cache(proxy) end
     if srcview then run("rm", { "-f", srcview }) end
     run("pleamar", { "--say", "mooi-wallpaper", "quit" })
 end
@@ -779,18 +884,53 @@ on("submit:bg_custom_hex", function(v)
     hex_input = tostring(v or "")
     use_custom()
 end)
-on("set_focus", function(raw)
-    local n = math.floor(tonumber(raw) or 0)
-    local x, y = math.floor(n / 10000), n % 10000
-    recipe.fx = clamp(round(x / math.max(1, screen_w) * 100), 0, 100)
-    recipe.fy = clamp(round(y / math.max(1, screen_h) * 100), 0, 100)
+-- The picture is carried by the hand: the scene moves the preview while it is dragged and sends
+-- the distance on release (`pan_dx`, `pan_dy`, screen pixels); the crop follows and the scene's
+-- offset is let go when the next preview arrives, so the picture does not jump back first.
+on("pan_done", function()
+    local dx, dy = tonumber(fact.pan_dx) or 0, tonumber(fact.pan_dy) or 0
+    if not base or (dx == 0 and dy == 0) then fact.pan_dx = 0; fact.pan_dy = 0; return end
+    recipe.fx, recipe.fy = W.pan(recipe, base_dims.w, base_dims.h, screen_w, screen_h,
+        dx / math.max(1, screen_w), dy / math.max(1, screen_h))
+    pan_pending = true
     changed()
 end)
-on("zoom_step", function(d)
-    local delta = (tonumber(d) or 0) > 0 and 5 or -5
-    recipe.zoom = clamp(recipe.zoom + delta, 100, 200)
+-- The wheel zooms round the pointer (`zoom_px`, `zoom_py`): what is under it stays under it.
+on("zoom_at", function(d)
+    if not base then return end
+    local n = tonumber(d) or 0
+    if n == 0 then return end
+    n = math.max(-5, math.min(5, n))
+    local z = recipe.zoom * (1.1 ^ n)
+    if math.abs(z - 100) < 3 then z = 100 end
+    local px = (tonumber(fact.zoom_px) or screen_w / 2) / math.max(1, screen_w)
+    local py = (tonumber(fact.zoom_py) or screen_h / 2) / math.max(1, screen_h)
+    local zoom, fx, fy = W.zoom_at(recipe, base_dims.w, base_dims.h, screen_w, screen_h, px, py, z)
+    if zoom == recipe.zoom and fx == recipe.fx and fy == recipe.fy then return end
+    recipe.zoom, recipe.fx, recipe.fy = zoom, fx, fy
     changed()
 end)
+-- The frame's switches: fill or fit, a quarter turn either way, a mirror.
+on("set_fit", function()
+    recipe.fit = recipe.fit > 0 and 0 or 1
+    changed()
+end)
+on("rotate_step", function(d)
+    recipe.rotate = ((recipe.rotate + ((tonumber(d) or 1) > 0 and 1 or -1)) % 4 + 4) % 4
+    changed()
+end)
+on("flip_toggle", function(n)
+    local bit = (tonumber(n) or 1) == 2 and 2 or 1
+    local h, v = recipe.flip % 2, math.floor(recipe.flip / 2)
+    if bit == 1 then h = 1 - h else v = 1 - v end
+    recipe.flip = h + v * 2
+    changed()
+end)
+on("frame_reset", function()
+    recipe.zoom, recipe.fx, recipe.fy, recipe.rotate, recipe.flip = 100, 50, 50, 0, 0
+    changed()
+end)
+on("save_copy", function() save_copy() end)
 on("reset_recipe", function()
     recipe = studio_defaults()
     changed()
@@ -842,7 +982,18 @@ on("pick_source", pick_source)
 on("browse_page", function(d)
     if not sources then return end
     fact.page = clamp(fact.page + ((tonumber(d) or 1) > 0 and 1 or -1), 0, fact.pages - 1)
+    fact.sel = 0
     build_hits()
+end)
+-- Up and Down walk the wall's tiles (the filter keeps the caret, and Enter in it opens the one
+-- that is lit); walking past either end of a page turns it.
+on("sel_step", function(d)
+    if not sources or #filtered == 0 then return end
+    local i = fact.page * 18 + fact.sel + ((tonumber(d) or 1) > 0 and 1 or -1)
+    i = clamp(i, 0, #filtered - 1)
+    local page = math.floor(i / 18)
+    if page ~= fact.page then fact.page = page; build_hits() end
+    fact.sel = i - page * 18
 end)
 on("shuffle", shuffle)
 on("use_current", use_current)
@@ -850,7 +1001,7 @@ on("apply_now", apply)
 on("close_studio", close)
 on("text:src_query", function(v)
     query = tostring(v or "")
-    if sources then fact.page = 0; build_hits() end
+    if sources then fact.page = 0; fact.sel = 0; build_hits() end
 end)
 on("text:src_folder", function(v) folder_input = tostring(v or "") end)
 on("text:bg_custom_hex", function(v) hex_input = tostring(v or "") end)

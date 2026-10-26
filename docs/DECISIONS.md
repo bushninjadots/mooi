@@ -2649,3 +2649,93 @@ in `tests/nexus.sh` — a focused card opens its whole body at the detail size a
 one row at the size the catalogue ships, and the last audio row is STREAMS. On screen at
 1920×1050: the header cluster reads load, memory, temperature and traffic; the Storage card at
 DETAIL shows five rows inside its frame; the System card shows its sub line and both bars.
+
+---
+
+## D84 · 2026-10-26 · The Nexus centre takes a face, the hub is the user's, a new mark, and Lumen works
+
+**Asked for:** the profile picture, banner and identity, and/or a music player with a visualiser,
+at the Nexus centre; the same in the compact view; the compact view customisable and better; the
+Control Nexus icon fixed; the wallpaper studio made to work properly.
+
+**The centre's faces (`nexus.centre`).** The core node has four faces at the centre of the
+workspace: REACTOR (as before), IDENTITY (the banner across the top, the avatar on its edge, the
+name, user@host · session, distro · kernel, uptime / workspace / time along the foot, EDIT
+IDENTITY), PLAYER (the cover, title, artist, album, a 24-band visualiser the width of the face,
+the time and the transport) and ID + PLAYER (who you are on one line over the player). FACE on the
+core's rail cycles them. In the ring the core card says what its face is: the name, or the track
+and its rows (artist, album, time, player, state). The generic value, note and bars are not drawn
+under a face.
+
+**The hub's arrangement (`nexus.hub`, `lib/nexushub`, 9 unit tests).** A hero of five faces —
+IDENTITY, PLAYER (the cover blurred behind it), REACTOR (four rings and the readings), ID +
+PLAYER, MINIMAL (one line) — then the sections in the user's order: switches, levels, now
+playing, machine, workspaces, shortcuts. The logic lays the column out and publishes each
+section's top (`nx_hy_*`) and whether it takes room (`nx_hon_*`); the scene draws each section
+from its own top and glides when one moves. CUSTOMISE (the arrange glyph by FULL) puts a strip
+under the hero (the five faces, COMPACT / WIDE — 452 or 540 px — RESET SECTIONS, DONE) and ▲ ▼ ◉
+on every section; a hidden section is a stub that can be shown again. The now-playing section
+is left out under a player face, and a machine with no backlight loses that level's row instead
+of drawing "NO BACKLIGHT".
+
+**The player.** Covers: `file://` as given (percent-decoded), `https://` fetched with curl,
+`data:` written out by ImageMagick (`inline:`). mpv's MPRIS plugin sends a truncated `data:`
+cover, which ImageMagick rightly refuses; a cover file beside the track works. The elapsed and
+total times were declared in the scene but never set: the logic now carries the reported
+position at the player's rate once a second while something plays and the Nexus is up.
+**The visualiser** is cava (`cava-nexus.conf`, written in the data folder the service names),
+spawned only while something plays and a player face or the now-playing section is on screen,
+and stopped on close, on a shortcut that leaves, and when the face changes back.
+
+**The mark.** `icons/nexus.svg` — a hexagonal core in a ring broken by three nodes — replaces
+the outline Arch "A" on the bar and in the Nexus header. The old figure was placed at `at: 8, …`,
+but a figure's `at` is its **centre**, so the mark sat half off its pill and 7 px high; it is
+centred now, brighter at rest, and lit with a rule under it while the Nexus is open.
+
+**Lumen, made to work.**
+- *The whole picture is reachable.* The base was centre-cropped to the screen's shape before any
+  edit, so most of a tall picture could never be framed. The base now keeps the picture's shape;
+  the crop is the largest screen-shaped part of it at zoom 100, placed by fx/fy anywhere along it.
+- *FIT* shows the whole picture on the backdrop; *↺ ↻ 90°*, *MIRROR*, *FLIP* and *RESET FRAME* are
+  chips on FRAME; zoom goes to 400 %.
+- *The hand moves the picture.* Dragging pans it (the preview moves with the hand, the crop follows
+  on release, `lib/wallpaper.pan`); the wheel zooms round the pointer (`zoom_at`). A click no longer
+  silently moves the focus.
+- *New adjustments:* Midtones (gamma) on TONE, Sharpen and Soften on FX. Hue turned only ±90°
+  (`hue / 3.6`); it is `hue / 1.8` now, the ±180° the slider says.
+- *A black picture.* The vignette's `-compose multiply` outlived its parentheses and multiplied the
+  picture into its backdrop whenever a matte, a key or FIT was on. `-compose over` is set before
+  that composite, and the vignette and grain are the finished frame's now (after the composite),
+  so they reach the backdrop and cannot touch a key's transparency. `-rotate` is followed by
+  `+repage`, without which the crop and the composite honoured the rotation's page offset.
+- *Fast while dragging.* The base is an `.mpc` (memory-mapped, read without decoding: 160 ms a
+  preview instead of 320 ms) and a proxy at a draft's scale answers a drag at once (960 × 540);
+  the full preview follows 260 ms after the edits settle. Every render is stamped, so a slow one
+  that finishes after a newer one is never shown; the compare view is remade only when the frame
+  changed (`frame_key`, `ungraded`).
+- *Keys that do not steal from a field.* A letter rule fires even while a field has the caret, so
+  typing `#aa1122` as a backdrop colour applied the wallpaper (`a`). The field is taken through a
+  zone that sets `typing`; while it holds, Escape only leaves the field and no letter or digit is
+  a shortcut. New keys: H hides the studio, C compares, F fits, Ctrl+S saves a copy.
+- *SAVE A COPY* writes the still to `~/Pictures/Lumen/<name>-lumen-<time>.png`. *APPLY* falls back to
+  `awww img` when the picker is not running (and says the palette waits for the picker).
+- *The dock* is laid out from its width: four slider columns whose values never sit on the next
+  slider, the vibe under the tabs instead of on BACKDROP, compare / undo / redo / reset at the right.
+- *The source wall* makes three thumbnails at a time, Up/Down walk its tiles (Enter in the filter
+  opens the lit one), and an arriving thumbnail no longer resets the selection. The folder picker
+  called `enter_picker` above its `local` (a nil global: PICTURES on a machine without the folder
+  crashed the handler); it is declared first.
+
+**Checked.** `bin/mooi check`: **258 unit tests, 0 failed** (9 hub, 5 new wallpaper: shape and
+reach, turn and mirror, pan and zoom, new fields and hue, compose order), all five scenes compile.
+In a lab copy (own scene name and data folder, `MOOI_SAFE=1`; Lumen's lab has no `qs`/`awww`):
+the four core faces with a silent mpv track (cover, title, ticking time, transport) and the
+user's own kew session (live visualiser in the hub's player face); cava starts with a player face
+and stops on the reactor; every hub face; customise moved MACHINE above NOW PLAYING, hid SWITCHES
+as a stub and widened the plate; Lumen's wheel (3 notches → 146 %), drag (fx 50 → 0 at the edge),
+FIT + 90° (a portrait strip on the blurred backdrop), drafts within ~300 ms and the full preview
+after, the typing guard (`a` went into the field, applied only after Escape), three thumbnail
+workers, PICTURES in the picker. Deployed with `bin/mooi refresh`; the new mark is on the bar.
+**Not checked:** APPLY and SAVE A COPY for real (they write to the desktop and to ~/Pictures),
+the `awww` fallback, a real mouse drag on the picture (the agent's hand was used), the hub faces
+on a narrow screen, and the visualiser with a player that sends a whole `data:` cover.

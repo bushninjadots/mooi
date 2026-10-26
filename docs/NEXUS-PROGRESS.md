@@ -200,6 +200,74 @@ side only.
 search field from a keyboard; the identity editor beside the docked panel; a node being
 resized by its grip with the new brackets drawn.
 
+## The compact hub (branch `nexus/s1-model`, 2026-10-26)
+
+The Nexus opens as a **hub** now: a 412 px chamfered plate hanging under the bar's Arch mark,
+the desktop left visible around it. The whole workspace is one press away (**FULL**), and the
+workspace header's mark folds it back. `nexus.view` (`hub` | `full`) keeps the choice.
+
+- **What it holds.** Header: mark, name, host · uptime · battery, the time and date, FULL, ×.
+  Four gauges (CPU, MEM, TEMP, DISK): reading, note, fill bar and the last twelve readings as a
+  lit trace over a faint area (`model nx_tel`). LEVELS: output volume and backlight, set by a
+  press or a drag along the track, nudged by the wheel; the speaker glyph mutes. SPACES: one cell
+  per workspace, lit when active, ticks for its windows, a press goes there. Media (only while a
+  player owns the session): title, artist, progress, previous/play/next. Foot: Bluetooth, mic,
+  network state with four strength ticks, COPY DIAG.
+- **Where it hangs.** The bar writes the mark's centre to `nexus-anchor.json` as it starts the
+  program; the logic publishes `nx_hub_cx` (-1 centres it) and the scene clamps the plate onto
+  the screen.
+- **Unintrusive.** A press anywhere outside the plate closes it (`nx_hub_away`, under the plate);
+  Escape too. The canvas's keys (Tab, arrows, Return, Delete, Ctrl+Z) only act in the workspace.
+  The packet gesture plays only in the workspace, so the idle hub paints nothing between readings
+  (measured: no repaint cycles after the opening frame; it was ~700 ms of frames every 2 s).
+- **Language notes.** `nx_view == full` does not compare (`full` is also the size keyword): the
+  scene tests `nx_view != hub`. A colour cannot be a `let` inside a `for`; `%` is `mod()`;
+  `upper` in a component cannot take a text with holes.
+
+**Verification.** `bin/mooi check` → 240 tests, 0 failed, five scenes compile. `tests/nexus.sh`
+→ the six new hub checks pass (opens as hub, knows the mark, FULL and back, slider on screen).
+The run's other failures (14 rows vs 9, trace points, audio rows, focus) also fail on a copy
+without the hub changes: they come from the uncommitted dense-arrangement work, not the hub.
+Live: opened from the real mark with a real click, hung under it at x 1113, outside click and
+Escape close it.
+
+## The hub as a control centre, and ORBIT (2026-10-26, later)
+
+- **Hub, after iNiR's control panel** (`modules/controlPanel`: profile header, quick actions,
+  sliders, system, media). 452 px: an identity band (banner image under a scrim, avatar or
+  initial, name, user@host · session, uptime, a 22 px clock; settings, FULL, ×); eight tiles —
+  network (opens the system island), Bluetooth, sound, microphone, QUIET (the bar's
+  `note_dnd`), AWAKE (the bar's `caffeine`), RECORD (`record 0`), POWER | LOCK (`power 0/1`);
+  volume, microphone and backlight sliders (press, drag, wheel); the player card while one
+  plays; four gauges with history; workspace cells; WALLPAPER, NOTICES, BOARD, OVERVIEW,
+  COPY DIAG. The bar's switches are asked for in one `pleamar --say mooi get …` per reading
+  while the hub shows (`nx_dnd`, `nx_caffeine`, `nx_rec`); a place that opens puts the Nexus
+  away first (`nx_hub_act`).
+- **ORBIT** (`lib/nexuslayout.orbit`, 5 unit tests): the focused node in the middle at its
+  detail size, every other drawable node a card of one size (300 × 176 where the canvas has
+  the height, 140 otherwise) on a ring that is the canvas's frame, spread evenly in
+  `RING_ORDER` from the left side's middle; the fewest columns whose ring holds every card.
+  Focus, RESTORE CENTRE and the header's ORBIT (TIDY's place) all use it. Core's minimum
+  height is 120 so it can sit in the ring.
+- **The core at the centre is a reactor**: four spring-eased rings (load, memory,
+  temperature, disk) on a 60-tick dial round the load, the host, distro and kernel above, a
+  legend under it. In the ring the core card reads load, memory, temperature, storage, uptime.
+- **Language notes.** `repeat k in 0..n` stops before n. A `let` made inside a `repeat`
+  (`let tx.$k`) is not visible after it. Text `size:` must be a literal.
+
+## Faces at the centre, a hub of the user's own (2026-10-26, D84)
+
+- **The core's faces** (`nexus.centre`): REACTOR, IDENTITY, PLAYER, ID + PLAYER; FACE on the
+  core's rail cycles them. The player face draws the cover, the track, a 24-band cava visualiser,
+  the time and the transport.
+- **The hub** (`nexus.hub`, `lib/nexushub`): a hero of five faces (IDENTITY, PLAYER, REACTOR,
+  ID + PLAYER, MINIMAL), then six sections in the user's order, each one hideable; COMPACT or WIDE.
+  CUSTOMISE (by FULL) shows the controls on the plate.
+- **The mark** is `icons/nexus.svg`, centred in its pill (a figure's `at` is its centre).
+- **Language notes.** Lets are scene-wide (the faces' are prefixed `cf_`); a text `pick` cannot
+  nest a `pick`; a centred text with a `width` needs `align: center`; the agent's `emit` takes
+  its value after a space (`emit nx_centre_set 2`), not in parentheses.
+
 ## Current phase
 
 **Phase 1 complete; Phase 2 complete; Phase 3 started.** Phase 0 reconnaissance is

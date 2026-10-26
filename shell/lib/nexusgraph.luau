@@ -43,148 +43,66 @@ function M.count(edges)
     return #edges
 end
 
--- Routing is pure geometry over two rects. It never looks at the rest of
--- the network, so a drag can re-route one edge per frame without a scan.
+-- The edges the scene can ever draw, in authored order: both ends need a slot (see
+-- nexusnode.SLOTS). The scene keeps one trace per row, so this order is its order.
+function M.drawable(slot)
+    local out = {}
+    for _, edge in ipairs(M.EDGES) do
+        local a, b = slot(edge.from), slot(edge.to)
+        if a and b then out[#out + 1] = { edge = edge, a = a, b = b } end
+    end
+    return out
+end
 
+-- The geometry of a trace between two rects, exactly as the scene draws it (the scene
+-- computes the same sums every frame, so a trace follows a node while it is carried or
+-- while it springs to a new place). The ports sit on the two sides that face each other
+-- across the wider gap; where those sides overlap by a row's height the trace runs straight,
+-- otherwise each port slides toward the other node's centre and the trace turns once on
+-- the middle line `m`. `hz` says whether it leaves sideways (true) or up and down.
 local function clamp(v, lo, hi)
     if v < lo then return lo end
     if v > hi then return hi end
     return v
 end
 
-local function snapped(v, step)
-    if not step or step <= 0 then return v end
-    return math.floor(v / step + 0.5) * step
-end
+M.PORT_INSET = 12
+M.STRAIGHT = 24
 
-function M.port(rect, toward)
-    local cx = rect.x + rect.w / 2
-    local cy = rect.y + rect.h / 2
-    local dx = (toward.x or cx) - cx
-    local dy = (toward.y or cy) - cy
-    if math.abs(dx) >= math.abs(dy) then
-        local east = dx >= 0
-        return (east and rect.x + rect.w or rect.x),
-            clamp(toward.y or cy, rect.y, rect.y + rect.h),
-            (east and "e" or "w")
-    end
-    local south = dy >= 0
-    return clamp(toward.x or cx, rect.x, rect.x + rect.w),
-        (south and rect.y + rect.h or rect.y),
-        (south and "s" or "n")
-end
-
-local function push(points, x, y)
-    local last = points[#points]
-    if last and last.x == x and last.y == y then return end
-    points[#points + 1] = { x = x, y = y }
-end
-
--- Circuit routes are orthogonal with a single dogleg. Ports always face
--- the other node's centre, so an opposite pair needs one mid-axis elbow
--- and a perpendicular pair needs one corner.
-function M.route(a, b, opts)
-    opts = opts or {}
-    if type(a) ~= "table" or type(b) ~= "table" then return {}, false end
-    if (a.w or 0) <= 0 or (a.h or 0) <= 0 or (b.w or 0) <= 0 or (b.h or 0) <= 0 then
-        return {}, false
-    end
-    local clearance = tonumber(opts.clearance) or 12
-    local step = tonumber(opts.step) or 12
-    local ca = { x = a.x + a.w / 2, y = a.y + a.h / 2 }
-    local cb = { x = b.x + b.w / 2, y = b.y + b.h / 2 }
-    local x1, y1, s1 = M.port(a, cb)
-    local x2, y2, s2 = M.port(b, ca)
-    if opts.style == "direct" then
-        return { { x = x1, y = y1 }, { x = x2, y = y2 } }, true
-    end
-    if opts.style == "curved" then
-        -- Curved routing: use bezier-like smooth curves
-        local points = {}
-        push(points, x1, y1)
-        -- Calculate control points for smooth curve
-        local dx = x2 - x1
-        local dy = y2 - y1
-        local dist = math.sqrt(dx * dx + dy * dy)
-        -- Control point offset based on distance
-        local offset = math.min(dist * 0.3, 60)
-        -- Determine control points based on port directions
-        local cx1, cy1 = x1, y1
-        local cx2, cy2 = x2, y2
-        if s1 == "e" then cx1 = x1 + offset
-        elseif s1 == "w" then cx1 = x1 - offset
-        elseif s1 == "n" then cy1 = y1 - offset
-        elseif s1 == "s" then cy1 = y1 + offset end
-        if s2 == "e" then cx2 = x2 + offset
-        elseif s2 == "w" then cx2 = x2 - offset
-        elseif s2 == "n" then cy2 = y2 - offset
-        elseif s2 == "s" then cy2 = y2 + offset end
-        -- Generate bezier curve points (simplified to 8 segments for performance)
-        local segments = 8
-        for i = 1, segments do
-            local t = i / segments
-            local mt = 1 - t
-            local px = mt * mt * mt * x1 + 3 * mt * mt * t * cx1 + 3 * mt * t * t * cx2 + t * t * t * x2
-            local py = mt * mt * mt * y1 + 3 * mt * mt * t * cy1 + 3 * mt * t * t * cy2 + t * t * t * y2
-            push(points, px, py)
-        end
-        push(points, x2, y2)
-        if #points < 2 then
-            push(points, x1, y1 + (step > 0 and step or 1))
-        end
-        return points, true
-    end
-    -- Default circuit (orthogonal) routing
-    local points = {}
-    push(points, x1, y1)
-    if x1 ~= x2 and y1 ~= y2 then
-        if (s1 == "e" and s2 == "w") or (s1 == "w" and s2 == "e") then
-            local lo, hi = math.min(x1, x2), math.max(x1, x2)
-            local mid = snapped((x1 + x2) / 2, step)
-            if mid <= lo or mid >= hi then mid = (x1 + x2) / 2 end
-            push(points, mid, y1)
-            push(points, mid, y2)
-        elseif (s1 == "n" and s2 == "s") or (s1 == "s" and s2 == "n") then
-            local lo, hi = math.min(y1, y2), math.max(y1, y2)
-            local mid = snapped((y1 + y2) / 2, step)
-            if mid <= lo or mid >= hi then mid = (y1 + y2) / 2 end
-            push(points, x1, mid)
-            push(points, x2, mid)
-        elseif s1 == s2 then
-            if s1 == "e" or s1 == "w" then
-                local mid = math.max(x1, x2) + clearance + step
-                if s1 == "w" then mid = math.min(x1, x2) - clearance - step end
-                push(points, mid, y1)
-                push(points, mid, y2)
-            else
-                local mid = math.max(y1, y2) + clearance + step
-                if s1 == "n" then mid = math.min(y1, y2) - clearance - step end
-                push(points, x1, mid)
-                push(points, x2, mid)
-            end
+function M.trace(a, b)
+    local gapx = math.max(b.x - (a.x + a.w), a.x - (b.x + b.w))
+    local gapy = math.max(b.y - (a.y + a.h), a.y - (b.y + b.h))
+    local acx, acy = a.x + a.w / 2, a.y + a.h / 2
+    local bcx, bcy = b.x + b.w / 2, b.y + b.h / 2
+    local t = { hz = gapx >= gapy }
+    if t.hz then
+        local east = bcx >= acx
+        t.x1 = east and a.x + a.w or a.x
+        t.x2 = east and b.x or b.x + b.w
+        local lo, hi = math.max(a.y, b.y), math.min(a.y + a.h, b.y + b.h)
+        if hi - lo >= M.STRAIGHT then
+            t.y1 = (lo + hi) / 2
+            t.y2 = t.y1
         else
-            push(points, x2, y1)
+            t.y1 = clamp(bcy, a.y + M.PORT_INSET, a.y + a.h - M.PORT_INSET)
+            t.y2 = clamp(acy, b.y + M.PORT_INSET, b.y + b.h - M.PORT_INSET)
         end
-    end
-    push(points, x2, y2)
-    if #points < 2 then
-        push(points, x1, y1 + (step > 0 and step or 1))
-    end
-    return points, true
-end
-
--- True when no segment midpoint sits inside the rect grown by clearance.
-function M.clear(points, rect, clearance)
-    clearance = clearance or 12
-    for i = 2, #points do
-        local mx = (points[i].x + points[i - 1].x) / 2
-        local my = (points[i].y + points[i - 1].y) / 2
-        if mx > rect.x - clearance and mx < rect.x + rect.w + clearance
-            and my > rect.y - clearance and my < rect.y + rect.h + clearance then
-            return false
+        t.m = (t.x1 + t.x2) / 2
+    else
+        local south = bcy >= acy
+        t.y1 = south and a.y + a.h or a.y
+        t.y2 = south and b.y or b.y + b.h
+        local lo, hi = math.max(a.x, b.x), math.min(a.x + a.w, b.x + b.w)
+        if hi - lo >= M.STRAIGHT then
+            t.x1 = (lo + hi) / 2
+            t.x2 = t.x1
+        else
+            t.x1 = clamp(bcx, a.x + M.PORT_INSET, a.x + a.w - M.PORT_INSET)
+            t.x2 = clamp(acx, b.x + M.PORT_INSET, b.x + b.w - M.PORT_INSET)
         end
+        t.m = (t.y1 + t.y2) / 2
     end
-    return true
+    return t
 end
 
 return M

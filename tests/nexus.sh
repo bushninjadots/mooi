@@ -126,6 +126,20 @@ if wait_value nexus nx_pinned true 10; then ok "pin control turns pinning on"; e
 say "emit nx_pin" >/dev/null
 if wait_value nexus nx_pinned false 10; then ok "pin control turns pinning off"; else bad "pin control did not turn pinning off"; fi
 
+echo "the compact hub"
+is "it opens as the compact hub" "$(get nx_view)" hub
+hub_cx=$(get nx_hub_cx)
+if [ "${hub_cx%%.*}" -gt 0 ] 2>/dev/null; then ok "the hub knows where the Arch mark is ($hub_cx)"; else bad "the hub has no mark position (got '$hub_cx')"; fi
+if say describe | grep -q "nx_hub_full"; then ok "the hub offers FULL"; else bad "the hub's FULL button is not on screen"; fi
+if say describe | grep -q "nx_hub_vol"; then ok "the hub carries the volume slider"; else bad "the hub's volume slider is not on screen"; fi
+say "press nx_hub_full" >/dev/null
+if wait_value nexus nx_view full 10; then ok "FULL opens the whole workspace"; else bad "FULL did not open the workspace"; fi
+say "press nx_to_hub" >/dev/null
+if wait_value nexus nx_view hub 10; then ok "the header mark folds it back to the hub"; else bad "the header mark did not fold it back"; fi
+# the rest of this script exercises the workspace
+say "emit nx_view_set 1" >/dev/null
+wait_value nexus nx_view full 10 || bad "could not switch to the workspace for the remaining checks"
+
 if [ "$banner_ok" -eq 1 ]; then
     echo "the imported identity banner is drawn"
     if wait_value nexus nx_banner_on true 20; then ok "the imported banner is drawn"; else bad "the imported banner was not drawn"; fi
