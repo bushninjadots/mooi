@@ -36,36 +36,6 @@ end
 local settings = config.parse(read(FILE), json.decode)
 local palette = read(PALETTE, "json")
 
--- The first Control Nexus graph is deliberately a pure model: the current board can keep its
--- proven layout while nodes, links and normalized positions become the shared contract for the
--- next spatial view. IDs are stable; screen pixels never leak into saved model coordinates.
-local nexusgraph = require("lib/nexusgraph")
-local model = nexusgraph.new()
-local model_nodes = {
-    { id = "system", label = "SYSTEM", kind = "system", group = "core", x = 0.50, y = 0.50, width = 0.20, height = 0.16 },
-    { id = "identity", label = "IDENTITY", kind = "identity", group = "system", x = 0.50, y = 0.18 },
-    { id = "display", label = "DISPLAY", kind = "monitor", group = "hardware", x = 0.20, y = 0.38 },
-    { id = "audio", label = "AUDIO", kind = "control", group = "hardware", x = 0.80, y = 0.38 },
-    { id = "network", label = "NETWORK", kind = "control", group = "connectivity", x = 0.20, y = 0.72 },
-    { id = "storage", label = "STORAGE", kind = "monitor", group = "hardware", x = 0.50, y = 0.84 },
-    { id = "media", label = "MEDIA", kind = "application", group = "activity", x = 0.80, y = 0.72 },
-}
-for _, spec in ipairs(model_nodes) do nexusgraph.add_node(model, spec) end
-for _, id in ipairs({ "identity", "display", "audio", "network", "storage", "media" }) do
-    nexusgraph.connect(model, "system", id, "contains")
-end
-nexusgraph.connect(model, "audio", "media", "routes")
-local function publish_model()
-    local nodes = nexusgraph.list_nodes(model)
-    local ok = nexusgraph.validate(model)
-    fact.nx_model_ready = ok
-    fact.nx_model_nodes = #nodes
-    fact.nx_model_links = #model.edges
-    text.nx_model_summary = ok and string.format("NODE MODEL · %02d NODES / %02d LINKS", #nodes, #model.edges)
-        or "NODE MODEL · VALIDATION ERROR"
-end
-publish_model()
-
 -- A settings write can fail either by raising or by returning false. Keep that distinction
 -- in one place so the UI never reports a change that wasn't persisted.
 local function save_settings()
@@ -610,7 +580,7 @@ local function build()
     end
 
     local rows, removed = {}, {}
-    if dirty_nodes or dirty_edges or dirty_library or dirty_ui then
+    do
         if a then
             for i, node in ipairs(a.nodes) do
                 local def = nexusnode.get(node.type)

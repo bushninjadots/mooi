@@ -1161,7 +1161,7 @@ scene Nexus {
                                          color: mix(fl.muted, tone, 0.55) }
                         text n.title { at: nx + 34, ny + rail / 2; anchor: left center; size: 9.5; weight: 700; family: "Exo 2"
                                        width: max(40, nw - 96); lines: 1; color: mix(fl.muted, tone, 0.95) }
-                        text pick(n.focus, "CENTRE", n.key) { at: nx + nw - 44, ny + rail / 2; anchor: right center
+                        text pick(n.focus, n.key, "CENTRE") { at: nx + nw - 44, ny + rail / 2; anchor: right center
                                                              size: 6.5; family: "Share Tech Mono"
                                                              color: mix(fl.muted, tone, if(n.focus, 0.9, 0.35)) }
                         box { from: nx + nw - 23, ny + rail / 2 - 4; size: 8, 8; corner: 4; color: fl.flare
@@ -1489,7 +1489,7 @@ scene Nexus {
                                               label: "Minimize or restore {n.title}" }
                         box { from: mx + 1, my + 55; size: 154, 22; color: ac; opacity: nx_act_min.hover * 0.12 }
                         box { from: mx + 6, my + 65; size: 3, 3; corner: 2; color: ac; opacity: 0.6 }
-                        text pick(n.mini, "RESTORE BODY", "MINIMIZE") { at: mx + 16, my + 66; anchor: left center; size: 8
+                        text pick(n.mini, "MINIMIZE", "RESTORE BODY") { at: mx + 16, my + 66; anchor: left center; size: 8
                                                                        family: "Share Tech Mono"; color: mix(fl.muted, ac, nx_act_min.hover) }
                         on press nx_act_min { emit nx_min(n.id); nx_menu = 0 }
 
@@ -1987,7 +1987,7 @@ scene Nexus {
                             box { from: px0, ay; size: 2, 24; color: if(a.active, fl.flare, fl.trace) }
                             text a.name { at: px0 + 12, ay + 12; anchor: left center; size: 9; weight: 700; family: "Exo 2"
                                           width: pwi - 90; lines: 1; color: if(a.active, fl.flare, fl.trace_lit) }
-                            text pick(a.active, "SHOW", "ON") { at: px0 + pwi - 8, ay + 12; anchor: right center; size: 6.5
+                            text pick(a.active, "SHOW", "SHOWING") { at: px0 + pwi - 8, ay + 12; anchor: right center; size: 6.5
                                   family: "Share Tech Mono"; color: if(a.active, fl.flare, fl.muted) }
                             zone box nx_arr_pick { from: px0, ay; size: pwi, 24; cursor: pointer; role: tab
                                                    selected: a.active; label: "Show the {a.name} arrangement" }
