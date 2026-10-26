@@ -138,7 +138,7 @@ if [ "$banner_ok" -eq 1 ]; then
 fi
 
 echo "the workspace starts from three arrangements"
-is "three arrangements are seeded" "$(get nx_arrangement_count)" 3
+is "four arrangements are seeded, DENSE among them" "$(get nx_arrangement_count)" 4
 is "the showing arrangement is named" "$(get nx_arrangement_name)" FULL
 case "$(get nx_node_count)" in
     8|9|10) ok "the default arrangement has 8 to 10 anchors" ;;
@@ -233,10 +233,8 @@ case "$(get nx_edge_count)" in
 esac
 is "the first trace has at least two points" "$(get nx_edges.0.n > /dev/null 2>&1; get nx_edges.0.n | grep -E '^[2-4]$' | wc -l | tr -d ' ')" 1
 is "the first trace carries whole-pixel points" "$(get nx_edges.0.x1 | grep -E '^-?[0-9]+$' | wc -l | tr -d ' ')" 1
-say "emit nx_hover_edge 1" >/dev/null
-if wait_value nexus nx_hover_edge 1 10; then ok "hovering a trace names it"; else bad "hover did not reach the trace"; fi
-is "the hovered trace is lit" "$(get nx_edges.0.hot)" true
-say "emit nx_hover_edge 0" >/dev/null
+# hover is the scene's own now (D84): it lights a trace without a logic round trip, so there
+# is no fact left to observe from here — it is checked on screen instead.
 say "emit nx_edge_pick 1" >/dev/null
 if wait_value nexus nx_edge_sel 1 10; then ok "a press picks the trace"; else bad "the trace was not picked"; fi
 is "both endpoints are marked" "$(get nx_nodes.$(get nx_edges.0.from_id).endsel 2>/dev/null | wc -l | tr -d ' ')" 1
@@ -424,14 +422,14 @@ if [ "$reset_w" != "$after_w" ]; then ok "RESET NODE returns the type's size ($r
 
 echo "arrangements can be added, copied and deleted"
 say "emit nx_arr_new" >/dev/null
-if wait_value nexus nx_arrangement_count 4 10; then ok "a new arrangement is kept"; else bad "the arrangement was not added"; fi
+if wait_value nexus nx_arrangement_count 5 10; then ok "a new arrangement is kept"; else bad "the arrangement was not added"; fi
 is "the new arrangement has its own name" "$(get nx_arrangement_name)" LAYOUT
 say "emit nx_arr_dup" >/dev/null
-if wait_value nexus nx_arrangement_count 5 10; then ok "the arrangement can be copied"; else bad "the copy was not made"; fi
+if wait_value nexus nx_arrangement_count 6 10; then ok "the arrangement can be copied"; else bad "the copy was not made"; fi
 say "emit nx_arr_del" >/dev/null
-if wait_value nexus nx_arrangement_count 4 10; then ok "an arrangement can be deleted"; else bad "the delete did nothing"; fi
+if wait_value nexus nx_arrangement_count 5 10; then ok "an arrangement can be deleted"; else bad "the delete did nothing"; fi
 say "emit nx_arr_del" >/dev/null
-if wait_value nexus nx_arrangement_count 3 10; then ok "the list comes back to three"; else bad "the list did not shrink back"; fi
+if wait_value nexus nx_arrangement_count 4 10; then ok "the list comes back to four"; else bad "the list did not shrink back"; fi
 
 echo "Escape closes the docked panel before the workspace"
 say "fact nx_panel library" >/dev/null
