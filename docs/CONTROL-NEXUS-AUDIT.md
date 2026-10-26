@@ -1,5 +1,7 @@
 # Control Nexus — Phase 0 audit and implementation plan
 
+> **Historical planning note:** this document predates the implemented standalone Control Nexus and contains an earlier recommendation to extend the System island. The implementation decision has since changed: Nexus is a separate Pleamar program (`shell/mooi-nexus.plm` + `shell/mooi-nexus.luau`). For the current architecture, built scope and verification status, use [`NEXUS-AUDIT.md`](NEXUS-AUDIT.md) and [`NEXUS-PROGRESS.md`](NEXUS-PROGRESS.md). The remainder below is retained as historical design context, not the current implementation plan.
+
 Date: 2026-10-23  
 Base audited: `main` at `00e72d8730a8dad1e372f5c47f8101409b5b7118`  
 Scope: read-only repository audit and safe implementation plan. No runtime files changed in this phase.

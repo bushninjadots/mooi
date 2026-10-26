@@ -36,6 +36,43 @@ end
 local settings = config.parse(read(FILE), json.decode)
 local palette = read(PALETTE, "json")
 
+-- The first Control Nexus graph is deliberately a pure model: the current board can keep its
+-- proven layout while nodes, links and normalized positions become the shared contract for the
+-- next spatial view. IDs are stable; screen pixels never leak into saved model coordinates.
+local nexusgraph = require("lib/nexusgraph")
+local model = nexusgraph.new()
+local model_nodes = {
+    { id = "system", label = "SYSTEM", kind = "system", group = "core", x = 0.50, y = 0.50, width = 0.20, height = 0.16 },
+    { id = "identity", label = "IDENTITY", kind = "identity", group = "system", x = 0.50, y = 0.18 },
+    { id = "display", label = "DISPLAY", kind = "monitor", group = "hardware", x = 0.20, y = 0.38 },
+    { id = "audio", label = "AUDIO", kind = "control", group = "hardware", x = 0.80, y = 0.38 },
+    { id = "network", label = "NETWORK", kind = "control", group = "connectivity", x = 0.20, y = 0.72 },
+    { id = "storage", label = "STORAGE", kind = "monitor", group = "hardware", x = 0.50, y = 0.84 },
+    { id = "media", label = "MEDIA", kind = "application", group = "activity", x = 0.80, y = 0.72 },
+}
+for _, spec in ipairs(model_nodes) do nexusgraph.add_node(model, spec) end
+for _, id in ipairs({ "identity", "display", "audio", "network", "storage", "media" }) do
+    nexusgraph.connect(model, "system", id, "contains")
+end
+nexusgraph.connect(model, "audio", "media", "routes")
+local function publish_model()
+    local nodes = nexusgraph.list_nodes(model)
+    local ok = nexusgraph.validate(model)
+    fact.nx_model_ready = ok
+    fact.nx_model_nodes = #nodes
+    fact.nx_model_links = #model.edges
+    text.nx_model_summary = ok and string.format("NODE MODEL · %02d NODES / %02d LINKS", #nodes, #model.edges)
+        or "NODE MODEL · VALIDATION ERROR"
+end
+publish_model()
+
+-- A settings write can fail either by raising or by returning false. Keep that distinction
+-- in one place so the UI never reports a change that wasn't persisted.
+local function save_settings()
+    local ok, result = pcall(sys.call, "files.write", FILE, settings)
+    return ok and result ~= false
+end
+
 -- A text field can be drawn but not compared in the scene, so the presence facts and the
 -- avatar's initial are published here beside the paths, from the one identity the settings own.
 local function sync_identity()
@@ -1966,7 +2003,7 @@ on("nx_identity_save", function()
     if type(settings.nexus.identity) ~= "table" then settings.nexus.identity = {} end
     local previous = settings.nexus.identity.name
     settings.nexus.identity.name = value
-    local ok = pcall(sys.call, "files.write", FILE, settings)
+    local ok = save_settings()
     if ok then
         sync_identity()
         fact.nx_identity_edit_on = false
@@ -2031,9 +2068,9 @@ on("nx_pin", function()
     local pinned = not settings.nexus.pinned
     settings.nexus.pinned = pinned
     if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
-        local ok = pcall(sys.call, "files.write", FILE, settings)
-        if not ok then
+        if not save_settings() then
             settings.nexus.pinned = not pinned
+            report_control_failure("PIN SETTING")
             return
         end
     end
