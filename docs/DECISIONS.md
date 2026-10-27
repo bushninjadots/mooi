@@ -2881,3 +2881,40 @@ software mixer (backup ~/.local/state/mooi/mpd.conf.before-2026-10-26); mpd was 
 media module; the library (728 artists), search ("free bird" → the song), LRCLIB's synced lyrics,
 full screen, the source switch; play/pause at low volume with the record turning 200°/s and the
 tonearm following progress; COVER relit the accent from a blue cover and back.
+
+## D89 · 2026-10-27 · BMO moves from Quickshell to pleamar
+
+**Asked for:** port the BMO companion (rebuilt in Quickshell on 2026-10-26, ~/.config/quickshell/bmo)
+to pleamar if possible. He goes behind windows by default, and chat/ollama is left out for now.
+**Done:** `companion/bmo/`: `bmo.plm` (the scene: one full-screen surface on the bottom layer,
+with only his own zones taking input, plus his panel and right-click menu while they are open),
+`bmo.luau` (the logic: position, walking, dancing, sleep, speech, music, settings),
+`brain.luau` (pure: faces, moods, poke and drift choices, energy, settings validation) and
+`test.lua` (`lua5.4 companion/bmo/test.lua`, 8 tests). The logic owns where he stands and his
+face, the pose's gestures own his body, and the drawing adds them together, so two animations
+never fight over a value. His data folder is ~/.local/share/pleamar/bmo (`settings.json`:
+wander, locked, size, motion, music, doze, clock, above, x/y). Music comes from the `media`
+service (MPRIS). Permissions are `hyprctl` (monitor size), `kitty` and `loginctl` (panel
+shortcuts) and `pleamar` (quitting himself). He doesn't get a shell.
+
+**Driving him from outside:** `pleamar --say bmo "emit ui N"` (1 panel, 4 home, 5 sleep/wake,
+120 walk, 121 dance, 122 look, 30–37 moods, the rest listed in `on("ui")`), `"fact above true"`
+to see him over windows, `"get mood_t"` / `wx` / `energy` to read him.
+
+**Checked live:** walking (turns three-quarter with side depth, strides, faces front again),
+dancing (happy face, arm sway and tilt, stops on its own after 6–12 s), a click counts as a poke,
+a double-click opens the panel, a drag carries him clamped to the screen with the face changing,
+sleep cycles its "z / z z / z z Z" bubble and pressing sleep again wakes him, music start/stop
+changes his mood, and a new song gets an excited face and a "♪ title" bubble (mpd at low volume,
+restored afterwards). Also seen: all four panel tabs and the menu. Note that the `still` motion
+setting turns off the hop and breathing by design.
+
+**Retired:** the Quickshell BMO (its uncommitted rewrite and ~/.local/state/bmo) is archived in
+~/.local/state/mooi/archive-2026-10-27-quickshell-bmo.tar.gz and the directory removed; the
+original is still in the home dotfiles repo's history.
+
+**Not done:** autostart. The line for ~/.config/hypr/config/custom/session.lua (inside the
+`hyprland.start` handler, because Hyprland doesn't run `pleamar --autostart`) was blocked by the
+agent's permission check and is left for the user to add. Not checked: a real re-login, his
+placement on a second monitor (he uses the focused monitor's size), and long-run energy/doze
+over hours.

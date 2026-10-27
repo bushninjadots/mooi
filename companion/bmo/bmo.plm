@@ -1,0 +1,579 @@
+language 0.4
+
+// BMO, a desktop companion. One full-screen surface on the bottom layer (behind windows, above
+// the wallpaper; `above` lifts it over them), and nothing in it takes a click except his zones:
+// himself, and his panel or menu while they are open. bmo.luau is his personality (brain.luau,
+// pure) and decides; this file only draws and moves. Every motion has one owner: the logic sets
+// where he stands and what his face says, the pose's gestures move his body, and the drawing
+// sums them, so two animations never fight over a value.
+
+scene Bmo {
+    permissions {
+        run: "hyprctl", "kitty", "loginctl", "pleamar"
+        services: "media", "media.*", "files", "files.write", "env", "clock"
+    }
+
+    service clock { time: text = "--:--"; date: text }
+
+    // His own colours, not the shell's: he is a character, not a panel.
+    let teal = #69c7bb
+    let side = #4fa99d
+    let ink = #183d42
+    let glass = #b8f5df
+    let glass_dim = #9fe3c9
+    let paper = #f4fff9
+
+
+    // ── State the logic owns ─────────────────────────────────
+    fact ready = false
+    fact wx = 0                  // where he stands: his box's top-left, in surface pixels
+    fact wy = 0
+    fact size = 0.9
+    fact facing = 0              // -1 left · 0 the viewer · 1 right
+    fact walking = false
+    fact dancing = false
+    fact breathing = false
+    fact dragged = false
+    fact lean = 0                // -1 … 1, from how fast he is carried
+    fact above = false           // over the windows instead of behind them
+    fact glx = 0                 // an idle glance, -1 … 1
+    fact gly = 0
+
+    // The face: the expression's row (brain.luau FACES), glided to.
+    fact e_ew = 8
+    fact e_eh = 14
+    fact e_sql = 0
+    fact e_sqr = 0
+    fact e_lid = 0
+    fact e_brow = 0
+    fact e_bron = 0
+    fact e_mc = 0.7
+    fact e_mo = 0.2
+    fact e_mw = 24
+    fact e_tg = 0
+    fact e_bl = 0
+
+    fact bubble_on = false
+    text bubble = ""
+
+    // The panel and the menu
+    fact panel = false
+    fact tab: home | music | me | setup = home
+    fact menu = false
+    fact menu_x = 0
+    fact menu_y = 0
+
+    // What the panel shows (the logic keeps these)
+    text mood_t = "happy"
+    text act_t = "idle"
+    fact mood_i = 0
+    fact energy = 1
+    fact asleep = false
+    fact s_wander = 2
+    fact s_locked = false
+    fact s_size = 1              // 0 S · 1 M · 2 L
+    fact s_motion = 1            // 0 still · 1 calm · 2 lively
+    fact s_music = true
+    fact s_doze = 1              // 0 5m · 1 10m · 2 30m · 3 never
+    fact s_clock = true
+    fact m_on = false
+    fact m_playing = false
+    fact m_art_on = false
+    text m_title = ""
+    text m_artist = ""
+    text m_src = ""
+    text m_art = ""
+    text m_line = "Nothing playing."
+    image cover = from m_art, 160, 160
+
+    // ── Events ───────────────────────────────────────────────
+    event hit_down ->            // a left press on him
+    event hit_up ->              // let go
+    event hov ->                 // 1 the pointer came over him, 0 it left
+    event ui ->                  // a control in the panel or the menu, by code (bmo.luau UI)
+    fact ddx = 0                 // how far the pointer went since the press (the logic reads it)
+    fact ddy = 0
+
+    // ── Motion ───────────────────────────────────────────────
+    prop px = 0 ~spring(420, 41)
+    follow px = wx
+    prop py = 0 ~spring(420, 41)
+    follow py = wy
+    prop turn = 0 ~260ms
+    follow turn = facing
+    prop lean_p = 0 ~220ms
+    follow lean_p = lean
+    prop drag_p = 0 ~180ms
+    follow drag_p = if(dragged, 1, 0)
+    prop walk_p = 0 ~140ms
+    follow walk_p = if(walking, 1, 0)
+    // a stride cycle every 0.6 s while he walks; nothing turns while he stands
+    prop stride_a = 0
+    spin stride_a by if(walking, 600, 0)
+
+    prop ew = 8 ~160ms
+    follow ew = e_ew
+    prop eh = 14 ~160ms
+    follow eh = e_eh
+    prop sql = 0 ~140ms
+    follow sql = e_sql
+    prop sqr = 0 ~140ms
+    follow sqr = e_sqr
+    prop lid = 0 ~420ms
+    follow lid = e_lid
+    prop brow = 0 ~180ms
+    follow brow = e_brow
+    prop bron = 0 ~180ms
+    follow bron = e_bron
+    prop mc = 0.7 ~180ms
+    follow mc = e_mc
+    prop mo = 0.2 ~160ms
+    follow mo = e_mo
+    prop mw = 24 ~180ms
+    follow mw = e_mw
+    prop tg = 0 ~160ms
+    follow tg = e_tg
+    prop bl = 0 ~300ms
+    follow bl = e_bl
+
+    // blinking (1 open, 0 shut) and the eyes' pull toward the pointer
+    prop eyes_open = 1
+    blink eyes_open every 2.2s..7s for 170ms
+    prop gzx = 0 ~gentle
+    follow gzx = glx
+    prop gzy = 0 ~gentle
+    follow gzy = gly
+    prop lkx = 0
+    prop lky = 0
+    look lkx, lky at px + (20 + 10 + 2 + 48) * size, py + (11 + 2 + 26) * size reach 9, 4 within 260 rest 0, 0
+
+    prop bub_a = 0 ~180ms
+    follow bub_a = if(bubble_on, 1, 0)
+    prop pan_a = 0 ~200ms
+    follow pan_a = if(panel, 1, 0)
+
+    // ── The body's gestures ──────────────────────────────────
+    pose gx = 0
+    pose gy = 0
+    pose tilt = 0
+    pose sq = 0                  // + squashes, - stretches
+    pose arml = 0                // extra raise, degrees
+    pose armr = 0
+    pose wv = 0                  // forearm wiggle while an arm is up
+
+    gesture hop asked {
+        80ms out_quad { sq: 0.1 }
+        170ms out_quad { gy: -20; sq: -0.07 }
+        170ms in_quad { gy: 0; sq: 0 }
+        60ms { sq: 0.12 }
+        220ms out_back
+    }
+    gesture big_hop asked {
+        100ms out_quad { sq: 0.15 }
+        240ms out_quad { gy: -42; sq: -0.1; arml: 120; armr: 120; tilt: -6 }
+        230ms in_quad { gy: 0; sq: 0; arml: 20; armr: 20; tilt: 0 }
+        70ms { sq: 0.16 }
+        260ms out_back
+    }
+    gesture land reflex {
+        70ms out_quad { sq: 0.18 }
+        320ms out_back
+    }
+    gesture wave asked {
+        260ms out_back { armr: 150 }
+        150ms in_out_sine { armr: 150; wv: 28 }
+        150ms in_out_sine { armr: 150; wv: -18 }
+        150ms in_out_sine { armr: 150; wv: 28 }
+        150ms in_out_sine { armr: 150; wv: -18 }
+        150ms in_out_sine { armr: 150; wv: 28 }
+        300ms in_out_sine
+    }
+    gesture stretch asked {
+        520ms in_out_sine { arml: 165; armr: 165; sq: -0.07 }
+        600ms { arml: 165; armr: 165; sq: -0.07 }
+        460ms in_out_sine { sq: 0.05 }
+        200ms
+    }
+    gesture shake asked {
+        70ms { tilt: -4 }
+        55ms { tilt: -4; gx: 3 }
+        55ms { tilt: -4; gx: -3 }
+        55ms { tilt: -4; gx: 3 }
+        55ms { tilt: -4; gx: -3 }
+        160ms
+    }
+    gesture wiggle asked {
+        140ms in_out_sine { tilt: -6 }
+        200ms in_out_sine { tilt: 6 }
+        180ms in_out_sine { tilt: -3 }
+        160ms in_out_sine
+    }
+    gesture nod asked {
+        130ms in_out_sine { gy: 3 }
+        150ms in_out_sine
+        130ms in_out_sine { gy: 3 }
+        150ms in_out_sine
+    }
+    gesture startle asked {
+        130ms out_quad { gy: -26; sq: -0.12; arml: 90; armr: 90 }
+        190ms in_quad { arml: 40; armr: 40 }
+        60ms { sq: 0.14 }
+        240ms out_back
+    }
+    // Dancing: a relaxed sway, about 100 bpm (there is no beat detection), arms up in turn.
+    posture dance while dancing {
+        300ms in_out_sine { gy: -4; tilt: 4; arml: 110; armr: 30 }
+        300ms in_out_sine { gy: 0; tilt: 0; arml: 70; armr: 70 }
+        300ms in_out_sine { gy: -4; tilt: -4; arml: 30; armr: 110 }
+        300ms in_out_sine { gy: 0; tilt: 0; arml: 70; armr: 70 }
+    }
+    // "lively" motion only: a slow breath while he stands about
+    posture breathe while breathing {
+        1800ms in_out_sine { gy: -1.5 }
+        1800ms in_out_sine
+    }
+
+    // ── Pieces ───────────────────────────────────────────────
+
+    // A thin two-segment limb from a joint at (x, y). Angles in degrees from straight down,
+    // positive toward +x; `b` bends the lower half. An outline pass, then the fill.
+    component Limb(x: number, y: number, a: number, b: number, l1: number, l2: number, w: number, foot: bool) {
+        size: 1, 1
+        let jx = x + sin(a) * l1
+        let jy = y + cos(a) * l1
+        let ex = jx + sin(a + b) * l2
+        let ey = jy + cos(a + b) * l2
+        path { stroke: w + 3; color: ink
+               move x, y; line jx, jy; line ex, ey }
+        path { stroke: w; color: teal
+               move x, y; line jx, jy; line ex, ey }
+        group {
+            show: foot
+            ellipse { at: ex + sin(a + b) * 2, ey + 1; radius: w * 1.45; scale: 1, 0.62; color: ink }
+            ellipse { at: ex + sin(a + b) * 2, ey + 1; radius: w * 1.15; scale: 1, 0.5; color: teal }
+        }
+    }
+
+    // A word that is a button; lit while `on`.
+    component Chip(x: number, y: number, w: number, word: text, on: bool, code: number) {
+        size: w, 22
+        zone box c { from: x, y; size: w, 22; cursor: pointer; role: button; label: word }
+        box { from: x, y; size: w, 22; corner: 6; color: if(on, ink, mix(glass, ink, c.hover * 0.12)) }
+        box { from: x, y; size: w, 22; corner: 6; stroke: 2; color: ink }
+        text word { at: x + w / 2, y + 11; anchor: center; size: 10.5; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
+        on press c { emit ui(code) }
+    }
+
+    surface desk {
+        size: full, full
+        anchor: top
+        reserve: -1
+        level: bottom, top while above
+        keyboard: none
+
+        let S = size
+        let bw = 160 * S
+        let bh = 196 * S
+        let stride = sin(stride_a) * walk_p
+        let bob = -abs(stride) * 2.5
+        let tlt = tilt + stride + lean_p * 8 * drag_p
+        let raise_l = arml + drag_p * 55
+        let raise_r = armr + drag_p * 55
+        let side_w = abs(turn) * 17
+        let front_x = 20 + if(turn > 0, side_w, 0)
+        // where the eyes point: the pointer, an idle glance, the way he faces
+        let lx = clamp(lkx + gzx * 9 + turn * 7, -9, 9)
+        let ly = clamp(lky + gzy * 4, -4, 4)
+        let shut = min(1, lid + 1 - eyes_open)
+        let eye_h = max(2.5, eh * (1 - shut))
+        let mx = 48 + lx * 0.3
+        let half = mw / 2
+        let bend = mc * 8
+        let upper = 46 + bend * 0.55 - mo * 7 * (1 - max(0, mc))
+        let lower = 46 + bend + mo * 13
+        let lift = clamp(-gy / 60, 0, 1)
+
+        group {
+            show: ready
+
+            // the ground shadow, shrinking as he leaves the floor
+            ellipse { at: px + bw / 2, py + bh - 4 * S; radius: (46 - lift * 20) * S; scale: 1, 0.11
+                      color: #000000; opacity: if(dragged, 0.08, 0.16 * (1 - lift * 0.6)) }
+
+            group {
+                move: px, py
+                group {
+                    pivot: 0, 0
+                    scale: S
+                    group {
+                        move: gx, gy + bob
+                        group {
+                            pivot: 80, 196
+                            rotate: tlt * 1deg
+                            scale: 1 + sq * 0.55, 1 - sq
+
+                            // legs, then arms (behind the body's edge, so the joints hide)
+                            Limb(56 - turn * 3, 146, if(dragged, lean_p * 22 + 6, stride * 24),
+                                 if(dragged, 12, -max(0, stride) * 22), 19, 18, 5.5, true)
+                            Limb(104 - turn * 3, 146, if(dragged, lean_p * 22 - 6, -stride * 24),
+                                 if(dragged, -12, -max(0, -stride) * 22), 19, 18, 5.5, true)
+                            Limb(22 + turn * 4, 84, -30 - raise_l - stride * 20, 22 - if(raise_l > 90, wv, 0), 22, 20, 5, false)
+                            Limb(138 + turn * 4, 84, 30 + raise_r + stride * 20, -22 + if(raise_r > 90, wv, 0), 22, 20, 5, false)
+
+                            // The box. The base is the side colour; the front slides and narrows as
+                            // he turns, uncovering a side strip: a three-quarter view that never
+                            // mirrors his buttons.
+                            box { from: 20, 0; size: 120, 150; corner: 11; color: side }
+                            box { from: front_x, 0; size: 120 - side_w, 150; corner: 11; color: teal }
+                            box { from: 20, 0; size: 120, 150; corner: 11; stroke: 3; color: ink }
+                            box { from: front_x, 0; size: 120 - side_w, 150; corner: 11; stroke: 3; color: ink; show: side_w > 0.5 }
+
+                            group {
+                                move: front_x, 0
+                                pivot: 0, 0
+                                scale: (120 - side_w) / 120, 1
+
+                                box { from: 8, 4; size: 104, 4; corner: 2; color: #ffffff; opacity: 0.16 }
+
+                                // the screen and his face
+                                box { from: 10, 11; size: 100, 70; corner: 9; color: ink }
+                                box { from: 12, 13; size: 96, 66; corner: 7; color: glass }
+                                box { from: 16, 16; size: 88, 7; corner: 4; color: #ffffff; opacity: 0.18 }
+                                group {
+                                    move: 12, 13
+                                    // blush
+                                    ellipse { at: 18, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: bl * 0.55 }
+                                    ellipse { at: 78, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: bl * 0.55 }
+
+                                    // eyes: a dot that lids and blinks squash from the top, a ^ when happy-shut
+                                    box { from: 30 + lx - ew / 2, 26 + ly + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2
+                                          color: ink; opacity: 1 - sql }
+                                    box { from: 66 + lx - ew / 2, 26 + ly + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2
+                                          color: ink; opacity: 1 - sqr }
+                                    box { from: 30 + lx + ew / 2 - 4, 26 + ly + eh / 2 - eye_h + 2.5; size: 2.5, 2.5; corner: 1.25
+                                          color: glass; opacity: 0.85 * (1 - sql); show: eye_h > 8 }
+                                    box { from: 66 + lx + ew / 2 - 4, 26 + ly + eh / 2 - eye_h + 2.5; size: 2.5, 2.5; corner: 1.25
+                                          color: glass; opacity: 0.85 * (1 - sqr); show: eye_h > 8 }
+                                    path { stroke: 3; color: ink; opacity: sql
+                                           move 24 + lx, 29 + ly; curve 36 + lx, 29 + ly via 30 + lx, 20 + ly }
+                                    path { stroke: 3; color: ink; opacity: sqr
+                                           move 60 + lx, 29 + ly; curve 72 + lx, 29 + ly via 66 + lx, 20 + ly }
+                                    // brows, tilted in (grumpy) or out (worried, curious)
+                                    box { at: 30 + lx, 26 + ly - eh / 2 - 6; size: 12, 3; corner: 1.5; rotate: -brow * 1deg
+                                          color: ink; opacity: bron }
+                                    box { at: 66 + lx, 26 + ly - eh / 2 - 6; size: 12, 3; corner: 1.5; rotate: brow * 1deg
+                                          color: ink; opacity: bron }
+
+                                    // the mouth: two curves between the corners. Closed it is a line;
+                                    // opening pulls the lower edge down into a D or an O.
+                                    path { color: ink; opacity: min(1, mo * 4)
+                                           move mx - half, 46; curve mx + half, 46 via mx, lower; curve mx - half, 46 via mx, upper; close }
+                                    path { stroke: 3.2; color: ink
+                                           move mx - half, 46; curve mx + half, 46 via mx, lower }
+                                    path { stroke: 3.2; color: ink; opacity: min(1, mo * 4)
+                                           move mx - half, 46; curve mx + half, 46 via mx, upper }
+                                    ellipse { at: mx + 3, (46 + lower) / 2 + 2; radius: 4.5; scale: 1, 0.66; color: #ef7f93
+                                              opacity: tg * if(mo > 0.25, 1, 0) }
+                                }
+
+                                // the yellow cross
+                                box { from: 24, 92; size: 12, 34; corner: 3; color: #f1c94a }
+                                box { from: 13, 103; size: 34, 12; corner: 3; color: #f1c94a }
+                                box { from: 24, 92; size: 12, 34; corner: 3; stroke: 2; color: ink }
+                                box { from: 13, 103; size: 34, 12; corner: 3; stroke: 2; color: ink }
+                                box { from: 25, 104; size: 10, 10; color: #f1c94a }
+                                // two slots
+                                box { from: 12, 134; size: 26, 4; corner: 2; color: ink }
+                                box { from: 42, 134; size: 10, 4; corner: 2; color: ink }
+                                // blue triangle, green and red buttons
+                                path { color: #5aa7e0
+                                       move 74, 91.5; line 80.5, 102.5; line 67.5, 102.5; close }
+                                path { stroke: 2; color: ink
+                                       move 74, 91.5; line 80.5, 102.5; line 67.5, 102.5; close }
+                                ellipse { at: 97, 109; radius: 11; color: #7bd66a }
+                                ellipse { at: 97, 109; radius: 11; stroke: 2; color: ink }
+                                box { from: 91, 102; size: 6, 3; corner: 1.5; color: #ffffff; opacity: 0.35 }
+                                ellipse { at: 76.5, 120.5; radius: 6.5; color: #e9606f }
+                                ellipse { at: 76.5, 120.5; radius: 6.5; stroke: 2; color: ink }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // what takes his clicks: a plain box over him, untouched by hops and squashes
+            zone box hit { from: px, py; size: bw, bh; cursor: pointer; role: button
+                           label: "BMO — click, double-click for his panel, right-click for his menu, drag to carry" }
+            on press hit { menu = false; emit hit_down }
+            on release hit { emit hit_up }
+            on drag hit { ddx = drag.dx; ddy = drag.dy }
+            on press right hit { menu = true; menu_x = pointer.x; menu_y = pointer.y }
+            on enter hit { emit hov(1) }
+            on leave hit { emit hov(0) }
+
+            // the speech bubble
+            measure bub
+            group {
+                show: bub_a > 0.01
+                opacity: bub_a
+                let bx = px + bw / 2
+                let by = py + (gy - 8) * S
+                box { from: bx - bub.width / 2 - 9, by - 26; size: bub.width + 18, 22; corner: 8; color: paper }
+                box { from: bx - bub.width / 2 - 9, by - 26; size: bub.width + 18, 22; corner: 8; stroke: 2; color: ink }
+                path { color: paper
+                       move bx - 6, by - 5; line bx + 6, by - 5; line bx, by + 2; close }
+                path { stroke: 2; color: ink
+                       move bx - 6, by - 4; line bx, by + 2; line bx + 6, by - 4 }
+                text bubble { at: bx, by - 15; anchor: center; size: 11; weight: 700; family: "JetBrains Mono"; color: ink; measure: bub }
+            }
+        }
+
+        // ── The menu (right press) ───────────────────────────
+        group {
+            show: menu
+            let mx0 = clamp(menu_x, 8, screen.width - 176)
+            let my0 = clamp(menu_y, 8, screen.height - 190)
+            zone box menuz { from: mx0, my0; size: 168, 178; agent: hidden }
+            on away menuz for 1600ms while menu { menu = false }
+            box { from: mx0, my0; size: 168, 178; corner: 9; color: glass }
+            box { from: mx0, my0; size: 168, 178; corner: 9; stroke: 3; color: ink }
+            MenuItem(mx0 + 5, my0 + 5, pick(panel, "Open panel", "Close panel"), 1)
+            MenuItem(mx0 + 5, my0 + 29, pick(s_wander > 0, "Let him wander", "Stop wandering"), 2)
+            MenuItem(mx0 + 5, my0 + 53, pick(s_locked, "Lock position", "Unlock position"), 3)
+            MenuItem(mx0 + 5, my0 + 77, "Go home", 4)
+            MenuItem(mx0 + 5, my0 + 101, pick(asleep, "Take a nap", "Wake up"), 5)
+            MenuItem(mx0 + 5, my0 + 125, "Hide for 10 min", 6)
+            MenuItem(mx0 + 5, my0 + 149, "Quit BMO", 7)
+        }
+
+        // ── The panel: a second little console screen beside him ──
+        group {
+            show: pan_a > 0.01
+            opacity: pan_a
+            let pw = 316
+            let ph = 252
+            let on_right = px + bw + 14 + pw <= screen.width - 8
+            let plx = if(on_right, px + bw + 8, px - pw - 8)
+            let ply = clamp(py + bh - ph - 6, 50, screen.height - ph - 8)
+
+            zone box pbody { from: plx, ply; size: pw, ph; agent: hidden }
+            box { from: plx, ply; size: pw, ph; corner: 12; color: teal }
+            box { from: plx + 8, ply + 4; size: pw - 16, 4; corner: 2; color: #ffffff; opacity: 0.16 }
+            box { from: plx, ply; size: pw, ph; corner: 12; stroke: 3; color: ink }
+
+            Tab(plx + 10, ply + 10, 54, "HOME", tab == home, 0)
+            Tab(plx + 68, ply + 10, 60, "MUSIC", tab == music, 1)
+            Tab(plx + 132, ply + 10, 34, "ME", tab == me, 2)
+            Tab(plx + 170, ply + 10, 60, "SETUP", tab == setup, 3)
+            Chip(plx + pw - 34, ply + 10, 24, "×", false, 1)
+
+            box { from: plx + 10, ply + 40; size: pw - 20, ph - 50; corner: 9; color: ink }
+            box { from: plx + 13, ply + 43; size: pw - 26, ph - 56; corner: 7; color: glass }
+
+            let cx = plx + 23
+            let cy = ply + 53
+
+            group {
+                show: tab == home
+                text clock.time { at: cx, cy + 18; anchor: left center; size: 34; weight: 700; family: "JetBrains Mono"; color: ink; show: s_clock }
+                text clock.date { at: cx, cy + 46; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink; show: s_clock }
+                text m_line { at: cx, cy + 74; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink; opacity: 0.8; width: 266; lines: 1 }
+                text "Feeling {mood_t}{? ({act_t})}" { at: cx, cy + 96; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink; opacity: 0.8 }
+                Chip(cx, cy + 116, 84, "TERMINAL", false, 110)
+                Chip(cx + 90, cy + 116, 54, "LOCK", false, 111)
+            }
+
+            group {
+                show: tab == music
+                text "No music player found." { at: cx + 135, cy + 80; anchor: center; size: 11; family: "JetBrains Mono"; color: ink; opacity: 0.6; show: not m_on }
+                group {
+                    show: m_on
+                    box { from: cx, cy; size: 84, 84; corner: 6; color: glass_dim }
+                    image cover { at: cx + 2, cy + 2; size: 80, 80; show: m_art_on }
+                    text "♪" { at: cx + 42, cy + 42; anchor: center; size: 30; color: ink; show: not m_art_on }
+                    box { from: cx, cy; size: 84, 84; corner: 6; stroke: 2; color: ink }
+                    text m_title { at: cx + 96, cy + 8; anchor: left center; size: 13; weight: 700; family: "JetBrains Mono"; color: ink; width: 174; lines: 2 }
+                    text m_artist { at: cx + 96, cy + 46; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink; width: 174; lines: 1 }
+                    text m_src { at: cx + 96, cy + 66; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink; opacity: 0.6; width: 174; lines: 1 }
+                    Chip(cx, cy + 150, 52, "PREV", false, 20)
+                    Chip(cx + 58, cy + 150, 62, pick(m_playing, "PLAY", "PAUSE"), false, 21)
+                    Chip(cx + 126, cy + 150, 52, "NEXT", false, 22)
+                }
+            }
+
+            group {
+                show: tab == me
+                text "Mood: {mood_t}{?  ·  {act_t}}" { at: cx, cy + 6; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink }
+                text "Energy" { at: cx, cy + 26; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink }
+                box { from: cx + 58, cy + 21; size: 150, 10; corner: 5; stroke: 2; color: ink }
+                box { from: cx + 60, cy + 23; size: 146 * energy, 6; corner: 3; color: ink }
+                text "Cheer him into a mood:" { at: cx, cy + 48; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink; opacity: 0.7 }
+                Chip(cx, cy + 60, 60, "happy", mood_i == 0, 30)
+                Chip(cx + 64, cy + 60, 68, "curious", mood_i == 1, 31)
+                Chip(cx + 136, cy + 60, 60, "sleepy", mood_i == 2, 32)
+                Chip(cx + 200, cy + 60, 68, "excited", mood_i == 3, 33)
+                Chip(cx, cy + 86, 60, "playful", mood_i == 5, 35)
+                Chip(cx + 64, cy + 86, 68, "focused", mood_i == 6, 36)
+                Chip(cx + 136, cy + 86, 60, "grumpy", mood_i == 7, 37)
+                Chip(cx + 200, cy + 86, 68, "surprised", mood_i == 4, 34)
+                text "Motion" { at: cx, cy + 127; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink }
+                Chip(cx + 58, cy + 116, 54, "still", s_motion == 0, 40)
+                Chip(cx + 116, cy + 116, 50, "calm", s_motion == 1, 41)
+                Chip(cx + 170, cy + 116, 58, "lively", s_motion == 2, 42)
+                Chip(cx, cy + 150, 100, pick(asleep, "TAKE A NAP", "WAKE UP"), false, 5)
+            }
+
+            group {
+                show: tab == setup
+                Row(cx, cy + 4, "Wander")
+                Chip(cx + 66, cy, 40, "off", s_wander == 0, 50)
+                Chip(cx + 110, cy, 44, "rare", s_wander == 1, 51)
+                Chip(cx + 158, cy, 44, "some", s_wander == 2, 52)
+                Chip(cx + 206, cy, 54, "often", s_wander == 3, 53)
+                Row(cx, cy + 29, "Position")
+                Chip(cx + 66, cy + 25, 64, pick(s_locked, "LOCK", "LOCKED"), s_locked, 3)
+                Chip(cx + 134, cy + 25, 72, "GO HOME", false, 4)
+                Row(cx, cy + 54, "Size")
+                Chip(cx + 66, cy + 50, 30, "S", s_size == 0, 60)
+                Chip(cx + 100, cy + 50, 30, "M", s_size == 1, 61)
+                Chip(cx + 134, cy + 50, 30, "L", s_size == 2, 62)
+                Row(cx, cy + 79, "Layer")
+                Chip(cx + 66, cy + 75, 64, "behind", not above, 70)
+                Chip(cx + 134, cy + 75, 56, "above", above, 71)
+                Row(cx, cy + 104, "Music")
+                Chip(cx + 66, cy + 100, 52, "react", s_music, 80)
+                Chip(cx + 122, cy + 100, 60, "ignore", not s_music, 81)
+                Row(cx, cy + 129, "Doze")
+                Chip(cx + 66, cy + 125, 34, "5m", s_doze == 0, 90)
+                Chip(cx + 104, cy + 125, 40, "10m", s_doze == 1, 91)
+                Chip(cx + 148, cy + 125, 40, "30m", s_doze == 2, 92)
+                Chip(cx + 192, cy + 125, 52, "never", s_doze == 3, 93)
+                Row(cx, cy + 154, "Clock")
+                Chip(cx + 66, cy + 150, 48, "show", s_clock, 100)
+                Chip(cx + 118, cy + 150, 48, "hide", not s_clock, 101)
+            }
+        }
+    }
+
+    component Tab(x: number, y: number, w: number, word: text, on: bool, k: number) {
+        size: w, 22
+        zone box t { from: x, y; size: w, 22; cursor: pointer; role: tab; selected: on; label: word }
+        box { from: x, y; size: w, 22; corner: 6; color: if(on, ink, mix(teal, ink, t.hover * 0.15)) }
+        box { from: x, y; size: w, 22; corner: 6; stroke: 2; color: ink }
+        text word { at: x + w / 2, y + 11; anchor: center; size: 10.5; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
+        on press t { emit ui(10 + k) }
+    }
+
+    component MenuItem(x: number, y: number, word: text, code: number) {
+        size: 158, 24
+        zone box m { from: x, y; size: 158, 24; cursor: pointer; role: button; label: word }
+        box { from: x, y; size: 158, 24; corner: 5; color: ink; opacity: m.hover }
+        text word { at: x + 8, y + 12; anchor: left center; size: 11; weight: 700; family: "JetBrains Mono"; color: mix(ink, glass, m.hover) }
+        on press m { emit ui(code) }
+    }
+
+    component Row(x: number, y: number, word: text) {
+        size: 60, 14
+        text word { at: x, y + 7; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink }
+    }
+}
