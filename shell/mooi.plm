@@ -2167,14 +2167,20 @@ scene Mooi {
         show: p_media
         move: xs_media, 0
         opacity: pv_media
+        // The wheel skips tracks anywhere on the module. Its zone is the first, underneath: declared
+        // last it covered the note, the title and the wave, and no press reached them (an idle note
+        // that would not open the player). The buttons on top skip with the wheel too.
+        zone box mscroll { from: 0, fl.top; size: ws_media, fl.mod_h }
+        on scroll mscroll { emit media_cmd(if(wheel > 0, -1, 1)) }
         zone box wave { from: vx0 - 5, fl.top; size: 86, fl.mod_h; cursor: pointer; role: button; show: has_viz
                         active: media_on; label: pick(med.playing, "Play", "Pause") }
         zone box track { from: tx - 4, fl.top; size: ws_media - tx + 4 - if(slabs, 42, 4), fl.mod_h; cursor: pointer; role: button
                          show: mfull or mart; label: "Music player — {med.title}" }
         zone box pill { from: 0, fl.top; size: ws_media, fl.mod_h; cursor: pointer; role: button; show: collapsed
                         label: "Music player" }
-        zone box mscroll { from: 0, fl.top; size: ws_media, fl.mod_h }
-        on scroll mscroll { emit media_cmd(if(wheel > 0, -1, 1)) }
+        on scroll wave { emit media_cmd(if(wheel > 0, -1, 1)) }
+        on scroll track { emit media_cmd(if(wheel > 0, -1, 1)) }
+        on scroll pill { emit media_cmd(if(wheel > 0, -1, 1)) }
         box { from: tx - 2, fl.top + 3; size: ws_media - tx - if(slabs, 40, 4), fl.mod_h - 6; corner: 4; color: fl.hull_raised
               opacity: 0.85 * track.hover; show: mfull or mart }
         group {
