@@ -1,2334 +1,420 @@
--- Control Nexus (D65): the system command centre, a program of its own. The scene
--- (`mooi-nexus.plm`) draws the plate and reads the bar's own services; this file paints the
--- shell's colours into it, keeps the player's text fields, and is the only place that calls
--- the system. The data folder is mooi's (bin/mooi links mooi-nexus to it), so settings.json
--- and palette.json are shared with the bar and a wallpaper change re-lights the plate too.
+-- mooi's Control Nexus (D98): the drawer's logic. What the drawer shows is read only while it is
+-- open (the program ends when it closes): the services the scene binds straight to, the machine
+-- every 2 s, the bar's own switches every 2 s, and two files the bar writes (nexus-feed.json,
+-- updates.json). Every press goes to the system (sys.call) or to the bar (`pleamar --say mooi`),
+-- which alone can open its islands, clear notifications, record or run the updater. The column's
+-- geometry is lib/nexusdrawer's; settings.json is mooi's own (bin/mooi links the data folder).
 
 local config = require("lib/config")
 local ferro = require("lib/ferro")
+local theme = require("lib/theme")
 local style = require("lib/style")
-local nexus = require("lib/nexus")
-local nexusnode = require("lib/nexusnode")
-local nexuslayout = require("lib/nexuslayout")
-local nexusgraph = require("lib/nexusgraph")
-local nexushub = require("lib/nexushub")
 local sysinfo = require("lib/sysinfo")
-local telemetry = require("lib/telemetry")
+local stats = require("lib/stats")
+local calendar = require("lib/calendar")
+local forecast = require("lib/forecast")
+local drawer = require("lib/nexusdrawer")
 
 local FILE = "settings.json"
-local PALETTE = "palette.json"
 
 local function env(name, fallback)
     local ok, v = pcall(sys.ask, "env", name)
     if ok and type(v) == "string" and v ~= "" then return v end
     return fallback
 end
-
-local data_home = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share")
-local identity_home = data_home .. "/pleamar/mooi"
-
 local function read(name, kind)
-    local ok, v
-    if kind then ok, v = pcall(sys.ask, "files.read", name, kind)
-    else ok, v = pcall(sys.ask, "files.read", name) end
+    local ok, v = pcall(sys.ask, "files.read", name, kind or "json")
     return ok and v or nil
 end
+local function trim(s) return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", "")) end
+local function launch(cmd, args, done)
+    local ok = pcall(run, cmd, args, function(out, code) if done then done(code == 0 and out or nil) end end)
+    if not ok and done then done(nil) end
+end
+local function bar(...) launch("pleamar", { "--say", "mooi", ... }) end
 
 local settings = config.parse(read(FILE), json.decode)
-fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
-local palette = read(PALETTE, "json")
+local screen_w = 1920
+local wifi_on, bt_powered = true, false
+local data_folder = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share") .. "/pleamar/mooi"
 
--- What the core shows when it is at the centre (`nexus.centre`): the reactor, who you are, the
--- player and its visualiser, or who you are over the player.
-local CENTRES = { "core", "identity", "player", "both" }
-local CENTRE_INDEX = { core = 0, identity = 1, player = 2, both = 3 }
-local CENTRE_TITLE = { core = "Nexus Core", identity = "Identity", player = "Now Playing", both = "Identity · Player" }
-local centre = (type(settings.nexus) == "table" and CENTRE_INDEX[settings.nexus.centre]) and settings.nexus.centre or "core"
-
--- A settings write can fail either by raising or by returning false. Keep that distinction
--- in one place so the UI never reports a change that wasn't persisted.
-local function save_settings()
-    local ok, result = pcall(sys.call, "files.write", FILE, settings)
-    return ok and result ~= false
-end
-
--- A text field can be drawn but not compared in the scene, so the presence facts and the
--- avatar's initial are published here beside the paths, from the one identity the settings own.
-local function sync_identity()
-    local identity = (type(settings.nexus) == "table" and type(settings.nexus.identity) == "table")
-        and settings.nexus.identity or {}
-    local name = type(identity.name) == "string" and identity.name or "mooi system"
-    local avatar = type(identity.avatar) == "string" and identity.avatar or ""
-    local banner = type(identity.banner) == "string" and identity.banner or ""
-    text.nx_identity_name = name
-    text.nx_initial = string.upper(string.sub(name, 1, 1))
-    text.nx_avatar_path = avatar ~= "" and (identity_home .. "/" .. avatar) or ""
-    text.nx_banner_path = banner ~= "" and (identity_home .. "/" .. banner) or ""
-    fact.nx_avatar_on = avatar ~= ""
-    fact.nx_banner_on = banner ~= ""
-end
-sync_identity()
-
--- The same roles the bar wears, from the same palette and settings; the tokens glide to them.
--- The appearance's brightness and contrast are applied here, to the roles themselves, so a
--- change reaches every surface the scene draws without a hex anywhere in the markup.
-local look_bright, look_contrast = 1, 1
-
-local function painted(v)
-    v = 0.5 + (v * look_bright - 0.5) * look_contrast
-    if v < 0 then return 0 end
-    if v > 1 then return 1 end
-    return v
-end
-
+-- ── The look: the shell's palette, the island style, the corners ──
 local function paint()
-    local out = ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
-    if not out then return end
+    local palette = read("palette.json")
+    local roles = ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
+    if not roles then return end
     for _, role in ipairs(ferro.ROLES) do
-        local c = out[role]
-        fact["fr_" .. role .. "_r"] = painted(c.r)
-        fact["fr_" .. role .. "_g"] = painted(c.g)
-        fact["fr_" .. role .. "_b"] = painted(c.b)
+        local c = roles[role]
+        fact["fr_" .. role .. "_r"], fact["fr_" .. role .. "_g"], fact["fr_" .. role .. "_b"] = c.r, c.g, c.b
     end
+    local colours = theme.resolve(settings.theme, roles)
+    for name, c in pairs(colours or {}) do
+        local f = "c_" .. string.gsub(name, "%.", "_")
+        -- the scene declares the tokens it draws with; any other the theme names is skipped
+        pcall(function() fact[f .. "_r"], fact[f .. "_g"], fact[f .. "_b"] = c.r, c.g, c.b end)
+    end
+    fact.cn_kind, fact.cn_scale = style.corners(settings)
+    fact.isl_style = settings.island.style == "tether" and 1 or 0
+    local look = style.facts(settings)
+    if look and look.st_glow then fact.st_glow = look.st_glow end
 end
 paint()
-pcall(sys.watch, "files:" .. PALETTE, function()
-    palette = read(PALETTE, "json")
-    paint()
-end)
--- ── The node workspace (D76) ───────────────────────────────
--- The plate's eleven modules are catalogue nodes now. The logic owns the arrangement,
--- its geometry and the selection; the scene draws the rows published here and sends a
--- press, a drag or a key back as an event. Facts carry what a rule can compare; text
--- fields carry what it only draws. Nothing here invents a reading: an absent provider
--- leaves its node out of the model, and the module library can say why.
-local present = { battery = false, brightness = false }
-local live = {
-    volume = 0, muted = false, input = 0, input_muted = false,
-    bright = 0, bright_on = false,
-    power = 0, power_on = false, charging = false,
-    net_on = false, net_name = "", net_kind = "none",
-    bt_on = false, bt_present = false,
-    ws = 1, time = "--:--", date = "",
-}
-local arrs, active_i, sel, last_arr_count = {}, 1, 0, nil
-local mix, spaces = {}, {}
 
--- What the connection layer is doing: the hovered node, the hovered trace and the picked one.
--- A short history per node type, one sample on every two-second reading: twelve samples is
--- twenty-four seconds of the machine, which is what a card's monitor strip draws (D84).
-local HIST_LEN = 12
-local hist = {}
-
-local function series_value(id)
-    if id == "core" then return nil end
-    if id == "system" or id == "cpu" then return fact.nx_cpu_on and fact.nx_cpu or nil end
-    if id == "memory" then return fact.nx_ram_on and fact.nx_ram or nil end
-    if id == "gpu" then return fact.nx_gpu_on and fact.nx_gpu or nil end
-    if id == "thermal" then return fact.nx_temp_on and math.min(1, (fact.nx_temp or 0) / 100) or nil end
-    if id == "storage" then return fact.nx_disk_on and fact.nx_disk or nil end
-    if id == "network" then
-        if not fact.nx_net_on then return nil end
-        return math.min(1, ((fact.nx_rx or 0) + (fact.nx_tx or 0)) / 1048576)
-    end
-    if id == "audio" then return live.volume end
-    if id == "display" then return live.bright_on and live.bright or nil end
-    if id == "power" then return live.power_on and (live.power / 100) or nil end
-    return nil
-end
-
-local function sample_history()
-    for _, id in ipairs(nexusnode.DENSE_ORDER) do
-        local v = series_value(id)
-        if v ~= nil then
-            local ring = hist[id]
-            if not ring then ring = {}; hist[id] = ring end
-            for k = 1, HIST_LEN - 1 do ring[k] = ring[k + 1] end
-            ring[HIST_LEN] = math.max(0, math.min(1, v))
-        end
-    end
-end
-
--- The picked trace is kept by its id, so it survives an arrangement switch.
--- Hover is the scene's own (D84): a pointer crossing a node or a trace changes a fact in
--- the scene and nothing else, so lighting a trace costs no logic round trip.
-local picked_edge = nil
--- The scene draws one node per slot and one trace per drawable edge, always in the same
--- order (nexusnode.SLOTS, nexusgraph.drawable): a slot keeps its springs, so a node that
--- moves, leaves or arrives is animated by the scene and never re-sent frame by frame.
-local SLOTS = nexusnode.SLOTS
-local EDGES = nexusgraph.drawable(nexusnode.slot)
--- The module library's search, kept here because a text field can be drawn but not
--- compared in the scene; the filtered rows are what the library panel receives.
-local lib_query = ""
--- The library shows a page at a time; the rest are one press away rather than lost. How
--- many rows a page holds follows the room the panel has on this screen, so a short band
--- gets four rows and a tall one gets ten, and no row is ever cut by the panel's foot.
-local lib_page = 0
-
-local function lib_page_size()
-    local ch = tonumber(fact.nx_ch) or 0
-    if ch <= 0 then return 10 end
-    if ch < 380 then return 4 end
-    if ch < 520 then return 6 end
-    if ch < 660 then return 8 end
-    return 10
-end
--- Which arrangement name the rename field was last seeded with.
-local draft_for = nil
-
--- Appearance is stored by role name, because a role name is what the scene's tokens read;
--- the scene gets the place in the list and picks the colour itself.
-local ACCENTS = { "phos", "flare", "ember", "trace_lit" }
-local ACCENT_INDEX = { phos = 1, flare = 2, ember = 3, trace_lit = 4 }
-local ACCENT_TONE = { phos = 1, trace_lit = 1, flare = 2, ember = 3 }
-local STYLES = { "circuit", "curved", "direct" }
-local STYLE_INDEX = { circuit = 1, curved = 2, direct = 3 }
-
-local function clamp(v, low, high)
-    if v < low then return low end
-    if v > high then return high end
-    return v
-end
-
--- The layout's own undo: snapshots of the arrangements taken before each edit, and the
--- steps a redo can walk forward again. Any new edit clears the forward list.
-local past, future = {}, {}
-local function remember()
-    nexusnode.remember(past, arrs)
-    future = {}
-end
-
--- publish is defined with the model below; the handlers above it reach for it by name.
-local publish
-local hub_states
--- Run after every build: the hub's column and the visualiser follow what the build decided
--- (the player came or went, the focus moved). Defined with the hub below.
-local after_build
-
--- Defined with the controls below; the mixer's handlers are declared before it, so the
--- name is reserved here rather than reached for as a global at press time.
-local report_control_failure
-
-local function node_list() return arrs[active_i] end
-
-local function edge_live(activity)
-    if activity == "cpu" then return fact.nx_cpu_on == true end
-    if activity == "memory" then return fact.nx_ram_on == true end
-    if activity == "gpu" then return fact.nx_gpu_on == true end
-    if activity == "thermal" then return fact.nx_temp_on == true end
-    if activity == "power" then return live.power_on end
-    if activity == "storage" then return fact.nx_disk_on == true end
-    if activity == "network" then return fact.nx_net_on == true end
-    if activity == "media" then return fact.nx_has == true end
-    return false
-end
-
-local function present_set()
-    return {
-        battery = present.battery,
-        brightness = present.brightness,
-        media = fact.nx_has == true,
-        gpu = fact.nx_gpu_on == true,
-        sensors = fact.nx_temp_on == true,
-    }
-end
-
-local function safe_write()
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return false end
-    local ok = pcall(sys.call, "files.write", FILE, settings)
-    if not ok then
-        fact.nx_notice = true
-        text.nx_notice_text = "Could not save the Nexus layout"
-        after(2600, function() fact.nx_notice = false end)
-    end
-    return ok
-end
-
--- One write per gesture, never per frame: the scene sends a drop or a resize release,
--- and the arrangement on disk is the one the model was published from.
-local function save()
-    if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    local a = node_list()
-    settings.nexus.arrangements = arrs
-    if a then
-        settings.nexus.arrangement = a.name
-        settings.nexus.focus = a.focus
-        settings.nexus.mode = a.mode
-        settings.nexus.banner = { mode = a.banner }
-    end
-    return safe_write()
-end
-
-local function str(value, fallback)
-    if type(value) == "string" and value ~= "" then return value end
-    return fallback
-end
-
-local function choose()
-    arrs = nexusnode.normalize_arrangements((type(settings.nexus) == "table" and settings.nexus.arrangements) or {})
-    local seeded = false
-    if #arrs == 0 then
-        arrs = nexusnode.seed_arrangements(type(settings.nexus) == "table" and settings.nexus or {})
-        seeded = true
-    end
-    if #arrs == 0 then
-        arrs = nexusnode.seed_arrangements({})
-        seeded = true
-    end
-    -- A file written before the third arrangement was renamed keeps its own copy of the old
-    -- name, in the list and in "which one is showing"; both move to BARE the once.
-    local renamed = nexusnode.rename_shipped(arrs)
-    active_i = 1
-    local want = type(settings.nexus) == "table" and settings.nexus.arrangement or nil
-    if type(want) == "string" then
-        if want == "MINIMAL" and renamed > 0 then
-            want = "BARE"
-            settings.nexus.arrangement = "BARE"
-        end
-        for i, a in ipairs(arrs) do
-            if a.name == want then active_i = i; break end
-        end
-    end
-    if renamed > 0 then seeded = true end
-    last_arr_count = #arrs
-    return seeded
-end
-
--- The compact body of a node: one reading, one line saying what it is, and a bar when
--- the reading has a range. A node with no provider is never published at all.
-local function content(node, def, total)
-    local tone, value, note, bar, baron = 1, "—", "", 0, false
-    -- The second line of a card and the second bar of a focused one: the same reading said
-    -- another way, or the number that sits beside it. Empty means "this one has only one".
-    local sub, bar2, bar2on, bar2l = "", 0, false, ""
-    local function beside(label, fraction, on)
-        bar2, bar2on, bar2l = fraction or 0, on == true, label
-    end
-    local function pct(fraction)
-        return string.format("%d%%", math.floor((fraction or 0) * 100 + 0.5))
-    end
-    local t = node.type
-    if t == "core" and (centre == "player" or (centre == "both" and fact.nx_has == true)) then
-        -- the player's face: what is playing, and by whom (who you are shows on the face itself)
-        value = fact.nx_has == true and str(text.nx_title, "—") or "NOTHING PLAYING"
-        note = fact.nx_has == true and string.upper(str(text.nx_artist, "")) or "START A PLAYER"
-        bar, baron = fact.nx_progress or 0, fact.nx_has == true
-        tone = fact.nx_playing == true and 1 or 0
-    elseif t == "core" and (centre == "identity" or centre == "both") then
-        value = str(text.nx_identity_name, "mooi system")
-        note = string.upper(str(text.nx_user, "")) .. "@" .. string.upper(str(text.nx_host, "")) .. "  ·  " .. string.upper(str(text.nx_session, ""))
-    elseif t == "core" then
-        -- the machine itself: its name, what it runs, how long it has been up
-        value = string.upper(str(text.nx_host, "mooi"))
-        note = string.upper(str(text.nx_distro, "Linux")) .. "  ·  " .. str(text.nx_kernel, "")
-    elseif t == "system" then
-        value = str(text.nx_cpu_value, "—")
-        note = str(text.nx_cpu_label, "SYSTEM")
-        bar, baron = fact.nx_cpu or 0, fact.nx_cpu_on == true
-        if not baron then tone = 0 end
-    elseif t == "cpu" then
-        value = str(text.nx_cpu_value, "—")
-        note = str(text.nx_cpu_label, "PROCESSOR LOAD")
-        bar, baron = fact.nx_cpu or 0, fact.nx_cpu_on == true
-        if not baron then tone = 0 end
-    elseif t == "memory" then
-        value = str(text.nx_ram_value, "—")
-        note = "OF TOTAL MEMORY"
-        bar, baron = fact.nx_ram or 0, fact.nx_ram_on == true
-        if not baron then tone = 0 end
-    elseif t == "gpu" then
-        value = str(text.nx_gpu_value, "N/A")
-        note = "GRAPHICS LOAD"
-        bar, baron = fact.nx_gpu or 0, fact.nx_gpu_on == true
-        if not baron then tone = 0 end
-    elseif t == "thermal" then
-        value = str(text.nx_temp_value, "N/A")
-        note = "THERMAL SENSOR"
-        tone = (fact.nx_temp_on == true) and 2 or 0
-    elseif t == "storage" then
-        value = str(text.nx_disk_value, "—")
-        note = "ROOT FILESYSTEM"
-        bar, baron, tone = fact.nx_disk or 0, fact.nx_disk_on == true, 2
-        if not baron then tone = 0 end
-    elseif t == "network" then
-        value = live.net_on and (live.net_kind == "wifi" and "WIFI" or "WIRED") or "OFFLINE"
-        note = "IN " .. str(text.nx_rx_value, "—") .. "  ·  OUT " .. str(text.nx_tx_value, "—")
-        tone = live.net_on and 2 or 3
-    elseif t == "audio" then
-        value = live.muted and "MUTED" or string.format("%d%%", math.floor(live.volume * 100 + 0.5))
-        note = str(text.nx_out_name, "OUTPUT DEVICE")
-        bar, baron = live.volume, true
-        tone = live.muted and 3 or 1
-    elseif t == "display" then
-        value = live.bright_on and string.format("%d%%", math.floor(live.bright * 100 + 0.5)) or "N/A"
-        note = str(text.nx_display_value, "DISPLAY")
-        bar, baron = live.bright, live.bright_on
-        if not baron then tone = 0 end
-    elseif t == "workspaces" then
-        value = string.format("%d", live.ws)
-        note = "CURRENT WORKSPACE"
-        tone = 1
-    elseif t == "media" then
-        value = str(text.nx_title, "No media session")
-        note = str(text.nx_artist, "NOTHING IS PLAYING")
-        bar, baron = fact.nx_progress or 0, fact.nx_has == true
-        if not baron then tone = 0 end
-    elseif t == "clock" then
-        value = str(live.time, "--:--")
-        note = str(live.date, "")
-        tone = 2
-    elseif t == "power" then
-        value = live.power_on and string.format("%d%%", math.floor(live.power + 0.5)) or "N/A"
-        note = not live.power_on and "NO BATTERY" or (live.charging and "CHARGING" or "ON BATTERY")
-        bar, baron = live.power / 100, live.power_on
-        tone = not live.power_on and 0 or (live.charging and 2 or 1)
-        sub = fact.nx_temp_on == true and str(text.nx_temp_value, "") or ""
-        beside("TEMPERATURE", fact.nx_temp or 0, fact.nx_temp_on)
-    end
-
-    -- The second line under the note, and the bar beside the reading. Both are filled in
-    -- here, after the switch, because each is a fact about the node rather than its reading.
-    if t == "core" and centre ~= "core" and fact.nx_has == true and centre ~= "identity" then
-        sub = string.upper(str(text.nx_album, str(text.nx_player, "")))
-    elseif t == "core" then
-        sub = "UP " .. string.upper(str(text.nx_uptime, "—")) .. "  ·  " .. string.format("%d NODES", total)
-    elseif t == "system" or t == "cpu" then
-        sub = string.format("MEM %s  ·  %s", pct(fact.nx_ram), str(text.nx_temp_value, "—"))
-        beside("MEMORY", fact.nx_ram or 0, fact.nx_ram_on)
-    elseif t == "memory" then
-        sub = str(text.nx_ram_avail, "")
-        beside("CPU", fact.nx_cpu or 0, fact.nx_cpu_on)
-    elseif t == "thermal" then
-        sub = "LOAD " .. str(text.nx_cpu_value, "—")
-        beside("MEMORY", fact.nx_ram or 0, fact.nx_ram_on)
-    elseif t == "storage" then
-        sub = str(text.nx_disk_free, "")
-    elseif t == "network" then
-        sub = live.net_on and str(live.net_name, "") or "NO LINK"
-    elseif t == "audio" then
-        sub = str(text.nx_in_name, "")
-        beside("MICROPHONE", live.input or 0, not live.input_muted)
-    elseif t == "display" then
-        sub = str(text.nx_gpu_value, "")
-    elseif t == "workspaces" then
-        sub = string.format("%d WORKSPACES", fact.nx_ws_count or 0)
-    elseif t == "media" then
-        sub = str(text.nx_album, "")
-    elseif t == "clock" then
-        sub = str(text.nx_host, "") .. "  ·  " .. str(text.nx_uptime, "")
-    elseif t == "gpu" then
-        sub = str(text.nx_display_value, "")
-    end
-    return value, note, bar, baron, tone, def.accent, sub, bar2, bar2on, bar2l
-end
-
--- The detail body of a node: the rows a focused frame draws under its reading. They are
--- the same numbers the plate carried in its old views, moved to the node that owns them,
--- and each one says `N/A` rather than guessing when its provider is absent.
-local KINDS = {
-    core = 0, system = 1, cpu = 2, memory = 3, gpu = 4, thermal = 5, storage = 6,
-    network = 7, audio = 8, display = 9, workspaces = 10, media = 11, clock = 12, power = 13,
-}
-
-local function detail_rows(node)
-    local t = node.type
-    local out = {}
-    local function row(label, value)
-        out[#out + 1] = { label = label, value = str(value, "N/A") }
-    end
-    if t == "core" and centre ~= "core" and centre ~= "identity" and fact.nx_has == true then
-        -- the player in brief (the ring card); at the centre its face draws it instead
-        row("ARTIST", text.nx_artist)
-        row("ALBUM", text.nx_album)
-        row("TIME", str(text.nx_elapsed, "—") .. " / " .. str(text.nx_duration, "—"))
-        row("PLAYER", text.nx_player)
-        row("STATE", fact.nx_playing == true and "PLAYING" or "PAUSED")
-    elseif t == "core" and centre ~= "core" then
-        row("OPERATOR", text.nx_user)
-        row("HOST", text.nx_host)
-        row("SESSION", text.nx_session)
-        row("SYSTEM", text.nx_distro)
-        row("UPTIME", text.nx_uptime)
-    elseif t == "core" then
-        -- the machine in brief (the ring card); at the centre the reactor draws it instead
-        row("LOAD", text.nx_cpu_value)
-        row("MEMORY", text.nx_ram_value)
-        row("TEMPERATURE", text.nx_temp_value)
-        row("STORAGE", text.nx_disk_value)
-        row("UPTIME", text.nx_uptime)
-        row("LAYOUT", str(text.nx_arrangement_name, "—") .. "  ·  " .. string.format("%d NODES", fact.nx_node_count or 0))
-    elseif t == "system" then
-        row("DISTRIBUTION", text.nx_distro)
-        row("KERNEL", text.nx_kernel)
-        row("UPTIME", text.nx_uptime)
-        row("CPU", text.nx_cpu_model)
-        row("LOAD AVERAGE", text.nx_load)
-        row("RUNNABLE", text.nx_tasks)
-        row("MEMORY", text.nx_ram_value)
-        row("ROOT STORAGE", text.nx_disk_value)
-    elseif t == "cpu" then
-        row("LOAD", text.nx_cpu_value)
-        row("CLOCK", text.nx_cpu_clock)
-        row("CORES", text.nx_cpu_label)
-        row("AVERAGES", text.nx_load)
-        row("RUNNABLE", text.nx_tasks)
-        row("MODEL", text.nx_cpu_model)
-        row("TEMPERATURE", text.nx_temp_value)
-        row("MEMORY", text.nx_ram_value)
-    elseif t == "memory" then
-        row("USED", text.nx_ram_value)
-        row("AVAILABLE", text.nx_ram_avail)
-        row("SWAP", text.nx_swap)
-        row("LOAD", text.nx_cpu_value)
-        row("TEMPERATURE", text.nx_temp_value)
-        row("UPTIME", text.nx_uptime)
-    elseif t == "gpu" then
-        row("LOAD", text.nx_gpu_value)
-        row("TEMPERATURE", text.nx_temp_value)
-        row("DISPLAYS", text.nx_display_value)
-        row("KERNEL", text.nx_kernel)
-        row("MEMORY", text.nx_ram_value)
-    elseif t == "thermal" then
-        row("TEMPERATURE", text.nx_temp_value)
-        row("LOAD", text.nx_cpu_value)
-        row("CLOCK", text.nx_cpu_clock)
-        row("MEMORY", text.nx_ram_value)
-        row("UPTIME", text.nx_uptime)
-    elseif t == "storage" then
-        row("ROOT STORAGE", text.nx_disk_value)
-        row("FREE", text.nx_disk_free)
-        row("FILESYSTEM", text.nx_disk_fs)
-        row("MEMORY", text.nx_ram_value)
-        row("UPTIME", text.nx_uptime)
-        row("HOST", text.nx_host)
-    elseif t == "network" then
-        row("LINK", live.net_on and (live.net_kind == "wifi" and "WIFI" or "WIRED") or "OFFLINE")
-        row("NETWORK", live.net_name)
-        row("RECEIVE", text.nx_rx_value)
-        row("SEND", text.nx_tx_value)
-        row("HOST", text.nx_host)
-    elseif t == "audio" then
-        row("OUTPUT", text.nx_out_name)
-        row("INPUT", text.nx_in_name)
-        row("MICROPHONE", live.input_muted and "MUTED" or string.format("%d%%", math.floor(live.input * 100 + 0.5)))
-        row("BLUETOOTH", live.bt_present and (live.bt_on and "ON" or "OFF") or "N/A")
-        row("STREAMS", string.format("%d PLAYING", fact.nx_mix_count or 0))
-    elseif t == "display" then
-        row("BRIGHTNESS", live.bright_on and string.format("%d%%", math.floor(live.bright * 100 + 0.5)) or "N/A")
-        row("DISPLAYS", text.nx_display_value)
-        row("GRAPHICS", text.nx_gpu_value)
-        row("KERNEL", text.nx_kernel)
-        row("LOAD", text.nx_cpu_value)
-    elseif t == "media" then
-        row("TITLE", text.nx_title)
-        row("ARTIST", text.nx_artist)
-        row("ALBUM", text.nx_album)
-        row("PLAYER", text.nx_player)
-        row("STATE", fact.nx_playing and "PLAYING" or "PAUSED")
-    elseif t == "clock" then
-        row("TIME", live.time)
-        row("DATE", live.date)
-        row("UPTIME", text.nx_uptime)
-        row("HOST", text.nx_host)
-        row("LOAD", text.nx_load)
-        row("KERNEL", text.nx_kernel)
-    elseif t == "power" then
-        row("CHARGE", live.power_on and string.format("%d%%", math.floor(live.power + 0.5)) or "N/A")
-        row("STATE", not live.power_on and "NO BATTERY" or (live.charging and "CHARGING" or "ON BATTERY"))
-        row("LOAD", text.nx_cpu_value)
-        row("TEMPERATURE", text.nx_temp_value)
-        row("UPTIME", text.nx_uptime)
-        row("HOST", text.nx_host)
-    end
-    return out
-end
-
-local function canvas_of()
-    local w = tonumber(fact.nx_cw) or 0
-    local h = tonumber(fact.nx_ch) or 0
-    if w <= 0 or h <= 0 then return nil end
-    return { w = w, h = h }
-end
-
--- How busy an edge's signal is, 0 … 1: what the scene's packet uses for its pace and the
--- trace for its light. The same readings the cards show; nothing is invented.
-local function edge_level(activity)
-    if activity == "cpu" then return fact.nx_cpu_on and (fact.nx_cpu or 0) or 0 end
-    if activity == "memory" then return fact.nx_ram_on and (fact.nx_ram or 0) or 0 end
-    if activity == "gpu" then return fact.nx_gpu_on and (fact.nx_gpu or 0) or 0 end
-    if activity == "thermal" then return fact.nx_temp_on and math.min(1, (fact.nx_temp or 0) / 100) or 0 end
-    if activity == "power" then return live.power_on and (live.power / 100) or 0 end
-    if activity == "storage" then return fact.nx_disk_on and (fact.nx_disk or 0) or 0 end
-    if activity == "network" then
-        if not fact.nx_net_on then return 0 end
-        local rate = (fact.nx_rx or 0) + (fact.nx_tx or 0)
-        return math.min(1, math.log(1 + rate / 1024, 10) / 4)
-    end
-    if activity == "media" then return fact.nx_playing and 1 or 0.3 end
-    return 0
-end
-
--- The card's body, laid out in the scene from the same numbers (keep them together): a
--- compact card has its reading block, a monitor strip once it is tall enough, then as many
--- labelled rows as fit above its bar; the centred card has its own taller layout. A row cut
--- by the frame is worse than a row not shown, so only whole rows are published.
-local RAIL = 30
-local function rows_that_fit(def, node, focused, has_series)
-    local h = node.h
-    if node.min then return 0 end
-    if focused then
-        -- the centred workspaces card draws the compositor's grid where its rows would be
-        if def.id == "workspaces" then return 0 end
-        local reserve = def.id == "system" and 56 or 0
-        return math.floor((h - RAIL - 104 - 14 - reserve) / 26) + 1
-    end
-    local spark = has_series and h >= 176
-    local top = RAIL + (spark and 114 or 78)
-    return math.floor((h - top - 26) / 22)
-end
-
-local function drawn(node, mode, p)
-    return node ~= nil and node.vis and nexusnode.available(node.type, p)
-        and (mode ~= "minimal" or node.essential) or false
-end
-
--- ORBIT's skip list: the nodes the canvas cannot draw right now (a player that is not
--- there, a sensor that never answered) keep their places and take no room on the ring.
-local function orbit(a, id, canvas)
-    local p = present_set()
-    local skip = {}
-    for _, node in ipairs(a.nodes) do
-        if not drawn(node, a.mode or "circuit", p) then skip[node.type] = true end
-    end
-    return nexuslayout.orbit(a.nodes, id, canvas, skip)
-end
-
-local publish_queued = false
-
--- The hub's four gauges: the reading, a line under it, how full its bar is, and the same
--- twenty-four seconds of history a card's monitor draws. A gauge whose provider has not
--- answered is published dark rather than as a zero.
-local HUB_GAUGES = {
-    { id = "cpu", label = "CPU", tone = 1, on = "nx_cpu_on", value = "nx_cpu_value", sub = "nx_cpu_clock",
-      bar = function() return fact.nx_cpu end },
-    { id = "memory", label = "MEM", tone = 1, on = "nx_ram_on", value = function()
-        return string.format("%d%%", math.floor((fact.nx_ram or 0) * 100 + 0.5)) end, sub = "nx_ram_avail",
-      bar = function() return fact.nx_ram end },
-    { id = "thermal", label = "TEMP", tone = 3, on = "nx_temp_on", value = "nx_temp_value", sub = "nx_cpu_label",
-      bar = function() return (fact.nx_temp or 0) / 100 end },
-    { id = "storage", label = "DISK", tone = 2, on = "nx_disk_on", value = function()
-        return string.format("%d%%", math.floor((fact.nx_disk or 0) * 100 + 0.5)) end, sub = "nx_disk_free",
-      bar = function() return fact.nx_disk end },
-}
-
-local function hub_gauges()
-    local out = {}
-    for i, g in ipairs(HUB_GAUGES) do
-        local on = fact[g.on] == true
-        local value = type(g.value) == "function" and g.value() or text[g.value]
-        local row = {
-            id = i, on = on, tone = g.tone, label = g.label,
-            value = on and str(value, "—") or "N/A",
-            sub = on and str(text[g.sub], "") or "NO READING",
-            bar = on and clamp(tonumber(g.bar()) or 0, 0, 1) or 0,
-        }
-        if g.id == "thermal" then row.sub = on and "PACKAGE" or "NO SENSOR" end
-        local ring = hist[g.id]
-        for k = 1, HIST_LEN do row["s" .. k] = ring and (ring[k] or 0) or 0 end
-        out[i] = row
-    end
-    return out
-end
-
-local function build()
-    local a = node_list()
-    local p = present_set()
-    local mode = a and a.mode or "circuit"
-    local focus = a and a.focus or "core"
-    local look = a and a.appearance or {}
-    local by_type = {}
-    local shown, total = 0, 0
-    if a then
-        for _, node in ipairs(a.nodes) do
-            by_type[node.type] = node
-            if nexusnode.available(node.type, p) then
-                total = total + 1
-                if drawn(node, mode, p) then shown = shown + 1 end
+-- ── Who, and where the drawer sits (under the bar, the screen's height below it) ──
+do
+    local id = type(settings.nexus) == "table" and type(settings.nexus.identity) == "table" and settings.nexus.identity or {}
+    local name = type(id.name) == "string" and id.name ~= "" and id.name or "mooi"
+    text.nx_name = name
+    text.nx_initial = string.upper(string.sub(name, 1, 1))
+    if type(id.avatar) == "string" and id.avatar ~= "" then text.nx_avatar = data_folder .. "/" .. id.avatar; fact.nx_avatar_on = true end
+    launch("whoami", {}, function(u) launch("hostname", {}, function(h)
+        text.nx_who = string.lower(trim(u) .. "@" .. trim(h))
+    end) end)
+    fact.nx_top = (tonumber(settings.bar.offset) or 0) + (tonumber(settings.bar.height) or 30) + 6
+    launch("hyprctl", { "-j", "monitors" }, function(out)
+        local ok, mons = pcall(json.decode, out or "")
+        local h = 1080
+        if ok and type(mons) == "table" then
+            for _, m in ipairs(mons) do
+                if m.focused and tonumber(m.height) then
+                    h = math.floor(m.height / (tonumber(m.scale) or 1) + 0.5)
+                    screen_w = math.floor(m.width / (tonumber(m.scale) or 1) + 0.5)
+                end
             end
         end
-    end
-    if sel > 0 and not drawn(by_type[SLOTS[sel] and SLOTS[sel].id], mode, p) then sel = 0 end
-
-    -- The traces first: a picked trace marks the two nodes it joins.
-    local hidden = {}
-    if a and type(a.edges) == "table" and type(a.edges.hidden) == "table" then
-        for _, id in ipairs(a.edges.hidden) do hidden[id] = true end
-    end
-    local show_trunk = not (a and a.edges and a.edges.show_trunk == false)
-    local edges, drawn_count, picked_row, endsel = {}, 0, 0, {}
-    for j, d in ipairs(EDGES) do
-        local e = d.edge
-        local active = edge_live(e.activity)
-        local on = drawn(by_type[e.from], mode, p) and drawn(by_type[e.to], mode, p)
-            and not hidden[e.id] and (e.kind ~= "trunk" or show_trunk)
-            and (mode ~= "minimal" or active)
-        if on then
-            drawn_count = drawn_count + 1
-            if e.id == picked_edge then picked_row = j; endsel[d.a] = true; endsel[d.b] = true end
-        end
-        edges[j] = {
-            on = on, a = d.a - 1, b = d.b - 1, trunk = e.kind == "trunk",
-            active = on and active, level = on and active and edge_level(e.activity) or 0,
-            dim = focus ~= "core" and e.from ~= focus and e.to ~= focus,
-            label = e.label, meaning = e.meaning,
-        }
-    end
-    if picked_edge and picked_row == 0 then picked_edge = nil end
-    text.nx_edge_label = picked_row > 0 and EDGES[picked_row].edge.label or ""
-    text.nx_edge_meaning = picked_row > 0 and EDGES[picked_row].edge.meaning or ""
-
-    -- One row per slot, drawn or not, so every node keeps its place in the scene. A slot
-    -- whose type is not in this arrangement waits at the middle of the canvas: added, it
-    -- unfolds from the core outward.
-    local canvas = canvas_of() or { w = 1880, h = 900 }
-    local rows, removed = {}, {}
-    for s, def in ipairs(SLOTS) do
-        local node = by_type[def.id]
-        local on = drawn(node, mode, p)
-        local entry = {
-            on = on, code = s, key = def.id, kind = KINDS[def.id] or 0,
-            minw = def.min.w, minh = def.min.h, maxw = def.max.w, maxh = def.max.h,
-            sel = on and s == sel, focus = on and def.id == focus, endsel = endsel[s] == true,
-            title = def.id == "core" and CENTRE_TITLE[centre] or def.title,
-            mini = node ~= nil and node.min == true,
-        }
-        if node then
-            entry.x, entry.y, entry.w, entry.h = node.x, node.y, node.w, node.h
-        else
-            entry.w, entry.h = def.size.w, def.size.h
-            entry.x = math.floor((canvas.w - def.size.w) / 2)
-            entry.y = math.floor((canvas.h - def.size.h) / 2)
-        end
-        if on then
-            local value, note, bar, baron, tone, _accent, sub, bar2, bar2on, bar2l = content(node, def, shown)
-            local detail = detail_rows(node)
-            local ring = hist[def.id]
-            local fit = rows_that_fit(def, node, entry.focus, ring ~= nil)
-            entry.value, entry.note, entry.sub = value, note, str(sub, "")
-            entry.tone, entry.bar, entry.baron = tone, math.max(0, math.min(1, bar)), baron
-            entry.bar2, entry.bar2on, entry.bar2l = math.max(0, math.min(1, bar2)), bar2on, bar2l
-            entry.ser = ring ~= nil
-            entry.rows = math.max(0, math.min(fit, #detail))
-            for k = 1, 8 do
-                entry["r" .. k .. "l"] = detail[k] and detail[k].label or ""
-                entry["r" .. k .. "v"] = detail[k] and detail[k].value or ""
-            end
-            for k = 1, HIST_LEN do
-                entry["s" .. k] = ring and (ring[k] or 0) or 0
-            end
-        elseif node and not node.vis then
-            removed[#removed + 1] = { id = s, slot = #removed + 1, key = def.id, title = def.title }
-        end
-        rows[s] = entry
-    end
-
-    -- The module library (S5): every type the catalogue declares, with the reason it is not
-    -- drawing right now. `state` is 0 on canvas, 1 removed from this arrangement —the row
-    -- carries the slot the restore event takes— 2 not connected on this machine, and 3
-    -- available but not part of this arrangement, which the row offers to add.
-    local library = {}
-    for code, def in ipairs(nexusnode.TYPES) do
-        local ok, why = nexusnode.available(def.id, p)
-        local node = by_type[def.id]
-        local state, note = 0, "ON CANVAS"
-        if not ok then
-            state, note = 2, str(why, "NOT CONNECTED")
-        elseif not node then
-            state, note = 3, "PRESS TO ADD IT"
-        elseif not node.vis then
-            state, note = 1, "REMOVED FROM THE LAYOUT"
-        elseif mode == "minimal" and not node.essential then
-            note = "ESSENTIAL ONLY"
-        end
-        local haystack = string.lower(def.title .. " " .. def.category)
-        if lib_query == "" or string.find(haystack, lib_query, 1, true) then
-            library[#library + 1] = {
-                slot = #library + 1, id = nexusnode.slot(def.id) or 0, code = code,
-                key = def.id, title = def.title, category = string.upper(def.category),
-                state = state, note = note, tone = ACCENT_TONE[def.accent] or 1,
-            }
-        end
-    end
-
-    -- The traces the user put away, with the meaning the graph gives each one, so the
-    -- connection layer can offer them back one at a time and not only all at once.
-    local put_away = {}
-    if a and type(a.edges) == "table" and type(a.edges.hidden) == "table" then
-        for slot, id in ipairs(a.edges.hidden) do
-            local label, meaning = id, "hidden trace"
-            for _, edge in ipairs(nexusgraph.EDGES) do
-                if edge.id == id then label, meaning = edge.label, edge.meaning; break end
-            end
-            put_away[#put_away + 1] = { id = slot, key = id, label = label, meaning = meaning }
-        end
-    end
-
-    local chips = {}
-    for i, item in ipairs(arrs) do
-        chips[#chips + 1] = { id = i, name = item.name, active = i == active_i }
-    end
-
-    local streams = {}
-    for i, row in ipairs(mix) do
-        streams[#streams + 1] = {
-            id = i,
-            sid = tonumber(row.id) or 0,
-            name = str(row.name, "STREAM"),
-            note = str(row.title, ""),
-            level = tonumber(row.volume) or 0,
-            muted = row.muted == 1,
-        }
-    end
-
-    local blocks = {}
-    for i, block in ipairs(spaces) do
-        blocks[i] = { id = block.id, slot = i, label = block.label, windows = block.windows, active = block.active }
-    end
-
-    model.nx_nodes = rows
-    model.nx_edges = edges
-    model.nx_removed = removed
-    model.nx_lib = library
-    model.nx_hidden = put_away
-    model.nx_arrs = chips
-    model.nx_mix = streams
-    model.nx_ws = blocks
-    model.nx_tel = hub_gauges()
-    fact.nx_mix_count = #streams
-    fact.nx_ws_count = #blocks
-    fact.nx_edge_count = drawn_count
-    fact.nx_edge_sel = picked_row
-    fact.nx_edges_hidden = #put_away
-    fact.nx_edge_width = a and a.edges and a.edges.width or 1
-    fact.nx_clear = look.clear == true
-    fact.nx_edge_labels = not (type(settings.nexus) == "table" and settings.nexus.edge
-        and settings.nexus.edge.labels == false)
-    fact.nx_arrangement_count = #arrs
-    fact.nx_node_count = shown
-    fact.nx_node_total = total
-    fact.nx_removed_count = #removed
-    local per_page = lib_page_size()
-    local pages = math.max(1, math.ceil(#library / per_page))
-    if lib_page > pages - 1 then lib_page = pages - 1 end
-    if lib_page < 0 then lib_page = 0 end
-    fact.nx_lib_page_size = per_page
-    fact.nx_lib_count = #library
-    fact.nx_lib_total = #nexusnode.TYPES
-    fact.nx_lib_page = lib_page + 1
-    fact.nx_lib_pages = pages
-    fact.nx_hidden_count = #put_away
-    fact.nx_undo_depth = #past
-    fact.nx_redo_depth = #future
-    fact.nx_sel = sel
-    fact.nx_focus = focus
-    fact.nx_mode = mode
-    fact.nx_banner_mode = a and a.banner or "compact"
-    fact.nx_grid = look.grid ~= false
-    local bright = clamp((tonumber(look.brightness) or 100) / 100, 0.6, 1.4)
-    local contrast = clamp((tonumber(look.contrast) or 100) / 100, 0.6, 1.4)
-    if bright ~= look_bright or contrast ~= look_contrast then
-        look_bright, look_contrast = bright, contrast
-        paint()
-    end
-    fact.nx_accent = ACCENT_INDEX[look.accent or "phos"] or 1
-    fact.nx_glow = tonumber(look.glow) or 60
-    fact.nx_bright = tonumber(look.brightness) or 100
-    fact.nx_contrast = tonumber(look.contrast) or 100
-    fact.nx_opacity = tonumber(look.opacity) or 100
-    local style = a and a.edges and a.edges.style or "circuit"
-    fact.nx_edge_style = STYLE_INDEX[style] or 1
-    fact.nx_motion = look.motion ~= false
-    fact.nx_signals = look.motion ~= false and not (a and a.edges and a.edges.animation == false)
-    fact.nx_edge_speed = tonumber(look.edge_speed) or 1
-    fact.nx_show_trunk = show_trunk
-    text.nx_accent_name = string.upper(str(look.accent, "phos"))
-    local picked = sel > 0 and rows[sel] or nil
-    fact.nx_sel_on = picked and 1 or 0
-    fact.nx_sel_kind = picked and picked.kind or 0
-    text.nx_sel_title = picked and picked.title or "NO NODE SELECTED"
-    text.nx_sel_note = picked and string.format("%d × %d", picked.w, picked.h) or "PRESS A NODE"
-    text.nx_arrangement_name = a and a.name or "—"
-    if draft_for ~= (a and a.name) then
-        draft_for = a and a.name or nil
-        text.nx_arr_draft = a and a.name or ""
-    end
-    text.nx_banner_name = string.upper(a and a.banner or "compact")
-    local focus_def = nexusnode.get(focus)
-    text.nx_focus_name = focus_def and focus_def.title or "Core"
-    text.nx_mode_name = string.upper(mode)
-
-    local bits = {}
-    if fact.nx_cpu_on then bits[#bits + 1] = "LOAD " .. str(text.nx_cpu_value, "—") end
-    if fact.nx_ram_on then bits[#bits + 1] = "MEM " .. str(text.nx_ram_value, "—") end
-    if fact.nx_temp_on then bits[#bits + 1] = str(text.nx_temp_value, "—") end
-    if fact.nx_net_on then
-        bits[#bits + 1] = "IN " .. str(text.nx_rx_value, "—") .. " · OUT " .. str(text.nx_tx_value, "—")
-    end
-    text.nx_status = #bits > 0 and table.concat(bits, "   ·   ") or "NO LIVE READINGS"
-
-    -- The panel's remembered corner. Absent or nonsense reads as "dock it", which is also
-    -- what a press on the panel's head asks for.
-    local panel = type(settings.nexus) == "table" and type(settings.nexus.panel) == "table"
-        and settings.nexus.panel or {}
-    fact.nx_panel_x = math.max(0, math.min(4096, math.floor(tonumber(panel.x) or 0)))
-    fact.nx_panel_y = math.max(0, math.min(4096, math.floor(tonumber(panel.y) or 0)))
-end
-
--- The one publish everything asks for. A second ask inside the same frame is dropped: the
--- build that is already queued will read the state this one would have read. A gesture that
--- the scene is still holding (a carried node, a resize) is let go only once the rows that
--- answer it are out, so the node glides from where it was dropped instead of jumping back.
-local release = {}
-function publish()
-    if publish_queued then return end
-    publish_queued = true
-    after(16, function()
-        publish_queued = false
-        build()
-        if after_build then after_build() end
-        if release.drag then fact.nx_drag = 0; release.drag = nil end
-        if release.resize then fact.nx_rz = 0; release.resize = nil end
+        fact.nx_h = h - fact.nx_top - 6
     end)
 end
 
-local function touch(write)
-    if write then save() end
-    publish()
+-- ── The column: folds, counts, and each section's top ──
+local folded = drawer.folded_set(type(settings.nexus) == "table" and settings.nexus.folded or nil)
+local counts = { playing = false, notes = 0, nets = 0, bt = 0, outs = 1, apps = 0, bright = false, ws = 1 }
+local function relayout()
+    local l = drawer.layout(counts, folded)
+    for _, id in ipairs(drawer.ORDER) do
+        fact["y_" .. id] = l.shown[id] and l.top[id] or 0
+        fact["f_" .. id] = folded[id] == true
+    end
+    fact.nx_total = l.total
 end
-
--- The arrangement node in a slot, and its index there: the undo and the settings keep the
--- arrangement's own order, the scene speaks in slots.
-local function in_slot(value)
-    local def = SLOTS[math.floor(tonumber(value) or 0)]
-    local a = node_list()
-    if not def or not a then return nil, nil end
-    for i, node in ipairs(a.nodes) do
-        if node.type == def.id then return i, node end
-    end
-    return nil, nil
+relayout()
+local function save_folds()
+    if env("MOOI_SAFE", "") == "1" then return end
+    local doc = read(FILE)       -- read again: whatever changed elsewhere is kept
+    if type(doc) ~= "table" then return end
+    doc.nexus = type(doc.nexus) == "table" and doc.nexus or {}
+    doc.nexus.folded = drawer.folded_list(folded)
+    pcall(sys.call, "files.write", FILE, doc)
 end
-
--- A node press with no drag: select it. The same press on the selected node clears it,
--- so a click on empty canvas and a second click agree about what is selected.
-on("nx_select", function(v)
-    local slot = math.floor(tonumber(v) or 0)
-    if not in_slot(slot) then return end
-    sel = (sel == slot) and 0 or slot
-    publish()
+on("nx_fold", function(v)
+    local id = drawer.ORDER[(tonumber(v) or -1) + 1]
+    if not id then return end
+    folded = drawer.toggle(folded, id)
+    relayout()
+    save_folds()
 end)
 
--- The boxes a card may not land on: every other drawn node, a minimized one only as tall
--- as its rail, because that is all of it there is on the canvas.
-local function others(except)
-    local a, p = node_list(), present_set()
-    local out = {}
-    if not a then return out end
-    for _, n in ipairs(a.nodes) do
-        if n ~= except and drawn(n, a.mode or "circuit", p) then
-            out[#out + 1] = { x = n.x, y = n.y, w = n.w, h = n.min and RAIL + 4 or n.h }
-        end
-    end
-    return out
+-- ── Opening and closing ──
+local closing = false
+local function close()
+    if closing then return end
+    closing = true
+    fact.nx_open = false
+    after(260, function() launch("pleamar", { "--say", "mooi-nexus", "quit" }) end)
 end
+on("nx_close", close)
+after(40, function() fact.nx_open = true end)
 
--- A drag that moved: the scene has already clamped to the canvas and published the
--- proposed origin, so the logic snaps and records once, on release. A card let go on top
--- of another slides to the nearest free room; the scene keeps holding it until the answer
--- is out, so it glides from the drop to its place.
-on("nx_drop", function(v)
-    local slot = math.floor(tonumber(v) or 0)
-    local i, node = in_slot(slot)
-    local canvas = canvas_of()
-    release.drag = true
-    if not i or not canvas then publish(); return end
-    sel = slot
-    local x = tonumber(fact.nx_gx) or node.x
-    local y = tonumber(fact.nx_gy) or node.y
-    local h = node.min and RAIL + 4 or node.h
-    local fx, fy = nexuslayout.nearest_free(others(node), node.w, h, x, y, canvas, 8, 8)
-    remember()
-    if nexuslayout.place(node, fx, fy, canvas, 8) then
-        touch(true)
-    else
-        table.remove(past)
-        publish()
-    end
-end)
-
-on("nx_resize", function(v)
-    local i, node = in_slot(v)
-    local canvas = canvas_of()
-    release.resize = true
-    if not i or not canvas then publish(); return end
-    remember()
-    local changed = nexuslayout.resize(node, tonumber(fact.nx_rw) or node.w, tonumber(fact.nx_rh) or node.h, 8)
-    local moved = nexuslayout.place(node, node.x, node.y, canvas, 0)
-    if changed or moved then
-        touch(true)
-    else
-        table.remove(past)
-        publish()
-    end
-end)
-
-on("nx_min", function(v)
-    local i, node = in_slot(v)
-    if not i then return end
-    remember()
-    node.min = not node.min
-    touch(true)
-end)
-
--- Focus at centre: the chosen node takes the middle at its detail size and the rest form
--- the ring around it (ORBIT), each where its kind belongs.
-on("nx_focus_node", function(v)
-    local i, node = in_slot(v)
-    local canvas = canvas_of()
-    local a = node_list()
-    if not i or not canvas or not a then return end
-    remember()
-    local out, ok = orbit(a, node.type, canvas)
-    if ok then
-        a.nodes = out
-        a.focus = node.type
-        sel = math.floor(tonumber(v) or 0)
-        touch(true)
-    else
-        a.focus = node.type
-        touch(true)
-    end
-end)
-
--- Removal is layout-only: the node keeps its slot and its services, and the drawer's
--- REMOVED list can put it back where it was.
-on("nx_remove", function(v)
-    local i, node = in_slot(v)
-    local a = node_list()
-    if not i or not a then return end
-    remember()
-    node.vis = false
-    if a.focus == node.type then
-        local fallback = "core"
-        local holds = false
-        for _, other in ipairs(a.nodes) do
-            if other.vis and other.type == "core" then holds = true end
-        end
-        if not holds then
-            for _, other in ipairs(a.nodes) do
-                if other.vis then fallback = other.type; break end
-            end
-        end
-        a.focus = fallback
-    end
-    if sel == math.floor(tonumber(v) or 0) then sel = 0 end
-    touch(true)
-end)
-
-on("nx_restore", function(v)
-    local slot = math.floor(tonumber(v) or 0)
-    local i = in_slot(slot)
-    local canvas = canvas_of()
-    local a = node_list()
-    if not i or not a or not canvas then return end
-    remember()
-    if nexuslayout.restore(a.nodes, i, canvas, 8) then
-        sel = slot
-        touch(true)
-    end
-end)
-
--- One place for the strip's short messages, so a refused press always says why.
-local function notify(message)
-    fact.nx_notice = true
-    text.nx_notice_text = message
-    after(2800, function() fact.nx_notice = false end)
-end
-
--- The panel's own place: carried by its head, kept in the settings, and put back by a press
--- on the same head. The scene clamps to the screen; the logic only keeps what it was given.
-local function set_panel_at(x, y)
-    if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    settings.nexus.panel = {
-        x = math.max(0, math.min(4096, math.floor(tonumber(x) or 0))),
-        y = math.max(0, math.min(4096, math.floor(tonumber(y) or 0))),
-    }
-    touch(true)
-end
-
-on("nx_panel_move", function()
-    set_panel_at(fact.nx_panel_gx, fact.nx_panel_gy)
-end)
-
-on("nx_panel_dock", function()
-    set_panel_at(0, 0)
-end)
-
--- The library's ADD row: a type the arrangement simply did not carry yet. The node takes
--- the first grid slot that clears the others, so a press on the fifth library row never
--- lands on top of the clock. Types already in the arrangement are only brought back.
-on("nx_lib_add", function(v)
-    local code = math.floor(tonumber(v) or 0)
-    local def = nexusnode.TYPES[code]
-    local a = node_list()
-    local canvas = canvas_of()
-    if not def or not a or not canvas then return end
-    local ok, why = nexusnode.available(def.id, present_set())
-    if not ok then notify(string.upper(str(why, "NOT CONNECTED"))); return end
-    for _, node in ipairs(a.nodes) do
-        if node.type == def.id then
-            if not node.vis then
-                remember()
-                node.vis = true
-                touch(true)
-            end
-            sel = nexusnode.slot(def.id) or 0
-            notify(def.title .. " IS ON THE CANVAS")
-            publish()
-            return
-        end
-    end
-    if #a.nodes >= 16 then notify("SIXTEEN NODES AT MOST"); return end
-    local template
-    for _, node in ipairs(nexusnode.default_nodes(canvas)) do
-        if node.type == def.id then template = node; break end
-    end
-    remember()
-    local x, y = nexuslayout.free_slot(a.nodes, def.id, canvas, 8)
-    local node = template or { type = def.id, w = def.size.w, h = def.size.h, min = false }
-    node.x, node.y = x, y
-    node.vis = true
-    node.min = false
-    node.essential = def.essential
-    a.nodes[#a.nodes + 1] = node
-    sel = nexusnode.slot(def.id) or 0
-    touch(true)
-    notify(def.title .. " ADDED")
-end)
-
--- The module library's search field. The rows are filtered here, because a text field
--- can be drawn in the scene but not compared there.
-on("text:nx_lib_query", function(value)
-    if type(value) ~= "string" then return end
-    lib_query = string.lower((value:gsub("^%s+", ""):gsub("%s+$", "")))
-    lib_page = 0
-    publish()
-end)
-
--- A page of the library, forward or back. A press past either end stays put.
-on("nx_lib_page", function(v)
-    local step = tonumber(v) or 0
-    lib_page = lib_page + (step > 0 and 1 or -1)
-    if lib_page < 0 then lib_page = 0 end
-    publish()
-end)
-
--- The size presets of a node: S, M, L and the detail size it takes at the centre. The
--- type's own limits still decide, so a preset never draws outside what the catalogue says.
-local function preset_size(def, preset)
-    if preset == 1 then return def.min.w, def.min.h end
-    if preset == 3 then return def.max.w, def.max.h end
-    if preset == 4 then return def.detail.w, def.detail.h end
-    return def.size.w, def.size.h
-end
-
-on("nx_node_preset", function(v)
-    local i, node = in_slot(sel)
-    local a = node_list()
-    local canvas = canvas_of()
-    if not i or not a then return end
-    local def = nexusnode.get(node.type)
-    if not def then return end
-    local w, h = preset_size(def, math.floor(tonumber(v) or 2))
-    remember()
-    node.w, node.h = nexuslayout.bounds(node.type, w, h)
-    if canvas then nexuslayout.place(node, node.x, node.y, canvas, 0) end
-    touch(true)
-end)
-
--- RESET NODE: the type's shipped size and the slot the default arrangement gives it.
-on("nx_node_reset", function()
-    local i, node = in_slot(sel)
-    local a = node_list()
-    if not i or not a then return end
-    local canvas = canvas_of() or { w = 1440, h = 860 }
-    local home
-    for _, d in ipairs(nexusnode.default_nodes(canvas)) do
-        if d.type == node.type then home = d; break end
-    end
-    if not home then return end
-    remember()
-    node.w, node.h = home.w, home.h
-    nexuslayout.place(node, home.x, home.y, canvas, 8)
-    touch(true)
-end)
-
--- One hidden trace back: the panel lists them by slot, so a press restores only that one.
-on("nx_edge_show", function(v)
-    local slot = math.floor(tonumber(v) or 0)
-    local a = node_list()
-    if not a or type(a.edges) ~= "table" or type(a.edges.hidden) ~= "table" then return end
-    if not a.edges.hidden[slot] then return end
-    remember()
-    table.remove(a.edges.hidden, slot)
-    picked_edge = nil
-    touch(true)
-end)
-
--- The arrangement's own management. A new one is the current arrangement under another
--- name; adding, duplicating, renaming and deleting all go through the same memory, so
--- Ctrl+Z takes back a delete as easily as a drag.
-local function arrangement_name(base)
-    local used = {}
-    for _, item in ipairs(arrs) do used[item.name] = true end
-    if not used[base] then return base end
-    for n = 2, 9 do
-        local suffix = " " .. n
-        local candidate = string.sub(base, 1, 16 - #suffix) .. suffix
-        if not used[candidate] then return candidate end
-    end
-    return nil
-end
-
-local function add_arrangement(copy)
-    if #arrs >= 8 then notify("EIGHT ARRANGEMENTS AT MOST"); return end
-    remember()
-    local name = arrangement_name(copy.name or "LAYOUT")
-    if not name then notify("NO ROOM FOR ANOTHER NAME"); return end
-    copy.name = name
-    arrs[#arrs + 1] = copy
-    active_i = #arrs
-    sel = 0
-    touch(true)
-end
-
-on("nx_arr_new", function()
-    local a = node_list()
-    if not a then return end
-    local copy = nexusnode.copy_arrangements({ a })[1]
-    if not copy then return end
-    copy.name = "LAYOUT"
-    add_arrangement(copy)
-end)
-
-on("nx_arr_dup", function()
-    local a = node_list()
-    if not a then return end
-    local copy = nexusnode.copy_arrangements({ a })[1]
-    if not copy then return end
-    copy.name = string.sub(a.name, 1, 12) .. " 2"
-    add_arrangement(copy)
-end)
-
-on("nx_arr_rename", function()
-    local a = node_list()
-    if not a then return end
-    local draft = type(text.nx_arr_draft) == "string" and text.nx_arr_draft or ""
-    draft = string.upper((draft:gsub("^%s+", ""):gsub("%s+$", "")))
-    if draft == "" then notify("NAME THE ARRANGEMENT FIRST"); return end
-    if #draft > 16 then notify("SIXTEEN CHARACTERS AT MOST"); return end
-    if draft == a.name then return end
-    for _, item in ipairs(arrs) do
-        if item.name == draft then notify("THAT NAME IS ALREADY USED"); return end
-    end
-    remember()
-    a.name = draft
-    touch(true)
-end)
-
-on("nx_arr_del", function()
-    if #arrs <= 1 then notify("ONE ARRANGEMENT MUST STAY"); return end
-    remember()
-    table.remove(arrs, active_i)
-    if active_i > #arrs then active_i = #arrs end
-    sel = 0
-    touch(true)
-end)
-
--- Appearance is one key and one number: accent, brightness, contrast, glow, grid, edge
--- width, edge style, edge labels, motion and surface opacity. Values are enums and bounded
--- numbers, never colours, so a theme change still reaches every surface.
-on("nx_look", function()
-    local a = node_list()
-    if not a then return end
-    if type(a.appearance) ~= "table" then a.appearance = {} end
-    local look = a.appearance
-    local key = math.floor(tonumber(fact.nx_look_key) or 0)
-    local val = tonumber(fact.nx_look_val) or 0
-    if key == 1 then
-        local at = ACCENT_INDEX[look.accent or "phos"] or 1
-        look.accent = ACCENTS[((at - 1 + math.floor(val)) % #ACCENTS) + 1]
-    elseif key == 2 then
-        look.brightness = math.floor(clamp((tonumber(look.brightness) or 100) + val, 60, 140))
-    elseif key == 3 then
-        look.contrast = math.floor(clamp((tonumber(look.contrast) or 100) + val, 60, 140))
-    elseif key == 4 then
-        look.glow = math.floor(clamp((tonumber(look.glow) or 60) + val, 0, 100))
-    elseif key == 5 then
-        look.grid = not (look.grid ~= false)
-    elseif key == 11 then
-        -- the clear field: no plate at all, the wallpaper behind the cards (D84)
-        look.clear = not (look.clear == true)
-    elseif key == 9 then
-        look.motion = not (look.motion ~= false)
-    elseif key == 10 then
-        look.opacity = math.floor(clamp((tonumber(look.opacity) or 100) + val, 40, 100))
-    elseif key == 6 then
-        if type(a.edges) ~= "table" then a.edges = {} end
-        a.edges.width = (tonumber(a.edges.width) == 2) and 1 or 2
-    elseif key == 7 then
-        if type(a.edges) ~= "table" then a.edges = {} end
-        local at = STYLE_INDEX[a.edges.style or "circuit"] or 1
-        a.edges.style = STYLES[((at - 1 + math.floor(val)) % #STYLES) + 1]
-    elseif key == 8 then
-        if type(settings.nexus) ~= "table" then settings.nexus = {} end
-        if type(settings.nexus.edge) ~= "table" then settings.nexus.edge = {} end
-        settings.nexus.edge.labels = not (settings.nexus.edge.labels ~= false)
-    elseif key == 12 then
-        -- edge animation speed: 0.5x, 1x, 2x
-        local speeds = { 0.5, 1, 2 }
-        local current = tonumber(look.edge_speed) or 1
-        local idx = 1
-        for i, s in ipairs(speeds) do if math.abs(s - current) < 0.1 then idx = i; break end end
-        look.edge_speed = speeds[((idx - 1 + math.floor(val)) % #speeds) + 1]
-    elseif key == 13 then
-        -- core bus visibility toggle
-        if type(a.edges) ~= "table" then a.edges = {} end
-        a.edges.show_trunk = not (a.edges.show_trunk == false)
-    else
-        return
-    end
-    remember()
-    touch(true)
-end)
-
--- The canvas the scene is drawing on, published when it first settles and whenever the
--- screen changes size. Only a shrink moves anything: `fit` leaves a canvas that still
--- holds the arrangement alone, so opening on a bigger screen never rearranges the work.
-local last_canvas = nil
-on("nx_canvas", function()
-    local canvas = canvas_of()
-    if not canvas then return end
-    local a = node_list()
-    local changed = false
-    if a and last_canvas and (last_canvas.w ~= canvas.w or last_canvas.h ~= canvas.h) then
-        local fitted = nexuslayout.fit(a.nodes, canvas)
-        if fitted ~= a.nodes then
-            a.nodes = fitted
-            changed = true
-        end
-    end
-    last_canvas = canvas
-    publish()
-end)
-
--- The rename field keeps what was typed; the logic only reseeds it when the arrangement
--- itself changed, so a refused name is not wiped out from under the cursor.
-on("text:nx_arr_draft", function(value)
-    if type(value) == "string" then text.nx_arr_draft = value end
-end)
-
--- The keys' way about: 1 left · 2 right · 3 up · 4 down, one snapped step at a time; with
--- Shift held the same key is four steps, as §5.4 asks. One move is one undo entry either way.
-local function shift_node(direction, times)
-    local canvas = canvas_of()
-    local _, node = in_slot(sel)
-    if not canvas or not node then return end
-    local dx = (direction == 1 and -1) or (direction == 2 and 1) or 0
-    local dy = (direction == 3 and -1) or (direction == 4 and 1) or 0
-    if dx == 0 and dy == 0 then return end
-    remember()
-    local moved = false
-    for _ = 1, math.max(1, times) do
-        local x, y = nexuslayout.move_step(node, dx, dy, canvas, 8)
-        if nexuslayout.place(node, x, y, canvas, 8) then moved = true end
-    end
-    if moved then touch(true) else table.remove(past); publish() end
-end
-
-on("nx_move", function(v) shift_node(math.floor(tonumber(v) or 0), 1) end)
-on("nx_move_fast", function(v) shift_node(math.floor(tonumber(v) or 0), 4) end)
-
-on("nx_mode_switch", function(v)
-    local mode = tonumber(v) == 1 and "minimal" or "circuit"
-    local a = node_list()
-    remember()
-    if a then a.mode = mode end
-    fact.nx_mode = mode
-    touch(true)
-end)
-
-local BANNERS = { "full", "compact", "strip", "hidden" }
-on("nx_banner_cycle", function()
-    local a = node_list()
-    local current = fact.nx_banner_mode or "compact"
-    local next_banner = "compact"
-    for i, mode in ipairs(BANNERS) do
-        if mode == current then next_banner = BANNERS[(i % #BANNERS) + 1]; break end
-    end
-    remember()
-    if a then a.banner = next_banner end
-    fact.nx_banner_mode = next_banner
-    touch(true)
-end)
-
-on("nx_arrangement", function(v)
-    local i = math.floor(tonumber(v) or 0)
-    if not arrs[i] or i == active_i then return end
-    active_i = i
-    sel = 0
-    touch(true)
-end)
-
-on("nx_tidy", function()
-    local a = node_list()
-    local canvas = canvas_of()
-    if not a or not canvas then return end
-    remember()
-    -- ORBIT (the header's former TIDY): the ring around whatever holds the middle now
-    local out = orbit(a, a.focus or "core", canvas)
-    a.nodes = out
-    touch(true)
-end)
-
--- A picked trace highlights the two endpoints; a press on the same trace puts it down.
-on("nx_edge_pick", function(v)
-    local i = math.floor(tonumber(v) or 0)
-    local id = EDGES[i] and EDGES[i].edge.id or nil
-    picked_edge = (id and id ~= picked_edge) and id or nil
-    publish()
-end)
-on("nx_edge_hide", function()
-    local a = node_list()
-    if not a or not picked_edge then return end
-    if type(a.edges) ~= "table" then a.edges = { hidden = {} } end
-    if type(a.edges.hidden) ~= "table" then a.edges.hidden = {} end
-    remember()
-    a.edges.hidden[#a.edges.hidden + 1] = picked_edge
-    picked_edge = nil
-    touch(true)
-end)
-on("nx_edges_restore", function()
-    local a = node_list()
-    if not a or type(a.edges) ~= "table" then return end
-    remember()
-    a.edges.hidden = {}
-    picked_edge = nil
-    touch(true)
-end)
-
--- RESTORE CENTRE: the core goes back to the middle. The node that was there takes the
--- slot the core left, exactly as a focus swap does.
-on("nx_restore_centre", function()
-    local a = node_list()
-    local canvas = canvas_of()
-    if not a or not canvas then return end
-    for _, node in ipairs(a.nodes) do
-        if node.vis and node.type == "core" then
-            remember()
-            local out, ok = orbit(a, "core", canvas)
-            if ok then a.nodes = out end
-            a.focus = "core"
-            sel = nexusnode.slot("core")
-            touch(true)
-            return
-        end
-    end
-end)
-
--- Ctrl+Z and Ctrl+Shift+Z walk the layout history; each step is a whole arrangement, so a
--- focus swap and the slot it moved are undone together.
-on("nx_undo", function()
-    local restored, ok = nexusnode.undo(past, future, arrs)
-    if not ok then return end
-    arrs = restored
-    if not arrs[active_i] then active_i = 1 end
-    sel = 0
-    save()
-    publish()
-end)
-on("nx_redo", function()
-    local restored, ok = nexusnode.redo(past, future, arrs)
-    if not ok then return end
-    arrs = restored
-    if not arrs[active_i] then active_i = 1 end
-    sel = 0
-    save()
-    publish()
-end)
-
-pcall(sys.watch, "files:" .. FILE, function()
-    settings = config.parse(read(FILE), json.decode)
-    fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
-    fact.nx_desk_on = type(settings.desk) == "table" and settings.desk.on == true
-    sync_identity()
-    local count = (type(settings.nexus) == "table" and type(settings.nexus.arrangements) == "table")
-        and #settings.nexus.arrangements or 0
-    if last_arr_count ~= count then
-        choose()
-        publish()
-    end
-end)
-
--- Presence and the readings a compact body shows come from the same services the plate
--- always used; each watcher only republishes the model, never writes the settings.
-pcall(sys.watch, "battery", function(b)
-    present.battery = type(b) == "table" and b.present == true
-    live.power_on = present.battery
-    live.power = type(b) == "table" and (tonumber(b.percent) or 0) or 0
-    live.charging = type(b) == "table" and b.charging == true
-    publish()
-end)
-pcall(sys.watch, "brightness", function(b)
-    present.brightness = type(b) == "table" and b.present == true
-    live.bright_on = present.brightness
-    live.bright = type(b) == "table" and (tonumber(b.level) or 0) or 0
-    publish()
-end)
+-- ── What the services say, for the counts and the rows' presses ──
+local nets, devices, outputs, apps = {}, {}, {}, {}
+local media = {}
 pcall(sys.watch, "network", function(n)
-    if type(n) ~= "table" then return end
-    live.net_on = n.online == true
-    live.net_name = str(n.name, "")
-    live.net_kind = str(n.kind, "none")
-    publish()
+    nets = type(n) == "table" and type(n.networks) == "table" and n.networks or {}
+    wifi_on = not (type(n) == "table" and n.wifi == false)
+    counts.nets = #nets; relayout()
+    text.t_s0 = (type(n) == "table" and n.wifi == false) and "Off" or ((type(n) == "table" and n.online) and tostring(n.name or "Connected") or "No network")
 end)
 pcall(sys.watch, "bluetooth", function(b)
-    if type(b) ~= "table" then return end
-    live.bt_present = b.present == true
-    live.bt_on = b.powered == true
-    publish()
+    devices = type(b) == "table" and type(b.devices) == "table" and b.devices or {}
+    counts.bt = #devices; relayout()
+    local present, powered = type(b) == "table" and b.present, type(b) == "table" and b.powered
+    bt_powered = powered == true
+    text.t_s1 = not present and "No adapter" or (powered and (#devices > 0 and (#devices .. " known") or "On") or "Off")
+    text.bt_empty = not present and "No Bluetooth adapter" or (powered and "No devices paired" or "Bluetooth is off")
 end)
-pcall(sys.watch, "clock", function(c)
-    if type(c) ~= "table" then return end
-    live.time = str(c.time, "--:--")
-    live.date = str(c.date, "")
-    publish()
+pcall(sys.watch, "audio", function(a)
+    if type(a) ~= "table" then return end
+    outputs = type(a.outputs) == "table" and a.outputs or {}
+    apps = type(a.apps) == "table" and a.apps or {}
+    counts.outs, counts.apps = #outputs, math.min(6, #apps); relayout()
+    text.t_s2 = a.muted and "Muted" or string.format("%d %%", math.floor((tonumber(a.volume) or 0) * 100 + 0.5))
+    text.t_s3 = a.input_muted and "Muted" or "Live"
 end)
+pcall(sys.watch, "brightness", function(b) counts.bright = type(b) == "table" and b.present == true; relayout() end)
 pcall(sys.watch, "workspaces", function(w)
-    if type(w) ~= "table" then return end
-    if tonumber(w.active) then live.ws = math.floor(tonumber(w.active)) end
-    spaces = nexus.ws_rows(w.list, 10)
-    publish()
+    local first = counts.ws_seen == nil
+    local active = type(w) == "table" and tonumber(w.active) or nil
+    if not first and active and active ~= counts.active_ws then close() end   -- the desktop moved on
+    counts.ws_seen = true; counts.active_ws = active
+end)
+-- another window taking the focus closes the drawer (the desktop is being used)
+local focused = nil
+pcall(sys.watch, "window", function(w)
+    local now = type(w) == "table" and (w.address or w.title) or nil
+    if focused ~= nil and now ~= nil and now ~= focused then close() end
+    focused = now or focused
 end)
 
--- Tab walks the nodes that are on the canvas, in slot order and, with Shift, backwards.
--- Both directions wrap, so the selection never strands on a removed node.
-local function walk_selection(back)
-    local a = node_list()
-    local p = present_set()
-    if not a then return end
-    local mode = a.mode or "circuit"
-    local order = {}
-    for s in ipairs(SLOTS) do
-        local _, node = in_slot(s)
-        if node and drawn(node, mode, p) then order[#order + 1] = s end
-    end
-    if #order == 0 then return end
-    local next_sel = order[#order]
-    if not back then
-        next_sel = order[1]
-        for _, i in ipairs(order) do
-            if i > sel then next_sel = i; break end
-        end
-    else
-        for k = #order, 1, -1 do
-            if order[k] < sel then next_sel = order[k]; break end
-        end
-    end
-    sel = next_sel
-    publish()
-end
-
-on("nx_cycle_sel", function() walk_selection(false) end)
-on("nx_cycle_sel_back", function() walk_selection(true) end)
-
--- The node menu is the scene's (a press opens it at once); its words are the logic's, because
--- the scene draws one menu for whichever slot asked and a slot's title is a text.
-on("fact:nx_menu", function(v)
-    local slot = math.floor(tonumber(v) or 0)
-    local def = SLOTS[slot]
-    local _, node = in_slot(slot)
-    text.nx_menu_title = def and string.format("N%02d  ·  %s", slot, string.upper(def.title)) or ""
-    text.nx_menu_min = (node and node.min) and "RESTORE BODY" or "MINIMIZE"
-end)
-
--- The mixer's two writes: a press mutes a stream, a wheel sets its level. The scene keeps
--- the stream id beside the event because a service call needs both the id and the level.
-on("nx_app_mute", function(v)
-    local id = math.floor(tonumber(v) or 0)
-    if id <= 0 then return end
-    local ok = pcall(sys.call, "audio.app_mute", id)
-    if not ok then report_control_failure("STREAM MUTE") end
-end)
-on("nx_app_vol", function()
-    local id = math.floor(tonumber(fact.nx_app_sid) or 0)
-    local level = tonumber(fact.nx_app_lvl)
-    if id <= 0 or not level then return end
-    local ok = pcall(sys.call, "audio.app_volume", id, math.max(0, math.min(1, level)))
-    if not ok then report_control_failure("STREAM VOLUME") end
-end)
-on("nx_ws_focus", function(v)
-    local id = math.floor(tonumber(v) or 0)
-    if id <= 0 then return end
-    local ok = pcall(sys.call, "workspaces.focus", id)
-    if not ok then report_control_failure("WORKSPACE") end
-end)
-
--- The glow the plate carries follows the theme's finish, as the bar's does.
-local look = style.facts(settings)
-if look and look.st_glow then fact.st_glow = look.st_glow end
-
--- Who is here: the session's own answers, never a made-up name. Each has a plain fallback
--- for a session that does not export it.
-text.nx_user = env("USER", "operator")
-text.nx_host = env("HOSTNAME", "Arch Linux")
-text.nx_session = env("XDG_CURRENT_DESKTOP", "Hyprland")
-fact.nx_pinned = settings.nexus and settings.nexus.pinned == true
-
--- The player: the service's text fields can be drawn, but not compared, so the facts that say
--- "there is something here" and the fields themselves are kept on this side of the boundary.
-local function clear_media()
-    fact.nx_has = false
-    fact.nx_playing = false
-    fact.nx_progress = 0
-    fact.nx_album_on = false
-    fact.nx_player_on = false
-    text.nx_title = ""
-    text.nx_artist = ""
-    text.nx_album = ""
-    text.nx_player = ""
-end
-clear_media()
-
--- The cover: a file the player names is drawn as it is; one on the web is fetched once into the
--- data folder (the image service reads files), under two names in turn so a new cover is a new
--- file and not a cached picture. The bar does the same with its own names.
--- the data folder itself (the service's own answer, so the config is read where it was written)
-local data_folder = (function()
-    local ok, f = pcall(sys.ask, "files.folder")
-    return ok and type(f) == "string" and f ~= "" and f or identity_home
-end)()
+-- ── Now playing: the cover, and the position carried at the player's rate ──
 local art_url, covers = nil, 0
 local function cover(url)
     if url == art_url then return end
     art_url = url
-    if type(url) ~= "string" or url == "" then text.nx_art = ""; fact.nx_art_on = false; return end
-    local path = string.match(url, "^file://(.*)$")
+    if type(url) ~= "string" or url == "" then fact.nx_art_on = false; return end
+    local path = url:match("^file://(.*)$")
     if path then
-        text.nx_art = (path:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
-        fact.nx_art_on = true
-        return
-    end
-    if string.match(url, "^https?://") then
+        text.nx_art = (path:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)); fact.nx_art_on = true
+    elseif url:match("^https?://") then
         covers = covers + 1
-        local dest = data_folder .. "/nexus-cover-" .. tostring(covers % 2) .. ".img"
-        run("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(_, code)
-            if code == 0 and art_url == url then text.nx_art = dest; fact.nx_art_on = true end
+        local dest = data_folder .. "/nexus-cover-" .. (covers % 2) .. ".img"
+        launch("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(ok)
+            if ok and art_url == url then text.nx_art = dest; fact.nx_art_on = true end
         end)
-    elseif string.match(url, "^data:image/") and #url < 120000 then
-        -- an embedded cover (mpv hands one over this way): ImageMagick reads it inline
+    elseif url:match("^data:image/") and #url < 120000 then
         covers = covers + 1
-        local dest = data_folder .. "/nexus-cover-" .. tostring(covers % 2) .. ".png"
-        run("magick", { "inline:" .. url, dest }, function(out, code)
-            if code ~= 0 then log("nexus · cover: magick " .. tostring(code) .. " " .. tostring(out)) end
-            if code == 0 and art_url == url then text.nx_art = dest; fact.nx_art_on = true end
+        local dest = data_folder .. "/nexus-cover-" .. (covers % 2) .. ".png"
+        launch("magick", { "inline:" .. url, dest }, function(ok)
+            if ok and art_url == url then text.nx_art = dest; fact.nx_art_on = true end
         end)
-    else
-        text.nx_art = ""; fact.nx_art_on = false
-    end
+    else fact.nx_art_on = false end
 end
-
--- How far into the song: the service reports the position as of its report, so it is carried on
--- at the player's rate once a second while something plays and the Nexus is up.
-local track = { position = 0, length = 0, rate = 1, at = 0, playing = false, ticking = false }
-local function show_time()
-    local pos = track.position
-    if track.playing then pos = pos + (os.time() - track.at) * track.rate end
-    local current, progress = nexus.media_progress(pos, track.length)
-    fact.nx_progress = progress
-    fact.nx_media_time_on = track.length > 0
-    text.nx_elapsed = nexus.format_time(current)
-    text.nx_duration = nexus.format_time(track.length)
+local function clock(s)
+    s = math.max(0, math.floor(tonumber(s) or 0))
+    return string.format("%d:%02d", math.floor(s / 60), s % 60)
 end
-local function tick_time()
-    if track.ticking then return end
-    track.ticking = true
-    local function step()
-        if not track.playing or fact.nx_open == 0 then track.ticking = false; return end
-        show_time()
-        after(1000, step)
-    end
-    after(1000, step)
-end
-
--- The visualiser: cava, only while something plays and a player face or the player's section is
--- on the plate. Twenty-four bands, written as facts only when a band moves by more than a step.
-local VIZ_BANDS = 24
-local CAVA = "cava-nexus.conf"
-pcall(sys.call, "files.write", CAVA, table.concat({
-    "[general]", "bars = " .. VIZ_BANDS, "framerate = 30",
-    "[input]", "method = pipewire",
-    "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
-    "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
-    "[smoothing]", "noise_reduction = 66", "" }, "\n"))
-local cava, viz_sent = nil, {}
-local function rest_viz()
-    for i = 0, VIZ_BANDS - 1 do fact["nv" .. i] = 0.04; viz_sent[i] = 0.04 end
-end
-local function listen()
-    if cava then return end
-    local mine
-    mine = spawn("cava", { "-p", data_folder .. "/" .. CAVA }, function(line)
-        if cava ~= mine then return end
-        local i = 0
-        for v in string.gmatch(line, "(%d+);") do
-            if i >= VIZ_BANDS then break end
-            local x = math.min(1, (tonumber(v) or 0) / 1000)
-            if math.abs(x - (viz_sent[i] or 0)) > 0.02 then fact["nv" .. i] = x; viz_sent[i] = x end
-            i = i + 1
-        end
-    end, function() if cava == mine then cava = nil; rest_viz() end end)
-    cava = mine
-end
-local function hush() if cava then kill(cava, "term"); cava = nil end; rest_viz() end
-rest_viz()
-
--- Whether a player face is on screen: the hub's hero or its player section, or the core's face at
--- the centre of the workspace. Asked again whenever any of those can change.
-local hub_wants_player
-local function viz_wanted()
-    if fact.nx_open == 0 or not track.playing then return false end
-    if fact.nx_view == "hub" then return hub_wants_player() end
-    local c = fact.nx_centre
-    return (c == "player" or c == "both") and fact.nx_focus == "core"
-end
-local function refresh_viz()
-    if viz_wanted() then listen() else hush() end
-end
-
-local had_media = false
+local pos, pos_at = 0, os.time()
 pcall(sys.watch, "media", function(m)
-    if type(m) ~= "table" then clear_media(); cover(nil); track.playing = false; refresh_viz(); return end
-    local title = type(m.title) == "string" and m.title or ""
-    local artist = type(m.artist) == "string" and m.artist or ""
-    local album = type(m.album) == "string" and m.album or ""
-    local player = type(m.player) == "string" and m.player or ""
-
-    fact.nx_has = title ~= ""
-    fact.nx_playing = m.playing == true
-    fact.nx_album_on = album ~= ""
-    fact.nx_player_on = player ~= ""
-    text.nx_title = title
-    text.nx_artist = artist
-    text.nx_album = album
-    text.nx_player = player
-    cover(fact.nx_has and m.art or nil)
-
-    track.position = tonumber(m.position) or 0
-    track.length = tonumber(m.length) or 0
-    track.rate = tonumber(m.rate) or 1
-    if track.rate <= 0 then track.rate = 1 end
-    track.at = os.time()
-    track.playing = m.playing == true and fact.nx_has
-    show_time()
-    if track.playing then tick_time() end
-    refresh_viz()
-    -- the hub's column changes when a player comes or goes, and so does the core's face
-    if fact.nx_has ~= had_media then
-        had_media = fact.nx_has
-        if publish then publish() end
-    end
+    media = type(m) == "table" and m or {}
+    counts.playing = media.playing == true or (tostring(media.title or "") ~= "" and tostring(media.player or "") ~= "")
+    relayout()
+    cover(media.art)
+    pos, pos_at = tonumber(media.position) or 0, os.time()
+    text.nx_length = (tonumber(media.length) or 0) > 0 and clock(media.length) or ""
+end)
+every(1000, function()
+    local len = tonumber(media.length) or 0
+    if len <= 0 then fact.nx_prog = 0; text.nx_elapsed = ""; return end
+    local p = pos + (media.playing and (os.time() - pos_at) * (tonumber(media.rate) or 1) or 0)
+    fact.nx_prog = math.min(1, p / len)
+    text.nx_elapsed = clock(p)
+end)
+on("nx_media", function(v)
+    local n = tonumber(v)
+    pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
 end)
 
--- Audio routing: the service owns the device lists; the logic keeps the last answer and names
--- the default, so a press can cycle to the next id without the scene iterating a list.
-local routes = { out = {}, input = {} }
-local function publish_routes()
-    text.nx_out_name = nexus.default_device(routes.out) or "—"
-    text.nx_in_name = nexus.default_device(routes.input) or "—"
-end
-local function read_routes(audio)
-    if type(audio) ~= "table" then return end
-    routes.out = type(audio.outputs) == "table" and audio.outputs or {}
-    routes.input = type(audio.inputs) == "table" and audio.inputs or {}
-    live.volume = tonumber(audio.volume) or live.volume
-    live.muted = audio.muted == true
-    live.input = tonumber(audio.input) or live.input
-    live.input_muted = audio.input_muted == true
-    mix = nexus.app_rows(audio.apps, 7)
-    publish_routes()
-    publish()
-end
-pcall(sys.watch, "audio", read_routes)
-local routed, initial_audio = pcall(sys.ask, "audio")
-if routed then read_routes(initial_audio) end
-publish_routes()
-
--- ── Linux system telemetry ───────────────────────────────────
--- Fixed, allowlisted reads only. Each optional source fails closed; no display text is ever
--- interpolated into a command. Static identity is read once, while proc counters are sampled
--- every two seconds so rates are derived from deltas instead of repeated heavyweight polling.
-local cpu_previous, net_previous = nil, nil
-local core_previous = nil
-local function launch(command, args, done)
-    local ok = pcall(run, command, args, function(out, code)
-        if code == 0 and type(out) == "string" then done(out) else done(nil) end
-    end)
-    if not ok then done(nil) end
-end
-local function trim(value)
-    if type(value) ~= "string" then return nil end
-    value = value:gsub("^%s+", ""):gsub("%s+$", "")
-    return value ~= "" and value or nil
-end
-local function read_static()
-    launch("cat", { "/etc/os-release" }, function(os_text)
-        if os_text then
-            local os = telemetry.os_release(os_text)
-            local name = os.name or "Unknown distribution"
-            local version = os.version
-            text.nx_distro = (type(version) == "string" and version ~= "") and (name .. " · " .. version) or name
-            text.nx_os_version = os.version or ""
-            text.nx_os_id = os.id or ""
-        else text.nx_distro = "Distribution unavailable" end
-        fact.nx_telemetry_on = true
-    end)
-    launch("uname", { "-r" }, function(out)
-        text.nx_kernel = trim(out) or "Kernel unavailable"
-    end)
-    launch("hostname", {}, function(out)
-        text.nx_host = trim(out) or env("HOSTNAME", "Host unavailable")
-    end)
-    launch("cat", { "/proc/uptime" }, function(out)
-        text.nx_uptime = telemetry.uptime(out) or "Uptime unavailable"
-    end)
-    launch("cat", { "/proc/cpuinfo" }, function(out)
-        text.nx_cpu_model = telemetry.cpu_model(out) or "CPU model unavailable"
-    end)
-    launch("hyprctl", { "monitors", "-j" }, function(out)
-        if not out then text.nx_display_value = "DISPLAY INFO N/A"; return end
-        local ok, monitors = pcall(json.decode, out)
-        local summary = ok and sysinfo.display_summary(monitors) or nil
-        text.nx_display_value = summary or "DISPLAY INFO N/A"
-    end)
-end
-read_static()
-
--- The hub's tiles that are the bar's own switches (do not disturb, keep awake, the screen
--- recorder): their state is the bar's, asked for in one call per reading while the hub shows.
--- A bar that does not answer leaves the tiles as they were.
-hub_states = function()
-    launch("pleamar", { "--say", "mooi", "get dnd_now", "get caffeine_on", "get recording" }, function(out)
+-- ── The bar's own switches, asked every 2 s ──
+local function bar_states()
+    launch("pleamar", { "--say", "mooi", "get dnd_now", "get caffeine_on", "get recording", "get nl_on", "get pw_saver" }, function(out)
         if not out then return end
         local got = {}
-        for line in string.gmatch(out, "[^\n]+") do got[#got + 1] = trim(line) end
-        if #got < 3 then return end
-        fact.nx_dnd = got[1] == "true"
-        fact.nx_caffeine = got[2] == "true"
-        fact.nx_rec = got[3] == "true"
+        for line in out:gmatch("[^\n]+") do got[#got + 1] = trim(line) end
+        if #got < 5 then return end
+        fact.b_dnd, fact.b_awake, fact.b_rec, fact.b_night = got[1] == "true", got[2] == "true", got[3] == "true", got[4] == "true"
+        fact.b_saver = (tonumber(got[5]) or 0) > 0
+        text.t_s4 = fact.b_dnd and "Do not disturb" or "Off"
+        text.t_s5 = fact.b_night and "4000 K" or "Off"
+        text.t_s6 = fact.b_awake and "Kept awake" or "Idle"
+        text.t_s7 = fact.b_saver and "On" or "Off"
+        text.t_s8 = fact.b_rec and "Recording" or "Ready"
     end)
 end
+bar_states()
+every(2000, bar_states)
 
-local function sample_live()
-    launch("cat", { "/proc/stat" }, function(out)
-        local value
-        value, cpu_previous = sysinfo.cpu(out, cpu_previous)
-        if value ~= nil then
-            fact.nx_cpu_on = true
-            fact.nx_cpu = value
-            text.nx_cpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
-        end
-        local cores = sysinfo.cpu_cores(out)
-        local count = 0
-        for _ in pairs(cores) do count = count + 1 end
-        if count > 0 then text.nx_cpu_label = string.format("CPU LOAD · %d CORES", count) end
-        core_previous = cores
-    end)
-    -- Optional DRM interface; most but not all drivers expose this file. Fixed card paths keep
-    -- the allowlist strict (no interpreter); every attempt fails closed and the first reading wins.
-    local gpu_seen = false
-    local function read_gpu(i)
-        if i > 2 then
-            if not gpu_seen then fact.nx_gpu_on = false; text.nx_gpu_value = "N/A" end
-            return
-        end
-        launch("cat", { "/sys/class/drm/card" .. i .. "/device/gpu_busy_percent" }, function(out)
-            local value = sysinfo.gpu_busy(out)
-            if value ~= nil then
-                gpu_seen = true
-                fact.nx_gpu_on = true
-                fact.nx_gpu = value
-                text.nx_gpu_value = string.format("%d%%", math.floor(value * 100 + 0.5))
-            end
-            read_gpu(i + 1)
-        end)
-    end
-    read_gpu(0)
-    launch("cat", { "/proc/meminfo" }, function(out)
-        local fraction, used, total = sysinfo.mem(out)
-        if fraction ~= nil and used ~= nil and total ~= nil then
-            fact.nx_ram_on = true
-            fact.nx_ram = math.max(0, math.min(1, fraction))
-            fact.nx_ram_used_gib, fact.nx_ram_total_gib = used, total
-            text.nx_ram_value = string.format("%.1f / %.1f GiB", used, total)
-        end
-        -- the same file, read for what the plate used to leave out: what is free, and swap
-        local m = sysinfo.mem_detail(out)
-        if m then
-            text.nx_ram_avail = string.format("%.1f GiB FREE", m.available_gib)
-            text.nx_swap = m.swap_total_gib > 0
-                and string.format("%.1f / %.1f GiB", m.swap_used_gib, m.swap_total_gib) or "NONE"
-        end
-    end)
-    -- the scheduler's own three averages, and how many tasks are waiting
-    launch("cat", { "/proc/loadavg" }, function(out)
-        local l = sysinfo.loadavg(out)
-        if l then
-            text.nx_load = string.format("%.2f  %.2f  %.2f", l.one, l.five, l.fifteen)
-            text.nx_tasks = string.format("%d OF %d RUNNABLE", l.running, l.total)
-        end
-    end)
-    -- one core's clock stands for the package; the file is four bytes of kHz
-    launch("cat", { "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq" }, function(out)
-        local ghz = sysinfo.clock_ghz(out)
-        text.nx_cpu_clock = ghz and string.format("%.2f GHz", ghz) or "N/A"
-    end)
-    launch("df", { "-Pk", "/" }, function(out)
-        local disk = telemetry.disk(out)
-        if disk then
-            fact.nx_disk_on = true
-            fact.nx_disk = disk.used_fraction
-            text.nx_disk_value = string.format("%d%% used", disk.percent)
-            text.nx_disk_free = string.format("%.0f GiB FREE", disk.available_kib / 1048576)
-            text.nx_disk_fs = str(disk.filesystem, "—")
-        end
-    end)
-    launch("cat", { "/proc/net/dev" }, function(out)
-        if not out then return end
-        local rx, tx = sysinfo.net(out)
-        if net_previous then
-            local rx_rate = math.max(0, (rx - net_previous.rx) / 2)
-            local tx_rate = math.max(0, (tx - net_previous.tx) / 2)
-            fact.nx_net_on = true
-            fact.nx_rx, fact.nx_tx = rx_rate, tx_rate
-            text.nx_rx_value, text.nx_tx_value = sysinfo.rate(rx_rate), sysinfo.rate(tx_rate)
-        end
-        net_previous = { rx = rx, tx = tx }
-    end)
-    launch("sensors", { "-j" }, function(out)
-        if not out then fact.nx_temp_on = false; text.nx_temp_value = "N/A"; return end
-        local ok, decoded = pcall(json.decode, out)
-        local temperature = ok and sysinfo.temp(decoded) or nil
-        if temperature then
-            fact.nx_temp_on = true
-            fact.nx_temp = temperature
-            text.nx_temp_value = string.format("%.0f°C", temperature)
-        else
-            fact.nx_temp_on = false
-            text.nx_temp_value = "N/A"
-        end
-    end)
-    sample_history()
-    if fact.nx_view == "hub" then hub_states() end
-    -- One beat per reading: the scene sends a packet down every live trace on it, so the
-    -- traces move when the machine reports and rest in between (no frame clock of its own).
-    fact.nx_beat = (fact.nx_beat or 0) + 1
-    publish()
-    after(2000, sample_live)
-end
+-- ── The quick toggles ──
+local TOGGLE = {
+    [0] = function() pcall(sys.call, "network.wifi", not wifi_on) end,
+    [1] = function() pcall(sys.call, "bluetooth.power", not bt_powered) end,
+    [2] = function() pcall(sys.call, "audio.mute") end,
+    [3] = function() pcall(sys.call, "audio.input_mute") end,
+    [4] = function() bar("emit note_dnd") end,
+    [5] = function() bar("emit night_light") end,
+    [6] = function() bar("emit caffeine") end,
+    [7] = function() bar("emit pw_set " .. (fact.b_saver and "0" or "1")) end,
+    [8] = function() bar("emit record 0") end,
+}
+on("nx_tog", function(v)
+    local f = TOGGLE[math.floor(tonumber(v) or -1)]
+    if f then f(); after(250, bar_states) end
+end)
 
--- Seed before the first publish, so the model the scene receives on start is the one the
--- settings file will carry from then on.
-local seeded = choose()
-publish()
-if seeded then save() end
-sample_live()
-
--- ── The controls ────────────────────────────────────────────
--- A wheel asks for a new level every notch; the system is told at most every 40 ms, always
--- the latest. The services remain the source of truth for displayed values. If a command
--- raises an error, the footer reports which operation failed without exposing raw internals.
-local notice_serial = 0
-function report_control_failure(label)
-    notice_serial = notice_serial + 1
-    local serial = notice_serial
-    text.nx_notice_text = label .. " FAILED"
-    fact.nx_notice = true
-    after(2600, function()
-        if notice_serial == serial then fact.nx_notice = false end
-    end)
-end
-
-local function control_call(label, service, value)
-    local ok, result
-    if value == nil then
-        ok, result = pcall(sys.call, service)
-    else
-        ok, result = pcall(sys.call, service, value)
-    end
-    if not ok or result == false then report_control_failure(label); return false end
-    return true
-end
-
-local pending = {}
-local flushing = false
+-- ── The levels (a drag sends many: the last one in 40 ms is what is asked for) ──
+local pending, flushing = {}, false
 local function flush()
     flushing = false
-    if pending.vol ~= nil then control_call("VOLUME", "audio.volume", pending.vol) end
-    if pending.mic ~= nil then control_call("MICROPHONE", "audio.input", pending.mic) end
-    if pending.bri ~= nil then control_call("BRIGHTNESS", "brightness.level", pending.bri) end
+    if pending.vol then pcall(sys.call, "audio.volume", pending.vol) end
+    if pending.mic then pcall(sys.call, "audio.input", pending.mic) end
+    if pending.bri then pcall(sys.call, "brightness.level", math.max(0.01, pending.bri)) end
     pending = {}
 end
 local function request(kind, v)
-    local n = tonumber(v)
-    if not n then return end
-    if n < 0 then n = 0 elseif n > 1 then n = 1 end
-    if kind == "bri" and n < 0.01 then n = 0.01 end
-    pending[kind] = n
+    local n = tonumber(v); if not n then return end
+    pending[kind] = math.max(0, math.min(1, n))
     if not flushing then flushing = true; after(40, flush) end
 end
-
-on("nx_out_cycle", function()
-    local id = nexus.next_device(routes.out)
-    if id then control_call("OUTPUT", "audio.default", id) end
-end)
-on("nx_in_cycle", function()
-    local id = nexus.next_device(routes.input)
-    if id then control_call("INPUT", "audio.default", id) end
-end)
-on("nx_mic", function() control_call("MICROPHONE", "audio.input_mute") end)
-on("nx_mic_level", function(v) request("mic", v) end)
-on("nx_bt", function(v) control_call("BLUETOOTH", "bluetooth.power", tonumber(v) == 1) end)
-on("nx_diagnostics_copy", function()
-    launch("mooi", { "diagnostics", "copy" }, function(out)
-        fact.nx_notice = true
-        if out and trim(out) then text.nx_notice_text = trim(out)
-        else text.nx_notice_text = "COPY FAILED — install wl-clipboard or xclip" end
-        after(3200, function() fact.nx_notice = false end)
-    end)
+on("vol", function(v) request("vol", v) end)
+on("mic", function(v) request("mic", v) end)
+on("bri", function(v) request("bri", v) end)
+on("nx_app", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local a = apps[math.floor(n / 1000) + 1]
+    if a and tonumber(a.id) then pcall(sys.call, "audio.app_volume", tonumber(a.id), (n % 1000) / 1000) end
 end)
 
-on("text:nx_identity_draft", function(value)
-    if type(value) == "string" then text.nx_identity_draft = value end
+-- ── Rows: networks, devices, outputs, workspaces ──
+on("nx_net", function(v)
+    local w = nets[(tonumber(v) or -1) + 1]
+    if not w or w.active then return end
+    if w.known or not w.secure then pcall(sys.call, "network.connect", w.ssid)
+    else close(); bar("emit open_settings") end     -- a password to type: the settings window
 end)
-
-on("nx_identity_edit", function()
-    fact.nx_identity_edit_on = true
-    text.nx_identity_draft = settings.nexus.identity and settings.nexus.identity.name or "mooi system"
-    focus("nx_identity_draft")
+on("nx_bt", function(v)
+    local d = devices[(tonumber(v) or -1) + 1]
+    if d and d.address then pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", d.address) end
 end)
-
-on("nx_identity_cancel", function()
-    fact.nx_identity_edit_on = false
-    focus()
+on("nx_out", function(v)
+    local o = outputs[(tonumber(v) or -1) + 1]
+    if o and o.id then pcall(sys.call, "audio.default", o.id) end
 end)
+on("nx_ws", function(v) pcall(sys.call, "workspaces.focus", math.floor(tonumber(v) or 0)) end)
 
-on("nx_identity_save", function()
-    local value = trim(text.nx_identity_draft)
-    if not value then
-        fact.nx_notice = true
-        text.nx_notice_text = "Enter a system name before saving"
-        after(2600, function() fact.nx_notice = false end)
-        return
-    end
-    if #value > 48 or value:find("[%c]") then
-        fact.nx_notice = true
-        text.nx_notice_text = "Name must be plain text, 48 characters max"
-        after(2600, function() fact.nx_notice = false end)
-        return
-    end
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then
-        fact.nx_identity_edit_on = false
-        focus()
-        fact.nx_notice = true
-        text.nx_notice_text = "Safe mode: identity not saved"
-        after(2600, function() fact.nx_notice = false end)
-        return
-    end
-    if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    if type(settings.nexus.identity) ~= "table" then settings.nexus.identity = {} end
-    local previous = settings.nexus.identity.name
-    settings.nexus.identity.name = value
-    local ok = save_settings()
-    if ok then
-        sync_identity()
-        fact.nx_identity_edit_on = false
-        focus()
-        fact.nx_notice = true
-        text.nx_notice_text = "System identity saved"
-    else
-        settings.nexus.identity.name = previous
-        fact.nx_notice = true
-        text.nx_notice_text = "Could not save identity settings"
-    end
-    after(2600, function() fact.nx_notice = false end)
-end)
-
-local function choose_identity_image(kind)
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then
-        fact.nx_notice = true
-        text.nx_notice_text = "Image import is disabled in safe mode"
-        after(2600, function() fact.nx_notice = false end)
-        return
-    end
-    local ok = pcall(run, "zenity", {
-        "--file-selection",
-        "--title=Choose system " .. kind,
-        "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif"
-    }, function(path, code)
-        if code ~= 0 or not trim(path) then return end
-        launch("mooi", { "identity", kind, trim(path) }, function(out)
-            if out then
-                settings = config.parse(read(FILE), json.decode)
-                sync_identity()
-                fact.nx_notice = true
-                text.nx_notice_text = string.upper(kind) .. " IMAGE UPDATED"
-            else
-                fact.nx_notice = true
-                text.nx_notice_text = "Image import failed; check file type and mooi command"
-            end
-            after(3000, function() fact.nx_notice = false end)
-        end)
-    end)
-    if not ok then
-        fact.nx_notice = true
-        text.nx_notice_text = "Install zenity to use the image picker"
-        after(3000, function() fact.nx_notice = false end)
-    end
+-- ── Opening things: in the bar (its islands and panels) or as programs ──
+-- An island opens under the drawer's edge, the drawer gone first.
+local function island(name)
+    close()
+    after(120, function() bar("fact isl_cx " .. tostring(screen_w - 200), "fact open " .. name) end)
 end
-
-on("nx_identity_avatar", function() choose_identity_image("avatar") end)
-on("nx_identity_banner", function() choose_identity_image("banner") end)
-on("nx_vol", function(v) request("vol", v) end)
-on("nx_bri", function(v) request("bri", v) end)
-on("nx_mute", function() control_call("MUTE", "audio.mute") end)
-on("nx_media", function(v)
-    local label, service = nexus.media_action(v)
-    if service then control_call(label, service) end
-end)
-
--- Pinned: a press toggles the setting and writes it, so the Nexus opens pinned next time.
--- If the write is refused the press is undone, and the plate keeps saying what is true.
-on("nx_pin", function()
-    if type(settings.nexus) ~= "table" then settings.nexus = { pinned = false } end
-    local pinned = not settings.nexus.pinned
-    settings.nexus.pinned = pinned
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
-        if not save_settings() then
-            settings.nexus.pinned = not pinned
-            report_control_failure("PIN SETTING")
-            return
-        end
-    end
-    fact.nx_pinned = pinned
-end)
-
--- How it opens: the compact hub under the mark, or the whole workspace. The choice is kept,
--- so the Nexus opens the way it was left; a refused write still switches, it just is not kept.
-fact.nx_view = (type(settings.nexus) == "table" and settings.nexus.view == "full") and "full" or "hub"
-on("nx_view_set", function(v)
-    local view = tonumber(v) == 1 and "full" or "hub"
-    if fact.nx_view == view then return end
-    fact.nx_view = view
-    if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    settings.nexus.view = view
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" and not save_settings() then
-        report_control_failure("VIEW SETTING")
-    end
-    -- the workspace measures its canvas once it is drawn; the hub has none
-    publish()
-end)
-
--- ── The hub's own arrangement (lib/nexushub) ─────────────────
--- The hero's face, the plate's width, and the order and visibility of the sections under it,
--- kept in `nexus.hub`. The logic lays the column out and publishes each section's place; the
--- scene draws them there and glides when one moves. CUSTOMISE shows the controls on the plate.
-local hub = nexushub.normalize(type(settings.nexus) == "table" and settings.nexus.hub or nil)
-local hub_editing = false
-
-local function publish_hub()
-    local l = nexushub.layout(hub, { backlight = live.bright_on, media = fact.nx_has == true, editing = hub_editing,
-                                     spaces = #spaces })
-    fact.nx_hub_w = l.w
-    fact.nx_hub_h = l.h
-    fact.nx_hub_main_w = l.main_w
-    fact.nx_hub_rail = l.rail_w > 0
-    fact.nx_hub_hero = l.hero
-    fact.nx_hub_hero_h = l.hero_h
-    fact.nx_hub_edit_y = l.edit_y
-    fact.nx_hub_edit = hub_editing
-    fact.nx_hub_wide = hub.size == "wide"
-    local rows = {}
-    for k, r in ipairs(l.rows) do
-        fact["nx_hy_" .. r.id] = r.y
-        fact["nx_hx_" .. r.id] = r.x
-        fact["nx_hw_" .. r.id] = r.w
-        fact["nx_hon_" .. r.id] = r.on
-        fact["nx_hs_" .. r.id] = r.side
-        rows[k] = { id = nexushub.SECTION_INDEX[r.id], name = r.name, x = r.x, y = r.y, w = r.w, h = r.h, on = r.on,
-                    stub = r.stub, side = r.side, hidden = nexushub.is_hidden(hub, r.id), first = r.first, last = r.last,
-                    shown = r.h > 0 }
-    end
-    model.nx_hsec = rows
-end
-
-hub_wants_player = function()
-    if hub.hero == "player" or hub.hero == "both" then return true end
-    if not nexushub.is_hidden(hub, "viz") then return true end
-    return not nexushub.is_hidden(hub, "media") and fact.nx_has == true
-end
-
-after_build = function()
-    publish_hub()
-    refresh_viz()
-end
-
--- A change is kept at once (a refused write still shows; it is just not kept).
-local function keep_hub()
-    if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    settings.nexus.hub = { hero = hub.hero, size = hub.size, order = hub.order, hidden = hub.hidden, side = hub.side }
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" and not save_settings() then
-        report_control_failure("HUB LAYOUT")
-    end
-    publish_hub()
-    refresh_viz()
-end
-
-on("nx_hub_edit", function()
-    hub_editing = not hub_editing
-    publish_hub()
-end)
-on("nx_hub_hero", function(v)
-    local h = nexushub.HEROES[math.floor(tonumber(v) or 0)]
-    if not h or h.id == hub.hero then return end
-    hub.hero = h.id
-    keep_hub()
-end)
-on("nx_hub_size", function()
-    hub.size = hub.size == "wide" and "compact" or "wide"
-    keep_hub()
-end)
--- `section * 10 + 1` moves it up, `+ 2` down (the section is its index in lib/nexushub).
-on("nx_hub_move", function(v)
-    local n = math.floor(tonumber(v) or 0)
-    local s = nexushub.SECTIONS[math.floor(n / 10)]
-    if not s then return end
-    local moved
-    hub, moved = nexushub.move(hub, s.id, n % 10 == 1 and -1 or 1)
-    if moved then keep_hub() end
-end)
-on("nx_hub_toggle", function(v)
-    local s = nexushub.SECTIONS[math.floor(tonumber(v) or 0)]
-    if not s then return end
-    hub = nexushub.toggle(hub, s.id)
-    keep_hub()
-end)
-on("nx_hub_reset", function()
-    hub = nexushub.normalize({ hero = hub.hero, size = hub.size })
-    keep_hub()
-end)
-on("nx_hub_side", function(v)
-    local s = nexushub.SECTIONS[math.floor(tonumber(v) or 0)]
-    if not s then return end
-    hub = nexushub.toggle_side(hub, s.id)
-    keep_hub()
-end)
-publish_hub()
-
--- The core's face at the centre of the workspace: 0 the reactor, 1 identity, 2 the player,
--- 3 identity over the player.
-fact.nx_centre = centre
-on("nx_centre_set", function(v)
-    local want = CENTRES[math.floor(tonumber(v) or 0) + 1]
-    if not want or want == centre then return end
-    centre = want
-    fact.nx_centre = centre
-    if type(settings.nexus) ~= "table" then settings.nexus = {} end
-    settings.nexus.centre = centre
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" and not save_settings() then
-        report_control_failure("CENTRE SETTING")
-    end
-    publish()
-end)
-
--- Where the hub hangs: under the bar's own reserve (its offset, its thickness and the rail
--- under it), so it opens below the mark instead of over it.
-do
-    local bar = type(settings.bar) == "table" and settings.bar or {}
-    fact.nx_top = (tonumber(bar.offset) or 0) + (tonumber(bar.height) or 30) + 7 + 10
-end
-
--- Where the mark is along the bar (the bar writes it as it starts this program); -1, the
--- hub centres itself on the screen.
-do
-    local anchor = read("nexus-anchor.json", "json")
-    local x = type(anchor) == "table" and tonumber(anchor.x) or nil
-    fact.nx_hub_cx = (x and x > 0) and x or -1
-end
-
--- The entrance: the plate unfolds under the mark (the scene's springs).
-fact.nx_open = 1
-
--- The hub's tiles and shortcuts. A switch of the bar's (1 do not disturb, 2 keep awake,
--- 3 record) is passed to the bar and read back at once; anything that opens a place of its
--- own (4 the session menu, 5 lock, 6 settings, 7 wallpaper, 8 notes, 9 board, 10 overview,
--- 11 the system island) puts the Nexus away first, so the keyboard goes to what opened.
-local HUB_SWITCH = { [1] = "emit note_dnd", [2] = "emit caffeine", [3] = "emit record 0" }
-local HUB_OPEN = {
-    [4] = { "say", "emit power 0" }, [5] = { "say", "emit power 1" }, [6] = { "settings" },
-    [7] = { "wallpaper" }, [8] = { "notes" }, [9] = { "board" }, [10] = { "overview" }, [11] = { "system" },
-    [13] = { "clipboard" },
+local GO = {
+    [1] = function() close(); bar("emit open_settings") end,
+    [2] = function() close(); bar("emit power 1") end,
+    [3] = function() close(); bar("emit power 0") end,
+    [10] = function() close(); pcall(spawn, "kitty", { "--title", "btop", "btop" }, function() end, function() end) end,
+    [11] = function() island("calendar") end,
+    [12] = function() island("weather") end,
+    [13] = function() close(); bar("emit run_updates") end,
+    [20] = function() close(); launch("mooi", { "player" }) end,
+    [30] = function() close(); bar("emit open_notes") end,
+    [31] = function() bar("emit note_clear") end,
+    [40] = function() close(); launch("mooi", { "wallpaper" }) end,
+    [41] = function() close(); bar("fact qn_open true") end,
+    [42] = function() close(); launch("mooi", { "board" }) end,
+    [43] = function() close(); bar("emit open_overview") end,
+    [44] = function() close(); after(300, function() bar("emit shot 0") end) end,
+    [45] = function() close(); bar("emit open_clips") end,
+    [46] = function() launch("mooi", { "diagnostics" }) end,
 }
--- The desk's switch (D85): the parallax and the cutout over the widgets, kept in settings.json,
--- which the bar watches — it starts the desk, and the desk ends itself when it is turned off. The
--- file is read again just before it is written, so nothing changed elsewhere is put back.
-local function desk_state()
-    fact.nx_desk_on = type(settings.desk) == "table" and settings.desk.on == true
-end
-desk_state()
-on("nx_hub_act", function(v)
-    local n = math.floor(tonumber(v) or 0)
-    if n == 12 then
-        local fresh = config.parse(read(FILE), json.decode)
-        if type(fresh.desk) ~= "table" then fresh.desk = {} end
-        fresh.desk.on = not (fresh.desk.on == true)
-        if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
-            if not pcall(sys.call, "files.write", FILE, fresh) then report_control_failure("PARALLAX"); return end
-        end
-        settings.desk = fresh.desk
-        desk_state()
-        return
-    end
-    if HUB_SWITCH[n] then
-        launch("pleamar", { "--say", "mooi", HUB_SWITCH[n] }, function() after(150, hub_states) end)
-        return
-    end
-    local args = HUB_OPEN[n]
-    if not args then return end
-    -- the same exit as ×: the plate folds, then the program ends
-    if fact.nx_open ~= 0 then
-        fact.nx_open = 0
-        hush()
-        after(240, function() run("pleamar", { "--say", "mooi-nexus", "quit" }) end)
-    end
-    after(120, function() run("mooi", args) end)
+on("nx_go", function(v)
+    local f = GO[math.floor(tonumber(v) or -1)]
+    if f then f() end
 end)
 
--- ×, Escape, or a press outside the plate: it leaves the way it came, then the program ends
--- and the compositor gives the keyboard back to whatever is under it.
-on("nx_close", function()
-    if fact.nx_open == 0 then return end
-    fact.nx_open = 0
-    hush()
-    after(240, function() run("pleamar", { "--say", "mooi-nexus", "quit" }) end)
+-- ── Notifications and updates: what the bar wrote ──
+local function show_feed()
+    local f = read("nexus-feed.json")
+    if type(f) ~= "table" then fact.feed_ok = false; fact.feed_n = 0; counts.notes = 0; relayout(); return end
+    local rows = {}
+    for i, it in ipairs(type(f.items) == "table" and f.items or {}) do
+        rows[i] = { app = tostring(it.app or ""), title = tostring(it.title or ""),
+                    ago = require("lib/nexusfeed").ago(os.time() - (tonumber(it.time) or os.time())) }
+    end
+    model.feed = rows
+    fact.feed_ok = true
+    fact.feed_n = tonumber(f.count) or #rows
+    counts.notes = #rows; relayout()
+end
+show_feed()
+pcall(sys.watch, "files:nexus-feed.json", show_feed)
+local function show_updates()
+    local u = read("updates.json")
+    if type(u) ~= "table" then fact.upd_ok = false; return end
+    fact.upd_ok = true
+    fact.upd_n = tonumber(u.total) or 0
+    text.upd_t = tostring(u.text or "")
+end
+show_updates()
+pcall(sys.watch, "files:updates.json", show_updates)
+
+-- ── The machine, every 2 s ──
+local cpu_prev = nil
+local function machine()
+    launch("cat", { "/proc/stat" }, function(out) local v; v, cpu_prev = sysinfo.cpu(out, cpu_prev); if v then fact.m_cpu = v end end)
+    launch("cat", { "/proc/meminfo" }, function(out)
+        local m = stats.meminfo(out); fact.m_mem = m.frac; text.m_mem_t = string.format("%.1f / %.1f GiB", m.used, m.total)
+    end)
+    launch("df", { "-P", "/" }, function(out) local d = stats.df(out); fact.m_disk = d.frac; text.m_disk_t = d.text end)
+    -- the GPU's busy share: whichever card has the file (cat fails as a whole when one is missing)
+    for _, card in ipairs({ "card1", "card0" }) do
+        launch("cat", { "/sys/class/drm/" .. card .. "/device/gpu_busy_percent" }, function(out)
+            local g = out and stats.gpu(out) or nil
+            if g then fact.m_gpu_ok = true; fact.m_gpu = g end
+        end)
+    end
+    launch("sensors", { "-j" }, function(out)
+        local ok, t = pcall(json.decode, out or ""); local c = ok and sysinfo.temp(t) or nil
+        if c then fact.m_temp = c end
+    end)
+end
+machine()
+every(2000, machine)
+pcall(sys.watch, "battery", function(b)
+    if type(b) ~= "table" or not b.present then text.m_bat_t = ""; return end
+    text.m_bat_t = string.format("Battery %d %% · %s", math.floor((tonumber(b.percent) or 0) + 0.5), b.charging and "charging" or "on battery")
 end)
+
+-- ── Today: the week from today, and the weather (kept 10 minutes in nexus-weather.json) ──
+do
+    local rows = {}
+    local DAYS = { "MO", "TU", "WE", "TH", "FR", "SA", "SU" }
+    local t = os.time()
+    for i = 0, 6 do
+        local when = t + i * 86400
+        local y, m, d = tonumber(os.date("%Y", when)), tonumber(os.date("%m", when)), tonumber(os.date("%d", when))
+        rows[#rows + 1] = { label = DAYS[calendar.weekday(y, m, d) + 1], day = d, today = i == 0 }
+    end
+    model.days = rows
+end
+local function kind_of(code, day)
+    local k = sysinfo.weather(code, day)
+    for i, name in ipairs(sysinfo.WEATHER_KINDS) do if name == k then return i - 1 end end
+    return 2
+end
+local function show_weather(doc)
+    local f = forecast.parse(doc.answer)
+    if not f then return end
+    local _, word = sysinfo.weather(f.now.code, f.now.day)
+    fact.wx_kind = kind_of(f.now.code, f.now.day)
+    fact.wx_temp = f.now.temp
+    text.wx_word = word
+    text.wx_place = tostring(doc.city or "")
+    fact.wx_ok = true
+end
+do
+    local cached = read("nexus-weather.json")
+    if type(cached) == "table" and type(cached.answer) == "table" then show_weather(cached) end
+    if type(cached) ~= "table" or os.time() - (tonumber(cached.at) or 0) > 600 then
+        launch("curl", { "-fsSL", "--max-time", "8", "https://ipinfo.io/json" }, function(out)
+            local ok, where = pcall(json.decode, out or "")
+            local lat, lon = nil, nil
+            if ok and type(where) == "table" then lat, lon = tostring(where.loc or ""):match("^([%d%.%-]+),([%d%.%-]+)$") end
+            if not lat then return end
+            launch("curl", { "-fsSL", "--max-time", "12", forecast.url(lat, lon) }, function(ans)
+                local ok2, t = pcall(json.decode, ans or "")
+                if not ok2 or type(t) ~= "table" then return end
+                local doc = { at = os.time(), city = where.city, answer = t }
+                pcall(sys.call, "files.write", "nexus-weather.json", doc)
+                show_weather(doc)
+            end)
+        end)
+    end
+end

@@ -1620,7 +1620,8 @@ end
 local nexus_win = nil
 local nexus_pending = false -- the keyboard hand-off is delayed; don't launch two scenes in that gap
 on("open_nexus", function()
-    if nexus_win then run("pleamar", { "--say", "mooi-nexus", "quit" }); return end
+    -- open: it slides away and ends itself (D98)
+    if nexus_win then run("pleamar", { "--say", "mooi-nexus", "emit nx_close" }); return end
     -- The bar releases its keyboard before Nexus starts. Multiple clicks/events can arrive during
     -- that short hand-off; only the first may schedule a launch.
     if nexus_pending then return end

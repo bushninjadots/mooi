@@ -289,6 +289,8 @@ M.SCHEMA = {
     { path = "nexus.hub.hero", kind = "enum", values = { "identity", "player", "reactor", "both", "minimal" }, default = "identity" },
     { path = "nexus.hub.size", kind = "enum", values = { "compact", "wide" }, default = "compact" },
     { path = "nexus.hub.order", kind = "ids", max = 12 },
+    -- the drawer's folded sections (D98, lib/nexusdrawer ORDER)
+    { path = "nexus.folded", kind = "ids", max = 12 },
     { path = "nexus.hub.hidden", kind = "ids", max = 12 },
     { path = "nexus.hub.side", kind = "ids", max = 12 },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
