@@ -32,6 +32,11 @@ scene Mooi {
     fact clock_view = 0          // clock.view: 0 full · 1 time · 2 seconds
     fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
+    // The calendar island (shell/islands.luau, lib/calendar): the month's 42 cells from Monday
+    model cal max 42 { n: number; day: number; cur: bool; today: bool; weekend: bool }
+    text cal_title = ""
+    text cal_sub = ""
+    fact cal_home = true         // the month on show is this month
     fact phase: compact | expanded = compact
 
     // Window island
@@ -872,6 +877,7 @@ scene Mooi {
     event open_window          // Spine button · `mooi toggle` · `mooi open`
     event open_system          // Spine status button · `mooi system`
     event clock_next ->        // to the logic: the clock shows the next of clock.view's states
+    event cal_shift ->         // to the logic: 0 the month before · 1 this month · 2 the month after
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
@@ -3770,6 +3776,49 @@ scene Mooi {
             }
         }
     }
+    // ── calendar_island (D97): the month under the clock ──
+    group {
+        move: 0, st_res + 6
+        let ca_ox = clamp(isl_cx - 150, 8, screen.width - 308)
+        group {
+            show: rv.calendar > 0.03
+            move: ca_ox, 0
+            IslandFrame(rv.calendar, 300, 292, tx: isl_cx - ca_ox) {
+                IsleHead(300, cal_title, cal_sub)
+                repeat k in 0..7 {
+                    text pick(k, "MO", "TU", "WE", "TH", "FR", "SA", "SU") { at: 33 + k * 39, 46; anchor: center; align: center; size: 9
+                         family: "Share Tech Mono"; color: if(k > 4, if(isl_style > 0.5, fg.muted, fl.ember), if(isl_style > 0.5, fg.secondary, fl.muted)) }
+                }
+                zone box calgrid { from: 12, 56; size: 276, 180; role: region; label: "The month — the wheel turns it" }
+                on scroll calgrid { emit cal_shift(if(wheel > 0, 2, 0)) }
+                for c in cal {
+                    let ccx = 33 + mod(c.n, 7) * 39
+                    let ccy = 70 + floor(c.n / 7) * 29
+                    group {
+                        show: c.today
+                        glow: 6, (0.6) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                        box { at: ccx, ccy; size: 30, 24; corner: if(isl_style > 0.5, 12, 2); color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                    }
+                    text "{c.day, 0}" { at: ccx, ccy; anchor: center; align: center; size: 12; weight: 600; family: "Exo 2"
+                         color: if(c.today, if(isl_style > 0.5, bg.primary, fl.ink),
+                                if(c.cur, if(c.weekend, if(isl_style > 0.5, fg.secondary, fl.ember), if(isl_style > 0.5, fg.primary, fl.engrave)),
+                                   if(isl_style > 0.5, fg.muted, fl.trace_dim)))
+                         opacity: if(c.cur, 1, 0.45) }
+                }
+                IsleRule(300, 250)
+                zone box calprev { from: 16, 258; size: 40, 24; cursor: pointer; role: button; label: "The month before" }
+                IsleBtn(16, 258, 40, "‹", 0, calprev.hover)
+                zone box calnow { from: 110, 258; size: 80, 24; cursor: pointer; role: button; label: "This month" }
+                IsleBtn(110, 258, 80, "Today", if(cal_home, 0, 1), calnow.hover)
+                zone box calnext { from: 244, 258; size: 40, 24; cursor: pointer; role: button; label: "The month after" }
+                IsleBtn(244, 258, 40, "›", 0, calnext.hover)
+                on press calprev { emit cal_shift(0) }
+                on press calnow { emit cal_shift(1) }
+                on press calnext { emit cal_shift(2) }
+            }
+        }
+    }
+
     // ── command_island (drawn in the bar's own surface, under the bar's strip: D53) ──
     group {
         move: 0, st_res + 6
@@ -5078,6 +5127,9 @@ scene Mooi {
     on key Escape while open == window and phase == compact and arming  { arming = false }
     on key Escape while open == window and phase == compact and not arming { open = none }
     on key Escape while open == system                                  { open = none }
+    on key Left while open == calendar  { emit cal_shift(0) }
+    on key Right while open == calendar { emit cal_shift(2) }
+    on key Home while open == calendar  { emit cal_shift(1) }
     on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,

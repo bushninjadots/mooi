@@ -1343,6 +1343,12 @@ require("command")({
     letter = apps.letter,
 })
 
+-- ── The modules' own islands (shell/islands.luau, D97) ───────
+require("islands")({
+    settings = function() return settings end,
+    save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
+})
+
 -- ── The bar's own controls ─────────────────────────────────
 -- What the mark's menu says: the version `bin/mooi` passes in (a bare test run has no
 -- one, and says so), and where the settings live, shortened to what the plate holds.

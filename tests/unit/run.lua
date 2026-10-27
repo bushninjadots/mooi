@@ -3179,5 +3179,32 @@ test("updates: the updater runs the AUR helper there is, then Flatpak, and waits
     assert(not updates.command({ paru = true }):find("flatpak"), "no flatpak: not run")
 end)
 
+local calendar = require("lib/calendar")
+test("calendar: a month is six weeks from Monday, its own days marked", function()
+    local m = calendar.month(2026, 10, { y = 2026, m = 10, d = 27 })
+    eq(#m.cells, 42, "six rows of seven")
+    -- 1 October 2026 is a Thursday: three days of September first
+    eq(m.cells[1].day, 28, "Mon 28 Sep"); eq(m.cells[1].cur, false)
+    eq(m.cells[4].day, 1, "Thu 1 Oct"); eq(m.cells[4].cur, true)
+    eq(m.cells[30].day, 27, "the 27th"); eq(m.cells[30].today, true)
+    eq(m.cells[34].day, 31); eq(m.cells[35].cur, false, "November after")
+    eq(m.title, "October 2026")
+    eq(m.cells[6].weekend, true, "Saturday"); eq(m.cells[5].weekend, false)
+end)
+test("calendar: leap years, year ends, and today only in its own month", function()
+    eq(calendar.days_in(2024, 2), 29); eq(calendar.days_in(2025, 2), 28); eq(calendar.days_in(2000, 2), 29); eq(calendar.days_in(1900, 2), 28)
+    local y, m = calendar.shift(2026, 12, 1); eq(y, 2027); eq(m, 1)
+    y, m = calendar.shift(2026, 1, -1); eq(y, 2025); eq(m, 12)
+    y, m = calendar.shift(2026, 3, -14); eq(y, 2025); eq(m, 1)
+    local n = calendar.month(2026, 11, { y = 2026, m = 10, d = 27 })
+    for _, c in ipairs(n.cells) do assert(not c.today, "no today in another month") end
+    local f = calendar.month(2021, 2, nil)   -- February 2021 starts on a Monday
+    eq(f.cells[1].day, 1); eq(f.cells[1].cur, true)
+end)
+test("calendar: ISO weeks", function()
+    eq(calendar.iso_week(2026, 10, 27), 44); eq(calendar.iso_week(2021, 1, 3), 53, "3 Jan 2021 is in 2020's last week")
+    eq(calendar.iso_week(2026, 1, 1), 1); eq(calendar.iso_week(2024, 12, 30), 1, "30 Dec 2024 is week 1 of 2025")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
