@@ -56,7 +56,7 @@ M.SETTERS = {
     "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces",
     "companion.react.battery", "companion.react.focus", "companion.react.time",
     -- the bar's islands and the clock (D97)
-    "island.style", "clock.view",
+    "island.style", "clock.view", "shelves.on",
 }
 
 local function row_of(path)

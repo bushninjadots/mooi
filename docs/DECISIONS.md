@@ -3230,3 +3230,27 @@ orbit. lib/nexusorbit (pure, 3 tests): the catalogue, cleaning a choice, the geo
 traces. A table named `on` had shadowed pleamar's `on()` — the logic crashed at load until renamed.
 **Checked live:** both styles; the Night node on and off through the bar (process 1 → 0, its trace lit);
 arcs swapped to GPU and back, the board to Circuit and back (saved each time). Unit 237 + BMO 27.
+
+## D100 · 2026-10-28 · The spine: shelves that slide out on hover
+
+**Asked for:** "change the whole dynamic … shapes, shelves in and out, extensions extended out on
+hover"; of three mocked dynamics (Spine & Shelves, Hive, Bloom) the user chose Spine & Shelves.
+**Done** (in the bar's own scene, so hover is instant and nothing launches): nine hexagonal tabs down
+the right edge on a slim backing — connections, sound, display, power, machine, calendar, weather,
+notifications, updates (the last two with count badges). Hovering a tab for 140 ms slides its shelf
+out level with it, tied to it by a short glowing trace; moving down the spine switches shelves; a
+press pins one; it goes home once the pointer has been over neither the tab nor its shelf for 500 ms
+(`on still max(tab.hover, keep.hover) for 500ms`). The shelves are the islands (D97) drawn beside the
+spine instead of under the bar — each gained a `keep_*` region so reading it is "over it" — and three
+of their own: connections (Wi-Fi and Bluetooth lists and radios; joining a known network, a locked one
+opens Settings; connecting devices), notifications (count, quiet, open the Signal Field, clear all),
+updates (what is waiting, Update now). A module's press still opens its island under the bar.
+`shelves.on` (Settings → Colour, "The spine"). The bar may now control the network and Bluetooth
+(`network.*`, `bluetooth.*`).
+
+**Found:** `on hover dismiss for …` fires while the pointer is anywhere over that zone, even under
+other zones; `on away tab for …` checks its `while` as the pointer leaves, before the shelf has the
+hover — both closed a shelf the pointer had just entered. `on still` re-checks and resets.
+**Checked with the real pointer:** hover opens, gliding into the shelf keeps it, sliding down the
+spine switches (connections → machine), leaving closes; calendar, updates, weather (tether) shown.
+Unit 237 + BMO 27. The Nexus mark still opens the D99 drawer: whether it stays is the user's call.

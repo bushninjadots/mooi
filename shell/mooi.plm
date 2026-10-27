@@ -21,7 +21,7 @@ import "ui/stash.plm"
 scene Mooi {
     permissions {
         run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
-        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
+        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
     // ── The island slot ───────────────────────────────────────
@@ -38,8 +38,13 @@ scene Mooi {
     text pw_state = ""
     text pw_time = ""
     text pw_rate = ""
-    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power = none
+    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | shnet | shalert | shupd = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
+    // The spine (D100): tabs on the right edge whose shelves slide out on hover — the islands, beside it
+    fact shelves_on = true       // shelves.on
+    fact isl_shelf = false       // the island showing is a shelf (beside the spine, not under the bar)
+    fact isl_sy = 0              // the tab it came from, along the edge
+    fact shelf_pin = false       // a press on its tab keeps it out
     // The calendar island (shell/islands.luau, lib/calendar): the month's 42 cells from Monday
     model cal max 42 { n: number; day: number; cur: bool; today: bool; weekend: bool }
     text cal_title = ""
@@ -1039,6 +1044,8 @@ scene Mooi {
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal
+    event sh_net ->            // to the logic: join network n (its place in network.networks); -1 the radio on or off
+    event sh_bt ->             // to the logic: connect or disconnect device n; -1 the radio on or off
     event edit_mode ->         // to the logic: edit mode on (1) or off (0)
     event screen_w ->          // to the logic: the bar's surface is this wide now (a new mode or scale)
     event edit_hover ->        // to the logic: a module carried over the bar (plan the layout)
@@ -1067,8 +1074,10 @@ scene Mooi {
     service media as med { playing: bool; title: text; artist: text }
     service brightness { present: bool; level: number }
     service battery { present: bool; percent: number; charging: bool }
-    service network { online: bool; kind: none | wired | wifi; name: text; strength: number }
-    service bluetooth { present: bool; powered: bool; discovering: bool }
+    model nets max 8 { ssid: text; strength: number; secure: bool; known: bool; active: bool }
+    service network { online: bool; kind: none | wired | wifi; name: text; strength: number; wifi: bool; networks: nets }
+    model btd max 8 { name: text; address: text; paired: bool; connected: bool; battery: number }
+    service bluetooth { present: bool; powered: bool; discovering: bool; devices: btd }
     image wicon = from win_icon, 22, 22
 
     // ── Motion: hidden → entering → shown → exiting, per island ──
@@ -1081,6 +1090,9 @@ scene Mooi {
     prop rv.sound = 0 ~m.enter
     prop rv.display = 0 ~m.enter
     prop rv.power = 0 ~m.enter
+    prop rv.shnet = 0 ~m.enter
+    prop rv.shalert = 0 ~m.enter
+    prop rv.shupd = 0 ~m.enter
     prop depth = 0 ~m.expand
     prop fb = 0 ~m.select
     prop pz = 0 ~m.confirm
@@ -1137,6 +1149,18 @@ scene Mooi {
     layer life.power {
         shown while open == power { rv.power: 1 ~m.enter }
         gone                      { rv.power: 0 ~m.exit }
+    }
+    layer life.shnet {
+        shown while open == shnet { rv.shnet: 1 ~m.enter }
+        gone                      { rv.shnet: 0 ~m.exit }
+    }
+    layer life.shalert {
+        shown while open == shalert { rv.shalert: 1 ~m.enter }
+        gone                        { rv.shalert: 0 ~m.exit }
+    }
+    layer life.shupd {
+        shown while open == shupd { rv.shupd: 1 ~m.enter }
+        gone                      { rv.shupd: 0 ~m.exit }
     }
     // The shutter's motion: the anchor answers first, the plates follow down the track in a short
     // stagger, a panel slides out of its plate, the third level out of its row; going, the panel
@@ -1598,6 +1622,7 @@ scene Mooi {
     figure i_wallpaper = file "icons/wallpaper.svg"
     figure i_nexus = file "icons/nexus.svg"
     figure i_updates = file "icons/updates.svg"
+    figure i_calendar = file "icons/calendar.svg"
 
     // The surface reserves the strip alone. What opens under it — the mark's menu — floats
     // over windows, and since pleamar commits the input region from what is painted, nothing
@@ -1634,7 +1659,7 @@ scene Mooi {
     // are above it; a press inside a panel never reaches it. The overview, the shutter and the
     // Atlas are surfaces of their own (overlay), above this one: they never see it.
     group {
-        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power
+        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd
         zone box dismiss { from: 0, 0; size: screen.width, screen.height; role: region; label: "Close the open panel" }
         on press dismiss while qn_open { qn_open = false }
         on press dismiss while mark_open { mark_open = false }
@@ -1642,7 +1667,7 @@ scene Mooi {
         on press dismiss while open == window { open = none }
         on press dismiss while open == system { open = none }
         on press dismiss while open == command { open = none }
-        on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
+        on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd { open = none }
         on press dismiss while stash_pin { stash_pin = false }
     }
 
@@ -2387,7 +2412,7 @@ scene Mooi {
         zone box zres { from: 0, fl.top; size: ws_resources, fl.mod_h; cursor: pointer; role: button
                         label: "Resources — processor {cpu_p, 0} %, memory {mem_p, 0} % ({res_memgb}), {tmp_c, 0} °C" }
         on press zres while open == stats { open = none }
-        on press zres while open != stats { isl_cx = xs_resources + ws_resources / 2; open = stats; side = none; mark_open = false }
+        on press zres while open != stats { isl_shelf = false; isl_cx = xs_resources + ws_resources / 2; open = stats; side = none; mark_open = false }
         figure i_cpu { at: 12, fl.cy; size: 15, 15; color: if(cpu_p > 85, fl.ember, fl.phos_fill) }
         Readout(23, "CPU", "{cpu_p, 0}%", cpu_p > 85)
         figure i_ram { at: 62, fl.cy; size: 15, 15; color: if(mem_p > 90, fl.ember, fl.phos_fill) }
@@ -2427,7 +2452,7 @@ scene Mooi {
         opacity: pv_weather
         zone box zwx { from: 0, fl.top; size: ws_weather, fl.mod_h; cursor: pointer; role: button; label: "Weather — {wx_word}, {wx_temp, 0} °C" }
         on press zwx while open == weather { open = none }
-        on press zwx while open != weather { isl_cx = xs_weather + ws_weather / 2; open = weather; side = none; mark_open = false }
+        on press zwx while open != weather { isl_shelf = false; isl_cx = xs_weather + ws_weather / 2; open = weather; side = none; mark_open = false }
         let wc = mix(fl.muted, fl.phos, wx_ok)
         figure i_clear { at: 13, fl.cy; size: 17, 17; color: fl.flare; show: wx_kind < 0.5 }
         figure i_night { at: 13, fl.cy; size: 17, 17; color: wc; show: wx_kind > 0.5 and wx_kind < 1.5 }
@@ -2522,7 +2547,7 @@ scene Mooi {
         Readout(26, "VOL", pick(audio.muted, "{vv, 0}%", "MUTE"), audio.muted)
         Ring(ws_volume - 10, fl.cy, audio.volume * (1 - audio.muted), audio.muted)
         on press zvol while open == sound { open = none }
-        on press zvol while open != sound { isl_cx = xs_volume + ws_volume / 2; open = sound; side = none; mark_open = false }
+        on press zvol while open != sound { isl_shelf = false; isl_cx = xs_volume + ws_volume / 2; open = sound; side = none; mark_open = false }
         on press middle zvol { emit mute }
         on scroll zvol { emit vol(clamp(audio.volume + 0.05 * wheel, 0, 1)) }
     }
@@ -2539,7 +2564,7 @@ scene Mooi {
         Readout(26, "BRI", "{bl, 0}%")
         Ring(ws_brightness - 10, fl.cy, brightness.level, false)
         on press zbri while open == display { open = none }
-        on press zbri while open != display { isl_cx = xs_brightness + ws_brightness / 2; open = display; side = none; mark_open = false }
+        on press zbri while open != display { isl_shelf = false; isl_cx = xs_brightness + ws_brightness / 2; open = display; side = none; mark_open = false }
         on scroll zbri { emit bri(clamp(brightness.level + 0.05 * wheel, 0.01, 1)) }
     }
 
@@ -2557,7 +2582,7 @@ scene Mooi {
         Readout(28, "BAT", "{bb, 0}%", low)
         Ring(ws_battery - 10, fl.cy, battery.percent / 100, low)
         on press zbat while open == power { open = none }
-        on press zbat while open != power { isl_cx = xs_battery + ws_battery / 2; open = power; side = none; mark_open = false }
+        on press zbat while open != power { isl_shelf = false; isl_cx = xs_battery + ws_battery / 2; open = power; side = none; mark_open = false }
     }
 
     // ── Network ───────────────────────────────────────────────
@@ -2608,7 +2633,7 @@ scene Mooi {
         zone box zclk { from: 0, fl.top; size: ws_clock, fl.mod_h; cursor: pointer; role: button
                         label: "{clock.time}, {clock.date} — the calendar (right press: what the clock shows)" }
         on press zclk while open == calendar { open = none }
-        on press zclk while open != calendar { isl_cx = xs_clock + ws_clock / 2; open = calendar; side = none; mark_open = false }
+        on press zclk while open != calendar { isl_shelf = false; isl_cx = xs_clock + ws_clock / 2; open = calendar; side = none; mark_open = false }
         on press right zclk { emit clock_next }
         group {
             show: st_aberr > 0.01 and clock_view < 0.5
@@ -3833,12 +3858,13 @@ scene Mooi {
     }
     // ── calendar_island (D97): the month under the clock ──
     group {
-        move: 0, st_res + 6
-        let ca_ox = clamp(isl_cx - 150, 8, screen.width - 308)
+        move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, screen.height - (292) - 20), st_res + 6)
+        let ca_ox = if(isl_shelf, screen.width - 56 - 300, clamp(isl_cx - 150, 8, screen.width - 308))
         group {
             show: rv.calendar > 0.03
             move: ca_ox, 0
-            IslandFrame(rv.calendar, 300, 292, tx: isl_cx - ca_ox) {
+            IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox)) {
+                zone box keep_calendar { from: 0, 0; size: 300, 292; role: region; agent: hidden }
                 IsleHead(300, cal_title, cal_sub)
                 repeat k in 0..7 {
                     text pick(k, "MO", "TU", "WE", "TH", "FR", "SA", "SU") { at: 33 + k * 39, 46; anchor: center; align: center; size: 9
@@ -3876,13 +3902,14 @@ scene Mooi {
 
     // ── stats_island (D97): the machine under the resources module ──
     group {
-        move: 0, st_res + 6
-        let so_ox = clamp(isl_cx - 160, 8, screen.width - 328)
+        move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, screen.height - (300 + if(st_gpu_ok, 30, 0)) - 20), st_res + 6)
+        let so_ox = if(isl_shelf, screen.width - 56 - 320, clamp(isl_cx - 160, 8, screen.width - 328))
         let sgh = if(st_gpu_ok, 30, 0)
         group {
             show: rv.stats > 0.03
             move: so_ox, 0
-            IslandFrame(rv.stats, 320, 300 + sgh, tx: isl_cx - so_ox) {
+            IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox)) {
+                zone box keep_stats { from: 0, 0; size: 320, 300 + if(st_gpu_ok, 30, 0); role: region; agent: hidden }
                 IsleHead(320, "System", st_load)
                 IsleGauge(16, 40, 288, "Processor", "{round(res_cpu * 100), 0} % · {round(res_temp), 0} °C", res_cpu, res_cpu > 0.85 or res_temp > 85)
                 IsleGauge(16, 72, 288, "Memory", st_mem_t, st_mem_f, st_mem_f > 0.9)
@@ -3913,12 +3940,13 @@ scene Mooi {
 
     // ── weather_island (D97): now, the next hours and the days ahead ──
     group {
-        move: 0, st_res + 6
-        let wi_x = clamp(isl_cx - 170, 8, screen.width - 348)
+        move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, screen.height - (356) - 20), st_res + 6)
+        let wi_x = if(isl_shelf, screen.width - 56 - 340, clamp(isl_cx - 170, 8, screen.width - 348))
         group {
             show: rv.weather > 0.03
             move: wi_x, 0
-            IslandFrame(rv.weather, 340, 356, tx: isl_cx - wi_x) {
+            IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x)) {
+                zone box keep_weather { from: 0, 0; size: 340, 356; role: region; agent: hidden }
                 IsleHead(340, wxi_title, wxi_sub)
                 group {
                     show: not wxi_ok
@@ -3962,13 +3990,14 @@ scene Mooi {
 
     // ── sound_island (D97): the level, the microphone, where it plays ──
     group {
-        move: 0, st_res + 6
-        let sn_x = clamp(isl_cx - 160, 8, screen.width - 328)
+        move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, screen.height - (214 + 26 * min(aouts.count, 6)) - 20), st_res + 6)
+        let sn_x = if(isl_shelf, screen.width - 56 - 320, clamp(isl_cx - 160, 8, screen.width - 328))
         let snh = 214 + 26 * min(aouts.count, 6)
         group {
             show: rv.sound > 0.03
             move: sn_x, 0
-            IslandFrame(rv.sound, 320, snh, tx: isl_cx - sn_x) {
+            IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x)) {
+                zone box keep_sound { from: 0, 0; size: 320, 214 + 26 * min(aouts.count, 6); role: region; agent: hidden }
                 IsleHead(320, "Sound", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"))
                 group { move: 16, 40
                         Level("Output", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"), audio.volume * (1 - audio.muted), false, vol, 288) }
@@ -4006,13 +4035,14 @@ scene Mooi {
 
     // ── display_island (D97): brightness, the night light, dark or light ──
     group {
-        move: 0, st_res + 6
-        let dp_x = clamp(isl_cx - 150, 8, screen.width - 308)
+        move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, screen.height - (150 + if(brightness.present, 52, 0)) - 20), st_res + 6)
+        let dp_x = if(isl_shelf, screen.width - 56 - 300, clamp(isl_cx - 150, 8, screen.width - 308))
         let dbh = if(brightness.present, 52, 0)
         group {
             show: rv.display > 0.03
             move: dp_x, 0
-            IslandFrame(rv.display, 300, 150 + dbh, tx: isl_cx - dp_x) {
+            IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x)) {
+                zone box keep_display { from: 0, 0; size: 300, 150 + if(brightness.present, 52, 0); role: region; agent: hidden }
                 IsleHead(300, "Display", pick(brightness.present, "No backlight", "{round(brightness.level * 100), 0} %"))
                 group { show: brightness.present
                         move: 16, 40
@@ -4042,13 +4072,14 @@ scene Mooi {
 
     // ── power_island (D97): the battery, how long it lasts, what saves it ──
     group {
-        move: 0, st_res + 6
-        let pw_x = clamp(isl_cx - 160, 8, screen.width - 328)
+        move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, screen.height - (252 + if(pw_ppd, 40, 0)) - 20), st_res + 6)
+        let pw_x = if(isl_shelf, screen.width - 56 - 320, clamp(isl_cx - 160, 8, screen.width - 328))
         let pph = if(pw_ppd, 40, 0)
         group {
             show: rv.power > 0.03
             move: pw_x, 0
-            IslandFrame(rv.power, 320, 252 + pph, tx: isl_cx - pw_x) {
+            IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x)) {
+                zone box keep_power { from: 0, 0; size: 320, 252 + if(pw_ppd, 40, 0); role: region; agent: hidden }
                 IsleHead(320, "Power", pw_state)
                 text "{round(battery.percent), 0}%" { at: 16, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"
                      color: if(battery.percent < 15 and not battery.charging, if(isl_style > 0.5, status.error, fl.ember), if(isl_style > 0.5, fg.primary, fl.phos)) }
@@ -4097,6 +4128,272 @@ scene Mooi {
                 on press pwsess { emit power(0); open = none }
             }
         }
+    }
+
+
+    // ── shnet shelf (D100): beside the spine only ──
+    group {
+        move: 0, clamp(isl_sy - 26, st_res + 6, screen.height - (112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count))) - 20)
+        group {
+            show: rv.shnet > 0.03
+            move: screen.width - 56 - 300, 0
+            IslandFrame(rv.shnet, 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count))) {
+                zone box keep_shnet { from: 0, 0; size: 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count)); role: region; agent: hidden }
+                IsleHead(300, "Connections", pick(network.online, "offline", network.name))
+                zone box snw { from: 204, 36; size: 80, 22; cursor: pointer; role: toggle; checked: network.wifi; label: "Wi-Fi on or off" }
+                group { show: network.wifi
+                        IsleBtn(204, 36, 80, "Wi-Fi on", 1, snw.hover, 22) }
+                group { show: not network.wifi
+                        IsleBtn(204, 36, 80, "Wi-Fi off", 0, snw.hover, 22) }
+                on press snw { emit sh_net(-1) }
+                text "WI-FI" { at: 16, 47; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                for w in nets {
+                    let wy = 64 + w.index * 28
+                    group {
+                        show: w.index < 5
+                        zone box snz { from: 8, wy; size: 284, 26; cursor: pointer; role: item; selected: w.active; label: "Join {w.ssid}" }
+                        box { from: 8, wy; size: 284, 26; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: max(if(w.active, 0.9, 0), 0.6 * snz.hover) }
+                        repeat b in 0..4 {
+                            box { from: 18 + b * 4, wy + 19 - b * 3; size: 3, 3 + b * 3; corner: 1; color: if(w.strength > b * 25, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)); opacity: if(w.strength > b * 25, 1, 0.4) }
+                        }
+                        text w.ssid { at: 42, wy + 13; anchor: left center; size: 12; family: "Exo 2"; width: 180; lines: 1; color: if(w.active, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
+                        text "connected" { at: 284, wy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: w.active }
+                        text "saved" { at: 284, wy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and w.known }
+                        text "locked" { at: 284, wy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and not w.known and w.secure }
+                        on press snz { emit sh_net(w.index) }
+                    }
+                }
+                text "No networks in reach" { at: 16, 78; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: nets.count < 1 }
+                let sby = 70 + max(1, min(5, nets.count)) * 28
+                IsleRule(300, sby)
+                text "BLUETOOTH" { at: 16, sby + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                zone box sbp { from: 204, sby + 6; size: 80, 22; cursor: pointer; role: toggle; checked: bluetooth.powered; label: "Bluetooth on or off" }
+                group { show: bluetooth.powered
+                        IsleBtn(204, sby + 6, 80, "On", 1, sbp.hover, 22) }
+                group { show: not bluetooth.powered
+                        IsleBtn(204, sby + 6, 80, "Off", 0, sbp.hover, 22) }
+                on press sbp { emit sh_bt(-1) }
+                for d in btd {
+                    let dy = sby + 34 + d.index * 28
+                    group {
+                        show: d.index < 5
+                        zone box sdz { from: 8, dy; size: 284, 26; cursor: pointer; role: item; selected: d.connected; label: "Connect or disconnect {d.name}" }
+                        box { from: 8, dy; size: 284, 26; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: max(if(d.connected, 0.9, 0), 0.6 * sdz.hover) }
+                        ellipse { at: 22, dy + 13; radius: 3.5; color: if(d.connected, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
+                        text d.name { at: 34, dy + 13; anchor: left center; size: 12; family: "Exo 2"; width: 190; lines: 1; color: if(d.connected, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
+                        text "{round(d.battery * 100), 0} %" { at: 284, dy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery >= 0 }
+                        text "connected" { at: 284, dy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery < 0 and d.connected }
+                        on press sdz { emit sh_bt(d.index) }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── shalert shelf (D100): beside the spine only ──
+    group {
+        move: 0, clamp(isl_sy - 26, st_res + 6, screen.height - (152) - 20)
+        group {
+            show: rv.shalert > 0.03
+            move: screen.width - 56 - 300, 0
+            IslandFrame(rv.shalert, 300, 152) {
+                zone box keep_shalert { from: 0, 0; size: 300, 152; role: region; agent: hidden }
+                IsleHead(300, "Notifications", pick(dnd_now, "", "quiet"))
+                text "{note_count, 0}" { at: 16, 66; anchor: left center; size: 30; weight: 600; family: "Exo 2"; color: if(note_count > 0, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
+                text pick(note_count == 1, "notifications waiting", "notification waiting") { at: 16, 90; anchor: left center; size: 11; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                zone box sad { from: 184, 52; size: 100, 24; cursor: pointer; role: toggle; checked: dnd_now; label: "Do not disturb" }
+                group { show: dnd_now
+                        IsleBtn(184, 52, 100, "Quiet on", 1, sad.hover) }
+                group { show: not dnd_now
+                        IsleBtn(184, 52, 100, "Quiet off", 0, sad.hover) }
+                on press sad { emit note_dnd }
+                IsleRule(300, 108)
+                zone box sao { from: 16, 118; size: 130, 24; cursor: pointer; role: button; label: "Open the Signal Field" }
+                IsleBtn(16, 118, 130, "Open all", 0, sao.hover)
+                on press sao { open = none; side = notes; mark_open = false }
+                zone box sac { from: 154, 118; size: 130, 24; cursor: pointer; role: button; label: "Clear every notification" }
+                IsleBtn(154, 118, 130, "Clear all", 0, sac.hover)
+                on press sac { emit note_clear }
+            }
+        }
+    }
+
+    // ── shupd shelf (D100): beside the spine only ──
+    group {
+        move: 0, clamp(isl_sy - 26, st_res + 6, screen.height - (114) - 20)
+        group {
+            show: rv.shupd > 0.03
+            move: screen.width - 56 - 300, 0
+            IslandFrame(rv.shupd, 300, 114) {
+                zone box keep_shupd { from: 0, 0; size: 300, 114; role: region; agent: hidden }
+                IsleHead(300, "System updates", pick(upd_n > 0, "up to date", "{upd_n, 0} waiting"))
+                text upd_t { at: 16, 52; anchor: left center; size: 12; family: "Exo 2"; color: if(upd_n > 0, if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, fg.secondary, fl.muted)); width: 268; lines: 2 }
+                group { show: upd_n > 0
+                        zone box suu { from: 16, 76; size: 268, 26; cursor: pointer; role: button; label: "Run the updater" }
+                        IsleBtn(16, 76, 268, "Update now", 1, suu.hover, 26)
+                        on press suu { open = none; emit run_updates } }
+            }
+        }
+    }
+
+    // ── The spine (D100): tabs down the right edge; hover one and its shelf slides out beside it ──
+    // A press pins the shelf; the pointer resting on the desktop for a moment puts it away. The
+    // shelves are the islands (and three of their own), drawn beside the spine instead of under the bar.
+    group {
+        show: shelves_on
+        move: screen.width - 46, 0
+        let sp0 = (screen.height - 320) / 2
+        box { from: 4, sp0 - 26; size: 38, 372; corner: 19; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.55 }
+        box { from: 4, sp0 - 26; size: 38, 372; corner: 19; stroke: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim); opacity: 0.7 }
+        line { from: 23, sp0 - 14; to: 23, sp0 + 320 + 14; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.22 }
+        // the open shelf's link to its tab: a short trace, a via at the shelf's edge
+        group {
+            show: isl_shelf and open != none
+            glow: 6, (0.7) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+            line { from: -10, isl_sy; to: 7, isl_sy; width: 1.6; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+            ellipse { at: -10, isl_sy; radius: 3; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+        }
+                // Connections
+                zone box sp0 { from: 6, sp0 + 0 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == shnet and isl_shelf); label: "Connections" }
+                group {
+                    glow: 7, (if((open == shnet and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == shnet and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp0.hover))
+                           move 39, sp0 + 0; line 31, sp0 + 0 + 14; line 15, sp0 + 0 + 14; line 7, sp0 + 0; line 15, sp0 + 0 - 14; line 31, sp0 + 0 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == shnet and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp0.hover)); opacity: 0.9
+                       move 39, sp0 + 0; line 31, sp0 + 0 + 14; line 15, sp0 + 0 + 14; line 7, sp0 + 0; line 15, sp0 + 0 - 14; line 31, sp0 + 0 - 14; close }
+                figure i_wifi { at: 23, sp0 + 0; size: 15, 15; color: if((open == shnet and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp0.hover)) }
+                on hover sp0 for 140ms while not (open == shnet and isl_shelf) { isl_sy = sp0 + 0; isl_shelf = true; shelf_pin = false; open = shnet; side = none; mark_open = false }
+                on press sp0 while (open == shnet and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp0.hover, keep_shnet.hover) for 500ms while open == shnet and isl_shelf and not shelf_pin and max(sp0.hover, keep_shnet.hover) < 0.5 { open = none }
+                on press sp0 while not (open == shnet and isl_shelf) { isl_sy = sp0 + 0; isl_shelf = true; shelf_pin = true; open = shnet; side = none; mark_open = false }
+                // Sound
+                zone box sp1 { from: 6, sp0 + 40 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == sound and isl_shelf); label: "Sound" }
+                group {
+                    glow: 7, (if((open == sound and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == sound and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp1.hover))
+                           move 39, sp0 + 40; line 31, sp0 + 40 + 14; line 15, sp0 + 40 + 14; line 7, sp0 + 40; line 15, sp0 + 40 - 14; line 31, sp0 + 40 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == sound and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp1.hover)); opacity: 0.9
+                       move 39, sp0 + 40; line 31, sp0 + 40 + 14; line 15, sp0 + 40 + 14; line 7, sp0 + 40; line 15, sp0 + 40 - 14; line 31, sp0 + 40 - 14; close }
+                figure i_volume { at: 23, sp0 + 40; size: 15, 15; color: if((open == sound and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp1.hover)) }
+                on hover sp1 for 140ms while not (open == sound and isl_shelf) { isl_sy = sp0 + 40; isl_shelf = true; shelf_pin = false; open = sound; side = none; mark_open = false }
+                on press sp1 while (open == sound and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp1.hover, keep_sound.hover) for 500ms while open == sound and isl_shelf and not shelf_pin and max(sp1.hover, keep_sound.hover) < 0.5 { open = none }
+                on press sp1 while not (open == sound and isl_shelf) { isl_sy = sp0 + 40; isl_shelf = true; shelf_pin = true; open = sound; side = none; mark_open = false }
+                // Display
+                zone box sp2 { from: 6, sp0 + 80 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == display and isl_shelf); label: "Display" }
+                group {
+                    glow: 7, (if((open == display and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == display and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp2.hover))
+                           move 39, sp0 + 80; line 31, sp0 + 80 + 14; line 15, sp0 + 80 + 14; line 7, sp0 + 80; line 15, sp0 + 80 - 14; line 31, sp0 + 80 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == display and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp2.hover)); opacity: 0.9
+                       move 39, sp0 + 80; line 31, sp0 + 80 + 14; line 15, sp0 + 80 + 14; line 7, sp0 + 80; line 15, sp0 + 80 - 14; line 31, sp0 + 80 - 14; close }
+                figure i_sun { at: 23, sp0 + 80; size: 15, 15; color: if((open == display and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp2.hover)) }
+                on hover sp2 for 140ms while not (open == display and isl_shelf) { isl_sy = sp0 + 80; isl_shelf = true; shelf_pin = false; open = display; side = none; mark_open = false }
+                on press sp2 while (open == display and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp2.hover, keep_display.hover) for 500ms while open == display and isl_shelf and not shelf_pin and max(sp2.hover, keep_display.hover) < 0.5 { open = none }
+                on press sp2 while not (open == display and isl_shelf) { isl_sy = sp0 + 80; isl_shelf = true; shelf_pin = true; open = display; side = none; mark_open = false }
+                // Power
+                zone box sp3 { from: 6, sp0 + 120 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == power and isl_shelf); label: "Power" }
+                group {
+                    glow: 7, (if((open == power and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == power and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp3.hover))
+                           move 39, sp0 + 120; line 31, sp0 + 120 + 14; line 15, sp0 + 120 + 14; line 7, sp0 + 120; line 15, sp0 + 120 - 14; line 31, sp0 + 120 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == power and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp3.hover)); opacity: 0.9
+                       move 39, sp0 + 120; line 31, sp0 + 120 + 14; line 15, sp0 + 120 + 14; line 7, sp0 + 120; line 15, sp0 + 120 - 14; line 31, sp0 + 120 - 14; close }
+                figure i_battery { at: 23, sp0 + 120; size: 15, 15; color: if((open == power and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp3.hover)) }
+                on hover sp3 for 140ms while not (open == power and isl_shelf) { isl_sy = sp0 + 120; isl_shelf = true; shelf_pin = false; open = power; side = none; mark_open = false }
+                on press sp3 while (open == power and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp3.hover, keep_power.hover) for 500ms while open == power and isl_shelf and not shelf_pin and max(sp3.hover, keep_power.hover) < 0.5 { open = none }
+                on press sp3 while not (open == power and isl_shelf) { isl_sy = sp0 + 120; isl_shelf = true; shelf_pin = true; open = power; side = none; mark_open = false }
+                // Machine
+                zone box sp4 { from: 6, sp0 + 160 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == stats and isl_shelf); label: "Machine" }
+                group {
+                    glow: 7, (if((open == stats and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == stats and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp4.hover))
+                           move 39, sp0 + 160; line 31, sp0 + 160 + 14; line 15, sp0 + 160 + 14; line 7, sp0 + 160; line 15, sp0 + 160 - 14; line 31, sp0 + 160 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == stats and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp4.hover)); opacity: 0.9
+                       move 39, sp0 + 160; line 31, sp0 + 160 + 14; line 15, sp0 + 160 + 14; line 7, sp0 + 160; line 15, sp0 + 160 - 14; line 31, sp0 + 160 - 14; close }
+                figure i_cpu { at: 23, sp0 + 160; size: 15, 15; color: if((open == stats and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp4.hover)) }
+                on hover sp4 for 140ms while not (open == stats and isl_shelf) { isl_sy = sp0 + 160; isl_shelf = true; shelf_pin = false; open = stats; side = none; mark_open = false }
+                on press sp4 while (open == stats and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp4.hover, keep_stats.hover) for 500ms while open == stats and isl_shelf and not shelf_pin and max(sp4.hover, keep_stats.hover) < 0.5 { open = none }
+                on press sp4 while not (open == stats and isl_shelf) { isl_sy = sp0 + 160; isl_shelf = true; shelf_pin = true; open = stats; side = none; mark_open = false }
+                // Calendar
+                zone box sp5 { from: 6, sp0 + 200 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == calendar and isl_shelf); label: "Calendar" }
+                group {
+                    glow: 7, (if((open == calendar and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == calendar and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp5.hover))
+                           move 39, sp0 + 200; line 31, sp0 + 200 + 14; line 15, sp0 + 200 + 14; line 7, sp0 + 200; line 15, sp0 + 200 - 14; line 31, sp0 + 200 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == calendar and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp5.hover)); opacity: 0.9
+                       move 39, sp0 + 200; line 31, sp0 + 200 + 14; line 15, sp0 + 200 + 14; line 7, sp0 + 200; line 15, sp0 + 200 - 14; line 31, sp0 + 200 - 14; close }
+                figure i_calendar { at: 23, sp0 + 200; size: 15, 15; color: if((open == calendar and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp5.hover)) }
+                on hover sp5 for 140ms while not (open == calendar and isl_shelf) { isl_sy = sp0 + 200; isl_shelf = true; shelf_pin = false; open = calendar; side = none; mark_open = false }
+                on press sp5 while (open == calendar and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp5.hover, keep_calendar.hover) for 500ms while open == calendar and isl_shelf and not shelf_pin and max(sp5.hover, keep_calendar.hover) < 0.5 { open = none }
+                on press sp5 while not (open == calendar and isl_shelf) { isl_sy = sp0 + 200; isl_shelf = true; shelf_pin = true; open = calendar; side = none; mark_open = false }
+                // Weather
+                zone box sp6 { from: 6, sp0 + 240 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == weather and isl_shelf); label: "Weather" }
+                group {
+                    glow: 7, (if((open == weather and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == weather and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp6.hover))
+                           move 39, sp0 + 240; line 31, sp0 + 240 + 14; line 15, sp0 + 240 + 14; line 7, sp0 + 240; line 15, sp0 + 240 - 14; line 31, sp0 + 240 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == weather and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp6.hover)); opacity: 0.9
+                       move 39, sp0 + 240; line 31, sp0 + 240 + 14; line 15, sp0 + 240 + 14; line 7, sp0 + 240; line 15, sp0 + 240 - 14; line 31, sp0 + 240 - 14; close }
+                figure i_cloud { at: 23, sp0 + 240; size: 15, 15; color: if((open == weather and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp6.hover)) }
+                on hover sp6 for 140ms while not (open == weather and isl_shelf) { isl_sy = sp0 + 240; isl_shelf = true; shelf_pin = false; open = weather; side = none; mark_open = false }
+                on press sp6 while (open == weather and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp6.hover, keep_weather.hover) for 500ms while open == weather and isl_shelf and not shelf_pin and max(sp6.hover, keep_weather.hover) < 0.5 { open = none }
+                on press sp6 while not (open == weather and isl_shelf) { isl_sy = sp0 + 240; isl_shelf = true; shelf_pin = true; open = weather; side = none; mark_open = false }
+                // Notifications
+                zone box sp7 { from: 6, sp0 + 280 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == shalert and isl_shelf); label: "Notifications" }
+                group {
+                    glow: 7, (if((open == shalert and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == shalert and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp7.hover))
+                           move 39, sp0 + 280; line 31, sp0 + 280 + 14; line 15, sp0 + 280 + 14; line 7, sp0 + 280; line 15, sp0 + 280 - 14; line 31, sp0 + 280 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == shalert and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp7.hover)); opacity: 0.9
+                       move 39, sp0 + 280; line 31, sp0 + 280 + 14; line 15, sp0 + 280 + 14; line 7, sp0 + 280; line 15, sp0 + 280 - 14; line 31, sp0 + 280 - 14; close }
+                figure i_bell { at: 23, sp0 + 280; size: 15, 15; color: if((open == shalert and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp7.hover)) }
+                group { show: note_count > 0
+                        ellipse { at: 14, sp0 + 280 - 12; radius: 7; color: fl.ember }
+                        text "{min(note_count, 9), 0}" { at: 14, sp0 + 280 - 12; anchor: center; align: center; size: 8.5; weight: 700; family: "Exo 2"; color: fl.ink } }
+                on hover sp7 for 140ms while not (open == shalert and isl_shelf) { isl_sy = sp0 + 280; isl_shelf = true; shelf_pin = false; open = shalert; side = none; mark_open = false }
+                on press sp7 while (open == shalert and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp7.hover, keep_shalert.hover) for 500ms while open == shalert and isl_shelf and not shelf_pin and max(sp7.hover, keep_shalert.hover) < 0.5 { open = none }
+                on press sp7 while not (open == shalert and isl_shelf) { isl_sy = sp0 + 280; isl_shelf = true; shelf_pin = true; open = shalert; side = none; mark_open = false }
+                // Updates
+                zone box sp8 { from: 6, sp0 + 320 - 17; size: 34, 34; cursor: pointer; role: toggle; checked: (open == shupd and isl_shelf); label: "Updates" }
+                group {
+                    glow: 7, (if((open == shupd and isl_shelf), 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    path { color: if((open == shupd and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.1 + 0.25 * sp8.hover))
+                           move 39, sp0 + 320; line 31, sp0 + 320 + 14; line 15, sp0 + 320 + 14; line 7, sp0 + 320; line 15, sp0 + 320 - 14; line 31, sp0 + 320 - 14; close }
+                }
+                path { stroke: 1.2; color: if((open == shupd and isl_shelf), if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), sp8.hover)); opacity: 0.9
+                       move 39, sp0 + 320; line 31, sp0 + 320 + 14; line 15, sp0 + 320 + 14; line 7, sp0 + 320; line 15, sp0 + 320 - 14; line 31, sp0 + 320 - 14; close }
+                figure i_updates { at: 23, sp0 + 320; size: 15, 15; color: if((open == shupd and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp8.hover)) }
+                group { show: upd_n > 0
+                        ellipse { at: 14, sp0 + 320 - 12; radius: 7; color: fl.ember }
+                        text "{min(upd_n, 99), 0}" { at: 14, sp0 + 320 - 12; anchor: center; align: center; size: 7.5; weight: 700; family: "Exo 2"; color: fl.ink } }
+                on hover sp8 for 140ms while not (open == shupd and isl_shelf) { isl_sy = sp0 + 320; isl_shelf = true; shelf_pin = false; open = shupd; side = none; mark_open = false }
+                on press sp8 while (open == shupd and isl_shelf) { shelf_pin = not shelf_pin }
+                // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
+                on still max(sp8.hover, keep_shupd.hover) for 500ms while open == shupd and isl_shelf and not shelf_pin and max(sp8.hover, keep_shupd.hover) < 0.5 { open = none }
+                on press sp8 while not (open == shupd and isl_shelf) { isl_sy = sp0 + 320; isl_shelf = true; shelf_pin = true; open = shupd; side = none; mark_open = false }
     }
 
     // ── command_island (drawn in the bar's own surface, under the bar's strip: D53) ──
@@ -5420,10 +5717,11 @@ scene Mooi {
     on key Escape while open == window and phase == compact and arming  { arming = false }
     on key Escape while open == window and phase == compact and not arming { open = none }
     on key Escape while open == system                                  { open = none }
+    on change open while open == none { isl_shelf = false; shelf_pin = false }
     on key Left while open == calendar  { emit cal_shift(0) }
     on key Right while open == calendar { emit cal_shift(2) }
     on key Home while open == calendar  { emit cal_shift(1) }
-    on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
+    on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd { open = none }
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,
     // Ctrl+M, Ctrl+Z, F2, Menu, Shift+F10, Escape — Enter is its submit.

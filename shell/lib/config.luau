@@ -105,6 +105,8 @@ M.SCHEMA = {
     { path = "island.style", kind = "enum", values = { "plate", "tether" }, default = "plate" },
     -- what the clock module shows; a right press on it cycles them
     { path = "clock.view", kind = "enum", values = { "full", "time", "seconds" }, default = "full" },
+    -- the spine on the right edge, whose shelves slide out on hover (D100)
+    { path = "shelves.on", kind = "boolean", default = true },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,

@@ -225,6 +225,33 @@ return function(ctx)
         ctx.save()
     end)
 
+    -- ── The connections shelf (D100): the radios, joining, connecting ──
+    local nets, devices, wifi_on, bt_on = {}, {}, true, false
+    pcall(sys.watch, "network", function(n)
+        if type(n) ~= "table" then return end
+        nets = type(n.networks) == "table" and n.networks or {}
+        wifi_on = n.wifi ~= false
+    end)
+    pcall(sys.watch, "bluetooth", function(b)
+        if type(b) ~= "table" then return end
+        devices = type(b.devices) == "table" and b.devices or {}
+        bt_on = b.powered == true
+    end)
+    on("sh_net", function(v)
+        local n = math.floor(tonumber(v) or -2)
+        if n == -1 then pcall(sys.call, "network.wifi", not wifi_on); return end
+        local w = nets[n + 1]
+        if not w or w.active then return end
+        if w.known or not w.secure then pcall(sys.call, "network.connect", w.ssid)
+        else fact.open = "none"; emit("open_settings") end      -- a password to type: the settings window
+    end)
+    on("sh_bt", function(v)
+        local n = math.floor(tonumber(v) or -2)
+        if n == -1 then pcall(sys.call, "bluetooth.power", not bt_on); return end
+        local d = devices[n + 1]
+        if d and d.address then pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", d.address) end
+    end)
+
     on("st_open", function(n)
         local tool = (tonumber(n) == 1 and have.nvtop) and "nvtop" or "btop"
         spawn("kitty", { "--title", tool, tool }, function() end, function() end)
