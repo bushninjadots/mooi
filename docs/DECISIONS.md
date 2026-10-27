@@ -3108,3 +3108,27 @@ updates") running `paru -Syu` (else `yay -Syu`, else `sudo pacman -Syu`), then `
 waits for Enter; its closing looks again. Placed on the user's bar before the bell. Found on the
 way: `mooi refresh` had stopped restarting the bar (fixed separately). Checked live: the counts
 match the three tools run directly. Not pressed: the press runs a real system update.
+
+## D96 · 2026-10-27 · A hardening pass
+
+**Asked for:** check recent work on a properly restarted bar, measure and fix performance, run the
+live test scripts. **Found and fixed:**
+- `mooi refresh` had not restarted the bar since a284174 (835bcb4) — every check since had run on
+  stale Luau libraries. Re-checked on a fresh bar: corners, theme mode, BMO supervision; log clean.
+- **The bar never rested** (71bfe83): the Overview timed double presses with `time`, and a scene
+  that names `time` draws 60 frames a second for ever. Two layers on an instant spring hold the
+  350 ms window instead. Idle: 1804 frames / 30 s → 0, 4 % → 2 % of a core.
+- **The window island acted on the previous window** on every second opening (5332373): the scene
+  set `open` before clearing `target_ok`. Close/Move/Float could reach the wrong window.
+- **Search → "Workspace N" bounced back** (8110b6b): closing the palette after the switch let
+  Hyprland refocus the old window. It closes first, waits the keyboard handover, then switches.
+- The mark's menu toggles were re-emitted by a scene rule and toggled twice; removed.
+- tests/integration.sh honours `island.follow_on_send` and waits for asynchronous switches.
+
+**Measured, not changed:** workspace switching is mostly smooth (18 switches: 3.8 % of frames a few
+ms late, none a whole frame lost, worst 30 ms); the late ones are painting (~12 ms, GPU, while
+Hyprland animates too) — likely the switcher's glow; a look decision. The log's "slow frame" lines
+measure the gap after a rest and overstate it; `pleamar --report` is the measure to trust.
+**Tests:** unit 303 + BMO 27; scene.sh 71/71; config-recovery.sh 13/13; integration.sh 42/42 twice
+in a row. Left to the user: deleting ~/.local/share/pleamar/bmo.old.1185462 (the auto-mode
+classifier refused the delete).
