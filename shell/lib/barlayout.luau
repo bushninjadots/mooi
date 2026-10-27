@@ -71,7 +71,8 @@ M.MODULES = {
     clipboard = { width = 30 },
     power = { width = 30 },
     actions = { width = 32 },
-    atlas = { width = 32 },
+    -- The Overview (D90, was the Workspace Atlas's place): a press opens it, as Super+Tab does.
+    overview = { width = 32 },
     core = { width = 40 },
     -- A focus session and its break: a ring of what is left, and the minutes.
     focus = { width = 86 },
@@ -89,7 +90,7 @@ M.MODULES = {
 M.ORDER = {
     "workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
     "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
-    "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "atlas", "core", "focus", "settings",
+    "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
     "notes", "wallpaper", "nexus",
 }
 
@@ -101,7 +102,7 @@ M.DEFAULT = {
     -- you are (from your address), which is the user's to choose, and quick notes takes the
     -- screenshot pair's room (D51).
     right = { "resources", "network+bluetooth", "volume+mic", "brightness+battery",
-              "tray", "notifications", "clock", "notes", "wallpaper", "nexus", "actions+atlas",
+              "tray", "notifications", "clock", "notes", "wallpaper", "nexus", "actions+overview",
               "settings+power+core" },
 }
 

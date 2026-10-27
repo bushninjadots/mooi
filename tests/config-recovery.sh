@@ -41,13 +41,12 @@ run_with '{ "spine": { "max_workspaces": 99, "clock": false } }'
 check ws_max 10 "out-of-range → default 10"; check show_clock false "the valid field is still applied"; check cfg_error true "the error dot is shown"
 say quit >/dev/null; sleep 1
 
-echo "a choice made in the Atlas is written down and read back"
-run_with '{ "version": 1 }'
-check previews true "previews default to on"
-say "emit open_atlas" >/dev/null; sleep 0.6
-say "key p" >/dev/null; sleep 0.6
-check previews false "p turns the preview pictures off"
-if jq -e '.atlas.previews == false' "$file" >/dev/null 2>&1; then echo "  ok    …and settings.json remembers it"
+echo "a choice made on the bar is written down and read back"
+run_with '{ "version": 1, "bar": { "labels": true } }'
+check bar_labels true "workspace labels on, as the file says"
+say "emit toggle_labels" >/dev/null; sleep 0.6
+check bar_labels false "the mark's menu turns them off"
+if jq -e '.bar.labels == false' "$file" >/dev/null 2>&1; then echo "  ok    …and settings.json remembers it"
 else echo "  FAIL  settings.json does not remember the choice"; fail=$((fail + 1)); fi
 say quit >/dev/null; sleep 1
 
@@ -57,9 +56,8 @@ before=$(cksum "$file")
 MOOI_SAFE=1 pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
 for _ in $(seq 1 20); do sleep 0.3; say "get open" >/dev/null 2>&1 && break; done; sleep 0.4
 check show_clock true "defaults used under MOOI_SAFE=1"
-say "emit open_atlas" >/dev/null; sleep 0.6
-say "key p" >/dev/null; sleep 0.6
-check previews false "the toggle still works under MOOI_SAFE=1"
+say "emit toggle_labels" >/dev/null; sleep 0.6
+check bar_labels false "the toggle still works under MOOI_SAFE=1"
 if [ "$before" = "$(cksum "$file")" ]; then echo "  ok    …and the settings file was not touched"
 else echo "  FAIL  safe mode wrote the settings file"; fail=$((fail + 1)); fi
 say quit >/dev/null; sleep 1

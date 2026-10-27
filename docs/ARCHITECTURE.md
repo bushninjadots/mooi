@@ -9,7 +9,7 @@ mooi is **one Pleamar scene** (`shell/mooi.plm`) with one Luau logic (`shell/moo
 ┌─ pleamar process ───────────────────────┼─────────────────────────────────────────────┼──┐
 │  render thread · shell/mooi.plm         │      logic thread · shell/mooi.luau          │  │
 │   surfaces: Spine · window_island ·     │       settings (lib/config)                  │  │
-│     system · command · atlas islands    │       window actions (lib/hypr) ────────────┘  │
+│  system · command · overview islands    │       window actions (lib/hypr) ────────────┘  │
 │   the slot `open` + rules (never wait)  │       workspace map (lib/spaces; svc)        │
 │   springs and layers (lifecycle)        │       icons (lib/apps)                         │
 │   ui/island.plm: IslandFrame, Level     │       command membrane (command/lib/search)   │
@@ -25,17 +25,17 @@ mooi is **one Pleamar scene** (`shell/mooi.plm`) with one Luau logic (`shell/moo
 | --- | --- | --- |
 | Windows, workspaces, focus | **Hyprland** | Never mirrored. Read on demand (`hyprctl -j`) or from the `workspaces` service (Hyprland socket; ext-workspace if the socket is gone) |
 | Volume, mute, brightness, battery, network | **the system** | Shown from Pleamar's services. A requested change shows only once the service reports it |
-| `open` (none / window / system / command / atlas): the island slot | **scene rules** | Input on the render thread, so Escape and the Spine buttons work even if the logic hangs. Actions close their own surface only if it still holds the slot |
+| `open` (none / window / system / command / shutter / overview): the island slot | **scene rules** | Input on the render thread, so Escape and the Spine buttons work even if the logic hangs. Actions close their own surface only if it still holds the slot |
 | `phase` (compact / expanded) | scene rules | Depth of whichever island holds the slot |
-| `sel`, `wsel`, `arming`, `srow`, `cmode`, `csel`, `asel`, `carming`, `atlas_sel`, `atlas_mode`, `atlas_ws` | scene rules | Selection and close confirmation (the `c…` ones are the membrane's) and the Atlas's (its tile, browse or move, and the workspace the move strip has chosen) |
+| `sel`, `wsel`, `arming`, `srow`, `cmode`, `csel`, `asel`, `carming` | scene rules | Selection and close confirmation (the `c…` ones are the membrane's) |
 | Membrane results (`model res`) | logic (`shell/command.luau`) | Rebuilt on every keystroke from windows (`hyprctl -j clients`, read on open and after actions), apps (`apps` service), workspaces and mooi actions; ranked by `lib/search` |
 | Usage counts | `~/.local/share/pleamar/mooi/usage.json` | How often each result was chosen; lifts it in ranking, capped so relevance wins. Forgets the least used half past 200 entries |
-| `busy` / `atlas_busy` | set by rules, cleared by the logic | A window or Atlas workspace action is with Hyprland; actions are refused while it holds |
+| `busy` / `atlas_busy` | set by rules, cleared by the logic | A window or Overview action is with Hyprland; actions are refused while it holds |
 | Window target | logic, **from Hyprland** | Captured by address when the window island opens, refreshed after every action |
 | Settings | `~/.local/share/pleamar/mooi/settings.json` | The only on-disk source. JSON, versioned, schema in `lib/config.luau` |
 | Tokens | `shell/theme/tokens.plm` | Colours, geometry, motion; components use semantic names only |
-| Atlas board (`model atlas_tiles`) | logic, **from Hyprland** | One tile per window Hyprland lists (address, class, title, workspace), rebuilt while the Atlas is up; the `thumbnails` service only lends the picture, matched to a window by app and title |
-| `spaces` (the workspace map) | logic (`lib/spaces`) | The bounded 1–16 workspace slots, from the `workspaces` service; **the Mechanism's chain and the Atlas's move strip both draw it** — the one place workspace state becomes rows, holding the positions the compositor has not made yet as well as the ones it has |
+| The Overview's board (`model atlas_tiles`) | logic, **from Hyprland** | One tile per window Hyprland lists (address, class, title, workspace), rebuilt while the Overview is up; the `thumbnails` service only lends the picture, matched to a window by app and title |
+| `spaces` (the workspace map) | logic (`lib/spaces`) | The bounded 1–16 workspace slots, from the `workspaces` service; **the bar's switchers and the Overview both draw it** — the one place workspace state becomes rows, holding the positions the compositor has not made yet as well as the ones it has |
 | The colour facts (`c_*_r/g/b`) | logic (`lib/theme`) | Forty-two facts: three per semantic token, 0 to 1, and `theme/tokens.plm` hands each to `rgb()`. Set together, or not at all. `palette.json` (Matugen) and `theme.*` settings are the only inputs; nothing else in the scene reads or writes them |
 | `theme_error` | logic | The new theme did not pass completeness or contrast; the last good one is on screen and the Spine's dot says so |
 | `previews` | logic, from settings (`atlas.previews`) | Preview pictures on or off. Off means they are not drawn, the frames are given back to the compositor and none is asked for again; `p` flips it and writes the setting (never in safe mode) |
@@ -44,7 +44,7 @@ mooi is **one Pleamar scene** (`shell/mooi.plm`) with one Luau logic (`shell/moo
 
 ## The Mechanism (the bar)
 
-The always-present strip along the **top edge**, in one surface reserved for it (56 px, `anchor: top`) — one exposed machine along it, ported from the renewed design (`pleamar helix bar/helix-v2-mooi/`, v6, the horizontal exposed helix): a matt black **body** whose surface is the bar's background (v7), a **shaft** of steel running the whole of the navigation region, the **chain** of workspace blocks threaded on that shaft — it slides along the bar so the block the compositor is on always sits at the focus slot, and the window it is seen through is a sleeve over the shaft, so the ends of the list show steel rather than a hole — a **module row** beside it of twelve slots and one frame — the media reading and its transport, the clock, the System door, the four readings (volume, brightness, Bluetooth, network) and the bar's three ways out (the focused window, the Atlas, the membrane) — and the mark at the left end, with the end cap at the right. Off the machine the desktop shows through the strip wherever there is no body, prism, shaft or cap. Everything under the strip — the mark's menu — floats over windows, and because pleamar commits the input region from what is actually painted, nothing there takes a click — nor does the strip's own empty space, measured on the running desktop. What the bar *asks of the machine* is the transport (the player's own commands) and the volume module: everything else it shows is a report.
+The always-present strip along the **top edge**, in one surface reserved for it (56 px, `anchor: top`) — one exposed machine along it, ported from the renewed design (`pleamar helix bar/helix-v2-mooi/`, v6, the horizontal exposed helix): a matt black **body** whose surface is the bar's background (v7), a **shaft** of steel running the whole of the navigation region, the **chain** of workspace blocks threaded on that shaft — it slides along the bar so the block the compositor is on always sits at the focus slot, and the window it is seen through is a sleeve over the shaft, so the ends of the list show steel rather than a hole — a **module row** beside it of twelve slots and one frame — the media reading and its transport, the clock, the System door, the four readings (volume, brightness, Bluetooth, network) and the bar's three ways out (the focused window, the Overview, the membrane) — and the mark at the left end, with the end cap at the right. Off the machine the desktop shows through the strip wherever there is no body, prism, shaft or cap. Everything under the strip — the mark's menu — floats over windows, and because pleamar commits the input region from what is actually painted, nothing there takes a click — nor does the strip's own empty space, measured on the running desktop. What the bar *asks of the machine* is the transport (the player's own commands) and the volume module: everything else it shows is a report.
 
 Two rules hold it together, both written out in **docs/MECHANISM.md**:
 
@@ -92,7 +92,7 @@ them at all — and before it starts one, it lets go (D64).
 
 A window cannot be given the keyboard while a layer holds it: Hyprland answers the dispatches
 but leaves the keyboard where it is. `focus` (the membrane's ↵ on a window, its Focus
-satellite, an Atlas tile) therefore gives the slot up first and dispatches once the layer has
+satellite, an Overview window) therefore gives the slot up first and dispatches once the layer has
 let go (`HANDOVER_MS`, mooi.luau); if it did not happen, `run_action` brings that island back
 with what happened, so the failure is read and not guessed. The window island's own actions
 (float, fullscreen, pin, move, close) do not need it. An `on_demand` keyboard would not work
@@ -182,7 +182,7 @@ All are critically damped, which means no overshoot and the duration is time to 
 ## Adding an island
 
 1. Add a value to `fact open` and a reveal spring `rv.<name>` with its `layer life.<name>`.
-2. Declare `surface <name>_island` anchored to the edge it belongs to and `margin:`ed clear of the bar's strip — the window island hangs from the top left under the bar, the command island from the top centre (`margin: 84, 0, 0, …`), the System island from the bottom left, the Atlas centred — with `open: open == <name> or rv.<name> > 0.004`. **No `keyboard:` clause**: the bar's single clause (above) is the scene's, and a second declarer would silently replace its `while` condition for the whole scene.
+2. Declare `surface <name>_island` anchored to the edge it belongs to and `margin:`ed clear of the bar's strip — the window island hangs from the top left under the bar, the command island from the top centre (`margin: 84, 0, 0, …`), the System island from the bottom left, the Overview over the whole screen — with `open: open == <name> or rv.<name> > 0.004`. **No `keyboard:` clause**: the bar's single clause (above) is the scene's, and a second declarer would silently replace its `while` condition for the whole scene.
 3. Draw it inside `IslandFrame(rv.<name>, w, h[, up: true][, centre: true])` from `ui/island.plm` (`centre` grows from the middle of the top edge, for an island with no Spine anchor).
 4. Add `on open_<name>` rules (toggle and hand-over), its keys guarded by `while open == <name>`, and an Escape rule.
 5. Add it to `tests/scene.sh`.
@@ -223,57 +223,35 @@ is read by `bin/mooi` at launch (it maps to `--reduced-motion`).
 | `shell/mooi.plm` | the scene: the bar (the Mechanism), the islands, the command membrane, rules |
 | `shell/ui/island.plm` | shared pieces: `IslandFrame`, `Level` |
 | `shell/theme/tokens.plm` | palette, semantic colours, geometry, motion springs |
-| `shell/mooi.luau` | glue: settings, window target and verified actions (`run_action`, with the keyboard hand-over), the Atlas board and its pictures, the move strip's subject and target, preview privacy, system requests, icons, the pad's badge and the board's program (start and close) |
+| `shell/mooi.luau` | glue: settings, window target and verified actions (`run_action`, with the keyboard hand-over), the Overview's board and its pictures, the move strip's subject and target, preview privacy, system requests, icons, the pad's badge and the board's program (start and close) |
 | `shell/mooi-board.plm` · `.luau` | the Kanban board as its own program (D64): the scene (columns, cards, the pane, keys) and the logic that paints the palette, starts `shell/board.luau` and quits it on `close_board` |
 | `shell/board.luau` · `lib/board.luau` | the board's scene-keeping and file, and the pure board rules (unit-tested) |
 | `shell/command.luau` | the command membrane: what it lists, and what choosing a result or satellite does |
-| `shell/lib/spaces.luau` | the bounded, pure workspace-slot map the bar's scale and the Atlas's move strip draw |
+| `shell/lib/spaces.luau` | the bounded, pure workspace-slot map the bar's switchers and the Overview draw |
 | `shell/lib/theme.luau` | the pure theme model: the fixed palette, Matugen roles → semantic tokens, overrides, colour maths and contrast checks |
 | `theme/matugen.toml.in` · `theme/palette.json.hbs` | mooi's own Matugen config and template (`bin/mooi theme-sync` fills the paths in): one output file, no other program's colours touched |
 | `shell/lib/config.luau` · `hypr.luau` · `apps.luau` · `search.luau` · `spaces.luau` | pure modules, unit-tested under Lua 5.4 |
 | `bin/mooi` | launcher, keeper and shell switch (SWITCHING.md) |
 | `tests/` | unit, scene lifecycle and motion, live Hyprland and system, degraded IPC, config recovery |
 
-## Workspace Atlas
+## The Overview's board and its pictures
 
-The Atlas is a wall of the windows that exist, two per row, with the workspace each sits on.
-Hyprland's clients are what it is built from — with their own addresses, so every tile can be
-focused — and Pleamar's `thumbnails` service lends the pictures: while the Atlas is up,
-`thumbnails.want("all")` asks the compositor to copy every window, and the reports carry each
-picture's *path with a version*, which `image … = from` paints and reloads as it changes
-(`stale` when the compositor stops copying that window). A picture cannot be matched by
-identifier — the ids are the compositor's own (`18000015`), not Hyprland addresses — so it is
-matched by app and title, one window each; a window with no picture is still a tile, named
-only. On closing, `thumbnails.want()` gives the frames back and no more pictures are taken.
+The Workspace Atlas that first held this board was removed in D90; the Overview (D37–D47, Super+Tab)
+is mooi's one workspace viewer, and it keeps the Atlas's plumbing under its old names
+(`model atlas_tiles`, `atlas_busy`, `lib/atlas`, the `atlas.*` settings).
 
-The board is rebuilt on every report while the Atlas is open (windows opening and closing
-move the tiles under the selection, and the pictures refresh), and left as it is while the
-Atlas leaves, so the way out is whole. A tile focuses its window through the same verified
-path as everything else, hand-over included; a failure brings the Atlas back and says what
-happened in the logic's own words (the header line shows `text feedback`), never that it
-must have worked.
+The board is the windows that exist. Hyprland's clients are what it is built from — with their
+own addresses, so every tile can be focused — and Pleamar's `thumbnails` service lends the
+pictures: while the Overview is up, `thumbnails.want(…)` asks the compositor to copy the windows
+(in short bursts, D40), and the reports carry each picture's *path with a version*, which
+`image … = from` paints and reloads as it changes. A picture cannot be matched by identifier —
+the ids are the compositor's own, not Hyprland addresses — so it is matched by app and title, one
+window each; a window with no picture is still a tile. On closing, `thumbnails.want()` gives the
+frames back and no more pictures are taken. With `atlas.previews` off no picture is matched and
+none is asked for; `atlas.private` keeps sensitive windows out of the copies entirely.
 
-**Moving a window.** `m` turns the strip below the board into a workspace picker built from the
-same `model spaces`, so an empty slot can be chosen and Hyprland creates it. ←→ (or a
-click) picks one, ↵ emits `atlas_move` and the logic moves **the selected tile's** window there
-through the same verified path as the window island (`run_action`: read, dispatch, read back),
-with `follow = false` so the user stays where they are. The Atlas is *not* closed — a move is
-not a choice — and the Spine pulses that workspace. The strip starts on the workspace the
-selected window is on (`fact.atlas_ws`, kept in step from the board and the selection) and its
-subject is named by `text atlas_target`, both set by the logic. `←→` are the only keys: a
-scene key cannot be a digit, so the picker is walked, not typed at.
-
-**Previews are a promise.** `p` toggles `previews` (the `atlas.previews` setting, written and
-reloaded like any other). While it is off, no picture is matched into a tile and
-`thumbnails.want()` is called at once, so the compositor stops copying; on it is called
-`thumbnails.want("all")` again. A safe-mode run never writes the settings file, so the test
-harnesses can flip it without touching the user's config.
-
-`shell/lib/spaces.luau` still turns the `workspaces` service's positive records into the
-configured 1–16 slot map (`model spaces`: id, window count, active, exists), including
-the empty slots Hyprland will create; `atlas_go` requests `workspaces.focus` and closes only
-once a service update reports that workspace active. The map is state, not the drawing: the
-tiles are the drawing, and the strip borrows it.
+`shell/lib/spaces.luau` turns the `workspaces` service's records into the configured 1–16 slot
+map (`model spaces`), including the empty slots Hyprland will create.
 
 ## Theme: colour is data, and it can change while the shell runs
 

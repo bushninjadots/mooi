@@ -81,7 +81,7 @@ keepalive() {
 keepalive &
 ka=$!
 
-start --record rv.window,depth,rv.system,rv.command,rv.atlas > "$out/record.tsv"
+start --record rv.window,depth,rv.system,rv.command > "$out/record.tsv"
 
 echo "window island"
 expect open none "starts with no island"
@@ -215,8 +215,8 @@ else
     esac
 fi
 
-echo "window Atlas (read-only checks; does not focus a window)"
-step "emit open_atlas"; expect open atlas "Spine action opens the Atlas"
+echo "Overview (read-only checks; does not focus a window)"
+step "emit open_overview"; expect open overview "the Overview opens"
 expect spaces.count 10 "the configured 10 workspace slots are listed"
 expect spaces.0.id 1 "the map starts at workspace 1"
 active=$(hyprctl -j activeworkspace | jq .id)
@@ -225,46 +225,7 @@ if [ "$active" -ge 1 ] && [ "$active" -le 10 ]; then
 fi
 windows=$(hyprctl -j clients | jq '[.[] | select(.mapped != false and .hidden != true)] | length')
 expect atlas_tiles.count "$windows" "every window Hyprland lists is a tile"
-expect atlas_tiles.0.address "$(hyprctl -j activewindow | jq -r '.address')" "a tile carries Hyprland's own address, so it can be focused"
-if [ "$(get thumbnails.capturing)" = true ] && [ "$windows" -gt 0 ]; then
-    sleep 0.5
-    n=$((n + 1)); pic=$(get atlas_tiles.0.picture)
-    if [ -n "$pic" ]; then echo "  ok    the compositor's own picture reaches the first tile"
-    else echo "  FAIL  the compositor is capturing but the first tile has no picture"; fail=$((fail + 1)); fi
-fi
-expect atlas_mode browse "the Atlas opens browsing"
-
-# The move strip starts on the workspace of the tile the Atlas has selected. The real
-# pointer may be resting on one (hover selects), so settle the selection on the first
-# tile — the focused window — and read the expectation from where it actually landed.
-step "key Left"; step "key Left"; step "key Left"
-sel_ws=$(get atlas_tiles.$(get atlas_sel).ws)
-if [ -n "$sel_ws" ] && [ "$sel_ws" -ge 1 ] && [ "$sel_ws" -le 10 ]; then
-    step "key m"; expect atlas_mode move "m opens the move strip"
-    expect atlas_ws "$sel_ws" "…starting on the selected window's workspace"
-    step "key Right"; expect atlas_ws "$(( sel_ws % 10 + 1 ))" "→ chooses the next workspace (wrapping)"
-    step "key Left"; expect atlas_ws "$sel_ws" "← back to the one it is on"
-    step "key Escape"; expect atlas_mode browse "Esc leaves the strip, keeping the Atlas"
-    expect open atlas "…and the Atlas is still open"
-fi
-
-if [ "$(get thumbnails.capturing)" = true ]; then
-    step "key p"; expect previews false "p stops the previews"
-    expect atlas_tiles.0.picture "" "…and no picture is drawn"
-    step "key p"; expect previews true "p brings the previews back"
-fi
-
-# The board is rebuilt while the Atlas is open and the real pointer may be resting on a tile
-# (hover selects), so the selection is not assumed: it is settled on the first tile and read
-# from there, and each key still has to move it by exactly what it claims.
-step "key Left"; step "key Left"; step "key Left"
-expect atlas_sel 0 "← settles the Atlas on the first tile"
-# One tile is a board that cannot move: the selection stays on it (and with a second window
-# open it moves, which is what this checks when there is one).
-if [ "$windows" -gt 1 ]; then step "key Right"; expect atlas_sel 1 "→ moves Atlas selection"
-else step "key Right"; expect atlas_sel 0 "→ stays on the only tile (one window open)"; fi
-step "key Down"; expect atlas_sel "$(( windows > 3 ? 3 : windows - 1 ))" "↓ moves one grid row"
-step "key Escape"; expect open none "Esc dismisses the Atlas"
+step "key Escape"; expect open none "Esc closes the Overview"
 expect atlas_tiles.count "$windows" "…and the board stays whole while it leaves"
 
 echo "command membrane (searches only; never opens a result)"
@@ -336,8 +297,6 @@ measure 3 down "surface.collapse (depth)" 160 || fail=$((fail + 1))
 measure 4 up "surface.enter (system)" 180 || fail=$((fail + 1))
 measure 5 up "surface.enter (command)" 180 || fail=$((fail + 1))
 measure 5 down "surface.exit (command)" 140 || fail=$((fail + 1))
-measure 6 up "surface.enter (Atlas)" 180 || fail=$((fail + 1))
-measure 6 down "surface.exit (Atlas)" 140 || fail=$((fail + 1))
 
 echo "reduced motion"
 start --reduced-motion --record rv.window > "$out/reduced.tsv"

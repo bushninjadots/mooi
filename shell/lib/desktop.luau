@@ -8,7 +8,6 @@ local M = {}
 M.ACTIONS = {
     { key = "search", cmd = "toggle", name = "Search" },
     { key = "window", cmd = "window", name = "Window actions" },
-    { key = "atlas", cmd = "atlas", name = "Workspace Atlas" },
     { key = "overview", cmd = "overview", name = "Overview" },
     { key = "system", cmd = "system", name = "System controls" },
     { key = "shutter", cmd = "shutter", name = "Window shutter" },

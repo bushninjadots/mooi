@@ -15,7 +15,7 @@
 #                          itself, so saving a file reloads it
 #   mooi refresh           copy the repo's shell into the running snapshot and restart the scene
 #                          (the keeper, the mode and ArchEclipse's state are kept)
-#   mooi window | system | atlas  toggle the window island (Super+Alt+W), system island, or Workspace Atlas
+#   mooi window | system   toggle the window island (Super+Alt+W) or the system island
 #   mooi overview          every workspace zoomed out (Super+Tab)
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
 #                          one under the pointer (Super+Alt+right-click)
@@ -732,7 +732,6 @@ case "$cmd" in
     clipboard) exec "$pleamar" --say "$name" "emit open_clips" ;;
     record) exec "$pleamar" --say "$name" "emit record $([ "${1:-}" = area ] && echo 1 || echo 0)" ;;
     edit) exec "$pleamar" --say "$name" "emit edit_toggle" ;;
-    atlas) exec "$pleamar" --say "$name" "emit open_atlas" ;;
     overview) exec "$pleamar" --say "$name" "emit open_overview" ;;
     shutter) exec "$pleamar" --say "$name" "emit open_shutter 0" ;;
     shutter-here) exec "$pleamar" --say "$name" "emit open_shutter 1" ;;

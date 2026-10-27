@@ -2918,3 +2918,38 @@ original is still in the home dotfiles repo's history.
 agent's permission check and is left for the user to add. Not checked: a real re-login, his
 placement on a second monitor (he uses the focused monitor's size), and long-run energy/doze
 over hours.
+
+## D90 · 2026-10-27 · One workspace viewer: the Workspace Atlas is removed, the Overview stays
+
+**Asked for:** two workspace viewers is one too many. Remove the Atlas completely and keep the
+Overview. **Removed:** the Atlas island (`atlas_island`: the windows grid, the workspaces board
+and the spatial view), its 16 key rules, its open/close rules and layer, the facts and events
+only it used (`atlas_sel`, `atlas_mode`, `atlas_ws`, `atlas_target`, `atlas_view`, `atlas_cols`,
+`atlas_drop`, `atlas_go`, `atlas_move`, `atlas_previews`, `open_atlas`, `sp_mons`, `sp_chips`,
+`sp_drop`, `sp_chip`, the tiles' `col/row/sx/sy/sw/sh/svis`), `atlas` from the `open` enum,
+their logic handlers (the move strip, the board and spatial drops, the `p` previews toggle,
+workspace focus), `lib/atlas.spatial`/`drop` and their test, `keys.atlas` (Super+Alt+A),
+`mooi atlas`, and the Atlas row on the Keys page.
+
+**Kept, under their old names:** what the Overview was built on: `model atlas_tiles`,
+`atlas_busy`, `atlas_window` (focus a window), `lib/atlas` (grid, canvas, privacy, search,
+menus, names and groups), and the `atlas.*` settings. Renaming the settings would need a
+migration of every saved file for no visible gain; the names are internal. `atlas.previews`
+stays a setting (Settings → Overview → Pictures), now without a key of its own.
+
+**The bar button.** The Atlas's bar module (32 px, index 22 in `barlayout.ORDER`) is now
+`overview`: same place in the order, so no other module's settings code moved; a press emits
+`open_overview` and it lights with the Overview (`ov_z`). An unknown module in `bar.left/center/
+right` makes `lib/config` drop the whole layout for the default, so `config.migrate` renames
+`atlas` → `overview` in the three lists (inside `a+b` groups too) and moves `bar.modules.atlas`
+to `bar.modules.overview`. Unit-tested. The user's own layout (with `atlas` on the left) came
+through unchanged: no config error, the button at x 278. Backup:
+~/.local/state/mooi/settings.before-d90-2026-10-27.json.
+
+**Tests:** `tests/scene.sh` and `tests/integration.sh` now open and close the Overview where
+they drove the Atlas; `tests/config-recovery.sh` checks the settings round trip with the bar's
+labels toggle (the same logic-writes-the-file path the Atlas's `p` used). `bin/mooi check`:
+seven scenes compile, **271 unit tests, 0 failed**. Live after a restart: the bar button
+opened the Overview (5 workspaces, 2 window tiles, Canvas, live pictures) and Escape closed it.
+Not run: the live scripts (scene.sh, integration.sh, config-recovery.sh) — they grab the
+keyboard and need mooi stopped.

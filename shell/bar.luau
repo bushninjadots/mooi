@@ -506,7 +506,7 @@ return function(ctx)
         bandwidth = "Bandwidth", keyboard = "Keyboard", weather = "Weather", tray = "Tray", notifications = "Notices",
         mic = "Mic", volume = "Volume", brightness = "Brightness", battery = "Battery", network = "Network",
         bluetooth = "Bluetooth", clock = "Clock", caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot",
-        clipboard = "Clipboard", power = "Session", actions = "Win actions", atlas = "Atlas", core = "Search",
+        clipboard = "Clipboard", power = "Session", actions = "Win actions", overview = "Overview", core = "Search",
         focus = "Focus", settings = "Settings", notes = "Quick notes", wallpaper = "Wallpaper" }
     local editing = nil      -- the layout a drag plans from: as edit mode found it, then as last dropped
     local previewed = nil    -- the last preview shown, so a pointer that moves within one place costs nothing

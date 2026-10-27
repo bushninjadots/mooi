@@ -1,88 +1,12 @@
--- The Workspace Atlas's spatial view (D36): the monitors as they are laid out, to scale, each with
--- the windows of the workspace it shows where they really are, and its workspaces as chips under
--- it. Pure, so tests/unit runs it: the geometry and what a drop lands on. The scene draws it
--- (shell/mooi.plm, `atlas_island`); shell/mooi.luau feeds it Hyprland's monitors and clients.
+-- The Overview's geometry and its keeping (D37–D47): the grid, the strip and the canvas, privacy,
+-- the keyboard's moves, search and menus, and the workspace names, accents and groups kept in
+-- workspaces.json. Pure, so tests/unit runs it. (The name is the Workspace Atlas's, which this
+-- library first served; the Atlas itself was removed in D90.)
 --
 -- A presentation, not a window manager: every position comes from Hyprland, and every move goes
 -- back to it.
 
 local M = {}
-
-M.CHIP_W, M.CHIP_H, M.CHIP_GAP = 34, 22, 4
-
--- `monitors`: Hyprland's (`hyprctl -j monitors`, raw); `clients`: lib/hypr's; `spaces`: the
--- workspaces service's list ({ id, monitor = name, windows }); `box` = { x, y, w, h } the room for
--- the monitors, with chips under them (`chips_h` of it). Returns
---   mons  { { name, id, x, y, w, h, ws (the one it shows), scale } … } in the box's pixels
---   wins  { [address] = { x, y, w, h, mon } } the windows on what each monitor shows
---   chips { { x, y, w, h, ws, active, windows, mon } … }
-function M.spatial(monitors, clients, spaces, box)
-    local list = {}
-    for _, m in ipairs(type(monitors) == "table" and monitors or {}) do
-        if not m.disabled then
-            local s = tonumber(m.scale) or 1
-            local w = (tonumber(m.width) or 1920) / s
-            local h = (tonumber(m.height) or 1080) / s
-            if (tonumber(m.transform) or 0) % 2 == 1 then w, h = h, w end
-            list[#list + 1] = { name = tostring(m.name), id = tonumber(m.id) or 0, gx = tonumber(m.x) or 0, gy = tonumber(m.y) or 0,
-                                gw = w, gh = h, ws = type(m.activeWorkspace) == "table" and tonumber(m.activeWorkspace.id) or 0 }
-        end
-    end
-    table.sort(list, function(a, b) if a.gx ~= b.gx then return a.gx < b.gx end return a.gy < b.gy end)
-    local out = { mons = {}, wins = {}, chips = {} }
-    if #list == 0 then return out end
-    -- the layout's bounds, fitted into the box above the chips, centred
-    local x0, y0, x1, y1 = math.huge, math.huge, -math.huge, -math.huge
-    for _, m in ipairs(list) do
-        x0 = math.min(x0, m.gx); y0 = math.min(y0, m.gy); x1 = math.max(x1, m.gx + m.gw); y1 = math.max(y1, m.gy + m.gh)
-    end
-    local chips_h = box.chips_h or (M.CHIP_H + 12)
-    local avail_h = box.h - chips_h
-    local scale = math.min(box.w / (x1 - x0), avail_h / (y1 - y0))
-    local ox = box.x + (box.w - (x1 - x0) * scale) / 2
-    local oy = box.y + (avail_h - (y1 - y0) * scale) / 2
-    for i, m in ipairs(list) do
-        local r = { name = m.name, id = m.id, ws = m.ws, scale = scale,
-                    x = ox + (m.gx - x0) * scale, y = oy + (m.gy - y0) * scale, w = m.gw * scale, h = m.gh * scale }
-        out.mons[i] = r
-        -- its workspaces, in order, under it (as many as fit across it, the active one always)
-        local mine = {}
-        for _, s in ipairs(type(spaces) == "table" and spaces or {}) do
-            if s.monitor == m.name and (tonumber(s.id) or 0) >= 1 then mine[#mine + 1] = s end
-        end
-        table.sort(mine, function(a, b) return a.id < b.id end)
-        local cx = r.x
-        for _, s in ipairs(mine) do
-            if cx + M.CHIP_W <= r.x + math.max(r.w, M.CHIP_W) then
-                out.chips[#out.chips + 1] = { x = cx, y = r.y + r.h + 8, w = M.CHIP_W, h = M.CHIP_H, ws = s.id,
-                                              active = s.id == m.ws, windows = tonumber(s.windows) or 0, mon = i }
-                cx = cx + M.CHIP_W + M.CHIP_GAP
-            end
-        end
-    end
-    for _, c in ipairs(type(clients) == "table" and clients or {}) do
-        for i, m in ipairs(list) do
-            if c.monitor == m.id and c.workspace == m.ws then
-                local r = out.mons[i]
-                out.wins[c.address] = { x = r.x + (c.x - m.gx) * scale, y = r.y + (c.y - m.gy) * scale,
-                                        w = math.max(6, c.w * scale), h = math.max(6, c.h * scale), mon = i }
-            end
-        end
-    end
-    return out
-end
-
--- What a window carried to (x, y) lands on: a chip (that workspace), or a monitor (the workspace it
--- shows). Returns the workspace id, or nil (nowhere it can go).
-function M.drop(sp, x, y)
-    for _, c in ipairs(sp.chips) do
-        if x >= c.x and x <= c.x + c.w and y >= c.y and y <= c.y + c.h then return c.ws end
-    end
-    for _, m in ipairs(sp.mons) do
-        if x >= m.x and x <= m.x + m.w and y >= m.y and y <= m.y + m.h then return (m.ws > 0) and m.ws or nil end
-    end
-    return nil
-end
 
 -- The Overview's grid on a monitor `w` × `h` (logical), after iNiR's workspace view: one panel
 -- just under the bar (`top`, the bar's reserve), rows × columns of the screen at SCALE, smaller only
@@ -111,7 +35,7 @@ function M.strip(w, h, n, top)
     return { cw = cw, ch = cw / asp, gap = gap, gx = (w - (n * cw + (n - 1) * gap)) / 2, gy = (top or 0) + 22 }
 end
 
--- Privacy (D38): what the Atlas and the Overview may show of a window. `mode` is the setting
+-- Privacy (D38): what the Overview may show of a window. `mode` is the setting
 -- atlas.private — "off" (everything), "sensitive" (password managers and private browsing keep
 -- their picture and title to themselves), "everything" (no pictures or titles at all, only app names:
 -- for sharing the screen). Returns whether its picture is kept back, and the title to show.

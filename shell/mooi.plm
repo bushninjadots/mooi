@@ -24,7 +24,7 @@ scene Mooi {
     }
 
     // ── The island slot ───────────────────────────────────────
-    fact open: none | window | system | command | atlas | shutter | overview = none
+    fact open: none | window | system | command | shutter | overview = none
     fact phase: compact | expanded = compact
 
     // Window island
@@ -45,33 +45,21 @@ scene Mooi {
     fact srow = 0             // 0 volume · 1 brightness
 
     // Workspace Atlas (Phase 4: per-window previews, grouped by workspace)
-    fact atlas_sel = 0
     fact atlas_busy = false
-    fact atlas_mode: browse | move = browse   // browse: ↵ focuses the tile. move: the strip picks its workspace
-    fact atlas_ws = 1         // the workspace the selected tile is being moved to
     fact previews = true      // settings: atlas.previews — off means no picture is taken or shown
-    text atlas_target = ""    // the tile the move strip is about, from the logic
     // The bounded workspace map, filled by the logic from the `workspaces` service
     // (`lib/spaces`). The Mechanism's chain draws it and the Atlas's move strip draws it:
     // it is the only place workspace state becomes rows, and it holds the positions the
     // compositor has not made yet as well as the ones it has.
     model spaces max 16 { id: number; windows: number; active: bool; exists: bool; name: text; monitor: text; label: text; icon: image 16, 16; iconed: bool; joined: bool }
-    model atlas_tiles max 40 { ws: number; address: text; title: text; app: text; picture: image 400, 225; stale: bool; col: number; row: number; sx: number; sy: number; sw: number; sh: number; svis: bool
+    model atlas_tiles max 40 { ws: number; address: text; title: text; app: text; picture: image 400, 225; stale: bool; 
                                   ocell: number; fx: number; fy: number; fw: number; fh: number; priv: bool; mark: bool
                                   icon: image 48, 48; iconed: bool; hit: bool; tx: number; ty: number; tw: number; th: number; floating: bool }
-    fact atlas_view = 0       // 0 the windows' grid · 1 the workspaces board · 2 spatial: the monitors as they are laid out
-    fact atlas_cols = 10      // the board's columns: the workspace map's length (the logic)
     fact bd_press = -1        // the board's tile under a press, and the one being carried
     fact bd_drag = -1
     fact bd_px = 0
     fact sp_hx = 0            // where a carried window is, in the frame's own pixels (the zone's `local`:
     fact sp_hy = 0            // an agent's drag reports `pointer.y` offset, `local` true)
-    event atlas_drop ->       // to the logic: 100 · tile + column — tile n carried to that workspace
-    // The spatial view (D36): the monitors as laid out, to scale; their workspaces as chips.
-    model sp_mons max 6 { name: text; x: number; y: number; w: number; h: number; ws: number }
-    model sp_chips max 40 { x: number; y: number; w: number; h: number; ws: number; active: bool; windows: number; mon: number }
-    event sp_drop ->          // to the logic: 1000000 · tile + 1000 · x + y — a window carried and let go there
-    event sp_chip ->          // to the logic: chip n pressed (go to that workspace)
     // ── The Overview (D37): every workspace zoomed out as a miniature of its screen ──
     event open_overview        // Super+Tab
     event ov_go ->            // to the logic: go to cell n's workspace
@@ -405,12 +393,12 @@ scene Mooi {
     fact m_actions = true
     fact fi_actions = 0
     fact g_actions = false
-    fact x_atlas = 0
-    fact p_atlas = false
-    fact w_atlas = 0
-    fact m_atlas = true
-    fact fi_atlas = 0
-    fact g_atlas = false
+    fact x_overview = 0
+    fact p_overview = false
+    fact w_overview = 0
+    fact m_overview = true
+    fact fi_overview = 0
+    fact g_overview = false
     fact x_core = 0
     fact p_core = false
     fact w_core = 0
@@ -868,7 +856,6 @@ scene Mooi {
     event open_window          // Spine button · `mooi toggle` · `mooi open`
     event open_system          // Spine status button · `mooi system`
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
-    event open_atlas           // Workspace Atlas from the Spine
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
     event sh_close ->          // to the logic: put it away
@@ -916,10 +903,7 @@ scene Mooi {
     model sh_plates max 4 { label: text; icon: number; acts: number }
     model sh_rows max 10 { label: text; hint: text; kind: number; on: bool; toggle: bool; armed: bool }
     model sh_items max 16 { label: text; on: bool }
-    event atlas_go ->          // focus a real or empty workspace slot
-    event atlas_window ->      // focus the window preview selected in the Atlas
-    event atlas_move ->        // to the logic: move the selected window to `atlas_ws`
-    event atlas_previews ->    // to the logic: previews on or off (a setting, remembered)
+    event atlas_window ->      // focus the window picked in the Overview
     event crun ->              // to the logic: open result n (launch, focus, switch, …)
     event csat_try             // a satellite action asked for, by index
     event csat ->              // to the logic: run satellite action n on result `csel`
@@ -1027,7 +1011,6 @@ scene Mooi {
     prop rv.window = 0 ~m.enter
     prop rv.system = 0 ~m.enter
     prop rv.command = 0 ~m.enter
-    prop rv.atlas = 0 ~m.enter
     prop depth = 0 ~m.expand
     prop fb = 0 ~m.select
     prop pz = 0 ~m.confirm
@@ -1076,10 +1059,6 @@ scene Mooi {
     layer life.overview {
         shown while open == overview { ov_z: 1 ~fl.zoom }
         gone                         { ov_z: 0 ~fl.zoom }
-    }
-    layer life.atlas {
-        shown while open == atlas { rv.atlas: 1 ~m.enter }
-        gone                     { rv.atlas: 0 ~m.exit }
     }
     layer size {
         wide while open == window and phase == expanded { depth: 1 ~m.expand }
@@ -1271,13 +1250,13 @@ scene Mooi {
     prop pv_actions = 0 ~m.enter
     follow pv_actions = p_actions
     on change p_actions while p_actions { xs_actions: x_actions ~1ms; ws_actions: w_actions ~1ms }
-    prop xs_atlas = 0 ~fl.flow
-    follow xs_atlas = x_atlas
-    prop ws_atlas = 0 ~fl.flow
-    follow ws_atlas = w_atlas
-    prop pv_atlas = 0 ~m.enter
-    follow pv_atlas = p_atlas
-    on change p_atlas while p_atlas { xs_atlas: x_atlas ~1ms; ws_atlas: w_atlas ~1ms }
+    prop xs_overview = 0 ~fl.flow
+    follow xs_overview = x_overview
+    prop ws_overview = 0 ~fl.flow
+    follow ws_overview = w_overview
+    prop pv_overview = 0 ~m.enter
+    follow pv_overview = p_overview
+    on change p_overview while p_overview { xs_overview: x_overview ~1ms; ws_overview: w_overview ~1ms }
     prop xs_core = 0 ~fl.flow
     follow xs_core = x_core
     prop ws_core = 0 ~fl.flow
@@ -1475,7 +1454,7 @@ scene Mooi {
     figure i_clipboard = file "icons/clipboard.svg"
     figure i_power = file "icons/power.svg"
     figure i_window = file "icons/window.svg"
-    figure i_atlas = file "icons/atlas.svg"
+    figure i_overview = file "icons/overview.svg"
     figure i_music = file "icons/music.svg"
     figure i_settings = file "icons/settings.svg"
     figure i_wallpaper = file "icons/wallpaper.svg"
@@ -1516,7 +1495,7 @@ scene Mooi {
     // are above it; a press inside a panel never reaches it. The overview, the shutter and the
     // Atlas are surfaces of their own (overlay), above this one: they never see it.
     group {
-        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or open == atlas or stash_pin
+        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin
         zone box dismiss { from: 0, 0; size: screen.width, screen.height; role: region; label: "Close the open panel" }
         on press dismiss while qn_open { qn_open = false }
         on press dismiss while mark_open { mark_open = false }
@@ -1524,7 +1503,6 @@ scene Mooi {
         on press dismiss while open == window { open = none }
         on press dismiss while open == system { open = none }
         on press dismiss while open == command { open = none }
-        on press dismiss while open == atlas { open = none; atlas_mode = browse }
         on press dismiss while stash_pin { stash_pin = false }
     }
 
@@ -1650,8 +1628,8 @@ scene Mooi {
     let hx_b = frame_x + chain_span + 2
     let pt = fl.top
     let pb = fl.top + fl.mod_h
-    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper))
-    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper))
+    let hc_x = if(bar_full, px, pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper))
+    let hc_w = if(bar_full, pw, (pick(wsf_b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(wsf_b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - pick(wsf_a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper))
     let hc_r = if(bar_full, st_radius + 1, fl.radius)
     // the outline's colour by weight (bar.outline_colour: subtle · bright · accent)
     let ob = clamp(st_ocol, 0, 1)
@@ -1842,8 +1820,8 @@ scene Mooi {
     // On a mechanism each group is a machined housing a little wider than its group, so
     // neighbouring housings meet at a seam and the bar reads as one machine.
     for f in frames {
-        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)
-        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - fx
+        let fx = pick(f.a, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)
+        let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - fx
         let own = helix_edges and f.a == wsf_a        // the workspaces' island, drawn as the helix
         group {
             show: not bar_full and not st_notch and not own
@@ -1862,8 +1840,8 @@ scene Mooi {
     // The hairlines between the members of a group (and, in full mode, between groups); on a
     // mechanism a group's seam in the full panel is a vent of three slots.
     for d in dividers {
-        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)            // where the module before the divider ends
-        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)                          // where the one after it begins
+        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)            // where the module before the divider ends
+        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)                          // where the one after it begins
         let dx = if(d.strong, (pe + ms) / 2, ms)
         line { from: dx, fl.top + if(d.strong, 5, 8); to: dx, fl.top + fl.mod_h - if(d.strong, 5, 8); width: 1
                color: if(d.strong, fl.trace, fl.trace_dim); show: not (mech and d.strong) and (not d.strong or ms - pe < 40) }
@@ -2574,17 +2552,17 @@ scene Mooi {
         on press dwin { emit open_window }
     }
     group {
-        show: p_atlas
-        move: xs_atlas, 0
-        opacity: pv_atlas
-        zone box datlas { from: 0, fl.top; size: ws_atlas, fl.mod_h; cursor: pointer; role: button
-                          label: "Workspace Atlas — every window, by workspace" }
-        Pill(ws_atlas, max(datlas.hover, rv.atlas))
+        show: p_overview
+        move: xs_overview, 0
+        opacity: pv_overview
+        zone box doverview { from: 0, fl.top; size: ws_overview, fl.mod_h; cursor: pointer; role: button
+                             label: "Overview — every workspace zoomed out (Super+Tab)" }
+        Pill(ws_overview, max(doverview.hover, ov_z))
         group {
-            glow: 5, (60% * max(datlas.hover, rv.atlas)) * st_glow, fl.phos
-            figure i_atlas { at: ws_atlas / 2, fl.cy; size: 16, 16; color: mix(fl.trace, fl.phos, max(datlas.hover, rv.atlas)) }
+            glow: 5, (60% * max(doverview.hover, ov_z)) * st_glow, fl.phos
+            figure i_overview { at: ws_overview / 2, fl.cy; size: 16, 16; color: mix(fl.trace, fl.phos, max(doverview.hover, ov_z)) }
         }
-        on press datlas { emit open_atlas }
+        on press doverview { emit open_overview }
     }
     group {
         show: p_core
@@ -2782,7 +2760,7 @@ scene Mooi {
     // Over the bar, where it will land: its outline at the pointer, a line through its middle.
     group {
         show: ed_drag >= 0 and ed_y <= st_res + 4 and not ed_merge
-        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)
+        let gw = pick(max(ed_drag, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)
         box { at: ed_x, fl.cy; size: gw, fl.mod_h; corner: fl.radius; stroke: 1.4; color: fl.phos; opacity: 0.9 }
         line { from: ed_x, fl.top - 3; to: ed_x, fl.top + fl.mod_h + 3; width: 1; color: fl.flare }
     }
@@ -3057,17 +3035,17 @@ scene Mooi {
     on release ez_actions while ed_drag == 21 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_actions while ed_drag < 0 and ed_press == 21 { ed_sel = if(ed_sel == 21, -1, 21); ed_press = -1 }
     group {
-        show: bar_edit and p_atlas
-        zone box ez_atlas { from: xs_atlas, fl.top; size: ws_atlas, fl.mod_h; cursor: grab; role: button; label: "Move Atlas" }
-        box { from: xs_atlas + 1, fl.top + 1; size: ws_atlas - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 22 and ed_merge, fl.ember_fill, fl.well)
-              opacity: if(ed_drag == 22, 0.6, if(ed_sel == 22, 0.4, 0.2 * ez_atlas.hover)) }
-        box { from: xs_atlas + 1, fl.top + 1; size: ws_atlas - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 22, 2, 1.2)
-              color: if(ed_sel == 22 or ed_drag == 22, fl.flare, mix(fl.trace_lit, fl.flare, ez_atlas.hover)); opacity: if(ed_drag >= 0 and ed_drag != 22, 0.45, 0.85) }
+        show: bar_edit and p_overview
+        zone box ez_overview { from: xs_overview, fl.top; size: ws_overview, fl.mod_h; cursor: grab; role: button; label: "Move Overview" }
+        box { from: xs_overview + 1, fl.top + 1; size: ws_overview - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 22 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 22, 0.6, if(ed_sel == 22, 0.4, 0.2 * ez_overview.hover)) }
+        box { from: xs_overview + 1, fl.top + 1; size: ws_overview - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 22, 2, 1.2)
+              color: if(ed_sel == 22 or ed_drag == 22, fl.flare, mix(fl.trace_lit, fl.flare, ez_overview.hover)); opacity: if(ed_drag >= 0 and ed_drag != 22, 0.45, 0.85) }
     }
-    on press ez_atlas while bar_edit { ed_press = 22; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-    on drag ez_atlas while ed_press == 22 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 22; ed_sel = -1 }
-    on release ez_atlas while ed_drag == 22 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-    on release ez_atlas while ed_drag < 0 and ed_press == 22 { ed_sel = if(ed_sel == 22, -1, 22); ed_press = -1 }
+    on press ez_overview while bar_edit { ed_press = 22; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_overview while ed_press == 22 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 22; ed_sel = -1 }
+    on release ez_overview while ed_drag == 22 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_overview while ed_drag < 0 and ed_press == 22 { ed_sel = if(ed_sel == 22, -1, 22); ed_press = -1 }
     group {
         show: bar_edit and p_core
         zone box ez_core { from: xs_core, fl.top; size: ws_core, fl.mod_h; cursor: grab; role: button; label: "Move Search" }
@@ -3141,17 +3119,17 @@ scene Mooi {
     on release ez_nexus while ed_drag == 28 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_nexus while ed_drag < 0 and ed_press == 28 { ed_sel = if(ed_sel == 28, -1, 28); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_atlas, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_atlas, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_atlas, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_atlas, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Atlas", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
@@ -3654,229 +3632,6 @@ scene Mooi {
                     text pick(battery.charging, "{battery.percent, 0} % · on battery", "{battery.percent, 0} % · charging") { at: 16, sh - 20; anchor: left center; size: 10.5; color: if(low, status.error, fg.secondary); show: battery.present }
                     text "↑↓  ←→  m mute  esc" { at: 284, sh - 20; anchor: right center; size: 10.5; color: fg.muted }
                 }
-            }
-        }
-    }
-    // ── atlas_island (drawn in the bar's own surface, under the bar's strip: D53) ──
-    group {
-        move: 0, st_res + 6
-
-        // Under the module that opens it (D53): a strip as wide as the screen whose panel sits
-        // under the module's middle, kept on the screen; the strip's empty parts let presses through.
-        let at_ox = clamp((if(p_atlas, xs_atlas + ws_atlas / 2, screen.width / 2)) - 590, 8, screen.width - 1188)
-        // nothing drawn for its last frames open, so the picture a closed full-screen surface keeps is empty
-        group {
-            show: rv.atlas > 0.03
-            move: at_ox, 0
-
-            // The board gives the move strip its room while the strip is up; the springs carry
-            // the tiles down and back, so a mode change interrupts cleanly.
-            prop bh = 430 ~m.reflow
-            follow bh = if(atlas_mode == move, 348, 430)
-            prop mv = 0 ~m.select
-            follow mv = if(atlas_mode == move, 1, 0)
-            // The grid is 580 wide; the board takes the width of the screen's middle. The frame
-            // widens between them, centred, so the surface's own place never moves.
-            prop afw = 580 ~m.expand
-            follow afw = if(atlas_view > 0.5, 1160, 580)
-            prop afh = 520 ~m.expand
-            follow afh = if(atlas_view > 0.5, 600, 520)
-            let aox = (1180 - afw) / 2
-            let cw = min(220, 1120 / max(atlas_cols, 1))      // a board column's pitch
-
-            group {
-            move: aox, 0
-            IslandFrame(rv.atlas, afw, afh, centre: true, aw: 80, ah: 48) {
-                text "WORKSPACE ATLAS" { at: 20, 24; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-                // What happened, in the logic's own words — never "it must have worked".
-                text feedback { at: 560, 24; anchor: right center; size: 10.5; width: 320; lines: 1
-                                color: if(note.failed, status.error, status.ok); opacity: fb }
-                text pick(if(atlas_mode == move, 3, if(atlas_view > 1.5, 2, if(atlas_view > 0.5, 1, 0))), "←→ ↑↓ select   ↵ focus   m move   v next view   p previews   esc close",
-                                              "drag a window to another workspace   press to focus it   v next view   esc close",
-                                              "drag a window to another monitor or onto a workspace   press a workspace to go there   v next view",
-                                              "Moving — choose a workspace in the strip below") {
-                    at: 20, 48; anchor: left center; size: 11; color: fg.muted; width: 540; lines: 1 }
-                // the two views, a press apart
-                zone box aview0 { from: afw - 280, 40; size: 84, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view < 0.5; label: "Windows" }
-                zone box aview1 { from: afw - 192, 40; size: 88, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view > 0.5 and atlas_view < 1.5; label: "Workspaces" }
-                zone box aview2 { from: afw - 100, 40; size: 80, 22; corner: 5; cursor: pointer; role: tab; selected: atlas_view > 1.5; label: "Spatial" }
-                BtnFace(84, 22, aview0.hover, if(atlas_view < 0.5, 1, 0)) { move: afw - 280, 40 }
-                BtnFace(88, 22, aview1.hover, if(atlas_view > 0.5 and atlas_view < 1.5, 1, 0)) { move: afw - 192, 40 }
-                BtnFace(80, 22, aview2.hover, if(atlas_view > 1.5, 1, 0)) { move: afw - 100, 40 }
-                text "WINDOWS" { at: afw - 238, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view < 0.5, accent.primary, fg.muted) }
-                text "WORKSPACES" { at: afw - 148, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view > 0.5 and atlas_view < 1.5, accent.primary, fg.muted) }
-                text "SPATIAL" { at: afw - 60, 51; anchor: center; size: 10; weight: 700; color: if(atlas_view > 1.5, accent.primary, fg.muted) }
-                on press aview0 { atlas_view = 0; atlas_mode = browse }
-                on press aview1 { atlas_view = 1; atlas_mode = browse }
-                on press aview2 { atlas_view = 2; atlas_mode = browse }
-                text "No windows are open" {
-                    at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count == 0 }
-                text "Previews are off — p takes their pictures again" {
-                    at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count > 0 and not previews }
-                text "No preview pictures from this compositor; the windows are named only" {
-                    at: 20, 78; anchor: left center; size: 12; color: fg.muted; show: atlas_view < 0.5 and atlas_tiles.count > 0 and previews and not thumbnails.capturing }
-
-                column atlas_list {
-                    show: atlas_view < 0.5
-                    at: 20, 76
-                    size: 540, bh
-                    view: 540, bh
-                    step: 236
-                    content: ceil(atlas_tiles.count / 2) * 236
-
-                    grid {
-                        columns: 2
-                        gap: 12
-                        width: 540
-                        row: 224
-
-                        repeat i in 0..40 {
-                            group {
-                                show: i < atlas_tiles.count
-                                span: 1
-                                zone box atlas_window.$i { from: 0, 0; size: 264, 224; corner: g.radius.item; cursor: pointer
-                                    active: not atlas_busy and atlas_mode == browse
-                                    label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"
-                                    role: button; selected: atlas_sel == i }
-                                box { from: 0, 0; size: 264, 224; corner: g.radius.item
-                                    color: mix(surface.primary, surface.elevated, atlas_window.$i.hover) }
-                                image atlas_tiles.$i.picture { at: 8, 8; size: 248, 140; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                                text "PRIVATE" { at: 132, 78; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.muted; show: atlas_tiles.$i.priv }
-                                box { from: 0, 0; size: 264, 224; corner: g.radius.item; stroke: 1.5
-                                    color: if(atlas_sel == i, focus.ring, border.subtle); opacity: if(atlas_sel == i, 1, 0.7) }
-                                text atlas_tiles.$i.app { at: 12, 188; anchor: left center; size: 10; weight: 700; color: accent.primary; width: 240; lines: 1 }
-                                text atlas_tiles.$i.title { at: 12, 207; anchor: left center; size: 11; color: fg.primary; width: 240; lines: 1 }
-                                text pick(atlas_tiles.$i.ws < 0, "WS {atlas_tiles.$i.ws}", "SCRATCHPAD") { at: 252, 188; anchor: right center; size: 10; color: fg.muted }   // Hyprland numbers special workspaces below zero
-                                on enter atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i }
-                                on press atlas_window.$i while open == atlas and not atlas_busy and atlas_mode == browse { atlas_sel = i; emit atlas_window(i) }
-                            }
-                        }
-                    }
-                }
-
-                // ── The workspaces board ──
-                // A column per workspace (the map: the active one ringed), its windows stacked in it as
-                // small previews. A window carried.$i to another column goes to that workspace, and the
-                // column under it lights while it is carried.$i; a press without moving focuses it.
-                group {
-                    show: atlas_view > 0.5 and atlas_view < 1.5
-                    let th = (cw - 16) * 0.5625
-                    let target = clamp(floor((sp_hx - 20) / cw), 0, max(atlas_cols - 1, 0))
-                    repeat j in 0..16 {
-                        group {
-                            show: j < atlas_cols
-                            let lit.$j = if(bd_drag >= 0 and target == j, 1, 0)
-                            box { from: 20 + j * cw, 76; size: cw - 8, 504; corner: g.radius.item; color: mix(surface.primary, selection.bg, 0.5 * lit.$j) }
-                            box { from: 20 + j * cw, 76; size: cw - 8, 504; corner: g.radius.item; stroke: if(spaces.$j.active, 1.6, 1)
-                                  color: if(spaces.$j.active or lit.$j > 0.5, focus.ring, border.subtle); opacity: if(spaces.$j.active or lit.$j > 0.5, 1, 0.6) }
-                            text "{spaces.$j.id}" { at: 32 + j * cw, 92; anchor: left center; size: 13; weight: 700
-                                                    color: if(spaces.$j.active, accent.primary, fg.secondary) }
-                            text "{spaces.$j.windows} ×" { at: 12 + (j + 1) * cw - 10, 92; anchor: right center; size: 10; color: fg.muted; show: spaces.$j.windows > 0 }
-                        }
-                    }
-                    repeat i in 0..40 {
-                        let tx.$i = 24 + atlas_tiles.$i.col * cw
-                        let ty.$i = 106 + atlas_tiles.$i.row * (th + 30)
-                        let carried.$i = bd_drag == i
-                        group {
-                            show: i < atlas_tiles.count and atlas_tiles.$i.col >= 0 and atlas_tiles.$i.col < atlas_cols
-                            move: if(carried.$i, sp_hx - tx.$i - (cw - 16) / 2, 0), if(carried.$i, sp_hy - ty.$i - th / 2, 0)
-                            opacity: if(carried.$i, 0.85, 1)
-                            zone box btile.$i { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; cursor: grab
-                                                label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"; role: button }
-                            box { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; color: mix(surface.elevated, selection.bg, btile.$i.hover * 0.6) }
-                            image atlas_tiles.$i.picture { at: tx.$i + 3, ty.$i + 3; size: cw - 22, th - 3; opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                            text "PRIVATE" { at: tx.$i + (cw - 16) / 2, ty.$i + th / 2; anchor: center; size: 9; family: "Share Tech Mono"; color: fg.muted; show: atlas_tiles.$i.priv }
-                            box { from: tx.$i, ty.$i; size: cw - 16, th + 24; corner: 6; stroke: if(carried.$i, 1.6, 1); color: if(carried.$i, focus.ring, border.subtle) }
-                            text atlas_tiles.$i.app { at: tx.$i + 6, ty.$i + th + 12; anchor: left center; size: 10; weight: 700; color: accent.primary; width: cw - 28; lines: 1 }
-                            on press btile.$i while open == atlas and not atlas_busy { bd_press = i; bd_px = pointer.x }
-                            on drag btile.$i while bd_press == i and bd_drag < 0 and abs(pointer.x - bd_px) > 6 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
-                            on drag btile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
-                            on release btile.$i while bd_drag == i { emit atlas_drop(i * 100 + clamp(floor((local.x - 20) / cw), 0, max(atlas_cols - 1, 0))); bd_drag = -1; bd_press = -1 }
-                            on release btile.$i while bd_drag < 0 and bd_press == i { bd_press = -1; atlas_sel = i; emit atlas_window(i) }
-                        }
-                    }
-                }
-
-                // ── Spatial: the monitors as they are laid out ──
-                // Each monitor to scale, where it is; in it the windows of the workspace it shows, where
-                // they are, with their pictures; under it its workspaces. Carried to another monitor a
-                // window goes to the workspace that one shows, onto a chip to that workspace; a press on
-                // a window focuses it, on a chip goes there.
-                group {
-                    show: atlas_view > 1.5
-                    for m in sp_mons {
-                        box { from: m.x, m.y; size: m.w, m.h; corner: 6; color: bg.primary }
-                        box { from: m.x, m.y; size: m.w, m.h; corner: 6; stroke: 1.2; color: border.subtle }
-                        text "{upper(m.name)}" { at: m.x + 10, m.y + 14; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-                        text "WS {m.ws}" { at: m.x + m.w - 10, m.y + 14; anchor: right center; size: 10; weight: 700; color: accent.primary }
-                    }
-                    // the monitor (or the chip) a carried window is over lights
-                    for m in sp_mons {
-                        box { from: m.x, m.y; size: m.w, m.h; corner: 6; stroke: 2; color: focus.ring
-                              show: bd_drag >= 0 and sp_hx >= m.x and sp_hx <= m.x + m.w and sp_hy >= m.y and sp_hy <= m.y + m.h }
-                    }
-                    for c in sp_chips {
-                        zone box schip { from: c.x, c.y; size: c.w, c.h; corner: 5; cursor: pointer; role: button; selected: c.active
-                                         label: "Workspace {c.ws}{? · {c.windows} windows}" }
-                        let over = bd_drag >= 0 and sp_hx >= c.x and sp_hx <= c.x + c.w and sp_hy >= c.y and sp_hy <= c.y + c.h
-                        BtnFace(c.w, c.h, max(schip.hover, if(over, 1, 0)), if(c.active, 1, 0)) { move: c.x, c.y }
-                        text "{c.ws}" { at: c.x + c.w / 2, c.y + c.h / 2; anchor: center; size: 11; weight: 700; color: if(c.active, accent.primary, fg.primary) }
-                        box { at: c.x + c.w / 2, c.y + c.h - 3; size: 8, 2; corner: 1; color: fg.muted; show: c.windows > 0 and not c.active }
-                        on press schip while open == atlas and not atlas_busy { emit sp_chip(c.index) }
-                    }
-                    repeat i in 0..40 {
-                        let scar.$i = bd_drag == i
-                        group {
-                            show: i < atlas_tiles.count and atlas_tiles.$i.svis
-                            move: if(scar.$i, sp_hx - atlas_tiles.$i.sx - atlas_tiles.$i.sw / 2, 0), if(scar.$i, sp_hy - atlas_tiles.$i.sy - atlas_tiles.$i.sh / 2, 0)
-                            opacity: if(scar.$i, 0.85, 1)
-                            zone box stile.$i { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: max(atlas_tiles.$i.sw, 6), max(atlas_tiles.$i.sh, 6); cursor: grab
-                                                label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}"; role: button; selected: atlas_sel == i }
-                            box { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: atlas_tiles.$i.sw, atlas_tiles.$i.sh; corner: 3; color: surface.elevated }
-                            image atlas_tiles.$i.picture { at: atlas_tiles.$i.sx + 1, atlas_tiles.$i.sy + 1; size: atlas_tiles.$i.sw - 2, atlas_tiles.$i.sh - 2
-                                                           opacity: if(atlas_tiles.$i.stale, 50%, 100%) }
-                            box { from: atlas_tiles.$i.sx, atlas_tiles.$i.sy; size: atlas_tiles.$i.sw, atlas_tiles.$i.sh; corner: 3; stroke: if(atlas_sel == i or scar.$i, 1.6, 1)
-                                  color: if(atlas_sel == i or scar.$i, focus.ring, mix(border.subtle, accent.primary, stile.$i.hover)) }
-                            box { from: atlas_tiles.$i.sx + 4, atlas_tiles.$i.sy + 4; size: min(atlas_tiles.$i.sw - 8, 120), 16; corner: 3; color: bg.primary; opacity: 0.8; show: atlas_tiles.$i.sw > 50 }
-                            text atlas_tiles.$i.app { at: atlas_tiles.$i.sx + 8, atlas_tiles.$i.sy + 12; anchor: left center; size: 10; weight: 700; color: accent.primary
-                                                      width: min(atlas_tiles.$i.sw - 14, 112); lines: 1; show: atlas_tiles.$i.sw > 50 }
-                            on press stile.$i while open == atlas and not atlas_busy { bd_press = i; bd_px = pointer.x }
-                            on drag stile.$i while bd_press == i and bd_drag < 0 and abs(pointer.x - bd_px) > 6 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
-                            on drag stile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
-                            on release stile.$i while bd_drag == i { emit sp_drop(i * 1000000 + round(clamp(local.x, 0, 999)) * 1000 + round(clamp(local.y, 0, 999))); bd_drag = -1; bd_press = -1 }
-                            on release stile.$i while bd_drag < 0 and bd_press == i { bd_press = -1; atlas_sel = i; emit atlas_window(i) }
-                        }
-                    }
-                    text "No monitors reported" { at: 20, 100; anchor: left center; size: 12; color: fg.muted; show: sp_mons.count < 1 }
-                }
-
-                // Move mode: where the selected window should go. The strip is the bounded map
-                // `spaces` — the same `workspaces` data the Spine's numbers come from — so
-                // an empty slot can be chosen, and Hyprland creates it when the window lands.
-                group {
-                    show: atlas_mode == move
-                    opacity: mv
-                    box { from: 0, 430; size: 580, 90; corner: g.radius; color: surface.primary }
-                    box { from: 16, 430; size: 548, 1; color: border.subtle }
-                    text "MOVE {atlas_target} TO" { at: 20, 448; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 430; lines: 1 }
-                    text "↵ move   esc cancel" { at: 560, 448; anchor: right center; size: 10.5; color: fg.muted }
-                    repeat j in 0..16 {
-                        group {
-                            show: j < ws_max
-                            move: 20 + j * 33, 462
-                            let here = spaces.$j.id == atlas_ws
-                            zone box mslot.$j { from: 0, 0; size: 32, 30; corner: 6; cursor: pointer; active: not atlas_busy
-                                                label: "Move to workspace {spaces.$j.id}"; role: button; selected: here }
-                            BtnFace(32, 30, mslot.$j.hover, if(here, 1, 0))
-                            text "{spaces.$j.id}" { at: 16, 14; anchor: center; size: 11; weight: 600
-                                                         color: if(spaces.$j.exists, fg.primary, fg.muted) }
-                            box { at: 16, 24; size: 10, 2; corner: 1; color: fg.muted; show: spaces.$j.windows > 0 }
-                            on press mslot.$j while open == atlas and not atlas_busy { atlas_ws = spaces.$j.id; emit atlas_move }
-                        }
-                    }
-                }
-            }
             }
         }
     }
@@ -5179,8 +4934,6 @@ scene Mooi {
     on open_window while open != window { open = window; phase = compact; sel = 0; arming = false; target_ok = false; mark_open = false }
     on open_system while open == system { open = none }
     on open_system while open != system { open = system; phase = compact; mark_open = false }
-    on open_atlas while open == atlas { open = none; atlas_mode = browse }
-    on open_atlas while open != atlas { open = atlas; atlas_sel = 0; atlas_mode = browse; blur; mark_open = false }
     on open_command while open == command { open = none; blur }
     on open_command while open != command { open = command; cmode = list; csel = 0; carming = false; blur; mark_open = false; focus query }
 
@@ -5264,24 +5017,7 @@ scene Mooi {
     on key Left while open == shutter and sh_dir < 0 and sh_panel < 0 { emit sh_pick(sh_plate) }
     on key Left while open == shutter and sh_dir < 0 and sh_panel >= 0 and not sh_ext { emit sh_row(sh_row) }
     on key Right while open == shutter and sh_dir < 0 { emit sh_back }
-    on key Escape while open == atlas and atlas_mode == move   { atlas_mode = browse }
-    on key Escape while open == atlas and atlas_mode == browse { open = none; atlas_mode = browse; blur }
-    on key Down while open == atlas and atlas_mode == browse and not atlas_busy { atlas_sel = min(atlas_sel + 2, max(atlas_tiles.count - 1, 0)); atlas_list.scroll: floor(min(atlas_sel + 2, max(atlas_tiles.count - 1, 0)) / 2) * 236 ~m.reflow }
-    on key Up while open == atlas and atlas_mode == browse and not atlas_busy   { atlas_sel = max(atlas_sel - 2, 0); atlas_list.scroll: floor(max(atlas_sel - 2, 0) / 2) * 236 ~m.reflow }
-    on key Right while open == atlas and atlas_mode == browse and not atlas_busy { atlas_sel = min(atlas_sel + 1, max(atlas_tiles.count - 1, 0)); atlas_list.scroll: floor(min(atlas_sel + 1, max(atlas_tiles.count - 1, 0)) / 2) * 236 ~m.reflow }
-    on key Left while open == atlas and atlas_mode == browse and not atlas_busy   { atlas_sel = max(atlas_sel - 1, 0); atlas_list.scroll: floor(max(atlas_sel - 1, 0) / 2) * 236 ~m.reflow }
-    on key Return while open == atlas and atlas_mode == browse and not atlas_busy { emit atlas_window(atlas_sel) }
-    on key space while open == atlas and atlas_mode == browse and not atlas_busy { emit atlas_window(atlas_sel) }
 
-    // Move mode: the strip chooses the workspace, ↵ gives the window to it.
-    on key m while open == atlas and atlas_mode == browse and not atlas_busy { atlas_mode = move }
-    on key m while open == atlas and atlas_mode == move { atlas_mode = browse }
-    on key p while open == atlas and not atlas_busy { emit atlas_previews }
-    on key v while open == atlas and atlas_mode == browse and not atlas_busy { atlas_view = mod(atlas_view + 1, 3) }
-    on key Right while open == atlas and atlas_mode == move and not atlas_busy { atlas_ws = mod(atlas_ws, ws_max) + 1 }
-    on key Left while open == atlas and atlas_mode == move and not atlas_busy  { atlas_ws = mod(atlas_ws - 2, ws_max) + 1 }
-    on key Return while open == atlas and atlas_mode == move and not atlas_busy { emit atlas_move }
-    on key space while open == atlas and atlas_mode == move and not atlas_busy { emit atlas_move }
     on key Escape while open == command and cmode == actions and carming     { carming = false }
     on key Escape while open == command and cmode == actions and not carming { cmode = list; focus query }
     on key Escape while open == command and cmode == list                    { open = none }

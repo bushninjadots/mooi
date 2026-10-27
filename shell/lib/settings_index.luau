@@ -98,7 +98,7 @@ local rows = {
     { title = "Columns", desc = "How many workspaces in a row", tab = 11, page = "Overview", y = 522 },
     { title = "Size", desc = "Each workspace, as a share of the screen; it shrinks if it would not fit", tab = 11, page = "Overview", y = 582 },
     { title = "Dim behind", desc = "How dark the desktop goes behind it", tab = 11, page = "Overview", y = 642 },
-    { title = "Pictures", desc = "Live pictures of windows in the Overview and the Atlas", tab = 11, page = "Overview", y = 768 },
+    { title = "Pictures", desc = "Live pictures of windows in the Overview", tab = 11, page = "Overview", y = 768 },
     { title = "Taken", desc = "As it opens and after a move (smooth), or every 3 seconds too (a small hitch each time)", tab = 11, page = "Overview", y = 828 },
     { title = "Privacy", desc = "Password managers and private browsing show no picture or title; or nothing does, for sharing the screen", tab = 11, page = "Overview", y = 888 },
     { title = "Matte", desc = "Inset the picture into a border; 0 leaves it full-bleed", tab = 13, page = "Wallpaper studio", y = 156 },

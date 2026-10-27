@@ -125,38 +125,11 @@ sat 4; [ -z "$(client "$addr" .address)" ] && ok "satellite Close (window gone �
 sleep 0.3; [ "$(get res.count)" = 0 ] && ok "…and the result disappears" || bad "still $(get res.count) results"
 say "key Escape" >/dev/null; sleep 0.2
 
-echo "the Atlas moves a window, and keeps the user where they are"
-spawn_probe; open_on_probe
-here=$(hyprctl -j activeworkspace | jq .id)
-say "emit open_atlas" >/dev/null; sleep 0.8
-[ "$(get atlas_mode)" = browse ] && ok "the Atlas opens browsing" || bad "atlas_mode = $(get atlas_mode)"
-say "key m" >/dev/null; sleep 0.3
-[ "$(get atlas_mode)" = move ] && ok "m opens the move strip" || bad "atlas_mode = $(get atlas_mode)"
-if [ "$here" -ge 1 ] && [ "$here" -le 10 ]; then
-    [ "$(get atlas_ws)" = "$here" ] && ok "the strip starts on the window's workspace ($here)" || bad "atlas_ws = $(get atlas_ws)"
-fi
-for _ in $(seq 1 12); do [ "$(get atlas_ws)" = 9 ] && break; say "key Right" >/dev/null; sleep 0.2; done
-[ "$(get atlas_ws)" = 9 ] && ok "→ chooses workspace 9" || bad "atlas_ws = $(get atlas_ws)"
-say "key Return" >/dev/null; sleep 0.3; wait_idle
-check "the tile's window moved to workspace 9" .workspace.id 9
-[ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && ok "…and the user stays on workspace $here" || bad "the user was moved to $(hyprctl -j activeworkspace | jq .id)"
-[ "$(get open)" = atlas ] && ok "…and the Atlas stays open (a move is not a choice)" || bad "open = $(get open)"
-[ "$(get atlas_mode)" = browse ] && ok "…back to browsing" || bad "atlas_mode = $(get atlas_mode)"
-[ "$(get feedback)" = "Moved to workspace 9" ] && ok "…and it says what happened" || bad "said: $(get feedback)"
-[ "$(get flash_ws)" = 9 ] && ok "the Spine confirms workspace 9" || bad "flash_ws = $(get flash_ws)"
-
-# Previews: off means nothing is captured, and the choice is not written to disk here
-# (the scene runs with MOOI_SAFE=1).
-[ "$(get previews)" = true ] && ok "previews are on by default" || bad "previews = $(get previews)"
-say "key p" >/dev/null; sleep 0.6
-[ "$(get previews)" = false ] && ok "p stops the previews" || bad "previews = $(get previews)"
-[ -z "$(get atlas_tiles.0.picture)" ] && ok "…and no picture is drawn" || bad "a picture is still drawn: $(get atlas_tiles.0.picture)"
-say "key p" >/dev/null; sleep 0.6
-[ "$(get previews)" = true ] && ok "p brings them back" || bad "previews = $(get previews)"
+echo "the Overview opens and closes"
+say "emit open_overview" >/dev/null; sleep 0.8
+[ "$(get open)" = overview ] && ok "the Overview opens" || bad "open = $(get open)"
 say "key Escape" >/dev/null; sleep 0.4
-[ "$(get open)" = none ] && ok "Esc closes the Atlas" || bad "open = $(get open)"
-hyprctl dispatch "hl.dsp.window.move({ workspace = $here, follow = false, window = \"address:$addr\" })" >/dev/null; sleep 0.3
-hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null
+[ "$(get open)" = none ] && ok "Esc closes the Overview" || bad "open = $(get open)"
 
 echo "the keyboard is really handed over (real keys, not --say)"
 if command -v wtype >/dev/null 2>&1; then
@@ -169,10 +142,9 @@ if command -v wtype >/dev/null 2>&1; then
     [ "$(get query)" = "mooi" ] && ok "typing reaches the field (the window below says $(hyprctl -j activewindow | jq -r '.class'))" || bad "typed 'mooi', the field says '$(get query)'"
     wtype -k Escape; sleep 0.5
     [ "$(get open)" = none ] && ok "Esc from a real keyboard closes the membrane" || bad "open = $(get open)"
-    say "emit open_atlas" >/dev/null; sleep 0.8
-    say "text query @$probe_class" >/dev/null; sleep 0.2
+    say "emit open_overview" >/dev/null; sleep 0.8
     wtype -k Escape; sleep 0.5
-    [ "$(get open)" = none ] && ok "…and it closes the Atlas too" || bad "open = $(get open)"
+    [ "$(get open)" = none ] && ok "…and it closes the Overview too" || bad "open = $(get open)"
     hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null; sleep 0.3
 else
     echo "  skip  wtype is not installed: the compositor's own keyboard was not tried"

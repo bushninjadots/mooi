@@ -250,7 +250,7 @@ local NAMES = {
     notifications = "Notifications", mic = "Microphone", volume = "Volume", brightness = "Brightness",
     battery = "Battery", network = "Network", bluetooth = "Bluetooth", clock = "Clock",
     caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot", clipboard = "Clipboard",
-    power = "Session", actions = "Window actions", atlas = "Atlas", core = "Search", focus = "Focus timer", settings = "Settings",
+    power = "Session", actions = "Window actions", overview = "Overview", core = "Search", focus = "Focus timer", settings = "Settings",
     notes = "Quick notes", wallpaper = "Wallpaper studio", gap = "Spacer",
 }
 local SIDE_NAME = { left = "LEFT", center = "CENTRE", right = "RIGHT" }

@@ -526,13 +526,13 @@ function fill_icons()
         for _, r in ipairs(ws_rows) do r.icon = by_ws[r.id] or ""; r.iconed = r.icon ~= "" end
         model.spaces = ws_rows
     end)
-end          -- the last map, for the names the Atlas and the membrane ask about
+end          -- the last map, for the names the Overview and the membrane ask about
 sys.watch("workspaces", function(w)
     atlas_active = tonumber(w.active) or atlas_active
     ws_list = w.list or {}
     local count = #ws_rows
     ws_rows = spaces.rows(w.list or {}, atlas_active, fact.ws_max)
-    model.spaces = ws_rows   -- the Mechanism's chain and the Atlas's move strip, one map
+    model.spaces = ws_rows   -- the bar's switchers and the Overview, one map
     -- The map grows past the setting to reach the focus (lib/spaces), so the switcher's width
     -- changes with it.
     if #ws_rows ~= count and bar then bar.relayout() end
@@ -554,7 +554,7 @@ sys.watch("workspaces", function(w)
     if settings.bar.workspaces == "segments" then fill_icons() end
 end)
 
--- ── The Atlas: the windows Hyprland lists, with a picture where one is given ──
+-- ── The Overview's board: the windows Hyprland lists, with a picture where one is given ──
 -- Hyprland's clients are the tiles: each brings its own address and workspace, so
 -- every tile can be focused. `thumbnails` only lends the pictures —the ids it goes
 -- by are the compositor's own, not Hyprland addresses— so a picture is matched to a
@@ -568,17 +568,6 @@ local function atlas_tile(index)
     return model.atlas_tiles[(tonumber(index) or -1) + 1]
 end
 
--- The move strip is about the selected tile: its name, and the workspace it is on
--- to start from (only while browsing: the strip's own choice is not taken back).
-local function sync_move_target()
-    local item = atlas_tile(fact.atlas_sel)
-    if not item then text.atlas_target = "" return end
-    text.atlas_target = tostring(item.app ~= "" and item.app or "window") .. ": " .. tostring(item.title or "")
-    local ws = tonumber(item.ws)
-    if fact.atlas_mode ~= "move" and ws and ws >= 1 and ws <= fact.ws_max then fact.atlas_ws = ws end
-end
-
-local spatial = nil            -- the spatial view's geometry, last built (lib/atlas)
 -- The Overview's hands (D39): the windows marked to go together (by address, so a rebuilt board
 -- keeps them), the one the keyboard picked, and the last move, to take back.
 local ov_marked = {}
@@ -669,21 +658,6 @@ function build_now(done)
             }
             rows[#rows].iconed = rows[#rows].icon ~= ""
         end
-        -- The board: a column per workspace on the map (1 … its length), the windows stacked in
-        -- each; a window elsewhere (a special workspace) has no column.
-        local cols = #ws_rows > 0 and #ws_rows or fact.ws_max
-        local in_col = {}
-        for _, r in ipairs(rows) do
-            local ws = tonumber(r.ws) or 0
-            if ws >= 1 and ws <= cols then
-                r.col = ws - 1
-                in_col[ws] = (in_col[ws] or 0) + 1
-                r.row = in_col[ws] - 1
-            else r.col, r.row = -1, 0 end
-        end
-        fact.atlas_cols = cols
-        -- The spatial view: the monitors as they are laid out, each window where it really is on
-        -- the workspace its monitor shows (lib/atlas). Asked of Hyprland with the clients.
         local function finish()
             board = rows
             -- the keyboard's pick follows its window, wherever the rebuilt board put it
@@ -694,26 +668,16 @@ function build_now(done)
             end
             if picked < 0 then ov_picked = nil end
             fact.ov_win, fact.ov_nmark = picked, marks
-            -- Only while the Atlas is up: a model nobody looks at is work for nothing, and
+            -- Only while the Overview is up: a model nobody looks at is work for nothing, and
             -- the board is left as it is while it leaves, so the way out is whole.
             if atlas_up() then
                 model.atlas_tiles = rows
-                sync_move_target()
                 if fact.ov_searching then apply_search() end
             end
             if done then done() end
         end
         run("hyprctl", { "-j", "monitors" }, function(mout, mcode)
             local monitors = mcode == 0 and decode(mout) or {}
-            spatial = atlas_geo.spatial(monitors, clients, ws_list, { x = 20, y = 76, w = 1120, h = 508 })
-            for i, r in ipairs(rows) do
-                local g = spatial.wins[clients[i] and clients[i].address or ""]
-                r.sx, r.sy, r.sw, r.sh, r.svis = g and g.x or 0, g and g.y or 0, g and g.w or 0, g and g.h or 0, g ~= nil
-            end
-            local mons = {}
-            for _, m in ipairs(spatial.mons) do mons[#mons + 1] = { name = m.name, x = m.x, y = m.y, w = m.w, h = m.h, ws = m.ws } end
-            model.sp_mons = mons
-            model.sp_chips = spatial.chips
             -- The Overview (D37): a page of workspaces, rows × columns — the page the active one is
             -- on — each window placed in its workspace's cell by where it is on its monitor.
             for _, m in ipairs(monitors) do
@@ -794,25 +758,6 @@ function build_now(done)
     end)
 end
 
--- A window carried across the spatial view: dropped on another monitor it goes to the workspace
--- that monitor shows, on a chip to that workspace (`n` = 1000000 · tile + 1000 · x + y).
-on("sp_drop", function(v)
-    local n = math.floor(tonumber(v) or -1)
-    local item = atlas_tile(math.floor(n / 1000000))
-    local ws = spatial and atlas_geo.drop(spatial, math.floor(n / 1000) % 1000, n % 1000)
-    if not item or not ws then
-        log(string.format("atlas · a window let go at %d, %d lands nowhere", math.floor(n / 1000) % 1000, n % 1000))
-        return
-    end
-    if tonumber(item.ws) == ws then return end
-    if not hypr.valid_address(item.address) then report(false, "That tile is not a window any more"); return end
-    fact.atlas_busy = true
-    run_action("move", item.address, { workspace = ws, follow = false }, function(ok)
-        fact.atlas_busy = false
-        if ok then fact.flash_ws = ws; emit("moved"); build_tiles() end
-    end)
-end)
--- A workspace chip pressed: that workspace, on its monitor.
 -- The Overview: a window carried to another cell goes to that workspace (`n` = 100 · tile + cell);
 -- a cell chosen is gone to (its id from the page the Overview shows).
 -- What a move did, on the Overview's hint line for a few seconds.
@@ -1280,22 +1225,17 @@ on("fact:open", function(v)
         end
     end)
 end)
-on("sp_chip", function(v)
-    local c = spatial and spatial.chips[math.floor(tonumber(v) or -1) + 1]
-    if c then sys.call("workspaces.focus", c.ws); after(120, build_tiles) end
-end)
 
--- Pictures are asked for only while the Atlas shows them: a compositor copying
+-- Pictures are asked for only while the Overview shows them: a compositor copying
 -- nothing is a compositor doing nothing. Previews off means they are given back and
 -- never asked for again until they are on.
--- The Atlas or the Overview is up: both show the board and its pictures.
-function atlas_up() return fact.open == "atlas" or fact.open == "overview" end
+function atlas_up() return fact.open == "overview" end
 -- Privacy (atlas.private) narrows it to the windows it lets be seen: the rest are never copied.
 -- The Overview takes its pictures in bursts (D40): copying windows that change all the time —a
 -- terminal at work, a browser— cost one frame in ten under a carried window, live copies one in two,
 -- and starting or stopping the copies costs a frame or three of its own. So it copies for a moment
 -- once it has unfolded and again after a move; in between, and all through a carry, the last
--- pictures stand. The Atlas island copies throughout.
+-- pictures stand.
 local burst = false
 local function ask_for_pictures()
     if not thumbs_watching then return end
@@ -1315,8 +1255,6 @@ local function ask_for_pictures()
     else sys.call("thumbnails.want", ids) end
     pictures_asked = want
 end
-
-on("fact:atlas_sel", sync_move_target)
 
 local bursts = 0
 function picture_burst()
@@ -1345,13 +1283,13 @@ on("fact:open", function(v)
     after(REFRESH_MS, tick)
 end)
 
--- The board is built once at startup, so the first time the Atlas is opened it has its
--- tiles at once and the strip has a workspace to start on. After that it is built only
--- while the Atlas is up (see build_tiles): a board nobody looks at is work for nothing.
+-- The board is built once at startup, so the first time the Overview is opened it has its
+-- tiles at once. After that it is built only while the Overview is up (see build_tiles): a
+-- board nobody looks at is work for nothing.
 build_tiles()
 
 on("fact:open", function(v)
-    if v ~= "atlas" and v ~= "overview" then ask_for_pictures() return end
+    if v ~= "overview" then ask_for_pictures() return end
     if not thumbs_watching then
         thumbs_watching = sys.watch("thumbnails", function(state)
             thumbs = state.list or {}
@@ -1360,125 +1298,18 @@ on("fact:open", function(v)
         end) == true
     end
     model.atlas_tiles = board   -- the last board at once: no empty frame while it is read
-    -- The strip starts on the selected tile's workspace now, from the board we already
-    -- have: the fresh board arrives from `hyprctl` a moment later, and the strip may be
-    -- up by then — a late reply must not be what decides where it points.
-    sync_move_target()
     ask_for_pictures()
     build_tiles()
 end)
 
-local atlas_request = 0
-on("fact:open", function(v)
-    if v ~= "atlas" then
-        atlas_request = atlas_request + 1 -- ignore a late reply after close or hand-over
-        fact.atlas_busy = false
-    end
-end)
+on("fact:open", function() fact.atlas_busy = false end)   -- a late reply after a close is not waited for
 on("atlas_window", function(index)
     local item = atlas_tile(index)
     if not item or not hypr.valid_address(item.address) then return end
     fact.atlas_busy = true
     run_action("focus", item.address, {}, function(ok)
         fact.atlas_busy = false
-        if ok and fact.open == "atlas" then fact.open = "none" end
     end)
-end)
-
--- Move the selected tile's window to the workspace the strip chose. The window island's
--- own verified action: Hyprland's reply is never the proof, the window read back after it
--- is — and the Spine pulses where it went, as it does for a move from the island.
-on("atlas_move", function()
-    local item = atlas_tile(fact.atlas_sel)
-    if not item or not hypr.valid_address(item.address) then
-        report(false, "That tile is not a window any more")
-        return
-    end
-    local ws = tonumber(fact.atlas_ws)
-    if not ws or ws ~= math.floor(ws) or ws < 1 or ws > fact.ws_max then
-        report(false, string.format("Workspace %s is outside the map (1 to %d)", tostring(fact.atlas_ws), fact.ws_max))
-        return
-    end
-    fact.atlas_busy = true
-    run_action("move", item.address, { workspace = ws, follow = false }, function(ok)
-        fact.atlas_busy = false
-        fact.atlas_mode = "browse"
-        if ok then
-            fact.flash_ws = ws
-            emit("moved")
-            build_tiles()     -- the tile now says where it went
-        end
-    end)
-end)
-
--- The board: a window carried to another column goes to that workspace (it stays where you
--- are: the board shows it arrive), and the column it left closes up.
-on("atlas_drop", function(v)
-    local n = math.floor(tonumber(v) or -1)
-    local item = atlas_tile(math.floor(n / 100))
-    local ws = n % 100 + 1
-    if not item or not hypr.valid_address(item.address) then report(false, "That tile is not a window any more"); return end
-    if tonumber(item.ws) == ws then return end
-    fact.atlas_busy = true
-    run_action("move", item.address, { workspace = ws, follow = false }, function(ok)
-        fact.atlas_busy = false
-        if ok then
-            fact.flash_ws = ws
-            emit("moved")
-            build_tiles()
-        end
-    end)
-end)
-
--- Preview pictures on or off. Off is a promise that nothing is captured: the frames are
--- given back at once and none is asked for again while it holds. It is a setting, so it is
--- remembered — except in safe mode, which never writes the settings file.
-on("atlas_previews", function()
-    local on = not fact.previews
-    fact.previews = on
-    if not safe_mode then
-        settings.atlas.previews = on
-        sys.call("files.write", FILE, settings)
-    end
-    if not on then thumbs = {} end
-    ask_for_pictures()
-    build_tiles()
-    report(true, on and "Preview pictures on" or "Preview pictures off")
-    log("atlas · preview pictures " .. (on and "on" or "off"))
-end)
-
-on("atlas_go", function(id)
-    local want = tonumber(id)
-    if not want or want ~= math.floor(want) or want < 1 or want > fact.ws_max or want > 99 then
-        fact.atlas_busy = false
-        report(false, string.format("Workspace %s is outside the map (1 to %d)", tostring(id), fact.ws_max))
-        return
-    end
-    atlas_request = atlas_request + 1
-    local mine = atlas_request
-    fact.atlas_busy = true
-
-    local function finish(ok)
-        if mine ~= atlas_request then return end
-        fact.atlas_busy = false
-        if ok then
-            if fact.open == "atlas" then fact.open = "none" end
-        else
-            report(false, "Hyprland did not switch to workspace " .. want)
-        end
-    end
-    if atlas_active == want then finish(true); return end
-
-    sys.call("workspaces.focus", want)
-    local tries = 0
-    local function confirm()
-        if mine ~= atlas_request then return end
-        tries = tries + 1
-        if atlas_active == want then finish(true)
-        elseif tries < 12 then after(75, confirm)
-        else finish(false) end
-    end
-    after(75, confirm)
 end)
 
 on("ws_pick", function(id)
@@ -1505,7 +1336,7 @@ text.bar_version = spaces.tail(version, 18)
 text.bar_path = spaces.tail(tostring(sys.ask("files.folder")) .. "/settings.json", 26)
 
 -- A row of the mark's menu asks, the logic writes: the setting first, then the fact the
--- bar reads. Exactly how the Atlas's previews switch works — and, like it, a safe-mode run
+-- bar reads. Like every setting written here, a safe-mode run
 -- (which is what the test harnesses use) never writes the user's file.
 on("toggle_labels", function()
     local on = not fact.bar_labels

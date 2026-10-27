@@ -153,7 +153,6 @@ M.SCHEMA = {
     { path = "keys.stop", kind = "key", default = "SUPER + ALT + SHIFT + Space" },
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
     { path = "keys.edit", kind = "key", default = "SUPER + ALT + E" },
-    { path = "keys.atlas", kind = "key", default = "SUPER + ALT + A" },
     { path = "keys.system", kind = "key", default = "SUPER + ALT + C" },
     { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },
     { path = "keys.wallpaper", kind = "key", default = "SUPER + ALT + P" },
@@ -548,6 +547,21 @@ local function migrate(t)
     end
     local b = t.bar
     if type(b) ~= "table" then return end
+    -- D90: the Workspace Atlas is gone; its bar module's place is the Overview's. An unknown
+    -- module would make the whole layout fall back to the default, so the name moves over.
+    for _, side in ipairs({ "left", "center", "right" }) do
+        if type(b[side]) == "table" then
+            for i, entry in ipairs(b[side]) do
+                if type(entry) == "string" then
+                    b[side][i] = (("+" .. entry .. "+"):gsub("%+atlas%+", "+overview+")):sub(2, -2)
+                end
+            end
+        end
+    end
+    if type(b.modules) == "table" and b.modules.atlas ~= nil then
+        if b.modules.overview == nil then b.modules.overview = b.modules.atlas end
+        b.modules.atlas = nil
+    end
     if OUTLINE[b.frame] then b.frame = OUTLINE[b.frame] end
     if b.border == false and b.mode == "full" and b.frame == "line" then b.frame = "none" end
     b.border = nil

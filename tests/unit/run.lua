@@ -317,6 +317,18 @@ test("previews are a setting, off only when false", function()
     local _, p2 = config.validate({ atlas = { previews = "off" } })
     eq(#p2, 1, "a wrong type is reported")
 end)
+test("D90: the Atlas's bar module becomes the Overview's, and the layout is kept", function()
+    local s, p = config.validate({ bar = { left = { "settings", "focus", "atlas", "clock" }, center = { "workspaces" },
+                                           right = { "tray" },
+                                           modules = { atlas = { show = false } } } })
+    eq(#p, 0, "no problems")
+    eq(s.bar.left[3], "overview", "a lone atlas entry is renamed")
+    eq(s.bar.left[1], "settings", "the rest of the layout is kept, not reset to the default")
+    eq(s.bar.modules.overview.show, false, "its per-module settings move with it")
+    local g = config.validate({ bar = { left = { "actions+atlas", "clock" }, center = {}, right = { "tray" } } })
+    eq(g.bar.left[1], "actions+overview", "inside a group too")
+    eq(config.defaults().keys.atlas, nil, "the Atlas's key is gone")
+end)
 test("out-of-range and fractional numbers are rejected", function()
     local _, p1 = config.validate({ spine = { max_workspaces = 0 } }); eq(#p1, 1, "zero")
     local _, p2 = config.validate({ spine = { max_workspaces = 99 } }); eq(#p2, 1, "too many")
@@ -1316,26 +1328,8 @@ test("shutter: its key always, Super+Alt+right-click only while asked for, nothi
     eq(has(off, "shutter"), nil, "off: no key"); eq(has(off, "shutter-here"), nil, "and no gesture")
 end)
 
-test("atlas spatial: two monitors to scale, windows where they are, a drop on a monitor or a chip", function()
+test("the Overview's grid: miniatures in the screen's shape that fit", function()
     local atlas = require("lib/atlas")
-    local mons = { { id = 0, name = "eDP-1", x = 0, y = 0, width = 1920, height = 1080, scale = 1, activeWorkspace = { id = 2 } },
-                   { id = 1, name = "HDMI-A-1", x = 1920, y = 0, width = 2560, height = 1440, scale = 1, activeWorkspace = { id = 6 } } }
-    local clients = { { address = "0xa", monitor = 0, workspace = 2, x = 0, y = 0, w = 960, h = 1080 },
-                      { address = "0xb", monitor = 1, workspace = 6, x = 1920, y = 0, w = 2560, h = 1440 },
-                      { address = "0xc", monitor = 0, workspace = 3, x = 0, y = 0, w = 100, h = 100 } }
-    local spaces = { { id = 2, monitor = "eDP-1", windows = 1 }, { id = 3, monitor = "eDP-1", windows = 1 }, { id = 6, monitor = "HDMI-A-1", windows = 1 } }
-    local sp = atlas.spatial(mons, clients, spaces, { x = 20, y = 80, w = 1120, h = 480 })
-    eq(#sp.mons, 2, "both monitors"); eq(sp.mons[1].name, "eDP-1", "left to right")
-    eq(math.abs(sp.mons[2].w / sp.mons[1].w - 2560 / 1920) < 0.001, true, "to scale")
-    eq(sp.mons[1].x + sp.mons[1].w <= sp.mons[2].x + 0.001, true, "side by side as they are")
-    eq(sp.wins["0xa"] ~= nil and math.abs(sp.wins["0xa"].w - sp.mons[1].w / 2) < 0.01, true, "half the screen, half the monitor")
-    eq(sp.wins["0xc"], nil, "a window on a workspace not shown is not drawn in the monitor")
-    eq(#sp.chips, 3, "a chip per workspace, under its monitor")
-    local c3 = nil; for _, c in ipairs(sp.chips) do if c.ws == 3 then c3 = c end end
-    eq(atlas.drop(sp, c3.x + 5, c3.y + 5), 3, "dropped on a chip: that workspace")
-    eq(atlas.drop(sp, sp.mons[2].x + 10, sp.mons[2].y + 10), 6, "on a monitor: the workspace it shows")
-    eq(atlas.drop(sp, 1, 1), nil, "outside everything: nowhere")
-    eq(#atlas.spatial({}, {}, {}, { x = 0, y = 0, w = 10, h = 10 }).mons, 0, "no monitors: nothing, and no error")
     local g = atlas.grid(1920, 1080, 2, 5, 40)
     eq(math.abs(g.cw / g.ch - 1920 / 1080) < 0.001, true, "the Overview's miniatures have the screen's shape")
     eq(g.gx >= 0 and g.gx + 5 * g.cw + 4 * g.gap <= 1920 + 0.01, true, "and fit across it")
