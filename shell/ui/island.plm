@@ -86,12 +86,12 @@ library Island {
                          width: w * 0.55; lines: 1 }
             line { from: 16, 27; to: 40, 27; width: 1.4; color: fl.phos; opacity: 0.8 }
             line { from: 44, 27; to: w - 16, 27; width: 1; color: fl.trace_dim; opacity: 0.6 }
-            text sub { at: w - 16, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: w * 0.45; lines: 1 }
+            text sub { at: w - 16, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: w * 0.45; lines: 1; align: right }
         }
         group {
             show: isl_style > 0.5
             text title { at: 16, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fg.primary; width: w * 0.55; lines: 1 }
-            text sub { at: w - 16, 18; anchor: right center; size: 11; family: "Exo 2"; color: fg.secondary; width: w * 0.45; lines: 1 }
+            text sub { at: w - 16, 18; anchor: right center; size: 11; family: "Exo 2"; color: fg.secondary; width: w * 0.45; lines: 1; align: right }
         }
     }
 

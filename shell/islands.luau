@@ -146,6 +146,20 @@ return function(ctx)
     end)
     on("wx_refresh", fetch_weather)
 
+    -- ── Sound: where it plays, and the mixer ─────────────────
+    local outputs = {}
+    pcall(sys.watch, "audio", function(a)
+        if type(a) == "table" and type(a.outputs) == "table" then outputs = a.outputs end
+    end)
+    on("snd_out", function(n)
+        local o = outputs[(tonumber(n) or -1) + 1]
+        if o and o.id then pcall(sys.call, "audio.default", o.id) end
+    end)
+    run("pavucontrol", { "--version" }, function(_, code) have.mixer = code == 0 end)
+    on("snd_mixer", function()
+        if have.mixer then spawn("pavucontrol", {}, function() end, function() end) end
+    end)
+
     on("st_open", function(n)
         local tool = (tonumber(n) == 1 and have.nvtop) and "nvtop" or "btop"
         spawn("kitty", { "--title", tool, tool }, function() end, function() end)

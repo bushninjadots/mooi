@@ -903,6 +903,8 @@ scene Mooi {
     event cal_shift ->         // to the logic: 0 the month before · 1 this month · 2 the month after
     event st_open ->           // to the logic: 0 btop · 1 nvtop, in a terminal
     event wx_refresh ->        // to the logic: fetch the forecast again now
+    event snd_out ->           // to the logic: make output n (its place in audio.outputs) the default
+    event snd_mixer ->         // to the logic: open the mixer (pavucontrol)
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
@@ -1048,7 +1050,8 @@ scene Mooi {
     service thumbnails { capturing: bool }
     service clock { time: text = "--:--"; date: text; weekday: number }
     service clock.seconds as tick { second: number }
-    service audio { volume: number; muted: bool; input: number; input_muted: bool }
+    model aouts max 8 { id: text; name: text; default: bool }
+    service audio { volume: number; muted: bool; input: number; input_muted: bool; outputs: aouts }
     service window { title: text; class: text }
     service media as med { playing: bool; title: text; artist: text }
     service brightness { present: bool; level: number }
@@ -3926,6 +3929,50 @@ scene Mooi {
                 IsleBtn(16, 326, 100, "Refresh", if(wxi_busy, 1, 0), wxref.hover)
                 on press wxref { emit wx_refresh }
                 text "open-meteo.com" { at: 324, 338; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
+            }
+        }
+    }
+
+    // ── sound_island (D97): the level, the microphone, where it plays ──
+    group {
+        move: 0, st_res + 6
+        let sn_x = clamp(isl_cx - 160, 8, screen.width - 328)
+        let snh = 214 + 26 * min(aouts.count, 6)
+        group {
+            show: rv.sound > 0.03
+            move: sn_x, 0
+            IslandFrame(rv.sound, 320, snh, tx: isl_cx - sn_x) {
+                IsleHead(320, "Sound", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"))
+                group { move: 16, 40
+                        Level("Output", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"), audio.volume * (1 - audio.muted), false, vol, 288) }
+                group { move: 16, 92
+                        Level("Microphone", pick(audio.input_muted, "{round(audio.input * 100), 0} %", "Muted"), audio.input * (1 - audio.input_muted), false, mic_vol, 288) }
+                zone box snmute { from: 16, 142; size: 90, 24; cursor: pointer; role: toggle; checked: audio.muted; label: "Mute the output" }
+                IsleBtn(16, 142, 90, "Mute", if(audio.muted, 1, 0), snmute.hover)
+                on press snmute { emit mute }
+                zone box snmic { from: 115, 142; size: 90, 24; cursor: pointer; role: toggle; checked: audio.input_muted; label: "Mute the microphone" }
+                IsleBtn(115, 142, 90, "Mic off", if(audio.input_muted, 1, 0), snmic.hover)
+                on press snmic { emit mic_mute }
+                zone box snmix { from: 214, 142; size: 90, 24; cursor: pointer; role: button; label: "Open the mixer" }
+                IsleBtn(214, 142, 90, "Mixer", 0, snmix.hover)
+                on press snmix { emit snd_mixer; open = none }
+                IsleRule(320, 178)
+                text "PLAYS ON" { at: 16, 192; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                for o in aouts {
+                    let oy = 206 + o.index * 26
+                    zone box sno { from: 10, oy; size: 300, 24; cursor: pointer; role: item; selected: o.default; label: "Play on {o.name}" }
+                    box { from: 10, oy; size: 300, 24; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well)
+                          opacity: max(if(o.default, 0.9, 0), 0.6 * sno.hover) }
+                    group {
+                        show: o.default
+                        glow: 5, (0.7) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                        ellipse { at: 22, oy + 12; radius: 3.5; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                    }
+                    ellipse { at: 22, oy + 12; radius: 3.5; stroke: 1; color: if(isl_style > 0.5, fg.muted, fl.trace); show: not o.default }
+                    text o.name { at: 36, oy + 12; anchor: left center; size: 12; family: "Exo 2"; width: 264; lines: 1
+                                  color: if(o.default, if(isl_style > 0.5, fg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.engrave)) }
+                    on press sno { emit snd_out(o.index) }
+                }
             }
         }
     }
