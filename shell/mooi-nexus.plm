@@ -14,7 +14,7 @@ import "ui/island.plm"
 
 scene Nexus {
     permissions {
-        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "cava", "curl", "magick", "kitty", "btop", "hostname", "whoami"
+        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "cava", "curl", "magick", "kitty", "btop", "hostname", "whoami", "zenity"
         services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env"
     }
 
@@ -275,6 +275,12 @@ scene Nexus {
     text nx_who = ""
     text nx_avatar = ""
     fact nx_avatar_on = false
+    text nx_banner = ""
+    fact nx_banner_on = false
+    text nx_uptime = ""
+    fact nx_naming = false       // the name is being typed
+    text nx_name_in = ""         // what is typed there
+    text nx_notice = ""          // a word after an import (or why it failed)
     text nx_initial = "M"
     // the column: each section's top and height, and whether it is folded
     fact y_toggles = 92
@@ -349,6 +355,8 @@ scene Nexus {
     text upd_t = "No word from the bar yet"
 
     event nx_close ->            // to the logic: slide away and end
+    event nx_pick ->             // to the logic: choose a picture — 0 the avatar · 1 the banner (a file picker, then `mooi identity`)
+    event nx_rename ->           // to the logic: the name typed (read from the field)
     event nx_fold ->             // to the logic: fold or unfold section n (lib/nexusdrawer ORDER, from 0)
     event nx_tog ->              // to the logic: quick toggle n (0 Wi-Fi … 8 record)
     event nx_go ->               // to the logic: open something (codes in mooi-nexus.luau GO)
@@ -385,7 +393,10 @@ scene Nexus {
     figure i_rain = file "icons/rain.svg"
     figure i_snow = file "icons/snow.svg"
     figure i_storm = file "icons/storm.svg"
-    image avatar = from nx_avatar, 44, 44
+    image avatar = from nx_avatar, 72, 72
+    image banner = from nx_banner, 960, 540
+    fact nx_bw = 388             // the banner drawn to cover its strip (the logic reads the picture's size)
+    fact nx_bh = 128
     image cover = from nx_art, 84, 84
 
     // ── Motion ───────────────────────────────────────────────
@@ -458,7 +469,7 @@ scene Nexus {
         level: top
         keyboard: on_demand
 
-        on key Escape { emit nx_close }
+        on key Escape while not nx_naming { emit nx_close }
 
         group {
             move: 440 * (1 - nx_in), nx_top
@@ -475,7 +486,7 @@ scene Nexus {
             opacity: smooth(0, 0.6, nx_in)
             group {
                 // what scrolls stays under the head
-                clip box { from: 0, 88; size: 420, nx_h - 96 }
+                clip box { from: 0, 200; size: 420, nx_h - 208 }
 
             // ── Quick toggles ──
             group {
@@ -772,31 +783,81 @@ scene Nexus {
             }
             }
 
-            // ── The head: who, when, and the ways out ──
+            // ── The profile card: the banner, who you are, the time, the ways out ──
             group {
-                box { from: 26, 18; size: 44, 44; corner: 22; color: if(isl_style > 0.5, surface.elevated, fl.well) }
-                image avatar { at: 26, 18; size: 44, 44; show: nx_avatar_on }
-                text nx_initial { at: 48, 40; anchor: center; align: center; size: 18; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, accent.primary, fl.phos); show: not nx_avatar_on }
-                text nx_name { at: 82, 30; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 170; lines: 1 }
-                text nx_who { at: 82, 48; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); width: 170; lines: 1 }
-                text clock.time { at: 82, 66; anchor: left center; size: 11; weight: 600; family: "Exo 2"; color: if(isl_style > 0.5, accent.primary, fl.phos) }
-                text clock.date { at: 124, 66; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); width: 120; lines: 1 }
-                zone box hset { from: 262, 24; size: 30, 26; cursor: pointer; role: button; label: "mooi's settings" }
-                IsleBtn(262, 24, 30, "", 0, hset.hover, 26)
-                figure i_set { at: 277, 37; size: 15, 15; color: mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), hset.hover) }
+                // the banner (or, without one, the palette's own gradient), fading into the drawer
+                group {
+                    clip box { from: 17, 9; size: 386, 128; corner: if(isl_style > 0.5, 14, 0) }
+                    body {
+                        gradient: 17, 9 to 403, 137, mix(if(isl_style > 0.5, accent.primary, fl.phos), #000000, 0.35), mix(if(isl_style > 0.5, accent.secondary, fl.ember), #000000, 0.55)
+                        box { from: 17, 9; size: 386, 128 }
+                    }
+                    image banner { at: 210 - nx_bw / 2, 73 - nx_bh / 2; size: nx_bw, nx_bh; show: nx_banner_on }
+                    box { from: 17, 97; size: 386, 14; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.25 }
+                    box { from: 17, 111; size: 386, 14; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.5 }
+                    box { from: 17, 125; size: 386, 12; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.8 }
+                    zone box bz { from: 17, 9; size: 386, 86; cursor: pointer; role: button; label: "Change the banner" }
+                    on press bz { emit nx_pick(1) }
+                    group {
+                        opacity: bz.hover
+                        box { from: 290, 70; size: 104, 20; corner: 10; color: #000000; opacity: 0.55 }
+                        text "change banner" { at: 342, 80; anchor: center; align: center; size: 10; family: "Exo 2"; color: #ffffff }
+                    }
+                }
+                // the time, large, over the banner
+                text clock.time { at: 392, 34; anchor: right center; size: 28; weight: 700; family: "Exo 2"; color: #ffffff
+                                   shadow: 0, 1, 8, 70%, #000000 }
+                text clock.date { at: 392, 56; anchor: right center; size: 11; family: "Share Tech Mono"; color: #ffffff; opacity: 0.85
+                                   shadow: 0, 1, 6, 70%, #000000 }
+                // the ways out, in a capsule on the banner
+                box { from: 24, 16; size: 132, 30; corner: 15; color: #000000; opacity: 0.45 }
+                zone box hset { from: 28, 18; size: 28, 26; cursor: pointer; role: button; label: "mooi's settings" }
+                figure i_set { at: 42, 31; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hset.hover }
                 on press hset { emit nx_go(1) }
-                zone box hlock { from: 296, 24; size: 30, 26; cursor: pointer; role: button; label: "Lock the screen" }
-                IsleBtn(296, 24, 30, "", 0, hlock.hover, 26)
-                figure i_lock { at: 311, 37; size: 15, 15; color: mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), hlock.hover) }
+                zone box hlock { from: 60, 18; size: 28, 26; cursor: pointer; role: button; label: "Lock the screen" }
+                figure i_lock { at: 74, 31; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hlock.hover }
                 on press hlock { emit nx_go(2) }
-                zone box hpow { from: 330, 24; size: 30, 26; cursor: pointer; role: button; label: "The session menu" }
-                IsleBtn(330, 24, 30, "", 0, hpow.hover, 26)
-                figure i_power { at: 345, 37; size: 15, 15; color: mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), hpow.hover) }
+                zone box hpow { from: 92, 18; size: 28, 26; cursor: pointer; role: button; label: "The session menu" }
+                figure i_power { at: 106, 31; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hpow.hover }
                 on press hpow { emit nx_go(3) }
-                zone box hx { from: 364, 24; size: 30, 26; cursor: pointer; role: button; label: "Close the Control Nexus" }
-                IsleBtn(364, 24, 30, "×", 0, hx.hover, 26)
+                zone box hx { from: 124, 18; size: 28, 26; cursor: pointer; role: button; label: "Close the Control Nexus" }
+                text "×" { at: 138, 31; anchor: center; align: center; size: 17; weight: 600; color: #ffffff; opacity: 0.75 + 0.25 * hx.hover }
                 on press hx { emit nx_close }
-                line { from: 26, 84; to: 394, 84; width: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim); opacity: 0.7 }
+
+                // the avatar, round, ringed in the accent, over the banner's edge
+                zone box az { from: 26, 100; size: 76, 76; cursor: pointer; role: button; label: "Change the profile picture" }
+                group {
+                    glow: 8, (0.7) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    ellipse { at: 64, 138; radius: 40; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                }
+                ellipse { at: 64, 138; radius: 37.5; color: if(isl_style > 0.5, bg.primary, fl.hull) }
+                group {
+                    clip box { from: 28, 102; size: 72, 72; corner: 36 }
+                    box { from: 28, 102; size: 72, 72; color: if(isl_style > 0.5, surface.elevated, fl.well) }
+                    image avatar { at: 28, 102; size: 72, 72; show: nx_avatar_on }
+                    text nx_initial { at: 64, 138; anchor: center; align: center; size: 28; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, accent.primary, fl.phos); show: not nx_avatar_on }
+                    box { from: 28, 152; size: 72, 22; color: #000000; opacity: 0.6 * az.hover }
+                    text "edit" { at: 64, 162; anchor: center; align: center; size: 10; family: "Exo 2"; color: #ffffff; opacity: az.hover }
+                }
+                on press az { emit nx_pick(0) }
+
+                // the name (a press to rename), user@host and how long it has been up
+                zone box nz { from: 110, 140; size: 230, 26; cursor: text; role: button; label: "Rename" }
+                text nx_name { at: 112, 153; anchor: left center; size: 19; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.phos); width: 230; lines: 1; show: not nx_naming }
+                line { from: 112, 166; to: 112 + 60 * nz.hover, 166; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: nz.hover; show: not nx_naming }
+                group {
+                    show: nx_naming
+                    box { from: 108, 140; size: 236, 26; corner: 6; color: if(isl_style > 0.5, surface.elevated, fl.well) }
+                    box { from: 108, 140; size: 236, 26; corner: 6; stroke: 1; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                    input nx_name_in { at: 114, 145; width: 224; size: 14; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); selection: if(isl_style > 0.5, selection.bg, fl.well)
+                                       placeholder: "Your name, then Enter" }
+                }
+                on press nz while not nx_naming { nx_naming = true; focus nx_name_in }
+                on submit nx_name_in { nx_naming = false; emit nx_rename; blur }
+                on key Escape while nx_naming { nx_naming = false; blur }
+                text "{nx_who}{?  ·  {nx_uptime}}" { at: 112, 178; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); width: 290; lines: 1 }
+                text nx_notice { at: 392, 178; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, accent.primary, fl.phos); width: 200; lines: 1; align: right }
+                line { from: 26, 196; to: 394, 196; width: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim); opacity: 0.7 }
             }
         }
     }

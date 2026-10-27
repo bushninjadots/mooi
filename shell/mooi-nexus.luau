@@ -33,7 +33,13 @@ local function launch(cmd, args, done)
 end
 local function bar(...) launch("pleamar", { "--say", "mooi", ... }) end
 
-local settings = config.parse(read(FILE), json.decode)
+-- config.parse takes the file's text (it decodes and checks it itself); handed a decoded table it
+-- saw no JSON and fell back to the defaults — your name, pictures, island style and folds lost
+local function read_text(name)
+    local ok, v = pcall(sys.ask, "files.read", name)
+    return ok and type(v) == "string" and v or nil
+end
+local settings = config.parse(read_text(FILE), json.decode)
 local screen_w = 1920
 local wifi_on, bt_powered = true, false
 local data_folder = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share") .. "/pleamar/mooi"
@@ -61,12 +67,36 @@ end
 paint()
 
 -- ── Who, and where the drawer sits (under the bar, the screen's height below it) ──
-do
+-- who you are: settings' nexus.identity (`mooi identity` imports the pictures into the data folder)
+local function show_identity()
     local id = type(settings.nexus) == "table" and type(settings.nexus.identity) == "table" and settings.nexus.identity or {}
     local name = type(id.name) == "string" and id.name ~= "" and id.name or "mooi"
     text.nx_name = name
     text.nx_initial = string.upper(string.sub(name, 1, 1))
-    if type(id.avatar) == "string" and id.avatar ~= "" then text.nx_avatar = data_folder .. "/" .. id.avatar; fact.nx_avatar_on = true end
+    local av = type(id.avatar) == "string" and id.avatar or ""
+    local bn = type(id.banner) == "string" and id.banner or ""
+    text.nx_avatar = av ~= "" and (data_folder .. "/" .. av) or ""; fact.nx_avatar_on = av ~= ""
+    text.nx_banner = bn ~= "" and (data_folder .. "/" .. bn) or ""; fact.nx_banner_on = bn ~= ""
+    -- drawn to cover the 386 × 128 strip, centred, the overflow cut by the strip
+    if bn ~= "" then
+        launch("magick", { "identify", "-format", "%w %h", data_folder .. "/" .. bn .. "[0]" }, function(out)
+            local w, h = tostring(out or ""):match("^(%d+) (%d+)")
+            w, h = tonumber(w), tonumber(h)
+            if not w or w <= 0 or h <= 0 then return end
+            local k = math.max(386 / w, 128 / h)
+            fact.nx_bw, fact.nx_bh = w * k, h * k
+        end)
+    end
+end
+local function notice(t) text.nx_notice = t; after(4000, function() if text.nx_notice == t then text.nx_notice = "" end end) end
+do
+    show_identity()
+    launch("cat", { "/proc/uptime" }, function(out)
+        local secs = tonumber(tostring(out or ""):match("^([%d.]+)"))
+        if not secs then return end
+        local h, m = math.floor(secs / 3600), math.floor(secs % 3600 / 60)
+        text.nx_uptime = h >= 24 and string.format("up %d d %d h", math.floor(h / 24), h % 24) or string.format("up %d h %d min", h, m)
+    end)
     launch("whoami", {}, function(u) launch("hostname", {}, function(h)
         text.nx_who = string.lower(trim(u) .. "@" .. trim(h))
     end) end)
@@ -113,6 +143,35 @@ on("nx_fold", function(v)
     relayout()
     save_folds()
 end)
+
+-- ── Changing who you are: a picture (a file picker, then `mooi identity`), the name ──
+local function reread()
+    settings = config.parse(read_text(FILE), json.decode)
+    show_identity()
+end
+on("nx_pick", function(v)
+    local kind = tonumber(v) == 1 and "banner" or "avatar"
+    if env("MOOI_SAFE", "") == "1" then notice("not in safe mode"); return end
+    local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose your " .. (kind == "banner" and "banner" or "profile picture"),
+                                      "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif" }, function(path, code)
+        path = trim(path)
+        if code ~= 0 or path == "" then return end
+        launch("mooi", { "identity", kind, path }, function(out)
+            if out then reread(); notice(kind == "banner" and "banner changed" or "picture changed")
+            else notice("that picture could not be used") end
+        end)
+    end)
+    if not ok then notice("install zenity to choose a picture") end
+end)
+on("nx_rename", function()
+    local name = trim(text.nx_name_in)
+    text.nx_name_in = ""
+    if name == "" or #name > 48 then return end
+    launch("mooi", { "identity", "name", name }, function(out)
+        if out then reread(); notice("renamed") else notice("could not rename") end
+    end)
+end)
+pcall(sys.watch, "files:" .. FILE, function() reread() end)
 
 -- ── Opening and closing ──
 local closing = false

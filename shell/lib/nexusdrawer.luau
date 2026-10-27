@@ -5,7 +5,7 @@
 
 local M = {}
 
-M.HEADER = 92      -- the drawer's own head (identity, time, buttons) before the first section
+M.HEADER = 204     -- the drawer's own head (the profile card: banner, avatar, name, time) before the first section
 M.GAP = 10         -- between sections
 M.FOLDED = 30      -- a section's header line
 M.ROW = 30         -- one row of a list
