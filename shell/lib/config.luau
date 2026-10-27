@@ -225,6 +225,26 @@ M.SCHEMA = {
     -- time); bin/mooi decides which, so Matugen, the bar and the apps always agree.
     { path = "theme.mode", kind = "enum", values = { "dark", "light", "auto" }, default = "dark" },
     -- Corners on every plate mooi draws (lib/style corners): the shape, and a size on each one's design
+    -- BMO, the desktop companion (shell/bmo): started by the bar while companion.bmo is on; his own
+    -- place and energy are not settings (bmo-state.json in his data folder)
+    { path = "companion.bmo", kind = "boolean", default = true },
+    { path = "companion.place", kind = "enum", values = { "desktop", "bar" }, default = "desktop" },
+    { path = "companion.size", kind = "enum", values = { "tiny", "small", "medium", "large" }, default = "medium" },
+    { path = "companion.variant", kind = "enum", values = { "classic", "night", "pastel", "gameboy", "mooi" }, default = "classic" },
+    { path = "companion.above", kind = "boolean", default = false },
+    { path = "companion.wander", kind = "integer", default = 2, min = 0, max = 3 },
+    { path = "companion.locked", kind = "boolean", default = false },
+    { path = "companion.motion", kind = "enum", values = { "still", "calm", "lively" }, default = "calm" },
+    { path = "companion.throw", kind = "boolean", default = true },
+    { path = "companion.talk", kind = "enum", values = { "off", "rare", "chatty" }, default = "rare" },
+    { path = "companion.music", kind = "boolean", default = true },
+    { path = "companion.clock", kind = "boolean", default = true },
+    { path = "companion.doze", kind = "integer", default = 10, min = 1, max = 100000 },
+    { path = "companion.react.notes", kind = "boolean", default = true },
+    { path = "companion.react.spaces", kind = "boolean", default = true },
+    { path = "companion.react.battery", kind = "boolean", default = true },
+    { path = "companion.react.focus", kind = "boolean", default = true },
+    { path = "companion.react.time", kind = "boolean", default = true },
     { path = "look.corners", kind = "enum", values = { "chamfer", "bevel", "round", "square" }, default = "chamfer" },
     { path = "look.corner_size", kind = "integer", default = 12, min = 0, max = 24 },
     { path = "theme.light_at", kind = "integer", default = 7, min = 0, max = 23 },

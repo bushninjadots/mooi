@@ -263,6 +263,7 @@ apply_theme("first read")
 -- changed too: the palette is extracted again only then.
 local extract   -- re-runs Matugen; defined with the bar's controls, below
 local desk_sync -- starts or lets go of the desk (D85); defined with the programs, below
+local bmo_sync  -- starts or lets go of BMO (companion.bmo); defined with the programs, below
 local function extraction(t) return tostring(t.scheme) .. "/" .. tostring(t.color_index) .. "/" .. tostring(t.contrast) end
 sys.watch("files:" .. FILE, function()
     local before = extraction(settings.theme)
@@ -270,6 +271,7 @@ sys.watch("files:" .. FILE, function()
     if extraction(settings.theme) ~= before then extract() end
     apply_theme("settings changed")
     if desk_sync then desk_sync() end
+    if bmo_sync then bmo_sync() end
 end)
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
@@ -1557,6 +1559,37 @@ function desk_sync()
     desk_win = mine
 end
 after(1500, desk_sync)
+
+-- BMO (shell/bmo), the desktop companion: started with the bar — so at login — while
+-- companion.bmo is on, started again if he ends while still wanted (later each time he fails at
+-- once), asked to quit when it is turned off. One already running (started by hand) is left be.
+local bmo_win, bmo_tries = nil, 0
+function bmo_sync()
+    local want = type(settings.companion) == "table" and settings.companion.bmo == true
+    if not want then
+        bmo_tries = 0
+        run("pleamar", { "--say", "bmo", "quit" })
+        return
+    end
+    if bmo_win then return end
+    run("pleamar", { "--say", "bmo", "get ready" }, function(_, up)
+        if up == 0 or bmo_win then return end
+        local mine
+        local started = os.time()
+        local said = {}
+        mine = spawn("pleamar", { "--scene", shell_dir() .. "/bmo/bmo.plm", "--no-hud", "--stall", "0" }, function(line)
+            if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+        end, function(_, code)
+            if bmo_win ~= mine then return end
+            bmo_win = nil
+            if os.time() - started < 5 then bmo_tries = bmo_tries + 1 else bmo_tries = 0 end
+            if code ~= 0 then log("bmo · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+            if code ~= 0 and bmo_tries < 5 then after(1000 * (bmo_tries + 1), bmo_sync) end
+        end, { errors = true })
+        bmo_win = mine
+    end)
+end
+after(2500, bmo_sync)
 
 -- Control Nexus (shell/mooi-nexus.plm, D65): the system command centre. A program of its own
 -- for the same reason as the studio: it holds the keyboard exclusively and declares its own

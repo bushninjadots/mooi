@@ -7,15 +7,26 @@
 
 local B = require("brain")
 
-local FILE = "settings.json"
+-- His settings are mooi's (settings.json's `companion` section, Settings → BMO), read through the
+-- link bin/mooi keeps in his data folder; where he stands is his own (bmo-state.json).
+local FILE = "mooi-settings.json"
+local STATE = "bmo-state.json"
 
 -- ── Settings ─────────────────────────────────────────────────
 local function read(name)
     local ok, v = pcall(sys.ask, "files.read", name, "json")
     return ok and v or nil
 end
-local cfg = B.settings(read(FILE))
-local SIZES = { 0.7, 0.9, 1.15 }
+local function companion_of(doc) return type(doc) == "table" and doc.companion or nil end
+local cfg = B.settings(companion_of(read(FILE)))
+local state = read(STATE)
+if type(state) ~= "table" then
+    -- his place from before the move into mooi's settings (his own settings.json)
+    local old = read("settings.json")
+    state = { x = type(old) == "table" and tonumber(old.x) or -1, y = type(old) == "table" and tonumber(old.y) or -1 }
+end
+state.x, state.y = tonumber(state.x) or -1, tonumber(state.y) or -1
+local SIZES = { 0.5, 0.7, 0.9, 1.15 }
 local DOZES = { 5, 10, 30, 100000 }
 local MOTIONS = { "still", "calm", "lively" }
 
@@ -28,9 +39,19 @@ local function index_of(list, v)
     return best
 end
 
+-- His panel's choices go back into mooi's settings, the rest of the file as it is now.
 local function save()
-    pcall(sys.call, "files.write", FILE, cfg)
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+    local doc = read(FILE)
+    if type(doc) ~= "table" then return end
+    local c = type(doc.companion) == "table" and doc.companion or {}
+    c.wander, c.locked, c.size, c.motion = cfg.wander, cfg.locked, B.size_name(cfg.size), cfg.motion
+    c.music, c.above, c.doze, c.clock = cfg.music, cfg.above, cfg.doze, cfg.clock
+    c.place, c.variant, c.throw, c.talk, c.react = cfg.place, cfg.variant, cfg.throw, cfg.talk, cfg.react
+    doc.companion = c
+    pcall(sys.call, "files.write", FILE, doc)
 end
+local function save_state() pcall(sys.call, "files.write", STATE, state) end
 
 -- ── The screen and where he may stand ────────────────────────
 local sw, sh = 1920, 1080
@@ -119,8 +140,8 @@ local function stop_walking()
 end
 
 local function save_position()
-    cfg.x, cfg.y = math.floor(x + 0.5), math.floor(y + 0.5)
-    save()
+    state.x, state.y = math.floor(x + 0.5), math.floor(y + 0.5)
+    save_state()
 end
 
 local function walk(target)
@@ -442,8 +463,8 @@ local function go_home()
     stop_walking()
     place(home_x(), home_y())
     play("land")
-    cfg.x, cfg.y = -1, -1
-    save()
+    state.x, state.y = -1, -1
+    save_state()
 end
 
 local last_wander = 2
@@ -495,6 +516,13 @@ on("ui", function(v)
     save()
 end)
 
+-- mooi's settings changed (Settings → BMO, or his own panel): read them again
+pcall(sys.watch, "files:" .. FILE, function()
+    cfg = B.settings(companion_of(read(FILE)))
+    sync_settings()
+    if fact.ready then place(x, y) end
+end)
+
 -- ── Up ───────────────────────────────────────────────────────
 -- The monitor's logical size, for where he may stand.
 run("hyprctl", { "-j", "monitors" }, function(out, code)
@@ -510,7 +538,7 @@ run("hyprctl", { "-j", "monitors" }, function(out, code)
         end
     end
     sync_settings()
-    place(cfg.x >= 0 and cfg.x or home_x(), cfg.y >= 0 and cfg.y or home_y())
+    place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
     show_face()
     fact.ready = true
     schedule()

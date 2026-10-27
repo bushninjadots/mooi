@@ -1,5 +1,5 @@
--- BMO's brain, unit-tested. Run: lua5.4 companion/bmo/test.lua (from the repo root)
-package.path = "companion/bmo/?.luau;" .. package.path
+-- BMO's brain, unit-tested. Run: lua5.4 shell/bmo/test.lua (from the repo root)
+package.path = "shell/bmo/?.luau;" .. package.path
 local B = require("brain")
 
 local failed, total = 0, 0
@@ -9,6 +9,19 @@ local function test(name, fn)
     if ok then print("  ok    " .. name) else failed = failed + 1; print("  FAIL  " .. name .. ": " .. tostring(err)) end
 end
 local function eq(a, b, what) if a ~= b then error((what or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
+
+test("settings: mooi's companion section — sizes by name, place, variant, throw, talk, reactions", function()
+    local c = B.settings({ size = "tiny", place = "bar", variant = "gameboy", throw = false, talk = "chatty",
+                           react = { notes = false } })
+    eq(c.size, 0.5, "tiny"); eq(c.place, "bar", "on the bar"); eq(c.variant, "gameboy", "variant")
+    eq(c.throw, false, "no throwing"); eq(c.talk, "chatty", "talk")
+    eq(c.react.notes, false, "notifications off"); eq(c.react.spaces, true, "the rest default on"); eq(c.react.battery, true, "battery")
+    local d = B.settings({})
+    eq(d.size, 0.9, "medium by default"); eq(d.place, "desktop", "desktop"); eq(d.variant, "classic", "classic")
+    eq(d.throw, true, "throwing on"); eq(d.talk, "rare", "rare talk")
+    eq(B.settings({ size = "huge", variant = "nope", talk = 5 }).variant, "classic", "unknown variant")
+    eq(B.size_name(0.7), "small", "a size's name back")
+end)
 
 test("every mood has a face", function()
     for _, m in ipairs(B.MOODS) do assert(B.FACES[m], m) end

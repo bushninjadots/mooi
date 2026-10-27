@@ -1,5 +1,5 @@
 -- BMO's personality, pure: no timers, no facts, no system. bmo.luau owns the state and the
--- clock and asks this what a moment means. companion/bmo/test.lua runs it under Lua 5.4.
+-- clock and asks this what a moment means. shell/bmo/test.lua runs it under Lua 5.4.
 --
 --   mood      slow: changes on events, or drifts after a few minutes
 --   activity  what he is doing: idle · walking · dancing · sleeping · dragged
@@ -106,9 +106,29 @@ function M.energy(e, dt, sleeping, night)
     return math.max(0, e - dt / (night and 3600 or 7200))
 end
 
--- Settings as they are kept, whatever the file holds.
-M.DEFAULTS = { wander = 2, locked = false, x = -1, y = -1, size = 0.9, motion = "calm", music = true,
-               above = false, doze = 10, clock = true }
+-- Settings as they are kept, whatever the file holds: mooi's `companion` section (settings.json,
+-- Settings → BMO). His place on screen and his energy are not settings: bmo-state.json.
+M.SIZES = { tiny = 0.5, small = 0.7, medium = 0.9, large = 1.15 }
+M.SIZE_ORDER = { "tiny", "small", "medium", "large" }
+M.VARIANTS = { "classic", "night", "pastel", "gameboy", "mooi" }
+M.TALK = { "off", "rare", "chatty" }
+M.REACTIONS = { "notes", "spaces", "battery", "focus", "time" }
+M.DEFAULTS = { wander = 2, locked = false, size = 0.9, motion = "calm", music = true, above = false, doze = 10,
+               clock = true, place = "desktop", variant = "classic", throw = true, talk = "rare" }
+
+local function one_of(list, v, d)
+    for _, x in ipairs(list) do if x == v then return v end end
+    return d
+end
+-- A size's name, from its scale (the nearest).
+function M.size_name(v)
+    local best, bd = "medium", math.huge
+    for name, s in pairs(M.SIZES) do
+        local d = math.abs(s - (tonumber(v) or 0.9))
+        if d < bd then best, bd = name, d end
+    end
+    return best
+end
 
 function M.settings(t)
     t = type(t) == "table" and t or {}
@@ -120,14 +140,19 @@ function M.settings(t)
     end
     out.wander = math.floor(num(t.wander, 0, 3, M.DEFAULTS.wander))
     out.locked = t.locked == true
-    out.x = num(t.x, -1, 100000, -1)
-    out.y = num(t.y, -1, 100000, -1)
-    out.size = num(t.size, 0.5, 1.6, M.DEFAULTS.size)
+    out.size = M.SIZES[t.size] or num(t.size, 0.4, 1.6, M.DEFAULTS.size)
     out.motion = (t.motion == "still" or t.motion == "lively") and t.motion or "calm"
     out.music = t.music ~= false
     out.above = t.above == true
     out.doze = math.floor(num(t.doze, 1, 100000, M.DEFAULTS.doze))
     out.clock = t.clock ~= false
+    out.place = t.place == "bar" and "bar" or "desktop"
+    out.variant = one_of(M.VARIANTS, t.variant, "classic")
+    out.throw = t.throw ~= false
+    out.talk = one_of(M.TALK, t.talk, "rare")
+    local r = type(t.react) == "table" and t.react or {}
+    out.react = {}
+    for _, k in ipairs(M.REACTIONS) do out.react[k] = r[k] ~= false end
     return out
 end
 

@@ -516,6 +516,9 @@ settings_link() {
         [ -e "$link" ] && mv "$link" "$link.old.$$"
         mkdir -p "$folder" && ln -s "$folder" "$link"
     done
+    # BMO keeps his own data folder (his place and energy) and reads mooi's settings through a link
+    bmo_dir="$(dirname "$folder")/bmo"
+    mkdir -p "$bmo_dir" && ln -sfn "$folder/settings.json" "$bmo_dir/mooi-settings.json"
 }
 snapshot() {
     "$pleamar" --check "$src" >/dev/null || { echo "mooi: the repo's scene does not compile; the running one is kept" >&2; return 1; }
@@ -525,6 +528,7 @@ snapshot() {
     "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-desk.plm" >/dev/null || { echo "mooi: the desk does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-player.plm" >/dev/null || { echo "mooi: the music player does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/bmo/bmo.plm" >/dev/null || { echo "mooi: BMO does not compile; the running one is kept" >&2; return 1; }
     settings_link
     rm -rf "$live.new" && cp -r "$root/shell" "$live.new" || return 1
     pace "$live.new"
@@ -868,13 +872,14 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-player.plm" || exit 1
+        "$pleamar" --check "$root/shell/bmo/bmo.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
         # file is written in the subset Lua 5.4 and Luau share, so Lua 5.4 can parse them all.
-        for f in "$root"/shell/*.luau "$root"/shell/lib/*.luau; do
+        for f in "$root"/shell/*.luau "$root"/shell/lib/*.luau "$root"/shell/player/*.luau "$root"/shell/bmo/*.luau; do
             F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
         done
-        cd "$root" && lua5.4 tests/unit/run.lua ;;
+        cd "$root" && lua5.4 shell/bmo/test.lua | tail -1 && lua5.4 tests/unit/run.lua ;;
     theme-sync)
         theme_sync "$@" || { echo "theme-sync: failed" >&2; exit 1; }
         running && echo "mooi asked to read it" || echo "mooi is not running; it will read the palette when it starts"
