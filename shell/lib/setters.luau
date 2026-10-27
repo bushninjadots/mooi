@@ -55,6 +55,8 @@ M.SETTERS = {
     "companion.wander", "companion.motion", "companion.throw", "companion.locked", "companion.talk",
     "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces",
     "companion.react.battery", "companion.react.focus", "companion.react.time",
+    -- the bar's islands and the clock (D97)
+    "island.style", "clock.view",
 }
 
 local function row_of(path)

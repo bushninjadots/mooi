@@ -28,6 +28,8 @@ scene Mooi {
     // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
     fact cn_kind = 0
     fact cn_scale = 1
+    fact isl_style = 0           // island.style: 0 plate · 1 tether (ui/island.plm reads it)
+    fact clock_view = 0          // clock.view: 0 full · 1 time · 2 seconds
     fact open: none | window | system | command | shutter | overview = none
     fact phase: compact | expanded = compact
 

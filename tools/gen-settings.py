@@ -49,6 +49,7 @@ SETTERS = [
     "companion.wander", "companion.motion", "companion.throw", "companion.locked", "companion.talk",
     "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces",
     "companion.react.battery", "companion.react.focus", "companion.react.time",
+    "island.style", "clock.view",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -120,6 +121,7 @@ SECTIONS = [
         ("card", "Shape"),
         ("choice", "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", "look.corners", "sv_look_corners", [("Chamfer", 0), ("Bevel", 1), ("Rounded", 2), ("Square", 3)]),
         ("slider", "Corner size", "How big the cut or the rounding is (12 is as designed)", "look.corner_size", 0, 24, "{sv_look_corner_size, 0}", "sv_look_corners != 3"),
+        ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
@@ -160,6 +162,7 @@ SECTIONS = [
     ("Bar", "The bar", "A style sets the surface and the edges at once; change any of them and it reads Custom", "BAR", [
         ("card", "Shape"),
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
+        ("choice", "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", "clock.view", "sv_clock_view", ["Time and date", "Time", "Seconds"]),
         ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
         ("slider", "From the edge", "How far down from the top of the screen it sits", "bar.offset", 0, 40, "{sv_bar_offset, 0} px"),
         ("slider", "Length", "How much of the screen's width it spans, centred", "bar.width", 30, 100, "{sv_bar_width + 30, 0}%"),

@@ -105,6 +105,8 @@ local function apply(s)
     fact.th_signal = position("theme.signal", s.theme.signal)
     for name, v in pairs(style.facts(s)) do fact[name] = v end
     fact.cn_kind, fact.cn_scale = style.corners(s)   -- corners on every plate (look.corners, look.corner_size)
+    fact.isl_style = position("island.style", s.island.style)   -- 0 plate · 1 tether (ui/island.plm)
+    fact.clock_view = position("clock.view", s.clock.view)      -- 0 full · 1 time · 2 seconds
     -- The battery saver (motion.saver): what costs frames and a process goes quiet.
     fact.saving = saving()
     if fact.saving then fact.st_glow = 0; fact.st_aberr = 0; fact.frame_music = false; fact.viz = 4 end

@@ -101,6 +101,10 @@ M.SCHEMA = {
     -- wears its first member's.
     { path = "island.confirm_close", kind = "boolean", default = true },
     { path = "island.follow_on_send", kind = "boolean", default = false },
+    -- every island's look (ui/island.plm): Ferrolume plates, or tethered to their module
+    { path = "island.style", kind = "enum", values = { "plate", "tether" }, default = "plate" },
+    -- what the clock module shows; a right press on it cycles them
+    { path = "clock.view", kind = "enum", values = { "full", "time", "seconds" }, default = "full" },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,
