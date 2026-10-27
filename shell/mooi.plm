@@ -20,7 +20,7 @@ import "ui/stash.plm"
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak"
+        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -37,6 +37,17 @@ scene Mooi {
     text cal_title = ""
     text cal_sub = ""
     fact cal_home = true         // the month on show is this month
+    // The stats island (lib/stats): read every 2 s while it is open
+    text st_load = ""
+    text st_mem_t = ""
+    fact st_mem_f = 0
+    text st_swap_t = ""
+    text st_disk_t = ""
+    fact st_disk_f = 0
+    fact st_gpu_f = 0
+    fact st_gpu_ok = false
+    fact st_nvtop = false
+    model st_top max 3 { name: text; cpu: number }
     fact phase: compact | expanded = compact
 
     // Window island
@@ -878,6 +889,7 @@ scene Mooi {
     event open_system          // Spine status button · `mooi system`
     event clock_next ->        // to the logic: the clock shows the next of clock.view's states
     event cal_shift ->         // to the logic: 0 the month before · 1 this month · 2 the month after
+    event st_open ->           // to the logic: 0 btop · 1 nvtop, in a terminal
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
@@ -3815,6 +3827,43 @@ scene Mooi {
                 on press calprev { emit cal_shift(0) }
                 on press calnow { emit cal_shift(1) }
                 on press calnext { emit cal_shift(2) }
+            }
+        }
+    }
+
+    // ── stats_island (D97): the machine under the resources module ──
+    group {
+        move: 0, st_res + 6
+        let so_ox = clamp(isl_cx - 160, 8, screen.width - 328)
+        let sgh = if(st_gpu_ok, 30, 0)
+        group {
+            show: rv.stats > 0.03
+            move: so_ox, 0
+            IslandFrame(rv.stats, 320, 300 + sgh, tx: isl_cx - so_ox) {
+                IsleHead(320, "System", st_load)
+                IsleGauge(16, 40, 288, "Processor", "{round(res_cpu * 100), 0} % · {round(res_temp), 0} °C", res_cpu, res_cpu > 0.85 or res_temp > 85)
+                IsleGauge(16, 72, 288, "Memory", st_mem_t, st_mem_f, st_mem_f > 0.9)
+                group { show: st_gpu_ok
+                        IsleGauge(16, 104, 288, "Graphics", "{round(st_gpu_f * 100), 0} %", st_gpu_f, st_gpu_f > 0.9) }
+                IsleGauge(16, 104 + sgh, 288, "Disk  /", st_disk_t, st_disk_f, st_disk_f > 0.9)
+                text st_swap_t { at: 16, 146 + sgh; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
+                IsleRule(320, 158 + sgh)
+                text "BUSIEST" { at: 16, 172 + sgh; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                for t in st_top {
+                    let ty = 192 + sgh + t.index * 20
+                    text t.name { at: 16, ty; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 220; lines: 1 }
+                    text "{t.cpu, 1} %" { at: 304, ty; anchor: right center; size: 11; family: "Share Tech Mono"; color: if(t.cpu > 50, if(isl_style > 0.5, status.error, fl.ember), if(isl_style > 0.5, fg.secondary, fl.phos)) }
+                }
+                IsleRule(320, 254 + sgh)
+                zone box stbtop { from: 16, 264 + sgh; size: 136, 24; cursor: pointer; role: button; label: "Open btop in a terminal" }
+                IsleBtn(16, 264 + sgh, 136, "btop", 0, stbtop.hover)
+                on press stbtop { emit st_open(0); open = none }
+                group {
+                    show: st_nvtop
+                    zone box stnv { from: 168, 264 + sgh; size: 136, 24; cursor: pointer; role: button; label: "Open nvtop in a terminal" }
+                    IsleBtn(168, 264 + sgh, 136, "nvtop", 0, stnv.hover)
+                    on press stnv { emit st_open(1); open = none }
+                }
             }
         }
     }

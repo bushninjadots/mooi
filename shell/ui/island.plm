@@ -82,7 +82,7 @@ library Island {
         size: w, 30
         group {
             show: isl_style < 0.5
-            text title { at: 16, 18; anchor: left center; size: 10.5; weight: 700; family: "Share Tech Mono"; color: fl.phos
+            text "{upper(title)}" { at: 16, 18; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos
                          width: w * 0.55; lines: 1 }
             line { from: 16, 27; to: 40, 27; width: 1.4; color: fl.phos; opacity: 0.8 }
             line { from: 44, 27; to: w - 16, 27; width: 1; color: fl.trace_dim; opacity: 0.6 }
@@ -139,6 +139,23 @@ library Island {
             }
             ellipse { at: x + max(6, w * sv) - 3, y + 4; radius: 6; color: fg.primary }
         }
+    }
+
+    // A reading with its meter: the label left, the figure right, the level under them, `w` wide
+    // from (x, y). `hot`: past where it hurts.
+    component IsleGauge(x: number, y: number, w: number, label: text, shown: text, v: number, hot: bool = false) {
+        size: w, 28
+        group {
+            show: isl_style < 0.5
+            text "{upper(label)}" { at: x, y + 6; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text shown { at: x + w, y + 6; anchor: right center; size: 10.5; family: "Share Tech Mono"; color: if(hot, fl.ember, fl.phos) }
+        }
+        group {
+            show: isl_style > 0.5
+            text label { at: x, y + 6; anchor: left center; size: 12; family: "Exo 2"; color: fg.primary }
+            text shown { at: x + w, y + 6; anchor: right center; size: 11; family: "Exo 2"; color: if(hot, status.error, fg.secondary) }
+        }
+        IsleMeter(x, y + 16, w, v, hot)
     }
 
     // A button's face at (x, y): a cut chip (plate) or a pill (tether). `lit`: the chosen one;
