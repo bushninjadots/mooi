@@ -342,7 +342,12 @@ end
 
 on("fact:open", function(v)
     if v == "window" and not fact.target_ok and not fact.busy then capture() end
-    if v ~= "window" then generation = generation + 1 end
+    if v ~= "window" then
+        generation = generation + 1
+        -- closed (not let go for a focus action, which comes back to the same window): the next
+        -- opening reads the focused window again, never acts on the one before
+        if not fact.busy then target = nil; fact.target_ok = false end
+    end
 end)
 
 -- ── Actions ─────────────────────────────────────────────────

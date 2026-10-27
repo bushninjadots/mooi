@@ -3422,9 +3422,6 @@ scene Mooi {
     on key s while side == notes { emit fld_snooze(fld_item) }
     on key m while side == notes { emit fld_mute }
     on idle for 30s while mark_open { mark_open = false }
-    on toggle_labels { emit toggle_labels }
-    on toggle_wheel { emit toggle_wheel }
-    on toggle_theme { emit toggle_theme }
     on clip_pick { side = none }
 
     // ══ The islands (D53): each under the module that opens it, drawn here in the bar's own surface ═
@@ -5020,7 +5017,8 @@ scene Mooi {
 
     // ── Rules: user intent → the slot ─────────────────────────
     on open_window while open == window { open = none }
-    on open_window while open != window { open = window; phase = compact; sel = 0; arming = false; target_ok = false; mark_open = false }
+    // target_ok first: the logic reads the window when `open` turns, and only if it has none
+    on open_window while open != window { target_ok = false; phase = compact; sel = 0; arming = false; mark_open = false; open = window }
     on open_system while open == system { open = none }
     on open_system while open != system { open = system; phase = compact; mark_open = false }
     on open_command while open == command { open = none; blur }
