@@ -283,7 +283,6 @@ scene Nexus {
     text nx_notice = ""          // a word after an import (or why it failed)
     text nx_initial = "M"
     // the column: each section's top and height, and whether it is folded
-    fact y_toggles = 92
     fact y_levels = 0
     fact y_media = 0
     fact y_notes = 0
@@ -294,7 +293,6 @@ scene Nexus {
     fact y_updates = 0
     fact y_workspaces = 0
     fact y_shortcuts = 0
-    fact f_toggles = false
     fact f_levels = false
     fact f_media = false
     fact f_notes = false
@@ -311,17 +309,23 @@ scene Nexus {
     fact b_rec = false
     fact b_night = false
     fact b_saver = false
-    // the quick toggles' second lines (the logic words them)
-    text t_s0 = ""
-    text t_s1 = ""
-    text t_s2 = ""
-    text t_s3 = ""
-    text t_s4 = ""
-    text t_s5 = ""
-    text t_s6 = ""
-    text t_s7 = ""
-    text t_s8 = ""
     text bt_empty = "No devices paired"
+    // ── The orbit (D99, lib/nexusorbit): its nodes, the rest as chips, the arcs, the backdrop ──
+    model orbit max 8 { word: text; state: text; on: bool; glyph: number; x: number; y: number; p1x: number; p1y: number; p2x: number; p2y: number; p3x: number; p3y: number }
+    model rest max 12 { word: text; on: bool }
+    fact orb_bg = 0              // 0 banner · 1 circuit · 2 plain
+    fact nx_bw2 = 386            // the banner drawn to cover the board
+    fact nx_bh2 = 452
+    fact arc_v0 = 0
+    fact arc_v1 = 0
+    fact arc_v2 = 0
+    text arc_l0 = ""
+    text arc_l1 = ""
+    text arc_l2 = ""
+    fact pulse_n = -1            // the node whose pulse is running home
+    fact nx_custom = false       // the customise sheet is open
+    model cus_nodes max 12 { word: text; on: bool }
+    model cus_arcs max 8 { word: text; on: bool }
     // now playing
     text nx_art = ""
     fact nx_art_on = false
@@ -355,6 +359,10 @@ scene Nexus {
     text upd_t = "No word from the bar yet"
 
     event nx_close ->            // to the logic: slide away and end
+    event nx_node ->             // to the logic: node n of the orbit pressed (flip it, or open it)
+    event nx_rest ->             // to the logic: chip n (the toggles not in the orbit) pressed
+    event nx_cus ->              // to the logic: customise — 100 + n a node in or out · 200 + n an arc · 300 + n the backdrop
+    event nx_pulse               // a node was pressed: its trace carries a pulse home
     event nx_pick ->             // to the logic: choose a picture — 0 the avatar · 1 the banner (a file picker, then `mooi identity`)
     event nx_rename ->           // to the logic: the name typed (read from the field)
     event nx_fold ->             // to the logic: fold or unfold section n (lib/nexusdrawer ORDER, from 0)
@@ -386,6 +394,7 @@ scene Nexus {
     figure i_night = file "icons/night.svg"
     figure i_caf = file "icons/caffeine.svg"
     figure i_rec = file "icons/recorder.svg"
+    figure i_shot = file "icons/screenshot.svg"
     figure i_bolt = file "icons/bolt.svg"
     figure i_clear = file "icons/clear.svg"
     figure i_cloud = file "icons/cloud.svg"
@@ -395,8 +404,6 @@ scene Nexus {
     figure i_storm = file "icons/storm.svg"
     image avatar = from nx_avatar, 72, 72
     image banner = from nx_banner, 960, 540
-    fact nx_bw = 388             // the banner drawn to cover its strip (the logic reads the picture's size)
-    fact nx_bh = 128
     image cover = from nx_art, 84, 84
 
     // ── Motion ───────────────────────────────────────────────
@@ -405,8 +412,20 @@ scene Nexus {
     follow nx_in = if(nx_open, 1, 0)
     prop sv = 0 ~m.select
     follow sv = nx_sy
-    // the rail's channels, gliding to each reading
     spring nx.rail = 160, 26         // ~500 ms, soft
+    // the arcs, gliding; the pulse, running home along a trace in 550 ms
+    prop ra0 = 0 ~nx.rail
+    follow ra0 = arc_v0
+    prop ra1 = 0 ~nx.rail
+    follow ra1 = arc_v1
+    prop ra2 = 0 ~nx.rail
+    follow ra2 = arc_v2
+    prop pulse_p = 0
+    layer pulse ~1ms {
+        go for 600ms after nx_pulse { pulse_p: 1 ~550ms }
+        idle                         { pulse_p: 0 ~1ms }
+    }
+    // the rail's channels, gliding to each reading
     prop rc_cpu = 0 ~nx.rail
     follow rc_cpu = m_cpu
     prop rc_mem = 0 ~nx.rail
@@ -439,26 +458,21 @@ scene Nexus {
         on press h { emit nx_fold(code) }
     }
 
-    // A quick toggle's face at (x, y), 120 × 56: its glyph is drawn by the caller at (x + 20, y + 20).
-    component Tile(x: number, y: number, word: text, state: text, on: bool, code: number) {
-        size: 120, 56
-        zone box t { from: x, y; size: 120, 56; cursor: pointer; role: toggle; checked: on; label: word }
-        group {
-            show: isl_style < 0.5
-            Chamfer(x, y, 120, 56, 7, mix(fl.hull_raised, fl.phos_fill, if(on, 0.55, 0)), mix(fl.trace, fl.phos, max(if(on, 1, 0), t.hover)), 1, 1)
-            box { from: x + 1, y + 8; size: 2, 40; color: fl.phos; opacity: if(on, 1, 0) }
-            text "{upper(word)}" { at: x + 12, y + 38; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: if(on, fl.phos, fl.engrave) }
-            text "{upper(state)}" { at: x + 12, y + 49; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 100; lines: 1 }
-        }
-        group {
-            show: isl_style > 0.5
-            box { from: x, y; size: 120, 56; corner: if(cn_kind > 2.5, 3, 14)
-                  color: mix(mix(surface.elevated, fg.primary, 0.05 * t.hover), accent.primary, if(on, 0.85, 0)) }
-            box { from: x, y; size: 120, 56; corner: if(cn_kind > 2.5, 3, 14); stroke: 1; color: mix(border.subtle, accent.primary, max(0.6 * t.hover, if(on, 1, 0))) }
-            text word { at: x + 12, y + 37; anchor: left center; size: 11.5; weight: 600; family: "Exo 2"; color: if(on, bg.primary, fg.primary) }
-            text state { at: x + 12, y + 49; anchor: left center; size: 9; family: "Exo 2"; color: if(on, bg.primary, fg.secondary); width: 100; lines: 1; opacity: 0.85 }
-        }
-        on press t { emit nx_tog(code) }
+    // A node's glyph `g` (lib/nexusorbit NODES' glyph), centred at (x, y), in colour `c`.
+    component Gl(x: number, y: number, g: number, c: color) {
+        size: 16, 16
+        figure i_wifi { at: x, y; size: 16, 16; color: c; show: g < 0.5 }
+        figure i_bt { at: x, y; size: 16, 16; color: c; show: g > 0.5 and g < 1.5 }
+        figure i_vol { at: x, y; size: 16, 16; color: c; show: g > 1.5 and g < 2.5 }
+        figure i_mic { at: x, y; size: 16, 16; color: c; show: g > 2.5 and g < 3.5 }
+        figure i_bell { at: x, y; size: 16, 16; color: c; show: g > 3.5 and g < 4.5 }
+        figure i_night { at: x, y; size: 16, 16; color: c; show: g > 4.5 and g < 5.5 }
+        figure i_caf { at: x, y; size: 16, 16; color: c; show: g > 5.5 and g < 6.5 }
+        figure i_bolt { at: x, y; size: 16, 16; color: c; show: g > 6.5 and g < 7.5 }
+        figure i_rec { at: x, y; size: 16, 16; color: c; show: g > 7.5 and g < 8.5 }
+        figure i_lock { at: x, y; size: 16, 16; color: c; show: g > 8.5 and g < 9.5 }
+        figure i_set { at: x, y; size: 16, 16; color: c; show: g > 9.5 and g < 10.5 }
+        figure i_shot { at: x, y; size: 16, 16; color: c; show: g > 10.5 }
     }
 
     // A weather glyph of kind `k` (lib/sysinfo WEATHER_KINDS), centred at (x, y), `sz` across.
@@ -525,44 +539,166 @@ scene Nexus {
             opacity: smooth(0, 0.6, nx_in)
             group {
                 // what scrolls stays under the head
-                clip box { from: 0, 200; size: 420, nx_h - 208 }
+                clip box { from: 0, 0; size: 440, nx_h - 8 }
 
-            // ── Quick toggles ──
+            // ── The orbit (D99): you at the core of a circuit board, your nodes wired to you ──
             group {
-                show: y_toggles > 0
-                move: 0, y_toggles - sv
-                SecHead(0, "Quick toggles", "", f_toggles, 0)
+                move: 0, -sv
+                // the board behind it: your banner, a circuit pattern, or nothing (nexus.orbit.backdrop)
                 group {
-                    show: not f_toggles
-                    Tile(16, 30, "Wi-Fi", t_s0, network.wifi, 0)
-                    figure i_wifi { at: 36, 48; size: 16, 16; color: if(network.wifi, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)); show: network.wifi }
-                    figure i_wifi_off { at: 36, 48; size: 16, 16; color: if(isl_style > 0.5, fg.secondary, fl.muted); show: not (network.wifi) }
-                    Tile(150, 30, "Bluetooth", t_s1, bluetooth.powered, 1)
-                    figure i_bt { at: 170, 48; size: 16, 16; color: if(bluetooth.powered, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)); show: bluetooth.powered }
-                    figure i_bt_off { at: 170, 48; size: 16, 16; color: if(isl_style > 0.5, fg.secondary, fl.muted); show: not (bluetooth.powered) }
-                    Tile(284, 30, "Sound", t_s2, not audio.muted, 2)
-                    figure i_vol { at: 304, 48; size: 16, 16; color: if(not audio.muted, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)); show: not audio.muted }
-                    figure i_vol_off { at: 304, 48; size: 16, 16; color: if(isl_style > 0.5, fg.secondary, fl.muted); show: not (not audio.muted) }
-                    Tile(16, 92, "Mic", t_s3, not audio.input_muted, 3)
-                    figure i_mic { at: 36, 110; size: 16, 16; color: if(not audio.input_muted, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)); show: not audio.input_muted }
-                    figure i_mic_off { at: 36, 110; size: 16, 16; color: if(isl_style > 0.5, fg.secondary, fl.muted); show: not (not audio.input_muted) }
-                    Tile(150, 92, "Quiet", t_s4, b_dnd, 4)
-                    figure i_bell { at: 170, 110; size: 16, 16; color: if(b_dnd, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)) }
-                    Tile(284, 92, "Night", t_s5, b_night, 5)
-                    figure i_night { at: 304, 110; size: 16, 16; color: if(b_night, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)) }
-                    Tile(16, 154, "Awake", t_s6, b_awake, 6)
-                    figure i_caf { at: 36, 172; size: 16, 16; color: if(b_awake, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)) }
-                    Tile(150, 154, "Saver", t_s7, b_saver, 7)
-                    figure i_bolt { at: 170, 172; size: 16, 16; color: if(b_saver, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)) }
-                    Tile(284, 154, "Record", t_s8, b_rec, 8)
-                    figure i_rec { at: 304, 172; size: 16, 16; color: if(b_rec, if(isl_style > 0.5, bg.primary, fl.phos), if(isl_style > 0.5, fg.secondary, fl.muted)) }
+                    clip box { from: 17, 9; size: 386, 464; corner: if(isl_style > 0.5, 16, 0) }
+                    group {
+                        show: orb_bg < 0.5
+                        body {
+                            gradient: 17, 9 to 403, 473, mix(if(isl_style > 0.5, accent.primary, fl.phos), #000000, 0.55), mix(if(isl_style > 0.5, accent.secondary, fl.ember), #000000, 0.7)
+                            box { from: 17, 9; size: 386, 464 }
+                        }
+                        image banner { at: 210 - nx_bw2 / 2, 235 - nx_bh2 / 2; size: nx_bw2, nx_bh2; opacity: 0.55; show: nx_banner_on }
+                    }
+                    group {
+                        show: orb_bg > 0.5 and orb_bg < 1.5
+                        box { from: 17, 9; size: 386, 464; color: mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.06) }
+                        // a board's copper: a grid, and runs between pads, fixed (random by place, never moving)
+                        repeat g in 0..16 {
+                            line { from: 17 + g * 26, 9; to: 17 + g * 26, 461; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.09 }
+                        }
+                        repeat g in 0..18 {
+                            line { from: 17, 9 + g * 26; to: 403, 9 + g * 26; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.09 }
+                        }
+                        repeat q in 0..22 {
+                            let qx = 30 + floor(random(q) * 14) * 26
+                            let qy = 22 + floor(random(q + 50) * 16) * 26
+                            path { stroke: 1.3; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.26
+                                   move qx, qy; line qx + 26 * (1 + floor(random(q + 9) * 3)), qy; line qx + 26 * (1 + floor(random(q + 9) * 3)) + 13, qy + 13 }
+                            ellipse { at: qx, qy; radius: 2.4; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.4 }
+                        }
+                    }
+                    box { from: 17, 9; size: 386, 464; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: if(orb_bg > 1.5, 0.9, 0.35) }
+                    box { from: 17, 404; size: 386, 30; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.35 }
+                    box { from: 17, 434; size: 386, 39; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.7 }
+                    zone box bz { from: 17, 9; size: 386, 464; cursor: pointer; role: button; label: "Change the banner" }
+                    on press bz { emit nx_pick(1) }
+                }
+
+                // the time, and the ways out
+                text clock.time { at: 34, 40; anchor: left center; size: 30; weight: 300; family: "Exo 2"; color: #ffffff; shadow: 0, 1, 8, 70%, #000000 }
+                text clock.date { at: 36, 64; anchor: left center; size: 10.5; family: "Share Tech Mono"; color: #ffffff; opacity: 0.8; shadow: 0, 1, 6, 70%, #000000 }
+                box { from: 226, 20; size: 168, 30; corner: 15; color: #000000; opacity: 0.45 }
+                zone box hcus { from: 230, 22; size: 28, 26; cursor: pointer; role: toggle; checked: nx_custom; label: "Customise the orbit" }
+                text "✎" { at: 244, 35; anchor: center; align: center; size: 14; color: if(nx_custom, if(isl_style > 0.5, accent.primary, fl.phos), #ffffff); opacity: 0.75 + 0.25 * hcus.hover }
+                on press hcus { nx_custom = not nx_custom }
+                zone box hset { from: 262, 22; size: 28, 26; cursor: pointer; role: button; label: "mooi's settings" }
+                figure i_set { at: 276, 35; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hset.hover }
+                on press hset { emit nx_go(1) }
+                zone box hlock { from: 294, 22; size: 28, 26; cursor: pointer; role: button; label: "Lock the screen" }
+                figure i_lock { at: 308, 35; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hlock.hover }
+                on press hlock { emit nx_go(2) }
+                zone box hpow { from: 326, 22; size: 28, 26; cursor: pointer; role: button; label: "The session menu" }
+                figure i_power { at: 340, 35; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hpow.hover }
+                on press hpow { emit nx_go(3) }
+                zone box hx { from: 358, 22; size: 28, 26; cursor: pointer; role: button; label: "Close the Control Nexus" }
+                text "×" { at: 372, 35; anchor: center; align: center; size: 17; weight: 600; color: #ffffff; opacity: 0.75 + 0.25 * hx.hover }
+                on press hx { emit nx_close }
+
+                // the bus: a dashed ring the traces cross
+                repeat d in 0..48 {
+                    arc { at: 210, 236; radius: 122; width: 1.2; span: 3deg; rotate: d * 7.5deg; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.35 }
+                }
+                // the arcs: three readings round the core (nexus.orbit.arcs)
+                repeat k in 0..3 {
+                    let ar = 70 + k * 11
+                    let av = pick(k, ra0, ra1, ra2)
+                    arc { at: 210, 236; radius: ar; width: 6; span: 300deg; rotate: 0deg; color: #ffffff; opacity: 0.07 }
+                    group {
+                        glow: 6, (0.6) * st_glow, pick(k, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, accent.primary, fl.phos), #ffffff, 0.45), mix(if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, accent.secondary, fl.ember), 0.35))
+                        arc { at: 210, 236; radius: ar; width: 6; span: max(1, 300 * clamp(av, 0, 1)) * 1deg; rotate: (-150 + 150 * clamp(av, 0, 1)) * 1deg; color: pick(k, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, accent.primary, fl.phos), #ffffff, 0.45), mix(if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, accent.secondary, fl.ember), 0.35)) }
+                    }
+                }
+                // the traces, their vias, and a pulse running home from a pressed node
+                for o in orbit {
+                    path { stroke: if(o.on, 2, 1.4); color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)); opacity: if(o.on, 0.95, 0.45)
+                           move o.p1x, o.p1y; line o.p2x, o.p2y; line o.p3x, o.p3y }
+                    ellipse { at: o.p2x, o.p2y; radius: 3; color: if(isl_style > 0.5, bg.primary, fl.hull) }
+                    ellipse { at: o.p2x, o.p2y; radius: 3; stroke: 1.2; color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
+                    ellipse { at: o.p1x, o.p1y; radius: 2.2; color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
+                    group {
+                        show: pulse_n == o.index and pulse_p > 0.01 and pulse_p < 0.99
+                        glow: 8, (1) * st_glow, if(isl_style > 0.5, accent.secondary, fl.ember)
+                        ellipse { at: if(pulse_p < 0.5, o.p3x + (o.p2x - o.p3x) * pulse_p * 2, o.p2x + (o.p1x - o.p2x) * (pulse_p - 0.5) * 2), if(pulse_p < 0.5, o.p3y + (o.p2y - o.p3y) * pulse_p * 2, o.p2y + (o.p1y - o.p2y) * (pulse_p - 0.5) * 2); radius: 3.5; color: #ffffff }
+                    }
+                }
+                // the nodes: hexagonal pads, lit when on, a press flips or opens
+                for o in orbit {
+                    zone box nzo { from: o.x - 22, o.y - 22; size: 44, 44; cursor: pointer; role: toggle; checked: o.on; label: "{o.word} — {o.state}" }
+                    group {
+                        glow: 7, (if(o.on, 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                        path { color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.12 + 0.18 * nzo.hover))
+                               move o.x + 20, o.y; line o.x + 10, o.y + 17.3; line o.x - 10, o.y + 17.3; line o.x - 20, o.y; line o.x - 10, o.y - 17.3; line o.x + 10, o.y - 17.3; close }
+                    }
+                    path { stroke: 1.3; color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), nzo.hover))
+                           move o.x + 20, o.y; line o.x + 10, o.y + 17.3; line o.x - 10, o.y + 17.3; line o.x - 20, o.y; line o.x - 10, o.y - 17.3; line o.x + 10, o.y - 17.3; close }
+                    Gl(o.x, o.y, o.glyph, if(o.on, if(isl_style > 0.5, bg.primary, fl.hull), #ffffff))
+                    text o.word { at: o.x, o.y + 29; anchor: center; align: center; size: 9; weight: 600; family: "Exo 2"; color: #ffffff; opacity: 0.85; width: 70; lines: 1
+                                  shadow: 0, 1, 4, 80%, #000000 }
+                    on press nzo { pulse_n = o.index; emit nx_pulse; emit nx_node(o.index) }
+                }
+                // the core: you, ringed
+                zone box az { from: 156, 182; size: 108, 108; cursor: pointer; role: button; label: "Change the profile picture" }
+                group {
+                    glow: 10, (0.8) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
+                    ellipse { at: 210, 236; radius: 55; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                }
+                ellipse { at: 210, 236; radius: 52.5; color: if(isl_style > 0.5, bg.primary, fl.hull) }
+                group {
+                    clip box { from: 160, 186; size: 100, 100; corner: 50 }
+                    box { from: 160, 186; size: 100, 100; color: if(isl_style > 0.5, surface.elevated, fl.well) }
+                    image avatar { at: 160, 186; size: 100, 100; show: nx_avatar_on }
+                    text nx_initial { at: 210, 236; anchor: center; align: center; size: 36; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, accent.primary, fl.phos); show: not nx_avatar_on }
+                    box { from: 160, 262; size: 100, 24; color: #000000; opacity: 0.6 * az.hover }
+                    text "edit" { at: 210, 273; anchor: center; align: center; size: 10; family: "Exo 2"; color: #ffffff; opacity: az.hover }
+                }
+                on press az { emit nx_pick(0) }
+                // the arcs' legend: one line under the name
+                repeat k in 0..3 {
+                    let lx = 70 + k * 140
+                    ellipse { at: lx - 10, 458; radius: 3; color: pick(k, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, accent.primary, fl.phos), #ffffff, 0.45), mix(if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, accent.secondary, fl.ember), 0.35)) }
+                    text pick(k, arc_l0, arc_l1, arc_l2) { at: lx - 2, 458; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: #ffffff; opacity: 0.85
+                         width: 120; lines: 1; shadow: 0, 1, 4, 80%, #000000 }
+                }
+                // the name (a press renames), who, how long
+                zone box nz { from: 110, 412; size: 200, 26; cursor: text; role: button; label: "Rename" }
+                text nx_name { at: 210, 424; anchor: center; align: center; size: 19; weight: 700; family: "Exo 2"; color: #ffffff; width: 260; lines: 1; show: not nx_naming
+                               shadow: 0, 1, 6, 70%, #000000 }
+                group {
+                    show: nx_naming
+                    box { from: 100, 411; size: 220, 26; corner: 6; color: if(isl_style > 0.5, surface.elevated, fl.well) }
+                    box { from: 100, 411; size: 220, 26; corner: 6; stroke: 1; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                    input nx_name_in { at: 106, 416; width: 208; size: 14; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); selection: if(isl_style > 0.5, selection.bg, fl.well)
+                                       placeholder: "Your name, then Enter" }
+                }
+                on press nz while not nx_naming { nx_naming = true; focus nx_name_in }
+                on submit nx_name_in { nx_naming = false; emit nx_rename; blur }
+                on key Escape while nx_naming { nx_naming = false; blur }
+                text "{nx_who}{?  ·  {nx_uptime}}" { at: 210, 442; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: #ffffff; opacity: 0.75; width: 360; lines: 1 }
+                text nx_notice { at: 392, 72; anchor: right center; align: right; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, accent.primary, fl.phos); width: 300; lines: 1 }
+                // what is not in the orbit: chips under it
+                for r in rest {
+                    let rx = 18 + mod(r.index, 4) * 97
+                    let ry = 480
+                    group {
+                        show: r.index < 4
+                        zone box rzo { from: rx, ry; size: 92, 22; cursor: pointer; role: toggle; checked: r.on; label: r.word }
+                        IsleBtn(rx, ry, 92, r.word, if(r.on, 1, 0), rzo.hover, 22)
+                        on press rzo { emit nx_rest(r.index) }
+                    }
                 }
             }
+
             // ── Levels ──
             group {
                 show: y_levels > 0
                 move: 0, y_levels - sv
-                SecHead(0, "Levels", pick(audio.muted, "{round(audio.volume * 100), 0} %", "muted"), f_levels, 1)
+                SecHead(0, "Levels", pick(audio.muted, "{round(audio.volume * 100), 0} %", "muted"), f_levels, 0)
                 group {
                     show: not f_levels
                     group { move: 30, 34
@@ -578,7 +714,7 @@ scene Nexus {
             group {
                 show: y_media > 0
                 move: 0, y_media - sv
-                SecHead(0, "Now playing", med.player, f_media, 2)
+                SecHead(0, "Now playing", med.player, f_media, 1)
                 group {
                     show: not f_media
                     zone box mcov { from: 30, 34; size: 84, 84; cursor: pointer; role: button; label: "Open the music player" }
@@ -608,7 +744,7 @@ scene Nexus {
             group {
                 show: y_notes > 0
                 move: 0, y_notes - sv
-                SecHead(0, "Notifications", pick(feed_n > 0, "none", "{feed_n, 0} waiting"), f_notes, 3)
+                SecHead(0, "Notifications", pick(feed_n > 0, "none", "{feed_n, 0} waiting"), f_notes, 2)
                 group {
                     show: not f_notes
                     text pick(feed_ok, "The bar has not said yet", "Nothing waiting") { at: 30, 44; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: feed_n < 1 }
@@ -634,7 +770,7 @@ scene Nexus {
             group {
                 show: y_connections > 0
                 move: 0, y_connections - sv
-                SecHead(0, "Connections", pick(network.online, "offline", network.name), f_connections, 4)
+                SecHead(0, "Connections", pick(network.online, "offline", network.name), f_connections, 3)
                 group {
                     show: not f_connections
                     text "WI-FI" { at: 30, 42; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
@@ -680,7 +816,7 @@ scene Nexus {
             group {
                 show: y_sound > 0
                 move: 0, y_sound - sv
-                SecHead(0, "Sound", "", f_sound, 5)
+                SecHead(0, "Sound", "", f_sound, 4)
                 group {
                     show: not f_sound
                     for o in outs {
@@ -714,7 +850,7 @@ scene Nexus {
             group {
                 show: y_machine > 0
                 move: 0, y_machine - sv
-                SecHead(0, "Machine", "{round(m_cpu * 100), 0} % CPU", f_machine, 6)
+                SecHead(0, "Machine", "{round(m_cpu * 100), 0} % CPU", f_machine, 5)
                 group {
                     show: not f_machine
                     zone box mz { from: 16, 30; size: 388, 76; cursor: pointer; role: button; label: "Open btop" }
@@ -731,7 +867,7 @@ scene Nexus {
             group {
                 show: y_today > 0
                 move: 0, y_today - sv
-                SecHead(0, "Today", clock.date, f_today, 7)
+                SecHead(0, "Today", clock.date, f_today, 6)
                 group {
                     show: not f_today
                     zone box tz { from: 16, 30; size: 388, 58; cursor: pointer; role: button; label: "Open the calendar" }
@@ -760,7 +896,7 @@ scene Nexus {
             group {
                 show: y_updates > 0
                 move: 0, y_updates - sv
-                SecHead(0, "System updates", pick(upd_n > 0, "up to date", "{upd_n, 0} waiting"), f_updates, 8)
+                SecHead(0, "System updates", pick(upd_n > 0, "up to date", "{upd_n, 0} waiting"), f_updates, 7)
                 group {
                     show: not f_updates
                     text upd_t { at: 30, 50; anchor: left center; size: 11.5; family: "Exo 2"; color: if(upd_n > 0, if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, fg.secondary, fl.muted)); width: 250; lines: 1 }
@@ -774,7 +910,7 @@ scene Nexus {
             group {
                 show: y_workspaces > 0
                 move: 0, y_workspaces - sv
-                SecHead(0, "Workspaces", "", f_workspaces, 9)
+                SecHead(0, "Workspaces", "", f_workspaces, 8)
                 group {
                     show: not f_workspaces
                     for w in wss {
@@ -794,7 +930,7 @@ scene Nexus {
             group {
                 show: y_shortcuts > 0
                 move: 0, y_shortcuts - sv
-                SecHead(0, "Shortcuts", "", f_shortcuts, 10)
+                SecHead(0, "Shortcuts", "", f_shortcuts, 9)
                 group {
                     show: not f_shortcuts
                     zone box sc40 { from: 30, 32; size: 86, 28; cursor: pointer; role: button; label: "Wallpaper" }
@@ -822,81 +958,42 @@ scene Nexus {
             }
             }
 
-            // ── The profile card: the banner, who you are, the time, the ways out ──
+
+            // ── Customise the orbit: which nodes, which arcs, which board ──
             group {
-                // the banner (or, without one, the palette's own gradient), fading into the drawer
-                group {
-                    clip box { from: 17, 9; size: 386, 128; corner: if(isl_style > 0.5, 14, 0) }
-                    body {
-                        gradient: 17, 9 to 403, 137, mix(if(isl_style > 0.5, accent.primary, fl.phos), #000000, 0.35), mix(if(isl_style > 0.5, accent.secondary, fl.ember), #000000, 0.55)
-                        box { from: 17, 9; size: 386, 128 }
-                    }
-                    image banner { at: 210 - nx_bw / 2, 73 - nx_bh / 2; size: nx_bw, nx_bh; show: nx_banner_on }
-                    box { from: 17, 97; size: 386, 14; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.25 }
-                    box { from: 17, 111; size: 386, 14; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.5 }
-                    box { from: 17, 125; size: 386, 12; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.8 }
-                    zone box bz { from: 17, 9; size: 386, 86; cursor: pointer; role: button; label: "Change the banner" }
-                    on press bz { emit nx_pick(1) }
-                    group {
-                        opacity: bz.hover
-                        box { from: 290, 70; size: 104, 20; corner: 10; color: #000000; opacity: 0.55 }
-                        text "change banner" { at: 342, 80; anchor: center; align: center; size: 10; family: "Exo 2"; color: #ffffff }
-                    }
+                show: nx_custom
+                box { from: 17, 70; size: 386, 330; corner: if(isl_style > 0.5, 16, 2); color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.96 }
+                box { from: 17, 70; size: 386, 330; corner: if(isl_style > 0.5, 16, 2); stroke: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.6 }
+                zone box cussheet { from: 17, 70; size: 386, 330; role: region; label: "Customise the orbit" }
+                text "NODES · UP TO EIGHT" { at: 32, 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                for c in cus_nodes {
+                    let cx2 = 30 + mod(c.index, 4) * 92
+                    let cy2 = 104 + floor(c.index / 4) * 30
+                    zone box cn { from: cx2, cy2; size: 86, 24; cursor: pointer; role: toggle; checked: c.on; label: "{c.word} in the orbit" }
+                    IsleBtn(cx2, cy2, 86, c.word, if(c.on, 1, 0), cn.hover)
+                    on press cn { emit nx_cus(100 + c.index) }
                 }
-                // the time, large, over the banner
-                text clock.time { at: 392, 34; anchor: right center; size: 28; weight: 700; family: "Exo 2"; color: #ffffff
-                                   shadow: 0, 1, 8, 70%, #000000 }
-                text clock.date { at: 392, 56; anchor: right center; size: 11; family: "Share Tech Mono"; color: #ffffff; opacity: 0.85
-                                   shadow: 0, 1, 6, 70%, #000000 }
-                // the ways out, in a capsule on the banner
-                box { from: 24, 16; size: 132, 30; corner: 15; color: #000000; opacity: 0.45 }
-                zone box hset { from: 28, 18; size: 28, 26; cursor: pointer; role: button; label: "mooi's settings" }
-                figure i_set { at: 42, 31; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hset.hover }
-                on press hset { emit nx_go(1) }
-                zone box hlock { from: 60, 18; size: 28, 26; cursor: pointer; role: button; label: "Lock the screen" }
-                figure i_lock { at: 74, 31; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hlock.hover }
-                on press hlock { emit nx_go(2) }
-                zone box hpow { from: 92, 18; size: 28, 26; cursor: pointer; role: button; label: "The session menu" }
-                figure i_power { at: 106, 31; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hpow.hover }
-                on press hpow { emit nx_go(3) }
-                zone box hx { from: 124, 18; size: 28, 26; cursor: pointer; role: button; label: "Close the Control Nexus" }
-                text "×" { at: 138, 31; anchor: center; align: center; size: 17; weight: 600; color: #ffffff; opacity: 0.75 + 0.25 * hx.hover }
-                on press hx { emit nx_close }
-
-                // the avatar, round, ringed in the accent, over the banner's edge
-                zone box az { from: 26, 100; size: 76, 76; cursor: pointer; role: button; label: "Change the profile picture" }
-                group {
-                    glow: 8, (0.7) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
-                    ellipse { at: 64, 138; radius: 40; color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                text "ARCS · UP TO THREE" { at: 32, 210; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                for c in cus_arcs {
+                    let ax2 = 30 + mod(c.index, 4) * 92
+                    let ay2 = 222 + floor(c.index / 4) * 30
+                    zone box ca { from: ax2, ay2; size: 86, 24; cursor: pointer; role: toggle; checked: c.on; label: "{c.word} on an arc" }
+                    IsleBtn(ax2, ay2, 86, c.word, if(c.on, 1, 0), ca.hover)
+                    on press ca { emit nx_cus(200 + c.index) }
                 }
-                ellipse { at: 64, 138; radius: 37.5; color: if(isl_style > 0.5, bg.primary, fl.hull) }
-                group {
-                    clip box { from: 28, 102; size: 72, 72; corner: 36 }
-                    box { from: 28, 102; size: 72, 72; color: if(isl_style > 0.5, surface.elevated, fl.well) }
-                    image avatar { at: 28, 102; size: 72, 72; show: nx_avatar_on }
-                    text nx_initial { at: 64, 138; anchor: center; align: center; size: 28; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, accent.primary, fl.phos); show: not nx_avatar_on }
-                    box { from: 28, 152; size: 72, 22; color: #000000; opacity: 0.6 * az.hover }
-                    text "edit" { at: 64, 162; anchor: center; align: center; size: 10; family: "Exo 2"; color: #ffffff; opacity: az.hover }
-                }
-                on press az { emit nx_pick(0) }
-
-                // the name (a press to rename), user@host and how long it has been up
-                zone box nz { from: 110, 140; size: 230, 26; cursor: text; role: button; label: "Rename" }
-                text nx_name { at: 112, 153; anchor: left center; size: 19; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.phos); width: 230; lines: 1; show: not nx_naming }
-                line { from: 112, 166; to: 112 + 60 * nz.hover, 166; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: nz.hover; show: not nx_naming }
-                group {
-                    show: nx_naming
-                    box { from: 108, 140; size: 236, 26; corner: 6; color: if(isl_style > 0.5, surface.elevated, fl.well) }
-                    box { from: 108, 140; size: 236, 26; corner: 6; stroke: 1; color: if(isl_style > 0.5, accent.primary, fl.phos) }
-                    input nx_name_in { at: 114, 145; width: 224; size: 14; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); selection: if(isl_style > 0.5, selection.bg, fl.well)
-                                       placeholder: "Your name, then Enter" }
-                }
-                on press nz while not nx_naming { nx_naming = true; focus nx_name_in }
-                on submit nx_name_in { nx_naming = false; emit nx_rename; blur }
-                on key Escape while nx_naming { nx_naming = false; blur }
-                text "{nx_who}{?  ·  {nx_uptime}}" { at: 112, 178; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); width: 290; lines: 1 }
-                text nx_notice { at: 392, 178; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, accent.primary, fl.phos); width: 200; lines: 1; align: right }
-                line { from: 26, 196; to: 394, 196; width: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim); opacity: 0.7 }
+                text "BOARD" { at: 32, 298; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                zone box cb0 { from: 30, 310; size: 110, 24; cursor: pointer; role: tab; selected: orb_bg == 0; label: "Your banner" }
+                IsleBtn(30, 310, 110, "Banner", if(orb_bg == 0, 1, 0), cb0.hover)
+                on press cb0 { emit nx_cus(300) }
+                zone box cb1 { from: 148, 310; size: 110, 24; cursor: pointer; role: tab; selected: orb_bg == 1; label: "A circuit board" }
+                IsleBtn(148, 310, 110, "Circuit", if(orb_bg == 1, 1, 0), cb1.hover)
+                on press cb1 { emit nx_cus(301) }
+                zone box cb2 { from: 266, 310; size: 110, 24; cursor: pointer; role: tab; selected: orb_bg == 2; label: "Plain" }
+                IsleBtn(266, 310, 110, "Plain", if(orb_bg == 2, 1, 0), cb2.hover)
+                on press cb2 { emit nx_cus(302) }
+                zone box cdone { from: 290, 356; size: 100, 26; cursor: pointer; role: button; label: "Done" }
+                IsleBtn(290, 356, 100, "Done", 1, cdone.hover, 26)
+                on press cdone { nx_custom = false }
             }
         }
     }

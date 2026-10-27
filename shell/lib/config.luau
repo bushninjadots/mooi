@@ -279,6 +279,10 @@ M.SCHEMA = {
     { path = "wallpaper.fuzz", kind = "integer", default = 18, min = 0, max = 45 },
     -- The Control Nexus (D98): a drawer from the bar's mark; which of its sections are folded.
     { path = "nexus.folded", kind = "ids", max = 12 },
+    -- the orbit (D99, lib/nexusorbit): the nodes round the core, the arcs' readings, the backdrop
+    { path = "nexus.orbit.nodes", kind = "ids", max = 8 },
+    { path = "nexus.orbit.arcs", kind = "ids", max = 3 },
+    { path = "nexus.orbit.backdrop", kind = "enum", values = { "banner", "circuit", "plain" }, default = "banner" },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -452,7 +456,7 @@ local function migrate(t)
     -- are and the folded sections are read. The rest goes quietly rather than as unknown settings.
     if type(t.nexus) == "table" then
         for k in pairs(t.nexus) do
-            if k ~= "identity" and k ~= "folded" then t.nexus[k] = nil end
+            if k ~= "identity" and k ~= "folded" and k ~= "orbit" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

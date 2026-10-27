@@ -14,6 +14,7 @@ local stats = require("lib/stats")
 local calendar = require("lib/calendar")
 local forecast = require("lib/forecast")
 local drawer = require("lib/nexusdrawer")
+local orbit = require("lib/nexusorbit")
 
 local FILE = "settings.json"
 
@@ -77,14 +78,14 @@ local function show_identity()
     local bn = type(id.banner) == "string" and id.banner or ""
     text.nx_avatar = av ~= "" and (data_folder .. "/" .. av) or ""; fact.nx_avatar_on = av ~= ""
     text.nx_banner = bn ~= "" and (data_folder .. "/" .. bn) or ""; fact.nx_banner_on = bn ~= ""
-    -- drawn to cover the 386 × 128 strip, centred, the overflow cut by the strip
+    -- drawn to cover the orbit's board (386 × 452), centred, the overflow cut by it
     if bn ~= "" then
         launch("magick", { "identify", "-format", "%w %h", data_folder .. "/" .. bn .. "[0]" }, function(out)
             local w, h = tostring(out or ""):match("^(%d+) (%d+)")
             w, h = tonumber(w), tonumber(h)
             if not w or w <= 0 or h <= 0 then return end
-            local k = math.max(386 / w, 128 / h)
-            fact.nx_bw, fact.nx_bh = w * k, h * k
+            local k = math.max(386 / w, 452 / h)
+            fact.nx_bw2, fact.nx_bh2 = w * k, h * k
         end)
     end
 end
@@ -187,30 +188,85 @@ end
 on("nx_close", function() close("asked (Esc, × or the mark)") end)
 after(40, function() fact.nx_open = true end)
 
+-- ── The orbit (D99): your nodes round the core, wired to it; the rest as chips; the arcs ──
+local state = {}            -- each toggle's state in words, by its nx_tog code (0 Wi-Fi … 8 record)
+local lit = {}              -- and whether it is on (not `on`: that is pleamar's own)
+local choice = orbit.choose(type(settings.nexus) == "table" and settings.nexus.orbit or nil)
+local publish_orbit         -- defined below, once the toggles' facts are known
+local function node_on(id)
+    local d = orbit.NODES[id]
+    return d and d.tog ~= nil and lit[d.tog] == true or false
+end
+local function node_state(id)
+    local d = orbit.NODES[id]
+    return d and d.tog ~= nil and (state[d.tog] or "") or "open"
+end
+function publish_orbit()
+    local g = orbit.geometry(#choice.nodes, 210, 236, 140, 98)
+    local rows = {}
+    for i, id in ipairs(choice.nodes) do
+        local d, p = orbit.NODES[id], g[i]
+        rows[i] = { word = d.word, state = node_state(id), on = node_on(id), glyph = d.glyph,
+                    x = p.x, y = p.y, p1x = p.p1x, p1y = p.p1y, p2x = p.p2x, p2y = p.p2y, p3x = p.p3x, p3y = p.p3y }
+    end
+    model.orbit = rows
+    local rest = {}
+    for i, id in ipairs(orbit.rest(choice.nodes)) do rest[i] = { word = orbit.NODES[id].word, on = node_on(id) } end
+    model.rest = rest
+    fact.orb_bg = ({ banner = 0, circuit = 1, plain = 2 })[choice.backdrop] or 0
+    local cn, ca, inside = {}, {}, {}
+    for _, id in ipairs(choice.nodes) do inside[id] = true end
+    for i, id in ipairs(orbit.NODE_ORDER) do cn[i] = { word = orbit.NODES[id].word, on = inside[id] == true } end
+    local arcs_in = {}
+    for _, id in ipairs(choice.arcs) do arcs_in[id] = true end
+    for i, id in ipairs(orbit.ARC_ORDER) do ca[i] = { word = orbit.ARCS[id], on = arcs_in[id] == true } end
+    model.cus_nodes, model.cus_arcs = cn, ca
+end
+
+-- the arcs' readings, 0..1, and their legend
+local readings = { cpu = 0, mem = 0, temp = 0, gpu = 0, disk = 0, battery = 0, volume = 0 }
+local SHORT = { cpu = "CPU", mem = "MEM", temp = "TEMP", gpu = "GPU", disk = "DISK", battery = "BAT", volume = "VOL" }
+local words = {}
+local function publish_arcs()
+    for k = 1, 3 do
+        local id = choice.arcs[k]
+        fact["arc_v" .. (k - 1)] = id and readings[id] or 0
+        text["arc_l" .. (k - 1)] = id and string.format("%s %s", SHORT[id] or "", words[id] or "") or ""
+    end
+end
+
 -- ── What the services say, for the counts and the rows' presses ──
 local nets, devices, outputs, apps = {}, {}, {}, {}
 local media = {}
 pcall(sys.watch, "network", function(n)
     nets = type(n) == "table" and type(n.networks) == "table" and n.networks or {}
     wifi_on = not (type(n) == "table" and n.wifi == false)
+    lit[0] = wifi_on and type(n) == "table" and n.online == true
     counts.nets = #nets; relayout()
-    text.t_s0 = (type(n) == "table" and n.wifi == false) and "Off" or ((type(n) == "table" and n.online) and tostring(n.name or "Connected") or "No network")
+    if publish_orbit then publish_orbit() end
+    state[0] = (type(n) == "table" and n.wifi == false) and "Off" or ((type(n) == "table" and n.online) and tostring(n.name or "Connected") or "No network")
 end)
 pcall(sys.watch, "bluetooth", function(b)
     devices = type(b) == "table" and type(b.devices) == "table" and b.devices or {}
     counts.bt = #devices; relayout()
     local present, powered = type(b) == "table" and b.present, type(b) == "table" and b.powered
     bt_powered = powered == true
-    text.t_s1 = not present and "No adapter" or (powered and (#devices > 0 and (#devices .. " known") or "On") or "Off")
+    lit[1] = bt_powered
+    state[1] = not present and "No adapter" or (powered and (#devices > 0 and (#devices .. " known") or "On") or "Off")
     text.bt_empty = not present and "No Bluetooth adapter" or (powered and "No devices paired" or "Bluetooth is off")
+    publish_orbit()
 end)
 pcall(sys.watch, "audio", function(a)
     if type(a) ~= "table" then return end
     outputs = type(a.outputs) == "table" and a.outputs or {}
     apps = type(a.apps) == "table" and a.apps or {}
     counts.outs, counts.apps = #outputs, math.min(6, #apps); relayout()
-    text.t_s2 = a.muted and "Muted" or string.format("%d %%", math.floor((tonumber(a.volume) or 0) * 100 + 0.5))
-    text.t_s3 = a.input_muted and "Muted" or "Live"
+    state[2] = a.muted and "Muted" or string.format("%d %%", math.floor((tonumber(a.volume) or 0) * 100 + 0.5))
+    state[3] = a.input_muted and "Muted" or "Live"
+    lit[2], lit[3] = not a.muted, not a.input_muted
+    readings.volume = a.muted and 0 or (tonumber(a.volume) or 0)
+    words.volume = a.muted and "muted" or string.format("%d%%", math.floor(readings.volume * 100 + 0.5))
+    publish_orbit(); publish_arcs()
 end)
 pcall(sys.watch, "brightness", function(b) counts.bright = type(b) == "table" and b.present == true; relayout() end)
 pcall(sys.watch, "workspaces", function(w)
@@ -280,11 +336,13 @@ local function bar_states()
         if #got < 5 then return end
         fact.b_dnd, fact.b_awake, fact.b_rec, fact.b_night = got[1] == "true", got[2] == "true", got[3] == "true", got[4] == "true"
         fact.b_saver = (tonumber(got[5]) or 0) > 0
-        text.t_s4 = fact.b_dnd and "Do not disturb" or "Off"
-        text.t_s5 = fact.b_night and "4000 K" or "Off"
-        text.t_s6 = fact.b_awake and "Kept awake" or "Idle"
-        text.t_s7 = fact.b_saver and "On" or "Off"
-        text.t_s8 = fact.b_rec and "Recording" or "Ready"
+        state[4] = fact.b_dnd and "Do not disturb" or "Off"
+        state[5] = fact.b_night and "4000 K" or "Off"
+        state[6] = fact.b_awake and "Kept awake" or "Idle"
+        state[7] = fact.b_saver and "On" or "Off"
+        state[8] = fact.b_rec and "Recording" or "Ready"
+        lit[4], lit[5], lit[6], lit[7], lit[8] = fact.b_dnd, fact.b_night, fact.b_awake, fact.b_saver, fact.b_rec
+        publish_orbit()
     end)
 end
 bar_states()
@@ -330,6 +388,40 @@ on("nx_app", function(v)
     if a and tonumber(a.id) then pcall(sys.call, "audio.app_volume", tonumber(a.id), (n % 1000) / 1000) end
 end)
 
+-- ── The orbit's presses: a node, a chip, the customise sheet ──
+local GO                    -- the actions, defined with the other ways of opening things below
+local function press_node(id)
+    local d = orbit.NODES[id]
+    if not d then return end
+    if d.tog ~= nil and TOGGLE[d.tog] then TOGGLE[d.tog](); after(250, bar_states)
+    elseif d.go ~= nil then local f = GO[d.go]; if f then f() end end
+end
+on("nx_node", function(v) press_node(choice.nodes[(tonumber(v) or -1) + 1]) end)
+on("nx_rest", function(v) press_node(orbit.rest(choice.nodes)[(tonumber(v) or -1) + 1]) end)
+local function save_orbit()
+    if env("MOOI_SAFE", "") == "1" then return end
+    local doc = read(FILE)
+    if type(doc) ~= "table" then return end
+    doc.nexus = type(doc.nexus) == "table" and doc.nexus or {}
+    doc.nexus.orbit = { nodes = choice.nodes, arcs = choice.arcs, backdrop = choice.backdrop }
+    pcall(sys.call, "files.write", FILE, doc)
+end
+on("nx_cus", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local function flip(list, id, max)
+        local out, had = {}, false
+        for _, x in ipairs(list) do if x == id then had = true else out[#out + 1] = x end end
+        if not had and #out < max then out[#out + 1] = id end
+        return out
+    end
+    if n >= 300 then choice.backdrop = ({ [0] = "banner", [1] = "circuit", [2] = "plain" })[n - 300] or choice.backdrop
+    elseif n >= 200 then local id = orbit.ARC_ORDER[n - 199]; if id then choice.arcs = flip(choice.arcs, id, 3) end
+    elseif n >= 100 then local id = orbit.NODE_ORDER[n - 99]; if id then choice.nodes = flip(choice.nodes, id, 8) end end
+    choice = orbit.choose(choice)
+    publish_orbit(); publish_arcs()
+    save_orbit()
+end)
+
 -- ── Rows: networks, devices, outputs, workspaces ──
 on("nx_net", function(v)
     local w = nets[(tonumber(v) or -1) + 1]
@@ -353,7 +445,7 @@ local function island(name)
     bar("fact isl_cx " .. tostring(screen_w - 200), "fact open " .. name)
     close()
 end
-local GO = {
+GO = {
     [1] = function() close(); bar("emit open_settings") end,
     [2] = function() close(); bar("emit power 1") end,
     [3] = function() close(); bar("emit power 0") end,
@@ -406,21 +498,30 @@ pcall(sys.watch, "files:updates.json", show_updates)
 -- ── The machine, every 2 s ──
 local cpu_prev = nil
 local function machine()
-    launch("cat", { "/proc/stat" }, function(out) local v; v, cpu_prev = sysinfo.cpu(out, cpu_prev); if v then fact.m_cpu = v end end)
+    launch("cat", { "/proc/stat" }, function(out)
+        local v; v, cpu_prev = sysinfo.cpu(out, cpu_prev)
+        if v then fact.m_cpu = v; readings.cpu = v; words.cpu = string.format("%d%%", math.floor(v * 100 + 0.5)); publish_arcs() end
+    end)
     launch("cat", { "/proc/meminfo" }, function(out)
         local m = stats.meminfo(out); fact.m_mem = m.frac; text.m_mem_t = string.format("%.1f / %.1f GiB", m.used, m.total)
+        readings.mem = m.frac; words.mem = string.format("%.1fG", m.used); publish_arcs()
     end)
-    launch("df", { "-P", "/" }, function(out) local d = stats.df(out); fact.m_disk = d.frac; text.m_disk_t = d.text end)
+    launch("df", { "-P", "/" }, function(out)
+        local d = stats.df(out); fact.m_disk = d.frac; text.m_disk_t = d.text
+        readings.disk = d.frac; words.disk = string.format("%d%%", math.floor(d.frac * 100 + 0.5)); publish_arcs()
+    end)
     -- the GPU's busy share: whichever card has the file (cat fails as a whole when one is missing)
     for _, card in ipairs({ "card1", "card0" }) do
         launch("cat", { "/sys/class/drm/" .. card .. "/device/gpu_busy_percent" }, function(out)
             local g = out and stats.gpu(out) or nil
-            if g then fact.m_gpu_ok = true; fact.m_gpu = g end
+            if g then fact.m_gpu_ok = true; fact.m_gpu = g; readings.gpu = g; words.gpu = string.format("%d%%", math.floor(g * 100 + 0.5)); publish_arcs() end
         end)
     end
     launch("sensors", { "-j" }, function(out)
         local ok, t = pcall(json.decode, out or ""); local c = ok and sysinfo.temp(t) or nil
-        if c then fact.m_temp = c end
+        if c then
+            fact.m_temp = c; readings.temp = math.max(0, math.min(1, (c - 30) / 70)); words.temp = string.format("%d°", math.floor(c + 0.5)); publish_arcs()
+        end
     end)
 end
 machine()
@@ -428,6 +529,7 @@ every(2000, machine)
 pcall(sys.watch, "battery", function(b)
     if type(b) ~= "table" or not b.present then text.m_bat_t = ""; return end
     text.m_bat_t = string.format("Battery %d %% · %s", math.floor((tonumber(b.percent) or 0) + 0.5), b.charging and "charging" or "on battery")
+    readings.battery = (tonumber(b.percent) or 0) / 100; words.battery = string.format("%d%%", math.floor((tonumber(b.percent) or 0) + 0.5)); publish_arcs()
 end)
 
 -- ── Today: the week from today, and the weather (kept 10 minutes in nexus-weather.json) ──

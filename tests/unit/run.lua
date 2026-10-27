@@ -2461,8 +2461,8 @@ local drawer = require("lib/nexusdrawer")
 test("nexus drawer: sections in order, each top under the one before", function()
     local c = { playing = true, notes = 2, nets = 3, bt = 1, outs = 2, apps = 1, bright = true, ws = 3 }
     local l = drawer.layout(c, {})
-    eq(l.order[1], "toggles"); eq(l.order[#l.order], "shortcuts")
-    eq(l.top.toggles, drawer.HEADER)
+    eq(l.order[1], "levels"); eq(l.order[#l.order], "shortcuts")
+    eq(l.top.levels, drawer.HEADER)
     local prev = nil
     for _, id in ipairs(l.order) do
         if prev then eq(l.top[id], l.top[prev] + l.height[prev] + drawer.GAP, id .. " under " .. prev) end
@@ -2489,6 +2489,37 @@ test("config: the old Nexus settings go quietly; who you are and the folds stay"
     eq(s.nexus.identity.name, "Alex"); eq(s.nexus.folded[1], "machine")
     eq(s.nexus.view, nil, "the retired view is gone"); eq(#problems, 0)
     for _, n in ipairs(notes) do assert(not n:find("nexus"), "no unknown-setting note for the old Nexus: " .. n) end
+end)
+
+local orbit = require("lib/nexusorbit")
+test("nexus orbit: your choices, cleaned — known ids, no repeats, at most eight nodes and three arcs", function()
+    local c = orbit.choose({ nodes = { "wifi", "bogus", "wifi", "night", "bt", "mute", "mic", "quiet", "awake", "saver", "record" },
+                             arcs = { "cpu", "nope", "temp", "cpu", "gpu", "disk" }, backdrop = "circuit" })
+    eq(#c.nodes, 8, "eight at most"); eq(c.nodes[1], "wifi"); eq(c.nodes[2], "night", "unknown and repeated ids dropped")
+    eq(#c.arcs, 3); eq(c.arcs[2], "temp"); eq(c.backdrop, "circuit")
+    local d = orbit.choose(nil)
+    eq(#d.nodes, 8, "the defaults"); eq(#d.arcs, 3); eq(d.backdrop, "banner")
+    eq(#orbit.choose({ nodes = {} }).nodes, 0, "an empty orbit is a choice too")
+end)
+test("nexus orbit: every node on its ring, every trace from the core's edge to its pad", function()
+    local g = orbit.geometry(8, 210, 215, 150, 98)
+    eq(#g, 8)
+    for i, n in ipairs(g) do
+        local d = math.sqrt((n.x - 210) ^ 2 + (n.y - 215) ^ 2)
+        assert(math.abs(d - 150) < 0.5, "node " .. i .. " on the ring")
+        local s0 = math.sqrt((n.p1x - 210) ^ 2 + (n.p1y - 215) ^ 2)
+        assert(math.abs(s0 - 98) < 0.5, "trace " .. i .. " starts at the core's edge")
+        eq(n.p3x, n.x); eq(n.p3y, n.y)
+    end
+    eq(math.floor(g[1].x + 0.5), 210, "the first at the top"); eq(math.floor(g[1].y + 0.5), 65)
+    eq(#orbit.geometry(0, 0, 0, 1, 1), 0)
+    local three = orbit.geometry(3, 0, 0, 100, 50)
+    assert(math.abs(three[2].x - 86.6) < 0.2, "spread evenly round the ring")
+end)
+test("nexus orbit: the rest of the toggles, for the chips under the orbit", function()
+    local rest = orbit.rest({ "wifi", "bt" })
+    for _, id in ipairs(rest) do assert(id ~= "wifi" and id ~= "bt") end
+    eq(#rest, #orbit.NODE_ORDER - 2)
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

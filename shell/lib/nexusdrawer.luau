@@ -5,12 +5,12 @@
 
 local M = {}
 
-M.HEADER = 204     -- the drawer's own head (the profile card: banner, avatar, name, time) before the first section
+M.HEADER = 514     -- the orbit (D99): the board, the core, its nodes, the name, the chips — before the first section
 M.GAP = 10         -- between sections
 M.FOLDED = 30      -- a section's header line
 M.ROW = 30         -- one row of a list
 
-M.ORDER = { "toggles", "levels", "media", "notes", "connections", "sound", "machine", "today",
+M.ORDER = { "levels", "media", "notes", "connections", "sound", "machine", "today",
             "updates", "workspaces", "shortcuts" }
 local KNOWN = {}
 for _, id in ipairs(M.ORDER) do KNOWN[id] = true end
@@ -19,7 +19,6 @@ local function n(v) return math.max(0, tonumber(v) or 0) end
 
 -- An open section's height for counts `c` (missing counts read as 0 / false).
 local function open_height(id, c)
-    if id == "toggles" then return M.FOLDED + 3 * 62 end
     if id == "levels" then return M.FOLDED + (c.bright and 3 or 2) * 40 end
     if id == "media" then return M.FOLDED + 96 end
     if id == "notes" then return M.FOLDED + math.max(1, math.min(5, n(c.notes))) * M.ROW + 36 end

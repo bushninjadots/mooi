@@ -3211,3 +3211,22 @@ output switch, record, lock and session (each would change the user's machine or
 window; closing on a focus change or a blur therefore closed it on every mouse move. Both rules are
 gone: it closes on Esc, ×, the mark, or a workspace change. Checked with real clicks: open from the
 mark, click inside, sweep the pointer across the windows — it stays; Esc closes it.
+
+## D99 · 2026-10-28 · The orbital Nexus: you at the core of a circuit board
+
+**Asked for:** "a different visual design altogether"; of three mockups (Monolith, Editorial, Orbital)
+the user chose Orbital, "with nodes, circuit board, a little more creativity, has everything and is
+customizable". **Done:** the drawer's top is a board (your banner faint behind it, a circuit pattern,
+or plain — nexus.orbit.backdrop): your picture at the core in an accent ring, three live arcs round it
+(nexus.orbit.arcs: any three of CPU, memory, temperature, GPU, disk, battery, volume, in shades of the
+accent), a dashed bus ring, and eight hexagonal nodes (nexus.orbit.nodes: any eight of the nine
+toggles and lock, settings, screenshot) wired to the core by traces with vias — a node that is on
+lights its pad and its trace, and a press sends a pulse home along its wire (a layer, 550 ms). The
+time and a capsule of buttons (customise ✎, settings, lock, session, ×) sit on the board; the name
+(a press renames), user@host · uptime and the arcs' legend under it; the toggles not in the orbit
+as chips below. ✎ opens a sheet over the board to choose the nodes, the arcs and the board, saved
+at once. The column below keeps every section; the old toggle grid and profile card went into the
+orbit. lib/nexusorbit (pure, 3 tests): the catalogue, cleaning a choice, the geometry of nodes and
+traces. A table named `on` had shadowed pleamar's `on()` — the logic crashed at load until renamed.
+**Checked live:** both styles; the Night node on and off through the bar (process 1 → 0, its trace lit);
+arcs swapped to GPU and back, the board to Circuit and back (saved each time). Unit 237 + BMO 27.
