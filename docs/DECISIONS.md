@@ -3206,3 +3206,8 @@ moves); the night light toggled through the bar and back (process 1 → 0); the 
 opens the calendar island; a notification opens the Signal Field; Esc closes; another app's window
 closes it. Unit 234 + BMO 27; integration.sh 42/42. Not pressed live: Wi-Fi join, Bluetooth connect,
 output switch, record, lock and session (each would change the user's machine or session).
+**Fixed the same night:** the drawer closed as soon as the mouse moved. This Hyprland has
+`input:follow_mouse = 1`, so the focus — and the keyboard — move whenever the pointer crosses a
+window; closing on a focus change or a blur therefore closed it on every mouse move. Both rules are
+gone: it closes on Esc, ×, the mark, or a workspace change. Checked with real clicks: open from the
+mark, click inside, sweep the pointer across the windows — it stays; Esc closes it.

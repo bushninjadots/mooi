@@ -90,3 +90,6 @@ layer surface hears nothing outside itself, and holding the keyboard to notice a
 the keyboard from every window. So it closes on Esc, ×, the mark, losing the keyboard (once it has
 it), the workspace changing, or another *app* taking the focus — by class, since Hyprland names the
 focused window only by title and class, and titles change by themselves.
+
+Update: with Hyprland's focus following the mouse, a focus change or a blur happens on every mouse
+move, so neither closes the drawer any more — Esc, ×, the mark, or a workspace change do.

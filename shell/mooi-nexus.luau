@@ -116,15 +116,16 @@ end)
 
 -- ── Opening and closing ──
 local closing = false
-local function close()
+local function close(why)
     if closing then return end
     closing = true
+    log("nexus · closing: " .. tostring(why or "asked"))
     fact.nx_open = false
     -- gone from sight in ~220 ms; it ends later, so what a press just asked of the bar or started
     -- (a `pleamar --say` takes ~250 ms) is not cut off with it
     after(900, function() launch("pleamar", { "--say", "mooi-nexus", "quit" }) end)
 end
-on("nx_close", close)
+on("nx_close", function() close("asked (Esc, × or the mark)") end)
 after(40, function() fact.nx_open = true end)
 
 -- ── What the services say, for the counts and the rows' presses ──
@@ -156,18 +157,12 @@ pcall(sys.watch, "brightness", function(b) counts.bright = type(b) == "table" an
 pcall(sys.watch, "workspaces", function(w)
     local first = counts.ws_seen == nil
     local active = type(w) == "table" and tonumber(w.active) or nil
-    if not first and active and active ~= counts.active_ws then close() end   -- the desktop moved on
+    if not first and active and active ~= counts.active_ws then close("the workspace changed") end   -- the desktop moved on
     counts.ws_seen = true; counts.active_ws = active
 end)
--- another app taking the focus closes the drawer (the desktop is being used). Its class, not its
--- title: Hyprland names the focused window only by title and class, and a title changes by itself
--- (a terminal's spinner), which is not the user going elsewhere.
-local focused = nil
-pcall(sys.watch, "window", function(w)
-    local now = type(w) == "table" and w.class or nil
-    if focused ~= nil and now ~= nil and now ~= "" and now ~= focused then close() end
-    if now and now ~= "" then focused = now end
-end)
+-- No closing on a focus change or on losing the keyboard: with Hyprland's focus following the
+-- mouse (input:follow_mouse), both happen whenever the pointer crosses a window, and the drawer
+-- went the moment the mouse moved. It stays until Esc, ×, the mark, or a workspace change.
 
 -- ── Now playing: the cover, and the position carried at the player's rate ──
 local art_url, covers = nil, 0

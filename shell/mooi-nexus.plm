@@ -6,8 +6,8 @@ import "ui/island.plm"
 
 // mooi's Control Nexus (D98) — a drawer on the right edge, under the bar, the screen's height
 // below it: everything that matters in one scrolling column, every tile doing something. It
-// never dims or covers the desktop; it closes on Esc, its ×, the bar's mark again, or when the
-// focus goes elsewhere. Drawn in the island style (island.style) with the island kit, so the
+// never dims or covers the desktop; it closes on Esc, its ×, the bar's mark again, or a workspace
+// change — not when the focus moves (with focus following the mouse, that is every mouse move). Drawn in the island style (island.style) with the island kit, so the
 // Nexus and the islands are one family. mooi-nexus.luau reads what the drawer shows while it is
 // open, and carries every press to the system or to the bar (`pleamar --say mooi`). The column's
 // geometry is lib/nexusdrawer's.
@@ -15,7 +15,7 @@ import "ui/island.plm"
 scene Nexus {
     permissions {
         run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "cava", "curl", "magick", "kitty", "btop", "hostname", "whoami"
-        services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env", "window"
+        services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env"
     }
 
     // The same facts and springs the bar wears: the logic paints them from palette.json, and
@@ -459,7 +459,6 @@ scene Nexus {
         keyboard: on_demand
 
         on key Escape { emit nx_close }
-        on blur { emit nx_close }
 
         group {
             move: 440 * (1 - nx_in), nx_top
