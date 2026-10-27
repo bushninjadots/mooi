@@ -40,8 +40,38 @@ local function index_of(list, v)
     return best
 end
 
+-- ── Only one BMO ─────────────────────────────────────────────
+-- A second program called bmo gets `bmo-<pid>` for a name, and nothing (the bar's `--say bmo`
+-- included) can see it, so two would live on. Each one marks itself and asks whoever answers to
+-- "bmo" for its mark; one that is not the answer is the second, finds its own name by its mark
+-- among the bmo-<pid> sockets, and quits. Until then it draws nothing and saves nothing.
+local spare = false
+-- the time, and where this process keeps a fresh table (each process its own place)
+local mark = (os.time() % 100000) * 10000 + (tonumber(tostring({}):match("(%x+)$") or "0", 16) or 0) % 10000
+fact.token = mark
+local function only_one()
+    run("pleamar", { "--say", "bmo", "get token" }, function(out, code)
+        -- only a clear answer that is not his own makes him the spare (no answer: he is not)
+        local theirs = code == 0 and tonumber((out or ""):match("^%s*([%d.]+)%s*$")) or nil
+        if not theirs or theirs == mark then return end
+        spare = true
+        fact.ready = false
+        local dir = tostring(sys.ask("env", "XDG_RUNTIME_DIR") or "") .. "/pleamar"
+        run("ls", { dir }, function(list)
+            for pid in tostring(list or ""):gmatch("bmo%-(%d+)%.sock") do
+                local name = "bmo-" .. pid
+                run("pleamar", { "--say", name, "get token" }, function(t)
+                    if tonumber((t or ""):match("[%d.]+")) == mark then run("pleamar", { "--say", name, "quit" }) end
+                end)
+            end
+        end)
+    end)
+end
+after(600, only_one)
+
 -- His panel's choices go back into mooi's settings, the rest of the file as it is now.
 local function save()
+    if spare then return end
     if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
     local doc = read(FILE)
     if type(doc) ~= "table" then return end
@@ -52,7 +82,7 @@ local function save()
     doc.companion = c
     pcall(sys.call, "files.write", FILE, doc)
 end
-local function save_state() pcall(sys.call, "files.write", STATE, state) end
+local function save_state() if not spare then pcall(sys.call, "files.write", STATE, state) end end
 
 -- ── The screen and where he may stand ────────────────────────
 local sw, sh = 1920, 1080
@@ -733,6 +763,6 @@ run("hyprctl", { "-j", "monitors" }, function(out, code)
     sync_settings()
     place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
     show_face()
-    fact.ready = true
+    if not spare then fact.ready = true end
     schedule()
 end)

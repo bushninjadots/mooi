@@ -9,7 +9,7 @@ language 0.4
 
 scene Bmo {
     permissions {
-        run: "hyprctl", "kitty", "loginctl", "pleamar"
+        run: "hyprctl", "kitty", "loginctl", "pleamar", "ls"
         services: "media", "media.*", "files", "files.write", "env", "clock", "workspaces", "battery", "window"
     }
 
@@ -66,6 +66,7 @@ scene Bmo {
 
     // ── State the logic owns ─────────────────────────────────
     fact ready = false
+    fact token = 0               // his own mark, to tell himself from another BMO (bmo.luau only_one)
     fact wx = 0                  // where he stands: his box's top-left, in surface pixels
     fact wy = 0
     fact size = 0.9
