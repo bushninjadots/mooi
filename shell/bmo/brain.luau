@@ -242,6 +242,53 @@ function M.react(kind, arg, s)
     return r
 end
 
+-- ── Talking (companion.talk) ─────────────────────────────────
+-- What he might say, by moment. One bubble at a time is the logic's (bmo.luau say); not saying
+-- the same thing again soon is here: `recent` holds the last few lines said.
+M.LINES = {
+    idle = { "beep boop!", "la la la…", "what are you making?", "I'm a good helper!", "hmm hmm hmm",
+             "let's play later?", "you're doing great!", "*bleep*", "I like it here.", "who wants a game?",
+             "my buttons are clean today.", "boop." },
+    poke = { "hi!", "hee hee!", "that tickles!", "boop!", "hello friend!", "yes?" },
+    won = { "I won!", "high score!", "yes yes yes!", "too easy!" },
+    lost = { "aw, so close…", "one more go…", "rematch!", "that wasn't fair!" },
+    landed = { "again!", "wheee!", "do it again!", "that was fun!" },
+    dizzy = { "whoa…", "the room is spinning…", "ow…", "everything is wobbly…" },
+    wake = { "good nap!", "huh? I'm up!", "*yawn*", "I was dreaming of games…" },
+}
+local RECENT = 4
+
+function M.remember(recent, line)
+    recent[#recent + 1] = line
+    while #recent > RECENT do table.remove(recent, 1) end
+end
+
+-- A line from `pool` that is not one of `recent` (never the very last, even from a small pool), or
+-- nil when the talk level keeps it unsaid. `r` in [0, 1).
+function M.chatter(pool, talk, important, recent, r)
+    local lines = M.LINES[pool]
+    if not lines or not M.speaks(talk, important) then return nil end
+    recent = recent or {}
+    local function fresh(skip)
+        local out = {}
+        for _, l in ipairs(lines) do
+            local seen = false
+            for i = #recent, math.max(1, #recent - skip + 1), -1 do if recent[i] == l then seen = true end end
+            if not seen then out[#out + 1] = l end
+        end
+        return out
+    end
+    local ok = fresh(RECENT)
+    if #ok == 0 then ok = fresh(1) end
+    if #ok == 0 then ok = lines end
+    return ok[math.min(#ok, math.floor((tonumber(r) or 0) * #ok) + 1)]
+end
+
+-- The chance an idle moment comes with a line of its own.
+function M.idle_chance(talk)
+    return ({ off = 0, rare = 0.03, chatty = 0.14 })[talk] or 0
+end
+
 -- ── Variants (companion.variant): his colours ────────────────
 -- Ten slots: his body and its side, the ink of every outline and of his face, the screen and its
 -- shade, the bubble's paper, and the D-pad, triangle, round and stop buttons. "mooi" takes the

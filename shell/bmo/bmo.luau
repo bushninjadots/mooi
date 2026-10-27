@@ -136,13 +136,31 @@ local function move(name)
 end
 
 -- ── Speech ───────────────────────────────────────────────────
+-- One bubble at a time: a passing remark never covers what matters (a ding, his hunger, a cheer)
+-- while that is still up. Returns whether it was said.
 local say_token = 0
-local function say(t, ms)
+local important_up = false    -- the bubble showing is one that matters
+local function say(t, ms, important)
+    if not important and important_up and fact.bubble_on then return false end
     text.bubble = t
     fact.bubble_on = true
     say_token = say_token + 1
     local mine = say_token
-    if ms then after(ms, function() if say_token == mine and activity ~= "sleeping" then fact.bubble_on = false end end) end
+    important_up = important == true
+    if ms then
+        after(ms, function()
+            if say_token ~= mine then return end
+            important_up = false
+            if activity ~= "sleeping" then fact.bubble_on = false end
+        end)
+    end
+    return true
+end
+-- A line from one of his pools (brain.luau LINES), at his talk level, not one he said lately.
+local said_lately = {}
+local function chat(pool, important, ms)
+    local line = B.chatter(pool, cfg.talk, important, said_lately, math.random())
+    if line and say(line, ms or 1800, important) then B.remember(said_lately, line) end
 end
 
 -- ── Walking ──────────────────────────────────────────────────
@@ -205,7 +223,7 @@ local function sleep()
     fact.dancing = false
     show_face()
     local n = 0
-    say("z", nil)
+    say("z", nil, true)
     zz_timer = every(1400, function()
         n = (n % 3) + 1
         text.bubble = ({ "z", "z z", "z z Z" })[n]
@@ -224,6 +242,7 @@ local function wake(poked)
         move("stretch")
         react("yawn", 1400)
         set_mood("happy")
+        after(1500, function() chat("wake", false) end)
     end
     show_face()
 end
@@ -282,7 +301,7 @@ pcall(sys.watch, "media", function(m)
     if music.playing and music.title ~= "" and music.title ~= was_title and activity ~= "sleeping" then
         react("excited", 1400)
         move("hop")
-        say("♪ " .. music.title, 3500)
+        if cfg.talk ~= "off" then say("♪ " .. music.title, 3500, true) end
     end
     if music.playing ~= was_playing then
         if music.playing then
@@ -315,10 +334,10 @@ end
 local function game_over()
     if math.random() < 0.65 then
         react("giggle", 1600); move("hop")
-        if B.speaks(cfg.talk, false) then say("I won!", 1800) end
+        chat("won", false)
     else
         react("grumpy", 1400); move("shake")
-        if B.speaks(cfg.talk, false) then say("aw, so close…", 1800) end
+        chat("lost", false)
     end
 end
 local function schedule()
@@ -341,6 +360,8 @@ function decide()
         elseif a == "game" then idle_act("gaming", 6000 + math.random() * 6000, game_over)
         elseif a == "hum" then idle_act("humming", 5000 + math.random() * 4000)
         elseif a ~= "rest" then move(a) end
+        -- now and then a line of his own (the level is the chance, so it counts as meant)
+        if activity == "idle" and math.random() < B.idle_chance(cfg.talk) then chat("idle", true, 2200) end
     end
     schedule()
 end
@@ -391,7 +412,9 @@ local function poke()
     react(r.face, r.ms)
     move(r.move)
     if r.mood then set_mood(r.mood) end
-    if r.say then say(r.say, 1400) end
+    if r.say then
+        if B.speaks(cfg.talk, true) then say(r.say, 1400, true) end
+    elseif math.random() < 0.35 then chat("poke", false, 1200) end
 end
 
 local function toggle_panel()
@@ -415,8 +438,8 @@ local function land_from_flight(hits, hardest)
     fact.lean = 0
     set_activity("idle")
     play("land")
-    if hardest > 1400 or hits >= 4 then react("dizzy", 1800); say("whoa…", 1400)
-    else react("giggle", 1100); if math.random() < 0.5 then say("again!", 1200) end end
+    if hardest > 1400 or hits >= 4 then react("dizzy", 1800); chat("dizzy", true, 1600)
+    else react("giggle", 1100); if math.random() < 0.5 then chat("landed", false, 1300) end end
     save_position()
 end
 local function throw(vx, vy)
@@ -598,7 +621,7 @@ local function feel(kind, arg)
     if r.mood then set_mood(r.mood) end
     if r.face then react(r.face, r.ms or 1500) end
     if r.move and activity ~= "dragged" and activity ~= "flying" then move(r.move) end
-    if r.line then say(r.line, 2400) end
+    if r.line then say(r.line, 2400, r.important) end
     if r.peek then
         fact.glx = math.random() < 0.5 and -1 or 1
         fact.gly = -0.3

@@ -185,5 +185,34 @@ test("react: he peeks at a new window, not at every one", function()
     eq(B.react("window", nil, s), nil)
 end)
 
+test("talk: lines from a pool, never the same twice running nor one of the last few", function()
+    local recent = {}
+    local said = {}
+    for i = 1, 40 do
+        local l = B.chatter("idle", "chatty", false, recent, ((i * 37) % 100) / 100)
+        assert(l, "chatty always has something")
+        for _, r in ipairs(recent) do assert(r ~= l, "repeated a recent one: " .. l) end
+        B.remember(recent, l)
+        said[l] = true
+    end
+    local n = 0; for _ in pairs(said) do n = n + 1 end
+    assert(n >= 5, "goes round the pool")
+    assert(#recent <= 4, "remembers only the last few")
+end)
+test("talk: the level decides, and a small pool still never repeats back to back", function()
+    eq(B.chatter("idle", "off", true, {}, 0.5), nil)
+    eq(B.chatter("idle", "rare", false, {}, 0.5), nil)
+    assert(B.chatter("won", "rare", true, {}, 0.5))
+    local last = nil
+    for i = 1, 20 do
+        local l = B.chatter("dizzy", "chatty", false, { last }, (i % 10) / 10)
+        assert(l ~= last); last = l
+    end
+    eq(B.chatter("nope", "chatty", false, {}, 0.5), nil, "an unknown pool")
+end)
+test("talk: how often he chats unprompted", function()
+    eq(B.idle_chance("off"), 0); assert(B.idle_chance("rare") < B.idle_chance("chatty"))
+end)
+
 print(string.format("\n%d tests, %d failed", total, failed))
 os.exit(failed == 0 and 0 or 1)
