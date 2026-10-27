@@ -510,8 +510,10 @@ not() { ! "$@"; }
 # mooi's, so they read and write mooi's settings.json, palette.json, wallpapers.json and
 # board.json. Made here, idempotently; a real folder in the way is moved aside.
 settings_link() {
-    for scene in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk mooi-player; do
-        link="$(dirname "$folder")/$scene"
+    # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
+    local prog link
+    for prog in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk mooi-player; do
+        link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
         mkdir -p "$folder" && ln -s "$folder" "$link"
