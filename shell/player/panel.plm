@@ -56,14 +56,15 @@ part Panel {
                     ellipse { at: rcx + sin(k * 5) * (rr + 14), rcy - cos(k * 5) * (rr + 14); radius: 0.9
                               color: fl.steel_500; opacity: 0.6 }
                 }
-                // the visualiser: 24 bands twice round the record, each a bar reaching out
-                repeat k in 0..48 {
-                    let vv = clamp(pick(mod(k, 24), vp0, vp1, vp2, vp3, vp4, vp5, vp6, vp7, vp8, vp9, vp10, vp11,
-                                        vp12, vp13, vp14, vp15, vp16, vp17, vp18, vp19, vp20, vp21, vp22, vp23), 0.03, 1)
-                    line { from: rcx + sin(k * 7.5) * (rr + 20), rcy - cos(k * 7.5) * (rr + 20)
-                           to: rcx + sin(k * 7.5) * (rr + 22 + vv * 26), rcy - cos(k * 7.5) * (rr + 22 + vv * 26)
-                           width: 3; color: mix(fl.phos, fl.flare, vv * 0.6); opacity: if(pstate == playing, 0.35 + vv * 0.6, 0.15) }
+                // the visualiser (ui/viz.plm): round the record, or along the plinth's foot
+                group {
+                    opacity: if(pstate == playing, 0.95, 0.35)
+                    viz.Pick(viz_deck, 36, ph - 64, 388, 40, rcx, rcy, rr + 20, 28, fl.phos, fl.flare, fl.trace_dim, vang)
                 }
+                zone box pviz { from: 24, 22; size: 76, 16; cursor: pointer; role: button; label: "Visualiser style" }
+                text pick(viz_deck, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 28, 30; anchor: left center
+                     size: 7.5; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, pviz.hover) }
+                on press pviz { emit viz_next(1) }
                 // the record: black vinyl, its grooves, a sheen that stays where the light is
                 ellipse { at: rcx, rcy; radius: rr; color: #08090a }
                 repeat g in 0..14 {

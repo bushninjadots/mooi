@@ -72,14 +72,17 @@ part Mini {
                     ellipse { at: ox, oy + ring + 4 + (bus - oy - ring - 4) * mod(pz * 3, 1); radius: 2; color: fl.ember }
                 }
 
-                // ── the visualiser: pins standing on the bus ──────
-                repeat k in 0..24 {
-                    let mv = clamp(pick(k, vp0, vp1, vp2, vp3, vp4, vp5, vp6, vp7, vp8, vp9, vp10, vp11,
-                                        vp12, vp13, vp14, vp15, vp16, vp17, vp18, vp19, vp20, vp21, vp22, vp23), 0.04, 1)
-                    // twelve each side of the core's drop, clear of the pads' traces
-                    let pxk = if(k < 12, 104 + k * 7.6, 222 + (k - 12) * 7.6)
-                    box { from: pxk, bus - 3 - mv * 30; size: 3, 3 + mv * 30; corner: 1.5; color: mix(fl.phos, fl.ember, mv); opacity: 0.9 }
+                // ── the visualiser (ui/viz.plm): either side of the core's drop, or round the core ──
+                viz.Pick(viz_mini, 104, bus - 36, 92, 33, ox, oy, ring + 7, 16, fl.phos, fl.ember, fl.trace_dim, vang)
+                group {
+                    show: viz_mini < 1.5 or (viz_mini > 2.5 and viz_mini < 4.5)
+                    viz.Pick(viz_mini, 224, bus - 36, 92, 33, ox, oy, ring + 7, 16, fl.phos, fl.ember, fl.trace_dim, vang)
                 }
+                // its chip: a press turns to the next style
+                zone box mviz { from: 14, bus - 22; size: 60, 16; cursor: pointer; role: button; label: "Visualiser style" }
+                text pick(viz_mini, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 18, bus - 14; anchor: left center
+                     size: 7; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, mviz.hover) }
+                on press mviz { emit viz_next(0) }
 
                 // ── the readout: the song ─────────────────────────
                 Chamfer(14, 14, 154, 52, 7, fl.well, mix(fl.trace_dim, fl.phos, 0.25), 1, 1)
@@ -111,6 +114,7 @@ part Mini {
                     show: cover_on
                     clip box { from: ox - orr, oy - orr; size: orr * 2, orr * 2; corner: orr }
                     group {
+                        pivot: ox, oy
                         rotate: vang * 0.12deg
                         image cover { at: ox - orr, oy - orr; size: orr * 2, orr * 2 }
                     }

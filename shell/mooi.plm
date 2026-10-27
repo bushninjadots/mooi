@@ -4,6 +4,7 @@ import "ui/island.plm"
 import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
 import "ui/loom.plm"
+import "ui/viz.plm" as viz
 import "ui/stash.plm"
 
 // mooi — the Spine and its islands.
@@ -1391,6 +1392,23 @@ scene Mooi {
     }
     // The audio levels (cava, 16 bands) glide on a quick spring; at rest they lie low.
     spring fl.level = 1200, 60
+    // the visualisers' sixteen bands (shell/ui/viz.plm reads vb0…vb15): the bar's own cava
+    let vb0 = lp0
+    let vb1 = lp1
+    let vb2 = lp2
+    let vb3 = lp3
+    let vb4 = lp4
+    let vb5 = lp5
+    let vb6 = lp6
+    let vb7 = lp7
+    let vb8 = lp8
+    let vb9 = lp9
+    let vb10 = lp10
+    let vb11 = lp11
+    let vb12 = lp12
+    let vb13 = lp13
+    let vb14 = lp14
+    let vb15 = lp15
     prop lp0 = 0.06 ~fl.level
     prop lp1 = 0.06 ~fl.level
     prop lp2 = 0.06 ~fl.level
@@ -2206,26 +2224,13 @@ scene Mooi {
         // Nothing on any player: one quiet line in the middle, not a flat visualizer and a dash.
         text "NOTHING PLAYING" { at: ws_media / 2, fl.cy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted
                                  show: not media_on and not collapsed }
+        // the visualiser (shell/ui/viz.plm, the music player overhaul): the same six as the player,
+        // coloured like every other module — the main accent rising into the second with the level,
+        // so it follows the wallpaper and the day. bar.visualizer's four keep their look's family:
+        // mirror → Mirror, bars → Spectrum, line → Aurora, dots → LED (lib/vizbands from_bar).
         group {
             show: has_viz and media_on
-            repeat k in 0..16 {
-                let L.$k = pick(k, lp0, lp1, lp2, lp3, lp4, lp5, lp6, lp7, lp8, lp9, lp10, lp11, lp12, lp13, lp14, lp15)
-                let N.$k = pick(min(k + 1, 15), lp0, lp1, lp2, lp3, lp4, lp5, lp6, lp7, lp8, lp9, lp10, lp11, lp12, lp13, lp14, lp15)
-                let vx.$k = vx0 + k * 5
-                let tone.$k = mix(mix(fl.ember, fl.muted, if(mod(k, 3) == 2, 0.35, 0)), fl.flare, clamp(L.$k * 1.4 - 0.3, 0, 1))
-                box { at: vx.$k + 1.5, fl.cy; size: 3, 2 + L.$k * 22; corner: 1.5; color: tone.$k; show: viz < 0.5 }
-                box { from: vx.$k, fl.cy + 11 - (2 + L.$k * 22); size: 3, 2 + L.$k * 22; corner: 1; color: tone.$k; show: viz > 0.5 and viz < 1.5 }
-                line { from: vx.$k + 1.5, fl.cy - L.$k * 11; to: vx.$k + 6.5, fl.cy - N.$k * 11; width: 1.4; color: tone.$k
-                       show: viz > 1.5 and viz < 2.5 and k < 15 }
-                line { from: vx.$k + 1.5, fl.cy + L.$k * 11; to: vx.$k + 6.5, fl.cy + N.$k * 11; width: 1; color: fl.trace
-                       show: viz > 1.5 and viz < 2.5 and k < 15 }
-                repeat j in 0..5 {
-                    ellipse { at: vx.$k + 1.5, fl.cy + 10 - j * 5; radius: 1.3; color: if(j > 3, fl.flare, fl.ember)
-                              opacity: clamp(L.$k * 5 - j, 0.12, 1); show: viz > 2.5 and viz < 3.5 }
-                }
-            }
-            path { color: fl.flare; move vx0 + 38, fl.top + 1; line vx0 + 44, fl.top + 1; line vx0 + 41, fl.top + 5; close; show: viz < 0.5 }
-            path { color: fl.ember_fill; move vx0 + 38, fl.top + fl.mod_h - 1; line vx0 + 44, fl.top + fl.mod_h - 1; line vx0 + 41, fl.top + fl.mod_h - 5; close; show: viz < 0.5 }
+            viz.Pick(pick(viz, 1, 0, 3, 4, 6), vx0, fl.cy - 11, 80, 22, vx0 + 40, fl.cy, 5, 6, fl.phos, fl.ember, fl.trace_dim)
         }
         group {
             show: (mfull or mart) and media_on

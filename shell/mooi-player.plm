@@ -2,6 +2,7 @@ language 0.4
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/loom.plm"
+import "ui/viz.plm" as viz
 
 // mooi's music player (docs/PLAYER.md): a program of its own, opened from the bar's media module.
 // Your mpd library first — the queue, seek, volume, shuffle and repeat through mpc — and a remote
@@ -349,6 +350,7 @@ scene Player {
     event lyr_seek ->        // to the logic: go to this line (its time × 10)
     event pl_tint ->         // to the logic: colours from the album cover, or the shell's again
     event pl_full ->         // to the logic: full screen, or back to the panel
+    event viz_next ->        // to the logic: the next visualiser style for a place (0 mini · 1 the deck · 2 full screen)
     event pl_size ->         // to the logic: -1 a press outside · -2 Escape · 1 the panel (OPEN PLAYER) · 2 full screen
     event lyr_scroll ->      // to the logic: the wheel over plain (unsynced) lyrics
 
@@ -372,6 +374,27 @@ scene Player {
     // the tonearm: parked while stopped, on the record otherwise, following the song (or the hand)
     prop arm = 0 ~pl.arm
     follow arm = if(arm_drag, arm_at, if(pstate == stopped, 0, 20 + 20 * clamp(progress, 0, 1)))
+    // the visualisers' sixteen bands (shell/ui/viz.plm reads vb0…vb15): cava's 24, thinned evenly
+    let vb0 = vp0
+    let vb1 = vp1
+    let vb2 = vp3
+    let vb3 = vp4
+    let vb4 = vp6
+    let vb5 = vp7
+    let vb6 = vp9
+    let vb7 = vp10
+    let vb8 = vp12
+    let vb9 = vp13
+    let vb10 = vp15
+    let vb11 = vp16
+    let vb12 = vp18
+    let vb13 = vp19
+    let vb14 = vp21
+    let vb15 = vp23
+    // each place's visualiser (lib/vizbands: 0 spectrum · 1 mirror · 2 ring · 3 aurora · 4 led · 5 orbit · 6 off)
+    fact viz_mini = 2
+    fact viz_deck = 2
+    fact viz_full = 2
     prop vp0 = 0.03 ~pl.level
     follow vp0 = nv0
     prop vp1 = 0.03 ~pl.level

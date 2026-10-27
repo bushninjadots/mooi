@@ -30,14 +30,15 @@ part Full {
             zone box fbody { from: 0, 0; size: fw, fh; agent: hidden }
             on press fbody { emit pl_full }
 
-            // the record, large
-            repeat k in 0..48 {
-                let fvv = clamp(pick(mod(k, 24), vp0, vp1, vp2, vp3, vp4, vp5, vp6, vp7, vp8, vp9, vp10, vp11,
-                                     vp12, vp13, vp14, vp15, vp16, vp17, vp18, vp19, vp20, vp21, vp22, vp23), 0.03, 1)
-                line { from: fcx + sin(k * 7.5) * (fr + 24), fcy - cos(k * 7.5) * (fr + 24)
-                       to: fcx + sin(k * 7.5) * (fr + 28 + fvv * 60), fcy - cos(k * 7.5) * (fr + 28 + fvv * 60)
-                       width: 5; color: mix(fl.phos, fl.flare, fvv * 0.6); opacity: if(pstate == playing, 0.35 + fvv * 0.6, 0.15) }
+            // the record, large, and its visualiser (ui/viz.plm): round it, or across the foot
+            group {
+                opacity: if(pstate == playing, 0.95, 0.35)
+                viz.Pick(viz_full, fw * 0.06, fh - 150, fw * 0.48, 90, fcx, fcy, fr + 24, 64, fl.phos, fl.flare, fl.trace_dim, vang)
             }
+            zone box fviz { from: 40, 36; size: 90, 18; cursor: pointer; role: button; label: "Visualiser style" }
+            text pick(viz_full, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 44, 45; anchor: left center
+                 size: 9; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, fviz.hover) }
+            on press fviz { emit viz_next(2) }
             ellipse { at: fcx, fcy; radius: fr; color: #08090a }
             repeat g in 0..22 {
                 ellipse { at: fcx, fcy; radius: frl + 10 + g * (fr - frl - 14) / 21; stroke: 0.8; color: #1c1f22; opacity: 0.9 }

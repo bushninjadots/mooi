@@ -7,6 +7,7 @@
 local config = require("lib/config")
 local ferro = require("lib/ferro")
 local P = require("lib/player")
+local VZ = require("lib/vizbands")
 
 local HOME = tostring(sys.ask("env", "HOME") or "")
 local function read(name, kind)
@@ -438,6 +439,22 @@ local function set_source(src)
     viz()
 end
 on("pl_src", function(v) set_source(tonumber(v) == 1 and "remote" or "library") end)
+
+-- Each place's visualiser: the setting's style, as the scene's index; a press on its chip turns it.
+local VIZ_PLACES = { [0] = "viz_mini", [1] = "viz_deck", [2] = "viz_full" }
+local function show_viz_styles()
+    for _, key in pairs(VIZ_PLACES) do fact[key] = VZ.index(settings.player[key]) end
+end
+show_viz_styles()
+on("viz_next", function(v)
+    local key = VIZ_PLACES[math.floor(tonumber(v) or -1)]
+    if not key then return end
+    local fresh = config.parse(read("settings.json"), json.decode)
+    fresh.player[key] = VZ.next(fresh.player[key])
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then pcall(sys.call, "files.write", "settings.json", fresh) end
+    settings.player = fresh.player
+    show_viz_styles()
+end)
 
 on("pl_tint", function()
     local fresh = config.parse(read("settings.json"), json.decode)

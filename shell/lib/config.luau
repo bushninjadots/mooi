@@ -273,6 +273,12 @@ M.SCHEMA = {
     { path = "desk.depth", kind = "boolean", default = true },
     -- The music player (D88): its colours from the shell's palette, or from the album cover.
     { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
+    -- each place's visualiser (the music player overhaul; lib/vizbands STYLES, shell/ui/viz.plm)
+    { path = "player.viz_mini", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "ring" },
+    { path = "player.viz_deck", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "ring" },
+    { path = "player.viz_stage", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "aurora" },
+    { path = "player.viz_rack", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "led" },
+    { path = "player.viz_full", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "ring" },
     { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
     { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },
