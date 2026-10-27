@@ -32,6 +32,12 @@ scene Mooi {
     fact clock_view = 0          // clock.view: 0 full · 1 time · 2 seconds
     fact th_mode = 0             // theme.mode: 0 dark · 1 light · 2 auto
     fact nl_on = false           // the night light (hyprsunset) is on
+    fact pw_saver = 0            // motion.saver: 0 off · 1 on battery · 2 always
+    fact pw_prof = 0             // power.profile: 0 keep · 1 power-saver · 2 balanced · 3 performance
+    fact pw_ppd = false          // power-profiles-daemon answers
+    text pw_state = ""
+    text pw_time = ""
+    text pw_rate = ""
     fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     // The calendar island (shell/islands.luau, lib/calendar): the month's 42 cells from Monday
@@ -908,6 +914,7 @@ scene Mooi {
     event snd_out ->           // to the logic: make output n (its place in audio.outputs) the default
     event snd_mixer ->         // to the logic: open the mixer (pavucontrol)
     event night_light ->       // to the logic: the night light on or off
+    event pw_set ->            // to the logic: 0–2 the battery saver (motion.saver) · 11–13 the power profile
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
@@ -4012,6 +4019,65 @@ scene Mooi {
                 zone box dpm2 { from: 224, 100 + dbh; size: 62, 24; cursor: pointer; role: tab; selected: th_mode == 2; label: "Light by day, dark by night" }
                 IsleBtn(224, 100 + dbh, 62, "Auto", if(th_mode == 2, 1, 0), dpm2.hover)
                 on press dpm2 { emit set_mode(2) }
+            }
+        }
+    }
+
+    // ── power_island (D97): the battery, how long it lasts, what saves it ──
+    group {
+        move: 0, st_res + 6
+        let pw_x = clamp(isl_cx - 160, 8, screen.width - 328)
+        let pph = if(pw_ppd, 40, 0)
+        group {
+            show: rv.power > 0.03
+            move: pw_x, 0
+            IslandFrame(rv.power, 320, 252 + pph, tx: isl_cx - pw_x) {
+                IsleHead(320, "Power", pw_state)
+                text "{round(battery.percent), 0}%" { at: 16, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"
+                     color: if(battery.percent < 15 and not battery.charging, if(isl_style > 0.5, status.error, fl.ember), if(isl_style > 0.5, fg.primary, fl.phos)) }
+                text pw_time { at: 304, 52; anchor: right center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 180; lines: 1; align: right }
+                text pw_rate { at: 304, 72; anchor: right center; size: 10.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 190; lines: 1; align: right }
+                IsleMeter(16, 90, 288, battery.percent / 100, battery.percent < 15 and not battery.charging)
+                IsleRule(320, 112)
+                text "Battery saver" { at: 16, 132; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
+                text "less glow and motion" { at: 16, 147; anchor: left center; size: 9.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
+                zone box pws0 { from: 124, 122; size: 56, 24; cursor: pointer; role: tab; selected: pw_saver == 0; label: "Battery saver off" }
+                IsleBtn(124, 122, 56, "Off", if(pw_saver == 0, 1, 0), pws0.hover)
+                on press pws0 { emit pw_set(0) }
+                zone box pws1 { from: 184, 122; size: 64, 24; cursor: pointer; role: tab; selected: pw_saver == 1; label: "Battery saver on battery" }
+                IsleBtn(184, 122, 64, "Battery", if(pw_saver == 1, 1, 0), pws1.hover)
+                on press pws1 { emit pw_set(1) }
+                zone box pws2 { from: 252, 122; size: 52, 24; cursor: pointer; role: tab; selected: pw_saver == 2; label: "Battery saver always" }
+                IsleBtn(252, 122, 52, "Always", if(pw_saver == 2, 1, 0), pws2.hover)
+                on press pws2 { emit pw_set(2) }
+                group {
+                    show: pw_ppd
+                    text "Profile" { at: 16, 174; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
+                    zone box pwp1 { from: 92, 162; size: 68, 24; cursor: pointer; role: tab; selected: pw_prof == 1; label: "Power saver" }
+                    IsleBtn(92, 162, 68, "Saver", if(pw_prof == 1, 1, 0), pwp1.hover)
+                    on press pwp1 { emit pw_set(11) }
+                    zone box pwp2 { from: 164, 162; size: 68, 24; cursor: pointer; role: tab; selected: pw_prof == 2; label: "Balanced" }
+                    IsleBtn(164, 162, 68, "Balanced", if(pw_prof == 2, 1, 0), pwp2.hover)
+                    on press pwp2 { emit pw_set(12) }
+                    zone box pwp3 { from: 236, 162; size: 68, 24; cursor: pointer; role: tab; selected: pw_prof == 3; label: "Performance" }
+                    IsleBtn(236, 162, 68, "Perform", if(pw_prof == 3, 1, 0), pwp3.hover)
+                    on press pwp3 { emit pw_set(13) }
+                }
+                text "Keep awake" { at: 16, 174 + pph; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
+                text "no sleep, no screen-off" { at: 16, 189 + pph; anchor: left center; size: 9.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
+                zone box pwcaf { from: 224, 164 + pph; size: 80, 24; cursor: pointer; role: toggle; checked: caffeine_on; label: "Keep awake" }
+                group { show: not caffeine_on
+                        IsleBtn(224, 164 + pph, 80, "Off", 0, pwcaf.hover) }
+                group { show: caffeine_on
+                        IsleBtn(224, 164 + pph, 80, "On", 1, pwcaf.hover) }
+                on press pwcaf { emit caffeine }
+                IsleRule(320, 206 + pph)
+                zone box pwlock { from: 16, 216 + pph; size: 140, 24; cursor: pointer; role: button; label: "Lock the screen" }
+                IsleBtn(16, 216 + pph, 140, "Lock", 0, pwlock.hover)
+                on press pwlock { emit power(1); open = none }
+                zone box pwsess { from: 164, 216 + pph; size: 140, 24; cursor: pointer; role: button; label: "The session menu" }
+                IsleBtn(164, 216 + pph, 140, "Session", 0, pwsess.hover)
+                on press pwsess { emit power(0); open = none }
             }
         }
     }

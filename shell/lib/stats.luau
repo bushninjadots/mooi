@@ -54,4 +54,27 @@ function M.gpu(out)
     return n and tonumber(n) / 100 or nil
 end
 
+-- `upower -i <battery>`: { state, time ("3 h 12 min left", "45 min to full", or ""), rate ("7.4 W"
+-- or "" when idle), health (capacity %, or nil) }. Decimals come with a comma or a point.
+local function num(s) return tonumber((tostring(s or ""):gsub(",", "."))) end
+local function span(v, unit)
+    local mins = (unit:match("^hour") and v * 60) or (unit:match("^day") and v * 1440) or v
+    mins = math.floor(mins + 0.5)
+    if mins >= 60 then return string.format("%d h %d min", math.floor(mins / 60), mins % 60) end
+    return string.format("%d min", mins)
+end
+function M.upower(out)
+    out = tostring(out or "")
+    local b = { state = out:match("state:%s+(%S+)") or "unknown", time = "", rate = "", health = nil }
+    local e, eu = out:match("time to empty:%s+([%d,.]+)%s+(%a+)")
+    local f, fu = out:match("time to full:%s+([%d,.]+)%s+(%a+)")
+    if e and num(e) then b.time = span(num(e), eu) .. " left"
+    elseif f and num(f) then b.time = span(num(f), fu) .. " to full" end
+    local r = num(out:match("energy%-rate:%s+([%d,.]+)%s*W"))
+    if r and r > 0.05 then b.rate = string.format("%.1f W", r) end
+    local c = num(out:match("\n%s*capacity:%s+([%d,.]+)%%"))
+    if c then b.health = math.floor(c + 0.5) end
+    return b
+end
+
 return M

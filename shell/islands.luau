@@ -173,6 +173,47 @@ return function(ctx)
         mine = id; nl = id; fact.nl_on = true
     end)
 
+    -- ── Power: upower's battery while the island is open; the saver and the profile ──
+    run("powerprofilesctl", { "get" }, function(_, code) fact.pw_ppd = code == 0 end)
+    local pw_timer = nil
+    local STATES = { charging = "Charging", discharging = "On battery", ["fully-charged"] = "Full",
+                     ["pending-charge"] = "Plugged in", empty = "Empty" }
+    local rate, health = "", ""
+    local function detail()   -- "7.4 W · health 82 %", either half alone, or nothing
+        text.pw_rate = (rate ~= "" and health ~= "") and (rate .. "  ·  " .. health) or (rate .. health)
+    end
+    local function read_power()
+        run("upower", { "-i", "/org/freedesktop/UPower/devices/DisplayDevice" }, function(out)
+            local b = stats.upower(out)
+            text.pw_state = STATES[b.state] or ""
+            text.pw_time = b.time
+            rate = b.rate; detail()
+        end)
+        run("upower", { "-e" }, function(list)
+            local bat = tostring(list or ""):match("(/org/freedesktop/UPower/devices/battery_[%w_]+)")
+            if not bat then health = ""; detail(); return end
+            run("upower", { "-i", bat }, function(out)
+                local b = stats.upower(out)
+                health = b.health and string.format("health %d %%", b.health) or ""
+                detail()
+            end)
+        end)
+    end
+    on("fact:open", function(v)
+        if v == "power" then
+            read_power()
+            if not pw_timer then pw_timer = every(10000, read_power) end
+        elseif pw_timer then cancel(pw_timer); pw_timer = nil end
+    end)
+    local SAVER = { [0] = "off", [1] = "battery", [2] = "always" }
+    local PROFILE = { [11] = "power-saver", [12] = "balanced", [13] = "performance" }
+    on("pw_set", function(v)
+        local n = math.floor(tonumber(v) or -1)
+        local s = ctx.settings()
+        if SAVER[n] then s.motion.saver = SAVER[n] elseif PROFILE[n] then s.power.profile = PROFILE[n] else return end
+        ctx.save()
+    end)
+
     on("st_open", function(n)
         local tool = (tonumber(n) == 1 and have.nvtop) and "nvtop" or "btop"
         spawn("kitty", { "--title", tool, tool }, function() end, function() end)
