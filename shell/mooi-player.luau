@@ -25,11 +25,13 @@ local COVERS = folder .. "/player-covers"
 local settings = config.parse(read("settings.json"), json.decode)
 local palette = read("palette.json", "json")
 local tint = nil -- the cover's palette while player.colours is "cover" (Matugen roles)
+local last_roles = nil   -- the palette as painted last (the library's generated covers take its tones)
 local function paint()
     local out
     if tint then out = ferro.resolve("wallpaper", tint, settings.theme.signal, false, ferro.options(settings, palette and palette.mode)) end
     out = out or ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
     if not out then return end
+    last_roles = out
     for _, role in ipairs(ferro.ROLES) do
         local c = out[role]
         fact["fr_" .. role .. "_r"] = c.r
@@ -38,24 +40,32 @@ local function paint()
     end
 end
 paint()
-pcall(sys.watch, "files:palette.json", function() palette = read("palette.json", "json"); paint() end)
+local retint   -- below: the cover's colours, which a new mode re-reads
+pcall(sys.watch, "files:palette.json", function()
+    palette = read("palette.json", "json")
+    paint()
+    if retint then retint() end   -- a new mode re-reads the cover's scheme on its side
+end)
 
 -- Cover colours (`player.colours`): the cover through Matugen (a dry run, the shell's own scheme,
 -- source colour and contrast), so each album relights the player. One run per cover, kept.
 local tints = {}
 local tint_busy = false
 local cover_now = ""
-local function retint()
+function retint()
     fact.cover_tint = settings.player.colours == "cover"
     local cover = cover_now
     if not fact.cover_tint or cover == nil or cover == "" then
         if tint then tint = nil; paint() end
         return
     end
-    if tints[cover] ~= nil then tint = tints[cover] or nil; paint(); return end
+    -- one tint per cover and mode: the day takes the light side of its scheme
+    local mode = (palette and palette.mode == "light") and "light" or "dark"
+    local key = cover .. "\t" .. mode
+    if tints[key] ~= nil then tint = tints[key] or nil; paint(); return end
     if tint_busy then return end
     tint_busy = true
-    run("matugen", { "image", cover, "-m", "dark", "--dry-run", "-j", "hex",
+    run("matugen", { "image", cover, "-m", mode, "--dry-run", "-j", "hex",
                      "--type", "scheme-" .. tostring(settings.theme.scheme),
                      "--source-color-index", "0",
                      "--contrast", tostring(settings.theme.contrast) }, function(out, code)
@@ -66,11 +76,12 @@ local function retint()
             if ok and type(t) == "table" and type(t.colors) == "table" then
                 roles = {}
                 for name, v in pairs(t.colors) do
-                    if type(v) == "table" and type(v.dark) == "table" then roles[name] = v.dark.color end
+                    local side = type(v) == "table" and v[mode] or nil
+                    if type(side) == "table" then roles[name] = side.color end
                 end
             end
         end
-        tints[cover] = roles and { colours = roles } or false
+        tints[key] = roles and { colours = roles, mode = mode } or false
         -- the cover may have changed while Matugen ran
         retint()
     end)
@@ -382,11 +393,23 @@ on("pl_clear", function() if on_library() then mpc({ "clear" }, refresh_queue) e
 on("pl_qpage", function(d) qpage = qpage + ((tonumber(d) or 0) > 0 and 1 or -1); show_queue() end)
 
 -- ── The library (mpd): shell/player/library.luau ─────────────
-local library = require("player/library")({ mpc = mpc, refresh_queue = refresh_queue, say = say })
+local library = require("player/library").new({
+    mpc = mpc, refresh_queue = refresh_queue, say = say, home = HOME,
+    music_dir = function() return music_dir end,
+    roles = function() return last_roles or ferro.resolve("fixed", palette, "auto", false) end,
+    group = settings.player.library, sort = settings.player.sort,
+    -- the grouping and sort are remembered (player.library, player.sort)
+    remember = function(group, sort)
+        if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+        local fresh = config.parse(read("settings.json"), json.decode)
+        fresh.player.library, fresh.player.sort = group, sort
+        pcall(sys.call, "files.write", "settings.json", fresh)
+    end,
+})
 local function set_pane(v)
     local n = math.floor(tonumber(v) or 0)
     fact.pane = n == 1 and "library" or n == 2 and "lyrics" or "queue"
-    if fact.pane == "library" and not library.ready() then library.open_artists() end
+    if fact.pane == "library" and not library.ready() then library.open() end
 end
 on("pl_pane", set_pane)
 

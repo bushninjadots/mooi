@@ -220,4 +220,82 @@ function M.size_after(size, action)
     return to or nil
 end
 
+-- ── The library (the music player overhaul) ──────────────────
+-- One `mpc listall` row per song, every field the library groups and sorts by.
+M.LIB_FIELDS = { "albumartist", "artist", "album", "date", "genre", "title", "time", "file" }
+M.LIB_FMT = "%albumartist%\t%artist%\t%album%\t%date%\t%genre%\t%title%\t%time%\t%file%"
+
+local function present(s) return type(s) == "string" and s ~= "" end
+-- Albums from song rows, in the order they are first met: by album artist (else the artist, else
+-- "Unknown artist") and album (else "Unknown album"). Each keeps its year, its song count and its
+-- first song (whose file carries the cover).
+function M.albums(rows)
+    local out, at = {}, {}
+    for _, r in ipairs(rows or {}) do
+        local artist = present(r.albumartist) and r.albumartist or (present(r.artist) and r.artist or "Unknown artist")
+        local album = present(r.album) and r.album or "Unknown album"
+        local key = artist .. "\t" .. album
+        local a = at[key]
+        if not a then
+            a = { artist = artist, album = album, year = tostring(r.date or ""):sub(1, 4), n = 0, file = r.file }
+            at[key] = a
+            out[#out + 1] = a
+        end
+        a.n = a.n + 1
+        if a.year == "" and present(r.date) then a.year = r.date:sub(1, 4) end
+    end
+    return out
+end
+
+-- A copy sorted by `key`: names ignore case and a leading "The"; years oldest first, undated last;
+-- time by its seconds.
+local function name_key(v) return (string.lower(tostring(v or "")):gsub("^the%s+", "")) end
+function M.sort(list, key)
+    local out = {}
+    for i, v in ipairs(list or {}) do out[i] = v end
+    local function cmp(a, b)
+        if key == "year" then
+            local ya, yb = tonumber(a.year), tonumber(b.year)
+            if ya and yb then return ya < yb end
+            if ya or yb then return ya ~= nil end
+            return false
+        elseif key == "time" then
+            return (tonumber(a.seconds) or 0) < (tonumber(b.seconds) or 0)
+        end
+        local na, nb = name_key(a[key]), name_key(b[key])
+        if (na == "") ~= (nb == "") then return nb == "" end   -- the nameless go last
+        return na < nb
+    end
+    table.sort(out, cmp)
+    return out
+end
+
+-- A song's second line in the library: the artist, the album and the year it has — or that it has none.
+function M.song_line(r)
+    local parts = {}
+    if present(r.artist) then parts[#parts + 1] = r.artist end
+    if present(r.album) then parts[#parts + 1] = r.album end
+    if present(r.date) then parts[#parts + 1] = r.date:sub(1, 4) end
+    return #parts > 0 and table.concat(parts, "  ·  ") or "No tags"
+end
+
+-- Where a song's cover is kept, at 64 or 256 px.
+function M.cover_file(dir, file, size)
+    return tostring(dir) .. "/" .. M.hash(file) .. "-" .. tostring(size) .. ".jpg"
+end
+
+-- A cover for an album with none: two tones of the palette chosen by the name, and its initials.
+-- `a` is the ground the initials (engraved) sit on; `b` the stripe across it.
+function M.cover_tones(name, roles)
+    local ferro = require("lib/ferro")
+    local h = tonumber(M.hash(name):sub(1, 4), 16) / 65535
+    local a = ferro.mix(roles.well, roles.hull_raised, 0.3 + h * 0.5)
+    local b = ferro.mix(roles.phos, roles.ember, h)
+    local ini = ""
+    for w in tostring(name or ""):gmatch("[%w\128-\255]+") do
+        if #ini < 2 then ini = ini .. string.upper(w:sub(1, 1)) end
+    end
+    return { a = a, b = b, initials = ini ~= "" and ini or "?" }
+end
+
 return M

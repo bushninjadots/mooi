@@ -1,0 +1,121 @@
+// The library pane (the music player overhaul): ALBUMS as a grid of covers, ARTISTS · GENRES as
+// lists that open onto their albums, SONGS as the detailed list with a cover on every row; a sort
+// chip, a search over everything, paging. The logic is shell/player/library.luau. A part of
+// shell/mooi-player.plm, included in the panel where the pane is drawn (it reads qx, qw, ph).
+part Library {
+                group {
+                    show: pane == library
+                    // the groupings, and the sort
+                    repeat g in 0..4 {
+                        let gx = qx + 12 + g * 66
+                        zone box zlg.$g { from: gx, 100; size: 62, 22; cursor: pointer; role: tab; selected: lib_group == g
+                                          label: pick(g, "Albums", "Artists", "Genres", "Songs") }
+                        PChip(gx, 100, 62, pick(g, "ALBUMS", "ARTISTS", "GENRES", "SONGS"), lib_group == g and lib_level < 0.5, zlg.$g.hover)
+                        on press zlg.$g { emit lib_group(g) }
+                    }
+                    zone box zlsort { from: qx + qw - 80, 100; size: 68, 22; cursor: pointer; role: button; label: "Sort: {lib_sort}"
+                                      show: lib_level < 0.5 and (lib_group < 0.5 or lib_group > 2.5) }
+                    group {
+                        show: lib_level < 0.5 and (lib_group < 0.5 or lib_group > 2.5)
+                        PChip(qx + qw - 80, 100, 68, "↕ {lib_sort}", false, zlsort.hover)
+                    }
+                    on press zlsort { emit lib_sort }
+
+                    // where it is, and the way back up
+                    zone box zlback { from: qx + 12, 128; size: 30, 24; cursor: pointer; role: button; label: "Back"; show: lib_level > 0 }
+                    group { show: lib_level > 0
+                        PRound(qx + 27, 140, 12, 0, fl.phos, zlback.hover)
+                        path { color: mix(fl.engrave, fl.phos, zlback.hover); move qx + 30, 134; line qx + 23, 140; line qx + 30, 146; close } }
+                    on press zlback { emit lib_back }
+                    text lib_where { at: if(lib_level > 0, qx + 46, qx + 16), 140; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
+                                     width: qw - 110; lines: 1; color: fl.trace_lit }
+                    text "{lib_count, 0}" { at: qx + qw - 16, 140; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+
+                    // the search, over every song
+                    zone box zlfind { from: qx + 12, 156; size: qw - 24, 26; cursor: text; role: region; label: "Search every song" }
+                    Chamfer(qx + 12, 156, qw - 24, 26, 6, fl.ground, mix(fl.trace_dim, fl.phos, zlfind.hover), 1, 1)
+                    ellipse { at: qx + 27, 169; radius: 4.5; stroke: 1.2; color: fl.trace_lit }
+                    line { from: qx + 30.5, 172.5; to: qx + 35, 177; width: 1.2; color: fl.trace_lit }
+                    input lib_query { at: qx + 42, 162; width: qw - 70; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
+                                      placeholder: "Search songs, artists, albums, genres…" }
+                    on press zlfind { typing = true; focus lib_query }
+
+                    zone box zlscroll { from: qx, 188; size: qw, ph - 228; role: list; label: "The library — the wheel pages it" }
+                    on scroll zlscroll { emit lib_page(if(wheel > 0, -1, 1)) }
+
+                    // ── the grid: albums as covers, three by three ──
+                    let gcw = (qw - 24) / 3
+                    for a in albums {
+                        let ax = qx + 12 + mod(a.n, 3) * gcw
+                        let ay = 192 + floor(a.n / 3) * 128
+                        let cs = min(gcw - 12, 92)
+                        let cx1 = ax + (gcw - cs) / 2
+                        zone box zal { from: ax, ay; size: gcw, 124; cursor: pointer; role: item; label: "Open {a.name}" }
+                        box { from: ax + 2, ay; size: gcw - 4, 124; corner: 8; color: fl.well; opacity: 0.35 * zal.hover }
+                        // the cover, or one in the palette's tones with the album's initials
+                        group {
+                            show: not a.has_art
+                            box { from: cx1, ay + 4; size: cs, cs; corner: 6; color: rgb(a.ar, a.ag, a.ab) }
+                            box { from: cx1, ay + 4 + cs * 0.62; size: cs, cs * 0.1; color: rgb(a.br, a.bg, a.bb); opacity: 0.85 }
+                            text a.ini { at: cx1 + cs / 2, ay + 4 + cs * 0.38; anchor: center; size: 26; weight: 700; family: "Exo 2"; color: fl.engrave }
+                        }
+                        group {
+                            show: a.has_art
+                            clip box { from: cx1, ay + 4; size: cs, cs; corner: 6 }
+                            image a.art { at: cx1, ay + 4; size: cs, cs }
+                        }
+                        box { from: cx1, ay + 4; size: cs, cs; corner: 6; stroke: 1; color: mix(fl.trace_dim, fl.phos, zal.hover) }
+                        text a.name { at: ax + gcw / 2, ay + cs + 14; anchor: center; size: 9; weight: 600; family: "Exo 2"; width: gcw - 8; lines: 1
+                                      color: mix(fl.engrave, fl.phos, zal.hover) }
+                        text a.sub { at: ax + gcw / 2, ay + cs + 27; anchor: center; size: 7.5; family: "Exo 2"; width: gcw - 8; lines: 1; color: fl.muted }
+                        // play and add, on the cover while hovered
+                        zone box zalp { from: cx1 + cs - 50, ay + cs - 22; size: 22, 22; cursor: pointer; role: button; label: "Play {a.name}" }
+                        zone box zala { from: cx1 + cs - 26, ay + cs - 22; size: 22, 22; cursor: pointer; role: button; label: "Add {a.name}" }
+                        group {
+                            opacity: max(max(zal.hover, zalp.hover), zala.hover)
+                            PRound(cx1 + cs - 39, ay + cs - 11, 10, 1, fl.phos, zalp.hover)
+                            path { color: fl.ink; move cx1 + cs - 42, ay + cs - 16; line cx1 + cs - 34, ay + cs - 11; line cx1 + cs - 42, ay + cs - 6; close }
+                            PRound(cx1 + cs - 15, ay + cs - 11, 10, 0, fl.trace_lit, zala.hover)
+                            line { from: cx1 + cs - 20, ay + cs - 11; to: cx1 + cs - 10, ay + cs - 11; width: 1.5; color: fl.engrave }
+                            line { from: cx1 + cs - 15, ay + cs - 16; to: cx1 + cs - 15, ay + cs - 6; width: 1.5; color: fl.engrave }
+                        }
+                        on press zal { emit lib_open(a.k) }
+                        on press zalp { emit lib_play(a.k) }
+                        on press zala { emit lib_add(a.k) }
+                    }
+
+                    // ── the rows: artists, genres, an album's songs, every song ──
+                    for r in librows {
+                        let ly = 192 + r.n * 42
+                        zone box zl { from: qx + 8, ly; size: qw - 88, 38; cursor: pointer; role: item; label: pick(r.song, "Open {r.name}", "Play {r.name}") }
+                        box { from: qx + 8, ly; size: qw - 16, 38; corner: 6; color: fl.well; opacity: 0.25 + 0.4 * zl.hover }
+                        // a song's cover, small; a disc for an artist or a genre
+                        group {
+                            show: r.thumb and r.has_art
+                            clip box { from: qx + 14, ly + 4; size: 30, 30; corner: 4 }
+                            image r.art { at: qx + 14, ly + 4; size: 30, 30 }
+                        }
+                        box { from: qx + 14, ly + 4; size: 30, 30; corner: 4; color: fl.well; show: r.thumb and not r.has_art }
+                        text "♪" { at: qx + 29, ly + 19; anchor: center; size: 13; color: fl.trace; show: r.thumb and not r.has_art }
+                        ellipse { at: qx + 29, ly + 19; radius: 9; stroke: 1.2; color: fl.trace_lit; show: not r.thumb }
+                        ellipse { at: qx + 29, ly + 19; radius: 2; color: fl.trace_lit; show: not r.thumb }
+                        text r.name { at: qx + 52, ly + 12; anchor: left center; size: 10; weight: 600; family: "Exo 2"; width: qw - 150; lines: 1
+                                      color: mix(fl.engrave, fl.phos, zl.hover) }
+                        text r.sub { at: qx + 52, ly + 27; anchor: left center; size: 7.5; family: "Exo 2"; width: qw - 150; lines: 1; color: fl.muted }
+                        text r.time { at: qx + qw - 84, ly + 19; anchor: right center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: r.song }
+                        zone box zlplay { from: qx + qw - 76, ly + 7; size: 28, 24; cursor: pointer; role: button; label: "Play {r.name} now" }
+                        PRound(qx + qw - 62, ly + 19, 12, 0, fl.phos, zlplay.hover)
+                        path { color: mix(fl.engrave, fl.phos, zlplay.hover); move qx + qw - 66, ly + 13; line qx + qw - 57, ly + 19; line qx + qw - 66, ly + 25; close }
+                        zone box zladd { from: qx + qw - 44, ly + 7; size: 28, 24; cursor: pointer; role: button; label: "Add {r.name} to the queue" }
+                        PRound(qx + qw - 30, ly + 19, 12, 0, fl.trace_lit, zladd.hover)
+                        line { from: qx + qw - 36, ly + 19; to: qx + qw - 24, ly + 19; width: 1.5; color: mix(fl.engrave, fl.trace_lit, zladd.hover) }
+                        line { from: qx + qw - 30, ly + 13; to: qx + qw - 30, ly + 25; width: 1.5; color: mix(fl.engrave, fl.trace_lit, zladd.hover) }
+                        on press zl { emit lib_open(r.k) }
+                        on press zlplay { emit lib_play(r.k) }
+                        on press zladd { emit lib_add(r.k) }
+                    }
+                    text "PAGE {lib_page + 1, 0} / {lib_pages, 0}  ·  the wheel turns pages" { at: qx + qw / 2, ph - 30; anchor: center; size: 8
+                         family: "Share Tech Mono"; color: fl.muted; show: lib_pages > 1 }
+                    text "NOTHING FOUND" { at: qx + qw / 2, 260; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: lib_count < 1 }
+                }
+}

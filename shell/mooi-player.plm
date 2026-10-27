@@ -277,7 +277,13 @@ scene Player {
     fact q_pages = 1
     fact pane: queue | library | lyrics | players = queue
     // the library's page: what level it is at (0 artists · 1 albums · 2 songs · 3 a search)
-    model librows max 9 { name: text; sub: text; n: number; k: number; song: bool }
+    model librows max 9 { name: text; sub: text; n: number; k: number; song: bool; thumb: bool; has_art: bool; art: image 64, 64; time: text }
+    // the grid: albums as covers (a cover with none has the palette's two tones and its initials)
+    model albums max 9 { name: text; sub: text; k: number; n: number; has_art: bool; art: image 256, 256; ini: text
+                         ar: number; ag: number; ab: number; br: number; bg: number; bb: number }
+    fact lib_grid = true
+    fact lib_group = 0            // 0 albums · 1 artists · 2 genres · 3 songs
+    text lib_sort = "ARTIST"
     fact lib_count = 0
     fact lib_page = 0
     fact lib_pages = 1
@@ -347,6 +353,8 @@ scene Player {
     event lib_add ->         // to the logic: the row, added to the queue
     event lib_back ->        // to the logic: up a level
     event lib_page ->        // to the logic: -1 / 1 a page
+    event lib_group ->       // to the logic: 0 albums · 1 artists · 2 genres · 3 songs
+    event lib_sort ->        // to the logic: the next sort
     event lyr_seek ->        // to the logic: go to this line (its time × 10)
     event pl_tint ->         // to the logic: colours from the album cover, or the shell's again
     event pl_full ->         // to the logic: full screen, or back to the panel

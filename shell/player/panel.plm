@@ -255,53 +255,8 @@ part Panel {
                     text "♪" { at: qx + qw / 2, 260; anchor: center; size: 30; family: "Exo 2"; color: fl.trace_dim; show: not lyr_on }
                 }
 
-                // ── the library: artists → albums → songs, and a search ──
-                group {
-                    show: pane == library
-                    zone box zlback { from: qx + 12, 104; size: 30, 26; cursor: pointer; role: button; label: "Up a level"; show: lib_level > 0 }
-                    group { show: lib_level > 0
-                        PRound(qx + 27, 117, 13, 0, fl.phos, zlback.hover)
-                        path { color: mix(fl.engrave, fl.phos, zlback.hover); move qx + 30, 111; line qx + 23, 117; line qx + 30, 123; close } }
-                    on press zlback { emit lib_back }
-                    text lib_where { at: if(lib_level > 0, qx + 48, qx + 16), 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
-                                     width: qw - 150; lines: 1; color: fl.trace_lit }
-                    text "{lib_count, 0}" { at: qx + qw - 16, 117; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    zone box zlfind { from: qx + 12, 136; size: qw - 24, 28; cursor: text; role: region; label: "Search every song" }
-                    Chamfer(qx + 12, 136, qw - 24, 28, 6, fl.ground, mix(fl.trace_dim, fl.phos, zlfind.hover), 1, 1)
-                    ellipse { at: qx + 27, 150; radius: 4.5; stroke: 1.2; color: fl.trace_lit }
-                    line { from: qx + 30.5, 153.5; to: qx + 35, 158; width: 1.2; color: fl.trace_lit }
-                    input lib_query { at: qx + 42, 143; width: qw - 70; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
-                                      placeholder: "Search songs, artists, albums…" }
-                    on press zlfind { typing = true; focus lib_query }
-                    zone box zlscroll { from: qx, 170; size: qw, 9 * 44; role: list; label: "The library — the wheel pages it" }
-                    on scroll zlscroll { emit lib_page(if(wheel > 0, -1, 1)) }
-                    for r in librows {
-                        let ly = 172 + r.n * 44
-                        zone box zl { from: qx + 8, ly; size: qw - 88, 40; cursor: pointer; role: item; label: pick(r.song, "Open {r.name}", "Play {r.name}") }
-                        box { from: qx + 8, ly; size: qw - 16, 40; corner: 6; color: fl.well; opacity: 0.25 + 0.4 * zl.hover }
-                        // what it is: a disc for an album or an artist, a note for a song
-                        ellipse { at: qx + 26, ly + 20; radius: 9; stroke: 1.2; color: fl.trace_lit; show: not r.song }
-                        ellipse { at: qx + 26, ly + 20; radius: 2; color: fl.trace_lit; show: not r.song }
-                        box { from: qx + 24, ly + 12; size: 2, 14; color: fl.phos; show: r.song }
-                        ellipse { at: qx + 22, ly + 26; radius: 3.5; color: fl.phos; show: r.song }
-                        text r.name { at: qx + 44, ly + 13; anchor: left center; size: 10.5; weight: 600; family: "Exo 2"; width: qw - 140; lines: 1
-                                      color: mix(fl.engrave, fl.phos, zl.hover) }
-                        text r.sub { at: qx + 44, ly + 28; anchor: left center; size: 8; family: "Exo 2"; width: qw - 140; lines: 1; color: fl.muted }
-                        zone box zlplay { from: qx + qw - 76, ly + 8; size: 28, 24; cursor: pointer; role: button; label: "Play {r.name} now" }
-                        PRound(qx + qw - 62, ly + 20, 12, 0, fl.phos, zlplay.hover)
-                        path { color: mix(fl.engrave, fl.phos, zlplay.hover); move qx + qw - 66, ly + 14; line qx + qw - 57, ly + 20; line qx + qw - 66, ly + 26; close }
-                        zone box zladd { from: qx + qw - 44, ly + 8; size: 28, 24; cursor: pointer; role: button; label: "Add {r.name} to the queue" }
-                        PRound(qx + qw - 30, ly + 20, 12, 0, fl.trace_lit, zladd.hover)
-                        line { from: qx + qw - 36, ly + 20; to: qx + qw - 24, ly + 20; width: 1.5; color: mix(fl.engrave, fl.trace_lit, zladd.hover) }
-                        line { from: qx + qw - 30, ly + 14; to: qx + qw - 30, ly + 26; width: 1.5; color: mix(fl.engrave, fl.trace_lit, zladd.hover) }
-                        on press zl { emit lib_open(r.k) }
-                        on press zlplay { emit lib_play(r.k) }
-                        on press zladd { emit lib_add(r.k) }
-                    }
-                    text "PAGE {lib_page + 1, 0} / {lib_pages, 0}" { at: qx + qw / 2, ph - 34; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted
-                         show: lib_pages > 1 }
-                    text "NOTHING FOUND" { at: qx + qw / 2, 240; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: lib_count < 1 }
-                }
+                // ── the library: shell/player/library.plm ──
+                include "library.plm"
             }
         }
 }

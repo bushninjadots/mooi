@@ -274,6 +274,9 @@ M.SCHEMA = {
     -- The music player (D88): its colours from the shell's palette, or from the album cover.
     { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
     -- each place's visualiser (the music player overhaul; lib/vizbands STYLES, shell/ui/viz.plm)
+    -- the library: how it groups, and how it sorts (the music player overhaul)
+    { path = "player.library", kind = "enum", values = { "albums", "artists", "genres", "songs" }, default = "albums" },
+    { path = "player.sort", kind = "enum", values = { "artist", "album", "year", "title", "time" }, default = "artist" },
     { path = "player.viz_mini", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "ring" },
     { path = "player.viz_deck", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "ring" },
     { path = "player.viz_stage", kind = "enum", values = { "spectrum", "mirror", "ring", "aurora", "led", "orbit", "off" }, default = "aurora" },
