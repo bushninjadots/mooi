@@ -30,7 +30,8 @@ scene Mooi {
     fact cn_scale = 1
     fact isl_style = 0           // island.style: 0 plate · 1 tether (ui/island.plm reads it)
     fact clock_view = 0          // clock.view: 0 full · 1 time · 2 seconds
-    fact open: none | window | system | command | shutter | overview = none
+    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power = none
+    fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     fact phase: compact | expanded = compact
 
     // Window island
@@ -870,6 +871,7 @@ scene Mooi {
 
     event open_window          // Spine button · `mooi toggle` · `mooi open`
     event open_system          // Spine status button · `mooi system`
+    event clock_next ->        // to the logic: the clock shows the next of clock.view's states
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
@@ -1028,6 +1030,12 @@ scene Mooi {
     prop rv.window = 0 ~m.enter
     prop rv.system = 0 ~m.enter
     prop rv.command = 0 ~m.enter
+    prop rv.stats = 0 ~m.enter
+    prop rv.calendar = 0 ~m.enter
+    prop rv.weather = 0 ~m.enter
+    prop rv.sound = 0 ~m.enter
+    prop rv.display = 0 ~m.enter
+    prop rv.power = 0 ~m.enter
     prop depth = 0 ~m.expand
     prop fb = 0 ~m.select
     prop pz = 0 ~m.confirm
@@ -1059,6 +1067,31 @@ scene Mooi {
     layer life.command {
         shown while open == command { rv.command: 1 ~m.enter }
         gone                        { rv.command: 0 ~m.exit }
+    }
+    // the modules' own islands (D97)
+    layer life.stats {
+        shown while open == stats { rv.stats: 1 ~m.enter }
+        gone                      { rv.stats: 0 ~m.exit }
+    }
+    layer life.calendar {
+        shown while open == calendar { rv.calendar: 1 ~m.enter }
+        gone                         { rv.calendar: 0 ~m.exit }
+    }
+    layer life.weather {
+        shown while open == weather { rv.weather: 1 ~m.enter }
+        gone                        { rv.weather: 0 ~m.exit }
+    }
+    layer life.sound {
+        shown while open == sound { rv.sound: 1 ~m.enter }
+        gone                      { rv.sound: 0 ~m.exit }
+    }
+    layer life.display {
+        shown while open == display { rv.display: 1 ~m.enter }
+        gone                        { rv.display: 0 ~m.exit }
+    }
+    layer life.power {
+        shown while open == power { rv.power: 1 ~m.enter }
+        gone                      { rv.power: 0 ~m.exit }
     }
     // The shutter's motion: the anchor answers first, the plates follow down the track in a short
     // stagger, a panel slides out of its plate, the third level out of its row; going, the panel
@@ -1556,7 +1589,7 @@ scene Mooi {
     // are above it; a press inside a panel never reaches it. The overview, the shutter and the
     // Atlas are surfaces of their own (overlay), above this one: they never see it.
     group {
-        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin
+        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power
         zone box dismiss { from: 0, 0; size: screen.width, screen.height; role: region; label: "Close the open panel" }
         on press dismiss while qn_open { qn_open = false }
         on press dismiss while mark_open { mark_open = false }
@@ -1564,6 +1597,7 @@ scene Mooi {
         on press dismiss while open == window { open = none }
         on press dismiss while open == system { open = none }
         on press dismiss while open == command { open = none }
+        on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
         on press dismiss while stash_pin { stash_pin = false }
     }
 
@@ -2298,8 +2332,10 @@ scene Mooi {
         let cpu_p = round(res_cpu * 100)
         let mem_p = round(res_mem * 100)
         let tmp_c = round(res_temp)
-        zone box zres { from: 0, fl.top; size: ws_resources, fl.mod_h
+        zone box zres { from: 0, fl.top; size: ws_resources, fl.mod_h; cursor: pointer; role: button
                         label: "Resources — processor {cpu_p, 0} %, memory {mem_p, 0} % ({res_memgb}), {tmp_c, 0} °C" }
+        on press zres while open == stats { open = none }
+        on press zres while open != stats { isl_cx = xs_resources + ws_resources / 2; open = stats; side = none; mark_open = false }
         figure i_cpu { at: 12, fl.cy; size: 15, 15; color: if(cpu_p > 85, fl.ember, fl.phos_fill) }
         Readout(23, "CPU", "{cpu_p, 0}%", cpu_p > 85)
         figure i_ram { at: 62, fl.cy; size: 15, 15; color: if(mem_p > 90, fl.ember, fl.phos_fill) }
@@ -2337,7 +2373,9 @@ scene Mooi {
         show: p_weather
         move: xs_weather, 0
         opacity: pv_weather
-        zone box zwx { from: 0, fl.top; size: ws_weather, fl.mod_h; label: "Weather — {wx_word}, {wx_temp, 0} °C" }
+        zone box zwx { from: 0, fl.top; size: ws_weather, fl.mod_h; cursor: pointer; role: button; label: "Weather — {wx_word}, {wx_temp, 0} °C" }
+        on press zwx while open == weather { open = none }
+        on press zwx while open != weather { isl_cx = xs_weather + ws_weather / 2; open = weather; side = none; mark_open = false }
         let wc = mix(fl.muted, fl.phos, wx_ok)
         figure i_clear { at: 13, fl.cy; size: 17, 17; color: fl.flare; show: wx_kind < 0.5 }
         figure i_night { at: 13, fl.cy; size: 17, 17; color: wc; show: wx_kind > 0.5 and wx_kind < 1.5 }
@@ -2431,7 +2469,8 @@ scene Mooi {
         figure i_volume_mute { at: 13, fl.cy; size: 17, 17; color: fl.ember; show: audio.muted }
         Readout(26, "VOL", pick(audio.muted, "{vv, 0}%", "MUTE"), audio.muted)
         Ring(ws_volume - 10, fl.cy, audio.volume * (1 - audio.muted), audio.muted)
-        on press zvol { sys_cx = xs_volume + ws_volume / 2; emit open_system }
+        on press zvol while open == sound { open = none }
+        on press zvol while open != sound { isl_cx = xs_volume + ws_volume / 2; open = sound; side = none; mark_open = false }
         on press middle zvol { emit mute }
         on scroll zvol { emit vol(clamp(audio.volume + 0.05 * wheel, 0, 1)) }
     }
@@ -2447,7 +2486,8 @@ scene Mooi {
         figure i_sun { at: 13, fl.cy; size: 17, 17; color: mix(fl.trace, fl.phos, clamp(brightness.level * 1.3, 0.25, 1)) }
         Readout(26, "BRI", "{bl, 0}%")
         Ring(ws_brightness - 10, fl.cy, brightness.level, false)
-        on press zbri { sys_cx = xs_brightness + ws_brightness / 2; emit open_system }
+        on press zbri while open == display { open = none }
+        on press zbri while open != display { isl_cx = xs_brightness + ws_brightness / 2; open = display; side = none; mark_open = false }
         on scroll zbri { emit bri(clamp(brightness.level + 0.05 * wheel, 0.01, 1)) }
     }
 
@@ -2464,7 +2504,8 @@ scene Mooi {
         figure i_bolt { at: 13, fl.cy; size: 11, 11; color: fl.flare; show: battery.charging }
         Readout(28, "BAT", "{bb, 0}%", low)
         Ring(ws_battery - 10, fl.cy, battery.percent / 100, low)
-        on press zbat { sys_cx = xs_battery + ws_battery / 2; emit open_system }
+        on press zbat while open == power { open = none }
+        on press zbat while open != power { isl_cx = xs_battery + ws_battery / 2; open = power; side = none; mark_open = false }
     }
 
     // ── Network ───────────────────────────────────────────────
@@ -2508,9 +2549,15 @@ scene Mooi {
     }
 
     // ── Clock ─────────────────────────────────────────────────
+    // A press opens the calendar under it; a right press cycles what it shows (clock.view).
     group {
         show: p_clock and show_clock
         move: xs_clock, 0
+        zone box zclk { from: 0, fl.top; size: ws_clock, fl.mod_h; cursor: pointer; role: button
+                        label: "{clock.time}, {clock.date} — the calendar (right press: what the clock shows)" }
+        on press zclk while open == calendar { open = none }
+        on press zclk while open != calendar { isl_cx = xs_clock + ws_clock / 2; open = calendar; side = none; mark_open = false }
+        on press right zclk { emit clock_next }
         group {
             show: st_aberr > 0.01
             mode: screen
@@ -5031,6 +5078,7 @@ scene Mooi {
     on key Escape while open == window and phase == compact and arming  { arming = false }
     on key Escape while open == window and phase == compact and not arming { open = none }
     on key Escape while open == system                                  { open = none }
+    on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,
     // Ctrl+M, Ctrl+Z, F2, Menu, Shift+F10, Escape — Enter is its submit.
