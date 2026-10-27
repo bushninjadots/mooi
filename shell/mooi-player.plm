@@ -765,14 +765,11 @@ scene Player {
                 }
             }
         }
-    }
 
-    // ══ Full screen: the cover over everything, a large record, the lyrics beside it ══
-    surface stage {
-        size: full, full
-        anchor: top
-        reserve: -1
-        level: overlay
+        // ══ Full screen: the cover over everything, a large record, the lyrics beside it ══
+        // Drawn in the panel's own surface: a second full-screen surface of its own took no
+        // presses at all (its close chip did nothing; only Escape, which the keyboard's surface
+        // hears, closed it).
         let fw = screen.width
         let fh = screen.height
         let fr = min(fh * 0.34, 360)
@@ -795,7 +792,9 @@ scene Player {
                 image cover { at: -fw * 0.1, -fw * 0.3; size: fw * 1.2, fw * 1.2 }
             }
             box { from: 0, 0; size: fw, fh; color: fl.ground; opacity: 0.45 }
+            // a press on the empty background goes back to the panel (the controls sit on top)
             zone box fbody { from: 0, 0; size: fw, fh; agent: hidden }
+            on press fbody { emit pl_full }
 
             // the record, large
             repeat k in 0..48 {
@@ -890,8 +889,11 @@ scene Player {
             PRound(ftx + 84, fty, 26, 0, fl.phos, fznext.hover)
             path { color: fl.engrave; move ftx + 77, fty - 10; line ftx + 91, fty; line ftx + 77, fty + 10; close }
             on press fznext { emit pl_next }
-            zone box fzback { from: fw - 150, 30; size: 120, 30; cursor: pointer; role: button; label: "Back to the panel" }
-            PChip(fw - 150, 34, 120, "ESC · PANEL", false, fzback.hover)
+            zone box fzback { from: fw - 76, 28; size: 48, 48; cursor: pointer; role: button; label: "Back to the panel" }
+            PRound(fw - 52, 52, 22, 0, fl.phos, fzback.hover)
+            line { from: fw - 60, 44; to: fw - 44, 60; width: 2; color: mix(fl.engrave, fl.phos, fzback.hover) }
+            line { from: fw - 44, 44; to: fw - 60, 60; width: 2; color: mix(fl.engrave, fl.phos, fzback.hover) }
+            text "ESC" { at: fw - 52, 88; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
             on press fzback { emit pl_full }
         }
     }
