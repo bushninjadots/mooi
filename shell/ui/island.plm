@@ -1,55 +1,195 @@
 language 0.4
 import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+import "loom.plm"
 
-// The pieces every island shares. An island is a surface the scene declares; inside it,
-// IslandFrame draws the body that grows out of its anchor and fades its content in.
+// The pieces every island shares. An island is drawn in the bar's surface; inside it,
+// IslandFrame draws the body that grows out of its anchor and fades its content in. Two styles
+// (island.style, the scene fact `isl_style`): 0 **plate** — a Ferrolume plate, the bar's own
+// language: chamfered (look.corners), a lit top edge, mono caps — and 1 **tether** — a calm
+// rounded slab hanging from its module on a hairline tether. The pieces below draw a header,
+// rules, meters, buttons and figures in whichever is chosen; zones and rules stay in the scene.
 library Island {
     // `rv` is the island's reveal spring (0 hidden → 1 shown). At 0 the body is the
     // anchor's own size (`aw` × `ah`), sitting where the anchor is; it grows to w × h.
     // `up`: grows upwards from the bottom-left corner (anchors at the bottom of the Spine).
     // `centre`: grows from the middle of its top edge (an island with no Spine anchor,
     // such as the command membrane, which sits at a fixed place).
-    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36) {
+    // `tx`: where its module is, from the island's left — the tether drops there (−1: no tether).
+    // A tethered island sits 12 px lower, so the tether shows; its children move with it.
+    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1) {
         size: w, h
+        let tether = isl_style > 0.5
+        let drop = if(tether and not up and not centre, 12, 0)
         let iw = aw + (w - aw) * rv
         let ih = ah + (h - ah) * rv
-        let top = if(up, h - ih, 0)
+        let top = if(up, h - ih, 0) + drop
         let left = if(centre, (w - iw) / 2, 0)
-        // its corner: the theme's radius on look.corner_size, none when square (the machined body is a
-        // rounded box: chamfer and bevel keep it round)
-        let irad = if(cn_kind > 2.5, 0, g.radius * cn_scale)
-        // machined like the bar: lighter at the top, a lit lip, a soft shadow under it
-        body {
-            gradient: 0, top to 0, top + ih, surface.elevated, surface.primary 40%, bg.primary
-            border: 1, border.subtle
-            shadow: 0, 6 * rv, 22 * rv, 38% * rv
-            box { from: left, top; size: iw, ih; corner: irad }
+        // the tether's corner: the theme's radius on look.corner_size, none when square
+        let irad = if(cn_kind > 2.5, 0, (g.radius + 4) * cn_scale)
+        let k = clamp(fl.chamfer * 1.4 * cn_scale, 0, min(iw, ih) / 2)
+
+        // ── plate ──
+        group {
+            show: not tether
+            // the shadow comes from a body inside the cut (a group cannot cast one)
+            body {
+                gradient: 0, top to 0, top + ih, fl.hull, fl.hull
+                shadow: 0, 6 * rv, 20 * rv, 45% * rv
+                box { from: left + k * 0.5, top + k * 0.5; size: max(1, iw - k), max(1, ih - k); corner: 2 }
+            }
+            Chamfer(left, top, iw, ih, fl.chamfer * 1.4, fl.hull, fl.trace, 0.97, 1)
+            // the lit top run and the cut it turns into
+            group {
+                glow: 5, (0.55 * rv) * st_glow, fl.phos
+                line { from: left + k + 2, top + 0.5; to: left + iw - 1, top + 0.5; width: 1.4; color: fl.phos; opacity: 0.85 * rv }
+            }
+            line { from: left + 10, top + ih - 3; to: left + 26, top + ih - 3; width: 1; color: fl.phos; opacity: 0.5 * rv }
         }
-        line { from: left + irad, top + 1.5; to: left + iw - irad, top + 1.5; width: 1; color: fg.primary; opacity: 0.08 * rv }
+
+        // ── tether ──
+        group {
+            show: tether
+            group {
+                show: tx >= 0 and not up and not centre
+                opacity: smooth(0.2, 1, rv)
+                line { from: clamp(tx, 14, w - 14), -6; to: clamp(tx, 14, w - 14), top; width: 1; color: accent.primary; opacity: 0.75 }
+                group {
+                    glow: 6, (0.8) * st_glow, accent.primary
+                    ellipse { at: clamp(tx, 14, w - 14), top; radius: 2.6; color: accent.primary }
+                }
+            }
+            body {
+                gradient: 0, top to 0, top + ih, mix(surface.elevated, accent.primary, 0.05), bg.primary
+                border: 1, mix(border.subtle, accent.primary, 0.35)
+                shadow: 0, 8 * rv, 26 * rv, 42% * rv
+                box { from: left, top; size: iw, ih; corner: irad }
+            }
+            line { from: left + irad, top + 0.75; to: left + iw - irad, top + 0.75; width: 1; color: accent.primary; opacity: 0.45 * rv }
+        }
+
         group {
             opacity: smooth(0.45, 1, rv)
-            move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0)
-            clip box { from: left, top; size: iw, ih; corner: irad }
+            move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0) + drop
+            clip box { from: left, top - drop; size: iw, ih; corner: if(tether, irad, 0) }
             children
         }
     }
 
-    // A button's face, wherever an island has one: machined like the bar (lighter at the top, a lit
-    // lip), its edge lighting under the pointer, a neon bar under it when it is the chosen one, the
-    // second colour when it is armed (a close that asks twice). `dim`: it cannot act now.
+    // The header: the island's name left, a live line right. Plate: mono caps over a short lit
+    // trace; tether: a quiet title.
+    component IsleHead(w: number, title: text, sub: text = "") {
+        size: w, 30
+        group {
+            show: isl_style < 0.5
+            text title { at: 16, 18; anchor: left center; size: 10.5; weight: 700; family: "Share Tech Mono"; color: fl.phos
+                         width: w * 0.55; lines: 1 }
+            line { from: 16, 27; to: 40, 27; width: 1.4; color: fl.phos; opacity: 0.8 }
+            line { from: 44, 27; to: w - 16, 27; width: 1; color: fl.trace_dim; opacity: 0.6 }
+            text sub { at: w - 16, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: w * 0.45; lines: 1 }
+        }
+        group {
+            show: isl_style > 0.5
+            text title { at: 16, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fg.primary; width: w * 0.55; lines: 1 }
+            text sub { at: w - 16, 18; anchor: right center; size: 11; family: "Exo 2"; color: fg.secondary; width: w * 0.45; lines: 1 }
+        }
+    }
+
+    // A divider across the island at `y`.
+    component IsleRule(w: number, y: number) {
+        size: w, 1
+        line { from: 16, y; to: w - 16, y; width: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim); opacity: if(isl_style > 0.5, 0.8, 0.55) }
+    }
+
+    // A small label over a large figure, at (x, y) its top-left. `hot`: past where it hurts.
+    component IsleStat(x: number, y: number, label: text, value: text, hot: bool = false) {
+        size: 90, 40
+        group {
+            show: isl_style < 0.5
+            text label { at: x, y + 6; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            text value { at: x, y + 25; anchor: left center; size: 19; weight: 600; family: "Exo 2"; color: if(hot, fl.ember, fl.phos) }
+        }
+        group {
+            show: isl_style > 0.5
+            text label { at: x, y + 6; anchor: left center; size: 10.5; family: "Exo 2"; color: fg.secondary }
+            text value { at: x, y + 25; anchor: left center; size: 19; weight: 600; family: "Exo 2"; color: if(hot, status.error, fg.primary) }
+        }
+    }
+
+    // A level 0..1 at (x, y), `w` wide: segments in plate, a smooth track with a thumb in tether.
+    component IsleMeter(x: number, y: number, w: number, v: number, hot: bool = false) {
+        size: w, 8
+        prop sv = 0 ~m.select
+        follow sv = clamp(v, 0, 1)
+        group {
+            show: isl_style < 0.5
+            repeat s in 0..24 {
+                let sw = (w - 23 * 2) / 24
+                box { from: x + s * (sw + 2), y; size: sw, 8; corner: 1
+                      color: if(s < sv * 24, if(hot, fl.ember, fl.phos), mix(fl.well, fl.trace, 0.45)); opacity: if(s < sv * 24, 1, 0.8) }
+            }
+        }
+        group {
+            show: isl_style > 0.5
+            box { from: x, y + 1; size: w, 6; corner: 3; color: bg.primary }
+            box { from: x, y + 1; size: w, 6; corner: 3; stroke: 1; color: border.subtle }
+            group {
+                glow: 6, (0.6) * st_glow, accent.primary
+                box { from: x, y + 1; size: max(6, w * sv), 6; corner: 3; color: if(hot, status.error, accent.primary) }
+            }
+            ellipse { at: x + max(6, w * sv) - 3, y + 4; radius: 6; color: fg.primary }
+        }
+    }
+
+    // A button's face at (x, y): a cut chip (plate) or a pill (tether). `lit`: the chosen one;
+    // `hover`: the pointer's over it. The caller draws its zone over the same box.
+    component IsleBtn(x: number, y: number, w: number, word: text, lit: number, hover: number, h: number = 24) {
+        size: w, h
+        group {
+            show: isl_style < 0.5
+            Chamfer(x, y, w, h, 5, mix(fl.hull_raised, fl.phos_fill, lit), mix(fl.trace, fl.phos, max(hover, lit)), 1, 1)
+            text "{upper(word)}" { at: x + w / 2, y + h / 2 + 0.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                                   color: if(lit > 0.5, fl.ink, mix(fl.engrave, fl.phos, hover)); width: w - 6; lines: 1 }
+        }
+        group {
+            show: isl_style > 0.5
+            box { from: x, y; size: w, h; corner: if(cn_kind > 2.5, 3, h / 2)
+                  color: mix(mix(surface.elevated, fg.primary, 0.06 * hover), accent.primary, 0.85 * lit) }
+            box { from: x, y; size: w, h; corner: if(cn_kind > 2.5, 3, h / 2); stroke: 1
+                  color: mix(border.subtle, accent.primary, max(0.6 * hover, lit)) }
+            text word { at: x + w / 2, y + h / 2; anchor: center; align: center; size: 11; weight: 600; family: "Exo 2"
+                        color: if(lit > 0.5, bg.primary, fg.primary); width: w - 8; lines: 1 }
+        }
+    }
+
+    // A button's face, wherever an island has one (the Window island's actions): machined in
+    // tether, a cut chip in plate; its edge lighting under the pointer, a neon bar under it when it
+    // is the chosen one, the second colour when it is armed (a close that asks twice). `dim`: it
+    // cannot act now.
     component BtnFace(w: number, h: number, hover: number, lit: number, hot: number = 0, dim: bool = false) {
         size: w, h
         opacity: if(dim, 0.45, 1)
-        body {
-            gradient: 0, 0 to 0, h, mix(surface.elevated, fg.primary, 0.06 * hover), mix(surface.primary, selection.bg, lit)
-            box { from: 0, 0; size: w, h; corner: g.radius.item }
-        }
-        line { from: g.radius.item, 1; to: w - g.radius.item, 1; width: 1; color: fg.primary; opacity: 0.07 + 0.08 * hover }
-        box { from: 0, 0; size: w, h; corner: g.radius.item; stroke: 1
-              color: mix(mix(border.subtle, focus.ring, max(0.7 * hover, lit)), accent.secondary, hot) }
         group {
-            glow: 6, (max(lit, hot)) * st_glow, mix(accent.primary, accent.secondary, hot)
-            box { from: w * 0.25, h - 3.5; size: w * 0.5, 2; corner: 1; color: mix(accent.primary, accent.secondary, hot); opacity: max(lit, hot) }
+            show: isl_style < 0.5
+            Chamfer(0, 0, w, h, 6, mix(fl.hull_raised, fl.well, lit * 0.6), mix(mix(fl.trace, fl.phos, max(0.8 * hover, lit)), fl.ember, hot), 1, 1)
+            group {
+                glow: 6, (max(lit, hot)) * st_glow, mix(fl.phos, fl.ember, hot)
+                box { from: w * 0.25, h - 3.5; size: w * 0.5, 2; corner: 1; color: mix(fl.phos, fl.ember, hot); opacity: max(lit, hot) }
+            }
+        }
+        group {
+            show: isl_style > 0.5
+            body {
+                gradient: 0, 0 to 0, h, mix(surface.elevated, fg.primary, 0.06 * hover), mix(surface.primary, selection.bg, lit)
+                box { from: 0, 0; size: w, h; corner: g.radius.item }
+            }
+            line { from: g.radius.item, 1; to: w - g.radius.item, 1; width: 1; color: fg.primary; opacity: 0.07 + 0.08 * hover }
+            box { from: 0, 0; size: w, h; corner: g.radius.item; stroke: 1
+                  color: mix(mix(border.subtle, focus.ring, max(0.7 * hover, lit)), accent.secondary, hot) }
+            group {
+                glow: 6, (max(lit, hot)) * st_glow, mix(accent.primary, accent.secondary, hot)
+                box { from: w * 0.25, h - 3.5; size: w * 0.5, 2; corner: 1; color: mix(accent.primary, accent.secondary, hot); opacity: max(lit, hot) }
+            }
         }
     }
 
@@ -61,21 +201,20 @@ library Island {
         follow v = value
         prop lit = 0 ~m.select
         follow lit = if(chosen, 1, 0)
-        box { from: -8, -4; size: w + 16, 46; corner: g.radius.item; color: selection.bg; opacity: lit * 70% }
-        text label { at: 0, 10; anchor: left center; size: 12; color: fg.primary }
-        text shown { at: w, 10; anchor: right center; size: 11; color: fg.secondary }
-        zone box track { from: 0, 22; size: w, 14; cursor: pointer; role: slider; value: value; label: label }
-        box { from: 0, 27; size: w, 4; corner: 2; color: bg.primary }
-        box { from: 0, 27; size: w, 4; corner: 2; stroke: 1; color: border.subtle }
+        box { from: -8, -4; size: w + 16, 46; corner: if(isl_style > 0.5, g.radius.item, 2)
+              color: if(isl_style > 0.5, selection.bg, fl.well); opacity: lit * 70% }
         group {
-            glow: 6, (0.7) * st_glow, accent.primary
-            box { from: 0, 28; size: max(2, w * clamp(v, 0, 1)), 2; corner: 1; color: accent.primary }
+            show: isl_style < 0.5
+            text "{upper(label)}" { at: 0, 10; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text shown { at: w, 10; anchor: right center; size: 10.5; family: "Share Tech Mono"; color: fl.phos }
         }
-        body {
-            gradient: 0, 20 to 0, 38, mix(surface.elevated, fg.primary, 0.25), surface.elevated
-            box { at: w * clamp(v, 0, 1), 29; size: 10, 18 + 2 * track.hover; corner: 2 }
+        group {
+            show: isl_style > 0.5
+            text label { at: 0, 10; anchor: left center; size: 12; color: fg.primary }
+            text shown { at: w, 10; anchor: right center; size: 11; color: fg.secondary }
         }
-        box { at: w * clamp(v, 0, 1), 29; size: 2, 9; corner: 1; color: accent.primary }
+        zone box track { from: 0, 22; size: w, 14; cursor: pointer; role: slider; value: value; label: label }
+        IsleMeter(0, 25, w, value)
         on press track { emit set(clamp(local.x / w, 0, 1)) }
         on drag track { emit set(clamp(local.x / w, 0, 1)) }
         on scroll track { emit set(clamp(value + wheel * 0.05, 0, 1)) }

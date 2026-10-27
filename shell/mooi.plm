@@ -3601,7 +3601,7 @@ scene Mooi {
             show: rv.window > 0.03
             move: wi_ox, 0
 
-            IslandFrame(rv.window, 340, 132 + 80 * depth) {
+            IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1)) {
                 text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
                 text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
 
@@ -3694,7 +3694,7 @@ scene Mooi {
             let sh = 144 + 52 * brightness.present
             group {
                 move: 0, 0
-                IslandFrame(rv.system, 300, sh) {
+                IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox) {
                     text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
                     text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
                     text "Wired" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wired }
