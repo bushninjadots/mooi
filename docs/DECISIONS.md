@@ -3132,3 +3132,42 @@ measure the gap after a rest and overstate it; `pleamar --report` is the measure
 **Tests:** unit 303 + BMO 27; scene.sh 71/71; config-recovery.sh 13/13; integration.sh 42/42 twice
 in a row. Left to the user: deleting ~/.local/share/pleamar/bmo.old.1185462 (the auto-mode
 classifier refused the delete).
+
+## D97 · 2026-10-27 · The bar's islands: one kit, two styles, six new islands
+
+**Asked for:** one design for every pop-up under the bar, a system statistics island from resources,
+clock view states and a calendar, media view states, better volume/brightness/battery islands, a
+weather island; then "Ferrolume plate option and our own something new options", and "do what you
+think is best" (the user away; every choice below was delegated). Spec and plan:
+docs/superpowers/specs/2026-10-27-bar-islands-design.md, docs/superpowers/plans/2026-10-27-bar-islands.md.
+
+**The kit** (shell/ui/island.plm): `IslandFrame` draws the body in the style of `island.style` —
+**plate** (a chamfered Ferrolume plate that follows look.corners, a lit top run, mono caps) or
+**tether** (a rounded slab hanging 12 px under its module on a hairline tether ending in a lit node;
+calm headers, pills, smooth meters). Pieces: IsleHead, IsleRule, IsleStat, IsleGauge, IsleMeter,
+IsleBtn; BtnFace and Level follow the style, so the Window, System and Search islands changed with it.
+Settings → Colour → Islands.
+
+**The islands** (shell/mooi.plm; logic in the new shell/islands.luau; data read only while open):
+**stats** (resources: CPU+temperature, memory, GPU busy, root disk, swap, the 3 busiest processes;
+btop/nvtop), **calendar** (clock: 6×7 from Monday, ISO week, ‹ Today ›, wheel, arrows),
+**weather** (weather module: now, feels/wind/humidity, high/low, 6 hours, 5 days with ranges; one
+open-meteo request when opened, 10-minute cache, offline keeps the last), **sound** (volume module:
+output and mic levels, mute, mixer, output devices), **display** (brightness, night light via
+hyprsunset 4000 K, Dark · Light · Auto), **power** (battery: charge, upower's time and health, the
+battery saver, the power profile only when power-profiles-daemon answers — masked here, so hidden;
+keep awake, lock, session). Pure parsing, tested: lib/calendar, lib/stats (incl. upower), lib/forecast.
+
+**View states:** the clock's right press cycles `clock.view` (full · time · seconds; also on Settings
+→ Bar); the media module's right press cycles media.mode; play/pause moved to the visualizer's left
+press and a middle press. The Control Nexus is left for its own spec (the user: "it can be different").
+
+**Correction to D96:** "0 frames at rest" was measured while the bar was hidden behind a full-screen
+window. With it shown, the idle bar redraws ~2 frames a second for real changes — the clock's second
+hand and the resources readout — against 60 before D96. Still the fix it was; the number was wrong.
+
+**Checked:** every island opened from its module (sound and display set open directly: the volume
+module is not on the user's bar) and screenshotted in both styles; module press again closes; night
+light on/off (process count 1 → 0); clock and media views cycled through and back to the user's own.
+Unit 311 + BMO 27; scene.sh 71/71 twice; integration.sh 42/42 twice; config-recovery 13/13 three
+times (its safe-mode wait fixed: --say succeeds against a stale socket).
