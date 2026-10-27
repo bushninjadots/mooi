@@ -20,6 +20,17 @@ return function(ctx)
         ctx.save()
     end)
 
+    -- ── The media module: a right press shows its next view (media.mode) ──
+    local MEDIA = { "full", "compact", "art", "viz" }
+    on("media_view", function()
+        local s = ctx.settings()
+        local i = 1
+        for k, v in ipairs(MEDIA) do if v == s.media.mode then i = k end end
+        s.media.mode = MEDIA[i % #MEDIA + 1]
+        fact.media_mode = i % #MEDIA
+        ctx.save()
+    end)
+
     -- ── The calendar ─────────────────────────────────────────
     local cal = { y = 0, m = 0 }
     local function today()

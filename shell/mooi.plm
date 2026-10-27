@@ -908,6 +908,7 @@ scene Mooi {
     event open_window          // Spine button · `mooi toggle` · `mooi open`
     event open_system          // Spine status button · `mooi system`
     event clock_next ->        // to the logic: the clock shows the next of clock.view's states
+    event media_view ->        // to the logic: the media module shows the next of media.mode's views
     event cal_shift ->         // to the logic: 0 the month before · 1 this month · 2 the month after
     event st_open ->           // to the logic: 0 btop · 1 nvtop, in a terminal
     event wx_refresh ->        // to the logic: fetch the forecast again now
@@ -2363,8 +2364,15 @@ scene Mooi {
         // slabs stay the transport, and the visualiser still plays and pauses.
         on press track { emit open_player(0); side = none; mark_open = false; open = none }
         on press pill { emit open_player(0); side = none; mark_open = false; open = none }
-        on press right track { emit media_cmd(0) }
-        on press right pill { emit media_cmd(0) }
+        // a right press shows the next of its views (media.mode: full → compact → art → visualizer);
+        // play/pause is a left press on the visualizer, or a middle press anywhere on it
+        on press right track { emit media_view }
+        on press right pill { emit media_view }
+        on press right wave { emit media_view }
+        on press right mscroll { emit media_view }
+        on press middle track { emit media_cmd(0) }
+        on press middle pill { emit media_cmd(0) }
+        on press middle wave { emit media_cmd(0) }
     }
 
     // ── Resources: processor, memory, temperature ─────────────
@@ -2603,16 +2611,25 @@ scene Mooi {
         on press zclk while open != calendar { isl_cx = xs_clock + ws_clock / 2; open = calendar; side = none; mark_open = false }
         on press right zclk { emit clock_next }
         group {
-            show: st_aberr > 0.01
+            show: st_aberr > 0.01 and clock_view < 0.5
             mode: screen
             text clock.time { at: 8 - 2.2 * st_aberr, fl.cy; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: #ff2a55; opacity: min(1, st_aberr * 2.5) * 0.8 }
             text clock.time { at: 8 + 2.2 * st_aberr, fl.cy; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: #2ae8ff; opacity: min(1, st_aberr * 2.5) * 0.8 }
         }
-        text clock.time { at: 8, fl.cy; anchor: left center; size: 15; weight: 600; family: "Exo 2"
-                          color: fl.phos; shadow: 0, if(bar_surface > 2.5 and bar_surface < 3.5, 1, 0), 6, 45%, mix(fl.phos, #000000, bar_surface > 2.5 and bar_surface < 3.5) }
-        text "{upper(clock.date)}" { at: 54, fl.cy + 0.5; anchor: left center; size: 10; family: "Share Tech Mono"
-                            shadow: 0, 1, 4, 90% * (bar_surface > 2.5 and bar_surface < 3.5), #000000
-                                     width: ws_clock - 58; lines: 1; color: fl.ember }
+        group {
+            show: clock_view < 0.5
+            text clock.time { at: 8, fl.cy; anchor: left center; size: 15; weight: 600; family: "Exo 2"
+                              color: fl.phos; shadow: 0, if(bar_surface > 2.5 and bar_surface < 3.5, 1, 0), 6, 45%, mix(fl.phos, #000000, bar_surface > 2.5 and bar_surface < 3.5) }
+            text "{upper(clock.date)}" { at: 54, fl.cy + 0.5; anchor: left center; size: 10; family: "Share Tech Mono"
+                                shadow: 0, 1, 4, 90% * (bar_surface > 2.5 and bar_surface < 3.5), #000000
+                                         width: ws_clock - 58; lines: 1; color: fl.ember }
+        }
+        // the time alone, larger, in the middle
+        text clock.time { at: ws_clock / 2, fl.cy; anchor: center; align: center; size: 17; weight: 600; family: "Exo 2"; color: fl.phos
+                          show: clock_view > 0.5 and clock_view < 1.5 }
+        // with the seconds
+        text "{clock.time}:{floor(tick.second / 10), 0}{mod(tick.second, 10), 0}" { at: ws_clock / 2, fl.cy; anchor: center; align: center
+                          size: 15; weight: 600; family: "Exo 2"; color: fl.phos; show: clock_view > 1.5 }
         // the minute running out under the time: an instrument's second hand, laid flat
         group {
             show: bar_accents
