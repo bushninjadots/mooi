@@ -13,7 +13,7 @@ import "ui/playerviews.plm" as views
 
 scene Player {
     permissions {
-        run: "mpc", "matugen", "ffmpeg", "playerctl", "cava", "curl", "pleamar", "magick", "mkdir", "cat"
+        run: "mpc", "matugen", "ffmpeg", "playerctl", "cava", "curl", "pleamar", "magick", "mkdir", "cat", "easyeffects", "pgrep", "cp", "ls"
         services: "media", "media.*", "audio", "audio.*", "files", "files.write", "env"
     }
 
@@ -276,7 +276,7 @@ scene Player {
     fact q_count = 0
     fact q_page = 0
     fact q_pages = 1
-    fact pane: queue | library | lyrics | players = queue
+    fact pane: queue | library | lyrics | players | eq = queue
     // the library's page: what level it is at (0 artists · 1 albums · 2 songs · 3 a search)
     model librows max 9 { name: text; sub: text; n: number; k: number; song: bool; thumb: bool; has_art: bool; art: image 64, 64; time: text }
     // the grid: albums as covers (a cover with none has the palette's two tones and its initials)
@@ -360,6 +360,11 @@ scene Player {
     event lyr_seek ->        // to the logic: go to this line (its time × 10)
     event pl_tint ->         // to the logic: colours from the album cover, or the shell's again
     event pl_full ->         // to the logic: full screen, or back to the panel
+    event eq_toggle ->       // to the logic: the equaliser on or off
+    event eq_band ->         // to the logic: 100 · band + dB + 12
+    event eq_pre ->          // to the logic: the preamp's dB + 12
+    event eq_knob ->         // to the logic: 100 · knob (1 low · 2 mid · 3 high) + dB + 12
+    event eq_preset ->       // to the logic: a preset chip's k
     event pl_view ->         // to the logic: 0 the deck · 1 the stage · 2 the rack
     event pl_cue ->          // to the logic: back to the last carried-to point, else the start
     event viz_next ->        // to the logic: the next visualiser style for a place (0 mini · 1 the deck · 2 full screen)
@@ -418,6 +423,21 @@ scene Player {
     // the rack's: the file's format, and the EQ's three knobs (the equaliser sets them)
     text t_audio = ""
     fact eq_on = false
+    // the equaliser's ten bands and preamp (dB), its preset, and the presets to pick from
+    fact eq_b0 = 0
+    fact eq_b1 = 0
+    fact eq_b2 = 0
+    fact eq_b3 = 0
+    fact eq_b4 = 0
+    fact eq_b5 = 0
+    fact eq_b6 = 0
+    fact eq_b7 = 0
+    fact eq_b8 = 0
+    fact eq_b9 = 0
+    fact eq_pre = 0
+    text eq_name = "FLAT"
+    text eq_save = ""
+    model eqchips max 12 { name: text; k: number; on: bool; mine: bool; n: number }
     fact eq_lo = 0
     fact eq_mid = 0
     fact eq_hi = 0

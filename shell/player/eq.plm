@@ -1,0 +1,64 @@
+// The equaliser pane (the music player overhaul): ten bands and a preamp, ±12 dB, the presets —
+// mooi's seven, then the user's own EasyEffects presets (loaded as they are) — and SAVE AS. The
+// logic is shell/player/eq.luau; EasyEffects applies it. A part of shell/mooi-player.plm, included
+// in the panel where the pane is drawn (it reads qx, qw, ph).
+part Eq {
+                group {
+                    show: pane == eq
+                    text "EQUALISER  ·  {eq_name}" { at: qx + 16, 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
+                         color: fl.trace_lit; width: qw - 110; lines: 1 }
+                    zone box zeqon { from: qx + qw - 74, 106; size: 60, 22; cursor: pointer; role: toggle; checked: eq_on; label: "The equaliser on or off" }
+                    PChip(qx + qw - 74, 106, 60, pick(eq_on, "OFF", "ON"), eq_on, zeqon.hover)
+                    on press zeqon { emit eq_toggle }
+
+                    // the bands: a press or a drag sets one (the line in the middle is 0 dB)
+                    let et = 158
+                    let eh = 170
+                    group {
+                        opacity: if(eq_on, 1, 0.5)
+                        box { from: qx + 22, et + eh / 2; size: qw - 44, 1; color: fl.trace_dim }
+                        repeat b in 0..10 {
+                            let bx = qx + 36 + b * ((qw - 72) / 9)
+                            let gv = pick(b, eq_b0, eq_b1, eq_b2, eq_b3, eq_b4, eq_b5, eq_b6, eq_b7, eq_b8, eq_b9)
+                            let gy = et + eh / 2 - gv / 12 * eh / 2
+                            zone box zeq.$b { from: bx - 12, et - 6; size: 24, eh + 12; cursor: grab; role: slider
+                                              label: pick(b, "31 Hz", "62 Hz", "125 Hz", "250 Hz", "500 Hz", "1 kHz", "2 kHz", "4 kHz", "8 kHz", "16 kHz"); value: (gv + 12) / 24 }
+                            box { from: bx - 2, et; size: 4, eh; corner: 2; color: fl.well }
+                            box { from: bx - 2, min(gy, et + eh / 2); size: 4, abs(gy - et - eh / 2); corner: 2; color: mix(fl.phos, fl.ember, abs(gv) / 12) }
+                            Chamfer(bx - 9, gy - 5, 18, 10, 3, fl.hull_raised, mix(fl.trace_lit, fl.phos, zeq.$b.hover), 1, 1.2)
+                            text "{gv, 0}" { at: bx, et - 14; anchor: center; align: center; size: 7; family: "Share Tech Mono"; color: fl.muted; width: 28 }
+                            text pick(b, "31", "62", "125", "250", "500", "1K", "2K", "4K", "8K", "16K") { at: bx, et + eh + 14; anchor: center; align: center
+                                 size: 7; family: "Share Tech Mono"; color: fl.muted; width: 28 }
+                            on press zeq.$b { emit eq_band(b * 100 + round(clamp(12 - (local.y - et) / eh * 24, -12, 12)) + 12) }
+                            on drag zeq.$b { emit eq_band(b * 100 + round(clamp(12 - (local.y - et) / eh * 24, -12, 12)) + 12) }
+                        }
+                        // the preamp
+                        text "PREAMP" { at: qx + 16, 372; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                        zone box zeqp { from: qx + 70, 362; size: qw - 130, 20; cursor: pointer; role: slider; label: "Preamp"; value: (eq_pre + 12) / 24 }
+                        box { from: qx + 70, 370; size: qw - 130, 4; corner: 2; color: fl.well }
+                        Chamfer(qx + 70 + (qw - 130) * (eq_pre + 12) / 24 - 6, 366, 12, 12, 3, fl.hull_raised, mix(fl.trace_lit, fl.phos, zeqp.hover), 1, 1.2)
+                        text "{eq_pre, 0} dB" { at: qx + qw - 16, 372; anchor: right center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                        on press zeqp { emit eq_pre(round(clamp((local.x - qx - 70) / (qw - 130), 0, 1) * 24)) }
+                        on drag zeqp { emit eq_pre(round(clamp((local.x - qx - 70) / (qw - 130), 0, 1) * 24)) }
+                    }
+
+                    // the presets: mooi's, then yours (loaded as they are, never rewritten)
+                    text "PRESETS" { at: qx + 16, 400; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                    for c in eqchips {
+                        let pcx = qx + 12 + mod(c.n, 4) * ((qw - 24) / 4)
+                        let pcy = 412 + floor(c.n / 4) * 28
+                        zone box zeqc { from: pcx, pcy; size: (qw - 24) / 4 - 6, 22; cursor: pointer; role: button; label: "Preset {c.name}" }
+                        PChip(pcx, pcy, (qw - 24) / 4 - 6, c.name, c.on, zeqc.hover)
+                        box { from: pcx + 6, pcy + 18; size: (qw - 24) / 4 - 18, 1; color: fl.ember; opacity: 0.6; show: not c.mine }
+                        on press zeqc { emit eq_preset(c.k) }
+                    }
+
+                    // SAVE AS: the bands as a preset of your own
+                    zone box zeqs { from: qx + 12, ph - 62; size: qw - 24, 26; cursor: text; role: region; label: "Save these bands as a preset" }
+                    Chamfer(qx + 12, ph - 62, qw - 24, 26, 6, fl.ground, mix(fl.trace_dim, fl.phos, zeqs.hover), 1, 1)
+                    input eq_save { at: qx + 22, ph - 56; width: qw - 44; size: 10; family: "Exo 2"; color: fl.phos; selection: fl.well
+                                    placeholder: "Save as… (a name, then Enter)" }
+                    on press zeqs { typing = true; focus eq_save }
+                    on submit eq_save { typing = false; blur }
+                }
+}

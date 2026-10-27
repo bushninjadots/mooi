@@ -2984,6 +2984,37 @@ test("lyrics: an offset moves the sung line", function()
     eq(player.lyric_at(l, 21, -2), 1, "late lyrics wait")
     eq(player.clamp_offset(12.3), 10, "capped"); eq(player.clamp_offset(0.74), 0.5, "steps of 0.5"); eq(player.clamp_offset(-0.26), -0.5, "and back")
 end)
+local eqpreset = require("lib/eqpreset")
+test("eq: ten bands round-trip through the EasyEffects document", function()
+    local doc = eqpreset.easyeffects(eqpreset.PRESETS.rock, -2)
+    local e = doc.output.equalizer
+    eq(e["num-bands"], 10, "ten bands"); eq(e["input-gain"], -2, "the preamp"); eq(e.left.band3.frequency, 250, "frequencies")
+    eq(e.right.band9.gain, eqpreset.PRESETS.rock[10], "both channels"); eq(doc.output.plugins_order[1], "equalizer", "the plugin")
+    local back = eqpreset.bands_from(doc)
+    for i = 1, 10 do eq(back[i], eqpreset.PRESETS.rock[i], "band " .. i) end
+    eq(eqpreset.bands_from({}), nil, "not a preset")
+end)
+test("eq: the rack's knobs move their bands", function()
+    local b = eqpreset.from_knob(eqpreset.PRESETS.flat, 1, 6)
+    local lo = eqpreset.knobs(b); eq(lo, 6, "low knob"); eq(b[4], 0, "mid untouched")
+    eq(eqpreset.from_knob(b, 1, 30)[1], 12, "clamped")
+    local _, mid, hi = eqpreset.knobs(eqpreset.from_knob(eqpreset.PRESETS.flat, 3, -4))
+    eq(mid, 0, "mid"); eq(hi, -4, "high knob")
+end)
+test("eq: the preset that was loaded before mooi's, to give back on off", function()
+    eq(eqpreset.last_output("input: mic\noutput: live_eq\n"), "live_eq", "read from -s")
+    eq(eqpreset.last_output("output: mooi\n"), nil, "mooi's own is not the user's")
+    eq(eqpreset.last_output("output: mooi-night\n"), nil, "nor one saved from here")
+    eq(eqpreset.last_output(""), nil, "none")
+end)
+test("eq: every preset has ten bands within ±12 dB", function()
+    local n = 0
+    for name, p in pairs(eqpreset.PRESETS) do
+        n = n + 1
+        eq(#p, 10, name); for _, v in ipairs(p) do assert(v >= -12 and v <= 12, name) end
+    end
+    eq(n, 7, "seven presets"); eq(#eqpreset.ORDER, 7, "in an order for the chips")
+end)
 test("sizes: escape steps back one size", function()
     eq(player.size_after("full", "escape"), "panel", "full → panel")
     eq(player.size_after("panel", "escape"), nil, "panel → closed")

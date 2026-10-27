@@ -122,6 +122,11 @@ library PlayerViews {
             arc { at: kcx, kcy; radius: kr + 4; width: 2; span: 270deg; color: fl.trace_dim }
             line { from: kcx, kcy; to: kcx + sin(kv * 11.25) * kr * 0.8, kcy - cos(kv * 11.25) * kr * 0.8; width: 2; color: if(eq_on, fl.phos, fl.muted) }
             text pick(k, "LO", "MID", "HI") { at: kcx, kcy + kr + 14 * fs; anchor: center; size: 7 * fs; family: "Share Tech Mono"; color: fl.muted }
+            // turned by angle round its centre: ±135° is ±12 dB (only while the EQ is on)
+            zone box zknob { from: kcx - kr - 6, kcy - kr - 6; size: kr * 2 + 12, kr * 2 + 12; cursor: grab; role: slider
+                             label: pick(k, "Low", "Middle", "High"); value: (kv + 12) / 24; show: eq_on }
+            on press zknob { emit eq_knob((k + 1) * 100 + round(clamp(atan2(local.x - kcx, kcy - local.y) / 11.25, -12, 12)) + 12) }
+            on drag zknob { emit eq_knob((k + 1) * 100 + round(clamp(atan2(local.x - kcx, kcy - local.y) / 11.25, -12, 12)) + 12) }
         }
         // the waveform: the whole song, the played part lit; a press or a drag seeks
         Chamfer(x, sy, w, sh, 10, fl.hull_raised, fl.trace_dim, 1, 1)

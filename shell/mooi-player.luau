@@ -414,7 +414,7 @@ local library = require("player/library").new({
 })
 local function set_pane(v)
     local n = math.floor(tonumber(v) or 0)
-    fact.pane = n == 1 and "library" or n == 2 and "lyrics" or "queue"
+    fact.pane = n == 1 and "library" or n == 2 and "lyrics" or n == 4 and "eq" or "queue"
     if fact.pane == "library" and not library.ready() then library.open() end
 end
 on("pl_pane", set_pane)
@@ -454,6 +454,9 @@ on("pl_size", function(v)
     local n = math.floor(tonumber(v) or 0)
     go_size(({ [-1] = "outside", [-2] = "escape", [1] = "grow", [2] = "full" })[n] or "open")
 end)
+
+-- ── The equaliser: shell/player/eq.luau (EasyEffects underneath) ──
+require("player/eq").new({ home = HOME, say = say, read = read, folder = folder })
 
 -- ── Lyrics: shell/player/lyrics.luau ─────────────────────────
 do

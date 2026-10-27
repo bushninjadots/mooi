@@ -212,21 +212,23 @@ part Panel {
                 // ── the pane: the queue ──
                 Chamfer(qx, 64, qw, ph - 84, 10, mix(fl.hull_raised, fl.ground, 0.4), fl.trace_dim, 0.95, 1)
                 // the pane's tabs
-                zone box ztq { from: qx + 12, 72; size: 70, 24; cursor: pointer; role: tab; selected: pane == queue; label: "The queue" }
-                PChip(qx + 12, 73, 70, "QUEUE", pane == queue, ztq.hover)
+                zone box ztq { from: qx + 12, 72; size: 60, 24; cursor: pointer; role: tab; selected: pane == queue; label: "The queue" }
+                PChip(qx + 12, 73, 60, "QUEUE", pane == queue, ztq.hover)
                 on press ztq { emit pl_pane(0) }
-                zone box ztl { from: qx + 86, 72; size: 78, 24; cursor: pointer; role: tab; selected: pane == library; label: "Your library" }
-                PChip(qx + 86, 73, 78, "LIBRARY", pane == library, ztl.hover)
+                zone box ztl { from: qx + 76, 72; size: 68, 24; cursor: pointer; role: tab; selected: pane == library; label: "Your library" }
+                PChip(qx + 76, 73, 68, "LIBRARY", pane == library, ztl.hover)
                 on press ztl { emit pl_pane(1) }
-                zone box zty { from: qx + 168, 72; size: 72, 24; cursor: pointer; role: tab; selected: pane == lyrics; label: "The lyrics" }
-                PChip(qx + 168, 73, 72, "LYRICS", pane == lyrics, zty.hover)
+                zone box zty { from: qx + 148, 72; size: 62, 24; cursor: pointer; role: tab; selected: pane == lyrics; label: "The lyrics" }
+                PChip(qx + 148, 73, 62, "LYRICS", pane == lyrics, zty.hover)
+                zone box zte { from: qx + 214, 72; size: 40, 24; cursor: pointer; role: tab; selected: pane == eq; label: "The equaliser" }
+                PChip(qx + 214, 73, 40, "EQ", pane == eq, zte.hover)
+                on press zte { emit pl_pane(4) }
                 on press zty { emit pl_pane(2) }
 
                 group {
                     show: pane == queue
-                text "{q_count, 0} SONGS" { at: qx + qw - 80, 84; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                    zone box zqclear { from: qx + qw - 70, 74; size: 56, 20; cursor: pointer; role: button; label: "Empty the queue"; show: q_count > 0 }
-                text "CLEAR" { at: qx + qw - 42, 84; anchor: center; size: 8; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, zqclear.hover); show: q_count > 0 }
+                    zone box zqclear { from: qx + qw - 90, 74; size: 76, 20; cursor: pointer; role: button; label: "Empty the queue"; show: q_count > 0 }
+                text "{q_count, 0} · CLEAR" { at: qx + qw - 52, 84; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, zqclear.hover); show: q_count > 0 }
                 on press zqclear { emit pl_clear }
                 zone box zqscroll { from: qx, 100; size: qw, 9 * 48; role: list; label: "The queue — the wheel pages it" }
                 on scroll zqscroll { emit pl_qpage(if(wheel > 0, -1, 1)) }
@@ -287,6 +289,9 @@ part Panel {
                     }
                     text "♪" { at: qx + qw / 2, 260; anchor: center; size: 30; family: "Exo 2"; color: fl.trace_dim; show: not lyr_on }
                 }
+
+                // ── the equaliser: shell/player/eq.plm ──
+                include "eq.plm"
 
                 // ── the library: shell/player/library.plm ──
                 include "library.plm"
