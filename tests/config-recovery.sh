@@ -21,7 +21,7 @@ check() { n=$((n + 1)); got=$(say "get $1"); if [ "$got" = "$2" ]; then echo "  
 run_with() { # settings-text
     mkdir -p "$dir"; printf '%s' "$1" > "$file"
     pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
-    for _ in $(seq 1 20); do sleep 0.3; say "get open" >/dev/null 2>&1 && say "get open" | grep -q none && break; done
+    for _ in $(seq 1 30); do sleep 0.3; say "get open" | grep -q none && break; done
     sleep 0.4
 }
 
@@ -54,7 +54,7 @@ echo "safe mode ignores the file, and never writes it"
 mkdir -p "$dir"; printf '%s' '{ "spine": { "clock": false } }' > "$file"
 before=$(cksum "$file")
 MOOI_SAFE=1 pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 8 >/dev/null 2>&1 &
-for _ in $(seq 1 20); do sleep 0.3; say "get open" >/dev/null 2>&1 && break; done; sleep 0.4
+for _ in $(seq 1 30); do sleep 0.3; say "get open" | grep -q none && break; done; sleep 0.4   # an answer, not a stale socket
 check show_clock true "defaults used under MOOI_SAFE=1"
 say "emit toggle_labels" >/dev/null; sleep 0.6
 check bar_labels false "the toggle still works under MOOI_SAFE=1"
