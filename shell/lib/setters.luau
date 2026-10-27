@@ -50,6 +50,11 @@ M.SETTERS = {
     "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
     -- the corners on every plate
     "look.corners", "look.corner_size",
+    -- BMO (shell/bmo), Settings → BMO
+    "companion.bmo", "companion.size", "companion.place", "companion.above", "companion.variant",
+    "companion.wander", "companion.motion", "companion.throw", "companion.locked", "companion.talk",
+    "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces",
+    "companion.react.battery", "companion.react.focus", "companion.react.time",
 }
 
 local function row_of(path)

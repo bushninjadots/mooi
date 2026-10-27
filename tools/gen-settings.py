@@ -45,6 +45,10 @@ SETTERS = [
     "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
     "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
     "look.corners", "look.corner_size",
+    "companion.bmo", "companion.size", "companion.place", "companion.above", "companion.variant",
+    "companion.wander", "companion.motion", "companion.throw", "companion.locked", "companion.talk",
+    "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces",
+    "companion.react.battery", "companion.react.focus", "companion.react.time",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -298,6 +302,28 @@ SECTIONS = [
         ("slider", "Strength", "How far the picture travels", "desk.strength", 0, 100, "{sv_desk_strength, 0}%", "sv_desk_on == 1"),
         ("toggle", "Depth", "The cut-out subject travels further than the picture behind it", "desk.depth", "sv_desk_depth", [], "sv_desk_on == 1"),
         ("toggle", "Over the widgets", "Lay the cutout made in Lumen (DESK tab) over the desktop widgets", "desk.cutout", "sv_desk_cutout", [], "sv_desk_on == 1"),
+    ]),
+    ("BMO", "BMO", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "DESKTOP", [
+        ("card", "BMO"),
+        ("toggle", "BMO on your desktop", "Starts with mooi; off, he says goodbye", "companion.bmo", "sv_companion_bmo"),
+        ("choice", "Size", "From a little one to a big one", "companion.size", "sv_companion_size", ["XS", "S", "M", "L"], "sv_companion_bmo == 1"),
+        ("choice", "Lives", "Anywhere on the desktop, or small, just under the bar", "companion.place", "sv_companion_place", ["Desktop", "Under the bar"], "sv_companion_bmo == 1"),
+        ("toggle", "Over the windows", "Off, he stays behind them, on the wallpaper", "companion.above", "sv_companion_above", [], "sv_companion_bmo == 1 and sv_companion_place == 0"),
+        ("choice", "Colours", "His variants; mooi takes your wallpaper's colours", "companion.variant", "sv_companion_variant", ["Classic", "Night", "Pastel", "Game Boy", "mooi"], "sv_companion_bmo == 1"),
+        ("card", "How he behaves"),
+        ("choice", "Wander", "How often he walks about on his own", "companion.wander", "sv_companion_wander", ["Off", "Rare", "Some", "Often"], "sv_companion_bmo == 1"),
+        ("choice", "Motion", "Still keeps him in place, lively makes him bouncier", "companion.motion", "sv_companion_motion", ["Still", "Calm", "Lively"], "sv_companion_bmo == 1"),
+        ("choice", "Talk", "Off, only what matters, or chatty", "companion.talk", "sv_companion_talk", ["Off", "Rare", "Chatty"], "sv_companion_bmo == 1"),
+        ("toggle", "Throw him", "Pick him up and flick: he flies and bounces off the edges", "companion.throw", "sv_companion_throw", [], "sv_companion_bmo == 1"),
+        ("toggle", "Lock his place", "He stays where he is; no walking or dragging", "companion.locked", "sv_companion_locked", [], "sv_companion_bmo == 1"),
+        ("toggle", "Dance to music", "He dances and sings along while something plays", "companion.music", "sv_companion_music", [], "sv_companion_bmo == 1"),
+        ("toggle", "Clock in his panel", "The time and date on his panel's home tab", "companion.clock", "sv_companion_clock", [], "sv_companion_bmo == 1"),
+        ("card", "What he notices"),
+        ("toggle", "Notifications", "A ding! when one arrives; he never reads what it says", "companion.react.notes", "sv_companion_react_notes", [], "sv_companion_bmo == 1"),
+        ("toggle", "Workspaces and windows", "A hop when you switch, a peek at a new window", "companion.react.spaces", "sv_companion_react_spaces", [], "sv_companion_bmo == 1"),
+        ("toggle", "Battery", "Hungry when it runs low, glad on the charger", "companion.react.battery", "sv_companion_react_battery", [], "sv_companion_bmo == 1"),
+        ("toggle", "Focus timer", "Focused while a block runs, a cheer when it ends", "companion.react.focus", "sv_companion_react_focus", [], "sv_companion_bmo == 1"),
+        ("toggle", "Time of day", "Good morning once a day, a yawn late at night", "companion.react.time", "sv_companion_react_time", [], "sv_companion_bmo == 1"),
     ]),
     ("Sound", "Sound", "Where sound plays and where it listens, and each app's own volume", "SYSTEM", [
         ("card", "Output"),
@@ -625,9 +651,9 @@ def generate():
     nav, ny, last = [], 136, None
     for i, (label, _, _, grp, _) in enumerate(SECTIONS):
         if grp != last:
-            nav.append(f'{ind}SNavGroup({ny + (4 if last else 0)}, "{grp}")'); ny += 26 if last else 22; last = grp
-        # 26: an item's own height — seventeen pages and four groups clear the edit button (D44)
-        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 26
+            nav.append(f'{ind}SNavGroup({ny + (4 if last else 0)}, "{grp}")'); ny += 24 if last else 22; last = grp
+        # 24: an item's own height (SNav) — twenty-one pages and four groups clear the edit button (D44)
+        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 24
     titles = ", ".join(f'"{t}"' for _, t, _, _, _ in SECTIONS)
     subs = ", ".join(f'"{s}"' for _, _, s, _, _ in SECTIONS)
     maxs = ", ".join(f"max(0, {h} + 24 - screen.height)" for h in heights)

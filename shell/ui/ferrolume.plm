@@ -541,14 +541,14 @@ library FerrolumeParts {
     // One page in the rail: its name; the chosen one sits on the well with a neon bar at its edge,
     // and the stripe of light grows in under the pointer.
     component SNav(y: number, label: text, on: bool, tab: number, press: event) {
-        size: 200, 26
-        zone box hit { from: 14, y; size: 200, 26; corner: 4; cursor: pointer; role: button; selected: on; label: label }
-        box { from: 14, y; size: 200, 26; corner: 4; color: mix(fl.steel_900, fl.well, 0.4); opacity: if(on, 1, 0.55 * hit.hover) }
+        size: 200, 24
+        zone box hit { from: 14, y; size: 200, 24; corner: 4; cursor: pointer; role: button; selected: on; label: label }
+        box { from: 14, y; size: 200, 24; corner: 4; color: mix(fl.steel_900, fl.well, 0.4); opacity: if(on, 1, 0.55 * hit.hover) }
         group {
             glow: 6, (if(on, 0.9, 0)) * st_glow, fl.phos
-            box { from: 14, y + 5; size: 3, 16; corner: 1; color: fl.phos; opacity: max(if(on, 1, 0), 0.6 * hit.hover) }
+            box { from: 14, y + 4; size: 3, 16; corner: 1; color: fl.phos; opacity: max(if(on, 1, 0), 0.6 * hit.hover) }
         }
-        text label { at: 30 + 3 * hit.hover, y + 13; anchor: left center; size: 13; weight: 600; family: "Exo 2"
+        text label { at: 30 + 3 * hit.hover, y + 12; anchor: left center; size: 13; weight: 600; family: "Exo 2"
                      color: if(on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
         on press hit { emit press(tab) }
     }
