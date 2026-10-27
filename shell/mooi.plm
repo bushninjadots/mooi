@@ -25,6 +25,9 @@ scene Mooi {
     }
 
     // ── The island slot ───────────────────────────────────────
+    // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
+    fact cn_kind = 0
+    fact cn_scale = 1
     fact open: none | window | system | command | shutter | overview = none
     fact phase: compact | expanded = compact
 

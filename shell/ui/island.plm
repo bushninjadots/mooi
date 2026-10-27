@@ -15,18 +15,21 @@ library Island {
         let ih = ah + (h - ah) * rv
         let top = if(up, h - ih, 0)
         let left = if(centre, (w - iw) / 2, 0)
+        // its corner: the theme's radius on look.corner_size, none when square (the machined body is a
+        // rounded box: chamfer and bevel keep it round)
+        let irad = if(cn_kind > 2.5, 0, g.radius * cn_scale)
         // machined like the bar: lighter at the top, a lit lip, a soft shadow under it
         body {
             gradient: 0, top to 0, top + ih, surface.elevated, surface.primary 40%, bg.primary
             border: 1, border.subtle
             shadow: 0, 6 * rv, 22 * rv, 38% * rv
-            box { from: left, top; size: iw, ih; corner: g.radius }
+            box { from: left, top; size: iw, ih; corner: irad }
         }
-        line { from: left + g.radius, top + 1.5; to: left + iw - g.radius, top + 1.5; width: 1; color: fg.primary; opacity: 0.08 * rv }
+        line { from: left + irad, top + 1.5; to: left + iw - irad, top + 1.5; width: 1; color: fg.primary; opacity: 0.08 * rv }
         group {
             opacity: smooth(0.45, 1, rv)
             move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0)
-            clip box { from: left, top; size: iw, ih; corner: g.radius }
+            clip box { from: left, top; size: iw, ih; corner: irad }
             children
         }
     }

@@ -18,6 +18,9 @@ scene Player {
     }
 
     // The same facts and springs the bar wears: the logic paints them from palette.json.
+    // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
+    fact cn_kind = 0
+    fact cn_scale = 1
     fact fr_ground_r = 0.000000
     fact fr_ground_g = 0.000000
     fact fr_ground_b = 0.000000

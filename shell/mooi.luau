@@ -104,6 +104,7 @@ local function apply(s)
     fact.th_contrast = s.theme.contrast + 1
     fact.th_signal = position("theme.signal", s.theme.signal)
     for name, v in pairs(style.facts(s)) do fact[name] = v end
+    fact.cn_kind, fact.cn_scale = style.corners(s)   -- corners on every plate (look.corners, look.corner_size)
     -- The battery saver (motion.saver): what costs frames and a process goes quiet.
     fact.saving = saving()
     if fact.saving then fact.st_glow = 0; fact.st_aberr = 0; fact.frame_music = false; fact.viz = 4 end

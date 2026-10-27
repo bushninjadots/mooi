@@ -48,6 +48,8 @@ M.SETTERS = {
     "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
     -- D91: day and night, and your own Matugen templates.
     "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
+    -- the corners on every plate
+    "look.corners", "look.corner_size",
 }
 
 local function row_of(path)

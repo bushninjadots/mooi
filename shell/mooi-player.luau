@@ -23,6 +23,7 @@ local COVERS = folder .. "/player-covers"
 
 -- ── The shell's colours ──────────────────────────────────────
 local settings = config.parse(read("settings.json"), json.decode)
+fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
 local palette = read("palette.json", "json")
 local tint = nil -- the cover's palette while player.colours is "cover" (Matugen roles)
 local last_roles = nil   -- the palette as painted last (the library's generated covers take its tones)

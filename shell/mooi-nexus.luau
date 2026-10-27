@@ -35,6 +35,7 @@ local function read(name, kind)
 end
 
 local settings = config.parse(read(FILE), json.decode)
+fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
 local palette = read(PALETTE, "json")
 
 -- What the core shows when it is at the centre (`nexus.centre`): the reactor, who you are, the

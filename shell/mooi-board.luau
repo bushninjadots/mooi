@@ -18,6 +18,7 @@ local function read(name, kind)
 end
 
 local settings = config.parse(read(FILE), json.decode)
+fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
 local palette = read(PALETTE, "json")
 
 -- The same roles the bar wears, from the same palette and settings; the tokens glide to them.

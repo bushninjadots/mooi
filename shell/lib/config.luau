@@ -224,6 +224,9 @@ M.SCHEMA = {
     -- colours — light or dark. `auto` is light from `light_at` to `dark_at` (whole hours, local
     -- time); bin/mooi decides which, so Matugen, the bar and the apps always agree.
     { path = "theme.mode", kind = "enum", values = { "dark", "light", "auto" }, default = "dark" },
+    -- Corners on every plate mooi draws (lib/style corners): the shape, and a size on each one's design
+    { path = "look.corners", kind = "enum", values = { "chamfer", "bevel", "round", "square" }, default = "chamfer" },
+    { path = "look.corner_size", kind = "integer", default = 12, min = 0, max = 24 },
     { path = "theme.light_at", kind = "integer", default = 7, min = 0, max = 23 },
     { path = "theme.dark_at", kind = "integer", default = 19, min = 0, max = 23 },
     -- One table of token = colour: a dotted setting path cannot name a token that has a

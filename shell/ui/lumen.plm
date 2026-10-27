@@ -11,11 +11,27 @@ library Lumen {
     // A chamfered plate: two opposite corners cut, a hairline edge and a top highlight.
     component Plate(x: number, y: number, w: number, h: number, cut: number, fill: color, edge: color, op: number = 0.9) {
         size: w, h
-        let k = clamp(cut, 0, min(w, h) / 2)
-        path { color: fill; opacity: op
-               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
-        path { stroke: 1; color: edge; opacity: min(1, op + 0.08)
-               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        let k = clamp(cut * cn_scale, 0, min(w, h) / 2)
+        // its corners follow the scene's cn_kind / cn_scale (look.corners, look.corner_size)
+        group {
+            show: cn_kind < 0.5
+            path { color: fill; opacity: op
+                   move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+            path { stroke: 1; color: edge; opacity: min(1, op + 0.08)
+                   move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        }
+        group {
+            show: cn_kind > 0.5 and cn_kind < 1.5
+            path { color: fill; opacity: op
+                   move x + k, y; line x + w - k, y; line x + w, y + k; line x + w, y + h - k; line x + w - k, y + h; line x + k, y + h; line x, y + h - k; line x, y + k; close }
+            path { stroke: 1; color: edge; opacity: min(1, op + 0.08)
+                   move x + k, y; line x + w - k, y; line x + w, y + k; line x + w, y + h - k; line x + w - k, y + h; line x + k, y + h; line x, y + h - k; line x, y + k; close }
+        }
+        group {
+            show: cn_kind > 1.5
+            box { from: x, y; size: w, h; corner: k; color: fill; opacity: op }
+            box { from: x, y; size: w, h; corner: k; stroke: 1; color: edge; opacity: min(1, op + 0.08) }
+        }
         line { from: x + k + 1, y + 1; to: x + w - 2, y + 1; width: 1; color: fl.steel_300; opacity: 0.16 }
     }
 

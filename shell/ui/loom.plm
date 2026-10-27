@@ -12,22 +12,36 @@ import "../theme/ferrolume.plm"
 library LoomParts {
 
     // A chamfered plate: its fill, and its edge as a line on top.
+    // Its corners follow the scene's `cn_kind` (look.corners: 0 chamfer, 1 bevel, 2 rounded, 3 square)
+    // and `cn_scale` (look.corner_size on the designed `c`; lib/style corners).
     component Chamfer(x: number, y: number, w: number, h: number, c: number, fill: color, edge: color, op: number = 1, ew: number = 1) {
         size: w, h
-        let k = clamp(c, 0, min(w, h) / 2)
-        path { color: fill; opacity: op
-               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
-        path { stroke: ew; color: edge; opacity: op
-               move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        let k = clamp(c * cn_scale, 0, min(w, h) / 2)
+        group {
+            show: cn_kind < 0.5
+            path { color: fill; opacity: op
+                   move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+            path { stroke: ew; color: edge; opacity: op
+                   move x + k, y; line x + w, y; line x + w, y + h - k; line x + w - k, y + h; line x, y + h; line x, y + k; close }
+        }
+        group {
+            show: cn_kind > 0.5 and cn_kind < 1.5
+            path { color: fill; opacity: op
+                   move x + k, y; line x + w - k, y; line x + w, y + k; line x + w, y + h - k; line x + w - k, y + h; line x + k, y + h; line x, y + h - k; line x, y + k; close }
+            path { stroke: ew; color: edge; opacity: op
+                   move x + k, y; line x + w - k, y; line x + w, y + k; line x + w, y + h - k; line x + w - k, y + h; line x + k, y + h; line x, y + h - k; line x, y + k; close }
+        }
+        group {
+            show: cn_kind > 1.5
+            box { from: x, y; size: w, h; corner: k; color: fill; opacity: op }
+            box { from: x, y; size: w, h; corner: k; stroke: ew; color: edge; opacity: op }
+        }
     }
 
     // A small chamfered button in a row: its word, lit while pointed at.
     component CutButton(x: number, y: number, w: number, word: text, tone: color, hit: number) {
         size: w, 20
-        path { color: mix(fl.hull_raised, fl.well, hit); opacity: 0.9
-               move x + 4, y; line x + w, y; line x + w, y + 16; line x + w - 4, y + 20; line x, y + 20; line x, y + 4; close }
-        path { stroke: 1; color: mix(fl.trace, tone, hit)
-               move x + 4, y; line x + w, y; line x + w, y + 16; line x + w - 4, y + 20; line x, y + 20; line x, y + 4; close }
+        Chamfer(x, y, w, 20, 4, mix(fl.hull_raised, fl.well, hit), mix(fl.trace, tone, hit), 0.9, 1)
         text "{upper(word)}" { at: x + w / 2, y + 10; anchor: center; size: 9; family: "Share Tech Mono"; width: w - 6; lines: 1
                                color: mix(fl.muted, tone, max(hit, 0.35)) }
     }

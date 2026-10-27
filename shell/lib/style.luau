@@ -130,4 +130,16 @@ function M.facts(s)
     }
 end
 
+-- Corners, everywhere mooi draws a plate (look.corners, look.corner_size): which shape — 0 chamfer
+-- (Ferrolume's two cut corners), 1 bevel (all four cut), 2 rounded, 3 square — and a scale on each
+-- component's own designed corner (12 is as designed; square has none).
+M.CORNERS = { "chamfer", "bevel", "round", "square" }
+function M.corners(s)
+    local l = type(s) == "table" and type(s.look) == "table" and s.look or {}
+    local k = 0
+    for i, v in ipairs(M.CORNERS) do if v == l.corners then k = i - 1 end end
+    local size = tonumber(l.corner_size) or 12
+    return k, k == 3 and 0 or size / 12
+end
+
 return M

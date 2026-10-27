@@ -3040,3 +3040,18 @@ the EQ (presets written, the user's two presets byte-identical, off restoring `l
 off), and video in both boxes with mpd picking up where it reached. `bin/mooi check`: **294 unit
 tests, 0 failed**. Not checked: the video's sound (output was muted), a live auto mode-switch at the
 hour with the player open, multi-monitor placement.
+
+## D93 · 2026-10-27 · One corner style for every plate
+
+**Asked for:** a system-wide choice of chamfered corners or normal ones, with the radius from
+Settings (rounded ↔ squared on a slider), and other border types if they work. **Done:**
+`look.corners` (chamfer · bevel · round · square) and `look.corner_size` (0–24, 12 = as designed), on
+Settings → Colour → Shape. `lib/style.corners` turns them into two facts every scene declares
+(`cn_kind`, `cn_scale`), and the shared shapes follow them: `Chamfer` and `CutButton` (ui/loom.plm —
+the bar's panels and islands' plates, the player, the board, the Nexus), `Plate` (ui/lumen.plm, the
+wallpaper studio), `IslandFrame` (ui/island.plm: its rounded body takes the size, and goes square; under
+chamfer and bevel it stays round, since its machined gradient body is a rounded box). Each shape keeps
+its own designed corner; the size scales it. Checked live: Rounded (16) and Bevel on the bar and the
+player, then back to the default. `bin/mooi check`: 299 unit tests, 0 failed. Not covered: the
+settings window's own cards (drawn without these components), shapes drawn as raw paths outside them,
+and the bar's body, which keeps its own `bar.radius` ("Corner rounding" on the Bar page).

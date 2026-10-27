@@ -44,6 +44,7 @@ SETTERS = [
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
     "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
     "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
+    "look.corners", "look.corner_size",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -112,6 +113,9 @@ SECTIONS = [
         ("choice", "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", "theme.mode", "sv_theme_mode", [("Dark", 0), ("Light", 1), ("Auto", 2)]),
         ("slider", "Light from", "The hour it turns light", "theme.light_at", 0, 23, "{sv_theme_light_at, 0}:00", "sv_theme_mode == 2"),
         ("slider", "Dark from", "The hour it turns dark", "theme.dark_at", 0, 23, "{sv_theme_dark_at, 0}:00", "sv_theme_mode == 2"),
+        ("card", "Shape"),
+        ("choice", "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", "look.corners", "sv_look_corners", [("Chamfer", 0), ("Bevel", 1), ("Rounded", 2), ("Square", 3)]),
+        ("slider", "Corner size", "How big the cut or the rounding is (12 is as designed)", "look.corner_size", 0, 24, "{sv_look_corner_size, 0}", "sv_look_corners != 3"),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),

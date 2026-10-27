@@ -36,6 +36,7 @@ local function clamp(v, lo, hi) if v < lo then return lo end; if v > hi then ret
 local function round(v) return math.floor(v + 0.5) end
 
 local settings = config.parse(read("settings.json"), json.decode)
+fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
 local palette = read(PALETTE, "json")
 local state = W.state(read(FILE, "json"))
 
