@@ -18,80 +18,98 @@ part Full {
         group {
             show: size == cinema and pl_a > 0.004
             opacity: pl_a
-            box { from: 0, 0; size: fw, fh; color: #000000 }
+            // the video's box (while one plays, everything round it is drawn and it is left undrawn)
+            let fvw = round(min(fw * 0.72, fh * 0.72 * 16 / 9))
+            let fvh = round(fvw * 9 / 16)
+            let fvx = round((fw - fvw) / 2)
+            let fvy = round(fh * 0.06)
             group {
-                show: cover_on
+                show: video_on
+                box { from: 0, 0; size: fw, fvy; color: fl.ground }
+                box { from: 0, fvy + fvh; size: fw, fh - fvy - fvh; color: fl.ground }
+                box { from: 0, fvy; size: fvx, fvh; color: fl.ground }
+                box { from: fvx + fvw, fvy; size: fw - fvx - fvw, fvh; color: fl.ground }
+                box { from: fvx - 1, fvy - 1; size: fvw + 2, fvh + 2; corner: 2; stroke: 1.4; color: mix(fl.trace, fl.phos, 0.5) }
+                text "FINDING THE VIDEO…" { at: fw / 2, fvy + fvh / 2; anchor: center; size: 14; family: "Share Tech Mono"; color: fl.muted
+                     show: video_busy }
+            }
+            box { from: 0, 0; size: fw, fh; color: #000000; show: not video_on }
+            group {
+                show: cover_on and not video_on
                 blur: 60
                 opacity: 0.55
                 image cover { at: -fw * 0.1, -fw * 0.3; size: fw * 1.2, fw * 1.2 }
             }
-            box { from: 0, 0; size: fw, fh; color: fl.ground; opacity: 0.45 }
+            box { from: 0, 0; size: fw, fh; color: fl.ground; opacity: 0.45; show: not video_on }
             // a press on the empty background goes back to the panel (the controls sit on top)
-            zone box fbody { from: 0, 0; size: fw, fh; agent: hidden }
+            zone box fbody { from: 0, 0; size: fw, fh; agent: hidden; show: not video_on }
             on press fbody { emit pl_full }
 
-            // the record, large, and its visualiser (ui/viz.plm): round it, or across the foot
             group {
-                opacity: if(pstate == playing, 0.95, 0.35)
-                viz.Pick(viz_full, fw * 0.06, fh - 150, fw * 0.48, 90, fcx, fcy, fr + 24, 64, fl.phos, fl.flare, fl.trace_dim, vang)
-            }
-            zone box fviz { from: 40, 36; size: 90, 18; cursor: pointer; role: button; label: "Visualiser style" }
-            text pick(viz_full, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 44, 45; anchor: left center
-                 size: 9; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, fviz.hover) }
-            on press fviz { emit viz_next(2) }
-            ellipse { at: fcx, fcy; radius: fr; color: #08090a }
-            repeat g in 0..22 {
-                ellipse { at: fcx, fcy; radius: frl + 10 + g * (fr - frl - 14) / 21; stroke: 0.8; color: #1c1f22; opacity: 0.9 }
-            }
-            ellipse { at: fcx, fcy; radius: fr; stroke: 2; color: fl.steel_700 }
-            group {
-                mask: radial fcx, fcy radius fr - 2 to fr
-                path { color: #ffffff; opacity: 0.05
-                       move fcx, fcy; line fcx + fr * 1.2, fcy - fr * 0.6; line fcx + fr * 1.2, fcy - fr * 0.1; close }
-                path { color: #ffffff; opacity: 0.05
-                       move fcx, fcy; line fcx - fr * 1.2, fcy + fr * 0.6; line fcx - fr * 1.2, fcy + fr * 0.1; close }
-            }
-            group {
-                pivot: fcx, fcy
-                rotate: vang * 1deg
-                mask: radial fcx, fcy radius frl - 1 to frl
-                box { from: fcx - frl, fcy - frl; size: frl * 2, frl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
-                image cover { at: fcx - frl, fcy - frl; size: frl * 2, frl * 2; show: cover_on }
-            }
-            ellipse { at: fcx, fcy; radius: 8; color: fl.steel_300 }
-            ellipse { at: fpx, fpy; radius: 32; color: fl.steel_700 }
-            ellipse { at: fpx, fpy; radius: 13; color: fl.steel_500 }
-            group {
-                pivot: fpx, fpy
-                rotate: arm * 1deg
-                line { from: fpx, fpy; to: fpx, fpy + flen - 44; width: 6; color: fl.steel_300 }
-                line { from: fpx, fpy + flen - 44; to: fpx - 15, fpy + flen; width: 6; color: fl.steel_300 }
-                box { from: fpx - 29, fpy + flen - 8; size: 32, 20; corner: 3; color: fl.steel_500 }
-                box { from: fpx - 13, fpy - 72; size: 26, 34; corner: 4; color: fl.steel_500 }
-            }
-
-            // the track and the lyrics
-            text pick(has_song, "NOTHING IS PLAYING", t_title) { at: flx, fh * 0.14; anchor: left center; size: 34; weight: 700; family: "Exo 2"
-                  width: flw; lines: 1; color: fl.engrave }
-            text t_artist { at: flx, fh * 0.14 + 40; anchor: left center; size: 18; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
-            text t_album { at: flx, fh * 0.14 + 66; anchor: left center; size: 13; family: "Exo 2"; width: flw; lines: 1; color: fl.trace_lit }
-            for l in lyr {
-                let fly = fh * 0.3 + l.n * 52
-                zone box fzline { from: flx - 10, fly - 22; size: flw + 20, 44; cursor: pointer; role: item; label: "Go to: {l.text}"; show: lyr_synced }
+                show: not video_on
+                // the record, large, and its visualiser (ui/viz.plm): round it, or across the foot
                 group {
-                    show: l.cur
-                    glow: 18, 55%, fl.phos
-                    text l.text { at: flx, fly; anchor: left center; size: 26; weight: 700; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+                    opacity: if(pstate == playing, 0.95, 0.35)
+                    viz.Pick(viz_full, fw * 0.06, fh - 150, fw * 0.48, 90, fcx, fcy, fr + 24, 64, fl.phos, fl.flare, fl.trace_dim, vang)
                 }
-                text l.text { at: flx, fly; anchor: left center; size: 17; family: "Exo 2"; width: flw; lines: 1
-                              color: mix(fl.engrave, fl.muted, clamp(l.dist / 4, 0, 1)); opacity: clamp(1 - l.dist * 0.17, 0.2, 1); show: not l.cur }
-                on press fzline { emit lyr_seek(l.t) }
+                zone box fviz { from: 40, 36; size: 90, 18; cursor: pointer; role: button; label: "Visualiser style" }
+                text pick(viz_full, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 44, 45; anchor: left center
+                     size: 9; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, fviz.hover) }
+                on press fviz { emit viz_next(2) }
+                ellipse { at: fcx, fcy; radius: fr; color: #08090a }
+                repeat g in 0..22 {
+                    ellipse { at: fcx, fcy; radius: frl + 10 + g * (fr - frl - 14) / 21; stroke: 0.8; color: #1c1f22; opacity: 0.9 }
+                }
+                ellipse { at: fcx, fcy; radius: fr; stroke: 2; color: fl.steel_700 }
+                group {
+                    mask: radial fcx, fcy radius fr - 2 to fr
+                    path { color: #ffffff; opacity: 0.05
+                           move fcx, fcy; line fcx + fr * 1.2, fcy - fr * 0.6; line fcx + fr * 1.2, fcy - fr * 0.1; close }
+                    path { color: #ffffff; opacity: 0.05
+                           move fcx, fcy; line fcx - fr * 1.2, fcy + fr * 0.6; line fcx - fr * 1.2, fcy + fr * 0.1; close }
+                }
+                group {
+                    pivot: fcx, fcy
+                    rotate: vang * 1deg
+                    mask: radial fcx, fcy radius frl - 1 to frl
+                    box { from: fcx - frl, fcy - frl; size: frl * 2, frl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                    image cover { at: fcx - frl, fcy - frl; size: frl * 2, frl * 2; show: cover_on }
+                }
+                ellipse { at: fcx, fcy; radius: 8; color: fl.steel_300 }
+                ellipse { at: fpx, fpy; radius: 32; color: fl.steel_700 }
+                ellipse { at: fpx, fpy; radius: 13; color: fl.steel_500 }
+                group {
+                    pivot: fpx, fpy
+                    rotate: arm * 1deg
+                    line { from: fpx, fpy; to: fpx, fpy + flen - 44; width: 6; color: fl.steel_300 }
+                    line { from: fpx, fpy + flen - 44; to: fpx - 15, fpy + flen; width: 6; color: fl.steel_300 }
+                    box { from: fpx - 29, fpy + flen - 8; size: 32, 20; corner: 3; color: fl.steel_500 }
+                    box { from: fpx - 13, fpy - 72; size: 26, 34; corner: 4; color: fl.steel_500 }
+                }
+
+                // the track and the lyrics
+                text pick(has_song, "NOTHING IS PLAYING", t_title) { at: flx, fh * 0.14; anchor: left center; size: 34; weight: 700; family: "Exo 2"
+                      width: flw; lines: 1; color: fl.engrave }
+                text t_artist { at: flx, fh * 0.14 + 40; anchor: left center; size: 18; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+                text t_album { at: flx, fh * 0.14 + 66; anchor: left center; size: 13; family: "Exo 2"; width: flw; lines: 1; color: fl.trace_lit }
+                for l in lyr {
+                    let fly = fh * 0.3 + l.n * 52
+                    zone box fzline { from: flx - 10, fly - 22; size: flw + 20, 44; cursor: pointer; role: item; label: "Go to: {l.text}"; show: lyr_synced }
+                    group {
+                        show: l.cur
+                        glow: 18, 55%, fl.phos
+                        text l.text { at: flx, fly; anchor: left center; size: 26; weight: 700; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+                    }
+                    text l.text { at: flx, fly; anchor: left center; size: 17; family: "Exo 2"; width: flw; lines: 1
+                                  color: mix(fl.engrave, fl.muted, clamp(l.dist / 4, 0, 1)); opacity: clamp(1 - l.dist * 0.17, 0.2, 1); show: not l.cur }
+                    on press fzline { emit lyr_seek(l.t) }
+                }
+                text lyr_note { at: flx, fh * 0.3 - 40; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
             }
-            text lyr_note { at: flx, fh * 0.3 - 40; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
 
             // the stage or the rack, large, over the deck's drawing (its transport stays along the foot)
             group {
-                show: view != deck
+                show: view != deck and not video_on
                 box { from: 0, 0; size: fw, fh; color: fl.ground; opacity: 0.94 }
                 zone box fvbody { from: 0, 0; size: fw, fh; agent: hidden }
                 on press fvbody { emit pl_full }
@@ -100,6 +118,13 @@ part Full {
                 group { show: view == rack
                         views.Rack(fw * 0.08, fh * 0.07, fw * 0.84, fh * 0.72, true) }
             }
+
+            // the song's video in the full screen's box
+            zone box fvid { from: 150, 34; size: 70, 22; cursor: pointer; role: toggle; checked: video_on; label: "The song's video"
+                            show: view != rack and video_ok }
+            group { show: view != rack and video_ok
+                    PChip(150, 34, 70, pick(video_on, "VIDEO", "MUSIC"), video_on, fvid.hover) }
+            on press fvid { vbx = fvx; vby = fvy; vbw = fvw; vbh = fvh; emit video_toggle }
 
             // the waveform and the transport along the foot
             let fsx = flx

@@ -455,6 +455,10 @@ on("pl_size", function(v)
     go_size(({ [-1] = "outside", [-2] = "escape", [1] = "grow", [2] = "full" })[n] or "open")
 end)
 
+-- ── The music video: shell/player/video.luau ──
+local video = require("player/video").new({ home = HOME, say = say, mpc = mpc, song = function() return song end, status = function() return st end })
+fact.video_ok = settings.player.video
+
 -- ── The equaliser: shell/player/eq.luau (EasyEffects underneath) ──
 require("player/eq").new({ home = HOME, say = say, read = read, folder = folder })
 
@@ -532,6 +536,7 @@ end)
 
 function close_player()
     if fact.pl_open == 0 then return end
+    video.stop()
     fact.pl_open = 0
     hush()
     if idle then kill(idle, "term"); idle = nil end

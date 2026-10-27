@@ -275,6 +275,8 @@ M.SCHEMA = {
     { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
     -- each place's visualiser (the music player overhaul; lib/vizbands STYLES, shell/ui/viz.plm)
     -- the library: how it groups, and how it sorts (the music player overhaul)
+    -- the song's video as the visual (mpv, found with yt-dlp on a press): off hides the chip
+    { path = "player.video", kind = "boolean", default = true },
     { path = "player.view", kind = "enum", values = { "deck", "stage", "rack" }, default = "deck" },
     { path = "player.library", kind = "enum", values = { "albums", "artists", "genres", "songs" }, default = "albums" },
     { path = "player.sort", kind = "enum", values = { "artist", "album", "year", "title", "time" }, default = "artist" },

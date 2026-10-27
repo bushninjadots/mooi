@@ -11,13 +11,30 @@ part Panel {
                 opacity: min(1, pl_a * 1.4)
                 zone box body { from: 0, 0; size: pw, ph; agent: hidden }
 
-                // the plate, and the cover's light behind it all, out of focus
+                // the plate, and the cover's light behind it all, out of focus — or, while a video plays
+                // under this overlay, the plate in four pieces round its box, which is left undrawn
+                let hx = rcx - rr - 30
+                let hw = 2 * rr + 100
+                // the video's box: 16:9 across the left plate, in its middle
+                let vh = round(hw * 9 / 16)
+                let vy = 64 + round((ph - 84 - vh) / 2)
                 group {
+                    show: video_on
+                    box { from: 0, 0; size: pw, vy; color: fl.hull }
+                    box { from: 0, vy + vh; size: pw, ph - vy - vh; color: fl.hull }
+                    box { from: 0, vy; size: hx, vh; color: fl.hull }
+                    box { from: hx + hw, vy; size: pw - hx - hw, vh; color: fl.hull }
+                    box { from: hx - 1, vy - 1; size: hw + 2, vh + 2; corner: 2; stroke: 1.4; color: mix(fl.trace, fl.phos, 0.5) }
+                    text "FINDING THE VIDEO…" { at: hx + hw / 2, vy + vh / 2; anchor: center; size: 10; family: "Share Tech Mono"
+                         color: fl.muted; show: video_busy }
+                }
+                group {
+                    show: not video_on
                     glow: 22, 30% * st_glow, fl.phos
                     Chamfer(0, 0, pw, ph, 14, fl.hull, mix(fl.trace, fl.phos, 0.35), 1, 1.4)
                 }
                 group {
-                    show: cover_on
+                    show: cover_on and not video_on
                     clip box { from: 2, 2; size: pw - 4, ph - 4 }
                     group {
                         blur: 40
@@ -46,6 +63,12 @@ part Panel {
                     PChip(pw - 420 + vv * 74, 14, 70, pick(vv, "DECK", "STAGE", "RACK"), pick(vv, view == deck, view == stage, view == rack), zview.$vv.hover)
                     on press zview.$vv { emit pl_view(vv) }
                 }
+                // the song's video, in the view's own box (not the rack: it has no picture to give way)
+                zone box zvid { from: pw - 494, 13; size: 66, 24; cursor: pointer; role: toggle; checked: video_on
+                                label: "The song's video, in the view"; show: view != rack and video_ok }
+                group { show: view != rack and video_ok
+                        PChip(pw - 494, 14, 66, pick(video_on, "VIDEO", "MUSIC"), video_on, zvid.hover) }
+                on press zvid { vbx = px + hx; vby = py + vy; vbw = hw; vbh = vh; emit video_toggle }
                 zone box zcol { from: pw - 178, 13; size: 66, 24; cursor: pointer; role: toggle; checked: cover_tint
                                 label: "Colours from the album cover" }
                 PChip(pw - 178, 14, 66, "COVER", cover_tint, zcol.hover)
@@ -60,7 +83,7 @@ part Panel {
                 let vx0 = rcx - rr - 30
                 let vw0 = 2 * rr + 100
                 group {
-                    show: view == deck
+                    show: view == deck and not video_on
                     // ── the turntable ──
                     // the plinth: a cut plate of brushed steel, a strobe dot ring at its edge
                     Chamfer(rcx - rr - 30, 64, 2 * rr + 60 + 40, ph - 84, 10, mix(fl.hull_raised, fl.steel_900, 0.5), fl.trace_dim, 1, 1)
@@ -126,7 +149,7 @@ part Panel {
                     views.DeckKit(vx0, 64, vw0, ph - 84)
                 }
                 group {
-                    show: view == stage
+                    show: view == stage and not video_on
                     views.Stage(vx0, 64, vw0, ph - 84)
                 }
                 group {

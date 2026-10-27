@@ -334,4 +334,33 @@ function M.cue_point(last_seek, now)
     return 0
 end
 
+-- ── Video (the music player overhaul) ────────────────────────
+-- yt-dlp's search for the song's video; nil with no title (nothing to look for).
+function M.video_query(artist, title)
+    if not present(title) then return nil end
+    return "ytsearch1:" .. (present(artist) and (artist .. " - ") or "") .. title .. " official video"
+end
+-- Whether VIDEO is offered: an mpd song with a title. The reason when not, for its label.
+function M.video_allowed(src, song)
+    if src ~= "library" then return false, "Video plays for your library's songs (mpd)" end
+    if type(song) ~= "table" or not present(song.title) then return false, "Nothing playing" end
+    return true, ""
+end
+-- Where mpd picks up when the video closes: as far as the video got, inside the song.
+function M.resume_at(video_t, song_len)
+    local t, len = tonumber(video_t) or 0, tonumber(song_len) or 0
+    if t < 0 or t >= len then return 0 end
+    return t
+end
+
+-- yt-dlp's `--newline` progress ("[download]  42.7% of …") as a number, or nil.
+function M.video_progress(line)
+    local pct = tostring(line or ""):match("^%[download%]%s+([%d.]+)%%")
+    return pct and tonumber(pct) or nil
+end
+-- Where a song's video is kept once fetched (YouTube refuses mpv's own stream; yt-dlp fetches it).
+function M.video_file(dir, artist, title)
+    return tostring(dir) .. "/" .. M.hash(tostring(artist or "") .. "\t" .. tostring(title or "")) .. ".mp4"
+end
+
 return M

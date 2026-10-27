@@ -13,7 +13,7 @@ import "ui/playerviews.plm" as views
 
 scene Player {
     permissions {
-        run: "mpc", "matugen", "ffmpeg", "playerctl", "cava", "curl", "pleamar", "magick", "mkdir", "cat", "easyeffects", "pgrep", "cp", "ls"
+        run: "mpc", "matugen", "ffmpeg", "playerctl", "cava", "curl", "pleamar", "magick", "mkdir", "cat", "easyeffects", "pgrep", "cp", "ls", "mpv", "hyprctl", "yt-dlp"
         services: "media", "media.*", "audio", "audio.*", "files", "files.write", "env"
     }
 
@@ -365,6 +365,8 @@ scene Player {
     event eq_pre ->          // to the logic: the preamp's dB + 12
     event eq_knob ->         // to the logic: 100 · knob (1 low · 2 mid · 3 high) + dB + 12
     event eq_preset ->       // to the logic: a preset chip's k
+    event video_toggle ->    // to the logic: the song's video in the view's box, or back to the music
+    event video_stop ->      // to the logic: the video closes (a new size or view)
     event pl_view ->         // to the logic: 0 the deck · 1 the stage · 2 the rack
     event pl_cue ->          // to the logic: back to the last carried-to point, else the start
     event viz_next ->        // to the logic: the next visualiser style for a place (0 mini · 1 the deck · 2 full screen)
@@ -417,6 +419,15 @@ scene Player {
     fact viz_rack = 4
     // the view (the music player overhaul): the DJ deck, the cover stage, the instrument rack
     fact view: deck | stage | rack = deck
+    // the music video (an mpv window under this overlay, in the box the scene leaves undrawn): on,
+    // still looking, and its box in screen pixels (set by the press that asks for it)
+    fact video_on = false
+    fact video_busy = false
+    fact video_ok = true
+    fact vbx = 0
+    fact vby = 0
+    fact vbw = 640
+    fact vbh = 360
     // the deck's own: the record at 33⅓ or 45, its pitch (±8 %: the spin, not the music)
     fact rpm45 = false
     fact pitch = 0
@@ -544,7 +555,10 @@ scene Player {
     }
 
     on key Escape while typing { typing = false; blur }
-    on key Escape while not typing { emit pl_size(-2) }
+    on key Escape while not typing and video_on { emit video_stop }
+    on key Escape while not typing and not video_on { emit pl_size(-2) }
+    on change size while video_on { emit video_stop }
+    on change view while video_on { emit video_stop }
     on key f while not typing { emit pl_full }
     on key space while not typing { emit pl_toggle }
     on key Left while not typing { emit pl_seek(-5) }
