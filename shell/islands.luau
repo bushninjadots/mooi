@@ -160,6 +160,19 @@ return function(ctx)
         if have.mixer then spawn("pavucontrol", {}, function() end, function() end) end
     end)
 
+    -- ── Display: the night light (hyprsunset at 4000 K, ours to stop) ──
+    local nl = nil
+    fact.nl_on = false
+    on("night_light", function()
+        if nl then kill(nl, "term"); nl = nil; fact.nl_on = false; return end   -- killed: no exit callback
+        local mine
+        local ok, id = pcall(spawn, "hyprsunset", { "-t", "4000" }, function() end, function()
+            if nl == mine then nl = nil; fact.nl_on = false end
+        end)
+        if not ok then log("display · night light did not start: " .. tostring(id)); return end
+        mine = id; nl = id; fact.nl_on = true
+    end)
+
     on("st_open", function(n)
         local tool = (tonumber(n) == 1 and have.nvtop) and "nvtop" or "btop"
         spawn("kitty", { "--title", tool, tool }, function() end, function() end)
