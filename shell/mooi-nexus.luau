@@ -120,7 +120,9 @@ local function close()
     if closing then return end
     closing = true
     fact.nx_open = false
-    after(260, function() launch("pleamar", { "--say", "mooi-nexus", "quit" }) end)
+    -- gone from sight in ~220 ms; it ends later, so what a press just asked of the bar or started
+    -- (a `pleamar --say` takes ~250 ms) is not cut off with it
+    after(900, function() launch("pleamar", { "--say", "mooi-nexus", "quit" }) end)
 end
 on("nx_close", close)
 after(40, function() fact.nx_open = true end)
@@ -157,12 +159,14 @@ pcall(sys.watch, "workspaces", function(w)
     if not first and active and active ~= counts.active_ws then close() end   -- the desktop moved on
     counts.ws_seen = true; counts.active_ws = active
 end)
--- another window taking the focus closes the drawer (the desktop is being used)
+-- another app taking the focus closes the drawer (the desktop is being used). Its class, not its
+-- title: Hyprland names the focused window only by title and class, and a title changes by itself
+-- (a terminal's spinner), which is not the user going elsewhere.
 local focused = nil
 pcall(sys.watch, "window", function(w)
-    local now = type(w) == "table" and (w.address or w.title) or nil
-    if focused ~= nil and now ~= nil and now ~= focused then close() end
-    focused = now or focused
+    local now = type(w) == "table" and w.class or nil
+    if focused ~= nil and now ~= nil and now ~= "" and now ~= focused then close() end
+    if now and now ~= "" then focused = now end
 end)
 
 -- ── Now playing: the cover, and the position carried at the player's rate ──
@@ -292,8 +296,8 @@ on("nx_ws", function(v) pcall(sys.call, "workspaces.focus", math.floor(tonumber(
 -- ── Opening things: in the bar (its islands and panels) or as programs ──
 -- An island opens under the drawer's edge, the drawer gone first.
 local function island(name)
+    bar("fact isl_cx " .. tostring(screen_w - 200), "fact open " .. name)
     close()
-    after(120, function() bar("fact isl_cx " .. tostring(screen_w - 200), "fact open " .. name) end)
 end
 local GO = {
     [1] = function() close(); bar("emit open_settings") end,
