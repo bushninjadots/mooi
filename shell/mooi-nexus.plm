@@ -405,6 +405,18 @@ scene Nexus {
     follow nx_in = if(nx_open, 1, 0)
     prop sv = 0 ~m.select
     follow sv = nx_sy
+    // the rail's channels, gliding to each reading
+    spring nx.rail = 160, 26         // ~500 ms, soft
+    prop rc_cpu = 0 ~nx.rail
+    follow rc_cpu = m_cpu
+    prop rc_mem = 0 ~nx.rail
+    follow rc_mem = m_mem
+    prop rc_gpu = 0 ~nx.rail
+    follow rc_gpu = if(m_gpu_ok, m_gpu, 0)
+    prop rc_tmp = 0 ~nx.rail
+    follow rc_tmp = clamp((m_temp - 30) / 70, 0, 1)
+    prop rc_song = 0 ~nx.rail
+    follow rc_song = nx_prog
 
     // A section's header line at its top `y`: its name, a short line on the right, the fold
     // chevron; a press folds or unfolds it.
@@ -464,7 +476,7 @@ scene Nexus {
     surface nexus {
         // the whole height: nothing is drawn above nx_top, and where nothing is drawn a press goes
         // through to the bar under it
-        size: 420, full
+        size: 440, full
         anchor: top_right
         level: top
         keyboard: on_demand
@@ -472,7 +484,7 @@ scene Nexus {
         on key Escape while not nx_naming { emit nx_close }
 
         group {
-            move: 440 * (1 - nx_in), nx_top
+            move: 460 * (1 - nx_in) + 22, nx_top
             opacity: smooth(0, 0.6, nx_in)
             IslandFrame(1, 404, nx_h - 8) {
                 // the viewport: the column scrolls under the head
@@ -481,8 +493,35 @@ scene Nexus {
             }
         }
 
+        // ── The rail: the machine's pulse down the drawer's edge ──
+        // Five channels — processor, memory, graphics, temperature, and the song's place — each
+        // filling from the bottom on a slow spring, hot ones in the warning colour. They move only
+        // when a reading changes (every 2 s), so the drawer still rests between readings.
         group {
-            move: 440 * (1 - nx_in) - 8, nx_top
+            move: 460 * (1 - nx_in) + 3, nx_top + 10
+            opacity: smooth(0.2, 0.9, nx_in)
+            let rch = (nx_h - 36 - 4 * 10) / 5
+            repeat c in 0..5 {
+                let rv = pick(c, rc_cpu, rc_mem, rc_gpu, rc_tmp, rc_song)
+                let hot = pick(c, m_cpu > 0.85, m_mem > 0.9, m_gpu > 0.9, m_temp > 85, false)
+                let ry = c * (rch + 10)
+                box { from: 0, ry; size: 12, rch; corner: if(isl_style > 0.5, 6, 2); color: if(isl_style > 0.5, bg.primary, fl.well); opacity: 0.85 }
+                box { from: 0, ry; size: 12, rch; corner: if(isl_style > 0.5, 6, 2); stroke: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim) }
+                group {
+                    glow: 7, (0.55 + 0.45 * rv) * st_glow, if(hot, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos))
+                    box { from: 2, ry + rch - 2 - (rch - 4) * clamp(rv, 0, 1); size: 8, (rch - 4) * clamp(rv, 0, 1); corner: if(isl_style > 0.5, 4, 1)
+                          color: if(hot, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos)) }
+                }
+                // plate: the instrument's ticks every tenth
+                repeat t in 1..10 {
+                    box { from: 0, ry + rch * t / 10; size: 3, 1; color: fl.trace_dim; opacity: 0.8; show: isl_style < 0.5 }
+                }
+                zone box rz.$c { from: -2, ry; size: 16, rch; role: region; label: pick(c, "Processor", "Memory", "Graphics", "Temperature", "The song") }
+            }
+        }
+
+        group {
+            move: 460 * (1 - nx_in) + 14, nx_top
             opacity: smooth(0, 0.6, nx_in)
             group {
                 // what scrolls stays under the head
