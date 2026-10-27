@@ -231,6 +231,7 @@ scene Mooi {
     fact nr_x = 0
     fact nr_w = 0
     fact theme_wallpaper = false        // setting · theme.source, as the bar shows it (the logic)
+    fact light = false                  // the palette is a day one (D91, theme.mode): what only differs by day reads it
     fact media_on = false     // there is a player with something on it at all (the logic)
     text bar_version = "mooi" // the version line of the mark's menu (the logic)
     text bar_path = ""        // where the settings file is, shortened (the logic)
@@ -925,6 +926,7 @@ scene Mooi {
     event toggle_labels ->     // to the logic: setting · bar.labels
     event toggle_wheel ->      // to the logic: setting · bar.wheel
     event toggle_theme ->      // to the logic: setting · theme.source (fixed ↔ wallpaper)
+    event set_mode ->          // to the logic: setting · theme.mode (0 dark · 1 light · 2 auto · 9 the other one now) — `mooi mode`, Super+Alt+T (D91)
     event set_value ->         // to the logic: one setting to one value (1000 · code + value; mooi.luau, SETTERS)
     event bar_join ->          // to the logic: merge a module into the entry before it, or split it out
     event tray_cmd ->          // to the logic: a tray icon pressed (4·index + 0 click, 1 menu, 2 middle)

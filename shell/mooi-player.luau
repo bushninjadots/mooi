@@ -26,7 +26,7 @@ local palette = read("palette.json", "json")
 local tint = nil -- the cover's palette while player.colours is "cover" (Matugen roles)
 local function paint()
     local out
-    if tint then out = ferro.resolve("wallpaper", tint, settings.theme.signal, false, ferro.options(settings)) end
+    if tint then out = ferro.resolve("wallpaper", tint, settings.theme.signal, false, ferro.options(settings, palette and palette.mode)) end
     out = out or ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
     if not out then return end
     for _, role in ipairs(ferro.ROLES) do

@@ -1255,6 +1255,45 @@ test("apps: every tag mooi's templates use has a colour, and the terminal's hues
     end
     eq(m.ansi_red ~= m.ansi_green and m.ansi_green ~= m.ansi_blue, true, "red, green and blue differ")
     eq(string.match(m.surface, "^#%x%x%x%x%x%x$") ~= nil, true, "colours are #rrggbb")
+    local f = assert(io.open("theme/apps/kde.colors")); local s = f:read("a"); f:close()
+    for role in string.gmatch(s, "{{colors%.([%w_]+)%.default%.hex") do eq(m[role] ~= nil, true, "kde.colors needs " .. role) end
+end)
+
+-- ── Day and night (D91) ──
+-- A real Matugen light palette (scheme-tonal-spot, the user's violet wallpaper).
+local violet_day = { mode = "light", colours = { primary = "#615690", secondary = "#615b71", tertiary = "#7d5263",
+    surface_container = "#f1ecf4", surface_container_low = "#f7f2fa", surface_container_lowest = "#ffffff" } }
+test("day: the palette is paper, and keeps its floors on it", function()
+    for _, finish in ipairs({ "luminous", "matte", "neon" }) do
+        for _, bg in ipairs({ "black", "obsidian", "accent", "wallpaper" }) do
+            local out, why = ferro.resolve("wallpaper", violet_day, "auto", false, { finish = finish, saturation = 20, bg = { kind = bg, light = 0, sat = 100, hue = 0 } })
+            local what = finish .. "/" .. bg
+            eq(string.find(why, "day", 1, true) ~= nil, true, what .. ": the mode is read from the palette")
+            assert(ferro.luminance(out.ground) > 0.6, what .. ": a light ground")
+            assert(ferro.contrast(out.phos, out.ground) >= 6, what .. ": phos 6:1 on paper")
+            assert(ferro.contrast(out.ember, out.ground) >= 4.5, what .. ": ember 4.5:1")
+            assert(ferro.contrast(out.muted, out.ground) >= 4.5, what .. ": muted 4.5:1")
+            assert(ferro.contrast(out.phos_fill, out.ink) >= 4.5, what .. ": ink on phos-fill 4.5:1")
+            assert(ferro.contrast(out.engrave, out.steel_700) >= 4.5, what .. ": engrave on steel 4.5:1")
+            local _, _, problems = require("lib/theme").resolve({}, out)
+            eq(#problems, 0, what .. ": the islands' tokens pass")
+        end
+    end
+    local fixed = ferro.resolve("fixed", { mode = "light" }, "auto", false)
+    assert(ferro.luminance(fixed.ground) > 0.6, "the fixed palette turns light too")
+    local dark = ferro.resolve("wallpaper", teal, "auto", false)
+    eq(dark.ground.r, 0, "a palette with no mode stays dark")
+end)
+test("day: the terminal's hues are inks that read on its paper", function()
+    local roles = ferro.resolve("wallpaper", violet_day, "auto", false, {})
+    local m = appcolors.material(roles, "light")
+    local bg = ferro.hex(m.surface_container_lowest)
+    for name in pairs(appcolors.ANSI) do
+        assert(ferro.contrast(ferro.hex(m["ansi_" .. name]), bg) >= 4.5, name .. " 4.5:1 on the background")
+        assert(ferro.contrast(ferro.hex(m["ansi_bright_" .. name]), bg) >= 4.5, "bright " .. name .. " too")
+    end
+    eq(config.defaults().theme.mode, "dark", "dark until asked")
+    eq(config.defaults().keys.mode, "SUPER + ALT + T", "the switch's key")
 end)
 
 -- ── The Mechanical Shutter: placement and the action registry (lib/shutter) ──

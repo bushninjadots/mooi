@@ -191,6 +191,51 @@ function M.derive(roles, signal)
     return out, from
 end
 
+-- Day (D91): the same nineteen roles for a light desktop — paper instead of steel. The roles keep
+-- their meaning, not their lightness: the ground is a tinted off-white with raised surfaces whiter
+-- still, the phosphor is a deep ink of the palette's hue (6:1 on the ground: a dark colour reads
+-- heavier than a light one, so 7:1 would turn it black), fills are deep and `ink` — what is written
+-- on a fill — is near-white. `roles` is Matugen's light palette; the dark one works too.
+function M.derive_light(roles, signal)
+    if type(roles) ~= "table" then return nil, "the palette has no colours" end
+    local primary = M.hex(roles.primary)
+    if not primary then return nil, "the palette has no primary" end
+    local ph, ps = M.to_hsl(primary)
+    local mono = ps < 0.1
+    local function sat(x) if mono then return 0 end return x end
+    ps = sat(math.max(ps, 0.35))
+    local eh, from = M.signal_hue(roles, ph, signal or "auto")
+    if mono then from = "lightness (a grey palette)" end
+    -- Matugen's light surfaces when they are light; otherwise the palette's hue, barely tinted.
+    local function surface(name, l)
+        local c = M.hex(roles[name])
+        if c and M.luminance(c) > 0.6 then return c end
+        return M.hsl(ph, sat(0.14), l)
+    end
+    local out = {}
+    out.ground = surface("surface_container", 0.935)
+    out.hull = surface("surface_container_low", 0.955)
+    out.hull_raised = surface("surface_container_lowest", 0.985)
+    local g = out.ground
+    out.well = M.hsl(ph, math.min(ps, 0.55), 0.87)
+    out.trace_dim = M.hsl(ph, math.min(ps, 0.22), 0.80)
+    out.trace = M.hold(M.hsl(ph, math.min(ps, 0.26), 0.60), g, 3.0)
+    out.phos = M.hold(M.hsl(ph, ps, math.min(0.42, select(3, M.to_hsl(primary)))), g, 6.0)
+    out.trace_lit = M.hold(M.mix(out.phos, g, 0.18), g, 3.0)
+    out.ink = M.hsl(ph, sat(0.35), 0.985)
+    out.phos_fill = M.hold(M.hsl(ph, sat(math.min(math.max(ps, 0.55), 0.75)), 0.42), out.ink, 4.5)
+    out.ember = M.hold(M.hsl(eh, sat(0.75), 0.46), g, 4.5)
+    out.ember_fill = M.hold(M.hsl(eh, sat(0.72), 0.44), out.ink, 4.5)
+    out.flare = M.hold(M.hsl((eh + 12) % 360, sat(0.9), 0.44), g, 6.0)
+    out.muted = M.hold(M.hsl(ph, math.min(ps, 0.18), 0.46), g, 4.5)
+    out.steel_900 = M.hsl(ph, sat(0.08), 0.95)
+    out.steel_700 = M.hsl(ph, sat(0.08), 0.87)
+    out.steel_500 = M.hsl(ph, sat(0.08), 0.72)
+    out.steel_300 = M.hsl(ph, sat(0.08), 0.44)
+    out.engrave = M.hold(M.hsl(ph, sat(0.10), 0.22), out.steel_700, 4.5)
+    return out, from
+end
+
 -- The whole decision: which palette, and Nominal or Alert. `source` is the setting
 -- theme.source ("fixed" | "wallpaper"), `palette` the Matugen file (or nil), `alert` the
 -- battery state. Always returns a complete set: a missing palette is a note, not a gap.
@@ -203,6 +248,9 @@ M.BACKGROUNDS = { graphite = "#1a1c1f", navy = "#0d1526", plum = "#1d1023", fore
     -- the industrial set: volcanic glass, gun-blued steel, poured concrete, bead-blasted titanium,
     -- oxidised iron, and the green-black of something that was not built here
     obsidian = "#0a0b0d", gunmetal = "#1b2026", concrete = "#2b2a28", titanium = "#34383c", oxide = "#2a1a14", alien = "#0c1a18" }
+-- Each base by day (D91): the same material in daylight — the hue kept, the lightness of paper.
+M.LIGHT_BACKGROUNDS = { graphite = "#e8e9eb", navy = "#e3e8f2", plum = "#efe6f1", forest = "#e3eee7", wine = "#f3e4e7", sand = "#efe6d4",
+    obsidian = "#ebecee", gunmetal = "#e2e6ea", concrete = "#e9e7e2", titanium = "#e0e3e5", oxide = "#f0e3dc", alien = "#dfeeeb" }
 
 local function scale_saturation(c, k)
     local h, sat, l = M.to_hsl(c)
@@ -210,36 +258,46 @@ local function scale_saturation(c, k)
 end
 
 -- The background's colour before its adjustments, or nil for black (the palette as it is).
-function M.background(bg, out, palette)
+function M.background(bg, out, palette, light)
     local kind = type(bg) == "table" and bg.kind or "black"
     if kind == "black" then return nil end
     local ph = M.to_hsl(out.phos)
     if kind == "wallpaper" then
         local roles = type(palette) == "table" and palette.colours or {}
-        return M.hex(roles.surface_container_low) or M.hex(roles.surface_dim) or M.hsl(ph, 0.25, 0.09)
+        return M.hex(roles.surface_container_low) or M.hex(roles.surface_dim) or M.hsl(ph, 0.25, light and 0.94 or 0.09)
     end
-    if kind == "accent" then return M.hsl(ph, 0.45, 0.10) end
-    if kind == "custom" then return M.hex(bg.colour) or M.hex("#101418") end
+    if kind == "accent" then return M.hsl(ph, 0.45, light and 0.92 or 0.10) end
+    if kind == "custom" then return M.hex(bg.colour) or M.hex(light and "#eceef0" or "#101418") end
+    if light then return M.hex(M.LIGHT_BACKGROUNDS[kind] or "#eceef0") end
     return M.hex(M.BACKGROUNDS[kind] or "#101418")
 end
 
 function M.adjust(out, opts, palette)
     opts = type(opts) == "table" and opts or {}
+    local light = opts.mode == "light"
     local k = 1 + (tonumber(opts.saturation) or 0) / 100
     if opts.finish == "matte" then k = k * 0.55 end
     if opts.finish == "neon" then k = k * 1.6 end
     if k ~= 1 then
         for _, role in ipairs(SIGNAL_ROLES) do out[role] = scale_saturation(out[role], k) end
     end
-    -- neon: the signals are tubes of light — at least nearly full saturation, lit bright
+    -- neon: the signals are tubes of light — at least nearly full saturation, lit bright (by day,
+    -- the same saturation as a deep ink: a light colour on paper is the one thing that cannot be read)
     if opts.finish == "neon" then
         for _, role in ipairs({ "phos", "ember", "flare", "trace_lit" }) do
             local h, sat, l = M.to_hsl(out[role])
-            out[role] = M.hsl(h, math.max(sat, 0.92), math.max(l, 0.6))
+            out[role] = M.hsl(h, math.max(sat, 0.92), light and math.min(l, 0.45) or math.max(l, 0.6))
         end
     end
+    if light then
+        -- whatever moved them, the signals hold their floor on the paper
+        out.phos = M.hold(out.phos, out.ground, 6.0)
+        out.ember = M.hold(out.ember, out.ground, 4.5)
+        out.flare = M.hold(out.flare, out.ground, 6.0)
+        out.trace_lit = M.hold(out.trace_lit, out.ground, 3.0)
+    end
     local bg = opts.bg or {}
-    local base = M.background(bg, out, palette)
+    local base = M.background(bg, out, palette, light)
     if base then
         local h, sat, l = M.to_hsl(base)
         base = M.hsl(h + (tonumber(bg.hue) or 0), sat * (tonumber(bg.sat) or 100) / 100, l + (tonumber(bg.light) or 0) / 100)
@@ -259,8 +317,8 @@ function M.adjust(out, opts, palette)
         out.hull_raised = M.hsl(bh, bs, math.min(1, bl + 0.055))
         out.well = M.mix(out.hull_raised, out.phos_fill, 0.25)
         -- what is read on it keeps its floor against the new ground (a light one darkens it)
-        out.phos = M.hold(out.phos, base, 7.0)
-        out.ember = M.hold(out.ember, base, 6.0)
+        out.phos = M.hold(out.phos, base, light and 6.0 or 7.0)
+        out.ember = M.hold(out.ember, base, light and 4.5 or 6.0)
         out.flare = M.hold(out.flare, base, 6.0)
         out.muted = M.hold(out.muted, base, 4.5)
         out.trace = M.hold(out.trace, base, 3.0)
@@ -270,22 +328,33 @@ function M.adjust(out, opts, palette)
     return out
 end
 
+-- Light or dark: `opts.mode` when given, else the palette's own `mode` (bin/mooi decides and stamps
+-- it there), so every mooi window that reads the palette turns with the day. By day the fixed
+-- palette and the Alert re-light are built the light way from their own two colours.
 function M.resolve(source, palette, signal, alert, opts)
     local out, why
-    if alert then out, why = from_table(M.ALERT), "alert"
+    opts = type(opts) == "table" and opts or {}
+    if opts.mode == nil then opts.mode = type(palette) == "table" and palette.mode or "dark" end
+    local light = opts.mode == "light"
+    local function fixed(t)
+        if not light then return from_table(t) end
+        return (M.derive_light({ primary = t.phos, tertiary = t.ember }, "tertiary"))
+    end
+    if alert then out, why = fixed(M.ALERT), "alert"
     elseif source == "wallpaper" then
         local roles = type(palette) == "table" and palette.colours or nil
-        local derived, from = M.derive(roles, signal)
+        local derived, from = (light and M.derive_light or M.derive)(roles, signal)
         if derived then out, why = derived, "wallpaper · second signal from " .. from
-        else out, why = from_table(M.NOMINAL), "fixed (" .. tostring(from) .. ")" end
-    else out, why = from_table(M.NOMINAL), "fixed" end
+        else out, why = fixed(M.NOMINAL), "fixed (" .. tostring(from) .. ")" end
+    else out, why = fixed(M.NOMINAL), "fixed" end
+    if light then why = why .. " · day" end
     return M.adjust(out, opts, palette), why
 end
 
 -- The options above, from validated settings (lib/config).
-function M.options(s)
+function M.options(s, mode)
     local b = s.bar
-    return { saturation = s.theme.saturation, finish = s.theme.finish,
+    return { saturation = s.theme.saturation, finish = s.theme.finish, mode = mode,
              bg = { kind = b.bg, colour = b.bg_colour, light = b.bg_light, sat = b.bg_sat, hue = b.bg_hue } }
 end
 

@@ -2953,3 +2953,54 @@ seven scenes compile, **271 unit tests, 0 failed**. Live after a restart: the ba
 opened the Overview (5 workspaces, 2 window tiles, Canvas, live pictures) and Escape closed it.
 Not run: the live scripts (scene.sh, integration.sh, config-recovery.sh) — they grab the
 keyboard and need mooi stopped.
+
+## D91 · 2026-10-27 · Day and night, and every app on the palette
+
+**Asked for:** check all theming; Qt, GTK and the terminal must follow it; a light mode that looks
+as good as the dark one, with everything going along with it. Choices made by the user: a manual
+switch plus a schedule, GTK 3 moved to adw-gtk3, Papirus icons everywhere, and mooi allowed to edit
+the Hyprland env and run their own Matugen config.
+
+**The audit found** that Qt apps were never themed (`QT_QPA_PLATFORMTHEME=qt6ct` lived only in
+~/.config/environment.d, which systemd services get but apps Hyprland starts do not); GTK 3 apps
+ignored the palette (gsettings named WhiteSur-Dark, which hardcodes its colours; settings.ini said
+adw-gtk3-dark); GTK used WhiteSur icons and Qt Papirus; KDE apps read colours from kdeglobals, and
+Dolphin, EasyEffects and Kdenlive each kept a dark scheme of their own in their rc; the terminal's
+colour 0 was the background's colour; the user's own Matugen templates (btop, fish, cava, Vesktop,
+Zen, Spicetify, widgets, picker) were only rendered by the wallpaper picker, always dark.
+
+**One source of truth for the mode.** `theme.mode` dark | light | auto with `theme.light_at` /
+`theme.dark_at` (hours, default 7 and 19). `bin/mooi mode_now` decides; the watch's key includes it
+(so auto flips within 5 s of the hour); `theme_sync` runs Matugen in that mode and stamps `mode`
+into palette.json; `lib/ferro.resolve` reads it from the palette, so the bar and every mooi window
+(settings, player, studio, board, Nexus) turn with no code of their own; the bar writes it into
+apps.json for `apps-sync`. Switch: Settings → Colour → Day and night, `mooi mode [light|dark|auto]`
+(none: the other one now), Super+Alt+T (`keys.mode`).
+
+**The light palette** (`ferro.derive_light`): the same nineteen roles as paper — Matugen's light
+surfaces for ground/hull/raised, the phosphor a deep ink held 6:1 on the ground (7:1 turns it
+black), fills deep with `ink` near-white, steel inverted, engrave dark. `adjust` is mode-aware:
+neon caps lightness at 0.45 by day, every industrial base has a daylight twin
+(`LIGHT_BACKGROUNDS`), the fixed palette and the Alert re-light are built the light way. By day
+the bar's glow keeps 30 % and the islands' shadows 35 % (a dark smudge on paper otherwise).
+Unit-tested over 12 finish × base combinations: every floor and the islands' token check hold.
+
+**Apps.** `apps-sync` now also sets adw-gtk3 / adw-gtk3-dark, Papirus-Light / Papirus-Dark and
+`color-scheme` prefer-light / prefer-dark (gsettings and both settings.ini), Qt's icon theme,
+renders theme/apps/kde.colors into ~/.local/share/color-schemes/Mooi.colors and copies its colour
+groups into kdeglobals (ColorScheme=Mooi, Papirus), and clears per-app `[UiSettings] ColorScheme`
+overrides — each original kept in apps.state and put back when the switch goes off. The terminal's
+hues by day are inks held 4.5:1 on its background; colour 0/8 are the outline and muted tones.
+`apps.others` (new, "Everything else"): theme_sync also runs ~/.config/matugen/config.toml with the
+same image, scheme and mode. Outside the repo: ~/.config/hypr/config/env.lua sets
+`QT_QPA_PLATFORMTHEME=qt6ct` (also applied to the running session). Backups:
+~/.local/state/mooi/theming-backup-2026-10-27/.
+
+**Checked live**, dark → light → dark: Matugen, the bar (`light`), gsettings, kdeglobals and the
+user's template outputs all switched; screenshots of kitty, nwg-look (GTK 3), Nautilus (GTK 4),
+pavucontrol-qt and Dolphin in both modes, and the settings window by day. GTK 4/libadwaita follow
+the preference live; GTK 3 and Qt/KDE apps take the new mode when reopened; Nautilus runs as a
+service (`nautilus -q`). `bin/mooi check`: **273 unit tests, 0 failed**. Not checked: a real
+re-login, the auto switch crossing an hour boundary live, Vesktop/Zen/Spotify windows by eye, VLC
+(the one Qt 5 app; qt6ct does not reach Qt 5), and the wallpaper picker running Matugen itself
+(always dark) racing mooi's run after a wallpaper change.

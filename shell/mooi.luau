@@ -40,6 +40,7 @@ local function saving()
     return v == "always" or (v == "battery" and on_battery)
 end
 local bar_palette = nil   -- the bar's palette as #rrggbb, for the desktop's border (paint_ferro)
+local day = false         -- the palette is a light one (D91): glow is a light's effect, and by day it is a smudge
 local sync_desktop        -- the desktop's look and mooi's keys; defined at the end, once it can run
 
 -- Where a choice sits in its setting's list of values, from 0: how an enum setting reaches
@@ -106,6 +107,8 @@ local function apply(s)
     -- The battery saver (motion.saver): what costs frames and a process goes quiet.
     fact.saving = saving()
     if fact.saving then fact.st_glow = 0; fact.st_aberr = 0; fact.frame_music = false; fact.viz = 4 end
+    -- by day a dark shadow under a light island reads as a stain: it keeps a third of its weight
+    if day then fact.st_glow = (tonumber(fact.st_glow) or 0) * 0.3; fact.st_sh_a = (tonumber(fact.st_sh_a) or 0) * 0.35 end
     -- The power profile (power.profile), through power-profiles-daemon when it runs; `keep`
     -- leaves the system's own.
     if s.power.profile ~= "keep" and s.power.profile ~= profile_set then
@@ -218,9 +221,12 @@ local function paint_ferro(reason)
     if sync_desktop then sync_desktop() end
     -- Your apps (apps.*): the palette in Matugen's role names, for `bin/mooi apps-sync` (the
     -- theme watch) to render into Kitty, GTK and Qt. Not the Alert re-light: that is the bar's.
+    local mode = (type(palette) == "table" and palette.mode == "light") and "light" or "dark"
+    fact.light = mode == "light"
+    if day ~= fact.light then day = fact.light; apply(settings) end
     if not alert then
-        local doc = { kitty = settings.apps.kitty, gtk = settings.apps.gtk, qt = settings.apps.qt,
-                      colors = appcolors.material(out) }
+        local doc = { kitty = settings.apps.kitty, gtk = settings.apps.gtk, qt = settings.apps.qt, mode = mode,
+                      colors = appcolors.material(out, mode) }
         local said = json.encode(doc)
         if said ~= apps_said then apps_said = said; sys.call("files.write", "apps.json", doc) end
     end
@@ -1349,6 +1355,16 @@ on("toggle_wheel", function()
     if not safe_mode then settings.bar.wheel = now; sys.call("files.write", FILE, settings) end
     fact.bar_wheel = now
     log("bar · the wheel over the chain: " .. now)
+end)
+-- Day and night (D91): `mooi mode` and its key. 9 turns to whichever the desktop is not in now (out of
+-- auto too: a hand on the switch means it). The theme watch sees the setting change and re-extracts.
+on("set_mode", function(v)
+    local n = math.floor(tonumber(v) or 9)
+    local want = ({ [0] = "dark", [1] = "light", [2] = "auto" })[n] or (day and "dark" or "light")
+    settings.theme.mode = want
+    if not safe_mode then sys.call("files.write", FILE, settings) end
+    log("theme · mode " .. want)
+    if not kept then extract() end
 end)
 on("toggle_theme", function()
     local wallpaper = not fact.theme_wallpaper

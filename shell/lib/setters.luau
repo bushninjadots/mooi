@@ -46,6 +46,8 @@ M.SETTERS = {
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
     -- D85: the desk (mooi's own wallpaper: parallax, and the cutout over the widgets).
     "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
+    -- D91: day and night, and your own Matugen templates.
+    "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
 }
 
 local function row_of(path)

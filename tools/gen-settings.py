@@ -43,6 +43,7 @@ SETTERS = [
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
     "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
+    "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -69,6 +70,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("settings", "Settings", "This window"),
         ("wallpaper", "Wallpaper studio", "Grade a picture and set it on the desk, with a folder of your own"),
         ("player", "Music player", "Your library, the queue and lyrics on a turntable"),
+        ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
@@ -106,6 +108,10 @@ SECTIONS = [
         ("choice", "", "…or an instrument", "bar.workspaces", "ws_style", INSTRUMENTS),
     ]),
     ("Colour", "Colour", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "LOOK", [
+        ("card", "Day and night"),
+        ("choice", "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", "theme.mode", "sv_theme_mode", [("Dark", 0), ("Light", 1), ("Auto", 2)]),
+        ("slider", "Light from", "The hour it turns light", "theme.light_at", 0, 23, "{sv_theme_light_at, 0}:00", "sv_theme_mode == 2"),
+        ("slider", "Dark from", "The hour it turns dark", "theme.dark_at", 0, 23, "{sv_theme_dark_at, 0}:00", "sv_theme_mode == 2"),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
@@ -128,8 +134,9 @@ SECTIONS = [
         ("card", "Your apps"),
         ("note", "true", "OFF, AN APP KEEPS ITS OWN COLOURS (YOUR MATUGEN SETUP); ON, IT WEARS THIS PALETTE"),
         ("toggle", "Kitty terminal", "Text, selection, cursor and the 16 terminal colours", "apps.kitty", "sv_apps_kitty"),
-        ("toggle", "GTK apps", "GTK 3 and 4 (libadwaita); open windows change when reopened", "apps.gtk", "sv_apps_gtk"),
-        ("toggle", "Qt apps", "Through qt5ct and qt6ct; apps change when reopened", "apps.qt", "sv_apps_qt"),
+        ("toggle", "GTK apps", "GTK 3 and 4 (libadwaita), light or dark with mooi; open windows change when reopened", "apps.gtk", "sv_apps_gtk"),
+        ("toggle", "Qt and KDE apps", "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", "apps.qt", "sv_apps_qt"),
+        ("toggle", "Everything else", "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", "apps.others", "sv_apps_others"),
     ]),
     ("Motion", "Motion & effects", "How fast things move, what glows, and what goes quiet to save the battery", "LOOK", [
         ("card", "Motion"),

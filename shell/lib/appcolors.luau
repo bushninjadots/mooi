@@ -35,7 +35,8 @@ M.MAP = {
 M.ANSI = { red = 356, green = 128, yellow = 46, blue = 214, magenta = 300, cyan = 182 }
 
 -- `roles` is a resolved Ferrolume palette (role → { r, g, b }); returns Material role → "#rrggbb".
-function M.material(roles)
+-- `mode` "light" draws the terminal's hues deep enough to read on a light background (D91).
+function M.material(roles, mode)
     local out = {}
     for name, from in pairs(M.MAP) do
         local c
@@ -48,7 +49,20 @@ function M.material(roles)
     -- saturation and lightness (so they sit in the palette), at the hues a terminal expects,
     -- and the bright ones a step lighter.
     local _, s, l = ferro.to_hsl(roles.phos)
-    s = math.max(0.45, math.min(0.85, s)); l = math.max(0.55, math.min(0.72, l))
+    s = math.max(0.45, math.min(0.85, s))
+    if mode == "light" then
+        -- by day each hue is an ink held to 4.5:1 on the terminal's background, and the "bright"
+        -- one a step deeper still (on paper, brighter means stronger, not lighter)
+        local bg = ferro.hex(out.surface_container_lowest)
+        for name, h in pairs(M.ANSI) do
+            local c = ferro.hold(ferro.hsl(h, s, 0.40), bg, 4.5)
+            local _, _, cl = ferro.to_hsl(c)
+            out["ansi_" .. name] = string.lower(ferro.to_hex(c))
+            out["ansi_bright_" .. name] = string.lower(ferro.to_hex(ferro.hold(ferro.hsl(h, s, math.max(0.12, cl - 0.08)), bg, 5.5)))
+        end
+        return out
+    end
+    l = math.max(0.55, math.min(0.72, l))
     for name, h in pairs(M.ANSI) do
         out["ansi_" .. name] = string.lower(ferro.to_hex(ferro.hsl(h, s, l)))
         out["ansi_bright_" .. name] = string.lower(ferro.to_hex(ferro.hsl(h, s, math.min(0.86, l + 0.12))))

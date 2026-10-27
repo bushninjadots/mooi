@@ -16,6 +16,7 @@
 #   mooi refresh           copy the repo's shell into the running snapshot and restart the scene
 #                          (the keeper, the mode and ArchEclipse's state are kept)
 #   mooi window | system   toggle the window island (Super+Alt+W) or the system island
+#   mooi mode [light|dark|auto]  day or night for the whole desktop; no word turns to the other one (Super+Alt+T)
 #   mooi overview          every workspace zoomed out (Super+Tab)
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
 #                          one under the pointer (Super+Alt+right-click)
@@ -94,7 +95,29 @@ folder=$(dirname "$settings")                   # where the palette and the sett
 palette="$folder/palette.json"
 from="$folder/palette.from"                     # which wallpaper, and extracted how, the palette came from
 # How the palette is extracted (settings.json): the scheme, the source colour and the contrast.
-extraction() { jq -c '[.theme.scheme, .theme.color_index, .theme.contrast]' "$settings" 2>/dev/null; }
+# Day or night, now (D91): theme.mode, and for `auto` the hours it turns light and dark. The one
+# place this is decided — Matugen runs in it, it is stamped into the palette the bar reads, and the
+# bar hands it to the apps — so nothing can disagree about what time of day it is.
+mode_now() {
+    mm=dark; lf=7; lt=19
+    if [ -f "$settings" ] && command -v jq >/dev/null 2>&1; then
+        mm=$(jq -r '.theme.mode // "dark"' "$settings" 2>/dev/null || echo dark)
+        lf=$(jq -r '.theme.light_at // 7' "$settings" 2>/dev/null || echo 7)
+        lt=$(jq -r '.theme.dark_at // 19' "$settings" 2>/dev/null || echo 19)
+    fi
+    case "$mm" in
+        light) echo light ;;
+        auto)
+            hh=$((10#$(date +%H)))
+            if [ "$lf" -le "$lt" ]; then
+                if [ "$hh" -ge "$lf" ] && [ "$hh" -lt "$lt" ]; then echo light; else echo dark; fi
+            else   # a day that runs past midnight (light at 20, dark at 6)
+                if [ "$hh" -ge "$lf" ] || [ "$hh" -lt "$lt" ]; then echo light; else echo dark; fi
+            fi ;;
+        *) echo dark ;;
+    esac
+}
+extraction() { echo "$(jq -c '[.theme.scheme, .theme.color_index, .theme.contrast]' "$settings" 2>/dev/null) $(mode_now)"; }
 theme_lock="$rt/theme.lock"
 theme_pid="$rt/theme.pid"
 theme_watch_lock="$rt/theme-watch.lock"
@@ -107,8 +130,9 @@ theme_watch_lock="$rt/theme-watch.lock"
 # The lock is what keeps two syncs apart: Matugen writes the palette in place, and a second
 # run reading the wallpaper while the first is still writing would hand mooi half a palette
 # (which is refused whole, so the bar would keep the old colours and look stuck).
-theme_sync() { # [--light] [image] — quiet: says what it did on stdout, nothing on failure
-    light=false; [ "${1:-}" = --light ] && { light=true; shift; }
+theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdout, nothing on failure
+    mode=$(mode_now)
+    case "${1:-}" in --light) mode=light; shift ;; --dark) mode=dark; shift ;; esac
     image=${1:-$wallpaper}
     # Read the actual image path once, before any filesystem changes
     real_image=$(readlink -f "$image" 2>/dev/null || echo "$image")
@@ -122,7 +146,6 @@ theme_sync() { # [--light] [image] — quiet: says what it did on stdout, nothin
     cfg="$folder/matugen.toml"
     sed -e "s|@TPL@|$root/theme/palette.json.hbs|" -e "s|@OUT@|$folder/palette.json|" \
         "$root/theme/matugen.toml.in" > "$cfg" || return 1
-    mode=dark; $light && mode=light
     # `--source-color-index 0` is what the user's own matugen-theme.sh passes, so mooi and the
     # rest of the desktop take their colours from the same source colour of the same wallpaper;
     # without it matugen 4.2 stops and asks.
@@ -138,6 +161,19 @@ theme_sync() { # [--light] [image] — quiet: says what it did on stdout, nothin
     matugen image "$real_image" -c "$cfg" -m "$mode" --type "scheme-$scheme" \
         --source-color-index "$index" --contrast "$contrast" >/dev/null \
         || { echo "matugen failed" >&2; return 1; }
+    # The mode rides in the palette itself, so the bar builds the matching set from the same write.
+    if command -v jq >/dev/null 2>&1 && [ -f "$palette" ]; then
+        jq --arg m "$mode" '. + {mode: $m}' "$palette" > "$palette.mooi-tmp" && mv "$palette.mooi-tmp" "$palette"
+    fi
+    # Your own Matugen templates (apps.others): the same image, scheme and mode, so btop, fish,
+    # cava, Vesktop, Zen, Spicetify and the widgets turn with the day too. Your config's hooks run
+    # as they always do; a failure there is reported, never mooi's.
+    user_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/matugen/config.toml"
+    if [ -f "$user_cfg" ] && [ "$(jq -r '.apps.others // false' "$settings" 2>/dev/null)" = true ]; then
+        matugen image "$real_image" -c "$user_cfg" -m "$mode" --type "scheme-$scheme" \
+            --source-color-index "$index" --contrast "$contrast" >/dev/null 2>&1 \
+            || echo "your matugen config failed (mooi's palette is fine)" >&2
+    fi
     echo "$(readlink -f "$image") $(extraction)" > "$from"   # what the palette came from: the watch reads it
     echo "palette from $(basename "$real_image") ($mode, $scheme, colour $index) → $palette"
     # mooi watches the palette file itself, so this is a courtesy: it is what makes the change
@@ -277,6 +313,90 @@ apps_sync() {
             put "${q}_was" ""; put "${q}_palette" ""; did="$did $q(yours)"
         fi
     done
+    # Day and night for the toolkits themselves (D91): the theme and icons that take mooi's colours
+    # in the mode the bar is in (apps.json `mode`) — adw-gtk3 is the GTK 3 theme that reads the
+    # palette above (WhiteSur and stock Adwaita hardcode their own), Papirus for GTK, Qt and KDE
+    # alike, and the desktop's light/dark preference, which GTK 4, libadwaita and browsers follow
+    # through the portal. What was there before is kept once in apps.state and put back on off.
+    mode=$(jq -r '.mode // "dark"' "$j")
+    if [ "$mode" = light ]; then gt=adw-gtk3; ic=Papirus-Light; cs=prefer-light; pd=0
+    else gt=adw-gtk3-dark; ic=Papirus-Dark; cs=prefer-dark; pd=1; fi
+    gs() { command -v gsettings >/dev/null 2>&1 && gsettings "$@" 2>/dev/null; }
+    ini() { # file key value — set it in [Settings], adding the key if it is missing
+        [ -f "$1" ] || return 0
+        if grep -q "^$2=" "$1"; then sed -i "s|^$2=.*|$2=$3|" "$1"; else sed -i "/^\[Settings\]/a $2=$3" "$1"; fi
+    }
+    if on gtk; then
+        [ -n "$(get gtk_look_was)" ] || put gtk_look_was "$(gs get org.gnome.desktop.interface gtk-theme | tr -d "'")|$(gs get org.gnome.desktop.interface icon-theme | tr -d "'")|$(gs get org.gnome.desktop.interface color-scheme | tr -d "'")"
+        if [ "$(gs get org.gnome.desktop.interface gtk-theme | tr -d "'")" != "$gt" ] || [ "$(gs get org.gnome.desktop.interface color-scheme | tr -d "'")" != "$cs" ] \
+           || [ "$(gs get org.gnome.desktop.interface icon-theme | tr -d "'")" != "$ic" ]; then
+            gs set org.gnome.desktop.interface gtk-theme "$gt"
+            gs set org.gnome.desktop.interface icon-theme "$ic"
+            gs set org.gnome.desktop.interface color-scheme "$cs"
+            did="$did gtk-$mode"
+        fi
+        for v in 3 4; do
+            ini "$C/gtk-$v.0/settings.ini" gtk-theme-name "$gt"
+            ini "$C/gtk-$v.0/settings.ini" gtk-icon-theme-name "$ic"
+            ini "$C/gtk-$v.0/settings.ini" gtk-application-prefer-dark-theme "$pd"
+        done
+    elif [ -n "$(get gtk_look_was)" ]; then
+        IFS='|' read -r wt wi wc <<EOF2
+$(get gtk_look_was)
+EOF2
+        [ -n "$wt" ] && gs set org.gnome.desktop.interface gtk-theme "$wt"
+        [ -n "$wi" ] && gs set org.gnome.desktop.interface icon-theme "$wi"
+        [ -n "$wc" ] && gs set org.gnome.desktop.interface color-scheme "$wc"
+        put gtk_look_was ""; did="$did gtk-look(yours)"
+    fi
+    kg="$C/kdeglobals"; kscheme="${XDG_DATA_HOME:-$HOME/.local/share}/color-schemes/Mooi.colors"
+    if on qt; then
+        for q in qt5ct qt6ct; do
+            qc="$C/$q/$q.conf"; [ -f "$qc" ] || continue
+            if grep -q '^icon_theme=' "$qc"; then sed -i "s|^icon_theme=.*|icon_theme=$ic|" "$qc"
+            else sed -i "/^\[Appearance\]/a icon_theme=$ic" "$qc"; fi
+        done
+        # KDE apps (Dolphin, Kate, Okular…) read their colours from kdeglobals, not from qt6ct:
+        # the scheme is rendered, and its colour groups are copied in; every other setting stays.
+        mkdir -p "$(dirname "$kscheme")"; render "$apps_dir/kde.colors" "$kscheme"
+        if [ -f "$kg" ] && [ -z "$(get kde_backup)" ]; then cp "$kg" "$folder/apps-kdeglobals.backup"; put kde_backup yes; fi
+        [ -f "$kg" ] || { : > "$kg"; [ -n "$(get kde_backup)" ] || put kde_backup made; }
+        python3 - "$kscheme" "$kg" "$ic" <<'PY' && did="$did kde"
+import configparser, sys
+src, dst, icons = sys.argv[1:4]
+def load(p):
+    cp = configparser.RawConfigParser(strict=False, interpolation=None)
+    cp.optionxform = str
+    cp.read(p)
+    return cp
+s, d = load(src), load(dst)
+for sec in s.sections():
+    if sec.startswith("Colors:") or sec == "WM":
+        if not d.has_section(sec): d.add_section(sec)
+        for k, v in s.items(sec): d.set(sec, k, v)
+for sec, k, v in (("General", "ColorScheme", "Mooi"), ("Icons", "Theme", icons)):
+    if not d.has_section(sec): d.add_section(sec)
+    d.set(sec, k, v)
+with open(dst, "w") as f: d.write(f, space_around_delimiters=False)
+PY
+        # A KDE app can keep a colour scheme of its own (Settings → Colour scheme, [UiSettings] in its
+        # rc), which wins over kdeglobals — Dolphin was still on ArchEclipse's dark one. Each is
+        # cleared so the app follows the desktop, and what it was is kept to put back.
+        command -v kreadconfig6 >/dev/null 2>&1 && for rc in "$C"/*rc; do
+            [ -f "$rc" ] || continue
+            cur=$(kreadconfig6 --file "$rc" --group UiSettings --key ColorScheme 2>/dev/null)
+            [ -n "$cur" ] || continue
+            put kde_app_was "$(get kde_app_was)$(basename "$rc")=$cur;"
+            kwriteconfig6 --file "$rc" --group UiSettings --key ColorScheme "" && did="$did $(basename "$rc")"
+        done
+    elif [ -n "$(get kde_backup)" ]; then
+        printf '%s' "$(get kde_app_was)" | tr ';' '\n' | while IFS='=' read -r rcf val; do
+            [ -n "$rcf" ] && kwriteconfig6 --file "$C/$rcf" --group UiSettings --key ColorScheme "$val"
+        done
+        put kde_app_was ""
+        if [ "$(get kde_backup)" = made ]; then rm -f "$kg"; else cp "$folder/apps-kdeglobals.backup" "$kg"; fi
+        rm -f "$kscheme"; put kde_backup ""; did="$did kde(yours)"
+    fi
     [ -n "$did" ] && echo "apps:$did"
     return 0
 }
@@ -733,6 +853,9 @@ case "$cmd" in
     record) exec "$pleamar" --say "$name" "emit record $([ "${1:-}" = area ] && echo 1 || echo 0)" ;;
     edit) exec "$pleamar" --say "$name" "emit edit_toggle" ;;
     overview) exec "$pleamar" --say "$name" "emit open_overview" ;;
+    mode)   # light | dark | auto | (nothing: the other one now)
+        case "${1:-}" in dark) n=0 ;; light) n=1 ;; auto) n=2 ;; ""|toggle) n=9 ;; *) echo "usage: mooi mode [light|dark|auto]" >&2; exit 2 ;; esac
+        exec "$pleamar" --say "$name" "emit set_mode $n" ;;
     shutter) exec "$pleamar" --say "$name" "emit open_shutter 0" ;;
     shutter-here) exec "$pleamar" --say "$name" "emit open_shutter 1" ;;
     say)  exec "$pleamar" --say "$name" "$@" ;;

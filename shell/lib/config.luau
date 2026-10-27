@@ -117,6 +117,9 @@ M.SCHEMA = {
     { path = "apps.kitty", kind = "boolean", default = false },
     { path = "apps.gtk", kind = "boolean", default = false },
     { path = "apps.qt", kind = "boolean", default = false },
+    -- Your own Matugen config (~/.config/matugen/config.toml: btop, fish, cava, Vesktop, Zen,
+    -- Spicetify, the widgets…) run with mooi's wallpaper and mode, so they follow day and night.
+    { path = "apps.others", kind = "boolean", default = false },
     -- The desktop around the bar (Hyprland's own look), set by mooi only while `manage` is on:
     -- the window border's width and colour (`theme` follows the bar's palette, `keep` leaves
     -- Hyprland's), the gaps between windows and round the screen, the corners, and dimming
@@ -184,6 +187,7 @@ M.SCHEMA = {
     { path = "session.standalone", kind = "boolean", default = false },
     -- A touchpad swipe down to open it (D45): off, or with three or four fingers.
     { path = "atlas.gesture", kind = "enum", values = { "off", "three", "four" }, default = "off" },
+    { path = "keys.mode", kind = "key", default = "SUPER + ALT + T" },
     { path = "keys.overview", kind = "key", default = "SUPER + ALT + O" },
     { path = "shutter.enabled", kind = "boolean", default = true },
     { path = "shutter.pointer", kind = "boolean", default = true },
@@ -216,6 +220,12 @@ M.SCHEMA = {
     -- expects (docs/MECHANISM.md §8). `fixed` is the brief's own palette, and it is also
     -- what shows when no palette has been generated yet; the mark's menu is the switch.
     { path = "theme.source", kind = "enum", values = { "fixed", "wallpaper" }, default = "wallpaper" },
+    -- Day and night (D91): the whole desktop — the bar, every mooi window, and the apps mooi
+    -- colours — light or dark. `auto` is light from `light_at` to `dark_at` (whole hours, local
+    -- time); bin/mooi decides which, so Matugen, the bar and the apps always agree.
+    { path = "theme.mode", kind = "enum", values = { "dark", "light", "auto" }, default = "dark" },
+    { path = "theme.light_at", kind = "integer", default = 7, min = 0, max = 23 },
+    { path = "theme.dark_at", kind = "integer", default = 19, min = 0, max = 23 },
     -- One table of token = colour: a dotted setting path cannot name a token that has a
     -- dot in it (`theme.overrides.bg.primary` would read as four nested keys). Which
     -- tokens exist, and which of them the user misspelled, is lib/theme.luau's business.
