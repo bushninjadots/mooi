@@ -1495,11 +1495,10 @@ end)
 -- player, a program of its own (it holds the keyboard). The media module's press or `mooi player`
 -- opens it; the same again, Esc or its × closes it.
 local player_win = nil
-on("open_player", function()
-    if player_win then run("pleamar", { "--say", "mooi-player", "quit" }); return end
+local function start_player(v)
     -- where the media module sits, so the panel hangs under it (-1: it is not on the bar)
     local cx = (tonumber(fact.x_media) or 0) + (tonumber(fact.w_media) or 0) / 2
-    pcall(sys.call, "files.write", "player-anchor.json", { x = fact.p_media and cx or -1 })
+    pcall(sys.call, "files.write", "player-anchor.json", { x = fact.p_media and cx or -1, size = (tonumber(v) == 0) and "mini" or "panel" })
     local mine
     local said = {}
     mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-player.plm", "--no-hud", "--stall", "0" }, function(line)
@@ -1509,6 +1508,21 @@ on("open_player", function()
         if code ~= 0 then log("player · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
     end, { errors = true })
     player_win = mine
+end
+on("open_player", function(v)
+    if not player_win then start_player(v); return end
+    -- Open or on its way out? For a moment after it closes itself (it fades, then quits) the
+    -- program is still there: a press then is a new opening, not a second close.
+    run("pleamar", { "--say", "mooi-player", "get pl_open" }, function(out, code)
+        if code == 0 and tonumber(out and out:match("[%d.]+")) == 1 then
+            run("pleamar", { "--say", "mooi-player", "quit" })
+        else
+            -- its own close fades for 260 ms and then quits: the new one waits it out, so two
+            -- programs never ask for the same name at once
+            player_win = nil
+            after(code == 0 and 450 or 0, function() if not player_win then start_player(v) end end)
+        end
+    end)
 end)
 
 -- The desk (shell/mooi-desk.plm, D85): mooi's own drawing of the wallpaper, travelling with the

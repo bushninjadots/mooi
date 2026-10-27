@@ -736,7 +736,7 @@ case "$cmd" in
                exec "$pleamar" --say "$name" "emit open_wallpaper" ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }
-            exec "$pleamar" --say "$name" "emit open_player" ;;
+            exec "$pleamar" --say "$name" "emit open_player 1" ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }

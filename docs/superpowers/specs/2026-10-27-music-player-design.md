@@ -59,9 +59,13 @@ a violet wallpaper reads as an unrelated pink-red: the user's report.
 ### Sizes (`fact size: mini | panel | full`)
 
 - **mini** — the bar writes `player-anchor.json` (the media module's centre, as today). The program
-  opens as a 360 × 168 card hanging from it, chamfered like the bar's islands: cover 96 px, title,
-  artist, a seek bar, prev/play/next, a volume slider, the visualiser across its foot (style from
-  `player.viz_mini`, default Mirror), and **OPEN PLAYER**. A press outside closes it; Escape closes it.
+  opens as a 420 × 200 **signal board** hanging from it, in the Control Nexus's language (the user's
+  redesign, 2026-10-27): the cover is the core node (press: play/pause) inside a progress ring
+  (press or drag round it to seek), previous/next are pad nodes wired to it by 45° traces, the
+  title a readout on its own trace, the volume a via sliding up a trace, the visualiser pins stand
+  on a bus along the foot (style from `player.viz_mini`), pulses run the traces while it plays
+  (driven by the record's turning, so a paused card is still), and **OPEN PLAYER**. A press
+  outside closes it.
 - **panel** — OPEN PLAYER (or `mooi player --panel`, Super+Alt+M) grows the card into the panel in
   place (one spring on `pl_w/pl_h/pl_x`, not a second window). The panel is today's layout rebuilt:
   the chosen **view** on the left, the **pane** on the right (QUEUE · LIBRARY · LYRICS · EQ).

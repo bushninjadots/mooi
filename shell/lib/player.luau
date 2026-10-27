@@ -203,4 +203,21 @@ function M.lrc_beside(path)
     return (path:gsub("%.[%w]+$", "")) .. ".lrc"
 end
 
+-- The player's three sizes (the music player overhaul): a mini card under the bar's icon, the
+-- panel, full screen. What an action does to the size it is in; nil is closed. `open` keeps the
+-- size asked for; the bar's press closes from any size (it toggles the program).
+local SIZES = {
+    mini = { escape = false, outside = false, grow = "panel", full = "full", bar = false },
+    panel = { escape = false, outside = false, grow = "panel", full = "full", bar = false },
+    full = { escape = "panel", outside = "full", grow = "full", full = "panel", bar = false },
+}
+function M.size_after(size, action)
+    if action == "open" then return size end
+    local row = SIZES[size]
+    if not row then return nil end
+    local to = row[action]
+    if to == nil then return size end
+    return to or nil
+end
+
 return M

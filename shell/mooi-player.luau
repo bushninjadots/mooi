@@ -89,6 +89,8 @@ do
     local anchor = read("player-anchor.json", "json")
     local x = type(anchor) == "table" and tonumber(anchor.x) or nil
     fact.pl_cx = (x and x > 0) and x or -1
+    -- the bar's icon opens the mini card; `mooi player --panel` and the key, the panel
+    fact.size = (type(anchor) == "table" and anchor.size == "mini") and "mini" or "panel"
 end
 
 local function say(s) text.t_status = s or "" end
@@ -380,11 +382,12 @@ on("pl_qpage", function(d) qpage = qpage + ((tonumber(d) or 0) > 0 and 1 or -1);
 
 -- ── The library (mpd): shell/player/library.luau ─────────────
 local library = require("player/library")({ mpc = mpc, refresh_queue = refresh_queue, say = say })
-on("pl_pane", function(v)
+local function set_pane(v)
     local n = math.floor(tonumber(v) or 0)
     fact.pane = n == 1 and "library" or n == 2 and "lyrics" or "queue"
     if fact.pane == "library" and not library.ready() then library.open_artists() end
-end)
+end
+on("pl_pane", set_pane)
 
 -- ── The waveform: a picture of the whole song, made once by ffmpeg and kept by the file ──
 local WAVES = folder .. "/player-waves"
@@ -406,7 +409,21 @@ wave_for = function(s)
 end
 
 -- Full screen (F): the same player, the record large, the lyrics beside it.
-on("pl_full", function() fact.full = not fact.full end)
+-- The three sizes (lib/player `size_after`): the scene's `cinema` is the library's "full".
+local close_player   -- below, with the rest of leaving
+local function size_now() return fact.size == "cinema" and "full" or tostring(fact.size) end
+local function go_size(action)
+    local to = P.size_after(size_now(), action)
+    if to == nil then close_player(); return end
+    fact.size = to == "full" and "cinema" or to
+    -- grown from a card with nothing playing: the library is what there is to do
+    if action == "grow" and not fact.has_song then set_pane(1) end
+end
+on("pl_full", function() go_size("full") end)
+on("pl_size", function(v)
+    local n = math.floor(tonumber(v) or 0)
+    go_size(({ [-1] = "outside", [-2] = "escape", [1] = "grow", [2] = "full" })[n] or "open")
+end)
 
 -- ── Lyrics: shell/player/lyrics.luau ─────────────────────────
 do
@@ -432,13 +449,14 @@ on("pl_tint", function()
     retint()
 end)
 
-on("pl_close", function()
+function close_player()
     if fact.pl_open == 0 then return end
     fact.pl_open = 0
     hush()
     if idle then kill(idle, "term"); idle = nil end
     after(260, function() run("pleamar", { "--say", "mooi-player", "quit" }) end)
-end)
+end
+on("pl_close", close_player)
 
 -- ── Up ───────────────────────────────────────────────────────
 -- It opens on the library; if mpd is idle while another player plays, it opens on that one.

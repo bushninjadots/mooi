@@ -1,7 +1,7 @@
 // The panel: the turntable, the transport and the pane — a part of shell/mooi-player.plm (`include`d in its surface): it reads the surface's lets.
 part Panel {
         group {
-            show: pl_a > 0.004 and not full
+            show: pl_a > 0.004 and size == panel
             zone box away { from: 0, 0; size: sw, sh; label: "Close the player"; agent: hidden }
             on press away { emit pl_close }
 

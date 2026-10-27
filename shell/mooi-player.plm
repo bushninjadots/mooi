@@ -289,7 +289,9 @@ scene Player {
     text t_wave = ""
     fact wave_on = false
     image wave = from t_wave, 720, 96
-    fact full = false
+    // its size: the mini card under the bar's icon, the panel, or the whole screen (not `full`: a
+    // word of the language, which a comparison would not read as the value)
+    fact size: mini | panel | cinema = panel
     // the lyrics: the lines round the one being sung (the lit one third from the top)
     model lyr max 9 { text: text; cur: bool; dist: number; t: number; n: number }
     fact lyr_on = false
@@ -347,6 +349,7 @@ scene Player {
     event lyr_seek ->        // to the logic: go to this line (its time × 10)
     event pl_tint ->         // to the logic: colours from the album cover, or the shell's again
     event pl_full ->         // to the logic: full screen, or back to the panel
+    event pl_size ->         // to the logic: -1 a press outside · -2 Escape · 1 the panel (OPEN PLAYER) · 2 full screen
     event lyr_scroll ->      // to the logic: the wheel over plain (unsynced) lyrics
 
     spring pl.ext = 900, 51
@@ -354,6 +357,8 @@ scene Player {
     spring pl.coast = 30, 11      // the record coasting to a stop, and spinning up
     spring pl.arm = 160, 26
     prop pl_a = 0 ~pl.ext
+    prop mn_a = 0 ~pl.ext
+    follow mn_a = if(pl_open > 0.5 and size == mini, 1, 0)
     on change pl_open while pl_open { pl_a: 1 ~pl.ext }
     on change pl_open while not pl_open { pl_a: 0 ~pl.ext }
     // 33⅓ rpm is 200° a second; paused, the platter slows to a stop rather than freezing
@@ -439,7 +444,7 @@ scene Player {
         anchor: top
         reserve: -1
         level: overlay
-        keyboard: exclusive
+        keyboard: exclusive while size != mini
 
         let sw = screen.width
         let sh = screen.height
@@ -462,14 +467,15 @@ scene Player {
         let qx = 830
         let qw = pw - qx - 18
 
+        include "player/mini.plm"
+
         include "player/panel.plm"
 
         include "player/full.plm"
     }
 
     on key Escape while typing { typing = false; blur }
-    on key Escape while not typing and full { emit pl_full }
-    on key Escape while not typing and not full { emit pl_close }
+    on key Escape while not typing { emit pl_size(-2) }
     on key f while not typing { emit pl_full }
     on key space while not typing { emit pl_toggle }
     on key Left while not typing { emit pl_seek(-5) }

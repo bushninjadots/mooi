@@ -16,7 +16,7 @@ part Full {
         let flx = fw * 0.56
         let flw = fw - flx - 80
         group {
-            show: full and pl_a > 0.004
+            show: size == cinema and pl_a > 0.004
             opacity: pl_a
             box { from: 0, 0; size: fw, fh; color: #000000 }
             group {

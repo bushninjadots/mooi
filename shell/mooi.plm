@@ -976,7 +976,7 @@ scene Mooi {
     event mic_vol ->           // to the logic: the microphone's level (0..1)
     event open_settings ->     // to the logic: start the settings program, or close it
     event open_wallpaper ->    // to the logic: start Lumen, the wallpaper studio, or close it (`mooi wallpaper`)
-    event open_player ->       // to the logic: start the music player, or close it (`mooi player`, a press on the media module)
+    event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event edit_mode ->         // to the logic: edit mode on (1) or off (0)
     event screen_w ->          // to the logic: the bar's surface is this wide now (a new mode or scale)
@@ -2237,8 +2237,8 @@ scene Mooi {
         on press wave { emit media_cmd(0) }
         // A press opens the player (D88); the right press keeps play/pause, the wheel and the
         // slabs stay the transport, and the visualiser still plays and pauses.
-        on press track { emit open_player; side = none; mark_open = false; open = none }
-        on press pill { emit open_player; side = none; mark_open = false; open = none }
+        on press track { emit open_player(0); side = none; mark_open = false; open = none }
+        on press pill { emit open_player(0); side = none; mark_open = false; open = none }
         on press right track { emit media_cmd(0) }
         on press right pill { emit media_cmd(0) }
     }
