@@ -26,6 +26,10 @@ M.FACES = {
     singing   = { ew = 8,  eh = 14, sql = 1,   sqr = 1, lid = 0,    brow = 0,   bron = 0, mc = 0.5,  mo = 0.5,  mw = 16, tg = 0, bl = 0.3 },
     yawn      = { ew = 8,  eh = 14, sql = 1,   sqr = 1, lid = 0,    brow = 0,   bron = 0, mc = 0,    mo = 1,    mw = 16, tg = 0, bl = 0 },
     content   = { ew = 8,  eh = 14, sql = 1,   sqr = 1, lid = 0,    brow = 0,   bron = 0, mc = 0.6,  mo = 0,    mw = 18, tg = 0, bl = 0.3 },
+    -- after a hard landing: screwed-up eyes, a wobbly little o
+    dizzy     = { ew = 9,  eh = 7,  sql = 1,   sqr = 1, lid = 0.3,  brow = -8,  bron = 1, mc = -0.2, mo = 0.6,  mw = 12, tg = 0.3, bl = 0 },
+    -- flying: eyes wide, mouth open in delight
+    whee      = { ew = 10, eh = 18, sql = 0,   sqr = 0, lid = 0,    brow = 6,   bron = 0, mc = 0.9,  mo = 1,    mw = 20, tg = 0, bl = 0.5 },
 }
 
 function M.is_mood(m)
@@ -39,6 +43,7 @@ function M.expression(s)
     if s.activity == "sleeping" then return "asleep" end
     if s.activity == "dancing" then return "singing" end
     if s.activity == "dragged" then return "excited" end
+    if s.activity == "flying" then return "whee" end
     return s.mood
 end
 
@@ -154,6 +159,48 @@ function M.settings(t)
     out.react = {}
     for _, k in ipairs(M.REACTIONS) do out.react[k] = r[k] ~= false end
     return out
+end
+
+
+-- ── Thrown (pick him up, flick, let go) ───────────────────────
+M.GRAVITY = 2600        -- px/s²
+M.BOUNCE = 0.55         -- what a bounce keeps of the speed it came in with
+M.ROLL = 6              -- how fast he slows sliding along the floor (per second)
+
+-- The flick: the speed across the last samples of a drag (one every `tick_ms`), in px/s.
+function M.release(samples, tick_ms)
+    local n = #(samples or {})
+    if n < 2 then return 0, 0 end
+    local first = samples[math.max(1, n - 4)]
+    local last = samples[n]
+    local steps = n - math.max(1, n - 4)
+    local dt = steps * (tonumber(tick_ms) or 16) / 1000
+    return (last.x - first.x) / dt, (last.y - first.y) / dt
+end
+
+-- One step of flight inside the box b = { x0, x1, y0, y1 } (y1 the floor). Returns the new state
+-- with `impact` (the speed of the hardest wall or floor met this step) and `rest` once he stands.
+function M.fly(s, dt, b)
+    local x, y, vx, vy = s.x, s.y, s.vx, s.vy + M.GRAVITY * dt
+    x, y = x + vx * dt, y + vy * dt
+    local impact = 0
+    if y >= b.y1 then
+        impact = math.max(impact, math.abs(vy))
+        y, vy = b.y1, -vy * M.BOUNCE
+        vx = vx * 0.85
+        if math.abs(vy) < 90 then vy = 0 end
+    elseif y <= b.y0 then
+        impact = math.max(impact, math.abs(vy))
+        y, vy = b.y0, -vy * M.BOUNCE
+    end
+    if x >= b.x1 then impact = math.max(impact, math.abs(vx)); x, vx = b.x1, -vx * M.BOUNCE
+    elseif x <= b.x0 then impact = math.max(impact, math.abs(vx)); x, vx = b.x0, -vx * M.BOUNCE end
+    local rest = false
+    if y >= b.y1 and vy == 0 then
+        vx = vx * math.max(0, 1 - M.ROLL * dt)
+        if math.abs(vx) < 15 then vx, rest = 0, true end
+    end
+    return { x = x, y = y, vx = vx, vy = vy, impact = impact, rest = rest }
 end
 
 return M

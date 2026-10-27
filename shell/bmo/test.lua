@@ -10,6 +10,24 @@ local function test(name, fn)
 end
 local function eq(a, b, what) if a ~= b then error((what or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
 
+test("throw: the flick's speed from the last samples of a drag", function()
+    local vx, vy = B.release({ { x = 0, y = 0 }, { x = 10, y = -5 }, { x = 20, y = -10 }, { x = 30, y = -15 } }, 16)
+    eq(math.floor(vx + 0.5), 625, "px/s across"); eq(math.floor(vy + 0.5), -312, "and up")
+    local sx = B.release({ { x = 5, y = 5 } }, 16); eq(sx, 0, "one sample: no throw")
+end)
+test("throw: gravity, bounces that lose speed, an impact, and rest", function()
+    local b = { x0 = 0, x1 = 1000, y0 = 0, y1 = 500 }
+    local s = { x = 500, y = 100, vx = 0, vy = 0 }
+    local n = B.fly(s, 0.1, b); assert(n.vy > 0 and n.y > 100, "falls")
+    local hit = { x = 500, y = 499, vx = 0, vy = 800 }
+    local h = B.fly(hit, 0.02, b); eq(h.y, 500, "stops at the floor"); assert(h.vy < 0, "bounces up"); assert(math.abs(h.vy) < 800, "loses speed")
+    assert(h.impact >= 700, "an impact as hard as it came in")
+    local w = B.fly({ x = 999, y = 200, vx = 900, vy = 0 }, 0.02, b); eq(w.x, 1000, "the right wall"); assert(w.vx < 0, "bounces back")
+    local r = { x = 500, y = 500, vx = 3, vy = 0 }
+    for _ = 1, 400 do r = B.fly(r, 0.016, b); if r.rest then break end end
+    eq(r.rest, true, "comes to rest on the floor"); eq(r.y, 500, "standing")
+end)
+
 test("settings: mooi's companion section — sizes by name, place, variant, throw, talk, reactions", function()
     local c = B.settings({ size = "tiny", place = "bar", variant = "gameboy", throw = false, talk = "chatty",
                            react = { notes = false } })

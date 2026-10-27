@@ -34,6 +34,7 @@ scene Bmo {
     fact dancing = false
     fact breathing = false
     fact dragged = false
+    fact flying = false          // thrown: in the air, bouncing (the logic flies him; brain.luau fly)
     fact lean = 0                // -1 … 1, from how fast he is carried
     fact above = false           // over the windows instead of behind them
     fact glx = 0                 // an idle glance, -1 … 1
@@ -104,7 +105,10 @@ scene Bmo {
     prop lean_p = 0 ~220ms
     follow lean_p = lean
     prop drag_p = 0 ~180ms
-    follow drag_p = if(dragged, 1, 0)
+    follow drag_p = if(dragged or flying, 1, 0)
+    // carried or thrown, he is where the logic says at once (the spring made dragging lag behind the hand)
+    on change wx while dragged or flying { px: wx ~0ms }
+    on change wy while dragged or flying { py: wy ~0ms }
     prop walk_p = 0 ~140ms
     follow walk_p = if(walking, 1, 0)
     // a stride cycle every 0.6 s while he walks; nothing turns while he stands

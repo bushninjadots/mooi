@@ -366,7 +366,43 @@ local function toggle_panel()
     end
 end
 
+-- ── Thrown: the drag is sampled, a flick throws him, and he bounces off the edges (brain fly) ──
+local samples, sampler = {}, nil
+local flight = nil
+local function stop_sampling() if sampler then cancel(sampler); sampler = nil end end
+local function land_from_flight(hits, hardest)
+    if flight then cancel(flight); flight = nil end
+    fact.flying = false
+    fact.lean = 0
+    activity = "idle"
+    play("land")
+    if hardest > 1400 or hits >= 4 then react("dizzy", 1800); say("whoa…", 1400)
+    else react("giggle", 1100); if math.random() < 0.5 then say("again!", 1200) end end
+    save_position()
+end
+local function throw(vx, vy)
+    stop_walking()
+    activity = "flying"
+    fact.flying = true
+    show_face()
+    local st = { x = x, y = y, vx = vx, vy = vy }
+    local hits, hardest = 0, 0
+    flight = every(16, function()
+        st = B.fly(st, 0.016, { x0 = min_x(), x1 = max_x(), y0 = min_y(), y1 = max_y() })
+        place(st.x, st.y)
+        fact.lean = clamp(st.vx / 1500, -1, 1)
+        if st.impact > 500 then
+            hits = hits + 1
+            hardest = math.max(hardest, st.impact)
+            if cfg.motion ~= "still" then play("land") end
+        end
+        if st.rest then land_from_flight(hits, hardest) end
+    end)
+end
+
 on("hit_down", function()
+    -- caught in the air: the flight ends in the hand
+    if flight then cancel(flight); flight = nil; fact.flying = false; activity = "idle" end
     press_x, press_y = x, y
     carrying = false
     fact.ddx, fact.ddy = 0, 0
@@ -390,6 +426,12 @@ local function carry()
         activity = "dragged"
         fact.dragged = true
         react("surprised", 450)
+        samples = {}
+        stop_sampling()
+        sampler = every(16, function()
+            samples[#samples + 1] = { x = x, y = y }
+            if #samples > 6 then table.remove(samples, 1) end
+        end)
     end
     local nx = clamp(press_x + dx, min_x(), max_x())
     fact.lean = clamp((nx - x) * 0.12, -1, 1)
@@ -406,6 +448,14 @@ on("hit_up", function()
         carrying = false
         fact.dragged = false
         fact.lean = 0
+        stop_sampling()
+        local vx, vy = B.release(samples, 16)
+        -- a flick throws him (Settings → BMO: throwing); a gentle let-go just sets him down
+        if cfg.throw and not cfg.locked and math.sqrt(vx * vx + vy * vy) > 350 then
+            touch()
+            throw(vx, vy)
+            return
+        end
         activity = "idle"
         drags = recent(drags, 20)
         drags[#drags + 1] = os.time()
