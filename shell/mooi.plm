@@ -48,6 +48,18 @@ scene Mooi {
     fact st_gpu_ok = false
     fact st_nvtop = false
     model st_top max 3 { name: text; cpu: number }
+    // The weather island (lib/forecast): fetched when it opens, kept 10 minutes
+    fact wxi_ok = false
+    fact wxi_busy = false
+    fact wxi_temp = 0
+    fact wxi_kind = 2
+    text wxi_word = ""
+    text wxi_line = ""
+    text wxi_hilo = ""
+    text wxi_sub = ""
+    text wxi_title = "Weather"
+    model wx_hours max 6 { n: number; label: text; temp: number; kind: number }
+    model wx_days max 5 { n: number; label: text; lo: number; hi: number; kind: number; a: number; b: number }
     fact phase: compact | expanded = compact
 
     // Window island
@@ -890,6 +902,7 @@ scene Mooi {
     event clock_next ->        // to the logic: the clock shows the next of clock.view's states
     event cal_shift ->         // to the logic: 0 the month before · 1 this month · 2 the month after
     event st_open ->           // to the logic: 0 btop · 1 nvtop, in a terminal
+    event wx_refresh ->        // to the logic: fetch the forecast again now
     event open_command         // Super+Alt+Space · Spine search button · `mooi toggle`
     // ── The Mechanical Shutter (D35; shell/shutter.luau places it and says what it offers) ──
     event open_shutter ->      // to the logic: 0 the focused window, 1 the one under the pointer
@@ -3868,6 +3881,55 @@ scene Mooi {
         }
     }
 
+    // ── weather_island (D97): now, the next hours and the days ahead ──
+    group {
+        move: 0, st_res + 6
+        let wi_x = clamp(isl_cx - 170, 8, screen.width - 348)
+        group {
+            show: rv.weather > 0.03
+            move: wi_x, 0
+            IslandFrame(rv.weather, 340, 356, tx: isl_cx - wi_x) {
+                IsleHead(340, wxi_title, wxi_sub)
+                group {
+                    show: not wxi_ok
+                    text pick(wxi_busy, "No forecast — offline, or open-meteo did not answer", "Fetching the forecast…") { at: 170, 120; anchor: center; align: center
+                         size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 300; lines: 2 }
+                }
+                group {
+                    show: wxi_ok
+                    WxGlyph(46, 68, 46, wxi_kind)
+                    text "{round(wxi_temp), 0}°" { at: 82, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.phos) }
+                    text wxi_word { at: 84, 88; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.phos) }
+                    text wxi_hilo { at: 324, 56; anchor: right center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
+                    text wxi_line { at: 324, 78; anchor: right center; size: 10.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 190; lines: 2; align: right }
+                    IsleRule(340, 108)
+                    for h in wx_hours {
+                        let hx = 40 + h.n * 52
+                        text h.label { at: hx, 122; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                        WxGlyph(hx, 144, 20, h.kind)
+                        text "{round(h.temp), 0}°" { at: hx, 166; anchor: center; align: center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
+                    }
+                    IsleRule(340, 182)
+                    for d in wx_days {
+                        let dy = 198 + d.n * 25
+                        text d.label { at: 16, dy; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 60; lines: 1 }
+                        WxGlyph(96, dy, 17, d.kind)
+                        text "{round(d.lo), 0}°" { at: 146, dy; anchor: right center; size: 11; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                        box { from: 156, dy - 2; size: 128, 4; corner: 2; color: if(isl_style > 0.5, bg.primary, fl.well) }
+                        box { from: 156 + 128 * d.a, dy - 2; size: max(4, 128 * (d.b - d.a)), 4; corner: 2
+                              color: if(isl_style > 0.5, accent.primary, fl.phos) }
+                        text "{round(d.hi), 0}°" { at: 324, dy; anchor: right center; size: 11; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
+                    }
+                }
+                IsleRule(340, 318)
+                zone box wxref { from: 16, 326; size: 100, 24; cursor: pointer; role: button; label: "Fetch the forecast again" }
+                IsleBtn(16, 326, 100, "Refresh", if(wxi_busy, 1, 0), wxref.hover)
+                on press wxref { emit wx_refresh }
+                text "open-meteo.com" { at: 324, 338; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
+            }
+        }
+    }
+
     // ── command_island (drawn in the bar's own surface, under the bar's strip: D53) ──
     group {
         move: 0, st_res + 6
@@ -5115,6 +5177,19 @@ scene Mooi {
 
 
     // One result. A window's row opens to show its satellite actions.
+    // A weather glyph of kind `k` (lib/sysinfo WEATHER_KINDS: clear, night, cloud, fog, rain, snow,
+    // storm) centred at (x, y), `sz` across; the sun and the storm keep their colours.
+    component WxGlyph(x: number, y: number, sz: number, k: number) {
+        size: sz, sz
+        figure i_clear { at: x, y; size: sz, sz; color: fl.flare; show: k < 0.5 }
+        figure i_night { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.phos); show: k > 0.5 and k < 1.5 }
+        figure i_cloud { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.phos); show: k > 1.5 and k < 2.5 }
+        figure i_fog { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.phos); show: k > 2.5 and k < 3.5 }
+        figure i_rain { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.phos); show: k > 3.5 and k < 4.5 }
+        figure i_snow { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.phos); show: k > 4.5 and k < 5.5 }
+        figure i_storm { at: x, y; size: sz, sz; color: fl.ember; show: k > 5.5 }
+    }
+
     component CRow(r: record) {
         let mine = csel == r.index
         let open_row = mine and cmode == actions and r.kind == win

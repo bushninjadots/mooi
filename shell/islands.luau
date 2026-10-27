@@ -5,6 +5,8 @@
 
 local calendar = require("lib/calendar")
 local stats = require("lib/stats")
+local forecast = require("lib/forecast")
+local sysinfo = require("lib/sysinfo")
 
 return function(ctx)
     -- ── The clock: what it shows (clock.view), a right press for the next ───
@@ -82,6 +84,68 @@ return function(ctx)
             if not st_timer then st_timer = every(2000, read_stats) end
         elseif st_timer then cancel(st_timer); st_timer = nil end
     end)
+    -- ── Weather: one request when it opens, kept 10 minutes ──
+    -- The location as the bar's weather module finds it (ipinfo.io, asked once); the island
+    -- opens only from that module, so asking is already the user's choice.
+    local where, wx_at, wx_busy = nil, 0, false
+    local function kind_of(code, day)
+        local k = sysinfo.weather(code, day)
+        for i, name in ipairs(sysinfo.WEATHER_KINDS) do if name == k then return i - 1 end end
+        return 2
+    end
+    local function show_forecast(f)
+        local _, word = sysinfo.weather(f.now.code, f.now.day)
+        fact.wxi_temp = f.now.temp
+        fact.wxi_kind = kind_of(f.now.code, f.now.day)
+        text.wxi_word = word
+        text.wxi_hilo = f.today.hi and string.format("H %d°  L %d°", math.floor(f.today.hi + 0.5), math.floor(f.today.lo + 0.5)) or ""
+        text.wxi_line = string.format("feels %d° · wind %d km/h · %d %%", math.floor(f.now.feels + 0.5), math.floor(f.now.wind + 0.5), math.floor(f.now.humidity + 0.5))
+        local hours = {}
+        for i, h in ipairs(f.hours) do hours[i] = { n = i - 1, label = h.label, temp = h.temp, kind = kind_of(h.code, h.day) } end
+        model.wx_hours = hours
+        local lo, hi = math.huge, -math.huge
+        for _, d in ipairs(f.days) do lo = math.min(lo, d.lo); hi = math.max(hi, d.hi) end
+        local span = math.max(1, hi - lo)
+        local days = {}
+        for i, d in ipairs(f.days) do
+            days[i] = { n = i - 1, label = d.label, lo = d.lo, hi = d.hi, kind = kind_of(d.code, 1),
+                        a = (d.lo - lo) / span, b = (d.hi - lo) / span }
+        end
+        model.wx_days = days
+        fact.wxi_ok = true
+    end
+    local function fetch_weather()
+        if wx_busy then return end
+        wx_busy = true; fact.wxi_busy = true
+        local function done(ok)
+            wx_busy = false; fact.wxi_busy = false
+            if ok then wx_at = os.time(); text.wxi_sub = "Updated " .. os.date("%H:%M")
+            else text.wxi_sub = fact.wxi_ok and ("Offline · from " .. os.date("%H:%M", wx_at)) or "Offline" end
+        end
+        local function ask()
+            run("curl", { "-fsSL", "--max-time", "15", forecast.url(where.lat, where.lon) }, function(out, code)
+                local ok, t = pcall(json.decode, out or "")
+                local f = code == 0 and ok and forecast.parse(t) or nil
+                if f then show_forecast(f) end
+                done(f ~= nil)
+            end)
+        end
+        if where then ask(); return end
+        run("curl", { "-fsSL", "--max-time", "10", "https://ipinfo.io/json" }, function(out, code)
+            local ok, t = pcall(json.decode, out or "")
+            local lat, lon = nil, nil
+            if code == 0 and ok and type(t) == "table" then lat, lon = string.match(tostring(t.loc or ""), "^([%d%.%-]+),([%d%.%-]+)$") end
+            if not lat then done(false); return end
+            where = { lat = lat, lon = lon }
+            text.wxi_title = (t.city and t.city ~= "") and tostring(t.city) or "Weather"
+            ask()
+        end)
+    end
+    on("fact:open", function(v)
+        if v == "weather" and os.time() - wx_at >= 600 then fetch_weather() end
+    end)
+    on("wx_refresh", fetch_weather)
+
     on("st_open", function(n)
         local tool = (tonumber(n) == 1 and have.nvtop) and "nvtop" or "btop"
         spawn("kitty", { "--title", tool, tool }, function() end, function() end)

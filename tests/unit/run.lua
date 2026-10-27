@@ -3225,5 +3225,34 @@ test("stats: the root disk, the busiest processes, the GPU", function()
     eq(stats.gpu("30\n"), 0.30); eq(stats.gpu("cat: no such file\n"), nil)
 end)
 
+local forecast = require("lib/forecast")
+local function meteo()
+    local hours, temps, codes, days = {}, {}, {}, {}
+    for h = 0, 47 do
+        local d = h < 24 and "2026-10-27" or "2026-10-28"
+        hours[#hours + 1] = string.format("%sT%02d:00", d, h % 24); temps[#temps + 1] = 10 + h * 0.5; codes[#codes + 1] = (h % 2 == 0) and 0 or 61; days[#days + 1] = (h % 24 >= 7 and h % 24 < 19) and 1 or 0
+    end
+    return { current = { time = "2026-10-27T20:15", temperature_2m = 19.4, apparent_temperature = 18.1, relative_humidity_2m = 71,
+                         wind_speed_10m = 12.6, weather_code = 3, is_day = 0 },
+             hourly = { time = hours, temperature_2m = temps, weather_code = codes, is_day = days },
+             daily = { time = { "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01" },
+                       weather_code = { 3, 61, 0, 2, 95, 71 }, temperature_2m_max = { 21.2, 17.8, 19, 20, 15, 9 },
+                       temperature_2m_min = { 12.1, 10, 9, 11, 8, 2 } } }
+end
+test("forecast: now, the next six hours, five days", function()
+    local f = forecast.parse(meteo())
+    eq(f.now.temp, 19.4); eq(f.now.feels, 18.1); eq(f.now.humidity, 71); eq(f.now.wind, 12.6); eq(f.now.code, 3); eq(f.now.day, 0)
+    eq(f.today.hi, 21.2); eq(f.today.lo, 12.1)
+    eq(#f.hours, 6); eq(f.hours[1].label, "21", "the hour after now"); eq(f.hours[4].label, "00", "across midnight")
+    eq(f.hours[1].temp, 20.5); eq(f.hours[1].code, 61)
+    eq(#f.days, 5); eq(f.days[1].label, "Today"); eq(f.days[2].label, "Wed"); eq(f.days[5].label, "Sat"); eq(f.days[5].code, 95)
+end)
+test("forecast: a broken or partial answer is nothing, not a crash", function()
+    eq(forecast.parse(nil), nil); eq(forecast.parse({}), nil); eq(forecast.parse({ current = "x" }), nil)
+    local t = meteo(); t.hourly = nil; t.daily = { time = "oops" }
+    local f = forecast.parse(t)
+    eq(f.now.temp, 19.4, "now still reads"); eq(#f.hours, 0); eq(#f.days, 0)
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
