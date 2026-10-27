@@ -44,6 +44,8 @@ function M.expression(s)
     if s.activity == "dancing" then return "singing" end
     if s.activity == "dragged" then return "excited" end
     if s.activity == "flying" then return "whee" end
+    if s.activity == "humming" then return "singing" end
+    if s.activity == "gaming" then return "focused" end
     return s.mood
 end
 
@@ -69,14 +71,17 @@ function M.decide(s, r1, r2)
     if s.still then return "rest" end
     if s.music and r1 < 0.3 then return "dance" end
     local walk = s.can_walk and ({ 0, 0.6, 1.6, 3.2 })[(s.wander or 0) + 1] or 0
-    local w = { rest = 6, look = 3, walk = walk, hop = 0.4, stretch = 0.25, yawn = 0.1, wiggle = 0.15, nod = 0.2 }
+    -- sit down a while, play the little game on his own screen, hum a tune
+    local w = { rest = 6, look = 3, walk = walk, hop = 0.4, stretch = 0.25, yawn = 0.1, wiggle = 0.15, nod = 0.2,
+                sit = 0.45, game = 0.3, hum = 0.3 }
     local m = s.mood
-    if m == "playful" then w.hop = w.hop * 3; w.wiggle = w.wiggle * 8; w.walk = w.walk * 1.5
-    elseif m == "excited" then w.hop = w.hop * 4; w.walk = w.walk * 1.8; w.rest = w.rest * 0.5
+    if m == "playful" then w.hop = w.hop * 3; w.wiggle = w.wiggle * 8; w.walk = w.walk * 1.5; w.game = w.game * 3
+    elseif m == "excited" then w.hop = w.hop * 4; w.walk = w.walk * 1.8; w.rest = w.rest * 0.5; w.sit = w.sit * 0.3
     elseif m == "curious" then w.look = w.look * 2.5; w.walk = w.walk * 1.3
-    elseif m == "sleepy" then w.walk = w.walk * 0.2; w.yawn = 2; w.stretch = w.stretch * 2; w.hop = 0
-    elseif m == "focused" then w.walk = w.walk * 0.3; w.look = w.look * 0.5; w.rest = w.rest * 1.5
-    elseif m == "grumpy" then w.walk = w.walk * 0.6; w.hop = 0; w.wiggle = 0; w.nod = 0 end
+    elseif m == "sleepy" then w.walk = w.walk * 0.2; w.yawn = 2; w.stretch = w.stretch * 2; w.hop = 0; w.sit = w.sit * 4
+    elseif m == "focused" then w.walk = w.walk * 0.3; w.look = w.look * 0.5; w.rest = w.rest * 1.5; w.game = w.game * 2
+    elseif m == "grumpy" then w.walk = w.walk * 0.6; w.hop = 0; w.wiggle = 0; w.nod = 0; w.hum = 0
+    elseif m == "happy" then w.hum = w.hum * 1.6 end
     return M.pick(w, r2) or "rest"
 end
 
@@ -174,7 +179,7 @@ function M.speaks(talk, important)
 end
 
 local BATTERY_LOW = 15
-local GAP = { note = 20, space = 4 }   -- seconds before the same thing moves him again
+local GAP = { note = 20, space = 4, window = 45 }   -- seconds before the same thing moves him again
 
 local function cooled(s, key)
     local t = s.last[key]
@@ -191,6 +196,10 @@ local function judge(kind, arg, s)
     elseif kind == "space" then
         if not react.spaces or s.asleep or not cooled(s, "space") then return nil end
         return { move = "hop", line = "whoosh!" }
+    elseif kind == "window" then
+        -- a new window: he turns to look (under the workspaces switch: the desktop moving)
+        if not react.spaces or s.asleep or not cooled(s, "window") then return nil end
+        return { face = "curious", ms = 1600, peek = true, line = "ooh, what's that?" }
     elseif kind == "battery" then
         if not react.battery or type(arg) ~= "table" then return nil end
         local pct = tonumber(arg.percent) or 100

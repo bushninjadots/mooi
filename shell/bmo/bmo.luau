@@ -2,7 +2,8 @@
 -- brain.luau is the pure part (faces, moods, choices) and is unit-tested.
 --
 -- From outside: `pleamar --say bmo "emit ui N"` presses a control (codes in on("ui") below;
--- 120 walk, 121 dance, 122 look), and
+-- 120 walk, 121 dance, 122 look, 123 sit, 124 his game, 125 hum), `emit tell N` tells him what
+-- the bar saw (Desktop awareness, below), and
 -- `pleamar --say bmo get mood_t` (or act_t, energy, wx…) reads him.
 
 local B = require("brain")
@@ -82,6 +83,14 @@ end
 -- ── State ────────────────────────────────────────────────────
 local mood, mood_since = "happy", os.time()
 local activity = "idle"
+-- What he is doing; the idle acts (sitting, his game, humming) are drawn from it, so whatever
+-- interrupts one (a walk, a hand, sleep) ends it too.
+local function set_activity(a)
+    activity = a
+    fact.sitting = a == "sitting"
+    fact.gaming = a == "gaming"
+    fact.humming = a == "humming"
+end
 local reaction = ""
 local energy = 1
 local last_touch = os.time()
@@ -142,7 +151,7 @@ local function stop_walking()
     if walk_timer then cancel(walk_timer); walk_timer = nil end
     if fact.walking then fact.walking = false end
     fact.facing = 0
-    if activity == "walking" then activity = "idle"; show_face() end
+    if activity == "walking" then set_activity("idle"); show_face() end
 end
 
 local function save_position()
@@ -154,7 +163,7 @@ local function walk(target)
     target = clamp(target, min_x(), max_x())
     if math.abs(target - x) < 16 then return end
     stop_walking()
-    activity = "walking"
+    set_activity("walking")
     walk_to, walk_dir = target, target > x and 1 or -1
     fact.facing = walk_dir
     -- turn first, then stride
@@ -169,7 +178,7 @@ local function walk(target)
                 fact.wx = x
                 cancel(walk_timer); walk_timer = nil
                 fact.walking = false
-                activity = "idle"
+                set_activity("idle")
                 show_face()
                 save_position()
                 after(350, function() if activity ~= "walking" then fact.facing = 0 end end)
@@ -191,7 +200,7 @@ local zz_timer = nil
 local function sleep()
     if activity == "sleeping" then return end
     stop_walking()
-    activity = "sleeping"
+    set_activity("sleeping")
     reaction = ""
     fact.dancing = false
     show_face()
@@ -207,7 +216,7 @@ local function wake(poked)
     if activity ~= "sleeping" then return end
     if zz_timer then cancel(zz_timer); zz_timer = nil end
     fact.bubble_on = false
-    activity = "idle"
+    set_activity("idle")
     if poked then
         react("surprised", 900)
         set_mood(math.random() < 0.4 and "grumpy" or "sleepy")
@@ -222,13 +231,13 @@ end
 local dance_token = 0
 local function stop_dancing()
     if activity ~= "dancing" then return end
-    activity = "idle"
+    set_activity("idle")
     fact.dancing = false
     react("content", 1500)
 end
 
 local function dance()
-    activity = "dancing"
+    set_activity("dancing")
     fact.dancing = true
     show_face()
     dance_token = dance_token + 1
@@ -291,6 +300,27 @@ local function can_walk()
 end
 
 local decide
+-- An idle act (sitting, his game, humming) for `ms`, then `done` — unless something ended it first.
+local function idle_act(name, ms, done)
+    set_activity(name)
+    show_face()
+    after(ms, function()
+        if activity ~= name then return end
+        set_activity("idle")
+        show_face()
+        if done then done() end
+    end)
+end
+-- How his game went: mostly he wins.
+local function game_over()
+    if math.random() < 0.65 then
+        react("giggle", 1600); move("hop")
+        if B.speaks(cfg.talk, false) then say("I won!", 1800) end
+    else
+        react("grumpy", 1400); move("shake")
+        if B.speaks(cfg.talk, false) then say("aw, so close…", 1800) end
+    end
+end
 local function schedule()
     local lively = cfg.motion == "lively"
     after((lively and 3000 or 5000) + math.random() * (lively and 4000 or 6000), decide)
@@ -307,6 +337,9 @@ function decide()
             fact.gly = math.random() * 1.4 - 0.7
             after(900 + math.random() * 1800, function() fact.glx = 0; fact.gly = 0 end)
         elseif a == "yawn" then react("yawn", 1600); move("stretch")
+        elseif a == "sit" then idle_act("sitting", 9000 + math.random() * 12000)
+        elseif a == "game" then idle_act("gaming", 6000 + math.random() * 6000, game_over)
+        elseif a == "hum" then idle_act("humming", 5000 + math.random() * 4000)
         elseif a ~= "rest" then move(a) end
     end
     schedule()
@@ -380,7 +413,7 @@ local function land_from_flight(hits, hardest)
     if flight then cancel(flight); flight = nil end
     fact.flying = false
     fact.lean = 0
-    activity = "idle"
+    set_activity("idle")
     play("land")
     if hardest > 1400 or hits >= 4 then react("dizzy", 1800); say("whoa…", 1400)
     else react("giggle", 1100); if math.random() < 0.5 then say("again!", 1200) end end
@@ -388,7 +421,7 @@ local function land_from_flight(hits, hardest)
 end
 local function throw(vx, vy)
     stop_walking()
-    activity = "flying"
+    set_activity("flying")
     fact.flying = true
     show_face()
     local st = { x = x, y = y, vx = vx, vy = vy }
@@ -408,7 +441,7 @@ end
 
 on("hit_down", function()
     -- caught in the air: the flight ends in the hand
-    if flight then cancel(flight); flight = nil; fact.flying = false; activity = "idle" end
+    if flight then cancel(flight); flight = nil; fact.flying = false; set_activity("idle") end
     press_x, press_y = x, y
     carrying = false
     fact.ddx, fact.ddy = 0, 0
@@ -429,7 +462,7 @@ local function carry()
             set_mood("grumpy")
         end
         if activity == "dancing" then fact.dancing = false end
-        activity = "dragged"
+        set_activity("dragged")
         fact.dragged = true
         react("surprised", 450)
         samples = {}
@@ -462,7 +495,7 @@ on("hit_up", function()
             throw(vx, vy)
             return
         end
-        activity = "idle"
+        set_activity("idle")
         drags = recent(drags, 20)
         drags[#drags + 1] = os.time()
         play("land")
@@ -566,6 +599,11 @@ local function feel(kind, arg)
     if r.face then react(r.face, r.ms or 1500) end
     if r.move and activity ~= "dragged" and activity ~= "flying" then move(r.move) end
     if r.line then say(r.line, 2400) end
+    if r.peek then
+        fact.glx = math.random() < 0.5 and -1 or 1
+        fact.gly = -0.3
+        after(1600, function() fact.glx = 0; fact.gly = 0 end)
+    end
 end
 local FOCUS = { [2] = "on", [3] = "done", [4] = "break_done", [5] = "off" }
 on("tell", function(v)
@@ -577,6 +615,22 @@ pcall(sys.watch, "workspaces", function(w)
     local a = type(w) == "table" and tonumber(w.active) or nil
     if a and space_now and a ~= space_now then feel("space", a) end
     space_now = a or space_now
+end)
+-- a window that was not there before: he peeks at it (the first report is only learnt)
+local windows_seen = nil
+pcall(sys.watch, "window", function(w)
+    local list = type(w) == "table" and w.list or nil
+    if type(list) ~= "table" then return end
+    local now, fresh = {}, false
+    for _, it in ipairs(list) do
+        local id = it.id
+        if id ~= nil then
+            now[id] = true
+            if windows_seen and not windows_seen[id] then fresh = true end
+        end
+    end
+    if fresh then feel("window") end
+    windows_seen = now
 end)
 pcall(sys.watch, "battery", function(b)
     if type(b) == "table" and b.present then feel("battery", { percent = b.percent, charging = b.charging }) end
@@ -619,6 +673,9 @@ on("ui", function(v)
     -- for scripts: make him walk, dance or look about now
     elseif n == 120 then wander(); return
     elseif n == 121 then dance(); return
+    elseif n == 123 then idle_act("sitting", 12000); return
+    elseif n == 124 then idle_act("gaming", 8000, game_over); return
+    elseif n == 125 then idle_act("humming", 7000); return
     elseif n == 122 then
         fact.glx = math.random() * 2 - 1
         after(1500, function() fact.glx = 0 end)

@@ -10,7 +10,7 @@ language 0.4
 scene Bmo {
     permissions {
         run: "hyprctl", "kitty", "loginctl", "pleamar"
-        services: "media", "media.*", "files", "files.write", "env", "clock", "workspaces", "battery"
+        services: "media", "media.*", "files", "files.write", "env", "clock", "workspaces", "battery", "window"
     }
 
     service clock { time: text = "--:--"; date: text }
@@ -77,6 +77,9 @@ scene Bmo {
     fact flying = false          // thrown: in the air, bouncing (the logic flies him; brain.luau fly)
     fact lean = 0                // -1 … 1, from how fast he is carried
     fact above = false           // over the windows instead of behind them
+    fact sitting = false         // the idle acts (bmo.luau set_activity): sat down a while,
+    fact gaming = false          // playing the little game on his own screen,
+    fact humming = false         // humming a tune
     fact on_bar = false          // companion.place = bar: small, walking just under the bar, over the windows
     fact glx = 0                 // an idle glance, -1 … 1
     fact gly = 0
@@ -156,6 +159,17 @@ scene Bmo {
     // a stride cycle every 0.6 s while he walks; nothing turns while he stands
     prop stride_a = 0
     spin stride_a by if(walking, 600, 0)
+    prop sit_p = 0 ~360ms
+    follow sit_p = if(sitting, 1, 0)
+    prop game_p = 0 ~260ms
+    follow game_p = if(gaming, 1, 0)
+    prop hum_p = 0 ~300ms
+    follow hum_p = if(humming, 1, 0)
+    // his game's ball goes round every 1.6 s, the notes rise every 2.2 s; still otherwise
+    prop game_a = 0
+    spin game_a by if(gaming, 1600, 0)
+    prop hum_a = 0
+    spin hum_a by if(humming, 2200, 0)
 
     prop ew = 8 ~160ms
     follow ew = e_ew
@@ -352,16 +366,16 @@ scene Bmo {
                     pivot: 0, 0
                     scale: S
                     group {
-                        move: gx, gy + bob
+                        move: gx, gy + bob + sit_p * 20
                         group {
                             pivot: 80, 196
                             rotate: tlt * 1deg
                             scale: 1 + sq * 0.55, 1 - sq
 
                             // legs, then arms (behind the body's edge, so the joints hide)
-                            Limb(56 - turn * 3, 146, if(dragged, lean_p * 22 + 6, stride * 24),
+                            Limb(56 - turn * 3, 146, if(dragged, lean_p * 22 + 6, stride * 24 - sit_p * 64),
                                  if(dragged, 12, -max(0, stride) * 22), 19, 18, 5.5, true)
-                            Limb(104 - turn * 3, 146, if(dragged, lean_p * 22 - 6, -stride * 24),
+                            Limb(104 - turn * 3, 146, if(dragged, lean_p * 22 - 6, -stride * 24 + sit_p * 64),
                                  if(dragged, -12, -max(0, -stride) * 22), 19, 18, 5.5, true)
                             Limb(22 + turn * 4, 84, -30 - raise_l - stride * 20, 22 - if(raise_l > 90, wv, 0), 22, 20, 5, false)
                             Limb(138 + turn * 4, 84, 30 + raise_r + stride * 20, -22 + if(raise_r > 90, wv, 0), 22, 20, 5, false)
@@ -387,6 +401,7 @@ scene Bmo {
                                 box { from: 16, 16; size: 88, 7; corner: 4; color: #ffffff; opacity: 0.18 }
                                 group {
                                     move: 12, 13
+                                    opacity: 1 - game_p
                                     // blush
                                     ellipse { at: 18, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: bl * 0.55 }
                                     ellipse { at: 78, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: bl * 0.55 }
@@ -422,6 +437,20 @@ scene Bmo {
                                               opacity: tg * if(mo > 0.25, 1, 0) }
                                 }
 
+                                // his game: a little tennis on his own screen, the face put away meanwhile
+                                group {
+                                    move: 12, 13
+                                    show: game_p > 0.01
+                                    opacity: game_p
+                                    let gbx = 48 + sin(game_a) * 38
+                                    let gby = 33 + sin(game_a * 3 + 40) * 22
+                                    box { from: 3, 3; size: 90, 60; corner: 5; color: glass_dim }
+                                    repeat k in 0..7 { box { from: 47, 6 + k * 8.5; size: 2, 4; color: ink; opacity: 0.35 } }
+                                    box { from: gbx - 2.5, gby - 2.5; size: 5, 5; color: ink }
+                                    box { from: 6, 33 + sin(game_a * 3 + 20) * 20 - 7; size: 3, 14; color: ink }
+                                    box { from: 87, 33 + sin(game_a * 3 + 60) * 20 - 7; size: 3, 14; color: ink }
+                                }
+
                                 // the yellow cross
                                 box { from: 24, 92; size: 12, 34; corner: 3; color: pad_c }
                                 box { from: 13, 103; size: 34, 12; corner: 3; color: pad_c }
@@ -441,6 +470,22 @@ scene Bmo {
                                 box { from: 91, 102; size: 6, 3; corner: 1.5; color: #ffffff; opacity: 0.35 }
                                 ellipse { at: 76.5, 120.5; radius: 6.5; color: stop_c }
                                 ellipse { at: 76.5, 120.5; radius: 6.5; stroke: 2; color: ink }
+
+                                // humming: notes float up beside his head
+                                group {
+                                    show: hum_p > 0.01
+                                    let f1 = mod(hum_a, 360) / 360
+                                    let f2 = mod(hum_a + 180, 360) / 360
+                                    // light notes on a dark shadow: read on any wallpaper
+                                    let n1x = 126 + sin(hum_a * 2) * 4
+                                    let n1y = 34 - f1 * 44
+                                    let n2x = 140 + sin(hum_a * 2 + 90) * 4
+                                    let n2y = 34 - f2 * 44
+                                    text "♪" { at: n1x + 1.5, n1y + 1.5; anchor: center; size: 22; weight: 700; color: ink; opacity: hum_p * sin(f1 * 180) }
+                                    text "♪" { at: n1x, n1y; anchor: center; size: 22; weight: 700; color: paper; opacity: hum_p * sin(f1 * 180) }
+                                    text "♫" { at: n2x + 1.5, n2y + 1.5; anchor: center; size: 20; weight: 700; color: ink; opacity: hum_p * sin(f2 * 180) }
+                                    text "♫" { at: n2x, n2y; anchor: center; size: 20; weight: 700; color: paper; opacity: hum_p * sin(f2 * 180) }
+                                }
                             }
                         }
                     }

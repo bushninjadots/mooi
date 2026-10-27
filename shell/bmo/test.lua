@@ -159,5 +159,31 @@ test("talk: off says nothing, rare only what matters, chatty everything", functi
     local q = rs({ talk = "rare" }); eq(B.react("space", 2, q).line, nil, "a hop needs no words")
 end)
 
+local function tally(s, n)
+    local c = {}
+    for i = 0, n - 1 do local a = B.decide(s, 0.9, (i + 0.5) / n); c[a] = (c[a] or 0) + 1 end
+    return c
+end
+test("idle life: he sometimes sits, plays his game, or hums", function()
+    local c = tally({ mood = "happy", wander = 2, can_walk = true }, 2000)
+    assert((c.sit or 0) > 0 and (c.game or 0) > 0 and (c.hum or 0) > 0, "all three happen")
+    assert(c.rest > c.sit, "resting is still the most of it")
+end)
+test("idle life: sleepy sits more, playful games more, grumpy never hums", function()
+    local base = tally({ mood = "happy", wander = 2, can_walk = true }, 2000)
+    assert((tally({ mood = "sleepy", wander = 2, can_walk = true }, 2000).sit or 0) > (base.sit or 0))
+    assert((tally({ mood = "playful", wander = 2, can_walk = true }, 2000).game or 0) > (base.game or 0))
+    eq(tally({ mood = "grumpy", wander = 2, can_walk = true }, 2000).hum, nil)
+end)
+test("idle life: the face while humming is singing, while gaming focused", function()
+    eq(B.expression({ mood = "happy", activity = "humming" }), "singing")
+    eq(B.expression({ mood = "happy", activity = "gaming" }), "focused")
+end)
+test("react: he peeks at a new window, not at every one", function()
+    local s = rs()
+    eq(B.react("window", nil, s).face, "curious")
+    eq(B.react("window", nil, s), nil)
+end)
+
 print(string.format("\n%d tests, %d failed", total, failed))
 os.exit(failed == 0 and 0 or 1)
