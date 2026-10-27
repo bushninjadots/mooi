@@ -3055,3 +3055,41 @@ its own designed corner; the size scales it. Checked live: Rounded (16) and Beve
 player, then back to the default. `bin/mooi check`: 299 unit tests, 0 failed. Not covered: the
 settings window's own cards (drawn without these components), shapes drawn as raw paths outside them,
 and the bar's body, which keeps its own `bar.radius` ("Corner rounding" on the Bar page).
+
+## D94 · 2026-10-27 · BMO, better: starts with mooi, thrown, sized, coloured, aware, alive
+
+**Asked for:** make BMO better and start him at login, with variants and animations, a smaller size,
+a place on the bar, better dragging, and "pick, drag and throw him and he can bounce off the sides".
+**Done**, in this order (one commit each):
+- **Starts with mooi** (26d67ee): the bar supervises him (`bmo_sync` in shell/mooi.luau) while
+  `companion.bmo` is on; he moved to shell/bmo and his settings became mooi's `companion` section.
+  His data folder is a link to mooi's (bin/mooi `settings_link`): a link to the one file was
+  replaced by a copy on his first `files.write`, so the folder is linked instead. Where he stands
+  is his own (`bmo-state.json`).
+- **Dragging and throwing** (1c59620): dragged, he is where the hand is at once; let go fast and he
+  flies (brain.luau `release`, `fly`: gravity, bounces off the walls, floor and top, rolls to rest),
+  dizzy after a hard landing.
+- **XS and the bar** (54e002f): sizes XS/S/M/L; "under the bar" makes him small and over windows,
+  walking just under the bar.
+- **Variants** (818adcf): classic, night, pastel, Game Boy and mooi. Palettes in brain.luau, handed
+  to the scene as `rgb()` numbers; mooi's comes from palette.json and follows the wallpaper, its
+  ink pushed until the face on his screen reads (4.5:1).
+- **Desktop awareness** (f9ad0da): a notification is "ding!" — the bar tells him (`emit tell N`:
+  only one program may receive notifications), he never sees its words, and a whisper (muted,
+  quiet time, low urgency) stays silent. A hop on a workspace switch, hungry at 15 % battery, glad
+  on the charger, focused with the focus timer and a cheer when a block ends, good morning once a
+  day, a yawn after 23:00. Each has its `companion.react.*` switch.
+- **Idle life** (3a4e4aa): he sits, plays a little tennis on his own screen, hums with notes
+  floating up, and peeks at a new window. One `set_activity` owns what he is doing, so a walk, a
+  hand or sleep ends any of them.
+- **Talk** (67f3686): off / rare / chatty governs every line; pools by moment that never repeat one
+  of the last four; one bubble at a time (a passing remark never covers a ding, his hunger or a cheer).
+- **Settings → BMO** (00b5bf7): every `companion.*` setting. The rail's items went from 26 to 24 px
+  so its twenty-one pages clear the edit button.
+
+Checked live: the bar starting him after a refresh, a real-pointer throw (walls, ceiling, floor
+bounces, rest, "whoa…"), bar mode and XS, each variant from his LOOK tab and from Settings, a real
+notification arriving as "ding!" with the second within 20 s silent, the focus cheer, his game,
+humming and sitting, and the Settings page. `bin/mooi check`: 299 unit tests and 27 of BMO's, 0
+failed. Not checked live: the workspace hop and the window peek (switching the user's workspace and
+opening windows were left alone), the battery reactions, morning and late-night lines at their hours.

@@ -25,6 +25,6 @@ what was done, and why, is docs/DECISIONS.md.
 - [ ] Wallpaper editor (Lumen) and our own wallpaper switcher, removing the other pickers
 - [ ] Control Nexus
 - [ ] The bar ("needs big work") — see Bar islands above
-- [ ] BMO — in progress (2026-10-27)
+- [x] BMO — starts with mooi, throwing, sizes, the bar, variants, awareness, idle life, talk, Settings page (D94)
 - [ ] Desktop widgets and their settings
 - [ ] Deferred: the claude.ai BMO design doc still describes the Quickshell BMO
