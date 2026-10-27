@@ -15,13 +15,53 @@ scene Bmo {
 
     service clock { time: text = "--:--"; date: text }
 
-    // His own colours, not the shell's: he is a character, not a panel.
-    let teal = #69c7bb
-    let side = #4fa99d
-    let ink = #183d42
-    let glass = #b8f5df
-    let glass_dim = #9fe3c9
-    let paper = #f4fff9
+    // His own colours, not the shell's: he is a character, not a panel. The variant
+    // (companion.variant, brain.luau PALETTES) is handed over by the logic as three numbers a
+    // colour; "mooi" is made from the shell's palette. Classic until the logic says otherwise.
+    fact c_body_r = 0.412
+    fact c_body_g = 0.78
+    fact c_body_b = 0.733
+    fact c_side_r = 0.31
+    fact c_side_g = 0.663
+    fact c_side_b = 0.616
+    fact c_ink_r = 0.094
+    fact c_ink_g = 0.239
+    fact c_ink_b = 0.259
+    fact c_glass_r = 0.722
+    fact c_glass_g = 0.961
+    fact c_glass_b = 0.875
+    fact c_glass_dim_r = 0.624
+    fact c_glass_dim_g = 0.89
+    fact c_glass_dim_b = 0.788
+    fact c_paper_r = 0.957
+    fact c_paper_g = 1.0
+    fact c_paper_b = 0.976
+    fact c_pad_r = 0.945
+    fact c_pad_g = 0.788
+    fact c_pad_b = 0.29
+    fact c_tri_r = 0.353
+    fact c_tri_g = 0.655
+    fact c_tri_b = 0.878
+    fact c_go_r = 0.482
+    fact c_go_g = 0.839
+    fact c_go_b = 0.416
+    fact c_stop_r = 0.914
+    fact c_stop_g = 0.376
+    fact c_stop_b = 0.435
+    let teal = rgb(c_body_r, c_body_g, c_body_b)
+    let side = rgb(c_side_r, c_side_g, c_side_b)
+    let ink = rgb(c_ink_r, c_ink_g, c_ink_b)
+    let glass = rgb(c_glass_r, c_glass_g, c_glass_b)
+    let glass_dim = rgb(c_glass_dim_r, c_glass_dim_g, c_glass_dim_b)
+    let paper = rgb(c_paper_r, c_paper_g, c_paper_b)
+    let pad_c = rgb(c_pad_r, c_pad_g, c_pad_b)
+    let tri_c = rgb(c_tri_r, c_tri_g, c_tri_b)
+    let go_c = rgb(c_go_r, c_go_g, c_go_b)
+    let stop_c = rgb(c_stop_r, c_stop_g, c_stop_b)
+    fact c_mooi_r = 0.69         // the shell's primary, for the "mooi" swatch
+    fact c_mooi_g = 0.81
+    fact c_mooi_b = 0.65
+    fact s_variant = 0           // brain.luau VARIANTS, from 0
 
 
     // ── State the logic owns ─────────────────────────────────
@@ -60,7 +100,7 @@ scene Bmo {
 
     // The panel and the menu
     fact panel = false
-    fact tab: home | music | me | setup = home
+    fact tab: home | music | me | setup | look = home
     fact menu = false
     fact menu_x = 0
     fact menu_y = 0
@@ -382,23 +422,23 @@ scene Bmo {
                                 }
 
                                 // the yellow cross
-                                box { from: 24, 92; size: 12, 34; corner: 3; color: #f1c94a }
-                                box { from: 13, 103; size: 34, 12; corner: 3; color: #f1c94a }
+                                box { from: 24, 92; size: 12, 34; corner: 3; color: pad_c }
+                                box { from: 13, 103; size: 34, 12; corner: 3; color: pad_c }
                                 box { from: 24, 92; size: 12, 34; corner: 3; stroke: 2; color: ink }
                                 box { from: 13, 103; size: 34, 12; corner: 3; stroke: 2; color: ink }
-                                box { from: 25, 104; size: 10, 10; color: #f1c94a }
+                                box { from: 25, 104; size: 10, 10; color: pad_c }
                                 // two slots
                                 box { from: 12, 134; size: 26, 4; corner: 2; color: ink }
                                 box { from: 42, 134; size: 10, 4; corner: 2; color: ink }
                                 // blue triangle, green and red buttons
-                                path { color: #5aa7e0
+                                path { color: tri_c
                                        move 74, 91.5; line 80.5, 102.5; line 67.5, 102.5; close }
                                 path { stroke: 2; color: ink
                                        move 74, 91.5; line 80.5, 102.5; line 67.5, 102.5; close }
-                                ellipse { at: 97, 109; radius: 11; color: #7bd66a }
+                                ellipse { at: 97, 109; radius: 11; color: go_c }
                                 ellipse { at: 97, 109; radius: 11; stroke: 2; color: ink }
                                 box { from: 91, 102; size: 6, 3; corner: 1.5; color: #ffffff; opacity: 0.35 }
-                                ellipse { at: 76.5, 120.5; radius: 6.5; color: #e9606f }
+                                ellipse { at: 76.5, 120.5; radius: 6.5; color: stop_c }
                                 ellipse { at: 76.5, 120.5; radius: 6.5; stroke: 2; color: ink }
                             }
                         }
@@ -470,6 +510,7 @@ scene Bmo {
             Tab(plx + 68, ply + 10, 60, "MUSIC", tab == music, 1)
             Tab(plx + 132, ply + 10, 34, "ME", tab == me, 2)
             Tab(plx + 170, ply + 10, 60, "SETUP", tab == setup, 3)
+            Tab(plx + 234, ply + 10, 44, "LOOK", tab == look, 4)
             Chip(plx + pw - 34, ply + 10, 24, "×", false, 1)
 
             box { from: plx + 10, ply + 40; size: pw - 20, ph - 50; corner: 9; color: ink }
@@ -559,6 +600,18 @@ scene Bmo {
                 Chip(cx + 66, cy + 150, 48, "show", s_clock, 100)
                 Chip(cx + 118, cy + 150, 48, "hide", not s_clock, 101)
             }
+
+            group {
+                show: tab == look
+                Row(cx, cy + 4, "Colours")
+                Swatch(cx, cy + 22, "classic", #69c7bb, #b8f5df, #183d42, s_variant == 0, 130)
+                Swatch(cx + 54, cy + 22, "night", #34506a, #86e1ff, #0b1622, s_variant == 1, 131)
+                Swatch(cx + 108, cy + 22, "pastel", #f5b8c9, #fff1d9, #5b3446, s_variant == 2, 132)
+                Swatch(cx + 162, cy + 22, "gameboy", #c5c6b6, #9bbc0f, #0f380f, s_variant == 3, 133)
+                Swatch(cx + 216, cy + 22, "mooi", rgb(c_mooi_r, c_mooi_g, c_mooi_b), #f4f4f0, #1a1a1a, s_variant == 4, 134)
+                text "mooi follows your wallpaper's colours" { at: cx, cy + 104; anchor: left center; size: 10; family: "JetBrains Mono"
+                     color: ink; opacity: 0.6; show: s_variant == 4 }
+            }
         }
     }
 
@@ -569,6 +622,20 @@ scene Bmo {
         box { from: x, y; size: w, 22; corner: 6; stroke: 2; color: ink }
         text word { at: x + w / 2, y + 11; anchor: center; size: 10.5; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
         on press t { emit ui(10 + k) }
+    }
+
+    // A colour choice: a little BMO in that variant's body, screen and ink, its name under it.
+    component Swatch(x: number, y: number, word: text, body: color, scr: color, line: color, on: bool, code: number) {
+        size: 50, 70
+        zone box w { from: x, y; size: 50, 70; cursor: pointer; role: toggle; checked: on; label: "{word} colours" }
+        box { from: x, y; size: 50, 70; corner: 7; color: ink; opacity: if(on, 1, w.hover * 0.12) }
+        box { from: x + 9, y + 5; size: 32, 40; corner: 5; color: body }
+        box { from: x + 9, y + 5; size: 32, 40; corner: 5; stroke: 2; color: line }
+        box { from: x + 13, y + 9; size: 24, 17; corner: 3; color: scr }
+        box { from: x + 19, y + 15; size: 2, 4; color: line }
+        box { from: x + 29, y + 15; size: 2, 4; color: line }
+        text word { at: x + 25, y + 58; anchor: center; size: 9; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
+        on press w { emit ui(code) }
     }
 
     component MenuItem(x: number, y: number, word: text, code: number) {

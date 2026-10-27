@@ -162,6 +162,80 @@ function M.settings(t)
 end
 
 
+-- ── Variants (companion.variant): his colours ────────────────
+-- Ten slots: his body and its side, the ink of every outline and of his face, the screen and its
+-- shade, the bubble's paper, and the D-pad, triangle, round and stop buttons. "mooi" takes the
+-- shell's palette (palette.json's colours): the primary is his body, the tertiary tints the screen.
+M.PALETTES = {
+    classic = { body = "#69c7bb", side = "#4fa99d", ink = "#183d42", glass = "#b8f5df", glass_dim = "#9fe3c9",
+                paper = "#f4fff9", pad = "#f1c94a", tri = "#5aa7e0", go = "#7bd66a", stop = "#e9606f" },
+    night = { body = "#34506a", side = "#273d52", ink = "#0b1622", glass = "#86e1ff", glass_dim = "#5fc1e6",
+              paper = "#e4f4ff", pad = "#c9a63e", tri = "#7a8fe8", go = "#4fb08a", stop = "#d0567a" },
+    pastel = { body = "#f5b8c9", side = "#e39cb1", ink = "#5b3446", glass = "#fff1d9", glass_dim = "#f7dfb9",
+               paper = "#fffaf3", pad = "#f7d98b", tri = "#a9c8f2", go = "#b6e3a8", stop = "#f19aa6" },
+    gameboy = { body = "#c5c6b6", side = "#a9aa9b", ink = "#0f380f", glass = "#9bbc0f", glass_dim = "#8bac0f",
+                paper = "#e0f0c8", pad = "#3c3c46", tri = "#3c3c46", go = "#8b2a5c", stop = "#8b2a5c" },
+}
+
+local function hex(c)
+    local r, g, b = tostring(c or ""):match("^#(%x%x)(%x%x)(%x%x)$")
+    if not r then return nil end
+    return tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255
+end
+local function to_hex(r, g, b)
+    local function c(v) return math.floor(math.max(0, math.min(1, v)) * 255 + 0.5) end
+    return string.format("#%02x%02x%02x", c(r), c(g), c(b))
+end
+-- a toward b by t (0 … 1)
+local function mix(a, b, t)
+    local ar, ag, ab = hex(a)
+    local br, bg, bb = hex(b)
+    return to_hex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t)
+end
+
+-- A colour as the scene's rgb() takes it: three numbers 0 … 1 (black when it is not a colour).
+function M.rgb(c)
+    local r, g, b = hex(c)
+    if not r then return 0, 0, 0 end
+    return r, g, b
+end
+
+-- WCAG's contrast ratio of two colours (1 … 21).
+local function lum(c)
+    local function ch(v) return v <= 0.03928 and v / 12.92 or ((v + 0.055) / 1.055) ^ 2.4 end
+    local r, g, b = hex(c)
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+end
+function M.contrast(a, b)
+    local la, lb = lum(a), lum(b)
+    if la < lb then la, lb = lb, la end
+    return (la + 0.05) / (lb + 0.05)
+end
+
+-- His colours for a variant; `shell` is palette.json's colours (only "mooi" reads it).
+function M.palette(variant, shell)
+    local base = M.PALETTES[variant] or M.PALETTES.classic
+    local out = {}
+    for k, v in pairs(base) do out[k] = v end
+    if variant ~= "mooi" then return out end
+    local p = type(shell) == "table" and shell or {}
+    local body, tint = p.primary, p.tertiary or p.primary
+    if not hex(body) then return out end
+    out.body = body
+    out.side = mix(body, "#000000", 0.18)
+    -- the screen is always light and the ink always dark, whatever the shell's mode
+    out.glass = mix(hex(tint) and tint or body, "#ffffff", 0.62)
+    out.glass_dim = mix(out.glass, body, 0.25)
+    out.ink = mix(body, "#000000", 0.78)
+    for _ = 1, 8 do
+        if M.contrast(out.ink, out.glass) >= 4.5 then break end
+        out.ink = mix(out.ink, "#000000", 0.5)
+        out.glass = mix(out.glass, "#ffffff", 0.4)
+    end
+    out.paper = mix(body, "#ffffff", 0.9)
+    return out
+end
+
 -- ── Thrown (pick him up, flick, let go) ───────────────────────
 M.GRAVITY = 2600        -- px/s²
 M.BOUNCE = 0.55         -- what a bounce keeps of the speed it came in with

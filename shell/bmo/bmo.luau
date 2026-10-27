@@ -26,6 +26,10 @@ local SIZES = { 0.5, 0.7, 0.9, 1.15 }
 local DOZES = { 5, 10, 30, 100000 }
 local MOTIONS = { "still", "calm", "lively" }
 
+local function index_of_name(list, v)
+    for i, x in ipairs(list) do if x == v then return i end end
+    return 1
+end
 local function index_of(list, v)
     local best, bd = 1, math.huge
     for i, x in ipairs(list) do
@@ -498,6 +502,26 @@ on("hov", function(v)
 end)
 
 -- ── Controls (the panel and the menu) ────────────────────────
+-- His colours (companion.variant): brain.luau's palette, handed to the scene as rgb() numbers.
+-- "mooi" is made from the shell's palette.json (beside settings.json), watched below.
+local SLOTS = { "body", "side", "ink", "glass", "glass_dim", "paper", "pad", "tri", "go", "stop" }
+local function shell_colours()
+    local p = read("palette.json")
+    return type(p) == "table" and p.colours or nil
+end
+local function paint()
+    local shell = shell_colours()
+    local pal = B.palette(cfg.variant, shell)
+    for _, k in ipairs(SLOTS) do
+        local cr, cg, cb = B.rgb(pal[k])
+        fact["c_" .. k .. "_r"], fact["c_" .. k .. "_g"], fact["c_" .. k .. "_b"] = cr, cg, cb
+    end
+    if type(shell) == "table" and shell.primary then
+        fact.c_mooi_r, fact.c_mooi_g, fact.c_mooi_b = B.rgb(shell.primary)
+    end
+    fact.s_variant = index_of_name(B.VARIANTS, cfg.variant) - 1
+end
+
 local function sync_settings()
     fact.s_wander = cfg.wander
     fact.s_locked = cfg.locked
@@ -510,6 +534,7 @@ local function sync_settings()
     fact.on_bar = cfg.place == "bar"
     fact.size = eff_size()
     fact.breathing = cfg.motion == "lively"
+    paint()
 end
 
 local function go_home()
@@ -540,7 +565,7 @@ on("ui", function(v)
     elseif n == 5 then if activity == "sleeping" then wake(false) else sleep() end; return
     elseif n == 6 then hide_for(10); return
     elseif n == 7 then run("pleamar", { "--say", "bmo", "quit" }); return
-    elseif n >= 10 and n <= 13 then fact.tab = ({ "home", "music", "me", "setup" })[n - 9]; return
+    elseif n >= 10 and n <= 14 then fact.tab = ({ "home", "music", "me", "setup", "look" })[n - 9]; return
     elseif n == 20 then pcall(sys.call, "media.previous"); return
     elseif n == 21 then pcall(sys.call, "media.toggle"); return
     elseif n == 22 then pcall(sys.call, "media.next"); return
@@ -556,6 +581,7 @@ on("ui", function(v)
     elseif n == 80 or n == 81 then cfg.music = n == 80; if not cfg.music then stop_dancing() end
     elseif n >= 90 and n <= 93 then cfg.doze = DOZES[n - 89]
     elseif n == 100 or n == 101 then cfg.clock = n == 100
+    elseif n >= 130 and n <= 134 then cfg.variant = B.VARIANTS[n - 129]
     elseif n == 110 then run("kitty", {}, nil, { output = false }); return
     elseif n == 111 then run("loginctl", { "lock-session" }); return
     -- for scripts: make him walk, dance or look about now
@@ -571,6 +597,7 @@ on("ui", function(v)
 end)
 
 -- mooi's settings changed (Settings → BMO, or his own panel): read them again
+pcall(sys.watch, "files:palette.json", function() if cfg.variant == "mooi" then paint() end end)
 pcall(sys.watch, "files:" .. FILE, function()
     cfg = B.settings(companion_of(read(FILE)))
     sync_settings()

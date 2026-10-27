@@ -92,5 +92,25 @@ test("settings are read whatever the file holds", function()
     eq(B.settings(nil).music, true)
 end)
 
+test("variants: each has his ten colours, and an unknown one is classic", function()
+    local slots = { "body", "side", "ink", "glass", "glass_dim", "paper", "pad", "tri", "go", "stop" }
+    for _, v in ipairs(B.VARIANTS) do
+        local p = B.palette(v)
+        for _, k in ipairs(slots) do assert(type(p[k]) == "string" and p[k]:match("^#%x%x%x%x%x%x$"), v .. "." .. k) end
+    end
+    eq(B.palette("nope").body, "#69c7bb", "classic's teal"); eq(B.palette("night").body ~= B.palette("classic").body, true, "night differs")
+end)
+test("variants: mooi takes the shell's colours, and the screen stays readable", function()
+    local p = B.palette("mooi", { primary = "#b0cfa7", tertiary = "#9fcfd7" })
+    eq(p.body, "#b0cfa7", "his body is the primary")
+    assert(B.contrast(p.ink, p.glass) >= 4.5, "the face on the screen reads")
+    local q = B.palette("mooi", nil); eq(q.body, B.palette("classic").body, "no palette: classic")
+    local dark = B.palette("mooi", { primary = "#1a2b1c", tertiary = "#10141a" })
+    assert(B.contrast(dark.ink, dark.glass) >= 4.5, "even from a dark palette")
+end)
+test("variants: a colour as rgb() wants it", function()
+    local r, g, b = B.rgb("#ff8000"); eq(r, 1); eq(math.floor(g * 255 + 0.5), 128); eq(b, 0)
+end)
+
 print(string.format("\n%d tests, %d failed", total, failed))
 os.exit(failed == 0 and 0 or 1)
