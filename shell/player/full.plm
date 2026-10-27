@@ -1,0 +1,133 @@
+// Full screen: the cover over everything, a large record, the lyrics beside it — a part of shell/mooi-player.plm (`include`d in its surface): it reads the surface's lets.
+part Full {
+        // ══ Full screen: the cover over everything, a large record, the lyrics beside it ══
+        // Drawn in the panel's own surface: a second full-screen surface of its own took no
+        // presses at all (its close chip did nothing; only Escape, which the keyboard's surface
+        // hears, closed it).
+        let fw = screen.width
+        let fh = screen.height
+        let fr = min(fh * 0.34, 360)
+        let frl = fr * 0.4
+        let fcx = fw * 0.3
+        let fcy = fh * 0.47
+        let fpx = fcx + fr * 1.17
+        let fpy = fcy - fr * 0.89
+        let flen = fr * 1.75
+        let flx = fw * 0.56
+        let flw = fw - flx - 80
+        group {
+            show: full and pl_a > 0.004
+            opacity: pl_a
+            box { from: 0, 0; size: fw, fh; color: #000000 }
+            group {
+                show: cover_on
+                blur: 60
+                opacity: 0.55
+                image cover { at: -fw * 0.1, -fw * 0.3; size: fw * 1.2, fw * 1.2 }
+            }
+            box { from: 0, 0; size: fw, fh; color: fl.ground; opacity: 0.45 }
+            // a press on the empty background goes back to the panel (the controls sit on top)
+            zone box fbody { from: 0, 0; size: fw, fh; agent: hidden }
+            on press fbody { emit pl_full }
+
+            // the record, large
+            repeat k in 0..48 {
+                let fvv = clamp(pick(mod(k, 24), vp0, vp1, vp2, vp3, vp4, vp5, vp6, vp7, vp8, vp9, vp10, vp11,
+                                     vp12, vp13, vp14, vp15, vp16, vp17, vp18, vp19, vp20, vp21, vp22, vp23), 0.03, 1)
+                line { from: fcx + sin(k * 7.5) * (fr + 24), fcy - cos(k * 7.5) * (fr + 24)
+                       to: fcx + sin(k * 7.5) * (fr + 28 + fvv * 60), fcy - cos(k * 7.5) * (fr + 28 + fvv * 60)
+                       width: 5; color: mix(fl.phos, fl.flare, fvv * 0.6); opacity: if(pstate == playing, 0.35 + fvv * 0.6, 0.15) }
+            }
+            ellipse { at: fcx, fcy; radius: fr; color: #08090a }
+            repeat g in 0..22 {
+                ellipse { at: fcx, fcy; radius: frl + 10 + g * (fr - frl - 14) / 21; stroke: 0.8; color: #1c1f22; opacity: 0.9 }
+            }
+            ellipse { at: fcx, fcy; radius: fr; stroke: 2; color: fl.steel_700 }
+            group {
+                mask: radial fcx, fcy radius fr - 2 to fr
+                path { color: #ffffff; opacity: 0.05
+                       move fcx, fcy; line fcx + fr * 1.2, fcy - fr * 0.6; line fcx + fr * 1.2, fcy - fr * 0.1; close }
+                path { color: #ffffff; opacity: 0.05
+                       move fcx, fcy; line fcx - fr * 1.2, fcy + fr * 0.6; line fcx - fr * 1.2, fcy + fr * 0.1; close }
+            }
+            group {
+                pivot: fcx, fcy
+                rotate: vang * 1deg
+                mask: radial fcx, fcy radius frl - 1 to frl
+                box { from: fcx - frl, fcy - frl; size: frl * 2, frl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                image cover { at: fcx - frl, fcy - frl; size: frl * 2, frl * 2; show: cover_on }
+            }
+            ellipse { at: fcx, fcy; radius: 8; color: fl.steel_300 }
+            ellipse { at: fpx, fpy; radius: 32; color: fl.steel_700 }
+            ellipse { at: fpx, fpy; radius: 13; color: fl.steel_500 }
+            group {
+                pivot: fpx, fpy
+                rotate: arm * 1deg
+                line { from: fpx, fpy; to: fpx, fpy + flen - 44; width: 6; color: fl.steel_300 }
+                line { from: fpx, fpy + flen - 44; to: fpx - 15, fpy + flen; width: 6; color: fl.steel_300 }
+                box { from: fpx - 29, fpy + flen - 8; size: 32, 20; corner: 3; color: fl.steel_500 }
+                box { from: fpx - 13, fpy - 72; size: 26, 34; corner: 4; color: fl.steel_500 }
+            }
+
+            // the track and the lyrics
+            text pick(has_song, "NOTHING IS PLAYING", t_title) { at: flx, fh * 0.14; anchor: left center; size: 34; weight: 700; family: "Exo 2"
+                  width: flw; lines: 1; color: fl.engrave }
+            text t_artist { at: flx, fh * 0.14 + 40; anchor: left center; size: 18; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+            text t_album { at: flx, fh * 0.14 + 66; anchor: left center; size: 13; family: "Exo 2"; width: flw; lines: 1; color: fl.trace_lit }
+            for l in lyr {
+                let fly = fh * 0.3 + l.n * 52
+                zone box fzline { from: flx - 10, fly - 22; size: flw + 20, 44; cursor: pointer; role: item; label: "Go to: {l.text}"; show: lyr_synced }
+                group {
+                    show: l.cur
+                    glow: 18, 55%, fl.phos
+                    text l.text { at: flx, fly; anchor: left center; size: 26; weight: 700; family: "Exo 2"; width: flw; lines: 1; color: fl.phos }
+                }
+                text l.text { at: flx, fly; anchor: left center; size: 17; family: "Exo 2"; width: flw; lines: 1
+                              color: mix(fl.engrave, fl.muted, clamp(l.dist / 4, 0, 1)); opacity: clamp(1 - l.dist * 0.17, 0.2, 1); show: not l.cur }
+                on press fzline { emit lyr_seek(l.t) }
+            }
+            text lyr_note { at: flx, fh * 0.3 - 40; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
+
+            // the waveform and the transport along the foot
+            let fsx = flx
+            let fsw = flw
+            let fsy = fh - 150
+            group {
+                show: wave_on
+                image wave { at: fsx, fsy - 40; size: fsw, 44; tint: fl.trace; opacity: 0.5 }
+                group {
+                    clip box { from: fsx, fsy - 46; size: fsw * clamp(prg, 0, 1), 56 }
+                    image wave { at: fsx, fsy - 40; size: fsw, 44; tint: fl.phos; opacity: 0.95 }
+                }
+            }
+            box { from: fsx, fsy + 8; size: fsw, 6; corner: 3; color: fl.ground; opacity: 0.8 }
+            box { from: fsx, fsy + 8; size: fsw * clamp(prg, 0, 1), 6; corner: 3; color: fl.phos; show: has_song }
+            text t_elapsed { at: fsx, fsy + 30; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.trace_lit }
+            text t_total { at: fsx + fsw, fsy + 30; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.muted }
+            zone box fzseek { from: fsx - 4, fsy - 44; size: fsw + 8, 64; cursor: pointer; role: slider; label: "Seek"; value: progress; show: has_song }
+            on press fzseek { emit pl_seek(round(clamp((local.x - fsx) / fsw, 0, 1) * 1000)) }
+            on drag fzseek { emit pl_seek(round(clamp((local.x - fsx) / fsw, 0, 1) * 1000)) }
+            let ftx = fsx + fsw / 2
+            let fty = fh - 66
+            zone box fzprev { from: ftx - 110, fty - 26; size: 52, 52; cursor: pointer; role: button; label: "Previous" }
+            PRound(ftx - 84, fty, 26, 0, fl.phos, fzprev.hover)
+            path { color: fl.engrave; move ftx - 77, fty - 10; line ftx - 91, fty; line ftx - 77, fty + 10; close }
+            on press fzprev { emit pl_prev }
+            zone box fzplay { from: ftx - 40, fty - 40; size: 80, 80; cursor: pointer; role: button; label: "Play / pause" }
+            PRound(ftx, fty, 40, if(pstate == playing, 1, 0.4), fl.phos, fzplay.hover)
+            path { color: fl.phos; show: pstate != playing; move ftx - 11, fty - 17; line ftx + 18, fty; line ftx - 11, fty + 17; close }
+            box { from: ftx - 13, fty - 16; size: 8, 32; corner: 2; color: fl.phos; show: pstate == playing }
+            box { from: ftx + 5, fty - 16; size: 8, 32; corner: 2; color: fl.phos; show: pstate == playing }
+            on press fzplay { emit pl_toggle }
+            zone box fznext { from: ftx + 58, fty - 26; size: 52, 52; cursor: pointer; role: button; label: "Next" }
+            PRound(ftx + 84, fty, 26, 0, fl.phos, fznext.hover)
+            path { color: fl.engrave; move ftx + 77, fty - 10; line ftx + 91, fty; line ftx + 77, fty + 10; close }
+            on press fznext { emit pl_next }
+            zone box fzback { from: fw - 76, 28; size: 48, 48; cursor: pointer; role: button; label: "Back to the panel" }
+            PRound(fw - 52, 52, 22, 0, fl.phos, fzback.hover)
+            line { from: fw - 60, 44; to: fw - 44, 60; width: 2; color: mix(fl.engrave, fl.phos, fzback.hover) }
+            line { from: fw - 44, 44; to: fw - 60, 60; width: 2; color: mix(fl.engrave, fl.phos, fzback.hover) }
+            text "ESC" { at: fw - 52, 88; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            on press fzback { emit pl_full }
+        }
+}
