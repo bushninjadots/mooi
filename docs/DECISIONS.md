@@ -3004,3 +3004,39 @@ service (`nautilus -q`). `bin/mooi check`: **273 unit tests, 0 failed**. Not che
 re-login, the auto switch crossing an hour boundary live, Vesktop/Zen/Spotify windows by eye, VLC
 (the one Qt 5 app; qt6ct does not reach Qt 5), and the wallpaper picker running Matugen itself
 (always dark) racing mooi's run after a wallpaper change.
+
+## D92 · 2026-10-27 · The music player overhaul
+
+**Asked for:** a library with album art and normal/detailed views; full screen fixed (it looked bad
+and did not close); several view types; a small player first from the bar's icon, then the real one;
+strong theming; creative visualisers; synced lyrics; video of songs; an equaliser; a better DJ vinyl;
+and (mid-way) the mini player as something unconventional "like our Control Nexus … with nodes,
+circuitry", and the bar's visualiser adaptive to the wallpaper like the rest of the bar. Designed in
+`docs/superpowers/specs/2026-10-27-music-player-design.md`, built from
+`docs/superpowers/plans/2026-10-27-music-player.md` in nine tasks; docs/PLAYER.md describes the result.
+
+**Built:** one program, three sizes — the **signal-board mini card** (the cover as a core node in a
+progress ring, pads and traces, a visualiser on the bus, pulses while it plays), the panel, full screen —
+in one surface; three views — **DJ deck** (CUE, 33/45, pitch, VU), **cover stage** (sung line lit),
+**instrument rack** (analyser, lit time, file format, EQ knobs, real waveform); six visualisers in
+`shell/ui/viz.plm`, shared with the **bar**, whose visualiser now takes the main accent into the second;
+the **library** (albums grid with covers, artists, genres, songs, sort, search, a cover cache, generated
+covers); **lyric offsets**; the **EasyEffects equaliser**; the **music video** in the view's box.
+Fixes on the way: the bar's media note swallowed by its wheel zone (dd83506), full screen on a second
+surface that took no presses (4e15fff), a press right after closing taken as a second close, the mini
+card's cover turning round the card's corner, the cover colours staying dark by day.
+
+**Rulings worth knowing** (all in the plan's ledger): sixteen common bands for the visualisers; the
+rack's format from ffmpeg (mpc cannot print mpd's `audio`); EQ off gives back the user's previous
+EasyEffects preset because EasyEffects persists bypass and the last preset (found live and restored);
+video fetched by yt-dlp then played (YouTube refuses mpv's stream), placed under the overlay with a
+hole drawn round it; EQ state in `player-eq.json`.
+
+**Checked live** on the real session with agent drives and real clicks: every size and transition,
+quick reopen, the six visualisers in the mini card and the deck/full ring, the library (1281 albums,
+covers page by page with one process at a time, groupings, sort, search), the three views in panel and
+full, light and dark (also switching with the player open), CUE, lyric offsets kept across reopen,
+the EQ (presets written, the user's two presets byte-identical, off restoring `live_eq` with bypass
+off), and video in both boxes with mpd picking up where it reached. `bin/mooi check`: **294 unit
+tests, 0 failed**. Not checked: the video's sound (output was muted), a live auto mode-switch at the
+hour with the player open, multi-monitor placement.
