@@ -3,6 +3,21 @@
 What the user has asked for and is not built yet, newest first. The long view is docs/VISION.md;
 what was done, and why, is docs/DECISIONS.md.
 
+## Next: the spine and the Nexus drawer (the user's plan, 2026-10-28)
+
+- [x] The spine & shelves (D100) — the user likes it
+- [ ] **The spine as an option in Settings** (it has `shelves.on` — "The spine" on Settings → Colour; check it
+      reads well there, maybe its own card)
+- [ ] **Autohide for the spine** (a setting): hidden until the pointer touches the right edge, then the tabs
+      slide in; away again, they slide out. A hairline glow at the edge while hidden (notifications, a hot CPU).
+- [ ] **Keep the Control Nexus drawer, with all its information, but redesign it "different and better".**
+      Not liked so far: the plate drawer (D98) and the orbital/circuit hero (D99). Liked: the spine's dynamic
+      (shapes, shelves in and out, things extending on hover). Mock 2–3 directions as images first (chromium
+      --headless from an HTML page) and let the user choose before building. Ideas offered: the banner turning
+      into the album art while music plays, a "moments" timeline of the day, sections that reorder themselves,
+      a compact glyph column, the drawer borrowing the spine's hover-to-extend for its sections.
+- [ ] Decide what the bar's Nexus mark opens once the redesign lands (the drawer, the spine pinned, or both).
+
 ## Bar islands (asked 2026-10-27) — built (D97)
 
 - [x] **One design for every pop-up island** — the island kit (ui/island.plm), two styles:
