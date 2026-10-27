@@ -49,7 +49,12 @@ shell/lib/player.luau          (exists) pure parsing — grows: album/artist/gen
 shell/lib/eqpreset.luau        pure: bands ↔ EasyEffects preset JSON, built-in presets
 ```
 
-`ui/viz.plm` is a library (not a part) so the bar can import it later (its media module's visualiser).
+`ui/viz.plm` is a library (not a part) so **the bar imports it too**: the media module's visualiser
+becomes these components (piece 3), coloured like every other bar component — the main accent
+(`fl.phos`) rising into the second (`fl.ember`/`fl.flare`) with the level — so it follows the
+wallpaper, the light/dark mode and, while the player shows cover colours, nothing else (the bar
+keeps the shell's palette). Today it draws only from the second accent (ember → flare), which with
+a violet wallpaper reads as an unrelated pink-red: the user's report.
 
 ### Sizes (`fact size: mini | panel | full`)
 
@@ -187,7 +192,7 @@ led, ring) · `player.library` albums|artists|genres|songs (albums) · `player.s
 
 1. Split the scene and logic into parts/modules (no visible change) — the ground for the rest.
 2. Mini player + sizes (mini → panel → full), full screen rebuilt on the panel's surface.
-3. `ui/viz.plm`, the six visualisers and their per-place choice.
+3. `ui/viz.plm`, the six visualisers and their per-place choice — **the bar's media visualiser included** (`bar.visualizer` keeps its four existing styles mapped onto the library: bars → Spectrum, mirror → Mirror, dots → LED, line → Aurora-thin).
 4. Library: art cache, albums grid, detailed list, artists, genres, sort, search.
 5. The three views (deck rebuilt, stage, rack) and their theming.
 6. Lyrics polish (sung line, offset).
