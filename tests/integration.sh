@@ -80,7 +80,16 @@ say "emit activate 3" >/dev/null; sleep 0.3
 [ "$(get phase)" = expanded ] && ok "Move expands" || bad "Move did not expand"
 say "emit pick_ws 9" >/dev/null; sleep 0.2; wait_idle
 check "moved to workspace 9" .workspace.id 9
-[ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && ok "user stays on workspace $here (follow off)" || bad "workspace changed"
+# island.follow_on_send decides whether a move takes the user along (off by default)
+follow=$(jq -r '.island.follow_on_send // false' "${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/mooi/settings.json" 2>/dev/null)
+if [ "$follow" = true ]; then
+    for _ in $(seq 1 20); do [ "$(hyprctl -j activeworkspace | jq .id)" = 9 ] && break; sleep 0.1; done
+    [ "$(hyprctl -j activeworkspace | jq .id)" = 9 ] && ok "the user follows to workspace 9 (follow on)" || bad "follow on, but the user stayed"
+    hyprctl dispatch "hl.dsp.focus({ workspace = $here })" >/dev/null
+    for _ in $(seq 1 20); do [ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && break; sleep 0.1; done
+else
+    [ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && ok "user stays on workspace $here (follow off)" || bad "workspace changed"
+fi
 [ "$(get flash_ws)" = 9 ] && ok "the Spine confirms workspace 9 (state.confirm pulse)" || bad "flash_ws = $(get flash_ws)"
 hyprctl dispatch "hl.dsp.window.close({ window = \"address:$addr\" })" >/dev/null
 
@@ -114,7 +123,8 @@ say "text query 9" >/dev/null; sleep 0.3
 say "emit crun 0" >/dev/null; sleep 0.8
 [ "$(hyprctl -j activeworkspace | jq .id)" = 9 ] && ok "↵ on 'Workspace 9' goes there (hyprctl agrees)" || bad "active workspace $(hyprctl -j activeworkspace | jq .id)"
 [ "$(get open)" = none ] && ok "…and closes once Hyprland confirms" || bad "open = $(get open)"
-hyprctl dispatch "hl.dsp.focus({ workspace = $here })" >/dev/null; sleep 0.4
+hyprctl dispatch "hl.dsp.focus({ workspace = $here })" >/dev/null
+for _ in $(seq 1 20); do [ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && break; sleep 0.1; done   # the switch is asynchronous
 find_probe
 sat 1; check "satellite Bring here (from 9 to $here)" .workspace.id "$here"
 [ "$(hyprctl -j activeworkspace | jq .id)" = "$here" ] && ok "…without moving the user" || bad "workspace changed"
