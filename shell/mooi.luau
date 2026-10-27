@@ -1590,6 +1590,12 @@ function bmo_sync()
     end)
 end
 after(2500, bmo_sync)
+-- What BMO hears from the bar (bmo.luau "Desktop awareness"): `emit tell N` while he is wanted.
+local function bmo_tell(n)
+    if type(settings.companion) == "table" and settings.companion.bmo == true then
+        run("pleamar", { "--say", "bmo", "emit tell " .. n })
+    end
+end
 
 -- Control Nexus (shell/mooi-nexus.plm, D65): the system command centre. A program of its own
 -- for the same reason as the studio: it holds the keyboard exclusively and declares its own
@@ -1689,6 +1695,7 @@ require("stash")({ safe_mode = safe_mode })
 
 -- ── Signal Loom: the notifications (shell/signals.luau, D50) ──
 loom = require("signals")({
+    bmo = bmo_tell,
     settings = function() return settings end,
     save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
     mode = sys.ask("env", "MOOI_MODE") or "beside",
@@ -1697,6 +1704,7 @@ loom = require("signals")({
 
 -- ── The Ferrolume bar: layout, readers and actions (shell/bar.luau) ──
 bar = require("bar")({
+    bmo = bmo_tell,
     signal = loom.signal,
     requiet = loom.requiet,
     settings = function() return settings end,

@@ -162,6 +162,77 @@ function M.settings(t)
 end
 
 
+-- ── Desktop awareness (companion.react) ──────────────────────
+-- What happens around him and how he takes it: { face, ms, move, line, mood } or nil. `s` is
+-- { cfg, now (seconds), last = {} (his memory, kept here), asleep }. A notification is only ever
+-- "ding!": he never reads what it says.
+
+-- Whether a line is spoken at this talk level: rare keeps to what matters.
+function M.speaks(talk, important)
+    if talk == "off" then return false end
+    return important == true or talk == "chatty"
+end
+
+local BATTERY_LOW = 15
+local GAP = { note = 20, space = 4 }   -- seconds before the same thing moves him again
+
+local function cooled(s, key)
+    local t = s.last[key]
+    if t and s.now - t < GAP[key] then return false end
+    s.last[key] = s.now
+    return true
+end
+
+local function judge(kind, arg, s)
+    local react = s.cfg.react or {}
+    if kind == "note" then
+        if not react.notes or s.asleep or not cooled(s, "note") then return nil end
+        return { face = "surprised", ms = 1400, move = "startle", line = "ding!", important = true }
+    elseif kind == "space" then
+        if not react.spaces or s.asleep or not cooled(s, "space") then return nil end
+        return { move = "hop", line = "whoosh!" }
+    elseif kind == "battery" then
+        if not react.battery or type(arg) ~= "table" then return nil end
+        local pct = tonumber(arg.percent) or 100
+        local now = arg.charging and "charging" or (pct <= BATTERY_LOW and "low" or "ok")
+        local was = s.last.battery or "ok"
+        s.last.battery = now
+        if now == was or s.asleep then return nil end
+        if now == "low" then return { face = "sad", ms = 3000, move = "shake", line = "I'm hungry…", important = true } end
+        if now == "charging" and was == "low" then return { face = "happy", ms = 2500, move = "hop", line = "yum, power!", important = true } end
+        if now == "charging" then return { face = "content", ms = 1800, line = "yum!" } end
+        return nil
+    elseif kind == "focus" then
+        if not react.focus then return nil end
+        if arg == "on" then return { mood = "focused", line = "focus mode!" } end
+        if arg == "done" then return { face = "excited", ms = 2500, move = "big_hop", line = "you did it!", mood = "happy", important = true } end
+        if arg == "break_done" then return { face = "curious", ms = 1800, move = "nod", line = "back to it?" } end
+        if arg == "off" then return { mood = "happy" } end
+        return nil
+    elseif kind == "hour" then
+        if not react.time or type(arg) ~= "table" or s.asleep then return nil end
+        local h, day = tonumber(arg.hour) or 12, tonumber(arg.day) or 0
+        if h >= 6 and h < 11 and s.last.morning ~= day then
+            s.last.morning = day
+            return { face = "happy", ms = 2000, move = "wave", line = "good morning!" }
+        end
+        local night = h >= 23 and day or (h < 3 and day - 1) or nil
+        if night and s.last.late ~= night then
+            s.last.late = night
+            return { face = "yawn", ms = 2200, move = "stretch", line = "it's late…" }
+        end
+        return nil
+    end
+    return nil
+end
+
+function M.react(kind, arg, s)
+    s.last = s.last or {}
+    local r = judge(kind, arg, s)
+    if r and r.line and not M.speaks(s.cfg.talk, r.important) then r.line = nil end
+    return r
+end
+
 -- ── Variants (companion.variant): his colours ────────────────
 -- Ten slots: his body and its side, the ink of every outline and of his face, the screen and its
 -- shade, the bubble's paper, and the D-pad, triangle, round and stop buttons. "mooi" takes the

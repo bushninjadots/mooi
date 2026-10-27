@@ -553,6 +553,38 @@ local function hide_for(minutes)
     after(minutes * 60000, function() fact.ready = true end)
 end
 
+-- ── Desktop awareness (companion.react; brain.luau react) ────
+-- Workspaces and the battery he watches himself. Notifications and the focus timer belong to the
+-- bar (only one program may receive notifications), which tells him: `emit tell N`, 1 a
+-- notification arrived (only that: never what it says) · 2 a focus block began · 3 it ended ·
+-- 4 the break is over · 5 the timer was stopped.
+local memory = {}
+local function feel(kind, arg)
+    local r = B.react(kind, arg, { cfg = cfg, now = os.time(), last = memory, asleep = activity == "sleeping" })
+    if not r then return end
+    if r.mood then set_mood(r.mood) end
+    if r.face then react(r.face, r.ms or 1500) end
+    if r.move and activity ~= "dragged" and activity ~= "flying" then move(r.move) end
+    if r.line then say(r.line, 2400) end
+end
+local FOCUS = { [2] = "on", [3] = "done", [4] = "break_done", [5] = "off" }
+on("tell", function(v)
+    local n = math.floor(tonumber(v) or 0)
+    if n == 1 then feel("note") elseif FOCUS[n] then feel("focus", FOCUS[n]) end
+end)
+local space_now = nil
+pcall(sys.watch, "workspaces", function(w)
+    local a = type(w) == "table" and tonumber(w.active) or nil
+    if a and space_now and a ~= space_now then feel("space", a) end
+    space_now = a or space_now
+end)
+pcall(sys.watch, "battery", function(b)
+    if type(b) == "table" and b.present then feel("battery", { percent = b.percent, charging = b.charging }) end
+end)
+local function hour_check() feel("hour", { hour = tonumber(os.date("%H")), day = tonumber(os.date("%j")) }) end
+after(8000, hour_check)
+every(60000, hour_check)
+
 on("ui", function(v)
     local n = math.floor(tonumber(v) or -1)
     if n >= 1 and n <= 7 then fact.menu = false end

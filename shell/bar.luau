@@ -466,9 +466,11 @@ return function(ctx)
             foc.left = foc.left - 1
             if foc.left > 0 then foc_show() return end
             if state == 1 then
+                if ctx.bmo then ctx.bmo(3) end
                 foc_toast("Time for a break", string.format("%d minutes of focus done · %d minutes off", fact.foc_len, break_minutes()))
                 foc_phase(2)
             else
+                if ctx.bmo then ctx.bmo(4) end
                 foc_toast("Break over", "Press the timer for the next block")
                 foc_stop()
             end
@@ -478,7 +480,8 @@ return function(ctx)
     on("focus_cmd", function(v)
         local n = math.floor(tonumber(v) or -1)
         if n == 0 then
-            if fact.foc_state > 0 then foc_stop() else foc_phase(1) end
+            if fact.foc_state > 0 then foc_stop(); if ctx.bmo then ctx.bmo(5) end
+            else foc_phase(1); if ctx.bmo then ctx.bmo(2) end end
         elseif n == 1 then
             if fact.foc_state == 1 then foc_phase(2) elseif fact.foc_state == 2 then foc_stop() end
         elseif (n == 2 or n == 3) and fact.foc_state == 0 then

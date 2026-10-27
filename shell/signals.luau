@@ -267,6 +267,12 @@ return function(ctx)
             st.tiers[id], st.seen[id], st.snooze[id], st.shelved[id] = nil, nil, nil, nil
         end
         recompute()
+        -- BMO hears a ding for one that shows (not a whisper: a muted app, quiet time, low urgency)
+        if ctx.bmo then
+            for _, id in ipairs(d.added) do
+                if st.tiers[id] and st.tiers[id] ~= sig.WHISPER then ctx.bmo(1); break end
+            end
+        end
         -- arm every group whose newest notice is new or changed; pulse a changed one's slot
         local fresh = {}
         for _, id in ipairs(d.added) do fresh[id] = true end

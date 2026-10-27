@@ -10,7 +10,7 @@ language 0.4
 scene Bmo {
     permissions {
         run: "hyprctl", "kitty", "loginctl", "pleamar"
-        services: "media", "media.*", "files", "files.write", "env", "clock"
+        services: "media", "media.*", "files", "files.write", "env", "clock", "workspaces", "battery"
     }
 
     service clock { time: text = "--:--"; date: text }
@@ -133,6 +133,7 @@ scene Bmo {
     event hit_up ->              // let go
     event hov ->                 // 1 the pointer came over him, 0 it left
     event ui ->                  // a control in the panel or the menu, by code (bmo.luau UI)
+    event tell ->                // the bar tells him what happened (bmo.luau, "Desktop awareness")
     fact ddx = 0                 // how far the pointer went since the press (the logic reads it)
     fact ddy = 0
 
