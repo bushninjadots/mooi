@@ -84,6 +84,7 @@ M.MODULES = {
     wallpaper = { width = 32 },
     -- Control Nexus (D65): the Arch mark; a press opens the system command centre.
     nexus = { width = 32 },
+    updates = { width = 42 },
 }
 
 -- In the order the scene declares their facts, and the bar menu lists them.
@@ -91,7 +92,7 @@ M.ORDER = {
     "workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
     "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
     "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
-    "notes", "wallpaper", "nexus",
+    "notes", "wallpaper", "nexus", "updates",
 }
 
 M.DEFAULT = {

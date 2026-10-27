@@ -20,7 +20,7 @@ import "ui/stash.plm"
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe"
+        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "bluetooth", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -440,6 +440,16 @@ scene Mooi {
     fact m_nexus = true
     fact fi_nexus = 0
     fact g_nexus = false
+    fact x_updates = 0
+    fact p_updates = false
+    fact w_updates = 0
+    fact m_updates = true
+    fact fi_updates = 0
+    fact g_updates = false
+    fact upd_n = 0               // system updates waiting (bar.luau, lib/updates)
+    fact upd_busy = false        // looking
+    fact upd_running = false     // the updater's terminal is open
+    text upd_t = "Checking for updates…"
     // The focus timer (shell/bar.luau): 0 idle, 1 a focus session, 2 its break; what is left
     // of it (1 → 0), the minutes and seconds left, and the length a session will have.
     fact foc_state = 0
@@ -982,6 +992,7 @@ scene Mooi {
     event open_wallpaper ->    // to the logic: start Lumen, the wallpaper studio, or close it (`mooi wallpaper`)
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
+    event run_updates ->       // to the logic: run the system updater in a terminal
     event edit_mode ->         // to the logic: edit mode on (1) or off (0)
     event screen_w ->          // to the logic: the bar's surface is this wide now (a new mode or scale)
     event edit_hover ->        // to the logic: a module carried over the bar (plan the layout)
@@ -1305,6 +1316,15 @@ scene Mooi {
     prop pv_nexus = 0 ~m.enter
     follow pv_nexus = p_nexus
     on change p_nexus while p_nexus { xs_nexus: x_nexus ~1ms; ws_nexus: w_nexus ~1ms }
+    prop xs_updates = 0 ~fl.flow
+    follow xs_updates = x_updates
+    prop ws_updates = 0 ~fl.flow
+    follow ws_updates = w_updates
+    prop pv_updates = 0 ~m.enter
+    follow pv_updates = p_updates
+    on change p_updates while p_updates { xs_updates: x_updates ~1ms; ws_updates: w_updates ~1ms }
+    prop upd_pulse = 0
+    spin upd_pulse by if(upd_busy, 1400, 0)
     let vv = round(audio.volume * 100)
     let bb = round(battery.percent)
 
@@ -1482,6 +1502,7 @@ scene Mooi {
     figure i_settings = file "icons/settings.svg"
     figure i_wallpaper = file "icons/wallpaper.svg"
     figure i_nexus = file "icons/nexus.svg"
+    figure i_updates = file "icons/updates.svg"
 
     // The surface reserves the strip alone. What opens under it — the mark's menu — floats
     // over windows, and since pleamar commits the input region from what is painted, nothing
@@ -2676,6 +2697,31 @@ scene Mooi {
         on press zwp { emit open_wallpaper; side = none; mark_open = false; open = none }
     }
 
+    // ── System updates ───────────────────────────────────────
+    // A tray with an arrow into it: dim when all is up to date, lit with the count (as the bell's)
+    // when updates wait, breathing while it looks. A press runs the updater in a terminal (paru or
+    // yay, then Flatpak); the rule under it stays lit while that is open.
+    group {
+        show: p_updates
+        move: xs_updates, 0
+        opacity: pv_updates
+        let ulit = max(zupd.hover, if(upd_running, 1, 0))
+        zone box zupd { from: 0, fl.top; size: ws_updates, fl.mod_h; cursor: pointer; role: button
+                        active: upd_running; label: "System updates — {upd_t}" }
+        Pill(ws_updates, ulit)
+        figure i_updates { at: 16, fl.cy; size: 17, 17
+                           color: if(upd_n > 0, mix(fl.phos, fl.engrave, 0.15 * (1 - ulit)), mix(fl.trace, fl.trace_lit, ulit))
+                           opacity: if(upd_busy, 0.55 + 0.45 * abs(cos(upd_pulse)), 1) }
+        group {
+            show: upd_n > 0
+            glow: 5, (70%) * st_glow, fl.ember
+            box { at: 31, fl.cy - 6; size: 16, 11; corner: 2; color: fl.ember_fill }
+        }
+        text "{min(upd_n, 99), 0}" { at: 31, fl.cy - 5.5; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.ink; show: upd_n > 0 }
+        box { from: ws_updates / 2 - 6, fl.top + fl.mod_h - 4; size: 12, 2; corner: 1; color: fl.phos; opacity: if(upd_running, 0.95, 0) }
+        on press zupd { emit run_updates; side = none; mark_open = false; open = none }
+    }
+
     // ── Control Nexus (D65) ──────────────────────────────────
     // The system command centre's door: the Arch mark. A press opens the Nexus program (a
     // full-screen overlay of its own); the same press again, Escape there or an outside press
@@ -3134,18 +3180,30 @@ scene Mooi {
     on drag ez_nexus while ed_press == 28 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 28; ed_sel = -1 }
     on release ez_nexus while ed_drag == 28 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_nexus while ed_drag < 0 and ed_press == 28 { ed_sel = if(ed_sel == 28, -1, 28); ed_press = -1 }
+    group {
+        show: bar_edit and p_updates
+        zone box ez_updates { from: xs_updates, fl.top; size: ws_updates, fl.mod_h; cursor: grab; role: button; label: "Move System updates" }
+        box { from: xs_updates + 1, fl.top + 1; size: ws_updates - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 29 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 29, 0.6, if(ed_sel == 29, 0.4, 0.2 * ez_updates.hover)) }
+        box { from: xs_updates + 1, fl.top + 1; size: ws_updates - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 29, 2, 1.2)
+              color: if(ed_sel == 29 or ed_drag == 29, fl.flare, mix(fl.trace_lit, fl.flare, ez_updates.hover)); opacity: if(ed_drag >= 0 and ed_drag != 29, 0.45, 0.85) }
+    }
+    on press ez_updates while bar_edit { ed_press = 29; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_updates while ed_press == 29 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 29; ed_sel = -1 }
+    on release ez_updates while ed_drag == 29 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_updates while ed_drag < 0 and ed_press == 29 { ed_sel = if(ed_sel == 29, -1, 29); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)

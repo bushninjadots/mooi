@@ -137,6 +137,9 @@ scene Mooi {
     fact m_nexus = true
     fact fi_nexus = 0
     fact g_nexus = false
+    fact m_updates = true
+    fact fi_updates = 0
+    fact g_updates = false
     fact helix_frame = true   // bar.helix_frame
     fact media_mode = 0       // media.mode · 0 full · 1 compact · 2 art · 3 viz
     fact media_idle = 0       // media.idle · 0 collapse · 1 keep · 2 hide

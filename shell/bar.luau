@@ -10,6 +10,7 @@
 
 local barlayout = require("lib/barlayout")
 local sysinfo = require("lib/sysinfo")
+local updates = require("lib/updates")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -361,6 +362,52 @@ return function(ctx)
         fact.caffeine_on = true
     end)
 
+    -- ── System updates (lib/updates) ───────────────────────────
+    -- While the module is on the bar: an hour after the last look (and soon after starting) it
+    -- asks pacman (checkupdates, which never touches the real database), the AUR helper and
+    -- Flatpak how many are waiting; more than last time is a notice. A press runs the updater in
+    -- a terminal, and its closing looks again.
+    local have = {}
+    for _, tool in ipairs({ "paru", "yay", "flatpak" }) do
+        run(tool, { "--version" }, function(_, code) have[tool] = code == 0 end)
+    end
+    local upd = { last = nil, at = nil, busy = false, term = nil }
+    fact.upd_n = 0; fact.upd_busy = false; fact.upd_running = false
+    text.upd_t = "Checking for updates…"
+    local function look()
+        if upd.busy then return end
+        upd.busy = true; fact.upd_busy = true
+        local got, repo, aur, flat = 0, 0, 0, 0
+        local want = 1 + ((have.paru or have.yay) and 1 or 0) + (have.flatpak and 1 or 0)
+        local function done()
+            got = got + 1
+            if got < want then return end
+            local s = updates.summary(repo, aur, flat)
+            if updates.should_notify(upd.last, s.total) and ctx.signal then ctx.signal("Updates", "Updates are waiting", s.text) end
+            upd.last, upd.at, upd.busy = s.total, os.time(), false
+            fact.upd_n = s.total; fact.upd_busy = false
+            text.upd_t = s.text
+        end
+        run("checkupdates", {}, function(out) repo = updates.count_pkgs(out); done() end)
+        if have.paru or have.yay then run(have.paru and "paru" or "yay", { "-Qua" }, function(out) aur = updates.count_pkgs(out); done() end) end
+        if have.flatpak then run("flatpak", { "remote-ls", "--updates", "--columns=application" }, function(out) flat = updates.count_apps(out); done() end) end
+    end
+    every(300000, function()
+        if fact.p_updates and not upd.term and (not upd.at or os.time() - upd.at >= 3600) then look() end
+    end)
+    after(45000, function() if fact.p_updates then look() end end)
+    on("run_updates", function()
+        if upd.term then return end
+        fact.upd_running = true
+        local mine
+        mine = spawn("kitty", { "--title", "mooi · updates", "--class", "mooi-updates", "sh", "-c", updates.command(have) }, nil, function()
+            if upd.term ~= mine then return end
+            upd.term = nil; fact.upd_running = false
+            look()
+        end)
+        upd.term = mine
+    end)
+
     -- Recording: wf-recorder into ~/Videos; 0 the whole screen, 1 an area (slurp). Pressed
     -- again, it stops (asked, not killed, so the file is finished).
     local rec = nil
@@ -510,7 +557,7 @@ return function(ctx)
         mic = "Mic", volume = "Volume", brightness = "Brightness", battery = "Battery", network = "Network",
         bluetooth = "Bluetooth", clock = "Clock", caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot",
         clipboard = "Clipboard", power = "Session", actions = "Win actions", overview = "Overview", core = "Search",
-        focus = "Focus", settings = "Settings", notes = "Quick notes", wallpaper = "Wallpaper" }
+        focus = "Focus", settings = "Settings", notes = "Quick notes", wallpaper = "Wallpaper", updates = "Updates" }
     local editing = nil      -- the layout a drag plans from: as edit mode found it, then as last dropped
     local previewed = nil    -- the last preview shown, so a pointer that moves within one place costs nothing
     local original = nil     -- the layout as edit mode found it, for Escape

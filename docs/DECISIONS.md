@@ -3093,3 +3093,18 @@ notification arriving as "ding!" with the second within 20 s silent, the focus c
 humming and sitting, and the Settings page. `bin/mooi check`: 299 unit tests and 27 of BMO's, 0
 failed. Not checked live: the workspace hop and the window peek (switching the user's workspace and
 opening windows were left alone), the battery reactions, morning and late-night lines at their hours.
+
+## D95 · 2026-10-27 · A system updates module
+
+**Asked for:** an icon module on the bar that says when system updates are waiting, and runs the
+updater when clicked. **Done:** the `updates` module (barlayout ORDER 29, width 42): a tray-and-arrow
+icon, dim when up to date, lit with an ember count badge (as the bell's) when updates wait,
+breathing while it looks; its tooltip says what is waiting ("48 updates · 26 packages · 5 AUR · 17
+Flatpak"). bar.luau looks soon after starting and then hourly while the module is on the bar:
+`checkupdates` (pacman-contrib: a temporary copy of the database, never the real one), `paru -Qua`
+(or `yay`), `flatpak remote-ls --updates`; lib/updates (pure, 4 unit tests) parses and words it.
+More waiting than at the last look is a notice through Signal Loom. A press opens kitty ("mooi ·
+updates") running `paru -Syu` (else `yay -Syu`, else `sudo pacman -Syu`), then `flatpak update`, and
+waits for Enter; its closing looks again. Placed on the user's bar before the bell. Found on the
+way: `mooi refresh` had stopped restarting the bar (fixed separately). Checked live: the counts
+match the three tools run directly. Not pressed: the press runs a real system update.
