@@ -82,3 +82,11 @@ section order and folding (lib/nexusdrawer, pure). Live: open from the mark; eve
 both styles and screenshotted; each kind of tile pressed once where it is safe (a toggle on and off,
 a level, a section folded and back, an island opened from Today); blur closes; the bar's idle frames
 unchanged; scene.sh and integration.sh still pass.
+
+## Deviation, found while building
+
+"A click anywhere else closes it" is not possible for a drawer that leaves the desktop usable: a
+layer surface hears nothing outside itself, and holding the keyboard to notice a blur would take
+the keyboard from every window. So it closes on Esc, ×, the mark, losing the keyboard (once it has
+it), the workspace changing, or another *app* taking the focus — by class, since Hyprland names the
+focused window only by title and class, and titles change by themselves.

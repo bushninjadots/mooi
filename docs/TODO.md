@@ -9,8 +9,7 @@ what was done, and why, is docs/DECISIONS.md.
       Plate (Ferrolume) and Tether (ours), Settings → Colour → Islands
 - [x] Resources → **system statistics island** · clock → **calendar island** + view states (right
       press) · media → view states (right press) · **sound, display, power islands** · **weather island**
-- [ ] **Control Nexus** — the user: "perfect it, it can be different; it needs all the important info
-      inside and buttons leading somewhere" (its own spec next; not part of the island kit)
+- [x] **Control Nexus** — a right-side drawer with everything, every tile acting (D98)
 - [ ] Later: per-app volumes in the sound island; the Signal Field and side panels in the kit
 
 ## Roadmap (asked 2026-10-27, in order)
@@ -21,7 +20,7 @@ what was done, and why, is docs/DECISIONS.md.
       player, so the EQ only applies while it is open).
 - [ ] Settings
 - [ ] Wallpaper editor (Lumen) and our own wallpaper switcher, removing the other pickers
-- [ ] Control Nexus
+- [x] Control Nexus — the drawer (D98)
 - [ ] The bar ("needs big work") — islands done (D97); next the Control Nexus
 - [x] BMO — starts with mooi, throwing, sizes, the bar, variants, awareness, idle life, talk, Settings page (D94)
 - [ ] Desktop widgets and their settings

@@ -3171,3 +3171,38 @@ module is not on the user's bar) and screenshotted in both styles; module press 
 light on/off (process count 1 → 0); clock and media views cycled through and back to the user's own.
 Unit 311 + BMO 27; scene.sh 71/71 twice; integration.sh 42/42 twice; config-recovery 13/13 three
 times (its safe-mode wait fixed: --say succeeds against a stale socket).
+
+## D98 · 2026-10-27 · The Control Nexus is a drawer
+
+**Asked for:** "perfect the control nexus … all the important info inside and buttons leading
+somewhere", "unobtrusive but has everything"; the user chose one Nexus (not two views), a right-side
+drawer, and the twelve sections. Spec and plan: docs/superpowers/specs/2026-10-27-nexus-drawer-design.md,
+docs/superpowers/plans/2026-10-27-nexus-drawer.md.
+
+**The drawer** (shell/mooi-nexus.plm/.luau, rewritten; same program, same mark, `mooi nexus`): a
+420 px column on the right edge under the bar, the screen's height below it, sliding in and out
+(~220 ms); nothing is dimmed or covered; drawn by the island kit in plate or tether. Head: identity,
+user@host, time, Settings · Lock · Session · ×. Sections, each folding (nexus.folded), the column
+scrolling: quick toggles (Wi-Fi, Bluetooth, sound, mic, quiet, night light, keep awake, battery
+saver, record — each lit when on, its state worded), levels, now playing (only while there is a
+player), notifications (the bar's nexus-feed.json: app, title, when — never a body; none under
+signals.private), Wi-Fi and Bluetooth rows that join / connect, outputs and app volumes, the machine
+(CPU+temperature, memory, disk, GPU; btop on a press; the battery line), today (the week, the
+weather — kept 10 minutes in nexus-weather.json; a press opens the bar's calendar/weather island),
+system updates (the bar's updates.json; Update runs the bar's updater), workspaces, shortcuts.
+Column geometry is lib/nexusdrawer (pure, tested); the feed is lib/nexusfeed (tested).
+
+**Closing:** Esc, ×, the mark (the bar asks it to slide away), a blur, the workspace changing, or
+another app taking the focus (by class — see the spec's deviation note). It ends 900 ms after it
+starts sliding so a `pleamar --say` it just started is not cut off.
+
+**Retired:** the node workspace and the hub, lib/nexus, nexusgraph, nexuslayout, nexusnode, nexushub,
+telemetry and their 82 tests; the nexus.* settings only they read (a migration keeps identity and
+folds, tested). The scene went from ~3500 lines and thousands of properties to 255 properties.
+
+**Checked live:** both styles top to bottom with real data (networks, devices, apps, updates
+"6 updates · 5 packages · 1 AUR", Springfield's weather); fold and unfold (saved, everything below
+moves); the night light toggled through the bar and back (process 1 → 0); the wheel scrolls; Today
+opens the calendar island; a notification opens the Signal Field; Esc closes; another app's window
+closes it. Unit 234 + BMO 27; integration.sh 42/42. Not pressed live: Wi-Fi join, Bluetooth connect,
+output switch, record, lock and session (each would change the user's machine or session).
