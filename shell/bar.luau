@@ -357,7 +357,7 @@ return function(ctx)
         if inhibit then kill(inhibit, "term"); inhibit = nil; fact.caffeine_on = false; return end
         local mine
         mine = spawn("systemd-inhibit", { "--what=idle:sleep", "--who=mooi", "--why=Keep awake", "--mode=block", "sleep", "infinity" },
-            nil, function() if inhibit == mine then inhibit = nil; fact.caffeine_on = false end end)
+            function() end, function() if inhibit == mine then inhibit = nil; fact.caffeine_on = false end end)
         inhibit = mine
         fact.caffeine_on = true
     end)
@@ -398,14 +398,17 @@ return function(ctx)
     after(45000, function() if fact.p_updates then look() end end)
     on("run_updates", function()
         if upd.term then return end
-        fact.upd_running = true
         local mine
-        mine = spawn("kitty", { "--title", "mooi · updates", "--class", "mooi-updates", "sh", "-c", updates.command(have) }, nil, function()
-            if upd.term ~= mine then return end
-            upd.term = nil; fact.upd_running = false
-            look()
-        end)
+        local ok, id = pcall(spawn, "kitty", { "--title", "mooi · updates", "--class", "mooi-updates", "sh", "-c", updates.command(have) },
+            function() end, function()
+                if upd.term ~= mine then return end
+                upd.term = nil; fact.upd_running = false
+                look()
+            end)
+        if not ok then log("updates · the terminal did not start: " .. tostring(id)); return end
+        mine = id
         upd.term = mine
+        fact.upd_running = true
     end)
 
     -- Recording: wf-recorder into ~/Videos; 0 the whole screen, 1 an area (slurp). Pressed

@@ -2707,7 +2707,7 @@ scene Mooi {
         opacity: pv_updates
         let ulit = max(zupd.hover, if(upd_running, 1, 0))
         zone box zupd { from: 0, fl.top; size: ws_updates, fl.mod_h; cursor: pointer; role: button
-                        active: upd_running; label: "System updates — {upd_t}" }
+                        label: "System updates — {upd_t}" }
         Pill(ws_updates, ulit)
         figure i_updates { at: 16, fl.cy; size: 17, 17
                            color: if(upd_n > 0, mix(fl.phos, fl.engrave, 0.15 * (1 - ulit)), mix(fl.trace, fl.trace_lit, ulit))
