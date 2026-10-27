@@ -110,6 +110,7 @@ local function say(s) text.t_status = s or "" end
 local lyrics_for   -- the lyrics for a song (local file, the cache, LRCLIB)
 local est_sync     -- the lyrics' clock, set from each reading
 local wave_for     -- a library song's waveform
+local audio_for    -- a library song's format, for the rack
 
 -- ── mpd ──────────────────────────────────────────────────────
 local music_dir = HOME .. "/Music"
@@ -189,6 +190,7 @@ local function show_song(s)
     text.t_meta = table.concat(bits, "  ·  ")
     show_cover(s)
     if wave_for then wave_for(s) end
+    if audio_for then audio_for(s) end
     if lyrics_for then lyrics_for(s.file, s.artist, s.title, s.album, s.seconds, P.path(music_dir, s.file)) end
 end
 
@@ -365,13 +367,17 @@ end)
 on("pl_next", function() if on_library() then mpc({ "next" }) else pcall(sys.call, "media.next") end end)
 on("pl_prev", function() if on_library() then mpc({ "prev" }) else pcall(sys.call, "media.previous") end end)
 -- 0 … 1000 a fraction of the song; -5/-6 five seconds back/on, -7/-8 thirty
+local last_seek = nil   -- where the song was last carried to (the deck's CUE)
 on("pl_seek", function(v)
     v = math.floor(tonumber(v) or 0)
     local rel = ({ [-5] = -5, [-6] = 5, [-7] = -30, [-8] = 30 })[v]
     if on_library() then
         if not st or st.state == "stopped" then return end
         if rel then mpc({ "seek", (rel > 0 and "+" or "") .. tostring(rel) })
-        else mpc({ "seek", string.format("%.1f%%", math.max(0, math.min(1000, v)) / 10) }) end
+        else
+            last_seek = st.total * math.max(0, math.min(1000, v)) / 1000   -- CUE comes back here
+            mpc({ "seek", string.format("%.1f%%", math.max(0, math.min(1000, v)) / 10) })
+        end
     elseif remote then
         local len = tonumber(remote.length) or 0
         if rel then pctl({ "position", tostring(math.abs(rel)) .. (rel > 0 and "+" or "-") })
@@ -464,7 +470,7 @@ end
 on("pl_src", function(v) set_source(tonumber(v) == 1 and "remote" or "library") end)
 
 -- Each place's visualiser: the setting's style, as the scene's index; a press on its chip turns it.
-local VIZ_PLACES = { [0] = "viz_mini", [1] = "viz_deck", [2] = "viz_full" }
+local VIZ_PLACES = { [0] = "viz_mini", [1] = "viz_deck", [2] = "viz_full", [3] = "viz_stage", [4] = "viz_rack" }
 local function show_viz_styles()
     for _, key in pairs(VIZ_PLACES) do fact[key] = VZ.index(settings.player[key]) end
 end
@@ -478,6 +484,38 @@ on("viz_next", function(v)
     settings.player = fresh.player
     show_viz_styles()
 end)
+
+-- The views: the deck, the stage, the rack (player.view, remembered).
+local VIEWS = { [0] = "deck", [1] = "stage", [2] = "rack" }
+fact.view = settings.player.view
+on("pl_view", function(v)
+    local want = VIEWS[math.floor(tonumber(v) or 0)] or "deck"
+    fact.view = want
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+    local fresh = config.parse(read("settings.json"), json.decode)
+    fresh.player.view = want
+    settings.player = fresh.player
+    pcall(sys.call, "files.write", "settings.json", fresh)
+end)
+-- CUE: back to where the song was last carried to, if that is behind the needle; else its start.
+on("pl_cue", function()
+    if not on_library() or not st or st.state == "stopped" then return end
+    local t = P.cue_point(last_seek, st.elapsed)
+    mpc({ "seek", P.clock(t) })
+end)
+-- The rack's line: the file's format, from ffmpeg's stream line (mpc cannot print mpd's).
+local audio_file = nil
+audio_for = function(s)
+    text.t_audio = ""
+    if not s or fact.src ~= "library" then return end
+    audio_file = s.file
+    local ext = string.upper(s.file:match("%.([%w]+)$") or "")
+    -- `-i` alone prints the streams (after every tag, which can run long) on the error output
+    run("ffmpeg", { "-hide_banner", "-i", P.path(music_dir, s.file) }, function(out)
+        if audio_file ~= s.file then return end
+        text.t_audio = P.audio_line(P.audio_from_ffmpeg(out), ext)
+    end, { errors = true })
+end
 
 on("pl_tint", function()
     local fresh = config.parse(read("settings.json"), json.decode)

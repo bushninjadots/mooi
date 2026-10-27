@@ -3,6 +3,7 @@ import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
+import "ui/playerviews.plm" as views
 
 // mooi's music player (docs/PLAYER.md): a program of its own, opened from the bar's media module.
 // Your mpd library first — the queue, seek, volume, shuffle and repeat through mpc — and a remote
@@ -358,6 +359,8 @@ scene Player {
     event lyr_seek ->        // to the logic: go to this line (its time × 10)
     event pl_tint ->         // to the logic: colours from the album cover, or the shell's again
     event pl_full ->         // to the logic: full screen, or back to the panel
+    event pl_view ->         // to the logic: 0 the deck · 1 the stage · 2 the rack
+    event pl_cue ->          // to the logic: back to the last carried-to point, else the start
     event viz_next ->        // to the logic: the next visualiser style for a place (0 mini · 1 the deck · 2 full screen)
     event pl_size ->         // to the logic: -1 a press outside · -2 Escape · 1 the panel (OPEN PLAYER) · 2 full screen
     event lyr_scroll ->      // to the logic: the wheel over plain (unsynced) lyrics
@@ -373,7 +376,7 @@ scene Player {
     on change pl_open while not pl_open { pl_a: 0 ~pl.ext }
     // 33⅓ rpm is 200° a second; paused, the platter slows to a stop rather than freezing
     prop spd = 0 ~pl.coast
-    follow spd = if(pstate == playing, 200, 0)
+    follow spd = if(pstate == playing, 200 * (1 + pitch / 100) * if(rpm45, 1.35, 1), 0)
     prop vang = 0
     spin vang by spd
     // the progress glides between the logic's readings
@@ -403,6 +406,19 @@ scene Player {
     fact viz_mini = 2
     fact viz_deck = 2
     fact viz_full = 2
+    fact viz_stage = 3
+    fact viz_rack = 4
+    // the view (the music player overhaul): the DJ deck, the cover stage, the instrument rack
+    fact view: deck | stage | rack = deck
+    // the deck's own: the record at 33⅓ or 45, its pitch (±8 %: the spin, not the music)
+    fact rpm45 = false
+    fact pitch = 0
+    // the rack's: the file's format, and the EQ's three knobs (the equaliser sets them)
+    text t_audio = ""
+    fact eq_on = false
+    fact eq_lo = 0
+    fact eq_mid = 0
+    fact eq_hi = 0
     prop vp0 = 0.03 ~pl.level
     follow vp0 = nv0
     prop vp1 = 0.03 ~pl.level

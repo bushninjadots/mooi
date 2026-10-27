@@ -298,4 +298,33 @@ function M.cover_tones(name, roles)
     return { a = a, b = b, initials = ini ~= "" and ini or "?" }
 end
 
+-- ── The views (the music player overhaul) ────────────────────
+-- The file's audio, from ffmpeg's stream line ("Audio: flac, 44100 Hz, stereo, s16 (24 bit)"):
+-- mpc cannot print mpd's own `audio` field. Float samples count as 32 bits.
+function M.audio_from_ffmpeg(out)
+    local line = tostring(out or ""):match("Audio:[^\n]*")
+    if not line then return nil end
+    local rate = tonumber(line:match("(%d+) Hz"))
+    if not rate then return nil end
+    local ch = line:match("Hz, ([^,]+)")
+    local channels = (ch == "mono" and 1) or (ch == "stereo" and 2) or tonumber((ch or ""):match("^(%d+)")) or 2
+    local bits = tonumber(line:match("%((%d+) bit%)")) or tonumber(line:match(", [su](%d+)")) or (line:match(", flt") and 32) or 16
+    return { rate = rate, bits = bits, channels = channels }
+end
+-- The rack's line: the file's format, then what mpd says it is playing.
+function M.audio_line(a, ext)
+    local parts = { ext ~= "" and ext or nil }
+    if a then
+        parts[#parts + 1] = string.format("%g kHz", a.rate / 1000)
+        parts[#parts + 1] = a.bits .. " bit"
+        parts[#parts + 1] = a.channels == 1 and "mono" or (a.channels == 2 and "stereo" or (a.channels .. " ch"))
+    end
+    return table.concat(parts, " · ")
+end
+-- CUE: back to where the song was last carried to, if that is behind the needle; else its start.
+function M.cue_point(last_seek, now)
+    if last_seek and last_seek >= 0 and last_seek < now then return last_seek end
+    return 0
+end
+
 return M

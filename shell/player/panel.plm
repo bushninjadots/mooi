@@ -39,6 +39,13 @@ part Panel {
                 zone box zfull { from: pw - 104, 13; size: 54, 24; cursor: pointer; role: button; label: "Full screen" }
                 PChip(pw - 104, 14, 54, "FULL", false, zfull.hover)
                 on press zfull { emit pl_full }
+                // the view: the DJ deck, the cover stage, the instrument rack
+                repeat vv in 0..3 {
+                    zone box zview.$vv { from: pw - 420 + vv * 74, 13; size: 70, 24; cursor: pointer; role: tab
+                                         selected: pick(vv, view == deck, view == stage, view == rack); label: pick(vv, "The DJ deck", "The cover stage", "The instrument rack") }
+                    PChip(pw - 420 + vv * 74, 14, 70, pick(vv, "DECK", "STAGE", "RACK"), pick(vv, view == deck, view == stage, view == rack), zview.$vv.hover)
+                    on press zview.$vv { emit pl_view(vv) }
+                }
                 zone box zcol { from: pw - 178, 13; size: 66, 24; cursor: pointer; role: toggle; checked: cover_tint
                                 label: "Colours from the album cover" }
                 PChip(pw - 178, 14, 66, "COVER", cover_tint, zcol.hover)
@@ -49,68 +56,83 @@ part Panel {
                 on press zclose { emit pl_close }
                 box { from: 18, 48; size: pw - 36, 1; color: fl.trace_dim; opacity: 0.8 }
 
-                // ── the turntable ──
-                // the plinth: a cut plate of brushed steel, a strobe dot ring at its edge
-                Chamfer(rcx - rr - 30, 64, 2 * rr + 60 + 40, ph - 84, 10, mix(fl.hull_raised, fl.steel_900, 0.5), fl.trace_dim, 1, 1)
-                repeat k in 0..72 {
-                    ellipse { at: rcx + sin(k * 5) * (rr + 14), rcy - cos(k * 5) * (rr + 14); radius: 0.9
-                              color: fl.steel_500; opacity: 0.6 }
-                }
-                // the visualiser (ui/viz.plm): round the record, or along the plinth's foot
+                // ── the view, on the left plate ──
+                let vx0 = rcx - rr - 30
+                let vw0 = 2 * rr + 100
                 group {
-                    opacity: if(pstate == playing, 0.95, 0.35)
-                    viz.Pick(viz_deck, 36, ph - 64, 388, 40, rcx, rcy, rr + 20, 28, fl.phos, fl.flare, fl.trace_dim, vang)
+                    show: view == deck
+                    // ── the turntable ──
+                    // the plinth: a cut plate of brushed steel, a strobe dot ring at its edge
+                    Chamfer(rcx - rr - 30, 64, 2 * rr + 60 + 40, ph - 84, 10, mix(fl.hull_raised, fl.steel_900, 0.5), fl.trace_dim, 1, 1)
+                    repeat k in 0..72 {
+                        ellipse { at: rcx + sin(k * 5) * (rr + 14), rcy - cos(k * 5) * (rr + 14); radius: 0.9
+                                  color: fl.steel_500; opacity: 0.6 }
+                    }
+                    // the visualiser (ui/viz.plm): round the record, or along the plinth's foot
+                    group {
+                        opacity: if(pstate == playing, 0.95, 0.35)
+                        viz.Pick(viz_deck, 36, ph - 64, 388, 40, rcx, rcy, rr + 20, 28, fl.phos, fl.flare, fl.trace_dim, vang)
+                    }
+                    zone box pviz { from: 24, 22; size: 76, 16; cursor: pointer; role: button; label: "Visualiser style" }
+                    text pick(viz_deck, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 28, 30; anchor: left center
+                         size: 7.5; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, pviz.hover) }
+                    on press pviz { emit viz_next(1) }
+                    // the record: black vinyl, its grooves, a sheen that stays where the light is
+                    ellipse { at: rcx, rcy; radius: rr; color: #08090a }
+                    repeat g in 0..14 {
+                        ellipse { at: rcx, rcy; radius: rl + 8 + g * (rr - rl - 12) / 13; stroke: 0.7; color: #1c1f22; opacity: 0.9 }
+                    }
+                    ellipse { at: rcx, rcy; radius: rr; stroke: 1.5; color: fl.steel_700 }
+                    group {
+                        mask: radial rcx, rcy radius rr - 2 to rr
+                        path { color: #ffffff; opacity: 0.045
+                               move rcx, rcy; line rcx + rr * 1.2, rcy - rr * 0.6; line rcx + rr * 1.2, rcy - rr * 0.1; close }
+                        path { color: #ffffff; opacity: 0.045
+                               move rcx, rcy; line rcx - rr * 1.2, rcy + rr * 0.6; line rcx - rr * 1.2, rcy + rr * 0.1; close }
+                    }
+                    // the label: the cover, round, turning with the record
+                    group {
+                        pivot: rcx, rcy
+                        rotate: vang * 1deg
+                        mask: radial rcx, rcy radius rl - 1 to rl
+                        box { from: rcx - rl, rcy - rl; size: rl * 2, rl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                        image cover { at: rcx - rl, rcy - rl; size: rl * 2, rl * 2; show: cover_on }
+                        // a mark on the label, so the turn can be seen even on a plain cover
+                        box { from: rcx - 2, rcy - rl + 4; size: 4, 10; corner: 2; color: fl.engrave; opacity: 0.5; show: not cover_on }
+                    }
+                    ellipse { at: rcx, rcy; radius: rl; stroke: 1; color: #000000; opacity: 0.5 }
+                    ellipse { at: rcx, rcy; radius: 5; color: fl.steel_300 }
+                    ellipse { at: rcx, rcy; radius: 2; color: fl.steel_700 }
+                    // the tonearm: its base, the arm, the head; dragged, it seeks
+                    ellipse { at: apx, apy; radius: 22; color: fl.steel_700 }
+                    ellipse { at: apx, apy; radius: 22; stroke: 1; color: fl.steel_300; opacity: 0.6 }
+                    ellipse { at: apx, apy; radius: 9; color: fl.steel_500 }
+                    group {
+                        pivot: apx, apy
+                        rotate: arm * 1deg
+                        line { from: apx, apy; to: apx, apy + alen - 30; width: 4; color: fl.steel_300 }
+                        line { from: apx, apy + alen - 30; to: apx - 10, apy + alen; width: 4; color: fl.steel_300 }
+                        box { from: apx - 20, apy + alen - 6; size: 22, 14; corner: 2; color: fl.steel_500 }
+                        box { from: apx - 18, apy + alen + 6; size: 4, 4; color: fl.phos; opacity: if(pstate == playing, 1, 0.3) }
+                        // the counterweight behind the pivot
+                        box { from: apx - 9, apy - 50; size: 18, 24; corner: 3; color: fl.steel_500 }
+                    }
+                    // the arm's head is the handle: carried, the angle is read from the pointer
+                    zone box zarm { from: apx - 60, apy + 150; size: 120, 160; cursor: grab; role: slider; label: "The tonearm — carry it to seek"
+                                    value: progress; show: has_song and src == library }
+                    on press zarm { arm_drag = true; arm_at = arm }
+                    on drag zarm while arm_drag { arm_at = clamp(atan2(apx - local.x, local.y - apy), 20, 40) }
+                    on release zarm while arm_drag { arm_drag = false; emit pl_seek(round((arm_at - 20) / 20 * 1000)) }
+                    views.DeckKit(vx0, 64, vw0, ph - 84)
                 }
-                zone box pviz { from: 24, 22; size: 76, 16; cursor: pointer; role: button; label: "Visualiser style" }
-                text pick(viz_deck, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 28, 30; anchor: left center
-                     size: 7.5; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, pviz.hover) }
-                on press pviz { emit viz_next(1) }
-                // the record: black vinyl, its grooves, a sheen that stays where the light is
-                ellipse { at: rcx, rcy; radius: rr; color: #08090a }
-                repeat g in 0..14 {
-                    ellipse { at: rcx, rcy; radius: rl + 8 + g * (rr - rl - 12) / 13; stroke: 0.7; color: #1c1f22; opacity: 0.9 }
-                }
-                ellipse { at: rcx, rcy; radius: rr; stroke: 1.5; color: fl.steel_700 }
                 group {
-                    mask: radial rcx, rcy radius rr - 2 to rr
-                    path { color: #ffffff; opacity: 0.045
-                           move rcx, rcy; line rcx + rr * 1.2, rcy - rr * 0.6; line rcx + rr * 1.2, rcy - rr * 0.1; close }
-                    path { color: #ffffff; opacity: 0.045
-                           move rcx, rcy; line rcx - rr * 1.2, rcy + rr * 0.6; line rcx - rr * 1.2, rcy + rr * 0.1; close }
+                    show: view == stage
+                    views.Stage(vx0, 64, vw0, ph - 84)
                 }
-                // the label: the cover, round, turning with the record
                 group {
-                    pivot: rcx, rcy
-                    rotate: vang * 1deg
-                    mask: radial rcx, rcy radius rl - 1 to rl
-                    box { from: rcx - rl, rcy - rl; size: rl * 2, rl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
-                    image cover { at: rcx - rl, rcy - rl; size: rl * 2, rl * 2; show: cover_on }
-                    // a mark on the label, so the turn can be seen even on a plain cover
-                    box { from: rcx - 2, rcy - rl + 4; size: 4, 10; corner: 2; color: fl.engrave; opacity: 0.5; show: not cover_on }
+                    show: view == rack
+                    views.Rack(vx0, 64, vw0, ph - 84)
                 }
-                ellipse { at: rcx, rcy; radius: rl; stroke: 1; color: #000000; opacity: 0.5 }
-                ellipse { at: rcx, rcy; radius: 5; color: fl.steel_300 }
-                ellipse { at: rcx, rcy; radius: 2; color: fl.steel_700 }
-                // the tonearm: its base, the arm, the head; dragged, it seeks
-                ellipse { at: apx, apy; radius: 22; color: fl.steel_700 }
-                ellipse { at: apx, apy; radius: 22; stroke: 1; color: fl.steel_300; opacity: 0.6 }
-                ellipse { at: apx, apy; radius: 9; color: fl.steel_500 }
-                group {
-                    pivot: apx, apy
-                    rotate: arm * 1deg
-                    line { from: apx, apy; to: apx, apy + alen - 30; width: 4; color: fl.steel_300 }
-                    line { from: apx, apy + alen - 30; to: apx - 10, apy + alen; width: 4; color: fl.steel_300 }
-                    box { from: apx - 20, apy + alen - 6; size: 22, 14; corner: 2; color: fl.steel_500 }
-                    box { from: apx - 18, apy + alen + 6; size: 4, 4; color: fl.phos; opacity: if(pstate == playing, 1, 0.3) }
-                    // the counterweight behind the pivot
-                    box { from: apx - 9, apy - 50; size: 18, 24; corner: 3; color: fl.steel_500 }
-                }
-                // the arm's head is the handle: carried, the angle is read from the pointer
-                zone box zarm { from: apx - 60, apy + 150; size: 120, 160; cursor: grab; role: slider; label: "The tonearm — carry it to seek"
-                                value: progress; show: has_song and src == library }
-                on press zarm { arm_drag = true; arm_at = arm }
-                on drag zarm while arm_drag { arm_at = clamp(atan2(apx - local.x, local.y - apy), 20, 40) }
-                on release zarm while arm_drag { arm_drag = false; emit pl_seek(round((arm_at - 20) / 20 * 1000)) }
 
                 // ── the track ──
                 text pick(has_song, "NOTHING IS PLAYING", t_title) { at: mx, 96; anchor: left center; size: 21; weight: 700; family: "Exo 2"

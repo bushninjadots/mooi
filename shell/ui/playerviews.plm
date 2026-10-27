@@ -1,0 +1,176 @@
+language 0.4
+import "viz.plm" as viz
+
+// The player's views (the music player overhaul), drawn at any size so the panel and full screen
+// share them: the Cover stage, the Instrument rack, and the DJ deck's controls (the deck's record
+// and tonearm stay in the panel and full screen parts, where the turning is drawn). Not strict:
+// they read the player's facts (the song, the cover, the lyrics, the bands) and emit its events.
+
+library PlayerViews {
+    // ── Cover stage: the cover large, its colours behind, the sung line lit beneath ──
+    component Stage(x: number, y: number, w: number, h: number, big: bool = false) {
+        size: w, h
+        let cs = min(w * 0.62, h * 0.5)
+        let cx1 = x + (w - cs) / 2
+        let cy1 = y + h * 0.06
+        let lh = if(big, 44, 26)
+        let ly0 = cy1 + cs + if(big, 48, 30)
+        group {
+            clip box { from: x, y; size: w, h; corner: 10 }
+            group {
+                show: cover_on
+                blur: 46
+                opacity: 0.55
+                image cover { at: x - w * 0.2, y - h * 0.2; size: w * 1.4, w * 1.4 }
+            }
+            box { from: x, y; size: w, h; color: fl.ground; opacity: 0.35 }
+            group {
+                opacity: if(pstate == playing, 0.9, 0.35)
+                viz.Pick(viz_stage, x, y + h * 0.5, w, h * 0.5, x + w / 2, cy1 + cs / 2, cs * 0.55, cs * 0.18, fl.phos, fl.ember, fl.trace_dim, vang)
+            }
+        }
+        // the cover, lifted off the page
+        box { from: cx1 + 6, cy1 + 10; size: cs, cs; corner: 10; color: #000000; opacity: 0.35 }
+        group {
+            show: cover_on
+            clip box { from: cx1, cy1; size: cs, cs; corner: 10 }
+            image cover { at: cx1, cy1; size: cs, cs }
+        }
+        group {
+            show: not cover_on
+            Chamfer(cx1, cy1, cs, cs, 10, fl.well, fl.trace_dim, 1, 1)
+            text "♪" { at: cx1 + cs / 2, cy1 + cs / 2; anchor: center; size: 48; color: fl.trace }
+        }
+        // the sung line, large and lit; the ones round it fade by their distance
+        for l in lyr {
+            // (a text's size is a number, so each size is its own line, shown by when it applies)
+            let lop = if(l.cur, 1, clamp(0.75 - l.dist * 0.18, 0.12, 0.75))
+            let lshow = lyr_on and l.n < if(big, 7, 5)
+            text l.text { at: x + w / 2, ly0 + l.n * lh; anchor: center; align: center; size: 30; weight: 700; family: "Exo 2"; width: w - 40; lines: 1
+                          color: fl.phos; show: lshow and l.cur and big }
+            text l.text { at: x + w / 2, ly0 + l.n * lh; anchor: center; align: center; size: 17; weight: 700; family: "Exo 2"; width: w - 40; lines: 1
+                          color: fl.phos; show: lshow and l.cur and not big }
+            text l.text { at: x + w / 2, ly0 + l.n * lh; anchor: center; align: center; size: 18; family: "Exo 2"; width: w - 40; lines: 1
+                          color: fl.engrave; opacity: lop; show: lshow and not l.cur and big }
+            text l.text { at: x + w / 2, ly0 + l.n * lh; anchor: center; align: center; size: 11.5; family: "Exo 2"; width: w - 40; lines: 1
+                          color: fl.engrave; opacity: lop; show: lshow and not l.cur and not big }
+            zone box zstl { from: x + 20, ly0 + l.n * lh - lh / 2; size: w - 40, lh; cursor: pointer; role: item; label: "Sing from here"
+                            show: lyr_on and lyr_synced and l.n < if(big, 7, 5) }
+            on press zstl { emit lyr_seek(l.t) }
+        }
+        // no lyrics: the song itself, large
+        text pick(has_song, "NOTHING PLAYING", t_title) { at: x + w / 2, ly0 + lh * 0.4; anchor: center; align: center; size: 34; weight: 700
+             family: "Exo 2"; width: w - 40; lines: 1; color: fl.engrave; show: not lyr_on and big }
+        text pick(has_song, "NOTHING PLAYING", t_title) { at: x + w / 2, ly0 + lh * 0.4; anchor: center; align: center; size: 18; weight: 700
+             family: "Exo 2"; width: w - 40; lines: 1; color: fl.engrave; show: not lyr_on and not big }
+        text t_artist { at: x + w / 2, ly0 + lh * 1.5; anchor: center; align: center; size: 18; family: "Exo 2"; color: fl.muted
+             width: w - 40; lines: 1; show: not lyr_on and big }
+        text t_artist { at: x + w / 2, ly0 + lh * 1.5; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted
+             width: w - 40; lines: 1; show: not lyr_on and not big }
+        // its visualiser's chip
+        zone box zstv { from: x + 12, y + 10; size: 80, 18; cursor: pointer; role: button; label: "Visualiser style" }
+        text pick(viz_stage, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: x + 16, y + 19; anchor: left center
+             size: 7.5; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, zstv.hover) }
+        on press zstv { emit viz_next(3) }
+    }
+
+    // ── Instrument rack: machined panels — the analyser, the readout, the EQ, the waveform ──
+    component Rack(x: number, y: number, w: number, h: number, big: bool = false) {
+        size: w, h
+        let g = if(big, 14, 8)
+        let ah = h * 0.34
+        let ih = h * 0.30
+        let iy = y + ah + g
+        let iw = (w - g) * 0.6
+        let sy = iy + ih + g
+        let sh = h - ah - ih - g * 2
+        let fs = if(big, 1.6, 1)
+        // the analyser
+        Chamfer(x, y, w, ah, 10, fl.hull_raised, fl.trace_dim, 1, 1)
+        text "ANALYSER" { at: x + 12, y + 14; anchor: left center; size: 7 * fs; family: "Share Tech Mono"; color: fl.muted }
+        zone box zrkv { from: x + w - 92, y + 6; size: 84, 18; cursor: pointer; role: button; label: "Visualiser style" }
+        text pick(viz_rack, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: x + w - 12, y + 15; anchor: right center
+             size: 7 * fs; family: "Share Tech Mono"; color: mix(fl.muted, fl.phos, zrkv.hover) }
+        on press zrkv { emit viz_next(4) }
+        group {
+            opacity: if(pstate == playing, 1, 0.4)
+            viz.Pick(viz_rack, x + 14, y + 28, w - 28, ah - 40, x + w / 2, y + ah / 2 + 6, ah * 0.22, ah * 0.16, fl.phos, fl.ember, fl.trace_dim, vang)
+        }
+        // the readout: the track, its file, the time in lit digits
+        Chamfer(x, iy, iw, ih, 10, fl.hull_raised, fl.trace_dim, 1, 1)
+        text "NOW" { at: x + 12, iy + 14; anchor: left center; size: 7 * fs; family: "Share Tech Mono"; color: fl.muted }
+        text pick(has_song, "NOTHING PLAYING", t_title) { at: x + 12, iy + 34 * fs; anchor: left center; size: 14 * fs; weight: 700; family: "Exo 2"
+             width: iw - 24; lines: 1; color: fl.engrave }
+        text "{t_artist}{?  ·  {t_album}}" { at: x + 12, iy + 54 * fs; anchor: left center; size: 9 * fs; family: "Exo 2"; width: iw - 24; lines: 1; color: fl.muted }
+        group {
+            glow: 10, 70% * st_glow, fl.phos
+            text t_elapsed { at: x + 12, iy + ih - 34 * fs; anchor: left center; size: 26 * fs; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        }
+        text "/ {t_total}" { at: x + 12 + 78 * fs, iy + ih - 30 * fs; anchor: left center; size: 10 * fs; family: "Share Tech Mono"; color: fl.muted }
+        text t_audio { at: x + 12, iy + ih - 12 * fs; anchor: left center; size: 7.5 * fs; family: "Share Tech Mono"; color: fl.trace_lit; width: iw - 24; lines: 1 }
+        // the EQ's three knobs (the equaliser drives them; off, they rest at the middle)
+        let kx = x + iw + g
+        let kw = w - iw - g
+        Chamfer(kx, iy, kw, ih, 10, fl.hull_raised, fl.trace_dim, 1, 1)
+        text pick(eq_on, "EQ · OFF", "EQ") { at: kx + 12, iy + 14; anchor: left center; size: 7 * fs; family: "Share Tech Mono"; color: if(eq_on, fl.phos, fl.muted) }
+        repeat k in 0..3 {
+            let kcx = kx + kw * (k + 0.5) / 3
+            let kcy = iy + ih * 0.55
+            let kr = min(kw / 8, ih * 0.22)
+            let kv = pick(k, eq_lo, eq_mid, eq_hi)
+            ellipse { at: kcx, kcy; radius: kr; color: fl.well }
+            arc { at: kcx, kcy; radius: kr + 4; width: 2; span: 270deg; color: fl.trace_dim }
+            line { from: kcx, kcy; to: kcx + sin(kv * 11.25) * kr * 0.8, kcy - cos(kv * 11.25) * kr * 0.8; width: 2; color: if(eq_on, fl.phos, fl.muted) }
+            text pick(k, "LO", "MID", "HI") { at: kcx, kcy + kr + 14 * fs; anchor: center; size: 7 * fs; family: "Share Tech Mono"; color: fl.muted }
+        }
+        // the waveform: the whole song, the played part lit; a press or a drag seeks
+        Chamfer(x, sy, w, sh, 10, fl.hull_raised, fl.trace_dim, 1, 1)
+        zone box zrks { from: x + 12, sy + 10; size: w - 24, sh - 20; cursor: pointer; role: slider; label: "Position"; value: prg; show: has_song }
+        group {
+            show: wave_on
+            image wave { at: x + 12, sy + 10; size: w - 24, sh - 20; tint: fl.trace; opacity: 0.6 }
+            clip box { from: x + 12, sy + 10; size: (w - 24) * clamp(prg, 0, 1), sh - 20 }
+            image wave { at: x + 12, sy + 10; size: w - 24, sh - 20; tint: fl.phos }
+        }
+        box { from: x + 12 + (w - 24) * clamp(prg, 0, 1) - 1, sy + 8; size: 2, sh - 16; color: fl.flare; show: has_song }
+        text "NO WAVEFORM FOR THIS SOURCE" { at: x + w / 2, sy + sh / 2; anchor: center; size: 8 * fs; family: "Share Tech Mono"; color: fl.muted
+             show: not wave_on }
+        on press zrks { emit pl_seek(round(clamp((local.x - x - 12) / (w - 24), 0, 1) * 1000)) }
+        on drag zrks { emit pl_seek(round(clamp((local.x - x - 12) / (w - 24), 0, 1) * 1000)) }
+    }
+
+    // ── The DJ deck's controls: CUE, the record's speed, the pitch fader, two VU meters ──
+    // Drawn over the plinth at (x, y, w, h). mpd cannot change speed: the fader turns the record
+    // faster or slower, and says so.
+    component DeckKit(x: number, y: number, w: number, h: number) {
+        size: w, h
+        zone box zcue { from: x + 14, y + 12; size: 46, 22; cursor: pointer; role: button; label: "Cue: back to where you last carried it, else the start" }
+        PChip(x + 14, y + 12, 46, "CUE", false, zcue.hover)
+        on press zcue { emit pl_cue }
+        zone box zrpm { from: x + 66, y + 12; size: 58, 22; cursor: pointer; role: toggle; checked: rpm45; label: "The record at 33 or 45" }
+        PChip(x + 66, y + 12, 58, pick(rpm45, "33⅓", "45"), rpm45, zrpm.hover)
+        on press zrpm { rpm45 = not rpm45 }
+        // VU: the low band and the high, side by side at the top right
+        let lo = clamp((vb0 + vb1 + vb2 + vb3) / 4, 0, 1)
+        let hi = clamp((vb10 + vb11 + vb12 + vb13 + vb14 + vb15) / 6, 0, 1)
+        repeat m in 0..2 {
+            let vx1 = x + w - 32 + m * 12
+            let lv = if(m == 0, lo, hi)
+            box { from: vx1, y + 14; size: 7, 96; corner: 2; color: fl.well }
+            box { from: vx1, y + 14 + 96 * (1 - lv); size: 7, 96 * lv; corner: 2; color: mix(fl.phos, fl.ember, lv) }
+        }
+        text "VU" { at: x + w - 23, y + 122; anchor: center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+        // the pitch fader: ±8 %, the record's turning only
+        let ft = y + h * 0.56
+        let fb = y + h - 26
+        zone box zpitch { from: x + w - 36, ft - 6; size: 28, fb - ft + 12; cursor: grab; role: slider; label: "Pitch (the record's spin, not the music's speed)"
+                          value: (pitch + 8) / 16 }
+        box { from: x + w - 24, ft; size: 4, fb - ft; corner: 2; color: fl.well }
+        box { from: x + w - 30, (ft + fb) / 2 - 0.5; size: 16, 1; color: fl.trace }
+        Chamfer(x + w - 34, ft + (fb - ft) * (8 - pitch) / 16 - 6, 24, 12, 3, fl.hull_raised, mix(fl.trace_lit, fl.phos, zpitch.hover), 1, 1.2)
+        text "{pitch, 0}%" { at: x + w - 22, fb + 14; anchor: center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+        text "SPIN" { at: x + w - 22, ft - 14; anchor: center; size: 7; family: "Share Tech Mono"; color: fl.muted }
+        on press zpitch { pitch = round(clamp(8 - (local.y - ft) / (fb - ft) * 16, -8, 8)) }
+        on drag zpitch { pitch = round(clamp(8 - (local.y - ft) / (fb - ft) * 16, -8, 8)) }
+    }
+}
