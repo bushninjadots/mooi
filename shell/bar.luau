@@ -387,6 +387,8 @@ return function(ctx)
             upd.last, upd.at, upd.busy = s.total, os.time(), false
             fact.upd_n = s.total; fact.upd_busy = false
             text.upd_t = s.text
+            -- the Control Nexus reads it (D98)
+            pcall(sys.call, "files.write", "updates.json", require("lib/nexusfeed").updates_doc(s.total, s.text, upd.at))
         end
         run("checkupdates", {}, function(out) repo = updates.count_pkgs(out); done() end)
         if have.paru or have.yay then run(have.paru and "paru" or "yay", { "-Qua" }, function(out) aur = updates.count_pkgs(out); done() end) end

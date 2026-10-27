@@ -8,6 +8,7 @@
 -- signals are what passes. Nothing here polls: a signal's time out is a timer of its own.
 
 local sig = require("lib/signals")
+local nexusfeed = require("lib/nexusfeed")
 
 local SLOTS = 6               -- the scene's `loom` rows: a slot is where a signal unfolds
 local FILE = "signals.json"   -- the apps you muted (whisper only), in mooi's data folder
@@ -289,8 +290,16 @@ return function(ctx)
         show_field()
     end
 
+    -- the Control Nexus's view of them (it cannot receive notifications itself): the latest five
+    local function share()
+        local s = ctx.settings and ctx.settings() or {}
+        local private = type(s.signals) == "table" and s.signals.private == true
+        pcall(sys.call, "files.write", "nexus-feed.json", nexusfeed.feed(list, os.time(), private))
+    end
+
     local function took(raw)
         list = take(raw)
+        share()
         local d = sig.diff(sigs, list)
         -- mooi's own signals stay in the signatures, so the server's list does not drop them
         for _, n in ipairs(locals) do d.sigs[n.id] = sig.signature(n) end
@@ -428,6 +437,7 @@ return function(ctx)
         sys.call("notifications.clear"); pcall(sys.call, "notifications.clear_history")
         locals = {}
         refresh()
+        list = {}; share()
     end)
     -- The quick switch: do not disturb on, or off.
     on("note_dnd", function()

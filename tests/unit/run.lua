@@ -3264,5 +3264,24 @@ test("stats: upower's battery — state, time left, rate, health", function()
     eq(stats.upower("").state, "unknown")
 end)
 
+local nexusfeed = require("lib/nexusfeed")
+test("nexus feed: the latest five, how long ago, never the bodies", function()
+    local list = {}
+    for i = 1, 7 do list[i] = { id = i, app = "App" .. i, title = "Title " .. i, body = "secret", time = 1000 - i * 90 } end
+    local f = nexusfeed.feed(list, 1000, false)
+    eq(f.count, 7); eq(#f.items, 5); eq(f.items[1].app, "App1"); eq(f.items[1].title, "Title 1")
+    eq(f.items[1].ago, "1 min"); eq(f.items[5].ago, "7 min")
+    for _, it in ipairs(f.items) do eq(it.body, nil, "no body leaves the bar") end
+    local p = nexusfeed.feed(list, 1000, true)
+    eq(p.items[1].title, "", "private: who it is from, not what it says")
+    eq(nexusfeed.feed(nil, 1000, false).count, 0)
+end)
+test("nexus feed: ages, and the updates document", function()
+    eq(nexusfeed.ago(30), "now"); eq(nexusfeed.ago(600), "10 min"); eq(nexusfeed.ago(7200), "2 h"); eq(nexusfeed.ago(200000), "2 d")
+    eq(nexusfeed.ago(-5), "now", "a clock that drifted")
+    local u = nexusfeed.updates_doc(48, "48 updates · 26 packages", 1234)
+    eq(u.total, 48); eq(u.text, "48 updates · 26 packages"); eq(u.at, 1234)
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
