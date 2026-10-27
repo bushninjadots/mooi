@@ -1628,10 +1628,6 @@ on("open_nexus", function()
     nexus_pending = true
     local mine
     local said = {}
-    -- Where the Arch mark sits on the bar, so the compact hub hangs under it rather than at a
-    -- guessed spot (the Nexus is a program of its own and cannot read the bar's facts).
-    local mark_cx = (tonumber(fact.x_nexus) or 0) + (tonumber(fact.w_nexus) or 0) / 2
-    pcall(sys.call, "files.write", "nexus-anchor.json", { x = fact.p_nexus and mark_cx or -1 })
     after(90, function()
         if nexus_win then nexus_pending = false; return end
         -- --stall 0: the default holds the logic for 600 ms after every decision to prove the

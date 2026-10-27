@@ -277,22 +277,8 @@ M.SCHEMA = {
     { path = "wallpaper.backdrop", kind = "enum", values = { "black", "picture", "corners", "edges", "both" }, default = "black" },
     { path = "wallpaper.key", kind = "boolean", default = false },
     { path = "wallpaper.fuzz", kind = "integer", default = 18, min = 0, max = 45 },
-    -- Control Nexus (D65): the command centre opens from the bar's Arch mark. Pinned keeps it
-    -- open until it is closed deliberately; the live readings themselves are never persisted.
-    -- `view` is how it opens: the compact hub under the mark, or the full-screen workspace.
-    { path = "nexus.pinned", kind = "boolean", default = false },
-    { path = "nexus.view", kind = "enum", values = { "hub", "full" }, default = "hub" },
-    -- The core's face at the centre, and the hub's own arrangement (D84, lib/nexushub): the hero,
-    -- the plate's width, the sections' order and the hidden ones (no default for the lists, so a
-    -- file that never had them gets the shipped order).
-    { path = "nexus.centre", kind = "enum", values = { "core", "identity", "player", "both" }, default = "core" },
-    { path = "nexus.hub.hero", kind = "enum", values = { "identity", "player", "reactor", "both", "minimal" }, default = "identity" },
-    { path = "nexus.hub.size", kind = "enum", values = { "compact", "wide" }, default = "compact" },
-    { path = "nexus.hub.order", kind = "ids", max = 12 },
-    -- the drawer's folded sections (D98, lib/nexusdrawer ORDER)
+    -- The Control Nexus (D98): a drawer from the bar's mark; which of its sections are folded.
     { path = "nexus.folded", kind = "ids", max = 12 },
-    { path = "nexus.hub.hidden", kind = "ids", max = 12 },
-    { path = "nexus.hub.side", kind = "ids", max = 12 },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -317,34 +303,6 @@ M.SCHEMA = {
     { path = "nexus.identity.name", kind = "text", default = "mooi system", max = 48 },
     { path = "nexus.identity.avatar", kind = "text", default = "", max = 180 },
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },
-    -- The Nexus layout that is showing, and the named layouts it can switch between. No default
-    -- for the list, so a file that never had one gets the plate's own three; `modules` is the
-    -- single-layout form of D72, kept readable so it can be migrated.
-    { path = "nexus.layout", kind = "text", default = "FULL", max = 16 },
-    { path = "nexus.layouts", kind = "layouts" },
-    { path = "nexus.modules", kind = "ids", max = 11 },
-    -- The node workspace (D76): arrangements hold every node's geometry, the centre, the
-    -- edge look and the appearance, so switching one is a whole-state change. Unknown fields
-    -- inside an arrangement are refused with it: a half-applied layout is worse than a default.
-    { path = "nexus.arrangements", kind = "arrangements", default = {} },
-    { path = "nexus.focus", kind = "text", default = "core", max = 24 },
-    { path = "nexus.mode", kind = "enum", values = { "circuit", "minimal" }, default = "circuit" },
-    { path = "nexus.banner.mode", kind = "enum", values = { "full", "compact", "strip", "hidden" }, default = "compact" },
-    { path = "nexus.appearance.accent", kind = "enum", values = { "phos", "flare", "ember", "trace_lit" }, default = "phos" },
-    { path = "nexus.appearance.brightness", kind = "integer", default = 100, min = 60, max = 140 },
-    { path = "nexus.appearance.contrast", kind = "integer", default = 100, min = 60, max = 140 },
-    { path = "nexus.appearance.opacity", kind = "integer", default = 100, min = 40, max = 100 },
-    { path = "nexus.appearance.glow", kind = "integer", default = 60, min = 0, max = 100 },
-    { path = "nexus.appearance.grid", kind = "boolean", default = true },
-    { path = "nexus.appearance.motion", kind = "boolean", default = true },
-    -- Where the docked panel was carried to, in surface pixels. Zero on both axes means the
-    -- panel docks itself, which is what a file that never carried it gets.
-    { path = "nexus.panel.x", kind = "integer", default = 0, min = 0, max = 4096 },
-    { path = "nexus.panel.y", kind = "integer", default = 0, min = 0, max = 4096 },
-    { path = "nexus.edge.style", kind = "enum", values = { "circuit", "curved", "direct" }, default = "circuit" },
-    { path = "nexus.edge.width", kind = "integer", default = 1, min = 1, max = 2 },
-    { path = "nexus.edge.animation", kind = "boolean", default = true },
-    { path = "nexus.edge.labels", kind = "boolean", default = true },
 }
 
 for _, id in ipairs(barlayout.ORDER) do
@@ -388,81 +346,6 @@ function M.defaults()
     return out
 end
 
--- An arrangement is the whole workspace state, so it is checked as a unit: one bad node
--- refuses the list and the defaults stand in, rather than a layout half-applied.
-local ARRANGEMENT_MODES = { circuit = true, minimal = true }
-local ARRANGEMENT_BANNERS = { full = true, compact = true, strip = true, hidden = true }
-local EDGE_STYLES = { circuit = true, curved = true, direct = true }
-local ACCENT_ROLES = { phos = true, flare = true, ember = true, trace_lit = true }
-
-local function finite_number(v)
-    return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
-end
-
-local function plain_name(v, max)
-    return type(v) == "string" and #v > 0 and #v <= max and not v:find("[%c]")
-end
-
-local function check_appearance(a)
-    if type(a) ~= "table" then return false, "expected an appearance table" end
-    if a.accent ~= nil and not ACCENT_ROLES[a.accent] then return false, "expected an accent role" end
-    local numbers = {
-        { "brightness", 60, 140 }, { "contrast", 60, 140 },
-        { "opacity", 40, 100 }, { "glow", 0, 100 },
-    }
-    for _, n in ipairs(numbers) do
-        local v = a[n[1]]
-        if v ~= nil and (not finite_number(v) or v ~= math.floor(v) or v < n[2] or v > n[3]) then
-            return false, "expected " .. n[1] .. " from " .. n[2] .. " to " .. n[3]
-        end
-    end
-    for _, key in ipairs({ "grid", "motion" }) do
-        if a[key] ~= nil and type(a[key]) ~= "boolean" then return false, "expected " .. key .. " to be true or false" end
-    end
-    return true
-end
-
-local function check_arrangement(a)
-    if type(a) ~= "table" then return false, "expected { name, mode, nodes }" end
-    if not plain_name(a.name, 16) then return false, "expected an arrangement name up to 16 characters" end
-    if not ARRANGEMENT_MODES[a.mode] then return false, "expected mode circuit or minimal" end
-    if not plain_name(a.focus or "", 24) then return false, "expected a focus id up to 24 characters" end
-    if not ARRANGEMENT_BANNERS[a.banner] then return false, "expected banner full, compact, strip or hidden" end
-    if type(a.nodes) ~= "table" then return false, "expected the arrangement's nodes" end
-    if #a.nodes > 16 then return false, "expected at most 16 nodes" end
-    for _, n in ipairs(a.nodes) do
-        if type(n) ~= "table" then return false, "expected { type, x, y, w, h }" end
-        if type(n.type) ~= "string" or #n.type > 24 or not string.match(n.type, "^[%w_]+$") then
-            return false, "expected a node type id"
-        end
-        if not finite_number(n.x) or not finite_number(n.y) then return false, "expected numeric node origins" end
-        if n.x < -4000 or n.x > 4000 or n.y < -4000 or n.y > 4000 then return false, "node origin out of range" end
-        if not finite_number(n.w) or not finite_number(n.h) then return false, "expected numeric node sizes" end
-        if n.w < 40 or n.w > 1200 or n.h < 40 or n.h > 1200 then return false, "node size out of range" end
-        for _, key in ipairs({ "vis", "min", "essential" }) do
-            if type(n[key]) ~= "boolean" then return false, "expected " .. key .. " to be true or false" end
-        end
-    end
-    if a.edges ~= nil then
-        local e = a.edges
-        if type(e) ~= "table" then return false, "expected an edges table" end
-        if e.hidden ~= nil then
-            if type(e.hidden) ~= "table" or #e.hidden > 24 then return false, "expected at most 24 hidden edges" end
-            for _, id in ipairs(e.hidden) do
-                if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_%-]+$") then return false, "expected edge ids" end
-            end
-        end
-        if e.style ~= nil and not EDGE_STYLES[e.style] then return false, "expected an edge style" end
-        if e.width ~= nil and e.width ~= 1 and e.width ~= 2 then return false, "expected an edge width of 1 or 2" end
-        if e.animation ~= nil and type(e.animation) ~= "boolean" then return false, "expected animation to be true or false" end
-    end
-    if a.appearance ~= nil then
-        local ok, why = check_appearance(a.appearance)
-        if not ok then return false, why end
-    end
-    return true
-end
-
 local function check(row, value)
     if row.kind == "boolean" then
         if type(value) ~= "boolean" then return false, "expected true or false" end
@@ -496,37 +379,6 @@ local function check(row, value)
             if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_]+$") then
                 return false, "expected ids like \"cpu\""
             end
-        end
-    elseif row.kind == "layouts" then
-        if type(value) ~= "table" then return false, "expected a list of named layouts" end
-        if #value > 6 then return false, "expected at most 6 layouts" end
-        local names = {}
-        for _, layout in ipairs(value) do
-            if type(layout) ~= "table" then return false, "expected { name, modules }" end
-            local name = layout.name
-            if type(name) ~= "string" or name == "" or #name > 16 or name:find("[%c]") then
-                return false, "expected a layout name up to 16 characters"
-            end
-            if names[name] then return false, "two layouts are called " .. name end
-            names[name] = true
-            if type(layout.modules) ~= "table" or #layout.modules > 11 then
-                return false, "expected the layout's module ids"
-            end
-            for _, id in ipairs(layout.modules) do
-                if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_]+$") then
-                    return false, "expected ids like \"cpu\""
-                end
-            end
-        end
-    elseif row.kind == "arrangements" then
-        if type(value) ~= "table" then return false, "expected a list of arrangements" end
-        if #value > 8 then return false, "expected at most 8 arrangements" end
-        local names = {}
-        for _, a in ipairs(value) do
-            local ok, why = check_arrangement(a)
-            if not ok then return false, why end
-            if names[a.name] then return false, "two arrangements are called " .. a.name end
-            names[a.name] = true
         end
     elseif row.kind == "colours" then
         if type(value) ~= "table" then return false, "expected a table of token = colour" end
@@ -595,6 +447,13 @@ local function migrate(t)
         if type(t.bar.modules.clock) ~= "table" then t.bar.modules.clock = {} end
         if t.bar.modules.clock.show == nil then t.bar.modules.clock.show = spine.clock end
         spine.clock = nil
+    end
+    -- D98: the Nexus is a drawer; of its old settings (the node workspace, the hub) only who you
+    -- are and the folded sections are read. The rest goes quietly rather than as unknown settings.
+    if type(t.nexus) == "table" then
+        for k in pairs(t.nexus) do
+            if k ~= "identity" and k ~= "folded" then t.nexus[k] = nil end
+        end
     end
     local b = t.bar
     if type(b) ~= "table" then return end
