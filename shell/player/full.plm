@@ -50,7 +50,7 @@ part Full {
                 // the record, large, and its visualiser (ui/viz.plm): round it, or across the foot
                 group {
                     opacity: if(pstate == playing, 0.95, 0.35)
-                    viz.Pick(viz_full, fw * 0.06, fh - 150, fw * 0.48, 90, fcx, fcy, fr + 24, 64, fl.phos, fl.flare, fl.trace_dim, vang)
+                    viz.Pick(viz_full, fw * 0.06, fh - 150, fw * 0.48, 90, fcx, fcy, fr + 24, 64, fl.phos, fl.flare, fl.trace_dim, vang, viz_still)
                 }
                 zone box fviz { from: 40, 36; size: 90, 18; cursor: pointer; role: button; label: "Visualiser style" }
                 text pick(viz_full, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 44, 45; anchor: left center
@@ -123,6 +123,7 @@ part Full {
             zone box fvid { from: 150, 34; size: 70, 22; cursor: pointer; role: toggle; checked: video_on; label: "The song's video"
                             show: view != rack and video_ok }
             group { show: view != rack and video_ok
+                    opacity: if(src == library and video_tools, 1, 0.4)
                     PChip(150, 34, 70, pick(video_on, "VIDEO", "MUSIC"), video_on, fvid.hover) }
             on press fvid { vbx = fvx; vby = fvy; vbw = fvw; vbh = fvh; emit video_toggle }
 

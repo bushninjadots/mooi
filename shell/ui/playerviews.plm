@@ -26,7 +26,7 @@ library PlayerViews {
             box { from: x, y; size: w, h; color: fl.ground; opacity: 0.35 }
             group {
                 opacity: if(pstate == playing, 0.9, 0.35)
-                viz.Pick(viz_stage, x, y + h * 0.5, w, h * 0.5, x + w / 2, cy1 + cs / 2, cs * 0.55, cs * 0.18, fl.phos, fl.ember, fl.trace_dim, vang)
+                viz.Pick(viz_stage, x, y + h * 0.5, w, h * 0.5, x + w / 2, cy1 + cs / 2, cs * 0.55, cs * 0.18, fl.phos, fl.ember, fl.trace_dim, vang, viz_still)
             }
         }
         // the cover, lifted off the page
@@ -94,7 +94,7 @@ library PlayerViews {
         on press zrkv { emit viz_next(4) }
         group {
             opacity: if(pstate == playing, 1, 0.4)
-            viz.Pick(viz_rack, x + 14, y + 28, w - 28, ah - 40, x + w / 2, y + ah / 2 + 6, ah * 0.22, ah * 0.16, fl.phos, fl.ember, fl.trace_dim, vang)
+            viz.Pick(viz_rack, x + 14, y + 28, w - 28, ah - 40, x + w / 2, y + ah / 2 + 6, ah * 0.22, ah * 0.16, fl.phos, fl.ember, fl.trace_dim, vang, viz_still)
         }
         // the readout: the track, its file, the time in lit digits
         Chamfer(x, iy, iw, ih, 10, fl.hull_raised, fl.trace_dim, 1, 1)

@@ -17,6 +17,15 @@ M.PRESETS = {
     acoustic = { 3, 2, 1, 1, 2, 2, 3, 3, 2, 1 },
 }
 
+-- A preset's gains, as a copy: what the bands start from must never be the preset itself.
+function M.preset(name)
+    local p = M.PRESETS[name]
+    if not p then return nil end
+    local out = {}
+    for i, g in ipairs(p) do out[i] = g end
+    return out
+end
+
 local function band(f, gain)
     return { frequency = f, gain = gain, mode = "Bell", mute = false, q = 1.0, solo = false, width = 1.0, slope = "x1" }
 end

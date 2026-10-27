@@ -353,22 +353,28 @@ local function listen_cava()
     end, function() if cava == mine then cava = nil end end)
     cava = mine
 end
+-- Reduced motion and "always" saving keep the visualisers still and cava off (as the desk does).
+local motion = type(settings.motion) == "table" and settings.motion or {}
+fact.viz_still = motion.reduced == true or motion.saver == "always"
 function viz()
-    if fact.pl_open ~= 0 and fact.pstate == "playing" then listen_cava() else hush() end
+    if fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still then listen_cava() else hush() end
 end
 
 -- ── The hands ────────────────────────────────────────────────
+local video   -- the music video (shell/player/video.luau), made further down: the transport stops it
 local function on_library() return fact.src == "library" end
 local function pctl(args) run("playerctl", args, function(_, code) if code ~= 0 then say("THAT PLAYER CANNOT DO THAT") end end) end
 
 on("pl_toggle", function()
+    if fact.video_on then video.stop(); return end   -- the transport, while a video plays, is the way back to the music
     if on_library() then mpc({ "toggle" }) else pcall(sys.call, "media.toggle") end
 end)
-on("pl_next", function() if on_library() then mpc({ "next" }) else pcall(sys.call, "media.next") end end)
-on("pl_prev", function() if on_library() then mpc({ "prev" }) else pcall(sys.call, "media.previous") end end)
+on("pl_next", function() if fact.video_on then video.stop(); return end; if on_library() then mpc({ "next" }) else pcall(sys.call, "media.next") end end)
+on("pl_prev", function() if fact.video_on then video.stop(); return end; if on_library() then mpc({ "prev" }) else pcall(sys.call, "media.previous") end end)
 -- 0 … 1000 a fraction of the song; -5/-6 five seconds back/on, -7/-8 thirty
 local last_seek = nil   -- where the song was last carried to (the deck's CUE)
 on("pl_seek", function(v)
+    if fact.video_on then return end   -- the video has its own clock; mpd waits
     v = math.floor(tonumber(v) or 0)
     local rel = ({ [-5] = -5, [-6] = 5, [-7] = -30, [-8] = 30 })[v]
     if on_library() then
@@ -398,12 +404,14 @@ on("pl_del", function(v) if on_library() then mpc({ "del", tostring(math.floor(t
 on("pl_clear", function() if on_library() then mpc({ "clear" }, refresh_queue) end end)
 on("pl_qpage", function(d) qpage = qpage + ((tonumber(d) or 0) > 0 and 1 or -1); show_queue() end)
 
+local set_source   -- below: which side the player shows (the library turns to mpd when played from)
 -- ── The library (mpd): shell/player/library.luau ─────────────
 local library = require("player/library").new({
     mpc = mpc, refresh_queue = refresh_queue, say = say, home = HOME,
     music_dir = function() return music_dir end,
     roles = function() return last_roles or ferro.resolve("fixed", palette, "auto", false) end,
     group = settings.player.library, sort = settings.player.sort,
+    use_library = function() if fact.src ~= "library" and set_source then set_source("library") end end,
     -- the grouping and sort are remembered (player.library, player.sort)
     remember = function(group, sort)
         if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
@@ -456,7 +464,8 @@ on("pl_size", function(v)
 end)
 
 -- ── The music video: shell/player/video.luau ──
-local video = require("player/video").new({ home = HOME, say = say, mpc = mpc, song = function() return song end, status = function() return st end })
+video = require("player/video").new({ home = HOME, say = say, mpc = mpc, song = function() return song end, status = function() return st end,
+    est = function(t, playing) if est_sync then est_sync(t, playing) end end })
 fact.video_ok = settings.player.video
 
 -- ── The equaliser: shell/player/eq.luau (EasyEffects underneath) ──
@@ -468,7 +477,7 @@ do
     lyrics_for, est_sync = lyrics.lyrics_for, lyrics.est_sync
 end
 
-local function set_source(src)
+function set_source(src)
     fact.src = src
     if src == "library" then show_song(song); show_status(); show_queue(); tick()
     else show_remote() end

@@ -1495,6 +1495,7 @@ end)
 -- player, a program of its own (it holds the keyboard). The media module's press or `mooi player`
 -- opens it; the same again, Esc or its × closes it.
 local player_win = nil
+local player_started = 0   -- when the last one was started: a press while it starts is not a second launch
 local function start_player(v)
     -- where the media module sits, so the panel hangs under it (-1: it is not on the bar)
     local cx = (tonumber(fact.x_media) or 0) + (tonumber(fact.w_media) or 0) / 2
@@ -1508,6 +1509,7 @@ local function start_player(v)
         if code ~= 0 then log("player · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
     end, { errors = true })
     player_win = mine
+    player_started = os.time()
 end
 on("open_player", function(v)
     if not player_win then start_player(v); return end
@@ -1515,7 +1517,10 @@ on("open_player", function(v)
     -- program is still there: a press then is a new opening, not a second close.
     run("pleamar", { "--say", "mooi-player", "get pl_open" }, function(out, code)
         if code == 0 and tonumber(out and out:match("[%d.]+")) == 1 then
-            run("pleamar", { "--say", "mooi-player", "quit" })
+            -- its own close: a video stops and mpd picks up, then it fades and quits
+            run("pleamar", { "--say", "mooi-player", "emit pl_close" })
+        elseif code ~= 0 and os.time() - player_started < 3 then
+            return   -- still starting (its name not yet up): this press is not a second player
         else
             -- its own close fades for 260 ms and then quits: the new one waits it out, so two
             -- programs never ask for the same name at once

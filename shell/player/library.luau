@@ -22,6 +22,18 @@ function M.next_cover_queue(old, page, cached)
     return out
 end
 
+-- The songs an artist's or a genre's row stands for (the same rule the lists are built by).
+function M.files_for(all, group, name)
+    local out = {}
+    for _, r in ipairs(all or {}) do
+        local v
+        if group == "artists" then v = (r.albumartist ~= "" and r.albumartist) or (r.artist ~= "" and r.artist) or "Unknown artist"
+        else v = (r.genre ~= "" and r.genre) or "No genre" end
+        if v == name then out[#out + 1] = r.file end
+    end
+    return out
+end
+
 function M.new(ctx)
     local mpc, refresh_queue, say = ctx.mpc, ctx.refresh_queue, ctx.say
     local home, music_dir, roles = ctx.home, ctx.music_dir, ctx.roles
@@ -149,7 +161,7 @@ function M.new(ctx)
                 return a == d.artist and ((r.album ~= "" and r.album) or "Unknown album") == d.album end)) do
                 list[#list + 1] = song_row(r)
             end
-            table.sort(list, function(x, y) return (tonumber(tostring(x.track or ""):match("%d+")) or 0) < (tonumber(tostring(y.track or ""):match("%d+")) or 0) end)
+            list = P.album_tracks(list)
         elseif d then        -- an artist or a genre: its albums, as the grid
             mode = "grid"
             list = P.sort(P.albums(songs_where(function(r)
@@ -196,6 +208,7 @@ function M.new(ctx)
     local function add(r, play_now)
         local files = {}
         if r.file and r.title then files[1] = r.file
+        elseif r.name and not r.album then files = M.files_for(all, st.group, r.name)   -- an artist's or a genre's row
         else
             for _, s in ipairs(all or {}) do
                 local a = (s.albumartist ~= "" and s.albumartist) or (s.artist ~= "" and s.artist) or "Unknown artist"
@@ -208,6 +221,8 @@ function M.new(ctx)
             for _, f in ipairs(files) do args[#args + 1] = f end
             mpc(args, function() refresh_queue(); if play_now then mpc({ "play" }) end end)
         end
+        -- played from here while another player shows: the player turns to mpd, which is what plays
+        if play_now and ctx.use_library then ctx.use_library() end
         if play_now then mpc({ "clear" }, go) else go() end
         say((play_now and "PLAYING · " or "ADDED · ") .. string.upper(r.title or r.album or ""))
     end

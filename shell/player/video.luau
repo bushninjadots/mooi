@@ -18,6 +18,16 @@ function M.new(ctx)
     local was_playing = false
     local VIDEOS = ctx.home .. "/.cache/mooi/videos"
     run("mkdir", { "-p", VIDEOS })
+    -- what it needs, asked once: a missing tool is named on the chip, not taken for a missing video
+    local missing = ""
+    local function probe(cmd)
+        run(cmd, { "--version" }, function(_, code)
+            if code ~= 0 then missing = missing == "" and cmd or (missing .. " and " .. cmd) end
+            text.video_why = missing ~= "" and ("VIDEO NEEDS " .. string.upper(missing)) or ""
+            fact.video_tools = missing == ""
+        end)
+    end
+    probe("mpv"); probe("yt-dlp")
 
     local function show(on, busy)
         fact.video_on = on
@@ -49,6 +59,7 @@ function M.new(ctx)
         local song, src = ctx.song(), fact.src
         local ok, why = P.video_allowed(src, song)
         if not ok then say(string.upper(why)); return end
+        if missing ~= "" then say("VIDEO NEEDS " .. string.upper(missing)); return end
         local q = P.video_query(song.artist, song.title)
         local st = ctx.status()
         len = tonumber(song.seconds) or 0
@@ -110,6 +121,7 @@ function M.new(ctx)
         local t = os.time() - started
         fact.progress = math.min(1, t / len)
         text.t_elapsed = P.clock(t)
+        if ctx.est then ctx.est(t, true) end   -- the lyrics follow the video, not the paused mpd
     end)
 
     return { stop = stop }

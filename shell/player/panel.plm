@@ -67,6 +67,7 @@ part Panel {
                 zone box zvid { from: pw - 494, 13; size: 66, 24; cursor: pointer; role: toggle; checked: video_on
                                 label: "The song's video, in the view"; show: view != rack and video_ok }
                 group { show: view != rack and video_ok
+                        opacity: if(src == library and video_tools, 1, 0.4)
                         PChip(pw - 494, 14, 66, pick(video_on, "VIDEO", "MUSIC"), video_on, zvid.hover) }
                 on press zvid { vbx = px + hx; vby = py + vy; vbw = hw; vbh = vh; emit video_toggle }
                 zone box zcol { from: pw - 178, 13; size: 66, 24; cursor: pointer; role: toggle; checked: cover_tint
@@ -94,7 +95,7 @@ part Panel {
                     // the visualiser (ui/viz.plm): round the record, or along the plinth's foot
                     group {
                         opacity: if(pstate == playing, 0.95, 0.35)
-                        viz.Pick(viz_deck, 36, ph - 64, 388, 40, rcx, rcy, rr + 20, 28, fl.phos, fl.flare, fl.trace_dim, vang)
+                        viz.Pick(viz_deck, 36, ph - 64, 388, 40, rcx, rcy, rr + 20, 28, fl.phos, fl.flare, fl.trace_dim, vang, viz_still)
                     }
                     zone box pviz { from: 24, 22; size: 76, 16; cursor: pointer; role: button; label: "Visualiser style" }
                     text pick(viz_deck, "SPECTRUM", "MIRROR", "RING", "AURORA", "LED", "ORBIT", "VIZ OFF") { at: 28, 30; anchor: left center

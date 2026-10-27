@@ -229,8 +229,8 @@ end
 
 -- ── The library (the music player overhaul) ──────────────────
 -- One `mpc listall` row per song, every field the library groups and sorts by.
-M.LIB_FIELDS = { "albumartist", "artist", "album", "date", "genre", "title", "time", "file" }
-M.LIB_FMT = "%albumartist%\t%artist%\t%album%\t%date%\t%genre%\t%title%\t%time%\t%file%"
+M.LIB_FIELDS = { "albumartist", "artist", "album", "date", "genre", "title", "time", "track", "file" }
+M.LIB_FMT = "%albumartist%\t%artist%\t%album%\t%date%\t%genre%\t%title%\t%time%\t%track%\t%file%"
 
 local function present(s) return type(s) == "string" and s ~= "" end
 -- Albums from song rows, in the order they are first met: by album artist (else the artist, else
@@ -286,6 +286,21 @@ function M.song_line(r)
     return #parts > 0 and table.concat(parts, "  ·  ") or "No tags"
 end
 
+-- An album's songs in track order ("2/12" is 2); songs with no number after, every tie by path —
+-- table.sort is not stable, so a comparator that cannot tell two apart must still order them.
+function M.album_tracks(list)
+    local out = {}
+    for i, v in ipairs(list or {}) do out[i] = v end
+    local function n(r) return tonumber(tostring(r.track or ""):match("%d+")) end
+    table.sort(out, function(a, b)
+        local na, nb = n(a), n(b)
+        if na and nb and na ~= nb then return na < nb end
+        if (na == nil) ~= (nb == nil) then return na ~= nil end
+        return tostring(a.file or "") < tostring(b.file or "")
+    end)
+    return out
+end
+
 -- Where a song's cover is kept, at 64 or 256 px.
 function M.cover_file(dir, file, size)
     return tostring(dir) .. "/" .. M.hash(file) .. "-" .. tostring(size) .. ".jpg"
@@ -299,8 +314,15 @@ function M.cover_tones(name, roles)
     local a = ferro.mix(roles.well, roles.hull_raised, 0.3 + h * 0.5)
     local b = ferro.mix(roles.phos, roles.ember, h)
     local ini = ""
+    -- the first letter of the first two words, whole (a UTF-8 letter is several bytes: a lone lead
+    -- byte is not text); only ASCII is upper-cased, the rest is kept as written
+    local count = 0
     for w in tostring(name or ""):gmatch("[%w\128-\255]+") do
-        if #ini < 2 then ini = ini .. string.upper(w:sub(1, 1)) end
+        if count < 2 then
+            local first = w:match("^[%z\1-\127\194-\244][\128-\191]*") or ""
+            ini = ini .. (#first == 1 and string.upper(first) or first)
+            count = count + 1
+        end
     end
     return { a = a, b = b, initials = ini ~= "" and ini or "?" }
 end

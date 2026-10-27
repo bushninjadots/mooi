@@ -8,7 +8,12 @@ part Eq {
                     text "EQUALISER  ·  {eq_name}" { at: qx + 16, 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
                          color: fl.trace_lit; width: qw - 110; lines: 1 }
                     zone box zeqon { from: qx + qw - 74, 106; size: 60, 22; cursor: pointer; role: toggle; checked: eq_on; label: "The equaliser on or off" }
-                    PChip(qx + qw - 74, 106, 60, pick(eq_on, "OFF", "ON"), eq_on, zeqon.hover)
+                    group { show: eq_ok
+                            PChip(qx + qw - 74, 106, 60, pick(eq_on, "OFF", "ON"), eq_on, zeqon.hover) }
+                    group { show: not eq_ok
+                            PChip(qx + qw - 74, 106, 60, "N/A", false, 0) }
+                    text "INSTALL EASYEFFECTS (pacman -S easyeffects) FOR THE EQUALISER" { at: qx + 16, 138; anchor: left center; size: 7.5
+                         family: "Share Tech Mono"; color: fl.ember; show: not eq_ok }
                     on press zeqon { emit eq_toggle }
 
                     // the bands: a press or a drag sets one (the line in the middle is 0 dB)

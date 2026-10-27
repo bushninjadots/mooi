@@ -73,10 +73,10 @@ part Mini {
                 }
 
                 // ── the visualiser (ui/viz.plm): either side of the core's drop, or round the core ──
-                viz.Pick(viz_mini, 104, bus - 36, 92, 33, ox, oy, ring + 7, 16, fl.phos, fl.ember, fl.trace_dim, vang)
+                viz.Pick(viz_mini, 104, bus - 36, 92, 33, ox, oy, ring + 7, 16, fl.phos, fl.ember, fl.trace_dim, vang, viz_still)
                 group {
                     show: viz_mini < 1.5 or (viz_mini > 2.5 and viz_mini < 4.5)
-                    viz.Pick(viz_mini, 224, bus - 36, 92, 33, ox, oy, ring + 7, 16, fl.phos, fl.ember, fl.trace_dim, vang)
+                    viz.Pick(viz_mini, 224, bus - 36, 92, 33, ox, oy, ring + 7, 16, fl.phos, fl.ember, fl.trace_dim, vang, viz_still)
                 }
                 // its chip: a press turns to the next style
                 zone box mviz { from: 14, bus - 22; size: 60, 16; cursor: pointer; role: button; label: "Visualiser style" }

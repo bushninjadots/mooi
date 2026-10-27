@@ -422,6 +422,10 @@ scene Player {
     // the music video (an mpv window under this overlay, in the box the scene leaves undrawn): on,
     // still looking, and its box in screen pixels (set by the press that asks for it)
     fact video_on = false
+    fact video_tools = true      // mpv and yt-dlp are there
+    text video_why = ""
+    fact eq_ok = true            // EasyEffects is there
+    fact viz_still = false       // reduced motion or the saver: the visualisers rest
     fact video_busy = false
     fact video_ok = true
     fact vbx = 0

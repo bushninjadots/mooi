@@ -29,6 +29,8 @@ part Library {
                     on press zlback { emit lib_back }
                     text lib_where { at: if(lib_level > 0, qx + 46, qx + 16), 140; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
                                      width: qw - 110; lines: 1; color: fl.trace_lit }
+                    text "YOUR MPD LIBRARY — PLAYING FROM IT TURNS THE PLAYER TO IT" { at: qx + 16, 186; anchor: left center; size: 7
+                         family: "Share Tech Mono"; color: fl.ember; show: src == remote }
                     text "{lib_count, 0}" { at: qx + qw - 16, 140; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
 
                     // the search, over every song

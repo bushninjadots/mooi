@@ -12,7 +12,7 @@ function M.new(ctx)
     local EE = home .. "/.local/share/easyeffects/output"
     local FILE = "player-eq.json"
     local saved = ctx.read(FILE, "json")
-    local st = { on = false, preset = "flat", bands = E.PRESETS.flat, preamp = 0 }
+    local st = { on = false, preset = "flat", bands = E.preset("flat"), preamp = 0 }
     if type(saved) == "table" then
         st.on = saved.on == true
         st.preset = type(saved.preset) == "string" and saved.preset or "flat"
@@ -22,6 +22,12 @@ function M.new(ctx)
     end
     local theirs = {}           -- the user's own EasyEffects presets ({ file, label }), loadable, never written
     local up = false            -- the service answers
+    -- EasyEffects there at all? Without it the switch is off-limits and says what to install
+    fact.eq_ok = true
+    run("easyeffects", { "--version" }, function(_, code)
+        fact.eq_ok = code == 0
+        if code ~= 0 then text.eq_name = "INSTALL EASYEFFECTS FOR THE EQUALISER" end
+    end)
 
     local function show()
         fact.eq_on = st.on
@@ -61,12 +67,15 @@ function M.new(ctx)
     end
 
     -- write mooi's preset beside the user's and load it, bypass off
-    local function push(name)
+    local function push(name, load)
         name = name or "mooi"
+        if load == nil then load = true end
         pcall(sys.call, "files.write", "player-eq-ee.json", E.easyeffects(st.bands, st.preamp))
         run("mkdir", { "-p", EE }, function()
             run("cp", { ctx.folder .. "/player-eq-ee.json", EE .. "/" .. name .. ".json" }, function(_, code)
                 if code ~= 0 then say("COULD NOT WRITE THE EQ PRESET"); return end
+                -- written always; applied only when asked (SAVE AS while the EQ is off only keeps it)
+                if not load then return end
                 with_service(function()
                     run("easyeffects", { "-l", name })
                     run("easyeffects", { "-b", "2" })
@@ -81,9 +90,10 @@ function M.new(ctx)
         keep(); show()
         if st.on then
             with_service(function()
-                if st.before then push(); return end
+                -- asked every time it is switched on: the user may have picked another preset since
+                -- (mooi's own loaded now tells nothing, so the last one known stands)
                 run("easyeffects", { "-s" }, function(out)
-                    st.before = E.last_output(out)
+                    st.before = E.last_output(out) or st.before
                     keep()
                     push()
                 end)
@@ -117,6 +127,7 @@ function M.new(ctx)
     end)
 
     on("eq_toggle", function()
+        if not fact.eq_ok then say("INSTALL EASYEFFECTS FOR THE EQUALISER"); return end
         st.on = not st.on
         apply()
     end)
@@ -150,14 +161,13 @@ function M.new(ctx)
         local name = E.ORDER[k]
         if not name then return end
         st.preset = name
-        st.bands = {}
-        for i, g in ipairs(E.PRESETS[name]) do st.bands[i] = g end
+        st.bands = E.preset(name)
         apply()
     end)
     on("submit:eq_save", function(v)
         local name = tostring(v or ""):lower():gsub("[^%w_-]+", "-"):gsub("^%-+", ""):gsub("%-+$", "")
         if name == "" then return end
-        push("mooi-" .. name)
+        push("mooi-" .. name, st.on)
         st.preset = "mooi-" .. name
         local known = false
         for _, t in ipairs(theirs) do if t.file == st.preset then known = true end end
