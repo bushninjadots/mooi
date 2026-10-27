@@ -3283,5 +3283,31 @@ test("nexus feed: ages, and the updates document", function()
     eq(u.total, 48); eq(u.text, "48 updates · 26 packages"); eq(u.at, 1234)
 end)
 
+local drawer = require("lib/nexusdrawer")
+test("nexus drawer: sections in order, each top under the one before", function()
+    local c = { playing = true, notes = 2, nets = 3, bt = 1, outs = 2, apps = 1, bright = true, ws = 3 }
+    local l = drawer.layout(c, {})
+    eq(l.order[1], "toggles"); eq(l.order[#l.order], "shortcuts")
+    eq(l.top.toggles, drawer.HEADER)
+    local prev = nil
+    for _, id in ipairs(l.order) do
+        if prev then eq(l.top[id], l.top[prev] + l.height[prev] + drawer.GAP, id .. " under " .. prev) end
+        prev = id
+    end
+    eq(l.total, l.top.shortcuts + l.height.shortcuts + drawer.GAP)
+end)
+test("nexus drawer: folding, absent sections, rows that grow", function()
+    local c = { playing = false, notes = 0, nets = 0, bt = 0, outs = 1, apps = 0, bright = false, ws = 1 }
+    local l = drawer.layout(c, { machine = true })
+    eq(l.shown.media, false, "nothing playing: no media section"); eq(l.height.media, 0)
+    eq(l.height.machine, drawer.FOLDED, "folded: its header only")
+    local more = drawer.layout({ playing = false, notes = 4, nets = 0, bt = 0, outs = 1, apps = 0, bright = false, ws = 1 }, {})
+    assert(more.height.notes > l.height.notes, "more notices, a taller section")
+    local lv = drawer.layout({ bright = true }, {}).height.levels
+    assert(lv > drawer.layout({ bright = false }, {}).height.levels, "no backlight: one level fewer")
+    local f = drawer.toggle({}, "sound"); eq(f.sound, true); eq(drawer.toggle(f, "sound").sound, nil)
+    eq(#drawer.folded_list({ sound = true, machine = true, bogus = true }), 2, "only real sections are kept")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
