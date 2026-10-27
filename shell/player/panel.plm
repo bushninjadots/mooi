@@ -257,7 +257,18 @@ part Panel {
                 group {
                     show: pane == lyrics
                     text lyr_note { at: qx + 16, 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit
-                                    width: qw - 32; lines: 1 }
+                                    width: qw - 170; lines: 1 }
+                    // the song's nudge, for lyrics that run early or late (kept by the song)
+                    group {
+                        show: lyr_synced
+                        zone box zlyb { from: qx + qw - 150, 106; size: 40, 22; cursor: pointer; role: button; label: "Lyrics half a second later" }
+                        PChip(qx + qw - 150, 106, 40, "−0.5", false, zlyb.hover)
+                        on press zlyb { emit lyr_nudge(-1) }
+                        text lyr_offset { at: qx + qw - 82, 117; anchor: center; align: center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; width: 60 }
+                        zone box zlyf { from: qx + qw - 54, 106; size: 40, 22; cursor: pointer; role: button; label: "Lyrics half a second earlier" }
+                        PChip(qx + qw - 54, 106, 40, "+0.5", false, zlyf.hover)
+                        on press zlyf { emit lyr_nudge(1) }
+                    }
                     zone box zlyr { from: qx, 130; size: qw, 9 * 46; role: list; label: "The lyrics" }
                     on scroll zlyr { emit lyr_scroll(wheel) }
                     for l in lyr {

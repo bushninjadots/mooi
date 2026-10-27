@@ -305,6 +305,7 @@ scene Player {
     fact lyr_on = false
     fact lyr_synced = false
     text lyr_note = ""
+    text lyr_offset = "ON TIME"   // the song's nudge, as the lyrics pane shows it
     // cava's 48 bands (the ring round the record)
     fact nv0 = 0.03
     fact nv1 = 0.03
@@ -363,6 +364,7 @@ scene Player {
     event pl_cue ->          // to the logic: back to the last carried-to point, else the start
     event viz_next ->        // to the logic: the next visualiser style for a place (0 mini · 1 the deck · 2 full screen)
     event pl_size ->         // to the logic: -1 a press outside · -2 Escape · 1 the panel (OPEN PLAYER) · 2 full screen
+    event lyr_nudge ->       // to the logic: -1 / 1 the song's lyrics half a second later / earlier
     event lyr_scroll ->      // to the logic: the wheel over plain (unsynced) lyrics
 
     spring pl.ext = 900, 51

@@ -12,6 +12,15 @@ return function(ctx)
     local LYR = folder .. "/player-lyrics"
     run("mkdir", { "-p", LYR })
     local lyr = { key = nil, data = nil, at = -1 }
+    -- each song's nudge (lyrics that run early or late), kept by the song in player-lyrics.json
+    local OFFSETS = "player-lyrics.json"
+    local offsets = read(OFFSETS, "json")
+    if type(offsets) ~= "table" then offsets = {} end
+    local function offset() return lyr.key and tonumber(offsets[P.hash(lyr.key)]) or 0 end
+    local function show_offset()
+        local o = offset()
+        text.lyr_offset = o == 0 and "ON TIME" or string.format("%s%.1f S", o > 0 and "+" or "", o)
+    end
     local est = { t = 0, playing = false }
     local LYR_ROWS = 9
     est_sync = function(t, playing) est.t = tonumber(t) or 0; est.playing = playing end
@@ -22,7 +31,7 @@ return function(ctx)
         fact.lyr_synced = d ~= nil and d.synced == true
         local rows = {}
         if d and #d.lines > 0 then
-            local cur = d.synced and P.lyric_at(d, est.t) or 0
+            local cur = d.synced and P.lyric_at(d, est.t, offset()) or 0
             lyr.at = cur
             -- the lit line sits third from the top, the coming ones under it
             local first = d.synced and math.max(1, cur - 2) or math.max(1, lyr.scroll or 1)
@@ -38,6 +47,7 @@ return function(ctx)
     lyrics_for = function(key, artist, title, album, seconds, path)
         if lyr.key == key then return end
         lyr.key, lyr.data, lyr.scroll = key, nil, 1
+        show_offset()
         text.lyr_note = "LOOKING FOR THE LYRICS…"
         show_lyrics()
         local cache = "player-lyrics/" .. P.hash(key) .. ".lrc"
@@ -86,7 +96,7 @@ return function(ctx)
     every(250, function()
         if fact.pl_open == 0 or not lyr.data or not lyr.data.synced then return end
         if est.playing then est.t = est.t + 0.25 end
-        if P.lyric_at(lyr.data, est.t) ~= lyr.at then show_lyrics() end
+        if P.lyric_at(lyr.data, est.t, offset()) ~= lyr.at then show_lyrics() end
     end)
     on("lyr_seek", function(v)
         local t = (tonumber(v) or 0) / 10
@@ -99,6 +109,18 @@ return function(ctx)
         lyr.scroll = math.max(1, math.min(#lyr.data.lines, (lyr.scroll or 1) + ((tonumber(d) or 0) > 0 and -3 or 3)))
         show_lyrics()
     end)
+
+    -- ± half a second for this song (the lines come earlier with +)
+    on("lyr_nudge", function(d)
+        if not lyr.key then return end
+        local h = P.hash(lyr.key)
+        offsets[h] = P.clamp_offset(offset() + ((tonumber(d) or 0) > 0 and 0.5 or -0.5))
+        if offsets[h] == 0 then offsets[h] = nil end
+        pcall(sys.call, "files.write", OFFSETS, offsets)
+        show_offset()
+        show_lyrics()
+    end)
+    show_offset()
 
     return { lyrics_for = lyrics_for, est_sync = est_sync }
 end

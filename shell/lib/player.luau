@@ -165,13 +165,20 @@ function M.parse_lrc(s)
 end
 
 -- The line being sung at `t` (seconds): the last one that has started, 0 before the first.
-function M.lyric_at(lyrics, t)
+-- `offset` (seconds, the song's own nudge) moves the lines earlier (+) or later (−).
+function M.lyric_at(lyrics, t, offset)
     if type(lyrics) ~= "table" or not lyrics.synced then return 0 end
+    local now = (tonumber(t) or 0) + (tonumber(offset) or 0)
     local at = 0
     for i, l in ipairs(lyrics.lines) do
-        if l.t <= (tonumber(t) or 0) + 0.05 then at = i else break end
+        if l.t <= now + 0.05 then at = i else break end
     end
     return at
+end
+-- A nudge kept in half seconds, at most ten either way.
+function M.clamp_offset(x)
+    local v = math.floor((tonumber(x) or 0) * 2 + 0.5) / 2
+    return math.max(-10, math.min(10, v))
 end
 
 local function enc(s)
