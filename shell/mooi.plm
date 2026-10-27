@@ -173,10 +173,8 @@ scene Mooi {
     fact cd_oy = 0
     fact bg_press = 0         // the open field pressed, and whether it was dragged (a pan)
     fact bg_moved = 0
-    fact bg_last = -10        // when it was last pressed (a double press makes a workspace)
     fact pan_cx = 0           // the camera when the pan began
     fact pan_cy = 0
-    fact ov_lastp = -10       // the last press on a window or territory, and which (a double press goes there)
     fact ov_lastt = -1
     fact ov_warm = -1         // a window whose Close was pressed once
     // Command membrane
@@ -1031,6 +1029,23 @@ scene Mooi {
     prop depth = 0 ~m.expand
     prop fb = 0 ~m.select
     prop pz = 0 ~m.confirm
+    // The Overview's double presses: a second press within 350 ms of the first. Gated by layers,
+    // not by `time` — naming `time` keeps the whole bar drawing 60 frames a second for ever. The
+    // layers' own spring is instant: a claim eases out on the default one, and stays above 0 long
+    // after its 350 ms.
+    event ov_bgtap               // a press on the Overview's background (a double one makes a workspace)
+    event ov_tap                 // a press on a window or territory, `ov_lastt` which (a double one goes there)
+    prop ov_bgg = 0
+    prop ov_tg = 0
+    layer ov_bggate ~1ms {
+        recent for 350ms after ov_bgtap { ov_bgg: 1 ~1ms }
+        idle                            { ov_bgg: 0 ~1ms }
+    }
+    layer ov_tapgate ~1ms {
+        recent for 350ms after ov_tap { ov_tg: 1 ~1ms }
+        idle                          { ov_tg: 0 ~1ms }
+    }
+
     layer life.window {
         shown while open == window { rv.window: 1 ~m.enter }
         gone                       { rv.window: 0 ~m.exit }
@@ -4371,8 +4386,8 @@ scene Mooi {
             // is selected (the canvas); on the canvas a drag pans, the wheel zooms where the pointer is,
             // and a double press makes a workspace there
             zone box ov_bg { from: 0, 0; size: ov_W, ov_H; role: region; label: "The open field" }
-            on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas and time - bg_last < 0.35 { ov_px = local.x; ov_py = local.y; emit ov_create(1) }
-            on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 { bg_press = 1; bg_moved = 0; pan_cx = ov_cx; pan_cy = ov_cy; bg_last = time }
+            on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas and ov_bggate.recent > 0.5 { ov_px = local.x; ov_py = local.y; emit ov_create(1) }
+            on press ov_bg while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 { bg_press = 1; bg_moved = 0; pan_cx = ov_cx; pan_cy = ov_cy; emit ov_bgtap }
             on drag ov_bg while bg_press == 1 and ov_canvas and length(drag.dx, drag.dy) > 4 { bg_moved = 1; ov_cx = pan_cx - drag.dx / ov_cz; ov_cy = pan_cy - drag.dy / ov_cz; cam_x: ov_cx ~0ms; cam_y: ov_cy ~0ms }
             on release ov_bg while bg_press == 1 and bg_moved == 0 and not ov_canvas { bg_press = 0; open = none }
             on release ov_bg while bg_press == 1 and bg_moved == 0 and ov_canvas { bg_press = 0; ov_win = -1 }
@@ -4457,8 +4472,8 @@ scene Mooi {
                                               family: "Share Tech Mono"; color: fg.muted; opacity: 0.4; show: ov_cells.$k.windows < 1 and not zc.$k and lw.$k > 90 }
                     on press ovc.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and not ov_canvas { ov_zc = k; emit ov_go(k); open = none }
                     // on the canvas a press on a territory selects it; a double press goes there
-                    on press ovc.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas and time - ov_lastp < 0.35 and ov_lastt == 100 + k { ov_zc = k; emit ov_go(k); open = none }
-                    on press ovc.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas { ov_sel = k; ov_win = -1; ov_lastp = time; ov_lastt = 100 + k }
+                    on press ovc.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas and ov_tapgate.recent > 0.5 and ov_lastt == 100 + k { ov_zc = k; emit ov_go(k); open = none }
+                    on press ovc.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 and ov_canvas { ov_sel = k; ov_win = -1; emit ov_tap; ov_lastt = 100 + k }
                     on press right ovc.$k while open == overview and bd_drag < 0 { ov_sel = k; ov_win = -1; emit ov_menu_open(k) }
                 }
             }
@@ -4551,8 +4566,8 @@ scene Mooi {
                     // where it was taken. Let go, the logic says where it lands — another workspace (it goes
                     // there), its own (placed or swapped, D45), or nowhere (it glides home). Released without
                     // carrying: in the grid it is gone to; on the canvas it is selected, and a double press goes.
-                    on press otile.$i while open == overview and not atlas_busy and ov_mopen < 0 and cd_drag < 0 and ov_canvas and time - ov_lastp < 0.35 and ov_lastt == i { bd_press = -1; ov_zc = tk.$i; emit atlas_window(i); open = none }
-                    on press otile.$i while open == overview and not atlas_busy and ov_mopen < 0 and cd_drag < 0 { bd_press = i; bd_ox = local.x - dx.$i; bd_oy = local.y - dy.$i; sp_hx = local.x; sp_hy = local.y; ov_lastp = time; ov_lastt = i }
+                    on press otile.$i while open == overview and not atlas_busy and ov_mopen < 0 and cd_drag < 0 and ov_canvas and ov_tapgate.recent > 0.5 and ov_lastt == i { bd_press = -1; ov_zc = tk.$i; emit atlas_window(i); open = none }
+                    on press otile.$i while open == overview and not atlas_busy and ov_mopen < 0 and cd_drag < 0 { bd_press = i; bd_ox = local.x - dx.$i; bd_oy = local.y - dy.$i; sp_hx = local.x; sp_hy = local.y; emit ov_tap; ov_lastt = i }
                     on drag otile.$i while bd_press == i and bd_drag < 0 and length(drag.dx, drag.dy) > 5 { bd_drag = i; sp_hx = local.x; sp_hy = local.y }
                     on drag otile.$i while bd_drag == i { sp_hx = local.x; sp_hy = local.y }
                     on release otile.$i while bd_drag == i { wx.$i: (sp_hx - bd_ox) / cam_z + cam_x ~0ms; wy.$i: (sp_hy - bd_oy) / cam_z + cam_y ~0ms
