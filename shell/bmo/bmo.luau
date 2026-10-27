@@ -7,9 +7,9 @@
 
 local B = require("brain")
 
--- His settings are mooi's (settings.json's `companion` section, Settings → BMO), read through the
--- link bin/mooi keeps in his data folder; where he stands is his own (bmo-state.json).
-local FILE = "mooi-settings.json"
+-- His settings are mooi's (settings.json's `companion` section, Settings → BMO): bin/mooi links his
+-- data folder to mooi's. Where he stands is his own (bmo-state.json beside it).
+local FILE = "settings.json"
 local STATE = "bmo-state.json"
 
 -- ── Settings ─────────────────────────────────────────────────
@@ -20,11 +20,7 @@ end
 local function companion_of(doc) return type(doc) == "table" and doc.companion or nil end
 local cfg = B.settings(companion_of(read(FILE)))
 local state = read(STATE)
-if type(state) ~= "table" then
-    -- his place from before the move into mooi's settings (his own settings.json)
-    local old = read("settings.json")
-    state = { x = type(old) == "table" and tonumber(old.x) or -1, y = type(old) == "table" and tonumber(old.y) or -1 }
-end
+if type(state) ~= "table" then state = { x = -1, y = -1 } end
 state.x, state.y = tonumber(state.x) or -1, tonumber(state.y) or -1
 local SIZES = { 0.5, 0.7, 0.9, 1.15 }
 local DOZES = { 5, 10, 30, 100000 }
@@ -55,12 +51,18 @@ local function save_state() pcall(sys.call, "files.write", STATE, state) end
 
 -- ── The screen and where he may stand ────────────────────────
 local sw, sh = 1920, 1080
-local function bw() return 160 * cfg.size end
-local function bh() return 196 * cfg.size end
+-- On the bar (companion.place) he is small, whatever his size, and stands just under the bar.
+local function eff_size() return cfg.place == "bar" and math.min(cfg.size, 0.42) or cfg.size end
+local function bar_floor()
+    local b = type(read(FILE)) == "table" and read(FILE).bar or {}
+    return (tonumber(type(b) == "table" and b.offset) or 0) + (tonumber(type(b) == "table" and b.height) or 30) + 6
+end
+local function bw() return 160 * eff_size() end
+local function bh() return 196 * eff_size() end
 local function min_x() return 40 end
 local function max_x() return math.max(min_x(), sw - bw() - 40) end
-local function min_y() return 50 end
-local function max_y() return math.max(min_y(), sh - bh() - 4) end
+local function min_y() return cfg.place == "bar" and bar_floor() or 50 end
+local function max_y() return cfg.place == "bar" and bar_floor() or math.max(min_y(), sh - bh() - 4) end
 local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
 local function home_x() return max_x() - 60 end
 local function home_y() return max_y() - 24 end
@@ -451,7 +453,7 @@ on("hit_up", function()
         stop_sampling()
         local vx, vy = B.release(samples, 16)
         -- a flick throws him (Settings → BMO: throwing); a gentle let-go just sets him down
-        if cfg.throw and not cfg.locked and math.sqrt(vx * vx + vy * vy) > 350 then
+        if cfg.throw and not cfg.locked and cfg.place ~= "bar" and math.sqrt(vx * vx + vy * vy) > 350 then
             touch()
             throw(vx, vy)
             return
@@ -505,7 +507,8 @@ local function sync_settings()
     fact.s_doze = index_of(DOZES, cfg.doze) - 1
     fact.s_clock = cfg.clock
     fact.above = cfg.above
-    fact.size = cfg.size
+    fact.on_bar = cfg.place == "bar"
+    fact.size = eff_size()
     fact.breathing = cfg.motion == "lively"
 end
 
@@ -544,11 +547,12 @@ on("ui", function(v)
     elseif n >= 30 and n <= 37 then set_mood(B.MOODS[n - 29]); return
     elseif n >= 40 and n <= 42 then cfg.motion = MOTIONS[n - 39]
     elseif n >= 50 and n <= 53 then cfg.wander = n - 50
-    elseif n >= 60 and n <= 62 then
+    elseif n >= 60 and n <= 63 then
         cfg.size = SIZES[n - 59]
-        fact.size = cfg.size
+        fact.size = eff_size()
         place(x, y)
-    elseif n == 70 or n == 71 then cfg.above = n == 71
+    elseif n == 70 or n == 71 then cfg.above = n == 71; cfg.place = "desktop"; sync_settings(); place(x, y)
+    elseif n == 72 then cfg.place = "bar"; sync_settings(); place(x, y)
     elseif n == 80 or n == 81 then cfg.music = n == 80; if not cfg.music then stop_dancing() end
     elseif n >= 90 and n <= 93 then cfg.doze = DOZES[n - 89]
     elseif n == 100 or n == 101 then cfg.clock = n == 100

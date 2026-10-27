@@ -37,6 +37,7 @@ scene Bmo {
     fact flying = false          // thrown: in the air, bouncing (the logic flies him; brain.luau fly)
     fact lean = 0                // -1 … 1, from how fast he is carried
     fact above = false           // over the windows instead of behind them
+    fact on_bar = false          // companion.place = bar: small, walking just under the bar, over the windows
     fact glx = 0                 // an idle glance, -1 … 1
     fact gly = 0
 
@@ -272,7 +273,7 @@ scene Bmo {
         size: full, full
         anchor: top
         reserve: -1
-        level: bottom, top while above
+        level: bottom, top while above or on_bar
         keyboard: none
 
         let S = size
@@ -538,12 +539,14 @@ scene Bmo {
                 Chip(cx + 66, cy + 25, 64, pick(s_locked, "LOCK", "LOCKED"), s_locked, 3)
                 Chip(cx + 134, cy + 25, 72, "GO HOME", false, 4)
                 Row(cx, cy + 54, "Size")
-                Chip(cx + 66, cy + 50, 30, "S", s_size == 0, 60)
-                Chip(cx + 100, cy + 50, 30, "M", s_size == 1, 61)
-                Chip(cx + 134, cy + 50, 30, "L", s_size == 2, 62)
-                Row(cx, cy + 79, "Layer")
-                Chip(cx + 66, cy + 75, 64, "behind", not above, 70)
-                Chip(cx + 134, cy + 75, 56, "above", above, 71)
+                Chip(cx + 66, cy + 50, 34, "XS", s_size == 0, 60)
+                Chip(cx + 104, cy + 50, 30, "S", s_size == 1, 61)
+                Chip(cx + 138, cy + 50, 30, "M", s_size == 2, 62)
+                Chip(cx + 172, cy + 50, 30, "L", s_size == 3, 63)
+                Row(cx, cy + 79, "Place")
+                Chip(cx + 66, cy + 75, 64, "behind", not above and not on_bar, 70)
+                Chip(cx + 134, cy + 75, 56, "above", above and not on_bar, 71)
+                Chip(cx + 194, cy + 75, 44, "bar", on_bar, 72)
                 Row(cx, cy + 104, "Music")
                 Chip(cx + 66, cy + 100, 52, "react", s_music, 80)
                 Chip(cx + 122, cy + 100, 60, "ignore", not s_music, 81)

@@ -516,9 +516,18 @@ settings_link() {
         [ -e "$link" ] && mv "$link" "$link.old.$$"
         mkdir -p "$folder" && ln -s "$folder" "$link"
     done
-    # BMO keeps his own data folder (his place and energy) and reads mooi's settings through a link
+    # BMO shares mooi's data folder too (his settings are its companion section; a link to a single
+    # file is replaced by a copy on the first write). His place, kept in his own folder before,
+    # comes along as bmo-state.json.
     bmo_dir="$(dirname "$folder")/bmo"
-    mkdir -p "$bmo_dir" && ln -sfn "$folder/settings.json" "$bmo_dir/mooi-settings.json"
+    if [ -d "$bmo_dir" ] && [ ! -L "$bmo_dir" ]; then
+        if [ -f "$bmo_dir/bmo-state.json" ]; then cp "$bmo_dir/bmo-state.json" "$folder/bmo-state.json"
+        elif [ -f "$bmo_dir/settings.json" ] && command -v jq >/dev/null 2>&1; then
+            jq '{x: (.x // -1), y: (.y // -1)}' "$bmo_dir/settings.json" > "$folder/bmo-state.json" 2>/dev/null || :
+        fi
+        mv "$bmo_dir" "$bmo_dir.old.$$"
+    fi
+    [ -L "$bmo_dir" ] || { mkdir -p "$folder" && ln -s "$folder" "$bmo_dir"; }
 }
 snapshot() {
     "$pleamar" --check "$src" >/dev/null || { echo "mooi: the repo's scene does not compile; the running one is kept" >&2; return 1; }
