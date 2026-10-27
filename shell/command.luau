@@ -141,16 +141,26 @@ return function(ctx)
             end)
         elseif it.kind == "space" then
             local want = it.ws
-            sys.call("workspaces.focus", want)
-            -- Only closes once Hyprland says it is there.
-            local tries = 0
-            local function confirm()
-                tries = tries + 1
-                if active_ws == want then remember(it.key); close()
-                elseif tries < 8 then after(50, confirm)
-                else ctx.report(false, "Hyprland did not switch to workspace " .. want) end
-            end
-            confirm()
+            -- The palette lets the keyboard go first: closed after the switch, Hyprland gives the
+            -- focus back to the window that had it — on the workspace just left, which pulls the
+            -- user back there (an empty workspace has no window of its own to keep it). So: close,
+            -- wait the frame that hands the keyboard back, switch, and confirm; if Hyprland does
+            -- not get there, the palette comes back saying so.
+            close()
+            after(60, function()
+                sys.call("workspaces.focus", want)
+                local tries = 0
+                local function confirm()
+                    tries = tries + 1
+                    if active_ws == want then remember(it.key)
+                    elseif tries < 8 then after(50, confirm)
+                    else
+                        fact.open = "command"
+                        ctx.report(false, "Hyprland did not switch to workspace " .. want)
+                    end
+                end
+                confirm()
+            end)
         elseif it.kind == "mooi" then
             remember(it.key)
             emit(it.act == "system" and "open_system" or "open_window")
