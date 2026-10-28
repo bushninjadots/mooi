@@ -112,7 +112,8 @@ return function(ctx)
     end
 
     -- ── Restoring: first the plan, shown; then, asked, carried out ──
-    local function preview(i)
+    local restore            -- below: carries a plan out
+    local function preview(i, then_restore)
         local e = store.envs[i]
         if not e then return end
         run("hyprctl", { "-j", "clients" }, function(out, code)
@@ -147,6 +148,7 @@ return function(ctx)
                 rows[#rows + 1] = { kind = "back_env", label = "‹ Back" }
                 fact.env_open, fact.env_sel = 3, 0
                 publish("RESTORE " .. string.upper(e.name))
+                if then_restore then restore() end
             end
             for _, l in ipairs(p.launches) do
                 if l.cwd ~= "" then
@@ -160,7 +162,7 @@ return function(ctx)
             ready()
         end)
     end
-    local function restore()
+    function restore()
         local e, p = store.envs[current], plan
         if not e or not p then return end
         fact.env_open = 0
@@ -200,6 +202,12 @@ return function(ctx)
         fact.env_naming = true
         emit("env_focus_name")
     end
+    -- A scene of the Control Nexus (D102) restores an environment by its place in the list: planned,
+    -- then carried out at once, as "Restore now" would.
+    on("env_restore_at", function(v)
+        local i = math.floor(tonumber(v) or -1) + 1
+        if store.envs[i] then preview(i, true) end
+    end)
     on("env_toggle", function()
         if fact.env_open > 0 then fact.env_open = 0; naming = nil; fact.env_naming = false else show_list() end
     end)

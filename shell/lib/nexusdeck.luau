@@ -5,16 +5,29 @@
 local M = {}
 
 M.EDGES = { "bottom", "top", "left", "right" }
-M.STRIP_H = 236        -- the deck's height along the top or the bottom
-M.STRIP_MAX = 1680     -- and its widest
+M.STRIP_MAX = 1900     -- the deck's widest along the top or the bottom
 M.COLUMN_W = 404       -- its width along a side
 M.GAP = 10             -- from the screen's edge
-M.HEAD = 36            -- the strip's top row: scenes, what is waiting, who you are
-M.WIN_W = 300          -- the strip's bays: this window, the console
-M.MIX_W = 432
+M.HEAD = 38            -- the strip's top row: scenes, what is waiting, who you are
+M.BODY = 214           -- and the parts' row under it
 M.CHIP_W, M.CHIP_H, M.CHIP_GAP = 76, 24, 4
 M.SPINE_W = 58         -- the spine's tabs on the right edge (D100), kept clear on that side
 M.TILE_GAP = 10        -- between the workspaces' miniatures
+M.WAIT_MIN = 260       -- what is waiting never gets less than this along the head
+
+-- The deck's parts: what each is called, its width along a strip (the mixer's follows its faders,
+-- the workspaces take what is left), its height down a column, and which give way first when
+-- there is no room (the highest number first). Every one can be moved and hidden (✎ on the deck).
+M.PARTS = {
+    window = { word = "This window", w = 280, h = 156, keep = 3 },
+    spaces = { word = "Workspaces", min = 300, keep = 1 },
+    mixer = { word = "Mixer", h = 184, keep = 4 },
+    quick = { word = "Quick settings", w = 404, h = 196, keep = 2 },
+    music = { word = "Music", w = 284, h = 118, keep = 5 },
+    machine = { word = "Machine", w = 236, h = 140, keep = 6 },
+    today = { word = "Today", w = 222, h = 134, keep = 7 },
+}
+M.ORDER = { "window", "spaces", "mixer", "quick", "music", "machine", "today" }
 
 local function edge_of(e)
     for _, x in ipairs(M.EDGES) do if x == e then return x end end
@@ -24,29 +37,102 @@ M.edge_of = edge_of
 
 local function rect(x, y, w, h) return { x = math.floor(x + 0.5), y = math.floor(y + 0.5), w = math.floor(w + 0.5), h = math.floor(h + 0.5) } end
 
--- Where the deck sits and where its bays are, inside a screen `sw` × `sh` whose top `top` px the
--- bar keeps. `opts.spine`: the spine is on, so the right edge keeps its tabs clear; `opts.scenes`:
--- how many scene chips (with Save) the head holds. Bays are relative to the deck.
+-- An order of parts as it can be trusted: known ids once each, in the order given, the rest after.
+function M.clean_parts(list)
+    local out, seen = {}, {}
+    for _, id in ipairs(type(list) == "table" and list or {}) do
+        if M.PARTS[id] and not seen[id] then seen[id] = true; out[#out + 1] = id end
+    end
+    for _, id in ipairs(M.ORDER) do if not seen[id] then out[#out + 1] = id end end
+    return out
+end
+
+-- `id` moved to sit at place `to` among the parts that are shown (`hidden` stay where they were).
+function M.move(order, id, to, hidden)
+    hidden = hidden or {}
+    local shown, rest = {}, {}
+    for _, x in ipairs(order) do
+        if x ~= id then
+            if hidden[x] then rest[#rest + 1] = x else shown[#shown + 1] = x end
+        end
+    end
+    to = math.max(1, math.min(#shown + 1, math.floor(tonumber(to) or 1)))
+    table.insert(shown, to, id)
+    for _, x in ipairs(rest) do shown[#shown + 1] = x end
+    return shown
+end
+
+local function mixer_w(n) return 34 + math.max(3, math.min(6, tonumber(n) or 4)) * 36 end
+
+-- Where the deck sits, where its head's bays are and where each part is, inside a screen `sw` × `sh`
+-- whose top `top` px the bar keeps. `opts`: `parts` (the order), `hidden` (a set), `faders` (how many
+-- the mixer has), `tiles` and `aspect` (the workspaces' miniatures), `spine` (keep the right edge's
+-- tabs clear), `scenes` (chips, Save among them). Parts that do not fit give way, the least kept
+-- first: they are listed in `d.dropped`. Rects are the deck's.
 function M.layout(edge, sw, sh, top, opts)
     edge, opts = edge_of(edge), opts or {}
     sw, sh, top = tonumber(sw) or 1920, tonumber(sh) or 1080, tonumber(top) or 0
     local chips = math.max(1, tonumber(opts.scenes) or 5)
-    local d = { edge = edge, vertical = edge == "left" or edge == "right", bays = {} }
+    local hidden = opts.hidden or {}
+    local order = M.clean_parts(opts.parts)
+    local aspect = (tonumber(opts.aspect) or 0) > 0 and opts.aspect or 16 / 9
+    local ntiles = math.max(1, tonumber(opts.tiles) or 2)
+    local d = { edge = edge, vertical = edge == "left" or edge == "right", bays = {}, parts = {}, dropped = {} }
     local b = d.bays
+    local shown = {}
+    for _, id in ipairs(order) do if not hidden[id] then shown[#shown + 1] = id end end
+    local function drop_least(total, room, size)
+        while total > room and #shown > 1 do
+            local worst, at = nil, nil
+            for i, id in ipairs(shown) do
+                if id ~= "spaces" and (not worst or M.PARTS[id].keep > M.PARTS[worst].keep) then worst, at = id, i end
+            end
+            if not at then break end
+            table.remove(shown, at)
+            d.dropped[#d.dropped + 1] = worst
+            total = total - size(worst)
+        end
+    end
     if not d.vertical then
-        d.w = math.min(sw - 2 * M.GAP, M.STRIP_MAX)
-        d.h = M.STRIP_H
-        d.x = (sw - d.w) / 2
-        d.y = edge == "top" and top + 6 or sh - d.h - M.GAP
+        d.h = M.HEAD + M.BODY
+        local room = math.min(sw - 2 * M.GAP, M.STRIP_MAX)
+        local function width(id)
+            if id == "mixer" then return mixer_w(opts.faders) end
+            if id == "spaces" then return M.PARTS.spaces.min end
+            return M.PARTS[id].w
+        end
+        local total = 0
+        for _, id in ipairs(shown) do total = total + width(id) end
+        drop_least(total, room, width)
+        total = 0
+        for _, id in ipairs(shown) do total = total + width(id) end
+        -- the workspaces as wide as their miniatures want, in what is left
+        local spaces_w = 0
+        for _, id in ipairs(shown) do
+            if id == "spaces" then
+                local th = M.BODY - 30 - 10 - 16
+                local want = 28 + (ntiles) * (th * aspect + M.TILE_GAP) - M.TILE_GAP
+                spaces_w = math.max(M.PARTS.spaces.min, math.min(want, room - total + M.PARTS.spaces.min))
+                total = total - M.PARTS.spaces.min + spaces_w
+            end
+        end
         local sc_w = 70 + chips * (M.CHIP_W + M.CHIP_GAP)
         local id_w = 300
+        d.w = math.max(total, sc_w + M.WAIT_MIN + id_w)
+        d.w = math.min(d.w, room)
+        d.x = (sw - d.w) / 2
+        d.y = edge == "top" and top + 6 or sh - d.h - M.GAP
         b.scenes = rect(0, 0, sc_w, M.HEAD)
         b.ident = rect(d.w - id_w, 0, id_w, M.HEAD)
         b.wait = rect(sc_w, 0, d.w - sc_w - id_w, M.HEAD)
-        local body = d.h - M.HEAD
-        b.win = rect(0, M.HEAD, M.WIN_W, body)
-        b.mix = rect(d.w - M.MIX_W, M.HEAD, M.MIX_W, body)
-        b.ws = rect(M.WIN_W, M.HEAD, d.w - M.WIN_W - M.MIX_W, body)
+        -- the parts side by side; any room over is shared out so they meet the deck's edges
+        local extra = (d.w - total) / math.max(1, #shown)
+        local x = 0
+        for _, id in ipairs(shown) do
+            local w = (id == "spaces" and spaces_w or width(id)) + extra
+            d.parts[#d.parts + 1] = { id = id, x = math.floor(x + 0.5), y = M.HEAD, w = math.floor(w + 0.5), h = M.BODY }
+            x = x + w
+        end
     else
         d.w = M.COLUMN_W
         d.x = edge == "left" and M.GAP or sw - d.w - M.GAP - (opts.spine and M.SPINE_W or 0)
@@ -54,28 +140,41 @@ function M.layout(edge, sw, sh, top, opts)
         local room = sh - d.y - M.GAP
         local per_row = math.floor((d.w - 28 + M.CHIP_GAP) / (M.CHIP_W + M.CHIP_GAP))
         local sc_h = 30 + math.ceil(chips / per_row) * (M.CHIP_H + M.CHIP_GAP) + 6
-        local y = 0
-        local function take(h) local r = rect(0, y, d.w, h); y = y + h; return r end
-        b.ident = take(44)
-        b.scenes = take(sc_h)
-        b.wait = take(112)
-        b.win = take(150)
-        -- the workspaces take what their tiles need (two across, `opts.tiles` of them with "+"),
-        -- and the column is only as tall as what it holds, the screen's height at most
-        local mix_h = 204
+        b.ident = rect(0, 0, d.w, 44)
+        b.scenes = rect(0, 44, d.w, sc_h)
+        b.wait = rect(0, 44 + sc_h, d.w, 112)
+        local head = 44 + sc_h + 112
         local tw = (d.w - 28 - M.TILE_GAP) / 2
-        local th = tw / ((tonumber(opts.aspect) or 0) > 0 and opts.aspect or 16 / 9)
-        local rows = math.ceil(math.max(1, tonumber(opts.tiles) or 2) / 2)
-        local want = 30 + rows * (th + 16 + M.TILE_GAP) + 10
-        d.h = math.min(room, y + want + mix_h)
-        b.ws = rect(0, y, d.w, math.max(120, d.h - y - mix_h))
-        b.mix = rect(0, d.h - mix_h, d.w, mix_h)
+        local spaces_h = 30 + math.ceil(ntiles / 2) * (tw / aspect + 16 + M.TILE_GAP) + 10
+        local function height(id) return id == "spaces" and spaces_h or M.PARTS[id].h end
+        local total = head
+        for _, id in ipairs(shown) do total = total + height(id) end
+        drop_least(total, room, height)
+        local y = head
+        for _, id in ipairs(shown) do
+            local h = height(id)
+            d.parts[#d.parts + 1] = { id = id, x = 0, y = math.floor(y + 0.5), w = d.w, h = math.floor(h + 0.5) }
+            y = y + h
+        end
+        d.h = math.min(room, y)
     end
+    for _, part in ipairs(d.parts) do d.bays[part.id] = part end
     d.x, d.y, d.w, d.h = math.floor(d.x + 0.5), math.floor(d.y + 0.5), math.floor(d.w + 0.5), math.floor(d.h + 0.5)
     -- the way it slides in from (and what grows out of it goes): away from its edge
     d.out_x = edge == "left" and -1 or (edge == "right" and 1 or 0)
     d.out_y = edge == "top" and -1 or (edge == "bottom" and 1 or 0)
     return d
+end
+
+-- Which place among the shown parts a part let go at `pos` (along the deck: x on a strip, y down a
+-- column, in the deck's coordinates) takes: before the first part whose middle is past it.
+function M.place_at(d, pos)
+    local n = 1
+    for _, part in ipairs(d.parts) do
+        local mid = d.vertical and (part.y + part.h / 2) or (part.x + part.w / 2)
+        if pos > mid then n = n + 1 end
+    end
+    return n
 end
 
 -- The scene chips' places in their bay: one row along a strip, wrapped rows down a column.
@@ -251,10 +350,11 @@ function M.waiting(s)
 end
 
 -- ── Scenes ───────────────────────────────────────────────────
--- A scene is a whole setup at once: some of the switches, and the levels. What it leaves out
+-- A scene is a whole setup at once: some of the switches (`saver` is the power-saver profile), the
+-- levels, and if it likes a saved environment (D43) restored with it, by name. What it leaves out
 -- stays as it is. Saved in the data folder's nexus-scenes.json.
 M.SWITCHES = { "quiet", "night", "awake", "saver", "wifi", "bluetooth" }
-M.WORDS = { quiet = "quiet", night = "night light", awake = "keep awake", saver = "battery saver", wifi = "Wi-Fi", bluetooth = "Bluetooth" }
+M.WORDS = { quiet = "quiet", night = "night light", awake = "keep awake", saver = "power saver", wifi = "Wi-Fi", bluetooth = "Bluetooth" }
 M.MAX = 7
 M.DEFAULTS = {
     { name = "Focus", quiet = true, awake = true },
@@ -280,6 +380,7 @@ function M.clean(list)
                 local c = { name = string.sub(name, 1, 12) }
                 for _, k in ipairs(M.SWITCHES) do if type(s[k]) == "boolean" then c[k] = s[k] end end
                 c.volume, c.brightness = level(s.volume), level(s.brightness)
+                if type(s.env) == "string" and s.env ~= "" then c.env = string.sub(s.env, 1, 40) end
                 out[#out + 1] = c
             end
         end
@@ -314,6 +415,7 @@ function M.diff(scene, state)
     if scene.brightness and state.brightness ~= nil and scene.brightness ~= level(state.brightness) then
         out[#out + 1] = string.format("screen %d%%", scene.brightness)
     end
+    if scene.env then out[#out + 1] = "restore " .. scene.env end
     return out
 end
 
@@ -334,7 +436,7 @@ end
 -- The scene the desktop already is (every part of it holds), or nil.
 function M.live(scenes, state)
     for i, s in ipairs(scenes or {}) do
-        if #M.diff(s, state) == 0 then return i end
+        if not s.env and #M.diff(s, state) == 0 then return i end
     end
     return nil
 end

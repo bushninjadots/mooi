@@ -261,40 +261,79 @@ scene Nexus {
     service media as med { playing: bool; title: text; artist: text; player: text }
     service clock { time: text = "--:--"; date: text }
 
-    // ── Where the deck is (lib/nexusdeck): the screen's, its own, and its bays' (in the deck) ──
+    // ── Where the deck is (lib/nexusdeck): the screen's, its own, and its head's bays (in the deck) ──
     fact dk_open = false         // in (true) or sliding away
     fact dk_edge = 0             // 0 bottom · 1 top · 2 left · 3 right (nexus.edge)
     fact dk_vert = false         // down a side: a column
     fact dk_x = 120
     fact dk_y = 830
     fact dk_w = 1680
-    fact dk_h = 236
+    fact dk_h = 252
     fact dk_ox = 0               // the way out of the screen, which it slides in from
     fact dk_oy = 1
     fact sc_x = 0
     fact sc_y = 0
     fact sc_w = 470
-    fact sc_h = 36
+    fact sc_h = 38
     fact wt_x = 470
     fact wt_y = 0
     fact wt_w = 974
-    fact wt_h = 36
+    fact wt_h = 38
     fact id_x = 1444
     fact id_y = 0
-    fact id_w = 236
-    fact id_h = 36
-    fact wn_x = 0
-    fact wn_y = 36
-    fact wn_w = 300
-    fact wn_h = 200
-    fact ws_x = 300
-    fact ws_y = 36
-    fact ws_w = 948
-    fact ws_h = 200
-    fact mx_x = 1248
-    fact mx_y = 36
-    fact mx_w = 432
-    fact mx_h = 200
+    fact id_w = 300
+    fact id_h = 38
+    // the parts (codes: 0 window · 1 spaces · 2 mixer · 3 quick · 4 music · 5 machine · 6 today):
+    // shown or not, where, and their number in your order
+    fact pw_on = false
+    fact pw_x = 0
+    fact pw_y = 38
+    fact pw_w = 280
+    fact pw_h = 214
+    text pw_n = "01"
+    fact ps_on = false
+    fact ps_x = 0
+    fact ps_y = 38
+    fact ps_w = 300
+    fact ps_h = 214
+    text ps_n = "02"
+    fact pm_on = false
+    fact pm_x = 0
+    fact pm_y = 38
+    fact pm_w = 200
+    fact pm_h = 214
+    text pm_n = "03"
+    fact pq_on = false
+    fact pq_x = 0
+    fact pq_y = 38
+    fact pq_w = 358
+    fact pq_h = 214
+    text pq_n = "04"
+    fact pu_on = false
+    fact pu_x = 0
+    fact pu_y = 38
+    fact pu_w = 284
+    fact pu_h = 214
+    text pu_n = "05"
+    fact pc_on = false
+    fact pc_x = 0
+    fact pc_y = 38
+    fact pc_w = 236
+    fact pc_h = 214
+    text pc_n = "06"
+    fact pt_on = false
+    fact pt_x = 0
+    fact pt_y = 38
+    fact pt_w = 222
+    fact pt_h = 214
+    text pt_n = "07"
+
+    // ── Arranging it (✎): parts moved by hand, hidden, shown again; the edge chosen here too ──
+    fact dk_edit = false
+    fact dk_gid = -1             // the part being carried (its code)
+    fact dk_gdx = 0              // how far it has been carried
+    fact dk_gdy = 0
+    model hid max 8 { word: text; code: number; room: bool }   // hidden parts (room: no room for it here)
 
     // ── Cascade (nexus.mode): the spine's shelves, every one out at once, down the right edge ──
     fact dk_cascade = false
@@ -327,14 +366,20 @@ scene Nexus {
     fact nx_noticed = false      // and it is showing
 
     // ── Scenes, and what is waiting ──
-    model scn max 8 { word: text; live: bool; save: bool; x: number; y: number; w: number }
+    model scn max 8 { word: text; live: bool; save: bool; env: bool; x: number; y: number; w: number }
     model wait max 6 { word: text; act: text; hot: bool; x: number; y: number; w: number }
     fact dk_hsc = -1             // the scene pointed at: what it would change grows out
     model diff max 8 { word: text; w: number }
-    text diff_t = ""             // "Focus would →"
+    text diff_t = ""             // "FOCUS WOULD →"
     fact gs_x = 0                // where that grows to (the screen's)
     fact gs_y = 0
     fact gs_w = 420
+    // naming a new scene: its name, and a saved environment to restore with it
+    fact dk_naming = false
+    text dk_name_in = ""
+    model envs max 8 { word: text; on: bool; w: number }
+    fact gn_x = 0
+    fact gn_y = 0
 
     // ── The window you are in ──
     fact w_ok = false
@@ -355,7 +400,10 @@ scene Nexus {
     fact dk_wall_on = false
     image wall = from dk_wall, 480, 270
     model tiles max 12 { id: number; label: text; n: text; active: bool; plus: bool; x: number; y: number; w: number; h: number }
-    model wins max 48 { x: number; y: number; w: number; h: number; focused: bool; pic: image 320, 180; pictured: bool }
+    model wins max 48 { x: number; y: number; w: number; h: number; focused: bool; app: text; pic: image 320, 180; pictured: bool }
+    fact dk_wd = -1              // a miniature window being carried to another workspace
+    fact dk_wdx = 0
+    fact dk_wdy = 0
     fact dk_hws = -1             // the tile pointed at: its preview grows out
     model big max 16 { x: number; y: number; w: number; h: number; focused: bool; app: text; pic: image 480, 270; pictured: bool }
     text big_t = ""
@@ -365,53 +413,136 @@ scene Nexus {
     fact gw_h = 336
     fact gw_free = false         // the tile pointed at is "+"
 
-    // ── The console: levels, switches, the machine, the music ──
+    // ── The mixer, quick settings, the machine, the music, today ──
     model faders max 6 { word: text; shown: text; v: number; code: number; hot: bool }
-    model keys max 8 { word: text; on: bool; code: number }
+    model quick max 12 { word: text; state: text; on: bool; hot: bool; glyph: number; code: number }
+    model sp_cpu max 40 { x1: number; y1: number; x2: number; y2: number }
+    model sp_mem max 40 { x1: number; y1: number; x2: number; y2: number }
+    model days max 7 { label: text; day: number; today: bool }
     fact m_cpu = 0
     fact m_temp = 0
     fact m_mem = 0
     fact m_disk = 0
-    text nx_art = ""
-    fact nx_art_on = false
-    fact nx_prog = 0
-    fact mus_on = false          // a player has a song
     text m_cpu_t = "0%"
     text m_mem_t = "0%"
     text m_bat_t = "AC"
     text m_disk_t = "0%"
+    text m_temp_t = ""
+    text m_up_t = ""
     fact m_bat = 1
     fact m_bat_hot = false
-    image cover = from nx_art, 64, 64
+    text nx_art = ""
+    fact nx_art_on = false
+    fact nx_prog = 0
+    text nx_elapsed = ""
+    text nx_length = ""
+    fact mus_on = false          // a player has a song
+    image cover = from nx_art, 96, 96
     image avatar = from nx_avatar, 64, 64
+    text td_day = ""             // today: the date, big
+    text td_month = ""
+    text td_week = ""
+    fact wx_ok = false
+    fact wx_kind = 2
+    text wx_t = ""
+    text wx_word = ""
 
     event nx_close ->            // to the logic: slide away and end
-    event nx_tog ->              // to the logic: switch n (0 Wi-Fi … 8 record)
+    event nx_tog ->              // to the logic: quick setting n (mooi-nexus.luau QUICK)
     event nx_go ->               // to the logic: open something (codes in mooi-nexus.luau GO)
     event nx_media ->            // to the logic: 0 previous · 1 play/pause · 2 next
     event dk_level ->            // to the logic: 1000 · fader code + level (0..1000)
     event dk_win ->              // to the logic: this window — 0 float · 1 fullscreen · 2 pin · 3 close
     event dk_wait ->             // to the logic: what is waiting, item n's action
-    event dk_scene ->            // to the logic: switch to scene n (the last chip saves this one)
+    event dk_scene ->            // to the logic: switch to scene n
     event dk_unscene ->          // to the logic: remove scene n (a right press)
     event dk_hov_scene ->        // to the logic: scene n is pointed at (say what it would change)
+    event dk_naming_on ->        // to the logic: "+ Save" pressed: the naming panel opens
+    event dk_save_named ->       // to the logic: save the setup under the name typed
+    event dk_env ->              // to the logic: environment n for the scene being named (again: none)
     event dk_ws ->               // to the logic: go to tile n's workspace
     event dk_send ->             // to the logic: send this window to tile n's workspace
     event dk_hov_ws ->           // to the logic: tile n is pointed at (its preview)
     event dk_big ->              // to the logic: window n of the preview — focus it
+    event dk_wdrop ->            // to the logic: a miniature window let go at 10000 · x + y (the screen's)
+    event dk_edit_on ->          // to the logic: ✎ — arranging, on or off
+    event dk_drop ->             // to the logic: the part carried let go at this place along the deck
+    event dk_hide ->             // to the logic: hide part n
+    event dk_show ->             // to the logic: show hidden part n again
+    event dk_edge_set ->         // to the logic: the deck to edge n (0 bottom · 1 top · 2 left · 3 right)
+    event dk_reset ->            // to the logic: every part back, in the first order
 
     figure i_set = file "icons/cog.svg"
     figure i_lock = file "icons/lock.svg"
     figure i_power = file "icons/power.svg"
+    figure i_wifi = file "icons/wifi.svg"
+    figure i_bt = file "icons/bluetooth.svg"
+    figure i_vol = file "icons/volume.svg"
+    figure i_mute = file "icons/volume-mute.svg"
+    figure i_mic = file "icons/mic.svg"
+    figure i_bell = file "icons/bell.svg"
+    figure i_night = file "icons/night.svg"
+    figure i_caf = file "icons/caffeine.svg"
+    figure i_bolt = file "icons/bolt.svg"
+    figure i_sun = file "icons/sun.svg"
+    figure i_rec = file "icons/recorder.svg"
+    figure i_shot = file "icons/screenshot.svg"
+    figure i_clip = file "icons/clipboard.svg"
+    figure i_clear = file "icons/clear.svg"
+    figure i_cloud = file "icons/cloud.svg"
+    figure i_fog = file "icons/fog.svg"
+    figure i_rain = file "icons/rain.svg"
+    figure i_snow = file "icons/snow.svg"
+    figure i_storm = file "icons/storm.svg"
+    figure i_cpu = file "icons/cpu.svg"
+    figure i_ram = file "icons/ram.svg"
+    figure i_music = file "icons/music.svg"
+    figure i_window = file "icons/window.svg"
+    figure i_ws = file "icons/workspace.svg"
+    figure i_cal = file "icons/calendar.svg"
+    figure i_arrange = file "icons/arrange.svg"
 
     // ── Motion ──
     spring nx.slide = 900, 62        // ~220 ms in and out
     prop nx_in = 0 ~nx.slide
     follow nx_in = if(dk_open, 1, 0)
-    prop gs_in = 0 ~m.expand         // what grows out: a scene's changes, a workspace's preview
-    follow gs_in = if(dk_hsc >= 0 and dk_open, 1, 0)
+    prop gs_in = 0 ~m.expand         // what grows out: a scene's changes, a workspace's preview, naming
+    follow gs_in = if(dk_hsc >= 0 and dk_open and not dk_naming, 1, 0)
     prop gw_in = 0 ~m.expand
-    follow gw_in = if(dk_hws >= 0 and dk_open, 1, 0)
+    follow gw_in = if(dk_hws >= 0 and dk_open and dk_wd < 0 and not dk_edit, 1, 0)
+    prop gn_in = 0 ~m.expand
+    follow gn_in = if(dk_naming and dk_open, 1, 0)
+    prop ed_in = 0 ~m.expand         // arranging: the handles and the edit bar
+    follow ed_in = if(dk_edit, 1, 0)
+    // where the parts are, gliding when they are moved, hidden or shown
+    prop gx.0 = 0 ~m.reflow
+    follow gx.0 = pw_x
+    prop gx.1 = 0 ~m.reflow
+    follow gx.1 = ps_x
+    prop gx.2 = 0 ~m.reflow
+    follow gx.2 = pm_x
+    prop gx.3 = 0 ~m.reflow
+    follow gx.3 = pq_x
+    prop gx.4 = 0 ~m.reflow
+    follow gx.4 = pu_x
+    prop gx.5 = 0 ~m.reflow
+    follow gx.5 = pc_x
+    prop gx.6 = 0 ~m.reflow
+    follow gx.6 = pt_x
+    prop gy.0 = 0 ~m.reflow
+    follow gy.0 = pw_y
+    prop gy.1 = 0 ~m.reflow
+    follow gy.1 = ps_y
+    prop gy.2 = 0 ~m.reflow
+    follow gy.2 = pm_y
+    prop gy.3 = 0 ~m.reflow
+    follow gy.3 = pq_y
+    prop gy.4 = 0 ~m.reflow
+    follow gy.4 = pu_y
+    prop gy.5 = 0 ~m.reflow
+    follow gy.5 = pc_y
+    prop gy.6 = 0 ~m.reflow
+    follow gy.6 = pt_y
     // Cascade's shelves come out one after another, 30 ms apart, and go home together
     prop cs.0 = 0 ~m.expand
     prop cs.1 = 0 ~m.expand
@@ -436,6 +567,53 @@ scene Nexus {
     prop rc_song = 0 ~m.reflow
     follow rc_song = nx_prog
 
+    // A quick setting's or a shelf's glyph `g` (mooi-nexus.luau QUICK's), centred at (x, y).
+    component QGlyph(x: number, y: number, g: number, c: color, sz: number = 16) {
+        size: sz, sz
+        figure i_wifi { at: x, y; size: sz, sz; color: c; show: g < 0.5 }
+        figure i_bt { at: x, y; size: sz, sz; color: c; show: g > 0.5 and g < 1.5 }
+        figure i_vol { at: x, y; size: sz, sz; color: c; show: g > 1.5 and g < 2.5 }
+        figure i_mic { at: x, y; size: sz, sz; color: c; show: g > 2.5 and g < 3.5 }
+        figure i_bell { at: x, y; size: sz, sz; color: c; show: g > 3.5 and g < 4.5 }
+        figure i_night { at: x, y; size: sz, sz; color: c; show: g > 4.5 and g < 5.5 }
+        figure i_caf { at: x, y; size: sz, sz; color: c; show: g > 5.5 and g < 6.5 }
+        figure i_bolt { at: x, y; size: sz, sz; color: c; show: g > 6.5 and g < 7.5 }
+        figure i_sun { at: x, y; size: sz, sz; color: c; show: g > 7.5 and g < 8.5 }
+        figure i_rec { at: x, y; size: sz, sz; color: c; show: g > 8.5 and g < 9.5 }
+        figure i_shot { at: x, y; size: sz, sz; color: c; show: g > 9.5 and g < 10.5 }
+        figure i_clip { at: x, y; size: sz, sz; color: c; show: g > 10.5 and g < 11.5 }
+        figure i_mute { at: x, y; size: sz, sz; color: c; show: g > 11.5 }
+    }
+    // A weather glyph of kind `k` (lib/sysinfo WEATHER_KINDS), centred at (x, y).
+    component WGlyph(x: number, y: number, sz: number, k: number) {
+        size: sz, sz
+        figure i_clear { at: x, y; size: sz, sz; color: fl.flare; show: k < 0.5 }
+        figure i_night { at: x, y; size: sz, sz; color: dk.ink; show: k > 0.5 and k < 1.5 }
+        figure i_cloud { at: x, y; size: sz, sz; color: dk.ink; show: k > 1.5 and k < 2.5 }
+        figure i_fog { at: x, y; size: sz, sz; color: dk.ink; show: k > 2.5 and k < 3.5 }
+        figure i_rain { at: x, y; size: sz, sz; color: dk.acc; show: k > 3.5 and k < 4.5 }
+        figure i_snow { at: x, y; size: sz, sz; color: dk.ink; show: k > 4.5 and k < 5.5 }
+        figure i_storm { at: x, y; size: sz, sz; color: dk.hot; show: k > 5.5 }
+    }
+    // A part's frame while arranging: its outline lit, a grip to carry it by, an eye to hide it.
+    // `code` is the part's (0 window … 6 today); the carrying is the scene's rules (they read `drag`).
+    component EditFrame(w: number, h: number, code: number, grip: number, eye: number) {
+        size: w, h
+        group {
+            opacity: ed_in
+            box { from: 4, 4; size: w - 8, h - 8; corner: dk.r; color: dk.acc; opacity: 0.05 + 0.06 * grip }
+            box { from: 4, 4; size: w - 8, h - 8; corner: dk.r; stroke: 1.2; color: dk.acc; opacity: 0.5 + 0.5 * if(dk_gid == code, 1, grip) }
+            // the grip: six dots, and the word
+            box { from: w - 122, 8; size: 82, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * grip) }
+            repeat g in 0..6 {
+                ellipse { at: w - 112 + mod(g, 2) * 5, 13 + floor(g / 2) * 5; radius: 1.3; color: dk.acc }
+            }
+            text "MOVE" { at: w - 76, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+            box { from: w - 34, 8; size: 24, 20; corner: 10; color: mix(dk.well, dk.hot, 0.2 + 0.4 * eye) }
+            text "×" { at: w - 22, 18; anchor: center; align: center; size: 13; color: dk.hot }
+        }
+    }
+
     surface nexus {
         // the whole screen: where nothing is drawn a press goes through to what is under it
         size: full, full
@@ -443,7 +621,9 @@ scene Nexus {
         level: top
         keyboard: on_demand
 
-        on key Escape { emit nx_close }
+        on key Escape while dk_naming { dk_naming = false; blur }
+        on key Escape while not dk_naming and dk_edit { emit dk_edit_on(0) }
+        on key Escape while not dk_naming and not dk_edit { emit nx_close }
 
         // ═══ The deck ═══
         group {
@@ -452,137 +632,208 @@ scene Nexus {
             opacity: smooth(0, 0.5, nx_in)
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
             IslandFrame(1, dk_w, dk_h, centre: true) {
-                // the bays' seams: the head's floor along a strip, each bay's top down a column
-                line { from: 0, sc_y + sc_h; to: dk_w, sc_y + sc_h; width: 1; color: dk.line; opacity: 0.7; show: not dk_vert }
-                line { from: wn_x + wn_w, wn_y + 10; to: wn_x + wn_w, wn_y + wn_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
-                line { from: mx_x, mx_y + 10; to: mx_x, mx_y + mx_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
-                line { from: wt_x, 9; to: wt_x, 27; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
-                line { from: id_x, 9; to: id_x, 27; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
-                repeat k in 0..5 {
-                    let seam.$k = pick(k, sc_y, wt_y, wn_y, ws_y, mx_y)
-                    line { from: 14, seam.$k; to: dk_w - 14, seam.$k; width: 1; color: dk.line; opacity: 0.6; show: dk_vert }
+                // the head: a raised band, its floor lit at the middle
+                box { from: 0, 0; size: dk_w, sc_h; color: dk.raised; opacity: 0.35; show: not dk_vert }
+                line { from: 0, sc_h; to: dk_w, sc_h; width: 1; color: dk.line; opacity: 0.8; show: not dk_vert }
+                group {
+                    show: not dk_vert
+                    glow: 5, 0.5 * st_glow, dk.acc
+                    line { from: dk_w / 2 - 60, sc_h; to: dk_w / 2 + 60, sc_h; width: 1.2; color: dk.acc; opacity: 0.6 }
+                }
+                line { from: wt_x, 10; to: wt_x, sc_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
+                line { from: id_x, 10; to: id_x, sc_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
+                repeat k in 0..3 {
+                    let seam.$k = pick(k, sc_y, wt_y, wt_y + wt_h)
+                    line { from: 14, seam.$k; to: dk_w - 14, seam.$k; width: 1; color: dk.line; opacity: 0.6; show: dk_vert and k > 0 }
+                }
+                // registration marks at the deck's corners
+                repeat c in 0..4 {
+                    let rx.$c = if(mod(c, 2) == 0, 6, dk_w - 6)
+                    let ry.$c = if(c < 2, 6, dk_h - 6)
+                    let sx.$c = if(mod(c, 2) == 0, 1, -1)
+                    let sy.$c = if(c < 2, 1, -1)
+                    line { from: rx.$c, ry.$c; to: rx.$c + 10 * sx.$c, ry.$c; width: 1.2; color: dk.acc; opacity: 0.55 }
+                    line { from: rx.$c, ry.$c; to: rx.$c, ry.$c + 10 * sy.$c; width: 1.2; color: dk.acc; opacity: 0.55 }
                 }
 
-                // ── Who you are, the time, and the ways out ──
+                // ── Who you are, the time, and the ways out (✎ arranges the deck) ──
                 group {
                     move: id_x, id_y
-                    let iy = if(dk_vert, 22, 18)
-                    box { from: 14, iy - 11; size: 22, 22; corner: if(isl_style > 0.5, 11, 2); color: dk.well }
-                    image avatar { at: 14, iy - 11; size: 22, 22; show: nx_avatar_on }
-                    text nx_initial { at: 25, iy; anchor: center; align: center; size: 11; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on }
-                    text pick(nx_noticed, nx_name, nx_notice) { at: 44, iy - (if(dk_vert, 6, 0)); anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: id_w - 172; lines: 1 }
-                    text nx_who { at: 44, iy + 8; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: id_w - 172; lines: 1; show: dk_vert }
-                    text clock.time { at: id_w - 104, iy; anchor: right center; size: 12; family: "Share Tech Mono"; color: dk.ink2 }
-                    zone box hset { from: id_w - 98, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "mooi's settings" }
-                    figure i_set { at: id_w - 87, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hset.hover) }
-                    on press hset { emit nx_go(1) }
-                    zone box hlock { from: id_w - 74, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "Lock the screen" }
-                    figure i_lock { at: id_w - 63, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hlock.hover) }
-                    on press hlock { emit nx_go(2) }
-                    zone box hpow { from: id_w - 50, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "The session menu" }
-                    figure i_power { at: id_w - 39, iy; size: 13, 13; color: mix(dk.ink2, dk.hot, hpow.hover) }
-                    on press hpow { emit nx_go(3) }
-                    zone box hx { from: id_w - 26, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "Close the Nexus" }
-                    text "×" { at: id_w - 15, iy; anchor: center; align: center; size: 16; color: mix(dk.mute, dk.ink, hx.hover) }
-                    on press hx { emit nx_close }
+                    let iy = if(dk_vert, 22, 19)
+                    box { from: 14, iy - 12; size: 24, 24; corner: if(isl_style > 0.5, 12, 2); color: mix(dk.well, dk.acc, 0.2) }
+                    image avatar { at: 14, iy - 12; size: 24, 24; show: nx_avatar_on }
+                    text nx_initial { at: 26, iy; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on }
+                    text pick(nx_noticed, nx_name, nx_notice) { at: 46, iy - (if(dk_vert, 6, 0)); anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: id_w - 196; lines: 1 }
+                    text nx_who { at: 46, iy + 8; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: id_w - 196; lines: 1; show: dk_vert }
+                    text clock.time { at: id_w - 128, iy; anchor: right center; size: 12; family: "Share Tech Mono"; color: dk.ink2 }
+                    repeat b in 0..5 {
+                        zone box hb.$b { from: id_w - 122 + b * 23, iy - 12; size: 22, 24; cursor: pointer; role: button
+                                         label: pick(b, "Arrange the deck", "mooi's settings", "Lock the screen", "The session menu", "Close the Nexus") }
+                        box { from: id_w - 121 + b * 23, iy - 11; size: 20, 22; corner: if(isl_style > 0.5, 6, 2); color: if(b == 0 and dk_edit, dk.acc, dk.well); opacity: if(b == 0 and dk_edit, 0.9, 0.6 * hb.$b.hover) }
+                    }
+                    text "✎" { at: id_w - 111, iy; anchor: center; align: center; size: 13; color: if(dk_edit, dk.well, mix(dk.ink2, dk.acc, hb.0.hover)) }
+                    figure i_set { at: id_w - 88, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hb.1.hover) }
+                    figure i_lock { at: id_w - 65, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hb.2.hover) }
+                    figure i_power { at: id_w - 42, iy; size: 13, 13; color: mix(dk.ink2, dk.hot, hb.3.hover) }
+                    text "×" { at: id_w - 19, iy; anchor: center; align: center; size: 16; color: mix(dk.mute, dk.ink, hb.4.hover) }
+                    on press hb.0 { emit dk_edit_on(if(dk_edit, 0, 1)) }
+                    on press hb.1 { emit nx_go(1) }
+                    on press hb.2 { emit nx_go(2) }
+                    on press hb.3 { emit nx_go(3) }
+                    on press hb.4 { emit nx_close }
                 }
 
                 // ── Scenes: a whole setup at a press; pointed at, it says what it would change ──
                 group {
                     move: sc_x, sc_y
                     zone box scbay { from: 0, 0; size: sc_w, sc_h; role: region; label: "Scenes" }
-                    group {
-                        show: not dk_vert
-                        text "SCENES" { at: 14, 18; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                    }
-                    BayHead(16, 10, "Scenes") { show: dk_vert }
+                    text "SCENES" { at: 14, 19; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: not dk_vert }
+                    PartHead(sc_w, "", "Scenes", "1 PRESS, WHOLE SETUP") { show: dk_vert }
                     for s in scn {
                         zone box sz { from: s.x, s.y; size: s.w, 24; cursor: pointer; role: button; selected: s.live
                                       label: pick(s.save, "Switch to {s.word}", "Save this setup as a scene") }
-                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; color: if(s.live, mix(dk.well, dk.hot, 0.14), mix(dk.well, dk.acc, 0.12 * sz.hover)); opacity: 0.9 }
+                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; color: if(s.live, mix(dk.well, dk.hot, 0.16), mix(dk.well, dk.acc, 0.14 * sz.hover)); opacity: 0.92 }
                         box { from: s.x, s.y; size: s.w, 24; corner: dk.r; stroke: 1
-                              color: if(s.live, dk.hot, mix(dk.line, dk.acc, sz.hover + if(dk_hsc == s.index, 1, 0))) ; opacity: if(s.save, 0.7, 1) }
-                        ellipse { at: s.x + 10, s.y + 12; radius: 2.6; color: dk.hot; show: s.live }
+                              color: if(s.live, dk.hot, mix(dk.line, dk.acc, sz.hover + if(dk_hsc == s.index, 1, 0))); opacity: if(s.save, 0.7, 1) }
+                        group {
+                            show: s.live
+                            glow: 5, 0.7 * st_glow, dk.hot
+                            ellipse { at: s.x + 10, s.y + 12; radius: 2.6; color: dk.hot }
+                        }
+                        box { from: s.x + s.w - 9, s.y + 4; size: 5, 5; corner: 1; color: dk.acc; opacity: 0.8; show: s.env }
                         text "{upper(s.word)}" { at: s.x + s.w / 2 + if(s.live, 5, 0), s.y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
                                                  color: if(s.live, dk.hot, if(s.save, dk.mute, mix(dk.ink2, dk.ink, sz.hover))); width: s.w - 14; lines: 1 }
                         on hover sz for 220ms while not s.save { dk_hsc = s.index; emit dk_hov_scene(s.index) }
-                        on press sz { emit dk_scene(s.index) }
+                        on press sz while not s.save { emit dk_scene(s.index) }
+                        on press sz while s.save { dk_naming = true; dk_hsc = -1; emit dk_naming_on(s.index); focus dk_name_in }
                         on press right sz while not s.save { emit dk_unscene(s.index) }
                     }
                 }
 
-                // ── What is waiting: each with the press that deals with it ──
+                // ── What is waiting (or, while arranging, the arranging bar) ──
                 group {
                     move: wt_x, wt_y
-                    BayHead(16, 10, "Waiting") { show: dk_vert }
                     group {
-                        clip box { from: 8, 0; size: wt_w - 16, wt_h }
-                        for t in wait {
-                            zone box tz { from: t.x, t.y; size: t.w, 24; cursor: pointer; role: button; label: "{t.word}: {t.act}" }
-                            ellipse { at: t.x + 4, t.y + 12; radius: 2.4; color: if(t.hot, dk.hot, dk.mute) }
-                            text t.word { at: t.x + 12, t.y + 12.5; anchor: left center; size: 10.5; family: "Share Tech Mono"; color: mix(dk.ink2, dk.ink, tz.hover); width: t.w - 70; lines: 1 }
-                            box { from: t.x + t.w - 54, t.y + 3; size: 52, 18; corner: dk.r; stroke: 1; color: mix(if(t.hot, dk.hot, dk.acc), dk.ink, 0.25 * tz.hover) }
-                            text t.act { at: t.x + t.w - 28, t.y + 12.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
-                            on press tz { emit dk_wait(t.index) }
+                        opacity: 1 - ed_in
+                        show: ed_in < 0.99
+                        PartHead(wt_w, "", "Waiting", "") { show: dk_vert }
+                        group {
+                            clip box { from: 8, 0; size: wt_w - 16, wt_h }
+                            for t in wait {
+                                zone box tz { from: t.x, t.y; size: t.w, 26; cursor: pointer; role: button; label: "{t.word}: {t.act}" }
+                                box { from: t.x - 4, t.y; size: t.w + 4, 26; corner: dk.r; color: dk.acc; opacity: 0.08 * tz.hover }
+                                group {
+                                    glow: 5, if(t.hot, 0.7, 0) * st_glow, dk.hot
+                                    ellipse { at: t.x + 4, t.y + 13; radius: 2.6; color: if(t.hot, dk.hot, dk.mute) }
+                                }
+                                text t.word { at: t.x + 13, t.y + 13.5; anchor: left center; size: 10.5; family: "Share Tech Mono"; color: mix(dk.ink2, dk.ink, tz.hover); width: t.w - 74; lines: 1 }
+                                box { from: t.x + t.w - 56, t.y + 4; size: 54, 18; corner: dk.r; color: if(t.hot, dk.hot, dk.acc); opacity: 0.12 + 0.2 * tz.hover }
+                                box { from: t.x + t.w - 56, t.y + 4; size: 54, 18; corner: dk.r; stroke: 1; color: if(t.hot, dk.hot, dk.acc) }
+                                text t.act { at: t.x + t.w - 29, t.y + 13.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
+                                on press tz { emit dk_wait(t.index) }
+                            }
                         }
+                    }
+                    // arranging: which edge, what is hidden, back to the first order, done
+                    group {
+                        show: ed_in > 0.01
+                        opacity: ed_in
+                        let ey = if(dk_vert, 34, 7)
+                        text "ARRANGE · DRAG A PART BY MOVE" { at: 14, if(dk_vert, 18, 19); anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: dk_vert }
+                        text "EDGE" { at: 14, ey + 12; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                        repeat e in 0..4 {
+                            let ex.$e = 48 + e * 32
+                            zone box ez.$e { from: ex.$e, ey; size: 28, 24; cursor: pointer; role: tab; selected: dk_edge == e; label: pick(e, "Along the bottom", "Along the top", "Down the left", "Down the right") }
+                            box { from: ex.$e, ey; size: 28, 24; corner: dk.r; color: if(dk_edge == e, mix(dk.well, dk.acc, 0.2), dk.well) }
+                            box { from: ex.$e, ey; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_edge == e, dk.acc, mix(dk.line, dk.acc, ez.$e.hover)) }
+                            // a little screen, its deck lit on that edge
+                            box { from: ex.$e + 6, ey + 5; size: 16, 14; corner: 1; stroke: 1; color: dk.mute }
+                            box { from: ex.$e + pick(e, 6, 6, 6, 19), ey + pick(e, 16, 5, 5, 5); size: pick(e, 16, 16, 3, 3), pick(e, 3, 3, 14, 14); color: if(dk_edge == e, dk.acc, dk.ink2) }
+                            on press ez.$e { emit dk_edge_set(e) }
+                        }
+                        text pick(hid.count > 0, "ALL PARTS SHOWN", "SHOW") { at: if(dk_vert, 14, 188), if(dk_vert, ey + 42, ey + 12); anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                        for h in hid {
+                            let hx = if(dk_vert, 14 + mod(h.index, 3) * 122, 228 + h.index * 104)
+                            let hy = if(dk_vert, ey + 54 + floor(h.index / 3) * 28, ey)
+                            zone box hz { from: hx, hy; size: 98, 24; cursor: pointer; role: button; label: "Show {h.word}"; active: not h.room }
+                            box { from: hx, hy; size: 98, 24; corner: dk.r; color: dk.well; opacity: 0.9 }
+                            box { from: hx, hy; size: 98, 24; corner: dk.r; stroke: 1; color: if(h.room, dk.line, mix(dk.line, dk.acc, 0.4 + 0.6 * hz.hover)) }
+                            text "+ {upper(h.word)}" { at: hx + 49, hy + 12.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(h.room, dk.mute, dk.ink); width: 92; lines: 1 }
+                            on press hz { emit dk_show(h.code) }
+                        }
+                        let aay = if(dk_vert, wt_h - 32, ey)
+                        zone box az.0 { from: wt_w - 150, aay; size: 66, 24; cursor: pointer; role: button; label: "Put every part back" }
+                        Act(wt_w - 150, aay, 66, "Reset", false, false, az.0.hover)
+                        zone box az.1 { from: wt_w - 78, aay; size: 66, 24; cursor: pointer; role: button; label: "Done arranging" }
+                        Act(wt_w - 78, aay, 66, "Done", true, false, az.1.hover)
+                        on press az.0 { emit dk_reset }
+                        on press az.1 { emit dk_edit_on(0) }
                     }
                 }
 
-                // ── The window you are in: its own controls and its own sound ──
+                // ═══ The parts ═══
+                // ── This window: its own controls and its own sound ──
                 group {
-                    move: wn_x, wn_y
-                    BayHead(16, 12, "This window")
+                    show: pw_on
+                    move: gx.0 + dk_gdx * if(dk_gid == 0, 1, 0), gy.0 + dk_gdy * if(dk_gid == 0, 1, 0)
+                    PartHead(pw_w, pw_n, "This window", "")
                     group {
                         show: w_ok
-                        let wy = if(dk_vert, 30, 36)
-                        box { from: 16, wy; size: 34, 34; corner: if(isl_style > 0.5, 8 * cn_scale, 2); color: mix(dk.well, dk.acc, 0.22) }
-                        box { from: 16, wy; size: 34, 34; corner: if(isl_style > 0.5, 8 * cn_scale, 2); stroke: 1; color: dk.acc; opacity: 0.6 }
-                        text w_initial { at: 33, wy + 17; anchor: center; align: center; size: 15; weight: 700; family: "Exo 2"; color: dk.acc }
-                        text w_app { at: 60, wy + 9; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: dk.ink; width: wn_w - 76; lines: 1 }
-                        text w_title { at: 60, wy + 25; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: wn_w - 76; lines: 1 }
-                        text w_where { at: 16, wy + 48; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: wn_w - 32; lines: 1 }
-                        // its sound: a level the hand moves, or a word that it plays nothing
-                        let wsy = wy + 64
-                        text "SOUND" { at: 16, wsy + 4; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                        box { from: 14, 34; size: 42, 42; corner: if(isl_style > 0.5, 10 * cn_scale, 2); color: mix(dk.well, dk.acc, 0.24) }
+                        box { from: 14, 34; size: 42, 42; corner: if(isl_style > 0.5, 10 * cn_scale, 2); stroke: 1; color: dk.acc; opacity: 0.7 }
+                        line { from: 18, 72; to: 52, 72; width: 2; color: dk.acc; opacity: 0.5 }
+                        text w_initial { at: 35, 54; anchor: center; align: center; size: 18; weight: 700; family: "Exo 2"; color: dk.acc }
+                        text w_app { at: 66, 46; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: dk.ink; width: pw_w - 80; lines: 1 }
+                        text w_title { at: 66, 64; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: pw_w - 80; lines: 1 }
+                        text w_where { at: 14, 90; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; width: pw_w - 28; lines: 1 }
+                        text "SOUND" { at: 14, 108; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
                         group {
                             show: w_snd
-                            zone box wsz { from: 64, wsy - 4; size: wn_w - 120, 16; cursor: pointer; role: slider; value: w_vol; label: "{w_app} volume" }
-                            box { from: 64, wsy + 2; size: wn_w - 120, 4; corner: 2; color: dk.well }
+                            zone box wsz { from: 60, 100; size: pw_w - 112, 16; cursor: pointer; role: slider; value: w_vol; label: "{w_app} volume" }
+                            box { from: 60, 106; size: pw_w - 112, 4; corner: 2; color: dk.well }
                             group {
-                                glow: 5, 0.4 * st_glow, dk.acc
-                                box { from: 64, wsy + 2; size: (wn_w - 120) * clamp(w_vol, 0, 1), 4; corner: 2; color: dk.acc }
+                                glow: 5, 0.45 * st_glow, dk.acc
+                                box { from: 60, 106; size: (pw_w - 112) * clamp(w_vol, 0, 1), 4; corner: 2; color: dk.acc }
                             }
-                            ellipse { at: 64 + (wn_w - 120) * clamp(w_vol, 0, 1), wsy + 4; radius: 4 + wsz.hover; color: dk.ink }
-                            text "{round(w_vol * 100), 0}%" { at: wn_w - 16, wsy + 4; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
-                            on press wsz { emit dk_level(9000 + round(clamp(local.x / (wn_w - 120), 0, 1) * 1000)) }
-                            on drag wsz { emit dk_level(9000 + round(clamp(local.x / (wn_w - 120), 0, 1) * 1000)) }
+                            ellipse { at: 60 + (pw_w - 112) * clamp(w_vol, 0, 1), 108; radius: 4.5 + wsz.hover; color: dk.ink }
+                            text "{round(w_vol * 100), 0}%" { at: pw_w - 14, 108; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
+                            on press wsz { emit dk_level(9000 + round(clamp((local.x - 60) / (pw_w - 112), 0, 1) * 1000)) }
+                            on drag wsz { emit dk_level(9000 + round(clamp((local.x - 60) / (pw_w - 112), 0, 1) * 1000)) }
                             on scroll wsz { emit dk_level(9000 + round(clamp(w_vol + wheel * 0.05, 0, 1) * 1000)) }
                         }
-                        text "plays nothing" { at: 64, wsy + 4; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not w_snd }
-                        // what it can do
-                        let ay = wsy + 20
-                        let aw = (wn_w - 32 - 3 * 6) / 4
+                        text "plays nothing" { at: 60, 108; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not w_snd }
+                        let aw = (pw_w - 28 - 3 * 6) / 4
                         repeat a in 0..4 {
-                            let ax.$a = 16 + a * (aw + 6)
+                            let ax.$a = 14 + a * (aw + 6)
                             let alit.$a = pick(a, w_floating, w_full, w_pinned, 0)
-                            zone box wa.$a { from: ax.$a, ay; size: aw, 24; cursor: pointer; role: button; label: pick(a, "Float {w_app}", "Fullscreen {w_app}", "Pin {w_app}", "Close {w_app}") }
-                            box { from: ax.$a, ay; size: aw, 24; corner: dk.r; color: if(alit.$a, mix(dk.well, dk.acc, 0.16), dk.well); opacity: 0.9 }
-                            box { from: ax.$a, ay; size: aw, 24; corner: dk.r; stroke: 1; color: if(a == 3, mix(dk.line, dk.hot, 0.4 + 0.6 * wa.$a.hover), if(alit.$a, dk.acc, mix(dk.line, dk.acc, 0.6 * wa.$a.hover))) }
-                            text pick(a, "FLOAT", "FULL", "PIN", "CLOSE") { at: ax.$a + aw / 2, ay + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                            zone box wa.$a { from: ax.$a, 124; size: aw, 24; cursor: pointer; role: button; label: pick(a, "Float {w_app}", "Fullscreen {w_app}", "Pin {w_app}", "Close {w_app}") }
+                            box { from: ax.$a, 124; size: aw, 24; corner: dk.r; color: if(alit.$a, mix(dk.well, dk.acc, 0.18), dk.well); opacity: 0.92 }
+                            box { from: ax.$a, 124; size: aw, 24; corner: dk.r; stroke: 1; color: if(a == 3, mix(dk.line, dk.hot, 0.4 + 0.6 * wa.$a.hover), if(alit.$a, dk.acc, mix(dk.line, dk.acc, 0.6 * wa.$a.hover))) }
+                            text pick(a, "FLOAT", "FULL", "PIN", "CLOSE") { at: ax.$a + aw / 2, 136.5; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"
                                 color: if(a == 3, mix(dk.ink2, dk.hot, wa.$a.hover), if(alit.$a, dk.acc, mix(dk.ink2, dk.ink, wa.$a.hover))) }
                             on press wa.$a { emit dk_win(a) }
                         }
-                        text w_note { at: 16, ay + 40; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: wn_w - 32; lines: 1; show: w_noted and not dk_vert }
+                        text w_note { at: 14, 170; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: pw_w - 28; lines: 1; show: w_noted and pw_h > 180 }
                     }
-                    text "No window here" { at: 16, 60; anchor: left center; size: 12; family: "Exo 2"; color: dk.mute; show: not w_ok }
+                    group {
+                        show: not w_ok
+                        figure i_window { at: pw_w / 2, pw_h / 2 - 8; size: 26, 26; color: dk.mute }
+                        text "NO WINDOW HERE" { at: pw_w / 2, pw_h / 2 + 20; anchor: center; align: center; size: 9.5; family: "Share Tech Mono"; color: dk.mute }
+                    }
+                    zone box eg0 { from: pw_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move This window"; active: dk_edit }
+                    zone box ee0 { from: pw_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide This window"; active: dk_edit }
+                    EditFrame(pw_w, pw_h, 0, eg0.hover, ee0.hover) { show: ed_in > 0.01 }
+                    on drag eg0 while dk_edit { dk_gid = 0; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg0 while dk_edit and dk_gid == 0 { emit dk_drop(0 * 100000 + round(if(dk_vert, gy.0 + dk_gdy + pw_h / 2, gx.0 + dk_gdx + pw_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee0 { emit dk_hide(0) }
                 }
 
                 // ── Your workspaces: each a miniature of its screen, its windows where they are ──
                 group {
-                    move: ws_x, ws_y
-                    zone box wsbay { from: 0, 0; size: ws_w, ws_h; role: region; label: "Workspaces" }
-                    BayHead(16, 12, "Workspaces")
-                    text "POINT AT ONE TO LOOK IN" { at: ws_w - 16, 18; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                    show: ps_on
+                    move: gx.1 + dk_gdx * if(dk_gid == 1, 1, 0), gy.1 + dk_gdy * if(dk_gid == 1, 1, 0)
+                    zone box wsbay { from: 0, 0; size: ps_w, ps_h; role: region; label: "Workspaces" }
+                    PartHead(ps_w, ps_n, "Workspaces", "POINT TO LOOK IN · DRAG A WINDOW TO MOVE IT")
                     for t in tiles {
                         zone box tlz { from: t.x, t.y; size: t.w, t.h + 16; cursor: pointer; role: item; selected: t.active
                                        label: pick(t.plus, "Workspace {t.id}", "A new workspace") }
@@ -591,92 +842,242 @@ scene Nexus {
                             group {
                                 clip box { from: t.x, t.y; size: t.w, t.h; corner: dk.r }
                                 box { from: t.x, t.y; size: t.w, t.h; color: dk.well }
-                                image wall { at: t.x, t.y; size: t.w, t.h; opacity: 0.8; show: dk_wall_on }
-                                box { from: t.x, t.y; size: t.w, t.h; color: #000000; opacity: if(t.active, 0.18, 0.38) }
+                                image wall { at: t.x, t.y; size: t.w, t.h; opacity: 0.85; show: dk_wall_on }
+                                box { from: t.x, t.y; size: t.w, t.h; color: #000000; opacity: if(t.active, 0.12, 0.36 - 0.14 * tlz.hover) }
                             }
                         }
                         group {
                             show: t.plus
                             box { from: t.x, t.y; size: t.w, t.h; corner: dk.r; color: dk.well; opacity: 0.5 + 0.4 * tlz.hover }
-                            text "+" { at: t.x + t.w / 2, t.y + t.h / 2; anchor: center; align: center; size: 20; weight: 300; family: "Exo 2"; color: mix(dk.mute, dk.acc, tlz.hover) }
+                            text "+" { at: t.x + t.w / 2, t.y + t.h / 2; anchor: center; align: center; size: 22; weight: 300; family: "Exo 2"; color: mix(dk.mute, dk.acc, tlz.hover) }
                         }
-                        box { from: t.x, t.y; size: t.w, t.h; corner: dk.r; stroke: if(t.active, 1.6, 1)
-                              color: if(t.active, dk.acc, mix(dk.line, dk.acc, tlz.hover + if(dk_hws == t.index, 1, 0))) }
+                        group {
+                            glow: 7, if(t.active, 0.6, 0) * st_glow, dk.acc
+                            box { from: t.x, t.y; size: t.w, t.h; corner: dk.r; stroke: if(t.active, 1.6, 1)
+                                  color: if(t.active, dk.acc, mix(dk.line, dk.acc, tlz.hover + if(dk_hws == t.index, 1, 0))) }
+                        }
                         text t.label { at: t.x + 2, t.y + t.h + 9; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2); width: t.w - 20; lines: 1 }
                         text t.n { at: t.x + t.w - 2, t.y + t.h + 9; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute }
-                        on hover tlz for 260ms { dk_hws = t.index; emit dk_hov_ws(t.index) }
+                        on hover tlz for 260ms while dk_wd < 0 { dk_hws = t.index; emit dk_hov_ws(t.index) }
                         on press tlz { emit dk_ws(t.index) }
                     }
-                    // the windows, already placed in their tiles by the logic
+                    // the windows, placed in their tiles by the logic; carried by hand to another one
                     for w in wins {
-                        box { from: w.x, w.y; size: w.w, w.h; corner: 1; color: mix(dk.raised, #000000, 0.2); opacity: 0.95 }
-                        image w.pic { at: w.x, w.y; size: w.w, w.h; show: w.pictured }
-                        box { from: w.x, w.y; size: w.w, min(4, w.h); color: dk.line; show: not w.pictured }
-                        box { from: w.x, w.y; size: w.w, w.h; corner: 1; stroke: 1; color: if(w.focused, dk.acc, dk.line); opacity: 0.9 }
+                        let wl = if(dk_wd == w.index, 1, 0)
+                        zone box wz { from: w.x, w.y; size: w.w, w.h; cursor: grab; role: item; label: "A window: drag it to another workspace" }
+                        group {
+                            move: dk_wdx * wl, dk_wdy * wl
+                            glow: 8, 0.8 * wl * st_glow, dk.acc
+                            box { from: w.x, w.y; size: w.w, w.h; corner: 1; color: mix(dk.raised, #000000, 0.25); opacity: if(w.pictured, 0.95, 0.72) }
+                            image w.pic { at: w.x, w.y; size: w.w, w.h; show: w.pictured }
+                            box { from: w.x, w.y; size: w.w, min(5, w.h); color: mix(dk.line, dk.acc, if(w.focused, 0.6, 0)); show: not w.pictured }
+                            text "{upper(w.app)}" { at: w.x + w.w / 2, w.y + w.h / 2 + 2; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: dk.ink2; width: w.w - 6; lines: 1; show: not w.pictured and w.w > 34 and w.h > 18 }
+                            box { from: w.x, w.y; size: w.w, w.h; corner: 1; stroke: 1 + wl; color: if(w.focused or wl > 0.5, dk.acc, mix(dk.line, dk.acc, wz.hover)); opacity: 0.95 }
+                        }
+                        on drag wz { dk_wd = w.index; dk_wdx = drag.dx; dk_wdy = drag.dy; dk_hws = -1 }
+                        on release wz { emit dk_wdrop(w.index * 100000000 + round(pointer.x) * 10000 + round(pointer.y)); dk_wd = -1; dk_wdx = 0; dk_wdy = 0 }
                     }
+                    zone box eg1 { from: ps_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Workspaces"; active: dk_edit }
+                    zone box ee1 { from: ps_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Workspaces"; active: dk_edit }
+                    EditFrame(ps_w, ps_h, 1, eg1.hover, ee1.hover) { show: ed_in > 0.01 }
+                    on drag eg1 while dk_edit { dk_gid = 1; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg1 while dk_edit and dk_gid == 1 { emit dk_drop(1 * 100000 + round(if(dk_vert, gy.1 + dk_gdy + ps_h / 2, gx.1 + dk_gdx + ps_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee1 { emit dk_hide(1) }
                 }
 
-                // ── The console: the mixer, the switches, the machine, the music ──
+                // ── The mixer: everything, the apps that play, the microphone, the screen ──
                 group {
-                    move: mx_x, mx_y
-                    BayHead(16, 12, "Console")
-                    // the mixer: everything, the apps that play, the microphone, the screen
-                    let fh = mx_h - 82
+                    show: pm_on
+                    move: gx.2 + dk_gdx * if(dk_gid == 2, 1, 0), gy.2 + dk_gdy * if(dk_gid == 2, 1, 0)
+                    PartHead(pm_w, pm_n, "Mixer", "")
+                    let fh = pm_h - 84
+                    let f0 = (pm_w - max(1, faders.count) * 36) / 2 + 18
                     for f in faders {
-                        Fader(f, 28 + f.index * 34, 36, fh, dk_level)
+                        Fader(f, f0 + f.index * 36, 38, fh, dk_level)
                     }
-                    let kx = 28 + max(1, faders.count) * 34 + 6
-                    let kw = (mx_w - kx - 14 - 3 * 5) / 4
-                    line { from: kx - 10, 34; to: kx - 10, mx_h - 12; width: 1; color: dk.line; opacity: 0.5 }
-                    for k in keys {
-                        let kxx = kx + mod(k.index, 4) * (kw + 5)
-                        let kyy = 30 + floor(k.index / 4) * 30
-                        zone box kz { from: kxx, kyy; size: kw, 26; cursor: pointer; role: toggle; checked: k.on; label: k.word }
-                        box { from: kxx, kyy; size: kw, 26; corner: dk.r; color: if(k.on, mix(dk.well, dk.acc, 0.12), dk.well) }
-                        box { from: kxx, kyy; size: kw, 26; corner: dk.r; stroke: 1; color: if(k.on, mix(dk.line, dk.acc, 0.7), mix(dk.line, dk.acc, 0.5 * kz.hover)) }
+                    zone box eg2 { from: pm_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Mixer"; active: dk_edit }
+                    zone box ee2 { from: pm_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Mixer"; active: dk_edit }
+                    EditFrame(pm_w, pm_h, 2, eg2.hover, ee2.hover) { show: ed_in > 0.01 }
+                    on drag eg2 while dk_edit { dk_gid = 2; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg2 while dk_edit and dk_gid == 2 { emit dk_drop(2 * 100000 + round(if(dk_vert, gy.2 + dk_gdy + pm_h / 2, gx.2 + dk_gdx + pm_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee2 { emit dk_hide(2) }
+                }
+
+                // ── Quick settings: twelve tiles, each lit while it is on, its state in words ──
+                group {
+                    show: pq_on
+                    move: gx.3 + dk_gdx * if(dk_gid == 3, 1, 0), gy.3 + dk_gdy * if(dk_gid == 3, 1, 0)
+                    PartHead(pq_w, pq_n, "Quick settings", "")
+                    let qw = (pq_w - 28 - 3 * 6) / 4
+                    for q in quick {
+                        let qx = 14 + mod(q.index, 4) * (qw + 6)
+                        let qy = 34 + floor(q.index / 4) * 52
+                        zone box qz { from: qx, qy; size: qw, 46; cursor: pointer; role: toggle; checked: q.on; label: "{q.word}: {q.state}" }
+                        box { from: qx, qy; size: qw, 46; corner: dk.r; color: if(q.on, mix(dk.well, mix(dk.acc, dk.hot, q.hot), 0.18), mix(dk.well, dk.acc, 0.06 * qz.hover)) }
+                        box { from: qx, qy; size: qw, 46; corner: dk.r; stroke: 1; color: if(q.on, mix(dk.line, mix(dk.acc, dk.hot, q.hot), 0.75), mix(dk.line, dk.acc, 0.6 * qz.hover)) }
                         group {
-                            glow: 5, if(k.on, 0.6, 0) * st_glow, dk.acc
-                            box { from: kxx + 6, kyy + 5; size: 12, 2; color: if(k.on, dk.acc, dk.line) }
+                            glow: 6, if(q.on, 0.7, 0) * st_glow, mix(dk.acc, dk.hot, q.hot)
+                            box { from: qx + 8, qy; size: qw - 16, 2; color: mix(dk.acc, dk.hot, q.hot); show: q.on }
+                            QGlyph(qx + 15, qy + 15, q.glyph, if(q.on, mix(dk.acc, dk.hot, q.hot), mix(dk.ink2, dk.ink, qz.hover)), 14)
                         }
-                        text "{upper(k.word)}" { at: kxx + 6, kyy + 16.5; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, mix(dk.ink2, dk.ink, kz.hover)); width: kw - 10; lines: 1 }
-                        on press kz { emit nx_tog(k.code) }
+                        text "{upper(q.word)}" { at: qx + 28, qy + 15.5; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(q.on, mix(dk.acc, dk.hot, q.hot), dk.ink); width: qw - 32; lines: 1 }
+                        text q.state { at: qx + 9, qy + 34; anchor: left center; size: 9; family: "Exo 2"; color: if(q.on, dk.ink, dk.mute); width: qw - 14; lines: 1 }
+                        on press qz { emit nx_tog(q.code) }
                     }
-                    // the machine
-                    let ry = 96
-                    let rw = (mx_w - kx - 14) / 4
-                    Reading(kx, ry, rw, "CPU", m_cpu_t, rc_cpu, m_cpu > 0.85 or m_temp > 85)
-                    Reading(kx + rw, ry, rw, "Memory", m_mem_t, rc_mem, m_mem > 0.9)
-                    Reading(kx + 2 * rw, ry, rw, "Battery", m_bat_t, m_bat, m_bat_hot)
-                    Reading(kx + 3 * rw, ry, rw, "Disk", m_disk_t, m_disk, m_disk > 0.9)
-                    // the music
-                    let my = mx_h - 46
+                    zone box eg3 { from: pq_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Quick settings"; active: dk_edit }
+                    zone box ee3 { from: pq_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Quick settings"; active: dk_edit }
+                    EditFrame(pq_w, pq_h, 3, eg3.hover, ee3.hover) { show: ed_in > 0.01 }
+                    on drag eg3 while dk_edit { dk_gid = 3; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg3 while dk_edit and dk_gid == 3 { emit dk_drop(3 * 100000 + round(if(dk_vert, gy.3 + dk_gdy + pq_h / 2, gx.3 + dk_gdx + pq_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee3 { emit dk_hide(3) }
+                }
+
+                // ── Music: the cover, the song, where it is, the transport ──
+                group {
+                    show: pu_on
+                    move: gx.4 + dk_gdx * if(dk_gid == 4, 1, 0), gy.4 + dk_gdy * if(dk_gid == 4, 1, 0)
+                    PartHead(pu_w, pu_n, "Music", "")
                     group {
                         show: mus_on
-                        zone box mart { from: kx, my; size: 30, 30; cursor: pointer; role: button; label: "Open the music player" }
-                        box { from: kx, my; size: 30, 30; corner: dk.r; color: dk.well }
-                        image cover { at: kx, my; size: 30, 30; show: nx_art_on }
-                        on press mart { emit nx_go(20) }
-                        text med.title { at: kx + 40, my + 8; anchor: left center; size: 11; weight: 600; family: "Exo 2"; color: dk.ink; width: mx_w - kx - 140; lines: 1 }
-                        text med.artist { at: kx + 40, my + 21; anchor: left center; size: 9.5; family: "Exo 2"; color: dk.ink2; width: mx_w - kx - 140; lines: 1 }
-                        box { from: kx + 40, my + 31; size: mx_w - kx - 140, 2; color: dk.line }
-                        box { from: kx + 40, my + 31; size: (mx_w - kx - 140) * clamp(rc_song, 0, 1), 2; color: dk.hot }
-                        repeat b in 0..3 {
-                            zone box mb.$b { from: mx_w - 92 + b * 26, my + 3; size: 24, 24; cursor: pointer; role: button; label: pick(b, "Previous", "Play or pause", "Next") }
-                            text pick(b, "⏮", "", "⏭") { at: mx_w - 80 + b * 26, my + 15; anchor: center; align: center; size: 12; color: mix(dk.ink2, dk.ink, mb.$b.hover) }
-                            on press mb.$b { emit nx_media(b) }
+                        let ua = if(dk_vert, 64, 84)
+                        let ux = 14 + ua + 14
+                        zone box uart { from: 14, 34; size: ua, ua; cursor: pointer; role: button; label: "Open the music player" }
+                        body {
+                            color: dk.well
+                            shadow: 0, 6, 16, 50%
+                            box { from: 14, 34; size: ua, ua; corner: dk.r }
                         }
-                        text pick(med.playing, "▶", "⏸") { at: mx_w - 54, my + 15; anchor: center; align: center; size: 14; color: mix(dk.hot, dk.ink, mb.1.hover) }
+                        image cover { at: 14, 34; size: ua, ua; show: nx_art_on }
+                        figure i_music { at: 14 + ua / 2, 34 + ua / 2; size: 22, 22; color: dk.mute; show: not nx_art_on }
+                        box { from: 14, 34; size: ua, ua; corner: dk.r; stroke: 1; color: mix(dk.line, dk.hot, uart.hover) }
+                        on press uart { emit nx_go(20) }
+                        text "{upper(med.player)}" { at: ux, 40; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.hot; width: pu_w - ux - 14; lines: 1 }
+                        text med.title { at: ux, 58; anchor: left center; size: 13.5; weight: 600; family: "Exo 2"; color: dk.ink; width: pu_w - ux - 14; lines: 1 }
+                        text med.artist { at: ux, 76; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: pu_w - ux - 14; lines: 1 }
+                        let uy = if(dk_vert, 98, 134)
+                        let upx = if(dk_vert, ux, 14)
+                        box { from: upx, uy; size: pu_w - upx - 14, 3; corner: 1; color: dk.well }
+                        group {
+                            glow: 5, 0.6 * st_glow, dk.hot
+                            box { from: upx, uy; size: (pu_w - upx - 14) * clamp(rc_song, 0, 1), 3; corner: 1; color: dk.hot }
+                        }
+                        ellipse { at: upx + (pu_w - upx - 14) * clamp(rc_song, 0, 1), uy + 1.5; radius: 3; color: dk.ink }
+                        text nx_elapsed { at: upx, uy + 12; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                        text nx_length { at: pu_w - 14, uy + 12; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                        let ucx = if(dk_vert, pu_w - 60, pu_w / 2)
+                        let ucy = if(dk_vert, 58, 176)
+                        zone box mb.0 { from: ucx - 46, ucy - 14; size: 28, 28; cursor: pointer; role: button; label: "Previous" }
+                        zone box mb.1 { from: ucx - 14, ucy - 14; size: 28, 28; cursor: pointer; role: button; label: "Play or pause" }
+                        zone box mb.2 { from: ucx + 18, ucy - 14; size: 28, 28; cursor: pointer; role: button; label: "Next" }
+                        box { from: ucx - 14, ucy - 14; size: 28, 28; corner: if(isl_style > 0.5, 14, 2); color: mix(dk.well, dk.hot, 0.18 + 0.2 * mb.1.hover); show: not dk_vert }
+                        box { from: ucx - 14, ucy - 14; size: 28, 28; corner: if(isl_style > 0.5, 14, 2); stroke: 1; color: dk.hot; show: not dk_vert }
+                        text "⏮" { at: ucx - 32, ucy; anchor: center; align: center; size: 13; color: mix(dk.ink2, dk.ink, mb.0.hover) }
+                        text pick(med.playing, "▶", "⏸") { at: ucx, ucy; anchor: center; align: center; size: 14; color: mix(dk.hot, dk.ink, mb.1.hover) }
+                        text "⏭" { at: ucx + 32, ucy; anchor: center; align: center; size: 13; color: mix(dk.ink2, dk.ink, mb.2.hover) }
+                        on press mb.0 { emit nx_media(0) }
+                        on press mb.1 { emit nx_media(1) }
+                        on press mb.2 { emit nx_media(2) }
                     }
                     group {
                         show: not mus_on
-                        zone box mopen { from: kx, my + 2; size: mx_w - kx - 14, 26; cursor: pointer; role: button; label: "Open the music player" }
-                        text "NOTHING PLAYING · OPEN THE PLAYER" { at: kx, my + 15; anchor: left center; size: 9; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, mopen.hover) }
+                        zone box mopen { from: 14, 34; size: pu_w - 28, pu_h - 48; cursor: pointer; role: button; label: "Open the music player" }
+                        figure i_music { at: pu_w / 2, pu_h / 2 - 4; size: 26, 26; color: mix(dk.mute, dk.acc, mopen.hover) }
+                        text "NOTHING PLAYING · OPEN THE PLAYER" { at: pu_w / 2, pu_h / 2 + 24; anchor: center; align: center; size: 8.5; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, mopen.hover) }
                         on press mopen { emit nx_go(20) }
                     }
+                    zone box eg4 { from: pu_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Music"; active: dk_edit }
+                    zone box ee4 { from: pu_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Music"; active: dk_edit }
+                    EditFrame(pu_w, pu_h, 4, eg4.hover, ee4.hover) { show: ed_in > 0.01 }
+                    on drag eg4 while dk_edit { dk_gid = 4; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg4 while dk_edit and dk_gid == 4 { emit dk_drop(4 * 100000 + round(if(dk_vert, gy.4 + dk_gdy + pu_h / 2, gx.4 + dk_gdx + pu_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee4 { emit dk_hide(4) }
+                }
+
+                // ── The machine: the processor and the memory as they went, and the rest ──
+                group {
+                    show: pc_on
+                    move: gx.5 + dk_gdx * if(dk_gid == 5, 1, 0), gy.5 + dk_gdy * if(dk_gid == 5, 1, 0)
+                    PartHead(pc_w, pc_n, "Machine", m_up_t)
+                    zone box mcz { from: 0, 30; size: pc_w, pc_h - 30; cursor: pointer; role: button; label: "The machine: open btop" }
+                    on press mcz { emit nx_go(10) }
+                    let spw = if(dk_vert, (pc_w - 42) / 2, pc_w - 28)
+                    repeat r in 0..2 {
+                        let sx.$r = if(dk_vert, 14 + r * (spw + 14), 14)
+                        let sy.$r = if(dk_vert, 36, 36 + r * 52)
+                        let hot.$r = pick(r, m_cpu > 0.85 or m_temp > 85, m_mem > 0.9)
+                        figure i_cpu { at: sx.$r + 6, sy.$r + 6; size: 11, 11; color: dk.mute; show: r == 0 }
+                        figure i_ram { at: sx.$r + 6, sy.$r + 6; size: 11, 11; color: dk.mute; show: r == 1 }
+                        text pick(r, "CPU", "MEMORY") { at: sx.$r + 16, sy.$r + 6; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                        text pick(r, m_cpu_t, m_mem_t) { at: sx.$r + spw, sy.$r + 6; anchor: right center; size: 12; weight: 600; family: "Exo 2"; color: if(hot.$r, dk.hot, dk.ink) }
+                        box { from: sx.$r, sy.$r + 14; size: spw, 28; corner: dk.r; color: dk.well; opacity: 0.8 }
+                        repeat g in 1..4 {
+                            line { from: sx.$r, sy.$r + 14 + 7 * g; to: sx.$r + spw, sy.$r + 14 + 7 * g; width: 1; color: dk.line; opacity: 0.25 }
+                        }
+                    }
+                    // each second a bar, the newest on the right; the top of each lit
+                    let bw = spw / 40
+                    for p in sp_cpu {
+                        box { from: 14 + p.x2 * (spw - bw), 50 + (1 - max(0.04, p.y2)) * 26; size: max(1, bw - 1), max(0.04, p.y2) * 26; color: if(m_cpu > 0.85, dk.hot, dk.acc); opacity: 0.25 + 0.5 * p.x2 }
+                        box { from: 14 + p.x2 * (spw - bw), 50 + (1 - max(0.04, p.y2)) * 26; size: max(1, bw - 1), 1.5; color: if(m_cpu > 0.85, dk.hot, dk.acc) }
+                    }
+                    for p in sp_mem {
+                        box { from: if(dk_vert, 28 + spw, 14) + p.x2 * (spw - bw), if(dk_vert, 50, 102) + (1 - max(0.04, p.y2)) * 26; size: max(1, bw - 1), max(0.04, p.y2) * 26; color: if(m_mem > 0.9, dk.hot, dk.acc); opacity: 0.25 + 0.5 * p.x2 }
+                        box { from: if(dk_vert, 28 + spw, 14) + p.x2 * (spw - bw), if(dk_vert, 50, 102) + (1 - max(0.04, p.y2)) * 26; size: max(1, bw - 1), 1.5; color: if(m_mem > 0.9, dk.hot, dk.acc) }
+                    }
+                    let my = if(dk_vert, 100, 152)
+                    let mw = (pc_w - 28) / 3
+                    Reading(14, my, mw, "Heat", m_temp_t, clamp((m_temp - 30) / 70, 0, 1), m_temp > 85)
+                    Reading(14 + mw, my, mw, "Disk", m_disk_t, m_disk, m_disk > 0.9)
+                    Reading(14 + 2 * mw, my, mw, "Battery", m_bat_t, m_bat, m_bat_hot)
+                    zone box eg5 { from: pc_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Machine"; active: dk_edit }
+                    zone box ee5 { from: pc_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Machine"; active: dk_edit }
+                    EditFrame(pc_w, pc_h, 5, eg5.hover, ee5.hover) { show: ed_in > 0.01 }
+                    on drag eg5 while dk_edit { dk_gid = 5; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg5 while dk_edit and dk_gid == 5 { emit dk_drop(5 * 100000 + round(if(dk_vert, gy.5 + dk_gdy + pc_h / 2, gx.5 + dk_gdx + pc_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee5 { emit dk_hide(5) }
+                }
+
+                // ── Today: the date large, the weather, the week ──
+                group {
+                    show: pt_on
+                    move: gx.6 + dk_gdx * if(dk_gid == 6, 1, 0), gy.6 + dk_gdy * if(dk_gid == 6, 1, 0)
+                    PartHead(pt_w, pt_n, "Today", clock.time)
+                    zone box tdz { from: 0, 30; size: pt_w, pt_h - 30; cursor: pointer; role: button; label: "The calendar" }
+                    on press tdz { emit nx_go(11) }
+                    text td_day { at: 12, 62; anchor: left center; size: 40; weight: 300; family: "Exo 2"; color: dk.ink }
+                    text td_week { at: 70, 52; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                    text td_month { at: 70, 68; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2 }
+                    group {
+                        show: wx_ok
+                        WGlyph(pt_w - 30, 50, 22, wx_kind)
+                        text wx_t { at: pt_w - 46, 50; anchor: right center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink }
+                        text wx_word { at: pt_w - 14, 72; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: pt_w - 120; lines: 1; align: right }
+                    }
+                    let dyy = pt_h - 46
+                    let dcw = (pt_w - 28) / 7
+                    for dd in days {
+                        let dx = 14 + dd.index * dcw
+                        box { from: dx + 1, dyy; size: dcw - 2, 34; corner: dk.r; color: if(dd.today, mix(dk.well, dk.acc, 0.22), dk.well); opacity: if(dd.today, 1, 0.55) }
+                        box { from: dx + 1, dyy; size: dcw - 2, 34; corner: dk.r; stroke: 1; color: dk.acc; show: dd.today }
+                        text dd.label { at: dx + dcw / 2, dyy + 10; anchor: center; align: center; size: 7.5; family: "Share Tech Mono"; color: if(dd.today, dk.acc, dk.mute) }
+                        text "{dd.day, 0}" { at: dx + dcw / 2, dyy + 24; anchor: center; align: center; size: 11; weight: 600; family: "Exo 2"; color: if(dd.today, dk.ink, dk.ink2) }
+                    }
+                    zone box eg6 { from: pt_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Today"; active: dk_edit }
+                    zone box ee6 { from: pt_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Today"; active: dk_edit }
+                    EditFrame(pt_w, pt_h, 6, eg6.hover, ee6.hover) { show: ed_in > 0.01 }
+                    on drag eg6 while dk_edit { dk_gid = 6; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
+                    on release eg6 while dk_edit and dk_gid == 6 { emit dk_drop(6 * 100000 + round(if(dk_vert, gy.6 + dk_gdy + pt_h / 2, gx.6 + dk_gdx + pt_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee6 { emit dk_hide(6) }
+                }
+
+                // the seams between parts along a strip (between their places, not their moving plates)
+                repeat k in 0..7 {
+                    let px.$k = pick(k, pw_x, ps_x, pm_x, pq_x, pu_x, pc_x, pt_x)
+                    let pon.$k = pick(k, pw_on, ps_on, pm_on, pq_on, pu_on, pc_on, pt_on)
+                    line { from: px.$k, sc_h + 12; to: px.$k, dk_h - 12; width: 1; color: dk.line; opacity: 0.55; show: pon.$k and px.$k > 1 and not dk_vert }
                 }
             }
         }
-
         // ═══ Cascade: every shelf out at once, staggered down the spine ═══
         group {
             show: dk_cascade
@@ -707,13 +1108,16 @@ scene Nexus {
                 move: cx0, cy_0
                 opacity: smooth(0, 0.6, cs.0)
                 text "// SWITCHES_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                for k in keys {
+                for k in quick {
                     let kx = 14 + k.index * 54
+                    group {
+                    show: k.index < 8
                     zone box ckz { from: kx, 28; size: 50, 26; cursor: pointer; role: toggle; checked: k.on; label: k.word }
                     box { from: kx, 28; size: 50, 26; corner: dk.r; color: if(k.on, mix(dk.well, dk.acc, 0.14), dk.well) }
                     box { from: kx, 28; size: 50, 26; corner: dk.r; stroke: 1; color: if(k.on, dk.acc, mix(dk.line, dk.acc, 0.5 * ckz.hover)) }
                     text "{upper(k.word)}" { at: kx + 25, 41.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, dk.ink2); width: 46; lines: 1 }
                     on press ckz { emit nx_tog(k.code) }
+                    }
                 }
             }
             group {
@@ -887,6 +1291,42 @@ scene Nexus {
                     Act(gw_w - 140, gw_h - 34, 128, "Send window here", false, false, bsend.hover)
                 }
                 on press bsend while w_ok { emit dk_send(dk_hws) }
+            }
+        }
+
+        // Naming a new scene: its name typed, and a saved environment (D43) to restore with it if wanted.
+        group {
+            show: gn_in > 0.01
+            move: gn_x - dk_ox * (1 - gn_in) * 14, gn_y - dk_oy * (1 - gn_in) * 14
+            opacity: smooth(0, 0.7, gn_in)
+            zone box keep_nm { from: 0, 0; size: 440, 132; role: region; label: "Naming a scene" }
+            IslandFrame(1, 440, 132, centre: true) {
+                text "SAVE THIS SETUP AS A SCENE" { at: 16, 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "ENTER SAVES · ESC LEAVES IT" { at: 424, 18; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute }
+                box { from: 16, 32; size: 408, 30; corner: dk.r; color: dk.well }
+                box { from: 16, 32; size: 408, 30; corner: dk.r; stroke: 1; color: dk.acc; opacity: 0.8 }
+                input dk_name_in { at: 26, 47; width: 390; size: 13; family: "Exo 2"; color: dk.ink; placeholder: "Its name (twelve letters)"; selection: dk.well; label: "The scene's name" }
+                on submit dk_name_in { emit dk_save_named; dk_naming = false; blur }
+                text "WITH" { at: 16, 82; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                text "NO SAVED ENVIRONMENTS YET (THE OVERVIEW SAVES THEM)" { at: 54, 82; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: envs.count == 0 }
+                row { at: 54, 71; gap: 6
+                    for e in envs {
+                        group {
+                            size: e.w, 22
+                            zone box enz { from: 0, 0; size: e.w, 22; cursor: pointer; role: toggle; checked: e.on; label: "Restore {e.word} with it" }
+                            box { from: 0, 0; size: e.w, 22; corner: dk.r; color: if(e.on, mix(dk.well, dk.acc, 0.2), dk.well) }
+                            box { from: 0, 0; size: e.w, 22; corner: dk.r; stroke: 1; color: if(e.on, dk.acc, mix(dk.line, dk.acc, enz.hover)) }
+                            text e.word { at: e.w / 2, 11.5; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: if(e.on, dk.acc, dk.ink2) }
+                            on press enz { emit dk_env(e.index) }
+                        }
+                    }
+                }
+                zone box nsave { from: 284, 98; size: 66, 24; cursor: pointer; role: button; label: "Save the scene" }
+                Act(284, 98, 66, "Save", true, false, nsave.hover)
+                on press nsave { emit dk_save_named; dk_naming = false; blur }
+                zone box ncan { from: 358, 98; size: 66, 24; cursor: pointer; role: button; label: "Leave it" }
+                Act(358, 98, 66, "Cancel", false, false, ncan.hover)
+                on press ncan { dk_naming = false; blur }
             }
         }
 

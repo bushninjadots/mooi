@@ -34,6 +34,17 @@ library Deck {
         text "{upper(word)}" { at: x + 16, y + 6; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.9 }
     }
 
+    // A part's head: its number in your order, a short lit trace, its name, a live line on the right.
+    // Down a column each part also opens with a seam across the deck.
+    component PartHead(w: number, n: text, word: text, meta: text) {
+        size: w, 28
+        line { from: 14, 0.5; to: w - 14, 0.5; width: 1; color: dk.line; opacity: 0.6; show: dk_vert }
+        text n { at: 14, 17; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+        line { from: 32, 17; to: 42, 17; width: 1.4; color: dk.acc; opacity: 0.85 }
+        text "{upper(word)}" { at: 47, 17; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.95 }
+        text meta { at: w - 14, 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute; width: w * 0.55; lines: 1; align: right; opacity: 1 - ed_in }
+    }
+
     // A small action with its word: a chamfered key, lit while pointed at or while `lit`.
     component Act(x: number, y: number, w: number, word: text, lit: bool, hot: bool, hover: number) {
         size: w, 24
@@ -48,6 +59,10 @@ library Deck {
     component Fader(r: record, x: number, y: number, h: number, set: event) {
         size: 30, h + 30
         zone box fz { from: x - 12, y - 4; size: 26, h + 8; cursor: pointer; role: slider; value: r.v; label: "{r.word} level" }
+        // its scale: quarters, the ends longer
+        repeat q in 0..5 {
+            line { from: x - if(q == 0 or q == 4, 11, 8), y + h * q / 4; to: x - 5, y + h * q / 4; width: 1; color: dk.line; opacity: 0.8 }
+        }
         box { from: x - 2, y; size: 4, h; corner: 2; color: dk.well }
         box { from: x - 2, y; size: 4, h; corner: 2; stroke: 1; color: dk.line }
         box { from: x - 2, y + h * (1 - clamp(r.v, 0, 1)); size: 4, h * clamp(r.v, 0, 1); corner: 2; color: if(r.hot, dk.hot, dk.acc); opacity: 0.55 }

@@ -54,7 +54,8 @@ echo "edges"
 wait_value dk_w 0 1 >/dev/null
 is "along the bottom by default" "$(get dk_edge)" 0
 is "a strip, not a column" "$(get dk_vert)" false
-is "eight switches on the console" "$(get keys.count)" 8
+is "twelve quick settings" "$(get quick.count)" 12
+is "every part is on a wide screen's deck" "$(get pw_on)$(get ps_on)$(get pq_on)$(get pu_on)" truetruetruetrue
 case "$(get faders.count)" in [2-6]) ok "the mixer has its faders" ;; *) bad "faders: $(get faders.count)" ;; esac
 case "$(get tiles.count)" in [2-9]|1[0-2]) ok "the workspaces, and +" ;; *) bad "tiles: $(get tiles.count)" ;; esac
 is "the scenes, and Save" "$(get scn.count)" 5
@@ -77,13 +78,30 @@ sleep 0.3
 case "$(get diff_t)" in FOCUS*) ok "a scene says what it would change" ;; *) bad "no scene title ($(get diff_t))" ;; esac
 
 echo "scenes"
-say "emit dk_scene 4" >/dev/null       # the fifth chip: + Save
+say "emit dk_naming_on 4" >/dev/null; sleep 0.3; say "text dk_name_in Lab scene" "emit dk_save_named" >/dev/null   # + Save, named
 sleep 0.5
 is "Save adds a scene" "$(get scn.count)" 6
+is "under the name typed" "$(jq -r '.scenes[4].name' "$out/data/pleamar/mooi/nexus-scenes.json" 2>/dev/null)" "Lab scene"
 if jq -e '.scenes | length == 5' "$out/data/pleamar/mooi/nexus-scenes.json" >/dev/null 2>&1; then ok "kept in nexus-scenes.json"; else bad "nexus-scenes.json was not written"; fi
 say "emit dk_unscene 4" >/dev/null
 sleep 0.5
 is "a right press removes it" "$(get scn.count)" 5
+
+echo "arranging"
+say "emit dk_edit_on 1" >/dev/null; sleep 0.2
+is "✎ arranges" "$(get dk_edit)" true
+say "emit dk_hide 4" >/dev/null; sleep 0.4
+is "a part hidden" "$(get pu_on)" false
+is "and listed to show again" "$(get hid.count)" 1
+is "kept in settings.json" "$(jq -r '.nexus.hidden[0]' "$settings")" music
+say "emit dk_drop 600000" >/dev/null; sleep 0.4     # Today let go before everything
+is "a part carried to the front" "$(jq -r '.nexus.parts[0]' "$settings")" today
+is "numbered first" "$(get pt_n)" 01
+say "emit dk_show 4" "emit dk_reset" >/dev/null; sleep 0.4
+is "Reset puts every part back" "$(jq -r '.nexus.parts[0]' "$settings")$(get pu_on)" windowtrue
+say "emit dk_edge_set 2" >/dev/null; sleep 0.6
+is "the edge chosen on the deck" "$(jq -r '.nexus.edge' "$settings")" left
+say "emit dk_edit_on 0" >/dev/null
 
 echo "cascade"
 set_edge bottom cascade

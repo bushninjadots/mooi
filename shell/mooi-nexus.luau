@@ -108,11 +108,14 @@ on("nx_close", function() close("asked (Esc, × or the mark)") end)
 
 -- ── The switches: their state, from the services and from the bar ──
 local lit = {}               -- each switch's state by its nx_tog code (0 Wi-Fi … 8 record)
-local wifi_on, bt_powered = true, false
+local wifi_on, bt_powered, bt_on = true, false, 0
 local levels = { volume = 0, muted = false, input = 0, bright = nil }
 local apps, media = {}, {}
 local publish_console, publish_wait, publish_scenes   -- defined below
 
+-- the power profile (power-profiles-daemon, through the bar): 1 saver · 2 balanced · 3 performance
+local power = { prof = 0, ppd = false }
+local light = false          -- the palette is a day one
 local TOGGLE = {
     [0] = function() pcall(sys.call, "network.wifi", not wifi_on) end,
     [1] = function() pcall(sys.call, "bluetooth.power", not bt_powered) end,
@@ -121,17 +124,22 @@ local TOGGLE = {
     [4] = function() bar("emit note_dnd") end,
     [5] = function() bar("emit night_light") end,
     [6] = function() bar("emit caffeine") end,
-    [7] = function() bar("emit pw_set " .. (lit[7] and "0" or "1")) end,
+    [7] = function() if power.ppd then bar("emit pw_set " .. tostring(10 + (power.prof % 3) + 1)) end end,
     [8] = function() bar("emit record 0") end,
+    [9] = function() bar("emit set_mode 9") end,
+    [10] = function() close(); after(320, function() bar("emit shot 0") end) end,
+    [11] = function() close(); bar("emit open_clips") end,
 }
 local function bar_states()
-    launch("pleamar", { "--say", "mooi", "get dnd_now", "get caffeine_on", "get recording", "get nl_on", "get pw_saver" }, function(out)
+    launch("pleamar", { "--say", "mooi", "get dnd_now", "get caffeine_on", "get recording", "get nl_on", "get pw_prof", "get pw_ppd", "get light" }, function(out)
         if not out then return end
         local got = {}
         for line in out:gmatch("[^\n]+") do got[#got + 1] = trim(line) end
-        if #got < 5 then return end
+        if #got < 7 then return end
         lit[4], lit[6], lit[8], lit[5] = got[1] == "true", got[2] == "true", got[3] == "true", got[4] == "true"
-        lit[7] = (tonumber(got[5]) or 0) > 0
+        power.prof, power.ppd = tonumber(got[5]) or 0, got[6] == "true"
+        lit[7] = power.prof == 1
+        light = got[7] == "true"
         publish_console(); publish_wait(); publish_scenes()
     end)
 end
@@ -165,6 +173,36 @@ end)
 
 -- ── The deck's place, and its bays ──
 local scenes = deck.clean((read(SCENES) or {}).scenes)
+local faders_n = 4           -- how many faders the mixer has (its width follows)
+-- the parts: your order and the hidden ones (settings.json nexus.parts, nexus.hidden; ✎ on the deck)
+local CODE = { window = 0, spaces = 1, mixer = 2, quick = 3, music = 4, machine = 5, today = 6 }
+local PREFIX = { window = "pw", spaces = "ps", mixer = "pm", quick = "pq", music = "pu", machine = "pc", today = "pt" }
+local BY_CODE = {}
+for id, c in pairs(CODE) do BY_CODE[c] = id end
+local parts, hidden
+local function read_parts()
+    local n = type(settings.nexus) == "table" and settings.nexus or {}
+    parts = deck.clean_parts(n.parts)
+    hidden = {}
+    for _, id in ipairs(type(n.hidden) == "table" and n.hidden or {}) do if deck.PARTS[id] then hidden[id] = true end end
+end
+read_parts()
+local function save_settings(change)
+    if SAFE then return end
+    local doc = read(FILE)       -- read again: whatever changed elsewhere is kept
+    if type(doc) ~= "table" then return end
+    doc.nexus = type(doc.nexus) == "table" and doc.nexus or {}
+    change(doc.nexus)
+    pcall(sys.call, "files.write", FILE, doc)
+end
+local function save_parts()
+    save_settings(function(n)
+        n.parts = parts
+        local h = {}
+        for _, id in ipairs(parts) do if hidden[id] then h[#h + 1] = id end end
+        n.hidden = h
+    end)
+end
 local function edge() return deck.edge_of(type(settings.nexus) == "table" and settings.nexus.edge or nil) end
 local relayout_rest      -- the tiles and chips, which follow the bays
 -- Cascade (nexus.mode): the spine's shelves all out at once, centred down the right edge. Their
@@ -183,22 +221,73 @@ local function aspect() return screen.full_w and (screen.full_w / screen.full_h)
 local function place()
     local top = 0                -- the bar's reserve is already outside the surface
     d = deck.layout(edge(), screen.w, screen.h, top, { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
-                                                    tiles = #spaces + 1, aspect = aspect() })
-    d.top = top
+                                                    tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n })
+    d.top, d.faders = top, faders_n
     fact.dk_edge = ({ bottom = 0, top = 1, left = 2, right = 3 })[d.edge]
     fact.dk_vert = d.vertical
     fact.dk_x, fact.dk_y, fact.dk_w, fact.dk_h = d.x, d.y, d.w, d.h
     fact.dk_ox, fact.dk_oy = d.out_x, d.out_y
-    for short, name in pairs({ sc = "scenes", wt = "wait", id = "ident", wn = "win", ws = "ws", mx = "mix" }) do
+    for short, name in pairs({ sc = "scenes", wt = "wait", id = "ident" }) do
         local b = d.bays[name]
         fact[short .. "_x"], fact[short .. "_y"], fact[short .. "_w"], fact[short .. "_h"] = b.x, b.y, b.w, b.h
     end
+    for id, pre in pairs(PREFIX) do fact[pre .. "_on"] = false end
+    for i, part in ipairs(d.parts) do
+        local pre = PREFIX[part.id]
+        fact[pre .. "_x"], fact[pre .. "_y"], fact[pre .. "_w"], fact[pre .. "_h"] = part.x, part.y, part.w, part.h
+        text[pre .. "_n"] = string.format("%02d", i)
+        fact[pre .. "_on"] = true
+    end
+    -- what is not on the deck: hidden by you (a press shows it), or with no room for it here
+    local rows = {}
+    for _, id in ipairs(parts) do if hidden[id] then rows[#rows + 1] = { word = deck.PARTS[id].word, code = CODE[id], room = false } end end
+    for _, id in ipairs(d.dropped) do rows[#rows + 1] = { word = deck.PARTS[id].word, code = CODE[id], room = true } end
+    model.hid = rows
     if relayout_rest then relayout_rest() end
     place_cascade()
 end
 
+-- ── Arranging (✎): parts carried to a new place, hidden, shown again; the edge; the first order ──
+on("dk_edit_on", function(v) fact.dk_edit = tonumber(v) == 1; fact.dk_hws, fact.dk_hsc = -1, -1 end)
+on("dk_drop", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local id = BY_CODE[math.floor(n / 100000)]
+    if not id or not d then return end
+    parts = deck.move(parts, id, deck.place_at(d, n % 100000), hidden)
+    save_parts(); place()
+end)
+on("dk_hide", function(v)
+    local id = BY_CODE[math.floor(tonumber(v) or -1)]
+    if not id then return end
+    local shown = 0
+    for _, x in ipairs(parts) do if not hidden[x] then shown = shown + 1 end end
+    if shown <= 1 then notice("one part at least stays"); return end
+    hidden[id] = true
+    save_parts(); place()
+end)
+on("dk_show", function(v)
+    local id = BY_CODE[math.floor(tonumber(v) or -1)]
+    if not id then return end
+    hidden[id] = nil
+    parts = deck.move(parts, id, #parts + 1, hidden)
+    save_parts(); place()
+end)
+on("dk_reset", function()
+    parts, hidden = deck.clean_parts(nil), {}
+    save_parts(); place()
+    notice("every part back")
+end)
+on("dk_edge_set", function(v)
+    local e = deck.EDGES[math.floor(tonumber(v) or 0) + 1]
+    if not e then return end
+    settings.nexus = type(settings.nexus) == "table" and settings.nexus or {}
+    settings.nexus.edge = e
+    save_settings(function(n) n.edge = e end)
+    place()
+end)
+
 -- ── The console: the mixer, the switches, the machine ──
-local KEYS = { { "Wi-Fi", 0 }, { "BT", 1 }, { "Mic", 3 }, { "Quiet", 4 }, { "Night", 5 }, { "Awake", 6 }, { "Saver", 7 }, { "Record", 8 } }
+local PROFILES = { "Saver", "Balanced", "Performance" }
 local function pct(v) return string.format("%d%%", math.floor((tonumber(v) or 0) * 100 + 0.5)) end
 local playing = {}           -- the faders' apps: their places in `apps`
 function publish_console()
@@ -214,9 +303,26 @@ function publish_console()
     rows[#rows + 1] = { word = "Mic", shown = lit[3] == false and "off" or pct(levels.input), v = lit[3] == false and 0 or levels.input, code = 1, hot = lit[3] == false }
     if levels.bright then rows[#rows + 1] = { word = "Screen", shown = pct(levels.bright), v = levels.bright, code = 2, hot = false } end
     model.faders = rows
-    local keys = {}
-    for i, k in ipairs(KEYS) do keys[i] = { word = k[1], on = lit[k[2]] == true, code = k[2] } end
-    model.keys = keys
+    faders_n = #rows
+    if d and d.faders ~= #rows then place() end
+    -- the quick settings: { word, state, on, hot, glyph, code }
+    local q = {
+        { "Wi-Fi", not wifi_on and "Off" or (lit[0] and (text.c_net ~= "" and text.c_net or "On") or "No network"), lit[0] == true, false, 0, 0 },
+        { "Bluetooth", bt_powered and (bt_on > 0 and string.format("%d connected", bt_on) or "On") or "Off", bt_powered, false, 1, 1 },
+        { "Sound", levels.muted and "Muted" or pct(levels.volume), not levels.muted, false, levels.muted and 12 or 2, 2 },
+        { "Mic", lit[3] == false and "Muted" or "Live", lit[3] ~= false, false, 3, 3 },
+        { "Quiet", lit[4] and "Do not disturb" or "Off", lit[4] == true, false, 4, 4 },
+        { "Night", lit[5] and "Warm screen" or "Off", lit[5] == true, false, 5, 5 },
+        { "Awake", lit[6] and "Kept awake" or "Idle sleeps", lit[6] == true, false, 6, 6 },
+        { "Power", power.ppd and (PROFILES[power.prof] or "Keep") or "No daemon", power.ppd and power.prof == 1, false, 7, 7 },
+        { "Record", lit[8] and "Recording" or "The screen", lit[8] == true, lit[8] == true, 9, 8 },
+        { light and "Light" or "Dark", light and "Day palette" or "Night palette", light, false, 8, 9 },
+        { "Screenshot", "An area", false, false, 10, 10 },
+        { "Clipboard", "History", false, false, 11, 11 },
+    }
+    local rowsq = {}
+    for i, t in ipairs(q) do rowsq[i] = { word = t[1], state = t[2], on = t[3], hot = t[4], glyph = t[5], code = t[6] } end
+    model.quick = rowsq
 end
 
 -- the levels (a drag sends many: the last one in 40 ms is what is asked for)
@@ -255,6 +361,7 @@ pcall(sys.watch, "bluetooth", function(b)
     bt_powered = type(b) == "table" and b.powered == true
     local on_now = 0
     for _, dv in ipairs(type(b) == "table" and type(b.devices) == "table" and b.devices or {}) do if dv.connected then on_now = on_now + 1 end end
+    bt_on = on_now
     text.c_bt = not (type(b) == "table" and b.present) and "NO BLUETOOTH" or (bt_powered and string.format("BT · %d CONNECTED", on_now) or "BT OFF")
     lit[1] = bt_powered
     publish_console(); publish_scenes()
@@ -314,20 +421,43 @@ end)
 -- ── The machine, every 2 s ──
 local cpu_prev = nil
 local battery = { present = false }
-local function machine()
+-- the last 40 s of the processor and the memory (every second), drawn as lines in their part
+local HIST = 40
+local hist = { cpu = {}, mem = {} }
+local function remember(name, v)
+    local h = hist[name]
+    h[#h + 1] = math.max(0, math.min(1, v))
+    if #h > HIST then table.remove(h, 1) end
+    local rows = {}
+    local off = HIST - #h
+    for i = 2, #h do
+        rows[#rows + 1] = { x1 = (off + i - 2) / (HIST - 1), y1 = h[i - 1], x2 = (off + i - 1) / (HIST - 1), y2 = h[i] }
+    end
+    model["sp_" .. name] = rows
+end
+local function pulse()
     launch("cat", { "/proc/stat" }, function(out)
         local v; v, cpu_prev = sysinfo.cpu(out, cpu_prev)
-        if v then fact.m_cpu = v; text.m_cpu_t = pct(v) .. (fact.m_temp > 0 and string.format(" %d°", math.floor(fact.m_temp + 0.5)) or "") end
+        if v then fact.m_cpu = v; text.m_cpu_t = pct(v); remember("cpu", v) end
     end)
-    launch("cat", { "/proc/meminfo" }, function(out) local m = stats.meminfo(out); fact.m_mem = m.frac; text.m_mem_t = string.format("%.1f G", m.used) end)
+    launch("cat", { "/proc/meminfo" }, function(out) local m = stats.meminfo(out); fact.m_mem = m.frac; text.m_mem_t = string.format("%.1f G", m.used); remember("mem", m.frac) end)
+end
+local function machine()
+    launch("cat", { "/proc/uptime" }, function(out)
+        local secs = tonumber(tostring(out or ""):match("^([%d.]+)"))
+        if not secs then return end
+        local h, m = math.floor(secs / 3600), math.floor(secs % 3600 / 60)
+        text.m_up_t = h >= 24 and string.format("UP %d D %d H", math.floor(h / 24), h % 24) or string.format("UP %d H %02d", h, m)
+    end)
     launch("df", { "-P", "/" }, function(out) local s = stats.df(out); fact.m_disk = s.frac; text.m_disk_t = pct(s.frac) end)
     launch("sensors", { "-j" }, function(out)
         local c = sysinfo.temp(decode(out))
-        if c then fact.m_temp = c end
+        if c then fact.m_temp = c; text.m_temp_t = string.format("%d°", math.floor(c + 0.5)) end
     end)
 end
-machine()
-every(2000, machine)
+pulse(); machine()
+every(1000, pulse)
+every(4000, machine)
 pcall(sys.watch, "battery", function(b)
     battery = type(b) == "table" and b or { present = false }
     if not battery.present then text.m_bat_t = "AC"; fact.m_bat = 1; fact.m_bat_hot = false
@@ -393,9 +523,29 @@ end
 local function show_weather(doc)
     local f = forecast.parse(doc.answer)
     if not f then return end
-    local _, word = sysinfo.weather(f.now.code, f.now.day)
+    local kind, word = sysinfo.weather(f.now.code, f.now.day)
     weather = string.format("%s %d°", tostring(word or ""), math.floor((tonumber(f.now.temp) or 0) + 0.5))
+    for i, name in ipairs(sysinfo.WEATHER_KINDS) do if name == kind then fact.wx_kind = i - 1 end end
+    text.wx_t = string.format("%d°", math.floor((tonumber(f.now.temp) or 0) + 0.5))
+    text.wx_word = string.upper(tostring(word or ""))
+    fact.wx_ok = true
     publish_wait()
+end
+-- today: the date large, the week from Monday
+do
+    local t = os.time()
+    text.td_day = os.date("%d", t):gsub("^0", "")
+    text.td_week = string.upper(os.date("%A", t))
+    text.td_month = os.date("%B %Y", t)
+    local wd = tonumber(os.date("%w", t))         -- 0 is Sunday
+    local back = (wd + 6) % 7                      -- days since Monday
+    local LABELS = { "MO", "TU", "WE", "TH", "FR", "SA", "SU" }
+    local rows = {}
+    for i = 0, 6 do
+        local when = t + (i - back) * 86400
+        rows[#rows + 1] = { label = LABELS[i + 1], day = tonumber(os.date("%d", when)), today = i == back }
+    end
+    model.days = rows
 end
 do
     local cached = read("nexus-weather.json")
@@ -420,22 +570,29 @@ end
 -- ── Scenes: whole setups at a press ──
 local function now_state()
     return {
-        quiet = lit[4] == true, night = lit[5] == true, awake = lit[6] == true, saver = lit[7] == true,
+        quiet = lit[4] == true, night = lit[5] == true, awake = lit[6] == true, saver = power.ppd and power.prof == 1 or nil,
         wifi = wifi_on, bluetooth = bt_powered,
         volume = math.floor(levels.volume * 100 + 0.5),
         brightness = levels.bright and math.floor(levels.bright * 100 + 0.5) or nil,
     }
 end
-local FLIP = { quiet = 4, night = 5, awake = 6, saver = 7, wifi = 0, bluetooth = 1 }
+local FLIP = { quiet = 4, night = 5, awake = 6, wifi = 0, bluetooth = 1 }
+-- the saved environments (D43, the Overview's): their names, in the bar's order
+local function environments()
+    local doc = read("environments.json")
+    local out = {}
+    for _, e in ipairs(type(doc) == "table" and type(doc.envs) == "table" and doc.envs or {}) do out[#out + 1] = tostring(e.name or "") end
+    return out
+end
 local chips = {}
 function publish_scenes()
     if not d then return end
     local live = deck.live(scenes, now_state())
     chips = deck.chips(#scenes + 1, d.bays.scenes, d.vertical)
     local rows = {}
-    for i, s in ipairs(scenes) do rows[i] = { word = s.name, live = live == i, save = false, x = chips[i].x, y = chips[i].y, w = chips[i].w } end
+    for i, s in ipairs(scenes) do rows[i] = { word = s.name, live = live == i, save = false, env = s.env ~= nil, x = chips[i].x, y = chips[i].y, w = chips[i].w } end
     local c = chips[#scenes + 1]
-    rows[#rows + 1] = { word = "+ Save", live = false, save = true, x = c.x, y = c.y, w = c.w }
+    rows[#rows + 1] = { word = "+ Save", live = false, save = true, env = false, x = c.x, y = c.y, w = c.w }
     model.scn = rows
 end
 local function save_scenes()
@@ -458,25 +615,61 @@ on("dk_hov_scene", function(v)
     local a = { x = d.bays.scenes.x + c.x, y = d.bays.scenes.y + c.y, w = c.w, h = c.h }
     fact.gs_x, fact.gs_y = deck.grow(d, a, fact.gs_w, 86, screen.w, screen.h, d.top)
 end)
+-- "+ Save": the naming panel grows out of its chip, with the saved environments to choose from
+local env_names, env_pick = {}, nil
+local function publish_envs()
+    local rows = {}
+    for i, name in ipairs(env_names) do
+        if i <= 6 then rows[i] = { word = string.upper(name), on = env_pick == i, w = 18 + math.floor(#name * 5.8 + 0.5) } end
+    end
+    model.envs = rows
+end
+on("dk_naming_on", function(v)
+    if #scenes >= deck.MAX then fact.dk_naming = false; notice("seven scenes at most: right-press one to remove it"); return end
+    text.dk_name_in = ""
+    env_names, env_pick = environments(), nil
+    publish_envs()
+    local c = chips[(tonumber(v) or -1) + 1]
+    if c and d then
+        local a = { x = d.bays.scenes.x + c.x, y = d.bays.scenes.y + c.y, w = c.w, h = c.h }
+        fact.gn_x, fact.gn_y = deck.grow(d, a, 440, 132, screen.w, screen.h, d.top)
+    end
+end)
+on("dk_env", function(v)
+    local i = (tonumber(v) or -1) + 1
+    env_pick = env_pick ~= i and i or nil
+    publish_envs()
+end)
+on("dk_save_named", function()
+    local name = trim(text.dk_name_in)
+    local taken = {}
+    for _, s in ipairs(scenes) do taken[s.name] = true end
+    if name == "" then
+        local n = 1; name = "Mine"
+        while taken[name] do n = n + 1; name = "Mine " .. n end
+    end
+    name = string.sub(name, 1, 12)
+    if taken[name] then notice(name .. " is taken"); return end
+    local s = deck.capture(now_state(), name)
+    s.env = env_pick and env_names[env_pick] or nil
+    scenes[#scenes + 1] = s
+    save_scenes(); place(); publish_scenes()
+    notice("saved as " .. name)
+end)
 on("dk_scene", function(v)
     local i = (tonumber(v) or -1) + 1
-    if i == #scenes + 1 then         -- "+ Save": this setup, as a scene of its own
-        if #scenes >= deck.MAX then notice("seven scenes at most: right-press one to remove it"); return end
-        local n, name = 1, "Mine"
-        local taken = {}
-        for _, s in ipairs(scenes) do taken[s.name] = true end
-        while taken[name] do n = n + 1; name = "Mine " .. n end
-        scenes[#scenes + 1] = deck.capture(now_state(), name)
-        save_scenes(); place(); publish_scenes()
-        notice("saved as " .. name)
-        return
-    end
     local s = scenes[i]
     if not s then return end
     for _, step in ipairs(deck.steps(s, now_state())) do
-        if step.flip and TOGGLE[FLIP[step.flip]] then TOGGLE[FLIP[step.flip]]()
+        if step.flip == "saver" then bar("emit pw_set " .. (s.saver and "11" or "12"))
+        elseif step.flip and TOGGLE[FLIP[step.flip]] then TOGGLE[FLIP[step.flip]]()
         elseif step.level == "volume" then pcall(sys.call, "audio.volume", step.to)
         elseif step.level == "brightness" then pcall(sys.call, "brightness.level", math.max(0.01, step.to)) end
+    end
+    if s.env then
+        for k, name in ipairs(environments()) do
+            if name == s.env then bar("emit env_restore_at " .. tostring(k - 1)); break end
+        end
     end
     fact.dk_hsc = -1
     notice(s.name)
@@ -495,6 +688,8 @@ end)
 
 -- ── The window you are in, and the workspaces as miniatures ──
 local clients, tiles_at, thumbs = {}, {}, {}
+local mini = {}              -- the miniature windows: their addresses and workspaces, by place
+local tile_rows = {}         -- the tiles as last published
 local this = nil             -- the window you are in (a Hyprland client)
 local active_ws = nil
 local previews = settings.atlas == nil or settings.atlas.previews ~= false
@@ -538,7 +733,7 @@ end
 function relayout_rest()
     if not d then return end
     publish_scenes(); publish_wait()
-    local bay = d.bays.ws
+    local bay = d.bays.spaces or { x = 0, y = 0, w = 600, h = deck.BODY }   -- hidden: the tiles for Cascade
     local rects = deck.tiles(#spaces, bay, d.vertical, aspect())
     tiles_at = {}
     local rows = {}
@@ -554,13 +749,16 @@ function relayout_rest()
     local r = rects[#spaces + 1]
     rows[#rows + 1] = { id = deck.free_space(spaces), label = "NEW", n = "", active = false, plus = true, x = r.x, y = r.y, w = r.w, h = r.h }
     model.tiles = rows
+    tile_rows = rows
     local out = {}
+    mini = {}
     for _, w in ipairs(wins) do
         local t = tiles_at[w.ws]
         if t and #out < 48 then
             local pic = picture_of(w)
             out[#out + 1] = { x = t.r.x + w.nx * t.r.w, y = t.r.y + w.ny * t.r.h, w = math.max(3, w.nw * t.r.w), h = math.max(3, w.nh * t.r.h),
-                              focused = w.focused, pic = pic, pictured = pic ~= "" }
+                              focused = w.focused, app = pretty(w.app), pic = pic, pictured = pic ~= "" }
+            mini[#out] = { address = w.address, ws = w.ws }
         end
     end
     model.wins = out
@@ -608,7 +806,7 @@ local function burst()
         for _, t in ipairs(thumbs) do if not atlas.private(private, t.app, t.title) then ids[#ids + 1] = t.id end end
         pcall(sys.call, "thumbnails.want", ids)
     end
-    after(500, function() pcall(sys.call, "thumbnails.want") end)
+    after(900, function() pcall(sys.call, "thumbnails.want") end)
 end
 if previews then
     pcall(sys.watch, "thumbnails", function(state)
@@ -633,7 +831,7 @@ on("dk_win", function(v)
     launch("hyprctl", { "dispatch", cmd }, function() after(200, read_desktop) end)
 end)
 -- the tiles: go there; the preview: a window focused, this window sent
-local function tile(v) return model.tiles[(tonumber(v) or -1) + 1] end
+local function tile(v) return tile_rows[(tonumber(v) or -1) + 1] end
 on("dk_ws", function(v)
     local t = tile(v)
     if t then pcall(sys.call, "workspaces.focus", math.floor(t.id)) end
@@ -644,6 +842,23 @@ on("dk_send", function(v)
     local cmd = hypr.dispatch("move", this.address, { workspace = math.floor(t.id), follow = false })
     if cmd then launch("hyprctl", { "dispatch", cmd }, function() after(200, read_desktop) end) end
 end)
+-- a miniature window let go: over another workspace's tile it goes there; over its own, a press
+on("dk_wdrop", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local m = mini[math.floor(n / 100000000) + 1]
+    local px, py = math.floor(n % 100000000 / 10000), n % 10000
+    if not m or not d or not d.bays.spaces then return end
+    local part = d.bays.spaces
+    for _, t in ipairs(tile_rows) do
+        local x0, y0 = d.x + part.x + t.x, d.y + part.y + t.y
+        if px >= x0 and px <= x0 + t.w and py >= y0 and py <= y0 + t.h + 16 then
+            if math.floor(t.id) == m.ws then pcall(sys.call, "workspaces.focus", m.ws); return end
+            local cmd = hypr.dispatch("move", m.address, { workspace = math.floor(t.id), follow = false })
+            if cmd then launch("hyprctl", { "dispatch", cmd }, function() after(150, read_desktop); notice(string.format("moved to %d", math.floor(t.id))) end) end
+            return
+        end
+    end
+end)
 local big_windows = {}
 on("dk_hov_ws", function(v)
     local t = tile(v)
@@ -652,7 +867,9 @@ on("dk_hov_ws", function(v)
     local ph = math.floor(pw / aspect() + 0.5)
     fact.gw_w, fact.gw_h = pw + 20, ph + 54
     fact.gw_free = t.plus == true
-    local a = { x = d.bays.ws.x + t.x, y = d.bays.ws.y + t.y, w = t.w, h = t.h }
+    local part = d.bays.spaces
+    if not part then return end
+    local a = { x = part.x + t.x, y = part.y + t.y, w = t.w, h = t.h }
     fact.gw_x, fact.gw_y = deck.grow(d, a, fact.gw_w, fact.gw_h, screen.w, screen.h, d.top)
     local rows = {}
     big_windows = {}
@@ -676,13 +893,16 @@ end)
 
 -- ── The wallpaper under the miniatures, and keeping up with the settings ──
 do
-    -- the picture the wallpaper studio last applied (a missing one draws nothing)
-    text.dk_wall = env("HOME", "") .. "/.cache/current_wallpaper"
-    fact.dk_wall_on = true
+    -- the picture the wallpaper studio last applied, made small (and given a name an image is known
+    -- by: the studio's copy has none) for the miniatures
+    local small = data_folder .. "/nexus-wall.jpg"
+    launch("magick", { env("HOME", "") .. "/.cache/current_wallpaper[0]", "-resize", "640x360^", "-gravity", "center", "-extent", "640x360", "-quality", "82", small }, function(ok)
+        if ok then text.dk_wall = small .. "?" .. tostring(os.time() % 100000); fact.dk_wall_on = true end
+    end)
 end
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read_text(FILE), json.decode)
-    paint(); show_identity()
+    paint(); show_identity(); read_parts()
     previews = settings.atlas == nil or settings.atlas.previews ~= false
     private = settings.atlas and settings.atlas.private or "off"
     place()
@@ -697,3 +917,4 @@ every(2000, bar_states)
 read_desktop()
 every(1500, read_desktop)
 after(40, function() fact.dk_open = true; burst() end)
+after(1300, burst)           -- the compositor's pictures often arrive on the second asking

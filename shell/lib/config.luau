@@ -107,6 +107,8 @@ M.SCHEMA = {
     { path = "clock.view", kind = "enum", values = { "full", "time", "seconds" }, default = "full" },
     -- the spine on the right edge, whose shelves slide out on hover (D100)
     { path = "shelves.on", kind = "boolean", default = true },
+    -- and whether it keeps out of sight until the pointer touches the right edge (a hairline shows it is there)
+    { path = "shelves.autohide", kind = "boolean", default = false },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,
@@ -293,6 +295,9 @@ M.SCHEMA = {
     -- at once (Cascade) — and the edge the deck comes from.
     { path = "nexus.mode", kind = "enum", values = { "deck", "cascade" }, default = "deck" },
     { path = "nexus.edge", kind = "enum", values = { "bottom", "top", "left", "right" }, default = "bottom" },
+    -- the deck's parts in your order, and those you hid (✎ on the deck arranges them; lib/nexusdeck PARTS)
+    { path = "nexus.parts", kind = "ids", max = 12 },
+    { path = "nexus.hidden", kind = "ids", max = 12 },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -466,7 +471,7 @@ local function migrate(t)
     -- folds, the orbit) only who you are is read. The rest goes quietly rather than as unknown settings.
     if type(t.nexus) == "table" then
         for k in pairs(t.nexus) do
-            if k ~= "identity" and k ~= "mode" and k ~= "edge" then t.nexus[k] = nil end
+            if k ~= "identity" and k ~= "mode" and k ~= "edge" and k ~= "parts" and k ~= "hidden" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

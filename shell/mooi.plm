@@ -42,6 +42,10 @@ scene Mooi {
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     // The spine (D100): tabs on the right edge whose shelves slide out on hover — the islands, beside it
     fact shelves_on = true       // shelves.on
+    fact shelves_hide = false    // shelves.autohide: the spine out of sight until the right edge is touched
+    fact sp_reveal = false       // it was touched: the tabs are out
+    prop sp_in = 1 ~m.enter
+    follow sp_in = if(not shelves_hide or sp_reveal or (isl_shelf and open != none), 1, 0)
     fact isl_shelf = false       // the island showing is a shelf (beside the spine, not under the bar)
     fact isl_sy = 0              // the tab it came from, along the edge
     fact shelf_pin = false       // a press on its tab keeps it out
@@ -177,6 +181,7 @@ scene Mooi {
     event env_back ->         // to the logic: back a page (or the name field, or a delete asked once)
     event env_named ->        // to the logic: the name field's Enter
     event env_focus_name      // from the logic: the name field takes the keys
+    event env_restore_at ->   // to the logic: restore environment n at once (a Nexus scene, D102)
     fact bd_ox = 0            // where a carried window was taken, from its corner
     fact bd_oy = 0
     event ov_close ->         // to the logic: close tile n's window (middle-click, as in iNiR)
@@ -4239,9 +4244,27 @@ scene Mooi {
     // ── The spine (D100): tabs down the right edge; hover one and its shelf slides out beside it ──
     // A press pins the shelf; the pointer resting on the desktop for a moment puts it away. The
     // shelves are the islands (and three of their own), drawn beside the spine instead of under the bar.
+    // Autohide (shelves.autohide): the tabs slide off the edge; touching the edge brings them back, and
+    // they go again once the pointer has been off them (and no shelf is out) for 700 ms. While hidden a
+    // hairline keeps their place, warm when notifications or updates are waiting.
+    group {
+        show: shelves_on and shelves_hide
+        let spe0 = (screen.height - 320) / 2
+        zone box sp_edge { from: screen.width - 3, spe0 - 40; size: 3, 400; role: region; label: "The spine (hidden): touch the edge"; active: sp_in < 0.5 }
+        zone box sp_body { from: screen.width - 46, spe0 - 26; size: 46, 372; role: region; label: "The spine"; active: sp_in > 0.5 }
+        on hover sp_edge for 60ms { sp_reveal = true }
+        on still max(max(sp_body.hover, sp_edge.hover), if(isl_shelf and open != none, 1, 0)) for 700ms while sp_reveal and max(max(sp_body.hover, sp_edge.hover), if(isl_shelf and open != none, 1, 0)) < 0.5 { sp_reveal = false }
+        group {
+            opacity: 1 - sp_in
+            glow: 6, (0.4 + 0.5 * if(note_count > 0 or upd_n > 0, 1, 0)) * st_glow, if(note_count > 0 or upd_n > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos))
+            line { from: screen.width - 1.5, spe0 - 10; to: screen.width - 1.5, spe0 + 330; width: 2
+                   color: if(note_count > 0 or upd_n > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos)); opacity: 0.7 }
+        }
+    }
     group {
         show: shelves_on
-        move: screen.width - 46, 0
+        move: screen.width - 46 + (1 - sp_in) * 60, 0
+        opacity: smooth(0, 0.6, sp_in)
         let sp0 = (screen.height - 320) / 2
         box { from: 4, sp0 - 26; size: 38, 372; corner: 19; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.55 }
         box { from: 4, sp0 - 26; size: 38, 372; corner: 19; stroke: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim); opacity: 0.7 }

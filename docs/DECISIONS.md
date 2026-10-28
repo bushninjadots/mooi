@@ -3316,3 +3316,45 @@ press removing it; Cascade; ending on close; a clean log). Screenshots of bottom
 workspace preview, a scene's changes, Cascade and the tether style. Unit 242 + BMO 27. Not checked: the
 faders and switch keys pressed by a real pointer (their events are the drawer's, which were), several
 monitors, and a screen narrower than 1366 px.
+
+## D103 · 2026-10-28 · The deck arranged by hand, seven parts, twelve quick settings; the rest of the list
+
+**Asked for:** "where can i customize it and move parts around and i want better visuals details and all
+other type quick settings… make it amazing unique cool and responsive", then "do the rest of still to do".
+**Done:** the deck is made of **parts** — This window, Workspaces, Mixer, Quick settings, Music, Machine,
+Today — each numbered in your order (01…07) with a lit head. **✎** on the deck arranges it: every part
+shows MOVE (carry it along the deck; it is put back where its middle is let go, lib/nexusdeck
+`place_at`) and × (hide it); the head becomes an arranging bar with the four edges as little screens,
+the hidden parts to show again, Reset and Done. Kept in settings.json `nexus.parts` / `nexus.hidden`;
+Settings → Colour → Control Nexus says where. **Responsive:** along a strip the parts are packed in your
+order and, when the screen cannot hold them all, the least kept give way first (Today, Machine, Music,
+Mixer, This window; never the workspaces), listed in the arranging bar as having no room; the deck is
+only as wide as what it holds and the room left is shared out. Down a side the same, by height.
+**Quick settings:** twelve tiles with their icons, lit while on, their state in words — Wi-Fi,
+Bluetooth, Sound, Mic, Quiet, Night, Awake, Power (cycles power-saver → balanced → performance through
+power-profiles-daemon; "No daemon" when it is not there), Record, Dark/Light (the bar's `set_mode`),
+Screenshot (an area), Clipboard. The old "Saver" key and scene drove motion.saver, not the battery: a
+scene's `saver` is now the power-saver profile. **Machine:** the last 40 s of the processor and the memory
+as bars (sampled every second while open), heat, disk, battery, uptime. **Today:** the date large, the
+weekday, the weather glyph and temperature, the week from Monday. **Mixer:** a scale on every fader.
+**Music:** the cover with its shadow, the player, the song, elapsed and length, the transport. The
+deck's corners carry registration marks; the head is a raised band. **Window pictures:** a 900 ms burst
+asked twice (the compositor's pictures often come on the second); a window without one shows its app's
+name; the wallpaper under the miniatures is a 640 × 360 copy (nexus-wall.jpg — the studio's copy has no
+extension and was never drawn). **The rest of the list:** a miniature window carried onto another
+workspace's tile moves there (onto its own, a press: go there); "+ Save" opens a naming panel — the name
+(twelve letters) and, if wanted, one of the Overview's saved environments to restore with the scene (the
+bar's new `env_restore_at`, environments.luau: planned and carried out at once); and the spine hides
+(`shelves.autohide`): its tabs slide off the edge, touching the edge brings them back, 700 ms off them
+(and no shelf out) puts them away, and a hairline keeps their place, ember while notifications or updates
+wait.
+**Found:** `local.x` counts from the zone's own `from:`, so the faders and the window's sound read a few
+pixels off before; zones declared in a `repeat` could not be read after it in one place (the transport's
+are written out); a colour cannot be chosen with `if()` in a `let` (`mix(a, b, flag)` does it).
+**Checked:** tests/nexus.sh 31 checks (adds: twelve quick settings, every part on a wide screen, ✎, a part
+hidden and kept, a part carried to the front and numbered 01, Reset, the edge chosen on the deck, a scene
+saved under its typed name). Unit 244 + BMO 27. The spine's autohide in the running bar through its
+facts (hidden, revealed, put away after the pointer left, restored). Screenshots: the deck, arranging,
+the naming panel with environments, the left column with a preview. Not checked: carrying a part or a
+window with a real mouse (the rules are the deck's own; only their events were driven), and restoring an
+environment from a scene end to end.
