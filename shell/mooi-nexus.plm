@@ -16,7 +16,7 @@ import "ui/deck.plm"
 
 scene Nexus {
     permissions {
-        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "curl", "magick", "kitty", "btop", "hostname", "whoami"
+        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "curl", "magick", "kitty", "btop", "hostname", "whoami", "cava", "zenity"
         services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want"
     }
 
@@ -261,72 +261,133 @@ scene Nexus {
     service media as med { playing: bool; title: text; artist: text; player: text }
     service clock { time: text = "--:--"; date: text }
 
-    // ── Where the deck is (lib/nexusdeck): the screen's, its own, and its head's bays (in the deck) ──
+    // ── Where the deck is (lib/nexusdeck): the screen's and its own; the cards in it ──
     fact dk_open = false         // in (true) or sliding away
     fact dk_edge = 0             // 0 bottom · 1 top · 2 left · 3 right (nexus.edge)
     fact dk_vert = false         // down a side: a column
+    fact dk_rows = 1             // along a strip: one row of cards, or two (nexus.rows)
+    fact nx_large = false        // the profile's large size (nexus.profile)
     fact dk_x = 120
     fact dk_y = 830
     fact dk_w = 1680
     fact dk_h = 252
     fact dk_ox = 0               // the way out of the screen, which it slides in from
     fact dk_oy = 1
-    fact sc_x = 0
-    fact sc_y = 0
-    fact sc_w = 470
-    fact sc_h = 38
-    fact wt_x = 470
-    fact wt_y = 0
-    fact wt_w = 974
-    fact wt_h = 38
-    fact id_x = 1444
-    fact id_y = 0
-    fact id_w = 300
-    fact id_h = 38
-    // the parts (codes: 0 window · 1 spaces · 2 mixer · 3 quick · 4 music · 5 machine · 6 today):
-    // shown or not, where, and their number in your order
+    // the cards (codes: 0 window · 1 spaces · 2 mixer · 3 quick · 4 music · 5 machine · 6 today · 7 profile · 8 scenes · 9 waiting · 10 activity): shown or not, where, their number in your order
     fact pw_on = false
     fact pw_x = 0
-    fact pw_y = 38
-    fact pw_w = 280
+    fact pw_y = 30
+    fact pw_w = 200
     fact pw_h = 214
     text pw_n = "01"
     fact ps_on = false
     fact ps_x = 0
-    fact ps_y = 38
-    fact ps_w = 300
+    fact ps_y = 30
+    fact ps_w = 200
     fact ps_h = 214
     text ps_n = "02"
     fact pm_on = false
     fact pm_x = 0
-    fact pm_y = 38
+    fact pm_y = 30
     fact pm_w = 200
     fact pm_h = 214
     text pm_n = "03"
     fact pq_on = false
     fact pq_x = 0
-    fact pq_y = 38
-    fact pq_w = 358
+    fact pq_y = 30
+    fact pq_w = 200
     fact pq_h = 214
     text pq_n = "04"
     fact pu_on = false
     fact pu_x = 0
-    fact pu_y = 38
-    fact pu_w = 284
+    fact pu_y = 30
+    fact pu_w = 200
     fact pu_h = 214
     text pu_n = "05"
     fact pc_on = false
     fact pc_x = 0
-    fact pc_y = 38
-    fact pc_w = 236
+    fact pc_y = 30
+    fact pc_w = 200
     fact pc_h = 214
     text pc_n = "06"
     fact pt_on = false
     fact pt_x = 0
-    fact pt_y = 38
-    fact pt_w = 222
+    fact pt_y = 30
+    fact pt_w = 200
     fact pt_h = 214
     text pt_n = "07"
+    fact pf_on = false
+    fact pf_x = 0
+    fact pf_y = 30
+    fact pf_w = 200
+    fact pf_h = 214
+    text pf_n = "08"
+    fact pn_on = false
+    fact pn_x = 0
+    fact pn_y = 30
+    fact pn_w = 200
+    fact pn_h = 214
+    text pn_n = "09"
+    fact pa_on = false
+    fact pa_x = 0
+    fact pa_y = 30
+    fact pa_w = 200
+    fact pa_h = 214
+    text pa_n = "10"
+    fact py_on = false
+    fact py_x = 0
+    fact py_y = 30
+    fact py_w = 200
+    fact py_h = 214
+    text py_n = "11"
+    // the circuit: each card's node wired up to the bus along the rail, and traces between neighbours
+    model nodes max 12 { x: number; y: number; bx: number; by: number }
+    model traces max 40 { x1: number; y1: number; x2: number; y2: number }
+    // arranging: the panel that grows out of the deck while ✎ is on
+    fact ga_x = 0
+    fact ga_y = 0
+    // the music on the deck's open edge (cava, 32 bands) while something plays (nexus.visualiser)
+    fact dk_viz = false
+    fact dv0 = 0
+    fact dv1 = 0
+    fact dv2 = 0
+    fact dv3 = 0
+    fact dv4 = 0
+    fact dv5 = 0
+    fact dv6 = 0
+    fact dv7 = 0
+    fact dv8 = 0
+    fact dv9 = 0
+    fact dv10 = 0
+    fact dv11 = 0
+    fact dv12 = 0
+    fact dv13 = 0
+    fact dv14 = 0
+    fact dv15 = 0
+    fact dv16 = 0
+    fact dv17 = 0
+    fact dv18 = 0
+    fact dv19 = 0
+    fact dv20 = 0
+    fact dv21 = 0
+    fact dv22 = 0
+    fact dv23 = 0
+    fact dv24 = 0
+    fact dv25 = 0
+    fact dv26 = 0
+    fact dv27 = 0
+    fact dv28 = 0
+    fact dv29 = 0
+    fact dv30 = 0
+    fact dv31 = 0
+    // the activity map (activity.json, which the bar writes): seven days of 24 hours, the apps most used
+    model heat max 168 { v: number }
+    model aday max 7 { label: text }
+    model topa max 4 { word: text; v: number; t: text }
+    text act_t = ""
+    text nx_banner = ""
+    fact nx_banner_on = false
+    image banner = from nx_banner, 960, 540
 
     // ── Status, HUD-fashion: each part's lamp (0 standby · 1 active · 2 caution · 3 alert), and the
     // master caution lit while something pressing waits (recording, a low battery, a hot machine) ──
@@ -337,6 +398,10 @@ scene Nexus {
     fact lp_u = 0
     fact lp_c = 1
     fact lp_t = 1
+    fact lp_f = 1
+    fact lp_n = 1
+    fact lp_a = 0
+    fact lp_y = 1
     fact dk_caution = false
     text dk_caution_t = ""
 
@@ -345,7 +410,7 @@ scene Nexus {
     fact dk_gid = -1             // the part being carried (its code)
     fact dk_gdx = 0              // how far it has been carried
     fact dk_gdy = 0
-    model hid max 8 { word: text; code: number; room: bool }   // hidden parts (room: no room for it here)
+    model hid max 12 { word: text; code: number; room: bool }   // hidden cards (room: no room for it here)
 
     // ── Cascade (nexus.mode): the spine's shelves, every one out at once, down the right edge ──
     fact dk_cascade = false
@@ -450,7 +515,7 @@ scene Nexus {
     text nx_length = ""
     fact mus_on = false          // a player has a song
     image cover = from nx_art, 96, 96
-    image avatar = from nx_avatar, 64, 64
+    image avatar = from nx_avatar, 96, 96
     text td_day = ""             // today: the date, big
     text td_month = ""
     text td_week = ""
@@ -483,6 +548,9 @@ scene Nexus {
     event dk_show ->             // to the logic: show hidden part n again
     event dk_edge_set ->         // to the logic: the deck to edge n (0 bottom · 1 top · 2 left · 3 right)
     event dk_reset ->            // to the logic: every part back, in the first order
+    event dk_rows_set ->         // to the logic: one row of cards or two
+    event dk_large_set ->        // to the logic: the profile small (0) or large (1)
+    event nx_pick ->             // to the logic: choose a picture — 0 the avatar · 1 the banner
 
     figure i_set = file "icons/cog.svg"
     figure i_lock = file "icons/lock.svg"
@@ -536,44 +604,63 @@ scene Nexus {
     prop rp.4 = 0 ~m.enter
     prop rp.5 = 0 ~m.enter
     prop rp.6 = 0 ~m.enter
+    prop rp.7 = 0 ~m.enter
+    prop rp.8 = 0 ~m.enter
+    prop rp.9 = 0 ~m.enter
+    prop rp.10 = 0 ~m.enter
     on change dk_open while dk_open {
         scan: 1 after 90ms
-        rp.0: 1 after 120ms;  rp.1: 1 after 170ms;  rp.2: 1 after 220ms;  rp.3: 1 after 270ms
-        rp.4: 1 after 320ms;  rp.5: 1 after 370ms;  rp.6: 1 after 420ms
+        rp.0: 1 after 120ms;  rp.1: 1 after 160ms;  rp.2: 1 after 200ms;  rp.3: 1 after 240ms;  rp.4: 1 after 280ms;  rp.5: 1 after 320ms;  rp.6: 1 after 360ms;  rp.7: 1 after 400ms;  rp.8: 1 after 440ms;  rp.9: 1 after 480ms;  rp.10: 1 after 520ms
     }
     // the lock-on: brackets that close on the workspace pointed at, again for each new one
     prop lk = 0 ~m.select
     follow lk = if(dk_hws >= 0, 1, 0)
     on change dk_hws { lk: 0 ~0ms }
-    // where the parts are, gliding when they are moved, hidden or shown
+    // where the cards are, gliding when they are moved, hidden or shown
     prop gx.0 = 0 ~m.reflow
     follow gx.0 = pw_x
-    prop gx.1 = 0 ~m.reflow
-    follow gx.1 = ps_x
-    prop gx.2 = 0 ~m.reflow
-    follow gx.2 = pm_x
-    prop gx.3 = 0 ~m.reflow
-    follow gx.3 = pq_x
-    prop gx.4 = 0 ~m.reflow
-    follow gx.4 = pu_x
-    prop gx.5 = 0 ~m.reflow
-    follow gx.5 = pc_x
-    prop gx.6 = 0 ~m.reflow
-    follow gx.6 = pt_x
     prop gy.0 = 0 ~m.reflow
     follow gy.0 = pw_y
+    prop gx.1 = 0 ~m.reflow
+    follow gx.1 = ps_x
     prop gy.1 = 0 ~m.reflow
     follow gy.1 = ps_y
+    prop gx.2 = 0 ~m.reflow
+    follow gx.2 = pm_x
     prop gy.2 = 0 ~m.reflow
     follow gy.2 = pm_y
+    prop gx.3 = 0 ~m.reflow
+    follow gx.3 = pq_x
     prop gy.3 = 0 ~m.reflow
     follow gy.3 = pq_y
+    prop gx.4 = 0 ~m.reflow
+    follow gx.4 = pu_x
     prop gy.4 = 0 ~m.reflow
     follow gy.4 = pu_y
+    prop gx.5 = 0 ~m.reflow
+    follow gx.5 = pc_x
     prop gy.5 = 0 ~m.reflow
     follow gy.5 = pc_y
+    prop gx.6 = 0 ~m.reflow
+    follow gx.6 = pt_x
     prop gy.6 = 0 ~m.reflow
     follow gy.6 = pt_y
+    prop gx.7 = 0 ~m.reflow
+    follow gx.7 = pf_x
+    prop gy.7 = 0 ~m.reflow
+    follow gy.7 = pf_y
+    prop gx.8 = 0 ~m.reflow
+    follow gx.8 = pn_x
+    prop gy.8 = 0 ~m.reflow
+    follow gy.8 = pn_y
+    prop gx.9 = 0 ~m.reflow
+    follow gx.9 = pa_x
+    prop gy.9 = 0 ~m.reflow
+    follow gy.9 = pa_y
+    prop gx.10 = 0 ~m.reflow
+    follow gx.10 = py_x
+    prop gy.10 = 0 ~m.reflow
+    follow gy.10 = py_y
     // Cascade's shelves come out one after another, 30 ms apart, and go home together
     prop cs.0 = 0 ~m.expand
     prop cs.1 = 0 ~m.expand
@@ -662,58 +749,77 @@ scene Nexus {
             move: dk_x + dk_ox * (1 - nx_in) * (dk_w + 40), dk_y + dk_oy * (1 - nx_in) * (dk_h + 40)
             opacity: smooth(0, 0.5, nx_in)
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
+
+            // the music on the open edge: a skyline of the sound, out of the deck (in on a side)
+            group {
+                show: dk_viz and mus_on
+                opacity: smooth(0, 1, rp.4)
+                glow: 6, 0.6 * st_glow, dk.hot
+                repeat v in 0..32 {
+                    let vv.$v = pick(v, dv0, dv1, dv2, dv3, dv4, dv5, dv6, dv7, dv8, dv9, dv10, dv11, dv12, dv13, dv14, dv15, dv16, dv17, dv18, dv19, dv20, dv21, dv22, dv23, dv24, dv25, dv26, dv27, dv28, dv29, dv30, dv31)
+                    let vl.$v = 3 + 26 * clamp(vv.$v, 0, 1)
+                    let vs.$v = if(dk_vert, dk_h, dk_w) / 32
+                    box { from: if(dk_vert, if(dk_edge == 2, dk_w + 2, -2 - vl.$v), v * vs.$v + 2), if(dk_vert, v * vs.$v + 2, if(dk_edge == 1, dk_h + 2, -2 - vl.$v))
+                          size: if(dk_vert, vl.$v, vs.$v - 4), if(dk_vert, vs.$v - 4, vl.$v); corner: 1; color: dk.hot; opacity: 0.25 + 0.6 * vv.$v }
+                }
+            }
+
             IslandFrame(1, dk_w, dk_h, centre: true) {
-                // the head: a raised band, its floor lit at the middle
-                box { from: 0, 0; size: dk_w, sc_h; color: dk.raised; opacity: 0.35; show: not dk_vert }
-                line { from: 0, sc_h; to: dk_w, sc_h; width: 1; color: dk.line; opacity: 0.8; show: not dk_vert }
-                group {
-                    show: not dk_vert
-                    glow: 5, 0.5 * st_glow, dk.acc
-                    line { from: dk_w / 2 - 60, sc_h; to: dk_w / 2 + 60, sc_h; width: 1.2; color: dk.acc; opacity: 0.6 }
-                }
-                line { from: wt_x, 10; to: wt_x, sc_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
-                line { from: id_x, 10; to: id_x, sc_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
-                repeat k in 0..3 {
-                    let seam.$k = pick(k, sc_y, wt_y, wt_y + wt_h)
-                    line { from: 14, seam.$k; to: dk_w - 14, seam.$k; width: 1; color: dk.line; opacity: 0.6; show: dk_vert and k > 0 }
-                }
                 // registration marks at the deck's corners
                 repeat c in 0..4 {
-                    let rx.$c = if(mod(c, 2) == 0, 6, dk_w - 6)
-                    let ry.$c = if(c < 2, 6, dk_h - 6)
+                    let rx.$c = if(mod(c, 2) == 0, 4, dk_w - 4)
+                    let ry.$c = if(c < 2, 4, dk_h - 4)
                     let sx.$c = if(mod(c, 2) == 0, 1, -1)
                     let sy.$c = if(c < 2, 1, -1)
                     line { from: rx.$c, ry.$c; to: rx.$c + 10 * sx.$c, ry.$c; width: 1.2; color: dk.acc; opacity: 0.55 }
                     line { from: rx.$c, ry.$c; to: rx.$c, ry.$c + 10 * sy.$c; width: 1.2; color: dk.acc; opacity: 0.55 }
                 }
 
-                // ── Who you are, the time, and the ways out (✎ arranges the deck) ──
+                // ── The rail: the circuit's bus, the time, ✎ and the ways out ──
+                // the bus: a trace along the rail, its pads where each card is wired to it
+                line { from: 8, 23; to: dk_w - 8, 23; width: 1.4; color: dk.acc; opacity: 0.55 }
+                line { from: 8, 26; to: dk_w * 0.3, 26; width: 1; color: dk.acc; opacity: 0.25 }
                 group {
-                    move: id_x, id_y
-                    let iy = if(dk_vert, 22, 19)
-                    box { from: 14, iy - 12; size: 24, 24; corner: if(isl_style > 0.5, 12, 2); color: mix(dk.well, dk.acc, 0.2) }
-                    image avatar { at: 14, iy - 12; size: 24, 24; show: nx_avatar_on }
-                    text nx_initial { at: 26, iy; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on }
-                    text pick(nx_noticed, nx_name, nx_notice) { at: 46, iy - (if(dk_vert, 6, 0)); anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: id_w - 196; lines: 1 }
-                    text nx_who { at: 46, iy + 8; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: id_w - 196; lines: 1; show: dk_vert }
-                    text clock.time { at: id_w - 128, iy; anchor: right center; size: 12; family: "Share Tech Mono"; color: dk.ink2; show: not dk_caution }
+                    show: scan > 0.01 and scan < 0.99
+                    glow: 8, 0.9 * st_glow, dk.acc
+                    ellipse { at: 8 + scan * (dk_w - 16), 23; radius: 3; color: dk.acc }
+                }
+                text "CONTROL NEXUS" { at: 14, 12; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text clock.date { at: 118, 12; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                // the traces from each card's lamp up to the bus, a via where they meet; and between neighbours
+                for nd in nodes {
+                    line { from: nd.x, nd.y - 6; to: nd.bx, nd.by + 7; width: 1.4; color: dk.acc; opacity: 0.6 }
+                    group {
+                        glow: 5, 0.6 * st_glow, dk.acc
+                        ellipse { at: nd.bx, nd.by + 7; radius: 2.6; color: dk.acc }
+                    }
+                    ellipse { at: nd.bx, nd.by + 7; radius: 4.6; stroke: 1; color: dk.acc; opacity: 0.5 }
+                }
+                // between neighbours: out of one card, down the gap, into the next, a via at each turn
+                for tr in traces {
+                    line { from: tr.x1, tr.y1; to: tr.x2, tr.y2; width: 1.4; color: dk.acc; opacity: 0.6 }
+                    ellipse { at: tr.x2, tr.y2; radius: 1.8; color: dk.acc; opacity: 0.8 }
+                }
+                group {
+                    move: dk_w - 168, 0
+                    text clock.time { at: 26, 12; anchor: right center; size: 11; family: "Share Tech Mono"; color: dk.ink2; show: not dk_caution }
                     group {
                         show: dk_caution
                         glow: 7, 0.9 * st_glow, dk.alert
-                        box { from: id_w - 196, iy - 9; size: 68, 18; corner: 2; color: dk.alert; opacity: 0.18 }
-                        box { from: id_w - 196, iy - 9; size: 68, 18; corner: 2; stroke: 1.2; color: dk.alert }
-                        text dk_caution_t { at: id_w - 162, iy + 0.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.alert; width: 64; lines: 1 }
+                        box { from: -40, 4; size: 68, 16; corner: 2; color: dk.alert; opacity: 0.18 }
+                        box { from: -40, 4; size: 68, 16; corner: 2; stroke: 1.2; color: dk.alert }
+                        text dk_caution_t { at: -6, 12.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.alert; width: 64; lines: 1 }
                     }
                     repeat b in 0..5 {
-                        zone box hb.$b { from: id_w - 122 + b * 23, iy - 12; size: 22, 24; cursor: pointer; role: button
+                        zone box hb.$b { from: 34 + b * 26, 1; size: 24, 22; cursor: pointer; role: button
                                          label: pick(b, "Arrange the deck", "mooi's settings", "Lock the screen", "The session menu", "Close the Nexus") }
-                        box { from: id_w - 121 + b * 23, iy - 11; size: 20, 22; corner: if(isl_style > 0.5, 6, 2); color: if(b == 0 and dk_edit, dk.acc, dk.well); opacity: if(b == 0 and dk_edit, 0.9, 0.6 * hb.$b.hover) }
+                        box { from: 35 + b * 26, 2; size: 22, 19; corner: if(isl_style > 0.5, 6, 2); color: if(b == 0 and dk_edit, dk.acc, dk.well); opacity: if(b == 0 and dk_edit, 0.9, 0.7 * hb.$b.hover) }
                     }
-                    text "✎" { at: id_w - 111, iy; anchor: center; align: center; size: 13; color: if(dk_edit, dk.well, mix(dk.ink2, dk.acc, hb.0.hover)) }
-                    figure i_set { at: id_w - 88, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hb.1.hover) }
-                    figure i_lock { at: id_w - 65, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hb.2.hover) }
-                    figure i_power { at: id_w - 42, iy; size: 13, 13; color: mix(dk.ink2, dk.hot, hb.3.hover) }
-                    text "×" { at: id_w - 19, iy; anchor: center; align: center; size: 16; color: mix(dk.mute, dk.ink, hb.4.hover) }
+                    text "✎" { at: 46, 12; anchor: center; align: center; size: 12; color: if(dk_edit, dk.well, mix(dk.ink2, dk.acc, hb.0.hover)) }
+                    figure i_set { at: 72, 12; size: 12, 12; color: mix(dk.ink2, dk.acc, hb.1.hover) }
+                    figure i_lock { at: 98, 12; size: 12, 12; color: mix(dk.ink2, dk.acc, hb.2.hover) }
+                    figure i_power { at: 124, 12; size: 12, 12; color: mix(dk.ink2, dk.hot, hb.3.hover) }
+                    text "×" { at: 150, 12; anchor: center; align: center; size: 15; color: mix(dk.mute, dk.ink, hb.4.hover) }
                     on press hb.0 { emit dk_edit_on(if(dk_edit, 0, 1)) }
                     on press hb.1 { emit nx_go(1) }
                     on press hb.2 { emit nx_go(2) }
@@ -721,100 +827,12 @@ scene Nexus {
                     on press hb.4 { emit nx_close }
                 }
 
-                // ── Scenes: a whole setup at a press; pointed at, it says what it would change ──
-                group {
-                    move: sc_x, sc_y
-                    zone box scbay { from: 0, 0; size: sc_w, sc_h; role: region; label: "Scenes" }
-                    text "SCENES" { at: 14, 19; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: not dk_vert }
-                    PartHead(sc_w, "", "Scenes", "1 PRESS, WHOLE SETUP") { show: dk_vert }
-                    for s in scn {
-                        zone box sz { from: s.x, s.y; size: s.w, 24; cursor: pointer; role: button; selected: s.live
-                                      label: pick(s.save, "Switch to {s.word}", "Save this setup as a scene") }
-                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; color: if(s.live, mix(dk.well, dk.hot, 0.16), mix(dk.well, dk.acc, 0.14 * sz.hover)); opacity: 0.92 }
-                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; stroke: 1
-                              color: if(s.live, dk.hot, mix(dk.line, dk.acc, sz.hover + if(dk_hsc == s.index, 1, 0))); opacity: if(s.save, 0.7, 1) }
-                        group {
-                            show: s.live
-                            glow: 5, 0.7 * st_glow, dk.hot
-                            ellipse { at: s.x + 10, s.y + 12; radius: 2.6; color: dk.hot }
-                        }
-                        box { from: s.x + s.w - 9, s.y + 4; size: 5, 5; corner: 1; color: dk.acc; opacity: 0.8; show: s.env }
-                        text "{upper(s.word)}" { at: s.x + s.w / 2 + if(s.live, 5, 0), s.y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
-                                                 color: if(s.live, dk.hot, if(s.save, dk.mute, mix(dk.ink2, dk.ink, sz.hover))); width: s.w - 14; lines: 1 }
-                        on hover sz for 220ms while not s.save { dk_hsc = s.index; emit dk_hov_scene(s.index) }
-                        on press sz while not s.save { emit dk_scene(s.index) }
-                        on press sz while s.save { dk_naming = true; dk_hsc = -1; emit dk_naming_on(s.index); focus dk_name_in }
-                        on press right sz while not s.save { emit dk_unscene(s.index) }
-                    }
-                }
-
-                // ── What is waiting (or, while arranging, the arranging bar) ──
-                group {
-                    move: wt_x, wt_y
-                    group {
-                        opacity: 1 - ed_in
-                        show: ed_in < 0.99
-                        PartHead(wt_w, "", "Waiting", "") { show: dk_vert }
-                        group {
-                            clip box { from: 8, 0; size: wt_w - 16, wt_h }
-                            for t in wait {
-                                zone box tz { from: t.x, t.y; size: t.w, 26; cursor: pointer; role: button; label: "{t.word}: {t.act}" }
-                                box { from: t.x - 4, t.y; size: t.w + 4, 26; corner: dk.r; color: dk.acc; opacity: 0.08 * tz.hover }
-                                group {
-                                    glow: 5, if(t.hot, 0.7, 0) * st_glow, dk.hot
-                                    ellipse { at: t.x + 4, t.y + 13; radius: 2.6; color: if(t.hot, dk.hot, dk.mute) }
-                                }
-                                text t.word { at: t.x + 13, t.y + 13.5; anchor: left center; size: 10.5; family: "Share Tech Mono"; color: mix(dk.ink2, dk.ink, tz.hover); width: t.w - 74; lines: 1 }
-                                box { from: t.x + t.w - 56, t.y + 4; size: 54, 18; corner: dk.r; color: if(t.hot, dk.hot, dk.acc); opacity: 0.12 + 0.2 * tz.hover }
-                                box { from: t.x + t.w - 56, t.y + 4; size: 54, 18; corner: dk.r; stroke: 1; color: if(t.hot, dk.hot, dk.acc) }
-                                text t.act { at: t.x + t.w - 29, t.y + 13.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
-                                on press tz { emit dk_wait(t.index) }
-                            }
-                        }
-                    }
-                    // arranging: which edge, what is hidden, back to the first order, done
-                    group {
-                        show: ed_in > 0.01
-                        opacity: ed_in
-                        let ey = if(dk_vert, 34, 7)
-                        text "ARRANGE · DRAG A PART BY MOVE" { at: 14, if(dk_vert, 18, 19); anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: dk_vert }
-                        text "EDGE" { at: 14, ey + 12; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
-                        repeat e in 0..4 {
-                            let ex.$e = 48 + e * 32
-                            zone box ez.$e { from: ex.$e, ey; size: 28, 24; cursor: pointer; role: tab; selected: dk_edge == e; label: pick(e, "Along the bottom", "Along the top", "Down the left", "Down the right") }
-                            box { from: ex.$e, ey; size: 28, 24; corner: dk.r; color: if(dk_edge == e, mix(dk.well, dk.acc, 0.2), dk.well) }
-                            box { from: ex.$e, ey; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_edge == e, dk.acc, mix(dk.line, dk.acc, ez.$e.hover)) }
-                            // a little screen, its deck lit on that edge
-                            box { from: ex.$e + 6, ey + 5; size: 16, 14; corner: 1; stroke: 1; color: dk.mute }
-                            box { from: ex.$e + pick(e, 6, 6, 6, 19), ey + pick(e, 16, 5, 5, 5); size: pick(e, 16, 16, 3, 3), pick(e, 3, 3, 14, 14); color: if(dk_edge == e, dk.acc, dk.ink2) }
-                            on press ez.$e { emit dk_edge_set(e) }
-                        }
-                        text pick(hid.count > 0, "ALL PARTS SHOWN", "SHOW") { at: if(dk_vert, 14, 188), if(dk_vert, ey + 42, ey + 12); anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
-                        for h in hid {
-                            let hx = if(dk_vert, 14 + mod(h.index, 3) * 122, 228 + h.index * 104)
-                            let hy = if(dk_vert, ey + 54 + floor(h.index / 3) * 28, ey)
-                            zone box hz { from: hx, hy; size: 98, 24; cursor: pointer; role: button; label: "Show {h.word}"; active: not h.room }
-                            box { from: hx, hy; size: 98, 24; corner: dk.r; color: dk.well; opacity: 0.9 }
-                            box { from: hx, hy; size: 98, 24; corner: dk.r; stroke: 1; color: if(h.room, dk.line, mix(dk.line, dk.acc, 0.4 + 0.6 * hz.hover)) }
-                            text "+ {upper(h.word)}" { at: hx + 49, hy + 12.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(h.room, dk.mute, dk.ink); width: 92; lines: 1 }
-                            on press hz { emit dk_show(h.code) }
-                        }
-                        let aay = if(dk_vert, wt_h - 32, ey)
-                        zone box az.0 { from: wt_w - 150, aay; size: 66, 24; cursor: pointer; role: button; label: "Put every part back" }
-                        Act(wt_w - 150, aay, 66, "Reset", false, false, az.0.hover)
-                        zone box az.1 { from: wt_w - 78, aay; size: 66, 24; cursor: pointer; role: button; label: "Done arranging" }
-                        Act(wt_w - 78, aay, 66, "Done", true, false, az.1.hover)
-                        on press az.0 { emit dk_reset }
-                        on press az.1 { emit dk_edit_on(0) }
-                    }
-                }
-
-                // ═══ The parts ═══
-                // ── This window: its own controls and its own sound ──
+                // ── This window ──
                 group {
                     show: pw_on
                     move: gx.0 + dk_gdx * if(dk_gid == 0, 1, 0) - dk_ox * (1 - rp.0) * 14, gy.0 + dk_gdy * if(dk_gid == 0, 1, 0) - dk_oy * (1 - rp.0) * 14
                     opacity: smooth(0, 1, rp.0)
+                    Card(pw_w, pw_h, if(dk_gid == 0, 1, 0))
                     PartHead(pw_w, pw_n, "This window", "", lamp: lp_w)
                     group {
                         show: w_ok
@@ -862,16 +880,17 @@ scene Nexus {
                     zone box eg0 { from: pw_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move This window"; active: dk_edit }
                     zone box ee0 { from: pw_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide This window"; active: dk_edit }
                     EditFrame(pw_w, pw_h, 0, eg0.hover, ee0.hover) { show: ed_in > 0.01 }
-                    on drag eg0 while dk_edit { dk_gid = 0; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg0 while dk_edit and dk_gid == 0 { emit dk_drop(0 * 100000 + round(if(dk_vert, gy.0 + dk_gdy + pw_h / 2, gx.0 + dk_gdx + pw_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg0 while dk_edit { dk_gid = 0; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg0 while dk_edit and dk_gid == 0 { emit dk_drop(0 * 100000000 + round(gx.0 + dk_gdx + pw_w / 2) * 10000 + round(gy.0 + dk_gdy + pw_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee0 { emit dk_hide(0) }
                 }
 
-                // ── Your workspaces: each a miniature of its screen, its windows where they are ──
+                // ── Workspaces ──
                 group {
                     show: ps_on
                     move: gx.1 + dk_gdx * if(dk_gid == 1, 1, 0) - dk_ox * (1 - rp.1) * 14, gy.1 + dk_gdy * if(dk_gid == 1, 1, 0) - dk_oy * (1 - rp.1) * 14
                     opacity: smooth(0, 1, rp.1)
+                    Card(ps_w, ps_h, if(dk_gid == 1, 1, 0))
                     zone box wsbay { from: 0, 0; size: ps_w, ps_h; role: region; label: "Workspaces" }
                     PartHead(ps_w, ps_n, "Workspaces", "POINT TO LOOK IN · DRAG A WINDOW TO MOVE IT", lamp: lp_s)
                     for t in tiles {
@@ -934,16 +953,17 @@ scene Nexus {
                     zone box eg1 { from: ps_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Workspaces"; active: dk_edit }
                     zone box ee1 { from: ps_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Workspaces"; active: dk_edit }
                     EditFrame(ps_w, ps_h, 1, eg1.hover, ee1.hover) { show: ed_in > 0.01 }
-                    on drag eg1 while dk_edit { dk_gid = 1; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg1 while dk_edit and dk_gid == 1 { emit dk_drop(1 * 100000 + round(if(dk_vert, gy.1 + dk_gdy + ps_h / 2, gx.1 + dk_gdx + ps_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg1 while dk_edit { dk_gid = 1; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg1 while dk_edit and dk_gid == 1 { emit dk_drop(1 * 100000000 + round(gx.1 + dk_gdx + ps_w / 2) * 10000 + round(gy.1 + dk_gdy + ps_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee1 { emit dk_hide(1) }
                 }
 
-                // ── The mixer: everything, the apps that play, the microphone, the screen ──
+                // ── Mixer ──
                 group {
                     show: pm_on
                     move: gx.2 + dk_gdx * if(dk_gid == 2, 1, 0) - dk_ox * (1 - rp.2) * 14, gy.2 + dk_gdy * if(dk_gid == 2, 1, 0) - dk_oy * (1 - rp.2) * 14
                     opacity: smooth(0, 1, rp.2)
+                    Card(pm_w, pm_h, if(dk_gid == 2, 1, 0))
                     PartHead(pm_w, pm_n, "Mixer", "", lamp: lp_m)
                     let fh = pm_h - 84
                     let f0 = (pm_w - max(1, faders.count) * 36) / 2 + 18
@@ -953,16 +973,17 @@ scene Nexus {
                     zone box eg2 { from: pm_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Mixer"; active: dk_edit }
                     zone box ee2 { from: pm_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Mixer"; active: dk_edit }
                     EditFrame(pm_w, pm_h, 2, eg2.hover, ee2.hover) { show: ed_in > 0.01 }
-                    on drag eg2 while dk_edit { dk_gid = 2; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg2 while dk_edit and dk_gid == 2 { emit dk_drop(2 * 100000 + round(if(dk_vert, gy.2 + dk_gdy + pm_h / 2, gx.2 + dk_gdx + pm_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg2 while dk_edit { dk_gid = 2; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg2 while dk_edit and dk_gid == 2 { emit dk_drop(2 * 100000000 + round(gx.2 + dk_gdx + pm_w / 2) * 10000 + round(gy.2 + dk_gdy + pm_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee2 { emit dk_hide(2) }
                 }
 
-                // ── Quick settings: twelve tiles, each lit while it is on, its state in words ──
+                // ── Quick settings ──
                 group {
                     show: pq_on
                     move: gx.3 + dk_gdx * if(dk_gid == 3, 1, 0) - dk_ox * (1 - rp.3) * 14, gy.3 + dk_gdy * if(dk_gid == 3, 1, 0) - dk_oy * (1 - rp.3) * 14
                     opacity: smooth(0, 1, rp.3)
+                    Card(pq_w, pq_h, if(dk_gid == 3, 1, 0))
                     PartHead(pq_w, pq_n, "Quick settings", "", lamp: lp_q)
                     let qw = (pq_w - 28 - 3 * 6) / 4
                     for q in quick {
@@ -983,17 +1004,27 @@ scene Nexus {
                     zone box eg3 { from: pq_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Quick settings"; active: dk_edit }
                     zone box ee3 { from: pq_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Quick settings"; active: dk_edit }
                     EditFrame(pq_w, pq_h, 3, eg3.hover, ee3.hover) { show: ed_in > 0.01 }
-                    on drag eg3 while dk_edit { dk_gid = 3; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg3 while dk_edit and dk_gid == 3 { emit dk_drop(3 * 100000 + round(if(dk_vert, gy.3 + dk_gdy + pq_h / 2, gx.3 + dk_gdx + pq_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg3 while dk_edit { dk_gid = 3; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg3 while dk_edit and dk_gid == 3 { emit dk_drop(3 * 100000000 + round(gx.3 + dk_gdx + pq_w / 2) * 10000 + round(gy.3 + dk_gdy + pq_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee3 { emit dk_hide(3) }
                 }
 
-                // ── Music: the cover, the song, where it is, the transport ──
+                // ── Music ──
                 group {
                     show: pu_on
                     move: gx.4 + dk_gdx * if(dk_gid == 4, 1, 0) - dk_ox * (1 - rp.4) * 14, gy.4 + dk_gdy * if(dk_gid == 4, 1, 0) - dk_oy * (1 - rp.4) * 14
                     opacity: smooth(0, 1, rp.4)
+                    Card(pu_w, pu_h, if(dk_gid == 4, 1, 0))
                     PartHead(pu_w, pu_n, "Music", "", lamp: lp_u)
+                    // the cover behind everything, faint, and the song's own visualiser
+                    group {
+                        show: mus_on and nx_art_on
+                        clip box { from: 1, 1; size: pu_w - 2, pu_h - 2; corner: dk.r }
+                        image cover { at: 0, (pu_h - pu_w) / 2; size: pu_w, pu_w; opacity: 0.2 }
+                        repeat f in 0..5 {
+                            box { from: 0, pu_h * f / 5; size: pu_w, pu_h / 5 + 1; color: mix(dk.raised, #000000, 0.5); opacity: 0.25 + f * 0.1 }
+                        }
+                    }
                     group {
                         show: mus_on
                         let ua = if(dk_vert, 64, 84)
@@ -1011,6 +1042,14 @@ scene Nexus {
                         text "{upper(med.player)}" { at: ux, 40; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.hot; width: pu_w - ux - 14; lines: 1 }
                         text med.title { at: ux, 58; anchor: left center; size: 13.5; weight: 600; family: "Exo 2"; color: dk.ink; width: pu_w - ux - 14; lines: 1 }
                         text med.artist { at: ux, 76; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: pu_w - ux - 14; lines: 1 }
+                        group {
+                            show: not dk_vert
+                            glow: 5, 0.5 * st_glow, dk.hot
+                            repeat v in 0..16 {
+                                let vv.$v = pick(v, dv0, dv2, dv4, dv6, dv8, dv10, dv12, dv14, dv16, dv18, dv20, dv22, dv24, dv26, dv28, dv30)
+                                box { from: ux + v * ((pu_w - ux - 14) / 16), 112 - 18 * clamp(vv.$v, 0.04, 1); size: max(2, (pu_w - ux - 14) / 16 - 2), 18 * clamp(vv.$v, 0.04, 1); corner: 1; color: dk.hot; opacity: 0.45 + 0.55 * vv.$v }
+                            }
+                        }
                         let uy = if(dk_vert, 98, 134)
                         let upx = if(dk_vert, ux, 14)
                         box { from: upx, uy; size: pu_w - upx - 14, 3; corner: 1; color: dk.well }
@@ -1045,16 +1084,17 @@ scene Nexus {
                     zone box eg4 { from: pu_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Music"; active: dk_edit }
                     zone box ee4 { from: pu_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Music"; active: dk_edit }
                     EditFrame(pu_w, pu_h, 4, eg4.hover, ee4.hover) { show: ed_in > 0.01 }
-                    on drag eg4 while dk_edit { dk_gid = 4; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg4 while dk_edit and dk_gid == 4 { emit dk_drop(4 * 100000 + round(if(dk_vert, gy.4 + dk_gdy + pu_h / 2, gx.4 + dk_gdx + pu_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg4 while dk_edit { dk_gid = 4; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg4 while dk_edit and dk_gid == 4 { emit dk_drop(4 * 100000000 + round(gx.4 + dk_gdx + pu_w / 2) * 10000 + round(gy.4 + dk_gdy + pu_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee4 { emit dk_hide(4) }
                 }
 
-                // ── The machine: the processor and the memory as they went, and the rest ──
+                // ── Machine ──
                 group {
                     show: pc_on
                     move: gx.5 + dk_gdx * if(dk_gid == 5, 1, 0) - dk_ox * (1 - rp.5) * 14, gy.5 + dk_gdy * if(dk_gid == 5, 1, 0) - dk_oy * (1 - rp.5) * 14
                     opacity: smooth(0, 1, rp.5)
+                    Card(pc_w, pc_h, if(dk_gid == 5, 1, 0))
                     PartHead(pc_w, pc_n, "Machine", m_up_t, lamp: lp_c)
                     zone box mcz { from: 0, 30; size: pc_w, pc_h - 30; cursor: pointer; role: button; label: "The machine: open btop" }
                     on press mcz { emit nx_go(10) }
@@ -1090,16 +1130,17 @@ scene Nexus {
                     zone box eg5 { from: pc_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Machine"; active: dk_edit }
                     zone box ee5 { from: pc_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Machine"; active: dk_edit }
                     EditFrame(pc_w, pc_h, 5, eg5.hover, ee5.hover) { show: ed_in > 0.01 }
-                    on drag eg5 while dk_edit { dk_gid = 5; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg5 while dk_edit and dk_gid == 5 { emit dk_drop(5 * 100000 + round(if(dk_vert, gy.5 + dk_gdy + pc_h / 2, gx.5 + dk_gdx + pc_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg5 while dk_edit { dk_gid = 5; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg5 while dk_edit and dk_gid == 5 { emit dk_drop(5 * 100000000 + round(gx.5 + dk_gdx + pc_w / 2) * 10000 + round(gy.5 + dk_gdy + pc_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee5 { emit dk_hide(5) }
                 }
 
-                // ── Today: the date large, the weather, the week ──
+                // ── Today ──
                 group {
                     show: pt_on
                     move: gx.6 + dk_gdx * if(dk_gid == 6, 1, 0) - dk_ox * (1 - rp.6) * 14, gy.6 + dk_gdy * if(dk_gid == 6, 1, 0) - dk_oy * (1 - rp.6) * 14
                     opacity: smooth(0, 1, rp.6)
+                    Card(pt_w, pt_h, if(dk_gid == 6, 1, 0))
                     PartHead(pt_w, pt_n, "Today", clock.time, lamp: lp_t)
                     zone box tdz { from: 0, 30; size: pt_w, pt_h - 30; cursor: pointer; role: button; label: "The calendar" }
                     on press tdz { emit nx_go(11) }
@@ -1124,24 +1165,234 @@ scene Nexus {
                     zone box eg6 { from: pt_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Today"; active: dk_edit }
                     zone box ee6 { from: pt_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Today"; active: dk_edit }
                     EditFrame(pt_w, pt_h, 6, eg6.hover, ee6.hover) { show: ed_in > 0.01 }
-                    on drag eg6 while dk_edit { dk_gid = 6; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
-                    on release eg6 while dk_edit and dk_gid == 6 { emit dk_drop(6 * 100000 + round(if(dk_vert, gy.6 + dk_gdy + pt_h / 2, gx.6 + dk_gdx + pt_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on drag eg6 while dk_edit { dk_gid = 6; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg6 while dk_edit and dk_gid == 6 { emit dk_drop(6 * 100000000 + round(gx.6 + dk_gdx + pt_w / 2) * 10000 + round(gy.6 + dk_gdy + pt_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee6 { emit dk_hide(6) }
+                }
+
+                // ── Profile ──
+                group {
+                    show: pf_on
+                    move: gx.7 + dk_gdx * if(dk_gid == 7, 1, 0) - dk_ox * (1 - rp.7) * 14, gy.7 + dk_gdy * if(dk_gid == 7, 1, 0) - dk_oy * (1 - rp.7) * 14
+                    opacity: smooth(0, 1, rp.7)
+                    Card(pf_w, pf_h, if(dk_gid == 7, 1, 0))
+                    PartHead(pf_w, pf_n, "Profile", "", lamp: lp_f)
+                    // the banner across the top (your picture, or a circuit of the deck's own), you over its edge
+                    let bnh = pf_h * if(nx_large, 0.5, 0.46)
+                    let av = if(nx_large, 74, 54)
+                    zone box pfb { from: 0, 0; size: pf_w, bnh; cursor: pointer; role: button; label: "Change the banner" }
+                    group {
+                        clip box { from: 1, 1; size: pf_w - 2, bnh; corner: dk.r }
+                        box { from: 0, 0; size: pf_w, bnh; color: mix(dk.well, dk.acc, 0.22) }
+                        repeat g in 0..14 {
+                            line { from: g * 28 - 20, bnh; to: g * 28 + 30, 0; width: 1; color: dk.acc; opacity: 0.12 }
+                        }
+                        image banner { at: 0, (bnh - pf_w * 0.5625) / 2; size: pf_w, pf_w * 0.5625; show: nx_banner_on }
+                        repeat f in 0..5 {
+                            box { from: 0, bnh * (0.5 + f * 0.1); size: pf_w, bnh * 0.1 + 1; color: mix(dk.raised, #000000, 0.45); opacity: 0.12 + f * 0.16 }
+                        }
+                        text "CHANGE BANNER" { at: pf_w - 12, 14; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: #ffffff; opacity: 0.9 * pfb.hover }
+                    }
+                    on press pfb { emit nx_pick(1) }
+                    zone box pfa { from: 12, bnh - av * 0.5; size: av, av; cursor: pointer; role: button; label: "Change your picture" }
+                    body {
+                        color: mix(dk.well, dk.acc, 0.2)
+                        shadow: 0, 4, 14, 55%
+                        box { from: 12, bnh - av * 0.5; size: av, av; corner: if(isl_style > 0.5, av / 2, 4 * cn_scale) }
+                    }
+                    group {
+                        clip box { from: 12, bnh - av * 0.5; size: av, av; corner: if(isl_style > 0.5, av / 2, 4 * cn_scale) }
+                        image avatar { at: 12, bnh - av * 0.5; size: av, av; show: nx_avatar_on }
+                    }
+                    text nx_initial { at: 12 + av / 2, bnh; anchor: center; align: center; size: 22; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on and not nx_large }
+                    text nx_initial { at: 12 + av / 2, bnh; anchor: center; align: center; size: 30; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on and nx_large }
+                    group {
+                        glow: 6, (0.5 + 0.5 * pfa.hover) * st_glow, dk.acc
+                        box { from: 12, bnh - av * 0.5; size: av, av; corner: if(isl_style > 0.5, av / 2, 4 * cn_scale); stroke: 1.6; color: dk.acc }
+                    }
+                    on press pfa { emit nx_pick(0) }
+                    text pick(nx_noticed, nx_name, nx_notice) { at: 22 + av, bnh + 13; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: pf_w - av - 34; lines: 1; show: not nx_large }
+                    text pick(nx_noticed, nx_name, nx_notice) { at: 22 + av, bnh + 18; anchor: left center; size: 19; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: pf_w - av - 34; lines: 1; show: nx_large }
+                    text nx_who { at: 22 + av, bnh + if(nx_large, 38, 29); anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: pf_w - av - 34; lines: 1 }
+                    let pfy = pf_h - 24
+                    line { from: 12, pfy - 10; to: pf_w - 12, pfy - 10; width: 1; color: dk.line; opacity: 0.6 }
+                    figure i_cpu { at: 18, pfy + 3; size: 10, 10; color: dk.mute }
+                    text m_up_t { at: 28, pfy + 3; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.ink2; width: pf_w - 120; lines: 1 }
+                    text "{tiles.count - 1, 0} WS · {wins.count, 0} WIN" { at: pf_w - 12, pfy + 3; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.acc }
+                    zone box eg7 { from: pf_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Profile"; active: dk_edit }
+                    zone box ee7 { from: pf_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Profile"; active: dk_edit }
+                    EditFrame(pf_w, pf_h, 7, eg7.hover, ee7.hover) { show: ed_in > 0.01 }
+                    on drag eg7 while dk_edit { dk_gid = 7; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg7 while dk_edit and dk_gid == 7 { emit dk_drop(7 * 100000000 + round(gx.7 + dk_gdx + pf_w / 2) * 10000 + round(gy.7 + dk_gdy + pf_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee7 { emit dk_hide(7) }
+                }
+
+                // ── Scenes ──
+                group {
+                    show: pn_on
+                    move: gx.8 + dk_gdx * if(dk_gid == 8, 1, 0) - dk_ox * (1 - rp.8) * 14, gy.8 + dk_gdy * if(dk_gid == 8, 1, 0) - dk_oy * (1 - rp.8) * 14
+                    opacity: smooth(0, 1, rp.8)
+                    Card(pn_w, pn_h, if(dk_gid == 8, 1, 0))
+                    PartHead(pn_w, pn_n, "Scenes", "ONE PRESS, WHOLE SETUP", lamp: lp_n)
+                    zone box scbay { from: 0, 0; size: pn_w, pn_h; role: region; label: "Scenes" }
+                    for s in scn {
+                        zone box sz { from: s.x, s.y; size: s.w, 24; cursor: pointer; role: button; selected: s.live
+                                      label: pick(s.save, "Switch to {s.word}", "Save this setup as a scene") }
+                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; color: if(s.live, mix(dk.well, dk.hot, 0.16), mix(dk.well, dk.acc, 0.14 * sz.hover)); opacity: 0.92 }
+                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; stroke: 1
+                              color: if(s.live, dk.hot, mix(dk.line, dk.acc, sz.hover + if(dk_hsc == s.index, 1, 0))); opacity: if(s.save, 0.7, 1) }
+                        group {
+                            show: s.live
+                            glow: 5, 0.7 * st_glow, dk.hot
+                            ellipse { at: s.x + 10, s.y + 12; radius: 2.6; color: dk.hot }
+                        }
+                        box { from: s.x + s.w - 9, s.y + 4; size: 5, 5; corner: 1; color: dk.acc; opacity: 0.8; show: s.env }
+                        text "{upper(s.word)}" { at: s.x + s.w / 2 + if(s.live, 5, 0), s.y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                                                 color: if(s.live, dk.hot, if(s.save, dk.mute, mix(dk.ink2, dk.ink, sz.hover))); width: s.w - 14; lines: 1 }
+                        on hover sz for 220ms while not s.save { dk_hsc = s.index; emit dk_hov_scene(s.index) }
+                        on press sz while not s.save { emit dk_scene(s.index) }
+                        on press sz while s.save { dk_naming = true; dk_hsc = -1; emit dk_naming_on(s.index); focus dk_name_in }
+                        on press right sz while not s.save { emit dk_unscene(s.index) }
+                    }
+                    zone box eg8 { from: pn_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Scenes"; active: dk_edit }
+                    zone box ee8 { from: pn_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Scenes"; active: dk_edit }
+                    EditFrame(pn_w, pn_h, 8, eg8.hover, ee8.hover) { show: ed_in > 0.01 }
+                    on drag eg8 while dk_edit { dk_gid = 8; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg8 while dk_edit and dk_gid == 8 { emit dk_drop(8 * 100000000 + round(gx.8 + dk_gdx + pn_w / 2) * 10000 + round(gy.8 + dk_gdy + pn_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee8 { emit dk_hide(8) }
+                }
+
+                // ── Waiting ──
+                group {
+                    show: pa_on
+                    move: gx.9 + dk_gdx * if(dk_gid == 9, 1, 0) - dk_ox * (1 - rp.9) * 14, gy.9 + dk_gdy * if(dk_gid == 9, 1, 0) - dk_oy * (1 - rp.9) * 14
+                    opacity: smooth(0, 1, rp.9)
+                    Card(pa_w, pa_h, if(dk_gid == 9, 1, 0))
+                    PartHead(pa_w, pa_n, "Waiting", "", lamp: lp_a)
+                    group {
+                        clip box { from: 4, 28; size: pa_w - 8, pa_h - 32 }
+                        for t in wait {
+                            zone box tz { from: t.x, t.y; size: t.w, 26; cursor: pointer; role: button; label: "{t.word}: {t.act}" }
+                            box { from: t.x - 4, t.y; size: t.w + 4, 26; corner: dk.r; color: dk.acc; opacity: 0.08 * tz.hover }
+                            group {
+                                glow: 5, if(t.hot, 0.7, 0) * st_glow, dk.hot
+                                ellipse { at: t.x + 4, t.y + 13; radius: 2.6; color: if(t.hot, dk.hot, dk.mute) }
+                            }
+                            text t.word { at: t.x + 13, t.y + 13.5; anchor: left center; size: 10; family: "Share Tech Mono"; color: mix(dk.ink2, dk.ink, tz.hover); width: t.w - 72; lines: 1 }
+                            box { from: t.x + t.w - 54, t.y + 4; size: 52, 18; corner: dk.r; color: if(t.hot, dk.hot, dk.acc); opacity: 0.12 + 0.2 * tz.hover }
+                            box { from: t.x + t.w - 54, t.y + 4; size: 52, 18; corner: dk.r; stroke: 1; color: if(t.hot, dk.hot, dk.acc) }
+                            text t.act { at: t.x + t.w - 28, t.y + 13.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
+                            on press tz { emit dk_wait(t.index) }
+                        }
+                    }
+                    zone box eg9 { from: pa_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Waiting"; active: dk_edit }
+                    zone box ee9 { from: pa_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Waiting"; active: dk_edit }
+                    EditFrame(pa_w, pa_h, 9, eg9.hover, ee9.hover) { show: ed_in > 0.01 }
+                    on drag eg9 while dk_edit { dk_gid = 9; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg9 while dk_edit and dk_gid == 9 { emit dk_drop(9 * 100000000 + round(gx.9 + dk_gdx + pa_w / 2) * 10000 + round(gy.9 + dk_gdy + pa_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee9 { emit dk_hide(9) }
+                }
+
+                // ── Activity ──
+                group {
+                    show: py_on
+                    move: gx.10 + dk_gdx * if(dk_gid == 10, 1, 0) - dk_ox * (1 - rp.10) * 14, gy.10 + dk_gdy * if(dk_gid == 10, 1, 0) - dk_oy * (1 - rp.10) * 14
+                    opacity: smooth(0, 1, rp.10)
+                    Card(py_w, py_h, if(dk_gid == 10, 1, 0))
+                    PartHead(py_w, py_n, "Activity", act_t, lamp: lp_y)
+                    // the last seven days hour by hour (the bar keeps it: activity.json), the apps most used
+                    let hc = (py_w - 40 - 23) / 24
+                    let hy0 = 34
+                    for dd in aday {
+                        text dd.label { at: 12, hy0 + dd.index * (hc + 1) + hc / 2; anchor: left center; size: 7; family: "Share Tech Mono"; color: if(dd.index == 6, dk.acc, dk.mute) }
+                    }
+                    for c in heat {
+                        let hx = 30 + mod(c.index, 24) * (hc + 1)
+                        let hy = hy0 + floor(c.index / 24) * (hc + 1)
+                        box { from: hx, hy; size: hc, hc; corner: 1; color: if(c.v > 0.01, mix(mix(dk.well, dk.acc, 0.25), dk.acc, c.v), dk.well); opacity: if(c.v > 0.01, 0.35 + 0.65 * c.v, 0.6) }
+                    }
+                    repeat q in 0..5 {
+                        text pick(q, "00", "06", "12", "18", "24") { at: 30 + q * 6 * (hc + 1) - if(q == 4, 1, 0), hy0 + 7 * (hc + 1) + 6; anchor: center; align: center; size: 6.5; family: "Share Tech Mono"; color: dk.mute }
+                    }
+                    let ty0 = hy0 + 7 * (hc + 1) + 18
+                    for a in topa {
+                        let ay = ty0 + a.index * 16
+                        text "{upper(a.word)}" { at: 12, ay + 5; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.ink2; width: 92; lines: 1 }
+                        box { from: 108, ay + 2; size: py_w - 170, 5; corner: 2; color: dk.well }
+                        group {
+                            glow: 4, 0.4 * st_glow, dk.acc
+                            box { from: 108, ay + 2; size: (py_w - 170) * clamp(a.v, 0, 1), 5; corner: 2; color: dk.acc }
+                        }
+                        text a.t { at: py_w - 12, ay + 5; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                    }
+                    text "THE BAR STARTS COUNTING NOW: A WEEK FILLS THIS" { at: py_w / 2, py_h / 2 + 30; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: dk.mute; show: topa.count == 0 }
+                    zone box eg10 { from: py_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Activity"; active: dk_edit }
+                    zone box ee10 { from: py_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Activity"; active: dk_edit }
+                    EditFrame(py_w, py_h, 10, eg10.hover, ee10.hover) { show: ed_in > 0.01 }
+                    on drag eg10 while dk_edit { dk_gid = 10; dk_gdx = drag.dx; dk_gdy = drag.dy }
+                    on release eg10 while dk_edit and dk_gid == 10 { emit dk_drop(10 * 100000000 + round(gx.10 + dk_gdx + py_w / 2) * 10000 + round(gy.10 + dk_gdy + py_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on press ee10 { emit dk_hide(10) }
                 }
 
                 // the power-on sweep: a lit line crossing the deck once
                 group {
                     show: scan > 0.01 and scan < 0.99
                     glow: 10, 0.9 * st_glow, dk.acc
-                    line { from: if(dk_vert, 6, scan * dk_w), if(dk_vert, scan * dk_h, sc_h + 4); to: if(dk_vert, dk_w - 6, scan * dk_w), if(dk_vert, scan * dk_h, dk_h - 6)
+                    line { from: if(dk_vert, 6, scan * dk_w), if(dk_vert, scan * dk_h, 30); to: if(dk_vert, dk_w - 6, scan * dk_w), if(dk_vert, scan * dk_h, dk_h - 6)
                            width: 1.6; color: dk.acc; opacity: 1 - abs(scan - 0.5) * 1.6 }
                 }
+            }
+        }
 
-                // the seams between parts along a strip (between their places, not their moving plates)
-                repeat k in 0..7 {
-                    let px.$k = pick(k, pw_x, ps_x, pm_x, pq_x, pu_x, pc_x, pt_x)
-                    let pon.$k = pick(k, pw_on, ps_on, pm_on, pq_on, pu_on, pc_on, pt_on)
-                    line { from: px.$k, sc_h + 12; to: px.$k, dk_h - 12; width: 1; color: dk.line; opacity: 0.55; show: pon.$k and px.$k > 1 and not dk_vert }
+        // ═══ Arranging: what grows out of the deck while ✎ is on ═══
+        group {
+            show: ed_in > 0.01
+            move: ga_x - dk_ox * (1 - ed_in) * 14, ga_y - dk_oy * (1 - ed_in) * 14
+            opacity: smooth(0, 0.8, ed_in)
+            zone box keep_ar { from: 0, 0; size: 620, 116; role: region; label: "Arranging the deck" }
+            IslandFrame(1, 620, 116, centre: true) {
+                text "ARRANGE · CARRY A CARD BY MOVE, × PUTS IT ON THE SHELF" { at: 16, 17; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "EDGE" { at: 16, 46; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                repeat e in 0..4 {
+                    let ex.$e = 54 + e * 32
+                    zone box ez.$e { from: ex.$e, 34; size: 28, 24; cursor: pointer; role: tab; selected: dk_edge == e; label: pick(e, "Along the bottom", "Along the top", "Down the left", "Down the right") }
+                    box { from: ex.$e, 34; size: 28, 24; corner: dk.r; color: if(dk_edge == e, mix(dk.well, dk.acc, 0.2), dk.well) }
+                    box { from: ex.$e, 34; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_edge == e, dk.acc, mix(dk.line, dk.acc, ez.$e.hover)) }
+                    box { from: ex.$e + 6, 39; size: 16, 14; corner: 1; stroke: 1; color: dk.mute }
+                    box { from: ex.$e + pick(e, 6, 6, 6, 19), 34 + pick(e, 16, 5, 5, 5); size: pick(e, 16, 16, 3, 3), pick(e, 3, 3, 14, 14); color: if(dk_edge == e, dk.acc, dk.ink2) }
+                    on press ez.$e { emit dk_edge_set(e) }
+                }
+                text "ROWS" { at: 194, 46; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                repeat r in 0..2 {
+                    zone box rz.$r { from: 232 + r * 32, 34; size: 28, 24; cursor: pointer; role: tab; selected: dk_rows == r + 1; label: pick(r, "One row of cards", "Two rows of cards"); active: not dk_vert }
+                    box { from: 232 + r * 32, 34; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_rows == r + 1, dk.acc, mix(dk.line, dk.acc, rz.$r.hover)); opacity: if(dk_vert, 0.4, 1) }
+                    text pick(r, "1", "2") { at: 246 + r * 32, 46.5; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: if(dk_rows == r + 1, dk.acc, dk.ink2) }
+                    on press rz.$r { emit dk_rows_set(r + 1) }
+                }
+                text "PROFILE" { at: 310, 46; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                repeat r in 0..2 {
+                    zone box pz.$r { from: 366 + r * 56, 34; size: 52, 24; cursor: pointer; role: tab; selected: if(nx_large, 1, 0) == r; label: pick(r, "A small profile", "A large profile") }
+                    box { from: 366 + r * 56, 34; size: 52, 24; corner: dk.r; stroke: 1; color: if(if(nx_large, 1, 0) == r, dk.acc, mix(dk.line, dk.acc, pz.$r.hover)) }
+                    text pick(r, "SMALL", "LARGE") { at: 392 + r * 56, 46.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(if(nx_large, 1, 0) == r, dk.acc, dk.ink2) }
+                    on press pz.$r { emit dk_large_set(r) }
+                }
+                zone box az.0 { from: 486, 34; size: 60, 24; cursor: pointer; role: button; label: "Put every card back" }
+                Act(486, 34, 60, "Reset", false, false, az.0.hover)
+                zone box az.1 { from: 552, 34; size: 54, 24; cursor: pointer; role: button; label: "Done arranging" }
+                Act(552, 34, 54, "Done", true, false, az.1.hover)
+                on press az.0 { emit dk_reset }
+                on press az.1 { emit dk_edit_on(0) }
+                text pick(hid.count > 0, "EVERY CARD IS ON THE DECK", "ON THE SHELF") { at: 16, 84; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                for h in hid {
+                    let hx = 104 + h.index * 86
+                    group {
+                        show: h.index < 6
+                        zone box hz { from: hx, 72; size: 82, 24; cursor: pointer; role: button; label: "Show {h.word}"; active: not h.room }
+                        box { from: hx, 72; size: 82, 24; corner: dk.r; color: dk.well; opacity: 0.9 }
+                        box { from: hx, 72; size: 82, 24; corner: dk.r; stroke: 1; color: if(h.room, dk.line, mix(dk.line, dk.acc, 0.4 + 0.6 * hz.hover)) }
+                        text "+ {upper(h.word)}" { at: hx + 41, 84.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(h.room, dk.mute, dk.ink); width: 78; lines: 1 }
+                        on press hz { emit dk_show(h.code) }
+                    }
                 }
             }
         }

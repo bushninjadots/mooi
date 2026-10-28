@@ -1707,6 +1707,8 @@ on("board_show", function()
 end)
 -- ── The stash (shell/stash.luau, D54): the box on the left edge, and what is dropped in ──
 require("stash")({ safe_mode = safe_mode })
+-- the activity map (D105): which app had the focus, a minute at a time
+require("activity")({ safe_mode = safe_mode })
 
 -- ── Signal Loom: the notifications (shell/signals.luau, D50) ──
 loom = require("signals")({

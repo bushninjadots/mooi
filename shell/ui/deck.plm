@@ -1,6 +1,7 @@
 language 0.4
 import "../theme/tokens.plm"
 import "../theme/ferrolume.plm"
+import "loom.plm"
 
 // The Control Nexus deck's pieces (D102): its colours and type in either island style, a bay's
 // name, an action key, a fader and a reading. Zones and rules stay in the scene, but for the
@@ -36,6 +37,24 @@ library Deck {
         text "{upper(word)}" { at: x + 16, y + 6; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.9 }
     }
 
+    // A card: a plate cut at its corners (look.corners), a hairline round it, a lit run along the top
+    // from its cut, a tick at the far corner; `lift` while it is being carried.
+    component Card(w: number, h: number, lift: number = 0) {
+        size: w, h
+        body {
+            color: mix(dk.raised, #000000, 0.42)
+            shadow: 0, 4 + 8 * lift, 14 + 16 * lift, 35% + 25% * lift
+            box { from: 2, 2; size: w - 4, h - 4; corner: dk.r }
+        }
+        Chamfer(0, 0, w, h, fl.chamfer * 3, mix(dk.raised, #000000, 0.42), mix(dk.line, dk.acc, 0.2 + 0.7 * lift), 0.94, 1)
+        group {
+            glow: 4, (0.45 + 0.4 * lift) * st_glow, dk.acc
+            line { from: fl.chamfer * 3 * cn_scale + 2, 0.75; to: min(w * 0.4, 140), 0.75; width: 1.4; color: dk.acc; opacity: 0.75 }
+        }
+        line { from: w - 20, h - 3.5; to: w - 8, h - 3.5; width: 1.2; color: dk.acc; opacity: 0.45 }
+        line { from: w - 3.5, h - 20; to: w - 3.5, h - 12; width: 1.2; color: dk.acc; opacity: 0.45 }
+    }
+
     // A part's head: its number in your order, a short lit trace, its name, a live line on the right.
     // Down a column each part also opens with a seam across the deck.
     // `lamp`: the part's status, HUD-fashion — 0 standby (dim), 1 active, 2 caution, 3 alert.
@@ -50,7 +69,7 @@ library Deck {
         text n { at: 14, 17; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
         line { from: 32, 17; to: 42, 17; width: 1.4; color: dk.acc; opacity: 0.85 }
         text "{upper(word)}" { at: 47, 17; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.95 }
-        text meta { at: w - 14, 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute; width: w * 0.55; lines: 1; align: right; opacity: 1 - ed_in }
+        text meta { at: w - 14, 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute; width: w - 150; lines: 1; align: right; opacity: 1 - ed_in; show: w > 250 }
     }
 
     // A small action with its word: a chamfered key, lit while pointed at or while `lit`.

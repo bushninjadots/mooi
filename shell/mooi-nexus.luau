@@ -82,6 +82,8 @@ local function show_identity()
     text.nx_initial = string.upper(string.sub(name, 1, 1))
     local av = type(id.avatar) == "string" and id.avatar or ""
     text.nx_avatar = av ~= "" and (data_folder .. "/" .. av) or ""; fact.nx_avatar_on = av ~= ""
+    local bn = type(id.banner) == "string" and id.banner or ""
+    text.nx_banner = bn ~= "" and (data_folder .. "/" .. bn) or ""; fact.nx_banner_on = bn ~= ""
 end
 show_identity()
 launch("whoami", {}, function(u) launch("hostname", {}, function(h) text.nx_who = string.lower(trim(u) .. "@" .. trim(h)) end) end)
@@ -93,12 +95,32 @@ local function notice(t)
     after(3500, function() if mine == noticed then fact.nx_noticed = false end end)
 end
 
+-- Changing who you are: a picture chosen (a file picker), imported by `mooi identity`
+on("nx_pick", function(v)
+    local kind = tonumber(v) == 1 and "banner" or "avatar"
+    if SAFE then notice("not in safe mode"); return end
+    local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose your " .. (kind == "banner" and "banner" or "profile picture"),
+                                      "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif" }, function(path, code)
+        path = trim(path)
+        if code ~= 0 or path == "" then return end
+        launch("mooi", { "identity", kind, path }, function(out)
+            if out then
+                settings = config.parse(read_text(FILE), json.decode)
+                show_identity(); notice(kind == "banner" and "banner changed" or "picture changed")
+            else notice("that picture could not be used") end
+        end)
+    end)
+    if not ok then notice("install zenity to choose a picture") end
+end)
+
 -- ── Opening and closing ──
 local closing = false
+local cava, viz              -- the visualiser's cava, and what starts or stops it (below)
 local function close(why)
     if closing then return end
     closing = true
     log("nexus · closing: " .. tostring(why or "asked"))
+    if cava then pcall(kill, cava, "term"); cava = nil end
     fact.dk_open = false
     pcall(sys.call, "thumbnails.want")
     -- gone from sight in ~220 ms; it ends later, so what a press just asked of the bar or started
@@ -176,16 +198,20 @@ end)
 local scenes = deck.clean((read(SCENES) or {}).scenes)
 local faders_n = 4           -- how many faders the mixer has (its width follows)
 -- the parts: your order and the hidden ones (settings.json nexus.parts, nexus.hidden; ✎ on the deck)
-local CODE = { window = 0, spaces = 1, mixer = 2, quick = 3, music = 4, machine = 5, today = 6 }
-local PREFIX = { window = "pw", spaces = "ps", mixer = "pm", quick = "pq", music = "pu", machine = "pc", today = "pt" }
+local CODE = { window = 0, spaces = 1, mixer = 2, quick = 3, music = 4, machine = 5, today = 6, profile = 7, scenes = 8, waiting = 9, activity = 10 }
+local PREFIX = { window = "pw", spaces = "ps", mixer = "pm", quick = "pq", music = "pu", machine = "pc", today = "pt",
+                 profile = "pf", scenes = "pn", waiting = "pa", activity = "py" }
 local BY_CODE = {}
 for id, c in pairs(CODE) do BY_CODE[c] = id end
 local parts, hidden
 local function read_parts()
     local n = type(settings.nexus) == "table" and settings.nexus or {}
     parts = deck.clean_parts(n.parts)
-    hidden = {}
-    for _, id in ipairs(type(n.hidden) == "table" and n.hidden or {}) do if deck.PARTS[id] then hidden[id] = true end end
+    -- arranged once (✎ saves the order): the hidden ones are yours; never arranged, the shelf's
+    hidden = deck.clean_hidden(n.hidden, type(n.parts) == "table" and #n.parts > 0)
+    fact.dk_rows = tonumber(n.rows) == 2 and 2 or 1
+    fact.nx_large = n.profile == "large"
+    fact.dk_viz = n.visualiser ~= false
 end
 read_parts()
 local function save_settings(change)
@@ -222,16 +248,16 @@ local function aspect() return screen.full_w and (screen.full_w / screen.full_h)
 local function place()
     local top = 0                -- the bar's reserve is already outside the surface
     d = deck.layout(edge(), screen.w, screen.h, top, { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
-                                                    tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n })
+                                                    tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n,
+                                                    rows = fact.dk_rows, large = fact.nx_large })
     d.top, d.faders = top, faders_n
     fact.dk_edge = ({ bottom = 0, top = 1, left = 2, right = 3 })[d.edge]
     fact.dk_vert = d.vertical
     fact.dk_x, fact.dk_y, fact.dk_w, fact.dk_h = d.x, d.y, d.w, d.h
     fact.dk_ox, fact.dk_oy = d.out_x, d.out_y
-    for short, name in pairs({ sc = "scenes", wt = "wait", id = "ident" }) do
-        local b = d.bays[name]
-        fact[short .. "_x"], fact[short .. "_y"], fact[short .. "_w"], fact[short .. "_h"] = b.x, b.y, b.w, b.h
-    end
+    local nodes, traces = deck.circuit(d)
+    model.nodes, model.traces = nodes, traces
+    fact.ga_x, fact.ga_y = deck.grow(d, { x = 0, y = 0, w = d.w, h = d.h }, 620, 116, screen.w, screen.h, top)
     for id, pre in pairs(PREFIX) do fact[pre .. "_on"] = false end
     for i, part in ipairs(d.parts) do
         local pre = PREFIX[part.id]
@@ -252,9 +278,10 @@ end
 on("dk_edit_on", function(v) fact.dk_edit = tonumber(v) == 1; fact.dk_hws, fact.dk_hsc = -1, -1 end)
 on("dk_drop", function(v)
     local n = math.floor(tonumber(v) or -1)
-    local id = BY_CODE[math.floor(n / 100000)]
+    local id = BY_CODE[math.floor(n / 100000000)]
     if not id or not d then return end
-    parts = deck.move(parts, id, deck.place_at(d, n % 100000), hidden)
+    local x, y = math.floor(n % 100000000 / 10000), n % 10000
+    parts = deck.move(parts, id, deck.place_at(d, x, y), hidden)
     save_parts(); place()
 end)
 on("dk_hide", function(v)
@@ -274,9 +301,21 @@ on("dk_show", function(v)
     save_parts(); place()
 end)
 on("dk_reset", function()
-    parts, hidden = deck.clean_parts(nil), {}
+    parts, hidden = deck.clean_parts(nil), deck.clean_hidden(nil, false)
     save_parts(); place()
     notice("every part back")
+end)
+on("dk_rows_set", function(v)
+    local r = tonumber(v) == 2 and 2 or 1
+    fact.dk_rows = r
+    save_settings(function(n) n.rows = r end)
+    place()
+end)
+on("dk_large_set", function(v)
+    local large = tonumber(v) == 1
+    fact.nx_large = large
+    save_settings(function(n) n.profile = large and "large" or "small" end)
+    place()
 end)
 on("dk_edge_set", function(v)
     local e = deck.EDGES[math.floor(tonumber(v) or 0) + 1]
@@ -428,6 +467,7 @@ pcall(sys.watch, "media", function(m)
     cover(media.art)
     pos, pos_at = tonumber(media.position) or 0, os.time()
     publish_status()
+    if viz then viz() end
 end)
 every(1000, function()
     local len = tonumber(media.length) or 0
@@ -435,6 +475,36 @@ every(1000, function()
     local p = pos + (media.playing and (os.time() - pos_at) * (tonumber(media.rate) or 1) or 0)
     fact.nx_prog = math.min(1, p / len)
 end)
+local CAVA = "cava-nexus.conf"
+pcall(sys.call, "files.write", CAVA, table.concat({
+    "[general]", "bars = 32", "framerate = 30",
+    "[input]", "method = pipewire",
+    "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
+    "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
+    "[smoothing]", "noise_reduction = 70", "" }, "\n"))
+local sent = {}
+local still = type(settings.motion) == "table" and (settings.motion.reduced == true or settings.motion.saver == "always")
+local function hush()
+    if cava then pcall(kill, cava, "term"); cava = nil end
+    for i = 0, 31 do fact["dv" .. i] = 0; sent[i] = 0 end
+end
+function viz()
+    local want = fact.dk_open and fact.dk_viz and media.playing == true and not still
+    if not want then hush(); return end
+    if cava then return end
+    local mine
+    mine = spawn("cava", { "-p", data_folder .. "/" .. CAVA }, function(line)
+        if cava ~= mine then return end
+        local i = 0
+        for v in line:gmatch("(%d+);") do
+            if i > 31 then break end
+            local x = math.min(1, (tonumber(v) or 0) / 1000)
+            if math.abs(x - (sent[i] or 0)) > 0.025 then fact["dv" .. i] = x; sent[i] = x end
+            i = i + 1
+        end
+    end, function() if cava == mine then cava = nil end end)
+    cava = mine
+end
 on("nx_media", function(v)
     local n = tonumber(v)
     pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
@@ -502,16 +572,15 @@ function publish_wait()
         notes = feed.count, first_note = first and (first.app ~= "" and first.app or first.title) or "",
         updates = updates, weather = weather,
     })
-    local rows, x = {}, 14
+    local rows = {}
+    local card = d and d.bays.waiting
+    local cw = card and card.w or 220
     for i, it in ipairs(items) do
-        if d and d.vertical then
-            if i <= 3 then rows[#rows + 1] = { word = it.word, act = it.act, hot = it.hot, x = 16, y = 30 + (i - 1) * 26, w = d.w - 32 } end
-        else
-            local w = 12 + math.floor(#it.word * 6.4 + 0.5) + 70
-            rows[#rows + 1] = { word = it.word, act = it.act, hot = it.hot, x = x, y = 6, w = w }
-            x = x + w + 18
-        end
+        if i <= 6 then rows[#rows + 1] = { word = it.word, act = it.act, hot = it.hot, x = 10, y = 32 + (i - 1) * 28, w = cw - 20 } end
     end
+    local hot = false
+    for _, it in ipairs(items) do if it.hot then hot = true end end
+    fact.lp_a = hot and 2 or (#items > 0 and items[1].act ~= "WEEK" and 1 or 0)
     model.wait = rows
     waiting_items = items
     -- Cascade's words for the same things
@@ -610,7 +679,7 @@ local chips = {}
 function publish_scenes()
     if not d then return end
     local live = deck.live(scenes, now_state())
-    chips = deck.chips(#scenes + 1, d.bays.scenes, d.vertical)
+    chips = deck.chips(#scenes + 1, d.bays.scenes or { w = 200, h = 214 })
     local rows = {}
     for i, s in ipairs(scenes) do rows[i] = { word = s.name, live = live == i, save = false, env = s.env ~= nil, x = chips[i].x, y = chips[i].y, w = chips[i].w } end
     local c = chips[#scenes + 1]
@@ -707,6 +776,43 @@ on("dk_unscene", function(v)
     save_scenes(); place(); publish_scenes()
     notice("removed " .. s.name)
 end)
+
+-- ── Activity: the last seven days hour by hour, the apps most used (the bar counts every minute) ──
+local function show_activity()
+    local doc = read("activity.json")
+    local days = type(doc) == "table" and type(doc.days) == "table" and doc.days or {}
+    local t = os.time()
+    local cells, labels, apps, top, total = {}, {}, {}, 1, 0
+    for back = 6, 0, -1 do
+        local when = t - back * 86400
+        local key = os.date("%Y-%m-%d", when)
+        local day = type(days[key]) == "table" and days[key] or {}
+        labels[#labels + 1] = { label = string.upper(string.sub(os.date("%a", when), 1, 2)) }
+        for h = 0, 23 do
+            local m = tonumber(type(day.hours) == "table" and day.hours[tostring(h)] or 0) or 0
+            cells[#cells + 1] = m
+            total = total + m
+            if m > top then top = m end
+        end
+        for app, m in pairs(type(day.apps) == "table" and day.apps or {}) do apps[app] = (apps[app] or 0) + (tonumber(m) or 0) end
+    end
+    local heat = {}
+    for i, m in ipairs(cells) do heat[i] = { v = m / math.max(top, 1) } end
+    model.heat, model.aday = heat, labels
+    local list = {}
+    for app, m in pairs(apps) do list[#list + 1] = { app = app, m = m } end
+    table.sort(list, function(a, b) return a.m > b.m end)
+    local rows = {}
+    for i = 1, math.min(3, #list) do
+        local m = list[i].m
+        rows[i] = { word = (tostring(list[i].app):gsub("^.*%.", "")), v = m / math.max(list[1].m, 1),
+                    t = m >= 60 and string.format("%d H %02d", math.floor(m / 60), m % 60) or string.format("%d MIN", m) }
+    end
+    model.topa = rows
+    text.act_t = string.format("THIS WEEK · %d H", math.floor(total / 60))
+end
+show_activity()
+pcall(sys.watch, "files:activity.json", show_activity)
 
 -- ── The window you are in, and the workspaces as miniatures ──
 local clients, tiles_at, thumbs = {}, {}, {}
@@ -939,5 +1045,5 @@ bar_states()
 every(2000, bar_states)
 read_desktop()
 every(1500, read_desktop)
-after(40, function() fact.dk_open = true; burst() end)
+after(40, function() fact.dk_open = true; burst(); viz() end)
 after(1300, burst)           -- the compositor's pictures often arrive on the second asking

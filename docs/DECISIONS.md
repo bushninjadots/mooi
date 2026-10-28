@@ -3378,3 +3378,32 @@ online after it, 50 ms apart, each easing in from its edge; with reduced motion 
 simply there.
 **Checked:** tests/nexus.sh 31/31; unit 244; a recording of opening, the lock-on and arranging, its frames
 read (the sweep with later parts dark; the brackets and LOCK on workspace 1).
+
+## D105 · 2026-10-28 · The deck is cards on a circuit; every one moves; profile, activity, a visualiser
+
+**Asked for:** "nodes circuitry · move any of those modules around, even the scenes · option bigger banner
+and profile pic · a music visualiser, maybe on the border · better visual of the music player · better
+borders and cards · … that activity map of hyprland use".
+**Done:** the deck has no fixed head any more: **every part is a card** — Profile, Scenes, Waiting, This
+window, Workspaces, Quick settings, Music, Mixer, Machine, Today, Activity — and every card can be carried
+anywhere with ✎ (scenes included). A **rail** along the top keeps the deck's own controls (time or the
+master caution, ✎, settings, lock, session, ×) and the circuit's **bus**: each card's lamp is wired up to
+it with a trace and a pad, neighbours are joined by traces down the gaps with vias at the turns, and the
+power-on runs a pulse along the bus as the scan line crosses. Cards are cut plates (look.corners) with a
+lit run off the cut, a corner tick, and a lift and shadow while carried. Cards **flow** in your order into
+one row or **two** (nexus.rows), each row filled out to the deck's width, the least kept giving way only
+when two rows cannot hold them; a first deck keeps Mixer, Machine, Today and Activity on the shelf.
+**Profile**: your banner across the top (or a pattern of its own), your picture over its edge, a press on
+either to change it (zenity, `mooi identity`); small or large (nexus.profile). **Music**: the cover faint
+behind the card, a 16-band visualiser under the song; and a 32-band **visualiser on the deck's open edge**
+while something plays (cava, nexus.visualiser). **Activity**: the last seven days hour by hour as a heat
+map and the three apps most used, from activity.json, which the bar now counts a minute at a time (the
+focused window's app; shell/activity.luau, lib/activity, 8 days kept). The arranging controls grow out of
+the deck: edge, rows, profile size, the shelf, Reset, Done.
+**Found:** a fact the logic sets itself does not fire the logic's `fact:` handler (the visualiser waited
+for one); text sizes must be numbers, not expressions; cava reads silence while the sound is muted.
+**Checked:** tests/nexus.sh 35/35 (adds: the first deck's seven cards and four on the shelf, the circuit's
+seven nodes, Scenes carried to the front, two rows and a large profile saved); unit 247 (layout rewritten:
+rows, packing, shelf, placing across rows, circuit, chips; activity). Screenshots of one row, two rows with
+every card, the right column, the large profile with the real banner and picture. Not seen: the
+visualiser moving (the machine was muted), the activity map with a week in it.

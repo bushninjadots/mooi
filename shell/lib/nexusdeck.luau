@@ -5,29 +5,36 @@
 local M = {}
 
 M.EDGES = { "bottom", "top", "left", "right" }
-M.STRIP_MAX = 1900     -- the deck's widest along the top or the bottom
-M.COLUMN_W = 404       -- its width along a side
+M.COLUMN_W = 404       -- the deck's width along a side
 M.GAP = 10             -- from the screen's edge
-M.HEAD = 38            -- the strip's top row: scenes, what is waiting, who you are
-M.BODY = 214           -- and the parts' row under it
+M.RAIL = 30            -- the rail along its top: the time, ✎, the ways out, the circuit's bus
+M.ROW = 214            -- a row of cards along a strip
+M.CARD_GAP = 8         -- between cards: the circuit's traces run there
+M.PAD = 8              -- round the cards, inside the deck
 M.CHIP_W, M.CHIP_H, M.CHIP_GAP = 76, 24, 4
 M.SPINE_W = 58         -- the spine's tabs on the right edge (D100), kept clear on that side
 M.TILE_GAP = 10        -- between the workspaces' miniatures
-M.WAIT_MIN = 260       -- what is waiting never gets less than this along the head
 
--- The deck's parts: what each is called, its width along a strip (the mixer's follows its faders,
--- the workspaces take what is left), its height down a column, and which give way first when
--- there is no room (the highest number first). Every one can be moved and hidden (✎ on the deck).
+-- The deck's parts, every one a card that can be carried anywhere (✎ on the deck): its name, its
+-- width along a strip (the mixer's follows its faders, the workspaces take what is left in their row,
+-- the profile has a large size), its height down a column, and which give way first when there is no
+-- room (the highest number first).
 M.PARTS = {
-    window = { word = "This window", w = 280, h = 156, keep = 3 },
-    spaces = { word = "Workspaces", min = 300, keep = 1 },
-    mixer = { word = "Mixer", h = 184, keep = 4 },
-    quick = { word = "Quick settings", w = 404, h = 196, keep = 2 },
-    music = { word = "Music", w = 284, h = 118, keep = 5 },
-    machine = { word = "Machine", w = 236, h = 140, keep = 6 },
-    today = { word = "Today", w = 222, h = 134, keep = 7 },
+    profile = { word = "Profile", w = 200, wl = 360, h = 150, hl = 210, keep = 5 },
+    scenes = { word = "Scenes", w = 180, h = 118, keep = 4 },
+    waiting = { word = "Waiting", w = 220, h = 118, keep = 3 },
+    window = { word = "This window", w = 250, h = 156, keep = 6 },
+    spaces = { word = "Workspaces", min = 280, keep = 1 },
+    mixer = { word = "Mixer", h = 184, keep = 8 },
+    quick = { word = "Quick settings", w = 392, h = 196, keep = 2 },
+    music = { word = "Music", w = 270, h = 150, keep = 7 },
+    machine = { word = "Machine", w = 236, h = 140, keep = 9 },
+    today = { word = "Today", w = 222, h = 134, keep = 10 },
+    activity = { word = "Activity", w = 318, h = 170, keep = 11 },
 }
-M.ORDER = { "window", "spaces", "mixer", "quick", "music", "machine", "today" }
+M.ORDER = { "profile", "scenes", "waiting", "window", "spaces", "quick", "music", "mixer", "machine", "today", "activity" }
+-- on a first deck, these wait on the shelf (✎ shows them); a second row has room for more
+M.SHELF = { mixer = true, machine = true, today = true, activity = true }
 
 local function edge_of(e)
     for _, x in ipairs(M.EDGES) do if x == e then return x end end
@@ -44,6 +51,14 @@ function M.clean_parts(list)
         if M.PARTS[id] and not seen[id] then seen[id] = true; out[#out + 1] = id end
     end
     for _, id in ipairs(M.ORDER) do if not seen[id] then out[#out + 1] = id end end
+    return out
+end
+
+-- The hidden set as it can be trusted: what is listed, or, with nothing saved yet, the shelf's.
+function M.clean_hidden(list, saved)
+    local out = {}
+    if not saved then for id in pairs(M.SHELF) do out[id] = true end; return out end
+    for _, id in ipairs(type(list) == "table" and list or {}) do if M.PARTS[id] then out[id] = true end end
     return out
 end
 
@@ -64,99 +79,115 @@ end
 
 local function mixer_w(n) return 34 + math.max(3, math.min(6, tonumber(n) or 4)) * 36 end
 
--- Where the deck sits, where its head's bays are and where each part is, inside a screen `sw` × `sh`
--- whose top `top` px the bar keeps. `opts`: `parts` (the order), `hidden` (a set), `faders` (how many
--- the mixer has), `tiles` and `aspect` (the workspaces' miniatures), `spine` (keep the right edge's
--- tabs clear), `scenes` (chips, Save among them). Parts that do not fit give way, the least kept
--- first: they are listed in `d.dropped`. Rects are the deck's.
+-- Where the deck sits and where each card is, inside a screen `sw` × `sh` whose top `top` px the bar
+-- keeps. `opts`: `parts` (the order), `hidden` (a set), `rows` (1 or 2 along a strip), `large` (the
+-- large profile), `faders`, `tiles` and `aspect` (the workspaces' miniatures), `spine`. Along a strip
+-- the cards flow into the rows in your order, each row filled out to the deck's width; what cannot fit
+-- gives way, the least kept first (`d.dropped`). Rects are the deck's.
 function M.layout(edge, sw, sh, top, opts)
     edge, opts = edge_of(edge), opts or {}
     sw, sh, top = tonumber(sw) or 1920, tonumber(sh) or 1080, tonumber(top) or 0
-    local chips = math.max(1, tonumber(opts.scenes) or 5)
     local hidden = opts.hidden or {}
     local order = M.clean_parts(opts.parts)
     local aspect = (tonumber(opts.aspect) or 0) > 0 and opts.aspect or 16 / 9
     local ntiles = math.max(1, tonumber(opts.tiles) or 2)
-    local d = { edge = edge, vertical = edge == "left" or edge == "right", bays = {}, parts = {}, dropped = {} }
-    local b = d.bays
+    local rows = (tonumber(opts.rows) or 1) >= 2 and 2 or 1
+    local d = { edge = edge, vertical = edge == "left" or edge == "right", parts = {}, dropped = {}, bays = {}, rows = rows }
     local shown = {}
     for _, id in ipairs(order) do if not hidden[id] then shown[#shown + 1] = id end end
-    local function drop_least(total, room, size)
-        while total > room and #shown > 1 do
-            local worst, at = nil, nil
-            for i, id in ipairs(shown) do
-                if id ~= "spaces" and (not worst or M.PARTS[id].keep > M.PARTS[worst].keep) then worst, at = id, i end
-            end
-            if not at then break end
-            table.remove(shown, at)
-            d.dropped[#d.dropped + 1] = worst
-            total = total - size(worst)
+    local function natural(id)
+        if id == "mixer" then return mixer_w(opts.faders) end
+        if id == "profile" and opts.large then return M.PARTS.profile.wl end
+        if id == "spaces" then
+            local th = M.ROW - 30 - 10 - 16
+            return math.max(M.PARTS.spaces.min, 28 + ntiles * (th * aspect + M.TILE_GAP) - M.TILE_GAP)
         end
+        return M.PARTS[id].w
+    end
+    local function minimum(id) return id == "spaces" and M.PARTS.spaces.min or natural(id) end
+    local function drop_least()
+        local worst, at = nil, nil
+        for i, id in ipairs(shown) do
+            if id ~= "spaces" and (not worst or M.PARTS[id].keep > M.PARTS[worst].keep) then worst, at = id, i end
+        end
+        if not at then return false end
+        table.remove(shown, at)
+        d.dropped[#d.dropped + 1] = worst
+        return true
     end
     if not d.vertical then
-        d.h = M.HEAD + M.BODY
-        local room = math.min(sw - 2 * M.GAP, M.STRIP_MAX)
-        local function width(id)
-            if id == "mixer" then return mixer_w(opts.faders) end
-            if id == "spaces" then return M.PARTS.spaces.min end
-            return M.PARTS[id].w
-        end
-        local total = 0
-        for _, id in ipairs(shown) do total = total + width(id) end
-        drop_least(total, room, width)
-        total = 0
-        for _, id in ipairs(shown) do total = total + width(id) end
-        -- the workspaces as wide as their miniatures want, in what is left
-        local spaces_w = 0
-        for _, id in ipairs(shown) do
-            if id == "spaces" then
-                local th = M.BODY - 30 - 10 - 16
-                local want = 28 + (ntiles) * (th * aspect + M.TILE_GAP) - M.TILE_GAP
-                spaces_w = math.max(M.PARTS.spaces.min, math.min(want, room - total + M.PARTS.spaces.min))
-                total = total - M.PARTS.spaces.min + spaces_w
+        local room = sw - 2 * M.GAP
+        local inner = room - 2 * M.PAD
+        -- pack: each card into the current row while it fits at its smallest, else the next row
+        local packed
+        repeat
+            packed = { {} }
+            local used = 0
+            local ok = true
+            for _, id in ipairs(shown) do
+                local w = minimum(id)
+                local row = packed[#packed]
+                local need = (#row > 0 and M.CARD_GAP or 0) + w
+                if used + need > inner and #row > 0 then
+                    if #packed >= rows then ok = false; break end
+                    packed[#packed + 1] = {}
+                    row = packed[#packed]; used = 0; need = w
+                end
+                row[#row + 1] = id
+                used = used + need
             end
+        until ok or not drop_least()
+        -- each row as wide as it wants, the workspaces taking what is left; the deck as wide as its widest row
+        local widths = {}
+        local deck_inner = 0
+        for r, row in ipairs(packed) do
+            local sum = M.CARD_GAP * math.max(0, #row - 1)
+            for _, id in ipairs(row) do sum = sum + natural(id) end
+            widths[r] = sum
+            deck_inner = math.max(deck_inner, math.min(sum, inner))
         end
-        local sc_w = 70 + chips * (M.CHIP_W + M.CHIP_GAP)
-        local id_w = 300
-        d.w = math.max(total, sc_w + M.WAIT_MIN + id_w)
-        d.w = math.min(d.w, room)
+        d.w = deck_inner + 2 * M.PAD
+        d.h = M.RAIL + #packed * M.ROW + (#packed - 1) * M.CARD_GAP + M.PAD
         d.x = (sw - d.w) / 2
         d.y = edge == "top" and top + 6 or sh - d.h - M.GAP
-        b.scenes = rect(0, 0, sc_w, M.HEAD)
-        b.ident = rect(d.w - id_w, 0, id_w, M.HEAD)
-        b.wait = rect(sc_w, 0, d.w - sc_w - id_w, M.HEAD)
-        -- the parts side by side; any room over is shared out so they meet the deck's edges
-        local extra = (d.w - total) / math.max(1, #shown)
-        local x = 0
-        for _, id in ipairs(shown) do
-            local w = (id == "spaces" and spaces_w or width(id)) + extra
-            d.parts[#d.parts + 1] = { id = id, x = math.floor(x + 0.5), y = M.HEAD, w = math.floor(w + 0.5), h = M.BODY }
-            x = x + w
+        for r, row in ipairs(packed) do
+            local fixed, flex = M.CARD_GAP * math.max(0, #row - 1), nil
+            for _, id in ipairs(row) do if id == "spaces" then flex = id else fixed = fixed + natural(id) end end
+            local spare = deck_inner - fixed
+            local share = flex and 0 or spare / math.max(1, #row)     -- no workspaces here: the room is shared out
+            local x = M.PAD
+            local y = M.RAIL + (r - 1) * (M.ROW + M.CARD_GAP)
+            for _, id in ipairs(row) do
+                local w = id == "spaces" and math.max(M.PARTS.spaces.min, spare) or natural(id) + share
+                d.parts[#d.parts + 1] = { id = id, row = r, x = math.floor(x + 0.5), y = y, w = math.floor(w + 0.5), h = M.ROW }
+                x = x + w + M.CARD_GAP
+            end
         end
     else
         d.w = M.COLUMN_W
         d.x = edge == "left" and M.GAP or sw - d.w - M.GAP - (opts.spine and M.SPINE_W or 0)
         d.y = top + 6
         local room = sh - d.y - M.GAP
-        local per_row = math.floor((d.w - 28 + M.CHIP_GAP) / (M.CHIP_W + M.CHIP_GAP))
-        local sc_h = 30 + math.ceil(chips / per_row) * (M.CHIP_H + M.CHIP_GAP) + 6
-        b.ident = rect(0, 0, d.w, 44)
-        b.scenes = rect(0, 44, d.w, sc_h)
-        b.wait = rect(0, 44 + sc_h, d.w, 112)
-        local head = 44 + sc_h + 112
-        local tw = (d.w - 28 - M.TILE_GAP) / 2
+        local tw = (d.w - 2 * M.PAD - 28 - M.TILE_GAP) / 2
         local spaces_h = 30 + math.ceil(ntiles / 2) * (tw / aspect + 16 + M.TILE_GAP) + 10
-        local function height(id) return id == "spaces" and spaces_h or M.PARTS[id].h end
-        local total = head
-        for _, id in ipairs(shown) do total = total + height(id) end
-        drop_least(total, room, height)
-        local y = head
+        local function height(id)
+            if id == "spaces" then return spaces_h end
+            if id == "profile" and opts.large then return M.PARTS.profile.hl end
+            return M.PARTS[id].h
+        end
+        local function total()
+            local t = M.RAIL + M.PAD
+            for i, id in ipairs(shown) do t = t + height(id) + (i > 1 and M.CARD_GAP or 0) end
+            return t
+        end
+        while total() > room and drop_least() do end
+        local y = M.RAIL
         for _, id in ipairs(shown) do
             local h = height(id)
-            d.parts[#d.parts + 1] = { id = id, x = 0, y = math.floor(y + 0.5), w = d.w, h = math.floor(h + 0.5) }
-            y = y + h
+            d.parts[#d.parts + 1] = { id = id, row = 1, x = M.PAD, y = math.floor(y + 0.5), w = d.w - 2 * M.PAD, h = math.floor(h + 0.5) }
+            y = y + h + M.CARD_GAP
         end
-        d.h = math.min(room, y)
+        d.h = math.min(room, y - M.CARD_GAP + M.PAD)
     end
     for _, part in ipairs(d.parts) do d.bays[part.id] = part end
     d.x, d.y, d.w, d.h = math.floor(d.x + 0.5), math.floor(d.y + 0.5), math.floor(d.w + 0.5), math.floor(d.h + 0.5)
@@ -166,25 +197,49 @@ function M.layout(edge, sw, sh, top, opts)
     return d
 end
 
--- Which place among the shown parts a part let go at `pos` (along the deck: x on a strip, y down a
--- column, in the deck's coordinates) takes: before the first part whose middle is past it.
-function M.place_at(d, pos)
+-- Which place among the shown parts a card let go at (x, y) (the deck's coordinates) takes: before the
+-- first card it lands ahead of — in an earlier row, or further along the same row (down a column: by y).
+function M.place_at(d, x, y)
     local n = 1
+    local row = 1
+    if not d.vertical and d.rows > 1 then
+        row = (y > M.RAIL + M.ROW + M.CARD_GAP / 2) and 2 or 1
+    end
     for _, part in ipairs(d.parts) do
-        local mid = d.vertical and (part.y + part.h / 2) or (part.x + part.w / 2)
-        if pos > mid then n = n + 1 end
+        local before
+        if d.vertical then before = y > part.y + part.h / 2
+        else before = part.row < row or (part.row == row and x > part.x + part.w / 2) end
+        if before then n = n + 1 end
     end
     return n
 end
 
--- The scene chips' places in their bay: one row along a strip, wrapped rows down a column.
-function M.chips(n, bay, vertical)
+-- The circuit's nodes: where each card is wired to the bus along the rail (its head's lamp), and the
+-- traces between neighbours in a row, as segments in the deck's coordinates.
+function M.circuit(d)
+    local nodes, traces = {}, {}
+    for i, part in ipairs(d.parts) do
+        nodes[#nodes + 1] = { x = part.x + 8, y = part.y + 17, bx = part.x + 8, by = M.RAIL - 7 }
+        local nxt = d.parts[i + 1]
+        if nxt and nxt.row == part.row and not d.vertical then
+            local gx = part.x + part.w + M.CARD_GAP / 2
+            local y1 = part.y + part.h * 0.42
+            local y2 = part.y + part.h * 0.62
+            traces[#traces + 1] = { x1 = part.x + part.w, y1 = y1, x2 = gx, y2 = y1 }
+            traces[#traces + 1] = { x1 = gx, y1 = y1, x2 = gx, y2 = y2 }
+            traces[#traces + 1] = { x1 = gx, y1 = y2, x2 = nxt.x, y2 = y2 }
+        end
+    end
+    return nodes, traces
+end
+
+-- The scene chips' places in their card: under its head, wrapping to its width.
+function M.chips(n, bay)
     local out = {}
-    local x0, y0 = vertical and 16 or 68, vertical and 30 or 6
-    local per_row = vertical and math.max(1, math.floor((bay.w - 28 + M.CHIP_GAP) / (M.CHIP_W + M.CHIP_GAP))) or n
+    local per_row = math.max(1, math.floor((bay.w - 24 + M.CHIP_GAP) / (M.CHIP_W + M.CHIP_GAP)))
     for i = 0, n - 1 do
         local r, c = math.floor(i / per_row), i % per_row
-        out[#out + 1] = { x = x0 + c * (M.CHIP_W + M.CHIP_GAP), y = y0 + r * (M.CHIP_H + M.CHIP_GAP), w = M.CHIP_W, h = M.CHIP_H }
+        out[#out + 1] = { x = 12 + c * (M.CHIP_W + M.CHIP_GAP), y = 34 + r * (M.CHIP_H + M.CHIP_GAP), w = M.CHIP_W, h = M.CHIP_H }
     end
     return out
 end

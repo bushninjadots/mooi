@@ -298,6 +298,10 @@ M.SCHEMA = {
     -- the deck's parts in your order, and those you hid (✎ on the deck arranges them; lib/nexusdeck PARTS)
     { path = "nexus.parts", kind = "ids", max = 12 },
     { path = "nexus.hidden", kind = "ids", max = 12 },
+    -- one row of cards along a strip, or two; the profile card small or large; the music on the deck's edge
+    { path = "nexus.rows", kind = "integer", default = 1, min = 1, max = 2 },
+    { path = "nexus.profile", kind = "enum", values = { "small", "large" }, default = "small" },
+    { path = "nexus.visualiser", kind = "boolean", default = true },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -471,7 +475,8 @@ local function migrate(t)
     -- folds, the orbit) only who you are is read. The rest goes quietly rather than as unknown settings.
     if type(t.nexus) == "table" then
         for k in pairs(t.nexus) do
-            if k ~= "identity" and k ~= "mode" and k ~= "edge" and k ~= "parts" and k ~= "hidden" then t.nexus[k] = nil end
+            if k ~= "identity" and k ~= "mode" and k ~= "edge" and k ~= "parts" and k ~= "hidden"
+               and k ~= "rows" and k ~= "profile" and k ~= "visualiser" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

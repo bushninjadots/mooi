@@ -55,7 +55,9 @@ wait_value dk_w 0 1 >/dev/null
 is "along the bottom by default" "$(get dk_edge)" 0
 is "a strip, not a column" "$(get dk_vert)" false
 is "twelve quick settings" "$(get quick.count)" 12
-is "every part is on a wide screen's deck" "$(get pw_on)$(get ps_on)$(get pq_on)$(get pu_on)" truetruetruetrue
+is "the first deck's cards" "$(get pf_on)$(get pn_on)$(get pa_on)$(get pw_on)$(get ps_on)$(get pq_on)$(get pu_on)" truetruetruetruetruetruetrue
+is "and the rest on the shelf" "$(get hid.count)" 4
+is "the circuit wires each card" "$(get nodes.count)" 7
 case "$(get faders.count)" in [2-6]) ok "the mixer has its faders" ;; *) bad "faders: $(get faders.count)" ;; esac
 case "$(get tiles.count)" in [2-9]|1[0-2]) ok "the workspaces, and +" ;; *) bad "tiles: $(get tiles.count)" ;; esac
 is "the scenes, and Save" "$(get scn.count)" 5
@@ -92,13 +94,17 @@ say "emit dk_edit_on 1" >/dev/null; sleep 0.2
 is "✎ arranges" "$(get dk_edit)" true
 say "emit dk_hide 4" >/dev/null; sleep 0.4
 is "a part hidden" "$(get pu_on)" false
-is "and listed to show again" "$(get hid.count)" 1
+is "and listed to show again" "$(get hid.count)" 5
 is "kept in settings.json" "$(jq -r '.nexus.hidden[0]' "$settings")" music
-say "emit dk_drop 600000" >/dev/null; sleep 0.4     # Today let go before everything
-is "a part carried to the front" "$(jq -r '.nexus.parts[0]' "$settings")" today
-is "numbered first" "$(get pt_n)" 01
+say "emit dk_drop 800000100" >/dev/null; sleep 0.4     # Scenes let go before everything (code 8, x 0, y 100)
+is "a card carried to the front" "$(jq -r '.nexus.parts[0]' "$settings")" scenes
+is "numbered first" "$(get pn_n)" 01
 say "emit dk_show 4" "emit dk_reset" >/dev/null; sleep 0.4
-is "Reset puts every part back" "$(jq -r '.nexus.parts[0]' "$settings")$(get pu_on)" windowtrue
+is "Reset puts every card back" "$(jq -r '.nexus.parts[0]' "$settings")$(get pu_on)" profiletrue
+say "emit dk_rows_set 2" >/dev/null; sleep 0.5
+is "two rows of cards" "$(get dk_rows)$(jq -r '.nexus.rows' "$settings")" 22
+say "emit dk_large_set 1" >/dev/null; sleep 0.4
+is "a large profile" "$(jq -r '.nexus.profile' "$settings")" large
 say "emit dk_edge_set 2" >/dev/null; sleep 0.6
 is "the edge chosen on the deck" "$(jq -r '.nexus.edge' "$settings")" left
 say "emit dk_edit_on 0" >/dev/null
