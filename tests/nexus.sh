@@ -105,6 +105,9 @@ say "emit dk_rows_set 2" >/dev/null; sleep 0.5
 is "two rows of cards" "$(get dk_rows)$(jq -r '.nexus.rows' "$settings")" 22
 say "emit dk_large_set 1" >/dev/null; sleep 0.4
 is "a large profile" "$(jq -r '.nexus.profile' "$settings")" large
+w0=$(get pq_w); say "emit dk_size 3" >/dev/null; sleep 0.4
+is "⇔ makes Quick settings large" "$(jq -r '.nexus.sizes[0]' "$settings")$(get pq_sz)" quick_lL
+w1=$(get pq_w); if [ "${w1%.*}" -gt "${w0%.*}" ]; then ok "and wider ($w0 → $w1)"; else bad "not wider ($w0 → $w1)"; fi
 say "emit dk_edge_set 2" >/dev/null; sleep 0.6
 is "the edge chosen on the deck" "$(jq -r '.nexus.edge' "$settings")" left
 say "emit dk_edit_on 0" >/dev/null

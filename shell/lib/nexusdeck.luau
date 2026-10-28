@@ -79,6 +79,26 @@ end
 
 local function mixer_w(n) return 34 + math.max(3, math.min(6, tonumber(n) or 4)) * 36 end
 
+-- A card's size (✎ ⇔ on the deck): small, medium or large, a share of its width along a strip.
+M.SIZES = { s = 0.82, m = 1, l = 1.4 }
+M.MIN_W = 168
+-- The sizes as saved (nexus.sizes: "music_l", "quick_s"…), as a table id → letter.
+function M.clean_sizes(list)
+    local out = {}
+    for _, v in ipairs(type(list) == "table" and list or {}) do
+        local id, k = tostring(v):match("^([%w]+)_([sml])$")
+        if id and M.PARTS[id] then out[id] = k end
+    end
+    return out
+end
+function M.sizes_list(t)
+    local out = {}
+    for _, id in ipairs(M.ORDER) do if t[id] and t[id] ~= "m" then out[#out + 1] = id .. "_" .. t[id] end end
+    return out
+end
+-- The next size round: small → medium → large → small.
+function M.next_size(k) return ({ s = "m", m = "l", l = "s" })[k or "m"] or "m" end
+
 -- Where the deck sits and where each card is, inside a screen `sw` × `sh` whose top `top` px the bar
 -- keeps. `opts`: `parts` (the order), `hidden` (a set), `rows` (1 or 2 along a strip), `large` (the
 -- large profile), `faders`, `tiles` and `aspect` (the workspaces' miniatures), `spine`. Along a strip
@@ -95,7 +115,9 @@ function M.layout(edge, sw, sh, top, opts)
     local d = { edge = edge, vertical = edge == "left" or edge == "right", parts = {}, dropped = {}, bays = {}, rows = rows }
     local shown = {}
     for _, id in ipairs(order) do if not hidden[id] then shown[#shown + 1] = id end end
-    local function natural(id)
+    local sizes = opts.sizes or {}
+    local function factor(id) return M.SIZES[sizes[id] or "m"] or 1 end
+    local function base(id)
         if id == "mixer" then return mixer_w(opts.faders) end
         if id == "profile" and opts.large then return M.PARTS.profile.wl end
         if id == "spaces" then
@@ -104,7 +126,11 @@ function M.layout(edge, sw, sh, top, opts)
         end
         return M.PARTS[id].w
     end
-    local function minimum(id) return id == "spaces" and M.PARTS.spaces.min or natural(id) end
+    local function natural(id) return math.max(M.MIN_W, math.floor(base(id) * factor(id) + 0.5)) end
+    local function minimum(id)
+        if id == "spaces" then return math.max(M.MIN_W, math.floor(M.PARTS.spaces.min * factor(id) + 0.5)) end
+        return natural(id)
+    end
     local function drop_least()
         local worst, at = nil, nil
         for i, id in ipairs(shown) do
@@ -158,7 +184,7 @@ function M.layout(edge, sw, sh, top, opts)
             local x = M.PAD
             local y = M.RAIL + (r - 1) * (M.ROW + M.CARD_GAP)
             for _, id in ipairs(row) do
-                local w = id == "spaces" and math.max(M.PARTS.spaces.min, spare) or natural(id) + share
+                local w = id == "spaces" and math.max(minimum("spaces"), spare) or natural(id) + share
                 d.parts[#d.parts + 1] = { id = id, row = r, x = math.floor(x + 0.5), y = y, w = math.floor(w + 0.5), h = M.ROW }
                 x = x + w + M.CARD_GAP
             end

@@ -309,6 +309,8 @@ M.SCHEMA = {
     { path = "nexus.profile", kind = "enum", values = { "small", "large" }, default = "small" },
     { path = "nexus.visualiser", kind = "boolean", default = true },
     { path = "nexus.notches", kind = "boolean", default = true },
+    -- each card's size along a strip, as "id_s" / "id_l" (medium is not listed)
+    { path = "nexus.sizes", kind = "ids", max = 12 },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },

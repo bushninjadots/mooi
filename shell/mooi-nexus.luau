@@ -206,6 +206,7 @@ local PREFIX = { window = "pw", spaces = "ps", mixer = "pm", quick = "pq", music
 local BY_CODE = {}
 for id, c in pairs(CODE) do BY_CODE[c] = id end
 local parts, hidden
+local sizes = {}             -- each card's size along a strip (✎ ⇔): id → s · m · l
 local function read_parts()
     local n = type(settings.nexus) == "table" and settings.nexus or {}
     parts = deck.clean_parts(n.parts)
@@ -215,6 +216,7 @@ local function read_parts()
     fact.nx_large = n.profile == "large"
     fact.dk_viz = n.visualiser ~= false
     fact.dk_notches = n.notches ~= false
+    sizes = deck.clean_sizes(n.sizes)
 end
 read_parts()
 local function save_settings(change)
@@ -252,7 +254,7 @@ local function place()
     local top = 0                -- the bar's reserve is already outside the surface
     d = deck.layout(edge(), screen.w, screen.h, top, { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
                                                     tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n,
-                                                    rows = fact.dk_rows, large = fact.nx_large })
+                                                    rows = fact.dk_rows, large = fact.nx_large, sizes = sizes })
     d.top, d.faders = top, faders_n
     fact.dk_edge = ({ bottom = 0, top = 1, left = 2, right = 3 })[d.edge]
     fact.dk_vert = d.vertical
@@ -261,7 +263,7 @@ local function place()
     local nodes, traces = deck.circuit(d)
     model.nodes, model.traces = nodes, traces
     fact.ga_x, fact.ga_y = deck.grow(d, { x = 0, y = 0, w = d.w, h = d.h }, 620, 116, screen.w, screen.h, top)
-    for id, pre in pairs(PREFIX) do fact[pre .. "_on"] = false end
+    for id, pre in pairs(PREFIX) do fact[pre .. "_on"] = false; text[pre .. "_sz"] = string.upper(sizes[id] or "m") end
     for i, part in ipairs(d.parts) do
         local pre = PREFIX[part.id]
         fact[pre .. "_x"], fact[pre .. "_y"], fact[pre .. "_w"], fact[pre .. "_h"] = part.x, part.y, part.w, part.h
@@ -316,9 +318,19 @@ on("dk_show", function(v)
     save_parts(); place()
 end)
 on("dk_reset", function()
-    parts, hidden = deck.clean_parts(nil), deck.clean_hidden(nil, false)
+    parts, hidden, sizes = deck.clean_parts(nil), deck.clean_hidden(nil, false), {}
     save_parts(); place()
     notice("every part back")
+end)
+on("dk_size", function(v)
+    local id = BY_CODE[math.floor(tonumber(v) or -1)]
+    if not id then return end
+    sizes[id] = deck.next_size(sizes[id])
+    save_settings(function(n) n.sizes = deck.sizes_list(sizes) end)
+    place()
+    for _, gone in ipairs(d and d.dropped or {}) do
+        if gone == id then notice("no room for it that large here: smaller, or two rows"); break end
+    end
 end)
 on("dk_rows_set", function(v)
     local r = tonumber(v) == 2 and 2 or 1
