@@ -659,6 +659,25 @@ local function feel(kind, arg)
     end
 end
 local FOCUS = { [2] = "on", [3] = "done", [4] = "break_done", [5] = "off" }
+-- An answer from Claude, as him (the side notch's chat in BMO's voice): said a bubble at a time, each
+-- as long as it takes to read.
+on("speak", function()
+    local words = tostring(text.bmo_line or "")
+    local lines, line = {}, ""
+    for w in words:gmatch("%S+") do
+        if #line > 0 and #line + 1 + #w > 38 then lines[#lines + 1] = line; line = w
+        else line = #line > 0 and (line .. " " .. w) or w end
+    end
+    if line ~= "" then lines[#lines + 1] = line end
+    local at = 0
+    for i = 1, math.min(#lines, 6) do
+        local l = lines[i]
+        local ms = 900 + #l * 55
+        after(at, function() say(l, ms, true) end)
+        at = at + ms + 150
+    end
+end)
+
 on("tell", function(v)
     local n = math.floor(tonumber(v) or 0)
     if n == 1 then feel("note") elseif FOCUS[n] then feel("focus", FOCUS[n]) end
@@ -694,7 +713,7 @@ every(60000, hour_check)
 
 on("ui", function(v)
     local n = math.floor(tonumber(v) or -1)
-    if n >= 1 and n <= 7 then fact.menu = false end
+    if n >= 1 and n <= 9 then fact.menu = false end
     touch()
     if n == 1 then toggle_panel(); return
     elseif n == 2 then
@@ -704,6 +723,9 @@ on("ui", function(v)
     elseif n == 5 then if activity == "sleeping" then wake(false) else sleep() end; return
     elseif n == 6 then hide_for(10); return
     elseif n == 7 then run("pleamar", { "--say", "bmo", "quit" }); return
+    -- asking him (D106): the side notch's chat, as BMO; what Claude answers comes back here to be said
+    elseif n == 8 then run("pleamar", { "--say", "mooi-notch", "emit nt_ask_bmo" }); say("ask BMO anything!", 2200, true); return
+    elseif n == 9 then run("pleamar", { "--say", "mooi-notch", "emit nt_show 0" }); return
     elseif n >= 10 and n <= 14 then fact.tab = ({ "home", "music", "me", "setup", "look" })[n - 9]; return
     elseif n == 20 then pcall(sys.call, "media.previous"); return
     elseif n == 21 then pcall(sys.call, "media.toggle"); return

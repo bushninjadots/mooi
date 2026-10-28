@@ -101,6 +101,8 @@ scene Bmo {
 
     fact bubble_on = false
     text bubble = ""
+    text bmo_line = ""           // what the side notch asked Claude, as BMO, and got back (D106): he says it
+    event speak ->               // from the side notch: say bmo_line
 
     // The panel and the menu
     fact panel = false
@@ -524,18 +526,20 @@ scene Bmo {
         group {
             show: menu
             let mx0 = clamp(menu_x, 8, screen.width - 176)
-            let my0 = clamp(menu_y, 8, screen.height - 190)
-            zone box menuz { from: mx0, my0; size: 168, 178; agent: hidden }
+            let my0 = clamp(menu_y, 8, screen.height - 238)
+            zone box menuz { from: mx0, my0; size: 168, 226; agent: hidden }
             on away menuz for 1600ms while menu { menu = false }
-            box { from: mx0, my0; size: 168, 178; corner: 9; color: glass }
-            box { from: mx0, my0; size: 168, 178; corner: 9; stroke: 3; color: ink }
+            box { from: mx0, my0; size: 168, 226; corner: 9; color: glass }
+            box { from: mx0, my0; size: 168, 226; corner: 9; stroke: 3; color: ink }
             MenuItem(mx0 + 5, my0 + 5, pick(panel, "Open panel", "Close panel"), 1)
             MenuItem(mx0 + 5, my0 + 29, pick(s_wander > 0, "Let him wander", "Stop wandering"), 2)
             MenuItem(mx0 + 5, my0 + 53, pick(s_locked, "Lock position", "Unlock position"), 3)
             MenuItem(mx0 + 5, my0 + 77, "Go home", 4)
             MenuItem(mx0 + 5, my0 + 101, pick(asleep, "Take a nap", "Wake up"), 5)
             MenuItem(mx0 + 5, my0 + 125, "Hide for 10 min", 6)
-            MenuItem(mx0 + 5, my0 + 149, "Quit BMO", 7)
+            MenuItem(mx0 + 5, my0 + 149, "Ask BMO…", 8)
+            MenuItem(mx0 + 5, my0 + 173, "Chat with Claude", 9)
+            MenuItem(mx0 + 5, my0 + 197, "Quit BMO", 7)
         }
 
         // ── The panel: a second little console screen beside him ──

@@ -3407,3 +3407,42 @@ seven nodes, Scenes carried to the front, two rows and a large profile saved); u
 rows, packing, shelf, placing across rows, circuit, chips; activity). Screenshots of one row, two rows with
 every card, the right column, the large profile with the real banner and picture. Not seen: the
 visualiser moving (the machine was muted), the activity map with a week in it.
+
+## D106 · 2026-10-28 · The side notch; Claude in the shell and in BMO; GitHub; notches off the Nexus
+
+**Asked for:** "a notch on the side that'll open up on hover and that can be a Claude chat … wire up
+Claude (you) to BMO and create a bar module for you that opens a nice panel, … a GitHub module that opens
+up all relevant info with activity", then "a notch on side, open on hover, an arc like wallpaper switcher
+… the workspace view as an arc for preview and switching, music player slides out … better weather
+visuals", and "it's in the way of the stash, do it so I can drag on the side of the screen edge, but I
+originally meant for those notches to come off the side of the Control Nexus".
+**Done:** **the side notch** (shell/mooi-notch.plm/.luau, lib/notch): a lit sliver on the left edge, started
+by the bar and kept running (notch.on) so pointing at it is instant; it fans out into six hexagonal tabs
+on an arc — Claude, Music, Workspaces, Wallpapers, Weather, GitHub — each opening its panel; carried along
+the edge it stays where it is let go (notch-state.json; it starts a third of the way down, above the
+stash); it folds away when the pointer leaves, unless a tab was pressed or Claude is answering.
+**Off the Nexus:** the deck grows two notches of its own — tabs rising from its corners along a strip,
+from its open side down a column — and pointing at one opens that panel beside the deck (lib/notch
+`from_deck`); the deck closing takes the panel with it. **Claude:** a chat with your own Claude through
+Claude Code (lib/claude): `claude -p` in stream-json, read as it answers, no tools (it talks, it cannot
+act), plugins' hooks off for the call, no MCP, no skills, run where no CLAUDE.md is (the runtime folder) —
+about five seconds and under a cent a turn; the conversation goes on by its session and is kept in
+notch-claude.json; New chat starts over; suggestions when empty; claude.model picks the model. **BMO:** his
+menu has Ask BMO… (the chat in his voice: Claude answers as BMO and he says it in his bubble, a line at a
+time) and Chat with Claude. **Music** slides out: the cover behind, the song, a 24-band visualiser, where it
+is, the transport. **Workspaces** and **Wallpapers** are carousels on an arc, the middle one largest, the
+wheel turning them: a press goes to a workspace (its windows drawn where they are) or wears a picture
+(thumbnails made once into the data folder; applied as the studio does — the picker, else awww).
+**Weather**: now (glyph, temperature, feels, range), the next six hours as bars, five days with their
+range bars. **GitHub** (through `gh`, signed in as you): you, your contribution calendar for 26 weeks,
+your open pull requests, what you did lately, your latest repositories, the unread count (on the tab and
+on the bar's module). **Bar modules** Claude and GitHub (lib/barlayout, appended so no code moved) open their
+panels; both were added to the user's bar.
+**Found:** `claude -p --bare` is not signed in (it skips the keychain); without `disableAllHooks` a turn
+cost ~$0.08 and 12 s (the user's plugin hooks), with it ~$0.004 and 5 s; a rule's header must be on one line;
+a safety hook refuses any command whose text contains a destructive-looking string, even inside a test.
+**Checked:** unit 249 (claude args/stream/wrap; notch fan, panels, carousel, bars, thumbnails, pictures,
+`from_deck`); tests/nexus.sh 35/35; live: a Claude answer in the panel, BMO answering through it and
+saying it, weather and GitHub panels with real data, the deck's notches opening Claude and the workspace
+arc beside the real right-hand column, the bar's two modules. Not checked: carrying the nub with a real
+mouse, the wallpaper arc wearing a picture (not pressed, to leave the desktop as it was).

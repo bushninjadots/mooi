@@ -64,14 +64,15 @@ def code(path):
 MODULES = ["workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
            "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
            "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
-           "notes", "wallpaper", "nexus", "updates"]
+           "notes", "wallpaper", "nexus", "updates", "claude", "github"]
 NAMES = {"workspaces": "Workspaces", "window": "Window title", "media": "Media player", "resources": "Resources",
          "bandwidth": "Bandwidth", "keyboard": "Keyboard layout", "weather": "Weather", "tray": "Tray",
          "notifications": "Notifications", "mic": "Microphone", "volume": "Volume", "brightness": "Brightness",
          "battery": "Battery", "network": "Network", "bluetooth": "Bluetooth", "clock": "Clock",
          "caffeine": "Keep awake", "recorder": "Screen recorder", "screenshot": "Screenshot",
          "clipboard": "Clipboard", "power": "Session", "actions": "Window actions", "overview": "Overview", "core": "Search", "focus": "Focus timer", "settings": "Settings",
-         "notes": "Quick notes", "wallpaper": "Wallpaper studio", "nexus": "Control Nexus", "updates": "System updates"}
+         "notes": "Quick notes", "wallpaper": "Wallpaper studio", "nexus": "Control Nexus", "updates": "System updates",
+         "claude": "Claude", "github": "GitHub"}
 KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("window", "Window actions", "Float, pin, fullscreen or close the focused window"),
         ("overview", "Overview", "Every workspace zoomed out (Super+Tab too, below in System)"),

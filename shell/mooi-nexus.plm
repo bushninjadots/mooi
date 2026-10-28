@@ -551,6 +551,7 @@ scene Nexus {
     event dk_rows_set ->         // to the logic: one row of cards or two
     event dk_large_set ->        // to the logic: the profile small (0) or large (1)
     event nx_pick ->             // to the logic: choose a picture — 0 the avatar · 1 the banner
+    event dk_notch ->            // to the logic: notch tab n off the deck's end (0 Claude · 1 Music · 2 Weather · 3 Workspaces · 4 Wallpapers · 5 GitHub)
 
     figure i_set = file "icons/cog.svg"
     figure i_lock = file "icons/lock.svg"
@@ -581,6 +582,20 @@ scene Nexus {
     figure i_ws = file "icons/workspace.svg"
     figure i_cal = file "icons/calendar.svg"
     figure i_arrange = file "icons/arrange.svg"
+    figure i_claude = file "icons/claude.svg"
+    figure i_git = file "icons/git.svg"
+    figure i_wallp = file "icons/wallpaper.svg"
+    fact dk_ntab = -1            // the notch tab off the deck last pointed at
+    // A notch tab's glyph (0 Claude · 1 Music · 2 Weather · 3 Workspaces · 4 Wallpapers · 5 GitHub).
+    component NGlyph(x: number, y: number, g: number, c: color) {
+        size: 14, 14
+        figure i_claude { at: x, y; size: 13, 13; color: c; show: g < 0.5 }
+        figure i_music { at: x, y; size: 13, 13; color: c; show: g > 0.5 and g < 1.5 }
+        figure i_cloud { at: x, y; size: 13, 13; color: c; show: g > 1.5 and g < 2.5 }
+        figure i_ws { at: x, y; size: 13, 13; color: c; show: g > 2.5 and g < 3.5 }
+        figure i_wallp { at: x, y; size: 13, 13; color: c; show: g > 3.5 and g < 4.5 }
+        figure i_git { at: x, y; size: 13, 13; color: c; show: g > 4.5 }
+    }
 
     // ── Motion ──
     spring nx.slide = 900, 62        // ~220 ms in and out
@@ -762,6 +777,39 @@ scene Nexus {
                     box { from: if(dk_vert, if(dk_edge == 2, dk_w + 2, -2 - vl.$v), v * vs.$v + 2), if(dk_vert, v * vs.$v + 2, if(dk_edge == 1, dk_h + 2, -2 - vl.$v))
                           size: if(dk_vert, vl.$v, vs.$v - 4), if(dk_vert, vs.$v - 4, vl.$v); corner: 1; color: dk.hot; opacity: 0.25 + 0.6 * vv.$v }
                 }
+            }
+
+            // the notches off the deck's ends: three tabs each (Claude · Music · Weather, Workspaces ·
+            // Wallpapers · GitHub); pointed at, the side notch opens that panel beside the deck
+            repeat e in 0..2 {
+                let ex.$e = if(dk_vert, if(dk_edge == 3, -34, dk_w + 2), if(e == 0, 26, dk_w - 158))
+                let ey.$e = if(dk_vert, 44 + e * 130, if(dk_edge == 1, dk_h - 2, -32))
+                group {
+                    opacity: smooth(0, 1, rp.7)
+                    body {
+                        color: mix(dk.raised, #000000, 0.35)
+                        box { from: ex.$e, ey.$e; size: if(dk_vert, 32, 132), if(dk_vert, 122, 34); corner: dk.r }
+                    }
+                    box { from: ex.$e, ey.$e; size: if(dk_vert, 32, 132), if(dk_vert, 122, 34); corner: dk.r; stroke: 1; color: mix(dk.line, dk.acc, 0.45) }
+                    line { from: ex.$e + if(dk_vert, 0, 10), ey.$e + if(dk_vert, 10, if(dk_edge == 1, 33, 0.5)); to: ex.$e + if(dk_vert, 0, 60), ey.$e + if(dk_vert, 60, if(dk_edge == 1, 33, 0.5)); width: 1.4; color: dk.acc; opacity: 0.7 }
+                }
+            }
+            repeat t in 0..6 {
+                let te.$t = floor(t / 3)
+                let tx.$t = if(dk_vert, if(dk_edge == 3, -18, dk_w + 18), if(te.$t == 0, 26, dk_w - 158) + 22 + mod(t, 3) * 44)
+                let ty.$t = if(dk_vert, 44 + te.$t * 130 + 21 + mod(t, 3) * 40, if(dk_edge == 1, dk_h + 15, -15))
+                zone box nz.$t { from: tx.$t - 16, ty.$t - 16; size: 32, 32; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers", "GitHub") }
+                group {
+                    opacity: smooth(0, 1, rp.7)
+                    glow: 6, (0.25 + 0.6 * max(nz.$t.hover, if(dk_ntab == t, 1, 0))) * st_glow, dk.acc
+                    path { color: mix(dk.raised, dk.acc, 0.1 + 0.35 * max(nz.$t.hover, if(dk_ntab == t, 1, 0)))
+                           move tx.$t, ty.$t - 14; line tx.$t + 12, ty.$t - 7; line tx.$t + 12, ty.$t + 7; line tx.$t, ty.$t + 14; line tx.$t - 12, ty.$t + 7; line tx.$t - 12, ty.$t - 7; close }
+                    path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.5 + 0.5 * nz.$t.hover)
+                           move tx.$t, ty.$t - 14; line tx.$t + 12, ty.$t - 7; line tx.$t + 12, ty.$t + 7; line tx.$t, ty.$t + 14; line tx.$t - 12, ty.$t + 7; line tx.$t - 12, ty.$t - 7; close }
+                }
+                NGlyph(tx.$t, ty.$t, t, mix(dk.ink2, dk.acc, nz.$t.hover)) { opacity: smooth(0, 1, rp.7) }
+                on hover nz.$t for 160ms { dk_ntab = t; emit dk_notch(t) }
+                on press nz.$t { dk_ntab = t; emit dk_notch(t) }
             }
 
             IslandFrame(1, dk_w, dk_h, centre: true) {

@@ -17,6 +17,7 @@ local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
 local atlas = require("lib/atlas")
 local deck = require("lib/nexusdeck")
+local notch = require("lib/notch")
 
 local FILE, SCENES = "settings.json", "nexus-scenes.json"
 
@@ -121,6 +122,7 @@ local function close(why)
     closing = true
     log("nexus · closing: " .. tostring(why or "asked"))
     if cava then pcall(kill, cava, "term"); cava = nil end
+    pcall(run, "pleamar", { "--say", "mooi-notch", "emit nt_close" }, function() end)   -- a panel it opened goes with it
     fact.dk_open = false
     pcall(sys.call, "thumbnails.want")
     -- gone from sight in ~220 ms; it ends later, so what a press just asked of the bar or started
@@ -273,6 +275,18 @@ local function place()
     if relayout_rest then relayout_rest() end
     place_cascade()
 end
+
+-- ── The notches off the deck's ends: the side notch (shell/mooi-notch) opens that panel beside the deck ──
+-- tab n of the deck: 0 Claude · 1 Music · 2 Weather (the left end) · 3 Workspaces · 4 Wallpapers · 5 GitHub
+local NOTCH_TAB = { [0] = 0, [1] = 1, [2] = 4, [3] = 2, [4] = 3, [5] = 5 }
+on("dk_notch", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local tab = NOTCH_TAB[n]
+    if not tab or not d then return end
+    local r = notch.from_deck(d, tab, n < 3, screen.w, screen.h)
+    launch("pleamar", { "--say", "mooi-notch", "fact nt_px " .. r.px, "fact pn_y " .. r.py, "fact nt_ox " .. r.ox,
+                        "fact nt_acy " .. r.acy, "fact nt_dir " .. r.dir, "emit nt_show_deck " .. tab })
+end)
 
 -- ── Arranging (✎): parts carried to a new place, hidden, shown again; the edge; the first order ──
 on("dk_edit_on", function(v) fact.dk_edit = tonumber(v) == 1; fact.dk_hws, fact.dk_hsc = -1, -1 end)

@@ -279,6 +279,7 @@ sys.watch("files:" .. FILE, function()
     apply_theme("settings changed")
     if desk_sync then desk_sync() end
     if bmo_sync then bmo_sync() end
+    if notch_sync then notch_sync() end
 end)
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
@@ -1577,6 +1578,34 @@ function desk_sync()
     desk_win = mine
 end
 after(1500, desk_sync)
+
+-- The side notch (shell/mooi-notch, D106): started with the bar while notch.on, kept running so that
+-- pointing at it is instant, started again if it ends (later each time it fails at once).
+local notch_win, notch_tries = nil, 0
+function notch_sync()
+    local want = type(settings.notch) ~= "table" or settings.notch.on ~= false
+    if not want then notch_tries = 0; run("pleamar", { "--say", "mooi-notch", "quit" }); return end
+    if notch_win then return end
+    run("pleamar", { "--say", "mooi-notch", "get nt_open" }, function(_, up)
+        if up == 0 or notch_win then return end
+        local mine
+        local started = os.time()
+        local said = {}
+        mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-notch.plm", "--no-hud", "--stall", "0" }, function(line)
+            if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+        end, function(_, code)
+            if notch_win ~= mine then return end
+            notch_win = nil
+            if os.time() - started < 5 then notch_tries = notch_tries + 1 else notch_tries = 0 end
+            if code ~= 0 then log("notch · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+            if code ~= 0 and notch_tries < 5 then after(1000 * (notch_tries + 1), notch_sync) end
+        end, { errors = true })
+        notch_win = mine
+    end)
+end
+after(2000, notch_sync)
+on("open_claude", function() notch_sync(); run("pleamar", { "--say", "mooi-notch", "emit nt_show 0" }) end)
+on("open_github", function() notch_sync(); run("pleamar", { "--say", "mooi-notch", "emit nt_show 5" }) end)
 
 -- BMO (shell/bmo), the desktop companion: started with the bar — so at login — while
 -- companion.bmo is on, started again if he ends while still wanted (later each time he fails at

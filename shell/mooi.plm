@@ -493,6 +493,19 @@ scene Mooi {
     fact m_updates = true
     fact fi_updates = 0
     fact g_updates = false
+    fact x_claude = 0
+    fact p_claude = false
+    fact w_claude = 0
+    fact m_claude = true
+    fact fi_claude = 0
+    fact g_claude = false
+    fact x_github = 0
+    fact p_github = false
+    fact w_github = 0
+    fact m_github = true
+    fact fi_github = 0
+    fact g_github = false
+    fact gh_unread = 0           // what waits on GitHub (the notch reads it)
     fact upd_n = 0               // system updates waiting (bar.luau, lib/updates)
     fact upd_busy = false        // looking
     fact upd_running = false     // the updater's terminal is open
@@ -1049,6 +1062,8 @@ scene Mooi {
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal
+    event open_claude ->       // to the logic: the side notch's Claude panel
+    event open_github ->       // to the logic: the side notch's GitHub panel
     event sh_net ->            // to the logic: join network n (its place in network.networks); -1 the radio on or off
     event sh_bt ->             // to the logic: connect or disconnect device n; -1 the radio on or off
     event edit_mode ->         // to the logic: edit mode on (1) or off (0)
@@ -1447,6 +1462,20 @@ scene Mooi {
     prop pv_updates = 0 ~m.enter
     follow pv_updates = p_updates
     on change p_updates while p_updates { xs_updates: x_updates ~1ms; ws_updates: w_updates ~1ms }
+    prop xs_claude = 0 ~fl.flow
+    follow xs_claude = x_claude
+    prop ws_claude = 0 ~fl.flow
+    follow ws_claude = w_claude
+    prop pv_claude = 0 ~m.enter
+    follow pv_claude = p_claude
+    on change p_claude while p_claude { xs_claude: x_claude ~1ms; ws_claude: w_claude ~1ms }
+    prop xs_github = 0 ~fl.flow
+    follow xs_github = x_github
+    prop ws_github = 0 ~fl.flow
+    follow ws_github = w_github
+    prop pv_github = 0 ~m.enter
+    follow pv_github = p_github
+    on change p_github while p_github { xs_github: x_github ~1ms; ws_github: w_github ~1ms }
     prop upd_pulse = 0
     spin upd_pulse by if(upd_busy, 1400, 0)
     let vv = round(audio.volume * 100)
@@ -1627,6 +1656,8 @@ scene Mooi {
     figure i_wallpaper = file "icons/wallpaper.svg"
     figure i_nexus = file "icons/nexus.svg"
     figure i_updates = file "icons/updates.svg"
+    figure i_claude = file "icons/claude.svg"
+    figure i_git = file "icons/git.svg"
     figure i_calendar = file "icons/calendar.svg"
 
     // The surface reserves the strip alone. What opens under it — the mark's menu — floats
@@ -2877,6 +2908,33 @@ scene Mooi {
         on press zupd { emit run_updates; side = none; mark_open = false; open = none }
     }
 
+    // ── Claude and GitHub (D106): doors to the side notch's panels ──
+    // Claude: the sparkle; a press opens the chat beside the notch. GitHub: the branch, the count of
+    // what waits for you there (read by the notch); a press opens your GitHub panel.
+    group {
+        show: p_claude
+        move: xs_claude, 0
+        opacity: pv_claude
+        zone box zcl { from: 0, fl.top; size: ws_claude, fl.mod_h; cursor: pointer; role: button; label: "Claude: ask anything" }
+        Pill(ws_claude, zcl.hover)
+        figure i_claude { at: ws_claude / 2, fl.cy; size: 16, 16; color: mix(fl.trace_lit, fl.phos, zcl.hover) }
+        on press zcl { emit open_claude; side = none; mark_open = false; open = none }
+    }
+    group {
+        show: p_github
+        move: xs_github, 0
+        opacity: pv_github
+        zone box zgh { from: 0, fl.top; size: ws_github, fl.mod_h; cursor: pointer; role: button; label: "GitHub: your repositories, pull requests and activity" }
+        Pill(ws_github, zgh.hover)
+        figure i_git { at: ws_github / 2, fl.cy; size: 16, 16; color: mix(fl.trace_lit, fl.phos, zgh.hover) }
+        group {
+            show: gh_unread > 0
+            glow: 5, (70%) * st_glow, fl.ember
+            box { at: ws_github - 7, fl.cy - 7; size: 12, 9; corner: 2; color: fl.ember_fill }
+        }
+        on press zgh { emit open_github; side = none; mark_open = false; open = none }
+    }
+
     // ── Control Nexus (D65) ──────────────────────────────────
     // The system command centre's door: the Arch mark. A press opens the Nexus program (a
     // full-screen overlay of its own); the same press again, Escape there or an outside press
@@ -3347,18 +3405,42 @@ scene Mooi {
     on drag ez_updates while ed_press == 29 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 29; ed_sel = -1 }
     on release ez_updates while ed_drag == 29 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_updates while ed_drag < 0 and ed_press == 29 { ed_sel = if(ed_sel == 29, -1, 29); ed_press = -1 }
+    group {
+        show: bar_edit and p_claude
+        zone box ez_claude { from: xs_claude, fl.top; size: ws_claude, fl.mod_h; cursor: grab; role: button; label: "Move Claude" }
+        box { from: xs_claude + 1, fl.top + 1; size: ws_claude - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 30 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 30, 0.6, if(ed_sel == 30, 0.4, 0.2 * ez_claude.hover)) }
+        box { from: xs_claude + 1, fl.top + 1; size: ws_claude - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 30, 2, 1.2)
+              color: if(ed_sel == 30 or ed_drag == 30, fl.flare, mix(fl.trace_lit, fl.flare, ez_claude.hover)); opacity: if(ed_drag >= 0 and ed_drag != 30, 0.45, 0.85) }
+    }
+    on press ez_claude while bar_edit { ed_press = 30; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_claude while ed_press == 30 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 30; ed_sel = -1 }
+    on release ez_claude while ed_drag == 30 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_claude while ed_drag < 0 and ed_press == 30 { ed_sel = if(ed_sel == 30, -1, 30); ed_press = -1 }
+    group {
+        show: bar_edit and p_github
+        zone box ez_github { from: xs_github, fl.top; size: ws_github, fl.mod_h; cursor: grab; role: button; label: "Move GitHub" }
+        box { from: xs_github + 1, fl.top + 1; size: ws_github - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 31 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 31, 0.6, if(ed_sel == 31, 0.4, 0.2 * ez_github.hover)) }
+        box { from: xs_github + 1, fl.top + 1; size: ws_github - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 31, 2, 1.2)
+              color: if(ed_sel == 31 or ed_drag == 31, fl.flare, mix(fl.trace_lit, fl.flare, ez_github.hover)); opacity: if(ed_drag >= 0 and ed_drag != 31, 0.45, 0.85) }
+    }
+    on press ez_github while bar_edit { ed_press = 31; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_github while ed_press == 31 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 31; ed_sel = -1 }
+    on release ez_github while ed_drag == 31 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_github while ed_drag < 0 and ed_press == 31 { ed_sel = if(ed_sel == 31, -1, 31); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates", "Claude", "GitHub") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates, xs_claude, xs_github) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates, ws_claude, ws_github) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates, fi_claude, fi_github)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates, g_claude, g_github)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates", "Claude", "GitHub") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)

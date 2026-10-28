@@ -109,6 +109,10 @@ M.SCHEMA = {
     { path = "shelves.on", kind = "boolean", default = true },
     -- and whether it keeps out of sight until the pointer touches the right edge (a hairline shows it is there)
     { path = "shelves.autohide", kind = "boolean", default = false },
+    -- the side notch (D106): a sliver on the left edge that fans out into Claude, music, workspaces,
+    -- wallpapers, weather and GitHub; the Claude it asks (an alias `claude --model` takes; empty: its default)
+    { path = "notch.on", kind = "boolean", default = true },
+    { path = "claude.model", kind = "text", default = "", max = 40 },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,

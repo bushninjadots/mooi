@@ -85,6 +85,9 @@ M.MODULES = {
     -- Control Nexus (D65): the Arch mark; a press opens the system command centre.
     nexus = { width = 32 },
     updates = { width = 42 },
+    -- the side notch's doors (D106): Claude's chat, and GitHub with what waits there
+    claude = { width = 32 },
+    github = { width = 32 },
 }
 
 -- In the order the scene declares their facts, and the bar menu lists them.
@@ -92,7 +95,7 @@ M.ORDER = {
     "workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray",
     "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
     "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
-    "notes", "wallpaper", "nexus", "updates",
+    "notes", "wallpaper", "nexus", "updates", "claude", "github",
 }
 
 M.DEFAULT = {

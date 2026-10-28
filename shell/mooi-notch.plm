@@ -1,0 +1,797 @@
+language 0.4
+import "theme/tokens.plm"
+import "theme/ferrolume.plm"
+import "ui/loom.plm"
+import "ui/island.plm"
+import "ui/deck.plm"
+
+// mooi's side notch (D106): a lit sliver on the left edge that, pointed at, fans out into six tabs on
+// an arc — Claude (a chat with your own Claude, through Claude Code), Music (the player slid out),
+// Workspaces and Wallpapers (each a carousel on an arc, the wheel turning it), Weather and GitHub. The
+// bar keeps it running (notch.on), so pointing at it is instant; it folds away when the pointer leaves,
+// unless a tab was pressed or Claude is being asked something. mooi-notch.luau reads what it shows.
+
+scene Notch {
+    permissions {
+        run: "pleamar", "env", "claude", "gh", "hyprctl", "magick", "find", "cava", "curl", "qs", "awww", "xdg-open", "mooi"
+        services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env"
+    }
+
+
+    // The same facts and springs the bar wears: the logic paints them from palette.json, and
+    // the studio re-lights with the desktop when the palette changes after an apply.
+    // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
+    fact cn_kind = 0
+    fact cn_scale = 1
+    fact fr_ground_r = 0.000000
+    fact fr_ground_g = 0.000000
+    fact fr_ground_b = 0.000000
+    fact fr_hull_r = 0.015686
+    fact fr_hull_g = 0.035294
+    fact fr_hull_b = 0.031373
+    fact fr_hull_raised_r = 0.027451
+    fact fr_hull_raised_g = 0.074510
+    fact fr_hull_raised_b = 0.066667
+    fact fr_well_r = 0.019608
+    fact fr_well_g = 0.164706
+    fact fr_well_b = 0.145098
+    fact fr_trace_dim_r = 0.121569
+    fact fr_trace_dim_g = 0.219608
+    fact fr_trace_dim_b = 0.200000
+    fact fr_trace_r = 0.239216
+    fact fr_trace_g = 0.415686
+    fact fr_trace_b = 0.376471
+    fact fr_trace_lit_r = 0.423529
+    fact fr_trace_lit_g = 0.788235
+    fact fr_trace_lit_b = 0.682353
+    fact fr_phos_r = 0.498039
+    fact fr_phos_g = 0.811765
+    fact fr_phos_b = 0.713725
+    fact fr_phos_fill_r = 0.090196
+    fact fr_phos_fill_g = 0.603922
+    fact fr_phos_fill_b = 0.533333
+    fact fr_ember_r = 0.878431
+    fact fr_ember_g = 0.482353
+    fact fr_ember_b = 0.180392
+    fact fr_ember_fill_r = 0.823529
+    fact fr_ember_fill_g = 0.411765
+    fact fr_ember_fill_b = 0.117647
+    fact fr_flare_r = 0.956863
+    fact fr_flare_g = 0.713725
+    fact fr_flare_b = 0.235294
+    fact fr_muted_r = 0.352941
+    fact fr_muted_g = 0.541176
+    fact fr_muted_b = 0.494118
+    fact fr_ink_r = 0.015686
+    fact fr_ink_g = 0.129412
+    fact fr_ink_b = 0.113725
+    fact fr_steel_900_r = 0.082353
+    fact fr_steel_900_g = 0.098039
+    fact fr_steel_900_b = 0.105882
+    fact fr_steel_700_r = 0.164706
+    fact fr_steel_700_g = 0.192157
+    fact fr_steel_700_b = 0.203922
+    fact fr_steel_500_r = 0.290196
+    fact fr_steel_500_g = 0.329412
+    fact fr_steel_500_b = 0.349020
+    fact fr_steel_300_r = 0.545098
+    fact fr_steel_300_g = 0.592157
+    fact fr_steel_300_b = 0.611765
+    fact fr_engrave_r = 0.603922
+    fact fr_engrave_g = 0.650980
+    fact fr_engrave_b = 0.670588
+    prop pr_ground_r = 0.000000 ~fl.relight
+    follow pr_ground_r = fr_ground_r
+    prop pr_ground_g = 0.000000 ~fl.relight
+    follow pr_ground_g = fr_ground_g
+    prop pr_ground_b = 0.000000 ~fl.relight
+    follow pr_ground_b = fr_ground_b
+    prop pr_hull_r = 0.015686 ~fl.relight
+    follow pr_hull_r = fr_hull_r
+    prop pr_hull_g = 0.035294 ~fl.relight
+    follow pr_hull_g = fr_hull_g
+    prop pr_hull_b = 0.031373 ~fl.relight
+    follow pr_hull_b = fr_hull_b
+    prop pr_hull_raised_r = 0.027451 ~fl.relight
+    follow pr_hull_raised_r = fr_hull_raised_r
+    prop pr_hull_raised_g = 0.074510 ~fl.relight
+    follow pr_hull_raised_g = fr_hull_raised_g
+    prop pr_hull_raised_b = 0.066667 ~fl.relight
+    follow pr_hull_raised_b = fr_hull_raised_b
+    prop pr_well_r = 0.019608 ~fl.relight
+    follow pr_well_r = fr_well_r
+    prop pr_well_g = 0.164706 ~fl.relight
+    follow pr_well_g = fr_well_g
+    prop pr_well_b = 0.145098 ~fl.relight
+    follow pr_well_b = fr_well_b
+    prop pr_trace_dim_r = 0.121569 ~fl.relight
+    follow pr_trace_dim_r = fr_trace_dim_r
+    prop pr_trace_dim_g = 0.219608 ~fl.relight
+    follow pr_trace_dim_g = fr_trace_dim_g
+    prop pr_trace_dim_b = 0.200000 ~fl.relight
+    follow pr_trace_dim_b = fr_trace_dim_b
+    prop pr_trace_r = 0.239216 ~fl.relight
+    follow pr_trace_r = fr_trace_r
+    prop pr_trace_g = 0.415686 ~fl.relight
+    follow pr_trace_g = fr_trace_g
+    prop pr_trace_b = 0.376471 ~fl.relight
+    follow pr_trace_b = fr_trace_b
+    prop pr_trace_lit_r = 0.423529 ~fl.relight
+    follow pr_trace_lit_r = fr_trace_lit_r
+    prop pr_trace_lit_g = 0.788235 ~fl.relight
+    follow pr_trace_lit_g = fr_trace_lit_g
+    prop pr_trace_lit_b = 0.682353 ~fl.relight
+    follow pr_trace_lit_b = fr_trace_lit_b
+    prop pr_phos_r = 0.498039 ~fl.relight
+    follow pr_phos_r = fr_phos_r
+    prop pr_phos_g = 0.811765 ~fl.relight
+    follow pr_phos_g = fr_phos_g
+    prop pr_phos_b = 0.713725 ~fl.relight
+    follow pr_phos_b = fr_phos_b
+    prop pr_phos_fill_r = 0.090196 ~fl.relight
+    follow pr_phos_fill_r = fr_phos_fill_r
+    prop pr_phos_fill_g = 0.603922 ~fl.relight
+    follow pr_phos_fill_g = fr_phos_fill_g
+    prop pr_phos_fill_b = 0.533333 ~fl.relight
+    follow pr_phos_fill_b = fr_phos_fill_b
+    prop pr_ember_r = 0.878431 ~fl.relight
+    follow pr_ember_r = fr_ember_r
+    prop pr_ember_g = 0.482353 ~fl.relight
+    follow pr_ember_g = fr_ember_g
+    prop pr_ember_b = 0.180392 ~fl.relight
+    follow pr_ember_b = fr_ember_b
+    prop pr_ember_fill_r = 0.823529 ~fl.relight
+    follow pr_ember_fill_r = fr_ember_fill_r
+    prop pr_ember_fill_g = 0.411765 ~fl.relight
+    follow pr_ember_fill_g = fr_ember_fill_g
+    prop pr_ember_fill_b = 0.117647 ~fl.relight
+    follow pr_ember_fill_b = fr_ember_fill_b
+    prop pr_flare_r = 0.956863 ~fl.relight
+    follow pr_flare_r = fr_flare_r
+    prop pr_flare_g = 0.713725 ~fl.relight
+    follow pr_flare_g = fr_flare_g
+    prop pr_flare_b = 0.235294 ~fl.relight
+    follow pr_flare_b = fr_flare_b
+    prop pr_muted_r = 0.352941 ~fl.relight
+    follow pr_muted_r = fr_muted_r
+    prop pr_muted_g = 0.541176 ~fl.relight
+    follow pr_muted_g = fr_muted_g
+    prop pr_muted_b = 0.494118 ~fl.relight
+    follow pr_muted_b = fr_muted_b
+    prop pr_ink_r = 0.015686 ~fl.relight
+    follow pr_ink_r = fr_ink_r
+    prop pr_ink_g = 0.129412 ~fl.relight
+    follow pr_ink_g = fr_ink_g
+    prop pr_ink_b = 0.113725 ~fl.relight
+    follow pr_ink_b = fr_ink_b
+    prop pr_steel_900_r = 0.082353 ~fl.relight
+    follow pr_steel_900_r = fr_steel_900_r
+    prop pr_steel_900_g = 0.098039 ~fl.relight
+    follow pr_steel_900_g = fr_steel_900_g
+    prop pr_steel_900_b = 0.105882 ~fl.relight
+    follow pr_steel_900_b = fr_steel_900_b
+    prop pr_steel_700_r = 0.164706 ~fl.relight
+    follow pr_steel_700_r = fr_steel_700_r
+    prop pr_steel_700_g = 0.192157 ~fl.relight
+    follow pr_steel_700_g = fr_steel_700_g
+    prop pr_steel_700_b = 0.203922 ~fl.relight
+    follow pr_steel_700_b = fr_steel_700_b
+    prop pr_steel_500_r = 0.290196 ~fl.relight
+    follow pr_steel_500_r = fr_steel_500_r
+    prop pr_steel_500_g = 0.329412 ~fl.relight
+    follow pr_steel_500_g = fr_steel_500_g
+    prop pr_steel_500_b = 0.349020 ~fl.relight
+    follow pr_steel_500_b = fr_steel_500_b
+    prop pr_steel_300_r = 0.545098 ~fl.relight
+    follow pr_steel_300_r = fr_steel_300_r
+    prop pr_steel_300_g = 0.592157 ~fl.relight
+    follow pr_steel_300_g = fr_steel_300_g
+    prop pr_steel_300_b = 0.611765 ~fl.relight
+    follow pr_steel_300_b = fr_steel_300_b
+    prop pr_engrave_r = 0.603922 ~fl.relight
+    follow pr_engrave_r = fr_engrave_r
+    prop pr_engrave_g = 0.650980 ~fl.relight
+    follow pr_engrave_g = fr_engrave_g
+    prop pr_engrave_b = 0.670588 ~fl.relight
+    follow pr_engrave_b = fr_engrave_b
+
+    // The islands' semantic tokens, which theme/tokens defines over these facts.
+    fact c_bg_primary_r = 0.062745
+    fact c_bg_primary_g = 0.078431
+    fact c_bg_primary_b = 0.086275
+    fact c_bg_secondary_r = 0.086275
+    fact c_bg_secondary_g = 0.105882
+    fact c_bg_secondary_b = 0.117647
+    fact c_surface_primary_r = 0.098039
+    fact c_surface_primary_g = 0.121569
+    fact c_surface_primary_b = 0.133333
+    fact c_surface_elevated_r = 0.133333
+    fact c_surface_elevated_g = 0.160784
+    fact c_surface_elevated_b = 0.176471
+    fact c_border_subtle_r = 0.172549
+    fact c_border_subtle_g = 0.207843
+    fact c_border_subtle_b = 0.223529
+    fact c_fg_primary_r = 0.890196
+    fact c_fg_primary_g = 0.913725
+    fact c_fg_primary_b = 0.921569
+    fact c_fg_secondary_r = 0.639216
+    fact c_fg_secondary_g = 0.690196
+    fact c_fg_secondary_b = 0.709804
+    fact c_fg_muted_r = 0.541176
+    fact c_fg_muted_g = 0.592157
+    fact c_fg_muted_b = 0.611765
+    fact c_accent_primary_r = 0.650980
+    fact c_accent_primary_g = 0.952941
+    fact c_accent_primary_b = 0.819608
+    fact c_accent_secondary_r = 1.000000
+    fact c_accent_secondary_g = 0.572549
+    fact c_accent_secondary_b = 0.372549
+    fact c_status_ok_r = 0.650980
+    fact c_status_ok_g = 0.952941
+    fact c_status_ok_b = 0.819608
+    fact c_status_error_r = 1.000000
+    fact c_status_error_g = 0.572549
+    fact c_status_error_b = 0.372549
+    fact c_focus_ring_r = 0.650980
+    fact c_focus_ring_g = 0.952941
+    fact c_focus_ring_b = 0.819608
+    fact c_selection_bg_r = 0.164706
+    fact c_selection_bg_g = 0.227451
+    fact c_selection_bg_b = 0.211765
+    // What theme/ferrolume reads for its geometry; the studio uses the colour, not the bar's
+    // strip, so these are only the values the tokens are defined against.
+    fact st_offset = 0
+    fact st_notch = false
+    fact bar_rail = true
+    fact st_height = 30
+    fact st_radius = 8
+    fact st_res = 46
+
+    fact st_glow = 1
+    fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
+
+    // ── What the services report ──
+    service media as med { playing: bool; title: text; artist: text; player: text }
+    service clock { time: text = "--:--"; date: text }
+
+    // ── The nub, the fan, which panel ──
+    fact nt_cy = 520             // the nub's middle (half the screen)
+    fact nt_h = 1049             // the screen's height (what the surface measures)
+    fact nt_open = false         // the fan is out
+    fact nt_tab = -1             // the panel out (lib/notch TABS, from 0), -1 none
+    fact nt_pin = false          // kept out: a tab pressed, typing, Claude answering
+    model tabs max 6 { word: text; x: number; y: number; glyph: number; badge: text; badged: bool }
+    // the deck's pieces (ui/deck.plm) read these: the notch is never a column and never being arranged
+    fact dk_vert = false
+    fact ed_in = 0
+    fact pn_y = 300              // the open panel's top
+    fact nt_px = 168             // and its left
+    fact nt_ox = 0               // where the carousels turn from (the nub, or the end of the Nexus)
+    fact nt_acy = 520
+    fact nt_dir = 1              // 1 they open rightwards, -1 leftwards
+    fact nt_deck = false         // opened from the Control Nexus's side (no fan)
+    fact nt_entered = false      // the pointer has been in the panel since it opened
+    fact nt_gdy = 0              // the nub carried along the edge
+
+    // ── Claude: the conversation, the field, what it is doing ──
+    model cl max 30 { kind: number; t: text }      // 0 you · 1 Claude · 2 your words · 3 its words · 4 a gap · 5 a note
+    text ch_in = ""
+    text ch_status = ""
+    fact ch_busy = false
+    fact ch_first = true         // no conversation yet: the suggestions show
+    fact ch_bmo = false          // asking BMO: Claude answers in his voice, and he says it on the desktop
+    model sugg max 4 { t: text }
+
+    // ── Music ──
+    text mu_art = ""
+    fact mu_art_on = false
+    image mcover = from mu_art, 160, 160
+    fact mu_prog = 0
+    fact mu_on = false
+    text mu_el = ""
+    text mu_len = ""
+    fact mv0 = 0
+    fact mv1 = 0
+    fact mv2 = 0
+    fact mv3 = 0
+    fact mv4 = 0
+    fact mv5 = 0
+    fact mv6 = 0
+    fact mv7 = 0
+    fact mv8 = 0
+    fact mv9 = 0
+    fact mv10 = 0
+    fact mv11 = 0
+    fact mv12 = 0
+    fact mv13 = 0
+    fact mv14 = 0
+    fact mv15 = 0
+    fact mv16 = 0
+    fact mv17 = 0
+    fact mv18 = 0
+    fact mv19 = 0
+    fact mv20 = 0
+    fact mv21 = 0
+    fact mv22 = 0
+    fact mv23 = 0
+
+    // ── The carousels: workspaces and wallpapers on an arc, the middle one large ──
+    text nt_wall = ""
+    fact nt_wall_on = false
+    image wall = from nt_wall, 480, 270
+    model warc max 12 { id: number; label: text; n: text; active: bool }
+    model wbox max 60 { k: number; nx: number; ny: number; nw: number; nh: number; focused: bool }
+    fact sp_c = 0                // the workspace in the middle
+    model pics max 40 { pic: image 320, 180; name: text; on: bool }
+    fact wp_c = 0                // the picture in the middle
+    text wp_t = ""
+
+    // ── Weather ──
+    fact wx_ok = false
+    fact wx_kind = 2
+    text wx_temp = ""
+    text wx_word = ""
+    text wx_feels = ""
+    text wx_place = ""
+    text wx_range = ""
+    model hrs max 6 { label: text; t: text; v: number; kind: number }
+    model dys max 5 { label: text; hi: text; lo: text; kind: number; lo_v: number; hi_v: number }
+
+    // ── GitHub ──
+    fact gh_ok = false
+    text gh_state = "Asking GitHub…"
+    text gh_login = ""
+    text gh_name = ""
+    text gh_avatar = ""
+    fact gh_avatar_on = false
+    image ghav = from gh_avatar, 64, 64
+    text gh_stats = ""
+    text gh_total = ""
+    model gcal max 182 { v: number }               // the last 26 weeks, a day each, Sunday first
+    model gprs max 5 { t: text; repo: text; url: text }
+    model gevt max 6 { t: text; repo: text; ago: text }
+    model grep max 4 { name: text; stars: text; lang: text }
+    text gh_notes = ""
+    fact gh_noted = false
+
+    event nt_close ->            // to the logic: fold away
+    event nt_tab_open ->         // to the logic: panel n pointed at (read what it needs)
+    event nt_show ->             // from outside (the bar, `mooi notch`): open on panel n, kept out
+    event nt_ask ->              // to the logic: ask Claude what the field says
+    event nt_ask_bmo ->          // from BMO's menu: the chat in his voice
+    event nt_mode ->             // to the logic: 0 Claude · 1 BMO
+    event nt_new ->              // to the logic: a new conversation
+    event nt_sugg ->             // to the logic: suggestion n pressed
+    event nt_scroll ->           // to the logic: the conversation scrolled by `wheel`
+    event nt_media ->            // to the logic: 0 previous · 1 play/pause · 2 next
+    event nt_open_player ->      // to the logic: open the music player
+    event nt_ws ->               // to the logic: go to workspace (its place on the arc)
+    event nt_wall ->             // to the logic: wear picture n
+    event nt_studio ->           // to the logic: open the wallpaper studio
+    event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
+    event nt_refresh ->          // to the logic: read the panel again
+    event nt_moved ->            // to the logic: the nub let go at this height
+    event nt_show_deck ->        // from the Control Nexus: open panel n where it has just said (nt_px, pn_y, nt_ox, nt_acy, nt_dir)
+
+    figure i_claude = file "icons/claude.svg"
+    figure i_music = file "icons/music.svg"
+    figure i_ws = file "icons/workspace.svg"
+    figure i_wall = file "icons/wallpaper.svg"
+    figure i_cloud = file "icons/cloud.svg"
+    figure i_git = file "icons/git.svg"
+    figure i_clear = file "icons/clear.svg"
+    figure i_night = file "icons/night.svg"
+    figure i_fog = file "icons/fog.svg"
+    figure i_rain = file "icons/rain.svg"
+    figure i_snow = file "icons/snow.svg"
+    figure i_storm = file "icons/storm.svg"
+
+    // ── Motion ──
+    prop fan_in = 0 ~m.expand
+    follow fan_in = if(nt_open, 1, 0)
+    prop pv = 0 ~m.expand
+    follow pv = if(nt_open and nt_tab >= 0, 1, 0)
+    prop spc = 0 ~m.reflow
+    follow spc = sp_c
+    prop wpc = 0 ~m.reflow
+    follow wpc = wp_c
+    prop mup = 0 ~m.reflow
+    follow mup = mu_prog
+    prop nub_lit = 0 ~m.select
+    follow nub_lit = if(nt_open, 1, 0)
+
+    // A tab's glyph `g` (lib/notch TABS' order), centred at (x, y).
+    component TGlyph(x: number, y: number, g: number, c: color) {
+        size: 16, 16
+        figure i_claude { at: x, y; size: 16, 16; color: c; show: g < 0.5 }
+        figure i_music { at: x, y; size: 16, 16; color: c; show: g > 0.5 and g < 1.5 }
+        figure i_ws { at: x, y; size: 16, 16; color: c; show: g > 1.5 and g < 2.5 }
+        figure i_wall { at: x, y; size: 16, 16; color: c; show: g > 2.5 and g < 3.5 }
+        figure i_cloud { at: x, y; size: 16, 16; color: c; show: g > 3.5 and g < 4.5 }
+        figure i_git { at: x, y; size: 16, 16; color: c; show: g > 4.5 }
+    }
+    component WGlyph(x: number, y: number, sz: number, k: number) {
+        size: sz, sz
+        figure i_clear { at: x, y; size: sz, sz; color: fl.flare; show: k < 0.5 }
+        figure i_night { at: x, y; size: sz, sz; color: dk.ink; show: k > 0.5 and k < 1.5 }
+        figure i_cloud { at: x, y; size: sz, sz; color: dk.ink; show: k > 1.5 and k < 2.5 }
+        figure i_fog { at: x, y; size: sz, sz; color: dk.ink; show: k > 2.5 and k < 3.5 }
+        figure i_rain { at: x, y; size: sz, sz; color: dk.acc; show: k > 3.5 and k < 4.5 }
+        figure i_snow { at: x, y; size: sz, sz; color: dk.ink; show: k > 4.5 and k < 5.5 }
+        figure i_storm { at: x, y; size: sz, sz; color: dk.hot; show: k > 5.5 }
+    }
+
+    surface notch {
+        // the whole screen (panels open beside the Control Nexus too): where nothing is drawn a press goes through
+        size: full, full
+        anchor: top_left
+        level: top
+        keyboard: on_demand
+
+        on key Escape { nt_pin = false; nt_open = false; nt_tab = -1; blur }
+
+        // ═══ The nub: a lit sliver on the edge; pointed at, the fan comes out ═══
+        // drag it along the edge to put it somewhere else; it stays there (notch-state.json)
+        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
+        on hover nubz for 110ms while nt_gdy == 0 { nt_open = true; nt_deck = false }
+        on press nubz { nt_open = true; nt_deck = false; nt_pin = not nt_pin }
+        on drag nubz { nt_gdy = drag.dy; nt_open = false; nt_tab = -1; nt_pin = false }
+        on release nubz while nt_gdy != 0 { emit nt_moved(round(nt_cy + nt_gdy)); nt_gdy = 0 }
+        group {
+            glow: 8, (0.5 + 0.5 * nub_lit) * st_glow, dk.acc
+            box { from: -3, nt_cy + nt_gdy - 46 - 8 * nub_lit; size: 8 + 3 * nub_lit, 92 + 16 * nub_lit; corner: 4; color: mix(dk.raised, dk.acc, 0.35 + 0.5 * nub_lit) }
+        }
+        repeat g in 0..3 {
+            box { from: 1.5, nt_cy + nt_gdy - 8 + g * 6; size: 2, 3; color: dk.ink; opacity: 0.55 * (1 - nub_lit) }
+        }
+
+        // ═══ The fan: the tabs on their arc, a trace of the arc behind them ═══
+        group {
+            show: fan_in > 0.01 and not nt_deck
+            opacity: smooth(0, 0.6, fan_in)
+            zone box fanz { from: 0, nt_cy - 150; size: 160, 300; role: region; label: "The notch's tabs" }
+            // the arc they sit on, and its traces back to the nub
+            repeat s in 0..24 {
+                let a0.$s = -66 + s * 5.5
+                let a1.$s = -66 + (s + 1) * 5.5
+                line { from: 10 + cos(a0.$s) * 100 * fan_in, nt_cy + sin(a0.$s) * 100 * fan_in; to: 10 + cos(a1.$s) * 100 * fan_in, nt_cy + sin(a1.$s) * 100 * fan_in; width: 1; color: dk.acc; opacity: 0.35 }
+            }
+            for t in tabs {
+                let tx = 10 * (1 - fan_in) + t.x * fan_in
+                let ty = nt_cy + (t.y - nt_cy) * fan_in
+                let on = nt_tab == t.index
+                zone box tz { from: tx - 19, ty - 19; size: 38, 38; cursor: pointer; role: tab; selected: on; label: t.word }
+                line { from: 4, nt_cy; to: tx - 18, ty; width: 1; color: dk.acc; opacity: 0.18 + 0.4 * if(on, 1, 0) }
+                group {
+                    glow: 7, (if(on, 0.9, 0.3 * tz.hover)) * st_glow, dk.acc
+                    path { color: if(on, mix(dk.raised, dk.acc, 0.35), mix(dk.raised, dk.acc, 0.08 + 0.15 * tz.hover))
+                           move tx, ty - 19; line tx + 16.5, ty - 9.5; line tx + 16.5, ty + 9.5; line tx, ty + 19; line tx - 16.5, ty + 9.5; line tx - 16.5, ty - 9.5; close }
+                    path { stroke: 1.2; color: if(on, dk.acc, mix(dk.line, dk.acc, 0.5 + 0.5 * tz.hover))
+                           move tx, ty - 19; line tx + 16.5, ty - 9.5; line tx + 16.5, ty + 9.5; line tx, ty + 19; line tx - 16.5, ty + 9.5; line tx - 16.5, ty - 9.5; close }
+                }
+                TGlyph(tx, ty, t.glyph, if(on, dk.ink, mix(dk.ink2, dk.acc, tz.hover)))
+                text "{upper(t.word)}" { at: tx + 24, ty; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: tz.hover * (1 - pv) }
+                group {
+                    show: t.badged
+                    box { from: tx + 7, ty - 18; size: 16, 11; corner: 3; color: dk.hot }
+                    text t.badge { at: tx + 15, ty - 12.5; anchor: center; align: center; size: 7.5; weight: 700; family: "Exo 2"; color: dk.well }
+                }
+                on hover tz for 140ms { nt_tab = t.index; emit nt_tab_open(t.index) }
+                on press tz { nt_tab = t.index; nt_pin = true; emit nt_tab_open(t.index) }
+            }
+        }
+
+        // ═══ The panels, beside the fan ═══
+        group {
+            show: pv > 0.01
+            move: -nt_dir * (1 - pv) * 24, 0
+            opacity: smooth(0, 0.7, pv)
+
+            // ── Claude ──
+            group {
+                show: nt_tab == 0
+                move: nt_px, pn_y
+                zone box keep0 { from: 0, 0; size: 440, 600; role: region; label: "Claude" }
+                Card(440, 600, 0)
+                PartHead(440, "", "Claude", ch_status, lamp: if(ch_busy, 2, 1))
+                // who answers: Claude, or BMO (who also says it on the desktop)
+                zone box chm0 { from: 14, 34; size: 70, 22; cursor: pointer; role: tab; selected: not ch_bmo; label: "Ask Claude" }
+                Act(14, 34, 70, "Claude", not ch_bmo, false, chm0.hover)
+                on press chm0 { emit nt_mode(0) }
+                zone box chm1 { from: 88, 34; size: 70, 22; cursor: pointer; role: tab; selected: ch_bmo; label: "Ask BMO" }
+                Act(88, 34, 70, "BMO", ch_bmo, false, chm1.hover)
+                on press chm1 { emit nt_mode(1) }
+                zone box chnew { from: 330, 34; size: 96, 22; cursor: pointer; role: button; label: "A new conversation" }
+                Act(330, 34, 96, "New chat", false, false, chnew.hover)
+                on press chnew { emit nt_new }
+                line { from: 14, 64; to: 426, 64; width: 1; color: dk.line; opacity: 0.6 }
+                zone box chlog { from: 0, 66; size: 440, 450; role: region; label: "The conversation" }
+                on scroll chlog { emit nt_scroll(wheel) }
+                group {
+                    clip box { from: 8, 66; size: 424, 450 }
+                    for m in cl {
+                        let my = 76 + m.index * 15
+                        text "YOU" { at: 18, my + 6; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.hot; show: m.kind == 0 }
+                        group {
+                            show: m.kind == 1
+                            figure i_claude { at: 23, my + 6; size: 10, 10; color: dk.acc }
+                            text "CLAUDE" { at: 32, my + 6; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        }
+                        group {
+                            show: m.kind == 6
+                            box { from: 18, my + 1; size: 11, 10; corner: 2; color: #6fc3a8 }
+                            box { from: 20, my + 3; size: 7, 4; color: #0e2a24 }
+                            text "BMO" { at: 34, my + 6; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: #6fc3a8 }
+                        }
+                        text m.t { at: 18, my + 6; anchor: left center; size: 11.5; family: "Exo 2"; color: dk.hot; width: 404; lines: 1; show: m.kind == 2 }
+                        text m.t { at: 18, my + 6; anchor: left center; size: 11.5; family: "Exo 2"; color: dk.ink; width: 404; lines: 1; show: m.kind == 3 }
+                        text m.t { at: 18, my + 6; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: 404; lines: 1; show: m.kind == 5 }
+                    }
+                }
+                // nothing said yet: a few things to ask
+                group {
+                    show: ch_first
+                    figure i_claude { at: 220, 190; size: 34, 34; color: dk.acc }
+                    text "ASK CLAUDE ANYTHING" { at: 220, 228; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                    text "Your own Claude, through Claude Code. It can talk, not act." { at: 220, 248; anchor: center; align: center; size: 10.5; family: "Exo 2"; color: dk.mute }
+                    for g in sugg {
+                        let gy = 282 + g.index * 34
+                        zone box gz { from: 40, gy; size: 360, 28; cursor: pointer; role: button; label: g.t }
+                        box { from: 40, gy; size: 360, 28; corner: dk.r; color: mix(dk.well, dk.acc, 0.1 * gz.hover) }
+                        box { from: 40, gy; size: 360, 28; corner: dk.r; stroke: 1; color: mix(dk.line, dk.acc, 0.4 + 0.6 * gz.hover) }
+                        text g.t { at: 54, gy + 14.5; anchor: left center; size: 11; family: "Exo 2"; color: dk.ink2; width: 336; lines: 1 }
+                        on press gz { emit nt_sugg(g.index) }
+                    }
+                }
+                // the field
+                box { from: 14, 528; size: 412, 56; corner: dk.r; color: dk.well }
+                box { from: 14, 528; size: 412, 56; corner: dk.r; stroke: 1; color: mix(dk.line, dk.acc, if(ch_busy, 0.4, 0.8)) }
+                zone box chf { from: 14, 528; size: 340, 56; cursor: text; role: region; label: "Ask Claude" }
+                input ch_in { at: 26, 556; width: 320; size: 13; family: "Exo 2"; color: dk.ink; placeholder: "Ask Claude… (Enter sends)"; selection: dk.well; label: "Ask Claude" }
+                on press chf { nt_pin = true; focus ch_in }
+                on submit ch_in while not ch_busy { emit nt_ask }
+                zone box chsend { from: 358, 540; size: 58, 32; cursor: pointer; role: button; label: "Send"; active: not ch_busy }
+                Act(358, 544, 58, "Send", not ch_busy, false, chsend.hover) { show: not ch_busy }
+                Act(358, 544, 58, "…", false, false, 0) { show: ch_busy }
+                on press chsend while not ch_busy { emit nt_ask }
+            }
+
+            // ── Music: the player slid out of the notch ──
+            group {
+                show: nt_tab == 1
+                move: nt_px, pn_y
+                zone box keep1 { from: 0, 0; size: 440, 220; role: region; label: "Music" }
+                Card(440, 220, 0)
+                group {
+                    show: mu_art_on
+                    clip box { from: 1, 1; size: 438, 218; corner: dk.r }
+                    image mcover { at: 0, -110; size: 440, 440; opacity: 0.18 }
+                    repeat f in 0..5 {
+                        box { from: 0, 44 * f; size: 440, 45; color: mix(dk.raised, #000000, 0.5); opacity: 0.2 + f * 0.12 }
+                    }
+                }
+                PartHead(440, "", "Music", med.player, lamp: if(med.playing, 1, 0))
+                zone box mca { from: 16, 38; size: 132, 132; cursor: pointer; role: button; label: "Open the music player" }
+                body {
+                    color: dk.well
+                    shadow: 0, 8, 22, 55%
+                    box { from: 16, 38; size: 132, 132; corner: dk.r }
+                }
+                image mcover { at: 16, 38; size: 132, 132; show: mu_art_on }
+                figure i_music { at: 82, 104; size: 30, 30; color: dk.mute; show: not mu_art_on }
+                box { from: 16, 38; size: 132, 132; corner: dk.r; stroke: 1; color: mix(dk.line, dk.hot, mca.hover) }
+                on press mca { emit nt_open_player }
+                text pick(mu_on, "Nothing playing", med.title) { at: 164, 54; anchor: left center; size: 16; weight: 600; family: "Exo 2"; color: dk.ink; width: 262; lines: 1 }
+                text med.artist { at: 164, 76; anchor: left center; size: 11.5; family: "Exo 2"; color: dk.ink2; width: 262; lines: 1 }
+                // the visualiser, then where the song is
+                group {
+                    glow: 5, 0.55 * st_glow, dk.hot
+                    repeat v in 0..24 {
+                        let vv.$v = pick(v, mv0, mv1, mv2, mv3, mv4, mv5, mv6, mv7, mv8, mv9, mv10, mv11, mv12, mv13, mv14, mv15, mv16, mv17, mv18, mv19, mv20, mv21, mv22, mv23)
+                        box { from: 164 + v * 10.8, 126 - 30 * clamp(vv.$v, 0.04, 1); size: 7.5, 30 * clamp(vv.$v, 0.04, 1); corner: 1; color: dk.hot; opacity: 0.4 + 0.6 * vv.$v }
+                    }
+                }
+                box { from: 164, 138; size: 262, 3; corner: 1; color: dk.well }
+                box { from: 164, 138; size: 262 * clamp(mup, 0, 1), 3; corner: 1; color: dk.hot }
+                ellipse { at: 164 + 262 * clamp(mup, 0, 1), 139.5; radius: 3.5; color: dk.ink }
+                text mu_el { at: 164, 152; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                text mu_len { at: 426, 152; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                zone box mb0 { from: 236, 168; size: 32, 32; cursor: pointer; role: button; label: "Previous" }
+                zone box mb1 { from: 276, 166; size: 36, 36; cursor: pointer; role: button; label: "Play or pause" }
+                zone box mb2 { from: 320, 168; size: 32, 32; cursor: pointer; role: button; label: "Next" }
+                text "⏮" { at: 252, 184; anchor: center; align: center; size: 14; color: mix(dk.ink2, dk.ink, mb0.hover) }
+                box { from: 276, 166; size: 36, 36; corner: if(isl_style > 0.5, 18, 3); color: mix(dk.well, dk.hot, 0.2 + 0.25 * mb1.hover) }
+                box { from: 276, 166; size: 36, 36; corner: if(isl_style > 0.5, 18, 3); stroke: 1.2; color: dk.hot }
+                text pick(med.playing, "▶", "⏸") { at: 294, 184; anchor: center; align: center; size: 15; color: dk.hot }
+                text "⏭" { at: 336, 184; anchor: center; align: center; size: 14; color: mix(dk.ink2, dk.ink, mb2.hover) }
+                on press mb0 { emit nt_media(0) }
+                on press mb1 { emit nt_media(1) }
+                on press mb2 { emit nt_media(2) }
+            }
+
+            // ── Workspaces on an arc: the one you are on in the middle; the wheel turns it ──
+            group {
+                show: nt_tab == 2
+                zone box keep2 { from: nt_ox + if(nt_dir > 0, 0, -760), 40; size: 760, nt_h - 80; role: region; label: "Workspaces" }
+                on scroll keep2 { sp_c = clamp(sp_c - wheel, 0, max(0, warc.count - 1)) }
+                text "WORKSPACES · THE WHEEL TURNS THE ARC · A PRESS GOES THERE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                for w in warc {
+                    let wa = (w.index - spc) * 13
+                    let ws = 1 - min(abs(wa), 60) / 110
+                    let wx = nt_ox + nt_dir * (cos(wa) * 560 - 212 + 168) - 120 * ws
+                    let wy = nt_acy + sin(wa) * 560 - 70 * ws
+                    group {
+                        show: abs(wa) < 48
+                        opacity: 1 - abs(wa) / 60
+                        zone box wz { from: wx, wy; size: 240 * ws, 140 * ws; cursor: pointer; role: item; selected: w.active; label: "Workspace {w.id}" }
+                        group {
+                            clip box { from: wx, wy; size: 240 * ws, 135 * ws; corner: dk.r }
+                            box { from: wx, wy; size: 240 * ws, 135 * ws; color: dk.well }
+                            image wall { at: wx, wy; size: 240 * ws, 135 * ws; opacity: 0.85; show: nt_wall_on }
+                            box { from: wx, wy; size: 240 * ws, 135 * ws; color: #000000; opacity: if(w.active, 0.1, 0.35 - 0.2 * wz.hover) }
+                        }
+                        group {
+                            glow: 8, if(w.active, 0.7, 0.4 * wz.hover) * st_glow, dk.acc
+                            box { from: wx, wy; size: 240 * ws, 135 * ws; corner: dk.r; stroke: if(w.active, 1.8, 1); color: if(w.active, dk.acc, mix(dk.line, dk.acc, wz.hover)) }
+                        }
+                        text w.label { at: wx + 4, wy + 135 * ws + 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(w.active, dk.acc, dk.ink2) }
+                        text w.n { at: wx + 240 * ws - 4, wy + 135 * ws + 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute }
+                        on press wz { emit nt_ws(w.index) }
+                    }
+                }
+                // each workspace's windows, where they are, in its miniature
+                for b in wbox {
+                    let ba = (b.k - spc) * 13
+                    let bs = 1 - min(abs(ba), 60) / 110
+                    let bx = nt_ox + nt_dir * (cos(ba) * 560 - 212 + 168) - 120 * bs
+                    let by = nt_acy + sin(ba) * 560 - 70 * bs
+                    box { from: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs); corner: 1
+                          color: mix(dk.raised, #000000, 0.2); opacity: 0.8 * (1 - abs(ba) / 60); show: abs(ba) < 48 }
+                    box { from: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs); corner: 1; stroke: 1
+                          color: if(b.focused, dk.acc, dk.line); opacity: 1 - abs(ba) / 60; show: abs(ba) < 48 }
+                }
+            }
+
+            // ── Wallpapers on an arc: the wheel turns it, a press wears one ──
+            group {
+                show: nt_tab == 3
+                zone box keep3 { from: nt_ox + if(nt_dir > 0, 0, -800), 40; size: 800, nt_h - 80; role: region; label: "Wallpapers" }
+                on scroll keep3 { wp_c = clamp(wp_c - wheel, 0, max(0, pics.count - 1)) }
+                text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
+                zone box wpst { from: nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312; size: 140, 24; cursor: pointer; role: button; label: "Open the wallpaper studio" }
+                Act(nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312, 140, "Open the studio", false, false, wpst.hover)
+                on press wpst { emit nt_studio }
+                for p in pics {
+                    let pa = (p.index - wpc) * 12
+                    let ps = 1 - min(abs(pa), 60) / 100
+                    let px = nt_ox + nt_dir * (cos(pa) * 580 - 212 + 168) - 140 * ps
+                    let py = nt_acy + sin(pa) * 580 - 79 * ps
+                    group {
+                        show: abs(pa) < 50
+                        opacity: 1 - abs(pa) / 62
+                        zone box pz { from: px, py; size: 280 * ps, 158 * ps; cursor: pointer; role: item; selected: p.on; label: "Wear {p.name}" }
+                        body {
+                            color: dk.well
+                            shadow: 0, 6 * ps, 18 * ps, 50%
+                            box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r }
+                        }
+                        group {
+                            clip box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r }
+                            image p.pic { at: px, py; size: 280 * ps, 158 * ps }
+                        }
+                        group {
+                            glow: 8, if(p.on, 0.7, 0.5 * pz.hover) * st_glow, dk.acc
+                            box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r; stroke: if(p.on, 1.8, 1); color: if(p.on, dk.acc, mix(dk.line, dk.acc, pz.hover)) }
+                        }
+                        text "WEARING" { at: px + 280 * ps - 8, py + 12; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: p.on }
+                        on press pz { emit nt_wall(p.index) }
+                    }
+                }
+            }
+
+            // ── Weather: now, the next hours, the days ──
+            group {
+                show: nt_tab == 4
+                move: nt_px, pn_y
+                zone box keep4 { from: 0, 0; size: 440, 340; role: region; label: "Weather" }
+                Card(440, 340, 0)
+                PartHead(440, "", "Weather", wx_place, lamp: if(wx_ok, 1, 0))
+                group {
+                    show: wx_ok
+                    WGlyph(70, 92, 64, wx_kind)
+                    text wx_temp { at: 124, 86; anchor: left center; size: 46; weight: 300; family: "Exo 2"; color: dk.ink }
+                    text wx_word { at: 126, 120; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                    text wx_feels { at: 426, 70; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
+                    text wx_range { at: 426, 90; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
+                    // the next six hours, a bar each, its temperature over it
+                    line { from: 16, 146; to: 424, 146; width: 1; color: dk.line; opacity: 0.6 }
+                    for h in hrs {
+                        let hx = 30 + h.index * 66
+                        box { from: hx, 222 - 50 * h.v; size: 40, 50 * h.v; corner: dk.r; color: mix(dk.well, dk.acc, 0.2 + 0.4 * h.v) }
+                        box { from: hx, 222 - 50 * h.v; size: 40, 2; color: dk.acc }
+                        text h.t { at: hx + 20, 214 - 50 * h.v; anchor: center; align: center; size: 10; weight: 600; family: "Exo 2"; color: dk.ink }
+                        text h.label { at: hx + 20, 234; anchor: center; align: center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                    }
+                    line { from: 16, 250; to: 424, 250; width: 1; color: dk.line; opacity: 0.6 }
+                    for dd in dys {
+                        let dx = 16 + dd.index * 82
+                        text dd.label { at: dx + 41, 266; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(dd.index == 0, dk.acc, dk.ink2) }
+                        WGlyph(dx + 41, 290, 20, dd.kind)
+                        text "{dd.hi}° {dd.lo}°" { at: dx + 41, 316; anchor: center; align: center; size: 10; family: "Exo 2"; color: dk.ink }
+                        box { from: dx + 16, 326; size: 50, 3; corner: 1; color: dk.well }
+                        box { from: dx + 16 + 50 * dd.lo_v, 326; size: max(4, 50 * (dd.hi_v - dd.lo_v)), 3; corner: 1; color: dk.acc }
+                    }
+                }
+                text "NO WORD FROM THE WEATHER YET" { at: 220, 170; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not wx_ok }
+            }
+
+            // ── GitHub: you, your contributions, what waits for you, what you did lately ──
+            group {
+                show: nt_tab == 5
+                move: nt_px, pn_y
+                zone box keep5 { from: 0, 0; size: 460, 600; role: region; label: "GitHub" }
+                Card(460, 600, 0)
+                PartHead(460, "", "GitHub", gh_notes, lamp: if(gh_ok, 1, 0))
+                group {
+                    show: gh_ok
+                    zone box ghme { from: 14, 34; size: 300, 56; cursor: pointer; role: button; label: "Your profile on GitHub" }
+                    box { from: 14, 36; size: 48, 48; corner: if(isl_style > 0.5, 24, 3); color: dk.well }
+                    group {
+                        clip box { from: 14, 36; size: 48, 48; corner: if(isl_style > 0.5, 24, 3) }
+                        image ghav { at: 14, 36; size: 48, 48; show: gh_avatar_on }
+                    }
+                    box { from: 14, 36; size: 48, 48; corner: if(isl_style > 0.5, 24, 3); stroke: 1.4; color: mix(dk.line, dk.acc, 0.5 + 0.5 * ghme.hover) }
+                    text gh_name { at: 74, 52; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink; width: 240; lines: 1 }
+                    text gh_login { at: 74, 72; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: dk.acc }
+                    text gh_stats { at: 446, 52; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.ink2 }
+                    on press ghme { emit nt_gh(0) }
+                    zone box ghn { from: 340, 62; size: 106, 22; cursor: pointer; role: button; label: "Your notifications" }
+                    Act(340, 62, 106, "Notifications", false, gh_noted, ghn.hover)
+                    on press ghn { emit nt_gh(10) }
+                    // contributions: the last 26 weeks, a column a week
+                    text "CONTRIBUTIONS · 26 WEEKS" { at: 14, 104; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                    text gh_total { at: 446, 104; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.acc }
+                    for c in gcal {
+                        let cx = 14 + floor(c.index / 7) * 16.5
+                        let cy = 114 + mod(c.index, 7) * 12.5
+                        box { from: cx, cy; size: 14.5, 10.5; corner: 2; color: if(c.v > 0.01, mix(mix(dk.well, dk.acc, 0.3), dk.acc, c.v), dk.well); opacity: if(c.v > 0.01, 0.4 + 0.6 * c.v, 0.7) }
+                    }
+                    line { from: 14, 212; to: 446, 212; width: 1; color: dk.line; opacity: 0.6 }
+                    text "YOUR OPEN PULL REQUESTS" { at: 14, 226; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                    text "NONE OPEN" { at: 446, 226; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: gprs.count == 0 }
+                    for r in gprs {
+                        let ry = 238 + r.index * 26
+                        zone box prz { from: 10, ry; size: 440, 24; cursor: pointer; role: link; label: "{r.repo}: {r.t}" }
+                        box { from: 10, ry; size: 440, 24; corner: dk.r; color: dk.acc; opacity: 0.08 * prz.hover }
+                        text r.repo { at: 18, ry + 12.5; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.acc; width: 120; lines: 1 }
+                        text r.t { at: 142, ry + 12.5; anchor: left center; size: 11; family: "Exo 2"; color: dk.ink; width: 300; lines: 1 }
+                        on press prz { emit nt_gh(1 + r.index) }
+                    }
+                    line { from: 14, 372; to: 446, 372; width: 1; color: dk.line; opacity: 0.6 }
+                    text "LATELY" { at: 14, 386; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                    for e in gevt {
+                        let ey = 398 + e.index * 22
+                        ellipse { at: 20, ey + 10; radius: 2.4; color: dk.acc }
+                        text e.t { at: 30, ey + 10; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: 300; lines: 1 }
+                        text e.ago { at: 446, ey + 10; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                    }
+                    line { from: 14, 536; to: 446, 536; width: 1; color: dk.line; opacity: 0.6 }
+                    for g in grep {
+                        let gx = 14 + g.index * 110
+                        text g.name { at: gx, 554; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: dk.ink; width: 104; lines: 1 }
+                        text "★ {g.stars} · {g.lang}" { at: gx, 572; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; width: 104; lines: 1 }
+                    }
+                }
+                text gh_state { at: 230, 300; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not gh_ok }
+            }
+        }
+
+        // folding away: the pointer off the nub, the fan and the panel for a moment (unless kept out)
+        let nt_over = max(max(nubz.hover, fanz.hover), max(max(keep0.hover, keep1.hover), max(max(keep2.hover, keep3.hover), max(keep4.hover, keep5.hover))))
+        on change nt_over while nt_over > 0.5 and nt_tab >= 0 { nt_entered = true }
+        on still nt_over for 650ms while nt_open and not nt_pin and nt_over < 0.5 and (nt_entered or not nt_deck) { nt_open = false; nt_tab = -1 }
+        // opened from the Nexus and never pointed at: it goes after a while
+        on still nt_over for 2200ms while nt_open and nt_deck and not nt_pin and not nt_entered and nt_over < 0.5 { nt_open = false; nt_tab = -1 }
+    }
+}

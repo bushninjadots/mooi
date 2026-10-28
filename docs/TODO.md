@@ -16,7 +16,11 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Deck: move and hide its parts by hand (✎), seven parts, twelve quick settings (D103)
 - [x] Deck: drag a window from one miniature onto another; name a scene as it is saved; an environment (D43)
       restored with a scene (D103)
-- [ ] Deck, later: one deck per monitor; parts resized by hand; the spine's hairline warm on a hot CPU
+- [x] Cards on a circuit, every one movable, two rows, profile/activity/visualiser (D105)
+- [x] The side notch: Claude, music, workspace and wallpaper arcs, weather, GitHub; notches off the Nexus;
+      Claude in BMO; Claude and GitHub bar modules (D106)
+- [ ] Later: one deck per monitor; cards resized by hand; the spine's hairline warm on a hot CPU; the notch
+      on the right edge as a choice; the GitHub panel's issues assigned to you
 
 ## Bar islands (asked 2026-10-27) — built (D97)
 

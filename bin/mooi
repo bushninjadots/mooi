@@ -27,6 +27,7 @@
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
 #   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
+#   mooi notch [panel]    the side notch on a panel: claude (default), music, spaces, walls, weather, github
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
@@ -512,7 +513,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk mooi-player; do
+    for prog in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk mooi-player mooi-notch; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -539,6 +540,7 @@ snapshot() {
     "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-desk.plm" >/dev/null || { echo "mooi: the desk does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-player.plm" >/dev/null || { echo "mooi: the music player does not compile; the running one is kept" >&2; return 1; }
+    "$pleamar" --check "$root/shell/mooi-notch.plm" >/dev/null || { echo "mooi: the side notch does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/bmo/bmo.plm" >/dev/null || { echo "mooi: BMO does not compile; the running one is kept" >&2; return 1; }
     settings_link
     rm -rf "$live.new" && cp -r "$root/shell" "$live.new" || return 1
@@ -754,6 +756,10 @@ case "$cmd" in
             exec "$pleamar" --say "$name" "emit open_player 1" ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
+    notch) # the side notch on a panel: claude music spaces walls weather github (Claude by default)
+        case "${1:-claude}" in claude) n=0 ;; music) n=1 ;; spaces|workspaces) n=2 ;; walls|wallpapers) n=3 ;; weather) n=4 ;; github) n=5 ;;
+            *) echo "usage: mooi notch [claude|music|spaces|walls|weather|github]" >&2; exit 2 ;; esac
+        exec "$pleamar" --say mooi-notch "emit nt_show $n" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_nexus" ;;
     hardware)
@@ -883,6 +889,7 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-player.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-notch.plm" || exit 1
         "$pleamar" --check "$root/shell/bmo/bmo.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
