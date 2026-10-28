@@ -289,12 +289,10 @@ M.SCHEMA = {
     { path = "wallpaper.backdrop", kind = "enum", values = { "black", "picture", "corners", "edges", "both" }, default = "black" },
     { path = "wallpaper.key", kind = "boolean", default = false },
     { path = "wallpaper.fuzz", kind = "integer", default = 18, min = 0, max = 45 },
-    -- The Control Nexus (D98): a drawer from the bar's mark; which of its sections are folded.
-    { path = "nexus.folded", kind = "ids", max = 12 },
-    -- the orbit (D99, lib/nexusorbit): the nodes round the core, the arcs' readings, the backdrop
-    { path = "nexus.orbit.nodes", kind = "ids", max = 8 },
-    { path = "nexus.orbit.arcs", kind = "ids", max = 3 },
-    { path = "nexus.orbit.backdrop", kind = "enum", values = { "banner", "circuit", "plain" }, default = "banner" },
+    -- The Control Nexus (D102): what the bar's mark opens — the deck, or the spine's shelves all out
+    -- at once (Cascade) — and the edge the deck comes from.
+    { path = "nexus.mode", kind = "enum", values = { "deck", "cascade" }, default = "deck" },
+    { path = "nexus.edge", kind = "enum", values = { "bottom", "top", "left", "right" }, default = "bottom" },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -464,11 +462,11 @@ local function migrate(t)
         if t.bar.modules.clock.show == nil then t.bar.modules.clock.show = spine.clock end
         spine.clock = nil
     end
-    -- D98: the Nexus is a drawer; of its old settings (the node workspace, the hub) only who you
-    -- are and the folded sections are read. The rest goes quietly rather than as unknown settings.
+    -- D102: the Nexus is a deck; of its old settings (the node workspace, the hub, the drawer's
+    -- folds, the orbit) only who you are is read. The rest goes quietly rather than as unknown settings.
     if type(t.nexus) == "table" then
         for k in pairs(t.nexus) do
-            if k ~= "identity" and k ~= "folded" and k ~= "orbit" then t.nexus[k] = nil end
+            if k ~= "identity" and k ~= "mode" and k ~= "edge" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

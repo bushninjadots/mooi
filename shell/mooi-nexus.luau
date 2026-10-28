@@ -1,9 +1,10 @@
--- mooi's Control Nexus (D98): the drawer's logic. What the drawer shows is read only while it is
--- open (the program ends when it closes): the services the scene binds straight to, the machine
--- every 2 s, the bar's own switches every 2 s, and two files the bar writes (nexus-feed.json,
--- updates.json). Every press goes to the system (sys.call) or to the bar (`pleamar --say mooi`),
--- which alone can open its islands, clear notifications, record or run the updater. The column's
--- geometry is lib/nexusdrawer's; settings.json is mooi's own (bin/mooi links the data folder).
+-- mooi's Control Nexus as a deck (D102): its logic. What the deck shows is read only while it is
+-- open (the program ends when it closes): the services the scene binds straight to, the windows and
+-- workspaces from Hyprland, the machine every 2 s, the bar's own switches every 2 s, and the files
+-- the bar writes (nexus-feed.json, updates.json). Where everything goes is lib/nexusdeck's; every
+-- press goes to the system (sys.call), to Hyprland, or to the bar (`pleamar --say mooi`), which
+-- alone can open its islands, record or run the updater. settings.json is mooi's own (bin/mooi
+-- links the data folder); scenes are kept beside it in nexus-scenes.json.
 
 local config = require("lib/config")
 local ferro = require("lib/ferro")
@@ -11,12 +12,13 @@ local theme = require("lib/theme")
 local style = require("lib/style")
 local sysinfo = require("lib/sysinfo")
 local stats = require("lib/stats")
-local calendar = require("lib/calendar")
 local forecast = require("lib/forecast")
-local drawer = require("lib/nexusdrawer")
-local orbit = require("lib/nexusorbit")
+local nexusfeed = require("lib/nexusfeed")
+local hypr = require("lib/hypr")
+local atlas = require("lib/atlas")
+local deck = require("lib/nexusdeck")
 
-local FILE = "settings.json"
+local FILE, SCENES = "settings.json", "nexus-scenes.json"
 
 local function env(name, fallback)
     local ok, v = pcall(sys.ask, "env", name)
@@ -33,17 +35,21 @@ local function launch(cmd, args, done)
     if not ok and done then done(nil) end
 end
 local function bar(...) launch("pleamar", { "--say", "mooi", ... }) end
+local function decode(out) local ok, t = pcall(json.decode, out or ""); return ok and t or nil end
+local SAFE = env("MOOI_SAFE", "") == "1"
 
--- config.parse takes the file's text (it decodes and checks it itself); handed a decoded table it
--- saw no JSON and fell back to the defaults — your name, pictures, island style and folds lost
+-- config.parse takes the file's text (it decodes and checks it itself)
 local function read_text(name)
     local ok, v = pcall(sys.ask, "files.read", name)
     return ok and type(v) == "string" and v or nil
 end
 local settings = config.parse(read_text(FILE), json.decode)
-local screen_w = 1920
-local wifi_on, bt_powered = true, false
 local data_folder = env("XDG_DATA_HOME", env("HOME", "") .. "/.local/share") .. "/pleamar/mooi"
+local screen = { w = 1920, h = 1080, mon = nil }
+local d = nil                -- the deck's layout (lib/nexusdeck), once the screen is known
+local this_stream = nil      -- the sound of the window you are in: its place in `apps`
+local waiting_items = {}     -- what is waiting, as lib/nexusdeck listed it
+local publish_window         -- defined with the windows, below
 
 -- ── The look: the shell's palette, the island style, the corners ──
 local function paint()
@@ -67,112 +73,24 @@ local function paint()
 end
 paint()
 
--- ── Who, and where the drawer sits (under the bar, the screen's height below it) ──
--- who you are: settings' nexus.identity (`mooi identity` imports the pictures into the data folder)
+-- ── Who you are ──
 local function show_identity()
     local id = type(settings.nexus) == "table" and type(settings.nexus.identity) == "table" and settings.nexus.identity or {}
     local name = type(id.name) == "string" and id.name ~= "" and id.name or "mooi"
     text.nx_name = name
     text.nx_initial = string.upper(string.sub(name, 1, 1))
     local av = type(id.avatar) == "string" and id.avatar or ""
-    local bn = type(id.banner) == "string" and id.banner or ""
     text.nx_avatar = av ~= "" and (data_folder .. "/" .. av) or ""; fact.nx_avatar_on = av ~= ""
-    text.nx_banner = bn ~= "" and (data_folder .. "/" .. bn) or ""; fact.nx_banner_on = bn ~= ""
-    -- drawn to cover the orbit's board (386 × 452), centred, the overflow cut by it
-    if bn ~= "" then
-        launch("magick", { "identify", "-format", "%w %h", data_folder .. "/" .. bn .. "[0]" }, function(out)
-            local w, h = tostring(out or ""):match("^(%d+) (%d+)")
-            w, h = tonumber(w), tonumber(h)
-            if not w or w <= 0 or h <= 0 then return end
-            local k = math.max(386 / w, 452 / h)
-            fact.nx_bw2, fact.nx_bh2 = w * k, h * k
-        end)
-    end
 end
-local function notice(t) text.nx_notice = t; after(4000, function() if text.nx_notice == t then text.nx_notice = "" end end) end
-do
-    show_identity()
-    launch("cat", { "/proc/uptime" }, function(out)
-        local secs = tonumber(tostring(out or ""):match("^([%d.]+)"))
-        if not secs then return end
-        local h, m = math.floor(secs / 3600), math.floor(secs % 3600 / 60)
-        text.nx_uptime = h >= 24 and string.format("up %d d %d h", math.floor(h / 24), h % 24) or string.format("up %d h %d min", h, m)
-    end)
-    launch("whoami", {}, function(u) launch("hostname", {}, function(h)
-        text.nx_who = string.lower(trim(u) .. "@" .. trim(h))
-    end) end)
-    fact.nx_top = (tonumber(settings.bar.offset) or 0) + (tonumber(settings.bar.height) or 30) + 6
-    launch("hyprctl", { "-j", "monitors" }, function(out)
-        local ok, mons = pcall(json.decode, out or "")
-        local h = 1080
-        if ok and type(mons) == "table" then
-            for _, m in ipairs(mons) do
-                if m.focused and tonumber(m.height) then
-                    h = math.floor(m.height / (tonumber(m.scale) or 1) + 0.5)
-                    screen_w = math.floor(m.width / (tonumber(m.scale) or 1) + 0.5)
-                end
-            end
-        end
-        fact.nx_h = h - fact.nx_top - 6
-    end)
+show_identity()
+launch("whoami", {}, function(u) launch("hostname", {}, function(h) text.nx_who = string.lower(trim(u) .. "@" .. trim(h)) end) end)
+local noticed = 0
+local function notice(t)
+    noticed = noticed + 1
+    local mine = noticed
+    text.nx_notice = t; fact.nx_noticed = true
+    after(3500, function() if mine == noticed then fact.nx_noticed = false end end)
 end
-
--- ── The column: folds, counts, and each section's top ──
-local folded = drawer.folded_set(type(settings.nexus) == "table" and settings.nexus.folded or nil)
-local counts = { playing = false, notes = 0, nets = 0, bt = 0, outs = 1, apps = 0, bright = false, ws = 1 }
-local function relayout()
-    local l = drawer.layout(counts, folded)
-    for _, id in ipairs(drawer.ORDER) do
-        fact["y_" .. id] = l.shown[id] and l.top[id] or 0
-        fact["f_" .. id] = folded[id] == true
-    end
-    fact.nx_total = l.total
-end
-relayout()
-local function save_folds()
-    if env("MOOI_SAFE", "") == "1" then return end
-    local doc = read(FILE)       -- read again: whatever changed elsewhere is kept
-    if type(doc) ~= "table" then return end
-    doc.nexus = type(doc.nexus) == "table" and doc.nexus or {}
-    doc.nexus.folded = drawer.folded_list(folded)
-    pcall(sys.call, "files.write", FILE, doc)
-end
-on("nx_fold", function(v)
-    local id = drawer.ORDER[(tonumber(v) or -1) + 1]
-    if not id then return end
-    folded = drawer.toggle(folded, id)
-    relayout()
-    save_folds()
-end)
-
--- ── Changing who you are: a picture (a file picker, then `mooi identity`), the name ──
-local function reread()
-    settings = config.parse(read_text(FILE), json.decode)
-    show_identity()
-end
-on("nx_pick", function(v)
-    local kind = tonumber(v) == 1 and "banner" or "avatar"
-    if env("MOOI_SAFE", "") == "1" then notice("not in safe mode"); return end
-    local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose your " .. (kind == "banner" and "banner" or "profile picture"),
-                                      "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif" }, function(path, code)
-        path = trim(path)
-        if code ~= 0 or path == "" then return end
-        launch("mooi", { "identity", kind, path }, function(out)
-            if out then reread(); notice(kind == "banner" and "banner changed" or "picture changed")
-            else notice("that picture could not be used") end
-        end)
-    end)
-    if not ok then notice("install zenity to choose a picture") end
-end)
-on("nx_rename", function()
-    local name = trim(text.nx_name_in)
-    text.nx_name_in = ""
-    if name == "" or #name > 48 then return end
-    launch("mooi", { "identity", "name", name }, function(out)
-        if out then reread(); notice("renamed") else notice("could not rename") end
-    end)
-end)
-pcall(sys.watch, "files:" .. FILE, function() reread() end)
 
 -- ── Opening and closing ──
 local closing = false
@@ -180,104 +98,181 @@ local function close(why)
     if closing then return end
     closing = true
     log("nexus · closing: " .. tostring(why or "asked"))
-    fact.nx_open = false
+    fact.dk_open = false
+    pcall(sys.call, "thumbnails.want")
     -- gone from sight in ~220 ms; it ends later, so what a press just asked of the bar or started
     -- (a `pleamar --say` takes ~250 ms) is not cut off with it
     after(900, function() launch("pleamar", { "--say", "mooi-nexus", "quit" }) end)
 end
 on("nx_close", function() close("asked (Esc, × or the mark)") end)
-after(40, function() fact.nx_open = true end)
 
--- ── The orbit (D99): your nodes round the core, wired to it; the rest as chips; the arcs ──
-local state = {}            -- each toggle's state in words, by its nx_tog code (0 Wi-Fi … 8 record)
-local lit = {}              -- and whether it is on (not `on`: that is pleamar's own)
-local choice = orbit.choose(type(settings.nexus) == "table" and settings.nexus.orbit or nil)
-local publish_orbit         -- defined below, once the toggles' facts are known
-local function node_on(id)
-    local d = orbit.NODES[id]
-    return d and d.tog ~= nil and lit[d.tog] == true or false
+-- ── The switches: their state, from the services and from the bar ──
+local lit = {}               -- each switch's state by its nx_tog code (0 Wi-Fi … 8 record)
+local wifi_on, bt_powered = true, false
+local levels = { volume = 0, muted = false, input = 0, bright = nil }
+local apps, media = {}, {}
+local publish_console, publish_wait, publish_scenes   -- defined below
+
+local TOGGLE = {
+    [0] = function() pcall(sys.call, "network.wifi", not wifi_on) end,
+    [1] = function() pcall(sys.call, "bluetooth.power", not bt_powered) end,
+    [2] = function() pcall(sys.call, "audio.mute") end,
+    [3] = function() pcall(sys.call, "audio.input_mute") end,
+    [4] = function() bar("emit note_dnd") end,
+    [5] = function() bar("emit night_light") end,
+    [6] = function() bar("emit caffeine") end,
+    [7] = function() bar("emit pw_set " .. (lit[7] and "0" or "1")) end,
+    [8] = function() bar("emit record 0") end,
+}
+local function bar_states()
+    launch("pleamar", { "--say", "mooi", "get dnd_now", "get caffeine_on", "get recording", "get nl_on", "get pw_saver" }, function(out)
+        if not out then return end
+        local got = {}
+        for line in out:gmatch("[^\n]+") do got[#got + 1] = trim(line) end
+        if #got < 5 then return end
+        lit[4], lit[6], lit[8], lit[5] = got[1] == "true", got[2] == "true", got[3] == "true", got[4] == "true"
+        lit[7] = (tonumber(got[5]) or 0) > 0
+        publish_console(); publish_wait(); publish_scenes()
+    end)
 end
-local function node_state(id)
-    local d = orbit.NODES[id]
-    return d and d.tog ~= nil and (state[d.tog] or "") or "open"
+on("nx_tog", function(v)
+    local f = TOGGLE[math.floor(tonumber(v) or -1)]
+    if f then f(); after(250, bar_states) end
+end)
+
+-- ── Opening things: in the bar (its islands and panels) or as programs ──
+local function island(name)
+    bar("fact isl_cx " .. tostring(screen.w - 200), "fact open " .. name)
+    close()
 end
-function publish_orbit()
-    local g = orbit.geometry(#choice.nodes, 210, 236, 140, 98)
-    local rows = {}
-    for i, id in ipairs(choice.nodes) do
-        local d, p = orbit.NODES[id], g[i]
-        rows[i] = { word = d.word, state = node_state(id), on = node_on(id), glyph = d.glyph,
-                    x = p.x, y = p.y, p1x = p.p1x, p1y = p.p1y, p2x = p.p2x, p2y = p.p2y, p3x = p.p3x, p3y = p.p3y }
+local GO = {
+    [1] = function() close(); bar("emit open_settings") end,
+    [2] = function() close(); bar("emit power 1") end,
+    [3] = function() close(); bar("emit power 0") end,
+    [10] = function() close(); pcall(spawn, "kitty", { "--title", "btop", "btop" }, function() end, function() end) end,
+    [11] = function() island("calendar") end,
+    [12] = function() island("weather") end,
+    [13] = function() close(); bar("emit run_updates") end,
+    [20] = function() close(); launch("mooi", { "player" }) end,
+    [30] = function() close(); bar("emit open_notes") end,
+    -- the spine's own connections shelf (D100), beside its tab
+    [50] = function() bar("fact isl_sy " .. tostring(math.floor(screen.h / 2 - 140)), "fact isl_shelf true", "fact open shnet"); close() end,
+}
+on("nx_go", function(v)
+    local f = GO[math.floor(tonumber(v) or -1)]
+    if f then f() end
+end)
+
+-- ── The deck's place, and its bays ──
+local scenes = deck.clean((read(SCENES) or {}).scenes)
+local function edge() return deck.edge_of(type(settings.nexus) == "table" and settings.nexus.edge or nil) end
+local relayout_rest      -- the tiles and chips, which follow the bays
+-- Cascade (nexus.mode): the spine's shelves all out at once, centred down the right edge. Their
+-- heights are the scene's (mooi-nexus.plm, Cascade): the song's shelf is taller while one plays.
+local function place_cascade()
+    fact.dk_cascade = type(settings.nexus) == "table" and settings.nexus.mode == "cascade"
+    local heights = { 66, 56, 56, fact.mus_on and 88 or 44, 60, 56, 56, 44, 48 }
+    local total = -10
+    for _, h in ipairs(heights) do total = total + h + 10 end
+    local y = math.max(10, math.floor((screen.h - total) / 2))
+    for k, h in ipairs(heights) do fact["cy_" .. (k - 1)] = y; y = y + h + 10 end
+    fact.cs_r = screen.w - ((settings.shelves and settings.shelves.on) and 66 or 34)
+end
+local spaces = {}        -- the workspaces of this monitor (lib/nexusdeck spaces)
+local function aspect() return screen.full_w and (screen.full_w / screen.full_h) or 16 / 9 end
+local function place()
+    local top = 0                -- the bar's reserve is already outside the surface
+    d = deck.layout(edge(), screen.w, screen.h, top, { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
+                                                    tiles = #spaces + 1, aspect = aspect() })
+    d.top = top
+    fact.dk_edge = ({ bottom = 0, top = 1, left = 2, right = 3 })[d.edge]
+    fact.dk_vert = d.vertical
+    fact.dk_x, fact.dk_y, fact.dk_w, fact.dk_h = d.x, d.y, d.w, d.h
+    fact.dk_ox, fact.dk_oy = d.out_x, d.out_y
+    for short, name in pairs({ sc = "scenes", wt = "wait", id = "ident", wn = "win", ws = "ws", mx = "mix" }) do
+        local b = d.bays[name]
+        fact[short .. "_x"], fact[short .. "_y"], fact[short .. "_w"], fact[short .. "_h"] = b.x, b.y, b.w, b.h
     end
-    model.orbit = rows
-    local rest = {}
-    for i, id in ipairs(orbit.rest(choice.nodes)) do rest[i] = { word = orbit.NODES[id].word, on = node_on(id) } end
-    model.rest = rest
-    fact.orb_bg = ({ banner = 0, circuit = 1, plain = 2 })[choice.backdrop] or 0
-    local cn, ca, inside = {}, {}, {}
-    for _, id in ipairs(choice.nodes) do inside[id] = true end
-    for i, id in ipairs(orbit.NODE_ORDER) do cn[i] = { word = orbit.NODES[id].word, on = inside[id] == true } end
-    local arcs_in = {}
-    for _, id in ipairs(choice.arcs) do arcs_in[id] = true end
-    for i, id in ipairs(orbit.ARC_ORDER) do ca[i] = { word = orbit.ARCS[id], on = arcs_in[id] == true } end
-    model.cus_nodes, model.cus_arcs = cn, ca
+    if relayout_rest then relayout_rest() end
+    place_cascade()
 end
 
--- the arcs' readings, 0..1, and their legend
-local readings = { cpu = 0, mem = 0, temp = 0, gpu = 0, disk = 0, battery = 0, volume = 0 }
-local SHORT = { cpu = "CPU", mem = "MEM", temp = "TEMP", gpu = "GPU", disk = "DISK", battery = "BAT", volume = "VOL" }
-local words = {}
-local function publish_arcs()
-    for k = 1, 3 do
-        local id = choice.arcs[k]
-        fact["arc_v" .. (k - 1)] = id and readings[id] or 0
-        text["arc_l" .. (k - 1)] = id and string.format("%s %s", SHORT[id] or "", words[id] or "") or ""
+-- ── The console: the mixer, the switches, the machine ──
+local KEYS = { { "Wi-Fi", 0 }, { "BT", 1 }, { "Mic", 3 }, { "Quiet", 4 }, { "Night", 5 }, { "Awake", 6 }, { "Saver", 7 }, { "Record", 8 } }
+local function pct(v) return string.format("%d%%", math.floor((tonumber(v) or 0) * 100 + 0.5)) end
+local playing = {}           -- the faders' apps: their places in `apps`
+function publish_console()
+    local rows = { { word = "All", shown = levels.muted and "mute" or pct(levels.volume), v = levels.muted and 0 or levels.volume, code = 0, hot = false } }
+    playing = {}
+    for i, a in ipairs(apps) do
+        if #playing < 2 and a.playing then
+            playing[#playing + 1] = i
+            local name = tostring(a.name or a.binary or "app")
+            rows[#rows + 1] = { word = string.sub(name, 1, 6), shown = a.muted and "mute" or pct(a.volume), v = a.muted and 0 or (tonumber(a.volume) or 0), code = 9 + #playing, hot = false }
+        end
     end
+    rows[#rows + 1] = { word = "Mic", shown = lit[3] == false and "off" or pct(levels.input), v = lit[3] == false and 0 or levels.input, code = 1, hot = lit[3] == false }
+    if levels.bright then rows[#rows + 1] = { word = "Screen", shown = pct(levels.bright), v = levels.bright, code = 2, hot = false } end
+    model.faders = rows
+    local keys = {}
+    for i, k in ipairs(KEYS) do keys[i] = { word = k[1], on = lit[k[2]] == true, code = k[2] } end
+    model.keys = keys
 end
 
--- ── What the services say, for the counts and the rows' presses ──
-local nets, devices, outputs, apps = {}, {}, {}, {}
-local media = {}
+-- the levels (a drag sends many: the last one in 40 ms is what is asked for)
+local pending, flushing = {}, false
+local function flush()
+    flushing = false
+    for code, v in pairs(pending) do
+        if code == 0 then pcall(sys.call, "audio.volume", v)
+        elseif code == 1 then pcall(sys.call, "audio.input", v)
+        elseif code == 2 then pcall(sys.call, "brightness.level", math.max(0.01, v))
+        else
+            local a = code == 9 and apps[(fact.w_snd and this_stream) or 0] or apps[playing[code - 9] or 0]
+            if a and tonumber(a.id) then pcall(sys.call, "audio.app_volume", tonumber(a.id), v) end
+        end
+    end
+    pending = {}
+end
+on("dk_level", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    if n < 0 then return end
+    pending[math.floor(n / 1000)] = math.max(0, math.min(1, (n % 1000) / 1000))
+    if not flushing then flushing = true; after(40, flush) end
+end)
+
+-- ── What the services say ──
 pcall(sys.watch, "network", function(n)
-    nets = type(n) == "table" and type(n.networks) == "table" and n.networks or {}
     wifi_on = not (type(n) == "table" and n.wifi == false)
+    if not wifi_on then text.c_net = "Wi-Fi is off"
+    elseif type(n) == "table" and n.online then
+        text.c_net = n.kind == "wired" and "Wired" or (tonumber(n.strength) or 0) > 0 and string.format("%s · %d%%", tostring(n.name or "Connected"), math.floor(tonumber(n.strength))) or tostring(n.name or "Connected")
+    else text.c_net = "No network" end
     lit[0] = wifi_on and type(n) == "table" and n.online == true
-    counts.nets = #nets; relayout()
-    if publish_orbit then publish_orbit() end
-    state[0] = (type(n) == "table" and n.wifi == false) and "Off" or ((type(n) == "table" and n.online) and tostring(n.name or "Connected") or "No network")
+    publish_console(); publish_scenes()
 end)
 pcall(sys.watch, "bluetooth", function(b)
-    devices = type(b) == "table" and type(b.devices) == "table" and b.devices or {}
-    counts.bt = #devices; relayout()
-    local present, powered = type(b) == "table" and b.present, type(b) == "table" and b.powered
-    bt_powered = powered == true
+    bt_powered = type(b) == "table" and b.powered == true
+    local on_now = 0
+    for _, dv in ipairs(type(b) == "table" and type(b.devices) == "table" and b.devices or {}) do if dv.connected then on_now = on_now + 1 end end
+    text.c_bt = not (type(b) == "table" and b.present) and "NO BLUETOOTH" or (bt_powered and string.format("BT · %d CONNECTED", on_now) or "BT OFF")
     lit[1] = bt_powered
-    state[1] = not present and "No adapter" or (powered and (#devices > 0 and (#devices .. " known") or "On") or "Off")
-    text.bt_empty = not present and "No Bluetooth adapter" or (powered and "No devices paired" or "Bluetooth is off")
-    publish_orbit()
+    publish_console(); publish_scenes()
 end)
 pcall(sys.watch, "audio", function(a)
     if type(a) ~= "table" then return end
-    outputs = type(a.outputs) == "table" and a.outputs or {}
     apps = type(a.apps) == "table" and a.apps or {}
-    counts.outs, counts.apps = #outputs, math.min(6, #apps); relayout()
-    state[2] = a.muted and "Muted" or string.format("%d %%", math.floor((tonumber(a.volume) or 0) * 100 + 0.5))
-    state[3] = a.input_muted and "Muted" or "Live"
+    text.c_out = ""
+    for _, o in ipairs(type(a.outputs) == "table" and a.outputs or {}) do if o.default then text.c_out = string.upper(tostring(o.name or "")) end end
+    levels.volume, levels.muted, levels.input = tonumber(a.volume) or 0, a.muted == true, tonumber(a.input) or 0
     lit[2], lit[3] = not a.muted, not a.input_muted
-    readings.volume = a.muted and 0 or (tonumber(a.volume) or 0)
-    words.volume = a.muted and "muted" or string.format("%d%%", math.floor(readings.volume * 100 + 0.5))
-    publish_orbit(); publish_arcs()
+    publish_console(); publish_scenes()
+    if publish_window then publish_window() end
 end)
-pcall(sys.watch, "brightness", function(b) counts.bright = type(b) == "table" and b.present == true; relayout() end)
-pcall(sys.watch, "workspaces", function(w)
-    local first = counts.ws_seen == nil
-    local active = type(w) == "table" and tonumber(w.active) or nil
-    if not first and active and active ~= counts.active_ws then close("the workspace changed") end   -- the desktop moved on
-    counts.ws_seen = true; counts.active_ws = active
+pcall(sys.watch, "brightness", function(b)
+    levels.bright = type(b) == "table" and b.present == true and (tonumber(b.level) or 0) or nil
+    publish_console(); publish_scenes()
 end)
--- No closing on a focus change or on losing the keyboard: with Hyprland's focus following the
--- mouse (input:follow_mouse), both happen whenever the pointer crosses a window, and the drawer
--- went the moment the mouse moved. It stays until Esc, ×, the mark, or a workspace change.
 
 -- ── Now playing: the cover, and the position carried at the player's rate ──
 local art_url, covers = nil, 0
@@ -294,283 +289,126 @@ local function cover(url)
         launch("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(ok)
             if ok and art_url == url then text.nx_art = dest; fact.nx_art_on = true end
         end)
-    elseif url:match("^data:image/") and #url < 120000 then
-        covers = covers + 1
-        local dest = data_folder .. "/nexus-cover-" .. (covers % 2) .. ".png"
-        launch("magick", { "inline:" .. url, dest }, function(ok)
-            if ok and art_url == url then text.nx_art = dest; fact.nx_art_on = true end
-        end)
     else fact.nx_art_on = false end
-end
-local function clock(s)
-    s = math.max(0, math.floor(tonumber(s) or 0))
-    return string.format("%d:%02d", math.floor(s / 60), s % 60)
 end
 local pos, pos_at = 0, os.time()
 pcall(sys.watch, "media", function(m)
     media = type(m) == "table" and m or {}
-    counts.playing = media.playing == true or (tostring(media.title or "") ~= "" and tostring(media.player or "") ~= "")
-    relayout()
+    local was = fact.mus_on
+    fact.mus_on = tostring(media.title or "") ~= ""
+    if was ~= fact.mus_on then place_cascade() end
     cover(media.art)
     pos, pos_at = tonumber(media.position) or 0, os.time()
-    text.nx_length = (tonumber(media.length) or 0) > 0 and clock(media.length) or ""
 end)
 every(1000, function()
     local len = tonumber(media.length) or 0
-    if len <= 0 then fact.nx_prog = 0; text.nx_elapsed = ""; return end
+    if len <= 0 then fact.nx_prog = 0; return end
     local p = pos + (media.playing and (os.time() - pos_at) * (tonumber(media.rate) or 1) or 0)
     fact.nx_prog = math.min(1, p / len)
-    text.nx_elapsed = clock(p)
 end)
 on("nx_media", function(v)
     local n = tonumber(v)
     pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
 end)
 
--- ── The bar's own switches, asked every 2 s ──
-local function bar_states()
-    launch("pleamar", { "--say", "mooi", "get dnd_now", "get caffeine_on", "get recording", "get nl_on", "get pw_saver" }, function(out)
-        if not out then return end
-        local got = {}
-        for line in out:gmatch("[^\n]+") do got[#got + 1] = trim(line) end
-        if #got < 5 then return end
-        fact.b_dnd, fact.b_awake, fact.b_rec, fact.b_night = got[1] == "true", got[2] == "true", got[3] == "true", got[4] == "true"
-        fact.b_saver = (tonumber(got[5]) or 0) > 0
-        state[4] = fact.b_dnd and "Do not disturb" or "Off"
-        state[5] = fact.b_night and "4000 K" or "Off"
-        state[6] = fact.b_awake and "Kept awake" or "Idle"
-        state[7] = fact.b_saver and "On" or "Off"
-        state[8] = fact.b_rec and "Recording" or "Ready"
-        lit[4], lit[5], lit[6], lit[7], lit[8] = fact.b_dnd, fact.b_night, fact.b_awake, fact.b_saver, fact.b_rec
-        publish_orbit()
-    end)
-end
-bar_states()
-every(2000, bar_states)
-
--- ── The quick toggles ──
-local TOGGLE = {
-    [0] = function() pcall(sys.call, "network.wifi", not wifi_on) end,
-    [1] = function() pcall(sys.call, "bluetooth.power", not bt_powered) end,
-    [2] = function() pcall(sys.call, "audio.mute") end,
-    [3] = function() pcall(sys.call, "audio.input_mute") end,
-    [4] = function() bar("emit note_dnd") end,
-    [5] = function() bar("emit night_light") end,
-    [6] = function() bar("emit caffeine") end,
-    [7] = function() bar("emit pw_set " .. (fact.b_saver and "0" or "1")) end,
-    [8] = function() bar("emit record 0") end,
-}
-on("nx_tog", function(v)
-    local f = TOGGLE[math.floor(tonumber(v) or -1)]
-    if f then f(); after(250, bar_states) end
-end)
-
--- ── The levels (a drag sends many: the last one in 40 ms is what is asked for) ──
-local pending, flushing = {}, false
-local function flush()
-    flushing = false
-    if pending.vol then pcall(sys.call, "audio.volume", pending.vol) end
-    if pending.mic then pcall(sys.call, "audio.input", pending.mic) end
-    if pending.bri then pcall(sys.call, "brightness.level", math.max(0.01, pending.bri)) end
-    pending = {}
-end
-local function request(kind, v)
-    local n = tonumber(v); if not n then return end
-    pending[kind] = math.max(0, math.min(1, n))
-    if not flushing then flushing = true; after(40, flush) end
-end
-on("vol", function(v) request("vol", v) end)
-on("mic", function(v) request("mic", v) end)
-on("bri", function(v) request("bri", v) end)
-on("nx_app", function(v)
-    local n = math.floor(tonumber(v) or -1)
-    local a = apps[math.floor(n / 1000) + 1]
-    if a and tonumber(a.id) then pcall(sys.call, "audio.app_volume", tonumber(a.id), (n % 1000) / 1000) end
-end)
-
--- ── The orbit's presses: a node, a chip, the customise sheet ──
-local GO                    -- the actions, defined with the other ways of opening things below
-local function press_node(id)
-    local d = orbit.NODES[id]
-    if not d then return end
-    if d.tog ~= nil and TOGGLE[d.tog] then TOGGLE[d.tog](); after(250, bar_states)
-    elseif d.go ~= nil then local f = GO[d.go]; if f then f() end end
-end
-on("nx_node", function(v) press_node(choice.nodes[(tonumber(v) or -1) + 1]) end)
-on("nx_rest", function(v) press_node(orbit.rest(choice.nodes)[(tonumber(v) or -1) + 1]) end)
-local function save_orbit()
-    if env("MOOI_SAFE", "") == "1" then return end
-    local doc = read(FILE)
-    if type(doc) ~= "table" then return end
-    doc.nexus = type(doc.nexus) == "table" and doc.nexus or {}
-    doc.nexus.orbit = { nodes = choice.nodes, arcs = choice.arcs, backdrop = choice.backdrop }
-    pcall(sys.call, "files.write", FILE, doc)
-end
-on("nx_cus", function(v)
-    local n = math.floor(tonumber(v) or -1)
-    local function flip(list, id, max)
-        local out, had = {}, false
-        for _, x in ipairs(list) do if x == id then had = true else out[#out + 1] = x end end
-        if not had and #out < max then out[#out + 1] = id end
-        return out
-    end
-    if n >= 300 then choice.backdrop = ({ [0] = "banner", [1] = "circuit", [2] = "plain" })[n - 300] or choice.backdrop
-    elseif n >= 200 then local id = orbit.ARC_ORDER[n - 199]; if id then choice.arcs = flip(choice.arcs, id, 3) end
-    elseif n >= 100 then local id = orbit.NODE_ORDER[n - 99]; if id then choice.nodes = flip(choice.nodes, id, 8) end end
-    choice = orbit.choose(choice)
-    publish_orbit(); publish_arcs()
-    save_orbit()
-end)
-
--- ── Rows: networks, devices, outputs, workspaces ──
-on("nx_net", function(v)
-    local w = nets[(tonumber(v) or -1) + 1]
-    if not w or w.active then return end
-    if w.known or not w.secure then pcall(sys.call, "network.connect", w.ssid)
-    else close(); bar("emit open_settings") end     -- a password to type: the settings window
-end)
-on("nx_bt", function(v)
-    local d = devices[(tonumber(v) or -1) + 1]
-    if d and d.address then pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", d.address) end
-end)
-on("nx_out", function(v)
-    local o = outputs[(tonumber(v) or -1) + 1]
-    if o and o.id then pcall(sys.call, "audio.default", o.id) end
-end)
-on("nx_ws", function(v) pcall(sys.call, "workspaces.focus", math.floor(tonumber(v) or 0)) end)
-
--- ── Opening things: in the bar (its islands and panels) or as programs ──
--- An island opens under the drawer's edge, the drawer gone first.
-local function island(name)
-    bar("fact isl_cx " .. tostring(screen_w - 200), "fact open " .. name)
-    close()
-end
-GO = {
-    [1] = function() close(); bar("emit open_settings") end,
-    [2] = function() close(); bar("emit power 1") end,
-    [3] = function() close(); bar("emit power 0") end,
-    [10] = function() close(); pcall(spawn, "kitty", { "--title", "btop", "btop" }, function() end, function() end) end,
-    [11] = function() island("calendar") end,
-    [12] = function() island("weather") end,
-    [13] = function() close(); bar("emit run_updates") end,
-    [20] = function() close(); launch("mooi", { "player" }) end,
-    [30] = function() close(); bar("emit open_notes") end,
-    [31] = function() bar("emit note_clear") end,
-    [40] = function() close(); launch("mooi", { "wallpaper" }) end,
-    [41] = function() close(); bar("fact qn_open true") end,
-    [42] = function() close(); launch("mooi", { "board" }) end,
-    [43] = function() close(); bar("emit open_overview") end,
-    [44] = function() close(); after(300, function() bar("emit shot 0") end) end,
-    [45] = function() close(); bar("emit open_clips") end,
-    [46] = function() launch("mooi", { "diagnostics" }) end,
-}
-on("nx_go", function(v)
-    local f = GO[math.floor(tonumber(v) or -1)]
-    if f then f() end
-end)
-
--- ── Notifications and updates: what the bar wrote ──
-local function show_feed()
-    local f = read("nexus-feed.json")
-    if type(f) ~= "table" then fact.feed_ok = false; fact.feed_n = 0; counts.notes = 0; relayout(); return end
-    local rows = {}
-    for i, it in ipairs(type(f.items) == "table" and f.items or {}) do
-        rows[i] = { app = tostring(it.app or ""), title = tostring(it.title or ""),
-                    ago = require("lib/nexusfeed").ago(os.time() - (tonumber(it.time) or os.time())) }
-    end
-    model.feed = rows
-    fact.feed_ok = true
-    fact.feed_n = tonumber(f.count) or #rows
-    counts.notes = #rows; relayout()
-end
-show_feed()
-pcall(sys.watch, "files:nexus-feed.json", show_feed)
-local function show_updates()
-    local u = read("updates.json")
-    if type(u) ~= "table" then fact.upd_ok = false; return end
-    fact.upd_ok = true
-    fact.upd_n = tonumber(u.total) or 0
-    text.upd_t = tostring(u.text or "")
-end
-show_updates()
-pcall(sys.watch, "files:updates.json", show_updates)
-
 -- ── The machine, every 2 s ──
 local cpu_prev = nil
+local battery = { present = false }
 local function machine()
     launch("cat", { "/proc/stat" }, function(out)
         local v; v, cpu_prev = sysinfo.cpu(out, cpu_prev)
-        if v then fact.m_cpu = v; readings.cpu = v; words.cpu = string.format("%d%%", math.floor(v * 100 + 0.5)); publish_arcs() end
+        if v then fact.m_cpu = v; text.m_cpu_t = pct(v) .. (fact.m_temp > 0 and string.format(" %d°", math.floor(fact.m_temp + 0.5)) or "") end
     end)
-    launch("cat", { "/proc/meminfo" }, function(out)
-        local m = stats.meminfo(out); fact.m_mem = m.frac; text.m_mem_t = string.format("%.1f / %.1f GiB", m.used, m.total)
-        readings.mem = m.frac; words.mem = string.format("%.1fG", m.used); publish_arcs()
-    end)
-    launch("df", { "-P", "/" }, function(out)
-        local d = stats.df(out); fact.m_disk = d.frac; text.m_disk_t = d.text
-        readings.disk = d.frac; words.disk = string.format("%d%%", math.floor(d.frac * 100 + 0.5)); publish_arcs()
-    end)
-    -- the GPU's busy share: whichever card has the file (cat fails as a whole when one is missing)
-    for _, card in ipairs({ "card1", "card0" }) do
-        launch("cat", { "/sys/class/drm/" .. card .. "/device/gpu_busy_percent" }, function(out)
-            local g = out and stats.gpu(out) or nil
-            if g then fact.m_gpu_ok = true; fact.m_gpu = g; readings.gpu = g; words.gpu = string.format("%d%%", math.floor(g * 100 + 0.5)); publish_arcs() end
-        end)
-    end
+    launch("cat", { "/proc/meminfo" }, function(out) local m = stats.meminfo(out); fact.m_mem = m.frac; text.m_mem_t = string.format("%.1f G", m.used) end)
+    launch("df", { "-P", "/" }, function(out) local s = stats.df(out); fact.m_disk = s.frac; text.m_disk_t = pct(s.frac) end)
     launch("sensors", { "-j" }, function(out)
-        local ok, t = pcall(json.decode, out or ""); local c = ok and sysinfo.temp(t) or nil
-        if c then
-            fact.m_temp = c; readings.temp = math.max(0, math.min(1, (c - 30) / 70)); words.temp = string.format("%d°", math.floor(c + 0.5)); publish_arcs()
-        end
+        local c = sysinfo.temp(decode(out))
+        if c then fact.m_temp = c end
     end)
 end
 machine()
 every(2000, machine)
 pcall(sys.watch, "battery", function(b)
-    if type(b) ~= "table" or not b.present then text.m_bat_t = ""; return end
-    text.m_bat_t = string.format("Battery %d %% · %s", math.floor((tonumber(b.percent) or 0) + 0.5), b.charging and "charging" or "on battery")
-    readings.battery = (tonumber(b.percent) or 0) / 100; words.battery = string.format("%d%%", math.floor((tonumber(b.percent) or 0) + 0.5)); publish_arcs()
+    battery = type(b) == "table" and b or { present = false }
+    if not battery.present then text.m_bat_t = "AC"; fact.m_bat = 1; fact.m_bat_hot = false
+    else
+        local p = tonumber(battery.percent) or 0
+        text.m_bat_t = string.format("%d%%%s", math.floor(p + 0.5), battery.charging and " +" or "")
+        fact.m_bat = p / 100
+        fact.m_bat_hot = p <= 20 and not battery.charging
+    end
+    publish_wait()
 end)
 
--- ── Today: the week from today, and the weather (kept 10 minutes in nexus-weather.json) ──
-do
-    local rows = {}
-    local DAYS = { "MO", "TU", "WE", "TH", "FR", "SA", "SU" }
-    local t = os.time()
-    for i = 0, 6 do
-        local when = t + i * 86400
-        local y, m, d = tonumber(os.date("%Y", when)), tonumber(os.date("%m", when)), tonumber(os.date("%d", when))
-        rows[#rows + 1] = { label = DAYS[calendar.weekday(y, m, d) + 1], day = d, today = i == 0 }
+-- ── What is waiting ──
+local feed, updates, weather = { count = 0, items = {} }, 0, ""
+function publish_wait()
+    local first = feed.items[1]
+    local items = deck.waiting({
+        recording = lit[8], quiet = lit[4], saver = lit[7],
+        battery = battery.present and battery.percent or nil, charging = battery.charging,
+        notes = feed.count, first_note = first and (first.app ~= "" and first.app or first.title) or "",
+        updates = updates, weather = weather,
+    })
+    local rows, x = {}, 14
+    for i, it in ipairs(items) do
+        if d and d.vertical then
+            if i <= 3 then rows[#rows + 1] = { word = it.word, act = it.act, hot = it.hot, x = 16, y = 30 + (i - 1) * 26, w = d.w - 32 } end
+        else
+            local w = 12 + math.floor(#it.word * 6.4 + 0.5) + 70
+            rows[#rows + 1] = { word = it.word, act = it.act, hot = it.hot, x = x, y = 6, w = w }
+            x = x + w + 18
+        end
     end
-    model.days = rows
+    model.wait = rows
+    waiting_items = items
+    -- Cascade's words for the same things
+    text.c_notes = feed.count > 0 and string.format("%d new%s", feed.count, first and (" · " .. (first.app ~= "" and first.app or first.title) .. " — " .. first.title) or "") or "Nothing new"
+    fact.c_notes_n = feed.count
+    text.c_upd = updates > 0 and string.format("%d waiting", updates) or "Up to date"
+    fact.c_upd_n = updates
+    local okd, day = pcall(os.date, "%A %d %B")
+    text.c_today = (okd and day or "") .. (weather ~= "" and (" · " .. weather) or "")
 end
-local function kind_of(code, day)
-    local k = sysinfo.weather(code, day)
-    for i, name in ipairs(sysinfo.WEATHER_KINDS) do if name == k then return i - 1 end end
-    return 2
+on("dk_wait", function(v)
+    local it = (waiting_items or {})[(tonumber(v) or -1) + 1]
+    if not it then return end
+    if it.tog >= 0 and TOGGLE[it.tog] then TOGGLE[it.tog](); after(250, bar_states)
+    elseif it.go >= 0 and GO[it.go] then GO[it.go]() end
+end)
+local function show_feed()
+    local f = read("nexus-feed.json")
+    local items = {}
+    for i, it in ipairs(type(f) == "table" and type(f.items) == "table" and f.items or {}) do
+        items[i] = { app = tostring(it.app or ""), title = tostring(it.title or ""), ago = nexusfeed.ago(os.time() - (tonumber(it.time) or os.time())) }
+    end
+    feed = { count = type(f) == "table" and (tonumber(f.count) or #items) or 0, items = items }
+    publish_wait()
+end
+local function show_updates()
+    local u = read("updates.json")
+    updates = type(u) == "table" and tonumber(u.total) or 0
+    publish_wait()
 end
 local function show_weather(doc)
     local f = forecast.parse(doc.answer)
     if not f then return end
     local _, word = sysinfo.weather(f.now.code, f.now.day)
-    fact.wx_kind = kind_of(f.now.code, f.now.day)
-    fact.wx_temp = f.now.temp
-    text.wx_word = word
-    text.wx_place = tostring(doc.city or "")
-    fact.wx_ok = true
+    weather = string.format("%s %d°", tostring(word or ""), math.floor((tonumber(f.now.temp) or 0) + 0.5))
+    publish_wait()
 end
 do
     local cached = read("nexus-weather.json")
     if type(cached) == "table" and type(cached.answer) == "table" then show_weather(cached) end
     if type(cached) ~= "table" or os.time() - (tonumber(cached.at) or 0) > 600 then
         launch("curl", { "-fsSL", "--max-time", "8", "https://ipinfo.io/json" }, function(out)
-            local ok, where = pcall(json.decode, out or "")
+            local where = decode(out)
             local lat, lon = nil, nil
-            if ok and type(where) == "table" then lat, lon = tostring(where.loc or ""):match("^([%d%.%-]+),([%d%.%-]+)$") end
+            if type(where) == "table" then lat, lon = tostring(where.loc or ""):match("^([%d%.%-]+),([%d%.%-]+)$") end
             if not lat then return end
             launch("curl", { "-fsSL", "--max-time", "12", forecast.url(lat, lon) }, function(ans)
-                local ok2, t = pcall(json.decode, ans or "")
-                if not ok2 or type(t) ~= "table" then return end
+                local t = decode(ans)
+                if type(t) ~= "table" then return end
                 local doc = { at = os.time(), city = where.city, answer = t }
                 pcall(sys.call, "files.write", "nexus-weather.json", doc)
                 show_weather(doc)
@@ -578,3 +416,284 @@ do
         end)
     end
 end
+
+-- ── Scenes: whole setups at a press ──
+local function now_state()
+    return {
+        quiet = lit[4] == true, night = lit[5] == true, awake = lit[6] == true, saver = lit[7] == true,
+        wifi = wifi_on, bluetooth = bt_powered,
+        volume = math.floor(levels.volume * 100 + 0.5),
+        brightness = levels.bright and math.floor(levels.bright * 100 + 0.5) or nil,
+    }
+end
+local FLIP = { quiet = 4, night = 5, awake = 6, saver = 7, wifi = 0, bluetooth = 1 }
+local chips = {}
+function publish_scenes()
+    if not d then return end
+    local live = deck.live(scenes, now_state())
+    chips = deck.chips(#scenes + 1, d.bays.scenes, d.vertical)
+    local rows = {}
+    for i, s in ipairs(scenes) do rows[i] = { word = s.name, live = live == i, save = false, x = chips[i].x, y = chips[i].y, w = chips[i].w } end
+    local c = chips[#scenes + 1]
+    rows[#rows + 1] = { word = "+ Save", live = false, save = true, x = c.x, y = c.y, w = c.w }
+    model.scn = rows
+end
+local function save_scenes()
+    if SAFE then return end
+    pcall(sys.call, "files.write", SCENES, { scenes = scenes })
+end
+on("dk_hov_scene", function(v)
+    local i = (tonumber(v) or -1) + 1
+    local s, c = scenes[i], chips[i]
+    if not s or not c or not d then return end
+    local rows, w = {}, 32
+    for _, word in ipairs(deck.diff(s, now_state())) do
+        local cw = 16 + math.floor(#word * 6.2 + 0.5)
+        rows[#rows + 1] = { word = word, w = cw }
+        w = w + cw + 6
+    end
+    model.diff = rows
+    text.diff_t = string.upper(s.name) .. " WOULD →"
+    fact.gs_w = math.max(380, math.min(760, w))
+    local a = { x = d.bays.scenes.x + c.x, y = d.bays.scenes.y + c.y, w = c.w, h = c.h }
+    fact.gs_x, fact.gs_y = deck.grow(d, a, fact.gs_w, 86, screen.w, screen.h, d.top)
+end)
+on("dk_scene", function(v)
+    local i = (tonumber(v) or -1) + 1
+    if i == #scenes + 1 then         -- "+ Save": this setup, as a scene of its own
+        if #scenes >= deck.MAX then notice("seven scenes at most: right-press one to remove it"); return end
+        local n, name = 1, "Mine"
+        local taken = {}
+        for _, s in ipairs(scenes) do taken[s.name] = true end
+        while taken[name] do n = n + 1; name = "Mine " .. n end
+        scenes[#scenes + 1] = deck.capture(now_state(), name)
+        save_scenes(); place(); publish_scenes()
+        notice("saved as " .. name)
+        return
+    end
+    local s = scenes[i]
+    if not s then return end
+    for _, step in ipairs(deck.steps(s, now_state())) do
+        if step.flip and TOGGLE[FLIP[step.flip]] then TOGGLE[FLIP[step.flip]]()
+        elseif step.level == "volume" then pcall(sys.call, "audio.volume", step.to)
+        elseif step.level == "brightness" then pcall(sys.call, "brightness.level", math.max(0.01, step.to)) end
+    end
+    fact.dk_hsc = -1
+    notice(s.name)
+    after(300, bar_states)
+end)
+on("dk_unscene", function(v)
+    local i = (tonumber(v) or -1) + 1
+    local s = scenes[i]
+    if not s then return end
+    table.remove(scenes, i)
+    scenes = deck.clean(scenes)
+    fact.dk_hsc = -1
+    save_scenes(); place(); publish_scenes()
+    notice("removed " .. s.name)
+end)
+
+-- ── The window you are in, and the workspaces as miniatures ──
+local clients, tiles_at, thumbs = {}, {}, {}
+local this = nil             -- the window you are in (a Hyprland client)
+local active_ws = nil
+local previews = settings.atlas == nil or settings.atlas.previews ~= false
+local private = settings.atlas and settings.atlas.private or "off"
+local function pretty(class)
+    class = tostring(class or ""):gsub("^.*%.", "")
+    return (class:gsub("^%l", string.upper))
+end
+local function picture_of(w)
+    if not previews or atlas.private(private, w.app, w.title) then return "" end
+    for _, t in ipairs(thumbs) do
+        if t.app == w.app and t.title == w.title then return t.picture or "" end
+    end
+    return ""
+end
+function publish_window()
+    local c = this
+    fact.w_ok = c ~= nil
+    if not c then return end
+    local ws = type(c.workspace) == "table" and tonumber(c.workspace.id) or 0
+    text.w_app = pretty(c.class)
+    text.w_initial = string.upper(string.sub(text.w_app, 1, 1))
+    local _, shown = atlas.private(private, c.class, c.title)
+    text.w_title = shown ~= "" and shown or tostring(c.title or "")
+    local here = 0
+    for _, o in ipairs(clients) do if type(o.workspace) == "table" and tonumber(o.workspace.id) == ws and o.mapped ~= false then here = here + 1 end end
+    text.w_where = string.format("WORKSPACE %d · %s · %d HERE", ws, c.floating and "FLOATING" or "TILED", here)
+    fact.w_floating, fact.w_pinned, fact.w_full = c.floating == true, c.pinned == true, (tonumber(c.fullscreen) or 0) > 0
+    local i, a = deck.stream(apps, c.class, c.pid)
+    this_stream = i
+    fact.w_snd = a ~= nil
+    fact.w_vol = a and (a.muted and 0 or (tonumber(a.volume) or 0)) or 0
+    local note = ""
+    local k = string.lower(tostring(c.class or ""))
+    for _, it in ipairs(feed.items) do
+        local app = string.lower(it.app)
+        if app ~= "" and (string.find(k, app, 1, true) or string.find(app, k, 1, true)) then note = "↳ " .. it.title .. " · " .. it.ago; break end
+    end
+    text.w_note = note; fact.w_noted = note ~= ""
+end
+function relayout_rest()
+    if not d then return end
+    publish_scenes(); publish_wait()
+    local bay = d.bays.ws
+    local rects = deck.tiles(#spaces, bay, d.vertical, aspect())
+    tiles_at = {}
+    local rows = {}
+    local wins = deck.windows(clients, screen.mon)
+    for i, s in ipairs(spaces) do
+        local r = rects[i]
+        local first = nil
+        for _, w in ipairs(wins) do if w.ws == s.id and not first then first = w end end
+        rows[i] = { id = s.id, label = first and string.format("%d · %s", s.id, string.lower(pretty(first.app))) or tostring(s.id),
+                    n = s.windows > 0 and tostring(s.windows) or "", active = s.active, plus = false, x = r.x, y = r.y, w = r.w, h = r.h }
+        tiles_at[s.id] = { r = r, i = i }
+    end
+    local r = rects[#spaces + 1]
+    rows[#rows + 1] = { id = deck.free_space(spaces), label = "NEW", n = "", active = false, plus = true, x = r.x, y = r.y, w = r.w, h = r.h }
+    model.tiles = rows
+    local out = {}
+    for _, w in ipairs(wins) do
+        local t = tiles_at[w.ws]
+        if t and #out < 48 then
+            local pic = picture_of(w)
+            out[#out + 1] = { x = t.r.x + w.nx * t.r.w, y = t.r.y + w.ny * t.r.h, w = math.max(3, w.nw * t.r.w), h = math.max(3, w.nh * t.r.h),
+                              focused = w.focused, pic = pic, pictured = pic ~= "" }
+        end
+    end
+    model.wins = out
+end
+-- what Hyprland has, read again (on open, on a change, every 1.5 s while open)
+local reading = false
+local function read_desktop()
+    if reading or closing then return end
+    reading = true
+    launch("hyprctl", { "-j", "monitors" }, function(mo)
+        local mons = decode(mo) or {}
+        for _, m in ipairs(mons) do
+            if m.focused then
+                -- the surface is what the monitor leaves once the bar's reserve is taken (`reserved`:
+                -- left, top, right, bottom), and it starts below that reserve
+                local s = tonumber(m.scale) or 1
+                local r = type(m.reserved) == "table" and m.reserved or {}
+                screen.mon = m
+                screen.full_w, screen.full_h = math.floor(m.width / s + 0.5), math.floor(m.height / s + 0.5)
+                screen.w = screen.full_w - (tonumber(r[1]) or 0) - (tonumber(r[3]) or 0)
+                screen.h = screen.full_h - (tonumber(r[2]) or 0) - (tonumber(r[4]) or 0)
+                active_ws = type(m.activeWorkspace) == "table" and tonumber(m.activeWorkspace.id) or active_ws
+            end
+        end
+        launch("hyprctl", { "-j", "workspaces" }, function(wo)
+            launch("hyprctl", { "-j", "clients" }, function(co)
+                reading = false
+                clients = decode(co) or {}
+                spaces = deck.spaces(decode(wo), screen.mon and screen.mon.name or nil, active_ws)
+                this = deck.focused(clients, active_ws)
+                if not d or d.sw ~= screen.w or d.sh ~= screen.h or d.n ~= #spaces then place(); d.sw, d.sh, d.n = screen.w, screen.h, #spaces end
+                relayout_rest()
+                publish_window()
+            end)
+        end)
+    end)
+end
+
+-- the windows' pictures: the compositor's own, asked for in a short burst (a picture is kept after it)
+local function burst()
+    if not previews or closing then return end
+    if private == "off" then pcall(sys.call, "thumbnails.want", "all")
+    else
+        local ids = {}
+        for _, t in ipairs(thumbs) do if not atlas.private(private, t.app, t.title) then ids[#ids + 1] = t.id end end
+        pcall(sys.call, "thumbnails.want", ids)
+    end
+    after(500, function() pcall(sys.call, "thumbnails.want") end)
+end
+if previews then
+    pcall(sys.watch, "thumbnails", function(state)
+        thumbs = type(state) == "table" and state.list or {}
+        relayout_rest()
+    end)
+end
+
+local first_ws = nil
+pcall(sys.watch, "workspaces", function(w)
+    local active = type(w) == "table" and tonumber(w.active) or nil
+    if first_ws ~= nil and active and active ~= first_ws then close("the workspace changed"); return end
+    first_ws = first_ws or active
+end)
+
+-- this window's controls
+on("dk_win", function(v)
+    if not this or not hypr.valid_address(this.address) then return end
+    local action = ({ [0] = "float", [1] = "fullscreen", [2] = "pin", [3] = "close" })[math.floor(tonumber(v) or -1)]
+    local cmd = action and hypr.dispatch(action, this.address)
+    if not cmd then return end
+    launch("hyprctl", { "dispatch", cmd }, function() after(200, read_desktop) end)
+end)
+-- the tiles: go there; the preview: a window focused, this window sent
+local function tile(v) return model.tiles[(tonumber(v) or -1) + 1] end
+on("dk_ws", function(v)
+    local t = tile(v)
+    if t then pcall(sys.call, "workspaces.focus", math.floor(t.id)) end
+end)
+on("dk_send", function(v)
+    local t = tile(v)
+    if not t or not this then return end
+    local cmd = hypr.dispatch("move", this.address, { workspace = math.floor(t.id), follow = false })
+    if cmd then launch("hyprctl", { "dispatch", cmd }, function() after(200, read_desktop) end) end
+end)
+local big_windows = {}
+on("dk_hov_ws", function(v)
+    local t = tile(v)
+    if not t or not d then return end
+    local pw = 500
+    local ph = math.floor(pw / aspect() + 0.5)
+    fact.gw_w, fact.gw_h = pw + 20, ph + 54
+    fact.gw_free = t.plus == true
+    local a = { x = d.bays.ws.x + t.x, y = d.bays.ws.y + t.y, w = t.w, h = t.h }
+    fact.gw_x, fact.gw_y = deck.grow(d, a, fact.gw_w, fact.gw_h, screen.w, screen.h, d.top)
+    local rows = {}
+    big_windows = {}
+    for _, w in ipairs(deck.windows(clients, screen.mon)) do
+        if w.ws == t.id and #rows < 16 then
+            local pic = picture_of(w)
+            rows[#rows + 1] = { x = 10 + w.nx * pw, y = 10 + w.ny * ph, w = math.max(6, w.nw * pw), h = math.max(6, w.nh * ph),
+                                focused = w.focused, app = pretty(w.app), pic = pic, pictured = pic ~= "" }
+            big_windows[#rows] = w.address
+        end
+    end
+    model.big = rows
+    text.big_t = t.plus and string.format("WORKSPACE %d · NEW", t.id) or string.format("WORKSPACE %d · %d WINDOW%s", t.id, #rows, #rows == 1 and "" or "S")
+    burst()
+end)
+on("dk_big", function(v)
+    local address = big_windows[(tonumber(v) or -1) + 1]
+    local cmd = address and hypr.dispatch("focus", address)
+    if cmd then launch("hyprctl", { "dispatch", cmd }) end
+end)
+
+-- ── The wallpaper under the miniatures, and keeping up with the settings ──
+do
+    -- the picture the wallpaper studio last applied (a missing one draws nothing)
+    text.dk_wall = env("HOME", "") .. "/.cache/current_wallpaper"
+    fact.dk_wall_on = true
+end
+pcall(sys.watch, "files:" .. FILE, function()
+    settings = config.parse(read_text(FILE), json.decode)
+    paint(); show_identity()
+    previews = settings.atlas == nil or settings.atlas.previews ~= false
+    private = settings.atlas and settings.atlas.private or "off"
+    place()
+end)
+pcall(sys.watch, "files:nexus-feed.json", show_feed)
+pcall(sys.watch, "files:updates.json", show_updates)
+pcall(sys.watch, "files:palette.json", paint)
+
+show_feed(); show_updates()
+bar_states()
+every(2000, bar_states)
+read_desktop()
+every(1500, read_desktop)
+after(40, function() fact.dk_open = true; burst() end)

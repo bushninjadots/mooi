@@ -3273,3 +3273,46 @@ Each one is claimed, so going back to Keep mine reloads Hyprland's own values.
 **Checked:** each call evaluated live and read back; through the window, Wobbly + Soft set
 `windowsMove` to `spring:mooi_wobble` and 6 samples and wrote the curve to hypr.lua; Keep mine
 brought back `ease` and motion blur off. Unit 238 + BMO 27. Not checked: how each spring feels.
+
+## D102 · 2026-10-28 · The Control Nexus is a deck, on any edge; Cascade beside it
+
+**Asked for:** of three new directions (Console, Context, Scenes) "merge somehow all 3 i like the
+workspaces shown underneath with preview but also remember we need it unobtrusive but with all the
+info"; then "build it but make it so it can go top side or bottom … from side as well. it must look
+great and ergonomic and flow nicely with our mooi type theme". Cascade (the spine's shelves all out at
+once) "must be option in settings to have opt in or out".
+**Done:** the Nexus program (shell/mooi-nexus.plm/.luau) is rewritten as the deck: one surface the size
+of the screen, presses passing through where nothing is drawn, the deck sliding in from its edge
+(`nexus.edge`: bottom · top · left · right). Along the top or bottom it is a 236 px strip (1680 px at
+most): a head of scenes, what is waiting and who you are; below it this window, the workspaces and the
+console. Down a side it is a 404 px column of the same bays stacked, only as tall as what it holds, kept
+clear of the spine's tabs on the right. **This window**: its app, title, where it is, its own sound as a
+level (the audio stream matched by process, then by name), Float · Full · Pin · Close, its last
+notification. **Workspaces**: miniatures of the screen with the wallpaper and each window where it is,
+with the compositor's picture of it (`thumbnails`, a 500 ms burst; atlas.previews and atlas.private
+respected), "+" for a new one; pointed at for 260 ms, a 520 px preview grows out on the open side, where
+a window is focused with a press, Go goes there and "Send window here" moves the window you are in.
+**Console**: faders (everything, up to two apps that play, the microphone, the screen; press, drag or
+wheel), eight lit switch keys, CPU, memory, battery, disk, and the song. **Waiting**: the pressing first,
+each with the press that deals with it (recording → STOP, low battery → SAVER, notifications → OPEN,
+updates → UPDATE, the weather → DAY, quiet → END). **Scenes**: Focus, Night, Present, Saver to start;
+pointed at, what switching would change grows out ("quiet on · screen 35%"); a press makes it so (only
+what differs is touched); "+ Save" keeps the desktop as it is as "Mine"; a right press removes one; the
+scene the desktop already is wears a dot. Kept in nexus-scenes.json. **Cascade** (`nexus.mode`): nine
+compact shelves (switches, connections, sound, music, machine, today, notifications, updates,
+workspaces) come out 30 ms apart down the right edge, each tied to the spine and leaning out under the
+pointer; a press acts or opens the full island. Both island styles (plate, tether) are drawn by the
+same pieces (shell/ui/deck.plm). The geometry, the miniatures, what is waiting and scenes are
+lib/nexusdeck (pure, 10 tests); lib/nexusdrawer and lib/nexusorbit are gone with the drawer (D98) and
+the orbit (D99), and their settings (`nexus.folded`, `nexus.orbit`) go quietly.
+**Found:** a full-screen surface is the monitor less the bar's reserve (1920 × 1049 here), so the deck is
+placed in Hyprland's `reserved` area, not the monitor; library lets cannot name the Theme library's
+tokens, and a colour cannot be chosen with `if()` in a let — the deck's colours are `mix(plate, tether,
+isl_style)` over `rgb()` lets of the colour facts; a zone cannot be read from the `move:` of the group
+that holds it.
+**Checked live:** tests/nexus.sh, 21 checks (opens; every edge followed from settings.json while open;
+the preview growing below a top deck; a scene's changes; Save writing nexus-scenes.json and a right
+press removing it; Cascade; ending on close; a clean log). Screenshots of bottom, top, left, right, a
+workspace preview, a scene's changes, Cascade and the tether style. Unit 242 + BMO 27. Not checked: the
+faders and switch keys pressed by a real pointer (their events are the drawer's, which were), several
+monitors, and a screen narrower than 1366 px.

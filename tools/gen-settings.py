@@ -52,6 +52,8 @@ SETTERS = [
     "island.style", "clock.view", "shelves.on",
     # Hyprland 0.56: finer blur, the windows' spring and motion blur
     "desktop.blur_vibrancy", "desktop.blur_xray", "desktop.blur_popups", "desktop.wobble", "desktop.motion_blur",
+    # the Control Nexus (D102): what the mark opens, and the deck's edge
+    "nexus.mode", "nexus.edge",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -124,6 +126,9 @@ SECTIONS = [
         ("choice", "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", "look.corners", "sv_look_corners", [("Chamfer", 0), ("Bevel", 1), ("Rounded", 2), ("Square", 3)]),
         ("slider", "Corner size", "How big the cut or the rounding is (12 is as designed)", "look.corner_size", 0, 24, "{sv_look_corner_size, 0}", "sv_look_corners != 3"),
         ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
+        ("card", "Control Nexus"),
+        ("choice", "The mark opens", "The deck: everything along one edge. Cascade: every shelf of the spine out at once", "nexus.mode", "sv_nexus_mode", ["The deck", "Cascade"]),
+        ("choice", "Deck edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
         ("toggle", "The spine", "Tabs down the right edge: hover one and its shelf slides out (sound, network, power, machine, calendar…)", "shelves.on", "sv_shelves_on"),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),

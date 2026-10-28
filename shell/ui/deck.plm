@@ -1,0 +1,75 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+
+// The Control Nexus deck's pieces (D102): its colours and type in either island style, a bay's
+// name, an action key, a fader and a reading. Zones and rules stay in the scene, but for the
+// fader's own (it is a hand-held level: the scene passes the event it sets).
+library Deck {
+    // ── The deck's colours and type, in either island style ──
+    // the tether style's roles, from the colour facts (lib/theme sets them)
+    let dk.t_accent_primary = rgb(c_accent_primary_r, c_accent_primary_g, c_accent_primary_b)
+    let dk.t_accent_secondary = rgb(c_accent_secondary_r, c_accent_secondary_g, c_accent_secondary_b)
+    let dk.t_fg_primary = rgb(c_fg_primary_r, c_fg_primary_g, c_fg_primary_b)
+    let dk.t_fg_secondary = rgb(c_fg_secondary_r, c_fg_secondary_g, c_fg_secondary_b)
+    let dk.t_fg_muted = rgb(c_fg_muted_r, c_fg_muted_g, c_fg_muted_b)
+    let dk.t_border_subtle = rgb(c_border_subtle_r, c_border_subtle_g, c_border_subtle_b)
+    let dk.t_bg_primary = rgb(c_bg_primary_r, c_bg_primary_g, c_bg_primary_b)
+    let dk.t_surface_elevated = rgb(c_surface_elevated_r, c_surface_elevated_g, c_surface_elevated_b)
+    let dk.tether = isl_style > 0.5
+    let dk.acc = mix(fl.phos, dk.t_accent_primary, isl_style)
+    let dk.hot = mix(fl.ember, dk.t_accent_secondary, isl_style)
+    let dk.ink = mix(fl.engrave, dk.t_fg_primary, isl_style)
+    let dk.ink2 = mix(fl.steel_300, dk.t_fg_secondary, isl_style)
+    let dk.mute = mix(fl.muted, dk.t_fg_muted, isl_style)
+    let dk.line = mix(fl.trace_dim, dk.t_border_subtle, isl_style)
+    let dk.well = mix(fl.well, dk.t_bg_primary, isl_style)
+    let dk.raised = mix(fl.hull_raised, dk.t_surface_elevated, isl_style)
+    let dk.r = if(isl_style > 0.5, 6 * cn_scale, 2)
+
+    // A bay's name: mono caps after a short lit trace, as the islands' heads are.
+    component BayHead(x: number, y: number, word: text) {
+        size: 160, 14
+        line { from: x, y + 6; to: x + 10, y + 6; width: 1.4; color: dk.acc; opacity: 0.85 }
+        text "{upper(word)}" { at: x + 16, y + 6; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.9 }
+    }
+
+    // A small action with its word: a chamfered key, lit while pointed at or while `lit`.
+    component Act(x: number, y: number, w: number, word: text, lit: bool, hot: bool, hover: number) {
+        size: w, 24
+        box { from: x, y; size: w, 24; corner: dk.r; color: if(lit, mix(dk.well, dk.acc, 0.16), dk.well); opacity: 0.9 }
+        box { from: x, y; size: w, 24; corner: dk.r; stroke: 1; color: if(hot, dk.hot, if(lit, dk.acc, mix(dk.line, dk.acc, 0.6 * hover))) }
+        text "{upper(word)}" { at: x + w / 2, y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                               color: if(hot, dk.hot, if(lit, dk.acc, mix(dk.ink2, dk.ink, hover))); width: w - 6; lines: 1 }
+    }
+
+    // A level the hand moves: a slot with its fill, a cap at the level, the figure and the name
+    // under it. A press or a drag sets it; the wheel nudges it.
+    component Fader(r: record, x: number, y: number, h: number, set: event) {
+        size: 30, h + 30
+        zone box fz { from: x - 12, y - 4; size: 26, h + 8; cursor: pointer; role: slider; value: r.v; label: "{r.word} level" }
+        box { from: x - 2, y; size: 4, h; corner: 2; color: dk.well }
+        box { from: x - 2, y; size: 4, h; corner: 2; stroke: 1; color: dk.line }
+        box { from: x - 2, y + h * (1 - clamp(r.v, 0, 1)); size: 4, h * clamp(r.v, 0, 1); corner: 2; color: if(r.hot, dk.hot, dk.acc); opacity: 0.55 }
+        group {
+            glow: 6, (0.35 + 0.4 * fz.hover) * st_glow, if(r.hot, dk.hot, dk.acc)
+            box { from: x - 9, y + h * (1 - clamp(r.v, 0, 1)) - 5; size: 18, 10; corner: if(isl_style > 0.5, 5, 1); color: dk.raised }
+            box { from: x - 9, y + h * (1 - clamp(r.v, 0, 1)) - 5; size: 18, 10; corner: if(isl_style > 0.5, 5, 1); stroke: 1; color: mix(dk.line, if(r.hot, dk.hot, dk.acc), 0.5 + 0.5 * fz.hover) }
+            line { from: x - 5, y + h * (1 - clamp(r.v, 0, 1)); to: x + 5, y + h * (1 - clamp(r.v, 0, 1)); width: 1.2; color: if(r.hot, dk.hot, dk.acc) }
+        }
+        text r.shown { at: x, y + h + 12; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.ink; width: 34; lines: 1 }
+        text "{upper(r.word)}" { at: x, y + h + 24; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: dk.mute; width: 34; lines: 1 }
+        on press fz { emit set(r.code * 1000 + round(clamp(1 - (local.y - 4) / h, 0, 1) * 1000)) }
+        on drag fz { emit set(r.code * 1000 + round(clamp(1 - (local.y - 4) / h, 0, 1) * 1000)) }
+        on scroll fz { emit set(r.code * 1000 + round(clamp(r.v + wheel * 0.05, 0, 1) * 1000)) }
+    }
+
+    // A reading in the console: its name, the figure, a thin bar under it.
+    component Reading(x: number, y: number, w: number, word: text, shown: text, v: number, hot: bool) {
+        size: w, 30
+        text "{upper(word)}" { at: x, y + 5; anchor: left center; size: 8; family: "Share Tech Mono"; color: dk.mute }
+        text shown { at: x, y + 18; anchor: left center; size: 12.5; weight: 600; family: "Exo 2"; color: if(hot, dk.hot, dk.ink); width: w; lines: 1 }
+        box { from: x, y + 28; size: w - 8, 2; color: dk.line }
+        box { from: x, y + 28; size: (w - 8) * clamp(v, 0, 1), 2; color: if(hot, dk.hot, dk.acc) }
+    }
+}

@@ -59,6 +59,8 @@ M.SETTERS = {
     "island.style", "clock.view", "shelves.on",
     -- Hyprland 0.56: finer blur, the windows' spring and motion blur
     "desktop.blur_vibrancy", "desktop.blur_xray", "desktop.blur_popups", "desktop.wobble", "desktop.motion_blur",
+    -- the Control Nexus (D102): what the mark opens, and the deck's edge
+    "nexus.mode", "nexus.edge",
 }
 
 local function row_of(path)

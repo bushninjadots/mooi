@@ -3,20 +3,23 @@ import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/island.plm"
+import "ui/deck.plm"
 
-// mooi's Control Nexus (D98) — a drawer on the right edge, under the bar, the screen's height
-// below it: everything that matters in one scrolling column, every tile doing something. It
-// never dims or covers the desktop; it closes on Esc, its ×, the bar's mark again, or a workspace
-// change — not when the focus moves (with focus following the mouse, that is every mouse move). Drawn in the island style (island.style) with the island kit, so the
-// Nexus and the islands are one family. mooi-nexus.luau reads what the drawer shows while it is
-// open, and carries every press to the system or to the bar (`pleamar --say mooi`). The column's
-// geometry is lib/nexusdrawer's.
+// mooi's Control Nexus as a deck (D102): one low strip along the bottom or the top of the screen,
+// or a column down either side (nexus.edge), that never dims or covers the desktop. Scenes and what
+// is waiting run along its head; the window you are in has its own controls; your workspaces are
+// miniatures with their windows in them; the mixer, the switches, the machine and the music share
+// the console. What needs more room grows out of the deck, away from its edge, while it is pointed
+// at — a scene says what it would change, a workspace opens into a preview you can read. It closes
+// on Esc, its ×, the bar's mark again, or a workspace change. mooi-nexus.luau reads what it shows
+// and places it (lib/nexusdeck); every press goes to the system or to the bar.
 
 scene Nexus {
     permissions {
-        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "cava", "curl", "magick", "kitty", "btop", "hostname", "whoami", "zenity"
-        services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env"
+        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "curl", "magick", "kitty", "btop", "hostname", "whoami"
+        services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want"
     }
+
 
     // The same facts and springs the bar wears: the logic paints them from palette.json, and
     // the studio re-lights with the desktop when the palette changes after an apply.
@@ -250,751 +253,645 @@ scene Nexus {
     fact st_glow = 1
     fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
 
-    // ── What the services report (the rows are drawn straight from them) ──
-    model nets max 8 { ssid: text; strength: number; secure: bool; known: bool; active: bool }
-    service network { online: bool; kind: text; name: text; strength: number; wifi: bool; networks: nets }
-    model btd max 8 { name: text; address: text; paired: bool; connected: bool; battery: number }
-    service bluetooth { present: bool; powered: bool; devices: btd }
-    model outs max 8 { id: text; name: text; default: bool }
+    // ── What the services report ──
     model apps max 8 { id: text; name: text; volume: number; muted: bool; playing: bool }
-    service audio { volume: number; muted: bool; input: number; input_muted: bool; outputs: outs; apps: apps }
+    service audio { volume: number; muted: bool; input: number; input_muted: bool; apps: apps }
     service brightness { present: bool; level: number }
     service battery { present: bool; percent: number; charging: bool }
     service media as med { playing: bool; title: text; artist: text; player: text }
-    model wss max 16 { id: number; windows: number; active: bool }
-    service workspaces as wks { list: wss }
     service clock { time: text = "--:--"; date: text }
 
-    // ── What the logic tells the drawer ──
-    fact nx_open = false         // in (true) or sliding away
-    fact nx_h = 900              // the drawer's height (the screen below the bar)
-    fact nx_top = 46             // the bar's reserve: the drawer starts under it
-    fact nx_sy = 0               // how far the column is scrolled
-    fact nx_total = 900          // the column's full height (lib/nexusdrawer)
+    // ── Where the deck is (lib/nexusdeck): the screen's, its own, and its bays' (in the deck) ──
+    fact dk_open = false         // in (true) or sliding away
+    fact dk_edge = 0             // 0 bottom · 1 top · 2 left · 3 right (nexus.edge)
+    fact dk_vert = false         // down a side: a column
+    fact dk_x = 120
+    fact dk_y = 830
+    fact dk_w = 1680
+    fact dk_h = 236
+    fact dk_ox = 0               // the way out of the screen, which it slides in from
+    fact dk_oy = 1
+    fact sc_x = 0
+    fact sc_y = 0
+    fact sc_w = 470
+    fact sc_h = 36
+    fact wt_x = 470
+    fact wt_y = 0
+    fact wt_w = 974
+    fact wt_h = 36
+    fact id_x = 1444
+    fact id_y = 0
+    fact id_w = 236
+    fact id_h = 36
+    fact wn_x = 0
+    fact wn_y = 36
+    fact wn_w = 300
+    fact wn_h = 200
+    fact ws_x = 300
+    fact ws_y = 36
+    fact ws_w = 948
+    fact ws_h = 200
+    fact mx_x = 1248
+    fact mx_y = 36
+    fact mx_w = 432
+    fact mx_h = 200
+
+    // ── Cascade (nexus.mode): the spine's shelves, every one out at once, down the right edge ──
+    fact dk_cascade = false
+    fact cs_r = 1860             // the shelves' right edge (the spine's tabs beyond it)
+    fact cy_0 = 0
+    fact cy_1 = 0
+    fact cy_2 = 0
+    fact cy_3 = 0
+    fact cy_4 = 0
+    fact cy_5 = 0
+    fact cy_6 = 0
+    fact cy_7 = 0
+    fact cy_8 = 0
+    text c_net = ""
+    text c_bt = ""
+    text c_out = ""
+    text c_today = ""
+    text c_notes = ""
+    fact c_notes_n = 0
+    text c_upd = ""
+    fact c_upd_n = 0
+
+    // ── Who you are ──
     text nx_name = "mooi"
     text nx_who = ""
     text nx_avatar = ""
     fact nx_avatar_on = false
-    text nx_banner = ""
-    fact nx_banner_on = false
-    text nx_uptime = ""
-    fact nx_naming = false       // the name is being typed
-    text nx_name_in = ""         // what is typed there
-    text nx_notice = ""          // a word after an import (or why it failed)
     text nx_initial = "M"
-    // the column: each section's top and height, and whether it is folded
-    fact y_levels = 0
-    fact y_media = 0
-    fact y_notes = 0
-    fact y_connections = 0
-    fact y_sound = 0
-    fact y_machine = 0
-    fact y_today = 0
-    fact y_updates = 0
-    fact y_workspaces = 0
-    fact y_shortcuts = 0
-    fact f_levels = false
-    fact f_media = false
-    fact f_notes = false
-    fact f_connections = false
-    fact f_sound = false
-    fact f_machine = false
-    fact f_today = false
-    fact f_updates = false
-    fact f_workspaces = false
-    fact f_shortcuts = false
-    // the bar's own switches, asked of the bar every 2 s while the drawer is open
-    fact b_dnd = false
-    fact b_awake = false
-    fact b_rec = false
-    fact b_night = false
-    fact b_saver = false
-    text bt_empty = "No devices paired"
-    // ── The orbit (D99, lib/nexusorbit): its nodes, the rest as chips, the arcs, the backdrop ──
-    model orbit max 8 { word: text; state: text; on: bool; glyph: number; x: number; y: number; p1x: number; p1y: number; p2x: number; p2y: number; p3x: number; p3y: number }
-    model rest max 12 { word: text; on: bool }
-    fact orb_bg = 0              // 0 banner · 1 circuit · 2 plain
-    fact nx_bw2 = 386            // the banner drawn to cover the board
-    fact nx_bh2 = 452
-    fact arc_v0 = 0
-    fact arc_v1 = 0
-    fact arc_v2 = 0
-    text arc_l0 = ""
-    text arc_l1 = ""
-    text arc_l2 = ""
-    fact pulse_n = -1            // the node whose pulse is running home
-    fact nx_custom = false       // the customise sheet is open
-    model cus_nodes max 12 { word: text; on: bool }
-    model cus_arcs max 8 { word: text; on: bool }
-    // now playing
-    text nx_art = ""
-    fact nx_art_on = false
-    fact nx_prog = 0
-    text nx_elapsed = ""
-    text nx_length = ""
-    // notifications (the bar's nexus-feed.json)
-    model feed max 5 { app: text; title: text; ago: text }
-    fact feed_n = 0
-    fact feed_ok = false
-    // machine
+    text nx_notice = ""          // a word after a scene is saved or removed
+    fact nx_noticed = false      // and it is showing
+
+    // ── Scenes, and what is waiting ──
+    model scn max 8 { word: text; live: bool; save: bool; x: number; y: number; w: number }
+    model wait max 6 { word: text; act: text; hot: bool; x: number; y: number; w: number }
+    fact dk_hsc = -1             // the scene pointed at: what it would change grows out
+    model diff max 8 { word: text; w: number }
+    text diff_t = ""             // "Focus would →"
+    fact gs_x = 0                // where that grows to (the screen's)
+    fact gs_y = 0
+    fact gs_w = 420
+
+    // ── The window you are in ──
+    fact w_ok = false
+    text w_app = ""
+    text w_title = ""
+    text w_where = ""
+    text w_initial = ""
+    text w_note = ""
+    fact w_noted = false
+    fact w_snd = false           // it plays something: its own level
+    fact w_vol = 0
+    fact w_floating = false
+    fact w_pinned = false
+    fact w_full = false
+
+    // ── Your workspaces as miniatures ──
+    text dk_wall = ""
+    fact dk_wall_on = false
+    image wall = from dk_wall, 480, 270
+    model tiles max 12 { id: number; label: text; n: text; active: bool; plus: bool; x: number; y: number; w: number; h: number }
+    model wins max 48 { x: number; y: number; w: number; h: number; focused: bool; pic: image 320, 180; pictured: bool }
+    fact dk_hws = -1             // the tile pointed at: its preview grows out
+    model big max 16 { x: number; y: number; w: number; h: number; focused: bool; app: text; pic: image 480, 270; pictured: bool }
+    text big_t = ""
+    fact gw_x = 0
+    fact gw_y = 0
+    fact gw_w = 520
+    fact gw_h = 336
+    fact gw_free = false         // the tile pointed at is "+"
+
+    // ── The console: levels, switches, the machine, the music ──
+    model faders max 6 { word: text; shown: text; v: number; code: number; hot: bool }
+    model keys max 8 { word: text; on: bool; code: number }
     fact m_cpu = 0
     fact m_temp = 0
     fact m_mem = 0
-    text m_mem_t = ""
     fact m_disk = 0
-    text m_disk_t = ""
-    fact m_gpu = 0
-    fact m_gpu_ok = false
-    text m_bat_t = ""
-    // today
-    model days max 7 { label: text; day: number; today: bool }
-    fact wx_ok = false
-    fact wx_kind = 2
-    fact wx_temp = 0
-    text wx_word = ""
-    text wx_place = ""
-    // updates (the bar's updates.json)
-    fact upd_n = 0
-    fact upd_ok = false
-    text upd_t = "No word from the bar yet"
+    text nx_art = ""
+    fact nx_art_on = false
+    fact nx_prog = 0
+    fact mus_on = false          // a player has a song
+    text m_cpu_t = "0%"
+    text m_mem_t = "0%"
+    text m_bat_t = "AC"
+    text m_disk_t = "0%"
+    fact m_bat = 1
+    fact m_bat_hot = false
+    image cover = from nx_art, 64, 64
+    image avatar = from nx_avatar, 64, 64
 
     event nx_close ->            // to the logic: slide away and end
-    event nx_node ->             // to the logic: node n of the orbit pressed (flip it, or open it)
-    event nx_rest ->             // to the logic: chip n (the toggles not in the orbit) pressed
-    event nx_cus ->              // to the logic: customise — 100 + n a node in or out · 200 + n an arc · 300 + n the backdrop
-    event nx_pulse               // a node was pressed: its trace carries a pulse home
-    event nx_pick ->             // to the logic: choose a picture — 0 the avatar · 1 the banner (a file picker, then `mooi identity`)
-    event nx_rename ->           // to the logic: the name typed (read from the field)
-    event nx_fold ->             // to the logic: fold or unfold section n (lib/nexusdrawer ORDER, from 0)
-    event nx_tog ->              // to the logic: quick toggle n (0 Wi-Fi … 8 record)
+    event nx_tog ->              // to the logic: switch n (0 Wi-Fi … 8 record)
     event nx_go ->               // to the logic: open something (codes in mooi-nexus.luau GO)
     event nx_media ->            // to the logic: 0 previous · 1 play/pause · 2 next
-    event nx_net ->              // to the logic: join network n (its place in network.networks)
-    event nx_bt ->               // to the logic: connect or disconnect device n
-    event nx_out ->              // to the logic: make output n the default
-    event nx_app ->              // to the logic: 1000 · app + level (0..1000)
-    event nx_ws ->               // to the logic: go to workspace n
-    event vol ->                 // to the logic: the output level (0..1)
-    event mic ->                 // to the logic: the microphone's level (0..1)
-    event bri ->                 // to the logic: the brightness (0..1)
+    event dk_level ->            // to the logic: 1000 · fader code + level (0..1000)
+    event dk_win ->              // to the logic: this window — 0 float · 1 fullscreen · 2 pin · 3 close
+    event dk_wait ->             // to the logic: what is waiting, item n's action
+    event dk_scene ->            // to the logic: switch to scene n (the last chip saves this one)
+    event dk_unscene ->          // to the logic: remove scene n (a right press)
+    event dk_hov_scene ->        // to the logic: scene n is pointed at (say what it would change)
+    event dk_ws ->               // to the logic: go to tile n's workspace
+    event dk_send ->             // to the logic: send this window to tile n's workspace
+    event dk_hov_ws ->           // to the logic: tile n is pointed at (its preview)
+    event dk_big ->              // to the logic: window n of the preview — focus it
 
-    figure i_nexus = file "icons/nexus.svg"
     figure i_set = file "icons/cog.svg"
     figure i_lock = file "icons/lock.svg"
     figure i_power = file "icons/power.svg"
-    figure i_wifi = file "icons/wifi.svg"
-    figure i_wifi_off = file "icons/wifi-off.svg"
-    figure i_bt = file "icons/bluetooth.svg"
-    figure i_bt_off = file "icons/bluetooth-off.svg"
-    figure i_vol = file "icons/volume.svg"
-    figure i_vol_off = file "icons/volume-mute.svg"
-    figure i_mic = file "icons/mic.svg"
-    figure i_mic_off = file "icons/mic-off.svg"
-    figure i_bell = file "icons/bell.svg"
-    figure i_night = file "icons/night.svg"
-    figure i_caf = file "icons/caffeine.svg"
-    figure i_rec = file "icons/recorder.svg"
-    figure i_shot = file "icons/screenshot.svg"
-    figure i_bolt = file "icons/bolt.svg"
-    figure i_clear = file "icons/clear.svg"
-    figure i_cloud = file "icons/cloud.svg"
-    figure i_fog = file "icons/fog.svg"
-    figure i_rain = file "icons/rain.svg"
-    figure i_snow = file "icons/snow.svg"
-    figure i_storm = file "icons/storm.svg"
-    image avatar = from nx_avatar, 72, 72
-    image banner = from nx_banner, 960, 540
-    image cover = from nx_art, 84, 84
 
-    // ── Motion ───────────────────────────────────────────────
+    // ── Motion ──
     spring nx.slide = 900, 62        // ~220 ms in and out
     prop nx_in = 0 ~nx.slide
-    follow nx_in = if(nx_open, 1, 0)
-    prop sv = 0 ~m.select
-    follow sv = nx_sy
-    spring nx.rail = 160, 26         // ~500 ms, soft
-    // the arcs, gliding; the pulse, running home along a trace in 550 ms
-    prop ra0 = 0 ~nx.rail
-    follow ra0 = arc_v0
-    prop ra1 = 0 ~nx.rail
-    follow ra1 = arc_v1
-    prop ra2 = 0 ~nx.rail
-    follow ra2 = arc_v2
-    prop pulse_p = 0
-    layer pulse ~1ms {
-        go for 600ms after nx_pulse { pulse_p: 1 ~550ms }
-        idle                         { pulse_p: 0 ~1ms }
+    follow nx_in = if(dk_open, 1, 0)
+    prop gs_in = 0 ~m.expand         // what grows out: a scene's changes, a workspace's preview
+    follow gs_in = if(dk_hsc >= 0 and dk_open, 1, 0)
+    prop gw_in = 0 ~m.expand
+    follow gw_in = if(dk_hws >= 0 and dk_open, 1, 0)
+    // Cascade's shelves come out one after another, 30 ms apart, and go home together
+    prop cs.0 = 0 ~m.expand
+    prop cs.1 = 0 ~m.expand
+    prop cs.2 = 0 ~m.expand
+    prop cs.3 = 0 ~m.expand
+    prop cs.4 = 0 ~m.expand
+    prop cs.5 = 0 ~m.expand
+    prop cs.6 = 0 ~m.expand
+    prop cs.7 = 0 ~m.expand
+    prop cs.8 = 0 ~m.expand
+    on change dk_open while dk_open {
+        cs.0: 1 after 0ms;  cs.1: 1 after 30ms;  cs.2: 1 after 60ms;  cs.3: 1 after 90ms;  cs.4: 1 after 120ms
+        cs.5: 1 after 150ms;  cs.6: 1 after 180ms;  cs.7: 1 after 210ms;  cs.8: 1 after 240ms
     }
-    // the rail's channels, gliding to each reading
-    prop rc_cpu = 0 ~nx.rail
+    on change dk_open while not dk_open {
+        cs.0: 0;  cs.1: 0;  cs.2: 0;  cs.3: 0;  cs.4: 0;  cs.5: 0;  cs.6: 0;  cs.7: 0;  cs.8: 0
+    }
+    prop rc_cpu = 0 ~m.reflow
     follow rc_cpu = m_cpu
-    prop rc_mem = 0 ~nx.rail
+    prop rc_mem = 0 ~m.reflow
     follow rc_mem = m_mem
-    prop rc_gpu = 0 ~nx.rail
-    follow rc_gpu = if(m_gpu_ok, m_gpu, 0)
-    prop rc_tmp = 0 ~nx.rail
-    follow rc_tmp = clamp((m_temp - 30) / 70, 0, 1)
-    prop rc_song = 0 ~nx.rail
+    prop rc_song = 0 ~m.reflow
     follow rc_song = nx_prog
 
-    // A section's header line at its top `y`: its name, a short line on the right, the fold
-    // chevron; a press folds or unfolds it.
-    component SecHead(y: number, title: text, sub: text, folded: bool, code: number) {
-        size: 388, 30
-        zone box h { from: 16, y; size: 388, 26; cursor: pointer; role: toggle; checked: not folded; label: "{title} — fold or unfold" }
-        group {
-            show: isl_style < 0.5
-            text "{upper(title)}" { at: 30, y + 13; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(fl.phos, fl.engrave, 0.3 * h.hover) }
-            line { from: 30, y + 25; to: 52, y + 25; width: 1.2; color: fl.phos; opacity: 0.7 }
-            text sub { at: 380, y + 13; anchor: right center; align: right; size: 9.5; family: "Share Tech Mono"; color: fl.muted; width: 220; lines: 1 }
-        }
-        group {
-            show: isl_style > 0.5
-            text title { at: 30, y + 13; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: mix(fg.primary, accent.primary, 0.4 * h.hover) }
-            text sub { at: 380, y + 13; anchor: right center; align: right; size: 10.5; family: "Exo 2"; color: fg.secondary; width: 220; lines: 1 }
-        }
-        path { stroke: 1.4; color: if(isl_style > 0.5, fg.secondary, fl.muted)
-               move 391, y + if(folded, 9, 11); line 395, y + if(folded, 13, 15); line 399, y + if(folded, 9, 11) }
-        on press h { emit nx_fold(code) }
-    }
-
-    // A node's glyph `g` (lib/nexusorbit NODES' glyph), centred at (x, y), in colour `c`.
-    component Gl(x: number, y: number, g: number, c: color) {
-        size: 16, 16
-        figure i_wifi { at: x, y; size: 16, 16; color: c; show: g < 0.5 }
-        figure i_bt { at: x, y; size: 16, 16; color: c; show: g > 0.5 and g < 1.5 }
-        figure i_vol { at: x, y; size: 16, 16; color: c; show: g > 1.5 and g < 2.5 }
-        figure i_mic { at: x, y; size: 16, 16; color: c; show: g > 2.5 and g < 3.5 }
-        figure i_bell { at: x, y; size: 16, 16; color: c; show: g > 3.5 and g < 4.5 }
-        figure i_night { at: x, y; size: 16, 16; color: c; show: g > 4.5 and g < 5.5 }
-        figure i_caf { at: x, y; size: 16, 16; color: c; show: g > 5.5 and g < 6.5 }
-        figure i_bolt { at: x, y; size: 16, 16; color: c; show: g > 6.5 and g < 7.5 }
-        figure i_rec { at: x, y; size: 16, 16; color: c; show: g > 7.5 and g < 8.5 }
-        figure i_lock { at: x, y; size: 16, 16; color: c; show: g > 8.5 and g < 9.5 }
-        figure i_set { at: x, y; size: 16, 16; color: c; show: g > 9.5 and g < 10.5 }
-        figure i_shot { at: x, y; size: 16, 16; color: c; show: g > 10.5 }
-    }
-
-    // A weather glyph of kind `k` (lib/sysinfo WEATHER_KINDS), centred at (x, y), `sz` across.
-    component Glyph(x: number, y: number, sz: number, k: number) {
-        size: sz, sz
-        figure i_clear { at: x, y; size: sz, sz; color: fl.flare; show: k < 0.5 }
-        figure i_night { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.engrave); show: k > 0.5 and k < 1.5 }
-        figure i_cloud { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.engrave); show: k > 1.5 and k < 2.5 }
-        figure i_fog { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.engrave); show: k > 2.5 and k < 3.5 }
-        figure i_rain { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.engrave); show: k > 3.5 and k < 4.5 }
-        figure i_snow { at: x, y; size: sz, sz; color: if(isl_style > 0.5, fg.primary, fl.engrave); show: k > 4.5 and k < 5.5 }
-        figure i_storm { at: x, y; size: sz, sz; color: fl.ember; show: k > 5.5 }
-    }
-
     surface nexus {
-        // the whole height: nothing is drawn above nx_top, and where nothing is drawn a press goes
-        // through to the bar under it
-        size: 440, full
-        anchor: top_right
+        // the whole screen: where nothing is drawn a press goes through to what is under it
+        size: full, full
+        anchor: top_left
         level: top
         keyboard: on_demand
 
-        on key Escape while not nx_naming { emit nx_close }
+        on key Escape { emit nx_close }
 
+        // ═══ The deck ═══
         group {
-            move: 460 * (1 - nx_in) + 22, nx_top
-            opacity: smooth(0, 0.6, nx_in)
-            IslandFrame(1, 404, nx_h - 8) {
-                // the viewport: the column scrolls under the head
-                zone box view { from: 0, 0; size: 404, nx_h; role: region; label: "The Control Nexus" }
-                on scroll view { nx_sy = clamp(nx_sy - wheel * 64, 0, max(0, nx_total - nx_h + 24)) }
-            }
-        }
-
-        // ── The rail: the machine's pulse down the drawer's edge ──
-        // Five channels — processor, memory, graphics, temperature, and the song's place — each
-        // filling from the bottom on a slow spring, hot ones in the warning colour. They move only
-        // when a reading changes (every 2 s), so the drawer still rests between readings.
-        group {
-            move: 460 * (1 - nx_in) + 3, nx_top + 10
-            opacity: smooth(0.2, 0.9, nx_in)
-            let rch = (nx_h - 36 - 4 * 10) / 5
-            repeat c in 0..5 {
-                let rv = pick(c, rc_cpu, rc_mem, rc_gpu, rc_tmp, rc_song)
-                let hot = pick(c, m_cpu > 0.85, m_mem > 0.9, m_gpu > 0.9, m_temp > 85, false)
-                let ry = c * (rch + 10)
-                box { from: 0, ry; size: 12, rch; corner: if(isl_style > 0.5, 6, 2); color: if(isl_style > 0.5, bg.primary, fl.well); opacity: 0.85 }
-                box { from: 0, ry; size: 12, rch; corner: if(isl_style > 0.5, 6, 2); stroke: 1; color: if(isl_style > 0.5, border.subtle, fl.trace_dim) }
-                group {
-                    glow: 7, (0.55 + 0.45 * rv) * st_glow, if(hot, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos))
-                    box { from: 2, ry + rch - 2 - (rch - 4) * clamp(rv, 0, 1); size: 8, (rch - 4) * clamp(rv, 0, 1); corner: if(isl_style > 0.5, 4, 1)
-                          color: if(hot, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos)) }
+            show: not dk_cascade
+            move: dk_x + dk_ox * (1 - nx_in) * (dk_w + 40), dk_y + dk_oy * (1 - nx_in) * (dk_h + 40)
+            opacity: smooth(0, 0.5, nx_in)
+            zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
+            IslandFrame(1, dk_w, dk_h, centre: true) {
+                // the bays' seams: the head's floor along a strip, each bay's top down a column
+                line { from: 0, sc_y + sc_h; to: dk_w, sc_y + sc_h; width: 1; color: dk.line; opacity: 0.7; show: not dk_vert }
+                line { from: wn_x + wn_w, wn_y + 10; to: wn_x + wn_w, wn_y + wn_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
+                line { from: mx_x, mx_y + 10; to: mx_x, mx_y + mx_h - 10; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
+                line { from: wt_x, 9; to: wt_x, 27; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
+                line { from: id_x, 9; to: id_x, 27; width: 1; color: dk.line; opacity: 0.6; show: not dk_vert }
+                repeat k in 0..5 {
+                    let seam.$k = pick(k, sc_y, wt_y, wn_y, ws_y, mx_y)
+                    line { from: 14, seam.$k; to: dk_w - 14, seam.$k; width: 1; color: dk.line; opacity: 0.6; show: dk_vert }
                 }
-                // plate: the instrument's ticks every tenth
-                repeat t in 1..10 {
-                    box { from: 0, ry + rch * t / 10; size: 3, 1; color: fl.trace_dim; opacity: 0.8; show: isl_style < 0.5 }
-                }
-                zone box rz.$c { from: -2, ry; size: 16, rch; role: region; label: pick(c, "Processor", "Memory", "Graphics", "Temperature", "The song") }
-            }
-        }
 
-        group {
-            move: 460 * (1 - nx_in) + 14, nx_top
-            opacity: smooth(0, 0.6, nx_in)
-            group {
-                // what scrolls stays under the head
-                clip box { from: 0, 0; size: 440, nx_h - 8 }
-
-            // ── The orbit (D99): you at the core of a circuit board, your nodes wired to you ──
-            group {
-                move: 0, -sv
-                // the board behind it: your banner, a circuit pattern, or nothing (nexus.orbit.backdrop)
+                // ── Who you are, the time, and the ways out ──
                 group {
-                    clip box { from: 17, 9; size: 386, 464; corner: if(isl_style > 0.5, 16, 0) }
+                    move: id_x, id_y
+                    let iy = if(dk_vert, 22, 18)
+                    box { from: 14, iy - 11; size: 22, 22; corner: if(isl_style > 0.5, 11, 2); color: dk.well }
+                    image avatar { at: 14, iy - 11; size: 22, 22; show: nx_avatar_on }
+                    text nx_initial { at: 25, iy; anchor: center; align: center; size: 11; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on }
+                    text pick(nx_noticed, nx_name, nx_notice) { at: 44, iy - (if(dk_vert, 6, 0)); anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: id_w - 172; lines: 1 }
+                    text nx_who { at: 44, iy + 8; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: id_w - 172; lines: 1; show: dk_vert }
+                    text clock.time { at: id_w - 104, iy; anchor: right center; size: 12; family: "Share Tech Mono"; color: dk.ink2 }
+                    zone box hset { from: id_w - 98, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "mooi's settings" }
+                    figure i_set { at: id_w - 87, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hset.hover) }
+                    on press hset { emit nx_go(1) }
+                    zone box hlock { from: id_w - 74, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "Lock the screen" }
+                    figure i_lock { at: id_w - 63, iy; size: 13, 13; color: mix(dk.ink2, dk.acc, hlock.hover) }
+                    on press hlock { emit nx_go(2) }
+                    zone box hpow { from: id_w - 50, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "The session menu" }
+                    figure i_power { at: id_w - 39, iy; size: 13, 13; color: mix(dk.ink2, dk.hot, hpow.hover) }
+                    on press hpow { emit nx_go(3) }
+                    zone box hx { from: id_w - 26, iy - 12; size: 22, 24; cursor: pointer; role: button; label: "Close the Nexus" }
+                    text "×" { at: id_w - 15, iy; anchor: center; align: center; size: 16; color: mix(dk.mute, dk.ink, hx.hover) }
+                    on press hx { emit nx_close }
+                }
+
+                // ── Scenes: a whole setup at a press; pointed at, it says what it would change ──
+                group {
+                    move: sc_x, sc_y
+                    zone box scbay { from: 0, 0; size: sc_w, sc_h; role: region; label: "Scenes" }
                     group {
-                        show: orb_bg < 0.5
-                        body {
-                            gradient: 17, 9 to 403, 473, mix(if(isl_style > 0.5, accent.primary, fl.phos), #000000, 0.55), mix(if(isl_style > 0.5, accent.secondary, fl.ember), #000000, 0.7)
-                            box { from: 17, 9; size: 386, 464 }
+                        show: not dk_vert
+                        text "SCENES" { at: 14, 18; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                    }
+                    BayHead(16, 10, "Scenes") { show: dk_vert }
+                    for s in scn {
+                        zone box sz { from: s.x, s.y; size: s.w, 24; cursor: pointer; role: button; selected: s.live
+                                      label: pick(s.save, "Switch to {s.word}", "Save this setup as a scene") }
+                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; color: if(s.live, mix(dk.well, dk.hot, 0.14), mix(dk.well, dk.acc, 0.12 * sz.hover)); opacity: 0.9 }
+                        box { from: s.x, s.y; size: s.w, 24; corner: dk.r; stroke: 1
+                              color: if(s.live, dk.hot, mix(dk.line, dk.acc, sz.hover + if(dk_hsc == s.index, 1, 0))) ; opacity: if(s.save, 0.7, 1) }
+                        ellipse { at: s.x + 10, s.y + 12; radius: 2.6; color: dk.hot; show: s.live }
+                        text "{upper(s.word)}" { at: s.x + s.w / 2 + if(s.live, 5, 0), s.y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                                                 color: if(s.live, dk.hot, if(s.save, dk.mute, mix(dk.ink2, dk.ink, sz.hover))); width: s.w - 14; lines: 1 }
+                        on hover sz for 220ms while not s.save { dk_hsc = s.index; emit dk_hov_scene(s.index) }
+                        on press sz { emit dk_scene(s.index) }
+                        on press right sz while not s.save { emit dk_unscene(s.index) }
+                    }
+                }
+
+                // ── What is waiting: each with the press that deals with it ──
+                group {
+                    move: wt_x, wt_y
+                    BayHead(16, 10, "Waiting") { show: dk_vert }
+                    group {
+                        clip box { from: 8, 0; size: wt_w - 16, wt_h }
+                        for t in wait {
+                            zone box tz { from: t.x, t.y; size: t.w, 24; cursor: pointer; role: button; label: "{t.word}: {t.act}" }
+                            ellipse { at: t.x + 4, t.y + 12; radius: 2.4; color: if(t.hot, dk.hot, dk.mute) }
+                            text t.word { at: t.x + 12, t.y + 12.5; anchor: left center; size: 10.5; family: "Share Tech Mono"; color: mix(dk.ink2, dk.ink, tz.hover); width: t.w - 70; lines: 1 }
+                            box { from: t.x + t.w - 54, t.y + 3; size: 52, 18; corner: dk.r; stroke: 1; color: mix(if(t.hot, dk.hot, dk.acc), dk.ink, 0.25 * tz.hover) }
+                            text t.act { at: t.x + t.w - 28, t.y + 12.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
+                            on press tz { emit dk_wait(t.index) }
                         }
-                        image banner { at: 210 - nx_bw2 / 2, 235 - nx_bh2 / 2; size: nx_bw2, nx_bh2; opacity: 0.55; show: nx_banner_on }
                     }
-                    group {
-                        show: orb_bg > 0.5 and orb_bg < 1.5
-                        box { from: 17, 9; size: 386, 464; color: mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.06) }
-                        // a board's copper: a grid, and runs between pads, fixed (random by place, never moving)
-                        repeat g in 0..16 {
-                            line { from: 17 + g * 26, 9; to: 17 + g * 26, 461; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.09 }
-                        }
-                        repeat g in 0..18 {
-                            line { from: 17, 9 + g * 26; to: 403, 9 + g * 26; width: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.09 }
-                        }
-                        repeat q in 0..22 {
-                            let qx = 30 + floor(random(q) * 14) * 26
-                            let qy = 22 + floor(random(q + 50) * 16) * 26
-                            path { stroke: 1.3; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.26
-                                   move qx, qy; line qx + 26 * (1 + floor(random(q + 9) * 3)), qy; line qx + 26 * (1 + floor(random(q + 9) * 3)) + 13, qy + 13 }
-                            ellipse { at: qx, qy; radius: 2.4; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.4 }
-                        }
-                    }
-                    box { from: 17, 9; size: 386, 464; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: if(orb_bg > 1.5, 0.9, 0.35) }
-                    box { from: 17, 404; size: 386, 30; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.35 }
-                    box { from: 17, 434; size: 386, 39; color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.7 }
-                    zone box bz { from: 17, 9; size: 386, 464; cursor: pointer; role: button; label: "Change the banner" }
-                    on press bz { emit nx_pick(1) }
                 }
 
-                // the time, and the ways out
-                text clock.time { at: 34, 40; anchor: left center; size: 30; weight: 300; family: "Exo 2"; color: #ffffff; shadow: 0, 1, 8, 70%, #000000 }
-                text clock.date { at: 36, 64; anchor: left center; size: 10.5; family: "Share Tech Mono"; color: #ffffff; opacity: 0.8; shadow: 0, 1, 6, 70%, #000000 }
-                box { from: 226, 20; size: 168, 30; corner: 15; color: #000000; opacity: 0.45 }
-                zone box hcus { from: 230, 22; size: 28, 26; cursor: pointer; role: toggle; checked: nx_custom; label: "Customise the orbit" }
-                text "✎" { at: 244, 35; anchor: center; align: center; size: 14; color: if(nx_custom, if(isl_style > 0.5, accent.primary, fl.phos), #ffffff); opacity: 0.75 + 0.25 * hcus.hover }
-                on press hcus { nx_custom = not nx_custom }
-                zone box hset { from: 262, 22; size: 28, 26; cursor: pointer; role: button; label: "mooi's settings" }
-                figure i_set { at: 276, 35; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hset.hover }
-                on press hset { emit nx_go(1) }
-                zone box hlock { from: 294, 22; size: 28, 26; cursor: pointer; role: button; label: "Lock the screen" }
-                figure i_lock { at: 308, 35; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hlock.hover }
-                on press hlock { emit nx_go(2) }
-                zone box hpow { from: 326, 22; size: 28, 26; cursor: pointer; role: button; label: "The session menu" }
-                figure i_power { at: 340, 35; size: 15, 15; color: #ffffff; opacity: 0.75 + 0.25 * hpow.hover }
-                on press hpow { emit nx_go(3) }
-                zone box hx { from: 358, 22; size: 28, 26; cursor: pointer; role: button; label: "Close the Control Nexus" }
-                text "×" { at: 372, 35; anchor: center; align: center; size: 17; weight: 600; color: #ffffff; opacity: 0.75 + 0.25 * hx.hover }
-                on press hx { emit nx_close }
-
-                // the bus: a dashed ring the traces cross
-                repeat d in 0..48 {
-                    arc { at: 210, 236; radius: 122; width: 1.2; span: 3deg; rotate: d * 7.5deg; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.35 }
-                }
-                // the arcs: three readings round the core (nexus.orbit.arcs)
-                repeat k in 0..3 {
-                    let ar = 70 + k * 11
-                    let av = pick(k, ra0, ra1, ra2)
-                    arc { at: 210, 236; radius: ar; width: 6; span: 300deg; rotate: 0deg; color: #ffffff; opacity: 0.07 }
+                // ── The window you are in: its own controls and its own sound ──
+                group {
+                    move: wn_x, wn_y
+                    BayHead(16, 12, "This window")
                     group {
-                        glow: 6, (0.6) * st_glow, pick(k, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, accent.primary, fl.phos), #ffffff, 0.45), mix(if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, accent.secondary, fl.ember), 0.35))
-                        arc { at: 210, 236; radius: ar; width: 6; span: max(1, 300 * clamp(av, 0, 1)) * 1deg; rotate: (-150 + 150 * clamp(av, 0, 1)) * 1deg; color: pick(k, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, accent.primary, fl.phos), #ffffff, 0.45), mix(if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, accent.secondary, fl.ember), 0.35)) }
-                    }
-                }
-                // the traces, their vias, and a pulse running home from a pressed node
-                for o in orbit {
-                    path { stroke: if(o.on, 2, 1.4); color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)); opacity: if(o.on, 0.95, 0.45)
-                           move o.p1x, o.p1y; line o.p2x, o.p2y; line o.p3x, o.p3y }
-                    ellipse { at: o.p2x, o.p2y; radius: 3; color: if(isl_style > 0.5, bg.primary, fl.hull) }
-                    ellipse { at: o.p2x, o.p2y; radius: 3; stroke: 1.2; color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
-                    ellipse { at: o.p1x, o.p1y; radius: 2.2; color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
-                    group {
-                        show: pulse_n == o.index and pulse_p > 0.01 and pulse_p < 0.99
-                        glow: 8, (1) * st_glow, if(isl_style > 0.5, accent.secondary, fl.ember)
-                        ellipse { at: if(pulse_p < 0.5, o.p3x + (o.p2x - o.p3x) * pulse_p * 2, o.p2x + (o.p1x - o.p2x) * (pulse_p - 0.5) * 2), if(pulse_p < 0.5, o.p3y + (o.p2y - o.p3y) * pulse_p * 2, o.p2y + (o.p1y - o.p2y) * (pulse_p - 0.5) * 2); radius: 3.5; color: #ffffff }
-                    }
-                }
-                // the nodes: hexagonal pads, lit when on, a press flips or opens
-                for o in orbit {
-                    zone box nzo { from: o.x - 22, o.y - 22; size: 44, 44; cursor: pointer; role: toggle; checked: o.on; label: "{o.word} — {o.state}" }
-                    group {
-                        glow: 7, (if(o.on, 0.8, 0)) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
-                        path { color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, bg.primary, fl.hull), if(isl_style > 0.5, accent.primary, fl.phos), 0.12 + 0.18 * nzo.hover))
-                               move o.x + 20, o.y; line o.x + 10, o.y + 17.3; line o.x - 10, o.y + 17.3; line o.x - 20, o.y; line o.x - 10, o.y - 17.3; line o.x + 10, o.y - 17.3; close }
-                    }
-                    path { stroke: 1.3; color: if(o.on, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, fg.muted, fl.muted), if(isl_style > 0.5, accent.primary, fl.phos), nzo.hover))
-                           move o.x + 20, o.y; line o.x + 10, o.y + 17.3; line o.x - 10, o.y + 17.3; line o.x - 20, o.y; line o.x - 10, o.y - 17.3; line o.x + 10, o.y - 17.3; close }
-                    Gl(o.x, o.y, o.glyph, if(o.on, if(isl_style > 0.5, bg.primary, fl.hull), #ffffff))
-                    text o.word { at: o.x, o.y + 29; anchor: center; align: center; size: 9; weight: 600; family: "Exo 2"; color: #ffffff; opacity: 0.85; width: 70; lines: 1
-                                  shadow: 0, 1, 4, 80%, #000000 }
-                    on press nzo { pulse_n = o.index; emit nx_pulse; emit nx_node(o.index) }
-                }
-                // the core: you, ringed
-                zone box az { from: 156, 182; size: 108, 108; cursor: pointer; role: button; label: "Change the profile picture" }
-                group {
-                    glow: 10, (0.8) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
-                    ellipse { at: 210, 236; radius: 55; color: if(isl_style > 0.5, accent.primary, fl.phos) }
-                }
-                ellipse { at: 210, 236; radius: 52.5; color: if(isl_style > 0.5, bg.primary, fl.hull) }
-                group {
-                    clip box { from: 160, 186; size: 100, 100; corner: 50 }
-                    box { from: 160, 186; size: 100, 100; color: if(isl_style > 0.5, surface.elevated, fl.well) }
-                    image avatar { at: 160, 186; size: 100, 100; show: nx_avatar_on }
-                    text nx_initial { at: 210, 236; anchor: center; align: center; size: 36; weight: 700; family: "Exo 2"; color: if(isl_style > 0.5, accent.primary, fl.phos); show: not nx_avatar_on }
-                    box { from: 160, 262; size: 100, 24; color: #000000; opacity: 0.6 * az.hover }
-                    text "edit" { at: 210, 273; anchor: center; align: center; size: 10; family: "Exo 2"; color: #ffffff; opacity: az.hover }
-                }
-                on press az { emit nx_pick(0) }
-                // the arcs' legend: one line under the name
-                repeat k in 0..3 {
-                    let lx = 70 + k * 140
-                    ellipse { at: lx - 10, 458; radius: 3; color: pick(k, if(isl_style > 0.5, accent.primary, fl.phos), mix(if(isl_style > 0.5, accent.primary, fl.phos), #ffffff, 0.45), mix(if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, accent.secondary, fl.ember), 0.35)) }
-                    text pick(k, arc_l0, arc_l1, arc_l2) { at: lx - 2, 458; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: #ffffff; opacity: 0.85
-                         width: 120; lines: 1; shadow: 0, 1, 4, 80%, #000000 }
-                }
-                // the name (a press renames), who, how long
-                zone box nz { from: 110, 412; size: 200, 26; cursor: text; role: button; label: "Rename" }
-                text nx_name { at: 210, 424; anchor: center; align: center; size: 19; weight: 700; family: "Exo 2"; color: #ffffff; width: 260; lines: 1; show: not nx_naming
-                               shadow: 0, 1, 6, 70%, #000000 }
-                group {
-                    show: nx_naming
-                    box { from: 100, 411; size: 220, 26; corner: 6; color: if(isl_style > 0.5, surface.elevated, fl.well) }
-                    box { from: 100, 411; size: 220, 26; corner: 6; stroke: 1; color: if(isl_style > 0.5, accent.primary, fl.phos) }
-                    input nx_name_in { at: 106, 416; width: 208; size: 14; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); selection: if(isl_style > 0.5, selection.bg, fl.well)
-                                       placeholder: "Your name, then Enter" }
-                }
-                on press nz while not nx_naming { nx_naming = true; focus nx_name_in }
-                on submit nx_name_in { nx_naming = false; emit nx_rename; blur }
-                on key Escape while nx_naming { nx_naming = false; blur }
-                text "{nx_who}{?  ·  {nx_uptime}}" { at: 210, 442; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: #ffffff; opacity: 0.75; width: 360; lines: 1 }
-                text nx_notice { at: 392, 72; anchor: right center; align: right; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, accent.primary, fl.phos); width: 300; lines: 1 }
-                // what is not in the orbit: chips under it
-                for r in rest {
-                    let rx = 18 + mod(r.index, 4) * 97
-                    let ry = 480
-                    group {
-                        show: r.index < 4
-                        zone box rzo { from: rx, ry; size: 92, 22; cursor: pointer; role: toggle; checked: r.on; label: r.word }
-                        IsleBtn(rx, ry, 92, r.word, if(r.on, 1, 0), rzo.hover, 22)
-                        on press rzo { emit nx_rest(r.index) }
-                    }
-                }
-            }
-
-            // ── Levels ──
-            group {
-                show: y_levels > 0
-                move: 0, y_levels - sv
-                SecHead(0, "Levels", pick(audio.muted, "{round(audio.volume * 100), 0} %", "muted"), f_levels, 0)
-                group {
-                    show: not f_levels
-                    group { move: 30, 34
-                            Level("Volume", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"), audio.volume * (1 - audio.muted), false, vol, 360) }
-                    group { move: 30, 74
-                            Level("Microphone", pick(audio.input_muted, "{round(audio.input * 100), 0} %", "Muted"), audio.input * (1 - audio.input_muted), false, mic, 360) }
-                    group { show: brightness.present
-                            move: 30, 114
-                            Level("Brightness", "{round(brightness.level * 100), 0} %", brightness.level, false, bri, 360) }
-                }
-            }
-            // ── Now playing ──
-            group {
-                show: y_media > 0
-                move: 0, y_media - sv
-                SecHead(0, "Now playing", med.player, f_media, 1)
-                group {
-                    show: not f_media
-                    zone box mcov { from: 30, 34; size: 84, 84; cursor: pointer; role: button; label: "Open the music player" }
-                    box { from: 30, 34; size: 84, 84; corner: 6; color: if(isl_style > 0.5, surface.elevated, fl.well) }
-                    image cover { at: 30, 34; size: 84, 84; show: nx_art_on }
-                    on press mcov { emit nx_go(20) }
-                    text med.title { at: 128, 46; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 248; lines: 1 }
-                    text med.artist { at: 128, 64; anchor: left center; size: 11; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 248; lines: 1 }
-                    zone box mprev { from: 128, 78; size: 40, 24; cursor: pointer; role: button; label: "Previous" }
-                    IsleBtn(128, 78, 40, "‹‹", 0, mprev.hover)
-                    zone box mplay { from: 174, 78; size: 56, 24; cursor: pointer; role: button; label: "Play or pause" }
-                    group { show: med.playing
-                            IsleBtn(174, 78, 56, "Pause", 1, mplay.hover) }
-                    group { show: not med.playing
-                            IsleBtn(174, 78, 56, "Play", 0, mplay.hover) }
-                    zone box mnext { from: 236, 78; size: 40, 24; cursor: pointer; role: button; label: "Next" }
-                    IsleBtn(236, 78, 40, "››", 0, mnext.hover)
-                    on press mprev { emit nx_media(0) }
-                    on press mplay { emit nx_media(1) }
-                    on press mnext { emit nx_media(2) }
-                    IsleMeter(128, 110, 248, nx_prog)
-                    text nx_elapsed { at: 128, 124; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
-                    text nx_length { at: 376, 124; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
-                }
-            }
-            // ── Notifications ──
-            group {
-                show: y_notes > 0
-                move: 0, y_notes - sv
-                SecHead(0, "Notifications", pick(feed_n > 0, "none", "{feed_n, 0} waiting"), f_notes, 2)
-                group {
-                    show: not f_notes
-                    text pick(feed_ok, "The bar has not said yet", "Nothing waiting") { at: 30, 44; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: feed_n < 1 }
-                    for f in feed {
-                        let fy = 30 + f.index * 30
-                        zone box fz { from: 16, fy; size: 388, 28; cursor: pointer; role: item; label: "{f.app}: {f.title}" }
-                        box { from: 18, fy + 1; size: 384, 26; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: 0.6 * fz.hover }
-                        text f.app { at: 30, fy + 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, accent.primary, fl.phos); width: 96; lines: 1 }
-                        text f.title { at: 132, fy + 14; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 210; lines: 1 }
-                        text f.ago { at: 392, fy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
-                        on press fz { emit nx_go(30) }
-                    }
-                    zone box nfield { from: 30, 36 + max(1, min(5, feed_n)) * 30; size: 170, 24; cursor: pointer; role: button; label: "Open the Signal Field" }
-                    IsleBtn(30, 36 + max(1, min(5, feed_n)) * 30, 170, "All notifications", 0, nfield.hover)
-                    on press nfield { emit nx_go(30) }
-                    group { show: feed_n > 0
-                            zone box nclear { from: 216, 36 + max(1, min(5, feed_n)) * 30; size: 160, 24; cursor: pointer; role: button; label: "Clear every notification" }
-                            IsleBtn(216, 36 + max(1, min(5, feed_n)) * 30, 160, "Clear all", 0, nclear.hover)
-                            on press nclear { emit nx_go(31) } }
-                }
-            }
-            // ── Connections ──
-            group {
-                show: y_connections > 0
-                move: 0, y_connections - sv
-                SecHead(0, "Connections", pick(network.online, "offline", network.name), f_connections, 3)
-                group {
-                    show: not f_connections
-                    text "WI-FI" { at: 30, 42; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
-                    text pick(network.wifi, "Wi-Fi is off", "No networks in reach") { at: 30, 68; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: nets.count < 1 }
-                    for w in nets {
-                        let wy = 54 + w.index * 30
+                        show: w_ok
+                        let wy = if(dk_vert, 30, 36)
+                        box { from: 16, wy; size: 34, 34; corner: if(isl_style > 0.5, 8 * cn_scale, 2); color: mix(dk.well, dk.acc, 0.22) }
+                        box { from: 16, wy; size: 34, 34; corner: if(isl_style > 0.5, 8 * cn_scale, 2); stroke: 1; color: dk.acc; opacity: 0.6 }
+                        text w_initial { at: 33, wy + 17; anchor: center; align: center; size: 15; weight: 700; family: "Exo 2"; color: dk.acc }
+                        text w_app { at: 60, wy + 9; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: dk.ink; width: wn_w - 76; lines: 1 }
+                        text w_title { at: 60, wy + 25; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: wn_w - 76; lines: 1 }
+                        text w_where { at: 16, wy + 48; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: wn_w - 32; lines: 1 }
+                        // its sound: a level the hand moves, or a word that it plays nothing
+                        let wsy = wy + 64
+                        text "SOUND" { at: 16, wsy + 4; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
                         group {
-                            show: w.index < 5
-                            zone box wz { from: 16, wy; size: 388, 28; cursor: pointer; role: item; selected: w.active; label: "Join {w.ssid}" }
-                            box { from: 18, wy + 1; size: 384, 26; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: max(if(w.active, 0.9, 0), 0.6 * wz.hover) }
-                            repeat b in 0..4 {
-                                box { from: 30 + b * 4, wy + 19 - b * 3; size: 3, 3 + b * 3; corner: 1
-                                      color: if(w.strength > b * 25, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)); opacity: if(w.strength > b * 25, 1, 0.4) }
+                            show: w_snd
+                            zone box wsz { from: 64, wsy - 4; size: wn_w - 120, 16; cursor: pointer; role: slider; value: w_vol; label: "{w_app} volume" }
+                            box { from: 64, wsy + 2; size: wn_w - 120, 4; corner: 2; color: dk.well }
+                            group {
+                                glow: 5, 0.4 * st_glow, dk.acc
+                                box { from: 64, wsy + 2; size: (wn_w - 120) * clamp(w_vol, 0, 1), 4; corner: 2; color: dk.acc }
                             }
-                            text w.ssid { at: 56, wy + 14; anchor: left center; size: 12; family: "Exo 2"; width: 250; lines: 1; color: if(w.active, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                            text "connected" { at: 392, wy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: w.active }
-                            text "saved" { at: 392, wy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and w.known }
-                            text "locked" { at: 392, wy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and not w.known and w.secure }
-                            text "open" { at: 392, wy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and not w.known and not w.secure }
-                            on press wz { emit nx_net(w.index) }
+                            ellipse { at: 64 + (wn_w - 120) * clamp(w_vol, 0, 1), wsy + 4; radius: 4 + wsz.hover; color: dk.ink }
+                            text "{round(w_vol * 100), 0}%" { at: wn_w - 16, wsy + 4; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
+                            on press wsz { emit dk_level(9000 + round(clamp(local.x / (wn_w - 120), 0, 1) * 1000)) }
+                            on drag wsz { emit dk_level(9000 + round(clamp(local.x / (wn_w - 120), 0, 1) * 1000)) }
+                            on scroll wsz { emit dk_level(9000 + round(clamp(w_vol + wheel * 0.05, 0, 1) * 1000)) }
                         }
-                    }
-                    let by0 = 54 + max(1, min(5, nets.count)) * 30
-                    text "BLUETOOTH" { at: 30, by0 + 12; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
-                    text bt_empty { at: 30, by0 + 38; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: btd.count < 1 }
-                    for d in btd {
-                        let dy = by0 + 24 + d.index * 30
-                        group {
-                            show: d.index < 6
-                            zone box dz { from: 16, dy; size: 388, 28; cursor: pointer; role: item; selected: d.connected; label: "Connect or disconnect {d.name}" }
-                            box { from: 18, dy + 1; size: 384, 26; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: max(if(d.connected, 0.9, 0), 0.6 * dz.hover) }
-                            ellipse { at: 34, dy + 14; radius: 3.5; color: if(d.connected, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
-                            text d.name { at: 48, dy + 14; anchor: left center; size: 12; family: "Exo 2"; width: 240; lines: 1; color: if(d.connected, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                            text "{round(d.battery * 100), 0} %" { at: 392, dy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery >= 0 }
-                            text "connected" { at: 392, dy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery < 0 and d.connected }
-                            text "paired" { at: 392, dy + 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery < 0 and not d.connected }
-                            on press dz { emit nx_bt(d.index) }
+                        text "plays nothing" { at: 64, wsy + 4; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not w_snd }
+                        // what it can do
+                        let ay = wsy + 20
+                        let aw = (wn_w - 32 - 3 * 6) / 4
+                        repeat a in 0..4 {
+                            let ax.$a = 16 + a * (aw + 6)
+                            let alit.$a = pick(a, w_floating, w_full, w_pinned, 0)
+                            zone box wa.$a { from: ax.$a, ay; size: aw, 24; cursor: pointer; role: button; label: pick(a, "Float {w_app}", "Fullscreen {w_app}", "Pin {w_app}", "Close {w_app}") }
+                            box { from: ax.$a, ay; size: aw, 24; corner: dk.r; color: if(alit.$a, mix(dk.well, dk.acc, 0.16), dk.well); opacity: 0.9 }
+                            box { from: ax.$a, ay; size: aw, 24; corner: dk.r; stroke: 1; color: if(a == 3, mix(dk.line, dk.hot, 0.4 + 0.6 * wa.$a.hover), if(alit.$a, dk.acc, mix(dk.line, dk.acc, 0.6 * wa.$a.hover))) }
+                            text pick(a, "FLOAT", "FULL", "PIN", "CLOSE") { at: ax.$a + aw / 2, ay + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                                color: if(a == 3, mix(dk.ink2, dk.hot, wa.$a.hover), if(alit.$a, dk.acc, mix(dk.ink2, dk.ink, wa.$a.hover))) }
+                            on press wa.$a { emit dk_win(a) }
                         }
+                        text w_note { at: 16, ay + 40; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: wn_w - 32; lines: 1; show: w_noted and not dk_vert }
                     }
+                    text "No window here" { at: 16, 60; anchor: left center; size: 12; family: "Exo 2"; color: dk.mute; show: not w_ok }
                 }
-            }
-            // ── Sound ──
-            group {
-                show: y_sound > 0
-                move: 0, y_sound - sv
-                SecHead(0, "Sound", "", f_sound, 4)
-                group {
-                    show: not f_sound
-                    for o in outs {
-                        let oy = 30 + o.index * 28
-                        group {
-                            show: o.index < 6
-                            zone box oz { from: 16, oy; size: 388, 26; cursor: pointer; role: item; selected: o.default; label: "Play on {o.name}" }
-                            box { from: 18, oy + 1; size: 384, 24; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: max(if(o.default, 0.9, 0), 0.6 * oz.hover) }
-                            ellipse { at: 34, oy + 13; radius: 3.5; color: if(o.default, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
-                            text o.name { at: 48, oy + 13; anchor: left center; size: 12; family: "Exo 2"; width: 330; lines: 1; color: if(o.default, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                            on press oz { emit nx_out(o.index) }
-                        }
-                    }
-                    let ay0 = 34 + max(1, min(6, outs.count)) * 28
-                    for a in apps {
-                        let ay = ay0 + a.index * 40
-                        group {
-                            show: a.index < 6
-                            text a.name { at: 30, ay + 8; anchor: left center; size: 11.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 260; lines: 1 }
-                            text pick(a.muted, "{round(a.volume * 100), 0} %", "muted") { at: 390, ay + 8; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
-                            zone box az { from: 30, ay + 14; size: 360, 18; cursor: pointer; role: slider; value: a.volume; label: "{a.name} volume" }
-                            IsleMeter(30, ay + 19, 360, a.volume * (1 - a.muted))
-                            on press az { emit nx_app(a.index * 1000 + round(clamp(local.x / 360, 0, 1) * 1000)) }
-                            on drag az { emit nx_app(a.index * 1000 + round(clamp(local.x / 360, 0, 1) * 1000)) }
-                            on scroll az { emit nx_app(a.index * 1000 + round(clamp(a.volume + wheel * 0.05, 0, 1) * 1000)) }
-                        }
-                    }
-                }
-            }
-            // ── Machine ──
-            group {
-                show: y_machine > 0
-                move: 0, y_machine - sv
-                SecHead(0, "Machine", "{round(m_cpu * 100), 0} % CPU", f_machine, 5)
-                group {
-                    show: not f_machine
-                    zone box mz { from: 16, 30; size: 388, 76; cursor: pointer; role: button; label: "Open btop" }
-                    IsleGauge(30, 32, 170, "CPU", "{round(m_cpu * 100), 0} % · {round(m_temp), 0}°", m_cpu, m_cpu > 0.85 or m_temp > 85)
-                    IsleGauge(220, 32, 170, "Memory", m_mem_t, m_mem, m_mem > 0.9)
-                    IsleGauge(30, 70, 170, "Disk", m_disk_t, m_disk, m_disk > 0.9)
-                    group { show: m_gpu_ok
-                            IsleGauge(220, 70, 170, "Graphics", "{round(m_gpu * 100), 0} %", m_gpu, m_gpu > 0.9) }
-                    on press mz { emit nx_go(10) }
-                    text m_bat_t { at: 30, 120; anchor: left center; size: 11; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 360; lines: 1; show: battery.present }
-                }
-            }
-            // ── Today ──
-            group {
-                show: y_today > 0
-                move: 0, y_today - sv
-                SecHead(0, "Today", clock.date, f_today, 6)
-                group {
-                    show: not f_today
-                    zone box tz { from: 16, 30; size: 388, 58; cursor: pointer; role: button; label: "Open the calendar" }
-                    for d in days {
-                        let dx = 44 + d.index * 54
-                        group {
-                            show: d.today
-                            glow: 6, (0.5) * st_glow, if(isl_style > 0.5, accent.primary, fl.phos)
-                            box { at: dx, 60; size: 44, 52; corner: if(isl_style > 0.5, 12, 2); color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.9 }
-                        }
-                        text d.label { at: dx, 46; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: if(d.today, if(isl_style > 0.5, bg.primary, fl.ink), if(isl_style > 0.5, fg.muted, fl.muted)) }
-                        text "{d.day, 0}" { at: dx, 70; anchor: center; align: center; size: 16; weight: 600; family: "Exo 2"; color: if(d.today, if(isl_style > 0.5, bg.primary, fl.ink), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                    }
-                    on press tz { emit nx_go(11) }
-                    zone box wz2 { from: 16, 92; size: 388, 40; cursor: pointer; role: button; label: "Open the weather" }
-                    group { show: wx_ok
-                            Glyph(44, 112, 24, wx_kind)
-                            text "{round(wx_temp), 0}°" { at: 66, 112; anchor: left center; size: 18; weight: 600; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
-                            text wx_word { at: 114, 112; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, accent.primary, fl.phos) }
-                            text wx_place { at: 392, 112; anchor: right center; size: 10.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); width: 160; lines: 1; align: right } }
-                    text "Weather: no answer yet" { at: 30, 112; anchor: left center; size: 11; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not wx_ok }
-                    on press wz2 { emit nx_go(12) }
-                }
-            }
-            // ── System updates ──
-            group {
-                show: y_updates > 0
-                move: 0, y_updates - sv
-                SecHead(0, "System updates", pick(upd_n > 0, "up to date", "{upd_n, 0} waiting"), f_updates, 7)
-                group {
-                    show: not f_updates
-                    text upd_t { at: 30, 50; anchor: left center; size: 11.5; family: "Exo 2"; color: if(upd_n > 0, if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, fg.secondary, fl.muted)); width: 250; lines: 1 }
-                    group { show: upd_n > 0
-                            zone box uz { from: 296, 38; size: 94, 24; cursor: pointer; role: button; label: "Run the updater" }
-                            IsleBtn(296, 38, 94, "Update", 1, uz.hover)
-                            on press uz { emit nx_go(13) } }
-                }
-            }
-            // ── Workspaces ──
-            group {
-                show: y_workspaces > 0
-                move: 0, y_workspaces - sv
-                SecHead(0, "Workspaces", "", f_workspaces, 8)
-                group {
-                    show: not f_workspaces
-                    for w in wss {
-                        let wx = 30 + w.index * 46
-                        group {
-                            show: w.id > 0 and w.index < 8
-                            zone box wsz { from: wx, 32; size: 40, 34; cursor: pointer; role: button; selected: w.active; label: "Go to workspace {w.id, 0}" }
-                            IsleBtn(wx, 32, 40, "", if(w.active, 1, 0), wsz.hover, 34)
-                            text "{w.id, 0}" { at: wx + 20, 49; anchor: center; align: center; size: 13; weight: 700; family: "Exo 2"
-                                               color: if(w.active, if(isl_style > 0.5, bg.primary, fl.ink), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                            on press wsz { emit nx_ws(w.id) }
-                        }
-                    }
-                }
-            }
-            // ── Shortcuts ──
-            group {
-                show: y_shortcuts > 0
-                move: 0, y_shortcuts - sv
-                SecHead(0, "Shortcuts", "", f_shortcuts, 9)
-                group {
-                    show: not f_shortcuts
-                    zone box sc40 { from: 30, 32; size: 86, 28; cursor: pointer; role: button; label: "Wallpaper" }
-                    IsleBtn(30, 32, 86, "Wallpaper", 0, sc40.hover, 28)
-                    on press sc40 { emit nx_go(40) }
-                    zone box sc41 { from: 122, 32; size: 86, 28; cursor: pointer; role: button; label: "Notes" }
-                    IsleBtn(122, 32, 86, "Notes", 0, sc41.hover, 28)
-                    on press sc41 { emit nx_go(41) }
-                    zone box sc42 { from: 214, 32; size: 86, 28; cursor: pointer; role: button; label: "Board" }
-                    IsleBtn(214, 32, 86, "Board", 0, sc42.hover, 28)
-                    on press sc42 { emit nx_go(42) }
-                    zone box sc43 { from: 306, 32; size: 86, 28; cursor: pointer; role: button; label: "Overview" }
-                    IsleBtn(306, 32, 86, "Overview", 0, sc43.hover, 28)
-                    on press sc43 { emit nx_go(43) }
-                    zone box sc44 { from: 30, 68; size: 86, 28; cursor: pointer; role: button; label: "Screenshot" }
-                    IsleBtn(30, 68, 86, "Screenshot", 0, sc44.hover, 28)
-                    on press sc44 { emit nx_go(44) }
-                    zone box sc45 { from: 122, 68; size: 86, 28; cursor: pointer; role: button; label: "Clipboard" }
-                    IsleBtn(122, 68, 86, "Clipboard", 0, sc45.hover, 28)
-                    on press sc45 { emit nx_go(45) }
-                    zone box sc46 { from: 214, 68; size: 86, 28; cursor: pointer; role: button; label: "Diagnostics" }
-                    IsleBtn(214, 68, 86, "Diagnostics", 0, sc46.hover, 28)
-                    on press sc46 { emit nx_go(46) }
-                }
-            }
-            }
 
+                // ── Your workspaces: each a miniature of its screen, its windows where they are ──
+                group {
+                    move: ws_x, ws_y
+                    zone box wsbay { from: 0, 0; size: ws_w, ws_h; role: region; label: "Workspaces" }
+                    BayHead(16, 12, "Workspaces")
+                    text "POINT AT ONE TO LOOK IN" { at: ws_w - 16, 18; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                    for t in tiles {
+                        zone box tlz { from: t.x, t.y; size: t.w, t.h + 16; cursor: pointer; role: item; selected: t.active
+                                       label: pick(t.plus, "Workspace {t.id}", "A new workspace") }
+                        group {
+                            show: not t.plus
+                            group {
+                                clip box { from: t.x, t.y; size: t.w, t.h; corner: dk.r }
+                                box { from: t.x, t.y; size: t.w, t.h; color: dk.well }
+                                image wall { at: t.x, t.y; size: t.w, t.h; opacity: 0.8; show: dk_wall_on }
+                                box { from: t.x, t.y; size: t.w, t.h; color: #000000; opacity: if(t.active, 0.18, 0.38) }
+                            }
+                        }
+                        group {
+                            show: t.plus
+                            box { from: t.x, t.y; size: t.w, t.h; corner: dk.r; color: dk.well; opacity: 0.5 + 0.4 * tlz.hover }
+                            text "+" { at: t.x + t.w / 2, t.y + t.h / 2; anchor: center; align: center; size: 20; weight: 300; family: "Exo 2"; color: mix(dk.mute, dk.acc, tlz.hover) }
+                        }
+                        box { from: t.x, t.y; size: t.w, t.h; corner: dk.r; stroke: if(t.active, 1.6, 1)
+                              color: if(t.active, dk.acc, mix(dk.line, dk.acc, tlz.hover + if(dk_hws == t.index, 1, 0))) }
+                        text t.label { at: t.x + 2, t.y + t.h + 9; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2); width: t.w - 20; lines: 1 }
+                        text t.n { at: t.x + t.w - 2, t.y + t.h + 9; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute }
+                        on hover tlz for 260ms { dk_hws = t.index; emit dk_hov_ws(t.index) }
+                        on press tlz { emit dk_ws(t.index) }
+                    }
+                    // the windows, already placed in their tiles by the logic
+                    for w in wins {
+                        box { from: w.x, w.y; size: w.w, w.h; corner: 1; color: mix(dk.raised, #000000, 0.2); opacity: 0.95 }
+                        image w.pic { at: w.x, w.y; size: w.w, w.h; show: w.pictured }
+                        box { from: w.x, w.y; size: w.w, min(4, w.h); color: dk.line; show: not w.pictured }
+                        box { from: w.x, w.y; size: w.w, w.h; corner: 1; stroke: 1; color: if(w.focused, dk.acc, dk.line); opacity: 0.9 }
+                    }
+                }
 
-            // ── Customise the orbit: which nodes, which arcs, which board ──
-            group {
-                show: nx_custom
-                box { from: 17, 70; size: 386, 330; corner: if(isl_style > 0.5, 16, 2); color: if(isl_style > 0.5, bg.primary, fl.hull); opacity: 0.96 }
-                box { from: 17, 70; size: 386, 330; corner: if(isl_style > 0.5, 16, 2); stroke: 1; color: if(isl_style > 0.5, accent.primary, fl.phos); opacity: 0.6 }
-                zone box cussheet { from: 17, 70; size: 386, 330; role: region; label: "Customise the orbit" }
-                text "NODES · UP TO EIGHT" { at: 32, 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
-                for c in cus_nodes {
-                    let cx2 = 30 + mod(c.index, 4) * 92
-                    let cy2 = 104 + floor(c.index / 4) * 30
-                    zone box cn { from: cx2, cy2; size: 86, 24; cursor: pointer; role: toggle; checked: c.on; label: "{c.word} in the orbit" }
-                    IsleBtn(cx2, cy2, 86, c.word, if(c.on, 1, 0), cn.hover)
-                    on press cn { emit nx_cus(100 + c.index) }
+                // ── The console: the mixer, the switches, the machine, the music ──
+                group {
+                    move: mx_x, mx_y
+                    BayHead(16, 12, "Console")
+                    // the mixer: everything, the apps that play, the microphone, the screen
+                    let fh = mx_h - 82
+                    for f in faders {
+                        Fader(f, 28 + f.index * 34, 36, fh, dk_level)
+                    }
+                    let kx = 28 + max(1, faders.count) * 34 + 6
+                    let kw = (mx_w - kx - 14 - 3 * 5) / 4
+                    line { from: kx - 10, 34; to: kx - 10, mx_h - 12; width: 1; color: dk.line; opacity: 0.5 }
+                    for k in keys {
+                        let kxx = kx + mod(k.index, 4) * (kw + 5)
+                        let kyy = 30 + floor(k.index / 4) * 30
+                        zone box kz { from: kxx, kyy; size: kw, 26; cursor: pointer; role: toggle; checked: k.on; label: k.word }
+                        box { from: kxx, kyy; size: kw, 26; corner: dk.r; color: if(k.on, mix(dk.well, dk.acc, 0.12), dk.well) }
+                        box { from: kxx, kyy; size: kw, 26; corner: dk.r; stroke: 1; color: if(k.on, mix(dk.line, dk.acc, 0.7), mix(dk.line, dk.acc, 0.5 * kz.hover)) }
+                        group {
+                            glow: 5, if(k.on, 0.6, 0) * st_glow, dk.acc
+                            box { from: kxx + 6, kyy + 5; size: 12, 2; color: if(k.on, dk.acc, dk.line) }
+                        }
+                        text "{upper(k.word)}" { at: kxx + 6, kyy + 16.5; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, mix(dk.ink2, dk.ink, kz.hover)); width: kw - 10; lines: 1 }
+                        on press kz { emit nx_tog(k.code) }
+                    }
+                    // the machine
+                    let ry = 96
+                    let rw = (mx_w - kx - 14) / 4
+                    Reading(kx, ry, rw, "CPU", m_cpu_t, rc_cpu, m_cpu > 0.85 or m_temp > 85)
+                    Reading(kx + rw, ry, rw, "Memory", m_mem_t, rc_mem, m_mem > 0.9)
+                    Reading(kx + 2 * rw, ry, rw, "Battery", m_bat_t, m_bat, m_bat_hot)
+                    Reading(kx + 3 * rw, ry, rw, "Disk", m_disk_t, m_disk, m_disk > 0.9)
+                    // the music
+                    let my = mx_h - 46
+                    group {
+                        show: mus_on
+                        zone box mart { from: kx, my; size: 30, 30; cursor: pointer; role: button; label: "Open the music player" }
+                        box { from: kx, my; size: 30, 30; corner: dk.r; color: dk.well }
+                        image cover { at: kx, my; size: 30, 30; show: nx_art_on }
+                        on press mart { emit nx_go(20) }
+                        text med.title { at: kx + 40, my + 8; anchor: left center; size: 11; weight: 600; family: "Exo 2"; color: dk.ink; width: mx_w - kx - 140; lines: 1 }
+                        text med.artist { at: kx + 40, my + 21; anchor: left center; size: 9.5; family: "Exo 2"; color: dk.ink2; width: mx_w - kx - 140; lines: 1 }
+                        box { from: kx + 40, my + 31; size: mx_w - kx - 140, 2; color: dk.line }
+                        box { from: kx + 40, my + 31; size: (mx_w - kx - 140) * clamp(rc_song, 0, 1), 2; color: dk.hot }
+                        repeat b in 0..3 {
+                            zone box mb.$b { from: mx_w - 92 + b * 26, my + 3; size: 24, 24; cursor: pointer; role: button; label: pick(b, "Previous", "Play or pause", "Next") }
+                            text pick(b, "⏮", "", "⏭") { at: mx_w - 80 + b * 26, my + 15; anchor: center; align: center; size: 12; color: mix(dk.ink2, dk.ink, mb.$b.hover) }
+                            on press mb.$b { emit nx_media(b) }
+                        }
+                        text pick(med.playing, "▶", "⏸") { at: mx_w - 54, my + 15; anchor: center; align: center; size: 14; color: mix(dk.hot, dk.ink, mb.1.hover) }
+                    }
+                    group {
+                        show: not mus_on
+                        zone box mopen { from: kx, my + 2; size: mx_w - kx - 14, 26; cursor: pointer; role: button; label: "Open the music player" }
+                        text "NOTHING PLAYING · OPEN THE PLAYER" { at: kx, my + 15; anchor: left center; size: 9; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, mopen.hover) }
+                        on press mopen { emit nx_go(20) }
+                    }
                 }
-                text "ARCS · UP TO THREE" { at: 32, 210; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
-                for c in cus_arcs {
-                    let ax2 = 30 + mod(c.index, 4) * 92
-                    let ay2 = 222 + floor(c.index / 4) * 30
-                    zone box ca { from: ax2, ay2; size: 86, 24; cursor: pointer; role: toggle; checked: c.on; label: "{c.word} on an arc" }
-                    IsleBtn(ax2, ay2, 86, c.word, if(c.on, 1, 0), ca.hover)
-                    on press ca { emit nx_cus(200 + c.index) }
-                }
-                text "BOARD" { at: 32, 298; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
-                zone box cb0 { from: 30, 310; size: 110, 24; cursor: pointer; role: tab; selected: orb_bg == 0; label: "Your banner" }
-                IsleBtn(30, 310, 110, "Banner", if(orb_bg == 0, 1, 0), cb0.hover)
-                on press cb0 { emit nx_cus(300) }
-                zone box cb1 { from: 148, 310; size: 110, 24; cursor: pointer; role: tab; selected: orb_bg == 1; label: "A circuit board" }
-                IsleBtn(148, 310, 110, "Circuit", if(orb_bg == 1, 1, 0), cb1.hover)
-                on press cb1 { emit nx_cus(301) }
-                zone box cb2 { from: 266, 310; size: 110, 24; cursor: pointer; role: tab; selected: orb_bg == 2; label: "Plain" }
-                IsleBtn(266, 310, 110, "Plain", if(orb_bg == 2, 1, 0), cb2.hover)
-                on press cb2 { emit nx_cus(302) }
-                zone box cdone { from: 290, 356; size: 100, 26; cursor: pointer; role: button; label: "Done" }
-                IsleBtn(290, 356, 100, "Done", 1, cdone.hover, 26)
-                on press cdone { nx_custom = false }
             }
         }
+
+        // ═══ Cascade: every shelf out at once, staggered down the spine ═══
+        group {
+            show: dk_cascade
+            // the spine's line, where the shelves are tied (the bar draws its tabs when the spine is on)
+            line { from: cs_r + 24, cy_0; to: cs_r + 24, cy_8 + 44; width: 1; color: dk.acc; opacity: 0.25 * cs.0 }
+            // each shelf's place at rest, where the pointer is looked for (its plate leans out of it)
+            repeat k in 0..9 {
+                let cw.$k = pick(k, 452, 360, 360, pick(mus_on, 300, 460), 420, 360, 400, 300, 380)
+                let ch.$k = pick(k, 66, 56, 56, pick(mus_on, 44, 88), 60, 56, 56, 44, 48)
+                let cy.$k = pick(k, cy_0, cy_1, cy_2, cy_3, cy_4, cy_5, cy_6, cy_7, cy_8)
+                zone box shz.$k { from: cs_r - cw.$k - 10, cy.$k; size: cw.$k + 34, ch.$k; role: region; active: cs.$k > 0.5
+                                  label: pick(k, "Switches", "Connections", "Sound", "Now playing", "The machine", "Today", "Notifications", "Updates", "Workspaces") }
+                group {
+                    show: cs.$k > 0.01
+                    move: cs_r - cw.$k + (1 - cs.$k) * (cw.$k + 60) - 10 * shz.$k.hover, cy.$k
+                    opacity: smooth(0, 0.6, cs.$k)
+                    Chamfer(0, 0, cw.$k, ch.$k, fl.chamfer * 1.4, mix(dk.raised, #000000, 0.35), mix(dk.line, dk.acc, 0.25 + 0.75 * shz.$k.hover), 0.94, 1)
+                    group {
+                        glow: 6, (0.5 * shz.$k.hover) * st_glow, dk.acc
+                        line { from: cw.$k, ch.$k / 2; to: cw.$k + 24, ch.$k / 2; width: 1 + shz.$k.hover; color: mix(dk.line, dk.acc, 0.4 + 0.6 * shz.$k.hover) }
+                        ellipse { at: cw.$k + 24, ch.$k / 2; radius: 2.6; color: mix(dk.line, dk.acc, 0.4 + 0.6 * shz.$k.hover) }
+                    }
+                }
+            }
+            // each shelf's own contents, over its plate (in the same places as above)
+            let cx0 = cs_r - 452 + (1 - cs.0) * 512 - 10 * shz.0.hover
+            group {
+                move: cx0, cy_0
+                opacity: smooth(0, 0.6, cs.0)
+                text "// SWITCHES_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                for k in keys {
+                    let kx = 14 + k.index * 54
+                    zone box ckz { from: kx, 28; size: 50, 26; cursor: pointer; role: toggle; checked: k.on; label: k.word }
+                    box { from: kx, 28; size: 50, 26; corner: dk.r; color: if(k.on, mix(dk.well, dk.acc, 0.14), dk.well) }
+                    box { from: kx, 28; size: 50, 26; corner: dk.r; stroke: 1; color: if(k.on, dk.acc, mix(dk.line, dk.acc, 0.5 * ckz.hover)) }
+                    text "{upper(k.word)}" { at: kx + 25, 41.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, dk.ink2); width: 46; lines: 1 }
+                    on press ckz { emit nx_tog(k.code) }
+                }
+            }
+            group {
+                move: cs_r - 360 + (1 - cs.1) * 420 - 10 * shz.1.hover, cy_1
+                opacity: smooth(0, 0.6, cs.1)
+                zone box cnz { from: 0, 0; size: 360, 56; cursor: pointer; role: button; label: "Connections" }
+                text "// CONNECTIONS_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text c_net { at: 14, 34; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dk.ink; width: 330; lines: 1 }
+                text c_bt { at: 346, 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: dk.ink2; width: 200; lines: 1; align: right }
+                on press cnz { emit nx_go(50) }
+            }
+            group {
+                move: cs_r - 360 + (1 - cs.2) * 420 - 10 * shz.2.hover, cy_2
+                opacity: smooth(0, 0.6, cs.2)
+                text "// SOUND_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text c_out { at: 346, 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: dk.ink2; width: 220; lines: 1; align: right }
+                zone box csv { from: 14, 30; size: 290, 16; cursor: pointer; role: slider; value: audio.volume; label: "Volume" }
+                box { from: 14, 36; size: 290, 4; corner: 2; color: dk.well }
+                group {
+                    glow: 5, 0.4 * st_glow, dk.acc
+                    box { from: 14, 36; size: 290 * clamp(audio.volume * (1 - audio.muted), 0, 1), 4; corner: 2; color: dk.acc }
+                }
+                ellipse { at: 14 + 290 * clamp(audio.volume * (1 - audio.muted), 0, 1), 38; radius: 4 + csv.hover; color: dk.ink }
+                text pick(audio.muted, "{round(audio.volume * 100), 0}%", "mute") { at: 346, 38; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
+                on press csv { emit dk_level(round(clamp(local.x / 290, 0, 1) * 1000)) }
+                on drag csv { emit dk_level(round(clamp(local.x / 290, 0, 1) * 1000)) }
+                on scroll csv { emit dk_level(round(clamp(audio.volume + wheel * 0.05, 0, 1) * 1000)) }
+            }
+            group {
+                move: cs_r - pick(mus_on, 300, 460) + (1 - cs.3) * (pick(mus_on, 300, 460) + 60) - 10 * shz.3.hover, cy_3
+                opacity: smooth(0, 0.6, cs.3)
+                group {
+                    show: mus_on
+                    zone box cmart { from: 14, 12; size: 64, 64; cursor: pointer; role: button; label: "Open the music player" }
+                    box { from: 14, 12; size: 64, 64; corner: dk.r; color: dk.well }
+                    image cover { at: 14, 12; size: 64, 64; show: nx_art_on }
+                    on press cmart { emit nx_go(20) }
+                    text "// NOW PLAYING_" { at: 92, 18; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.hot }
+                    text med.title { at: 92, 38; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink; width: 350; lines: 1 }
+                    text med.artist { at: 92, 55; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: 250; lines: 1 }
+                    box { from: 92, 70; size: 270, 2; color: dk.line }
+                    box { from: 92, 70; size: 270 * clamp(rc_song, 0, 1), 2; color: dk.hot }
+                    repeat b in 0..3 {
+                        zone box cmb.$b { from: 372 + b * 26, 58; size: 24, 24; cursor: pointer; role: button; label: pick(b, "Previous", "Play or pause", "Next") }
+                        text pick(b, "⏮", "", "⏭") { at: 384 + b * 26, 70; anchor: center; align: center; size: 12; color: mix(dk.ink2, dk.ink, cmb.$b.hover) }
+                        on press cmb.$b { emit nx_media(b) }
+                    }
+                    text pick(med.playing, "▶", "⏸") { at: 410, 70; anchor: center; align: center; size: 14; color: mix(dk.hot, dk.ink, cmb.1.hover) }
+                }
+                group {
+                    show: not mus_on
+                    zone box cmopen { from: 0, 0; size: 300, 44; cursor: pointer; role: button; label: "Open the music player" }
+                    text "// NOTHING PLAYING · OPEN THE PLAYER_" { at: 14, 22; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, cmopen.hover) }
+                    on press cmopen { emit nx_go(20) }
+                }
+            }
+            group {
+                move: cs_r - 420 + (1 - cs.4) * 480 - 10 * shz.4.hover, cy_4
+                opacity: smooth(0, 0.6, cs.4)
+                zone box cmz { from: 0, 0; size: 420, 60; cursor: pointer; role: button; label: "The machine: open btop" }
+                text "// MACHINE_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                Reading(14, 22, 98, "CPU", m_cpu_t, rc_cpu, m_cpu > 0.85 or m_temp > 85)
+                Reading(112, 22, 98, "Memory", m_mem_t, rc_mem, m_mem > 0.9)
+                Reading(210, 22, 98, "Battery", m_bat_t, m_bat, m_bat_hot)
+                Reading(308, 22, 98, "Disk", m_disk_t, m_disk, m_disk > 0.9)
+                on press cmz { emit nx_go(10) }
+            }
+            group {
+                move: cs_r - 360 + (1 - cs.5) * 420 - 10 * shz.5.hover, cy_5
+                opacity: smooth(0, 0.6, cs.5)
+                zone box ctz { from: 0, 0; size: 360, 56; cursor: pointer; role: button; label: "Today: the calendar" }
+                text "// TODAY_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text clock.time { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
+                text c_today { at: 14, 35; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dk.ink; width: 330; lines: 1 }
+                on press ctz { emit nx_go(11) }
+            }
+            group {
+                move: cs_r - 400 + (1 - cs.6) * 460 - 10 * shz.6.hover, cy_6
+                opacity: smooth(0, 0.6, cs.6)
+                zone box cnt { from: 0, 0; size: 400, 56; cursor: pointer; role: button; label: "Notifications: open the Signal Field" }
+                text "// NOTIFICATIONS_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(c_notes_n > 0, dk.hot, dk.acc) }
+                text c_notes { at: 14, 35; anchor: left center; size: 12; family: "Exo 2"; color: dk.ink; width: 300; lines: 1 }
+                Act(316, 23, 70, "Open", false, c_notes_n > 0, cnt.hover)
+                on press cnt { emit nx_go(30) }
+            }
+            group {
+                move: cs_r - 300 + (1 - cs.7) * 360 - 10 * shz.7.hover, cy_7
+                opacity: smooth(0, 0.6, cs.7)
+                zone box cup { from: 0, 0; size: 300, 44; cursor: pointer; role: button; label: "Updates" }
+                text "// UPDATES_" { at: 14, 22; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text c_upd { at: 106, 22; anchor: left center; size: 11; family: "Share Tech Mono"; color: dk.ink; width: 110; lines: 1 }
+                Act(216, 10, 70, "Update", c_upd_n > 0, false, cup.hover) { show: c_upd_n > 0 }
+                on press cup while c_upd_n > 0 { emit nx_go(13) }
+            }
+            group {
+                move: cs_r - 380 + (1 - cs.8) * 440 - 10 * shz.8.hover, cy_8
+                opacity: smooth(0, 0.6, cs.8)
+                text "// WORKSPACES_" { at: 14, 24; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                for t in tiles {
+                    let tx = 130 + t.index * 32
+                    group {
+                        show: t.index < 7
+                        zone box cwz { from: tx, 12; size: 28, 24; cursor: pointer; role: item; selected: t.active; label: pick(t.plus, "Workspace {t.id}", "A new workspace") }
+                        box { from: tx, 12; size: 28, 24; corner: dk.r; color: if(t.active, mix(dk.well, dk.acc, 0.2), dk.well) }
+                        box { from: tx, 12; size: 28, 24; corner: dk.r; stroke: 1; color: if(t.active, dk.acc, mix(dk.line, dk.acc, cwz.hover)) }
+                        text pick(t.plus, "{t.id}", "+") { at: tx + 14, 24.5; anchor: center; align: center; size: 10.5; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2) }
+                        on press cwz { emit dk_ws(t.index) }
+                    }
+                }
+            }
+        }
+
+        // ═══ What grows out of the deck ═══
+        // A scene's changes, beside its chip.
+        group {
+            show: gs_in > 0.01
+            move: gs_x - dk_ox * (1 - gs_in) * 14, gs_y - dk_oy * (1 - gs_in) * 14
+            opacity: smooth(0, 0.7, gs_in)
+            zone box keep_sc { from: 0, 0; size: gs_w, 86; role: region; label: "What the scene would change" }
+            IslandFrame(1, gs_w, 86, centre: true) {
+                text diff_t { at: 16, 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.hot; width: gs_w - 150 }
+                text "PRESS TO SWITCH · RIGHT PRESS REMOVES" { at: gs_w - 16, 18; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute }
+                row { at: 16, 40; gap: 6
+                    for c in diff {
+                        group {
+                            size: c.w, 24
+                            box { from: 0, 0; size: c.w, 24; corner: dk.r; color: dk.well }
+                            box { from: 0, 0; size: c.w, 24; corner: dk.r; stroke: 1; color: dk.acc; opacity: 0.7 }
+                            text c.word { at: 8, 12.5; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.ink }
+                        }
+                    }
+                }
+                text "ALREADY LIKE THIS" { at: 16, 52; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: diff.count == 0 }
+            }
+        }
+        // A workspace's preview, beside its tile: big enough to read, a press on a window focuses it.
+        group {
+            show: gw_in > 0.01
+            move: gw_x - dk_ox * (1 - gw_in) * 14, gw_y - dk_oy * (1 - gw_in) * 14
+            opacity: smooth(0, 0.7, gw_in)
+            zone box keep_ws { from: 0, 0; size: gw_w, gw_h; role: region; label: "The workspace's preview" }
+            IslandFrame(1, gw_w, gw_h, centre: true) {
+                let pw = gw_w - 20
+                let ph = gw_h - 54
+                group {
+                    show: not gw_free
+                    group {
+                        clip box { from: 10, 10; size: pw, ph; corner: dk.r }
+                        box { from: 10, 10; size: pw, ph; color: dk.well }
+                        image wall { at: 10, 10; size: pw, ph; opacity: 0.85; show: dk_wall_on }
+                        box { from: 10, 10; size: pw, ph; color: #000000; opacity: 0.25 }
+                    }
+                    for b in big {
+                        zone box bz { from: b.x, b.y; size: b.w, b.h; cursor: pointer; role: item; label: "Focus {b.app}" }
+                        box { from: b.x, b.y; size: b.w, b.h; corner: 2; color: mix(dk.raised, #000000, 0.15) }
+                        image b.pic { at: b.x, b.y; size: b.w, b.h; show: b.pictured }
+                        text b.app { at: b.x + b.w / 2, b.y + b.h / 2; anchor: center; align: center; size: 11; family: "Share Tech Mono"; color: dk.ink2; width: b.w - 8; lines: 1; show: not b.pictured }
+                        box { from: b.x, b.y; size: b.w, b.h; corner: 2; stroke: 1 + bz.hover; color: if(b.focused, dk.acc, mix(dk.line, dk.acc, bz.hover)) }
+                        on press bz { emit dk_big(b.index) }
+                    }
+                    box { from: 10, 10; size: pw, ph; corner: dk.r; stroke: 1; color: dk.line }
+                }
+                text "AN EMPTY WORKSPACE, READY" { at: gw_w / 2, 10 + ph / 2; anchor: center; align: center; size: 11; family: "Share Tech Mono"; color: dk.mute; show: gw_free }
+                text big_t { at: 14, gw_h - 22; anchor: left center; size: 11; family: "Share Tech Mono"; color: dk.ink; width: gw_w - 240; lines: 1 }
+                zone box bgo { from: gw_w - 216, gw_h - 34; size: 70, 24; cursor: pointer; role: button; label: "Go there" }
+                Act(gw_w - 216, gw_h - 34, 70, "Go", true, false, bgo.hover)
+                on press bgo { emit dk_ws(dk_hws) }
+                zone box bsend { from: gw_w - 140, gw_h - 34; size: 128, 24; cursor: pointer; role: button; label: "Send this window there"; active: w_ok }
+                group {
+                    opacity: if(w_ok, 1, 0.4)
+                    Act(gw_w - 140, gw_h - 34, 128, "Send window here", false, false, bsend.hover)
+                }
+                on press bsend while w_ok { emit dk_send(dk_hws) }
+            }
+        }
+
+        // What grows out folds back once the pointer has been off it and off what it grew from for a moment.
+        on still max(scbay.hover, keep_sc.hover) for 380ms while dk_hsc >= 0 and max(scbay.hover, keep_sc.hover) < 0.5 { dk_hsc = -1 }
+        on still max(wsbay.hover, keep_ws.hover) for 420ms while dk_hws >= 0 and max(wsbay.hover, keep_ws.hover) < 0.5 { dk_hws = -1 }
     }
 }

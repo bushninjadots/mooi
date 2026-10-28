@@ -2480,69 +2480,115 @@ test("nexus feed: ages, and the updates document", function()
     eq(u.total, 48); eq(u.text, "48 updates · 26 packages"); eq(u.at, 1234)
 end)
 
-local drawer = require("lib/nexusdrawer")
-test("nexus drawer: sections in order, each top under the one before", function()
-    local c = { playing = true, notes = 2, nets = 3, bt = 1, outs = 2, apps = 1, bright = true, ws = 3 }
-    local l = drawer.layout(c, {})
-    eq(l.order[1], "levels"); eq(l.order[#l.order], "shortcuts")
-    eq(l.top.levels, drawer.HEADER)
-    local prev = nil
-    for _, id in ipairs(l.order) do
-        if prev then eq(l.top[id], l.top[prev] + l.height[prev] + drawer.GAP, id .. " under " .. prev) end
-        prev = id
+local deck = require("lib/nexusdeck")
+test("nexus deck: a strip along the top or the bottom, its bays filling it side by side", function()
+    for _, e in ipairs({ "bottom", "top" }) do
+        local d = deck.layout(e, 1920, 1080, 52, {})
+        eq(d.vertical, false); eq(d.w, deck.STRIP_MAX); eq(d.x, (1920 - deck.STRIP_MAX) / 2, "centred")
+        local b = d.bays
+        eq(b.win.x, 0); eq(b.ws.x, b.win.w, "the workspaces after this window"); eq(b.mix.x + b.mix.w, d.w, "the console to the edge")
+        eq(b.scenes.w + b.wait.w + b.ident.w, d.w, "the head is one row")
+        eq(b.win.y, deck.HEAD); eq(b.win.h, d.h - deck.HEAD)
     end
-    eq(l.total, l.top.shortcuts + l.height.shortcuts + drawer.GAP)
+    eq(deck.layout("bottom", 1920, 1080, 52).y, 1080 - deck.STRIP_H - deck.GAP, "on the bottom edge")
+    eq(deck.layout("top", 1920, 1080, 52).y, 58, "under the bar")
+    eq(deck.layout("top", 1920, 1080, 52).out_y, -1, "it slides in from above")
+    eq(deck.layout("bogus", 1366, 768, 40).edge, "bottom", "an unknown edge is the bottom")
+    eq(deck.layout("bottom", 1366, 768, 40).w, 1366 - 2 * deck.GAP, "narrow: as wide as the screen allows")
 end)
-test("nexus drawer: folding, absent sections, rows that grow", function()
-    local c = { playing = false, notes = 0, nets = 0, bt = 0, outs = 1, apps = 0, bright = false, ws = 1 }
-    local l = drawer.layout(c, { machine = true })
-    eq(l.shown.media, false, "nothing playing: no media section"); eq(l.height.media, 0)
-    eq(l.height.machine, drawer.FOLDED, "folded: its header only")
-    local more = drawer.layout({ playing = false, notes = 4, nets = 0, bt = 0, outs = 1, apps = 0, bright = false, ws = 1 }, {})
-    assert(more.height.notes > l.height.notes, "more notices, a taller section")
-    local lv = drawer.layout({ bright = true }, {}).height.levels
-    assert(lv > drawer.layout({ bright = false }, {}).height.levels, "no backlight: one level fewer")
-    local f = drawer.toggle({}, "sound"); eq(f.sound, true); eq(drawer.toggle(f, "sound").sound, nil)
-    eq(#drawer.folded_list({ sound = true, machine = true, bogus = true }), 2, "only real sections are kept")
+test("nexus deck: a column down either side, its bays stacked, the spine kept clear", function()
+    local l = deck.layout("left", 1920, 1080, 52)
+    eq(l.vertical, true); eq(l.x, deck.GAP); eq(l.y, 58); eq(l.out_x, -1)
+    assert(l.h < 1080 - 58 - deck.GAP, "a few workspaces: only as tall as it needs")
+    eq(deck.layout("left", 1920, 1080, 52, { tiles = 20 }).h, 1080 - 58 - deck.GAP, "many: the screen's height at most")
+    local b = l.bays
+    eq(b.scenes.y, b.ident.h); eq(b.wait.y, b.scenes.y + b.scenes.h); eq(b.win.y, b.wait.y + b.wait.h)
+    eq(b.ws.y, b.win.y + b.win.h); eq(b.mix.y + b.mix.h, l.h, "the console at the foot")
+    assert(b.ws.y + b.ws.h <= b.mix.y, "the workspaces never under the console")
+    eq(deck.layout("right", 1920, 1080, 52).x, 1920 - deck.COLUMN_W - deck.GAP)
+    eq(deck.layout("right", 1920, 1080, 52, { spine = true }).x, 1920 - deck.COLUMN_W - deck.GAP - deck.SPINE_W, "the spine's tabs stay clear")
+    local few = deck.layout("left", 1920, 1080, 52, { scenes = 3 }).bays.scenes.h
+    local many = deck.layout("left", 1920, 1080, 52, { scenes = 8 }).bays.scenes.h
+    assert(many > few, "more scenes wrap onto another row")
 end)
-
-test("config: the old Nexus settings go quietly; who you are and the folds stay", function()
-    local s, problems, notes = config.validate({ version = 2, nexus = { view = "full", hub = { hero = "player" }, arrangements = {},
-        identity = { name = "Alex" }, folded = { "machine" } } })
-    eq(s.nexus.identity.name, "Alex"); eq(s.nexus.folded[1], "machine")
-    eq(s.nexus.view, nil, "the retired view is gone"); eq(#problems, 0)
+test("nexus deck: what grows out sits on the open side, level with what it grew from, on the screen", function()
+    local d = deck.layout("bottom", 1920, 1080, 52)
+    local x, y = deck.grow(d, { x = 0, y = 40, w = 100, h = 60 }, 520, 330, 1920, 1080, 52)
+    eq(y, d.y - 330 - deck.GAP, "above a bottom deck"); eq(x, deck.GAP, "kept on the screen")
+    local t = deck.layout("top", 1920, 1080, 52)
+    local _, ty = deck.grow(t, { x = 800, y = 40, w = 100, h = 60 }, 520, 330, 1920, 1080, 52)
+    eq(ty, t.y + t.h + deck.GAP, "below a top deck")
+    local r = deck.layout("right", 1920, 1080, 52)
+    local rx, ry = deck.grow(r, { x = 0, y = 900, w = 100, h = 60 }, 520, 330, 1920, 1080, 52)
+    eq(rx, r.x - 520 - deck.GAP, "beside a right column"); eq(ry, 1080 - 330 - deck.GAP, "and never off the bottom")
+end)
+test("nexus deck: the workspaces, in order, the active one even when empty, and where + goes", function()
+    local list = { { id = 3, monitor = "eDP-1", windows = 2 }, { id = 1, monitor = "eDP-1", windows = 1 }, { id = 7, monitor = "HDMI-A-1", windows = 1 }, { id = -98, monitor = "eDP-1", name = "special" } }
+    local s = deck.spaces(list, "eDP-1", 5)
+    eq(#s, 3); eq(s[1].id, 1); eq(s[2].id, 3); eq(s[3].id, 5, "the active one, empty"); eq(s[3].active, true); eq(s[1].active, false)
+    eq(deck.free_space(s), 2)
+end)
+test("nexus deck: tiles the screen's shape, fitted to the bay in a row or in columns", function()
+    local row = deck.tiles(5, { x = 0, y = 0, w = 948, h = 200 }, false, 16 / 9)
+    eq(#row, 6, "one more for +")
+    for i, r in ipairs(row) do
+        assert(math.abs(r.w / r.h - 16 / 9) < 0.05, "tile " .. i .. " is the screen's shape")
+        if i > 1 then assert(r.x >= row[i - 1].x + row[i - 1].w, "side by side") end
+    end
+    assert(row[6].x + row[6].w <= 948 - 14 + 1, "inside the bay")
+    local col = deck.tiles(9, { x = 0, y = 0, w = 404, h = 380 }, true, 16 / 9)
+    local last = col[#col]
+    assert(last.y + last.h + 16 <= 380, "every tile and its name fit down the column")
+end)
+test("nexus deck: windows as parts of their screen, floating ones over the tiled", function()
+    local mon = { id = 0, x = 0, y = 0, width = 1920, height = 1080, scale = 1 }
+    local w = deck.windows({
+        { address = "0x1", class = "zen", title = "a", at = { 960, 0 }, size = { 960, 540 }, workspace = { id = 2 }, monitor = 0, floating = true },
+        { address = "0x2", class = "kitty", title = "b", at = { 0, 0 }, size = { 960, 1080 }, workspace = { id = 2 }, monitor = 0, focusHistoryID = 0 },
+        { address = "0x3", class = "x", title = "c", at = { 0, 0 }, size = { 10, 10 }, workspace = { id = 2 }, monitor = 1 },
+    }, mon)
+    eq(#w, 2, "only this monitor's"); eq(w[1].app, "kitty", "tiled first"); eq(w[1].focused, true)
+    eq(w[2].nx, 0.5); eq(w[2].nh, 0.5)
+    local f = deck.focused({ { workspace = { id = 2 }, focusHistoryID = 3, class = "a" }, { workspace = { id = 2 }, focusHistoryID = 1, class = "b" }, { workspace = { id = 4 }, focusHistoryID = 0, class = "c" } }, 2)
+    eq(f.class, "b", "the most recent on the workspace you are on")
+end)
+test("nexus deck: a window's own sound, by its process, then by its name", function()
+    local apps = { { id = "7", name = "Spotify", binary = "spotify", pid = 50 }, { id = "8", name = "Firefox", binary = "firefox", pid = 60 } }
+    eq(deck.stream(apps, "firefox", 99), 2); eq(deck.stream(apps, "whatever", 50), 1, "the process first")
+    eq(deck.stream(apps, "kitty", 1), nil); eq(deck.stream(apps, "", 1), nil)
+end)
+test("nexus deck: what is waiting, the pressing first, each with what deals with it", function()
+    local w = deck.waiting({ notes = 3, first_note = "Discord", updates = 14, weather = "Cloudy 20°", quiet = true, recording = true, battery = 12, charging = false })
+    eq(w[1].word, "Recording the screen"); eq(w[1].tog, 8)
+    eq(w[2].act, "SAVER"); eq(w[2].tog, 7)
+    eq(w[3].word, "3 new · Discord"); eq(w[3].go, 30)
+    eq(w[4].word, "14 updates waiting"); eq(w[4].go, 13)
+    eq(w[#w].act, "END", "quiet last")
+    local none = deck.waiting({})
+    eq(#none, 1); eq(none[1].word, "All quiet")
+end)
+test("nexus deck: scenes cleaned, compared and carried out", function()
+    eq(#deck.clean(nil), #deck.DEFAULTS, "nothing saved: the defaults")
+    local c = deck.clean({ { name = "  Focus time is long  ", quiet = "yes", night = true, volume = 140 }, { name = "" }, 5 })
+    eq(#c, 1); eq(c[1].name, "Focus time i", "twelve letters"); eq(c[1].quiet, nil, "not a switch"); eq(c[1].volume, 100)
+    local state = { quiet = false, night = true, awake = false, saver = false, wifi = true, bluetooth = true, volume = 62, brightness = 80 }
+    local night = { name = "Night", night = true, quiet = true, brightness = 35 }
+    local d = deck.diff(night, state)
+    eq(#d, 2); eq(d[1], "quiet on"); eq(d[2], "screen 35%")
+    local s = deck.steps(night, state)
+    eq(s[1].flip, "quiet"); eq(s[2].level, "brightness"); eq(s[2].to, 0.35)
+    eq(#deck.diff(night, { quiet = true, night = true, brightness = 35 }), 0)
+    eq(deck.live({ { name = "A", saver = true }, night }, { quiet = true, night = true, brightness = 35 }), 2)
+    local mine = deck.capture(state, "Mine")
+    eq(mine.volume, 62); eq(mine.night, true); eq(#deck.diff(mine, state), 0, "a captured scene is the desktop as it is")
+    eq(#deck.diff({ name = "S", brightness = 50 }, { volume = 10 }), 0, "no backlight: brightness is left out")
+end)
+test("config: the old Nexus settings go quietly; who you are stays, and the deck's edge", function()
+    local s, problems, notes = config.validate({ version = 2, nexus = { view = "full", hub = { hero = "player" }, folded = { "machine" },
+        orbit = { nodes = { "wifi" } }, identity = { name = "Alex" }, edge = "left" } })
+    eq(s.nexus.identity.name, "Alex"); eq(s.nexus.edge, "left"); eq(s.nexus.mode, "deck")
+    eq(s.nexus.folded, nil, "the drawer's folds are gone"); eq(s.nexus.orbit, nil, "and the orbit"); eq(#problems, 0)
     for _, n in ipairs(notes) do assert(not n:find("nexus"), "no unknown-setting note for the old Nexus: " .. n) end
-end)
-
-local orbit = require("lib/nexusorbit")
-test("nexus orbit: your choices, cleaned — known ids, no repeats, at most eight nodes and three arcs", function()
-    local c = orbit.choose({ nodes = { "wifi", "bogus", "wifi", "night", "bt", "mute", "mic", "quiet", "awake", "saver", "record" },
-                             arcs = { "cpu", "nope", "temp", "cpu", "gpu", "disk" }, backdrop = "circuit" })
-    eq(#c.nodes, 8, "eight at most"); eq(c.nodes[1], "wifi"); eq(c.nodes[2], "night", "unknown and repeated ids dropped")
-    eq(#c.arcs, 3); eq(c.arcs[2], "temp"); eq(c.backdrop, "circuit")
-    local d = orbit.choose(nil)
-    eq(#d.nodes, 8, "the defaults"); eq(#d.arcs, 3); eq(d.backdrop, "banner")
-    eq(#orbit.choose({ nodes = {} }).nodes, 0, "an empty orbit is a choice too")
-end)
-test("nexus orbit: every node on its ring, every trace from the core's edge to its pad", function()
-    local g = orbit.geometry(8, 210, 215, 150, 98)
-    eq(#g, 8)
-    for i, n in ipairs(g) do
-        local d = math.sqrt((n.x - 210) ^ 2 + (n.y - 215) ^ 2)
-        assert(math.abs(d - 150) < 0.5, "node " .. i .. " on the ring")
-        local s0 = math.sqrt((n.p1x - 210) ^ 2 + (n.p1y - 215) ^ 2)
-        assert(math.abs(s0 - 98) < 0.5, "trace " .. i .. " starts at the core's edge")
-        eq(n.p3x, n.x); eq(n.p3y, n.y)
-    end
-    eq(math.floor(g[1].x + 0.5), 210, "the first at the top"); eq(math.floor(g[1].y + 0.5), 65)
-    eq(#orbit.geometry(0, 0, 0, 1, 1), 0)
-    local three = orbit.geometry(3, 0, 0, 100, 50)
-    assert(math.abs(three[2].x - 86.6) < 0.2, "spread evenly round the ring")
-end)
-test("nexus orbit: the rest of the toggles, for the chips under the orbit", function()
-    local rest = orbit.rest({ "wifi", "bt" })
-    for _, id in ipairs(rest) do assert(id ~= "wifi" and id ~= "bt") end
-    eq(#rest, #orbit.NODE_ORDER - 2)
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))
