@@ -50,6 +50,7 @@ local d = nil                -- the deck's layout (lib/nexusdeck), once the scre
 local this_stream = nil      -- the sound of the window you are in: its place in `apps`
 local waiting_items = {}     -- what is waiting, as lib/nexusdeck listed it
 local publish_window         -- defined with the windows, below
+local publish_status         -- the lamps and the master caution, below
 
 -- ── The look: the shell's palette, the island style, the corners ──
 local function paint()
@@ -140,7 +141,7 @@ local function bar_states()
         power.prof, power.ppd = tonumber(got[5]) or 0, got[6] == "true"
         lit[7] = power.prof == 1
         light = got[7] == "true"
-        publish_console(); publish_wait(); publish_scenes()
+        publish_console(); publish_wait(); publish_scenes(); publish_status()
     end)
 end
 on("nx_tog", function(v)
@@ -347,6 +348,26 @@ on("dk_level", function(v)
     if not flushing then flushing = true; after(40, flush) end
 end)
 
+-- ── Status, HUD-fashion: each part's lamp (0 standby · 1 active · 2 caution · 3 alert), and the master
+-- caution, which names the most pressing thing (the HUD's rule: a warning overrides everything else) ──
+local battery = { present = false }
+publish_status = function()
+    local hot_machine = fact.m_cpu > 0.85 or fact.m_temp > 85
+    fact.lp_w = fact.w_ok and 1 or 0
+    fact.lp_m = levels.muted and 2 or 1
+    fact.lp_q = lit[8] and 3 or 1
+    fact.lp_u = media.playing and 1 or 0
+    fact.lp_c = hot_machine and 3 or ((fact.m_mem > 0.9 or fact.m_disk > 0.9) and 2 or 1)
+    local p = tonumber(battery.percent) or 100
+    local why = nil
+    if lit[8] then why = "● REC"
+    elseif battery.present and p <= 20 and not battery.charging then why = string.format("BATT %d%%", math.floor(p + 0.5))
+    elseif fact.m_temp > 85 then why = string.format("HEAT %d°", math.floor(fact.m_temp + 0.5))
+    elseif fact.m_cpu > 0.9 then why = string.format("CPU %d%%", math.floor(fact.m_cpu * 100 + 0.5)) end
+    fact.dk_caution = why ~= nil
+    text.dk_caution_t = why or ""
+end
+
 -- ── What the services say ──
 pcall(sys.watch, "network", function(n)
     wifi_on = not (type(n) == "table" and n.wifi == false)
@@ -406,6 +427,7 @@ pcall(sys.watch, "media", function(m)
     if was ~= fact.mus_on then place_cascade() end
     cover(media.art)
     pos, pos_at = tonumber(media.position) or 0, os.time()
+    publish_status()
 end)
 every(1000, function()
     local len = tonumber(media.length) or 0
@@ -420,7 +442,6 @@ end)
 
 -- ── The machine, every 2 s ──
 local cpu_prev = nil
-local battery = { present = false }
 -- the last 40 s of the processor and the memory (every second), drawn as lines in their part
 local HIST = 40
 local hist = { cpu = {}, mem = {} }
@@ -458,6 +479,7 @@ end
 pulse(); machine()
 every(1000, pulse)
 every(4000, machine)
+every(1000, function() publish_status() end)
 pcall(sys.watch, "battery", function(b)
     battery = type(b) == "table" and b or { present = false }
     if not battery.present then text.m_bat_t = "AC"; fact.m_bat = 1; fact.m_bat_hot = false
@@ -729,6 +751,7 @@ function publish_window()
         if app ~= "" and (string.find(k, app, 1, true) or string.find(app, k, 1, true)) then note = "↳ " .. it.title .. " · " .. it.ago; break end
     end
     text.w_note = note; fact.w_noted = note ~= ""
+    publish_status()
 end
 function relayout_rest()
     if not d then return end

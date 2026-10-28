@@ -26,6 +26,8 @@ library Deck {
     let dk.well = mix(fl.well, dk.t_bg_primary, isl_style)
     let dk.raised = mix(fl.hull_raised, dk.t_surface_elevated, isl_style)
     let dk.r = if(isl_style > 0.5, 6 * cn_scale, 2)
+    // alert is alert in either style: a red that no palette takes over
+    let dk.alert = #ff4d4d
 
     // A bay's name: mono caps after a short lit trace, as the islands' heads are.
     component BayHead(x: number, y: number, word: text) {
@@ -36,9 +38,15 @@ library Deck {
 
     // A part's head: its number in your order, a short lit trace, its name, a live line on the right.
     // Down a column each part also opens with a seam across the deck.
-    component PartHead(w: number, n: text, word: text, meta: text) {
+    // `lamp`: the part's status, HUD-fashion — 0 standby (dim), 1 active, 2 caution, 3 alert.
+    component PartHead(w: number, n: text, word: text, meta: text, lamp: number = -1) {
         size: w, 28
         line { from: 14, 0.5; to: w - 14, 0.5; width: 1; color: dk.line; opacity: 0.6; show: dk_vert }
+        group {
+            show: lamp >= 0
+            glow: 5, if(lamp > 0.5, 0.8, 0) * st_glow, pick(lamp, dk.mute, dk.acc, fl.flare, dk.alert)
+            ellipse { at: 8, 17; radius: 2.4; color: pick(lamp, dk.mute, dk.acc, fl.flare, dk.alert) }
+        }
         text n { at: 14, 17; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
         line { from: 32, 17; to: 42, 17; width: 1.4; color: dk.acc; opacity: 0.85 }
         text "{upper(word)}" { at: 47, 17; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.95 }

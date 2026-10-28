@@ -3358,3 +3358,23 @@ facts (hidden, revealed, put away after the pointer left, restored). Screenshots
 the naming panel with environments, the left column with a preview. Not checked: carrying a part or a
 window with a real mouse (the rules are the deck's own; only their events were driven), and restoring an
 environment from a scene end to end.
+
+## D104 · 2026-10-28 · The deck in HUD fashion: lamps, master caution, lock-on, power-on
+
+**Asked for:** "use the new designs i added for inspiration if possible … surprise me and wow me". No
+design of the user's was found (the repo, the home folder, the claude.ai artifacts and the Open Design
+library were looked through); what had just been added was the Open Design plugin, so its catalogue was
+the inspiration: its **HUD** system (a fighter's head-up display), taken for its rules, not its green —
+status in four states, a warning that overrides everything, reference brackets, nothing animated that does
+not say something has changed.
+**Done:** every part's head carries a **lamp** — standby (dim), active, caution (flare), alert (a fixed
+red, #ff4d4d, that no palette takes over): the window lit while there is one, the mixer amber while muted,
+quick settings red while recording, music lit while playing, the machine amber past 90 % memory or disk
+and red when hot. A **master caution** replaces the clock in the head while something presses — ● REC, a
+battery at 20 % or less off the charger, heat past 85°, the processor past 90 % — naming the most pressing
+one. **Lock-on:** four brackets close on the workspace pointed at, again for each new one, with LOCK, as its
+preview grows out. **Power-on:** opening, a lit scan line sweeps the deck once (620 ms) and the parts come
+online after it, 50 ms apart, each easing in from its edge; with reduced motion the springs settle and it is
+simply there.
+**Checked:** tests/nexus.sh 31/31; unit 244; a recording of opening, the lock-on and arranging, its frames
+read (the sweep with later parts dark; the brackets and LOCK on workspace 1).

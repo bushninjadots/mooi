@@ -328,6 +328,18 @@ scene Nexus {
     fact pt_h = 214
     text pt_n = "07"
 
+    // ── Status, HUD-fashion: each part's lamp (0 standby · 1 active · 2 caution · 3 alert), and the
+    // master caution lit while something pressing waits (recording, a low battery, a hot machine) ──
+    fact lp_w = 0
+    fact lp_s = 1
+    fact lp_m = 1
+    fact lp_q = 1
+    fact lp_u = 0
+    fact lp_c = 1
+    fact lp_t = 1
+    fact dk_caution = false
+    text dk_caution_t = ""
+
     // ── Arranging it (✎): parts moved by hand, hidden, shown again; the edge chosen here too ──
     fact dk_edit = false
     fact dk_gid = -1             // the part being carried (its code)
@@ -514,6 +526,25 @@ scene Nexus {
     follow gn_in = if(dk_naming and dk_open, 1, 0)
     prop ed_in = 0 ~m.expand         // arranging: the handles and the edit bar
     follow ed_in = if(dk_edit, 1, 0)
+    // Powering on: a scan line sweeps the deck once as it opens, and each part comes online after it
+    // (springs settle at once with reduced motion, so it is simply there)
+    prop scan = 0 ~620ms
+    prop rp.0 = 0 ~m.enter
+    prop rp.1 = 0 ~m.enter
+    prop rp.2 = 0 ~m.enter
+    prop rp.3 = 0 ~m.enter
+    prop rp.4 = 0 ~m.enter
+    prop rp.5 = 0 ~m.enter
+    prop rp.6 = 0 ~m.enter
+    on change dk_open while dk_open {
+        scan: 1 after 90ms
+        rp.0: 1 after 120ms;  rp.1: 1 after 170ms;  rp.2: 1 after 220ms;  rp.3: 1 after 270ms
+        rp.4: 1 after 320ms;  rp.5: 1 after 370ms;  rp.6: 1 after 420ms
+    }
+    // the lock-on: brackets that close on the workspace pointed at, again for each new one
+    prop lk = 0 ~m.select
+    follow lk = if(dk_hws >= 0, 1, 0)
+    on change dk_hws { lk: 0 ~0ms }
     // where the parts are, gliding when they are moved, hidden or shown
     prop gx.0 = 0 ~m.reflow
     follow gx.0 = pw_x
@@ -665,7 +696,14 @@ scene Nexus {
                     text nx_initial { at: 26, iy; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: dk.acc; show: not nx_avatar_on }
                     text pick(nx_noticed, nx_name, nx_notice) { at: 46, iy - (if(dk_vert, 6, 0)); anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: id_w - 196; lines: 1 }
                     text nx_who { at: 46, iy + 8; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: id_w - 196; lines: 1; show: dk_vert }
-                    text clock.time { at: id_w - 128, iy; anchor: right center; size: 12; family: "Share Tech Mono"; color: dk.ink2 }
+                    text clock.time { at: id_w - 128, iy; anchor: right center; size: 12; family: "Share Tech Mono"; color: dk.ink2; show: not dk_caution }
+                    group {
+                        show: dk_caution
+                        glow: 7, 0.9 * st_glow, dk.alert
+                        box { from: id_w - 196, iy - 9; size: 68, 18; corner: 2; color: dk.alert; opacity: 0.18 }
+                        box { from: id_w - 196, iy - 9; size: 68, 18; corner: 2; stroke: 1.2; color: dk.alert }
+                        text dk_caution_t { at: id_w - 162, iy + 0.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.alert; width: 64; lines: 1 }
+                    }
                     repeat b in 0..5 {
                         zone box hb.$b { from: id_w - 122 + b * 23, iy - 12; size: 22, 24; cursor: pointer; role: button
                                          label: pick(b, "Arrange the deck", "mooi's settings", "Lock the screen", "The session menu", "Close the Nexus") }
@@ -775,8 +813,9 @@ scene Nexus {
                 // ── This window: its own controls and its own sound ──
                 group {
                     show: pw_on
-                    move: gx.0 + dk_gdx * if(dk_gid == 0, 1, 0), gy.0 + dk_gdy * if(dk_gid == 0, 1, 0)
-                    PartHead(pw_w, pw_n, "This window", "")
+                    move: gx.0 + dk_gdx * if(dk_gid == 0, 1, 0) - dk_ox * (1 - rp.0) * 14, gy.0 + dk_gdy * if(dk_gid == 0, 1, 0) - dk_oy * (1 - rp.0) * 14
+                    opacity: smooth(0, 1, rp.0)
+                    PartHead(pw_w, pw_n, "This window", "", lamp: lp_w)
                     group {
                         show: w_ok
                         box { from: 14, 34; size: 42, 42; corner: if(isl_style > 0.5, 10 * cn_scale, 2); color: mix(dk.well, dk.acc, 0.24) }
@@ -831,9 +870,10 @@ scene Nexus {
                 // ── Your workspaces: each a miniature of its screen, its windows where they are ──
                 group {
                     show: ps_on
-                    move: gx.1 + dk_gdx * if(dk_gid == 1, 1, 0), gy.1 + dk_gdy * if(dk_gid == 1, 1, 0)
+                    move: gx.1 + dk_gdx * if(dk_gid == 1, 1, 0) - dk_ox * (1 - rp.1) * 14, gy.1 + dk_gdy * if(dk_gid == 1, 1, 0) - dk_oy * (1 - rp.1) * 14
+                    opacity: smooth(0, 1, rp.1)
                     zone box wsbay { from: 0, 0; size: ps_w, ps_h; role: region; label: "Workspaces" }
-                    PartHead(ps_w, ps_n, "Workspaces", "POINT TO LOOK IN · DRAG A WINDOW TO MOVE IT")
+                    PartHead(ps_w, ps_n, "Workspaces", "POINT TO LOOK IN · DRAG A WINDOW TO MOVE IT", lamp: lp_s)
                     for t in tiles {
                         zone box tlz { from: t.x, t.y; size: t.w, t.h + 16; cursor: pointer; role: item; selected: t.active
                                        label: pick(t.plus, "Workspace {t.id}", "A new workspace") }
@@ -858,6 +898,20 @@ scene Nexus {
                         }
                         text t.label { at: t.x + 2, t.y + t.h + 9; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2); width: t.w - 20; lines: 1 }
                         text t.n { at: t.x + t.w - 2, t.y + t.h + 9; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute }
+                        group {
+                            show: dk_hws == t.index
+                            opacity: lk
+                            glow: 6, 0.8 * st_glow, dk.acc
+                            repeat c in 0..4 {
+                                let bx.$c = if(mod(c, 2) == 0, t.x - 4 - (1 - lk) * 10, t.x + t.w + 4 + (1 - lk) * 10)
+                                let by.$c = if(c < 2, t.y - 4 - (1 - lk) * 10, t.y + t.h + 4 + (1 - lk) * 10)
+                                let bs.$c = if(mod(c, 2) == 0, 1, -1)
+                                let bt.$c = if(c < 2, 1, -1)
+                                line { from: bx.$c, by.$c; to: bx.$c + 9 * bs.$c, by.$c; width: 1.6; color: dk.acc }
+                                line { from: bx.$c, by.$c; to: bx.$c, by.$c + 9 * bt.$c; width: 1.6; color: dk.acc }
+                            }
+                            text "LOCK" { at: t.x + t.w, t.y - 11; anchor: right center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: lk > 0.9 }
+                        }
                         on hover tlz for 260ms while dk_wd < 0 { dk_hws = t.index; emit dk_hov_ws(t.index) }
                         on press tlz { emit dk_ws(t.index) }
                     }
@@ -888,8 +942,9 @@ scene Nexus {
                 // ── The mixer: everything, the apps that play, the microphone, the screen ──
                 group {
                     show: pm_on
-                    move: gx.2 + dk_gdx * if(dk_gid == 2, 1, 0), gy.2 + dk_gdy * if(dk_gid == 2, 1, 0)
-                    PartHead(pm_w, pm_n, "Mixer", "")
+                    move: gx.2 + dk_gdx * if(dk_gid == 2, 1, 0) - dk_ox * (1 - rp.2) * 14, gy.2 + dk_gdy * if(dk_gid == 2, 1, 0) - dk_oy * (1 - rp.2) * 14
+                    opacity: smooth(0, 1, rp.2)
+                    PartHead(pm_w, pm_n, "Mixer", "", lamp: lp_m)
                     let fh = pm_h - 84
                     let f0 = (pm_w - max(1, faders.count) * 36) / 2 + 18
                     for f in faders {
@@ -906,8 +961,9 @@ scene Nexus {
                 // ── Quick settings: twelve tiles, each lit while it is on, its state in words ──
                 group {
                     show: pq_on
-                    move: gx.3 + dk_gdx * if(dk_gid == 3, 1, 0), gy.3 + dk_gdy * if(dk_gid == 3, 1, 0)
-                    PartHead(pq_w, pq_n, "Quick settings", "")
+                    move: gx.3 + dk_gdx * if(dk_gid == 3, 1, 0) - dk_ox * (1 - rp.3) * 14, gy.3 + dk_gdy * if(dk_gid == 3, 1, 0) - dk_oy * (1 - rp.3) * 14
+                    opacity: smooth(0, 1, rp.3)
+                    PartHead(pq_w, pq_n, "Quick settings", "", lamp: lp_q)
                     let qw = (pq_w - 28 - 3 * 6) / 4
                     for q in quick {
                         let qx = 14 + mod(q.index, 4) * (qw + 6)
@@ -935,8 +991,9 @@ scene Nexus {
                 // ── Music: the cover, the song, where it is, the transport ──
                 group {
                     show: pu_on
-                    move: gx.4 + dk_gdx * if(dk_gid == 4, 1, 0), gy.4 + dk_gdy * if(dk_gid == 4, 1, 0)
-                    PartHead(pu_w, pu_n, "Music", "")
+                    move: gx.4 + dk_gdx * if(dk_gid == 4, 1, 0) - dk_ox * (1 - rp.4) * 14, gy.4 + dk_gdy * if(dk_gid == 4, 1, 0) - dk_oy * (1 - rp.4) * 14
+                    opacity: smooth(0, 1, rp.4)
+                    PartHead(pu_w, pu_n, "Music", "", lamp: lp_u)
                     group {
                         show: mus_on
                         let ua = if(dk_vert, 64, 84)
@@ -996,8 +1053,9 @@ scene Nexus {
                 // ── The machine: the processor and the memory as they went, and the rest ──
                 group {
                     show: pc_on
-                    move: gx.5 + dk_gdx * if(dk_gid == 5, 1, 0), gy.5 + dk_gdy * if(dk_gid == 5, 1, 0)
-                    PartHead(pc_w, pc_n, "Machine", m_up_t)
+                    move: gx.5 + dk_gdx * if(dk_gid == 5, 1, 0) - dk_ox * (1 - rp.5) * 14, gy.5 + dk_gdy * if(dk_gid == 5, 1, 0) - dk_oy * (1 - rp.5) * 14
+                    opacity: smooth(0, 1, rp.5)
+                    PartHead(pc_w, pc_n, "Machine", m_up_t, lamp: lp_c)
                     zone box mcz { from: 0, 30; size: pc_w, pc_h - 30; cursor: pointer; role: button; label: "The machine: open btop" }
                     on press mcz { emit nx_go(10) }
                     let spw = if(dk_vert, (pc_w - 42) / 2, pc_w - 28)
@@ -1040,8 +1098,9 @@ scene Nexus {
                 // ── Today: the date large, the weather, the week ──
                 group {
                     show: pt_on
-                    move: gx.6 + dk_gdx * if(dk_gid == 6, 1, 0), gy.6 + dk_gdy * if(dk_gid == 6, 1, 0)
-                    PartHead(pt_w, pt_n, "Today", clock.time)
+                    move: gx.6 + dk_gdx * if(dk_gid == 6, 1, 0) - dk_ox * (1 - rp.6) * 14, gy.6 + dk_gdy * if(dk_gid == 6, 1, 0) - dk_oy * (1 - rp.6) * 14
+                    opacity: smooth(0, 1, rp.6)
+                    PartHead(pt_w, pt_n, "Today", clock.time, lamp: lp_t)
                     zone box tdz { from: 0, 30; size: pt_w, pt_h - 30; cursor: pointer; role: button; label: "The calendar" }
                     on press tdz { emit nx_go(11) }
                     text td_day { at: 12, 62; anchor: left center; size: 40; weight: 300; family: "Exo 2"; color: dk.ink }
@@ -1068,6 +1127,14 @@ scene Nexus {
                     on drag eg6 while dk_edit { dk_gid = 6; dk_gdx = if(dk_vert, 0, drag.dx); dk_gdy = if(dk_vert, drag.dy, 0) }
                     on release eg6 while dk_edit and dk_gid == 6 { emit dk_drop(6 * 100000 + round(if(dk_vert, gy.6 + dk_gdy + pt_h / 2, gx.6 + dk_gdx + pt_w / 2))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee6 { emit dk_hide(6) }
+                }
+
+                // the power-on sweep: a lit line crossing the deck once
+                group {
+                    show: scan > 0.01 and scan < 0.99
+                    glow: 10, 0.9 * st_glow, dk.acc
+                    line { from: if(dk_vert, 6, scan * dk_w), if(dk_vert, scan * dk_h, sc_h + 4); to: if(dk_vert, dk_w - 6, scan * dk_w), if(dk_vert, scan * dk_h, dk_h - 6)
+                           width: 1.6; color: dk.acc; opacity: 1 - abs(scan - 0.5) * 1.6 }
                 }
 
                 // the seams between parts along a strip (between their places, not their moving plates)
