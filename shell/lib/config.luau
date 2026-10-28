@@ -155,6 +155,16 @@ M.SCHEMA = {
     -- Window shadows: a dark soft one, a deep one, or a neon glow in the palette's main colour.
     { path = "desktop.shadow", kind = "enum", values = { "keep", "off", "soft", "deep", "neon" }, default = "keep" },
     { path = "desktop.shadow_size", kind = "integer", default = 14, min = 2, max = 40 },
+    -- Hyprland 0.56's finer blur: how much the blur saturates (0 keeps), floating windows blurring
+    -- only the wallpaper (xray), and right-click menus blurred behind.
+    { path = "desktop.blur_vibrancy", kind = "integer", default = 0, min = 0, max = 100 },
+    { path = "desktop.blur_xray", kind = "enum", values = { "keep", "on", "off" }, default = "keep" },
+    { path = "desktop.blur_popups", kind = "enum", values = { "keep", "on", "off" }, default = "keep" },
+    -- Windows in motion (0.56): a spring under the windows' open and move animations — `off` settles
+    -- without overshoot, the rest overshoot and wobble into place, more each step — and motion blur
+    -- on windows being moved or resized.
+    { path = "desktop.wobble", kind = "enum", values = { "keep", "off", "subtle", "wobbly", "jelly" }, default = "keep" },
+    { path = "desktop.motion_blur", kind = "enum", values = { "keep", "off", "soft", "strong" }, default = "keep" },
     -- mooi's keys: "SUPER + ALT + Space" and the like (Hyprland's own spelling). Bound live
     -- and by custom/mooi.lua at Hyprland's start.
     { path = "keys.search", kind = "key", default = "SUPER + ALT + Space" },

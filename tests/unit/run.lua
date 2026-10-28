@@ -740,6 +740,29 @@ test("windows and scrolling: nothing written while kept, Hyprland's names when c
     eq(desktop.covers(was, desktop.claims(d)), true, "claiming more is not")
 end)
 
+test("Hyprland 0.56: finer blur, the windows' spring and motion blur, nothing while kept", function()
+    local d = config.defaults().desktop
+    d.manage = true
+    local look = desktop.look(d, nil)
+    assert(not string.find(look, "blur") and not string.find(look, "hl.curve", 1, true), "keep writes nothing: " .. look)
+    d.blur, d.blur_vibrancy, d.blur_xray, d.blur_popups = "medium", 30, "on", "off"
+    d.wobble, d.motion_blur = "jelly", "soft"
+    look = desktop.look(d, nil)
+    assert(string.find(look, "blur = { enabled = true, size = 6, passes = 3, vibrancy = 0.30, xray = true, popups = false }", 1, true), look)
+    assert(string.find(look, "motion_blur = { enabled = true, samples = 6 }", 1, true), look)
+    assert(string.find(look, 'hl.curve("mooi_wobble", { type = "spring", mass = 1, stiffness = 220, dampening = 7.0 })', 1, true), look)
+    assert(string.find(look, 'leaf = "windowsIn", enabled = true, speed = 5, spring = "mooi_wobble", style = "popin 87%"', 1, true), "the pop-in kept: " .. look)
+    assert(string.find(look, 'leaf = "windowsMove"', 1, true), look)
+    assert(load(look), "one chunk of Lua, as custom/mooi.lua loads it")
+    d.blur, d.motion_blur = "keep", "off"
+    look = desktop.look(d, nil)
+    assert(string.find(look, "blur = { vibrancy = 0.30, xray = true, popups = false }", 1, true), "the details without the preset: " .. look)
+    assert(string.find(look, "motion_blur = { enabled = false }", 1, true), look)
+    local was = desktop.claims(d)
+    d.wobble = "keep"
+    eq(desktop.covers(desktop.claims(d), was), false, "handing the spring back is noticed (Hyprland reloads)")
+end)
+
 test("the desktop's named choices of an earlier mooi become numbers", function()
     local s, p = config.validate({ desktop = { column = "half", touchpad_speed = "slow", mouse_speed = "keep" } })
     eq(#p, 0, "no problems"); eq(s.desktop.column, 50, "half → 50 %"); eq(s.desktop.touchpad_speed, 30, "slow → 30 %"); eq(s.desktop.mouse_speed, 4, "keep → its keep")

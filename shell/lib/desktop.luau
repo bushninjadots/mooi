@@ -47,6 +47,13 @@ local function column(d) return frac(d.column, 9) end
 local function touch_speed(d) return frac(d.touchpad_speed, 4) end
 local function mouse_speed(d) return frac(d.mouse_speed, 4) end
 local function opacity(v) return frac(v, 49) end
+local function vibrancy(d) return frac(d.blur_vibrancy, 0) end
+local ONOFF = { on = true, off = false }                   -- blur:xray, blur:popups
+-- The spring under the windows' animations (Hyprland 0.56 `hl.curve` type spring): mass 1, so how
+-- far it overshoots is the damping against 2·√stiffness (critical, no overshoot). `off` is
+-- critical; each step after swings further before it settles.
+local WOBBLE = { off = { 250, 31.6 }, subtle = { 300, 20 }, wobbly = { 260, 12 }, jelly = { 220, 7 } }
+local MOTION_BLUR = { off = 0, soft = 6, strong = 16 }     -- decoration:motion_blur:samples (0: off)
 
 -- The windows' shadow as Hyprland's own fields, or nil while kept. `soft` and `deep` are dark;
 -- `neon` is a glow in the palette's main colour round the focused window, fainter round the rest.
@@ -75,6 +82,8 @@ function M.claims(d)
     claim("mouse_natural", NATURAL[d.mouse_natural] ~= nil); claim("mouse_speed", mouse_speed(d))
     claim("blur", BLUR[d.blur]); claim("opacity_active", opacity(d.opacity_active)); claim("opacity_inactive", opacity(d.opacity_inactive))
     claim("shadow", d.shadow ~= nil and d.shadow ~= "keep")
+    claim("blur_vibrancy", vibrancy(d)); claim("blur_xray", ONOFF[d.blur_xray] ~= nil); claim("blur_popups", ONOFF[d.blur_popups] ~= nil)
+    claim("wobble", WOBBLE[d.wobble]); claim("motion_blur", MOTION_BLUR[d.motion_blur])
     return out
 end
 
@@ -99,7 +108,14 @@ function M.look(d, pal, frame)
     if LAYOUT[d.layout] then general = general .. string.format(', layout = "%s"', LAYOUT[d.layout]) end
     local decoration = string.format("rounding = %d, dim_inactive = %s", d.rounding, tostring(d.dim_inactive == true))
     local b = BLUR[d.blur]
-    if b then decoration = decoration .. string.format(", blur = { enabled = %s, size = %d, passes = %d }", tostring(b[1]), b[2], b[3]) end
+    local blur = {}
+    if b then blur[#blur + 1] = string.format("enabled = %s, size = %d, passes = %d", tostring(b[1]), b[2], b[3]) end
+    if vibrancy(d) then blur[#blur + 1] = string.format("vibrancy = %.2f", vibrancy(d)) end
+    if ONOFF[d.blur_xray] ~= nil then blur[#blur + 1] = "xray = " .. tostring(ONOFF[d.blur_xray]) end
+    if ONOFF[d.blur_popups] ~= nil then blur[#blur + 1] = "popups = " .. tostring(ONOFF[d.blur_popups]) end
+    if #blur > 0 then decoration = decoration .. ", blur = { " .. table.concat(blur, ", ") .. " }" end
+    local mb = MOTION_BLUR[d.motion_blur]
+    if mb then decoration = decoration .. (mb > 0 and string.format(", motion_blur = { enabled = true, samples = %d }", mb) or ", motion_blur = { enabled = false }") end
     if opacity(d.opacity_active) then decoration = decoration .. string.format(", active_opacity = %.2f", opacity(d.opacity_active)) end
     if opacity(d.opacity_inactive) then decoration = decoration .. string.format(", inactive_opacity = %.2f", opacity(d.opacity_inactive)) end
     local sh = M.shadow(d, pal)
@@ -116,7 +132,16 @@ function M.look(d, pal, frame)
     if touch_speed(d) then touchpad[#touchpad + 1] = string.format("scroll_factor = %.2f", touch_speed(d)) end
     if #touchpad > 0 then input[#input + 1] = "touchpad = { " .. table.concat(touchpad, ", ") .. " }" end
     if #input > 0 then parts[#parts + 1] = "input = { " .. table.concat(input, ", ") .. " }" end
-    return "hl.config({ " .. table.concat(parts, ", ") .. " })"
+    local out = "hl.config({ " .. table.concat(parts, ", ") .. " })"
+    -- the spring: a curve of mooi's own, under windows opening (keeping their pop-in) and moving.
+    -- An `hl.animation` without a style clears the one set before, so the opening one is given.
+    local w = WOBBLE[d.wobble]
+    if w then
+        out = out .. string.format('; hl.curve("mooi_wobble", { type = "spring", mass = 1, stiffness = %d, dampening = %.1f })', w[1], w[2])
+            .. '; hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, spring = "mooi_wobble", style = "popin 87%" })'
+            .. '; hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, spring = "mooi_wobble" })'
+    end
+    return out
 end
 
 -- Every bind mooi asks Hyprland for: its keys, and — while the shutter is on and asks for it —

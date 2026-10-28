@@ -57,6 +57,8 @@ M.SETTERS = {
     "companion.react.battery", "companion.react.focus", "companion.react.time",
     -- the bar's islands and the clock (D97)
     "island.style", "clock.view", "shelves.on",
+    -- Hyprland 0.56: finer blur, the windows' spring and motion blur
+    "desktop.blur_vibrancy", "desktop.blur_xray", "desktop.blur_popups", "desktop.wobble", "desktop.motion_blur",
 }
 
 local function row_of(path)

@@ -50,6 +50,8 @@ SETTERS = [
     "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces",
     "companion.react.battery", "companion.react.focus", "companion.react.time",
     "island.style", "clock.view", "shelves.on",
+    # Hyprland 0.56: finer blur, the windows' spring and motion blur
+    "desktop.blur_vibrancy", "desktop.blur_xray", "desktop.blur_popups", "desktop.wobble", "desktop.motion_blur",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -237,7 +239,14 @@ SECTIONS = [
         ("choice", "Shadow", "Dark and soft, deep, or a neon glow", "desktop.shadow", "sv_desktop_shadow", ["Keep mine", "Off", "Soft", "Deep", "Neon"]),
         ("slider", "Shadow size", "How far the shadow reaches", "desktop.shadow_size", 2, 40, "{sv_desktop_shadow_size + 2, 0} px", "sv_desktop_shadow > 1.5"),
         ("choice", "Blur", "Behind see-through windows and Frosted bars", "desktop.blur", "sv_desktop_blur", ["Keep mine", "Off", "Light", "Medium", "Heavy"]),
+        ("slider", "Blur vibrancy", "How much the colours behind are saturated", "desktop.blur_vibrancy", 0, 100,
+         'pick(sv_desktop_blur_vibrancy == 0, "{sv_desktop_blur_vibrancy, 0}%", "KEEP")', "sv_desktop_blur != 1"),
+        ("choice", "Floating see-through", "On: a floating window blurs the wallpaper, not the windows under it", "desktop.blur_xray", "sv_desktop_blur_xray", ["Keep mine", "On", "Off"], "sv_desktop_blur != 1"),
+        ("choice", "Blur menus", "Right-click menus and popups blurred behind", "desktop.blur_popups", "sv_desktop_blur_popups", ["Keep mine", "On", "Off"], "sv_desktop_blur != 1"),
         ("toggle", "Dim the others", "Shade every window but the one you are using", "desktop.dim_inactive", "dk_dim"),
+        ("card", "Motion", "dk_manage"),
+        ("choice", "Wobble", "Opening and moving windows settle, or bounce in", "desktop.wobble", "sv_desktop_wobble", ["Keep mine", "Off", "Subtle", "Wobbly", "Jelly"]),
+        ("choice", "Motion blur", "Smears a window while it is moved or resized", "desktop.motion_blur", "sv_desktop_motion_blur", ["Keep mine", "Off", "Soft", "Strong"]),
         ("card", "Tiling", "dk_manage"),
         ("choice", "Layout", "How tiled windows are arranged", "desktop.layout", "sv_desktop_layout", ["Keep mine", "Dwindle", "Master", "Scrolling", "Monocle"]),
         ("slider", "Column width", "Scrolling layout: a new column's width", "desktop.column", 9, 100,

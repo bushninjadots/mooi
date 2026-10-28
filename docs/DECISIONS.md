@@ -3254,3 +3254,22 @@ hover — both closed a shelf the pointer had just entered. `on still` re-checks
 **Checked with the real pointer:** hover opens, gliding into the shelf keeps it, sliding down the
 spine switches (connections → machine), leaving closes; calendar, updates, weather (tether) shown.
 Unit 237 + BMO 27. The Nexus mark still opens the D99 drawer: whether it stays is the user's call.
+
+## D101 · 2026-10-28 · Hyprland 0.56's wobble, motion blur and finer blur in Settings → Windows
+
+**Asked for:** "hyprland just had update with new functions like wobbly windows and blur functions add
+them to settings so we can use them when wanted".
+**Found** (Hyprland 0.56.2, `hyprctl -j descriptions` and the binary): no mesh-deforming wobbly
+windows (no option, no string, no plugin loaded). What 0.56 has is spring-physics curves
+(`hl.curve{ type = "spring", mass, stiffness, dampening }`), `decoration:motion_blur` and more blur
+fields (`vibrancy`, `xray`, `popups`, noise, contrast…). An `hl.animation` without `style` clears the
+one set before it.
+**Done:** `desktop.wobble` (keep/off/subtle/wobbly/jelly) puts a spring of mooi's own, `mooi_wobble`,
+under `windowsIn` (its `popin 87%` given again) and `windowsMove`: `off` is critically damped and each
+step after overshoots further. Also `desktop.motion_blur` (keep/off/soft 6/strong 16 samples),
+`desktop.blur_vibrancy` (0 keeps), `desktop.blur_xray` and `desktop.blur_popups` (keep/on/off), shown
+while blur is not Off. They are all part of `desktop.look()`, so they apply live and at Hyprland's start.
+Each one is claimed, so going back to Keep mine reloads Hyprland's own values.
+**Checked:** each call evaluated live and read back; through the window, Wobbly + Soft set
+`windowsMove` to `spring:mooi_wobble` and 6 samples and wrote the curve to hypr.lua; Keep mine
+brought back `ease` and motion blur off. Unit 238 + BMO 27. Not checked: how each spring feels.
