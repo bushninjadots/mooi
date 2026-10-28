@@ -61,6 +61,8 @@ M.SETTERS = {
     "desktop.blur_vibrancy", "desktop.blur_xray", "desktop.blur_popups", "desktop.wobble", "desktop.motion_blur",
     -- the Control Nexus (D102): what the mark opens, and the deck's edge
     "nexus.mode", "nexus.edge", "shelves.autohide",
+    -- Hyprland 0.57, the Nexus's cards, the notch, Claude
+    "desktop.blur_variant", "nexus.rows", "nexus.profile", "nexus.visualiser", "notch.on",
 }
 
 local function row_of(path)

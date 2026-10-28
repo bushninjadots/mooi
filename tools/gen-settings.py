@@ -54,6 +54,8 @@ SETTERS = [
     "desktop.blur_vibrancy", "desktop.blur_xray", "desktop.blur_popups", "desktop.wobble", "desktop.motion_blur",
     # the Control Nexus (D102): what the mark opens, and the deck's edge
     "nexus.mode", "nexus.edge", "shelves.autohide",
+    # Hyprland 0.57, the Nexus's cards, the notch, Claude
+    "desktop.blur_variant", "nexus.rows", "nexus.profile", "nexus.visualiser", "notch.on",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -251,9 +253,12 @@ SECTIONS = [
          'pick(sv_desktop_blur_vibrancy == 0, "{sv_desktop_blur_vibrancy, 0}%", "KEEP")', "sv_desktop_blur != 1"),
         ("choice", "Floating see-through", "On: a floating window blurs the wallpaper, not the windows under it", "desktop.blur_xray", "sv_desktop_blur_xray", ["Keep mine", "On", "Off"], "sv_desktop_blur != 1"),
         ("choice", "Blur menus", "Right-click menus and popups blurred behind", "desktop.blur_popups", "sv_desktop_blur_popups", ["Keep mine", "On", "Off"], "sv_desktop_blur != 1"),
+        ("choice", "Blur finish", "Hyprland 0.57: a material over the blur (the animated ones cost more)", "desktop.blur_variant", "sv_desktop_blur_variant",
+         [("Keep mine", 0), ("Plain", 1), ("Glass", 2), ("Acrylic", 3), ("Water", 4)], "sv_desktop_blur != 1"),
+        ("choice", "", "…or a moving one", "desktop.blur_variant", "sv_desktop_blur_variant", [("Ripple", 5), ("Aurora", 6), ("Haze", 7), ("Heat", 8), ("Drops", 9)], "sv_desktop_blur != 1"),
         ("toggle", "Dim the others", "Shade every window but the one you are using", "desktop.dim_inactive", "dk_dim"),
         ("card", "Motion", "dk_manage"),
-        ("choice", "Wobble", "Opening and moving windows settle, or bounce in", "desktop.wobble", "sv_desktop_wobble", ["Keep mine", "Off", "Subtle", "Wobbly", "Jelly"]),
+        ("choice", "Wobble", "Windows bend as you drag them (Hyprland 0.57) and bounce as they open and move", "desktop.wobble", "sv_desktop_wobble", ["Keep mine", "Off", "Subtle", "Wobbly", "Jelly"]),
         ("choice", "Motion blur", "Smears a window while it is moved or resized", "desktop.motion_blur", "sv_desktop_motion_blur", ["Keep mine", "Off", "Soft", "Strong"]),
         ("card", "Tiling", "dk_manage"),
         ("choice", "Layout", "How tiled windows are arranged", "desktop.layout", "sv_desktop_layout", ["Keep mine", "Dwindle", "Master", "Scrolling", "Monocle"]),

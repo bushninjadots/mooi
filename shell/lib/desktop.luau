@@ -54,6 +54,17 @@ local ONOFF = { on = true, off = false }                   -- blur:xray, blur:po
 -- critical; each step after swings further before it settles.
 local WOBBLE = { off = { 250, 31.6 }, subtle = { 300, 20 }, wobbly = { 260, 12 }, jelly = { 220, 7 } }
 local MOTION_BLUR = { off = 0, soft = 6, strong = 16 }     -- decoration:motion_blur:samples (0: off)
+-- Hyprland 0.57's real wobbly windows (decoration:wobble: a spring mesh that bends a window as it is
+-- moved or resized): how hard each step wobbles. And its blur variants (decoration:blur:variant). Each
+-- is asked for in a call of its own under pcall, so a Hyprland that does not know them yet (0.56) skips
+-- them and keeps the rest of the look.
+local MESH = { off = false, subtle = { 0.6, 320, 22 }, wobbly = { 1.0, 260, 14 }, jelly = { 1.7, 210, 8 } }
+M.VARIANTS = { "acrylic", "aurora", "drops", "fluid_jar", "glass", "haze", "heat_shimmer", "ripple", "water" }
+local function variant(d)
+    for _, v in ipairs(M.VARIANTS) do if d.blur_variant == v then return v end end
+    if d.blur_variant == "none" then return "none" end
+    return nil
+end
 
 -- The windows' shadow as Hyprland's own fields, or nil while kept. `soft` and `deep` are dark;
 -- `neon` is a glow in the palette's main colour round the focused window, fainter round the rest.
@@ -84,6 +95,7 @@ function M.claims(d)
     claim("shadow", d.shadow ~= nil and d.shadow ~= "keep")
     claim("blur_vibrancy", vibrancy(d)); claim("blur_xray", ONOFF[d.blur_xray] ~= nil); claim("blur_popups", ONOFF[d.blur_popups] ~= nil)
     claim("wobble", WOBBLE[d.wobble]); claim("motion_blur", MOTION_BLUR[d.motion_blur])
+    claim("blur_variant", variant(d))
     return out
 end
 
@@ -140,7 +152,14 @@ function M.look(d, pal, frame)
         out = out .. string.format('; hl.curve("mooi_wobble", { type = "spring", mass = 1, stiffness = %d, dampening = %.1f })', w[1], w[2])
             .. '; hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, spring = "mooi_wobble", style = "popin 87%" })'
             .. '; hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, spring = "mooi_wobble" })'
+        local m = MESH[d.wobble]
+        if m == false then out = out .. "; pcall(hl.config, { decoration = { wobble = { enabled = false } } })"
+        elseif m then
+            out = out .. string.format("; pcall(hl.config, { decoration = { wobble = { enabled = true, intensity = %.2f, stiffness = %d, damping = %d, mass = 1 } } })", m[1], m[2], m[3])
+        end
     end
+    local v = variant(d)
+    if v then out = out .. string.format('; pcall(hl.config, { decoration = { blur = { variant = "%s" } } })', v) end
     return out
 end
 

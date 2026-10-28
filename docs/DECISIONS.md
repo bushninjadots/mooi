@@ -3446,3 +3446,18 @@ a safety hook refuses any command whose text contains a destructive-looking stri
 saying it, weather and GitHub panels with real data, the deck's notches opening Claude and the workspace
 arc beside the real right-hand column, the bar's two modules. Not checked: carrying the nub with a real
 mouse, the wallpaper arc wearing a picture (not pressed, to leave the desktop as it was).
+
+## D107 · 2026-10-29 · Hyprland 0.57: real wobbly windows and blur finishes
+
+**Asked for:** "now I have the Hyprland update so update those previous things with the new hyprland
+functions". **Found** (the 0.57.0 binary, installed 2026-10-28 23:45; the session still runs 0.56.2 until
+the next login): `decoration:wobble` (enabled, intensity, stiffness, damping, mass, mesh — a spring mesh
+that bends a window while it is moved or resized) and `decoration:blur:variant` with acrylic, aurora,
+drops, fluid_jar, glass, haze, heat_shimmer, ripple and water (each with its own fields).
+**Done:** Settings → Windows → Wobble now also turns on the real wobble (subtle 0.6 · wobbly 1.0 · jelly
+1.7 intensity, their stiffness and damping); Off turns it off. A new **Blur finish** row (Plain, Glass,
+Acrylic, Water; or a moving one: Ripple, Aurora, Haze, Heat, Drops) sets the variant. Both are sent as
+`pcall(hl.config, …)` of their own after the look, so 0.56 prints that it does not know them and goes on
+(checked live: the setting after it still applied).
+**Not checked:** how they look — that needs 0.57 running (log out and in). The variant's value is the
+name as the binary lists it; if 0.57 wants another spelling, its error will say so in the log.

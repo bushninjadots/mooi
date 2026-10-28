@@ -171,6 +171,8 @@ M.SCHEMA = {
     -- on windows being moved or resized.
     { path = "desktop.wobble", kind = "enum", values = { "keep", "off", "subtle", "wobbly", "jelly" }, default = "keep" },
     { path = "desktop.motion_blur", kind = "enum", values = { "keep", "off", "soft", "strong" }, default = "keep" },
+    -- Hyprland 0.57's blur variants: glass, acrylic, water, aurora and more on top of the blur
+    { path = "desktop.blur_variant", kind = "enum", values = { "keep", "none", "glass", "acrylic", "water", "ripple", "aurora", "haze", "heat_shimmer", "drops", "fluid_jar" }, default = "keep" },
     -- mooi's keys: "SUPER + ALT + Space" and the like (Hyprland's own spelling). Bound live
     -- and by custom/mooi.lua at Hyprland's start.
     { path = "keys.search", kind = "key", default = "SUPER + ALT + Space" },

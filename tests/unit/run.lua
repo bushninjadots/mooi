@@ -761,6 +761,14 @@ test("Hyprland 0.56: finer blur, the windows' spring and motion blur, nothing wh
     local was = desktop.claims(d)
     d.wobble = "keep"
     eq(desktop.covers(desktop.claims(d), was), false, "handing the spring back is noticed (Hyprland reloads)")
+    -- Hyprland 0.57: the real wobble and the blur variants, each on its own under pcall
+    d.wobble, d.blur_variant = "jelly", "glass"
+    look = desktop.look(d, nil)
+    assert(string.find(look, "pcall(hl.config, { decoration = { wobble = { enabled = true, intensity = 1.70", 1, true), look)
+    assert(string.find(look, 'pcall(hl.config, { decoration = { blur = { variant = "glass" } } })', 1, true), look)
+    assert(load(look), "still one chunk of Lua")
+    d.wobble = "off"
+    assert(string.find(desktop.look(d, nil), "wobble = { enabled = false }", 1, true), "off: no bending either")
 end)
 
 test("the desktop's named choices of an earlier mooi become numbers", function()
