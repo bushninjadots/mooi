@@ -112,7 +112,7 @@ M.SCHEMA = {
     -- the side notch (D106): a sliver on the left edge that fans out into Claude, music, workspaces,
     -- wallpapers, weather and GitHub; the Claude it asks (an alias `claude --model` takes; empty: its default)
     { path = "notch.on", kind = "boolean", default = true },
-    { path = "claude.model", kind = "text", default = "", max = 40 },
+    { path = "claude.model", kind = "enum", values = { "default", "haiku", "sonnet", "opus" }, default = "default" },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,
@@ -308,6 +308,7 @@ M.SCHEMA = {
     { path = "nexus.rows", kind = "integer", default = 1, min = 1, max = 2 },
     { path = "nexus.profile", kind = "enum", values = { "small", "large" }, default = "small" },
     { path = "nexus.visualiser", kind = "boolean", default = true },
+    { path = "nexus.notches", kind = "boolean", default = true },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -482,7 +483,7 @@ local function migrate(t)
     if type(t.nexus) == "table" then
         for k in pairs(t.nexus) do
             if k ~= "identity" and k ~= "mode" and k ~= "edge" and k ~= "parts" and k ~= "hidden"
-               and k ~= "rows" and k ~= "profile" and k ~= "visualiser" then t.nexus[k] = nil end
+               and k ~= "rows" and k ~= "profile" and k ~= "visualiser" and k ~= "notches" and k ~= "sizes" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

@@ -56,6 +56,7 @@ SETTERS = [
     "nexus.mode", "nexus.edge", "shelves.autohide",
     # Hyprland 0.57, the Nexus's cards, the notch, Claude
     "desktop.blur_variant", "nexus.rows", "nexus.profile", "nexus.visualiser", "notch.on",
+    "nexus.notches", "claude.model",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -129,12 +130,6 @@ SECTIONS = [
         ("choice", "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", "look.corners", "sv_look_corners", [("Chamfer", 0), ("Bevel", 1), ("Rounded", 2), ("Square", 3)]),
         ("slider", "Corner size", "How big the cut or the rounding is (12 is as designed)", "look.corner_size", 0, 24, "{sv_look_corner_size, 0}", "sv_look_corners != 3"),
         ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
-        ("card", "Control Nexus"),
-        ("choice", "The mark opens", "The deck: everything along one edge. Cascade: every shelf of the spine out at once", "nexus.mode", "sv_nexus_mode", ["The deck", "Cascade"]),
-        ("choice", "Deck edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
-        ("note", "sv_nexus_mode == 0", "ARRANGE THE DECK ON THE DECK ITSELF: ✎ — DRAG PARTS BY MOVE, × HIDES ONE, THE EDGE TOO"),
-        ("toggle", "The spine", "Tabs down the right edge: hover one and its shelf slides out (sound, network, power, machine, calendar…)", "shelves.on", "sv_shelves_on"),
-        ("toggle", "Hide the spine", "Out of sight until the pointer touches the right edge; a hairline keeps its place", "shelves.autohide", "sv_shelves_autohide", None, "sv_shelves_on == 1"),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
@@ -410,6 +405,27 @@ SECTIONS = [
         ("card", "Log"),
         ("log",),
     ]),
+    # D108: everything round the Control Nexus in one place — the deck, its cards and notches, the
+    # spine, the side notch and the Claude they ask
+    ("Nexus", "Control Nexus", "The deck from the bar's mark, its cards and notches, the spine, the side notch, and Claude", "SHELL", [
+        ("card", "The deck"),
+        ("choice", "The mark opens", "The deck: everything along one edge. Cascade: every shelf of the spine out at once", "nexus.mode", "sv_nexus_mode", ["The deck", "Cascade"]),
+        ("choice", "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
+        ("choice", "Rows", "Along a strip: one row of cards, or two for more of them", "nexus.rows", "sv_nexus_rows", ["One", "Two"], "sv_nexus_mode == 0"),
+        ("choice", "Profile", "Your banner and picture, small or large", "nexus.profile", "sv_nexus_profile", ["Small", "Large"], "sv_nexus_mode == 0"),
+        ("toggle", "Music on the edge", "A visualiser along the deck's open edge while something plays", "nexus.visualiser", "sv_nexus_visualiser", None, "sv_nexus_mode == 0"),
+        ("toggle", "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", "nexus.notches", "sv_nexus_notches", None, "sv_nexus_mode == 0"),
+        ("note", "sv_nexus_mode == 0", "ON THE DECK: ✎ CARRIES A CARD BY MOVE, × SHELVES IT, ⇔ RESIZES IT"),
+        ("card", "The spine"),
+        ("toggle", "The spine", "Tabs down the right edge: hover one and its shelf slides out (sound, network, power, machine, calendar…)", "shelves.on", "sv_shelves_on"),
+        ("toggle", "Hide the spine", "Out of sight until the pointer touches the right edge; a hairline keeps its place", "shelves.autohide", "sv_shelves_autohide", None, "sv_shelves_on == 1"),
+        ("card", "The side notch"),
+        ("toggle", "The side notch", "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", "notch.on", "sv_notch_on"),
+        ("note", "sv_notch_on == 1", "DRAG IT ALONG THE EDGE TO MOVE IT; IT STAYS WHERE YOU LEAVE IT"),
+        ("card", "Claude"),
+        ("choice", "Model", "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", "claude.model", "sv_claude_model", ["Default", "Haiku", "Sonnet", "Opus"]),
+        ("note", "true", "IT CAN TALK, NOT ACT: NO TOOLS, NO FILES. BMO'S CHAT IS IN HIS PANEL"),
+    ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
 
@@ -677,9 +693,10 @@ def generate():
     nav, ny, last = [], 136, None
     for i, (label, _, _, grp, _) in enumerate(SECTIONS):
         if grp != last:
-            nav.append(f'{ind}SNavGroup({ny + (4 if last else 0)}, "{grp}")'); ny += 24 if last else 22; last = grp
-        # 24: an item's own height (SNav) — twenty-one pages and four groups clear the edit button (D44)
-        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 24
+            nav.append(f'{ind}SNavGroup({ny + (3 if last else 0)}, "{grp}")'); ny += 21 if last else 20; last = grp
+        # 22 an item (SNav is 24 tall; its neighbours overlap it by its padding) — twenty-two pages and
+        # five groups clear the edit button in the 800 px window (D108)
+        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 22
     titles = ", ".join(f'"{t}"' for _, t, _, _, _ in SECTIONS)
     subs = ", ".join(f'"{s}"' for _, _, s, _, _ in SECTIONS)
     maxs = ", ".join(f"max(0, {h} + 24 - screen.height)" for h in heights)

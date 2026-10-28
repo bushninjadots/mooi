@@ -171,7 +171,7 @@ local function ask(prompt)
     show_chat()
     local bmo = fact.ch_bmo
     local args = claude.args(prompt, { session = bmo and chat.bmo_session or chat.session, persona = bmo and "bmo" or "chat",
-                                       model = type(settings.claude) == "table" and settings.claude.model ~= "" and settings.claude.model or nil })
+                                       model = type(settings.claude) == "table" and settings.claude.model ~= "default" and settings.claude.model or nil })
     local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "claude" }
     for _, a in ipairs(args) do cmd[#cmd + 1] = a end
     local done = false

@@ -63,6 +63,7 @@ M.SETTERS = {
     "nexus.mode", "nexus.edge", "shelves.autohide",
     -- Hyprland 0.57, the Nexus's cards, the notch, Claude
     "desktop.blur_variant", "nexus.rows", "nexus.profile", "nexus.visualiser", "notch.on",
+    "nexus.notches", "claude.model",
 }
 
 local function row_of(path)
