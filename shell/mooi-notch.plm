@@ -359,6 +359,8 @@ scene Notch {
     event nt_show ->             // from outside (the bar, `mooi notch`): open on panel n, kept out
     event nt_ask ->              // to the logic: ask Claude what the field says
     event nt_ask_bmo ->          // from BMO's menu: the chat in his voice
+    event nt_bmo_q ->            // from BMO's own chat: ask, in his voice, what nb_q says; the answer goes back to him
+    text nb_q = ""
     event nt_mode ->             // to the logic: 0 Claude · 1 BMO
     event nt_new ->              // to the logic: a new conversation
     event nt_sugg ->             // to the logic: suggestion n pressed

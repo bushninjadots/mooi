@@ -106,7 +106,17 @@ scene Bmo {
 
     // The panel and the menu
     fact panel = false
-    fact tab: home | music | me | setup | look = home
+    fact tab: home | music | me | setup | look | chat = home
+    // ── His chat (D109): a conversation with him, Claude answering in his voice (through the side notch) ──
+    model bc max 9 { who: number; t: text }   // 0 you · 1 BMO · 2 his "thinking"
+    text bmo_q = ""
+    fact bc_busy = false
+    fact bc_empty = true
+    event bmo_ask ->             // to the logic: ask him what the field says
+    // ── His game's pop-ups, his tantrum, his peeking ──
+    text game_note = ""
+    fact game_note_on = false
+    fact tantrum = false
     fact menu = false
     fact menu_x = 0
     fact menu_y = 0
@@ -165,6 +175,12 @@ scene Bmo {
     prop sit_p = 0 ~360ms
     follow sit_p = if(sitting, 1, 0)
     prop game_p = 0 ~260ms
+    prop gnote_a = 0 ~180ms
+    follow gnote_a = if(game_note_on and gaming, 1, 0)
+    prop steam = 0
+    spin steam by if(tantrum, 900, 0)
+    prop tant_a = 0 ~200ms
+    follow tant_a = if(tantrum, 1, 0)
     follow game_p = if(gaming, 1, 0)
     prop hum_p = 0 ~300ms
     follow hum_p = if(humming, 1, 0)
@@ -277,6 +293,18 @@ scene Bmo {
         130ms in_out_sine { gy: 3 }
         150ms in_out_sine
     }
+    // a tantrum: stamping, fists going, shaking side to side
+    gesture stomp asked {
+        90ms out_quad { gy: -10; sq: -0.06; arml: 140; armr: 40; tilt: -5 }
+        80ms in_quad { gy: 0; sq: 0.14; arml: 60; armr: 150; tilt: 5; gx: 3 }
+        90ms out_quad { gy: -10; sq: -0.06; arml: 150; armr: 50; tilt: -6; gx: -3 }
+        80ms in_quad { gy: 0; sq: 0.16; arml: 50; armr: 150; tilt: 6; gx: 3 }
+        90ms out_quad { gy: -12; sq: -0.08; arml: 150; armr: 60; tilt: -6; gx: -4 }
+        80ms in_quad { gy: 0; sq: 0.18; arml: 60; armr: 150; tilt: 6; gx: 4 }
+        90ms out_quad { gy: -10; sq: -0.06; arml: 140; armr: 40; tilt: -5; gx: -3 }
+        80ms in_quad { gy: 0; sq: 0.14; arml: 40; armr: 140; tilt: 4; gx: 2 }
+        300ms out_back
+    }
     gesture startle asked {
         130ms out_quad { gy: -26; sq: -0.12; arml: 90; armr: 90 }
         190ms in_quad { arml: 40; armr: 40 }
@@ -332,7 +360,8 @@ scene Bmo {
         anchor: top
         reserve: -1
         level: bottom, top while above or on_bar
-        keyboard: none
+        // the keyboard only while his panel is out (his chat's field); otherwise he never takes it
+        keyboard: on_demand while panel
 
         let S = size
         let bw = 160 * S
@@ -452,7 +481,18 @@ scene Bmo {
                                     box { from: gbx - 2.5, gby - 2.5; size: 5, 5; color: ink }
                                     box { from: 6, 33 + sin(game_a * 3 + 20) * 20 - 7; size: 3, 14; color: ink }
                                     box { from: 87, 33 + sin(game_a * 3 + 60) * 20 - 7; size: 3, 14; color: ink }
+                                    // a pop-up on his screen: 1UP!, HI-SCORE!… dropping in from the top
+                                    group {
+                                        show: gnote_a > 0.01
+                                        opacity: gnote_a
+                                        move: 0, -10 * (1 - gnote_a)
+                                        box { from: 14, 5; size: 68, 15; corner: 4; color: ink }
+                                        box { from: 15, 6; size: 66, 13; corner: 3; color: #f7e36a }
+                                        text game_note { at: 48, 12.5; anchor: center; align: center; size: 8; weight: 800; family: "JetBrains Mono"; color: ink }
+                                    }
                                 }
+                                // a tantrum: the screen flushed red
+                                box { from: 12, 13; size: 96, 66; corner: 7; color: #ff3b3b; opacity: 0.28 * tant_a }
 
                                 // the yellow cross
                                 box { from: 24, 92; size: 12, 34; corner: 3; color: pad_c }
@@ -505,6 +545,16 @@ scene Bmo {
             on enter hit { emit hov(1) }
             on leave hit { emit hov(0) }
 
+            // a tantrum: steam puffing up out of his head, three puffs on their way up in turn
+            group {
+                show: tant_a > 0.01
+                opacity: tant_a
+                repeat k in 0..3 {
+                    let st.$k = mod(steam + k * 120, 360) / 360
+                    ellipse { at: px + bw * (0.28 + 0.22 * k), py - 4 - st.$k * 34; radius: 5 + 7 * st.$k; color: #f2f2f2; opacity: 0.85 * (1 - st.$k) }
+                    ellipse { at: px + bw * (0.28 + 0.22 * k), py - 4 - st.$k * 34; radius: 5 + 7 * st.$k; stroke: 2; color: ink; opacity: 0.6 * (1 - st.$k) }
+                }
+            }
             // the speech bubble
             measure bub
             group {
@@ -537,7 +587,7 @@ scene Bmo {
             MenuItem(mx0 + 5, my0 + 77, "Go home", 4)
             MenuItem(mx0 + 5, my0 + 101, pick(asleep, "Take a nap", "Wake up"), 5)
             MenuItem(mx0 + 5, my0 + 125, "Hide for 10 min", 6)
-            MenuItem(mx0 + 5, my0 + 149, "Ask BMO…", 8)
+            MenuItem(mx0 + 5, my0 + 149, "Talk to BMO…", 8)
             MenuItem(mx0 + 5, my0 + 173, "Chat with Claude", 9)
             MenuItem(mx0 + 5, my0 + 197, "Quit BMO", 7)
         }
@@ -557,11 +607,12 @@ scene Bmo {
             box { from: plx + 8, ply + 4; size: pw - 16, 4; corner: 2; color: #ffffff; opacity: 0.16 }
             box { from: plx, ply; size: pw, ph; corner: 12; stroke: 3; color: ink }
 
-            Tab(plx + 10, ply + 10, 54, "HOME", tab == home, 0)
-            Tab(plx + 68, ply + 10, 60, "MUSIC", tab == music, 1)
-            Tab(plx + 132, ply + 10, 34, "ME", tab == me, 2)
-            Tab(plx + 170, ply + 10, 60, "SETUP", tab == setup, 3)
-            Tab(plx + 234, ply + 10, 44, "LOOK", tab == look, 4)
+            Tab(plx + 10, ply + 10, 46, "HOME", tab == home, 0)
+            Tab(plx + 58, ply + 10, 50, "MUSIC", tab == music, 1)
+            Tab(plx + 110, ply + 10, 28, "ME", tab == me, 2)
+            Tab(plx + 140, ply + 10, 50, "SETUP", tab == setup, 3)
+            Tab(plx + 192, ply + 10, 40, "LOOK", tab == look, 4)
+            Tab(plx + 234, ply + 10, 44, "CHAT", tab == chat, 5)
             Chip(plx + pw - 34, ply + 10, 24, "×", false, 1)
 
             box { from: plx + 10, ply + 40; size: pw - 20, ph - 50; corner: 9; color: ink }
@@ -569,6 +620,25 @@ scene Bmo {
 
             let cx = plx + 23
             let cy = ply + 53
+
+            // ── CHAT: talk to him; Claude answers as BMO (the side notch asks it) ──
+            group {
+                show: tab == chat
+                text "Talk to BMO! He answers (with a little help from Claude)." { at: cx + 135, cy + 60; anchor: center; align: center; size: 10; family: "JetBrains Mono"; color: ink; opacity: 0.65; width: 260; show: bc_empty }
+                for m in bc {
+                    let by = cy - 4 + m.index * 15
+                    text "YOU›" { at: cx, by + 6; anchor: left center; size: 9; weight: 800; family: "JetBrains Mono"; color: ink; opacity: 0.55; show: m.who == 0 }
+                    text "BMO›" { at: cx, by + 6; anchor: left center; size: 9; weight: 800; family: "JetBrains Mono"; color: ink; show: m.who > 0 }
+                    text m.t { at: cx + 34, by + 6; anchor: left center; size: 10; family: "JetBrains Mono"; color: ink; width: 236; lines: 1; opacity: if(m.who == 0, 0.7, if(m.who == 2, 0.5, 1)) }
+                }
+                box { from: cx - 4, ply + ph - 52; size: 276, 26; corner: 6; color: glass_dim }
+                box { from: cx - 4, ply + ph - 52; size: 276, 26; corner: 6; stroke: 2; color: ink }
+                zone box bcf { from: cx - 4, ply + ph - 52; size: 276, 26; cursor: text; role: region; label: "Talk to BMO" }
+                input bmo_q { at: cx + 4, ply + ph - 39; width: 222; size: 11; family: "JetBrains Mono"; color: ink; placeholder: "say something to BMO…"; label: "Talk to BMO" }
+                on press bcf { focus bmo_q }
+                on submit bmo_q while not bc_busy { emit bmo_ask }
+                text pick(bc_busy, "⏎", "…") { at: cx + 258, ply + ph - 39; anchor: center; align: center; size: 12; weight: 800; family: "JetBrains Mono"; color: ink }
+            }
 
             group {
                 show: tab == home

@@ -3461,3 +3461,35 @@ Acrylic, Water; or a moving one: Ripple, Aurora, Haze, Heat, Drops) sets the var
 (checked live: the setting after it still applied).
 **Not checked:** how they look — that needs 0.57 running (log out and in). The variant's value is the
 name as the binary lists it; if 0.57 wants another spelling, its error will say so in the log.
+
+## D108 · 2026-10-29 · A Control Nexus settings page; angular notches; cards resized
+
+**Asked for:** "fix the notches on nexus like angular, improve the spacing on them when things expand out …
+put all proper settings for all this and easily found where makes sense", "option on control nexus resize
+the cards and they adjust well and automatically". **Done:** a page of its own, Settings → SHELL →
+**Nexus**: the deck (what the mark opens, edge, rows, profile size, music on the edge, notches off the deck),
+the spine (on, hidden), the side notch (on) and Claude (its model: default, Haiku, Sonnet, Opus); the rail
+tightened to 22 px an item so twenty-two pages and five groups clear its button. The deck's **notches** are
+cut trapezoids rising out of its corners (hanging under it at the top, out of a column's open side), their
+hexagons 48 px apart; a panel opening from one leaves the notch's 34 px and a gap clear. **Cards resize**:
+✎ ⇔ on a card turns it small · medium · large (0.82 · 1 · 1.4 of its width along a strip, 168 px at least);
+the deck packs again round it (the workspaces take or give the room), a card too large for the row says so
+and gives way; kept as nexus.sizes. Also fixed: the Workspaces card on the shelf broke the tiles (a removed
+size constant). Checked: unit 250; tests/nexus.sh 37/37 (adds ⇔ making a card large and wider); the page
+and the rail captured; the notches and a panel opened from one captured on a bottom deck.
+
+## D109 · 2026-10-29 · BMO: his own chat, game pop-ups, a tantrum, peeking from behind windows
+
+**Asked for:** "the bmo claude chat for the chat to be inside him", "when bmo plays games … a notification
+pops up on his screen, make an angry emotion for him where he throws an angry tantrum, more animations …
+he can peek through on and under windows". **Done:** his panel has a **CHAT** tab (and his menu's "Talk to
+BMO…" opens it): what you type there goes to the side notch, which asks Claude in BMO's voice on a session
+of his own and sends the answer back — he says it in his bubble, a line at a time, and it is written in the
+panel; his surface takes the keyboard only while his panel is out. While he plays his game, **pop-ups** drop
+onto his screen (1UP!, HI-SCORE!, LEVEL UP, COMBO x3…). Poked four times in three seconds he throws a
+**tantrum**: a new angry face (slitted eyes, hard brows, a square shout, flushed), a stamping, shaking
+gesture done twice, his screen washed red, steam puffing out of his head, a cross word, and grumpy after.
+**Peeking**: now and then, instead of a stroll, he goes to the edge of a window on your workspace, tucked
+behind it (he lives under the windows), leans out with a glance and maybe a "peekaboo!", and goes back.
+Outside codes 126 peek, 127 tantrum. Checked live: the chat answering in his voice (8 lines in the panel),
+four pokes setting off the tantrum and its words, a peek to a window's edge and back. BMO's 27 tests pass.

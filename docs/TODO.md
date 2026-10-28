@@ -19,7 +19,10 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Cards on a circuit, every one movable, two rows, profile/activity/visualiser (D105)
 - [x] The side notch: Claude, music, workspace and wallpaper arcs, weather, GitHub; notches off the Nexus;
       Claude in BMO; Claude and GitHub bar modules (D106)
-- [ ] Later: one deck per monitor; cards resized by hand; the spine's hairline warm on a hot CPU; the notch
+- [x] Settings → SHELL → Nexus; angular notches; cards resized (D108); Hyprland 0.57 wobble and blur finishes (D107)
+- [x] BMO: his own chat, game pop-ups, a tantrum, peeking (D109)
+- [ ] Log out and in to run Hyprland 0.57, then check Wobble and Blur finish look right (the variant's spelling)
+- [ ] Later: one deck per monitor; the spine's hairline warm on a hot CPU; the notch
       on the right edge as a choice; the GitHub panel's issues assigned to you
 
 ## Bar islands (asked 2026-10-27) — built (D97)

@@ -2,7 +2,7 @@
 -- brain.luau is the pure part (faces, moods, choices) and is unit-tested.
 --
 -- From outside: `pleamar --say bmo "emit ui N"` presses a control (codes in on("ui") below;
--- 120 walk, 121 dance, 122 look, 123 sit, 124 his game, 125 hum), `emit tell N` tells him what
+-- 120 walk, 121 dance, 122 look, 123 sit, 124 his game, 125 hum, 126 peek, 127 tantrum), `emit tell N` tells him what
 -- the bar saw (Desktop awareness, below), and
 -- `pleamar --say bmo get mood_t` (or act_t, energy, wx…) reads him.
 
@@ -349,6 +349,61 @@ local function can_walk()
 end
 
 local decide
+-- Peeking (D109): he lives under the windows, so a window hides him — he goes to one's edge on the
+-- workspace you are on, tucked behind it, leans out to look, and goes back where he was.
+local peek_token = 0
+function peek()
+    run("hyprctl", { "-j", "clients" }, function(out, code)
+        if code ~= 0 then return end
+        local ok, list = pcall(json.decode, out or "")
+        if not ok or type(list) ~= "table" then return end
+        run("hyprctl", { "-j", "activeworkspace" }, function(wo)
+            local okw, w = pcall(json.decode, wo or "")
+            local ws = okw and type(w) == "table" and tonumber(w.id) or nil
+            local wins = {}
+            for _, c in ipairs(list) do
+                if type(c.workspace) == "table" and tonumber(c.workspace.id) == ws and c.mapped ~= false and (tonumber(c.fullscreen) or 0) == 0
+                   and type(c.at) == "table" and type(c.size) == "table" and c.size[1] > bw() * 1.5 and c.size[2] > bh() then
+                    wins[#wins + 1] = c
+                end
+            end
+            if #wins == 0 or activity ~= "idle" or not can_walk() then return end
+            local c = wins[math.random(1, #wins)]
+            local left = math.random() < 0.5
+            local edge = left and c.at[1] or (c.at[1] + c.size[1])
+            local behind = left and (edge + 6) or (edge - bw() - 6)         -- tucked out of sight
+            local out_x = left and (edge - bw() * 0.55) or (edge - bw() * 0.45)   -- leaning out of it
+            local gy = c.at[2] + c.size[2] - bh() - 2
+            if gy < min_y() or gy > max_y() then gy = clamp(gy, min_y(), max_y()) end
+            local home_x, home_y = x, y
+            stop_walking()
+            set_activity("peeking")
+            peek_token = peek_token + 1
+            local mine = peek_token
+            show_face()
+            place(behind, gy)
+            fact.facing = left and -1 or 1
+            after(500, function()
+                if peek_token ~= mine or activity ~= "peeking" then return end
+                place(out_x, gy)
+                fact.glx = left and -0.8 or 0.8
+                if math.random() < 0.5 then say(({ "peekaboo!", "…hello?", "BMO sees you!", "hehehe" })[math.random(1, 4)], 1500, false) end
+            end)
+            after(3200, function()
+                if peek_token ~= mine or activity ~= "peeking" then return end
+                place(behind, gy)
+                fact.glx = 0
+            end)
+            after(3900, function()
+                if peek_token ~= mine or activity ~= "peeking" then return end
+                place(home_x, home_y)
+                fact.facing = 0
+                set_activity("idle")
+                show_face()
+            end)
+        end)
+    end)
+end
 -- An idle act (sitting, his game, humming) for `ms`, then `done` — unless something ended it first.
 local function idle_act(name, ms, done)
     set_activity(name)
@@ -380,14 +435,25 @@ function decide()
         local a = B.decide({ mood = mood, wander = cfg.wander, can_walk = can_walk(), music = music_on(),
                              still = cfg.motion == "still" }, math.random(), math.random())
         if a == "dance" then dance()
-        elseif a == "walk" then wander()
+        elseif a == "walk" then if math.random() < 0.25 then peek() else wander() end
         elseif a == "look" then
             fact.glx = math.random() * 2 - 1
             fact.gly = math.random() * 1.4 - 0.7
             after(900 + math.random() * 1800, function() fact.glx = 0; fact.gly = 0 end)
         elseif a == "yawn" then react("yawn", 1600); move("stretch")
         elseif a == "sit" then idle_act("sitting", 9000 + math.random() * 12000)
-        elseif a == "game" then idle_act("gaming", 6000 + math.random() * 6000, game_over)
+        elseif a == "game" then
+            idle_act("gaming", 6000 + math.random() * 6000, game_over)
+            -- pop-ups on his screen while he plays
+            local NOTES = { "1UP!", "HI-SCORE!", "LEVEL UP", "COMBO x3", "BOSS!", "+100", "PERFECT", "BONUS ★" }
+            local function note()
+                if activity ~= "gaming" then fact.game_note_on = false; return end
+                text.game_note = NOTES[math.random(1, #NOTES)]
+                fact.game_note_on = true
+                after(1300, function() fact.game_note_on = false end)
+                after(2200 + math.random() * 1600, note)
+            end
+            after(1200, note)
         elseif a == "hum" then idle_act("humming", 5000 + math.random() * 4000)
         elseif a ~= "rest" then move(a) end
         -- now and then a line of his own (the level is the chance, so it counts as meant)
@@ -431,11 +497,36 @@ local click_pending = false
 local single_token = 0
 local calm_token = 0
 
+-- A tantrum (D109): poked four times in three seconds he has had enough — he stamps and shakes, red in
+-- the face, steam out of his head, and stays grumpy a while after.
+local tantrum_token = 0
+local function tantrum()
+    stop_walking()
+    if activity == "dancing" then stop_dancing() end
+    set_activity("tantrum")
+    fact.tantrum = true
+    tantrum_token = tantrum_token + 1
+    local mine = tantrum_token
+    react("angry", 2900)
+    move("stomp")
+    after(950, function() if tantrum_token == mine then move("stomp") end end)
+    say(({ "GRRR! BMO IS SO MAD!", "STOP POKING BMO!", "BMO IS NOT A BUTTON! well… BMO IS. BUT STILL!", "HMPH!!" })[math.random(1, 4)], 2400, true)
+    after(2900, function()
+        if tantrum_token ~= mine then return end
+        fact.tantrum = false
+        set_activity("idle")
+        set_mood("grumpy")
+        show_face()
+    end)
+end
+
 local function poke()
     touch()
     pokes = recent(pokes, 3)
     pokes[#pokes + 1] = os.time()
     if activity == "sleeping" then wake(true); move("startle"); return end
+    if activity == "tantrum" then return end
+    if #pokes >= 4 and cfg.motion ~= "still" then pokes = {}; tantrum(); return end
     if activity == "dancing" then stop_dancing() end
     local r = B.poke(mood, #pokes, math.random())
     if #pokes >= 5 then pokes = {} end
@@ -661,8 +752,51 @@ end
 local FOCUS = { [2] = "on", [3] = "done", [4] = "break_done", [5] = "off" }
 -- An answer from Claude, as him (the side notch's chat in BMO's voice): said a bubble at a time, each
 -- as long as it takes to read.
+-- His chat (D109, the panel's CHAT tab): what you say goes to the side notch, which asks Claude in his
+-- voice and sends the answer back here (speak), to be said and kept in the panel.
+local talk = {}
+local function show_talk(thinking)
+    local rows = {}
+    for _, t in ipairs(talk) do
+        local line, first = "", true
+        for w in t.text:gmatch("%S+") do
+            if #line > 0 and #line + 1 + #w > 32 then rows[#rows + 1] = { who = first and t.who or 3, t = line }; first = false; line = w
+            else line = #line > 0 and (line .. " " .. w) or w end
+        end
+        if line ~= "" then rows[#rows + 1] = { who = first and t.who or 3, t = line } end
+    end
+    if thinking then rows[#rows + 1] = { who = 2, t = "hmm… BMO is thinking…" } end
+    while #rows > 9 do table.remove(rows, 1) end
+    -- a line that goes on from one above keeps its speaker's look but not the "BMO›"
+    for _, r in ipairs(rows) do if r.who == 3 then r.who = 1 end end
+    model.bc = rows
+    fact.bc_empty = #talk == 0 and not thinking
+end
+on("bmo_ask", function()
+    local q = tostring(text.bmo_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    text.bmo_q = ""
+    if q == "" then return end
+    talk[#talk + 1] = { who = 0, text = q }
+    while #talk > 12 do table.remove(talk, 1) end
+    fact.bc_busy = true
+    show_talk(true)
+    react("curious", 1800)
+    run("pleamar", { "--say", "mooi-notch", "text nb_q " .. q:gsub("%s+", " "), "emit nt_bmo_q" }, function(_, code)
+        if code ~= 0 then
+            fact.bc_busy = false
+            talk[#talk + 1] = { who = 1, text = "BMO can't reach Claude… is the side notch on? (Settings → Control Nexus)" }
+            show_talk(false)
+        end
+    end)
+end)
+
 on("speak", function()
     local words = tostring(text.bmo_line or "")
+    if fact.bc_busy or fact.tab == "chat" then
+        fact.bc_busy = false
+        talk[#talk + 1] = { who = 1, text = words }
+        show_talk(false)
+    end
     local lines, line = {}, ""
     for w in words:gmatch("%S+") do
         if #line > 0 and #line + 1 + #w > 38 then lines[#lines + 1] = line; line = w
@@ -724,9 +858,13 @@ on("ui", function(v)
     elseif n == 6 then hide_for(10); return
     elseif n == 7 then run("pleamar", { "--say", "bmo", "quit" }); return
     -- asking him (D106): the side notch's chat, as BMO; what Claude answers comes back here to be said
-    elseif n == 8 then run("pleamar", { "--say", "mooi-notch", "emit nt_ask_bmo" }); say("ask BMO anything!", 2200, true); return
+    elseif n == 8 then
+        if not fact.panel then toggle_panel() end
+        fact.tab = "chat"
+        say("talk to BMO!", 1800, true)
+        return
     elseif n == 9 then run("pleamar", { "--say", "mooi-notch", "emit nt_show 0" }); return
-    elseif n >= 10 and n <= 14 then fact.tab = ({ "home", "music", "me", "setup", "look" })[n - 9]; return
+    elseif n >= 10 and n <= 15 then fact.tab = ({ "home", "music", "me", "setup", "look", "chat" })[n - 9]; return
     elseif n == 20 then pcall(sys.call, "media.previous"); return
     elseif n == 21 then pcall(sys.call, "media.toggle"); return
     elseif n == 22 then pcall(sys.call, "media.next"); return
@@ -751,6 +889,8 @@ on("ui", function(v)
     elseif n == 123 then idle_act("sitting", 12000); return
     elseif n == 124 then idle_act("gaming", 8000, game_over); return
     elseif n == 125 then idle_act("humming", 7000); return
+    elseif n == 126 then peek(); return
+    elseif n == 127 then tantrum(); return
     elseif n == 122 then
         fact.glx = math.random() * 2 - 1
         after(1500, function() fact.glx = 0 end)

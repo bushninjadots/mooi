@@ -28,6 +28,8 @@ M.FACES = {
     content   = { ew = 8,  eh = 14, sql = 1,   sqr = 1, lid = 0,    brow = 0,   bron = 0, mc = 0.6,  mo = 0,    mw = 18, tg = 0, bl = 0.3 },
     -- after a hard landing: screwed-up eyes, a wobbly little o
     dizzy     = { ew = 9,  eh = 7,  sql = 1,   sqr = 1, lid = 0.3,  brow = -8,  bron = 1, mc = -0.2, mo = 0.6,  mw = 12, tg = 0.3, bl = 0 },
+    -- a tantrum: eyes slitted under hard brows, the mouth a wide square shout, red in the face
+    angry     = { ew = 10, eh = 7,  sql = 0,   sqr = 0, lid = 0.35, brow = -26, bron = 1, mc = -0.9, mo = 0.9,  mw = 26, tg = 0, bl = 1 },
     -- flying: eyes wide, mouth open in delight
     whee      = { ew = 10, eh = 18, sql = 0,   sqr = 0, lid = 0,    brow = 6,   bron = 0, mc = 0.9,  mo = 1,    mw = 20, tg = 0, bl = 0.5 },
 }
@@ -46,6 +48,8 @@ function M.expression(s)
     if s.activity == "flying" then return "whee" end
     if s.activity == "humming" then return "singing" end
     if s.activity == "gaming" then return "focused" end
+    if s.activity == "tantrum" then return "angry" end
+    if s.activity == "peeking" then return "curious" end
     return s.mood
 end
 

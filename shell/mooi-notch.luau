@@ -211,6 +211,32 @@ local function ask(prompt)
 end
 on("nt_ask", function() local t = text.ch_in; text.ch_in = ""; ask(t) end)
 on("nt_sugg", function(v) ask(SUGGEST[(tonumber(v) or -1) + 1]) end)
+-- BMO's own chat (his panel's CHAT tab, D109): he sends what was said (nb_q); asked in his voice, on
+-- his own session, and the answer goes back to him to be said and written in his panel.
+local bmo_asking = nil
+on("nt_bmo_q", function()
+    local q = trim(text.nb_q)
+    if q == "" or bmo_asking then return end
+    local args = claude.args(q, { session = chat.bmo_session, persona = "bmo",
+                                  model = type(settings.claude) == "table" and settings.claude.model ~= "default" and settings.claude.model or nil })
+    local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "claude" }
+    for _, a in ipairs(args) do cmd[#cmd + 1] = a end
+    local said = nil
+    local mine
+    mine = spawn("env", cmd, function(line)
+        if bmo_asking ~= mine then return end
+        local r = claude.read(line, json.decode)
+        if r and r.done then said = r.text; chat.bmo_session = r.session or chat.bmo_session
+        elseif r and r.error then said = "BMO's brain is fuzzy right now… (" .. r.error .. ")" end
+    end, function()
+        if bmo_asking ~= mine then return end
+        bmo_asking = nil
+        said = said or "BMO couldn't hear Claude… try again?"
+        save_chat()
+        launch("pleamar", { "--say", "bmo", "text bmo_line " .. said:gsub("%s+", " "), "emit speak" })
+    end)
+    bmo_asking = mine
+end)
 on("nt_mode", function(v) fact.ch_bmo = tonumber(v) == 1; text.ch_status = fact.ch_bmo and "IN BMO'S VOICE" or "" end)
 on("nt_ask_bmo", function()
     fact.ch_bmo = true
