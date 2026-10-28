@@ -42,16 +42,17 @@ end
 -- `tab`, and `left` for the deck's left end (or a column's open side). Along a strip it rises over
 -- (or hangs under) that end; beside a column it opens on the column's open side. The carousels turn
 -- from the screen's nearer edge. Returns { px, py, ox, acy, dir }.
+M.EAR = 34            -- how far the deck's notches stick out of it: a panel opens past them
 function M.from_deck(d, tab, left, sw, sh)
     local p = M.PANELS[tab] or { w = 440, h = 400 }
-    local g = 12
+    local g = 14 + M.EAR
     local r = {}
     if not d.vertical then
         r.px = left and math.max(g, d.x) or math.min(sw - p.w - g, d.x + d.w - p.w)
         r.py = d.edge == "bottom" and (d.y - p.h - g) or (d.y + d.h + g)
         r.dir = left and 1 or -1
         r.ox = left and 0 or sw
-        r.acy = d.edge == "bottom" and math.max(430, (d.y) / 2) or math.min(sh - 430, (d.y + d.h + sh) / 2)
+        r.acy = d.edge == "bottom" and math.max(430, (d.y - M.EAR) / 2) or math.min(sh - 430, (d.y + d.h + M.EAR + sh) / 2)
     else
         local cy = d.y + 60
         r.py = M.panel_y(cy + p.h / 2 - 40, p.h, sh)

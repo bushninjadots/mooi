@@ -586,6 +586,7 @@ scene Nexus {
     figure i_git = file "icons/git.svg"
     figure i_wallp = file "icons/wallpaper.svg"
     fact dk_ntab = -1            // the notch tab off the deck last pointed at
+    fact dk_notches = true       // the notches off the deck are shown (nexus.notches)
     // A notch tab's glyph (0 Claude · 1 Music · 2 Weather · 3 Workspaces · 4 Wallpapers · 5 GitHub).
     component NGlyph(x: number, y: number, g: number, c: color) {
         size: 14, 14
@@ -779,37 +780,57 @@ scene Nexus {
                 }
             }
 
-            // the notches off the deck's ends: three tabs each (Claude · Music · Weather, Workspaces ·
-            // Wallpapers · GitHub); pointed at, the side notch opens that panel beside the deck
-            repeat e in 0..2 {
-                let ex.$e = if(dk_vert, if(dk_edge == 3, -34, dk_w + 2), if(e == 0, 26, dk_w - 158))
-                let ey.$e = if(dk_vert, 44 + e * 130, if(dk_edge == 1, dk_h - 2, -32))
-                group {
-                    opacity: smooth(0, 1, rp.7)
-                    body {
-                        color: mix(dk.raised, #000000, 0.35)
-                        box { from: ex.$e, ey.$e; size: if(dk_vert, 32, 132), if(dk_vert, 122, 34); corner: dk.r }
+            // the notches off the deck's ends (nexus.notches): cut tabs rising from its corners along a strip
+            // (hanging under it at the top), from its open side down a column, three hexagons each —
+            // Claude · Music · Weather, Workspaces · Wallpapers · GitHub; pointed at, the side notch opens
+            // that panel beside the deck, clear of the notch
+            group {
+                show: dk_notches
+                opacity: smooth(0, 1, rp.7)
+                repeat e in 0..2 {
+                    // a strip's: 168 × 34 over the corner; a column's: 34 × 168 on its open side
+                    let ex.$e = if(dk_vert, if(dk_edge == 3, 0, dk_w), if(e == 0, 22, dk_w - 190))
+                    let ey.$e = if(dk_vert, 40 + e * 184, if(dk_edge == 1, dk_h, 0))
+                    let eo.$e = if(dk_vert, if(dk_edge == 3, -1, 1), if(dk_edge == 1, 1, -1))   // the way it sticks out
+                    group {
+                        show: not dk_vert
+                        path { color: mix(dk.raised, #000000, 0.35)
+                               move ex.$e, ey.$e; line ex.$e + 14, ey.$e + 34 * eo.$e; line ex.$e + 154, ey.$e + 34 * eo.$e; line ex.$e + 168, ey.$e; close }
+                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.55)
+                               move ex.$e, ey.$e; line ex.$e + 14, ey.$e + 34 * eo.$e; line ex.$e + 154, ey.$e + 34 * eo.$e; line ex.$e + 168, ey.$e }
+                        group {
+                            glow: 4, 0.5 * st_glow, dk.acc
+                            line { from: ex.$e + 20, ey.$e + 34 * eo.$e; to: ex.$e + 64, ey.$e + 34 * eo.$e; width: 1.6; color: dk.acc; opacity: 0.8 }
+                        }
                     }
-                    box { from: ex.$e, ey.$e; size: if(dk_vert, 32, 132), if(dk_vert, 122, 34); corner: dk.r; stroke: 1; color: mix(dk.line, dk.acc, 0.45) }
-                    line { from: ex.$e + if(dk_vert, 0, 10), ey.$e + if(dk_vert, 10, if(dk_edge == 1, 33, 0.5)); to: ex.$e + if(dk_vert, 0, 60), ey.$e + if(dk_vert, 60, if(dk_edge == 1, 33, 0.5)); width: 1.4; color: dk.acc; opacity: 0.7 }
+                    group {
+                        show: dk_vert
+                        path { color: mix(dk.raised, #000000, 0.35)
+                               move ex.$e, ey.$e; line ex.$e + 34 * eo.$e, ey.$e + 14; line ex.$e + 34 * eo.$e, ey.$e + 154; line ex.$e, ey.$e + 168; close }
+                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.55)
+                               move ex.$e, ey.$e; line ex.$e + 34 * eo.$e, ey.$e + 14; line ex.$e + 34 * eo.$e, ey.$e + 154; line ex.$e, ey.$e + 168 }
+                        group {
+                            glow: 4, 0.5 * st_glow, dk.acc
+                            line { from: ex.$e + 34 * eo.$e, ey.$e + 20; to: ex.$e + 34 * eo.$e, ey.$e + 64; width: 1.6; color: dk.acc; opacity: 0.8 }
+                        }
+                    }
                 }
-            }
-            repeat t in 0..6 {
-                let te.$t = floor(t / 3)
-                let tx.$t = if(dk_vert, if(dk_edge == 3, -18, dk_w + 18), if(te.$t == 0, 26, dk_w - 158) + 22 + mod(t, 3) * 44)
-                let ty.$t = if(dk_vert, 44 + te.$t * 130 + 21 + mod(t, 3) * 40, if(dk_edge == 1, dk_h + 15, -15))
-                zone box nz.$t { from: tx.$t - 16, ty.$t - 16; size: 32, 32; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers", "GitHub") }
-                group {
-                    opacity: smooth(0, 1, rp.7)
-                    glow: 6, (0.25 + 0.6 * max(nz.$t.hover, if(dk_ntab == t, 1, 0))) * st_glow, dk.acc
-                    path { color: mix(dk.raised, dk.acc, 0.1 + 0.35 * max(nz.$t.hover, if(dk_ntab == t, 1, 0)))
-                           move tx.$t, ty.$t - 14; line tx.$t + 12, ty.$t - 7; line tx.$t + 12, ty.$t + 7; line tx.$t, ty.$t + 14; line tx.$t - 12, ty.$t + 7; line tx.$t - 12, ty.$t - 7; close }
-                    path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.5 + 0.5 * nz.$t.hover)
-                           move tx.$t, ty.$t - 14; line tx.$t + 12, ty.$t - 7; line tx.$t + 12, ty.$t + 7; line tx.$t, ty.$t + 14; line tx.$t - 12, ty.$t + 7; line tx.$t - 12, ty.$t - 7; close }
+                repeat t in 0..6 {
+                    let te.$t = floor(t / 3)
+                    let tx.$t = if(dk_vert, if(dk_edge == 3, -17, dk_w + 17), if(te.$t == 0, 22, dk_w - 190) + 36 + mod(t, 3) * 48)
+                    let ty.$t = if(dk_vert, 40 + te.$t * 184 + 36 + mod(t, 3) * 48, if(dk_edge == 1, dk_h + 17, -17))
+                    zone box nz.$t { from: tx.$t - 18, ty.$t - 17; size: 36, 34; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers", "GitHub") }
+                    group {
+                        glow: 6, (0.25 + 0.6 * max(nz.$t.hover, if(dk_ntab == t, 1, 0))) * st_glow, dk.acc
+                        path { color: mix(dk.raised, dk.acc, 0.1 + 0.35 * max(nz.$t.hover, if(dk_ntab == t, 1, 0)))
+                               move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
+                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.5 + 0.5 * nz.$t.hover)
+                               move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
+                    }
+                    NGlyph(tx.$t, ty.$t, t, mix(dk.ink2, dk.acc, nz.$t.hover))
+                    on hover nz.$t for 160ms { dk_ntab = t; emit dk_notch(t) }
+                    on press nz.$t { dk_ntab = t; emit dk_notch(t) }
                 }
-                NGlyph(tx.$t, ty.$t, t, mix(dk.ink2, dk.acc, nz.$t.hover)) { opacity: smooth(0, 1, rp.7) }
-                on hover nz.$t for 160ms { dk_ntab = t; emit dk_notch(t) }
-                on press nz.$t { dk_ntab = t; emit dk_notch(t) }
             }
 
             IslandFrame(1, dk_w, dk_h, centre: true) {

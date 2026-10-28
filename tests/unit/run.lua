@@ -2686,12 +2686,12 @@ test("notch: the fan's tabs on their arc, panels on the screen, the carousel, th
     -- from the Control Nexus: over a bottom strip's end, on a right column's open side
     local strip = deck.layout("bottom", 1920, 1049, 0, {})
     local l = notch.from_deck(strip, 0, true, 1920, 1049)
-    eq(l.py + notch.PANELS[0].h + 12, strip.y, "over the deck"); eq(l.dir, 1); eq(l.ox, 0)
+    eq(l.py + notch.PANELS[0].h + 14 + notch.EAR, strip.y, "over the deck, clear of its notch"); eq(l.dir, 1); eq(l.ox, 0)
     local r = notch.from_deck(strip, 5, false, 1920, 1049)
     eq(r.px + notch.PANELS[5].w <= 1920, true, "kept on the screen"); eq(r.dir, -1); eq(r.ox, 1920)
     local col = deck.layout("right", 1920, 1049, 0, {})
     local c = notch.from_deck(col, 1, false, 1920, 1049)
-    eq(c.px + notch.PANELS[1].w + 12, col.x, "beside the column, on its open side")
+    eq(c.px + notch.PANELS[1].w + 14 + notch.EAR, col.x, "beside the column, on its open side, clear of its notch")
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

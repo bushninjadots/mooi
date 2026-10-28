@@ -214,6 +214,7 @@ local function read_parts()
     fact.dk_rows = tonumber(n.rows) == 2 and 2 or 1
     fact.nx_large = n.profile == "large"
     fact.dk_viz = n.visualiser ~= false
+    fact.dk_notches = n.notches ~= false
 end
 read_parts()
 local function save_settings(change)
@@ -876,7 +877,7 @@ end
 function relayout_rest()
     if not d then return end
     publish_scenes(); publish_wait()
-    local bay = d.bays.spaces or { x = 0, y = 0, w = 600, h = deck.BODY }   -- hidden: the tiles for Cascade
+    local bay = d.bays.spaces or { x = 0, y = 0, w = 600, h = deck.ROW }   -- hidden: the tiles for Cascade
     local rects = deck.tiles(#spaces, bay, d.vertical, aspect())
     tiles_at = {}
     local rows = {}
