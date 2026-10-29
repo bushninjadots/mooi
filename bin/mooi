@@ -897,7 +897,21 @@ case "$cmd" in
         for f in "$root"/shell/*.luau "$root"/shell/lib/*.luau "$root"/shell/player/*.luau "$root"/shell/bmo/*.luau; do
             F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
         done
-        cd "$root" && lua5.4 shell/bmo/test.lua | tail -1 && lua5.4 tests/unit/run.lua ;;
+        cd "$root" && lua5.4 shell/bmo/test.lua | tail -1 && lua5.4 tests/unit/run.lua
+        # What this machine lacks: the scenes fall back quietly, so name it here rather than let a
+        # visualizer or a store module look broken (audit 2026-10-29).
+        missing=
+        for tool in cava rembg playerctl mpc mpv yt-dlp magick wf-recorder grim slurp checkupdates flatpak; do
+            command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+        done
+        [ -n "$missing" ] && echo "optional, not installed:$missing"
+        # The scenes are written for language 0.4; another one may compile and still behave
+        # differently, so say which pleamar this is.
+        ver=$("$pleamar" --version 2>/dev/null | head -1)
+        case "$ver" in
+            *"language 0.4"*) echo "pleamar: $ver" ;;
+            *) echo "warning: $ver · the scenes are written for language 0.4" >&2 ;;
+        esac ;;
     theme-sync)
         theme_sync "$@" || { echo "theme-sync: failed" >&2; exit 1; }
         running && echo "mooi asked to read it" || echo "mooi is not running; it will read the palette when it starts"

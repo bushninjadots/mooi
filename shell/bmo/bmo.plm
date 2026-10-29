@@ -351,7 +351,7 @@ scene Bmo {
         zone box c { from: x, y; size: w, 22; cursor: pointer; role: button; label: word }
         box { from: x, y; size: w, 22; corner: 6; color: if(on, ink, mix(glass, ink, c.hover * 0.12)) }
         box { from: x, y; size: w, 22; corner: 6; stroke: 2; color: ink }
-        text word { at: x + w / 2, y + 11; anchor: center; size: 10.5; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
+        text word { at: x + w / 2, y + 11; anchor: center; size: 10; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
         on press c { emit ui(code) }
     }
 
@@ -488,7 +488,7 @@ scene Bmo {
                                         move: 0, -10 * (1 - gnote_a)
                                         box { from: 14, 5; size: 68, 15; corner: 4; color: ink }
                                         box { from: 15, 6; size: 66, 13; corner: 3; color: #f7e36a }
-                                        text game_note { at: 48, 12.5; anchor: center; align: center; size: 8; weight: 800; family: "JetBrains Mono"; color: ink }
+                                        text game_note { at: 48, 12.5; anchor: center; align: center; size: 10; weight: 800; family: "JetBrains Mono"; color: ink }
                                     }
                                 }
                                 // a tantrum: the screen flushed red
@@ -627,8 +627,8 @@ scene Bmo {
                 text "Talk to BMO! He answers (with a little help from Claude)." { at: cx + 135, cy + 60; anchor: center; align: center; size: 10; family: "JetBrains Mono"; color: ink; opacity: 0.65; width: 260; show: bc_empty }
                 for m in bc {
                     let by = cy - 4 + m.index * 15
-                    text "YOU›" { at: cx, by + 6; anchor: left center; size: 9; weight: 800; family: "JetBrains Mono"; color: ink; opacity: 0.55; show: m.who == 0 }
-                    text "BMO›" { at: cx, by + 6; anchor: left center; size: 9; weight: 800; family: "JetBrains Mono"; color: ink; show: m.who > 0 }
+                    text "YOU›" { at: cx, by + 6; anchor: left center; size: 10; weight: 800; family: "JetBrains Mono"; color: ink; opacity: 0.55; show: m.who == 0 }
+                    text "BMO›" { at: cx, by + 6; anchor: left center; size: 10; weight: 800; family: "JetBrains Mono"; color: ink; show: m.who > 0 }
                     text m.t { at: cx + 34, by + 6; anchor: left center; size: 10; family: "JetBrains Mono"; color: ink; width: 236; lines: 1; opacity: if(m.who == 0, 0.7, if(m.who == 2, 0.5, 1)) }
                 }
                 box { from: cx - 4, ply + ph - 52; size: 276, 26; corner: 6; color: glass_dim }
@@ -741,7 +741,7 @@ scene Bmo {
         zone box t { from: x, y; size: w, 22; cursor: pointer; role: tab; selected: on; label: word }
         box { from: x, y; size: w, 22; corner: 6; color: if(on, ink, mix(teal, ink, t.hover * 0.15)) }
         box { from: x, y; size: w, 22; corner: 6; stroke: 2; color: ink }
-        text word { at: x + w / 2, y + 11; anchor: center; size: 10.5; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
+        text word { at: x + w / 2, y + 11; anchor: center; size: 10; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
         on press t { emit ui(10 + k) }
     }
 
@@ -755,7 +755,7 @@ scene Bmo {
         box { from: x + 13, y + 9; size: 24, 17; corner: 3; color: scr }
         box { from: x + 19, y + 15; size: 2, 4; color: line }
         box { from: x + 29, y + 15; size: 2, 4; color: line }
-        text word { at: x + 25, y + 58; anchor: center; size: 9; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
+        text word { at: x + 25, y + 58; anchor: center; size: 10; weight: 700; family: "JetBrains Mono"; color: if(on, glass, ink) }
         on press w { emit ui(code) }
     }
 

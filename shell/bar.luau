@@ -266,6 +266,9 @@ return function(ctx)
 
     -- ── The visualizer: cava, while something plays ───────────
     local cava, playing = nil, false
+    -- A cava that never printed a band is not installed (or cannot read PipeWire): say so once
+    -- instead of respawning it on every relayout (audit 2026-10-29).
+    local cava_lines, viz_missing = 0, false
     local CAVA = "cava.conf"
     sys.call("files.write", CAVA, table.concat({
         "[general]", "bars = 16", "framerate = 30",
@@ -283,8 +286,10 @@ return function(ctx)
     local function listen()
         if cava then return end
         local mine
+        cava_lines = 0
         mine = spawn("cava", { "-p", folder .. "/" .. CAVA }, function(line)
             if cava ~= mine then return end
+            cava_lines = cava_lines + 1
             local i, b = 0, {}
             for v in string.gmatch(line, "(%d+);") do
                 if i > 15 then break end
@@ -305,7 +310,14 @@ return function(ctx)
             if math.abs(swell.level - swell.sl) > 0.015 then fact.fbass = swell.level; swell.sl = swell.level end
             if math.abs(swell.high - swell.sh) > 0.02 then fact.fhigh = swell.high; swell.sh = swell.high end
             fact.fph = swell.phase
-        end, function() if cava == mine then cava = nil; rest_levels() end end)
+        end, function()
+            if cava ~= mine then return end
+            cava = nil
+            -- nothing ever came out: no cava on this machine. The bar says so; a refresh or a
+            -- restart tries again once it is installed.
+            if cava_lines == 0 then viz_missing = true; fact.viz_missing = true end
+            rest_levels()
+        end)
         cava = mine
     end
     local function hush() if cava then kill(cava, "term"); cava = nil end; rest_levels() end
@@ -345,7 +357,7 @@ return function(ctx)
         if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
         local want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
         local want_swell = s.frame.on and s.frame.music
-        if playing and (want_viz or want_swell) and not ctx.saving() then listen() else hush() end
+        if playing and (want_viz or want_swell) and not ctx.saving() and not viz_missing then listen() else hush() end
     end
 
     -- ── Actions ────────────────────────────────────────────────

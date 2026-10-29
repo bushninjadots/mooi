@@ -70,8 +70,9 @@ library Ferrolume {
     let fl.cut_w = 8                // a cut in a bezel's stroke
 
     // Type: 13 px readouts and tags, 16 px clock, 10 px codes and rail — never under 10 px
-    // (Ferrolume's `tick`). Written on each text: a text's size is a plain number.
-
+    // (Ferrolume's `tick`). A text's size is a plain number written where it is used — the
+    // language does not take a token there — so the floor is held by the numbers themselves:
+    // the 7–9 px labels were raised to 10 and the fractional sizes rounded down (audit 2026-10-29).
     // The workspace instrument's window: `fl.reach` pitches each side of the focus slot, so
     // seven positions are in view and half a pitch at each end fades out.
     let fl.pitch = 26

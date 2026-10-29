@@ -42,7 +42,7 @@ library LoomParts {
     component CutButton(x: number, y: number, w: number, word: text, tone: color, hit: number) {
         size: w, 20
         Chamfer(x, y, w, 20, 4, mix(fl.hull_raised, fl.well, hit), mix(fl.trace, tone, hit), 0.9, 1)
-        text "{upper(word)}" { at: x + w / 2, y + 10; anchor: center; size: 9; family: "Share Tech Mono"; width: w - 6; lines: 1
+        text "{upper(word)}" { at: x + w / 2, y + 10; anchor: center; size: 10; family: "Share Tech Mono"; width: w - 6; lines: 1
                                color: mix(fl.muted, tone, max(hit, 0.35)) }
     }
 
@@ -76,7 +76,7 @@ library LoomParts {
             Chamfer(w - 46, 26, 36, 16, 4, fl.ground, fl.trace)
             text "×{c.many, 0}" { at: w - 28, 34; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.trace_lit }
         }
-        text "MUTED" { at: 12, 48; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: c.muted }
+        text "MUTED" { at: 12, 48; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: c.muted }
         on press hit { emit pick(c.index) }
     }
 

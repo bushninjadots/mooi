@@ -29,6 +29,8 @@ bin/mooi check              # compile, parse the logic, unit tests
 
 Needs `pleamar` 0.4.6 (language 0.4), `hyprctl`, `jq`, `lua5.4` (tests), and `wpctl`/`brightnessctl` (tests).
 
+Optional, with a fallback when absent: `cava` for the bar's and player's visualizers (`pacman -S cava`; without it the bar says CAVA MISSING), `rembg` for the wallpaper studio's AI cutout (`pipx install "rembg[cli]"`; the studio offers the install line), and the store/player tools the bar's modules call (`playerctl`/`mpc`, `mpv`, `ffmpeg`, `yt-dlp`, `magick`, `wf-recorder`/`grim`/`slurp`, `checkupdates`, `paru`/`yay`, `flatpak`). `bin/mooi check` names what this machine lacks.
+
 ## What is there
 
 - **The bar** (Ferrolume): three lists of modules — left, centre, right — each module a reading or a control (workspaces, the focused window, media with its visualizer, resources, throughput, keyboard, weather, tray, notifications, mic, volume, brightness, battery, network, Bluetooth, clock, keep-awake, recorder, screenshot, clipboard, session, window actions, Overview, search, quick notes, wallpaper studio). Modules join into one frame with `+`, can be hidden or re-outlined, and the bar is either separate islands or one full panel. The workspaces are a **DNA double helix** by default (prism and cells selectable). The thin tab at the left edge opens mooi's settings window; the bar has an edit mode (drag modules, drop on one to group, onto the shelf to hide, Escape to undo). Details: [docs/FERROLUME.md](docs/FERROLUME.md). The weather module asks ipinfo.io where you are (from your IP address) and open-meteo for the forecast, every ten minutes while it is on the bar, so it starts on the shelf (edit mode places it); off the bar, no request is made.

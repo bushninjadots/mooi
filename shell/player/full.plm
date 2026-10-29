@@ -104,7 +104,7 @@ part Full {
                                   color: mix(fl.engrave, fl.muted, clamp(l.dist / 4, 0, 1)); opacity: clamp(1 - l.dist * 0.17, 0.2, 1); show: not l.cur }
                     on press fzline { emit lyr_seek(l.t) }
                 }
-                text lyr_note { at: flx, fh * 0.3 - 40; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
+                text lyr_note { at: flx, fh * 0.3 - 40; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit }
             }
 
             // the stage or the rack, large, over the deck's drawing (its transport stays along the foot)
@@ -166,7 +166,7 @@ part Full {
             PRound(fw - 52, 52, 22, 0, fl.phos, fzback.hover)
             line { from: fw - 60, 44; to: fw - 44, 60; width: 2; color: mix(fl.engrave, fl.phos, fzback.hover) }
             line { from: fw - 44, 44; to: fw - 60, 60; width: 2; color: mix(fl.engrave, fl.phos, fzback.hover) }
-            text "ESC" { at: fw - 52, 88; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            text "ESC" { at: fw - 52, 88; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             on press fzback { emit pl_full }
         }
 }

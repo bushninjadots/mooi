@@ -291,6 +291,7 @@ scene Notch {
     text mu_el = ""
     text mu_len = ""
     fact mv0 = 0
+    fact mu_viz_missing = false // cava is not installed: the panel says so (shell/mooi-notch.luau)
     fact mv1 = 0
     fact mv2 = 0
     fact mv3 = 0
@@ -472,11 +473,11 @@ scene Notch {
                            move tx, ty - 19; line tx + 16.5, ty - 9.5; line tx + 16.5, ty + 9.5; line tx, ty + 19; line tx - 16.5, ty + 9.5; line tx - 16.5, ty - 9.5; close }
                 }
                 TGlyph(tx, ty, t.glyph, if(on, dk.ink, mix(dk.ink2, dk.acc, tz.hover)))
-                text "{upper(t.word)}" { at: tx + 24, ty; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: tz.hover * (1 - pv) }
+                text "{upper(t.word)}" { at: tx + 24, ty; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: tz.hover * (1 - pv) }
                 group {
                     show: t.badged
                     box { from: tx + 7, ty - 18; size: 16, 11; corner: 3; color: dk.hot }
-                    text t.badge { at: tx + 15, ty - 12.5; anchor: center; align: center; size: 7.5; weight: 700; family: "Exo 2"; color: dk.well }
+                    text t.badge { at: tx + 15, ty - 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: dk.well }
                 }
                 on hover tz for 140ms { nt_tab = t.index; emit nt_tab_open(t.index) }
                 on press tz { nt_tab = t.index; nt_pin = true; emit nt_tab_open(t.index) }
@@ -513,21 +514,21 @@ scene Notch {
                     clip box { from: 8, 66; size: 424, 450 }
                     for m in cl {
                         let my = 76 + m.index * 15
-                        text "YOU" { at: 18, my + 6; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.hot; show: m.kind == 0 }
+                        text "YOU" { at: 18, my + 6; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.hot; show: m.kind == 0 }
                         group {
                             show: m.kind == 1
                             figure i_claude { at: 23, my + 6; size: 10, 10; color: dk.acc }
-                            text "CLAUDE" { at: 32, my + 6; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                            text "CLAUDE" { at: 32, my + 6; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                         }
                         group {
                             show: m.kind == 6
                             box { from: 18, my + 1; size: 11, 10; corner: 2; color: #6fc3a8 }
                             box { from: 20, my + 3; size: 7, 4; color: #0e2a24 }
-                            text "BMO" { at: 34, my + 6; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: #6fc3a8 }
+                            text "BMO" { at: 34, my + 6; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: #6fc3a8 }
                         }
-                        text m.t { at: 18, my + 6; anchor: left center; size: 11.5; family: "Exo 2"; color: dk.hot; width: 404; lines: 1; show: m.kind == 2 }
-                        text m.t { at: 18, my + 6; anchor: left center; size: 11.5; family: "Exo 2"; color: dk.ink; width: 404; lines: 1; show: m.kind == 3 }
-                        text m.t { at: 18, my + 6; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: 404; lines: 1; show: m.kind == 5 }
+                        text m.t { at: 18, my + 6; anchor: left center; size: 11; family: "Exo 2"; color: dk.hot; width: 404; lines: 1; show: m.kind == 2 }
+                        text m.t { at: 18, my + 6; anchor: left center; size: 11; family: "Exo 2"; color: dk.ink; width: 404; lines: 1; show: m.kind == 3 }
+                        text m.t { at: 18, my + 6; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 404; lines: 1; show: m.kind == 5 }
                     }
                 }
                 // nothing said yet: a few things to ask
@@ -535,7 +536,7 @@ scene Notch {
                     show: ch_first
                     figure i_claude { at: 220, 190; size: 34, 34; color: dk.acc }
                     text "ASK CLAUDE ANYTHING" { at: 220, 228; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                    text "Your own Claude, through Claude Code. It can talk, not act." { at: 220, 248; anchor: center; align: center; size: 10.5; family: "Exo 2"; color: dk.mute }
+                    text "Your own Claude, through Claude Code. It can talk, not act." { at: 220, 248; anchor: center; align: center; size: 10; family: "Exo 2"; color: dk.mute }
                     for g in sugg {
                         let gy = 282 + g.index * 34
                         zone box gz { from: 40, gy; size: 360, 28; cursor: pointer; role: button; label: g.t }
@@ -584,20 +585,22 @@ scene Notch {
                 box { from: 16, 38; size: 132, 132; corner: dk.r; stroke: 1; color: mix(dk.line, dk.hot, mca.hover) }
                 on press mca { emit nt_open_player }
                 text pick(mu_on, "Nothing playing", med.title) { at: 164, 54; anchor: left center; size: 16; weight: 600; family: "Exo 2"; color: dk.ink; width: 262; lines: 1 }
-                text med.artist { at: 164, 76; anchor: left center; size: 11.5; family: "Exo 2"; color: dk.ink2; width: 262; lines: 1 }
+                text med.artist { at: 164, 76; anchor: left center; size: 11; family: "Exo 2"; color: dk.ink2; width: 262; lines: 1 }
                 // the visualiser, then where the song is
                 group {
+                    show: not mu_viz_missing
                     glow: 5, 0.55 * st_glow, dk.hot
                     repeat v in 0..24 {
                         let vv.$v = pick(v, mv0, mv1, mv2, mv3, mv4, mv5, mv6, mv7, mv8, mv9, mv10, mv11, mv12, mv13, mv14, mv15, mv16, mv17, mv18, mv19, mv20, mv21, mv22, mv23)
                         box { from: 164 + v * 10.8, 126 - 30 * clamp(vv.$v, 0.04, 1); size: 7.5, 30 * clamp(vv.$v, 0.04, 1); corner: 1; color: dk.hot; opacity: 0.4 + 0.6 * vv.$v }
                     }
                 }
+                text "CAVA MISSING · pacman -S cava" { at: 295, 120; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.hot; show: mu_viz_missing }
                 box { from: 164, 138; size: 262, 3; corner: 1; color: dk.well }
                 box { from: 164, 138; size: 262 * clamp(mup, 0, 1), 3; corner: 1; color: dk.hot }
                 ellipse { at: 164 + 262 * clamp(mup, 0, 1), 139.5; radius: 3.5; color: dk.ink }
-                text mu_el { at: 164, 152; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
-                text mu_len { at: 426, 152; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                text mu_el { at: 164, 152; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute }
+                text mu_len { at: 426, 152; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                 zone box mb0 { from: 236, 168; size: 32, 32; cursor: pointer; role: button; label: "Previous" }
                 zone box mb1 { from: 276, 166; size: 36, 36; cursor: pointer; role: button; label: "Play or pause" }
                 zone box mb2 { from: 320, 168; size: 32, 32; cursor: pointer; role: button; label: "Next" }
@@ -616,7 +619,7 @@ scene Notch {
                 show: nt_tab == 2
                 zone box keep2 { from: nt_ox + if(nt_dir > 0, 0, -760), 40; size: 760, nt_h - 80; role: region; label: "Workspaces" }
                 on scroll keep2 { sp_c = clamp(sp_c - wheel, 0, max(0, warc.count - 1)) }
-                text "WORKSPACES · THE WHEEL TURNS THE ARC · A PRESS GOES THERE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "WORKSPACES · THE WHEEL TURNS THE ARC · A PRESS GOES THERE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 for w in warc {
                     let wa = (w.index - spc) * 13
                     let ws = 1 - min(abs(wa), 60) / 110
@@ -637,7 +640,7 @@ scene Notch {
                             box { from: wx, wy; size: 240 * ws, 135 * ws; corner: dk.r; stroke: if(w.active, 1.8, 1); color: if(w.active, dk.acc, mix(dk.line, dk.acc, wz.hover)) }
                         }
                         text w.label { at: wx + 4, wy + 135 * ws + 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(w.active, dk.acc, dk.ink2) }
-                        text w.n { at: wx + 240 * ws - 4, wy + 135 * ws + 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute }
+                        text w.n { at: wx + 240 * ws - 4, wy + 135 * ws + 11; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                         on press wz { emit nt_ws(w.index) }
                     }
                 }
@@ -659,8 +662,8 @@ scene Notch {
                 show: nt_tab == 3
                 zone box keep3 { from: nt_ox + if(nt_dir > 0, 0, -800), 40; size: 800, nt_h - 80; role: region; label: "Wallpapers" }
                 on scroll keep3 { wp_c = clamp(wp_c - wheel, 0, max(0, pics.count - 1)) }
-                text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
+                text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
                 zone box wpst { from: nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312; size: 140, 24; cursor: pointer; role: button; label: "Open the wallpaper studio" }
                 Act(nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312, 140, "Open the studio", false, false, wpst.hover)
                 on press wpst { emit nt_studio }
@@ -686,7 +689,7 @@ scene Notch {
                             glow: 8, if(p.on, 0.7, 0.5 * pz.hover) * st_glow, dk.acc
                             box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r; stroke: if(p.on, 1.8, 1); color: if(p.on, dk.acc, mix(dk.line, dk.acc, pz.hover)) }
                         }
-                        text "WEARING" { at: px + 280 * ps - 8, py + 12; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: p.on }
+                        text "WEARING" { at: px + 280 * ps - 8, py + 12; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: p.on }
                         on press pz { emit nt_wall(p.index) }
                     }
                 }
@@ -713,12 +716,12 @@ scene Notch {
                         box { from: hx, 222 - 50 * h.v; size: 40, 50 * h.v; corner: dk.r; color: mix(dk.well, dk.acc, 0.2 + 0.4 * h.v) }
                         box { from: hx, 222 - 50 * h.v; size: 40, 2; color: dk.acc }
                         text h.t { at: hx + 20, 214 - 50 * h.v; anchor: center; align: center; size: 10; weight: 600; family: "Exo 2"; color: dk.ink }
-                        text h.label { at: hx + 20, 234; anchor: center; align: center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                        text h.label { at: hx + 20, 234; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                     }
                     line { from: 16, 250; to: 424, 250; width: 1; color: dk.line; opacity: 0.6 }
                     for dd in dys {
                         let dx = 16 + dd.index * 82
-                        text dd.label { at: dx + 41, 266; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(dd.index == 0, dk.acc, dk.ink2) }
+                        text dd.label { at: dx + 41, 266; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(dd.index == 0, dk.acc, dk.ink2) }
                         WGlyph(dx + 41, 290, 20, dd.kind)
                         text "{dd.hi}° {dd.lo}°" { at: dx + 41, 316; anchor: center; align: center; size: 10; family: "Exo 2"; color: dk.ink }
                         box { from: dx + 16, 326; size: 50, 3; corner: 1; color: dk.well }
@@ -745,44 +748,44 @@ scene Notch {
                     }
                     box { from: 14, 36; size: 48, 48; corner: if(isl_style > 0.5, 24, 3); stroke: 1.4; color: mix(dk.line, dk.acc, 0.5 + 0.5 * ghme.hover) }
                     text gh_name { at: 74, 52; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink; width: 240; lines: 1 }
-                    text gh_login { at: 74, 72; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: dk.acc }
-                    text gh_stats { at: 446, 52; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.ink2 }
+                    text gh_login { at: 74, 72; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.acc }
+                    text gh_stats { at: 446, 52; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
                     on press ghme { emit nt_gh(0) }
                     zone box ghn { from: 340, 62; size: 106, 22; cursor: pointer; role: button; label: "Your notifications" }
                     Act(340, 62, 106, "Notifications", false, gh_noted, ghn.hover)
                     on press ghn { emit nt_gh(10) }
                     // contributions: the last 26 weeks, a column a week
-                    text "CONTRIBUTIONS · 26 WEEKS" { at: 14, 104; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
-                    text gh_total { at: 446, 104; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.acc }
+                    text "CONTRIBUTIONS · 26 WEEKS" { at: 14, 104; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                    text gh_total { at: 446, 104; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.acc }
                     for c in gcal {
                         let cx = 14 + floor(c.index / 7) * 16.5
                         let cy = 114 + mod(c.index, 7) * 12.5
                         box { from: cx, cy; size: 14.5, 10.5; corner: 2; color: if(c.v > 0.01, mix(mix(dk.well, dk.acc, 0.3), dk.acc, c.v), dk.well); opacity: if(c.v > 0.01, 0.4 + 0.6 * c.v, 0.7) }
                     }
                     line { from: 14, 212; to: 446, 212; width: 1; color: dk.line; opacity: 0.6 }
-                    text "YOUR OPEN PULL REQUESTS" { at: 14, 226; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
-                    text "NONE OPEN" { at: 446, 226; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: gprs.count == 0 }
+                    text "YOUR OPEN PULL REQUESTS" { at: 14, 226; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                    text "NONE OPEN" { at: 446, 226; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: gprs.count == 0 }
                     for r in gprs {
                         let ry = 238 + r.index * 26
                         zone box prz { from: 10, ry; size: 440, 24; cursor: pointer; role: link; label: "{r.repo}: {r.t}" }
                         box { from: 10, ry; size: 440, 24; corner: dk.r; color: dk.acc; opacity: 0.08 * prz.hover }
-                        text r.repo { at: 18, ry + 12.5; anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.acc; width: 120; lines: 1 }
+                        text r.repo { at: 18, ry + 12.5; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.acc; width: 120; lines: 1 }
                         text r.t { at: 142, ry + 12.5; anchor: left center; size: 11; family: "Exo 2"; color: dk.ink; width: 300; lines: 1 }
                         on press prz { emit nt_gh(1 + r.index) }
                     }
                     line { from: 14, 372; to: 446, 372; width: 1; color: dk.line; opacity: 0.6 }
-                    text "LATELY" { at: 14, 386; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                    text "LATELY" { at: 14, 386; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
                     for e in gevt {
                         let ey = 398 + e.index * 22
                         ellipse { at: 20, ey + 10; radius: 2.4; color: dk.acc }
-                        text e.t { at: 30, ey + 10; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: 300; lines: 1 }
-                        text e.ago { at: 446, ey + 10; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                        text e.t { at: 30, ey + 10; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: 300; lines: 1 }
+                        text e.ago { at: 446, ey + 10; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                     }
                     line { from: 14, 536; to: 446, 536; width: 1; color: dk.line; opacity: 0.6 }
                     for g in grep {
                         let gx = 14 + g.index * 110
                         text g.name { at: gx, 554; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: dk.ink; width: 104; lines: 1 }
-                        text "★ {g.stars} · {g.lang}" { at: gx, 572; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; width: 104; lines: 1 }
+                        text "★ {g.stars} · {g.lang}" { at: gx, 572; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 104; lines: 1 }
                     }
                 }
                 text gh_state { at: 230, 300; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not gh_ok }

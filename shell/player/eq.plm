@@ -5,14 +5,14 @@
 part Eq {
                 group {
                     show: pane == eq
-                    text "EQUALISER  ·  {eq_name}" { at: qx + 16, 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
+                    text "EQUALISER  ·  {eq_name}" { at: qx + 16, 117; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"
                          color: fl.trace_lit; width: qw - 110; lines: 1 }
                     zone box zeqon { from: qx + qw - 74, 106; size: 60, 22; cursor: pointer; role: toggle; checked: eq_on; label: "The equaliser on or off" }
                     group { show: eq_ok
                             PChip(qx + qw - 74, 106, 60, pick(eq_on, "OFF", "ON"), eq_on, zeqon.hover) }
                     group { show: not eq_ok
                             PChip(qx + qw - 74, 106, 60, "N/A", false, 0) }
-                    text "INSTALL EASYEFFECTS (pacman -S easyeffects) FOR THE EQUALISER" { at: qx + 16, 138; anchor: left center; size: 7.5
+                    text "INSTALL EASYEFFECTS (pacman -S easyeffects) FOR THE EQUALISER" { at: qx + 16, 138; anchor: left center; size: 10
                          family: "Share Tech Mono"; color: fl.ember; show: not eq_ok }
                     on press zeqon { emit eq_toggle }
 
@@ -31,24 +31,24 @@ part Eq {
                             box { from: bx - 2, et; size: 4, eh; corner: 2; color: fl.well }
                             box { from: bx - 2, min(gy, et + eh / 2); size: 4, abs(gy - et - eh / 2); corner: 2; color: mix(fl.phos, fl.ember, abs(gv) / 12) }
                             Chamfer(bx - 9, gy - 5, 18, 10, 3, fl.hull_raised, mix(fl.trace_lit, fl.phos, zeq.$b.hover), 1, 1.2)
-                            text "{gv, 0}" { at: bx, et - 14; anchor: center; align: center; size: 7; family: "Share Tech Mono"; color: fl.muted; width: 28 }
+                            text "{gv, 0}" { at: bx, et - 14; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 28 }
                             text pick(b, "31", "62", "125", "250", "500", "1K", "2K", "4K", "8K", "16K") { at: bx, et + eh + 14; anchor: center; align: center
                                  size: 7; family: "Share Tech Mono"; color: fl.muted; width: 28 }
                             on press zeq.$b { emit eq_band(b * 100 + round(clamp(12 - (local.y - et) / eh * 24, -12, 12)) + 12) }
                             on drag zeq.$b { emit eq_band(b * 100 + round(clamp(12 - (local.y - et) / eh * 24, -12, 12)) + 12) }
                         }
                         // the preamp
-                        text "PREAMP" { at: qx + 16, 372; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                        text "PREAMP" { at: qx + 16, 372; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                         zone box zeqp { from: qx + 70, 362; size: qw - 130, 20; cursor: pointer; role: slider; label: "Preamp"; value: (eq_pre + 12) / 24 }
                         box { from: qx + 70, 370; size: qw - 130, 4; corner: 2; color: fl.well }
                         Chamfer(qx + 70 + (qw - 130) * (eq_pre + 12) / 24 - 6, 366, 12, 12, 3, fl.hull_raised, mix(fl.trace_lit, fl.phos, zeqp.hover), 1, 1.2)
-                        text "{eq_pre, 0} dB" { at: qx + qw - 16, 372; anchor: right center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                        text "{eq_pre, 0} dB" { at: qx + qw - 16, 372; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                         on press zeqp { emit eq_pre(round(clamp((local.x - qx - 70) / (qw - 130), 0, 1) * 24)) }
                         on drag zeqp { emit eq_pre(round(clamp((local.x - qx - 70) / (qw - 130), 0, 1) * 24)) }
                     }
 
                     // the presets: mooi's, then yours (loaded as they are, never rewritten)
-                    text "PRESETS" { at: qx + 16, 400; anchor: left center; size: 7.5; family: "Share Tech Mono"; color: fl.muted }
+                    text "PRESETS" { at: qx + 16, 400; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                     for c in eqchips {
                         let pcx = qx + 12 + mod(c.n, 4) * ((qw - 24) / 4)
                         let pcy = 412 + floor(c.n / 4) * 28

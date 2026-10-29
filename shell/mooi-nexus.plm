@@ -754,7 +754,7 @@ scene Nexus {
             repeat g in 0..6 {
                 ellipse { at: w - 112 + mod(g, 2) * 5, 13 + floor(g / 2) * 5; radius: 1.3; color: dk.acc }
             }
-            text "MOVE" { at: w - 76, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+            text "MOVE" { at: w - 76, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
             box { from: w - 34, 8; size: 24, 20; corner: 10; color: mix(dk.well, dk.hot, 0.2 + 0.4 * eye) }
             text "×" { at: w - 22, 18; anchor: center; align: center; size: 13; color: dk.hot }
         }
@@ -865,8 +865,8 @@ scene Nexus {
                     glow: 8, 0.9 * st_glow, dk.acc
                     ellipse { at: 8 + scan * (dk_w - 16), 23; radius: 3; color: dk.acc }
                 }
-                text "CONTROL NEXUS" { at: 14, 12; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text clock.date { at: 118, 12; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                text "CONTROL NEXUS" { at: 14, 12; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text clock.date { at: 118, 12; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
                 // the traces from each card's lamp up to the bus, a via where they meet; and between neighbours
                 for nd in nodes {
                     line { from: nd.x, nd.y - 6; to: nd.bx, nd.by + 7; width: 1.4; color: dk.acc; opacity: 0.6 }
@@ -889,7 +889,7 @@ scene Nexus {
                         glow: 7, 0.9 * st_glow, dk.alert
                         box { from: -40, 4; size: 68, 16; corner: 2; color: dk.alert; opacity: 0.18 }
                         box { from: -40, 4; size: 68, 16; corner: 2; stroke: 1.2; color: dk.alert }
-                        text dk_caution_t { at: -6, 12.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.alert; width: 64; lines: 1 }
+                        text dk_caution_t { at: -6, 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.alert; width: 64; lines: 1 }
                     }
                     repeat b in 0..5 {
                         zone box hb.$b { from: 34 + b * 26, 1; size: 24, 22; cursor: pointer; role: button
@@ -923,8 +923,8 @@ scene Nexus {
                         text w_initial { at: 35, 54; anchor: center; align: center; size: 18; weight: 700; family: "Exo 2"; color: dk.acc }
                         text w_app { at: 66, 46; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: dk.ink; width: pw_w - 80; lines: 1 }
                         text w_title { at: 66, 64; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: pw_w - 80; lines: 1 }
-                        text w_where { at: 14, 90; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; width: pw_w - 28; lines: 1 }
-                        text "SOUND" { at: 14, 108; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                        text w_where { at: 14, 90; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: pw_w - 28; lines: 1 }
+                        text "SOUND" { at: 14, 108; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                         group {
                             show: w_snd
                             zone box wsz { from: 60, 100; size: pw_w - 112, 16; cursor: pointer; role: slider; value: w_vol; label: "{w_app} volume" }
@@ -956,7 +956,7 @@ scene Nexus {
                     group {
                         show: not w_ok
                         figure i_window { at: pw_w / 2, pw_h / 2 - 8; size: 26, 26; color: dk.mute }
-                        text "NO WINDOW HERE" { at: pw_w / 2, pw_h / 2 + 20; anchor: center; align: center; size: 9.5; family: "Share Tech Mono"; color: dk.mute }
+                        text "NO WINDOW HERE" { at: pw_w / 2, pw_h / 2 + 20; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                     }
                     zone box eg0 { from: pw_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move This window"; active: dk_edit }
                     zone box ee0 { from: pw_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide This window"; active: dk_edit }
@@ -966,7 +966,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pw_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es0.hover) }
-                        text "⇔ {pw_sz}" { at: pw_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pw_sz}" { at: pw_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es0 { emit dk_size(0) }
                     on drag eg0 while dk_edit { dk_gid = 0; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1004,8 +1004,8 @@ scene Nexus {
                             box { from: t.x, t.y; size: t.w, t.h; corner: dk.r; stroke: if(t.active, 1.6, 1)
                                   color: if(t.active, dk.acc, mix(dk.line, dk.acc, tlz.hover + if(dk_hws == t.index, 1, 0))) }
                         }
-                        text t.label { at: t.x + 2, t.y + t.h + 9; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2); width: t.w - 20; lines: 1 }
-                        text t.n { at: t.x + t.w - 2, t.y + t.h + 9; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute }
+                        text t.label { at: t.x + 2, t.y + t.h + 9; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2); width: t.w - 20; lines: 1 }
+                        text t.n { at: t.x + t.w - 2, t.y + t.h + 9; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                         group {
                             show: dk_hws == t.index
                             opacity: lk
@@ -1018,7 +1018,7 @@ scene Nexus {
                                 line { from: bx.$c, by.$c; to: bx.$c + 9 * bs.$c, by.$c; width: 1.6; color: dk.acc }
                                 line { from: bx.$c, by.$c; to: bx.$c, by.$c + 9 * bt.$c; width: 1.6; color: dk.acc }
                             }
-                            text "LOCK" { at: t.x + t.w, t.y - 11; anchor: right center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: lk > 0.9 }
+                            text "LOCK" { at: t.x + t.w, t.y - 11; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: lk > 0.9 }
                         }
                         on hover tlz for 260ms while dk_wd < 0 { dk_hws = t.index; emit dk_hov_ws(t.index) }
                         on press tlz { emit dk_ws(t.index) }
@@ -1033,7 +1033,7 @@ scene Nexus {
                             box { from: w.x, w.y; size: w.w, w.h; corner: 1; color: mix(dk.raised, #000000, 0.25); opacity: if(w.pictured, 0.95, 0.72) }
                             image w.pic { at: w.x, w.y; size: w.w, w.h; show: w.pictured }
                             box { from: w.x, w.y; size: w.w, min(5, w.h); color: mix(dk.line, dk.acc, if(w.focused, 0.6, 0)); show: not w.pictured }
-                            text "{upper(w.app)}" { at: w.x + w.w / 2, w.y + w.h / 2 + 2; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: dk.ink2; width: w.w - 6; lines: 1; show: not w.pictured and w.w > 34 and w.h > 18 }
+                            text "{upper(w.app)}" { at: w.x + w.w / 2, w.y + w.h / 2 + 2; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: w.w - 6; lines: 1; show: not w.pictured and w.w > 34 and w.h > 18 }
                             box { from: w.x, w.y; size: w.w, w.h; corner: 1; stroke: 1 + wl; color: if(w.focused or wl > 0.5, dk.acc, mix(dk.line, dk.acc, wz.hover)); opacity: 0.95 }
                         }
                         on drag wz { dk_wd = w.index; dk_wdx = drag.dx; dk_wdy = drag.dy; dk_hws = -1 }
@@ -1047,7 +1047,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: ps_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es1.hover) }
-                        text "⇔ {ps_sz}" { at: ps_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {ps_sz}" { at: ps_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es1 { emit dk_size(1) }
                     on drag eg1 while dk_edit { dk_gid = 1; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1075,7 +1075,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pm_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es2.hover) }
-                        text "⇔ {pm_sz}" { at: pm_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pm_sz}" { at: pm_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es2 { emit dk_size(2) }
                     on drag eg2 while dk_edit { dk_gid = 2; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1102,8 +1102,8 @@ scene Nexus {
                             box { from: qx + 8, qy; size: qw - 16, 2; color: mix(dk.acc, dk.hot, q.hot); show: q.on }
                             QGlyph(qx + 15, qy + 15, q.glyph, if(q.on, mix(dk.acc, dk.hot, q.hot), mix(dk.ink2, dk.ink, qz.hover)), 14)
                         }
-                        text "{upper(q.word)}" { at: qx + 28, qy + 15.5; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: if(q.on, mix(dk.acc, dk.hot, q.hot), dk.ink); width: qw - 32; lines: 1 }
-                        text q.state { at: qx + 9, qy + 34; anchor: left center; size: 9; family: "Exo 2"; color: if(q.on, dk.ink, dk.mute); width: qw - 14; lines: 1 }
+                        text "{upper(q.word)}" { at: qx + 28, qy + 15.5; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(q.on, mix(dk.acc, dk.hot, q.hot), dk.ink); width: qw - 32; lines: 1 }
+                        text q.state { at: qx + 9, qy + 34; anchor: left center; size: 10; family: "Exo 2"; color: if(q.on, dk.ink, dk.mute); width: qw - 14; lines: 1 }
                         on press qz { emit nx_tog(q.code) }
                     }
                     zone box eg3 { from: pq_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Quick settings"; active: dk_edit }
@@ -1114,7 +1114,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pq_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es3.hover) }
-                        text "⇔ {pq_sz}" { at: pq_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pq_sz}" { at: pq_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es3 { emit dk_size(3) }
                     on drag eg3 while dk_edit { dk_gid = 3; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1152,9 +1152,9 @@ scene Nexus {
                         figure i_music { at: 14 + ua / 2, 34 + ua / 2; size: 22, 22; color: dk.mute; show: not nx_art_on }
                         box { from: 14, 34; size: ua, ua; corner: dk.r; stroke: 1; color: mix(dk.line, dk.hot, uart.hover) }
                         on press uart { emit nx_go(20) }
-                        text "{upper(med.player)}" { at: ux, 40; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.hot; width: pu_w - ux - 14; lines: 1 }
-                        text med.title { at: ux, 58; anchor: left center; size: 13.5; weight: 600; family: "Exo 2"; color: dk.ink; width: pu_w - ux - 14; lines: 1 }
-                        text med.artist { at: ux, 76; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: pu_w - ux - 14; lines: 1 }
+                        text "{upper(med.player)}" { at: ux, 40; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.hot; width: pu_w - ux - 14; lines: 1 }
+                        text med.title { at: ux, 58; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: dk.ink; width: pu_w - ux - 14; lines: 1 }
+                        text med.artist { at: ux, 76; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: pu_w - ux - 14; lines: 1 }
                         group {
                             show: not dk_vert
                             glow: 5, 0.5 * st_glow, dk.hot
@@ -1171,8 +1171,8 @@ scene Nexus {
                             box { from: upx, uy; size: (pu_w - upx - 14) * clamp(rc_song, 0, 1), 3; corner: 1; color: dk.hot }
                         }
                         ellipse { at: upx + (pu_w - upx - 14) * clamp(rc_song, 0, 1), uy + 1.5; radius: 3; color: dk.ink }
-                        text nx_elapsed { at: upx, uy + 12; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
-                        text nx_length { at: pu_w - 14, uy + 12; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                        text nx_elapsed { at: upx, uy + 12; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
+                        text nx_length { at: pu_w - 14, uy + 12; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not dk_vert }
                         let ucx = if(dk_vert, pu_w - 60, pu_w / 2)
                         let ucy = if(dk_vert, 58, 176)
                         zone box mb.0 { from: ucx - 46, ucy - 14; size: 28, 28; cursor: pointer; role: button; label: "Previous" }
@@ -1191,7 +1191,7 @@ scene Nexus {
                         show: not mus_on
                         zone box mopen { from: 14, 34; size: pu_w - 28, pu_h - 48; cursor: pointer; role: button; label: "Open the music player" }
                         figure i_music { at: pu_w / 2, pu_h / 2 - 4; size: 26, 26; color: mix(dk.mute, dk.acc, mopen.hover) }
-                        text "NOTHING PLAYING · OPEN THE PLAYER" { at: pu_w / 2, pu_h / 2 + 24; anchor: center; align: center; size: 8.5; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, mopen.hover) }
+                        text "NOTHING PLAYING · OPEN THE PLAYER" { at: pu_w / 2, pu_h / 2 + 24; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, mopen.hover) }
                         on press mopen { emit nx_go(20) }
                     }
                     zone box eg4 { from: pu_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Music"; active: dk_edit }
@@ -1202,7 +1202,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pu_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es4.hover) }
-                        text "⇔ {pu_sz}" { at: pu_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pu_sz}" { at: pu_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es4 { emit dk_size(4) }
                     on drag eg4 while dk_edit { dk_gid = 4; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1256,7 +1256,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pc_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es5.hover) }
-                        text "⇔ {pc_sz}" { at: pc_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pc_sz}" { at: pc_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es5 { emit dk_size(5) }
                     on drag eg5 while dk_edit { dk_gid = 5; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1274,13 +1274,13 @@ scene Nexus {
                     zone box tdz { from: 0, 30; size: pt_w, pt_h - 30; cursor: pointer; role: button; label: "The calendar" }
                     on press tdz { emit nx_go(11) }
                     text td_day { at: 12, 62; anchor: left center; size: 40; weight: 300; family: "Exo 2"; color: dk.ink }
-                    text td_week { at: 70, 52; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                    text td_week { at: 70, 52; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     text td_month { at: 70, 68; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2 }
                     group {
                         show: wx_ok
                         WGlyph(pt_w - 30, 50, 22, wx_kind)
                         text wx_t { at: pt_w - 46, 50; anchor: right center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink }
-                        text wx_word { at: pt_w - 14, 72; anchor: right center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: pt_w - 120; lines: 1; align: right }
+                        text wx_word { at: pt_w - 14, 72; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: pt_w - 120; lines: 1; align: right }
                     }
                     let dyy = pt_h - 46
                     let dcw = (pt_w - 28) / 7
@@ -1288,7 +1288,7 @@ scene Nexus {
                         let dx = 14 + dd.index * dcw
                         box { from: dx + 1, dyy; size: dcw - 2, 34; corner: dk.r; color: if(dd.today, mix(dk.well, dk.acc, 0.22), dk.well); opacity: if(dd.today, 1, 0.55) }
                         box { from: dx + 1, dyy; size: dcw - 2, 34; corner: dk.r; stroke: 1; color: dk.acc; show: dd.today }
-                        text dd.label { at: dx + dcw / 2, dyy + 10; anchor: center; align: center; size: 7.5; family: "Share Tech Mono"; color: if(dd.today, dk.acc, dk.mute) }
+                        text dd.label { at: dx + dcw / 2, dyy + 10; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: if(dd.today, dk.acc, dk.mute) }
                         text "{dd.day, 0}" { at: dx + dcw / 2, dyy + 24; anchor: center; align: center; size: 11; weight: 600; family: "Exo 2"; color: if(dd.today, dk.ink, dk.ink2) }
                     }
                     zone box eg6 { from: pt_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Today"; active: dk_edit }
@@ -1299,7 +1299,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pt_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es6.hover) }
-                        text "⇔ {pt_sz}" { at: pt_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pt_sz}" { at: pt_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es6 { emit dk_size(6) }
                     on drag eg6 while dk_edit { dk_gid = 6; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1328,7 +1328,7 @@ scene Nexus {
                         repeat f in 0..5 {
                             box { from: 0, bnh * (0.5 + f * 0.1); size: pf_w, bnh * 0.1 + 1; color: mix(dk.raised, #000000, 0.45); opacity: 0.12 + f * 0.16 }
                         }
-                        text "CHANGE BANNER" { at: pf_w - 12, 14; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: #ffffff; opacity: 0.9 * pfb.hover }
+                        text "CHANGE BANNER" { at: pf_w - 12, 14; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"; color: #ffffff; opacity: 0.9 * pfb.hover }
                     }
                     on press pfb { emit nx_pick(1) }
                     zone box pfa { from: 12, bnh - av * 0.5; size: av, av; cursor: pointer; role: button; label: "Change your picture" }
@@ -1350,12 +1350,12 @@ scene Nexus {
                     on press pfa { emit nx_pick(0) }
                     text pick(nx_noticed, nx_name, nx_notice) { at: 22 + av, bnh + 13; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: pf_w - av - 34; lines: 1; show: not nx_large }
                     text pick(nx_noticed, nx_name, nx_notice) { at: 22 + av, bnh + 18; anchor: left center; size: 19; weight: 600; family: "Exo 2"; color: if(nx_noticed, dk.acc, dk.ink); width: pf_w - av - 34; lines: 1; show: nx_large }
-                    text nx_who { at: 22 + av, bnh + if(nx_large, 38, 29); anchor: left center; size: 9; family: "Share Tech Mono"; color: dk.mute; width: pf_w - av - 34; lines: 1 }
+                    text nx_who { at: 22 + av, bnh + if(nx_large, 38, 29); anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: pf_w - av - 34; lines: 1 }
                     let pfy = pf_h - 24
                     line { from: 12, pfy - 10; to: pf_w - 12, pfy - 10; width: 1; color: dk.line; opacity: 0.6 }
                     figure i_cpu { at: 18, pfy + 3; size: 10, 10; color: dk.mute }
-                    text m_up_t { at: 28, pfy + 3; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.ink2; width: pf_w - 120; lines: 1 }
-                    text "{tiles.count - 1, 0} WS · {wins.count, 0} WIN" { at: pf_w - 12, pfy + 3; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.acc }
+                    text m_up_t { at: 28, pfy + 3; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: pf_w - 120; lines: 1 }
+                    text "{tiles.count - 1, 0} WS · {wins.count, 0} WIN" { at: pf_w - 12, pfy + 3; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.acc }
                     zone box eg7 { from: pf_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Profile"; active: dk_edit }
                     zone box ee7 { from: pf_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Profile"; active: dk_edit }
                     zone box es7 { from: pf_w - 166, 8; size: 38, 20; cursor: pointer; role: button; label: "Resize Profile"; active: dk_edit and not dk_vert }
@@ -1364,7 +1364,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pf_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es7.hover) }
-                        text "⇔ {pf_sz}" { at: pf_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pf_sz}" { at: pf_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es7 { emit dk_size(7) }
                     on drag eg7 while dk_edit { dk_gid = 7; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1392,7 +1392,7 @@ scene Nexus {
                             ellipse { at: s.x + 10, s.y + 12; radius: 2.6; color: dk.hot }
                         }
                         box { from: s.x + s.w - 9, s.y + 4; size: 5, 5; corner: 1; color: dk.acc; opacity: 0.8; show: s.env }
-                        text "{upper(s.word)}" { at: s.x + s.w / 2 + if(s.live, 5, 0), s.y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+                        text "{upper(s.word)}" { at: s.x + s.w / 2 + if(s.live, 5, 0), s.y + 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"
                                                  color: if(s.live, dk.hot, if(s.save, dk.mute, mix(dk.ink2, dk.ink, sz.hover))); width: s.w - 14; lines: 1 }
                         on hover sz for 220ms while not s.save { dk_hsc = s.index; emit dk_hov_scene(s.index) }
                         on press sz while not s.save { emit dk_scene(s.index) }
@@ -1407,7 +1407,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pn_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es8.hover) }
-                        text "⇔ {pn_sz}" { at: pn_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pn_sz}" { at: pn_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es8 { emit dk_size(8) }
                     on drag eg8 while dk_edit { dk_gid = 8; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1434,7 +1434,7 @@ scene Nexus {
                             text t.word { at: t.x + 13, t.y + 13.5; anchor: left center; size: 10; family: "Share Tech Mono"; color: mix(dk.ink2, dk.ink, tz.hover); width: t.w - 72; lines: 1 }
                             box { from: t.x + t.w - 54, t.y + 4; size: 52, 18; corner: dk.r; color: if(t.hot, dk.hot, dk.acc); opacity: 0.12 + 0.2 * tz.hover }
                             box { from: t.x + t.w - 54, t.y + 4; size: 52, 18; corner: dk.r; stroke: 1; color: if(t.hot, dk.hot, dk.acc) }
-                            text t.act { at: t.x + t.w - 28, t.y + 13.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
+                            text t.act { at: t.x + t.w - 28, t.y + 13.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(t.hot, dk.hot, dk.acc) }
                             on press tz { emit dk_wait(t.index) }
                         }
                     }
@@ -1446,7 +1446,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: pa_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es9.hover) }
-                        text "⇔ {pa_sz}" { at: pa_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {pa_sz}" { at: pa_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es9 { emit dk_size(9) }
                     on drag eg9 while dk_edit { dk_gid = 9; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1465,7 +1465,7 @@ scene Nexus {
                     let hc = (py_w - 40 - 23) / 24
                     let hy0 = 34
                     for dd in aday {
-                        text dd.label { at: 12, hy0 + dd.index * (hc + 1) + hc / 2; anchor: left center; size: 7; family: "Share Tech Mono"; color: if(dd.index == 6, dk.acc, dk.mute) }
+                        text dd.label { at: 12, hy0 + dd.index * (hc + 1) + hc / 2; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(dd.index == 6, dk.acc, dk.mute) }
                     }
                     for c in heat {
                         let hx = 30 + mod(c.index, 24) * (hc + 1)
@@ -1478,15 +1478,15 @@ scene Nexus {
                     let ty0 = hy0 + 7 * (hc + 1) + 18
                     for a in topa {
                         let ay = ty0 + a.index * 16
-                        text "{upper(a.word)}" { at: 12, ay + 5; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: dk.ink2; width: 92; lines: 1 }
+                        text "{upper(a.word)}" { at: 12, ay + 5; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.ink2; width: 92; lines: 1 }
                         box { from: 108, ay + 2; size: py_w - 170, 5; corner: 2; color: dk.well }
                         group {
                             glow: 4, 0.4 * st_glow, dk.acc
                             box { from: 108, ay + 2; size: (py_w - 170) * clamp(a.v, 0, 1), 5; corner: 2; color: dk.acc }
                         }
-                        text a.t { at: py_w - 12, ay + 5; anchor: right center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+                        text a.t { at: py_w - 12, ay + 5; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                     }
-                    text "THE BAR STARTS COUNTING NOW: A WEEK FILLS THIS" { at: py_w / 2, py_h / 2 + 30; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: dk.mute; show: topa.count == 0 }
+                    text "THE BAR STARTS COUNTING NOW: A WEEK FILLS THIS" { at: py_w / 2, py_h / 2 + 30; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: topa.count == 0 }
                     zone box eg10 { from: py_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Activity"; active: dk_edit }
                     zone box ee10 { from: py_w - 34, 8; size: 24, 20; cursor: pointer; role: button; label: "Hide Activity"; active: dk_edit }
                     zone box es10 { from: py_w - 166, 8; size: 38, 20; cursor: pointer; role: button; label: "Resize Activity"; active: dk_edit and not dk_vert }
@@ -1495,7 +1495,7 @@ scene Nexus {
                         show: ed_in > 0.01 and not dk_vert
                         opacity: ed_in
                         box { from: py_w - 166, 8; size: 38, 20; corner: 10; color: mix(dk.well, dk.acc, 0.25 + 0.35 * es10.hover) }
-                        text "⇔ {py_sz}" { at: py_w - 147, 18.5; anchor: center; align: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                        text "⇔ {py_sz}" { at: py_w - 147, 18.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                     }
                     on press es10 { emit dk_size(10) }
                     on drag eg10 while dk_edit { dk_gid = 10; dk_gdx = drag.dx; dk_gdy = drag.dy }
@@ -1520,8 +1520,8 @@ scene Nexus {
             opacity: smooth(0, 0.8, ed_in)
             zone box keep_ar { from: 0, 0; size: 620, 116; role: region; label: "Arranging the deck" }
             IslandFrame(1, 620, 116, centre: true) {
-                text "ARRANGE · CARRY A CARD BY MOVE, × PUTS IT ON THE SHELF" { at: 16, 17; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text "EDGE" { at: 16, 46; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                text "ARRANGE · CARRY A CARD BY MOVE, × PUTS IT ON THE SHELF" { at: 16, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "EDGE" { at: 16, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
                 repeat e in 0..4 {
                     let ex.$e = 54 + e * 32
                     zone box ez.$e { from: ex.$e, 34; size: 28, 24; cursor: pointer; role: tab; selected: dk_edge == e; label: pick(e, "Along the bottom", "Along the top", "Down the left", "Down the right") }
@@ -1531,14 +1531,14 @@ scene Nexus {
                     box { from: ex.$e + pick(e, 6, 6, 6, 19), 34 + pick(e, 16, 5, 5, 5); size: pick(e, 16, 16, 3, 3), pick(e, 3, 3, 14, 14); color: if(dk_edge == e, dk.acc, dk.ink2) }
                     on press ez.$e { emit dk_edge_set(e) }
                 }
-                text "ROWS" { at: 194, 46; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                text "ROWS" { at: 194, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
                 repeat r in 0..2 {
                     zone box rz.$r { from: 232 + r * 32, 34; size: 28, 24; cursor: pointer; role: tab; selected: dk_rows == r + 1; label: pick(r, "One row of cards", "Two rows of cards"); active: not dk_vert }
                     box { from: 232 + r * 32, 34; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_rows == r + 1, dk.acc, mix(dk.line, dk.acc, rz.$r.hover)); opacity: if(dk_vert, 0.4, 1) }
                     text pick(r, "1", "2") { at: 246 + r * 32, 46.5; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: if(dk_rows == r + 1, dk.acc, dk.ink2) }
                     on press rz.$r { emit dk_rows_set(r + 1) }
                 }
-                text "PROFILE" { at: 310, 46; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                text "PROFILE" { at: 310, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
                 repeat r in 0..2 {
                     zone box pz.$r { from: 366 + r * 56, 34; size: 52, 24; cursor: pointer; role: tab; selected: if(nx_large, 1, 0) == r; label: pick(r, "A small profile", "A large profile") }
                     box { from: 366 + r * 56, 34; size: 52, 24; corner: dk.r; stroke: 1; color: if(if(nx_large, 1, 0) == r, dk.acc, mix(dk.line, dk.acc, pz.$r.hover)) }
@@ -1559,7 +1559,7 @@ scene Nexus {
                         zone box hz { from: hx, 72; size: 82, 24; cursor: pointer; role: button; label: "Show {h.word}"; active: not h.room }
                         box { from: hx, 72; size: 82, 24; corner: dk.r; color: dk.well; opacity: 0.9 }
                         box { from: hx, 72; size: 82, 24; corner: dk.r; stroke: 1; color: if(h.room, dk.line, mix(dk.line, dk.acc, 0.4 + 0.6 * hz.hover)) }
-                        text "+ {upper(h.word)}" { at: hx + 41, 84.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(h.room, dk.mute, dk.ink); width: 78; lines: 1 }
+                        text "+ {upper(h.word)}" { at: hx + 41, 84.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(h.room, dk.mute, dk.ink); width: 78; lines: 1 }
                         on press hz { emit dk_show(h.code) }
                     }
                 }
@@ -1594,7 +1594,7 @@ scene Nexus {
             group {
                 move: cx0, cy_0
                 opacity: smooth(0, 0.6, cs.0)
-                text "// SWITCHES_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "// SWITCHES_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 for k in quick {
                     let kx = 14 + k.index * 54
                     group {
@@ -1602,7 +1602,7 @@ scene Nexus {
                     zone box ckz { from: kx, 28; size: 50, 26; cursor: pointer; role: toggle; checked: k.on; label: k.word }
                     box { from: kx, 28; size: 50, 26; corner: dk.r; color: if(k.on, mix(dk.well, dk.acc, 0.14), dk.well) }
                     box { from: kx, 28; size: 50, 26; corner: dk.r; stroke: 1; color: if(k.on, dk.acc, mix(dk.line, dk.acc, 0.5 * ckz.hover)) }
-                    text "{upper(k.word)}" { at: kx + 25, 41.5; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, dk.ink2); width: 46; lines: 1 }
+                    text "{upper(k.word)}" { at: kx + 25, 41.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, dk.ink2); width: 46; lines: 1 }
                     on press ckz { emit nx_tog(k.code) }
                     }
                 }
@@ -1611,16 +1611,16 @@ scene Nexus {
                 move: cs_r - 360 + (1 - cs.1) * 420 - 10 * shz.1.hover, cy_1
                 opacity: smooth(0, 0.6, cs.1)
                 zone box cnz { from: 0, 0; size: 360, 56; cursor: pointer; role: button; label: "Connections" }
-                text "// CONNECTIONS_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "// CONNECTIONS_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 text c_net { at: 14, 34; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dk.ink; width: 330; lines: 1 }
-                text c_bt { at: 346, 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: dk.ink2; width: 200; lines: 1; align: right }
+                text c_bt { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: 200; lines: 1; align: right }
                 on press cnz { emit nx_go(50) }
             }
             group {
                 move: cs_r - 360 + (1 - cs.2) * 420 - 10 * shz.2.hover, cy_2
                 opacity: smooth(0, 0.6, cs.2)
-                text "// SOUND_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text c_out { at: 346, 14; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: dk.ink2; width: 220; lines: 1; align: right }
+                text "// SOUND_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text c_out { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: 220; lines: 1; align: right }
                 zone box csv { from: 14, 30; size: 290, 16; cursor: pointer; role: slider; value: audio.volume; label: "Volume" }
                 box { from: 14, 36; size: 290, 4; corner: 2; color: dk.well }
                 group {
@@ -1642,9 +1642,9 @@ scene Nexus {
                     box { from: 14, 12; size: 64, 64; corner: dk.r; color: dk.well }
                     image cover { at: 14, 12; size: 64, 64; show: nx_art_on }
                     on press cmart { emit nx_go(20) }
-                    text "// NOW PLAYING_" { at: 92, 18; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.hot }
+                    text "// NOW PLAYING_" { at: 92, 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.hot }
                     text med.title { at: 92, 38; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink; width: 350; lines: 1 }
-                    text med.artist { at: 92, 55; anchor: left center; size: 10.5; family: "Exo 2"; color: dk.ink2; width: 250; lines: 1 }
+                    text med.artist { at: 92, 55; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: 250; lines: 1 }
                     box { from: 92, 70; size: 270, 2; color: dk.line }
                     box { from: 92, 70; size: 270 * clamp(rc_song, 0, 1), 2; color: dk.hot }
                     repeat b in 0..3 {
@@ -1657,7 +1657,7 @@ scene Nexus {
                 group {
                     show: not mus_on
                     zone box cmopen { from: 0, 0; size: 300, 44; cursor: pointer; role: button; label: "Open the music player" }
-                    text "// NOTHING PLAYING · OPEN THE PLAYER_" { at: 14, 22; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, cmopen.hover) }
+                    text "// NOTHING PLAYING · OPEN THE PLAYER_" { at: 14, 22; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, cmopen.hover) }
                     on press cmopen { emit nx_go(20) }
                 }
             }
@@ -1665,7 +1665,7 @@ scene Nexus {
                 move: cs_r - 420 + (1 - cs.4) * 480 - 10 * shz.4.hover, cy_4
                 opacity: smooth(0, 0.6, cs.4)
                 zone box cmz { from: 0, 0; size: 420, 60; cursor: pointer; role: button; label: "The machine: open btop" }
-                text "// MACHINE_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "// MACHINE_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 Reading(14, 22, 98, "CPU", m_cpu_t, rc_cpu, m_cpu > 0.85 or m_temp > 85)
                 Reading(112, 22, 98, "Memory", m_mem_t, rc_mem, m_mem > 0.9)
                 Reading(210, 22, 98, "Battery", m_bat_t, m_bat, m_bat_hot)
@@ -1676,7 +1676,7 @@ scene Nexus {
                 move: cs_r - 360 + (1 - cs.5) * 420 - 10 * shz.5.hover, cy_5
                 opacity: smooth(0, 0.6, cs.5)
                 zone box ctz { from: 0, 0; size: 360, 56; cursor: pointer; role: button; label: "Today: the calendar" }
-                text "// TODAY_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "// TODAY_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 text clock.time { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
                 text c_today { at: 14, 35; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dk.ink; width: 330; lines: 1 }
                 on press ctz { emit nx_go(11) }
@@ -1685,7 +1685,7 @@ scene Nexus {
                 move: cs_r - 400 + (1 - cs.6) * 460 - 10 * shz.6.hover, cy_6
                 opacity: smooth(0, 0.6, cs.6)
                 zone box cnt { from: 0, 0; size: 400, 56; cursor: pointer; role: button; label: "Notifications: open the Signal Field" }
-                text "// NOTIFICATIONS_" { at: 14, 14; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(c_notes_n > 0, dk.hot, dk.acc) }
+                text "// NOTIFICATIONS_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(c_notes_n > 0, dk.hot, dk.acc) }
                 text c_notes { at: 14, 35; anchor: left center; size: 12; family: "Exo 2"; color: dk.ink; width: 300; lines: 1 }
                 Act(316, 23, 70, "Open", false, c_notes_n > 0, cnt.hover)
                 on press cnt { emit nx_go(30) }
@@ -1694,7 +1694,7 @@ scene Nexus {
                 move: cs_r - 300 + (1 - cs.7) * 360 - 10 * shz.7.hover, cy_7
                 opacity: smooth(0, 0.6, cs.7)
                 zone box cup { from: 0, 0; size: 300, 44; cursor: pointer; role: button; label: "Updates" }
-                text "// UPDATES_" { at: 14, 22; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "// UPDATES_" { at: 14, 22; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 text c_upd { at: 106, 22; anchor: left center; size: 11; family: "Share Tech Mono"; color: dk.ink; width: 110; lines: 1 }
                 Act(216, 10, 70, "Update", c_upd_n > 0, false, cup.hover) { show: c_upd_n > 0 }
                 on press cup while c_upd_n > 0 { emit nx_go(13) }
@@ -1702,7 +1702,7 @@ scene Nexus {
             group {
                 move: cs_r - 380 + (1 - cs.8) * 440 - 10 * shz.8.hover, cy_8
                 opacity: smooth(0, 0.6, cs.8)
-                text "// WORKSPACES_" { at: 14, 24; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text "// WORKSPACES_" { at: 14, 24; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 for t in tiles {
                     let tx = 130 + t.index * 32
                     group {
@@ -1726,7 +1726,7 @@ scene Nexus {
             zone box keep_sc { from: 0, 0; size: gs_w, 86; role: region; label: "What the scene would change" }
             IslandFrame(1, gs_w, 86, centre: true) {
                 text diff_t { at: 16, 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.hot; width: gs_w - 150 }
-                text "PRESS TO SWITCH · RIGHT PRESS REMOVES" { at: gs_w - 16, 18; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute }
+                text "PRESS TO SWITCH · RIGHT PRESS REMOVES" { at: gs_w - 16, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                 row { at: 16, 40; gap: 6
                     for c in diff {
                         group {
@@ -1789,13 +1789,13 @@ scene Nexus {
             zone box keep_nm { from: 0, 0; size: 440, 132; role: region; label: "Naming a scene" }
             IslandFrame(1, 440, 132, centre: true) {
                 text "SAVE THIS SETUP AS A SCENE" { at: 16, 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text "ENTER SAVES · ESC LEAVES IT" { at: 424, 18; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute }
+                text "ENTER SAVES · ESC LEAVES IT" { at: 424, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute }
                 box { from: 16, 32; size: 408, 30; corner: dk.r; color: dk.well }
                 box { from: 16, 32; size: 408, 30; corner: dk.r; stroke: 1; color: dk.acc; opacity: 0.8 }
                 input dk_name_in { at: 26, 47; width: 390; size: 13; family: "Exo 2"; color: dk.ink; placeholder: "Its name (twelve letters)"; selection: dk.well; label: "The scene's name" }
                 on submit dk_name_in { emit dk_save_named; dk_naming = false; blur }
-                text "WITH" { at: 16, 82; anchor: left center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: dk.mute }
-                text "NO SAVED ENVIRONMENTS YET (THE OVERVIEW SAVES THEM)" { at: 54, 82; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute; show: envs.count == 0 }
+                text "WITH" { at: 16, 82; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
+                text "NO SAVED ENVIRONMENTS YET (THE OVERVIEW SAVES THEM)" { at: 54, 82; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: envs.count == 0 }
                 row { at: 54, 71; gap: 6
                     for e in envs {
                         group {
@@ -1803,7 +1803,7 @@ scene Nexus {
                             zone box enz { from: 0, 0; size: e.w, 22; cursor: pointer; role: toggle; checked: e.on; label: "Restore {e.word} with it" }
                             box { from: 0, 0; size: e.w, 22; corner: dk.r; color: if(e.on, mix(dk.well, dk.acc, 0.2), dk.well) }
                             box { from: 0, 0; size: e.w, 22; corner: dk.r; stroke: 1; color: if(e.on, dk.acc, mix(dk.line, dk.acc, enz.hover)) }
-                            text e.word { at: e.w / 2, 11.5; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: if(e.on, dk.acc, dk.ink2) }
+                            text e.word { at: e.w / 2, 11.5; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: if(e.on, dk.acc, dk.ink2) }
                             on press enz { emit dk_env(e.index) }
                         }
                     }

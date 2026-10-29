@@ -263,6 +263,9 @@ local media, pos, pos_at = {}, 0, os.time()
 local art_url = nil
 local function clock(s) s = math.max(0, math.floor(tonumber(s) or 0)); return string.format("%d:%02d", math.floor(s / 60), s % 60) end
 local cava, sent = nil, {}
+-- A cava that never printed a band is not installed: say so once and stop respawning it
+-- (audit 2026-10-29).
+local cava_lines, viz_missing = 0, false
 local CAVA = "cava-notch.conf"
 pcall(sys.call, "files.write", CAVA, table.concat({
     "[general]", "bars = 24", "framerate = 30", "[input]", "method = pipewire",
@@ -275,10 +278,12 @@ local function viz()
         for i = 0, 23 do if (sent[i] or 0) ~= 0 then fact["mv" .. i] = 0; sent[i] = 0 end end
         return
     end
-    if cava then return end
+    if cava or viz_missing then return end
     local mine
+    cava_lines = 0
     mine = spawn("cava", { "-p", data_folder .. "/" .. CAVA }, function(line)
         if cava ~= mine then return end
+        cava_lines = cava_lines + 1
         local i = 0
         for v in line:gmatch("(%d+);") do
             if i > 23 then break end
@@ -286,7 +291,11 @@ local function viz()
             if math.abs(x - (sent[i] or 0)) > 0.025 then fact["mv" .. i] = x; sent[i] = x end
             i = i + 1
         end
-    end, function() if cava == mine then cava = nil end end)
+    end, function()
+        if cava ~= mine then return end
+        cava = nil
+        if cava_lines == 0 then viz_missing = true; fact.mu_viz_missing = true end
+    end)
     cava = mine
 end
 pcall(sys.watch, "media", function(m)

@@ -27,11 +27,11 @@ part Library {
                         PRound(qx + 27, 140, 12, 0, fl.phos, zlback.hover)
                         path { color: mix(fl.engrave, fl.phos, zlback.hover); move qx + 30, 134; line qx + 23, 140; line qx + 30, 146; close } }
                     on press zlback { emit lib_back }
-                    text lib_where { at: if(lib_level > 0, qx + 46, qx + 16), 140; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"
+                    text lib_where { at: if(lib_level > 0, qx + 46, qx + 16), 140; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"
                                      width: qw - 110; lines: 1; color: fl.trace_lit }
-                    text "YOUR MPD LIBRARY — PLAYING FROM IT TURNS THE PLAYER TO IT" { at: qx + 16, 186; anchor: left center; size: 7
+                    text "YOUR MPD LIBRARY — PLAYING FROM IT TURNS THE PLAYER TO IT" { at: qx + 16, 186; anchor: left center; size: 10
                          family: "Share Tech Mono"; color: fl.ember; show: src == remote }
-                    text "{lib_count, 0}" { at: qx + qw - 16, 140; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    text "{lib_count, 0}" { at: qx + qw - 16, 140; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
 
                     // the search, over every song
                     zone box zlfind { from: qx + 12, 156; size: qw - 24, 26; cursor: text; role: region; label: "Search every song" }
@@ -67,9 +67,9 @@ part Library {
                             image a.art { at: cx1, ay + 4; size: cs, cs }
                         }
                         box { from: cx1, ay + 4; size: cs, cs; corner: 6; stroke: 1; color: mix(fl.trace_dim, fl.phos, zal.hover) }
-                        text a.name { at: ax + gcw / 2, ay + cs + 14; anchor: center; size: 9; weight: 600; family: "Exo 2"; width: gcw - 8; lines: 1
+                        text a.name { at: ax + gcw / 2, ay + cs + 14; anchor: center; size: 10; weight: 600; family: "Exo 2"; width: gcw - 8; lines: 1
                                       color: mix(fl.engrave, fl.phos, zal.hover) }
-                        text a.sub { at: ax + gcw / 2, ay + cs + 27; anchor: center; size: 7.5; family: "Exo 2"; width: gcw - 8; lines: 1; color: fl.muted }
+                        text a.sub { at: ax + gcw / 2, ay + cs + 27; anchor: center; size: 10; family: "Exo 2"; width: gcw - 8; lines: 1; color: fl.muted }
                         // play and add, on the cover while hovered
                         zone box zalp { from: cx1 + cs - 50, ay + cs - 22; size: 22, 22; cursor: pointer; role: button; label: "Play {a.name}" }
                         zone box zala { from: cx1 + cs - 26, ay + cs - 22; size: 22, 22; cursor: pointer; role: button; label: "Add {a.name}" }
@@ -103,8 +103,8 @@ part Library {
                         ellipse { at: qx + 29, ly + 19; radius: 2; color: fl.trace_lit; show: not r.thumb }
                         text r.name { at: qx + 52, ly + 12; anchor: left center; size: 10; weight: 600; family: "Exo 2"; width: qw - 150; lines: 1
                                       color: mix(fl.engrave, fl.phos, zl.hover) }
-                        text r.sub { at: qx + 52, ly + 27; anchor: left center; size: 7.5; family: "Exo 2"; width: qw - 150; lines: 1; color: fl.muted }
-                        text r.time { at: qx + qw - 84, ly + 19; anchor: right center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; show: r.song }
+                        text r.sub { at: qx + 52, ly + 27; anchor: left center; size: 10; family: "Exo 2"; width: qw - 150; lines: 1; color: fl.muted }
+                        text r.time { at: qx + qw - 84, ly + 19; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: r.song }
                         zone box zlplay { from: qx + qw - 76, ly + 7; size: 28, 24; cursor: pointer; role: button; label: "Play {r.name} now" }
                         PRound(qx + qw - 62, ly + 19, 12, 0, fl.phos, zlplay.hover)
                         path { color: mix(fl.engrave, fl.phos, zlplay.hover); move qx + qw - 66, ly + 13; line qx + qw - 57, ly + 19; line qx + qw - 66, ly + 25; close }
@@ -116,7 +116,7 @@ part Library {
                         on press zlplay { emit lib_play(r.k) }
                         on press zladd { emit lib_add(r.k) }
                     }
-                    text "PAGE {lib_page + 1, 0} / {lib_pages, 0}  ·  the wheel turns pages" { at: qx + qw / 2, ph - 30; anchor: center; size: 8
+                    text "PAGE {lib_page + 1, 0} / {lib_pages, 0}  ·  the wheel turns pages" { at: qx + qw / 2, ph - 30; anchor: center; size: 10
                          family: "Share Tech Mono"; color: fl.muted; show: lib_pages > 1 }
                     text "NOTHING FOUND" { at: qx + qw / 2, 260; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: lib_count < 1 }
                 }

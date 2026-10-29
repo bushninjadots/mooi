@@ -52,7 +52,7 @@ part Panel {
                 PChip(206, 15, 116, "ELSEWHERE", src == remote, zsrc1.hover)
                 on press zsrc1 { emit pl_src(1) }
                 ellipse { at: 314, 19; radius: 3; color: fl.flare; show: has_remote and src != remote }
-                text t_status { at: 340, 26; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 400; lines: 1 }
+                text t_status { at: 340, 26; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 400; lines: 1 }
                 zone box zfull { from: pw - 104, 13; size: 54, 24; cursor: pointer; role: button; label: "Full screen" }
                 PChip(pw - 104, 14, 54, "FULL", false, zfull.hover)
                 on press zfull { emit pl_full }
@@ -162,9 +162,9 @@ part Panel {
                 text pick(has_song, "NOTHING IS PLAYING", t_title) { at: mx, 96; anchor: left center; size: 21; weight: 700; family: "Exo 2"
                       width: mw; lines: 2; color: fl.engrave }
                 text t_artist { at: mx, 146; anchor: left center; size: 13; family: "Exo 2"; width: mw; lines: 1; color: fl.phos }
-                text t_album { at: mx, 168; anchor: left center; size: 10.5; family: "Exo 2"; width: mw; lines: 1; color: fl.trace_lit }
-                text t_meta { at: mx, 188; anchor: left center; size: 8; family: "Share Tech Mono"; width: mw; lines: 1; color: fl.muted }
-                text "START mpd, OR PLAY SOMETHING ELSEWHERE" { at: mx, 146; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted
+                text t_album { at: mx, 168; anchor: left center; size: 10; family: "Exo 2"; width: mw; lines: 1; color: fl.trace_lit }
+                text t_meta { at: mx, 188; anchor: left center; size: 10; family: "Share Tech Mono"; width: mw; lines: 1; color: fl.muted }
+                text "START mpd, OR PLAY SOMETHING ELSEWHERE" { at: mx, 146; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted
                       show: not has_song and not mpd_on and src == library }
 
                 // the time: a bar to seek along, with the played part lit
@@ -183,8 +183,8 @@ part Panel {
                     box { from: mx, 238; size: mw * clamp(prg, 0, 1), 6; corner: 3; color: fl.phos; show: has_song }
                 }
                 ellipse { at: mx + mw * clamp(prg, 0, 1), 241; radius: 6 + zseek.hover * 2; color: fl.engrave; show: has_song }
-                text t_elapsed { at: mx, 262; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                text t_total { at: mx + mw, 262; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text t_elapsed { at: mx, 262; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
+                text t_total { at: mx + mw, 262; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                 on press zseek { emit pl_seek(round(clamp((local.x - mx) / mw, 0, 1) * 1000)) }
                 on drag zseek { emit pl_seek(round(clamp((local.x - mx) / mw, 0, 1) * 1000)) }
 
@@ -218,7 +218,7 @@ part Panel {
                 on press zrpt { emit pl_rpt }
 
                 // the volume, and the single-song switch
-                text "VOLUME" { at: mx, 404; anchor: left center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                text "VOLUME" { at: mx, 404; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.muted }
                 zone box zvol { from: mx + 60, 394; size: mw - 110, 22; cursor: pointer; role: slider; label: "Volume"; value: vol / 100; show: vol_on }
                 box { from: mx + 60, 402; size: mw - 110, 5; corner: 2.5; color: fl.ground }
                 box { from: mx + 60, 402; size: (mw - 110) * clamp(vol / 100, 0, 1), 5; corner: 2.5; color: fl.trace_lit; show: vol_on }
@@ -230,7 +230,7 @@ part Panel {
                 zone box zsgl { from: mx, 436; size: 96, 22; cursor: pointer; role: toggle; checked: sgl; label: "Stop after this song" }
                 PChip(mx, 436, 96, "SINGLE", sgl, zsgl.hover)
                 on press zsgl { emit pl_sgl }
-                text "SPACE PLAY · ← → SEEK · ↑ ↓ VOLUME · N P · S SHUFFLE · R REPEAT · ESC" { at: mx, ph - 26; anchor: left center; size: 7
+                text "SPACE PLAY · ← → SEEK · ↑ ↓ VOLUME · N P · S SHUFFLE · R REPEAT · ESC" { at: mx, ph - 26; anchor: left center; size: 10
                      family: "Share Tech Mono"; color: fl.trace; width: mw + 40; lines: 1 }
 
                 // ── the pane: the queue ──
@@ -252,7 +252,7 @@ part Panel {
                 group {
                     show: pane == queue
                     zone box zqclear { from: qx + qw - 90, 74; size: 76, 20; cursor: pointer; role: button; label: "Empty the queue"; show: q_count > 0 }
-                text "{q_count, 0} · CLEAR" { at: qx + qw - 52, 84; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, zqclear.hover); show: q_count > 0 }
+                text "{q_count, 0} · CLEAR" { at: qx + qw - 52, 84; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, zqclear.hover); show: q_count > 0 }
                 on press zqclear { emit pl_clear }
                 zone box zqscroll { from: qx, 100; size: qw, 9 * 48; role: list; label: "The queue — the wheel pages it" }
                 on scroll zqscroll { emit pl_qpage(if(wheel > 0, -1, 1)) }
@@ -262,11 +262,11 @@ part Panel {
                     box { from: qx + 8, qy; size: qw - 16, 44; corner: 6; color: if(q.current, mix(fl.well, fl.phos, 0.12), fl.well)
                           opacity: if(q.current, 0.9, 0.5 * zq.hover) }
                     box { from: qx + 8, qy + 8; size: 3, 28; corner: 1.5; color: fl.phos; show: q.current }
-                    text "{q.pos + 1, 0}" { at: qx + 30, qy + 22; anchor: center; size: 8; family: "Share Tech Mono"; color: if(q.current, fl.phos, fl.muted) }
-                    text q.title { at: qx + 48, qy + 15; anchor: left center; size: 10.5; weight: 600; family: "Exo 2"; width: qw - 130; lines: 1
+                    text "{q.pos + 1, 0}" { at: qx + 30, qy + 22; anchor: center; size: 10; family: "Share Tech Mono"; color: if(q.current, fl.phos, fl.muted) }
+                    text q.title { at: qx + 48, qy + 15; anchor: left center; size: 10; weight: 600; family: "Exo 2"; width: qw - 130; lines: 1
                                    color: if(q.current, fl.phos, fl.engrave) }
-                    text q.artist { at: qx + 48, qy + 31; anchor: left center; size: 8.5; family: "Exo 2"; width: qw - 130; lines: 1; color: fl.muted }
-                    text q.time { at: qx + qw - 40, qy + 22; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    text q.artist { at: qx + 48, qy + 31; anchor: left center; size: 10; family: "Exo 2"; width: qw - 130; lines: 1; color: fl.muted }
+                    text q.time { at: qx + qw - 40, qy + 22; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                     zone box zqdel { from: qx + qw - 34, qy + 11; size: 22, 22; cursor: pointer; role: button; label: "Take {q.title} out" }
                     line { from: qx + qw - 28, qy + 17; to: qx + qw - 18, qy + 27; width: 1.2; color: mix(fl.trace, fl.ember, zqdel.hover) }
                     line { from: qx + qw - 18, qy + 17; to: qx + qw - 28, qy + 27; width: 1.2; color: mix(fl.trace, fl.ember, zqdel.hover) }
@@ -275,14 +275,14 @@ part Panel {
                 }
                 text pick(src == remote, "THE QUEUE IS EMPTY", "ANOTHER PLAYER KEEPS ITS OWN QUEUE") { at: qx + qw / 2, 200; anchor: center; size: 10; family: "Share Tech Mono"
                      color: fl.muted; show: q_count < 1 or src == remote }
-                text "PAGE {q_page + 1, 0} / {q_pages, 0}" { at: qx + qw / 2, ph - 34; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted
+                text "PAGE {q_page + 1, 0} / {q_pages, 0}" { at: qx + qw / 2, ph - 34; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted
                      show: q_pages > 1 and src == library }
                 }
 
                 // ── the lyrics: the line being sung lit, the ones round it fading ──
                 group {
                     show: pane == lyrics
-                    text lyr_note { at: qx + 16, 117; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit
+                    text lyr_note { at: qx + 16, 117; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.trace_lit
                                     width: qw - 170; lines: 1 }
                     // the song's nudge, for lyrics that run early or late (kept by the song)
                     group {
@@ -290,7 +290,7 @@ part Panel {
                         zone box zlyb { from: qx + qw - 150, 106; size: 40, 22; cursor: pointer; role: button; label: "Lyrics half a second later" }
                         PChip(qx + qw - 150, 106, 40, "−0.5", false, zlyb.hover)
                         on press zlyb { emit lyr_nudge(-1) }
-                        text lyr_offset { at: qx + qw - 82, 117; anchor: center; align: center; size: 7.5; family: "Share Tech Mono"; color: fl.muted; width: 60 }
+                        text lyr_offset { at: qx + qw - 82, 117; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 60 }
                         zone box zlyf { from: qx + qw - 54, 106; size: 40, 22; cursor: pointer; role: button; label: "Lyrics half a second earlier" }
                         PChip(qx + qw - 54, 106, 40, "+0.5", false, zlyf.hover)
                         on press zlyf { emit lyr_nudge(1) }

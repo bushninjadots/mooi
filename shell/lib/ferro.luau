@@ -173,15 +173,19 @@ function M.derive(roles, signal)
     out.hull_raised = M.mix(black, lowish, 0.55)
     out.well = M.hsl(ph, math.min(ps, 0.75), 0.10)
     out.trace_dim = M.hsl(ph, math.min(ps, 0.3), 0.16)
-    out.trace = M.hold(M.hsl(ph, math.min(ps, 0.28), 0.32), black, 3.0)
+    -- Strokes and muted labels are painted on the hulls, not on the black ground alone: a
+    -- palette whose raised hull is not black left `muted` at 4.4:1 and `trace` at 2.8:1 there
+    -- (audit 2026-10-29). Hold against both, so the floor holds wherever they are drawn.
+    local on_ground = function(c, ratio) return M.hold(M.hold(c, black, ratio), out.hull_raised, ratio) end
+    out.trace = on_ground(M.hsl(ph, math.min(ps, 0.28), 0.32), 3.0)
     out.phos = M.hold(M.hsl(ph, ps, math.max(0.62, select(3, M.to_hsl(primary)))), black, 7.0)
-    out.trace_lit = M.hold(M.mix(out.phos, black, 0.12), black, 3.0)
+    out.trace_lit = on_ground(M.mix(out.phos, black, 0.12), 3.0)
     out.ink = M.hsl(ph, sat(0.7), 0.08)
     out.phos_fill = M.hold(M.hsl(ph, sat(math.min(math.max(ps, 0.55), 0.75)), 0.36), out.ink, 4.5)
     out.ember = M.hold(M.hsl(eh, sat(0.75), 0.55), black, 6.0)
     out.ember_fill = M.hold(M.hsl(eh, sat(0.72), 0.45), out.ink, 4.5)
     out.flare = M.hold(M.hsl((eh + 12) % 360, sat(0.9), 0.62), black, 9.0)
-    out.muted = M.hold(M.hsl(ph, math.min(ps, 0.22), 0.42), black, 4.5)
+    out.muted = on_ground(M.hsl(ph, math.min(ps, 0.22), 0.42), 4.5)
     -- Steel takes the palette's hue at a whisper, so the metal belongs to the scheme.
     out.steel_900 = M.hsl(ph, sat(0.08), 0.10)
     out.steel_700 = M.hsl(ph, sat(0.08), 0.19)
@@ -325,6 +329,11 @@ function M.adjust(out, opts, palette)
         out.trace_lit = M.hold(out.trace_lit, base, 3.0)
         out.trace_dim = M.hold(out.trace_dim, base, 1.5)
     end
+    -- Whatever moved them (a finish, a background, the day), the strokes and muted text keep
+    -- their floor on the surface they are painted on, not only on the black ground.
+    out.muted = M.hold(out.muted, out.hull_raised, 4.5)
+    out.trace = M.hold(out.trace, out.hull_raised, 3.0)
+    out.trace_lit = M.hold(out.trace_lit, out.hull_raised, 3.0)
     return out
 end
 

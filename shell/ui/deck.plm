@@ -34,7 +34,7 @@ library Deck {
     component BayHead(x: number, y: number, word: text) {
         size: 160, 14
         line { from: x, y + 6; to: x + 10, y + 6; width: 1.4; color: dk.acc; opacity: 0.85 }
-        text "{upper(word)}" { at: x + 16, y + 6; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.9 }
+        text "{upper(word)}" { at: x + 16, y + 6; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.9 }
     }
 
     // A card: a plate cut at its corners (look.corners), a hairline round it, a lit run along the top
@@ -66,10 +66,10 @@ library Deck {
             glow: 5, if(lamp > 0.5, 0.8, 0) * st_glow, pick(lamp, dk.mute, dk.acc, fl.flare, dk.alert)
             ellipse { at: 8, 17; radius: 2.4; color: pick(lamp, dk.mute, dk.acc, fl.flare, dk.alert) }
         }
-        text n { at: 14, 17; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: dk.mute }
+        text n { at: 14, 17; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute }
         line { from: 32, 17; to: 42, 17; width: 1.4; color: dk.acc; opacity: 0.85 }
-        text "{upper(word)}" { at: 47, 17; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.95 }
-        text meta { at: w - 14, 17; anchor: right center; size: 8; family: "Share Tech Mono"; color: dk.mute; width: w - 150; lines: 1; align: right; opacity: 1 - ed_in; show: w > 250 }
+        text "{upper(word)}" { at: 47, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: 0.95 }
+        text meta { at: w - 14, 17; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: w - 150; lines: 1; align: right; opacity: 1 - ed_in; show: w > 250 }
     }
 
     // A small action with its word: a chamfered key, lit while pointed at or while `lit`.
@@ -77,7 +77,7 @@ library Deck {
         size: w, 24
         box { from: x, y; size: w, 24; corner: dk.r; color: if(lit, mix(dk.well, dk.acc, 0.16), dk.well); opacity: 0.9 }
         box { from: x, y; size: w, 24; corner: dk.r; stroke: 1; color: if(hot, dk.hot, if(lit, dk.acc, mix(dk.line, dk.acc, 0.6 * hover))) }
-        text "{upper(word)}" { at: x + w / 2, y + 12.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+        text "{upper(word)}" { at: x + w / 2, y + 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"
                                color: if(hot, dk.hot, if(lit, dk.acc, mix(dk.ink2, dk.ink, hover))); width: w - 6; lines: 1 }
     }
 
@@ -100,7 +100,7 @@ library Deck {
             line { from: x - 5, y + h * (1 - clamp(r.v, 0, 1)); to: x + 5, y + h * (1 - clamp(r.v, 0, 1)); width: 1.2; color: if(r.hot, dk.hot, dk.acc) }
         }
         text r.shown { at: x, y + h + 12; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.ink; width: 34; lines: 1 }
-        text "{upper(r.word)}" { at: x, y + h + 24; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: dk.mute; width: 34; lines: 1 }
+        text "{upper(r.word)}" { at: x, y + h + 24; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 34; lines: 1 }
         on press fz { emit set(r.code * 1000 + round(clamp(1 - (local.y - 4) / h, 0, 1) * 1000)) }
         on drag fz { emit set(r.code * 1000 + round(clamp(1 - (local.y - 4) / h, 0, 1) * 1000)) }
         on scroll fz { emit set(r.code * 1000 + round(clamp(r.v + wheel * 0.05, 0, 1) * 1000)) }
@@ -109,8 +109,8 @@ library Deck {
     // A reading in the console: its name, the figure, a thin bar under it.
     component Reading(x: number, y: number, w: number, word: text, shown: text, v: number, hot: bool) {
         size: w, 30
-        text "{upper(word)}" { at: x, y + 5; anchor: left center; size: 8; family: "Share Tech Mono"; color: dk.mute }
-        text shown { at: x, y + 18; anchor: left center; size: 12.5; weight: 600; family: "Exo 2"; color: if(hot, dk.hot, dk.ink); width: w; lines: 1 }
+        text "{upper(word)}" { at: x, y + 5; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute }
+        text shown { at: x, y + 18; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(hot, dk.hot, dk.ink); width: w; lines: 1 }
         box { from: x, y + 28; size: w - 8, 2; color: dk.line }
         box { from: x, y + 28; size: (w - 8) * clamp(v, 0, 1), 2; color: if(hot, dk.hot, dk.acc) }
     }

@@ -112,7 +112,7 @@ M.SCHEMA = {
     -- the side notch (D106): a sliver on the left edge that fans out into Claude, music, workspaces,
     -- wallpapers, weather and GitHub; the Claude it asks (an alias `claude --model` takes; empty: its default)
     { path = "notch.on", kind = "boolean", default = true },
-    { path = "claude.model", kind = "enum", values = { "default", "haiku", "sonnet", "opus" }, default = "default" },
+    { path = "claude.model", kind = "enum", values = { "default", "haiku", "sonnet", "opus" }, default = "default", empty = true },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,
@@ -388,6 +388,10 @@ local function check(row, value)
         end
     elseif row.kind == "enum" then
         if type(value) ~= "string" then return false, "expected one of " .. table.concat(row.values, ", ") end
+        -- An empty string is "unset" for an enum that allows it (claude.model: pass no --model at
+        -- all), so it becomes the default rather than a problem reported on every load (audit
+        -- 2026-10-29).
+        if value == "" and row.empty then return true, nil, row.default end
         local known = false
         for _, allowed in ipairs(row.values) do if value == allowed then known = true end end
         if not known then return false, "expected one of " .. table.concat(row.values, ", ") end
@@ -529,9 +533,9 @@ function M.validate(t)
     for _, row in ipairs(M.SCHEMA) do
         local value = get(t, row.path)
         if value ~= nil then
-            local ok, why = check(row, value)
+            local ok, why, fixed = check(row, value)
             if ok then
-                set(out, row.path, value)
+                set(out, row.path, fixed ~= nil and fixed or value)
             else
                 problems[#problems + 1] = string.format("%s: %s, got %s; using %s",
                     row.path, why, tostring(value), (type(row.default) == "table") and "the default" or tostring(row.default))

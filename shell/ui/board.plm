@@ -69,7 +69,7 @@ library BoardParts {
             path { stroke: 1; color: fl.trace_dim
                    move c.x + 12, y0 + 52; line c.x + c.w - 12, y0 + 52; line c.x + c.w - 12, y0 + 130; line c.x + 12, y0 + 130; close }
             text pick(c.done, "NOTHING HERE YET", "FINISHED CARDS LAND HERE") { at: c.x + c.w / 2, y0 + 82; anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
-            text "+ ADDS A CARD · OR DRAG ONE IN" { at: c.x + c.w / 2, y0 + 100; anchor: center; size: 7.5; family: "Share Tech Mono"; color: fl.trace }
+            text "+ ADDS A CARD · OR DRAG ONE IN" { at: c.x + c.w / 2, y0 + 100; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
         }
         zone box add { from: c.x + c.w - 36, y0 + 8; size: 26, 24; cursor: pointer; role: button; label: "A card in {c.title}" }
         Chamfer(c.x + c.w - 36, y0 + 8, 26, 24, 4, mix(fl.hull_raised, fl.well, add.hover), mix(fl.trace, fl.phos, add.hover), 0.9)
@@ -113,9 +113,9 @@ library BoardParts {
         text k.title { at: k.x + 13, k.y + 9; anchor: left top; size: 12; weight: 600; family: "Exo 2"; width: k.w - 26; lines: 2
                        color: if(k.done, fl.muted, fl.phos) }
         text k.note { at: k.x + 13, k.y + 44; anchor: left top; size: 11; family: "Exo 2"; width: k.w - 26; lines: 1; color: fl.muted; show: k.noted }
-        text k.due { at: k.x + 48, k.y + k.h - 11.5; anchor: center; size: 8.5; family: "Share Tech Mono"; show: k.dated and not k.done
+        text k.due { at: k.x + 48, k.y + k.h - 11.5; anchor: center; size: 10; family: "Share Tech Mono"; show: k.dated and not k.done
                      color: if(k.due_st > 3.5, fl.ember, if(k.due_st > 2.5, fl.flare, if(k.due_st > 1.5, fl.phos, fl.muted))) }
-        text "DONE" { at: k.x + 13, k.y + k.h - 11; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos; show: k.done }
-        text k.age { at: k.x + k.w - 10, k.y + k.h - 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+        text "DONE" { at: k.x + 13, k.y + k.h - 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: k.done }
+        text k.age { at: k.x + k.w - 10, k.y + k.h - 11; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
     }
 }

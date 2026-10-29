@@ -469,7 +469,7 @@ scene Lumen {
                 box { from: min(rg_x0, rg_x1), min(rg_y0, rg_y1); size: abs(rg_x1 - rg_x0), abs(rg_y1 - rg_y0)
                       corner: 2; stroke: 2; color: fl.phos; show: canvas.pressed > 0.5 }
                 text "REGION · WHAT IS INSIDE SITS OVER THE WIDGETS" { at: screen.width * reg_x0 / 100 + 8, screen.height * reg_y0 / 100 + 14
-                     anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.ember; shadow: 0, 1, 6, 80%, #000000 }
+                     anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember; shadow: 0, 1, 6, 80%, #000000 }
             }
 
             // The whole screen is the crop's target: a press puts the subject where it is,
@@ -497,7 +497,7 @@ scene Lumen {
                                           family: "Share Tech Mono"; color: fl.ember; show: loading and not has_preview }
             text "COULD NOT READ THAT PICTURE — PICK ANOTHER" { at: screen.width / 2, screen.height / 2; anchor: center; size: 13
                                                                 family: "Share Tech Mono"; color: fl.ember; show: failed and not loading and not has_preview }
-            text "THE SOURCE · UNEDITED" { at: screen.width / 2, 58; anchor: center; size: 9; family: "Share Tech Mono"
+            text "THE SOURCE · UNEDITED" { at: screen.width / 2, 58; anchor: center; size: 10; family: "Share Tech Mono"
                                            color: fl.phos; shadow: 0, 1, 6, 70%, #000000; show: comparing }
             box { from: 0, 0; size: screen.width, 2; color: fl.ember; opacity: if(loading, 0.9, 0) }
 
@@ -508,13 +508,13 @@ scene Lumen {
             Plate(48, 36, 318, 66, 8, mix(fl.hull, fl.ground, 0.35), fl.trace_dim, 0.9)
             text "LUMEN" { at: 68, 59; anchor: left center; size: 25; weight: 700; family: "Exo 2"; color: fl.phos
                            shadow: 0, 0, 10, 40%, fl.phos }
-            text "WALLPAPER STUDIO" { at: 69, 82; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember }
+            text "WALLPAPER STUDIO" { at: 69, 82; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
 
             text src_name { at: 392, 54; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos
                             width: 820; lines: 1; shadow: 0, 1, 8, 70%, #000000 }
-            text src_meta { at: 392, 74; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted
+            text src_meta { at: 392, 74; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted
                             width: 820; lines: 1; shadow: 0, 1, 6, 70%, #000000 }
-            text status { at: 392, 94; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember
+            text status { at: 392, 94; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember
                           width: 900; lines: 1; shadow: 0, 1, 6, 70%, #000000 }
 
             Button(screen.width - 652, 44, 140, 38, "SOURCES", fl.trace_lit, false, open_browse, 0)
@@ -525,12 +525,12 @@ scene Lumen {
             // ── The vibes and the palette, on the right ─────────
             Plate(screen.width - 420, 132, 372, 440, 10, mix(fl.hull, fl.ground, 0.4), fl.trace_dim, 0.88)
             text "VIBE" { at: screen.width - 402, 154; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }
-            text "THE LOOK OF THE PICTURE" { at: screen.width - 66, 154; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            text "THE LOOK OF THE PICTURE" { at: screen.width - 66, 154; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             for v in vibes { Vibe(v, v.index == vibe_sel, pick_vibe, screen.width - 408, 176 + v.index * 40, 348) }
 
             Plate(screen.width - 420, 584, 372, 176, 8, mix(fl.hull, fl.ground, 0.4), fl.trace_dim, 0.88)
             text "THEME SIGNAL" { at: screen.width - 402, 602; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }
-            text pal_note { at: screen.width - 66, 602; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            text pal_note { at: screen.width - 66, 602; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             Swatch(screen.width - 402, 642, 56, 56, rgb(pal_phos_r, pal_phos_g, pal_phos_b), "SIGNAL · PHOS", pal_phos)
             Swatch(screen.width - 402, 702, 56, 56, rgb(pal_ember_r, pal_ember_g, pal_ember_b), "COUNTER · EMBER", pal_ember)
 
@@ -550,7 +550,7 @@ scene Lumen {
 
             zone box cmp { from: dr - 404, screen.height - 230; size: 128, 30; cursor: pointer; role: button; label: "Hold to see the source" }
             Plate(dr - 404, screen.height - 230, 128, 30, 6, mix(fl.hull_raised, fl.well, 0.5 * cmp.hover + if(comparing, 0.5, 0)), if(comparing, fl.phos, fl.trace), 0.95)
-            text "HOLD · SOURCE" { at: dr - 340, screen.height - 215; anchor: center; size: 9; weight: 600; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, max(cmp.hover, if(comparing, 1, 0))) }
+            text "HOLD · SOURCE" { at: dr - 340, screen.height - 215; anchor: center; size: 10; weight: 600; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, max(cmp.hover, if(comparing, 1, 0))) }
             Button(dr - 268, screen.height - 230, 84, 30, "UNDO", fl.trace_lit, false, undo_recipe, 0, can_undo > 0)
             Button(dr - 176, screen.height - 230, 84, 30, "REDO", fl.trace_lit, false, redo_recipe, 0, can_redo > 0)
             Button(dr - 84, screen.height - 230, 84, 30, "RESET", fl.trace_lit, false, reset_recipe, 0)
@@ -558,7 +558,7 @@ scene Lumen {
             // the look the grade is, under the tabs (the frame and the backdrop use this row)
             text "VIBE · {vibe_name}" { at: 72, screen.height - 188; anchor: left center; size: 11; weight: 600; family: "Exo 2"; color: fl.phos
                                        show: tab == 0 or tab == 1 or tab == 3 }
-            text vibe_hint { at: 72 + 260, screen.height - 188; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted
+            text vibe_hint { at: 72 + 260, screen.height - 188; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted
                              width: 560; lines: 1; show: tab == 0 or tab == 1 or tab == 3 }
 
             // ── The frame's switches ────────────────────────────
@@ -571,7 +571,7 @@ scene Lumen {
                 Button(500, screen.height - 198, 110, 26, "MIRROR ⇆", fl.phos, flip_h, flip_toggle, 1)
                 Button(616, screen.height - 198, 110, 26, "FLIP ⇅", fl.phos, flip_v, flip_toggle, 2)
                 Button(750, screen.height - 198, 130, 26, "RESET FRAME", fl.trace_lit, false, frame_reset, 0)
-                text "ZOOM {zoom_now, 0}%  ·  TURNED {rot * 90, 0}°" { at: 900, screen.height - 185; anchor: left center; size: 9
+                text "ZOOM {zoom_now, 0}%  ·  TURNED {rot * 90, 0}°" { at: 900, screen.height - 185; anchor: left center; size: 10
                      family: "Share Tech Mono"; color: fl.engrave }
             }
 
@@ -596,12 +596,12 @@ scene Lumen {
                 // the field is taken through this zone, so the studio knows a colour is being typed
                 zone box hex_take { from: 1350, screen.height - 198; size: 100, 24; cursor: text; role: region
                                     label: "Type a backdrop colour"; show: not typing }
-                text bg_note { at: 72, screen.height - 207; anchor: left center; size: 8
+                text bg_note { at: 72, screen.height - 207; anchor: left center; size: 10
                                 family: "Share Tech Mono"; color: fl.trace }
 
                 // The palette (D63): the shell's own colours, a press to fill with one, and the same
                 // colour in the field above, so picking and typing are one thing.
-                text "PALETTE · CLICK A COLOUR, OR TYPE ONE ABOVE" { at: 72, screen.height - 159; anchor: left center; size: 8
+                text "PALETTE · CLICK A COLOUR, OR TYPE ONE ABOVE" { at: 72, screen.height - 159; anchor: left center; size: 10
                                                                    family: "Share Tech Mono"; color: fl.muted }
                 for s in swatches { ColorSwatch(180 + s.index * 40, screen.height - 170, 34, 22, rgb(s.r, s.g, s.b), s.hex,
                                                 sw_sel == s.index, pick_swatch, s.index) }
@@ -613,14 +613,14 @@ scene Lumen {
             // moves the picture, depth, the subject over the widgets — and how far it travels.
             group {
                 show: tab == 5
-                text "CUTOUT" { at: 72, screen.height - 207; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                text "CUTOUT" { at: 72, screen.height - 207; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }
                 Button(72, screen.height - 198, 58, 26, "OFF", fl.phos, cut_mode == 0, set_cut, 0)
                 Button(134, screen.height - 198, 58, 26, "KEY", fl.phos, cut_mode == 1, set_cut, 1)
                 Button(196, screen.height - 198, 82, 26, "REGION", fl.phos, cut_mode == 2, set_cut, 2)
                 Button(282, screen.height - 198, 104, 26, "KEY+REGION", fl.phos, cut_mode == 3, set_cut, 3)
                 Button(390, screen.height - 198, 50, 26, "AI", fl.phos, cut_mode == 4, set_cut, 4, has_ai)
                 Button(450, screen.height - 198, 104, 26, pick(cut_show, "SHOW CUT", "HIDE CUT"), fl.trace_lit, cut_show, cut_show_toggle, 0, cut_mode > 0)
-                text "DESK" { at: 580, screen.height - 207; anchor: left center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                text "DESK" { at: 580, screen.height - 207; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }
                 Button(580, screen.height - 198, 96, 26, pick(desk_on, "DESK OFF", "DESK ON"), fl.ember, desk_on, desk_toggle, 0)
                 Button(686, screen.height - 198, 58, 26, "STILL", fl.phos, desk_par == 0, desk_parallax, 0)
                 Button(748, screen.height - 198, 96, 26, "WORKSPACES", fl.phos, desk_par == 1, desk_parallax, 1)
@@ -635,9 +635,9 @@ scene Lumen {
             for s in sliders { Slider(72 + s.index * colw, screen.height - 140, colw - 100, s.label, s.v, s.span, set_value, s.code, s.shown) }
 
             text "DRAG THE PICTURE TO MOVE IT · WHEEL ZOOMS · ← → TABS · 1–9 VIBES · H HIDES THE STUDIO · C COMPARES · F FITS · A APPLIES · CTRL+S SAVES A COPY · ESC CLOSES" { at: 72, screen.height - 72; anchor: left center
-                 size: 8; family: "Share Tech Mono"; color: fl.trace; width: dw - 48; lines: 1 }
+                 size: 10; family: "Share Tech Mono"; color: fl.trace; width: dw - 48; lines: 1 }
             }
-            text "H · SHOW THE STUDIO" { at: screen.width - 48, screen.height - 36; anchor: right center; size: 9
+            text "H · SHOW THE STUDIO" { at: screen.width - 48, screen.height - 36; anchor: right center; size: 10
                                          family: "Share Tech Mono"; color: fl.phos; shadow: 0, 1, 6, 80%, #000000; show: chrome_off }
 
             // ── The source wall ─────────────────────────────────
@@ -648,8 +648,8 @@ scene Lumen {
 
                 text "SOURCE WALL" { at: 48, 58; anchor: left center; size: 30; weight: 700; family: "Exo 2"; color: fl.phos
                                     shadow: 0, 0, 12, 40%, fl.phos }
-                text "PICK A PICTURE · {count_label}" { at: 48, 86; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember }
-                text "THE PICTURE IS NEVER CHANGED · A NEW STILL IS SAVED ON APPLY" { at: 48, 104; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace }
+                text "PICK A PICTURE · {count_label}" { at: 48, 86; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                text "THE PICTURE IS NEVER CHANGED · A NEW STILL IS SAVED ON APPLY" { at: 48, 104; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
 
                 zone box bx { from: screen.width - 88, 40; size: 40, 40; cursor: pointer; role: button; label: "Close the source wall" }
                 box { from: screen.width - 88, 40; size: 40, 40; corner: 5; color: mix(fl.hull_raised, fl.well, bx.hover); opacity: 0.9 }
@@ -658,7 +658,7 @@ scene Lumen {
 
                 // The folder: typed, scanned, remembered in wallpapers.json. The live wallpaper's own
                 // folder is one press away, and the current wallpaper itself is at the foot.
-                text "WALLPAPER FOLDER · {folder_show}" { at: 48, 128; anchor: left center; size: 8
+                text "WALLPAPER FOLDER · {folder_show}" { at: 48, 128; anchor: left center; size: 10
                                                           family: "Share Tech Mono"; color: fl.muted
                                                           width: 600; lines: 1 }
                 Plate(48, 140, 600, 44, 6, mix(fl.hull, fl.ground, 0.3), fl.trace_dim, 0.92)
@@ -669,7 +669,7 @@ scene Lumen {
                 Button(768, 146, 212, 32, "LIVE WALLPAPER'S FOLDER", fl.trace_lit, false, folder_current, 0)
                 Button(988, 146, 108, 32, "BROWSE…", fl.trace_lit, false, open_picker, 0)
 
-                text "FILTER" { at: screen.width - 348, 128; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                text "FILTER" { at: screen.width - 348, 128; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                 Plate(screen.width - 348, 140, 300, 44, 6, mix(fl.hull, fl.ground, 0.3), fl.trace_dim, 0.92)
                 input src_query { at: screen.width - 332, 152; width: 268; size: 14; family: "Exo 2"; color: fl.phos
                                   placeholder: "Filter by name…"; selection: fl.well; label: "Filter the pictures" }
@@ -682,7 +682,7 @@ scene Lumen {
                 Button(400, screen.height - 190, 88, 30, "NEXT ›", fl.trace_lit, false, browse_page, 1, page < pages - 1)
                 Button(500, screen.height - 190, 120, 30, "SHUFFLE", fl.trace_lit, false, shuffle, 0)
                 Button(632, screen.height - 190, 220, 30, "USE THE CURRENT WALLPAPER", fl.trace_lit, false, use_current, 0)
-                text "ESC CLOSES" { at: screen.width - 48, screen.height - 174; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.trace }
+                text "ESC CLOSES" { at: screen.width - 48, screen.height - 174; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.trace }
 
                 // ── The folder picker ───────────────────────────
                 // A folder is chosen by walking to it: the subfolders of the folder it is in, A→Z,
@@ -696,7 +696,7 @@ scene Lumen {
                     Plate(pkx, pky, 760, 520, 10, mix(fl.hull, fl.ground, 0.25), fl.trace_dim, 0.99)
                     text "CHOOSE A WALLPAPER FOLDER" { at: pkx + 28, pky + 28; anchor: left center; size: 10; weight: 700
                                                      family: "Share Tech Mono"; color: fl.ember }
-                    text pick_count { at: pkx + 732, pky + 28; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    text pick_count { at: pkx + 732, pky + 28; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
 
                     // The folder itself, written out: a folder anywhere — on another disk, under a
                     // link, deep in the home folder — is typed and taken, and the rows below walk
@@ -716,7 +716,7 @@ scene Lumen {
                     for d in dirs { DirRow(d, pick_dir, pkx + 28, pky + 130 + d.index * 30) }
 
                     Button(pkx + 28, pky + 456, 84, 30, "‹ PREV", fl.trace_lit, false, pick_page, -1, pick_page > 0)
-                    text pick_page_l { at: pkx + 122, pky + 471; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.engrave }
+                    text pick_page_l { at: pkx + 122, pky + 471; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.engrave }
                     Button(pkx + 260, pky + 456, 84, 30, "NEXT ›", fl.trace_lit, false, pick_page, 1, pick_page < pick_pages - 1)
                     Button(pkx + 360, pky + 456, 96, 30, "CANCEL", fl.trace_lit, false, pick_cancel, 0)
                     Button(pkx + 470, pky + 456, 206, 30, "USE THIS FOLDER", fl.phos, true, pick_choose, 0)

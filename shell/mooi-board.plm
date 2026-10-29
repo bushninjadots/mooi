@@ -386,17 +386,17 @@ scene Board {
                         glow: 5, 0.6 * st_glow, fl.phos
                         box { from: 20, 38; size: 140 * kb_done_n / max(1, kb_count), 3; corner: 1.5; color: fl.phos; show: kb_count > 0 }
                     }
-                    text "{kb_done_n * 100 / max(1, kb_count), 0}% DONE" { at: 166, 39; anchor: left center; size: 7; family: "Share Tech Mono"
+                    text "{kb_done_n * 100 / max(1, kb_count), 0}% DONE" { at: 166, 39; anchor: left center; size: 10; family: "Share Tech Mono"
                                                                            color: fl.trace_lit; show: kb_count > 0 }
                     group {
                         show: kb_late > 0
                         Chamfer(170, 15, 66, 20, 4, fl.ember_fill, fl.ember, 0.9)
-                        text "{kb_late, 0} LATE" { at: 203, 25; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.ink }
+                        text "{kb_late, 0} LATE" { at: 203, 25; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink }
                     }
                     group {
                         show: kb_due_today > 0
                         Chamfer(if(kb_late > 0, 242, 170), 15, 72, 20, 4, fl.ground, fl.flare, 0.9)
-                        text "{kb_due_today, 0} TODAY" { at: if(kb_late > 0, 278, 206), 25; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.flare }
+                        text "{kb_due_today, 0} TODAY" { at: if(kb_late > 0, 278, 206), 25; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.flare }
                     }
                     // search
                     Chamfer(330, 11, 230, 28, 6, fl.ground, fl.trace, 1)
@@ -409,9 +409,9 @@ scene Board {
                         group { show: t > 0; TagDot(582 + t * 26, 25, t, kb_tagf == t, 6) }
                         on press kf.$t { emit kb_filter(t) }
                     }
-                    text "ALL" { at: 582, 25; anchor: center; size: 8; family: "Share Tech Mono"; color: if(kb_tagf == 0, fl.phos, fl.muted) }
+                    text "ALL" { at: 582, 25; anchor: center; size: 10; family: "Share Tech Mono"; color: if(kb_tagf == 0, fl.phos, fl.muted) }
                     zone box kclear { from: 732, 13; size: 52, 24; cursor: pointer; role: button; label: "No filter"; show: kb_filtering }
-                    text "CLEAR" { at: 758, 25; anchor: center; size: 9; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, kclear.hover); show: kb_filtering }
+                    text "CLEAR" { at: 758, 25; anchor: center; size: 10; family: "Share Tech Mono"; color: mix(fl.muted, fl.ember, kclear.hover); show: kb_filtering }
                     on press kclear { emit kb_clearfilter }
                     zone box kaddcol { from: 800, 13; size: 96, 24; cursor: pointer; role: button; label: "A new column"; show: not kb_cols_full }
                     group { show: not kb_cols_full; CutButton(800, 15, 96, "+ Column", fl.phos, kaddcol.hover) }
@@ -420,7 +420,7 @@ scene Board {
                     group {
                         show: kb_done_n > 0
                         CutButton(904, 15, 150, "Archive done", fl.flare, karch.hover)
-                        text "{kb_done_n, 0}" { at: 1046, 25; anchor: right center; size: 9; weight: 700; family: "Exo 2"; color: fl.flare }
+                        text "{kb_done_n, 0}" { at: 1046, 25; anchor: right center; size: 10; weight: 700; family: "Exo 2"; color: fl.flare }
                     }
                     on press karch { emit kb_archive }
                     zone box kundo { from: 1062, 13; size: 70, 24; cursor: pointer; role: button; label: "Undo"; show: kb_can_undo }
@@ -469,23 +469,23 @@ scene Board {
                             show: kb_d_has
                             text "CARD" { at: bp_x + 16, kbl_y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
                             text "DONE" { at: bp_x + 284, kbl_y0 + 20; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: kb_d_done }
-                            text kb_d_meta { at: bp_x + 16, kbl_y0 + 38; anchor: left center; size: 8; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.muted }
-                            text "TITLE · F2" { at: bp_x + 16, kbl_y0 + 60; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text kb_d_meta { at: bp_x + 16, kbl_y0 + 38; anchor: left center; size: 10; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.muted }
+                            text "TITLE · F2" { at: bp_x + 16, kbl_y0 + 60; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             Chamfer(bp_x + 12, kbl_y0 + 68, 276, 30, 6, fl.ground, fl.trace, 1)
                             input kb_title { at: bp_x + 22, kbl_y0 + 75; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                            text "NOTE" { at: bp_x + 16, kbl_y0 + 112; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "NOTE" { at: bp_x + 16, kbl_y0 + 112; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             Chamfer(bp_x + 12, kbl_y0 + 120, 276, 30, 6, fl.ground, fl.trace, 1)
                             input kb_note { at: bp_x + 22, kbl_y0 + 127; width: 256; size: 12; family: "Exo 2"; color: fl.trace_lit; selection: fl.well }
-                            text "SAVED AS YOU TYPE" { at: bp_x + 284, kbl_y0 + 112; anchor: right center; size: 7; family: "Share Tech Mono"; color: fl.muted }
-                            text "TAG · ALT+0–5" { at: bp_x + 16, kbl_y0 + 166; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "SAVED AS YOU TYPE" { at: bp_x + 284, kbl_y0 + 112; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                            text "TAG · ALT+0–5" { at: bp_x + 16, kbl_y0 + 166; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             repeat t in 0..6 {
                                 zone box kt.$t { from: bp_x + 14 + t * 34, kbl_y0 + 176; size: 28, 28; cursor: pointer; role: toggle; checked: kb_d_tag == t
                                                  label: pick(t > 0, "No tag", "Tag {t, 0}") }
                                 TagDot(bp_x + 28 + t * 34, kbl_y0 + 190, t, kb_d_tag == t, 8)
                                 on press kt.$t { emit kb_tag(t) }
                             }
-                            text "DUE" { at: bp_x + 16, kbl_y0 + 222; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
-                            text kb_d_due { at: bp_x + 284, kbl_y0 + 222; anchor: right center; size: 9; family: "Share Tech Mono"
+                            text "DUE" { at: bp_x + 16, kbl_y0 + 222; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text kb_d_due { at: bp_x + 284, kbl_y0 + 222; anchor: right center; size: 10; family: "Share Tech Mono"
                                             color: if(kb_d_due_st > 3.5, fl.ember, if(kb_d_due_st > 2.5, fl.flare, if(kb_d_due_st > 1.5, fl.phos, fl.muted))) }
                             zone box kd0 { from: bp_x + 12, kbl_y0 + 232; size: 64, 20; cursor: pointer; role: button; label: "No due day" }
                             zone box kd1 { from: bp_x + 80, kbl_y0 + 232; size: 64, 20; cursor: pointer; role: button; label: "Due today" }
@@ -499,7 +499,7 @@ scene Board {
                             on press kd1 { emit kb_due(1) }
                             on press kd2 { emit kb_due(2) }
                             on press kd3 { emit kb_due(3) }
-                            text "MOVE · ALT+SHIFT+ARROWS" { at: bp_x + 16, kbl_y0 + 272; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "MOVE · ALT+SHIFT+ARROWS" { at: bp_x + 16, kbl_y0 + 272; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             zone box km1 { from: bp_x + 12, kbl_y0 + 282; size: 64, 20; cursor: pointer; role: button; label: "One column left" }
                             zone box km2 { from: bp_x + 80, kbl_y0 + 282; size: 64, 20; cursor: pointer; role: button; label: "One column right" }
                             zone box km3 { from: bp_x + 148, kbl_y0 + 282; size: 68, 20; cursor: pointer; role: button; label: "One place up" }
@@ -524,10 +524,10 @@ scene Board {
                             show: not kb_d_has
                             text "COLUMN" { at: bp_x + 16, kbl_y0 + 20; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.ember }
                             text kb_col_title { at: bp_x + 284, kbl_y0 + 20; anchor: right center; size: 10; family: "Share Tech Mono"; width: 180; lines: 1; color: fl.trace_lit }
-                            text "NAME · ENTER RENAMES" { at: bp_x + 16, kbl_y0 + 50; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "NAME · ENTER RENAMES" { at: bp_x + 16, kbl_y0 + 50; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             Chamfer(bp_x + 12, kbl_y0 + 58, 276, 30, 6, fl.ground, fl.trace, 1)
                             input kb_colname { at: bp_x + 22, kbl_y0 + 65; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                            text "LIMIT · WORK IN PROGRESS" { at: bp_x + 16, kbl_y0 + 104; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "LIMIT · WORK IN PROGRESS" { at: bp_x + 16, kbl_y0 + 104; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             repeat w in 0..6 {
                                 let wv.$w = pick(w, 0, 2, 3, 4, 5, 8)
                                 zone box kw.$w { from: bp_x + 12 + w * 46, kbl_y0 + 114; size: 42, 22; cursor: pointer; role: toggle; checked: kb_col_wip == wv.$w
@@ -539,7 +539,7 @@ scene Board {
                             }
                             text "Over its limit, a column's head goes ember: a reminder to finish before starting." { at: bp_x + 16, kbl_y0 + 150; anchor: left top; size: 10; family: "Exo 2"
                                  width: 268; lines: 2; color: fl.muted }
-                            text "PLACE" { at: bp_x + 16, kbl_y0 + 196; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "PLACE" { at: bp_x + 16, kbl_y0 + 196; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                             zone box kcl { from: bp_x + 12, kbl_y0 + 206; size: 132, 22; cursor: pointer; role: button; label: "Move the column left" }
                             zone box kcr { from: bp_x + 156, kbl_y0 + 206; size: 132, 22; cursor: pointer; role: button; label: "Move the column right" }
                             CutButton(bp_x + 12, kbl_y0 + 206, 132, "◀ Left", fl.phos, kcl.hover)
@@ -555,15 +555,15 @@ scene Board {
                         }
                         // a new card, always
                         line { from: bp_x + 12, kbl_y0 + 520; to: bp_x + 288, kbl_y0 + 520; width: 1; color: fl.trace_dim }
-                        text "NEW CARD → {kb_col_title}" { at: bp_x + 16, kbl_y0 + 538; anchor: left center; size: 8; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.ember }
+                        text "NEW CARD → {kb_col_title}" { at: bp_x + 16, kbl_y0 + 538; anchor: left center; size: 10; family: "Share Tech Mono"; width: 268; lines: 1; color: fl.ember }
                         Chamfer(bp_x + 12, kbl_y0 + 548, 276, 32, 6, fl.ground, mix(fl.trace, fl.phos, if(kb_drafting, 1, 0)), 1)
                         text "Write it — Enter adds it   Ctrl+N" { at: bp_x + 22, kbl_y0 + 564; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: not kb_drafting }
                         input kb_new { at: bp_x + 22, kbl_y0 + 556; width: 256; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
-                        text "It goes to the top of the chosen column." { at: bp_x + 16, kbl_y0 + 596; anchor: left center; size: 9; family: "Exo 2"; color: fl.muted }
+                        text "It goes to the top of the chosen column." { at: bp_x + 16, kbl_y0 + 596; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted }
 
                         // ── the foot: the keys, or what just happened ──
                         text "ALT+ARROWS CHOOSE · ALT+SHIFT+ARROWS MOVE · CTRL+N NEW · CTRL+F FIND · F2 TITLE · ALT+0–5 TAG · ALT+DEL DELETE · CTRL+Z UNDO · ESC CLOSE" {
-                             at: 20, 718; anchor: left center; size: 8; family: "Share Tech Mono"; width: 1000; lines: 1; color: fl.muted }
+                             at: 20, 718; anchor: left center; size: 10; family: "Share Tech Mono"; width: 1000; lines: 1; color: fl.muted }
                         text kb_said { at: kbl_W - 20, 718; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: kb_saying }
                     }
                 }

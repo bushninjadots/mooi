@@ -40,6 +40,14 @@ test("valid values are taken", function()
     eq(state, "ok", "state"); eq(#p, 0, "problems"); eq(s.bar.modules.clock.show, false, "clock"); eq(s.spine.max_workspaces, 6, "max")
     eq(s.island.confirm_close, true, "untouched default"); eq(s.atlas.previews, false, "previews off")
 end)
+test("an empty enum that allows it is the default, not a problem", function()
+    -- settings.json held claude.model = "" (meaning "no --model") and every load reported it
+    -- as a problem (audit 2026-10-29).
+    local s, p, _, state = config.parse("x", decode_table({ claude = { model = "" } }))
+    eq(state, "ok", "state"); eq(#p, 0, "no problem"); eq(s.claude.model, "default", "normalised")
+    local bad, bp = config.validate({ claude = { model = "gpt" } })
+    eq(#bp, 1, "a real unknown value is still refused"); eq(bad.claude.model, "default", "default kept")
+end)
 test("a wrong type falls back for that field only", function()
     local s, p, _, state = config.parse("x", decode_table({ spine = { clock = "yes", max_workspaces = 4 } }))
     eq(state, "partial", "state"); eq(#p, 1, "problems"); eq(s.bar.modules.clock.show, true, "clock default"); eq(s.spine.max_workspaces, 4, "max kept")
@@ -385,6 +393,25 @@ test("a wallpaper palette keeps the design's contrast floors", function()
         assert(ferro.contrast(out.phos_fill, out.ink) >= 4.5, "ink on phos-fill 4.5:1")
         assert(ferro.contrast(out.ember_fill, out.ink) >= 4.5, "ink on ember-fill 4.5:1")
         assert(ferro.contrast(out.engrave, out.steel_700) >= 4.5, "engrave on steel 4.5:1")
+    end
+end)
+test("the floors hold on the hulls strokes and muted text are painted on", function()
+    -- Measured on the live wallpaper palette (audit 2026-10-29): holding against black alone left
+    -- muted at 4.4:1 and trace at 2.8:1 on hull_raised, because only the ground is black.
+    local cases = {
+        { "fixed", nil, false, {} },
+        { "wallpaper", teal, false, {} },
+        { "wallpaper", teal, true, {} },
+        { "wallpaper", grey, false, {} },
+        { "wallpaper", teal, false, { mode = "light" } },
+    }
+    for _, c in ipairs(cases) do
+        local out = ferro.resolve(c[1], c[2], "auto", c[3], c[4])
+        assert(ferro.contrast(out.muted, out.hull) >= 4.5, "muted on hull")
+        assert(ferro.contrast(out.muted, out.hull_raised) >= 4.5, "muted on raised hull")
+        assert(ferro.contrast(out.trace, out.hull) >= 3, "trace on hull")
+        assert(ferro.contrast(out.trace, out.hull_raised) >= 3, "trace on raised hull")
+        assert(ferro.contrast(out.trace_lit, out.hull_raised) >= 3, "trace_lit on raised hull")
     end
 end)
 test("the phosphor keeps the wallpaper's hue", function()

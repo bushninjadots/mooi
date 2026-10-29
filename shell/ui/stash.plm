@@ -93,7 +93,7 @@ library StashParts {
         }
         text r.name { at: 64, 20; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: 198; lines: 1
                       color: mix(fl.trace_lit, fl.phos, hot) }
-        text r.sub { at: 64, 38; anchor: left center; size: 9; family: "Share Tech Mono"; width: 198; lines: 1; color: fl.muted }
+        text r.sub { at: 64, 38; anchor: left center; size: 10; family: "Share Tech Mono"; width: 198; lines: 1; color: fl.muted }
         // the tray: an arrow down into it, for the next folder
         line { from: 275, 22; to: 275, 29; width: 1.3; color: mix(fl.muted, fl.phos, hot) }
         line { from: 272, 26; to: 275, 29; width: 1.1; color: mix(fl.muted, fl.phos, hot) }

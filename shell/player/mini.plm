@@ -150,14 +150,14 @@ part Mini {
                 line { from: vx, vt; to: vx, vb; width: 2; color: fl.ground; show: vol_on }
                 line { from: vx, vb - (vb - vt) * clamp(vol / 100, 0, 1); to: vx, vb; width: 2; color: fl.trace_lit; show: vol_on }
                 Chamfer(vx - 7, vb - (vb - vt) * clamp(vol / 100, 0, 1) - 5, 14, 10, 3, fl.hull_raised, mix(fl.trace_lit, fl.phos, mvol.hover), 1, 1.2)
-                text "VOL" { at: vx, vt - 10; anchor: center; size: 7; family: "Share Tech Mono"; color: fl.muted; show: vol_on }
+                text "VOL" { at: vx, vt - 10; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: vol_on }
                 on press mvol { emit pl_vol(round(clamp((vb - local.y) / (vb - vt), 0, 1) * 100)) }
                 on drag mvol { emit pl_vol(round(clamp((vb - local.y) / (vb - vt), 0, 1) * 100)) }
 
                 // ── OPEN PLAYER: the same window grows into the panel ─
                 zone box mopen { from: 296, 14; size: 92, 30; cursor: pointer; role: button; label: "Open the player" }
                 Chamfer(296, 14, 92, 30, 6, mix(fl.hull_raised, fl.phos, 0.12 + mopen.hover * 0.14), mix(fl.trace, fl.phos, 0.5 + mopen.hover * 0.5), 1, 1.2)
-                text "OPEN PLAYER" { at: 342, 29; anchor: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                text "OPEN PLAYER" { at: 342, 29; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.phos }
                 on press mopen { emit pl_size(1) }
             }
         }

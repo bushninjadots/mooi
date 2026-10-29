@@ -298,6 +298,7 @@ scene Mooi {
     fact bar_full = false     // bar.mode · islands, or one full panel
     fact bar_surface = 0      // bar.surface · 0 solid · 1 glass · 2 blur · 3 clear
     fact viz = 0              // bar.visualizer · 0 mirror · 1 bars · 2 line · 3 dots · 4 off
+    fact viz_missing = false  // cava is not installed: the visualizer says so (shell/bar.luau)
     fact side: none | notes | clips = none   // the side panel
     fact settings_open = false  // the settings program is running (the logic)
     fact nexus_open = false     // Control Nexus is running (the logic)
@@ -1966,8 +1967,12 @@ scene Mooi {
     let nc_e = ncx + ncw + n_pad
     let nr_a = nrx - n_pad                       // the right piece's left side
     // At full width the side pieces sit flush in the corners; a narrower bar hangs them free.
-    let nl_a = if(full_w, -n_r, nlx - n_pad)
-    let nr_e = if(full_w, screen.width + n_r, nrx + nrw + n_pad)
+    // The pieces are flush with the screen's corners, so their outer edge runs past it. The body
+    // unions every shape it holds, so the ends go to the edge itself and the fillets' outer arms
+    // stop there: off the surface, they were invisible anyway and the renderer reported the body
+    // as cut by n_r + n_f on each side.
+    let nl_a = max(0, if(full_w, -n_r, nlx - n_pad))
+    let nr_e = min(screen.width, if(full_w, screen.width + n_r, nrx + nrw + n_pad))
     group {
         show: st_notch
         body {
@@ -1983,7 +1988,7 @@ scene Mooi {
             // the left piece
             box { from: nl_a, -n_r; size: nl_e - nl_a, n_b + n_r; corner: n_r; show: nlw > 1 }
             path { show: nlw > 1; move nl_e, 0; line nl_e + n_f, 0; curve nl_e, n_f via nl_e, 0; close }
-            path { show: nlw > 1 and not full_w; move nl_a, 0; line nl_a - n_f, 0; curve nl_a, n_f via nl_a, 0; close }
+            path { show: nlw > 1 and not full_w; move nl_a, 0; line max(0, nl_a - n_f), 0; curve nl_a, n_f via nl_a, 0; close }
             // the notch
             box { from: nc_a, -n_r; size: nc_e - nc_a, n_b + n_r; corner: n_r; show: ncw > 1 }
             path { show: ncw > 1; move nc_a, 0; line nc_a - n_f, 0; curve nc_a, n_f via nc_a, 0; close }
@@ -1991,7 +1996,7 @@ scene Mooi {
             // the right piece
             box { from: nr_a, -n_r; size: nr_e - nr_a, n_b + n_r; corner: n_r; show: nrw > 1 }
             path { show: nrw > 1; move nr_a, 0; line nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; close }
-            path { show: nrw > 1 and not full_w; move nr_e, 0; line nr_e + n_f, 0; curve nr_e, n_f via nr_e, 0; close }
+            path { show: nrw > 1 and not full_w; move nr_e, 0; line min(screen.width, nr_e + n_f), 0; curve nr_e, n_f via nr_e, 0; close }
         }
         // the outline (bar.frame = line): the fillet, down the side, round the foot, and back
         group {
@@ -2000,7 +2005,7 @@ scene Mooi {
             path { stroke: st_owidth; color: nec; show: nlw > 1 and full_w
                    move 0, n_b; line nl_e - n_r, n_b; curve nl_e, n_b - n_r via nl_e, n_b; line nl_e, n_f; curve nl_e + n_f, 0 via nl_e, 0 }
             path { stroke: st_owidth; color: nec; show: nlw > 1 and not full_w
-                   move nl_a - n_f, 0; curve nl_a, n_f via nl_a, 0; line nl_a, n_b - n_r; curve nl_a + n_r, n_b via nl_a, n_b
+                   move max(0, nl_a - n_f), 0; curve nl_a, n_f via nl_a, 0; line nl_a, n_b - n_r; curve nl_a + n_r, n_b via nl_a, n_b
                    line nl_e - n_r, n_b; curve nl_e, n_b - n_r via nl_e, n_b; line nl_e, n_f; curve nl_e + n_f, 0 via nl_e, 0 }
             path { stroke: st_owidth; color: nec; show: ncw > 1
                    move nc_a - n_f, 0; curve nc_a, n_f via nc_a, 0; line nc_a, n_b - n_r; curve nc_a + n_r, n_b via nc_a, n_b
@@ -2009,7 +2014,7 @@ scene Mooi {
                    move nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b; line screen.width, n_b }
             path { stroke: st_owidth; color: nec; show: nrw > 1 and not full_w
                    move nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
-                   line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_f; curve nr_e + n_f, 0 via nr_e, 0 }
+                   line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_f; curve min(screen.width, nr_e + n_f), 0 via nr_e, 0 }
         }
         // corners (bar.frame = corners): marks at each piece's foot
         group {
@@ -2415,9 +2420,12 @@ scene Mooi {
         // so it follows the wallpaper and the day. bar.visualizer's four keep their look's family:
         // mirror → Mirror, bars → Spectrum, line → Aurora, dots → LED (lib/vizbands from_bar).
         group {
-            show: has_viz and media_on
+            show: has_viz and media_on and not viz_missing
             viz.Pick(pick(viz, 1, 0, 3, 4, 6), vx0, fl.cy - 11, 80, 22, vx0 + 40, fl.cy, 5, 6, fl.phos, fl.ember, fl.trace_dim)
         }
+        // cava missing: a flat visualizer would look like silence, so it says what it needs.
+        text "CAVA MISSING" { at: vx0 + 40, fl.cy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember
+                             show: has_viz and media_on and viz_missing }
         group {
             show: (mfull or mart) and media_on
             text pick(media_on, "—", med.title) { at: tx + 4, fl.cy - 5; anchor: left center; size: 12; weight: 600
@@ -3505,18 +3513,18 @@ scene Mooi {
                        move 15, 20; line 26, 20; line 30, 24; line 30, 38; line 15, 38; close }
                 line { from: 18, 28; to: 27, 28; width: 1; color: fl.phos }
                 line { from: 18, 32; to: 27, 32; width: 1; color: fl.phos }
-                text "PAD" { at: 22, 48; anchor: center; size: 7; family: "Share Tech Mono"; color: fl.trace_lit }
+                text "PAD" { at: 22, 48; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
                 zone box qrail_board { from: 4, 62; size: 37, 46; cursor: pointer; role: button
                                        label: pick(kb_count > 0, "Open the board", "Open the board — {kb_count, 0} cards") }
                 Chamfer(4, 62, 37, 46, 5, mix(fl.ground, fl.well, qrail_board.hover), mix(fl.trace_dim, fl.phos, qrail_board.hover), 0.9)
                 box { from: 13, 72; size: 5, 16; corner: 1; color: mix(fl.trace_lit, fl.phos, qrail_board.hover) }
                 box { from: 20, 72; size: 5, 11; corner: 1; color: mix(fl.trace_lit, fl.flare, qrail_board.hover) }
                 box { from: 27, 72; size: 5, 20; corner: 1; color: mix(fl.trace_lit, fl.ember, qrail_board.hover) }
-                text "BOARD" { at: 22, 100; anchor: center; size: 7; family: "Share Tech Mono"; color: mix(fl.trace_lit, fl.phos, qrail_board.hover) }
+                text "BOARD" { at: 22, 100; anchor: center; size: 10; family: "Share Tech Mono"; color: mix(fl.trace_lit, fl.phos, qrail_board.hover) }
                 group {
                     show: kb_late > 0
                     ellipse { at: 37, 66; radius: 6; color: fl.ember_fill }
-                    text "{min(kb_late, 9), 0}" { at: 37, 66; anchor: center; size: 8; weight: 700; family: "Exo 2"; color: fl.ink }
+                    text "{min(kb_late, 9), 0}" { at: 37, 66; anchor: center; size: 10; weight: 700; family: "Exo 2"; color: fl.ink }
                 }
                 on press qrail_board { qn_open = false; emit board_show }
 
@@ -3566,11 +3574,11 @@ scene Mooi {
                     line { from: 74, qry + 20; to: 77, qry + 23; width: 1.6; color: fl.phos; show: r.done }
                     line { from: 77, qry + 23; to: 82, qry + 16; width: 1.6; color: fl.phos; show: r.done }
                     // pinned: a small flare mark by the name
-                    text r.text { at: 96, qry + if(r.two, 14, 20); anchor: left center; size: 11.5; weight: 600; family: "Exo 2"; width: qbx - 140; lines: 1
+                    text r.text { at: 96, qry + if(r.two, 14, 20); anchor: left center; size: 11; weight: 600; family: "Exo 2"; width: qbx - 140; lines: 1
                                   color: if(r.done, fl.muted, mix(fl.engrave, fl.phos, qrow.hover)) }
-                    text r.more { at: 96, qry + 29; anchor: left center; size: 9; family: "Exo 2"; width: qbx - 140; lines: 1; color: fl.muted
+                    text r.more { at: 96, qry + 29; anchor: left center; size: 10; family: "Exo 2"; width: qbx - 140; lines: 1; color: fl.muted
                                   opacity: if(r.done, 0.6, 1) }
-                    text r.when { at: qbx - 6, qry + 20; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text r.when { at: qbx - 6, qry + 20; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                     // pin
                     zone box qpin { from: qbx, qry + 9; size: 26, 22; corner: 4; cursor: pointer; role: toggle; checked: r.pinned; label: pick(r.pinned, "Pin note {r.n + 1}", "Unpin note {r.n + 1}") }
                     line { from: qbx + 7, qry + 26; to: qbx + 12, qry + 20; width: 1.4; color: if(r.pinned, fl.flare, mix(fl.trace_lit, fl.phos, qpin.hover)) }
@@ -3600,9 +3608,9 @@ scene Mooi {
                 text pick(qn_searching, "No notes yet — write one above.", "No note says that.") { at: qn_w / 2 + 22, 160; anchor: center; size: 12; family: "Exo 2"; color: fl.muted; show: qn_count < 1 }
                 line { from: 56, qn_h - 34; to: qn_w - 12, qn_h - 34; width: 1; color: fl.trace_dim }
                 text pick(qn_editing, "↑↓ · ALT+C COPY · ALT+E EDIT · ALT+P PIN · ALT+B BOARD · STRIPE: COLOUR · BOX: DONE", "ESC CANCELS · ENTER SAVES") { at: 58, qn_h - 18; anchor: left center; size: 8; family: "Share Tech Mono"; width: qn_w - 120; lines: 1; color: fl.muted; show: not qn_saying }
-                text qn_said { at: 58, qn_h - 18; anchor: left center; size: 9; family: "Share Tech Mono"; width: qn_w - 120; lines: 1
+                text qn_said { at: 58, qn_h - 18; anchor: left center; size: 10; family: "Share Tech Mono"; width: qn_w - 120; lines: 1
                                color: fl.ember; show: qn_saying }
-                text "UNDO" { at: qn_w - 12, qn_h - 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: qn_can_undo }
+                text "UNDO" { at: qn_w - 12, qn_h - 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: qn_can_undo }
                 zone box qundo { from: qn_w - 48, qn_h - 30; size: 36, 22; corner: 4; cursor: pointer; role: button; label: "Put the forgotten note back"; show: qn_can_undo }
                 on press qundo { emit qn_undo }
             }
@@ -3740,11 +3748,11 @@ scene Mooi {
                         // ── the summary: what waits, from how many, how urgent; and each app's share ──
                         group {
                             show: note_count + note_missed > 0
-                            text "{note_count, 0} WAITING" { at: 18, 52; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos }
-                            text "{fld_apps, 0} APPS" { at: 112, 52; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.trace_lit }
-                            text "{fld_urgent, 0} URGENT" { at: 184, 52; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"
+                            text "{note_count, 0} WAITING" { at: 18, 52; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                            text "{fld_apps, 0} APPS" { at: 112, 52; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace_lit }
+                            text "{fld_urgent, 0} URGENT" { at: 184, 52; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"
                                                            color: if(fld_urgent > 0, fl.ember, fl.muted) }
-                            text "{note_missed, 0} MISSED" { at: 272, 52; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                            text "{note_missed, 0} MISSED" { at: 272, 52; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                             // the share bar: one segment per app, the chosen one lit, an urgent one in ember
                             row {
                                 at: 360, 48
@@ -3770,7 +3778,7 @@ scene Mooi {
                                 ellipse { at: fq_x, fq_y; radius: 3.5; color: fl.phos }
                             }
                             text pick(notes_on, "Notifications go to another program while mooi runs beside it.", "ALL QUIET") { at: fq_x, fq_y + 108; anchor: center; size: 13; weight: 700; family: "Exo 2"; color: fl.trace_lit; width: fd_W - 40; lines: 2 }
-                            text "Signals unfold here as they arrive." { at: fq_x, fq_y + 130; anchor: center; size: 10.5; family: "Exo 2"; color: fl.muted; show: notes_on }
+                            text "Signals unfold here as they arrive." { at: fq_x, fq_y + 130; anchor: center; size: 10; family: "Exo 2"; color: fl.muted; show: notes_on }
                         }
                         // the clusters
                         column fcl {
@@ -3801,16 +3809,16 @@ scene Mooi {
                         }
                         // the activity rail: the last six hours, now at the right
                         line { from: 12, 462; to: fd_W - 12, 462; width: 1; color: fl.trace_dim }
-                        text "ACTIVITY" { at: 18, 476; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        text "ACTIVITY" { at: 18, 476; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                         line { from: 16, 502; to: fd_W - 16, 502; width: 1; color: fl.trace }
-                        text "6 H" { at: 16, 520; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "3 H" { at: 16 + (fd_W - 32) * 0.293, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "1 H" { at: 16 + (fd_W - 32) * 0.592, 520; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                        text "NOW" { at: fd_W - 16, 520; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text "6 H" { at: 16, 520; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                        text "3 H" { at: 16 + (fd_W - 32) * 0.293, 520; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                        text "1 H" { at: 16 + (fd_W - 32) * 0.592, 520; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                        text "NOW" { at: fd_W - 16, 520; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                         for r in frail { RailTick(r, 16, fd_W - 32, 502, fld_pick) }
-                        text "↑↓ CLUSTERS · SHIFT ↑↓ NOTICES · ⏎ OPEN · DEL DISMISS · S SNOOZE · M MUTE · ESC" { at: fd_W - 18, 476; anchor: right center; size: 8
+                        text "↑↓ CLUSTERS · SHIFT ↑↓ NOTICES · ⏎ OPEN · DEL DISMISS · S SNOOZE · M MUTE · ESC" { at: fd_W - 18, 476; anchor: right center; size: 10
                              family: "Share Tech Mono"; color: fl.muted; show: loom_comfy }
-                        text "↑↓ · SHIFT ↑↓ · ⏎ · DEL · S · M · ESC" { at: fd_W - 18, 476; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: not loom_comfy }
+                        text "↑↓ · SHIFT ↑↓ · ⏎ · DEL · S · M · ESC" { at: fd_W - 18, 476; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: not loom_comfy }
                     }
                 }
             }
@@ -3899,7 +3907,7 @@ scene Mooi {
                 let hint_k = if(busy, 3, if(phase == expanded, 2, if(arming, 1, 0)))
                 text pick(hint_k, "←→ select   ↵ apply   esc close", "↵ again to close   esc keeps it", "←→ ↵ move   esc back", "Waiting for Hyprland…") {
                      at: 16, hint_y; anchor: left center; size: 10.5; color: if(arming, accent.secondary, fg.muted); opacity: 1 - fb }
-                text feedback { at: 16, hint_y; anchor: left center; size: 10.5; width: 310; lines: 1
+                text feedback { at: 16, hint_y; anchor: left center; size: 10; width: 310; lines: 1
                                 color: if(note.failed, status.error, status.ok); opacity: fb }
             }
         }
@@ -3923,16 +3931,16 @@ scene Mooi {
                 move: 0, 0
                 IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox) {
                     text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
-                    text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wifi }
-                    text "Wired" { at: 284, 20; anchor: right center; size: 10.5; color: fg.secondary; show: network.online and network.kind == wired }
-                    text "Offline" { at: 284, 20; anchor: right center; size: 10.5; color: status.error; show: not network.online }
+                    text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wifi }
+                    text "Wired" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wired }
+                    text "Offline" { at: 284, 20; anchor: right center; size: 10; color: status.error; show: not network.online }
 
                     // Bluetooth is a state here, not a control: the bar's rune reports it and
                     // this line names it, so a widget that only ever opens this surface never
                     // offers something the surface cannot do.
                     text pick(bluetooth.present and bluetooth.powered, "Bluetooth off", "Bluetooth on") {
                         at: 284, 36; anchor: right center; size: 10.5; color: fg.secondary; show: bluetooth.present }
-                    text "No Bluetooth" { at: 284, 36; anchor: right center; size: 10.5; color: fg.muted; show: not bluetooth.present }
+                    text "No Bluetooth" { at: 284, 36; anchor: right center; size: 10; color: fg.muted; show: not bluetooth.present }
 
                     group {
                         move: 16, 52
@@ -3945,7 +3953,7 @@ scene Mooi {
                     }
 
                     text pick(battery.charging, "{battery.percent, 0} % · on battery", "{battery.percent, 0} % · charging") { at: 16, sh - 20; anchor: left center; size: 10.5; color: if(low, status.error, fg.secondary); show: battery.present }
-                    text "↑↓  ←→  m mute  esc" { at: 284, sh - 20; anchor: right center; size: 10.5; color: fg.muted }
+                    text "↑↓  ←→  m mute  esc" { at: 284, sh - 20; anchor: right center; size: 10; color: fg.muted }
                 }
             }
         }
@@ -4012,7 +4020,7 @@ scene Mooi {
                 IsleGauge(16, 104 + sgh, 288, "Disk  /", st_disk_t, st_disk_f, st_disk_f > 0.9)
                 text st_swap_t { at: 16, 146 + sgh; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
                 IsleRule(320, 158 + sgh)
-                text "BUSIEST" { at: 16, 172 + sgh; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                text "BUSIEST" { at: 16, 172 + sgh; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
                 for t in st_top {
                     let ty = 192 + sgh + t.index * 20
                     text t.name { at: 16, ty; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 220; lines: 1 }
@@ -4053,7 +4061,7 @@ scene Mooi {
                     text "{round(wxi_temp), 0}°" { at: 82, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.phos) }
                     text wxi_word { at: 84, 88; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.phos) }
                     text wxi_hilo { at: 324, 56; anchor: right center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
-                    text wxi_line { at: 324, 78; anchor: right center; size: 10.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 190; lines: 2; align: right }
+                    text wxi_line { at: 324, 78; anchor: right center; size: 10; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 190; lines: 2; align: right }
                     IsleRule(340, 108)
                     for h in wx_hours {
                         let hx = 40 + h.n * 52
@@ -4077,7 +4085,7 @@ scene Mooi {
                 zone box wxref { from: 16, 326; size: 100, 24; cursor: pointer; role: button; label: "Fetch the forecast again" }
                 IsleBtn(16, 326, 100, "Refresh", if(wxi_busy, 1, 0), wxref.hover)
                 on press wxref { emit wx_refresh }
-                text "open-meteo.com" { at: 324, 338; anchor: right center; size: 9.5; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
+                text "open-meteo.com" { at: 324, 338; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
             }
         }
     }
@@ -4107,7 +4115,7 @@ scene Mooi {
                 IsleBtn(214, 142, 90, "Mixer", 0, snmix.hover)
                 on press snmix { emit snd_mixer; open = none }
                 IsleRule(320, 178)
-                text "PLAYS ON" { at: 16, 192; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                text "PLAYS ON" { at: 16, 192; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
                 for o in aouts {
                     let oy = 206 + o.index * 26
                     zone box sno { from: 10, oy; size: 300, 24; cursor: pointer; role: item; selected: o.default; label: "Play on {o.name}" }
@@ -4178,11 +4186,11 @@ scene Mooi {
                 text "{round(battery.percent), 0}%" { at: 16, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"
                      color: if(battery.percent < 15 and not battery.charging, if(isl_style > 0.5, status.error, fl.ember), if(isl_style > 0.5, fg.primary, fl.phos)) }
                 text pw_time { at: 304, 52; anchor: right center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave); width: 180; lines: 1; align: right }
-                text pw_rate { at: 304, 72; anchor: right center; size: 10.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 190; lines: 1; align: right }
+                text pw_rate { at: 304, 72; anchor: right center; size: 10; family: "Exo 2"; color: if(isl_style > 0.5, fg.secondary, fl.muted); width: 190; lines: 1; align: right }
                 IsleMeter(16, 90, 288, battery.percent / 100, battery.percent < 15 and not battery.charging)
                 IsleRule(320, 112)
                 text "Battery saver" { at: 16, 132; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
-                text "less glow and motion" { at: 16, 147; anchor: left center; size: 9.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
+                text "less glow and motion" { at: 16, 147; anchor: left center; size: 10; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
                 zone box pws0 { from: 124, 122; size: 56, 24; cursor: pointer; role: tab; selected: pw_saver == 0; label: "Battery saver off" }
                 IsleBtn(124, 122, 56, "Off", if(pw_saver == 0, 1, 0), pws0.hover)
                 on press pws0 { emit pw_set(0) }
@@ -4206,7 +4214,7 @@ scene Mooi {
                     on press pwp3 { emit pw_set(13) }
                 }
                 text "Keep awake" { at: 16, 174 + pph; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.primary, fl.engrave) }
-                text "no sleep, no screen-off" { at: 16, 189 + pph; anchor: left center; size: 9.5; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
+                text "no sleep, no screen-off" { at: 16, 189 + pph; anchor: left center; size: 10; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted) }
                 zone box pwcaf { from: 224, 164 + pph; size: 80, 24; cursor: pointer; role: toggle; checked: caffeine_on; label: "Keep awake" }
                 group { show: not caffeine_on
                         IsleBtn(224, 164 + pph, 80, "Off", 0, pwcaf.hover) }
@@ -4240,7 +4248,7 @@ scene Mooi {
                 group { show: not network.wifi
                         IsleBtn(204, 36, 80, "Wi-Fi off", 0, snw.hover, 22) }
                 on press snw { emit sh_net(-1) }
-                text "WI-FI" { at: 16, 47; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                text "WI-FI" { at: 16, 47; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
                 for w in nets {
                     let wy = 64 + w.index * 28
                     group {
@@ -4251,16 +4259,16 @@ scene Mooi {
                             box { from: 18 + b * 4, wy + 19 - b * 3; size: 3, 3 + b * 3; corner: 1; color: if(w.strength > b * 25, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)); opacity: if(w.strength > b * 25, 1, 0.4) }
                         }
                         text w.ssid { at: 42, wy + 13; anchor: left center; size: 12; family: "Exo 2"; width: 180; lines: 1; color: if(w.active, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                        text "connected" { at: 284, wy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: w.active }
-                        text "saved" { at: 284, wy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and w.known }
-                        text "locked" { at: 284, wy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and not w.known and w.secure }
+                        text "connected" { at: 284, wy + 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: w.active }
+                        text "saved" { at: 284, wy + 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and w.known }
+                        text "locked" { at: 284, wy + 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: not w.active and not w.known and w.secure }
                         on press snz { emit sh_net(w.index) }
                     }
                 }
                 text "No networks in reach" { at: 16, 78; anchor: left center; size: 12; family: "Exo 2"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: nets.count < 1 }
                 let sby = 70 + max(1, min(5, nets.count)) * 28
                 IsleRule(300, sby)
-                text "BLUETOOTH" { at: 16, sby + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
+                text "BLUETOOTH" { at: 16, sby + 16; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted) }
                 zone box sbp { from: 204, sby + 6; size: 80, 22; cursor: pointer; role: toggle; checked: bluetooth.powered; label: "Bluetooth on or off" }
                 group { show: bluetooth.powered
                         IsleBtn(204, sby + 6, 80, "On", 1, sbp.hover, 22) }
@@ -4275,8 +4283,8 @@ scene Mooi {
                         box { from: 8, dy; size: 284, 26; corner: if(isl_style > 0.5, 8, 2); color: if(isl_style > 0.5, selection.bg, fl.well); opacity: max(if(d.connected, 0.9, 0), 0.6 * sdz.hover) }
                         ellipse { at: 22, dy + 13; radius: 3.5; color: if(d.connected, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
                         text d.name { at: 34, dy + 13; anchor: left center; size: 12; family: "Exo 2"; width: 190; lines: 1; color: if(d.connected, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.primary, fl.engrave)) }
-                        text "{round(d.battery * 100), 0} %" { at: 284, dy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery >= 0 }
-                        text "connected" { at: 284, dy + 13; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery < 0 and d.connected }
+                        text "{round(d.battery * 100), 0} %" { at: 284, dy + 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery >= 0 }
+                        text "connected" { at: 284, dy + 13; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.muted, fl.muted); show: d.battery < 0 and d.connected }
                         on press sdz { emit sh_bt(d.index) }
                     }
                 }
@@ -4482,7 +4490,7 @@ scene Mooi {
                 figure i_bell { at: 23, sp0 + 280; size: 15, 15; color: if((open == shalert and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp7.hover)) }
                 group { show: note_count > 0
                         ellipse { at: 14, sp0 + 280 - 12; radius: 7; color: fl.ember }
-                        text "{min(note_count, 9), 0}" { at: 14, sp0 + 280 - 12; anchor: center; align: center; size: 8.5; weight: 700; family: "Exo 2"; color: fl.ink } }
+                        text "{min(note_count, 9), 0}" { at: 14, sp0 + 280 - 12; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: fl.ink } }
                 on hover sp7 for 140ms while not (open == shalert and isl_shelf) { isl_sy = sp0 + 280; isl_shelf = true; shelf_pin = false; open = shalert; side = none; mark_open = false }
                 on press sp7 while (open == shalert and isl_shelf) { shelf_pin = not shelf_pin }
                 // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
@@ -4500,7 +4508,7 @@ scene Mooi {
                 figure i_updates { at: 23, sp0 + 320; size: 15, 15; color: if((open == shupd and isl_shelf), if(isl_style > 0.5, bg.primary, fl.hull), mix(if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, accent.primary, fl.phos), sp8.hover)) }
                 group { show: upd_n > 0
                         ellipse { at: 14, sp0 + 320 - 12; radius: 7; color: fl.ember }
-                        text "{min(upd_n, 99), 0}" { at: 14, sp0 + 320 - 12; anchor: center; align: center; size: 7.5; weight: 700; family: "Exo 2"; color: fl.ink } }
+                        text "{min(upd_n, 99), 0}" { at: 14, sp0 + 320 - 12; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: fl.ink } }
                 on hover sp8 for 140ms while not (open == shupd and isl_shelf) { isl_sy = sp0 + 320; isl_shelf = true; shelf_pin = false; open = shupd; side = none; mark_open = false }
                 on press sp8 while (open == shupd and isl_shelf) { shelf_pin = not shelf_pin }
                 // it goes home once the pointer has been over neither the tab nor its shelf for half a second (unless pinned)
@@ -4541,7 +4549,7 @@ scene Mooi {
                     let foot = ch - 16
                     text pick(cmode == actions, "←→ choose   ↵ apply   esc back", "↑↓ select   ↵ open   tab window actions   esc close") {
                         at: 20, foot; anchor: left center; size: 10.5; color: if(carming, accent.secondary, fg.muted); opacity: 1 - fb }
-                    text feedback { at: 20, foot; anchor: left center; size: 10.5; width: 540; lines: 1
+                    text feedback { at: 20, foot; anchor: left center; size: 10; width: 540; lines: 1
                                     color: if(note.failed, status.error, status.ok); opacity: fb }
                 }
             }
@@ -4834,7 +4842,7 @@ scene Mooi {
         group {
             show: loom_more > 0 and loom_count > 0
             Chamfer(lm_mox, lm_moy, 170, 22, 5, fl.hull, mix(fl.trace, fl.phos, if(zmore.hover, 1, 0)), 0.95)
-            text "+{loom_more, 0} WAITING · FIELD" { at: lm_mox + 85, lm_moy + 11; anchor: center; size: 9; family: "Share Tech Mono"
+            text "+{loom_more, 0} WAITING · FIELD" { at: lm_mox + 85, lm_moy + 11; anchor: center; size: 10; family: "Share Tech Mono"
                                                      color: mix(fl.trace_lit, fl.phos, if(zmore.hover, 1, 0)) }
         }
         on press zmore { side = notes; mark_open = false; open = none }
@@ -4962,19 +4970,19 @@ scene Mooi {
                 // which folder is being looked into, said in its own name
                 text stash_here_name { at: 96, 26; anchor: left center; size: 10; family: "Exo 2"; width: 150; lines: 1
                                        color: fl.ember; show: not stash_root }
-                text "{stash_from, 0}–{stash_to, 0} / {stash_count, 0}" { at: sb_w - 18, 26; anchor: right center; size: 9; family: "Share Tech Mono"
+                text "{stash_from, 0}–{stash_to, 0} / {stash_count, 0}" { at: sb_w - 18, 26; anchor: right center; size: 10; family: "Share Tech Mono"
                                                                          color: fl.muted; show: stash_pages > 1 }
-                text "DROP ANYTHING" { at: sb_w - 18, 26; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: stash_pages <= 1 }
+                text "DROP ANYTHING" { at: sb_w - 18, 26; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: stash_pages <= 1 }
                 line { from: 16, 46; to: sb_w - 16, 46; width: 1; color: fl.trace_dim }
 
                 // ── D86: the ways in that are not a drop, and the ways to find what is here ──
                 zone box zspaste { from: 12, 56; size: 72, 26; cursor: pointer; role: button; label: "Stash what is on the clipboard" }
                 Chamfer(12, 56, 72, 26, 5, mix(fl.hull_raised, fl.well, zspaste.hover), mix(fl.trace, fl.phos, zspaste.hover), 0.95, 1)
-                text "PASTE" { at: 48, 69; anchor: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, zspaste.hover) }
+                text "PASTE" { at: 48, 69; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(fl.engrave, fl.phos, zspaste.hover) }
                 on press zspaste { emit stash_paste }
                 zone box zsshot { from: 90, 56; size: 66, 26; cursor: pointer; role: button; label: "Stash a screenshot of a region" }
                 Chamfer(90, 56, 66, 26, 5, mix(fl.hull_raised, fl.well, zsshot.hover), mix(fl.trace, fl.ember, zsshot.hover), 0.95, 1)
-                text "SHOT" { at: 123, 69; anchor: center; size: 8.5; weight: 700; family: "Share Tech Mono"; color: mix(fl.engrave, fl.ember, zsshot.hover) }
+                text "SHOT" { at: 123, 69; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(fl.engrave, fl.ember, zsshot.hover) }
                 on press zsshot { stash_pin = false; stash_a: 0; stash_away: 1; emit stash_shot }
                 zone box zsfind { from: 162, 56; size: sb_w - 174, 26; cursor: text; role: region; label: "Search the stash" }
                 Chamfer(162, 56, sb_w - 174, 26, 5, fl.ground, mix(fl.trace_dim, fl.phos, max(zsfind.hover, if(stash_searching, 1, 0))), 1, 1)
@@ -5031,7 +5039,7 @@ scene Mooi {
                 zone box zall { from: 12, 458; size: 48, 22; cursor: pointer; role: tab; selected: stash_root
                                 label: "Everything — {stash_all, 0} kept" }
                 Chamfer(12, 458, 48, 22, 5, mix(fl.ground, fl.well, max(zall.hover, if(stash_root, 0.9, 0))), mix(fl.trace_dim, fl.phos, max(zall.hover, if(stash_root, 1, 0))), 0.9, 1)
-                text "ALL" { at: 36, 469; anchor: center; size: 8; weight: 600; family: "Share Tech Mono";
+                text "ALL" { at: 36, 469; anchor: center; size: 10; weight: 600; family: "Share Tech Mono";
                              color: mix(fl.muted, fl.phos, max(zall.hover, if(stash_root, 1, 0))) }
                 on press zall { stash_naming = false; blur; emit stash_folder(0) }
                 repeat i in 0..5 {
@@ -5057,12 +5065,12 @@ scene Mooi {
                 line { from: 26, 499; to: 26, 507; width: 1.4; color: mix(fl.trace_lit, fl.ember, znew.hover) }
                 input stash_new { at: 36, 498; width: 278; size: 11; family: "Exo 2"; color: fl.phos; selection: fl.well
                                   placeholder: "New folder — name it, then Enter" }
-                text "FOLDERS · ONE LEVEL · RIGHT PRESS A CHIP TAKES IT AWAY" { at: 12, 530; anchor: left center; size: 8
+                text "FOLDERS · ONE LEVEL · RIGHT PRESS A CHIP TAKES IT AWAY" { at: 12, 530; anchor: left center; size: 10
                      family: "Share Tech Mono"; width: 312; lines: 1; color: fl.muted }
                 on press znew { stash_naming = true; focus stash_new }
 
                 line { from: 16, 542; to: sb_w - 16, 542; width: 1; color: fl.trace_dim; show: not stash_empty }
-                text "CLICK OPENS · TRAY FILES IT · DRAG A ROW OUT · × REMOVES" { at: sb_w / 2, 558; anchor: center; size: 8
+                text "CLICK OPENS · TRAY FILES IT · DRAG A ROW OUT · × REMOVES" { at: sb_w / 2, 558; anchor: center; size: 10
                      family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted; show: not stash_empty }
                 text pick(stash_pages > 1, "WHEEL PAGES · PRESS A FOLDER TO LOOK INSIDE", "PRESS A FOLDER TO LOOK INSIDE · THE EDGE RAIL OPENS THIS") {
                      at: sb_w / 2, 574; anchor: center; size: 8; family: "Share Tech Mono"; width: sb_w - 36; lines: 1; color: fl.muted }
@@ -5309,7 +5317,7 @@ scene Mooi {
                         box { from: dx.$i, dy.$i; size: dw.$i, 18; color: bg.primary; opacity: 0.78 * to.$i }
                         text "{atlas_tiles.$i.app} · {atlas_tiles.$i.title}" { at: dx.$i + 8, dy.$i + 9; anchor: left center; size: 10; color: fg.secondary; width: dw.$i - 16; lines: 1; opacity: to.$i }
                     }
-                    text "PRIVATE" { at: dx.$i + dw.$i / 2, dy.$i + dh.$i / 2 + is.$i / 2 + 9; anchor: center; size: 9; family: "Share Tech Mono"; color: fg.muted
+                    text "PRIVATE" { at: dx.$i + dw.$i / 2, dy.$i + dh.$i / 2 + is.$i / 2 + 9; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.muted
                                      opacity: to.$i; show: atlas_tiles.$i.priv and dw.$i > 56 }
                     box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: max(g.radius.item - 3, 2); opacity: to.$i; stroke: if(car.$i or atlas_tiles.$i.mark or found.$i or picked.$i, 1.6, 1)
                           color: if(car.$i or picked.$i, focus.ring, if(atlas_tiles.$i.mark, fl.ember, if(found.$i, accent.primary, mix(border.subtle, accent.primary, otile.$i.hover)))) }
@@ -5340,12 +5348,12 @@ scene Mooi {
                         box { from: dx.$i + 62, ab.$i + 5; size: 1, 14; color: border.subtle }
                         box { from: dx.$i + 124, ab.$i + 5; size: 1, 14; color: border.subtle }
                         box { from: dx.$i + 186, ab.$i + 5; size: 1, 14; color: border.subtle }
-                        text "FOCUS" { at: dx.$i + 31, ab.$i + 12; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fg.secondary }
-                        text "TILE" { at: dx.$i + 93, ab.$i + 12; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fg.secondary; show: atlas_tiles.$i.floating }
-                        text "FLOAT" { at: dx.$i + 93, ab.$i + 12; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fg.secondary; show: not atlas_tiles.$i.floating }
-                        text "FULL" { at: dx.$i + 155, ab.$i + 12; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fg.secondary }
-                        text "CLOSE" { at: dx.$i + 217, ab.$i + 12; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fl.ember; show: ov_warm != i }
-                        text "AGAIN" { at: dx.$i + 217, ab.$i + 12; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fl.ember; show: ov_warm == i }
+                        text "FOCUS" { at: dx.$i + 31, ab.$i + 12; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.secondary }
+                        text "TILE" { at: dx.$i + 93, ab.$i + 12; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.secondary; show: atlas_tiles.$i.floating }
+                        text "FLOAT" { at: dx.$i + 93, ab.$i + 12; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.secondary; show: not atlas_tiles.$i.floating }
+                        text "FULL" { at: dx.$i + 155, ab.$i + 12; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.secondary }
+                        text "CLOSE" { at: dx.$i + 217, ab.$i + 12; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: ov_warm != i }
+                        text "AGAIN" { at: dx.$i + 217, ab.$i + 12; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember; show: ov_warm == i }
                         on press wfocus.$i while open == overview { emit ov_wact(i * 10) }
                         on press wfloat.$i while open == overview { emit ov_wact(i * 10 + 1) }
                         on press wfull.$i while open == overview { emit ov_wact(i * 10 + 2) }
@@ -5427,9 +5435,9 @@ scene Mooi {
                             glow: 6, (if(ov_cells.$k.active, 0.8, 0)) * st_glow, accent.primary
                             box { from: lx.$k, ly.$k - 26; size: 3, 20; color: if(ov_cells.$k.active, accent.primary, if(ov_cells.$k.acc == 2, fl.ember, if(ov_cells.$k.acc == 1, fl.phos, fl.trace))) }
                         }
-                        text "{ov_cells.$k.label}" { at: lx.$k + 10, ly.$k - 16; anchor: left center; size: 10.5; weight: 600; family: "Share Tech Mono"; width: np.$k - 16; lines: 1
+                        text "{ov_cells.$k.label}" { at: lx.$k + 10, ly.$k - 16; anchor: left center; size: 10; weight: 600; family: "Share Tech Mono"; width: np.$k - 16; lines: 1
                                                      color: if(ov_cells.$k.active, accent.primary, fg.primary) }
-                        text "{ov_cells.$k.sub}" { at: lx.$k + np.$k - 8, ly.$k - 16; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: np.$k > 190 }
+                        text "{ov_cells.$k.sub}" { at: lx.$k + np.$k - 8, ly.$k - 16; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: np.$k > 190 }
                         // its group: a rule under it in the group's colour, the group's name at its foot
                         group {
                             show: ov_cells.$k.grp >= 0
@@ -5437,7 +5445,7 @@ scene Mooi {
                             text ov_cells.$k.gname { at: lx.$k, ly.$k + lh.$k + 16; anchor: left center; size: 9; family: "Share Tech Mono"
                                                      color: if(gc.$k == 2, fl.ember, if(gc.$k == 1, fl.phos, fg.secondary)); show: lw.$k > 140 }
                         }
-                        text "NOT OPENED YET" { at: lx.$k + lw.$k / 2, ly.$k + lh.$k / 2 + 30; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.muted
+                        text "NOT OPENED YET" { at: lx.$k + lw.$k / 2, ly.$k + lh.$k / 2 + 30; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted
                                                       show: not ov_cells.$k.exists and lw.$k > 160 }
                         on press ovh.$k while open == overview and bd_drag < 0 and cd_drag < 0 and ov_mopen < 0 { cd_press = k; cd_ox = local.x - lx.$k; cd_oy = local.y - ly.$k; sp_hx = local.x; sp_hy = local.y; ov_sel = k }
                         on drag ovh.$k while cd_press == k and cd_drag < 0 and length(drag.dx, drag.dy) > 4 { cd_drag = k; sp_hx = local.x; sp_hy = local.y }
@@ -5451,9 +5459,9 @@ scene Mooi {
                     // several monitors (D44)
                     group {
                         show: ov_multi and ov_cells.$k.monned and lw.$k > 140
-                        text "ON {ov_cells.$k.mon}" { at: lx.$k + lw.$k - 8, ly.$k + lh.$k - 12; anchor: right center; size: 9; family: "Share Tech Mono"
+                        text "ON {ov_cells.$k.mon}" { at: lx.$k + lw.$k - 8, ly.$k + lh.$k - 12; anchor: right center; size: 10; family: "Share Tech Mono"
                                                       color: accent.secondary; show: ov_cells.$k.elsewhere }
-                        text "{ov_cells.$k.mon}" { at: lx.$k + lw.$k - 8, ly.$k + lh.$k - 12; anchor: right center; size: 9; family: "Share Tech Mono"
+                        text "{ov_cells.$k.mon}" { at: lx.$k + lw.$k - 8, ly.$k + lh.$k - 12; anchor: right center; size: 10; family: "Share Tech Mono"
                                                    color: fl.muted; show: not ov_cells.$k.elsewhere }
                         box { from: lx.$k + 2, ly.$k + 2; size: lw.$k - 4, lh.$k - 4; corner: 5; stroke: 1.6; color: accent.secondary; show: ov_cells.$k.elsewhere }
                     }
@@ -5492,7 +5500,7 @@ scene Mooi {
                 zone box envbtn { from: srx + srw - 176, sry - 11; size: 176, 22; corner: 4; cursor: pointer; role: button
                                   label: "Environments"; active: not ov_searching }
                 box { from: srx + srw - 176, sry - 11; size: 176, 22; corner: 4; color: mix(fl.hull, fg.primary, 0.06 + 0.06 * envbtn.hover); show: not ov_searching }
-                text "ENVIRONMENTS · CTRL+E" { at: srx + srw - 88, sry; anchor: center; size: 9.5; family: "Share Tech Mono"
+                text "ENVIRONMENTS · CTRL+E" { at: srx + srw - 88, sry; anchor: center; size: 10; family: "Share Tech Mono"
                                               color: if(env_open > 0, accent.primary, fl.muted); show: not ov_searching }
                 on press envbtn while open == overview and ov_mopen < 0 { emit env_toggle }
             }
@@ -5516,10 +5524,10 @@ scene Mooi {
                 opacity: if(ov_canvas, ov_oa, ov_oa * ov_oa)
                 move: 0, if(ov_canvas, 0, ov_slide)
                 text "TYPE TO SEARCH · ENTER GOES · TAB ↑↓ WORKSPACES · ALT+↑↓ A WINDOW · CTRL+M MARK · MENU OR RIGHT-CLICK ACTIONS · F2 NAME · CTRL+Z UNDO · ESC BACK" {
-                     at: hx, hy; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fl.muted
+                     at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted
                      show: not ov_said and ov_nmark == 0 and not ov_naming and not ov_canvas }
                 text "DRAG THE FIELD TO PAN · WHEEL ZOOMS · DOUBLE-CLICK THE FIELD: A NEW WORKSPACE · CARRY A NAMEPLATE TO MOVE IT · CLICK A WINDOW: ITS ACTIONS · CTRL+F FIT · ESC BACK" {
-                     at: ov_W / 2 - 150, hy; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fl.muted
+                     at: ov_W / 2 - 150, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted
                      show: not ov_said and ov_nmark == 0 and not ov_naming and ov_canvas }
                 text "{ov_nmark} MARKED · CARRY ONE OF THEM, OR MENU › MOVE HERE, TO MOVE THEM ALL · ESC CLEARS" {
                      at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ember
@@ -5528,7 +5536,7 @@ scene Mooi {
                      at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: ov_naming and not ov_naming_group }
                 text "NAME THE GROUP · ENTER KEEPS IT · ESC LEAVES IT" {
                      at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: ov_naming_group }
-                text ov_msg { at: hx, hy; anchor: center; size: 10.5; family: "Share Tech Mono"; color: if(ov_ok, fl.phos, fl.ember)
+                text ov_msg { at: hx, hy; anchor: center; size: 10; family: "Share Tech Mono"; color: if(ov_ok, fl.phos, fl.ember)
                               show: ov_said and not ov_naming }
             }
 
@@ -5554,10 +5562,10 @@ scene Mooi {
                     box { from: bx.$b + bw.$b, nvy + 5; size: 1, 16; color: border.subtle; show: b < 4 }
                 }
                 text "−" { at: nvx + 18, nvy + 13; anchor: center; size: 14; color: fg.secondary }
-                text "{round(cam_z * 100)}%" { at: nvx + 72, nvy + 13; anchor: center; size: 10.5; family: "Share Tech Mono"; color: accent.primary }
+                text "{round(cam_z * 100)}%" { at: nvx + 72, nvy + 13; anchor: center; size: 10; family: "Share Tech Mono"; color: accent.primary }
                 text "+" { at: nvx + 126, nvy + 13; anchor: center; size: 14; color: fg.secondary }
-                text "FIT" { at: nvx + 174, nvy + 13; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fg.secondary }
-                text "HERE" { at: nvx + 240, nvy + 13; anchor: center; size: 9.5; family: "Share Tech Mono"; color: fg.secondary }
+                text "FIT" { at: nvx + 174, nvy + 13; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.secondary }
+                text "HERE" { at: nvx + 240, nvy + 13; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.secondary }
                 on press nav.0 while open == overview { ov_cx = ov_cx + ov_W / 2 / ov_cz - ov_W / 2 / clamp(ov_cz / 1.4, 0.03, 1.5); ov_cy = ov_cy + ov_H / 2 / ov_cz - ov_H / 2 / clamp(ov_cz / 1.4, 0.03, 1.5); ov_cz = clamp(ov_cz / 1.4, 0.03, 1.5) }
                 on press nav.2 while open == overview { ov_cx = ov_cx + ov_W / 2 / ov_cz - ov_W / 2 / clamp(ov_cz * 1.4, 0.03, 1.5); ov_cy = ov_cy + ov_H / 2 / ov_cz - ov_H / 2 / clamp(ov_cz * 1.4, 0.03, 1.5); ov_cz = clamp(ov_cz * 1.4, 0.03, 1.5) }
                 on press nav.3 while open == overview { ov_cx = ov_fx; ov_cy = ov_fy; ov_cz = ov_fz }
@@ -5582,7 +5590,7 @@ scene Mooi {
                     box { from: ov_mx, ov_my; size: ov_mw, 30 + ov_menu.count * 28; corner: g.radius }
                 }
                 box { from: ov_mx + 12, ov_my - 1; size: 40, 2; color: fl.phos }
-                text ov_mtitle { at: ov_mx + 12, ov_my + 15; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: fl.muted }
+                text ov_mtitle { at: ov_mx + 12, ov_my + 15; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                 repeat j in 0..8 {
                     let ry.$j = ov_my + 26 + j * 28
                     group {
@@ -5620,8 +5628,8 @@ scene Mooi {
                     box { from: ov_ex, ov_ey; size: ov_ew, ov_eh; corner: g.radius }
                 }
                 box { from: ov_ex + 12, ov_ey - 1; size: 48, 2; color: fl.phos }
-                text env_title { at: ov_ex + 14, ov_ey + 18; anchor: left center; size: 9.5; family: "Share Tech Mono"; color: fl.muted; width: ov_ew - 120; lines: 1 }
-                text "ESC BACK" { at: ov_ex + ov_ew - 14, ov_ey + 18; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text env_title { at: ov_ex + 14, ov_ey + 18; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: ov_ew - 120; lines: 1 }
+                text "ESC BACK" { at: ov_ex + ov_ew - 14, ov_ey + 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
                 // the plan
                 repeat j in 0..14 {
                     text env_lines.$j.text { at: ov_ex + 16, ov_ey + 44 + j * 19; anchor: left center; size: 11; width: ov_ew - 32; lines: 1
@@ -5735,7 +5743,7 @@ scene Mooi {
                     move: (1 - sh_p) * -14 * sh_brx, 0
                     clip box { from: if(sh_brx > 0, sh_bx, sh_bx + sh_bw * (1 - sh_p)), sh_by - 2; size: sh_bw * sh_p + 2, sh_bh + 4 }
                     ShHousing(sh_bx, sh_by, sh_bw, sh_bh, pick(max(sh_panel, 0), "ARRANGE", "WORKSPACE", "BEHAVIOUR", "CONNECTIONS"), sh_brx > 0)
-                    text sh_title { at: sh_bx + sh_bw - 12, sh_by + 15; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 110; lines: 1; align: right }
+                    text sh_title { at: sh_bx + sh_bw - 12, sh_by + 15; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 110; lines: 1; align: right }
                     for r in sh_rows { ShRow(r, sh_bx + 2, sh_by + 30, sh_bw - 4, sh_row_h, sh_row == r.index and not sh_ext, sh_row) }
                 }
             }
@@ -5788,8 +5796,8 @@ scene Mooi {
         box { from: 0, 12; size: 2, 20; corner: 1; color: accent.primary; opacity: lit }
         image r.icon { at: 14, 12; size: 20, 20 }
         text "{upper(r.letter)}" { at: 24, 22; anchor: center; size: 12; weight: 700; color: fg.secondary }
-        text r.title { at: 46, 15; anchor: left center; size: 13.5; width: 420; lines: 1; color: fg.primary }
-        text r.sub { at: 46, 31; anchor: left center; size: 10.5; width: 420; lines: 1; color: fg.secondary }
+        text r.title { at: 46, 15; anchor: left center; size: 13; width: 420; lines: 1; color: fg.primary }
+        text r.sub { at: 46, 31; anchor: left center; size: 10; width: 420; lines: 1; color: fg.secondary }
         text pick(r.kind, "App", "Window", "Workspace", "mooi") { at: 548, 22; anchor: right center; size: 10; color: fg.muted; show: r.kind != win }
 
         zone box more { at: 538, 22; size: 28, 28; corner: 6; cursor: pointer; show: r.kind == win; label: "Actions for {r.title}" }

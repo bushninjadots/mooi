@@ -335,15 +335,20 @@ pcall(sys.call, "files.write", CAVA, table.concat({
     "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
     "[smoothing]", "noise_reduction = 66", "" }, "\n"))
 local cava, sent = nil, {}
+-- A cava that never printed a band is not installed (or cannot read PipeWire): the player says
+-- so once and stops respawning it (audit 2026-10-29).
+local cava_lines, viz_missing = 0, false
 local function hush()
     if cava then kill(cava, "term"); cava = nil end
     for i = 0, 23 do fact["nv" .. i] = 0.03; sent[i] = 0.03 end
 end
 local function listen_cava()
-    if cava then return end
+    if cava or viz_missing then return end
     local mine
+    cava_lines = 0
     mine = spawn("cava", { "-p", folder .. "/" .. CAVA }, function(line)
         if cava ~= mine then return end
+        cava_lines = cava_lines + 1
         local i = 0
         for v in line:gmatch("(%d+);") do
             if i > 23 then break end
@@ -351,14 +356,21 @@ local function listen_cava()
             if math.abs(x - (sent[i] or 0)) > 0.02 then fact["nv" .. i] = x; sent[i] = x end
             i = i + 1
         end
-    end, function() if cava == mine then cava = nil end end)
+    end, function()
+        if cava ~= mine then return end
+        cava = nil
+        if cava_lines == 0 then
+            viz_missing = true
+            say("VISUALIZER NEEDS CAVA · pacman -S cava")
+        end
+    end)
     cava = mine
 end
 -- Reduced motion and "always" saving keep the visualisers still and cava off (as the desk does).
 local motion = type(settings.motion) == "table" and settings.motion or {}
 fact.viz_still = motion.reduced == true or motion.saver == "always"
 function viz()
-    if fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still then listen_cava() else hush() end
+    if fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still and not viz_missing then listen_cava() else hush() end
 end
 
 -- ── The hands ────────────────────────────────────────────────

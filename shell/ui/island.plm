@@ -106,12 +106,12 @@ library Island {
         size: 90, 40
         group {
             show: isl_style < 0.5
-            text label { at: x, y + 6; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            text label { at: x, y + 6; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             text value { at: x, y + 25; anchor: left center; size: 19; weight: 600; family: "Exo 2"; color: if(hot, fl.ember, fl.phos) }
         }
         group {
             show: isl_style > 0.5
-            text label { at: x, y + 6; anchor: left center; size: 10.5; family: "Exo 2"; color: fg.secondary }
+            text label { at: x, y + 6; anchor: left center; size: 10; family: "Exo 2"; color: fg.secondary }
             text value { at: x, y + 25; anchor: left center; size: 19; weight: 600; family: "Exo 2"; color: if(hot, status.error, fg.primary) }
         }
     }
@@ -147,8 +147,8 @@ library Island {
         size: w, 28
         group {
             show: isl_style < 0.5
-            text "{upper(label)}" { at: x, y + 6; anchor: left center; size: 9.5; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-            text shown { at: x + w, y + 6; anchor: right center; size: 10.5; family: "Share Tech Mono"; color: if(hot, fl.ember, fl.phos) }
+            text "{upper(label)}" { at: x, y + 6; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text shown { at: x + w, y + 6; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(hot, fl.ember, fl.phos) }
         }
         group {
             show: isl_style > 0.5
@@ -165,7 +165,7 @@ library Island {
         group {
             show: isl_style < 0.5
             Chamfer(x, y, w, h, 5, mix(fl.hull_raised, fl.phos_fill, lit), mix(fl.trace, fl.phos, max(hover, lit)), 1, 1)
-            text "{upper(word)}" { at: x + w / 2, y + h / 2 + 0.5; anchor: center; align: center; size: 9.5; weight: 700; family: "Share Tech Mono"
+            text "{upper(word)}" { at: x + w / 2, y + h / 2 + 0.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"
                                    color: if(lit > 0.5, fl.ink, mix(fl.engrave, fl.phos, hover)); width: w - 6; lines: 1 }
         }
         group {
@@ -223,7 +223,7 @@ library Island {
         group {
             show: isl_style < 0.5
             text "{upper(label)}" { at: 0, 10; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-            text shown { at: w, 10; anchor: right center; size: 10.5; family: "Share Tech Mono"; color: fl.phos }
+            text shown { at: w, 10; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.phos }
         }
         group {
             show: isl_style > 0.5

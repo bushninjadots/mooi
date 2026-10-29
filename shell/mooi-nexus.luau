@@ -510,6 +510,9 @@ pcall(sys.call, "files.write", CAVA, table.concat({
     "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
     "[smoothing]", "noise_reduction = 70", "" }, "\n"))
 local sent = {}
+-- A cava that never printed a band is not installed: say so once and stop respawning it
+-- (audit 2026-10-29).
+local cava_lines, viz_missing = 0, false
 local still = type(settings.motion) == "table" and (settings.motion.reduced == true or settings.motion.saver == "always")
 local function hush()
     if cava then pcall(kill, cava, "term"); cava = nil end
@@ -518,10 +521,12 @@ end
 function viz()
     local want = fact.dk_open and fact.dk_viz and media.playing == true and not still
     if not want then hush(); return end
-    if cava then return end
+    if cava or viz_missing then return end
     local mine
+    cava_lines = 0
     mine = spawn("cava", { "-p", data_folder .. "/" .. CAVA }, function(line)
         if cava ~= mine then return end
+        cava_lines = cava_lines + 1
         local i = 0
         for v in line:gmatch("(%d+);") do
             if i > 31 then break end
@@ -529,7 +534,11 @@ function viz()
             if math.abs(x - (sent[i] or 0)) > 0.025 then fact["dv" .. i] = x; sent[i] = x end
             i = i + 1
         end
-    end, function() if cava == mine then cava = nil end end)
+    end, function()
+        if cava ~= mine then return end
+        cava = nil
+        if cava_lines == 0 then viz_missing = true; notice("CAVA MISSING · pacman -S cava") end
+    end)
     cava = mine
 end
 on("nx_media", function(v)

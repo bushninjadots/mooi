@@ -523,7 +523,7 @@ scene Player {
         size: w, 22
         box { from: x, y; size: w, 22; corner: 11; color: mix(fl.hull_raised, fl.phos, if(on, 0.22, 0) + hot * 0.1) }
         box { from: x, y; size: w, 22; corner: 11; stroke: 1; color: if(on, fl.phos, mix(fl.trace, fl.phos, hot * 0.6)) }
-        text word { at: x + w / 2, y + 11; anchor: center; size: 7.5; weight: 700; family: "Share Tech Mono"; color: if(on, fl.phos, fl.muted) }
+        text word { at: x + w / 2, y + 11; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(on, fl.phos, fl.muted) }
     }
 
     surface player {

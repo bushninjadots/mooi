@@ -833,7 +833,7 @@ library FerrolumeParts {
         box { from: x, y + 6; size: 2.5, rh - 12; color: if(r.kind == 2, fl.ember, fl.phos); opacity: if(focus, 1, 0) }
         text r.label { at: x + 14, y + rh / 2 - 6; anchor: left center; size: 12; weight: 600; family: "Exo 2"; width: w - 60; lines: 1
                        color: if(r.kind == 2, mix(fl.ember, fl.flare, max(hit.hover, if(r.armed, 1, 0))), mix(fl.engrave, fl.phos, max(hit.hover, if(focus, 1, 0)))) }
-        text r.hint { at: x + 14, y + rh / 2 + 8; anchor: left center; size: 9; family: "Share Tech Mono"; width: w - 40; lines: 1; color: fl.muted }
+        text r.hint { at: x + 14, y + rh / 2 + 8; anchor: left center; size: 10; family: "Share Tech Mono"; width: w - 40; lines: 1; color: fl.muted }
         ellipse { at: x + w - 16, y + rh / 2; radius: 3.5; stroke: 1.2; color: if(r.on, fl.phos, fl.trace); show: r.toggle }
         ellipse { at: x + w - 16, y + rh / 2; radius: 2; color: fl.phos; show: r.toggle and r.on }
         path { stroke: 1.4; color: mix(fl.trace_lit, fl.phos, hit.hover); show: r.kind == 1

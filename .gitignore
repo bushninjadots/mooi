@@ -12,10 +12,14 @@ settings.known-good.json
 *.log
 .claude/settings.local.json
 
-# agent tooling state (claude-flow / ruflo), not part of mooi
+# agent tooling state (claude-flow / ruflo / design helpers), not part of mooi
 .claude-flow/
+.claude/
+.open-design/
 .swarm/
 ruvector.db
+agentdb.rvf
+agentdb.rvf.idmap.json
 
 # binaries and images that ship through Arch / Hypr ecosystem; not mooi
 *.xcf

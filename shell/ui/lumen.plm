@@ -40,7 +40,7 @@ library Lumen {
     // code * 1000 + offset, as the settings window's sliders do.
     component Slider(x: number, y: number, w: number, label: text, v: number, span: number, press: event, code: number, shown: text) {
         size: w + 78, 46
-        text "{upper(label)}" { at: x, y; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+        text "{upper(label)}" { at: x, y; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
         zone box hit { from: x - 8, y + 14; size: w + 16, 30; cursor: pointer; role: slider; label: label; value: v / max(span, 1) }
         let at = round(clamp((pointer.x - x) / w, 0, 1) * span)
         let cur = if(hit.pressed > 0.5, at, v)
@@ -100,9 +100,9 @@ library Lumen {
         box { from: x, y; size: w, h; corner: 3; stroke: if(on, 2, 1); color: if(on, fl.ember, fl.trace_dim) }
         box { from: x + 5, y + 5; size: min(h - 10, 20), min(h - 10, 20); corner: 2; color: c }
         box { from: x + 5, y + 5; size: min(h - 10, 20), min(h - 10, 20); corner: 2; stroke: 1; color: mix(c, fl.phos, 0.4) }
-        text label { at: x + 32, y + h / 2; anchor: left center; size: 9; weight: 600; family: "Share Tech Mono"
+        text label { at: x + 32, y + h / 2; anchor: left center; size: 10; weight: 600; family: "Share Tech Mono"
                       color: if(on, fl.phos, mix(fl.engrave, fl.phos, hit.hover)) }
-        text hex { at: x + w - 8, y + h / 2; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+        text hex { at: x + w - 8, y + h / 2; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
         box { from: x, y + h - 2; size: w, 2; color: fl.ember; opacity: if(on, 1, 0) }
         on press hit { emit press(n) }
     }
@@ -129,7 +129,7 @@ library Lumen {
         box { from: x + 7, y + h / 2 - 5; size: 18, 10; corner: 5; color: fl.ground }
         box { from: x + 7, y + h / 2 - 5; size: 18, 10; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_dim) }
         box { at: x + (if(on, 21, 11)), y + h / 2; size: 6, 6; corner: 3; color: if(on, fl.phos, fl.trace) }
-        text label { at: x + 32, y + h / 2; anchor: left center; size: 9; weight: 600; family: "Share Tech Mono"
+        text label { at: x + 32, y + h / 2; anchor: left center; size: 10; weight: 600; family: "Share Tech Mono"
                       color: if(on, fl.phos, mix(fl.engrave, fl.phos, hit.hover)) }
         text pick(on, "ON", "OFF") { at: x + w - 8, y + h / 2; anchor: right center; size: 8; family: "Share Tech Mono"
                                       color: if(on, fl.ember, fl.muted) }
@@ -148,7 +148,7 @@ library Lumen {
         box { from: x, y + 5; size: 2, 28; color: if(sel, fl.ember, fl.trace_dim) }
         text r.name { at: x + 14, y + 13; anchor: left center; size: 12; weight: 600; family: "Exo 2"
                       color: if(sel, fl.phos, mix(fl.engrave, fl.phos, hit.hover)) }
-        text r.hint { at: x + 14, y + 27; anchor: left center; size: 8; family: "Share Tech Mono"
+        text r.hint { at: x + 14, y + 27; anchor: left center; size: 10; family: "Share Tech Mono"
                       color: if(sel, fl.trace_lit, fl.muted) }
         box { at: x + w - 12, y + 19; size: 4, 4; corner: 2; color: fl.ember; show: sel }
         on press hit { emit press(r.index) }
@@ -173,7 +173,7 @@ library Lumen {
         size: w, h
         box { from: x, y; size: w, h; corner: 2; color: c }
         box { from: x, y; size: w, h; corner: 2; stroke: 1; color: mix(c, fl.phos, 0.4) }
-        text role { at: x + w + 12, y + 12; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+        text role { at: x + w + 12, y + 12; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
         text hex { at: x + w + 12, y + 32; anchor: left center; size: 13; weight: 600; family: "Share Tech Mono"; color: c }
     }
 
@@ -183,12 +183,12 @@ library Lumen {
         zone box hit { from: r.x, r.y; size: 284, 186; cursor: pointer; role: item; label: r.name; selected: sel }
         box { from: r.x, r.y; size: 284, 186; corner: 3; color: fl.hull; opacity: 0.6 }
         image r.thumb { at: r.x + 1, r.y + 1; size: 282, 158; show: r.ready > 0.5 }
-        text "DEVELOPING…" { at: r.x + 142, r.y + 79; anchor: center; size: 8; family: "Share Tech Mono"
+        text "DEVELOPING…" { at: r.x + 142, r.y + 79; anchor: center; size: 10; family: "Share Tech Mono"
                              color: fl.trace; show: r.ready < 0.5 }
         box { from: r.x, r.y; size: 284, 158; corner: 3; stroke: if(sel, 2, 1); color: if(sel, fl.ember, fl.trace_dim) }
-        text r.name { at: r.x + 2, r.y + 169; anchor: left center; size: 9; family: "Share Tech Mono"
+        text r.name { at: r.x + 2, r.y + 169; anchor: left center; size: 10; family: "Share Tech Mono"
                       color: if(sel, fl.phos, fl.engrave); width: 226; lines: 1 }
-        text r.dims { at: r.x + 282, r.y + 169; anchor: right center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+        text r.dims { at: r.x + 282, r.y + 169; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
         on press hit { emit pick(r.slot) }
     }
 }
