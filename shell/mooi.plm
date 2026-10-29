@@ -638,6 +638,10 @@ scene Mooi {
     // both, so a press and a drop can name one by its place.
     model stash_folders max 5 { name: text; held: number; n: number; lit: number }
     fact stash_count = 0
+    // the side notch's nub and fan, top and bottom on the screen (notch-state.json; 0, 0 none): the
+    // stash's edge strip is overlay and would take the pointer from them, so it leaves them that band
+    fact nub_cut0 = 0
+    fact nub_cut1 = 0
     fact stash_page = 0
     fact stash_pages = 1
     fact stash_from = 0
@@ -867,6 +871,7 @@ scene Mooi {
     // Settings (logic, from settings.json; these are the defaults)
     fact show_clock = true
     fact ws_max = 10
+    fact ws_last = 10         // the chain's last workspace as drawn (lib/spaces rows: the setting, or further to reach the focus)
     fact confirm_close = true
     fact cfg_error = false
 
@@ -3630,8 +3635,10 @@ scene Mooi {
     // everything the bar has is switched: a program of its own (shell/mooi-settings.plm), which
     // the logic starts and, pressed again, closes.
     on bar_menu { emit open_settings }
-    on scroll chain while bar_wheel == step { emit ws_pick(clamp(active_row + 1 - wheel, 1, ws_max)) }
-    on scroll chain while bar_wheel == invert { emit ws_pick(clamp(active_row + 1 + wheel, 1, ws_max)) }
+    // The wheel walks the chain as it is drawn: it grows past the setting to reach the focus (lib/spaces
+    // rows), so its end is the chain's last (ws_last) — clamped to the setting alone, a turn from 9 landed on 5.
+    on scroll chain while bar_wheel == step { emit ws_pick(clamp(active_row + 1 - wheel, 1, ws_last)) }
+    on scroll chain while bar_wheel == invert { emit ws_pick(clamp(active_row + 1 + wheel, 1, ws_last)) }
     on key Escape while mark_open { mark_open = false }
     on key Escape while side != none { side = none }
     on loom_field { side = notes; mark_open = false; open = none }
@@ -4908,8 +4915,14 @@ scene Mooi {
         // box would never learn it was coming. It is the strip, too, that takes a file let go
         // right at the edge, before the box has finished sliding out. It keeps inside
         // Hyprland's gaps_out (12 px), so no click meant for a window is taken.
-        zone box zstash_catch { from: 0, sb_y; size: 12, sb_h; role: region; label: "The stash's edge — drop here" }
-        box { from: 0, sb_y; size: 12, sb_h; color: fl.hull; opacity: 0.01 }
+        // It is cut in two round the side notch's nub (nub_cut0..1), which lives on this edge too.
+        let sc_h0 = max(0, min(sb_h, nub_cut0 - sb_y))
+        let sc_y1 = max(sb_y, min(sb_y + sb_h, nub_cut1))
+        let sc_h1 = sb_y + sb_h - sc_y1
+        zone box zstash_catch { from: 0, sb_y; size: 12, sc_h0; role: region; label: "The stash's edge — drop here" }
+        box { from: 0, sb_y; size: 12, sc_h0; color: fl.hull; opacity: 0.01; show: sc_h0 > 0 }
+        zone box zstash_catch2 { from: 0, sc_y1; size: 12, sc_h1; role: region; label: "The stash's edge — drop here" }
+        box { from: 0, sc_y1; size: 12, sc_h1; color: fl.hull; opacity: 0.01; show: sc_h1 > 0 }
         zone box zstash_tab { from: 0, sb_tab_y; size: 9, sb_tab_h; cursor: pointer; role: button; label: "Stash — drop files, links and pictures here" }
         box { from: 0, sb_tab_y; size: 9, sb_tab_h; corner: 2; color: fl.hull_raised; opacity: 0.55 }
         group {
@@ -5074,8 +5087,8 @@ scene Mooi {
         on press zstash_tab while stash_pin { stash_pin = false; stash_a: 0; stash_away: 1; blur }
         on press zstash { stash_pin = false; stash_a: 0; stash_away: 1; blur }
         every 80ms while drag.over and pointer.x < 26 and not stash_pin { stash_a: 1; stash_away: 0 }
-        every 100ms while zstash_tab.hover >= 0.2 or zstash_catch.hover >= 0.2 or zstash.hover >= 0.2 or drag.over or stash_naming or stash_pin { stash_away: 0 }
-        every 100ms while stash_a > 0.5 and not stash_pin and zstash_tab.hover < 0.2 and zstash_catch.hover < 0.2 and zstash.hover < 0.2 and not drag.over and not stash_naming { stash_away: 1 }
+        every 100ms while zstash_tab.hover >= 0.2 or zstash_catch.hover >= 0.2 or zstash_catch2.hover >= 0.2 or zstash.hover >= 0.2 or drag.over or stash_naming or stash_pin { stash_away: 0 }
+        every 100ms while stash_a > 0.5 and not stash_pin and zstash_tab.hover < 0.2 and zstash_catch.hover < 0.2 and zstash_catch2.hover < 0.2 and zstash.hover < 0.2 and not drag.over and not stash_naming { stash_away: 1 }
         every 100ms while stash_a > 0.5 and stash_away > 0.9 { stash_a: 0 }
         every 33ms while stash_a > 0.2 and not saving { stash_pulse: mod(stash_pulse + 0.0055, 1) ~1ms }
         on idle for 45s while stash_pin { stash_pin = false; stash_a: 0; stash_away: 1 }

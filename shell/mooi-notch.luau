@@ -71,8 +71,12 @@ local tab_rows = {}       -- the tabs as last published (their badges change)
 local STATE = "notch-state.json"
 local nub = tonumber((read(STATE) or {}).y) or N.NUB_Y
 local function place()
-    local cy = math.floor(math.max(160, math.min(screen.h - 160, screen.h * nub)))
+    local top = tonumber((type(screen.mon) == "table" and type(screen.mon.reserved) == "table" and screen.mon.reserved[2]) or 0) or 0
+    local cy = N.nub_cy(nub, screen.h, top, screen.full_h)
     fact.nt_cy, fact.nt_h = cy, screen.h
+    -- where it is on the whole screen, for the bar: the stash's edge strip leaves that band to the nub
+    local c0, c1 = N.cut(cy, top)
+    if not SAFE and screen.mon then pcall(sys.call, "files.write", STATE, { y = nub, cut0 = c0, cut1 = c1 }) end
     local rows = {}
     for i, p in ipairs(N.fan(cy)) do rows[i] = { word = N.TABS[i].word, x = p.x + 22, y = p.y, glyph = i - 1, badge = "", badged = false } end
     model.tabs = rows
@@ -107,7 +111,6 @@ on("nt_moved", function(v)
     if not y then return end
     nub = math.max(0.12, math.min(0.88, y / math.max(1, screen.h)))
     place()
-    if not SAFE then pcall(sys.call, "files.write", STATE, { y = nub }) end
 end)
 local function badge(tab, word)
     local rows = tab_rows or {}

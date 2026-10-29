@@ -280,6 +280,7 @@ sys.watch("files:" .. FILE, function()
     if desk_sync then desk_sync() end
     if bmo_sync then bmo_sync() end
     if notch_sync then notch_sync() end
+    if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
@@ -555,6 +556,7 @@ sys.watch("workspaces", function(w)
     local count = #ws_rows
     ws_rows = spaces.rows(w.list or {}, atlas_active, fact.ws_max)
     model.spaces = ws_rows   -- the bar's switchers and the Overview, one map
+    fact.ws_last = math.max(1, #ws_rows)
     -- The map grows past the setting to reach the focus (lib/spaces), so the switcher's width
     -- changes with it.
     if #ws_rows ~= count and bar then bar.relayout() end
@@ -1336,7 +1338,9 @@ end)
 
 on("ws_pick", function(id)
     local n = tonumber(id)
-    if n and n > 0 then sys.call("workspaces.focus", n) end
+    -- the one already there is left alone: Hyprland's workspace_back_and_forth would take it as "go back",
+    -- so the wheel at the chain's end (or a press on the lit one) threw you to the last workspace
+    if n and n > 0 and n ~= atlas_active then sys.call("workspaces.focus", n) end
 end)
 
 -- ── Command membrane ────────────────────────────────────────
@@ -1604,6 +1608,17 @@ function notch_sync()
     end)
 end
 after(2000, notch_sync)
+-- Where the notch's nub is on the screen (it writes notch-state.json when it places it): the stash's
+-- edge strip, overlay and over the same edge, leaves that band alone so pointing at the nub opens it.
+function notch_cut()
+    local on = type(settings.notch) ~= "table" or settings.notch.on ~= false
+    local ok, t = pcall(sys.ask, "files.read", "notch-state.json", "json")
+    t = ok and type(t) == "table" and t or {}
+    local c0, c1 = tonumber(t.cut0), tonumber(t.cut1)
+    if on and c0 and c1 then fact.nub_cut0, fact.nub_cut1 = c0, c1 else fact.nub_cut0, fact.nub_cut1 = 0, 0 end
+end
+notch_cut()
+pcall(sys.watch, "files:notch-state.json", notch_cut)
 on("open_claude", function() notch_sync(); run("pleamar", { "--say", "mooi-notch", "emit nt_show 0" }) end)
 on("open_github", function() notch_sync(); run("pleamar", { "--say", "mooi-notch", "emit nt_show 5" }) end)
 

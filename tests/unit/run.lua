@@ -2708,6 +2708,13 @@ test("notch: the fan's tabs on their arc, panels on the screen, the carousel, th
     local col = deck.layout("right", 1920, 1049, 0, {})
     local c = notch.from_deck(col, 1, false, 1920, 1049)
     eq(c.px + notch.PANELS[1].w + 14 + notch.EAR, col.x, "beside the column, on its open side, clear of its notch")
+    -- the nub: kept on the surface, off the stash's tab; the band it leaves the stash's edge strip
+    eq(notch.nub_cy(0.3, 1049, 31, 1080), 314)
+    eq(notch.nub_cy(0.01, 1049), 160, "kept off the surface's top")
+    eq(notch.nub_cy(0.47, 1049, 31, 1080) + 31 + 70 <= (1080 - notch.STASH_TAB) / 2, true, "pushed above the stash's tab")
+    eq(notch.nub_cy(0.53, 1049, 31, 1080) + 31 - 70 >= (1080 + notch.STASH_TAB) / 2, true, "or below it")
+    local c0, c1 = notch.cut(314, 31)
+    eq(c0, 31 + 314 - notch.NUB_REACH); eq(c1, 31 + 314 + notch.NUB_REACH)
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

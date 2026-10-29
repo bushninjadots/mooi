@@ -22,6 +22,28 @@ M.ARC_R = 560         -- the carousel's radius (its centre off the screen to the
 M.ARC_STEP = 12       -- degrees between neighbours on it
 M.ARC_SEEN = 46       -- and how far from the middle one is still drawn
 
+M.NUB_REACH = 150     -- the nub and its fan, above and below its middle: the stash's edge strip leaves this to the notch
+M.STASH_TAB = 128     -- the stash's tab, in the middle of the screen's full height (shell/mooi.plm sb_tab_h)
+
+-- The nub's middle on a surface h tall whose top is `top` px down a screen full_h tall: kept off the
+-- surface's ends and, when the stash's tab is given, clear of it (the stash is overlay, the notch is not:
+-- over the tab the stash would take the pointer). Returns the middle in the surface's own pixels.
+function M.nub_cy(share, h, top, full_h)
+    local cy = math.floor(math.max(160, math.min(h - 160, h * share)))
+    if full_h then
+        local tab0, tab1 = (full_h - M.STASH_TAB) / 2 - top, (full_h + M.STASH_TAB) / 2 - top
+        if cy + 70 > tab0 and cy - 70 < tab1 then
+            cy = (cy < (tab0 + tab1) / 2) and math.floor(tab0 - 70) or math.ceil(tab1 + 70)
+        end
+    end
+    return cy
+end
+
+-- The band of the screen (its full-height pixels) the nub and its fan need to themselves.
+function M.cut(cy, top)
+    return top + cy - M.NUB_REACH, top + cy + M.NUB_REACH
+end
+
 function M.tab_index(id)
     for i, t in ipairs(M.TABS) do if t.id == id then return i - 1 end end
     return nil

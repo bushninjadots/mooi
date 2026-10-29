@@ -3493,3 +3493,24 @@ gesture done twice, his screen washed red, steam puffing out of his head, a cros
 behind it (he lives under the windows), leans out with a glance and maybe a "peekaboo!", and goes back.
 Outside codes 126 peek, 127 tantrum. Checked live: the chat answering in his voice (8 lines in the panel),
 four pokes setting off the tantrum and its words, a peek to a window's edge and back. BMO's 27 tests pass.
+
+## D110 · 2026-10-29 · The side notch answers the real pointer; the wheel stays on the chain; Super alone opens nothing
+
+**Asked for:** "left side panel … its there but nothing happens", "holding super opens search … only make 1
+and that is super+a", "fix workspace logic numbering and scrolling". **Found:** the stash's 12 px edge strip
+(D54's drop catcher, y 233–847 on a 1080 screen) is an overlay surface and the notch is a top one: the nub
+(y ~275–415) sat entirely under it, so a real pointer never reached it — D106 had only been tried with
+synthetic events. Moved below the strip, the same hover opened the fan. The bar's wheel clamped to
+spine.max_workspaces (5) although the chain grows to the focus (9): a turn "next" from 9 went to 5; and
+asking for the workspace already there is, with Hyprland's workspace_back_and_forth on, "go back" — the
+wheel at the end of the chain (and a press on the lit workspace) threw you to the last one.
+**Done:** the notch writes the band its nub and fan need (cut0, cut1, screen pixels; lib/notch `cut`,
+NUB_REACH 150) to notch-state.json each time it places the nub; the bar watches it (`notch_cut`, facts
+nub_cut0/1) and cuts its edge strip in two round it (zstash_catch, zstash_catch2); with the notch off the
+strip is whole again. A nub carried onto the stash's tab is put just above or below it (lib/notch
+`nub_cy`). The wheel clamps to the chain as drawn (`ws_last`, from lib/spaces rows); `ws_pick` leaves the
+workspace already focused alone. The Super-alone binding (ArchEclipse's search) was dropped from the
+machine-local ~/.config/hypr/config/custom/mooi.lua and is unbound; Super+A is the one key.
+**Checked:** with the real pointer (hl.dsp.cursor.move) the nub at its default place fans out and folds
+when left, and the strip below still catches; ydotool's wheel over the compass: 9 → 9 at the end, 8, 7,
+back to 9; Hyprland reloaded without errors, no Super-alone bind left; unit 250, BMO 27.
