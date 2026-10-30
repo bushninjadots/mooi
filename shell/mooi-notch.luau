@@ -269,7 +269,10 @@ local function clock(s) s = math.max(0, math.floor(tonumber(s) or 0)); return st
 -- D112: the bar owns the one cava. The Music panel reads the line it publishes, and only while up.
 local still = type(settings.motion) == "table" and (settings.motion.reduced == true or settings.motion.saver == "always")
 local viz_seq, viz_at = nil, 0
-local function rest_viz() for i = 0, 23 do fact["mv" .. i] = 0 end end
+local function rest_viz()
+    for i = 0, 23 do fact["mv" .. i] = 0 end
+    fact.rm_on = 0; fact.rm_beat = 0; fact.rm_phase = 0
+end
 local function take_viz()
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
     if not ok or type(raw) ~= "string" then return end
@@ -277,6 +280,13 @@ local function take_viz()
     if not t or not vizfeed.newer(viz_seq, t.seq) then return end
     viz_seq, viz_at = t.seq, os.time()
     fact.mu_viz_missing = t.missing == true
+    -- the rim's facts (ui/rim.plm): the panels' borders follow the music, not the Music tab alone
+    local folded = vizfeed.map(t.bands, 16)
+    for i = 0, 15 do fact["rm" .. i] = folded[i + 1] end
+    fact.rm_bass, fact.rm_high, fact.rm_beat, fact.rm_phase = t.bass, t.high, t.beat, t.phase
+    fact.rm_gain = tonumber(fact.music_rim_gain) or 1
+    fact.rm_glow = fact.music_rim_glow == true and 1 or 0
+    fact.rm_on = (t.playing and fact.music_rim == true and not still) and 1 or 0
     -- a silent frame rests the bars even while the panel is shut, so it cannot freeze on reopen
     if not t.playing or still then rest_viz(); return end
     if not (fact.nt_open and fact.nt_tab == 1) then return end

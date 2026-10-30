@@ -336,7 +336,10 @@ local motion = type(settings.motion) == "table" and settings.motion or {}
 fact.viz_still = motion.reduced == true or motion.saver == "always"
 -- D112: the bar owns the one cava. The player reads the line it publishes, and only while up.
 local viz_seq, viz_at, viz_missing = nil, 0, false
-local function hush() for i = 0, 23 do fact["nv" .. i] = 0.03 end end
+local function hush()
+    for i = 0, 23 do fact["nv" .. i] = 0.03 end
+    fact.rm_on = 0; fact.rm_beat = 0; fact.rm_phase = 0
+end
 local function take_viz()
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
     if not ok or type(raw) ~= "string" then return end
@@ -346,6 +349,13 @@ local function take_viz()
     -- cava is not installed (or cannot read PipeWire): the player says so once, as it did alone
     if t.missing and not viz_missing then say("VISUALIZER NEEDS CAVA · pacman -S cava") end
     viz_missing = t.missing == true
+    -- the rim's facts (ui/rim.plm): the player has no switch of its own, it follows the master
+    local folded = vizfeed.map(t.bands, 16)
+    for i = 0, 15 do fact["rm" .. i] = folded[i + 1] end
+    fact.rm_bass, fact.rm_high, fact.rm_beat, fact.rm_phase = t.bass, t.high, t.beat, t.phase
+    fact.rm_gain = tonumber(fact.music_rim_gain) or 1
+    fact.rm_glow = fact.music_rim_glow == true and 1 or 0
+    fact.rm_on = (t.playing and fact.music_rim == true and not fact.viz_still) and 1 or 0
     -- a silent frame rests the bars even while the player is shut, so it cannot freeze on reopen
     if not t.playing then hush(); return end
     if not (fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still) then return end

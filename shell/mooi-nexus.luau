@@ -514,6 +514,10 @@ local still = type(settings.motion) == "table" and (settings.motion.reduced == t
 local function rest_viz()
     for i = 0, 31 do fact["dv" .. i] = 0 end
 end
+local function rest_rim()
+    fact.rm_beat, fact.rm_phase = 0, 0
+    fact.rm_on = 0
+end
 local function take_viz()
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
     if not ok or type(raw) ~= "string" then return end
@@ -523,7 +527,14 @@ local function take_viz()
     if t.missing and not viz_missing then notice("CAVA MISSING · pacman -S cava") end
     viz_missing = t.missing == true
     -- a silent frame rests the bars even while the deck is shut, so it cannot freeze on reopen
-    if not t.playing then rest_viz(); return end
+    if not t.playing then rest_viz(); rest_rim(); return end
+    -- the rim's facts (ui/rim.plm): the master, the deck's own override, and reduced motion
+    local folded = vizfeed.map(t.bands, 16)
+    for i = 0, 15 do fact["rm" .. i] = folded[i + 1] end
+    fact.rm_bass, fact.rm_high, fact.rm_beat, fact.rm_phase = t.bass, t.high, t.beat, t.phase
+    fact.rm_gain = tonumber(fact.music_rim_gain) or 1
+    fact.rm_glow = fact.music_rim_glow == true and 1 or 0
+    fact.rm_on = (fact.music_rim == true and fact.dk_viz and not still) and 1 or 0
     if not (fact.dk_open and fact.dk_viz) then return end
     for i = 0, 31 do fact["dv" .. i] = t.bands[i + 1] end
 end
@@ -531,7 +542,7 @@ pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
 every(500, function()
     if fact.dk_open and fact.dk_viz and viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then
         viz_seq, viz_at = nil, 0
-        rest_viz()
+        rest_viz(); rest_rim()
     end
 end)
 take_viz()

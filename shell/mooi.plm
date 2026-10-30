@@ -2109,6 +2109,12 @@ scene Mooi {
         // the bay a group sits in on a mechanism (both modes)
         MechBay(fx, fw, mech and not own)
     }
+    // Full mode: one panel, one border — its left, right and bottom lift with the music (the top
+    // is the screen's own edge). The frames above are hidden in this mode, so this is the only rim.
+    group {
+        show: bar_full and not st_notch
+        rim.Rect(px, fl.top, pw, fl.mod_h, st_radius + 1, 14, fl.hull, fl.phos, rim_line, 10)
+    }
     // Full mode on a mechanism: bolts at the panel's two ends.
     group {
         show: bar_full and mech

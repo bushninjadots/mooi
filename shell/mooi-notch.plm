@@ -3,6 +3,7 @@ import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/island.plm"
+import "ui/rim.plm" as rim
 import "ui/deck.plm"
 
 // mooi's side notch (D106): a lit sliver on the left edge that, pointed at, fans out into six tabs on
@@ -543,6 +544,8 @@ scene Notch {
                 move: nt_px, pn_y
                 zone box keep0 { from: 0, 0; size: 440, 600; role: region; label: "Claude" }
                 Card(440, 600, 0)
+                // the music on the panel's own border (ui/rim.plm), all four sides
+                rim.Rect(0, 0, 440, 600, dk.r, 15, mix(dk.raised, #000000, 0.35), dk.hot, mix(dk.line, dk.hot, 0.55), 10)
                 PartHead(440, "", "Claude", ch_status, lamp: if(ch_busy, 2, 1))
                 // who answers: Claude, or BMO (who also says it on the desktop)
                 zone box chm0 { from: 14, 34; size: 70, 22; cursor: pointer; role: tab; selected: not ch_bmo; label: "Ask Claude" }
@@ -612,6 +615,8 @@ scene Notch {
                 move: nt_px, pn_y
                 zone box keep1 { from: 0, 0; size: 440, 220; role: region; label: "Music" }
                 Card(440, 220, 0)
+                // the music on the panel's own border (ui/rim.plm), all four sides
+                rim.Rect(0, 0, 440, 220, dk.r, 15, mix(dk.raised, #000000, 0.35), dk.hot, mix(dk.line, dk.hot, 0.55), 10)
                 group {
                     show: mu_art_on
                     clip box { from: 1, 1; size: 438, 218; corner: dk.r }
@@ -775,6 +780,8 @@ scene Notch {
                 move: nt_px, pn_y
                 zone box keep4 { from: 0, 0; size: 440, 340; role: region; label: "Weather" }
                 Card(440, 340, 0)
+                // the music on the panel's own border (ui/rim.plm), all four sides
+                rim.Rect(0, 0, 440, 340, dk.r, 15, mix(dk.raised, #000000, 0.35), dk.hot, mix(dk.line, dk.hot, 0.55), 10)
                 PartHead(440, "", "Weather", wx_place, lamp: if(wx_ok, 1, 0))
                 group {
                     show: wx_ok
@@ -811,6 +818,8 @@ scene Notch {
                 move: nt_px, pn_y
                 zone box keep5 { from: 0, 0; size: 460, 600; role: region; label: "GitHub" }
                 Card(460, 600, 0)
+                // the music on the panel's own border (ui/rim.plm), all four sides
+                rim.Rect(0, 0, 460, 600, dk.r, 15, mix(dk.raised, #000000, 0.35), dk.hot, mix(dk.line, dk.hot, 0.55), 10)
                 PartHead(460, "", "GitHub", gh_notes, lamp: if(gh_ok, 1, 0))
                 group {
                     show: gh_ok

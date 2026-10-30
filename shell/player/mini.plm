@@ -36,6 +36,8 @@ part Mini {
                     glow: 18, 24% * st_glow, fl.phos
                     Chamfer(0, 0, cw, ch, 14, fl.hull, mix(fl.trace, fl.phos, 0.35), 1, 1.4)
                 }
+                // the music on the card's own border (ui/rim.plm): left, right and bottom
+                rim.Rect(0, 0, cw, ch, 16, 14, fl.hull, fl.phos, mix(fl.trace, fl.phos, 0.35), 9)
                 repeat k in 0..104 {
                     ellipse { at: 21 + mod(k, 13) * 31, 18 + floor(k / 13) * 23; radius: 0.8; color: fl.trace_dim; opacity: 0.7 }
                 }
