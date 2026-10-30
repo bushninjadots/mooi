@@ -58,6 +58,8 @@ M.SCHEMA = {
     { path = "bar.ground", kind = "enum", values = { "black", "tinted", "clear" }, default = "black" },
     { path = "bar.rail", kind = "boolean", default = true },
     { path = "bar.accents", kind = "boolean", default = true },
+    -- the islands' feet step with the music (the bar's border as the visualiser)
+    { path = "bar.foot_visualizer", kind = "boolean", default = true },
     -- The look of what the bar is made of (lib/style hands these to the scene). Defaults are the
     -- look the bar had before they existed.
     -- Presets: one choice that sets a coherent look (lib/style). What is stored is the last one
@@ -304,10 +306,13 @@ M.SCHEMA = {
     -- the deck's parts in your order, and those you hid (✎ on the deck arranges them; lib/nexusdeck PARTS)
     { path = "nexus.parts", kind = "ids", max = 12 },
     { path = "nexus.hidden", kind = "ids", max = 12 },
-    -- one row of cards along a strip, or two; the profile card small or large; the music on the deck's edge
+    -- one row of cards, or two (down a side that is two columns); the profile card small or large;
+    -- the music on the deck's edge
     { path = "nexus.rows", kind = "integer", default = 1, min = 1, max = 2 },
     { path = "nexus.profile", kind = "enum", values = { "small", "large" }, default = "small" },
     { path = "nexus.visualiser", kind = "boolean", default = true },
+    -- how many bars the deck's open border is cut into (the notches' faces carry their own share)
+    { path = "nexus.bars", kind = "enum", values = { "eight", "twelve", "sixteen", "twentyfour" }, default = "sixteen" },
     { path = "nexus.notches", kind = "boolean", default = true },
     -- each card's size along a strip, as "id_s" / "id_l" (medium is not listed)
     { path = "nexus.sizes", kind = "ids", max = 12 },
@@ -489,7 +494,8 @@ local function migrate(t)
     if type(t.nexus) == "table" then
         for k in pairs(t.nexus) do
             if k ~= "identity" and k ~= "mode" and k ~= "edge" and k ~= "parts" and k ~= "hidden"
-               and k ~= "rows" and k ~= "profile" and k ~= "visualiser" and k ~= "notches" and k ~= "sizes" then t.nexus[k] = nil end
+               and k ~= "rows" and k ~= "profile" and k ~= "visualiser" and k ~= "bars"
+               and k ~= "notches" and k ~= "sizes" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

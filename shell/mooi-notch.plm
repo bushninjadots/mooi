@@ -325,6 +325,7 @@ scene Notch {
     fact sp_c = 0                // the workspace in the middle
     model pics max 40 { pic: image 320, 180; name: text; on: bool }
     fact wp_c = 0                // the picture in the middle
+    fact wp_hue = -1             // the colour along the arc's inside: -1 all of them, else its band
     text wp_t = ""
 
     // ── Weather ──
@@ -370,6 +371,7 @@ scene Notch {
     event nt_open_player ->      // to the logic: open the music player
     event nt_ws ->               // to the logic: go to workspace (its place on the arc)
     event nt_wall ->             // to the logic: wear picture n
+    event nt_hue ->              // to the logic: the colour band along the arc pressed (again: all of them)
     event nt_studio ->           // to the logic: open the wallpaper studio
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
     event nt_refresh ->          // to the logic: read the panel again
@@ -413,6 +415,24 @@ scene Notch {
         figure i_cloud { at: x, y; size: 16, 16; color: c; show: g > 3.5 and g < 4.5 }
         figure i_git { at: x, y; size: 16, 16; color: c; show: g > 4.5 }
     }
+    // A colour on the arc's inside: the band's hue, lit when it is the one chosen. `k` is the band.
+    component Swatch(k: number, word: text, c: color) {
+        let ha = -52 + k * 104 / 11
+        // the ring inside the arc, made to the screen: twelve chips a finger apart on any height
+        let rr = min(380, max(250, (nt_acy - 90) * 0.62))
+        let sx = nt_ox - nt_dir * 44 + nt_dir * cos(ha) * rr
+        let sy = nt_acy + sin(ha) * rr
+        let on = wp_hue == k
+        size: 22, 22
+        zone box swz { from: sx - 11, sy - 11; size: 22, 22; cursor: pointer; role: item; selected: on; label: word }
+        group {
+            glow: 8, if(on, 0.9, 0.5 * swz.hover) * st_glow, c
+            box { from: sx - 8, sy - 8; size: 16, 16; corner: 8; color: c; opacity: if(on, 1, 0.55 + 0.45 * swz.hover) }
+        }
+        box { from: sx - 8, sy - 8; size: 16, 16; corner: 8; stroke: if(on, 2, 1); color: if(on, dk.ink, mix(c, dk.ink, 0.35)); opacity: if(on, 1, 0.5 + 0.5 * swz.hover) }
+        on press swz { emit nt_hue(k) }
+    }
+
     component WGlyph(x: number, y: number, sz: number, k: number) {
         size: sz, sz
         figure i_clear { at: x, y; size: sz, sz; color: fl.flare; show: k < 0.5 }
@@ -619,12 +639,14 @@ scene Notch {
                 show: nt_tab == 2
                 zone box keep2 { from: nt_ox + if(nt_dir > 0, 0, -760), 40; size: 760, nt_h - 80; role: region; label: "Workspaces" }
                 on scroll keep2 { sp_c = clamp(sp_c - wheel, 0, max(0, warc.count - 1)) }
+                // the arc's radius, made to the screen: the same shape on a laptop and on a 4K
+                let war = clamp(nt_h * 0.55, 470, 600)
                 text "WORKSPACES · THE WHEEL TURNS THE ARC · A PRESS GOES THERE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 for w in warc {
                     let wa = (w.index - spc) * 13
                     let ws = 1 - min(abs(wa), 60) / 110
-                    let wx = nt_ox + nt_dir * (cos(wa) * 560 - 212 + 168) - 120 * ws
-                    let wy = nt_acy + sin(wa) * 560 - 70 * ws
+                    let wx = nt_ox + nt_dir * (cos(wa) * war - 212 + 168) - 120 * ws
+                    let wy = nt_acy + sin(wa) * war - 70 * ws
                     group {
                         show: abs(wa) < 48
                         opacity: 1 - abs(wa) / 60
@@ -648,8 +670,8 @@ scene Notch {
                 for b in wbox {
                     let ba = (b.k - spc) * 13
                     let bs = 1 - min(abs(ba), 60) / 110
-                    let bx = nt_ox + nt_dir * (cos(ba) * 560 - 212 + 168) - 120 * bs
-                    let by = nt_acy + sin(ba) * 560 - 70 * bs
+                    let bx = nt_ox + nt_dir * (cos(ba) * war - 212 + 168) - 120 * bs
+                    let by = nt_acy + sin(ba) * war - 70 * bs
                     box { from: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs); corner: 1
                           color: mix(dk.raised, #000000, 0.2); opacity: 0.8 * (1 - abs(ba) / 60); show: abs(ba) < 48 }
                     box { from: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs); corner: 1; stroke: 1
@@ -662,16 +684,41 @@ scene Notch {
                 show: nt_tab == 3
                 zone box keep3 { from: nt_ox + if(nt_dir > 0, 0, -800), 40; size: 800, nt_h - 80; role: region; label: "Wallpapers" }
                 on scroll keep3 { wp_c = clamp(wp_c - wheel, 0, max(0, pics.count - 1)) }
+                let par = clamp(nt_h * 0.55, 470, 600)
                 text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
                 zone box wpst { from: nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312; size: 140, 24; cursor: pointer; role: button; label: "Open the wallpaper studio" }
                 Act(nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312, 140, "Open the studio", false, false, wpst.hover)
                 on press wpst { emit nt_studio }
+                // the colours along the arc's inside: narrow it to the reds, the blues…
+                group {
+                    show: nt_dir != 0
+                    let srr = min(380, max(250, (nt_acy - 90) * 0.62))
+                    repeat c in 0..23 {
+                        let ca0.$c = -52 + c * 104 / 24
+                        let ca1.$c = -52 + (c + 1) * 104 / 24
+                        line { from: nt_ox - nt_dir * 44 + nt_dir * cos(ca0.$c) * srr, nt_acy + sin(ca0.$c) * srr
+                               to: nt_ox - nt_dir * 44 + nt_dir * cos(ca1.$c) * srr, nt_acy + sin(ca1.$c) * srr
+                               width: 1; color: dk.line; opacity: 0.45 }
+                    }
+                    Swatch(0, "Reds", #ec1313)
+                    Swatch(1, "Oranges", #ec8013)
+                    Swatch(2, "Yellows", #ecec13)
+                    Swatch(3, "Limes", #80ec13)
+                    Swatch(4, "Greens", #13ec13)
+                    Swatch(5, "Springs", #13ec80)
+                    Swatch(6, "Cyans", #13ecec)
+                    Swatch(7, "Azures", #1380ec)
+                    Swatch(8, "Blues", #1313ec)
+                    Swatch(9, "Violets", #8013ec)
+                    Swatch(10, "Purples", #ec13ec)
+                    Swatch(11, "Pinks", #ec1380)
+                }
                 for p in pics {
                     let pa = (p.index - wpc) * 12
                     let ps = 1 - min(abs(pa), 60) / 100
-                    let px = nt_ox + nt_dir * (cos(pa) * 580 - 212 + 168) - 140 * ps
-                    let py = nt_acy + sin(pa) * 580 - 79 * ps
+                    let px = nt_ox + nt_dir * (cos(pa) * par - 212 + 168) - 140 * ps
+                    let py = nt_acy + sin(pa) * par - 79 * ps
                     group {
                         show: abs(pa) < 50
                         opacity: 1 - abs(pa) / 62

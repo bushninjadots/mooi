@@ -77,6 +77,24 @@ function M.move(order, id, to, hidden)
     return shown
 end
 
+-- Where to cut `n` cards in two: the place nearest the middle at which both sides `fits`, or, if
+-- none fits, the one that overruns least. Walking down from the middle (what this used to do) can
+-- settle on a cut where the first side fits and the second does not, and a card is dropped for it.
+function M.split(n, fits)
+    if n < 2 then return nil end
+    local best, best_gap, fallback, fallback_over
+    for at = 1, n - 1 do
+        if fits(1, at) and fits(at + 1, n) then
+            local gap = math.abs(at - n / 2)
+            if not best_gap or gap < best_gap then best, best_gap = at, gap end
+        end
+        local over = math.max(at, n - at)
+        if not fallback then fallback, fallback_over = at, over end
+    end
+    if best then return best end
+    return fallback or math.ceil(n / 2)
+end
+
 local function mixer_w(n) return 34 + math.max(3, math.min(6, tonumber(n) or 4)) * 36 end
 
 -- A card's size (✎ ⇔ on the deck): small, medium or large, a share of its width along a strip.
@@ -145,16 +163,30 @@ function M.layout(edge, sw, sh, top, opts)
         local room = sw - 2 * M.GAP
         local inner = room - 2 * M.PAD
         -- pack: each card into the current row while it fits at its smallest, else the next row
+        -- two rows means two rows: the cards are split over them, half the width each, in your
+        -- order — not only when one row runs out of room. A single row instead fills up and flows on.
+        local function split_at()
+            if rows < 2 or #shown < 2 then return nil end
+            local function width(a, b)
+                local w = M.CARD_GAP * math.max(0, b - a)
+                for i = a, b do w = w + minimum(shown[i]) end
+                return w
+            end
+            -- the split that leaves both rows the most even, and inside the deck's width
+            return M.split(#shown, function(a, b) return width(a, b) <= inner end)
+        end
         local packed
         repeat
             packed = { {} }
             local used = 0
             local ok = true
-            for _, id in ipairs(shown) do
+            local split = split_at()
+            for i, id in ipairs(shown) do
                 local w = minimum(id)
                 local row = packed[#packed]
                 local need = (#row > 0 and M.CARD_GAP or 0) + w
-                if used + need > inner and #row > 0 then
+                local forced = split ~= nil and i > split and #packed < 2
+                if #row > 0 and (used + need > inner or forced) then
                     if #packed >= rows then ok = false; break end
                     packed[#packed + 1] = {}
                     row = packed[#packed]; used = 0; need = w
@@ -190,30 +222,54 @@ function M.layout(edge, sw, sh, top, opts)
             end
         end
     else
-        d.w = M.COLUMN_W
+        -- down a side, two rows are two columns: the cards stack in the first, then the second,
+        -- half each — the deck grows out towards the desktop
+        local cols = rows >= 2 and 2 or 1
+        local colw = M.COLUMN_W - 2 * M.PAD                 -- a card's width down a column
+        d.w = cols == 2 and (2 * colw + M.CARD_GAP + 2 * M.PAD) or M.COLUMN_W
         d.x = edge == "left" and M.GAP or sw - d.w - M.GAP - (opts.spine and M.SPINE_W or 0)
         d.y = top + 6
         local room = sh - d.y - M.GAP
-        local tw = (d.w - 2 * M.PAD - 28 - M.TILE_GAP) / 2
+        local tw = (colw - 28 - M.TILE_GAP) / 2
         local spaces_h = 30 + math.ceil(ntiles / 2) * (tw / aspect + 16 + M.TILE_GAP) + 10
         local function height(id)
             if id == "spaces" then return spaces_h end
             if id == "profile" and opts.large then return M.PARTS.profile.hl end
             return M.PARTS[id].h
         end
-        local function total()
-            local t = M.RAIL + M.PAD
-            for i, id in ipairs(shown) do t = t + height(id) + (i > 1 and M.CARD_GAP or 0) end
-            return t
+        -- where the second column begins: the most even split that keeps both inside the height
+        local function split_at()
+            if cols < 2 or #shown < 2 then return nil end
+            local function stack(a, b)
+                local t = M.RAIL + M.CARD_GAP * math.max(0, b - a)
+                for i = a, b do t = t + height(shown[i]) end
+                return t
+            end
+            return M.split(#shown, function(a, b) return stack(a, b) <= room end)
         end
-        while total() > room and drop_least() do end
-        local y = M.RAIL
-        for _, id in ipairs(shown) do
-            local h = height(id)
-            d.parts[#d.parts + 1] = { id = id, row = 1, x = M.PAD, y = math.floor(y + 0.5), w = d.w - 2 * M.PAD, h = math.floor(h + 0.5) }
-            y = y + h + M.CARD_GAP
+        local function pack()
+            local split = split_at()
+            local used, out = { [1] = M.RAIL, [2] = M.RAIL }, {}
+            for i, id in ipairs(shown) do
+                local c = (split and i > split) and 2 or 1
+                local h = height(id)
+                used[c] = used[c] + (used[c] > M.RAIL and M.CARD_GAP or 0) + h
+                out[#out + 1] = { id = id, col = c, y = used[c] - h, h = h }
+            end
+            local tall = M.RAIL
+            for c = 1, cols do tall = math.max(tall, used[c]) end
+            return out, tall + M.PAD
         end
-        d.h = math.min(room, y - M.CARD_GAP + M.PAD)
+        local packed, tall
+        while true do
+            packed, tall = pack()
+            if tall <= room or not drop_least() then break end
+        end
+        for _, p in ipairs(packed) do
+            d.parts[#d.parts + 1] = { id = p.id, row = p.col, x = M.PAD + (p.col - 1) * (colw + M.CARD_GAP),
+                                     y = math.floor(p.y + 0.5), w = colw, h = math.floor(p.h + 0.5) }
+        end
+        d.h = math.min(room, math.floor(tall + 0.5))
     end
     for _, part in ipairs(d.parts) do d.bays[part.id] = part end
     d.x, d.y, d.w, d.h = math.floor(d.x + 0.5), math.floor(d.y + 0.5), math.floor(d.w + 0.5), math.floor(d.h + 0.5)
@@ -226,14 +282,14 @@ end
 -- Which place among the shown parts a card let go at (x, y) (the deck's coordinates) takes: before the
 -- first card it lands ahead of — in an earlier row, or further along the same row (down a column: by y).
 function M.place_at(d, x, y)
-    local n = 1
-    local row = 1
-    if not d.vertical and d.rows > 1 then
-        row = (y > M.RAIL + M.ROW + M.CARD_GAP / 2) and 2 or 1
+    local n, row = 1, 1
+    if d.rows > 1 then
+        if d.vertical then row = x > M.PAD + (M.COLUMN_W - 2 * M.PAD) + M.CARD_GAP / 2 and 2 or 1
+        else row = (y > M.RAIL + M.ROW + M.CARD_GAP / 2) and 2 or 1 end
     end
     for _, part in ipairs(d.parts) do
         local before
-        if d.vertical then before = y > part.y + part.h / 2
+        if d.vertical then before = part.row < row or (part.row == row and y > part.y + part.h / 2)
         else before = part.row < row or (part.row == row and x > part.x + part.w / 2) end
         if before then n = n + 1 end
     end

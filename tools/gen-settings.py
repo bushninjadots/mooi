@@ -57,6 +57,10 @@ SETTERS = [
     # Hyprland 0.57, the Nexus's cards, the notch, Claude
     "desktop.blur_variant", "nexus.rows", "nexus.profile", "nexus.visualiser", "notch.on",
     "nexus.notches", "claude.model",
+    # the bar's islands' feet as the visualiser
+    "bar.foot_visualizer",
+    # how many bars the Control Nexus deck's border is cut into
+    "nexus.bars",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -189,6 +193,7 @@ SECTIONS = [
         ("choice", "Hover", "What lights under the pointer", "bar.pill", "sv_bar_pill", ["Soft", "Outline", "Underline", "Glow"]),
         ("toggle", "Info rail", "The thin scale line above the bar", "bar.rail", "bar_rail", None, "not st_notch"),
         ("toggle", "Details", "Cuts in the outline, ticks, the comet and the seconds", "bar.accents", "bar_accents"),
+        ("toggle", "Bars on the foot", "Each island's bottom edge steps in and out with the music", "bar.foot_visualizer", "bar_foot_viz", None, "not st_notch"),
     ]),
     ("Layout", "Layout", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "BAR", [
         ("layout",),
@@ -401,7 +406,8 @@ SECTIONS = [
         ("info", "Version", "The shell and Pleamar it runs on", "adv_version"),
         ("info", "The bar", "Its process's share of a core, and its memory", "adv_usage"),
         ("info", "Settings file", "Every setting, as JSON; mooi applies an edit at once", "bar_path"),
-        ("actions", [("Open settings.json", "adv_act", 1), ("Open the log", "adv_act", 2), ("Open the shell's folder", "adv_act", 3)]),
+        ("actions", [("Open settings.json", "adv_act", 1), ("Open the log", "adv_act", 2), ("Open the shell's folder", "adv_act", 3), ("Restart Hyprland", "adv_act", 4)]),
+        ("note", "true", "HYPRLAND READS ITS CONFIG AGAIN AND MOOI'S BAR RESTARTS ON IT · WINDOWS STAY OPEN"),
         ("card", "Log"),
         ("log",),
     ]),
@@ -411,9 +417,10 @@ SECTIONS = [
         ("card", "The deck"),
         ("choice", "The mark opens", "The deck: everything along one edge. Cascade: every shelf of the spine out at once", "nexus.mode", "sv_nexus_mode", ["The deck", "Cascade"]),
         ("choice", "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
-        ("choice", "Rows", "Along a strip: one row of cards, or two for more of them", "nexus.rows", "sv_nexus_rows", ["One", "Two"], "sv_nexus_mode == 0"),
+        ("choice", "Rows", "The cards on one row, or split over two — down a side that is two columns of them, growing out towards the desktop", "nexus.rows", "sv_nexus_rows", ["One", "Two"], "sv_nexus_mode == 0"),
         ("choice", "Profile", "Your banner and picture, small or large", "nexus.profile", "sv_nexus_profile", ["Small", "Large"], "sv_nexus_mode == 0"),
-        ("toggle", "Music on the edge", "A visualiser along the deck's open edge while something plays", "nexus.visualiser", "sv_nexus_visualiser", None, "sv_nexus_mode == 0"),
+        ("toggle", "Music on the edge", "A bar visualiser cut from the deck's open border while something plays", "nexus.visualiser", "sv_nexus_visualiser", None, "sv_nexus_mode == 0"),
+        ("choice", "Bars on the edge", "How many bars the deck's open border is cut into; the notches' outer faces carry their own share of them", "nexus.bars", "sv_nexus_bars", ["8", "12", "16", "24"], "sv_nexus_mode == 0 and sv_nexus_visualiser == 1"),
         ("toggle", "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", "nexus.notches", "sv_nexus_notches", None, "sv_nexus_mode == 0"),
         ("note", "sv_nexus_mode == 0", "ON THE DECK: ✎ CARRIES A CARD BY MOVE, × SHELVES IT, ⇔ RESIZES IT"),
         ("card", "The spine"),
@@ -829,7 +836,7 @@ import "ui/ferrolume.plm"
 // paints the same palette (lib/ferro), so the window wears what the bar wears.
 scene Mooi {
     permissions {
-        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps"
+        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi"
         services: "files", "files.write", "env", "audio", "audio.*", "battery"
     }
 """
@@ -838,7 +845,7 @@ def shared_facts():
     """The facts the window reads, declared exactly as mooi.plm declares them."""
     text = SCENE.read_text()
     want = re.compile(r"^    (fact|prop|follow) (c_\w+|fr_\w+|pr_\w+|ws_style|bar_frame|bar_ground|bar_rail|bar_accents|"
-                      r"bar_full|bar_surface|viz|helix_frame|media_mode|media_idle|frame_on|frame_band|"
+                      r"bar_full|bar_surface|viz|bar_foot_viz|helix_frame|media_mode|media_idle|frame_on|frame_band|"
                       r"frame_music|frame_style|frame_reach|frame_edges|note_server|th_scheme|th_index|th_contrast|"
                       r"th_signal|theme_wallpaper|show_clock|previews|confirm_close|bar_labels|bar_wheel|"
                       r"m_\w+|fi_\w+|g_\w+|st_\w+)\b.*$", re.M)
@@ -911,7 +918,7 @@ def main():
     text adv_version = ""
     text adv_usage = ""
     model adv_log max 12 { line: text; warn: bool }
-    event adv_act ->          // to the logic: 1 open settings.json · 2 open the log · 3 open the shell's folder
+    event adv_act ->          // to the logic: 1 open settings.json · 2 open the log · 3 open the shell's folder · 4 restart Hyprland and the bar
     // The custom base colour (bar.bg_colour) as hue, richness and lightness, and eight quick picks.
     event set_colour ->       // to the logic: 1000 · (1 hue · 2 richness · 3 lightness) + value, or 9000 + a quick pick
     text cp_hex = "#101418"

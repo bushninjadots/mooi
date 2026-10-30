@@ -358,51 +358,212 @@ end)
 pcall(sys.watch, "workspaces", function() if fact.nt_tab == 2 then read_screen(read_spaces) end end)
 
 -- ── Wallpapers: the studio's folder, a thumbnail each (made once, kept), a press wears one ──
-local pictures, made = {}, {}
+-- And the colours: each picture's hue, read once (wallpaper-hues.json) in the background, so the
+-- arc can be narrowed to the reds, the blues… and the swatches along its inside choose them.
+local pictures, made, draws = {}, {}, 0
+local tried = {}             -- a thumbnail looked for once
+local where = ""             -- the folder those came from, named under the arc
+local left = -1              -- pictures whose colour is not read yet (the pass says so under the arc)
+local pool = {}              -- every picture in the folder (the colour pass reads them all)
+local hues = {}              -- picture path → its hue, 0..360
+local hue_queue, hue_busy = {}, false
+local thumb_queue, thumb_busy = {}, false
+local BAND_N = 12
+local BAND_WORD = { "REDS", "ORANGES", "YELLOWS", "LIMES", "GREENS", "SPRINGS",
+                    "CYANS", "AZURES", "BLUES", "VIOLETS", "PURPLES", "PINKS" }
+
+do
+    local doc = read("wallpaper-hues.json")
+    if type(doc) == "table" then
+        for k, v in pairs(doc) do
+            if type(k) == "string" then
+                local h = tonumber(v)
+                if h then hues[k] = h % 360 elseif v == false then hues[k] = false end
+            end
+        end
+    end
+end
 local function wearing()
     local w = read("wallpapers.json")
     return type(w) == "table" and type(w.applied) == "table" and w.applied.source or nil
 end
-local function show_pictures()
+local function save_hues()
+    if SAFE then return end
+    pcall(sys.call, "files.write", "wallpaper-hues.json", hues)
+end
+
+local function band()
+    return math.floor(tonumber(fact.wp_hue) or -1)
+end
+
+local need_thumbs, pump_thumbs, pump_hues
+
+-- What the arc shows: the forty drawn, or, a colour chosen, the pictures of that colour.
+local function view()
+    local b = band()
+    if b < 0 then return pictures, #pictures end
+    local out, all = {}, 0
+    for _, p in ipairs(pool) do
+        local h = hues[p]
+        if type(h) == "number" and N.band(h, BAND_N) == b then
+            all = all + 1
+            if #out < 40 then out[#out + 1] = p end
+        end
+    end
+    return out, all
+end
+
+-- `recenter` is for a new list (the panel opening, a colour chosen): the worn picture, or the
+-- first. A thumbnail or a colour arriving in the background must leave the arc where the wheel
+-- put it — otherwise every finished batch snaps the picture in the middle back to the start.
+local function show_pictures(recenter)
     local on = wearing()
+    local list, all = view()
     local rows = {}
-    for i, p in ipairs(pictures) do
+    local keep = math.floor(tonumber(fact.wp_c) or 0)
+    if recenter then
+        keep = 0
+        for i, p in ipairs(list) do if p == on then keep = i - 1; break end end
+    end
+    fact.wp_c = math.max(0, math.min(keep, #list - 1))
+    for i, p in ipairs(list) do
         local name = N.thumb_name(p)
         rows[i] = { pic = made[name] and (data_folder .. "/" .. name) or "", name = (p:match("([^/]+)$") or p), on = p == on }
-        if p == on then fact.wp_c = i - 1 end
     end
     model.pics = rows
-    text.wp_t = #pictures > 0 and string.format("%d PICTURES · %s", #pictures, string.upper(tostring((read("wallpapers.json") or {}).folder or ""))) or "NO PICTURES FOUND IN THE STUDIO'S FOLDER"
+    local b = band()
+    if b >= 0 then
+        local more = left > 0 and string.format(" · %d OF %d READ", #pool - left, #pool) or ""
+        local count = all > #list and string.format("%d OF %d", #list, all) or string.format("%d PICTURES", #list)
+        text.wp_t = all > 0 and (count .. " · " .. BAND_WORD[b + 1] .. more)
+                        or ("NONE OF THAT COLOUR YET · STILL READING THE FOLDER" .. more)
+    else
+        text.wp_t = #list > 0 and string.format("%d OF %d · %s", #list, #pool, string.upper(where))
+                        or ("NO PICTURES FOUND IN " .. string.upper(where == "" and "THE STUDIO'S FOLDER" or where))
+    end
+    need_thumbs(list)
 end
+
+-- The thumbnails missing, a few at a time (each a moment's work for magick).
+need_thumbs = function(list)
+    for _, p in ipairs(list) do
+        local name = N.thumb_name(p)
+        if not made[name] and not tried[name] then
+            local ok, there = pcall(sys.ask, "files.exists", name)
+            tried[name] = true
+            if ok and there then made[name] = true
+            else
+                local queued = false
+                for _, q in ipairs(thumb_queue) do if q.name == name then queued = true; break end end
+                if not queued then thumb_queue[#thumb_queue + 1] = { p = p, name = name } end
+            end
+        end
+    end
+    pump_thumbs()
+end
+
+pump_thumbs = function()
+    if thumb_busy then return end
+    local job = table.remove(thumb_queue, 1)
+    if not job then return end
+    thumb_busy = true
+    launch("magick", { "-define", "jpeg:size=320x180", job.p .. "[0]", "-thumbnail", "320x180^", "-gravity", "center", "-extent", "320x180", "-quality", "80", data_folder .. "/" .. job.name }, function(ok)
+        thumb_busy = false
+        if ok then made[job.name] = true; show_pictures() end
+        pump_thumbs()
+    end)
+end
+
+-- Every picture's hue, a batch at a time (one magick for the lot), so a colour can be browsed on
+-- the whole folder, not just the forty drawn. Kept in wallpaper-hues.json.
+-- Read a batch's colours. One picture magick cannot read makes the whole batch fail and print
+-- nothing, so a short batch is tried again in halves until the bad picture is alone; it is filed
+-- as colourless (false) and never asked for again, or the pass would retry the same batch forever.
+local function read_hues(batch, done)
+    local args = { "-define", "jpeg:size=64x64" }
+    for _, p in ipairs(batch) do
+        args[#args + 1] = p .. "[0]"; args[#args + 1] = "-resize"; args[#args + 1] = "8x8!"
+    end
+    -- sRGB first: a grey picture has one channel, and its green and blue would read as none
+    args[#args + 1] = "-colorspace"; args[#args + 1] = "sRGB"
+    args[#args + 1] = "-format"; args[#args + 1] = "%f %[fx:mean.r] %[fx:mean.g] %[fx:mean.b]\n"
+    args[#args + 1] = "info:"
+    launch("magick", args, function(out)
+        local by, missing, got = {}, {}, 0
+        for _, p in ipairs(batch) do
+            by[p:match("([^/]+)$")] = p
+            missing[p] = true
+        end
+        for line in tostring(out or ""):gmatch("[^\n]+") do
+            local name, cr, cg, cb = line:match("^(.-)%s+([%d%.]+)%s+([%d%.]+)%s+([%d%.]+)$")
+            if name and by[name] and tonumber(cr) then
+                local h, sat = N.hue(tonumber(cr), tonumber(cg), tonumber(cb))
+                -- a grey has no colour to be filed under: it stays in the whole folder only
+                hues[by[name]] = sat >= 0.15 and h or false
+                missing[by[name]] = nil
+                got = got + 1
+            end
+        end
+        local left_paths = {}
+        for _, p in ipairs(batch) do if missing[p] then left_paths[#left_paths + 1] = p end end
+        if #left_paths == 0 then done(got); return end
+        if #batch == 1 then hues[batch[1]] = false; done(got); return end
+        if #left_paths < #batch then
+            read_hues(left_paths, function(g) done(got + g) end); return
+        end
+        local half = math.floor(#batch / 2)
+        local a, b = {}, {}
+        for i = 1, half do a[i] = batch[i] end
+        for i = half + 1, #batch do b[#b + 1] = batch[i] end
+        read_hues(a, function(ga)
+            read_hues(b, function(gb) done(ga + gb) end)
+        end)
+    end)
+end
+
+pump_hues = function()
+    if hue_busy then return end
+    if #hue_queue == 0 then
+        -- what is on the arc first, so a colour pressed now has pictures under it; then the folder
+        for _, p in ipairs(pictures) do if hues[p] == nil then hue_queue[#hue_queue + 1] = p end end
+        for _, p in ipairs(pool) do if hues[p] == nil then hue_queue[#hue_queue + 1] = p end end
+        if #hue_queue == 0 then return end
+    end
+    local batch = {}
+    for i = 1, math.min(32, #hue_queue) do batch[i] = table.remove(hue_queue, 1) end
+    -- a jpeg read at a sixty-fourth of its size: the same colour, in a third of the time
+    hue_busy = true
+    read_hues(batch, function(got)
+        hue_busy = false
+        if got > 0 then save_hues() end
+        left = 0
+        for _, p in ipairs(pool) do if hues[p] == nil then left = left + 1 end end
+        if fact.nt_open and math.floor(tonumber(fact.nt_tab) or -1) == 3 then show_pictures() end
+        if #hue_queue > 0 then after(120, pump_hues) end
+    end)
+end
+
 local function read_pictures()
     local w = read("wallpapers.json")
     local folder = type(w) == "table" and type(w.folder) == "string" and w.folder or (HOME .. "/Pictures/wallpapers")
+    where = folder:match("([^/]+)/*$") or folder
     launch("find", { folder, "-maxdepth", "1", "-type", "f" }, function(out)
-        pictures = N.pictures(out, 40)
-        show_pictures()
-        -- the thumbnails missing, one after another (each a moment's work for magick)
-        local queue = {}
-        for _, p in ipairs(pictures) do
-            local name = N.thumb_name(p)
-            if not made[name] then
-                local ok, there = pcall(sys.ask, "files.exists", name)
-                if ok and there then made[name] = true else queue[#queue + 1] = { p = p, name = name } end
-            end
-        end
-        show_pictures()
-        local function next_one()
-            local job = table.remove(queue, 1)
-            if not job then return end
-            launch("magick", { job.p .. "[0]", "-thumbnail", "320x180^", "-gravity", "center", "-extent", "320x180", "-quality", "80", data_folder .. "/" .. job.name }, function(ok)
-                if ok then made[job.name] = true; show_pictures() end
-                next_one()
-            end)
-        end
-        next_one()
+        -- the studio's folder can hold thousands: forty of them, drawn afresh each time the panel
+        -- opens, so the arc is not the same first names over and over. The one on the desk stays in it.
+        draws = draws + 1
+        pool = N.pictures(out, 100000)
+        pictures = N.draw(pool, 40, os.time() + draws * 7919)
+        local on = wearing()
+        local there = false
+        for _, p in ipairs(pictures) do if p == on then there = true end end
+        if on and not there then pictures[#pictures] = nil; table.insert(pictures, 1, on) end
+        show_pictures(true)
+        pump_hues()
     end)
 end
 on("nt_wall", function(v)
-    local p = pictures[(tonumber(v) or -1) + 1]
+    local list = view()
+    local p = list[(tonumber(v) or -1) + 1]
     if not p then return end
     text.wp_t = "WEARING " .. string.upper(p:match("([^/]+)$") or p) .. "…"
     -- as the studio does (shell/mooi-wallpaper.luau): the picker, which also makes the palette; else awww
@@ -413,14 +574,13 @@ on("nt_wall", function(v)
         end)
     end)
 end)
-on("nt_studio", function() fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; launch("mooi", { "wallpaper" }) end)
-do
-    local small = data_folder .. "/nexus-wall.jpg"
-    launch("magick", { HOME .. "/.cache/current_wallpaper[0]", "-resize", "640x360^", "-gravity", "center", "-extent", "640x360", "-quality", "82", small }, function(ok)
-        if ok then text.nt_wall = small .. "?" .. os.time() % 100000; fact.nt_wall_on = true end
-    end)
-end
-
+-- a colour on the arc: that band of pictures, or, pressed again, all of them
+on("nt_hue", function(v)
+    local k = math.floor(tonumber(v) or -1)
+    fact.wp_hue = k == band() and -1 or (k >= 0 and k < BAND_N and k or -1)
+    fact.wp_c = 0
+    show_pictures(true)
+end)
 -- ── Weather: the Nexus's cache (ten minutes), else open-meteo ──
 local function kind_of(code, day)
     local k = sysinfo.weather(code, day)

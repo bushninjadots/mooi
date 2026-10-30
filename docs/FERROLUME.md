@@ -124,6 +124,7 @@ wheel); on the Windows and Input sliders the lowest step is KEEP, Hyprland's own
 | `bar.modules.<m>.show` / `.frame` | `true`/`false` · `inherit` … `none` | per module |
 | `bar.ground` | `black` · `tinted` · `clear` | the strip behind the islands |
 | `bar.rail`, `bar.accents`, `bar.labels`, `bar.wheel` | `bar.wheel`: `step` · `off` · `invert` | the rail; cuts, drops, slashes; numbers; the wheel |
+| `bar.foot_visualizer` | `true` · `false` | each island's bottom border as eight bars joined at their feet, stepping out with the music |
 | `notifications.server` | `takeover` · `always` · `never` | when mooi receives the session's notifications |
 | `bar.helix_frame` | `true` · `false` | the workspace island's own edges as the DNA's strands (islands mode) |
 | `media.mode` | `full` · `compact` · `art` · `viz` | what the player shows |

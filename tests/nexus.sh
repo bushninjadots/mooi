@@ -103,6 +103,16 @@ say "emit dk_show 4" "emit dk_reset" >/dev/null; sleep 0.4
 is "Reset puts every card back" "$(jq -r '.nexus.parts[0]' "$settings")$(get pu_on)" profiletrue
 say "emit dk_rows_set 2" >/dev/null; sleep 0.5
 is "two rows of cards" "$(get dk_rows)$(jq -r '.nexus.rows' "$settings")" 22
+echo "the same cards on every edge"
+cards() { c=0; for f in pw_on ps_on pm_on pq_on pu_on pc_on pt_on pf_on pn_on pa_on py_on; do [ "$(get "$f")" = true ] && c=$((c+1)); done; echo "$c"; }
+say "emit dk_edge_set 0" >/dev/null; sleep 0.7
+base=$(cards)
+for pair in "1 top" "2 left" "3 right"; do
+    set -- $pair
+    say "emit dk_edge_set $1" >/dev/null; sleep 0.7
+    is "the same cards along the $2" "$(cards)" "$base"
+done
+say "emit dk_edge_set 1" >/dev/null; sleep 0.7      # back along the top, a strip: a card's size shows there
 say "emit dk_large_set 1" >/dev/null; sleep 0.4
 is "a large profile" "$(jq -r '.nexus.profile' "$settings")" large
 w0=$(get pq_w); say "emit dk_size 3" >/dev/null; sleep 0.4

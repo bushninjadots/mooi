@@ -59,11 +59,15 @@ local MOTION_BLUR = { off = 0, soft = 6, strong = 16 }     -- decoration:motion_
 -- is asked for in a call of its own under pcall, so a Hyprland that does not know them yet (0.56) skips
 -- them and keeps the rest of the look.
 local MESH = { off = false, subtle = { 0.6, 320, 22 }, wobbly = { 1.0, 260, 14 }, jelly = { 1.7, 210, 8 } }
-M.VARIANTS = { "acrylic", "aurora", "drops", "fluid_jar", "glass", "haze", "heat_shimmer", "ripple", "water" }
+-- Hyprland 0.57 names its plain blur `kawase` and refuses any name it does not list, so the
+-- settings' `none` ("Plain") is asked for as kawase; `glass` is a material 0.57 shares between
+-- aurora/drops/heat_shimmer/prism rather than a variant of its own, so a saved `glass` asks for
+-- acrylic, the liquid-glass look it stood for.
+M.VARIANTS = { "acrylic", "aurora", "drops", "fluid_jar", "haze", "heat_shimmer", "ripple", "water" }
+local LEGACY_VARIANTS = { none = "kawase", glass = "acrylic" }
 local function variant(d)
     for _, v in ipairs(M.VARIANTS) do if d.blur_variant == v then return v end end
-    if d.blur_variant == "none" then return "none" end
-    return nil
+    return LEGACY_VARIANTS[d.blur_variant]
 end
 
 -- The windows' shadow as Hyprland's own fields, or nil while kept. `soft` and `deep` are dark;

@@ -41,30 +41,49 @@ local function index_of(list, v)
 end
 
 -- ── Only one BMO ─────────────────────────────────────────────
--- A second program called bmo gets `bmo-<pid>` for a name, and nothing (the bar's `--say bmo`
--- included) can see it, so two would live on. Each one marks itself and asks whoever answers to
--- "bmo" for its mark; one that is not the answer is the second, finds its own name by its mark
--- among the bmo-<pid> sockets, and quits. Until then it draws nothing and saves nothing.
+-- A second program called bmo gets `bmo-<pid>` for a name, and the bar's `--say bmo` cannot see
+-- it, so two would live on. Each one marks itself and asks whoever answers to "bmo" for its mark;
+-- one that is not the answer is the second, finds its own name by its mark among the bmo-<pid>
+-- sockets, and quits. Until then it draws nothing and saves nothing.
+--
+-- Being the second is checked again while it lasts (found 2026-10-29: BMO gone from the desktop,
+-- still running, `ready` false and saving nothing, for two hours). The name is asked for again
+-- and again: the moment this one *is* what answers to "bmo" — the other ended as it was being
+-- replaced, which is what a refresh does — it takes over instead of staying invisible for good.
 local spare = false
+local claim -- below, once show_face and save_state exist
 -- the time, and where this process keeps a fresh table (each process its own place)
 local mark = (os.time() % 100000) * 10000 + (tonumber(tostring({}):match("(%x+)$") or "0", 16) or 0) % 10000
 fact.token = mark
-local function only_one()
+-- for the shell: which BMO this is (a new one has a new boot), and that its logic is still going
+-- (upkeep moves the beat, every 30 s; a logic that has stopped cannot)
+fact.beat = 1
+local function answer(cb) -- the token of whoever answers to "bmo" (nil: nobody)
     run("pleamar", { "--say", "bmo", "get token" }, function(out, code)
+        cb(code == 0 and tonumber((out or ""):match("^%s*([%d.]+)%s*$")) or nil)
+    end)
+end
+-- A spare ends itself: the socket that answers with its mark is its own (it is bmo-<pid>, and
+-- it may not know which pid). Asked by its own name, it quits.
+local function end_spare()
+    local dir = tostring(sys.ask("env", "XDG_RUNTIME_DIR") or "") .. "/pleamar"
+    run("ls", { dir }, function(list)
+        for pid in tostring(list or ""):gmatch("bmo%-(%d+)%.sock") do
+            local name = "bmo-" .. pid
+            run("pleamar", { "--say", name, "get token" }, function(t)
+                if tonumber((t or ""):match("[%d.]+")) == mark then run("pleamar", { "--say", name, "quit" }) end
+            end)
+        end
+    end)
+end
+local function only_one()
+    answer(function(theirs)
         -- only a clear answer that is not his own makes him the spare (no answer: he is not)
-        local theirs = code == 0 and tonumber((out or ""):match("^%s*([%d.]+)%s*$")) or nil
         if not theirs or theirs == mark then return end
         spare = true
         fact.ready = false
-        local dir = tostring(sys.ask("env", "XDG_RUNTIME_DIR") or "") .. "/pleamar"
-        run("ls", { dir }, function(list)
-            for pid in tostring(list or ""):gmatch("bmo%-(%d+)%.sock") do
-                local name = "bmo-" .. pid
-                run("pleamar", { "--say", name, "get token" }, function(t)
-                    if tonumber((t or ""):match("[%d.]+")) == mark then run("pleamar", { "--say", name, "quit" }) end
-                end)
-            end
-        end)
+        end_spare()
+        after(2000, claim)
     end)
 end
 after(600, only_one)
@@ -143,6 +162,30 @@ local function show_face()
     text.act_t = activity ~= "idle" and activity or ""
     for i, m in ipairs(B.MOODS) do if m == mood then fact.mood_i = i - 1 end end
     fact.asleep = activity == "sleeping"
+end
+
+-- The other one ended while this one was its spare (a refresh does exactly that: the new BMO is
+-- up before the old is gone). We are what answers to "bmo" now, so take the name and come back;
+-- until we are, ask again. A spare that never is ends itself on its own name, above.
+local misses = 0
+claim = function()
+    if not spare then return end
+    answer(function(theirs)
+        if not spare then return end
+        if theirs ~= mark then
+            -- still someone else's name, or nobody's: the second case is one we cannot fix from
+            -- here (we answer to bmo-<pid>), so ask our own name to quit and let the shell start
+            -- a BMO that can take it
+            if theirs then misses = 0 elseif (misses + 1) >= 4 then end_spare() else misses = misses + 1 end
+            after(1500, claim)
+            return
+        end
+        spare = false
+        fact.ready = true
+        place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
+        save_state()
+        show_face()
+    end)
 end
 
 local function set_mood(m)
@@ -467,6 +510,7 @@ local function upkeep()
     local t = os.time()
     local dt = t - last_upkeep
     last_upkeep = t
+    fact.beat = fact.beat + 1               -- the shell's sign that this logic is still going
     local hour = tonumber(os.date("%H")) or 12
     local night = hour >= 23 or hour < 6
     energy = B.energy(energy, dt, activity == "sleeping", night)
@@ -856,7 +900,17 @@ on("ui", function(v)
     elseif n == 4 then go_home(); return
     elseif n == 5 then if activity == "sleeping" then wake(false) else sleep() end; return
     elseif n == 6 then hide_for(10); return
-    elseif n == 7 then run("pleamar", { "--say", "bmo", "quit" }); return
+    elseif n == 7 then
+        -- Quit BMO: off in mooi's settings as well (Settings → BMO), so the shell does not start
+        -- him again — a BMO that ended only for this would be back a second later
+        local doc = read(FILE)
+        if type(doc) == "table" then
+            local c = type(doc.companion) == "table" and doc.companion or {}
+            c.bmo = false
+            doc.companion = c
+            pcall(sys.call, "files.write", FILE, doc)
+        end
+        run("pleamar", { "--say", "bmo", "quit" }); return
     -- asking him (D106): the side notch's chat, as BMO; what Claude answers comes back here to be said
     elseif n == 8 then
         if not fact.panel then toggle_panel() end

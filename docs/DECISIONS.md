@@ -3514,3 +3514,35 @@ machine-local ~/.config/hypr/config/custom/mooi.lua and is unbound; Super+A is t
 **Checked:** with the real pointer (hl.dsp.cursor.move) the nub at its default place fans out and folds
 when left, and the strip below still catches; ydotool's wheel over the compass: 9 → 9 at the end, 8, 7,
 back to 9; Hyprland reloaded without errors, no Super-alone bind left; unit 250, BMO 27.
+
+## D111 · 2026-10-29 · Two rows on every edge; the wallpapers arc narrowed by colour; a restart for Hyprland
+
+**Asked for:** "one or two rows … when i click two rows i dont see a difference", "two rows doesnt work on
+the left and right side and only top and bottom, i want it for all sides", "the quick wallpaper switcher …
+only has same few wallpapers can we add more … on the inside is a range of colors and shows wallpapers of
+those colors", "the bottom and top nexus have different modules they must be the same card types, visuals
+why do they miss the left and right deck", "a restart hyprland button that refreshes it and restarts the
+bar".
+**Rows:** `nexus.rows` was read only along a strip, and even there it meant "flow onto a second row when
+the first is full" — with a handful of cards, nothing moved. Now **Two means two**: the cards are split
+over both in your order, half the width each (lib/nexusdeck `layout`); down a side the two rows are two
+columns, and the deck grows out towards the desktop (800 px wide at 388 a card). The Settings row is no
+longer hidden for a column.
+**The cut:** both splits walked down from the middle and could settle on a cut where the first side fits
+and the second does not, and a card gave way although another cut held them all — the right deck showed 5
+of 11 cards for it. `M.split` scans every cut and takes the one nearest the middle that holds both (or the
+least overrun when none does). All four edges now hold the same eleven cards at the same settings.
+**Wallpapers:** the panel showed the first forty names of three thousand, alphabetically, every time. It
+draws forty afresh each open (lib/notch `draw`), the one worn pinned first; thumbnails are cached by path.
+**Colour:** each picture's mean colour is read once, in the background, a batch of 32 through one `magick`
+(a JPEG read at `jpeg:size=64x64`, then sRGB — a grey picture has one channel and its green and blue read
+as none otherwise), kept in `wallpaper-hues.json`; greys are filed under nothing. Twelve bands are drawn
+along the inside of the arc (a ring at 0.62 of the cards' radius, made to the screen's height, so it stays
+clear on a short one); a press narrows the arc to that band's pictures and says how many, pressing it again
+gives the whole folder back. The folder's colours are read first for the forty on the arc, so a press has
+pictures under it at once; the rest of the folder is read at about 30 a second and the caption counts it.
+**Restart:** `mooi restart-hypr` runs `hyprctl reload`, then the bar comes back on the new config (windows
+stay open; mooi's own windows restart); Settings → Advanced → Restart Hyprland and a ↻ in the Nexus rail.
+**Checked:** 253 unit tests; `tests/nexus.sh` 37 checks against the compositor; every scene compiles; the
+right deck measured 800×994 with all eleven cards; pressing a colour on a live panel narrowed twelve
+pictures to the one cyan among them, its thumbnail made.

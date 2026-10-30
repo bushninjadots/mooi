@@ -265,7 +265,7 @@ scene Nexus {
     fact dk_open = false         // in (true) or sliding away
     fact dk_edge = 0             // 0 bottom · 1 top · 2 left · 3 right (nexus.edge)
     fact dk_vert = false         // down a side: a column
-    fact dk_rows = 1             // along a strip: one row of cards, or two (nexus.rows)
+    fact dk_rows = 1             // one row of cards, or two (down a side: two columns) — nexus.rows
     fact nx_large = false        // the profile's large size (nexus.profile)
     fact dk_x = 120
     fact dk_y = 830
@@ -357,8 +357,10 @@ scene Nexus {
     // arranging: the panel that grows out of the deck while ✎ is on
     fact ga_x = 0
     fact ga_y = 0
-    // the music on the deck's open edge (cava, 32 bands) while something plays (nexus.visualiser)
+    // the music on the deck's open edge (cava, 32 bands) while something plays (nexus.visualiser),
+    // and how many bars that edge is cut into (nexus.bars: 8 · 12 · 16 · 24)
     fact dk_viz = false
+    fact dk_bars = 16
     fact dv0 = 0
     fact dv1 = 0
     fact dv2 = 0
@@ -712,6 +714,10 @@ scene Nexus {
     follow rc_mem = m_mem
     prop rc_song = 0 ~m.reflow
     follow rc_song = nx_prog
+    // the edge's bars: 1 while the music plays (the bars cut from the open border lift with it),
+    // and back to 0 as it stops, so the sound settles into the deck instead of blinking out
+    prop dk_vz = 0 ~m.expand
+    follow dk_vz = if(dk_viz and mus_on, 1, 0)
 
     // A quick setting's or a shelf's glyph `g` (mooi-nexus.luau QUICK's), centred at (x, y).
     component QGlyph(x: number, y: number, g: number, c: color, sz: number = 16) {
@@ -760,6 +766,116 @@ scene Nexus {
         }
     }
 
+    // the bars' pitch along the deck's open side: one bar each of (nexus.bars) across its length
+    let dk_pitch = max(16, (if(dk_vert, dk_h, dk_w) - 2 * if(cn_kind > 2.5, 0, (st_radius + 6) * cn_scale)) / max(1, dk_bars))
+
+    // ── The visualiser: bars cut from the border ─────────────────
+    // A run of `n` bars along the deck's open side, from `u0` to `u1` along it, standing on the line
+    // `d` out from that edge (0: the edge itself; 34: a notch's outer face). The bars are joined at
+    // their feet: each is as tall as the band that plays where it stands, and the line that closes
+    // them is the border itself — `tint` fills them, `line_c` strokes them. At rest every bar is 0
+    // tall, so the edge is the plain 1 px line it always was; the music is what lifts it.
+    component EdgeBars(u0: number, u1: number, d: number, n: number, tint: color, line_c: color) {
+        size: 1, 1
+        // the way the open side faces, and the line the bars' feet stand on
+        let eb = if(dk_vert, if(dk_edge == 2, 1, -1), if(dk_edge == 1, 1, -1))
+        let ep = if(dk_vert, if(dk_edge == 2, dk_w, 0), if(dk_edge == 1, dk_h, 0)) + eb * d
+        // the whole open side, so a bar reads the band at its place on the deck, not in its run
+        let el = max(1, if(dk_vert, dk_h, dk_w))
+        let ew = max(2, (u1 - u0) / max(1, n))
+        let ht = 24 * dk_vz
+        group {
+            show: u1 - u0 > 10
+            repeat b in 0..24 {
+                let us.$b = u0 + b * ew                       // where this bar's foot begins
+                let uc.$b = us.$b + ew / 2                    // its middle: which band it reads
+                let hb.$b = ht * clamp(pick(round(uc.$b / el * 31.99), dv0, dv1, dv2, dv3, dv4, dv5, dv6, dv7, dv8, dv9, dv10, dv11, dv12, dv13, dv14, dv15, dv16, dv17, dv18, dv19, dv20, dv21, dv22, dv23, dv24, dv25, dv26, dv27, dv28, dv29, dv30, dv31), 0, 1)
+                let hp.$b = if(b < 1, 0, ht * clamp(pick(round((uc.$b - ew) / el * 31.99), dv0, dv1, dv2, dv3, dv4, dv5, dv6, dv7, dv8, dv9, dv10, dv11, dv12, dv13, dv14, dv15, dv16, dv17, dv18, dv19, dv20, dv21, dv22, dv23, dv24, dv25, dv26, dv27, dv28, dv29, dv30, dv31), 0, 1))
+                let on.$b = b < n - 0.5
+                // the fill: from just inside the edge (so the border's own line does not show
+                // through the foot) out to the bar's height
+                let p0.$b = ep - eb * 1.2
+                let p1.$b = ep + eb * hb.$b
+                box { from: if(dk_vert, min(p0.$b, p1.$b), us.$b), if(dk_vert, us.$b, min(p0.$b, p1.$b))
+                       size: if(dk_vert, abs(p1.$b - p0.$b), ew), if(dk_vert, ew, abs(p1.$b - p0.$b))
+                       color: tint; show: on.$b and hb.$b > 0.4 }
+                // its edge: its own line, the step up from its neighbour, and, at the run's end,
+                // the step back down to the deck
+                line { from: if(dk_vert, p1.$b, us.$b), if(dk_vert, us.$b, p1.$b)
+                        to: if(dk_vert, p1.$b, us.$b + ew), if(dk_vert, us.$b + ew, p1.$b)
+                        width: 1; color: line_c; show: on.$b }
+                line { from: if(dk_vert, ep + eb * min(hp.$b, hb.$b), us.$b), if(dk_vert, us.$b, ep + eb * min(hp.$b, hb.$b))
+                        to: if(dk_vert, ep + eb * max(hp.$b, hb.$b), us.$b), if(dk_vert, us.$b, ep + eb * max(hp.$b, hb.$b))
+                        width: 1; color: line_c; show: on.$b }
+                line { from: if(dk_vert, ep, us.$b + ew), if(dk_vert, us.$b + ew, ep)
+                        to: if(dk_vert, p1.$b, us.$b + ew), if(dk_vert, us.$b + ew, p1.$b)
+                        width: 1; color: line_c; show: on.$b and b > n - 1.5 }
+            }
+        }
+    }
+
+    // ── The deck's frame: its outline is the visualiser ──────────
+    // The deck is one plate. Its open side (the one facing the desktop) carries the visualiser: bars
+    // cut from its own border, standing on that line and lifting with the music, filled with the
+    // deck's own hull and stroked with its own edge. They break where the notches leave the deck and
+    // go on round each notch's outer face (the notch group below), so the border is followed all the
+    // way round. At rest every bar is 0 tall and it is the plain border it always was.
+    // `children` is the deck's content, clipped to it as IslandFrame clipped it.
+    component DeckFrame(w: number, h: number) {
+        size: w, h
+        let r = if(cn_kind > 2.5, 0, (st_radius + 6) * cn_scale)
+        let edgec = mix(fl.trace, mix(dk.t_border_subtle, dk.t_accent_primary, 0.35), isl_style)
+        let topc = mix(fl.hull, mix(dk.t_surface_elevated, dk.t_accent_primary, 0.05), isl_style)
+        let botc = mix(fl.hull, dk.t_bg_primary, isl_style)
+        // the plate's own colour where the bars leave it: the gradient's end their edge lies on
+        let fillc = mix(topc, botc, if(dk_edge == 1, 1, 0))
+
+        // the plate, as one body
+        body {
+            gradient: 0, 0 to 0, h, topc, botc
+            shadow: 0, 7, 24, 44%
+            box { from: 0, 0; size: w, h; corner: r }
+        }
+        // its edge, the plain line the bars stand on and cover where they rise
+        path { stroke: 1; color: edgec
+               move r, 0; line w - r, 0; curve w, r via w, 0; line w, h - r; curve w - r, h via w, h
+               line r, h; curve 0, h - r via 0, h; line 0, r; curve r, 0 via 0, 0 }
+
+        // the open side, in the stretches the notches leave free (or all of it with them off)
+        group {
+            show: not dk_vert and not dk_notches
+            EdgeBars(r, w - r, 0, max(1, round((w - 2 * r) / dk_pitch)), fillc, edgec)
+        }
+        group {
+            show: not dk_vert and dk_notches
+            EdgeBars(r, 22, 0, max(1, round((22 - r) / dk_pitch)), fillc, edgec)
+            EdgeBars(190, w - 190, 0, max(1, round((w - 380) / dk_pitch)), fillc, edgec)
+            EdgeBars(w - 22, w - r, 0, max(1, round((w - r - 22) / dk_pitch)), fillc, edgec)
+        }
+        group {
+            show: dk_vert and not dk_notches
+            EdgeBars(r, h - r, 0, max(1, round((h - 2 * r) / dk_pitch)), fillc, edgec)
+        }
+        group {
+            show: dk_vert and dk_notches
+            EdgeBars(r, 40, 0, max(1, round((40 - r) / dk_pitch)), fillc, edgec)
+            EdgeBars(208, 224, 0, max(1, round(16 / dk_pitch)), fillc, edgec)
+            EdgeBars(392, 408, 0, max(1, round(16 / dk_pitch)), fillc, edgec)
+            EdgeBars(576, h - r, 0, max(1, round((h - r - 576) / dk_pitch)), fillc, edgec)
+        }
+
+        // the lit run along the top when the top is not the open side (a bottom deck's is)
+        group {
+            show: dk_edge != 0
+            glow: 5, mix(0.8, 0.5, isl_style) * st_glow, mix(fl.phos, dk.t_accent_primary, isl_style)
+            line { from: r + 2, 0.75; to: w - r - 1, 0.75; width: 1.2; color: mix(fl.phos, dk.t_accent_primary, isl_style); opacity: mix(0.85, 0.5, isl_style) }
+        }
+        group {
+            clip box { from: 0, 0; size: w, h; corner: r }
+            children
+        }
+    }
+
     surface nexus {
         // the whole screen: where nothing is drawn a press goes through to what is under it
         size: full, full
@@ -778,74 +894,7 @@ scene Nexus {
             opacity: smooth(0, 0.5, nx_in)
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
 
-            // the music on the open edge: a skyline of the sound, out of the deck (in on a side)
-            group {
-                show: dk_viz and mus_on
-                opacity: smooth(0, 1, rp.4)
-                glow: 6, 0.6 * st_glow, dk.hot
-                repeat v in 0..32 {
-                    let vv.$v = pick(v, dv0, dv1, dv2, dv3, dv4, dv5, dv6, dv7, dv8, dv9, dv10, dv11, dv12, dv13, dv14, dv15, dv16, dv17, dv18, dv19, dv20, dv21, dv22, dv23, dv24, dv25, dv26, dv27, dv28, dv29, dv30, dv31)
-                    let vl.$v = 3 + 26 * clamp(vv.$v, 0, 1)
-                    let vs.$v = if(dk_vert, dk_h, dk_w) / 32
-                    box { from: if(dk_vert, if(dk_edge == 2, dk_w + 2, -2 - vl.$v), v * vs.$v + 2), if(dk_vert, v * vs.$v + 2, if(dk_edge == 1, dk_h + 2, -2 - vl.$v))
-                          size: if(dk_vert, vl.$v, vs.$v - 4), if(dk_vert, vs.$v - 4, vl.$v); corner: 1; color: dk.hot; opacity: 0.25 + 0.6 * vv.$v }
-                }
-            }
-
-            // the notches off the deck's ends (nexus.notches): cut tabs rising from its corners along a strip
-            // (hanging under it at the top), from its open side down a column, three hexagons each —
-            // Claude · Music · Weather, Workspaces · Wallpapers · GitHub; pointed at, the side notch opens
-            // that panel beside the deck, clear of the notch
-            group {
-                show: dk_notches
-                opacity: smooth(0, 1, rp.7)
-                repeat e in 0..2 {
-                    // a strip's: 168 × 34 over the corner; a column's: 34 × 168 on its open side
-                    let ex.$e = if(dk_vert, if(dk_edge == 3, 0, dk_w), if(e == 0, 22, dk_w - 190))
-                    let ey.$e = if(dk_vert, 40 + e * 184, if(dk_edge == 1, dk_h, 0))
-                    let eo.$e = if(dk_vert, if(dk_edge == 3, -1, 1), if(dk_edge == 1, 1, -1))   // the way it sticks out
-                    group {
-                        show: not dk_vert
-                        path { color: mix(dk.raised, #000000, 0.35)
-                               move ex.$e, ey.$e; line ex.$e + 14, ey.$e + 34 * eo.$e; line ex.$e + 154, ey.$e + 34 * eo.$e; line ex.$e + 168, ey.$e; close }
-                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.55)
-                               move ex.$e, ey.$e; line ex.$e + 14, ey.$e + 34 * eo.$e; line ex.$e + 154, ey.$e + 34 * eo.$e; line ex.$e + 168, ey.$e }
-                        group {
-                            glow: 4, 0.5 * st_glow, dk.acc
-                            line { from: ex.$e + 20, ey.$e + 34 * eo.$e; to: ex.$e + 64, ey.$e + 34 * eo.$e; width: 1.6; color: dk.acc; opacity: 0.8 }
-                        }
-                    }
-                    group {
-                        show: dk_vert
-                        path { color: mix(dk.raised, #000000, 0.35)
-                               move ex.$e, ey.$e; line ex.$e + 34 * eo.$e, ey.$e + 14; line ex.$e + 34 * eo.$e, ey.$e + 154; line ex.$e, ey.$e + 168; close }
-                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.55)
-                               move ex.$e, ey.$e; line ex.$e + 34 * eo.$e, ey.$e + 14; line ex.$e + 34 * eo.$e, ey.$e + 154; line ex.$e, ey.$e + 168 }
-                        group {
-                            glow: 4, 0.5 * st_glow, dk.acc
-                            line { from: ex.$e + 34 * eo.$e, ey.$e + 20; to: ex.$e + 34 * eo.$e, ey.$e + 64; width: 1.6; color: dk.acc; opacity: 0.8 }
-                        }
-                    }
-                }
-                repeat t in 0..6 {
-                    let te.$t = floor(t / 3)
-                    let tx.$t = if(dk_vert, if(dk_edge == 3, -17, dk_w + 17), if(te.$t == 0, 22, dk_w - 190) + 36 + mod(t, 3) * 48)
-                    let ty.$t = if(dk_vert, 40 + te.$t * 184 + 36 + mod(t, 3) * 48, if(dk_edge == 1, dk_h + 17, -17))
-                    zone box nz.$t { from: tx.$t - 18, ty.$t - 17; size: 36, 34; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers", "GitHub") }
-                    group {
-                        glow: 6, (0.25 + 0.6 * max(nz.$t.hover, if(dk_ntab == t, 1, 0))) * st_glow, dk.acc
-                        path { color: mix(dk.raised, dk.acc, 0.1 + 0.35 * max(nz.$t.hover, if(dk_ntab == t, 1, 0)))
-                               move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
-                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.5 + 0.5 * nz.$t.hover)
-                               move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
-                    }
-                    NGlyph(tx.$t, ty.$t, t, mix(dk.ink2, dk.acc, nz.$t.hover))
-                    on hover nz.$t for 160ms { dk_ntab = t; emit dk_notch(t) }
-                    on press nz.$t { dk_ntab = t; emit dk_notch(t) }
-                }
-            }
-
-            IslandFrame(1, dk_w, dk_h, centre: true) {
+            DeckFrame(dk_w, dk_h) {
                 // registration marks at the deck's corners
                 repeat c in 0..4 {
                     let rx.$c = if(mod(c, 2) == 0, 4, dk_w - 4)
@@ -891,6 +940,12 @@ scene Nexus {
                         box { from: -40, 4; size: 68, 16; corner: 2; stroke: 1.2; color: dk.alert }
                         text dk_caution_t { at: -6, 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.alert; width: 64; lines: 1 }
                     }
+                    // and, to their left, Hyprland: its config again, then the bar on it (bin/mooi
+                    // restart-hypr). A press is not the end of anything: windows stay open
+                    zone box hyr { from: -58, 1; size: 24, 22; cursor: pointer; role: button; label: "Restart Hyprland and the bar" }
+                    box { from: -58, 2; size: 22, 19; corner: if(isl_style > 0.5, 6, 2); color: dk.well; opacity: 0.7 * hyr.hover }
+                    text "↻" { at: -47, 12; anchor: center; align: center; size: 13; color: mix(dk.ink2, dk.acc, hyr.hover) }
+                    on press hyr { emit nx_go(60) }
                     repeat b in 0..5 {
                         zone box hb.$b { from: 34 + b * 26, 1; size: 24, 22; cursor: pointer; role: button
                                          label: pick(b, "Arrange the deck", "mooi's settings", "Lock the screen", "The session menu", "Close the Nexus") }
@@ -1090,6 +1145,13 @@ scene Nexus {
                     opacity: smooth(0, 1, rp.3)
                     Card(pq_w, pq_h, if(dk_gid == 3, 1, 0))
                     PartHead(pq_w, pq_n, "Quick settings", "", lamp: lp_q)
+                    // the same restart as the rail's ↻, put where the toggles are
+                    group {
+                        show: ed_in < 0.01
+                        zone box hqr { from: pq_w - 108, 6; size: 94, 24; cursor: pointer; role: button; label: "Restart Hyprland and the bar" }
+                        Act(pq_w - 108, 6, 94, "↻ Hyprland", false, false, hqr.hover)
+                        on press hqr { emit nx_go(60) }
+                    }
                     let qw = (pq_w - 28 - 3 * 6) / 4
                     for q in quick {
                         let qx = 14 + mod(q.index, 4) * (qw + 6)
@@ -1511,6 +1573,64 @@ scene Nexus {
                            width: 1.6; color: dk.acc; opacity: 1 - abs(scan - 0.5) * 1.6 }
                 }
             }
+            // the notches off the deck's ends (nexus.notches): cut tabs rising from its corners along a strip
+            // (hanging under it at the top), from its open side down a column, three hexagons each —
+            // Claude · Music · Weather, Workspaces · Wallpapers · GitHub; pointed at, the side notch opens
+            // that panel beside the deck, clear of the notch. The deck's bars break where a tab leaves it
+            // and run on along the tab's own outer face, so the visualiser follows the border round it.
+            group {
+                show: dk_notches
+                opacity: smooth(0, 1, rp.7)
+                repeat e in 0..2 {
+                    // a strip's: 168 × 34 over the corner; a column's: 34 × 168 on its open side
+                    let ex.$e = if(dk_vert, if(dk_edge == 3, 0, dk_w), if(e == 0, 22, dk_w - 190))
+                    let ey.$e = if(dk_vert, 40 + e * 184, if(dk_edge == 1, dk_h, 0))
+                    let eo.$e = if(dk_vert, if(dk_edge == 3, -1, 1), if(dk_edge == 1, 1, -1))   // the way it sticks out
+                    group {
+                        show: not dk_vert
+                        path { color: mix(dk.raised, #000000, 0.35)
+                               move ex.$e, ey.$e; line ex.$e + 14, ey.$e + 34 * eo.$e; line ex.$e + 154, ey.$e + 34 * eo.$e; line ex.$e + 168, ey.$e; close }
+                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.55)
+                               move ex.$e, ey.$e; line ex.$e + 14, ey.$e + 34 * eo.$e; line ex.$e + 154, ey.$e + 34 * eo.$e; line ex.$e + 168, ey.$e }
+                        group {
+                            glow: 4, 0.5 * st_glow, dk.acc
+                            line { from: ex.$e + 20, ey.$e + 34 * eo.$e; to: ex.$e + 64, ey.$e + 34 * eo.$e; width: 1.6; color: dk.acc; opacity: 0.8 }
+                        }
+                        // the visualiser goes on round the notch: its outer face is the border too
+                        EdgeBars(ex.$e + 14, ex.$e + 154, 34, max(1, round(140 / dk_pitch)), mix(dk.raised, #000000, 0.35), mix(dk.line, dk.acc, 0.55))
+                    }
+                    group {
+                        show: dk_vert
+                        path { color: mix(dk.raised, #000000, 0.35)
+                               move ex.$e, ey.$e; line ex.$e + 34 * eo.$e, ey.$e + 14; line ex.$e + 34 * eo.$e, ey.$e + 154; line ex.$e, ey.$e + 168; close }
+                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.55)
+                               move ex.$e, ey.$e; line ex.$e + 34 * eo.$e, ey.$e + 14; line ex.$e + 34 * eo.$e, ey.$e + 154; line ex.$e, ey.$e + 168 }
+                        group {
+                            glow: 4, 0.5 * st_glow, dk.acc
+                            line { from: ex.$e + 34 * eo.$e, ey.$e + 20; to: ex.$e + 34 * eo.$e, ey.$e + 64; width: 1.6; color: dk.acc; opacity: 0.8 }
+                        }
+                        // the visualiser goes on round the notch: its outer face is the border too
+                        EdgeBars(ey.$e + 14, ey.$e + 154, 34, max(1, round(140 / dk_pitch)), mix(dk.raised, #000000, 0.35), mix(dk.line, dk.acc, 0.55))
+                    }
+                }
+                repeat t in 0..6 {
+                    let te.$t = floor(t / 3)
+                    let tx.$t = if(dk_vert, if(dk_edge == 3, -17, dk_w + 17), if(te.$t == 0, 22, dk_w - 190) + 36 + mod(t, 3) * 48)
+                    let ty.$t = if(dk_vert, 40 + te.$t * 184 + 36 + mod(t, 3) * 48, if(dk_edge == 1, dk_h + 17, -17))
+                    zone box nz.$t { from: tx.$t - 18, ty.$t - 17; size: 36, 34; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers", "GitHub") }
+                    group {
+                        glow: 6, (0.25 + 0.6 * max(nz.$t.hover, if(dk_ntab == t, 1, 0))) * st_glow, dk.acc
+                        path { color: mix(dk.raised, dk.acc, 0.1 + 0.35 * max(nz.$t.hover, if(dk_ntab == t, 1, 0)))
+                               move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
+                        path { stroke: 1.1; color: mix(dk.line, dk.acc, 0.5 + 0.5 * nz.$t.hover)
+                               move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
+                    }
+                    NGlyph(tx.$t, ty.$t, t, mix(dk.ink2, dk.acc, nz.$t.hover))
+                    on hover nz.$t for 160ms { dk_ntab = t; emit dk_notch(t) }
+                    on press nz.$t { dk_ntab = t; emit dk_notch(t) }
+                }
+            }
+
         }
 
         // ═══ Arranging: what grows out of the deck while ✎ is on ═══
@@ -1533,8 +1653,8 @@ scene Nexus {
                 }
                 text "ROWS" { at: 194, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.mute }
                 repeat r in 0..2 {
-                    zone box rz.$r { from: 232 + r * 32, 34; size: 28, 24; cursor: pointer; role: tab; selected: dk_rows == r + 1; label: pick(r, "One row of cards", "Two rows of cards"); active: not dk_vert }
-                    box { from: 232 + r * 32, 34; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_rows == r + 1, dk.acc, mix(dk.line, dk.acc, rz.$r.hover)); opacity: if(dk_vert, 0.4, 1) }
+                    zone box rz.$r { from: 232 + r * 32, 34; size: 28, 24; cursor: pointer; role: tab; selected: dk_rows == r + 1; label: pick(r, "One row of cards", "Two rows of cards") }
+                    box { from: 232 + r * 32, 34; size: 28, 24; corner: dk.r; stroke: 1; color: if(dk_rows == r + 1, dk.acc, mix(dk.line, dk.acc, rz.$r.hover)) }
                     text pick(r, "1", "2") { at: 246 + r * 32, 46.5; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: if(dk_rows == r + 1, dk.acc, dk.ink2) }
                     on press rz.$r { emit dk_rows_set(r + 1) }
                 }
@@ -1569,7 +1689,117 @@ scene Nexus {
         group {
             show: dk_cascade
             // the spine's line, where the shelves are tied (the bar draws its tabs when the spine is on)
-            line { from: cs_r + 24, cy_0; to: cs_r + 24, cy_8 + 44; width: 1; color: dk.acc; opacity: 0.25 * cs.0 }
+            line { from: cs_r + 24, cy_0; to: cs_r + 24, cy_8 + 44; width: 1; color: dk.acc; opacity: 0.25 * cs.0 * (1 - dk_vz) }
+            // the spine is the visualiser while the shelves are out: the same sound bends it, so the line
+            // the shelves hang from is the one moving with the music. It is drawn as a lit thread — the
+            // line's own colour at the crest, light around it — and the straight rule is not drawn under
+            // it while it is up (see the spine line above).
+            group {
+                show: dk_viz
+                opacity: dk_vz
+                // the same swells as the deck's crest: the band means, then 0.6 px on the edge and
+                // 24 more at a full band; ew_lv is their mean, for the glow
+                let ew_l0 = (dv0 + dv1 + dv2 + dv3) / 4
+                let ew_l1 = (dv4 + dv5 + dv6 + dv7) / 4
+                let ew_l2 = (dv8 + dv9 + dv10 + dv11) / 4
+                let ew_l3 = (dv12 + dv13 + dv14 + dv15) / 4
+                let ew_l4 = (dv16 + dv17 + dv18 + dv19) / 4
+                let ew_l5 = (dv20 + dv21 + dv22 + dv23) / 4
+                let ew_l6 = (dv24 + dv25 + dv26 + dv27) / 4
+                let ew_l7 = (dv28 + dv29 + dv30 + dv31) / 4
+                let ew_lv = (ew_l0 + ew_l1 + ew_l2 + ew_l3 + ew_l4 + ew_l5 + ew_l6 + ew_l7) / 8
+                let ew_d0 = 0.6
+                let ew_d1 = 0.6 + 24 * ew_l0 * dk_vz
+                let ew_d2 = 0.6 + 24 * ew_l1 * dk_vz
+                let ew_d3 = 0.6 + 24 * ew_l2 * dk_vz
+                let ew_d4 = 0.6 + 24 * ew_l3 * dk_vz
+                let ew_d5 = 0.6 + 24 * ew_l4 * dk_vz
+                let ew_d6 = 0.6 + 24 * ew_l5 * dk_vz
+                let ew_d7 = 0.6 + 24 * ew_l6 * dk_vz
+                let ew_d8 = 0.6 + 24 * ew_l7 * dk_vz
+                let ew_d9 = 0.6
+                let cw_y0 = cy_0
+                let cw_y1 = cy_8 + 44
+                let cw_len = cw_y1 - cw_y0
+                let cw_x = cs_r + 24
+                let cw_gx0 = cw_x - 1.5 * ew_d0
+                let cw_gy0 = cw_y0 + cw_len * 0 / 9
+                let cw_gx1 = cw_x - 1.5 * ew_d1
+                let cw_gy1 = cw_y0 + cw_len * 1 / 9
+                let cw_gx2 = cw_x - 1.5 * ew_d2
+                let cw_gy2 = cw_y0 + cw_len * 2 / 9
+                let cw_gx3 = cw_x - 1.5 * ew_d3
+                let cw_gy3 = cw_y0 + cw_len * 3 / 9
+                let cw_gx4 = cw_x - 1.5 * ew_d4
+                let cw_gy4 = cw_y0 + cw_len * 4 / 9
+                let cw_gx5 = cw_x - 1.5 * ew_d5
+                let cw_gy5 = cw_y0 + cw_len * 5 / 9
+                let cw_gx6 = cw_x - 1.5 * ew_d6
+                let cw_gy6 = cw_y0 + cw_len * 6 / 9
+                let cw_gx7 = cw_x - 1.5 * ew_d7
+                let cw_gy7 = cw_y0 + cw_len * 7 / 9
+                let cw_gx8 = cw_x - 1.5 * ew_d8
+                let cw_gy8 = cw_y0 + cw_len * 8 / 9
+                let cw_gx9 = cw_x - 1.5 * ew_d9
+                let cw_gy9 = cw_y0 + cw_len * 9 / 9
+                let cw_vx0 = (cw_gx0 + cw_gx1) / 2 - 1.5 * min(ew_d0, ew_d1) * 0.22
+                let cw_vy0 = (cw_gy0 + cw_gy1) / 2
+                let cw_vx1 = (cw_gx1 + cw_gx2) / 2 - 1.5 * min(ew_d1, ew_d2) * 0.22
+                let cw_vy1 = (cw_gy1 + cw_gy2) / 2
+                let cw_vx2 = (cw_gx2 + cw_gx3) / 2 - 1.5 * min(ew_d2, ew_d3) * 0.22
+                let cw_vy2 = (cw_gy2 + cw_gy3) / 2
+                let cw_vx3 = (cw_gx3 + cw_gx4) / 2 - 1.5 * min(ew_d3, ew_d4) * 0.22
+                let cw_vy3 = (cw_gy3 + cw_gy4) / 2
+                let cw_vx4 = (cw_gx4 + cw_gx5) / 2 - 1.5 * min(ew_d4, ew_d5) * 0.22
+                let cw_vy4 = (cw_gy4 + cw_gy5) / 2
+                let cw_vx5 = (cw_gx5 + cw_gx6) / 2 - 1.5 * min(ew_d5, ew_d6) * 0.22
+                let cw_vy5 = (cw_gy5 + cw_gy6) / 2
+                let cw_vx6 = (cw_gx6 + cw_gx7) / 2 - 1.5 * min(ew_d6, ew_d7) * 0.22
+                let cw_vy6 = (cw_gy6 + cw_gy7) / 2
+                let cw_vx7 = (cw_gx7 + cw_gx8) / 2 - 1.5 * min(ew_d7, ew_d8) * 0.22
+                let cw_vy7 = (cw_gy7 + cw_gy8) / 2
+                let cw_vx8 = (cw_gx8 + cw_gx9) / 2 - 1.5 * min(ew_d8, ew_d9) * 0.22
+                let cw_vy8 = (cw_gy8 + cw_gy9) / 2
+                group {
+                    glow: 8, (0.3 + 0.55 * ew_lv) * st_glow, dk.hot
+        path { stroke: 9; color: dk.hot; opacity: 0.06 + 0.10 * ew_lv
+               move cw_gx0, cw_gy0
+               curve cw_gx1, cw_gy1 via cw_vx0, cw_vy0
+               curve cw_gx2, cw_gy2 via cw_vx1, cw_vy1
+               curve cw_gx3, cw_gy3 via cw_vx2, cw_vy2
+               curve cw_gx4, cw_gy4 via cw_vx3, cw_vy3
+               curve cw_gx5, cw_gy5 via cw_vx4, cw_vy4
+               curve cw_gx6, cw_gy6 via cw_vx5, cw_vy5
+               curve cw_gx7, cw_gy7 via cw_vx6, cw_vy6
+               curve cw_gx8, cw_gy8 via cw_vx7, cw_vy7
+               curve cw_gx9, cw_gy9 via cw_vx8, cw_vy8
+               }
+        path { stroke: 4.5; color: mix(dk.acc, dk.hot, ew_lv); opacity: 0.16 + 0.22 * ew_lv
+               move cw_gx0, cw_gy0
+               curve cw_gx1, cw_gy1 via cw_vx0, cw_vy0
+               curve cw_gx2, cw_gy2 via cw_vx1, cw_vy1
+               curve cw_gx3, cw_gy3 via cw_vx2, cw_vy2
+               curve cw_gx4, cw_gy4 via cw_vx3, cw_vy3
+               curve cw_gx5, cw_gy5 via cw_vx4, cw_vy4
+               curve cw_gx6, cw_gy6 via cw_vx5, cw_vy5
+               curve cw_gx7, cw_gy7 via cw_vx6, cw_vy6
+               curve cw_gx8, cw_gy8 via cw_vx7, cw_vy7
+               curve cw_gx9, cw_gy9 via cw_vx8, cw_vy8
+               }
+        path { stroke: 2.2; color: mix(dk.line, dk.acc, 0.2 + 0.65 * ew_lv); opacity: 0.6 + 0.4 * ew_lv
+               move cw_gx0, cw_gy0
+               curve cw_gx1, cw_gy1 via cw_vx0, cw_vy0
+               curve cw_gx2, cw_gy2 via cw_vx1, cw_vy1
+               curve cw_gx3, cw_gy3 via cw_vx2, cw_vy2
+               curve cw_gx4, cw_gy4 via cw_vx3, cw_vy3
+               curve cw_gx5, cw_gy5 via cw_vx4, cw_vy4
+               curve cw_gx6, cw_gy6 via cw_vx5, cw_vy5
+               curve cw_gx7, cw_gy7 via cw_vx6, cw_vy6
+               curve cw_gx8, cw_gy8 via cw_vx7, cw_vy7
+               curve cw_gx9, cw_gy9 via cw_vx8, cw_vy8
+               }
+                }
+            }
             // each shelf's place at rest, where the pointer is looked for (its plate leans out of it)
             repeat k in 0..9 {
                 let cw.$k = pick(k, 452, 360, 360, pick(mus_on, 300, 460), 420, 360, 400, 300, 380)

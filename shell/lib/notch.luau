@@ -133,4 +133,45 @@ function M.pictures(listing, max)
     return out
 end
 
+-- A colour's hue (0..360) and how strongly it has one (0..1, grey near 0), from its red, green and
+-- blue as 0..1 (or 0..255): the mean colour of a picture, read by magick (shell/mooi-notch.luau).
+function M.hue(r, g, b)
+    r, g, b = tonumber(r) or 0, tonumber(g) or 0, tonumber(b) or 0
+    if r > 1 or g > 1 or b > 1 then r, g, b = r / 255, g / 255, b / 255 end
+    local hi, lo = math.max(r, g, b), math.min(r, g, b)
+    local d = hi - lo
+    local sat = hi > 0 and d / hi or 0
+    if d == 0 then return 0, 0 end
+    local h
+    if hi == r then h = ((g - b) / d) % 6
+    elseif hi == g then h = (b - r) / d + 2
+    else h = (r - g) / d + 4 end
+    return (h * 60) % 360, sat
+end
+
+-- The colour band (0..n-1) a hue falls in, each band centred on its own colour: with 8, red is
+-- 337.5°..22.5°, orange 22.5°..67.5°, and so on round the wheel.
+function M.band(hue, n)
+    n = math.max(1, math.floor(tonumber(n) or 8))
+    local step = 360 / n
+    return math.floor((((tonumber(hue) or 0) % 360) + step / 2) / step) % n
+end
+
+-- `max` of them, drawn afresh: a folder of thousands should not open on the same first forty
+-- names every time. The same `seed` draws the same ones, so a test — or a redraw — is repeatable.
+function M.draw(list, max, seed)
+    local out = {}
+    for i, v in ipairs(type(list) == "table" and list or {}) do out[i] = v end
+    -- a Lehmer generator: kept under 2^53, where a Lua number is still exact (a wider one loses
+    -- its low bits, and the shuffle leaves most of the list where it found it)
+    local s = math.floor(tonumber(seed) or 0) % 2147483646
+    for i = #out, 2, -1 do
+        s = (s * 48271) % 2147483647
+        local j = (s % i) + 1
+        out[i], out[j] = out[j], out[i]
+    end
+    while #out > (max or 40) do out[#out] = nil end
+    return out
+end
+
 return M

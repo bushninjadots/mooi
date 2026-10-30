@@ -719,12 +719,12 @@ function M.state(v)
         for k, e in pairs(v.edges) do
             local c = type(e) == "table" and e.c
             if type(k) == "string" and type(c) == "table" then
-                local hex = {}
+                local hex, good = {}, true
                 for i = 1, 3 do
                     local h = tostring(c[i] or "")
-                    if h:match("^#%x%x%x%x%x%x$") then hex[i] = string.lower(h) end
+                    if h:match("^#%x%x%x%x%x%x$") then hex[i] = string.lower(h) else good = false end
                 end
-                if #hex == 3 then out.edges[k] = { c = hex, at = tonumber(e.at) or 0 } end
+                if good then out.edges[k] = { c = hex, at = tonumber(e.at) or 0 } end
             end
         end
     end

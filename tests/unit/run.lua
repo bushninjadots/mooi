@@ -792,8 +792,12 @@ test("Hyprland 0.56: finer blur, the windows' spring and motion blur, nothing wh
     d.wobble, d.blur_variant = "jelly", "glass"
     look = desktop.look(d, nil)
     assert(string.find(look, "pcall(hl.config, { decoration = { wobble = { enabled = true, intensity = 1.70", 1, true), look)
-    assert(string.find(look, 'pcall(hl.config, { decoration = { blur = { variant = "glass" } } })', 1, true), look)
+    assert(string.find(look, 'pcall(hl.config, { decoration = { blur = { variant = "acrylic" } } })', 1, true),
+        "glass (0.57 keeps it for aurora/drops/heat_shimmer/prism) asks for acrylic: " .. look)
     assert(load(look), "still one chunk of Lua")
+    -- 0.57 accepts only its own names: `none` is refused, its plain blur is kawase
+    d.blur_variant = "none"
+    assert(string.find(desktop.look(d, nil), 'blur = { variant = "kawase" }', 1, true), "Plain asks for kawase")
     d.wobble = "off"
     assert(string.find(desktop.look(d, nil), "wobble = { enabled = false }", 1, true), "off: no bending either")
 end)
@@ -2540,6 +2544,16 @@ test("nexus deck: two rows hold more, every card movable, the least kept giving 
     local seen = { false, false }
     for _, p in ipairs(two.parts) do seen[p.row] = true end
     assert(seen[1] and seen[2], "cards in both rows")
+    -- two rows even when one would hold them: the cards split over them, half the width each
+    local four, only = { "music", "machine", "today", "activity" }, {}
+    for _, id in ipairs(deck.ORDER) do only[id] = true end
+    for _, id in ipairs(four) do only[id] = nil end
+    local flat = deck.layout("bottom", 1920, 1080, 0, { hidden = only })
+    local split = deck.layout("bottom", 1920, 1080, 0, { hidden = only, rows = 2 })
+    local r2 = 0
+    for _, p in ipairs(split.parts) do if p.row == 2 then r2 = r2 + 1 end end
+    eq(#split.parts, 4, "no card lost to the second row"); eq(r2, 2, "two cards in each row")
+    eq(#flat.parts, 4, "one row holds four"); eq(split.h > flat.h, true, "two rows are taller")
     local mine = deck.layout("bottom", 1920, 1080, 0, { parts = { "scenes", "music" }, hidden = {} })
     eq(mine.parts[1].id, "scenes", "scenes move like anything else"); eq(mine.parts[2].id, "music")
     local big = deck.layout("bottom", 1920, 1080, 0, { parts = { "profile" }, hidden = {}, large = true })
@@ -2593,6 +2607,43 @@ test("nexus deck: a column down either side, its cards stacked, the spine kept c
     assert(l.h <= 1080 - 58 - deck.GAP, "never past the screen")
     assert(#deck.layout("left", 1920, 1080, 52, { hidden = {}, tiles = 6 }).dropped > 0, "every part with many workspaces gives way down a side")
     eq(deck.layout("right", 1920, 1080, 52, { spine = true }).x, 1920 - deck.COLUMN_W - deck.GAP - deck.SPINE_W, "the spine's tabs stay clear")
+    -- two rows down a side are two columns: twice as wide, half as tall, the spine still clear
+    local one = deck.layout("right", 1920, 1080, 52, { hidden = {}, spine = true })
+    local two = deck.layout("right", 1920, 1080, 52, { hidden = {}, spine = true, rows = 2 })
+    eq(two.w, 2 * (deck.COLUMN_W - 2 * deck.PAD) + deck.CARD_GAP + 2 * deck.PAD, "two columns wide")
+    eq(two.x, 1920 - two.w - deck.GAP - deck.SPINE_W, "the spine's tabs stay clear of both")
+    assert(#two.dropped < #one.dropped, "two columns hold more")
+    local cols, bottom = {}, 0
+    for _, p in ipairs(two.parts) do
+        cols[p.row] = true; eq(p.w, deck.COLUMN_W - 2 * deck.PAD, "a card one column wide")
+        bottom = math.max(bottom, p.y + p.h)
+    end
+    assert(cols[1] and cols[2], "cards in both columns")
+    assert(bottom + deck.PAD <= two.h, "both columns within the deck")
+    eq(deck.place_at(two, deck.PAD + 4, two.parts[1].y + 2), 1, "let go at the top of the first column: first")
+end)
+test("nexus deck: the cut in two taken where both sides fit, so no card gives way for nothing", function()
+    eq(deck.split(4, function() return true end), 2, "a middle cut when any will do")
+    local mid = deck.split(11, function(a, b) return b - a < 6 end); eq(mid >= 5 and mid <= 6, true, "the middle of what fits")
+    eq(deck.split(11, function() return false end) ~= nil, true, "a cut even when none fits")
+    eq(deck.split(1, function() return true end), nil)
+    -- the same cards on every edge: with two rows, a side holds what a strip holds
+    local strip = deck.layout("bottom", 1920, 1080, 52, { tiles = 2, rows = 2, hidden = {} })
+    local col = deck.layout("right", 1920, 1080, 52, { tiles = 2, rows = 2, hidden = {} })
+    eq(#strip.dropped, 0, "a strip holds every card"); eq(#col.dropped, 0, "and so does a side")
+    local ids = {}
+    for _, p in ipairs(strip.parts) do ids[p.id] = true end
+    for _, p in ipairs(col.parts) do eq(ids[p.id], true, p.id .. " on the side too"); ids[p.id] = nil end
+    eq(next(ids), nil, "nothing on the strip that the side misses")
+    -- the callers' shape: a cut is one this test can hold, not one the walk from the middle settled on
+    local part = { 200, 120, 170, 150, 180, 140, 160, 190, 120, 130, 140 }
+    local function stack(a, b)
+        local t = deck.RAIL + deck.CARD_GAP * (b - a)
+        for i = a, b do t = t + part[i] end
+        return t
+    end
+    local at = deck.split(#part, function(a, b) return stack(a, b) <= 960 end)
+    eq(stack(1, at) <= 960 and stack(at + 1, #part) <= 960, true, "both sides of the cut fit")
 end)
 test("nexus deck: the scene chips wrap to their card", function()
     local c = deck.chips(5, { w = 200, h = 214 })
@@ -2676,8 +2727,9 @@ test("nexus deck: scenes cleaned, compared and carried out", function()
 end)
 test("config: the old Nexus settings go quietly; who you are stays, and the deck's edge", function()
     local s, problems, notes = config.validate({ version = 2, nexus = { view = "full", hub = { hero = "player" }, folded = { "machine" },
-        orbit = { nodes = { "wifi" } }, identity = { name = "Alex" }, edge = "left" } })
+        orbit = { nodes = { "wifi" } }, identity = { name = "Alex" }, edge = "left", bars = "twentyfour" } })
     eq(s.nexus.identity.name, "Alex"); eq(s.nexus.edge, "left"); eq(s.nexus.mode, "deck")
+    eq(s.nexus.bars, "twentyfour", "the deck's border keeps its bars")
     eq(s.nexus.folded, nil, "the drawer's folds are gone"); eq(s.nexus.orbit, nil, "and the orbit"); eq(#problems, 0)
     for _, n in ipairs(notes) do assert(not n:find("nexus"), "no unknown-setting note for the old Nexus: " .. n) end
 end)
@@ -2725,7 +2777,30 @@ test("notch: the fan's tabs on their arc, panels on the screen, the carousel, th
     eq(notch.thumb_name("/a/b.jpg"), notch.thumb_name("/a/b.jpg")); assert(notch.thumb_name("/a/b.jpg") ~= notch.thumb_name("/a/c.jpg"))
     local p = notch.pictures("/w/b.PNG\n/w/notes.txt\n/w/a.jpg\n", 5)
     eq(#p, 2); eq(p[1], "/w/a.jpg")
+    -- a folder of thousands: forty drawn at a time, the same seed the same forty, all of them its own
+    local many = {}
+    for i = 1, 200 do many[i] = "/w/p" .. i .. ".jpg" end
+    local d1, d2, d3 = notch.draw(many, 40, 7), notch.draw(many, 40, 7), notch.draw(many, 40, 8)
+    eq(#d1, 40, "forty of them"); eq(d1[1], d2[1], "the same seed draws the same")
+    local moved = 0
+    for i = 1, 10 do if d1[i] ~= d3[i] then moved = moved + 1 end end
+    eq(moved >= 8, true, "another seed draws others")
+    local okall, got = true, {}
+    for _, v in ipairs(d1) do if got[v] then okall = false end; got[v] = true; if not v:find("^/w/p%d+%.jpg$") then okall = false end end
+    eq(okall, true, "each picture once, out of the folder")
     eq(notch.tab_index("walls"), 3)
+    -- the colours: a mean colour's hue, and how grey it is; the band it is filed under
+    local hh, ss = notch.hue(1, 0, 0); eq(hh, 0, "red"); eq(ss, 1)
+    local hg = notch.hue(0, 1, 0); eq(hg, 120, "green")
+    local hb = notch.hue(0, 0, 1); eq(hb, 240, "blue")
+    eq(notch.hue(255, 255, 255), 0, "white has no hue"); eq(select(2, notch.hue(255, 255, 255)), 0, "and no colour")
+    eq(math.floor(notch.hue(0.9, 0.2, 0.1) + 0.5), 8, "a red-orange, in degrees")
+    eq(notch.band(notch.hue(0.9, 0.2, 0.1), 12), 0, "filed under the reds")
+    eq(notch.band(notch.hue(0.1, 0.2, 0.9), 12), 8, "a blue under the blues")
+    eq(notch.band(notch.hue(0.1, 0.8, 0.2), 12), 4, "a green under the greens")
+    eq(notch.band(notch.hue(0.9, 0.9, 0.1), 12), 2, "a yellow under the yellows")
+    eq(notch.band(notch.hue(0.1, 0.8, 0.8), 12), 6, "a cyan under the cyans")
+    eq(notch.band(355, 12), 0, "red round the far side of the wheel too")
     -- from the Control Nexus: over a bottom strip's end, on a right column's open side
     local strip = deck.layout("bottom", 1920, 1049, 0, {})
     local l = notch.from_deck(strip, 0, true, 1920, 1049)

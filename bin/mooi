@@ -15,6 +15,8 @@
 #                          itself, so saving a file reloads it
 #   mooi refresh           copy the repo's shell into the running snapshot and restart the scene
 #                          (the keeper, the mode and ArchEclipse's state are kept)
+#   mooi restart-hypr      Hyprland reads its config again, then the bar restarts on it (Settings →
+#                          Advanced and the Nexus's rail); windows stay open, mooi's own close
 #   mooi window | system   toggle the window island (Super+Alt+W) or the system island
 #   mooi mode [light|dark|auto]  day or night for the whole desktop; no word turns to the other one (Super+Alt+T)
 #   mooi overview          every workspace zoomed out (Super+Tab)
@@ -532,7 +534,22 @@ settings_link() {
     fi
     [ -L "$bmo_dir" ] || { mkdir -p "$folder" && ln -s "$folder" "$bmo_dir"; }
 }
+# Sockets of scenes that are gone. pleamar names a second copy of a scene `<name>-<pid>`; a copy
+# ended outright (a refresh mid-flight, a scene killed) leaves that socket behind, one per restart
+# (28 of them by 2026-10-29, every one from a killed copy). A dead pid's is removed, a live one's
+# left alone — no name is held by files, only by the process listening on them.
+reap_sockets() {
+    local d="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/pleamar" f pid
+    [ -d "$d" ] || return 0
+    for f in "$d"/*.sock; do
+        [ -S "$f" ] || continue
+        pid=$(basename "$f" | sed -n 's/.*-\([0-9][0-9]*\)\.sock$/\1/p')
+        [ -n "$pid" ] || continue
+        kill -0 "$pid" 2>/dev/null || rm -f "$f"
+    done
+}
 snapshot() {
+    reap_sockets
     "$pleamar" --check "$src" >/dev/null || { echo "mooi: the repo's scene does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-settings.plm" >/dev/null || { echo "mooi: the settings window does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-wallpaper.plm" >/dev/null || { echo "mooi: the wallpaper studio does not compile; the running one is kept" >&2; return 1; }
@@ -700,6 +717,12 @@ case "$cmd" in
             echo "mooi did not start; see $log" >&2
             exit 1
         fi
+        ;;
+    restart-hypr)
+        # Hyprland reads its config again, then the bar comes back on it. A reload leaves every
+        # window open; mooi's own windows restart with the bar.
+        hyprctl reload >/dev/null 2>&1 || { echo "hyprctl could not reload Hyprland" >&2; exit 1; }
+        exec "$self" refresh
         ;;
     refresh)
         running || { echo "mooi is not running; \`mooi start\` or \`mooi takeover\`" >&2; exit 1; }

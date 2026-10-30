@@ -571,6 +571,9 @@ read_advanced()
 every(3000, read_advanced)
 on("adv_act", function(v)
     local n = math.floor(tonumber(v) or 0)
+    -- 4: Hyprland reads its config again, then the bar comes back on it (bin/mooi restart-hypr);
+    -- windows stay open, mooi's own windows restart with the bar
+    if n == 4 then run("mooi", { "restart-hypr" }); return end
     local target = ({ text.bar_path, log_path, tostring(sys.ask("env", "MOOI_SHELL") or (home .. "/Projects/mooi/shell")) })[n]
     if target then run("xdg-open", { target }) end
 end)

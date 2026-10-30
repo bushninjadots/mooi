@@ -295,6 +295,7 @@ scene Mooi {
     fact bar_ground = 0       // bar.ground · 0 black · 1 tinted · 2 clear
     fact bar_rail = true      // bar.rail
     fact bar_accents = true   // bar.accents · cuts, drop ticks, slashes
+    fact bar_foot_viz = true  // bar.foot_visualizer · the islands' feet step with the music
     fact bar_full = false     // bar.mode · islands, or one full panel
     fact bar_surface = 0      // bar.surface · 0 solid · 1 glass · 2 blur · 3 clear
     fact viz = 0              // bar.visualizer · 0 mirror · 1 bars · 2 line · 3 dots · 4 off
@@ -1966,6 +1967,93 @@ scene Mooi {
     let nc_a = ncx - n_pad
     let nc_e = ncx + ncw + n_pad
     let nr_a = nrx - n_pad                       // the right piece's left side
+    // ── One island's foot, as the visualiser ─────────────────────
+    // An island's bottom border is the visualiser: eight bars cut from that line itself, joined at
+    // their feet, stepping down into the desktop with the music — the bar's sixteen cava bands, two
+    // to a bar — filled with the island's hull and stroked with its own edge, so nothing is drawn
+    // beside the bar. At rest every bar sits on the line and it is the plain border it was. `x0`..`x1`
+    // is the straight run between the island's two foot corners; `fy` is the foot's line.
+    component BarFoot(x0: number, x1: number, fy: number) {
+        size: max(1, x1 - x0), 26
+        let wv_w = max(1, x1 - x0)
+        let steel = bar_surface > 3.5
+        let ob = clamp(st_ocol, 0, 1)
+        let oa = clamp(st_ocol - 1, 0, 1)
+        let wv_edge = mix(mix(mix(fl.trace, fl.trace_lit, ob), fl.phos_fill, oa), fl.steel_300, steel)
+        // 0 at the floor the levels rest on (0.06), 12 px at a full band
+        let wa1 = 12 * clamp(((vb0 + vb1) / 2 - 0.06) / 0.5, 0, 1)
+        let wa2 = 12 * clamp(((vb2 + vb3) / 2 - 0.06) / 0.5, 0, 1)
+        let wa3 = 12 * clamp(((vb4 + vb5) / 2 - 0.06) / 0.5, 0, 1)
+        let wa4 = 12 * clamp(((vb6 + vb7) / 2 - 0.06) / 0.5, 0, 1)
+        let wa5 = 12 * clamp(((vb8 + vb9) / 2 - 0.06) / 0.5, 0, 1)
+        let wa6 = 12 * clamp(((vb10 + vb11) / 2 - 0.06) / 0.5, 0, 1)
+        let wa7 = 12 * clamp(((vb12 + vb13) / 2 - 0.06) / 0.5, 0, 1)
+        let wa8 = 12 * clamp(((vb14 + vb15) / 2 - 0.06) / 0.5, 0, 1)
+        // the bars' feet along the run, and each bar's own line above its span
+        let wx0 = x0
+        let wx1 = x0 + wv_w * 1 / 8
+        let wx2 = x0 + wv_w * 2 / 8
+        let wx3 = x0 + wv_w * 3 / 8
+        let wx4 = x0 + wv_w * 4 / 8
+        let wx5 = x0 + wv_w * 5 / 8
+        let wx6 = x0 + wv_w * 6 / 8
+        let wx7 = x0 + wv_w * 7 / 8
+        let wx8 = x1
+        let wy1 = fy + wa1
+        let wy2 = fy + wa2
+        let wy3 = fy + wa3
+        let wy4 = fy + wa4
+        let wy5 = fy + wa5
+        let wy6 = fy + wa6
+        let wy7 = fy + wa7
+        let wy8 = fy + wa8
+        group {
+            show: bar_foot_viz
+            // the fill: the island's hull, from 3 px inside its foot out to the bars' feet
+            path { color: mix(fl.hull, fl.steel_700, steel); opacity: st_opacity
+                   move x0, fy - 3
+                   line x1, fy - 3
+                   line wx8, wy8
+                   line wx7, wy8
+                   line wx7, wy7
+                   line wx6, wy7
+                   line wx6, wy6
+                   line wx5, wy6
+                   line wx5, wy5
+                   line wx4, wy5
+                   line wx4, wy4
+                   line wx3, wy4
+                   line wx3, wy3
+                   line wx2, wy3
+                   line wx2, wy2
+                   line wx1, wy2
+                   line wx1, wy1
+                   line wx0, wy1
+                   close }
+            // and its edge, which is the border itself
+            path { stroke: st_owidth; color: wv_edge
+                   move wx0, fy
+                   line wx0, wy1
+                   line wx1, wy1
+                   line wx1, wy2
+                   line wx2, wy2
+                   line wx2, wy3
+                   line wx3, wy3
+                   line wx3, wy4
+                   line wx4, wy4
+                   line wx4, wy5
+                   line wx5, wy5
+                   line wx5, wy6
+                   line wx6, wy6
+                   line wx6, wy7
+                   line wx7, wy7
+                   line wx7, wy8
+                   line wx8, wy8
+                   line wx8, fy
+                   }
+        }
+    }
+
     // At full width the side pieces sit flush in the corners; a narrower bar hangs them free.
     // The pieces are flush with the screen's corners, so their outer edge runs past it. The body
     // unions every shape it holds, so the ends go to the edge itself and the fillets' outer arms
@@ -2016,6 +2104,24 @@ scene Mooi {
                    move nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
                    line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_f; curve min(screen.width, nr_e + n_f), 0 via nr_e, 0 }
         }
+        // ── Each island's foot, as the visualiser ────────────────
+        // Three islands, three borders: every piece's own foot line steps down into the desktop with
+        // the music, filled with its hull and stroked with its own edge, so the visualiser is what the
+        // bar stands on and never a band across the screen. Not on glass, blurred or clear surfaces,
+        // which have no opaque fill to carry the swells.
+        group {
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1
+            BarFoot(if(full_w, 0, nl_a + n_r), nl_e - n_r, n_b)
+        }
+        group {
+            show: bar_frame < 0.5 and bar_surface < 0.5 and ncw > 1
+            BarFoot(nc_a + n_r, nc_e - n_r, n_b)
+        }
+        group {
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1
+            BarFoot(nr_a + n_r, if(full_w, screen.width, nr_e - n_r), n_b)
+        }
+
         // corners (bar.frame = corners): marks at each piece's foot
         group {
             show: bar_frame > 0.5 and bar_frame < 1.5

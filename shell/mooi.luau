@@ -77,6 +77,7 @@ local function apply(s)
     fact.bar_ground = position("bar.ground", s.bar.ground)
     fact.bar_rail = s.bar.rail
     fact.bar_accents = s.bar.accents
+    fact.bar_foot_viz = s.bar.foot_visualizer
     fact.bar_full = (s.bar.mode == "full")
     fact.bar_surface = position("bar.surface", s.bar.surface)
     fact.viz = position("bar.visualizer", s.bar.visualizer)
@@ -1623,13 +1624,15 @@ on("open_claude", function() notch_sync(); run("pleamar", { "--say", "mooi-notch
 on("open_github", function() notch_sync(); run("pleamar", { "--say", "mooi-notch", "emit nt_show 5" }) end)
 
 -- BMO (shell/bmo), the desktop companion: started with the bar — so at login — while
--- companion.bmo is on, started again if he ends while still wanted (later each time he fails at
--- once), asked to quit when it is turned off. One already running (started by hand) is left be.
-local bmo_win, bmo_tries = nil, 0
+-- companion.bmo is on, and started again when he ends for any reason but being turned off (later
+-- each time he fails at once). One already running (started by hand) is left be. A BMO that is
+-- alive but no longer answering — a logic that stopped, or a process that lost the name to a
+-- newer one — is ended and replaced: one that draws nothing is not worth keeping.
+local bmo_win, bmo_tries, bmo_token, bmo_beat, bmo_miss = nil, 0, nil, nil, 0
 function bmo_sync()
     local want = type(settings.companion) == "table" and settings.companion.bmo == true
     if not want then
-        bmo_tries = 0
+        bmo_tries, bmo_token, bmo_beat, bmo_miss = 0, nil, nil, 0
         run("pleamar", { "--say", "bmo", "quit" })
         return
     end
@@ -1640,18 +1643,64 @@ function bmo_sync()
         local started = os.time()
         local said = {}
         mine = spawn("pleamar", { "--scene", shell_dir() .. "/bmo/bmo.plm", "--no-hud", "--stall", "0" }, function(line)
-            if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+            -- his errors are the shell's too: six of them, as they come (before, only an exit kept them)
+            if #said < 6 and string.find(line, "error") then said[#said + 1] = line; log("bmo · " .. line) end
         end, function(_, code)
             if bmo_win ~= mine then return end
-            bmo_win = nil
+            bmo_win, bmo_token, bmo_beat, bmo_miss = nil, nil, nil, 0
             if os.time() - started < 5 then bmo_tries = bmo_tries + 1 else bmo_tries = 0 end
             if code ~= 0 then log("bmo · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
-            if code ~= 0 and bmo_tries < 5 then after(1000 * (bmo_tries + 1), bmo_sync) end
+            -- any end while he is still wanted: a crash, or a quit that was not "turn him off"
+            if bmo_tries < 5 then after(1000 * (bmo_tries + 1), bmo_sync) end
         end, { errors = true })
         bmo_win = mine
     end)
 end
 after(2500, bmo_sync)
+-- Is the BMO we started still the one answering, and still alive? Three ways it is not:
+-- nothing answers to `bmo` twice in a row (the logic is gone, or the name went to another
+-- process), the beat has not moved since the last look (his upkeep counts one every 30 s, so a
+-- still counter is a logic that is stuck — a clock is not used: a scene's time is its own),
+-- or another token answers (a newer BMO took the name). Any of them, and he is wanted but there
+-- is no BMO at all: end ours (or start one) and look again.
+-- (found 2026-10-29: a BMO that ran for two hours, drawing nothing and saving nothing, which no
+-- restart rule could see.)
+local function bmo_guard()
+    if not (type(settings.companion) == "table" and settings.companion.bmo == true) then return end
+    local mine = bmo_win
+    if not mine then
+        run("pleamar", { "--say", "bmo", "get token" }, function(_, code)
+            if code ~= 0 and not bmo_win then bmo_sync() end
+        end)
+        return
+    end
+    local function replace(why)
+        if bmo_win ~= mine then return end
+        log("bmo · " .. why .. "; starting him again")
+        bmo_win, bmo_token, bmo_beat, bmo_miss = nil, nil, nil, 0
+        kill(mine, "term")
+        after(1500, bmo_sync)
+    end
+    run("pleamar", { "--say", "bmo", "get token" }, function(out, code)
+        local token = code == 0 and tonumber((out or ""):match("^%s*([%d.]+)%s*$")) or nil
+        if not token then
+            -- a BMO that has just started has not answered yet: one look is not enough
+            bmo_miss = bmo_miss + 1
+            if bmo_miss >= 2 then replace("not answering") end
+            return
+        end
+        bmo_miss = 0
+        if bmo_token and token ~= bmo_token then replace("another one has the name") return end
+        bmo_token = bmo_token or token
+        run("pleamar", { "--say", "bmo", "get beat" }, function(b, bc)
+            local beat = bc == 0 and tonumber((b or ""):match("^%s*([%d.]+)%s*$")) or nil
+            if not beat then return end
+            if bmo_beat ~= nil and beat == bmo_beat then replace("its logic stopped") return end
+            bmo_beat = beat
+        end)
+    end)
+end
+every(30000, bmo_guard)
 -- What BMO hears from the bar (bmo.luau "Desktop awareness"): `emit tell N` while he is wanted.
 local function bmo_tell(n)
     if type(settings.companion) == "table" and settings.companion.bmo == true then

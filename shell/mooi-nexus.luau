@@ -190,6 +190,9 @@ local GO = {
     [30] = function() close(); bar("emit open_notes") end,
     -- the spine's own connections shelf (D100), beside its tab
     [50] = function() bar("fact isl_sy " .. tostring(math.floor(screen.h / 2 - 140)), "fact isl_shelf true", "fact open shnet"); close() end,
+    -- Hyprland reads its config again, then the bar comes back on it (bin/mooi restart-hypr). Asked
+    -- first and ended after: the deck is the bar's child, so the refresh takes it away mid-slide.
+    [60] = function() launch("mooi", { "restart-hypr" }); close("restarting Hyprland") end,
 }
 on("nx_go", function(v)
     local f = GO[math.floor(tonumber(v) or -1)]
@@ -207,6 +210,7 @@ local BY_CODE = {}
 for id, c in pairs(CODE) do BY_CODE[c] = id end
 local parts, hidden
 local sizes = {}             -- each card's size along a strip (✎ ⇔): id → s · m · l
+local BARS = { eight = 8, twelve = 12, sixteen = 16, twentyfour = 24 }   -- nexus.bars, the edge's bars
 local function read_parts()
     local n = type(settings.nexus) == "table" and settings.nexus or {}
     parts = deck.clean_parts(n.parts)
@@ -215,6 +219,7 @@ local function read_parts()
     fact.dk_rows = tonumber(n.rows) == 2 and 2 or 1
     fact.nx_large = n.profile == "large"
     fact.dk_viz = n.visualiser ~= false
+    fact.dk_bars = BARS[n.bars] or 16
     fact.dk_notches = n.notches ~= false
     sizes = deck.clean_sizes(n.sizes)
 end

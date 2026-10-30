@@ -64,6 +64,10 @@ M.SETTERS = {
     -- Hyprland 0.57, the Nexus's cards, the notch, Claude
     "desktop.blur_variant", "nexus.rows", "nexus.profile", "nexus.visualiser", "notch.on",
     "nexus.notches", "claude.model",
+    -- the bar's islands' feet as the visualiser (bar.foot_visualizer)
+    "bar.foot_visualizer",
+    -- how many bars the Control Nexus deck's border is cut into (nexus.bars)
+    "nexus.bars",
 }
 
 local function row_of(path)
