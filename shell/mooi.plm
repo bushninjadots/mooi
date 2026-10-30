@@ -4690,6 +4690,21 @@ scene Mooi {
             box { from: bs, st_res; size: W - 2 * bs, H - st_res - bt; corner: fr; stroke: if(st_frame_edge > 0.5, 1.6, 1)
                   color: if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)); opacity: st_frame_op }
         }
+        // ── The frame's border, as the same border as the bar ──────
+        // The two used to be separate lines that happened not to move together. They are one edge:
+        // the bar's foot is this frame's top beside it, and these three runs are the rest of the
+        // same, from the corners the bar's foot ends at, down the sides and round the foot of the
+        // screen. Same facts as the bar (ui/rim.plm), so the rim runs out of the bar, round the
+        // frame, and back into it — the frame has only its band to lift into, so the reach is that.
+        group {
+            show: frame_on and st_frame_edge < 1.5
+            rim.Edge(st_res + fr, H - bt - fr, st_res, H, bs, -1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
+                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), true)
+            rim.Edge(st_res + fr, H - bt - fr, st_res, H, W - bs, 1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
+                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), true)
+            rim.Edge(bs + fr, W - bs - fr, 0, W, H - bt, 1, clamp(round((W - 2 * bs) / 16), 6, 32), fcol, fl.phos,
+                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), false)
+        }
         group {
             show: frame_on and not fstill
             body {

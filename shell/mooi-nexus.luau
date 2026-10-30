@@ -539,7 +539,8 @@ local function take_viz()
     for i = 0, 31 do fact["dv" .. i] = t.bands[i + 1] end
 end
 pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
-every(500, function()
+every(400, function()
+    if fact.dk_open then take_viz() end   -- the watch coalesces quick writes; this read keeps it true
     if fact.dk_open and fact.dk_viz and viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then
         viz_seq, viz_at = nil, 0
         rest_viz(); rest_rim()

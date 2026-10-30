@@ -294,7 +294,8 @@ local function take_viz()
     for i = 0, 23 do fact["mv" .. i] = bands[i + 1] end
 end
 pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
-every(500, function()
+every(400, function()
+    take_viz()   -- the watch coalesces quick writes; this read is what keeps the panel true
     if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; rest_viz() end
 end)
 local function viz()
