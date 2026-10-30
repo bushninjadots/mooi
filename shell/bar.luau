@@ -410,7 +410,12 @@ return function(ctx)
         rim_glow = s.music.rim_glow == true and 1 or 0
         local want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
         local want_swell = s.frame.on and s.frame.music
-        if playing and (want_viz or want_swell or want_rim) and not ctx.saving() and not viz_missing then listen() else hush() end
+        -- The frame's music follows whatever is audible, not only what the media module knows
+        -- about: with frame.music on, cava runs whether or not that module says anything is
+        -- playing, so a browser, a game or a video moves the frame too. The rim and the bar's
+        -- own visualiser still start with the module. Neither runs while the saver is on.
+        local want_audio = want_viz or want_swell or want_rim
+        if want_audio and (playing or want_swell) and not ctx.saving() and not viz_missing then listen() else hush() end
     end
 
     -- ── Actions ────────────────────────────────────────────────

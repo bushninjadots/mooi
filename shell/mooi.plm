@@ -1756,8 +1756,11 @@ scene Mooi {
     prop flvl = 0 ~fl.level
     prop fhi = 0 ~fl.level
     prop fphs = 0 ~fl.level
-    follow flvl = if(frame_music and med.playing, fbass, 0)
-    follow fhi = if(frame_music and med.playing, fhigh, 0)
+    // cava, not the media module: the frame's music follows whatever is audible (fbass/fhigh are
+    // the analysis in bar.luau), so a track from a browser, a video or anything else the media
+    // module does not track still moves the frame. `frame.music` is the only switch.
+    follow flvl = if(frame_music, fbass, 0)
+    follow fhi = if(frame_music, fhigh, 0)
     follow fphs = fph
     let W = screen.width
     let H = screen.height
@@ -2013,7 +2016,7 @@ scene Mooi {
     let s_all = st_notch and frame_on and full_w and nlw > 1 and ncw > 1 and nrw > 1
     // frame.motion means *this*: the frame is one frame always, and only while a track plays do
     // its band and its border move (frame.music, and frame.style picks which of the three).
-    let fmove = frame_music and med.playing
+    let fmove = frame_music and (flvl > 0.01 or fhi > 0.01)
     // ── One island's foot, as the visualiser ─────────────────────
     // An island's bottom border is the visualiser: eight bars cut from that line itself, joined at
     // their feet, stepping down into the desktop with the music — the bar's sixteen cava bands, two
