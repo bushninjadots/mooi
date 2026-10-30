@@ -72,15 +72,15 @@ library Viz {
     component LED(x: number, y: number, w: number, h: number, t1: color, t2: color, dim: color, still: bool = false) {
         size: w, h
         let cwk = w / 16
-        let rh = h / 8
+        let rh = h / 4
         let dr = min(cwk, rh) * 0.32
-        repeat k in 0..128 {
+        repeat k in 0..63 {
             let col = mod(k, 16)
             let row = floor(k / 16)
             let lv = if(still, 0.2, clamp(pick(col, vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), 0, 1))
-            let lit = lv * 8 > row + 0.5
+            let lit = lv * 4 > row + 0.5
             ellipse { at: x + col * cwk + cwk / 2, y + h - row * rh - rh / 2; radius: dr
-                      color: if(lit, if(row >= 6, t2, t1), dim); opacity: if(lit, 1, 0.5) }
+                      color: if(lit, if(row >= 3, t2, t1), dim); opacity: if(lit, 1, 0.5) }
         }
     }
 

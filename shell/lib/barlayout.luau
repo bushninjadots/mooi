@@ -268,7 +268,7 @@ function M.layout(cfg, ctx)
                 x = x + g.w + gap
             else
                 if i > 1 and not after_spacer and joined then
-                    out.dividers[#out.dividers + 1] = { x = x + gap / 2 - gap, strong = true,
+                    out.dividers[#out.dividers + 1] = { x = x + gap / 2 - gap, strong = true, gap = gap,
                         p = M.INDEX[last], m = M.INDEX[g.ids[1]] }
                 end
                 after_spacer = false
@@ -278,7 +278,7 @@ function M.layout(cfg, ctx)
                     a = M.INDEX[g.ids[1]], b = M.INDEX[g.ids[#g.ids]] }
                 local mx = x
                 for j, id in ipairs(g.ids) do
-                    if j > 1 then out.dividers[#out.dividers + 1] = { x = mx, strong = false, p = M.INDEX[g.ids[j - 1]], m = M.INDEX[id] } end
+                    if j > 1 then out.dividers[#out.dividers + 1] = { x = mx, strong = false, gap = 0, p = M.INDEX[g.ids[j - 1]], m = M.INDEX[id] } end
                     out.x[id] = mx
                     mx = mx + g.widths[j]
                 end
@@ -323,9 +323,9 @@ function M.layout(cfg, ctx)
         -- the clusters' own seams, where one cluster ends and the next begins (a list's ends are
         -- modules: trim() leaves no spacer there)
         local function ends(gs) return M.INDEX[gs[#gs].ids[#gs[#gs].ids]], M.INDEX[gs[1].ids[1]] end
-        if #L > 0 and #C > 0 then out.dividers[#out.dividers + 1] = { x = left_x + left_w + (cx - left_x - left_w) / 2, strong = true, p = (ends(L)), m = select(2, ends(C)) } end
-        if #C > 0 and #Rg > 0 then out.dividers[#out.dividers + 1] = { x = cx + center_w + (right_x - cx - center_w) / 2, strong = true, p = (ends(C)), m = select(2, ends(Rg)) } end
-        if #L > 0 and #C == 0 and #Rg > 0 then out.dividers[#out.dividers + 1] = { x = left_x + left_w + gap / 2, strong = true, p = (ends(L)), m = select(2, ends(Rg)) } end
+        if #L > 0 and #C > 0 then out.dividers[#out.dividers + 1] = { x = left_x + left_w + (cx - left_x - left_w) / 2, strong = true, gap = cx - left_x - left_w, p = (ends(L)), m = select(2, ends(C)) } end
+        if #C > 0 and #Rg > 0 then out.dividers[#out.dividers + 1] = { x = cx + center_w + (right_x - cx - center_w) / 2, strong = true, gap = right_x - cx - center_w, p = (ends(C)), m = select(2, ends(Rg)) } end
+        if #L > 0 and #C == 0 and #Rg > 0 then out.dividers[#out.dividers + 1] = { x = left_x + left_w + gap / 2, strong = true, gap = right_x - left_x - left_w, p = (ends(L)), m = select(2, ends(Rg)) } end
         out.panel = { x = ctx.inset - 6, w = ctx.screen - 2 * ctx.inset + 12 }
     end
     out.overflow = (#C > 0 and center_w > hi - lo) or (left_x + left_w > right_x)

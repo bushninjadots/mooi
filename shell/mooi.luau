@@ -55,6 +55,14 @@ local function position(path, value)
 end
 
 local function apply(s)
+    -- A settings signal can arrive more than once for one write (the file service reports a
+    -- move and a close, and a control's own write comes back through the watch). This is the
+    -- scene's largest fact write, so only paint it when something it reads really changed;
+    -- `day` and `on_battery` ride along because they re-light the same facts from outside.
+    local sig = json.encode(s) .. "|" .. tostring(day) .. "|" .. tostring(on_battery)
+    if sig == applied_sig then return end
+    applied_sig = sig
+
     fact.max_results = s.command.max_results
     fact.show_clock = s.bar.modules.clock.show       -- the clock module's own switch
     fact.tray_style = position("tray.style", s.tray.style)
@@ -77,7 +85,6 @@ local function apply(s)
     fact.bar_ground = position("bar.ground", s.bar.ground)
     fact.bar_rail = s.bar.rail
     fact.bar_accents = s.bar.accents
-    fact.bar_foot_viz = s.music.rim
     fact.music_rim = s.music.rim
     fact.music_rim_gain = s.music.rim_gain / 100
     fact.music_rim_glow = s.music.rim_glow
@@ -143,6 +150,10 @@ local function load_settings()
         return
     end
     local raw = sys.ask("files.read", FILE)
+    -- The same file read again (a second watch callback, or `recolor` after a palette write)
+    -- cannot change anything: parse and repaint only when the text differs.
+    if type(raw) == "string" and raw == last_raw then return end
+    last_raw = raw
     local s, problems, notes, state = config.parse(raw, json.decode)
     for _, n in ipairs(notes) do log("settings · " .. n) end
     for _, p in ipairs(problems) do log("settings · problem · " .. p) end
@@ -174,6 +185,10 @@ end
 -- palette change can never move a surface or change a spring.
 local PALETTE = "palette.json"
 local palette = nil     -- what theme/palette.json.hbs wrote (Matugen, dark scheme)
+local applied_sig = nil -- the settings `apply` last painted, so one write paints once
+local last_raw = nil    -- settings.json as last parsed
+local painted_sig = nil -- the tokens `paint` last wrote
+local ferro_sig = nil   -- the bar's roles `paint_ferro` last wrote
 
 
 local function load_palette()
@@ -188,6 +203,18 @@ end
 -- (the scene compile catches either one going missing). The extended names in
 -- theme/tokens.plm (`background`, `chassis`, …) are aliases of these, not facts of their own.
 local function paint(colours)
+    -- 42 facts, one per token channel: write them only when a colour actually moved. Pleamar
+    -- re-reads the properties that read a fact when it changes, so repeating a palette's own
+    -- values is the most expensive no-op in the scene.
+    local keys = {}
+    for k in pairs(colours) do keys[#keys + 1] = k end
+    table.sort(keys)
+    local sig = {}
+    for _, k in ipairs(keys) do sig[#sig + 1] = k .. theme.to_hex(colours[k]) end
+    sig = table.concat(sig, ";")
+    if sig == painted_sig then return end
+    painted_sig = sig
+
     -- Original brief tokens (backward compatible)
     local c = colours["bg.primary"]
     fact.c_bg_primary_r = c.r; fact.c_bg_primary_g = c.g; fact.c_bg_primary_b = c.b
@@ -229,13 +256,25 @@ local apps_said = nil        -- apps.json as last written (written again only wh
 local function paint_ferro(reason)
     local out, why = ferro.resolve(settings.theme.source, palette, settings.theme.signal, alert, ferro.options(settings))
     roles = out
-    bar_palette = { phos = ferro.to_hex(out.phos), ember = ferro.to_hex(out.ember), trace = ferro.to_hex(out.trace) }
-    if sync_desktop then sync_desktop() end
     -- Your apps (apps.*): the palette in Matugen's role names, for `bin/mooi apps-sync` (the
     -- theme watch) to render into Kitty, GTK and Qt. Not the Alert re-light: that is the bar's.
     local mode = (type(palette) == "table" and palette.mode == "light") and "light" or "dark"
     fact.light = mode == "light"
     if day ~= fact.light then day = fact.light; apply(settings) end
+    -- 57 more facts (nineteen roles, three channels each). A settings watch and the palette
+    -- watch can both land for one theme-sync; only the first one has anything to paint.
+    local fsig = {}
+    for _, role in ipairs(ferro.ROLES) do
+        local c = out[role]
+        fsig[#fsig + 1] = role .. ":" .. tostring(c.r) .. "," .. tostring(c.g) .. "," .. tostring(c.b)
+    end
+    fsig[#fsig + 1] = mode
+    fsig[#fsig + 1] = tostring(alert)
+    fsig = table.concat(fsig, ";")
+    if fsig == ferro_sig then return end
+    ferro_sig = fsig
+    bar_palette = { phos = ferro.to_hex(out.phos), ember = ferro.to_hex(out.ember), trace = ferro.to_hex(out.trace) }
+    if sync_desktop then sync_desktop() end
     if not alert then
         local doc = { kitty = settings.apps.kitty, gtk = settings.apps.gtk, qt = settings.apps.qt, mode = mode,
                       colors = appcolors.material(out, mode) }
@@ -289,7 +328,7 @@ end)
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
 end)
-on("recolor", function() load_palette(); load_settings(); apply_theme("asked to recolour") end)
+on("recolor", function() load_palette(); apply_theme("asked to recolour") end)
 -- Alert: a critical battery re-lights the whole bar (Ferrolume's Alert theme).
 sys.watch("battery", function(b)
     local unplugged = type(b) == "table" and b.present == true and b.charging ~= true

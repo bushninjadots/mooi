@@ -502,6 +502,21 @@ test("full mode: one panel, dividers between groups, boxes for the bays", functi
     for _, d in ipairs(out.dividers) do if d.strong then strong = strong + 1 end end
     eq(strong, 2, "between clock and power+core, and at the clusters' seam")
 end)
+test("dividers carry the line and gap the layout computed", function()
+    local out = barlayout.layout({ left = { "workspaces" }, center = { "media" }, right = { "clock", "power+core" }, mode = "full" }, ctx())
+    local strong = {}
+    for _, d in ipairs(out.dividers) do
+        eq(type(d.x), "number", "a line")
+        eq(type(d.gap), "number", "a gap")
+        if d.strong then strong[#strong + 1] = d
+        else eq(d.x, out.x.core, "a member's seam"); eq(d.gap, 0, "no gap inside a group") end
+    end
+    eq(#strong, 3, "a seam between each pair of groups")
+    for _, d in ipairs(strong) do
+        assert(d.gap > 0, "a seam has room")
+        assert(d.x > out.panel.x and d.x < out.panel.x + out.panel.w, "and sits on the panel")
+    end
+end)
 test("the media follows its mode, and with nothing playing stays, collapses or leaves", function()
     local function mw(t) local c = ctx(t); return barlayout.layout({ left = {}, center = { "media" }, right = {}, mode = "islands" }, c) end
     eq(barlayout.width("media", ctx({ playing = true, media_mode = "full" })), 280, "full")

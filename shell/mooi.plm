@@ -575,7 +575,7 @@ scene Mooi {
     fact fph = 0
     fact pw = 0
     model frames max 24 { x: number; w: number; style: number; a: number; b: number }
-    model dividers max 40 { x: number; strong: bool; p: number; m: number }
+    model dividers max 40 { x: number; strong: bool; p: number; m: number; gap: number }
     // What the modules read (shell/bar.luau).
     fact res_cpu = 0
     fact res_mem = 0
@@ -1705,13 +1705,16 @@ scene Mooi {
     // one (ARCHITECTURE.md). The bar takes the keyboard only while an island, the side panel
     // or the mark's menu is up — except the command surface in its window-actions mode, where
     // the arrows and Enter belong to the actions (§13).
-    // As tall as the screen, so the bar's menu and edit shelf can open below the strip.
-    // Anchored to the top, it keeps the strip's reserve (a full-height surface reserves along
-    // its own edge only). The screen frame is its own surface (frame_surface, under the
-    // windows): its sides and foot reserve nothing, lying in the windows' own outer gap
-    // (Hyprland's gaps_out, 12 px here).
+    // Only as tall as the strip and its shadow, anchored to the top so it keeps the strip's
+    // reserve. Everything that opens below the strip — the edit shelf, quick notes, the islands,
+    // the side panel, the spine's shelves, the command membrane — is drawn on popup_surface, a
+    // surface of its own above this one (below). Pleamar damages the surface a shape is painted
+    // on, so an animating module (cava, the clock, a hovered glow) now repaints 1920×160 instead
+    // of the whole screen: measured, an active frame cost 5–6 ms paint and 1.4–1.6 ms compose
+    // for the full layer. The height is a literal, the tallest the config allows: bar.offset 40
+    // + bar.height 44 + the shadow and the music's rim, rounded up.
     surface {
-        size: full, full
+        size: full, 160
         anchor: top
         // It reserves nothing itself (-1: it lies over the whole screen, whatever else keeps
         // room): the strip the windows leave it is the reserve surfaces' (below), which change
@@ -1723,25 +1726,8 @@ scene Mooi {
     }
 
     // ── A press outside a panel closes it (D55) ───────────────
-    // A layer surface does not hear what happens outside it, so a panel used to be dismissed only
-    // by its own ×, Escape or the idle timer: a press on the desktop did nothing at all, which is
-    // what "my clicks are not registering" felt like. The bar's surface is the whole screen in any
-    // case, so this plate — under everything else drawn in it — takes the presses the open
-    // panel's own controls do not. It is declared first so every panel, its rows and its buttons
-    // are above it; a press inside a panel never reaches it. The overview, the shutter and the
-    // Atlas are surfaces of their own (overlay), above this one: they never see it.
-    group {
-        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd
-        zone box dismiss { from: 0, 0; size: screen.width, screen.height; role: region; label: "Close the open panel" }
-        on press dismiss while qn_open { qn_open = false }
-        on press dismiss while mark_open { mark_open = false }
-        on press dismiss while side == notes { side = none }
-        on press dismiss while open == window { open = none }
-        on press dismiss while open == system { open = none }
-        on press dismiss while open == command { open = none }
-        on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd { open = none }
-        on press dismiss while stash_pin { stash_pin = false }
-    }
+    // The plate is on popup_surface, with the panels it dismisses (below): it must lie under
+    // them, and this surface is now only as tall as the strip.
 
     // ── The screen frame ──────────────────────────────────────
     // ArchEclipse's Tide, in mooi: one band round the screen whose top is the bar's own strip,
@@ -1792,10 +1778,11 @@ scene Mooi {
     // ── The telemetry rail ────────────────────────────────────
     group {
         show: bar_rail and not st_notch
-        // Keep the rail texture sparse enough to be cheap on every frame. The 16 px
-        // pitch still spans a 1920 px display, while avoiding 40 always-present ellipses.
-        repeat k in 0..120 {
-            ellipse { at: rx0 + 28 + k * 16, fl.rail_y; radius: 0.8; color: fl.trace_dim; show: rx0 + 28 + k * 16 < rx1 - 28 }
+        // A sparse rail: one tick every 72 px (24 shapes across 1920 px) instead of 121. The
+        // texture reads the same at a glance and the full panel no longer carries a shape per
+        // 16 px through every repaint.
+        repeat k in 0..23 {
+            ellipse { at: rx0 + 28 + k * 72, fl.rail_y; radius: 0.9; color: fl.trace_dim; show: rx0 + 28 + k * 72 < rx1 - 28 }
         }
         line { from: rx0 + 4, fl.rail_base; to: rx1 - 4, fl.rail_base; width: 1.2; color: fl.trace }
         ellipse { at: rx0, fl.rail_base; radius: 2.6; color: fl.ground }
@@ -1898,14 +1885,14 @@ scene Mooi {
             dispersion: 35% + 165% * st_aberr
             smoke: 1% * if(bar_surface < 1.5, st_smoke, st_smoke + 8)
             frost: 1% * st_frost
-            shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * (bar_surface < 2.5)
+            shadow: 0, st_sh_y, min(st_sh_blur, 16), 100% * st_sh_a * (bar_surface < 2.5)
             show: not mech
             box { from: hc_x, pt; size: if(helix_edges, hx_a + 10 - hc_x, hc_w), fl.mod_h; corner: hc_r }
             box { from: hx_b - 10, pt; size: hc_x + hc_w - hx_b + 10, fl.mod_h; corner: hc_r; show: helix_edges }
         }
         body {
             gradient: 0, pt to 0, pb, fl.steel_500, fl.steel_700 22%, fl.steel_900
-            shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+            shadow: 0, st_sh_y, min(st_sh_blur, 16), 100% * st_sh_a
             show: mech
             box { from: hc_x - 5, pt; size: if(helix_edges, hx_a + 10 - hc_x + 5, hc_w + 10), fl.mod_h; corner: hc_r }
             box { from: hx_b - 10, pt; size: hc_x + hc_w - hx_b + 15, fl.mod_h; corner: hc_r; show: helix_edges }
@@ -1917,43 +1904,18 @@ scene Mooi {
             opacity: pick(bar_surface, 1, 0.62, 0.62, 0, 1)
             // <gen:slices>
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 0), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 0) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 0) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 0) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 0) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 0) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 0) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 0) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 0) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 0) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 0) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 0) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 0) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 0) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 6), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 6) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 6) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 6) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 6) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 6) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 6) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 6) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 6) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 6) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 6) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 6) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 6) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 6) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 12), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 12) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 12) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 12) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 12) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 12) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 12) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 12) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 12) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 12) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 12) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 12) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 12) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 12) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 18), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 18) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 18) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 18) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 18) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 18) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 18) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 18) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 18) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 18) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 18) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 18) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 18) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 18) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 24), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 24) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 24) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 24) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 24) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 24) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 24) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 24) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 24) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 24) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 24) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 24) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 24) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 24) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 30), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 30) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 30) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 30) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 30) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 30) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 30) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 30) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 30) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 30) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 30) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 30) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 30) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 30) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 36), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 36) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 36) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 36) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 36) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 36) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 36) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 36) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 36) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 36) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 36) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 36) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 36) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 36) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 42), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 42) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 42) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 42) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 42) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 42) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 42) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 42) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 42) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 42) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 42) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 42) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 42) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 42) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 48), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 48) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 48) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 48) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 48) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 48) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 48) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 48) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 48) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 48) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 48) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 48) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 48) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 48) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 54), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 54) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 54) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 54) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 54) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 54) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 54) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 54) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 54) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 54) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 54) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 54) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 54) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 54) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 60), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 60) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 60) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 60) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 60) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 60) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 60) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 60) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 60) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 60) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 60) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 60) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 60) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 60) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 66), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 66) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 66) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 66) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 66) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 66) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 66) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 66) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 66) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 66) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 66) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 66) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 66) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 66) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 72), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 72) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 72) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 72) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 72) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 72) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 72) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 72) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 72) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 72) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 72) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 72) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 72) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 72) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 78), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 78) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 78) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 78) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 78) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 78) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 78) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 78) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 78) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 78) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 78) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 78) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 78) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 78) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 84), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 84) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 84) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 84) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 84) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 84) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 84) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 84) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 84) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 84) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 84) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 84) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 84) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 84) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 90), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 90) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 90) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 90) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 90) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 90) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 90) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 90) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 90) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 90) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 90) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 90) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 90) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 90) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 96), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 96) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 96) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 96) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 96) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 96) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 96) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 96) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 96) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 96) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 96) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 96) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 96) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 96) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 102), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 102) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 102) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 102) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 102) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 102) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 102) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 102) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 102) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 102) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 102) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 102) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 102) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 102) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 108), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 108) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 108) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 108) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 108) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 108) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 108) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 108) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 108) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 108) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 108) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 108) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 108) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 108) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 114), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 114) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 114) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 114) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 114) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 114) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 114) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 114) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 114) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 114) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 114) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 114) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 114) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 114) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 120), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 120) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 120) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 120) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 120) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 120) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 120) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 120) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 120) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 120) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 120) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 120) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 120) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 120) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 126), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 126) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 126) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 126) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 126) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 126) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 126) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 126) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 126) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 126) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 126) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 126) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 126) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 126) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 132), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 132) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 132) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 132) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 132) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 132) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 132) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 132) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 132) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 132) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 132) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 132) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 132) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 132) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 138), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 138) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 138) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 138) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 138) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 138) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 138) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 138) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 138) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 138) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 138) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 138) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 138) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 138) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 144), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 144) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 144) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 144) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 144) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 144) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 144) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 144) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 144) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 144) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 144) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 144) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 144) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 144) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 150), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 150) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 150) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 150) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 150) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 150) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 150) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 150) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 150) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 150) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 150) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 150) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 150) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 150) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 156), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 156) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 156) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 156) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 156) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 156) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 156) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 156) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 156) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 156) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 156) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 156) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 156) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 156) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 162), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 162) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 162) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 162) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 162) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 162) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 162) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 162) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 162) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 162) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 162) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 162) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 162) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 162) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 168), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 168) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 168) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 168) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 168) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 168) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 168) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 168) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 168) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 168) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 168) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 168) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 168) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 168) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 174), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 174) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 174) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 174) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 174) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 174) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 174) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 174) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 174) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 174) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 174) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 174) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 174) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 174) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 180), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 180) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 180) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 180) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 180) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 180) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 180) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 180) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 180) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 180) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 180) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 180) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 180) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 180) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 186), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 186) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 186) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 186) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 186) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 186) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 186) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 186) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 186) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 186) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 186) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 186) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 186) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 186) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 192), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 192) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 192) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 192) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 192) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 192) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 192) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 192) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 192) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 192) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 192) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 192) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 192) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 192) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 198), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 198) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 198) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 198) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 198) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 198) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 198) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 198) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 198) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 198) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 198) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 198) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 198) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 198) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 204), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 204) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 204) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 204) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 204) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 204) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 204) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 204) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 204) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 204) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 204) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 204) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 204) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 204) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 210), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 210) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 210) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 210) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 210) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 210) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 210) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 210) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 210) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 210) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 210) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 210) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 210) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 210) < hx_b }
             box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 216), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 216) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 216) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 216) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 216) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 216) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 216) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 216) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 216) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 216) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 216) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 216) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 216) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 216) < hx_b }
-            box { color: pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700); from: (hx_a + 220), min(mix(pt, fl.cy - amp * sin((90 - ((hx_a + 220) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 220) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 220) - 2) / 14, 0, 1))), mix(pb, fl.cy + amp * sin((90 - ((hx_a + 220) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 220) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 220) - 2) / 14, 0, 1)))); size: 6.4, max(0.5, abs(mix(pb, fl.cy + amp * sin((90 - ((hx_a + 220) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 220) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 220) - 2) / 14, 0, 1))) - mix(pt, fl.cy - amp * sin((90 - ((hx_a + 220) + 2 - chain_x) / fl.pitch * fl.dna_twist + spin)), smooth(0, 1, clamp(((hx_a + 220) + 2 - hx_a) / 14, 0, 1) * clamp((hx_b - (hx_a + 220) - 2) / 14, 0, 1))))); show: helix_edges and (hx_a + 220) < hx_b }
             // </gen:slices>
         }
         // The edge: straight runs and rounded ends — open where they become the strands.
@@ -2119,15 +2081,17 @@ scene Mooi {
         // iNiR draws the frame as one field and publishes the bar's bodies into it, so the join
         // is the frame's own (IrisFrame.placeBodies); the border is then the field's boundary,
         // drawn once. Pleamar draws shape by shape and surface by surface, so the same boundary
-        // is written out here as one closed path: from where the left side meets the left piece's
-        // foot, along that foot, up its flank to the gap line, across each gap, down and round
-        // every notch, up the last flank, down the screen's right side, round both feet corners,
-        // and back up the left side to the point it started at. One stroke, one colour, one
+        // is written out as one path: from above the screen, down the left side to the left
+        // piece's foot, along that foot, up its flank to the gap line, across each gap, down and
+        // round every notch, up the last flank and down the screen's right side. Its top half is
+        // here, on the strip's surface; frame_surface draws the sides and the foot (the strip is
+        // only as tall as the bar), in the same colour and width. One stroke, one colour, one
         // width, no corner to line up — which is what "one whole frame" means.
         group {
             show: s_all
             path { stroke: st_owidth; color: nec
-                   move nl_a, n_b - n_r
+                   move nl_a, -1
+                   line nl_a, n_b - n_r
                    curve nl_a + n_r, n_b via nl_a, n_b
                    line nl_e - n_r, n_b
                    curve nl_e, n_b - n_r via nl_e, n_b
@@ -2143,10 +2107,7 @@ scene Mooi {
                    curve nr_a + n_r, n_b via nr_a, n_b
                    line nr_e - n_r, n_b
                    curve nr_e, n_b - n_r via nr_e, n_b
-                   line nr_e, H - bt - st_frame_r
-                   curve nr_e - st_frame_r, H - bt via nr_e, H - bt
-                   line nl_a + st_frame_r, H - bt
-                   curve nl_a, H - bt - st_frame_r via nl_a, H - bt
+                   line nr_e, -1
                    close }
         }
 
@@ -2225,13 +2186,14 @@ scene Mooi {
     // The hairlines between the members of a group (and, in full mode, between groups); on a
     // mechanism a group's seam in the full panel is a vent of three slots.
     for d in dividers {
-        let pe = pick(d.p, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(d.p, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)            // where the module before the divider ends
-        let ms = pick(d.m, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper)                          // where the one after it begins
-        let dx = if(d.strong, (pe + ms) / 2, ms)
+        // The layout already computed this line in `d.x` (a module's seam, or the midpoint between
+        // two groups). Re-deriving it from 29 module positions cost three `pick` chains per divider
+        // on every relayout.
+        let dx = d.x
         line { from: dx, fl.top + if(d.strong, 5, 8); to: dx, fl.top + fl.mod_h - if(d.strong, 5, 8); width: 1
-               color: if(d.strong, fl.trace, fl.trace_dim); show: not (mech and d.strong) and (not d.strong or ms - pe < 40) }
+               color: if(d.strong, fl.trace, fl.trace_dim); show: not (mech and d.strong) and (not d.strong or d.gap < 40) }
         group {
-            show: mech and d.strong and ms - pe < 40
+            show: mech and d.strong and d.gap < 40
             box { at: dx - 3, fl.cy; size: 1.6, 16; corner: 0.8; color: fl.ground }
             box { at: dx, fl.cy; size: 1.6, 16; corner: 0.8; color: fl.ground }
             box { at: dx + 3, fl.cy; size: 1.6, 16; corner: 0.8; color: fl.ground }
@@ -2265,19 +2227,20 @@ scene Mooi {
             let x_last = chain_x + (spaces.count - 1 - pos) * fl.pitch
             line { from: max(frame_x, x_first - 12), fl.cy; to: min(frame_x + chain_span, x_last + 12), fl.cy
                    width: 1; color: fl.trace_dim; show: not helix_edges }
-            // The strands: sampled every 6 px to keep the helix smooth with fewer segments, drawn twice —
+            // The strands: sampled every 12 px (eighteen per run) to keep the helix smooth with
+            // half the segments it used to carry, drawn twice —
             // the halves in front after the rungs. With the helix as the panel's edges they run
             // a little wider (the ramps into the straight), and nothing fades at the ends.
-            repeat k in 0..35 {
-                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 6
-                let xm.$k = x0.$k + 3
+            repeat k in 0..17 {
+                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 12
+                let xm.$k = x0.$k + 6
                 let e0.$k = if(helix_edges, clamp((x0.$k - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k) / 14, 0, 1), 1)
-                let e1.$k = if(helix_edges, clamp((x0.$k + 6 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 6) / 14, 0, 1), 1)
+                let e1.$k = if(helix_edges, clamp((x0.$k + 12 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 12) / 14, 0, 1), 1)
                 let w0.$k = e0.$k * e0.$k * (3 - 2 * e0.$k)
                 let w1.$k = e1.$k * e1.$k * (3 - 2 * e1.$k)
                 let p0.$k = 90 - (x0.$k - chain_x) / fl.pitch * fl.dna_twist + spin
-                let p1.$k = p0.$k - 6 / fl.pitch * fl.dna_twist
-                let z.$k = cos(p0.$k - 3 / fl.pitch * fl.dna_twist)
+                let p1.$k = p0.$k - 12 / fl.pitch * fl.dna_twist
+                let z.$k = cos(p0.$k - 6 / fl.pitch * fl.dna_twist)
                 let fade.$k = if(helix_edges, 1, clamp(min(xm.$k - frame_x, frame_x + chain_span - xm.$k) / 18, 0, 1) * clamp(min(xm.$k - x_first + 0.5 * fl.pitch, x_last + 0.5 * fl.pitch - xm.$k) / 10, 0, 1))
                 let on.$k = x0.$k < if(helix_edges, hx_b, frame_x + chain_span)
                 let ya0.$k = mix(pt, fl.cy - amp * sin(p0.$k), w0.$k)
@@ -2286,9 +2249,9 @@ scene Mooi {
                 let yb1.$k = mix(pb, fl.cy + amp * sin(p1.$k), w1.$k)
                 let ca.$k = mix(fl.trace, mix(fl.phos, fl.trace_dim, 0.6), w0.$k)
                 let cb.$k = mix(fl.trace, mix(fl.ember, fl.trace_dim, 0.6), w0.$k)
-                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 12, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
                        width: if(helix_edges, 1.3, 0.8); color: ca.$k; opacity: fade.$k; show: on.$k and (z.$k < 0 or w0.$k < 0.5) }
-                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 12, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
                        width: if(helix_edges, 1.3, 0.8); color: cb.$k; opacity: fade.$k; show: on.$k and (z.$k >= 0 or w0.$k < 0.5) }
             }
             for w in spaces {
@@ -2298,25 +2261,25 @@ scene Mooi {
                         opacity: clamp(min(ax - frame_x, frame_x + chain_span - ax) / 18, 0, 1)
                         DnaBack(w, d, spin, clamp(1 - abs(d), 0, 1), amp) }
             }
-            repeat k in 0..35 {
-                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 6
-                let xm.$k = x0.$k + 3
+            repeat k in 0..17 {
+                let x0.$k = if(helix_edges, hx_a, frame_x) + k * 12
+                let xm.$k = x0.$k + 6
                 let e0.$k = if(helix_edges, clamp((x0.$k - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k) / 14, 0, 1), 1)
-                let e1.$k = if(helix_edges, clamp((x0.$k + 6 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 6) / 14, 0, 1), 1)
+                let e1.$k = if(helix_edges, clamp((x0.$k + 12 - hx_a) / 14, 0, 1) * clamp((hx_b - x0.$k - 12) / 14, 0, 1), 1)
                 let w0.$k = e0.$k * e0.$k * (3 - 2 * e0.$k)
                 let w1.$k = e1.$k * e1.$k * (3 - 2 * e1.$k)
                 let p0.$k = 90 - (x0.$k - chain_x) / fl.pitch * fl.dna_twist + spin
-                let p1.$k = p0.$k - 6 / fl.pitch * fl.dna_twist
-                let z.$k = cos(p0.$k - 3 / fl.pitch * fl.dna_twist)
+                let p1.$k = p0.$k - 12 / fl.pitch * fl.dna_twist
+                let z.$k = cos(p0.$k - 6 / fl.pitch * fl.dna_twist)
                 let fade.$k = if(helix_edges, 1, clamp(min(xm.$k - frame_x, frame_x + chain_span - xm.$k) / 18, 0, 1) * clamp(min(xm.$k - x_first + 0.5 * fl.pitch, x_last + 0.5 * fl.pitch - xm.$k) / 10, 0, 1))
                 let on.$k = x0.$k < if(helix_edges, hx_b, frame_x + chain_span) and w0.$k >= 0.5
                 let ya0.$k = mix(pt, fl.cy - amp * sin(p0.$k), w0.$k)
                 let ya1.$k = mix(pt, fl.cy - amp * sin(p1.$k), w1.$k)
                 let yb0.$k = mix(pb, fl.cy + amp * sin(p0.$k), w0.$k)
                 let yb1.$k = mix(pb, fl.cy + amp * sin(p1.$k), w1.$k)
-                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, ya0.$k, fl.cy - fl.dna_amp * sin(p0.$k)); to: x0.$k + 12, if(helix_edges, ya1.$k, fl.cy - fl.dna_amp * sin(p1.$k))
                        width: 1 + 1.2 * z.$k; color: mix(fl.trace, fl.phos, 0.35 + 0.65 * z.$k); opacity: fade.$k; show: on.$k and z.$k >= 0 }
-                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 6, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
+                line { from: x0.$k, if(helix_edges, yb0.$k, fl.cy + fl.dna_amp * sin(p0.$k)); to: x0.$k + 12, if(helix_edges, yb1.$k, fl.cy + fl.dna_amp * sin(p1.$k))
                        width: 1 - 1.2 * z.$k; color: mix(fl.trace, fl.ember, 0.35 - 0.65 * z.$k); opacity: fade.$k; show: on.$k and z.$k < 0 }
             }
             for w in spaces {
@@ -3171,6 +3134,42 @@ scene Mooi {
         on scroll zfoc { emit focus_cmd(if(wheel > 0, 2, 3)) }
     }
 
+    // ── The pop-up surface ────────────────────────────────────
+    // Everything that opens below the strip is drawn here, on a surface of its own above it:
+    // the edit shelf, quick notes, the side panel, the spine's shelves, the islands and the
+    // command membrane. Pleamar damages the surface a shape is painted on, so before this split
+    // any of them — and any animating module in the bar — repainted the whole 1920×1080 layer.
+    // `reserve: -1` like the strip: the reserve surfaces own the strip's exclusive zone. It
+    // declares no `keyboard:`: the scene's clause belongs to its first surface (D8), which is
+    // still the strip's.
+    surface popup_surface {
+        size: full, full
+        anchor: top
+        level: top
+        reserve: -1
+    }
+
+    // ── A press outside a panel closes it (D55) ───────────────
+    // A layer surface does not hear what happens outside it, so a panel used to be dismissed only
+    // by its own ×, Escape or the idle timer: a press on the desktop did nothing at all, which is
+    // what "my clicks are not registering" felt like. This plate — under every panel on this
+    // surface — takes the presses the open panel's own controls do not. It starts at the strip's
+    // foot: the bar is on the surface below and its modules must keep taking presses while a
+    // panel is up (they switch panels), and a press inside a panel never reaches it. The
+    // overview, the shutter and the Atlas are surfaces of their own (overlay), above this one.
+    group {
+        show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd
+        zone box dismiss { from: 0, st_res; size: screen.width, screen.height - st_res; role: region; label: "Close the open panel" }
+        on press dismiss while qn_open { qn_open = false }
+        on press dismiss while mark_open { mark_open = false }
+        on press dismiss while side == notes { side = none }
+        on press dismiss while open == window { open = none }
+        on press dismiss while open == system { open = none }
+        on press dismiss while open == command { open = none }
+        on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == shnet or open == shalert or open == shupd { open = none }
+        on press dismiss while stash_pin { stash_pin = false }
+    }
+
     // ── Edit mode ─────────────────────────────────────────────
     // The bar as a workbench (the settings window's "Edit bar layout"): every placed module
     // outlined and picked up by a press, carried by the pointer (the others make room live,
@@ -4023,7 +4022,7 @@ scene Mooi {
                 // Actions: 0 float · 1 fullscreen · 2 pin · 3 move · 4 close
                 repeat k in 0..5 {
                     group {
-                        move: 12 + k * 64, 58
+                        move: 12 + k * 124, 58
                         let on_k = pick(k, floating, fullscreen, pinned, 0, arming)
                         let usable_k = target_ok and not busy and (k != 2 or floating)
                         prop lit = 0 ~m.select
@@ -4792,6 +4791,21 @@ scene Mooi {
                    line W - bs - fr, H - bt
                    curve W - bs, H - bt - fr via W - bs, H - bt
                    line W - bs, sy - 1
+                   close }
+        }
+        // The sides and foot of the one-border case (s_all), whose top half is on the strip's
+        // surface above: that surface is only as tall as the strip, so this closes the border
+        // round the screen's sides and foot, in the same colour and width. It starts above the
+        // screen (y = -1) so its own closing segment is never seen.
+        group {
+            show: frame_on and s_all
+            path { stroke: st_owidth; color: nec
+                   move nl_a, -1
+                   line nl_a, H - bt - st_frame_r
+                   curve nl_a + st_frame_r, H - bt via nl_a, H - bt
+                   line nr_e - st_frame_r, H - bt
+                   curve nr_e, H - bt - st_frame_r via nr_e, H - bt
+                   line nr_e, -1
                    close }
         }
         // (no bars on the frame's sides and foot either: `frame.motion` moves the border itself,
