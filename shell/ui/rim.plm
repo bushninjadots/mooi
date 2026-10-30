@@ -64,10 +64,11 @@ library Rim {
                 box { from: if(vertical, min(p0.$b, p1.$b), us.$b), if(vertical, us.$b, min(p0.$b, p1.$b))
                       size: if(vertical, abs(p1.$b - p0.$b), ew), if(vertical, ew, abs(p1.$b - p0.$b))
                       color: mix(tint, hot, 0.35 * clamp(rm_beat, 0, 1)); show: on.$b and hb.$b > 0.4 }
-                // its cap
+                // its cap, drawn even at rest height: while the rim is the border, the border is a
+                // line with bars on it, not bars floating beside a line
                 line { from: if(vertical, p1.$b, us.$b), if(vertical, us.$b, p1.$b)
                        to: if(vertical, p1.$b, us.$b + ew), if(vertical, us.$b + ew, p1.$b)
-                       width: 1; color: line_c; show: on.$b and hb.$b > 0.2 }
+                       width: 1; color: line_c; show: on.$b }
                 // the step up from its neighbour
                 line { from: if(vertical, at + e * min(hp.$b, hb.$b), us.$b), if(vertical, us.$b, at + e * min(hp.$b, hb.$b))
                        to: if(vertical, at + e * max(hp.$b, hb.$b), us.$b), if(vertical, us.$b, at + e * max(hp.$b, hb.$b))

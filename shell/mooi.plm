@@ -1989,7 +1989,9 @@ scene Mooi {
     prop nrw = 0 ~fl.flow
     follow nrw = nr_w
     let n_pad = 10                               // the piece's room round its modules
-    let n_b = fl.top + fl.mod_h + 6              // its foot
+    // its foot: with the screen frame on, it ends on the frame's own inner edge, so the bar and the
+    // frame are one line and not a strip floating above a frame
+    let n_b = if(frame_on, st_res, fl.top + fl.mod_h + 6)
     let n_r = st_radius + 4                      // the foot's corners
     let n_f = 10                                 // the fillets where it leaves the top edge
     // the rim's 1 px cap: the piece's own edge (ui/rim.plm only fills and caps; the plain
@@ -2063,19 +2065,19 @@ scene Mooi {
         // opaque fill to carry the swells. The bars come from ui/rim.plm — one analysis for every
         // surface — and at rest each is 0 tall, so this is the plain border again.
         group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1 and not frame_on
             rim.Edge(if(full_w, 0, nl_a + n_r), nl_e - n_r, 0, screen.width, n_b, 1,
                      clamp(round((nl_e - n_r - if(full_w, 0, nl_a + n_r)) / 14), 6, 32),
                      fl.hull, fl.phos, rim_line, 12)
         }
         group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and ncw > 1
+            show: bar_frame < 0.5 and bar_surface < 0.5 and ncw > 1 and not frame_on
             rim.Edge(nc_a + n_r, nc_e - n_r, 0, screen.width, n_b, 1,
                      clamp(round((nc_e - n_r - nc_a - n_r) / 14), 6, 32),
                      fl.hull, fl.phos, rim_line, 12)
         }
         group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1 and not frame_on
             rim.Edge(nr_a + n_r, if(full_w, screen.width, nr_e - n_r), 0, screen.width, n_b, 1,
                      clamp(round((if(full_w, screen.width, nr_e - n_r) - nr_a - n_r) / 14), 6, 32),
                      fl.hull, fl.phos, rim_line, 12)
@@ -2085,12 +2087,12 @@ scene Mooi {
         // they hang free (full width, they run past the screen's corners and there is nothing to
         // lift). The rim follows the border all the way round the notch, not just its foot.
         group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1 and not full_w
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1 and not full_w and not frame_on
             rim.Edge(0, n_b - n_r, 0, n_b, nl_a, -1, clamp(round((n_b - n_r) / 14), 6, 32),
                      fl.hull, fl.phos, rim_line, 12, true)
         }
         group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1 and not full_w
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1 and not full_w and not frame_on
             rim.Edge(0, n_b - n_r, 0, n_b, nr_e, 1, clamp(round((n_b - n_r) / 14), 6, 32),
                      fl.hull, fl.phos, rim_line, 12, true)
         }
@@ -2118,7 +2120,10 @@ scene Mooi {
             group { show: not mech; Frame(fx - 3, fw + 6, 0, f.style) }
             group { show: mech; MechHousing(fx, fw, f.style) }
             // the music on the island's border: left, right and bottom (the top is the screen's edge)
-            rim.Rect(fx - 3, fl.top, fw + 6, fl.mod_h, fl.radius, 14, fl.hull, fl.phos, rim_line, 10)
+            group {
+                show: not frame_on
+                rim.Rect(fx - 3, fl.top, fw + 6, fl.mod_h, fl.radius, 14, fl.hull, fl.phos, rim_line, 10)
+            }
         }
         // the bay a group sits in on a mechanism (both modes)
         MechBay(fx, fw, mech and not own)
@@ -2126,7 +2131,7 @@ scene Mooi {
     // Full mode: one panel, one border — its left, right and bottom lift with the music (the top
     // is the screen's own edge). The frames above are hidden in this mode, so this is the only rim.
     group {
-        show: bar_full and not st_notch
+        show: bar_full and not st_notch and not frame_on
         rim.Rect(px, fl.top, pw, fl.mod_h, st_radius + 1, 14, fl.hull, fl.phos, rim_line, 10)
     }
     // Full mode on a mechanism: bolts at the panel's two ends.
@@ -4703,14 +4708,18 @@ scene Mooi {
             // the top: the bar's own foot line, drawn here too, so the stretches the bar leaves
             // open (between its islands, round the notch's fan) are the same border at the same
             // place with the same bands — it lies exactly over the bar's runs, so it is one line
-            rim.Edge(0, W, 0, W, fl.top + fl.mod_h + 6, 1, clamp(round(W / 14), 6, 32), fl.hull, fl.phos,
+            // The bar's own runs are switched off while the frame is on, so this is the only rim on
+            // the top edge: one wave at one density and one reach, the same as the three sides, and
+            // the bar's outline is the line it stands on. Runs meet end to end at each corner (the
+            // top starts and ends at the sides' x), so the border is continuous all the way round.
+            rim.Edge(bs, W - bs, 0, W, st_res, 1, clamp(round(W / 14), 6, 32), fl.hull, fl.phos,
                      mix(mix(fl.trace, fl.trace_lit, clamp(st_ocol, 0, 1)), fl.phos_fill, clamp(st_ocol - 1, 0, 1)), 12, false)
-            rim.Edge(st_res + fr, H - bt - fr, st_res, H, bs, -1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
-                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), true)
-            rim.Edge(st_res + fr, H - bt - fr, st_res, H, W - bs, 1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
-                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), true)
-            rim.Edge(bs + fr, W - bs - fr, 0, W, H - bt, 1, clamp(round((W - 2 * bs) / 16), 6, 32), fcol, fl.phos,
-                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), false)
+            rim.Edge(st_res, H - bt, st_res, H, bs, -1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
+                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), 12, true)
+            rim.Edge(st_res, H - bt, st_res, H, W - bs, 1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
+                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), 12, true)
+            rim.Edge(bs, W - bs, 0, W, H - bt, 1, clamp(round((W - 2 * bs) / 16), 6, 32), fcol, fl.phos,
+                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), 12, false)
         }
         group {
             show: frame_on and not fstill
