@@ -1764,10 +1764,14 @@ scene Mooi {
     follow fphs = fph
     let W = screen.width
     let H = screen.height
-    let famp = flvl * frame_reach * 1.6
+    // What the frame's music is made of: the band's thickness and the border that follows it.
+    // `swell` rides the bass (slow and wide), `crests` the treble (quick and shallow), `pulse`
+    // widens on the beat with the bass underneath it (so it never sits still between drums).
+    // All three scale geometry that is already drawn — no lobe field, no smooth union — so a
+    // moving frame costs the same as a still one.
+    let famp = pick(frame_style, flvl, fhi, 0.45 * flvl + 0.9 * rm_beat) * frame_reach * 1.6
     let aside = if(frame_edges != 2, famp, 0)          // the sides swell
     let aflat = if(frame_edges != 1, famp, 0)          // the top (under the bar) and the bottom swell
-    let fpl = if(frame_style > 1.5, 1, 0)              // pulse
     let bt = frame_band + aflat * pick(frame_style, 0.6, 0.15, 0.45)
     let bs = frame_band + aside * 0.6
     let fcol = mix(mix(fl.hull, fl.ground, bar_ground < 0.5), fl.steel_900, mech)
@@ -2014,9 +2018,6 @@ scene Mooi {
     // The one-border case: the screen frame on, the bar full width and all three pieces there.
     // Then the band and the pieces are one shape and its inner boundary is drawn once, below.
     let s_all = st_notch and frame_on and full_w and nlw > 1 and ncw > 1 and nrw > 1
-    // frame.motion means *this*: the frame is one frame always, and only while a track plays do
-    // its band and its border move (frame.music, and frame.style picks which of the three).
-    let fmove = frame_music and (flvl > 0.01 or fhi > 0.01)
     // ── One island's foot, as the visualiser ─────────────────────
     // An island's bottom border is the visualiser: eight bars cut from that line itself, joined at
     // their feet, stepping down into the desktop with the music — the bar's sixteen cava bands, two
@@ -2124,7 +2125,7 @@ scene Mooi {
         // and back up the left side to the point it started at. One stroke, one colour, one
         // width, no corner to line up — which is what "one whole frame" means.
         group {
-            show: s_all and not fmove
+            show: s_all
             path { stroke: st_owidth; color: nec
                    move nl_a, n_b - n_r
                    curve nl_a + n_r, n_b via nl_a, n_b
@@ -2176,49 +2177,6 @@ scene Mooi {
             show: frame_on and gD < screen.width - 2
             box { from: gD, 0; size: screen.width - gD, bs; color: fcol }
             line { from: gD, bs; to: screen.width, bs; width: st_owidth; color: nec; show: not s_all }
-        }
-
-        // ── The same frame, as the music ────────────────────────
-        // The three frame.motion modes are not three frames. The frame is one: the band plus the
-        // one border above. While a track plays that border is what moves — `swell` thickens the
-        // band and the border follows it, `crests` runs ripples along it, `pulse` catches the
-        // beat — and with the frame's music off, or the music paused, this draws nothing and the
-        // frame is exactly the plain one. It is drawn here, over the pieces and under the
-        // modules, so the border sits above every body it traces; iRis draws its field in the
-        // bar's own window for the same reason. No bars: the line itself is the visualiser.
-        group {
-            show: s_all and fmove
-            body {
-                color: fcol
-                opacity: st_frame_op
-                border: if(st_frame_edge > 0.5, 1.6, st_owidth) + if(frame_style > 1.5, 3 * clamp(rm_beat, 0, 1), 0.9 * clamp(flvl + fhi, 0, 1)), mix(fnec, fl.phos, if(frame_style > 1.5, clamp(rm_beat, 0, 1), 0))
-                // the pieces, the two sides and the screen's foot, one union; the tops go above
-                // the screen so the border is not drawn along the screen's own edge
-                box { from: nl_a, -n_r; size: nl_e - nl_a, n_b + n_r; corner: n_r }
-                box { from: nc_a, -n_r; size: nc_e - nc_a, n_b + n_r; corner: n_r }
-                box { from: nr_a, -n_r; size: nr_e - nr_a, n_b + n_r; corner: n_r }
-                box { from: 0, -n_r; size: bs, H - bt + n_r; blend: st_frame_r + 2 }
-                box { from: W - bs, -n_r; size: bs, H - bt + n_r; blend: st_frame_r + 2 }
-                box { from: 0, H - bt; size: W, bt; blend: st_frame_r + 2 }
-                // swell and crests: the edge itself ripples (the lobes deform the union, and the
-                // border is the union's edge, so the line moves — no bars anywhere)
-                ellipse { at: bs, H * 0.14; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 0.2 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: bs, H * 0.34; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 1.1 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: bs, H * 0.54; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 2.0 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: bs, H * 0.74; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 2.9 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W - bs, H * 0.14; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 0.7 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W - bs, H * 0.34; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 1.6 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W - bs, H * 0.54; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 2.5 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W - bs, H * 0.74; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 3.4 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.07, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(0.0 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.19, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 1.1 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.31, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 2.2 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.43, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 3.3 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.55, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 4.4 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.67, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 5.5 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.79, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 6.6 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-                ellipse { at: W * 0.91, H - bt; radius: (8 + 18 * clamp(flvl + fhi, 0, 1)) * pick(frame_style, 1, 0.4, 0) * (0.55 + 0.45 * sin(57.3 * 7.7 - fphs * pick(frame_style, 90, 330, 126))); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
-            }
         }
 
         // corners (bar.frame = corners): marks at each piece's foot
@@ -4789,13 +4747,11 @@ scene Mooi {
         reserve: -1
         open: frame_on
 
-        // Still (no music, or a quiet moment): the same band from plain shapes — the four
-        // bands, the fillets of the inner corners as curves, the inner edge as one stroked
-        // rounded box. A body costs ~16 ms a paint over the whole screen and the surface is
-        // painted with every cycle of the scene; these cost next to nothing. The body below
-        // takes over only while the swell moves.
-        let fstill = flvl < 0.02 and fhi < 0.02
-        let fr = st_frame_r                                 // the inner corners (frame.radius)
+        // The band, from plain shapes: the four bands, the fillets of the inner corners as
+        // curves. A body (a smooth union over the whole screen) costs ~16 ms a paint and this
+        // surface is painted with every cycle of the scene — that was the frame's lag. These
+        // shapes cost next to nothing, and their widths are what the music moves.
+            let fr = st_frame_r                                 // the inner corners (frame.radius)
         // Where the frame's side band begins. With the bar in notch mode its pieces sit inside
         // the band, so the band runs from the screen's own edge: the side's border is then one
         // vertical, the piece's flank above and the frame's side line below, not two lines 2 px
@@ -4806,7 +4762,7 @@ scene Mooi {
         // glass or frosted bar they take its translucency instead (the bar keeps its glass).
         let fthin = if(bar_surface > 0.5 and bar_surface < 3.5, 0.72, 1)
         group {
-            show: frame_on and fstill
+            show: frame_on
             opacity: st_frame_op
             // the top strip is the bar's in notch mode (its pieces and its gaps draw it)
             box { from: 0, 0; size: W, st_res; color: fcol; opacity: fthin; show: not st_notch }
@@ -4840,43 +4796,6 @@ scene Mooi {
         }
         // (no bars on the frame's sides and foot either: `frame.motion` moves the border itself,
         // and with its music off the border here is the plain one.)
-        group {
-            show: frame_on and not fstill and not st_notch
-            body {
-                color: fcol
-                opacity: fthin * st_frame_op   // tinted like the still band, never glass
-                rim: 4% + 10% * fhi + 16% * fpl * flvl
-                border: 1 + fpl * flvl * 4, mix(if(mech, fl.steel_500, fl.trace_dim), fl.phos, fpl * clamp(flvl * 0.9 + fhi * 0.7, 0, 1))
-                box { from: 0, 0; size: W, st_res; show: not st_notch }
-                box { from: 0, H - bt; size: W, bt }
-                box { from: 0, 0; size: bs, H; blend: st_frame_r + 2 }
-                box { from: W - bs, 0; size: bs, H; blend: st_frame_r + 2 }
-                // <gen:lobes>
-            ellipse { at: W * 0.0714, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(0.00 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.0714, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(0.80 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.2143, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(1.15 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.2143, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(1.95 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.3571, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(2.30 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.3571, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(3.10 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.5000, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(3.45 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.5000, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(4.25 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.6429, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(4.60 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.6429, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(5.40 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.7857, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(5.75 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.7857, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(6.55 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.9286, st_res; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(6.90 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: W * 0.9286, H - bt; radius: (W / 7 * if(frame_style == 1, 0.28, 0.62)) * clamp(aflat / 4, 0, 1); scale: 1, max(0.5, aflat * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(7.70 * 57.3 - fphs * 126))) / max(0.5, W / 7 * if(frame_style == 1, 0.28, 0.62)); blend: 22 * clamp(aflat / 4, 0, 1); show: aflat > 0.5 and frame_style < 1.5 }
-            ellipse { at: bs, H * 0.1250; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(1.60 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: W - bs, H * 0.1250; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(2.40 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: bs, H * 0.3750; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(2.75 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: W - bs, H * 0.3750; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(3.55 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: bs, H * 0.6250; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(3.90 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: W - bs, H * 0.6250; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(4.70 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: bs, H * 0.8750; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(5.05 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-            ellipse { at: W - bs, H * 0.8750; radius: (H / 4 * if(frame_style == 1, 0.28, 0.62)) * clamp(aside / 4, 0, 1); scale: max(0.5, aside * if(frame_style == 1, 1.3, 0.8) * (0.5 + 0.5 * sin(5.85 * 57.3 - fphs * 126))) / max(0.5, H / 4 * if(frame_style == 1, 0.28, 0.62)), 1; blend: 22 * clamp(aside / 4, 0, 1); show: aside > 0.5 and frame_style < 1.5 }
-                // </gen:lobes>
-            }
-        }
     }
 
     // The bar's strip, reserved: seven empty surfaces whose reserves are the bits of `st_res`,

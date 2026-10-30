@@ -160,9 +160,9 @@ function M.analyse(prev, bands, dt)
     local tempo = prev and (tonumber(prev.tempo) or 0) or 0
     local beat = prev and (tonumber(prev.beat) or 0) or 0
     local phase = prev and (tonumber(prev.phase) or 0) or 0
-    local rise = prev and (tonumber(prev.bass) or 0) or 0
+    local rise = prev and (bass - (tonumber(prev.bass) or 0)) or 0   -- the edge, not the level
 
-    if bass > 0.55 and rise <= 0.55 and t - last_beat >= 0.25 then
+    if bass > 0.55 and rise > 0.05 and t - last_beat >= 0.25 then
         local interval = t - last_beat
         if interval >= 0.25 and interval <= 2 then
             tempo = tempo > 0 and (tempo * 0.5 + interval * 0.5) or interval
