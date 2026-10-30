@@ -1632,16 +1632,26 @@ on("open_github", function() notch_sync(); run("pleamar", { "--say", "mooi-notch
 -- alive but no longer answering — a logic that stopped, or a process that lost the name to a
 -- newer one — is ended and replaced: one that draws nothing is not worth keeping.
 local bmo_win, bmo_tries, bmo_token, bmo_beat, bmo_miss = nil, 0, nil, nil, 0
+local bmo_probe = 0   -- how many times we have asked before deciding nobody is there
 function bmo_sync()
     local want = type(settings.companion) == "table" and settings.companion.bmo == true
     if not want then
-        bmo_tries, bmo_token, bmo_beat, bmo_miss = 0, nil, nil, 0
+        bmo_tries, bmo_token, bmo_beat, bmo_miss, bmo_probe = 0, nil, nil, 0, 0
         run("pleamar", { "--say", "bmo", "quit" })
         return
     end
     if bmo_win then return end
     run("pleamar", { "--say", "bmo", "get ready" }, function(_, up)
-        if up == 0 or bmo_win then return end
+        if up == 0 or bmo_win then bmo_probe = 0; return end
+        -- A BMO that is up but slow to answer would otherwise get a second one spawned beside it
+        -- (two lived on 2026-10-30, and the loser drew nothing while its logic kept running). Ask
+        -- twice more before starting one.
+        if bmo_probe < 2 then
+            bmo_probe = bmo_probe + 1
+            after(900, bmo_sync)
+            return
+        end
+        bmo_probe = 0
         local mine
         local started = os.time()
         local said = {}
