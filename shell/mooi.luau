@@ -77,7 +77,10 @@ local function apply(s)
     fact.bar_ground = position("bar.ground", s.bar.ground)
     fact.bar_rail = s.bar.rail
     fact.bar_accents = s.bar.accents
-    fact.bar_foot_viz = s.bar.foot_visualizer
+    fact.bar_foot_viz = s.music.rim
+    fact.music_rim = s.music.rim
+    fact.music_rim_gain = s.music.rim_gain / 100
+    fact.music_rim_glow = s.music.rim_glow
     fact.bar_full = (s.bar.mode == "full")
     fact.bar_surface = position("bar.surface", s.bar.surface)
     fact.viz = position("bar.visualizer", s.bar.visualizer)

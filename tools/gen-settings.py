@@ -59,6 +59,8 @@ SETTERS = [
     "nexus.notches", "claude.model",
     # the bar's islands' feet as the visualiser
     "bar.foot_visualizer",
+    # music on every mooi edge: the master, its strength and the halo
+    "music.rim", "music.rim_gain", "music.rim_glow",
     # how many bars the Control Nexus deck's border is cut into
     "nexus.bars",
 ]
@@ -193,7 +195,9 @@ SECTIONS = [
         ("choice", "Hover", "What lights under the pointer", "bar.pill", "sv_bar_pill", ["Soft", "Outline", "Underline", "Glow"]),
         ("toggle", "Info rail", "The thin scale line above the bar", "bar.rail", "bar_rail", None, "not st_notch"),
         ("toggle", "Details", "Cuts in the outline, ticks, the comet and the seconds", "bar.accents", "bar_accents"),
-        ("toggle", "Bars on the foot", "Each island's bottom edge steps in and out with the music", "bar.foot_visualizer", "bar_foot_viz", None, "not st_notch"),
+        ("toggle", "Music on every edge", "The whole border of every mooi surface steps with the music; the old foot switch is honoured when this is absent", "music.rim", "music_rim", None, "not st_notch"),
+        ("slider", "Edge strength", "How far the bars reach out of the border", "music.rim_gain", 25, 150, "{sv_music_rim_gain + 25, 0}%", "music_rim == 1 and not st_notch"),
+        ("toggle", "Edge glow", "A halo on each lit edge, only while music plays", "music.rim_glow", "music_rim_glow", None, "music_rim == 1 and not st_notch"),
     ]),
     ("Layout", "Layout", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "BAR", [
         ("layout",),
@@ -419,8 +423,8 @@ SECTIONS = [
         ("choice", "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
         ("choice", "Rows", "The cards on one row, or split over two — down a side that is two columns of them, growing out towards the desktop", "nexus.rows", "sv_nexus_rows", ["One", "Two"], "sv_nexus_mode == 0"),
         ("choice", "Profile", "Your banner and picture, small or large", "nexus.profile", "sv_nexus_profile", ["Small", "Large"], "sv_nexus_mode == 0"),
-        ("toggle", "Music on the edge", "A bar visualiser cut from the deck's open border while something plays", "nexus.visualiser", "sv_nexus_visualiser", None, "sv_nexus_mode == 0"),
-        ("choice", "Bars on the edge", "How many bars the deck's open border is cut into; the notches' outer faces carry their own share of them", "nexus.bars", "sv_nexus_bars", ["8", "12", "16", "24"], "sv_nexus_mode == 0 and sv_nexus_visualiser == 1"),
+        ("toggle", "Music on the deck's edges", "The deck's own override; off keeps its plain border even when the master is on", "nexus.visualiser", "sv_nexus_visualiser", None, "sv_nexus_mode == 0"),
+        ("choice", "Bars on the deck's edges", "How many bars the deck's border is cut into; the notches' outer faces carry their own share", "nexus.bars", "sv_nexus_bars", ["8", "12", "16", "24"], "sv_nexus_mode == 0 and sv_nexus_visualiser == 1"),
         ("toggle", "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", "nexus.notches", "sv_nexus_notches", None, "sv_nexus_mode == 0"),
         ("note", "sv_nexus_mode == 0", "ON THE DECK: ✎ CARRIES A CARD BY MOVE, × SHELVES IT, ⇔ RESIZES IT"),
         ("card", "The spine"),
@@ -845,7 +849,7 @@ def shared_facts():
     """The facts the window reads, declared exactly as mooi.plm declares them."""
     text = SCENE.read_text()
     want = re.compile(r"^    (fact|prop|follow) (c_\w+|fr_\w+|pr_\w+|ws_style|bar_frame|bar_ground|bar_rail|bar_accents|"
-                      r"bar_full|bar_surface|viz|bar_foot_viz|helix_frame|media_mode|media_idle|frame_on|frame_band|"
+                      r"bar_full|bar_surface|viz|bar_foot_viz|music_rim|music_rim_gain|music_rim_glow|helix_frame|media_mode|media_idle|frame_on|frame_band|"
                       r"frame_music|frame_style|frame_reach|frame_edges|note_server|th_scheme|th_index|th_contrast|"
                       r"th_signal|theme_wallpaper|show_clock|previews|confirm_close|bar_labels|bar_wheel|"
                       r"m_\w+|fi_\w+|g_\w+|st_\w+)\b.*$", re.M)

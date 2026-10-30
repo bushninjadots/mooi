@@ -221,6 +221,9 @@ local function read_parts()
     fact.dk_viz = n.visualiser ~= false
     fact.dk_bars = BARS[n.bars] or 16
     fact.dk_notches = n.notches ~= false
+    fact.music_rim = settings.music.rim == true
+    fact.music_rim_gain = settings.music.rim_gain / 100
+    fact.music_rim_glow = settings.music.rim_glow == true
     sizes = deck.clean_sizes(n.sizes)
 end
 read_parts()

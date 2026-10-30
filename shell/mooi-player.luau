@@ -23,6 +23,9 @@ local COVERS = folder .. "/player-covers"
 
 -- ── The shell's colours ──────────────────────────────────────
 local settings = config.parse(read("settings.json"), json.decode)
+fact.music_rim = settings.music.rim == true
+fact.music_rim_gain = settings.music.rim_gain / 100
+fact.music_rim_glow = settings.music.rim_glow == true
 fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
 local palette = read("palette.json", "json")
 local tint = nil -- the cover's palette while player.colours is "cover" (Matugen roles)

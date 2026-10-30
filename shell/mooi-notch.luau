@@ -57,6 +57,9 @@ local function paint()
     end
     fact.cn_kind, fact.cn_scale = style.corners(settings)
     fact.isl_style = settings.island.style == "tether" and 1 or 0
+    fact.music_rim = settings.music.rim == true
+    fact.music_rim_gain = settings.music.rim_gain / 100
+    fact.music_rim_glow = settings.music.rim_glow == true
     local look = style.facts(settings)
     if look and look.st_glow then fact.st_glow = look.st_glow end
 end

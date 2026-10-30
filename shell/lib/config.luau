@@ -41,7 +41,7 @@ M.SCHEMA = {
     -- how far it swells, and along which edges.
     { path = "frame.on", kind = "boolean", default = true },
     { path = "frame.band", kind = "integer", default = 6, min = 2, max = 16 },
-    { path = "frame.music", kind = "boolean", default = true },
+    { path = "frame.music", kind = "boolean", default = false },
     { path = "frame.style", kind = "enum", values = { "swell", "crests", "pulse" }, default = "swell" },
     { path = "frame.reach", kind = "integer", default = 18, min = 6, max = 40 },
     { path = "frame.edges", kind = "enum", values = { "all", "sides", "ends" }, default = "all" },
@@ -60,6 +60,11 @@ M.SCHEMA = {
     { path = "bar.accents", kind = "boolean", default = true },
     -- the islands' feet step with the music (the bar's border as the visualiser)
     { path = "bar.foot_visualizer", kind = "boolean", default = true },
+    -- Music on every mooi edge: the master, how far it reaches, and its halo. The old foot
+    -- switch is read as the master only when this is absent (see M.validate).
+    { path = "music.rim", kind = "boolean", default = true },
+    { path = "music.rim_gain", kind = "integer", default = 100, min = 25, max = 150 },
+    { path = "music.rim_glow", kind = "boolean", default = true },
     -- The look of what the bar is made of (lib/style hands these to the scene). Defaults are the
     -- look the bar had before they existed.
     -- Presets: one choice that sets a coherent look (lib/style). What is stored is the last one
@@ -546,6 +551,16 @@ function M.validate(t)
                 problems[#problems + 1] = string.format("%s: %s, got %s; using %s",
                     row.path, why, tostring(value), (type(row.default) == "table") and "the default" or tostring(row.default))
             end
+        end
+    end
+    -- D112: the bar's foot switch was the first rim. A file that predates music.rim keeps its
+    -- answer; a file that has the master is never overridden by the old key.
+    local master = get(t, "music.rim")
+    local legacy = get(t, "bar.foot_visualizer")
+    if master == nil and legacy ~= nil then
+        if type(legacy) == "boolean" then
+            set(out, "music.rim", legacy)
+            notes[#notes + 1] = "music.rim: read from bar.foot_visualizer"
         end
     end
     -- A module may be placed once across the three lists; a layout that places one twice is

@@ -50,6 +50,7 @@ local function publish(s)
     fact.bar_ground = P("bar.ground", s.bar.ground)
     fact.bar_rail = s.bar.rail
     fact.bar_accents = s.bar.accents
+    fact.music_rim = s.music.rim == true
     fact.bar_full = s.bar.mode == "full"
     fact.bar_surface = P("bar.surface", s.bar.surface)
     fact.viz = P("bar.visualizer", s.bar.visualizer)

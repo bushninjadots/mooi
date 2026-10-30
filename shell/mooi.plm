@@ -296,6 +296,9 @@ scene Mooi {
     fact bar_rail = true      // bar.rail
     fact bar_accents = true   // bar.accents · cuts, drop ticks, slashes
     fact bar_foot_viz = true  // bar.foot_visualizer · the islands' feet step with the music
+    fact music_rim = true     // music.rim · the whole border steps with the music
+    fact music_rim_gain = 1   // music.rim_gain · 0.25..1.5
+    fact music_rim_glow = true
     fact bar_full = false     // bar.mode · islands, or one full panel
     fact bar_surface = 0      // bar.surface · 0 solid · 1 glass · 2 blur · 3 clear
     fact viz = 0              // bar.visualizer · 0 mirror · 1 bars · 2 line · 3 dots · 4 off

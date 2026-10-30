@@ -66,6 +66,8 @@ M.SETTERS = {
     "nexus.notches", "claude.model",
     -- the bar's islands' feet as the visualiser (bar.foot_visualizer)
     "bar.foot_visualizer",
+    -- music on every mooi edge: the master, its strength and the halo
+    "music.rim", "music.rim_gain", "music.rim_glow",
     -- how many bars the Control Nexus deck's border is cut into (nexus.bars)
     "nexus.bars",
 }
