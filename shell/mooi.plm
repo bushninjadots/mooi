@@ -2077,6 +2077,19 @@ scene Mooi {
                    line nr_e, -1; close }
         }
 
+        // The music on the pieces' feet (ui/rim.plm): the old `BarFoot`, generalised. Not with
+        // the screen frame on — then the frame's border is the bar's and moves itself — and not
+        // for a piece that is not there.
+        group {
+            show: not frame_on
+            rim.Edge(nl_a + n_r, nl_e - n_r, 0, screen.width, n_b, 1, clamp(round((nl_e - nl_a - 2 * n_r) / 14), 6, 32),
+                     if(mech, fl.steel_700, fl.hull), fl.phos, nec, 10)
+            rim.Edge(nc_a + n_r, nc_e - n_r, 0, screen.width, n_b, 1, clamp(round((nc_e - nc_a - 2 * n_r) / 14), 6, 32),
+                     if(mech, fl.steel_700, fl.hull), fl.phos, nec, 10)
+            rim.Edge(nr_a + n_r, nr_e - n_r, 0, screen.width, n_b, 1, clamp(round((nr_e - nr_a - 2 * n_r) / 14), 6, 32),
+                     if(mech, fl.steel_700, fl.hull), fl.phos, nec, 10)
+        }
+
         // ── The border, as one path ────────────────────────────
         // iNiR draws the frame as one field and publishes the bar's bodies into it, so the join
         // is the frame's own (IrisFrame.placeBodies); the border is then the field's boundary,

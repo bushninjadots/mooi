@@ -114,9 +114,14 @@ part Full {
                 zone box fvbody { from: 0, 0; size: fw, fh; agent: hidden }
                 on press fvbody { emit pl_full }
                 group { show: view == stage
-                        views.Stage(fw * 0.18, fh * 0.05, fw * 0.64, fh * 0.76, true) }
+                        views.Stage(fw * 0.18, fh * 0.05, fw * 0.64, fh * 0.76, true)
+                        // the music on the inner plate's border, never the screen's (ui/rim.plm)
+                        rim.Rect(fw * 0.18, fh * 0.05, fw * 0.64, fh * 0.76, 0, 15, fl.ground, fl.phos,
+                                 mix(fl.trace, fl.phos, 0.35), 8) }
                 group { show: view == rack
-                        views.Rack(fw * 0.08, fh * 0.07, fw * 0.84, fh * 0.72, true) }
+                        views.Rack(fw * 0.08, fh * 0.07, fw * 0.84, fh * 0.72, true)
+                        rim.Rect(fw * 0.08, fh * 0.07, fw * 0.84, fh * 0.72, 0, 15, fl.ground, fl.phos,
+                                 mix(fl.trace, fl.phos, 0.35), 8) }
             }
 
             // the song's video in the full screen's box

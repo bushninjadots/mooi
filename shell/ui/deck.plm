@@ -2,6 +2,7 @@ language 0.4
 import "../theme/tokens.plm"
 import "../theme/ferrolume.plm"
 import "loom.plm"
+import "rim.plm" as rim
 
 // The Control Nexus deck's pieces (D102): its colours and type in either island style, a bay's
 // name, an action key, a fader and a reading. Zones and rules stay in the scene, but for the
@@ -53,6 +54,12 @@ library Deck {
         }
         line { from: w - 20, h - 3.5; to: w - 8, h - 3.5; width: 1.2; color: dk.acc; opacity: 0.45 }
         line { from: w - 3.5, h - 20; to: w - 3.5, h - 12; width: 1.2; color: dk.acc; opacity: 0.45 }
+        // The music on the border of the card being carried only (ui/rim.plm): five spectra at
+        // once would compete, and the deck's own edges already carry the rest.
+        group {
+            show: lift > 0.5
+            rim.Rect(0, 0, w, h, dk.r, 15, mix(dk.raised, #000000, 0.42), dk.acc, mix(dk.line, dk.acc, 0.9), 8)
+        }
     }
 
     // A part's head: its number in your order, a short lit trace, its name, a live line on the right.

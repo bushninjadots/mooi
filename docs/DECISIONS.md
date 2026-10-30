@@ -3546,3 +3546,33 @@ stay open; mooi's own windows restart); Settings → Advanced → Restart Hyprla
 **Checked:** 253 unit tests; `tests/nexus.sh` 37 checks against the compositor; every scene compiles; the
 right deck measured 800×994 with all eleven cards; pressing a colour on a live panel narrowed twelve
 pictures to the one cyan among them, its thumbnail made.
+
+## D112 · 2026-10-30 · Music on every edge: one feed, one rim
+
+**One producer, one feed, one library.** The rim used to be four private copies: `BarFoot` in the bar,
+`EdgeBars` in the Nexus, and cava read separately by the notch and the player. `shell/lib/vizfeed.luau`
+writes one line (`viz-levels.txt`: 32 bands, bass, high, beat, phase, playing, missing, seq) from the
+bar's single cava at up to 30 Hz, and every surface folds those bands into `rm0..rm15`, `rm_bass`,
+`rm_high`, `rm_beat`, `rm_phase`, `rm_gain`, `rm_glow`, `rm_on` and draws `shell/ui/rim.plm` on its own
+border. A repeated or older `seq` is refused; two seconds without a line settles every rim (`rm_on` 0).
+The bar starts cava when the visualiser or `frame.music` wants it, so a machine has one cava, not four.
+
+**The rim is the border lifting.** `Rim.Edge` runs bars along a straight edge, each reading the band at
+its place on the whole edge, joined at the feet and capped in the surface's own line colour;
+`Rim.Rect` lays four edges round a plate with corner gaps and a side mask. At rest `rm_on` is 0 and
+nothing extra is drawn: the plain border is still the border. `music.rim` (default on), `music.rim_gain`
+(25–150) and `music.rim_glow` are the master controls; the retired `bar.foot_visualizer` is read only
+when `music.rim` is absent.
+
+**Where it draws.** Bar: islands' frames and the full panel (left, right, bottom), the notch pieces'
+feet, and every bar pop-up (left, right, bottom). Nexus: the deck's open side and notch tabs, and only
+the card being carried. Notch: each panel's four sides; the nub and the fan's tabs glow on the beat but
+grow no bars. Player: mini, panel, and the cinema's inner stage/rack. The screen frame is deliberately
+left plain: its music body was the most expensive thing in the scene and the effect the user disliked,
+so `frame.music` now defaults to **false**.
+
+**Measured:** with the bar idle in islands mode, 61 fps, 0 late frames; rules 1.15 ms, compose 0.97 ms,
+paint 0.52 ms, the rest waiting for the screen. Splitting the bar's layer into a 1920×160 strip and a
+pop-up surface cut an active frame's paint (5.6–6.3 ms over the whole 1920×1080) to the strip alone.
+Not measured while silent: `pgrep -c cava` under playback, and the 60 s rim-on/rim-off samples — nothing
+was playing music during the pass.

@@ -489,7 +489,7 @@ scene Notch {
         on drag nubz { nt_gdy = drag.dy; nt_open = false; nt_tab = -1; nt_pin = false }
         on release nubz while nt_gdy != 0 { emit nt_moved(round(nt_cy + nt_gdy)); nt_gdy = 0 }
         group {
-            glow: 8, (0.5 + 0.5 * nub_lit) * st_glow, dk.acc
+            glow: 8, (0.5 + 0.5 * nub_lit + 0.4 * clamp(rm_beat, 0, 1) * rm_glow) * st_glow, dk.acc
             box { from: -3, nt_cy + nt_gdy - 46 - 8 * nub_lit; size: 8 + 3 * nub_lit, 92 + 16 * nub_lit; corner: 4; color: mix(dk.raised, dk.acc, 0.35 + 0.5 * nub_lit) }
         }
         repeat g in 0..3 {
@@ -514,7 +514,7 @@ scene Notch {
                 zone box tz { from: tx - 19, ty - 19; size: 38, 38; cursor: pointer; role: tab; selected: on; label: t.word }
                 line { from: 4, nt_cy; to: tx - 18, ty; width: 1; color: dk.acc; opacity: 0.18 + 0.4 * if(on, 1, 0) }
                 group {
-                    glow: 7, (if(on, 0.9, 0.3 * tz.hover)) * st_glow, dk.acc
+                    glow: 7, (if(on, 0.9, 0.3 * tz.hover) + 0.4 * clamp(rm_beat, 0, 1) * rm_glow) * st_glow, dk.acc
                     path { color: if(on, mix(dk.raised, dk.acc, 0.35), mix(dk.raised, dk.acc, 0.08 + 0.15 * tz.hover))
                            move tx, ty - 19; line tx + 16.5, ty - 9.5; line tx + 16.5, ty + 9.5; line tx, ty + 19; line tx - 16.5, ty + 9.5; line tx - 16.5, ty - 9.5; close }
                     path { stroke: 1.2; color: if(on, dk.acc, mix(dk.line, dk.acc, 0.5 + 0.5 * tz.hover))
