@@ -4684,8 +4684,10 @@ scene Mooi {
             path { color: fcol; opacity: fthin; move W - bs, H - bt; line W - bs - fr, H - bt; curve W - bs, H - bt - fr via W - bs, H - bt; close }
         }
         // The inner edge, over the band (still or swelling): a quiet line, or a neon one that glows.
+        // While the rim draws, the rim *is* the border: the plain line goes, so there is never a
+        // straight border with a wavy one beside it. At rest it comes back exactly as it was.
         group {
-            show: frame_on and st_frame_edge < 1.5
+            show: frame_on and st_frame_edge < 1.5 and not (rm_on > 0.5 and bar_frame < 0.5 and bar_surface < 0.5)
             glow: 8, (if(st_frame_edge > 0.5, 0.9, 0)) * st_glow, fl.phos
             box { from: bs, st_res; size: W - 2 * bs, H - st_res - bt; corner: fr; stroke: if(st_frame_edge > 0.5, 1.6, 1)
                   color: if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)); opacity: st_frame_op }
@@ -4697,7 +4699,12 @@ scene Mooi {
         // screen. Same facts as the bar (ui/rim.plm), so the rim runs out of the bar, round the
         // frame, and back into it — the frame has only its band to lift into, so the reach is that.
         group {
-            show: frame_on and st_frame_edge < 1.5
+            show: frame_on and st_frame_edge < 1.5 and bar_frame < 0.5 and bar_surface < 0.5
+            // the top: the bar's own foot line, drawn here too, so the stretches the bar leaves
+            // open (between its islands, round the notch's fan) are the same border at the same
+            // place with the same bands — it lies exactly over the bar's runs, so it is one line
+            rim.Edge(0, W, 0, W, fl.top + fl.mod_h + 6, 1, clamp(round(W / 14), 6, 32), fl.hull, fl.phos,
+                     mix(mix(fl.trace, fl.trace_lit, clamp(st_ocol, 0, 1)), fl.phos_fill, clamp(st_ocol - 1, 0, 1)), 12, false)
             rim.Edge(st_res + fr, H - bt - fr, st_res, H, bs, -1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
                      if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), max(4, min(10, frame_band)), true)
             rim.Edge(st_res + fr, H - bt - fr, st_res, H, W - bs, 1, clamp(round((H - st_res - bt) / 16), 6, 32), fcol, fl.phos,
