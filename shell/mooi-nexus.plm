@@ -839,6 +839,19 @@ scene Nexus {
                move r, 0; line w - r, 0; curve w, r via w, 0; line w, h - r; curve w - r, h via w, h
                line r, h; curve 0, h - r via 0, h; line 0, r; curve r, 0 via 0, 0 }
 
+        // the deck's two short sides: the border lifts there too, so the music is round the plate
+        // and not only on its open edge. (The other long side is the screen's own edge.)
+        group {
+            show: not dk_vert
+            rim.Edge(r, h - r, 0, h, 0, -1, clamp(round((h - 2 * r) / 14), 6, 32), fillc, dk.acc, edgec, 12, true)
+            rim.Edge(r, h - r, 0, h, w, 1, clamp(round((h - 2 * r) / 14), 6, 32), fillc, dk.acc, edgec, 12, true)
+        }
+        group {
+            show: dk_vert
+            rim.Edge(r, w - r, 0, w, 0, -1, clamp(round((w - 2 * r) / 14), 6, 32), fillc, dk.acc, edgec, 12, false)
+            rim.Edge(r, w - r, 0, w, h, 1, clamp(round((w - 2 * r) / 14), 6, 32), fillc, dk.acc, edgec, 12, false)
+        }
+
         // the open side, in the stretches the notches leave free (or all of it with them off)
         group {
             show: not dk_vert and not dk_notches

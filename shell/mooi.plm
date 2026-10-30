@@ -2081,6 +2081,20 @@ scene Mooi {
                      fl.hull, fl.phos, rim_line, 12)
         }
 
+        // the pieces' own sides: the left piece's left edge and the right piece's right edge, when
+        // they hang free (full width, they run past the screen's corners and there is nothing to
+        // lift). The rim follows the border all the way round the notch, not just its foot.
+        group {
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1 and not full_w
+            rim.Edge(0, n_b - n_r, 0, n_b, nl_a, -1, clamp(round((n_b - n_r) / 14), 6, 32),
+                     fl.hull, fl.phos, rim_line, 12, true)
+        }
+        group {
+            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1 and not full_w
+            rim.Edge(0, n_b - n_r, 0, n_b, nr_e, 1, clamp(round((n_b - n_r) / 14), 6, 32),
+                     fl.hull, fl.phos, rim_line, 12, true)
+        }
+
         // corners (bar.frame = corners): marks at each piece's foot
         group {
             show: bar_frame > 0.5 and bar_frame < 1.5

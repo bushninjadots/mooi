@@ -96,10 +96,35 @@ fi
 echo "the notch reads the feed"
 if start mooi-notch; then ok "it opens"; else bad "it never opened"; sed -n 1,20p "$out/mooi-notch.log"; exit 1; fi
 until_fact "emit nt_show 1" nt_tab 1 && ok "the Music panel is open" || bad "the Music panel did not open (nt_tab $(get nt_tab))"
-feed 800 1 0 1
-if v=$(wait_between mv0 0.7 0.9); then ok "mv0 follows the line ($v)"; else bad "mv0 did not follow it ($v)"; fi
-feed 800 1 1 2
-wait_value mu_viz_missing true >/dev/null && ok "a missing frame says so" || bad "mu_viz_missing stayed $(get mu_viz_missing)"
+# The file watch can coalesce two quick writes, and a real producer writes thirty times a second,
+# so a surface recovers on the next frame either way; here the same line is simply written again.
+write_until() { # fact low high band playing missing
+    i=0; v=none
+    while [ "$i" -lt 5 ]; do
+        feed "$4" "$5" "$6" $((30 + i))
+        sleep 0.8
+        v=$(get "$1")
+        case "$v" in
+            *[!0-9.]*|'') : ;;
+            *) awk -v v="$v" -v lo="$2" -v hi="$3" 'BEGIN { exit !(v >= lo && v <= hi) }' && { echo "$v"; return 0; } ;;
+        esac
+        i=$((i + 1))
+    done
+    echo "$v"
+    return 1
+}
+write_until_true() { # fact band playing missing
+    i=0
+    while [ "$i" -lt 5 ]; do
+        feed "$2" "$3" "$4" $((30 + i))
+        sleep 0.8
+        [ "$(get "$1")" = true ] && return 0
+        i=$((i + 1))
+    done
+    return 1
+}
+if v=$(write_until mv0 0.7 0.9 800 1 0); then ok "mv0 follows the line ($v)"; else bad "mv0 did not follow it ($v)"; fi
+write_until_true mu_viz_missing 800 1 1 && ok "a missing frame says so" || bad "mu_viz_missing stayed $(get mu_viz_missing)"
 feed 0 0 0 3
 if wait_value mv0 0 >/dev/null; then ok "a silent frame rests it"; else bad "mv0 stayed at $(get mv0)"; fi
 no_errors

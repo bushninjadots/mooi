@@ -506,11 +506,18 @@ function decide()
 end
 
 local last_upkeep = os.time()
+-- Until when he was asked to hide (his panel's "hide for 10 minutes"). A deadline, not a timer:
+-- a refresh drops pending timers, and this way the next upkeep brings him back.
+local hidden_until = 0
 local function upkeep()
     local t = os.time()
     local dt = t - last_upkeep
     last_upkeep = t
     fact.beat = fact.beat + 1               -- the shell's sign that this logic is still going
+    -- `ready` is the scene's drawing gate. Only a spare and a hide may leave it false, and nothing
+    -- else may leave him running and invisible (found 2026-10-30: beat climbing, ready false,
+    -- nothing drawn). It is only ever lifted here, never lowered.
+    if not spare and not fact.ready and t >= hidden_until then fact.ready = true end
     local hour = tonumber(os.date("%H")) or 12
     local night = hour >= 23 or hour < 6
     energy = B.energy(energy, dt, activity == "sleeping", night)
@@ -771,7 +778,7 @@ local function hide_for(minutes)
     fact.panel = false
     fact.menu = false
     fact.ready = false
-    after(minutes * 60000, function() fact.ready = true end)
+    hidden_until = os.time() + minutes * 60   -- upkeep lifts it again
 end
 
 -- ── Desktop awareness (companion.react; brain.luau react) ────
