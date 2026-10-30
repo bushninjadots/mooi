@@ -94,6 +94,29 @@ function M.fresh(last_ms, now_ms)
     return now_ms - last_ms <= M.STALE_MS
 end
 
+-- The producer's cadence: a frame goes out at most 30 times a second, at once
+-- when its content moves, and at least every `keepalive` ms while it repeats.
+function M.should_publish(prev, now, now_ms, last_ms, keepalive)
+    if type(now) ~= "table" then return false end
+    if type(prev) ~= "table" then return true end
+    now_ms, last_ms = tonumber(now_ms) or 0, tonumber(last_ms) or 0
+    keepalive = tonumber(keepalive) or 500
+    if now_ms - last_ms >= keepalive then return true end
+
+    local function moved(a, b)
+        return math.abs((tonumber(a) or 0) - (tonumber(b) or 0)) > 0.002
+    end
+    for i = 1, M.BANDS do
+        if moved(now.bands and now.bands[i], prev.bands and prev.bands[i]) then return true end
+    end
+    for _, k in ipairs({ "bass", "high", "beat", "phase" }) do
+        if moved(now[k], prev[k]) then return true end
+    end
+    if (now.playing and true or false) ~= (prev.playing and true or false) then return true end
+    if (now.missing and true or false) ~= (prev.missing and true or false) then return true end
+    return now_ms - last_ms >= 33
+end
+
 -- Sample the 32 bands onto n values, keeping both endpoints and their order.
 function M.map(bands, n)
     n = math.max(1, math.floor(n or M.BANDS))

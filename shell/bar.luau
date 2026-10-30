@@ -11,6 +11,7 @@
 local barlayout = require("lib/barlayout")
 local sysinfo = require("lib/sysinfo")
 local updates = require("lib/updates")
+local vizfeed = require("lib/vizfeed")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -271,56 +272,86 @@ return function(ctx)
     local cava_lines, viz_missing = 0, false
     local CAVA = "cava.conf"
     sys.call("files.write", CAVA, table.concat({
-        "[general]", "bars = 16", "framerate = 30",
+        "[general]", "bars = 32", "framerate = 30",
         "[input]", "method = pipewire",
         "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
         "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
         "[smoothing]", "noise_reduction = 66", "" }, "\n"))
     local sent = {}
-    local swell = { level = 0, high = 0, phase = 0, sl = -1, sh = -1 }
+    local swell = nil                    -- the shared analysis: level, high, bass, beat, phase, tempo
+    local last_level, last_high = -1, -1
+    local seq, last_ms, prev = 0, 0, nil -- the published feed and its cadence
+    local silent_written = nil           -- the missing flag last written at rest
+    local function publish(cand, now_ms)
+        if prev and not vizfeed.should_publish(prev, cand, now_ms, last_ms, 500) then return end
+        seq = seq + 1
+        cand.seq = seq
+        prev, last_ms, silent_written = cand, now_ms, nil
+        sys.call("files.write", vizfeed.FILE, vizfeed.encode(cand))
+    end
+    local function rest_feed(missing)
+        missing = missing == true
+        if seq > 0 and prev == nil and silent_written == missing then return end
+        seq = seq + 1
+        local t = vizfeed.silent(seq)
+        t.missing = missing
+        prev, last_ms, silent_written = nil, 0, missing
+        sys.call("files.write", vizfeed.FILE, vizfeed.encode(t))
+    end
     local function rest_levels()
         for i = 0, 15 do fact["lv" .. i] = 0.06; sent[i] = 0.06 end
-        swell.level, swell.high, swell.sl, swell.sh = 0, 0, -1, -1
-        fact.fbass = 0; fact.fhigh = 0
+        swell, last_level, last_high = nil, -1, -1
+        fact.fbass = 0; fact.fhigh = 0; fact.fph = 0
     end
     local function listen()
         if cava then return end
-        local mine
+        local mine, frame = nil, 0
         cava_lines = 0
         mine = spawn("cava", { "-p", folder .. "/" .. CAVA }, function(line)
             if cava ~= mine then return end
             cava_lines = cava_lines + 1
+            frame = frame + 1
             local i, b = 0, {}
             for v in string.gmatch(line, "(%d+);") do
-                if i > 15 then break end
-                local x = math.min(1, (tonumber(v) or 0) / 1000)
-                b[i] = x
-                if math.abs(x - (sent[i] or 0)) > 0.02 then fact["lv" .. i] = x; sent[i] = x end
+                if i > 31 then break end
+                b[i] = math.min(1, (tonumber(v) or 0) / 1000)
                 i = i + 1
             end
-            if i < 16 then return end
-            -- The frame's swell (Tide's recipe): the bass with a fast attack and a slow release,
-            -- the treble likewise, and a phase that travels faster the louder it is.
-            local bass = math.min(1, math.sqrt((b[0] + b[1] + b[2] + b[3]) / 4) * 1.4)
-            local treble = math.min(1, math.sqrt((b[10] + b[11] + b[12] + b[13] + b[14] + b[15]) / 6) * 1.8)
-            local dt = 1 / 30
-            swell.level = swell.level + (bass - swell.level) * math.min(1, (bass > swell.level and 16 or (2.6 + 3 * swell.level)) * dt)
-            swell.high = swell.high + (treble - swell.high) * math.min(1, (treble > swell.high and 14 or 4) * dt)
-            swell.phase = swell.phase + dt * (0.6 + 2.4 * swell.level)
-            if math.abs(swell.level - swell.sl) > 0.015 then fact.fbass = swell.level; swell.sl = swell.level end
-            if math.abs(swell.high - swell.sh) > 0.02 then fact.fhigh = swell.high; swell.sh = swell.high end
-            fact.fph = swell.phase
+            if i < 32 then return end
+            local bands = {}
+            for j = 1, 32 do bands[j] = b[j - 1] or 0 end
+            -- The bar's own bands keep their first 16, exactly as before.
+            for j = 0, 15 do
+                local x = bands[j + 1]
+                if math.abs(x - (sent[j] or 0)) > 0.02 then fact["lv" .. j] = x; sent[j] = x end
+            end
+            -- One analysis for every surface: the bass, the treble, the beat and the phase.
+            local state = vizfeed.analyse(swell, bands, 1 / 30)
+            swell = state
+            if math.abs(state.level - last_level) > 0.015 then fact.fbass = state.level; last_level = state.level end
+            if math.abs(state.high - last_high) > 0.02 then fact.fhigh = state.high; last_high = state.high end
+            fact.fph = state.phase
+            publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,
+                      phase = state.phase, playing = true, missing = viz_missing }, frame * 1000 / 30)
         end, function()
             if cava ~= mine then return end
             cava = nil
             -- nothing ever came out: no cava on this machine. The bar says so; a refresh or a
             -- restart tries again once it is installed.
-            if cava_lines == 0 then viz_missing = true; fact.viz_missing = true end
-            rest_levels()
+            if cava_lines == 0 then
+                viz_missing = true
+                fact.viz_missing = true
+                rest_levels()
+                rest_feed(true)
+            end
         end)
         cava = mine
     end
-    local function hush() if cava then kill(cava, "term"); cava = nil end; rest_levels() end
+    local function hush()
+        if cava then kill(cava, "term"); cava = nil end
+        rest_levels()
+        rest_feed(viz_missing)
+    end
     rest_levels()
     -- The cover: a file the player names is used as it is; one on the web is fetched once
     -- into the scene's folder (the image service reads files).
@@ -355,9 +386,11 @@ return function(ctx)
         if placed.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
         if placed.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
         if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
+        local still = s.motion.reduced == true or s.motion.saver == "always"
+        local want_rim = s.music.rim == true and not still
         local want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
         local want_swell = s.frame.on and s.frame.music
-        if playing and (want_viz or want_swell) and not ctx.saving() and not viz_missing then listen() else hush() end
+        if playing and (want_viz or want_swell or want_rim) and not ctx.saving() and not viz_missing then listen() else hush() end
     end
 
     -- ── Actions ────────────────────────────────────────────────

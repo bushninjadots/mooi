@@ -2908,5 +2908,15 @@ test("config: the screen frame's music is off by default", function()
     eq(config.defaults().frame.music, false, "retired unless asked for")
 end)
 
+test("vizfeed: publishing is capped at 30 a second and keeps alive at 2 Hz", function()
+    local a = vizfeed.silent(1); a.bands[1] = 0.9
+    local b = vizfeed.silent(2); b.bands[1] = 0.9
+    eq(vizfeed.should_publish(a, b, 100, 0, 500), true, "50 ms since the last publish")
+    eq(vizfeed.should_publish(a, b, 520, 500, 500), false, "same bands, not yet due")
+    eq(vizfeed.should_publish(a, b, 1000, 500, 500), true, "the keepalive wins")
+    local changed = vizfeed.silent(3); changed.bands[1] = 0.1
+    eq(vizfeed.should_publish(a, changed, 520, 500, 500), true, "a real change goes at once")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
