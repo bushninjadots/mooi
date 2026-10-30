@@ -2011,6 +2011,9 @@ scene Mooi {
     // The one-border case: the screen frame on, the bar full width and all three pieces there.
     // Then the band and the pieces are one shape and its inner boundary is drawn once, below.
     let s_all = st_notch and frame_on and full_w and nlw > 1 and ncw > 1 and nrw > 1
+    // frame.motion means *this*: the frame is one frame always, and only while a track plays do
+    // its band and its border move (frame.music, and frame.style picks which of the three).
+    let fmove = frame_music and med.playing
     // ── One island's foot, as the visualiser ─────────────────────
     // An island's bottom border is the visualiser: eight bars cut from that line itself, joined at
     // their feet, stepping down into the desktop with the music — the bar's sixteen cava bands, two
@@ -2118,7 +2121,7 @@ scene Mooi {
         // and back up the left side to the point it started at. One stroke, one colour, one
         // width, no corner to line up — which is what "one whole frame" means.
         group {
-            show: s_all
+            show: s_all and not fmove
             path { stroke: st_owidth; color: nec
                    move nl_a, n_b - n_r
                    curve nl_a + n_r, n_b via nl_a, n_b
@@ -2143,44 +2146,8 @@ scene Mooi {
                    close }
         }
 
-        // ── Each island's foot, as the rim ───────────────────────
-        // Three islands, three borders: every piece's own foot line lifts with the music, filled
-        // with its hull and capped with its own edge, so the rim is what the bar stands on and
-        // never a band across the screen. Not on glass, blurred or clear surfaces, which have no
-        // opaque fill to carry the swells. The bars come from ui/rim.plm — one analysis for every
-        // surface — and at rest each is 0 tall, so this is the plain border again.
-        group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1
-            rim.Edge(if(full_w, 0, nl_a + n_r), nl_e - n_r, 0, screen.width, n_b, 1,
-                     clamp(round((nl_e - n_r - if(full_w, 0, nl_a + n_r)) / 14), 6, 32),
-                     fl.hull, fl.phos, nec, 12)
-        }
-        group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and ncw > 1
-            rim.Edge(nc_a + n_r, nc_e - n_r, 0, screen.width, n_b, 1,
-                     clamp(round((nc_e - n_r - nc_a - n_r) / 14), 6, 32),
-                     fl.hull, fl.phos, nec, 12)
-        }
-        group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1
-            rim.Edge(nr_a + n_r, if(full_w, screen.width, nr_e - n_r), 0, screen.width, n_b, 1,
-                     clamp(round((if(full_w, screen.width, nr_e - n_r) - nr_a - n_r) / 14), 6, 32),
-                     fl.hull, fl.phos, nec, 12)
-        }
-
-        // the pieces' own sides: the left piece's left edge and the right piece's right edge, when
-        // they hang free (full width, they run past the screen's corners and there is nothing to
-        // lift). The rim follows the border all the way round the notch, not just its foot.
-        group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1 and not full_w
-            rim.Edge(0, n_b - n_r, 0, n_b, nl_a, -1, clamp(round((n_b - n_r) / 14), 6, 32),
-                     fl.hull, fl.phos, nec, 12, true)
-        }
-        group {
-            show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1 and not full_w
-            rim.Edge(0, n_b - n_r, 0, n_b, nr_e, 1, clamp(round((n_b - n_r) / 14), 6, 32),
-                     fl.hull, fl.phos, nec, 12, true)
-        }
+        // No bars on this border any more: the frame's edge is one line and the music moves it
+        // (the frame.motion modes below), rather than a run of bars laid along it.
 
         // ── The screen's edge, where the bar is not ────────────────
         // With the screen frame on, the top of the frame is the bar's own silhouette: the border
@@ -2191,25 +2158,64 @@ scene Mooi {
             show: frame_on and gA > 2
             box { from: 0, 0; size: gA, bs; color: fcol }
             line { from: 0, bs; to: gA, bs; width: st_owidth; color: nec; show: not s_all }
-            rim.Edge(0, gA, 0, screen.width, bs, 1, clamp(round(gA / 14), 1, 32), fl.hull, fl.phos, nec, 12)
         }
         group {
             show: frame_on and nlw > 1 and ncw > 1 and gB1 - gB0 > 2
             box { from: gB0, 0; size: gB1 - gB0, bs; color: fcol }
             line { from: gB0, bs; to: gB1, bs; width: st_owidth; color: nec; show: not s_all }
-            rim.Edge(gB0, gB1, 0, screen.width, bs, 1, clamp(round((gB1 - gB0) / 14), 1, 32), fl.hull, fl.phos, nec, 12)
         }
         group {
             show: frame_on and ncw > 1 and nrw > 1 and gC1 - gC0 > 2
             box { from: gC0, 0; size: gC1 - gC0, bs; color: fcol }
             line { from: gC0, bs; to: gC1, bs; width: st_owidth; color: nec; show: not s_all }
-            rim.Edge(gC0, gC1, 0, screen.width, bs, 1, clamp(round((gC1 - gC0) / 14), 1, 32), fl.hull, fl.phos, nec, 12)
         }
         group {
             show: frame_on and gD < screen.width - 2
             box { from: gD, 0; size: screen.width - gD, bs; color: fcol }
             line { from: gD, bs; to: screen.width, bs; width: st_owidth; color: nec; show: not s_all }
-            rim.Edge(gD, screen.width, 0, screen.width, bs, 1, clamp(round((screen.width - gD) / 14), 1, 32), fl.hull, fl.phos, nec, 12)
+        }
+
+        // ── The same frame, as the music ────────────────────────
+        // The three frame.motion modes are not three frames. The frame is one: the band plus the
+        // one border above. While a track plays that border is what moves — `swell` thickens the
+        // band and the border follows it, `crests` runs ripples along it, `pulse` catches the
+        // beat — and with the frame's music off, or the music paused, this draws nothing and the
+        // frame is exactly the plain one. It is drawn here, over the pieces and under the
+        // modules, so the border sits above every body it traces; iRis draws its field in the
+        // bar's own window for the same reason. No bars: the line itself is the visualiser.
+        group {
+            show: s_all and fmove
+            body {
+                color: fcol
+                opacity: st_frame_op
+                border: if(st_frame_edge > 0.5, 1.6, st_owidth) + if(frame_style > 1.5, 3 * clamp(rm_beat, 0, 1), 0.9 * clamp(flvl + fhi, 0, 1)), mix(fnec, fl.phos, if(frame_style > 1.5, clamp(rm_beat, 0, 1), 0))
+                // the pieces, the two sides and the screen's foot, one union; the tops go above
+                // the screen so the border is not drawn along the screen's own edge
+                box { from: nl_a, -n_r; size: nl_e - nl_a, n_b + n_r; corner: n_r }
+                box { from: nc_a, -n_r; size: nc_e - nc_a, n_b + n_r; corner: n_r }
+                box { from: nr_a, -n_r; size: nr_e - nr_a, n_b + n_r; corner: n_r }
+                box { from: 0, -n_r; size: bs, H - bt + n_r; blend: st_frame_r + 2 }
+                box { from: W - bs, -n_r; size: bs, H - bt + n_r; blend: st_frame_r + 2 }
+                box { from: 0, H - bt; size: W, bt; blend: st_frame_r + 2 }
+                // swell and crests: the edge itself ripples (the lobes deform the union, and the
+                // border is the union's edge, so the line moves — no bars anywhere)
+                ellipse { at: bs, H * 0.14; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 0.2 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: bs, H * 0.34; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 1.1 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: bs, H * 0.54; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 2.0 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: bs, H * 0.74; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 2.9 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W - bs, H * 0.14; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 0.7 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W - bs, H * 0.34; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 1.6 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W - bs, H * 0.54; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 2.5 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W - bs, H * 0.74; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 3.4 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.07, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(0.0 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.19, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 1.1 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.31, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 2.2 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.43, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 3.3 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.55, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 4.4 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.67, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 5.5 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.79, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 6.6 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+                ellipse { at: W * 0.91, H - bt; radius: (5 + 9 * clamp(flvl + fhi, 0, 1)) * if(frame_style == 1, 0.45, 1) * (0.55 + 0.45 * sin(57.3 * 7.7 - fphs * 126)); blend: 16 * clamp(flvl + fhi, 0, 1); show: frame_style < 1.5 }
+            }
         }
 
         // corners (bar.frame = corners): marks at each piece's foot
@@ -4829,28 +4835,10 @@ scene Mooi {
                    line W - bs, sy - 1
                    close }
         }
-        // ── The frame's border, as the same border as the bar ──────
-        // The two used to be separate lines that happened not to move together. They are one edge:
-        // the bar's foot is this frame's top beside it, and these three runs are the rest of the
-        // same, from the corners the bar's foot ends at, down the sides and round the foot of the
-        // screen. Same facts as the bar (ui/rim.plm), so the rim runs out of the bar, round the
-        // frame, and back into it — the frame has only its band to lift into, so the reach is that.
+        // (no bars on the frame's sides and foot either: `frame.motion` moves the border itself,
+        // and with its music off the border here is the plain one.)
         group {
-            show: frame_on and st_frame_edge < 1.5 and bar_frame < 0.5 and bar_surface < 0.5
-            // the top: the bar's own foot line, drawn here too, so the stretches the bar leaves
-            // open (between its islands, round the notch's fan) are the same border at the same
-            // place with the same bands — it lies exactly over the bar's runs, so it is one line
-            // Three runs: the top is the bar's own silhouette (its pieces' feet and sides, and the
-            // screen's edge between them), so the frame closes onto the bar rather than through it.
-            rim.Edge(sy, H - bt, sy, H, bs, -1, clamp(round((H - sy - bt) / 16), 6, 32), fcol, fl.phos,
-                     fnec, 12, true)
-            rim.Edge(sy, H - bt, sy, H, W - bs, 1, clamp(round((H - sy - bt) / 16), 6, 32), fcol, fl.phos,
-                     fnec, 12, true)
-            rim.Edge(bs, W - bs, 0, W, H - bt, 1, clamp(round((W - 2 * bs) / 16), 6, 32), fcol, fl.phos,
-                     fnec, 12, false)
-        }
-        group {
-            show: frame_on and not fstill
+            show: frame_on and not fstill and not st_notch
             body {
                 color: fcol
                 opacity: fthin * st_frame_op   // tinted like the still band, never glass
