@@ -13,7 +13,7 @@ import "ui/deck.plm"
 
 scene Notch {
     permissions {
-        run: "pleamar", "env", "claude", "gh", "hyprctl", "magick", "find", "cava", "curl", "qs", "awww", "xdg-open", "mooi"
+        run: "pleamar", "env", "claude", "gh", "hyprctl", "magick", "find", "curl", "qs", "awww", "xdg-open", "mooi"
         services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env"
     }
 
@@ -292,6 +292,9 @@ scene Notch {
     text mu_len = ""
     fact mv0 = 0
     fact mu_viz_missing = false // cava is not installed: the panel says so (shell/mooi-notch.luau)
+    fact music_rim = true        // music.rim: the master, published by mooi-notch.luau
+    fact music_rim_gain = 1      // music.rim_gain / 100
+    fact music_rim_glow = true   // music.rim_glow
     fact mv1 = 0
     fact mv2 = 0
     fact mv3 = 0

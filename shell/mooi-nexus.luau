@@ -18,6 +18,7 @@ local hypr = require("lib/hypr")
 local atlas = require("lib/atlas")
 local deck = require("lib/nexusdeck")
 local notch = require("lib/notch")
+local vizfeed = require("lib/vizfeed")
 
 local FILE, SCENES = "settings.json", "nexus-scenes.json"
 
@@ -116,12 +117,10 @@ end)
 
 -- ── Opening and closing ──
 local closing = false
-local cava, viz              -- the visualiser's cava, and what starts or stops it (below)
 local function close(why)
     if closing then return end
     closing = true
     log("nexus · closing: " .. tostring(why or "asked"))
-    if cava then pcall(kill, cava, "term"); cava = nil end
     pcall(run, "pleamar", { "--say", "mooi-notch", "emit nt_close" }, function() end)   -- a panel it opened goes with it
     fact.dk_open = false
     pcall(sys.call, "thumbnails.want")
@@ -502,7 +501,6 @@ pcall(sys.watch, "media", function(m)
     cover(media.art)
     pos, pos_at = tonumber(media.position) or 0, os.time()
     publish_status()
-    if viz then viz() end
 end)
 every(1000, function()
     local len = tonumber(media.length) or 0
@@ -510,45 +508,33 @@ every(1000, function()
     local p = pos + (media.playing and (os.time() - pos_at) * (tonumber(media.rate) or 1) or 0)
     fact.nx_prog = math.min(1, p / len)
 end)
-local CAVA = "cava-nexus.conf"
-pcall(sys.call, "files.write", CAVA, table.concat({
-    "[general]", "bars = 32", "framerate = 30",
-    "[input]", "method = pipewire",
-    "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
-    "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
-    "[smoothing]", "noise_reduction = 70", "" }, "\n"))
-local sent = {}
--- A cava that never printed a band is not installed: say so once and stop respawning it
--- (audit 2026-10-29).
-local cava_lines, viz_missing = 0, false
+-- D112: the bar owns the one cava. The deck reads the line it publishes, and only while open.
+local viz_seq, viz_at, viz_missing = nil, 0, false
 local still = type(settings.motion) == "table" and (settings.motion.reduced == true or settings.motion.saver == "always")
-local function hush()
-    if cava then pcall(kill, cava, "term"); cava = nil end
-    for i = 0, 31 do fact["dv" .. i] = 0; sent[i] = 0 end
+local function rest_viz()
+    for i = 0, 31 do fact["dv" .. i] = 0 end
 end
-function viz()
-    local want = fact.dk_open and fact.dk_viz and media.playing == true and not still
-    if not want then hush(); return end
-    if cava or viz_missing then return end
-    local mine
-    cava_lines = 0
-    mine = spawn("cava", { "-p", data_folder .. "/" .. CAVA }, function(line)
-        if cava ~= mine then return end
-        cava_lines = cava_lines + 1
-        local i = 0
-        for v in line:gmatch("(%d+);") do
-            if i > 31 then break end
-            local x = math.min(1, (tonumber(v) or 0) / 1000)
-            if math.abs(x - (sent[i] or 0)) > 0.025 then fact["dv" .. i] = x; sent[i] = x end
-            i = i + 1
-        end
-    end, function()
-        if cava ~= mine then return end
-        cava = nil
-        if cava_lines == 0 then viz_missing = true; notice("CAVA MISSING · pacman -S cava") end
-    end)
-    cava = mine
+local function take_viz()
+    local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
+    if not ok or type(raw) ~= "string" then return end
+    local t = vizfeed.decode(raw)
+    if not t or not vizfeed.newer(viz_seq, t.seq) then return end
+    viz_seq, viz_at = t.seq, os.time()
+    if t.missing and not viz_missing then notice("CAVA MISSING · pacman -S cava") end
+    viz_missing = t.missing == true
+    -- a silent frame rests the bars even while the deck is shut, so it cannot freeze on reopen
+    if not t.playing then rest_viz(); return end
+    if not (fact.dk_open and fact.dk_viz) then return end
+    for i = 0, 31 do fact["dv" .. i] = t.bands[i + 1] end
 end
+pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
+every(500, function()
+    if fact.dk_open and fact.dk_viz and viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then
+        viz_seq, viz_at = nil, 0
+        rest_viz()
+    end
+end)
+take_viz()
 on("nx_media", function(v)
     local n = tonumber(v)
     pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
@@ -1089,5 +1075,5 @@ bar_states()
 every(2000, bar_states)
 read_desktop()
 every(1500, read_desktop)
-after(40, function() fact.dk_open = true; burst(); viz() end)
+after(40, function() fact.dk_open = true; burst(); take_viz() end)
 after(1300, burst)           -- the compositor's pictures often arrive on the second asking

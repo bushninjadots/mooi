@@ -13,7 +13,7 @@ import "ui/playerviews.plm" as views
 
 scene Player {
     permissions {
-        run: "mpc", "matugen", "ffmpeg", "playerctl", "cava", "curl", "pleamar", "magick", "mkdir", "cat", "easyeffects", "pgrep", "cp", "ls", "mpv", "hyprctl", "yt-dlp"
+        run: "mpc", "matugen", "ffmpeg", "playerctl", "curl", "pleamar", "magick", "mkdir", "cat", "easyeffects", "pgrep", "cp", "ls", "mpv", "hyprctl", "yt-dlp"
         services: "media", "media.*", "audio", "audio.*", "files", "files.write", "env"
     }
 
@@ -429,6 +429,9 @@ scene Player {
     text video_why = ""
     fact eq_ok = true            // EasyEffects is there
     fact viz_still = false       // reduced motion or the saver: the visualisers rest
+    fact music_rim = true        // music.rim: the master, published by mooi-player.luau
+    fact music_rim_gain = 1      // music.rim_gain / 100
+    fact music_rim_glow = true   // music.rim_glow
     fact video_busy = false
     fact video_ok = true
     fact vbx = 0

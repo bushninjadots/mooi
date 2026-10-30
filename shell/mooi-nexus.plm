@@ -16,7 +16,7 @@ import "ui/deck.plm"
 
 scene Nexus {
     permissions {
-        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "curl", "magick", "kitty", "btop", "hostname", "whoami", "cava", "zenity"
+        run: "pleamar", "cat", "df", "sensors", "hyprctl", "mooi", "curl", "magick", "kitty", "btop", "hostname", "whoami", "zenity"
         services: "workspaces", "clock", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want"
     }
 
@@ -360,6 +360,9 @@ scene Nexus {
     // the music on the deck's open edge (cava, 32 bands) while something plays (nexus.visualiser),
     // and how many bars that edge is cut into (nexus.bars: 8 · 12 · 16 · 24)
     fact dk_viz = false
+    fact music_rim = true        // music.rim: the master, published by mooi-nexus.luau
+    fact music_rim_gain = 1      // music.rim_gain / 100
+    fact music_rim_glow = true   // music.rim_glow
     fact dk_bars = 16
     fact dv0 = 0
     fact dv1 = 0

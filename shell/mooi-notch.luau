@@ -1,5 +1,5 @@
 -- mooi's side notch (D106): its logic. The fan's tabs and each panel's contents — a conversation with
--- Claude (lib/claude, through the `claude` command), the music (the media service, cava), your
+-- Claude (lib/claude, through the `claude` command), the music (the media service, the bar's feed), your
 -- workspaces and wallpapers as carousels, the weather (the Nexus's cache, or open-meteo), and GitHub
 -- (the `gh` command, signed in as you). A panel is read when it is opened, not before. Pure parts are
 -- lib/notch's.
@@ -15,6 +15,7 @@ local hypr = require("lib/hypr")
 local deck = require("lib/nexusdeck")
 local claude = require("lib/claude")
 local N = require("lib/notch")
+local vizfeed = require("lib/vizfeed")
 
 local FILE, CHAT = "settings.json", "notch-claude.json"
 
@@ -261,45 +262,33 @@ on("nt_new", function()
 end)
 on("nt_scroll", function(v) scroll = math.max(0, scroll + math.floor(tonumber(v) or 0) * 3); show_chat() end)
 
--- ── Music: the media service, the cover, where the song is, cava while it plays and is shown ──
+-- ── Music: the media service, the cover, where the song is, and the bar's feed while it is shown ──
 local media, pos, pos_at = {}, 0, os.time()
 local art_url = nil
 local function clock(s) s = math.max(0, math.floor(tonumber(s) or 0)); return string.format("%d:%02d", math.floor(s / 60), s % 60) end
-local cava, sent = nil, {}
--- A cava that never printed a band is not installed: say so once and stop respawning it
--- (audit 2026-10-29).
-local cava_lines, viz_missing = 0, false
-local CAVA = "cava-notch.conf"
-pcall(sys.call, "files.write", CAVA, table.concat({
-    "[general]", "bars = 24", "framerate = 30", "[input]", "method = pipewire",
-    "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
-    "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10", "[smoothing]", "noise_reduction = 70", "" }, "\n"))
+-- D112: the bar owns the one cava. The Music panel reads the line it publishes, and only while up.
+local still = type(settings.motion) == "table" and (settings.motion.reduced == true or settings.motion.saver == "always")
+local viz_seq, viz_at = nil, 0
+local function rest_viz() for i = 0, 23 do fact["mv" .. i] = 0 end end
+local function take_viz()
+    local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
+    if not ok or type(raw) ~= "string" then return end
+    local t = vizfeed.decode(raw)
+    if not t or not vizfeed.newer(viz_seq, t.seq) then return end
+    viz_seq, viz_at = t.seq, os.time()
+    fact.mu_viz_missing = t.missing == true
+    -- a silent frame rests the bars even while the panel is shut, so it cannot freeze on reopen
+    if not t.playing or still then rest_viz(); return end
+    if not (fact.nt_open and fact.nt_tab == 1) then return end
+    local bands = vizfeed.map(t.bands, 24)
+    for i = 0, 23 do fact["mv" .. i] = bands[i + 1] end
+end
+pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
+every(500, function()
+    if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; rest_viz() end
+end)
 local function viz()
-    local want = fact.nt_open and fact.nt_tab == 1 and media.playing == true
-    if not want then
-        if cava then pcall(kill, cava, "term"); cava = nil end
-        for i = 0, 23 do if (sent[i] or 0) ~= 0 then fact["mv" .. i] = 0; sent[i] = 0 end end
-        return
-    end
-    if cava or viz_missing then return end
-    local mine
-    cava_lines = 0
-    mine = spawn("cava", { "-p", data_folder .. "/" .. CAVA }, function(line)
-        if cava ~= mine then return end
-        cava_lines = cava_lines + 1
-        local i = 0
-        for v in line:gmatch("(%d+);") do
-            if i > 23 then break end
-            local x = math.min(1, (tonumber(v) or 0) / 1000)
-            if math.abs(x - (sent[i] or 0)) > 0.025 then fact["mv" .. i] = x; sent[i] = x end
-            i = i + 1
-        end
-    end, function()
-        if cava ~= mine then return end
-        cava = nil
-        if cava_lines == 0 then viz_missing = true; fact.mu_viz_missing = true end
-    end)
-    cava = mine
+    if fact.nt_open and fact.nt_tab == 1 and media.playing == true then take_viz() else rest_viz() end
 end
 pcall(sys.watch, "media", function(m)
     media = type(m) == "table" and m or {}

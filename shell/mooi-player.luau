@@ -8,6 +8,7 @@ local config = require("lib/config")
 local ferro = require("lib/ferro")
 local P = require("lib/player")
 local VZ = require("lib/vizbands")
+local vizfeed = require("lib/vizfeed")
 
 local HOME = tostring(sys.ask("env", "HOME") or "")
 local function read(name, kind)
@@ -208,7 +209,7 @@ local function refresh_song()
     end)
 end
 
-local viz   -- the visualiser follows the state; defined with cava, below
+local viz   -- the visualiser follows the state; defined with the shared feed, below
 local mpd_mixer = false
 -- The system's output, for a player without a mixer of its own (and for any other player).
 local sys_vol = nil
@@ -329,51 +330,34 @@ pcall(sys.watch, "media", function(m)
     show_remote()
 end)
 
--- ── The visualiser: cava while something plays and the player is up ──
-local CAVA = "cava-player.conf"
-pcall(sys.call, "files.write", CAVA, table.concat({
-    "[general]", "bars = 24", "framerate = 30",
-    "[input]", "method = pipewire",
-    "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
-    "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
-    "[smoothing]", "noise_reduction = 66", "" }, "\n"))
-local cava, sent = nil, {}
--- A cava that never printed a band is not installed (or cannot read PipeWire): the player says
--- so once and stops respawning it (audit 2026-10-29).
-local cava_lines, viz_missing = 0, false
-local function hush()
-    if cava then kill(cava, "term"); cava = nil end
-    for i = 0, 23 do fact["nv" .. i] = 0.03; sent[i] = 0.03 end
-end
-local function listen_cava()
-    if cava or viz_missing then return end
-    local mine
-    cava_lines = 0
-    mine = spawn("cava", { "-p", folder .. "/" .. CAVA }, function(line)
-        if cava ~= mine then return end
-        cava_lines = cava_lines + 1
-        local i = 0
-        for v in line:gmatch("(%d+);") do
-            if i > 23 then break end
-            local x = math.min(1, (tonumber(v) or 0) / 1000)
-            if math.abs(x - (sent[i] or 0)) > 0.02 then fact["nv" .. i] = x; sent[i] = x end
-            i = i + 1
-        end
-    end, function()
-        if cava ~= mine then return end
-        cava = nil
-        if cava_lines == 0 then
-            viz_missing = true
-            say("VISUALIZER NEEDS CAVA · pacman -S cava")
-        end
-    end)
-    cava = mine
-end
--- Reduced motion and "always" saving keep the visualisers still and cava off (as the desk does).
+-- ── The visualiser: the bar's shared feed, while something plays and the player is up ──
+-- Reduced motion and "always" saving keep the visualisers still (as the desk does).
 local motion = type(settings.motion) == "table" and settings.motion or {}
 fact.viz_still = motion.reduced == true or motion.saver == "always"
+-- D112: the bar owns the one cava. The player reads the line it publishes, and only while up.
+local viz_seq, viz_at, viz_missing = nil, 0, false
+local function hush() for i = 0, 23 do fact["nv" .. i] = 0.03 end end
+local function take_viz()
+    local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
+    if not ok or type(raw) ~= "string" then return end
+    local t = vizfeed.decode(raw)
+    if not t or not vizfeed.newer(viz_seq, t.seq) then return end
+    viz_seq, viz_at = t.seq, os.time()
+    -- cava is not installed (or cannot read PipeWire): the player says so once, as it did alone
+    if t.missing and not viz_missing then say("VISUALIZER NEEDS CAVA · pacman -S cava") end
+    viz_missing = t.missing == true
+    -- a silent frame rests the bars even while the player is shut, so it cannot freeze on reopen
+    if not t.playing then hush(); return end
+    if not (fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still) then return end
+    local bands = vizfeed.map(t.bands, 24)
+    for i = 0, 23 do fact["nv" .. i] = bands[i + 1] end
+end
+pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
+every(500, function()
+    if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; hush() end
+end)
 function viz()
-    if fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still and not viz_missing then listen_cava() else hush() end
+    if fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still then take_viz() else hush() end
 end
 
 -- ── The hands ────────────────────────────────────────────────

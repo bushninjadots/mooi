@@ -128,6 +128,20 @@ wait_value dk_cascade true >/dev/null && ok "Cascade is chosen in the settings" 
 c0=$(get cy_0); c8=$(get cy_8)
 if [ "${c8%.*}" -gt "${c0%.*}" ]; then ok "its shelves are stacked down the edge"; else bad "shelves not stacked ($c0, $c8)"; fi
 
+echo "the music feed"
+viz="$out/data/pleamar/mooi/viz-levels.txt"
+printf 'v1 %s 900 400 700 500 1 0 41\n' "$(yes 500 | head -32 | tr '\n' ' ')" > "$viz"
+i=0; v0=0
+while [ "$i" -lt 25 ]; do
+    v0=$(get dv0)
+    case "$v0" in 0.[4-6]*) break ;; esac
+    sleep 0.2; i=$((i + 1))
+done
+case "$v0" in
+    0.[4-6]*) ok "the deck reads the shared feed (dv0 $v0)" ;;
+    *) bad "the deck does not follow viz-levels.txt (dv0 $v0)" ;;
+esac
+
 echo "closing"
 say "emit nx_close" >/dev/null
 i=0
