@@ -51,6 +51,7 @@ end
 -- and again: the moment this one *is* what answers to "bmo" — the other ended as it was being
 -- replaced, which is what a refresh does — it takes over instead of staying invisible for good.
 local spare = false
+local spare_since = 0        -- when this one last concluded it was the second one
 local claim -- below, once show_face and save_state exist
 -- the time, and where this process keeps a fresh table (each process its own place)
 local mark = (os.time() % 100000) * 10000 + (tonumber(tostring({}):match("(%x+)$") or "0", 16) or 0) % 10000
@@ -78,9 +79,16 @@ local function end_spare()
 end
 local function only_one()
     answer(function(theirs)
-        -- only a clear answer that is not his own makes him the spare (no answer: he is not)
-        if not theirs or theirs == mark then return end
+        -- only a clear answer that is not his own makes him the spare (no answer: he is not).
+        -- A lone BMO has to say so where the scene reads it: `ready` (found 2026-10-30: the only
+        -- BMO alive, beat climbing, ready false, nothing drawn — the scene defaulted it and only
+        -- the spare's claim ever lifted it).
+        if not theirs or theirs == mark then
+            if not fact.ready then fact.ready = true end
+            return
+        end
         spare = true
+        spare_since = os.time()
         fact.ready = false
         end_spare()
         after(2000, claim)
@@ -176,7 +184,29 @@ claim = function()
             -- still someone else's name, or nobody's: the second case is one we cannot fix from
             -- here (we answer to bmo-<pid>), so ask our own name to quit and let the shell start
             -- a BMO that can take it
-            if theirs then misses = 0 elseif (misses + 1) >= 4 then end_spare() else misses = misses + 1 end
+            -- A spare for this long is not a refresh race (a refresh replaces him in a second or
+            -- two): show him rather than leave a live BMO invisible for as long as the other one
+            -- answers, which is the state the user found on 2026-10-30.
+            if spare_since > 0 and os.time() - spare_since > 15 then
+                spare = false
+                fact.ready = true
+                place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
+                save_state()
+                show_face()
+                return
+            end
+            if theirs then misses = 0
+            elseif (misses + 1) >= 4 then
+                -- Nobody answers to "bmo" at all, and `end_spare` can only end a bmo-<pid>: this one
+                -- may already hold the name behind a socket that answers nothing. Show him rather
+                -- than leave a running BMO invisible (2026-10-30).
+                spare = false
+                fact.ready = true
+                place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
+                save_state()
+                show_face()
+                return
+            else misses = misses + 1 end
             after(1500, claim)
             return
         end
