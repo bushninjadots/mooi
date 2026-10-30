@@ -1768,6 +1768,10 @@ scene Mooi {
     let bt = frame_band + aflat * pick(frame_style, 0.6, 0.15, 0.45)
     let bs = frame_band + aside * 0.6
     let fcol = mix(mix(fl.hull, fl.ground, bar_ground < 0.5), fl.steel_900, mech)
+    // The one border colour: the bar's own outline (`nec` in the notch below), so the frame's
+    // sides, its foot and every run through the bar's notches are literally the same line in the
+    // same colour. `frame.edge` still overrides it with phos when that edge is the neon one.
+    let fnec = mix(mix(mix(fl.trace, fl.trace_lit, clamp(st_ocol, 0, 1)), fl.phos_fill, clamp(st_ocol - 1, 0, 1)), fl.steel_300, mech)
 
     // ── Ground ────────────────────────────────────────────────
     // Islands mode: the strip is black, the palette's hull, or nothing. Full mode: the panel
@@ -2015,20 +2019,24 @@ scene Mooi {
     // The pieces are flush with the screen's corners, so their outer edge runs past it. The body
     // unions every shape it holds, so the ends go to the edge itself and the fillets' outer arms
     // stop there: off the surface, they were invisible anyway and the renderer reported the body
-    // as cut by n_r + n_f on each side.
-    let nl_a = max(0, if(full_w, -n_r, nlx - n_pad))
-    let nr_e = min(screen.width, if(full_w, screen.width + n_r, nrx + nrw + n_pad))
+    // as cut by n_r + n_f on each side. With the screen frame on they are inset by its band
+    // instead: the piece's flank and the frame's side line are then the same vertical at `bs`,
+    // so the border does not jog sideways where the bar meets the frame.
+    let nl_a = if(full_w, if(frame_on, bs, 0), max(0, nlx - n_pad))
+    let nr_e = if(full_w, if(frame_on, screen.width - bs, screen.width), min(screen.width, nrx + nrw + n_pad))
     // Where the screen's own edge is left bare between the pieces: the border runs along the edge
     // there, then turns down around the next piece and back out. `gA` is where the first piece
     // begins, `gD` where the last one ends (the edge itself, when they are flush with it).
     // Each gap starts where the piece's flare has finished, so the band and the line stop at the
     // edge the piece folds back over instead of cutting across the fold.
-    let gA = if(nlw > 1, if(full_w, 0, max(0, nl_a - n_f)), if(ncw > 1, max(0, nc_a - n_f), max(0, nr_a - n_f)))
-    let gD = if(nrw > 1, if(full_w, screen.width, min(screen.width, nr_e + n_f)), if(ncw > 1, min(screen.width, nc_e + n_f), min(screen.width, nl_e + n_f)))
-    let gB0 = nl_e + n_f
-    let gB1 = nc_a - n_f
-    let gC0 = nc_e + n_f
-    let gC1 = nr_a - n_f
+    // (with the screen frame on, these end on the pieces' own sides: the border leaves the edge
+    // at the piece's flank, so the gap's run and the piece's flank meet at one point, not two)
+    let gA = if(nlw > 1, if(full_w, 0, max(0, nl_a)), if(ncw > 1, max(0, nc_a), max(0, nr_a)))
+    let gD = if(nrw > 1, if(full_w, screen.width, min(screen.width, nr_e)), if(ncw > 1, min(screen.width, nc_e), min(screen.width, nl_e)))
+    let gB0 = if(frame_on, nl_e, nl_e + n_f)
+    let gB1 = if(frame_on, nc_a, nc_a - n_f)
+    let gC0 = if(frame_on, nc_e, nc_e + n_f)
+    let gC1 = if(frame_on, nr_a, nr_a - n_f)
     group {
         show: st_notch
         body {
@@ -2043,20 +2051,22 @@ scene Mooi {
             shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * (bar_surface < 2.5 or mech)
             // the left piece
             box { from: nl_a, -n_r; size: nl_e - nl_a, n_b + n_r; corner: n_r; show: nlw > 1 }
-            path { show: nlw > 1; move nl_e, 0; line nl_e + n_f, 0; curve nl_e, n_f via nl_e, 0; close }
-            path { show: nlw > 1 and not full_w; move nl_a, 0; line max(0, nl_a - n_f), 0; curve nl_a, n_f via nl_a, 0; close }
+            path { show: nlw > 1 and not frame_on; move nl_e, 0; line nl_e + n_f, 0; curve nl_e, n_f via nl_e, 0; close }
+            path { show: nlw > 1 and not full_w and not frame_on; move nl_a, 0; line max(0, nl_a - n_f), 0; curve nl_a, n_f via nl_a, 0; close }
             // the notch
             box { from: nc_a, -n_r; size: nc_e - nc_a, n_b + n_r; corner: n_r; show: ncw > 1 }
-            path { show: ncw > 1; move nc_a, 0; line nc_a - n_f, 0; curve nc_a, n_f via nc_a, 0; close }
-            path { show: ncw > 1; move nc_e, 0; line nc_e + n_f, 0; curve nc_e, n_f via nc_e, 0; close }
+            path { show: ncw > 1 and not frame_on; move nc_a, 0; line nc_a - n_f, 0; curve nc_a, n_f via nc_a, 0; close }
+            path { show: ncw > 1 and not frame_on; move nc_e, 0; line nc_e + n_f, 0; curve nc_e, n_f via nc_e, 0; close }
             // the right piece
             box { from: nr_a, -n_r; size: nr_e - nr_a, n_b + n_r; corner: n_r; show: nrw > 1 }
-            path { show: nrw > 1; move nr_a, 0; line nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; close }
-            path { show: nrw > 1 and not full_w; move nr_e, 0; line min(screen.width, nr_e + n_f), 0; curve nr_e, n_f via nr_e, 0; close }
+            path { show: nrw > 1 and not frame_on; move nr_a, 0; line nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; close }
+            path { show: nrw > 1 and not full_w and not frame_on; move nr_e, 0; line min(screen.width, nr_e + n_f), 0; curve nr_e, n_f via nr_e, 0; close }
         }
-        // the outline (bar.frame = line): the fillet, down the side, round the foot, and back
+        // the outline (bar.frame = line): the fillet, down the side, round the foot, and back.
+        // With the screen frame on this is the frame's border instead (the group below), so these
+        // open paths — whose closing segment is the top edge — step aside.
         group {
-            show: bar_frame < 0.5
+            show: bar_frame < 0.5 and not frame_on
             path { stroke: st_owidth; color: nec; show: nlw > 1 and full_w
                    move 0, n_b; line nl_e - n_r, n_b; curve nl_e, n_b - n_r via nl_e, n_b; line nl_e, n_f; curve nl_e + n_f, 0 via nl_e, 0 }
             path { stroke: st_owidth; color: nec; show: nlw > 1 and not full_w
@@ -2071,6 +2081,30 @@ scene Mooi {
                    move nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
                    line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_f; curve min(screen.width, nr_e + n_f), 0 via nr_e, 0 }
         }
+        // ── The pieces' outline, as the frame's border ──────────
+        // One closed path per piece: down its left side from the screen's top edge, round the
+        // foot, up its right side, and back across the top *above* the screen (y = -1), so the
+        // closing segment is never seen. The gap runs above end exactly on the sides (gB0 = nl_e,
+        // gB1 = nc_a, …), so edge, side, foot and the next edge are one line with no step. When a
+        // piece is flush with a corner (full width) the outer corner is left square and its foot
+        // runs to the screen's edge, where the frame's side band picks it up.
+        group {
+            show: frame_on and bar_frame < 0.5
+            path { stroke: st_owidth; color: nec; show: nlw > 1
+                   move nl_a, -1; line nl_a, n_b - if(full_w, 0, n_r)
+                   curve nl_a + n_r, n_b via nl_a, n_b
+                   line nl_e - if(full_w, 0, n_r), n_b; curve nl_e, n_b - if(full_w, 0, n_r) via nl_e, n_b
+                   line nl_e, -1; close }
+            path { stroke: st_owidth; color: nec; show: ncw > 1
+                   move nc_a, -1; line nc_a, n_b - n_r; curve nc_a + n_r, n_b via nc_a, n_b
+                   line nc_e - n_r, n_b; curve nc_e, n_b - n_r via nc_e, n_b
+                   line nc_e, -1; close }
+            path { stroke: st_owidth; color: nec; show: nrw > 1
+                   move nr_a, -1; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
+                   line nr_e - if(full_w, 0, n_r), n_b; curve nr_e, n_b - if(full_w, 0, n_r) via nr_e, n_b
+                   line nr_e, -1; close }
+        }
+
         // ── Each island's foot, as the rim ───────────────────────
         // Three islands, three borders: every piece's own foot line lifts with the music, filled
         // with its hull and capped with its own edge, so the rim is what the bar stands on and
@@ -2102,12 +2136,12 @@ scene Mooi {
         group {
             show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1 and not full_w
             rim.Edge(0, n_b - n_r, 0, n_b, nl_a, -1, clamp(round((n_b - n_r) / 14), 6, 32),
-                     fl.hull, fl.phos, rim_line, 12, true)
+                     fl.hull, fl.phos, nec, 12, true)
         }
         group {
             show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1 and not full_w
             rim.Edge(0, n_b - n_r, 0, n_b, nr_e, 1, clamp(round((n_b - n_r) / 14), 6, 32),
-                     fl.hull, fl.phos, rim_line, 12, true)
+                     fl.hull, fl.phos, nec, 12, true)
         }
 
         // ── The screen's edge, where the bar is not ────────────────
@@ -4715,10 +4749,11 @@ scene Mooi {
         // takes over only while the swell moves.
         let fstill = flvl < 0.02 and fhi < 0.02
         let fr = st_frame_r                                 // the inner corners (frame.radius)
-        // Where the frame's side band begins. With the bar in notch mode flush to the screen's
-        // corners its pieces are the frame's top edge there, so the sides start at their foot;
-        // otherwise they start at the screen's edge and the bar's own border steps in from it.
-        let sy = if(st_notch and full_w, n_b, bs)
+        // Where the frame's side band begins. With the bar in notch mode its pieces sit inside
+        // the band, so the band runs from the screen's own edge: the side's border is then one
+        // vertical, the piece's flank above and the frame's side line below, not two lines 2 px
+        // apart. In every other bar mode the band is the top strip's own edge.
+        let sy = if(st_notch and full_w, 0, bs)
         // Glass behind the band, even the strip alone, costs a third of the frames on this
         // surface; the bands are a few pixels wide, where refraction cannot be seen. With a
         // glass or frosted bar they take its translucency instead (the bar keeps its glass).
@@ -4745,12 +4780,12 @@ scene Mooi {
             // Three sides, not four: the top is the bar's, so the line stops where the bar begins.
             // Three lines and not one path: a stroked path is closed, so an open one draws its own
             // top edge back across the screen — which is exactly the straight line to avoid.
-            line { from: bs, sy; to: bs, H - bt - fr; width: if(st_frame_edge > 0.5, 1.6, 1); opacity: st_frame_op
-                   color: if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)) }
-            line { from: W - bs, sy; to: W - bs, H - bt - fr; width: if(st_frame_edge > 0.5, 1.6, 1); opacity: st_frame_op
-                   color: if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)) }
-            line { from: bs + fr, H - bt; to: W - bs - fr, H - bt; width: if(st_frame_edge > 0.5, 1.6, 1); opacity: st_frame_op
-                   color: if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)) }
+            line { from: bs, sy; to: bs, H - bt - fr; width: if(st_frame_edge > 0.5, 1.6, st_owidth); opacity: 1
+                   color: fnec }
+            line { from: W - bs, sy; to: W - bs, H - bt - fr; width: if(st_frame_edge > 0.5, 1.6, st_owidth); opacity: 1
+                   color: fnec }
+            line { from: bs + fr, H - bt; to: W - bs - fr, H - bt; width: if(st_frame_edge > 0.5, 1.6, st_owidth); opacity: 1
+                   color: fnec }
         }
         // ── The frame's border, as the same border as the bar ──────
         // The two used to be separate lines that happened not to move together. They are one edge:
@@ -4766,11 +4801,11 @@ scene Mooi {
             // Three runs: the top is the bar's own silhouette (its pieces' feet and sides, and the
             // screen's edge between them), so the frame closes onto the bar rather than through it.
             rim.Edge(sy, H - bt, sy, H, bs, -1, clamp(round((H - sy - bt) / 16), 6, 32), fcol, fl.phos,
-                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), 12, true)
+                     fnec, 12, true)
             rim.Edge(sy, H - bt, sy, H, W - bs, 1, clamp(round((H - sy - bt) / 16), 6, 32), fcol, fl.phos,
-                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), 12, true)
+                     fnec, 12, true)
             rim.Edge(bs, W - bs, 0, W, H - bt, 1, clamp(round((W - 2 * bs) / 16), 6, 32), fcol, fl.phos,
-                     if(st_frame_edge > 0.5, fl.phos, if(mech, fl.steel_500, fl.trace_dim)), 12, false)
+                     fnec, 12, false)
         }
         group {
             show: frame_on and not fstill
