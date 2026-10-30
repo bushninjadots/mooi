@@ -7,6 +7,8 @@
 -- `pleamar --say bmo get mood_t` (or act_t, energy, wx…) reads him.
 
 local B = require("brain")
+local W = require("wire")     -- what crosses to the side notch, and back
+local G = require("geom")     -- which monitor is his, and where he may stand on it
 
 -- His settings are mooi's (settings.json's `companion` section, Settings → BMO): bin/mooi links his
 -- data folder to mooi's. Where he stands is his own (bmo-state.json beside it).
@@ -23,6 +25,8 @@ local cfg = B.settings(companion_of(read(FILE)))
 local state = read(STATE)
 if type(state) ~= "table" then state = { x = -1, y = -1 } end
 state.x, state.y = tonumber(state.x) or -1, tonumber(state.y) or -1
+-- the monitor he was on: a restart puts him back on it rather than on whichever has the focus
+state.mon = type(state.mon) == "string" and state.mon or ""
 local SIZES = { 0.5, 0.7, 0.9, 1.15 }
 local DOZES = { 5, 10, 30, 100000 }
 local MOTIONS = { "still", "calm", "lively" }
@@ -140,9 +144,13 @@ end
 -- ── State ────────────────────────────────────────────────────
 local mood, mood_since = "happy", os.time()
 local activity = "idle"
+local end_stride   -- the walking section's: an activity that is not walking ends the stride
 -- What he is doing; the idle acts (sitting, his game, humming) are drawn from it, so whatever
 -- interrupts one (a walk, a hand, sleep) ends it too.
 local function set_activity(a)
+    -- one owner: whatever he starts doing instead of walking stops the stride (a sit, a dance, sleep,
+    -- a hand, a throw), so no timer of a walk that is over can keep moving him
+    if a ~= "walking" and activity == "walking" and end_stride then end_stride() end
     activity = a
     fact.sitting = a == "sitting"
     fact.gaming = a == "gaming"
@@ -185,9 +193,11 @@ claim = function()
             -- here (we answer to bmo-<pid>), so ask our own name to quit and let the shell start
             -- a BMO that can take it
             -- A spare for this long is not a refresh race (a refresh replaces him in a second or
-            -- two): show him rather than leave a live BMO invisible for as long as the other one
-            -- answers, which is the state the user found on 2026-10-30.
-            if spare_since > 0 and os.time() - spare_since > 15 then
+            -- two, and the shell starts him again 1.2 s after letting the old one go): show him
+            -- rather than leave a live BMO invisible for as long as the other one answers, which is
+            -- the state the user found on 2026-10-30. Four seconds, not fifteen: turning him off and
+            -- on again left a visible BMO hidden for a quarter of a minute.
+            if spare_since > 0 and os.time() - spare_since > 4 then
                 spare = false
                 fact.ready = true
                 place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
@@ -267,10 +277,23 @@ local function chat(pool, important, ms)
 end
 
 -- ── Walking ──────────────────────────────────────────────────
-local walk_timer, walk_to, walk_dir = nil, nil, 0
-local function stop_walking()
+-- One walk at a time, and only the newest may move him. `walk_token` is what makes that true: every
+-- walk takes the next number, and both halves of it — the turn (a delay) and the stride (a timer)
+-- check it before touching anything. A walk that is over (stopped, replaced, or interrupted by
+-- sitting, sleeping, a hand, a throw) cannot land on the next one's destination, facing or activity,
+-- even when its delayed turn was already queued (found 2026-10-30: a second wander within 240 ms
+-- left two strides running over the same x, and stopping him left a stale turn to start one).
+local walk_timer, walk_to, walk_dir, walk_token = nil, nil, 0, 0
+-- The stride alone: it ends, and no callback of it may go on, without touching what he is doing
+-- (set_activity calls this whenever the walking gives way to something else).
+function end_stride()
+    walk_token = walk_token + 1            -- every callback of a walk that is over is stale now
     if walk_timer then cancel(walk_timer); walk_timer = nil end
+    walk_to, walk_dir = nil, 0
     if fact.walking then fact.walking = false end
+end
+local function stop_walking()
+    end_stride()
     fact.facing = 0
     if activity == "walking" then set_activity("idle"); show_face() end
 end
@@ -284,29 +307,45 @@ local function walk(target)
     target = clamp(target, min_x(), max_x())
     if math.abs(target - x) < 16 then return end
     stop_walking()
+    walk_token = walk_token + 1
+    local mine = walk_token
     set_activity("walking")
     walk_to, walk_dir = target, target > x and 1 or -1
     fact.facing = walk_dir
     -- turn first, then stride
     after(240, function()
-        if activity ~= "walking" then return end
+        if walk_token ~= mine then return end           -- a newer walk, or none: this one is over
+        if activity ~= "walking" then stop_walking(); return end
         fact.walking = true
         local speed = 60 * cfg.size
-        walk_timer = every(33, function()
+        local timer
+        timer = every(33, function()
+            if walk_token ~= mine or activity ~= "walking" then   -- stopped, replaced, or sat down
+                cancel(timer)
+                if walk_timer == timer then walk_timer = nil end
+                if fact.walking then fact.walking = false end
+                return
+            end
             x = x + walk_dir * speed * 0.033
             if (walk_dir > 0 and x >= walk_to) or (walk_dir < 0 and x <= walk_to) then
                 x = walk_to
                 fact.wx = x
-                cancel(walk_timer); walk_timer = nil
+                cancel(timer)
+                if walk_timer == timer then walk_timer = nil end
                 fact.walking = false
                 set_activity("idle")
                 show_face()
                 save_position()
-                after(350, function() if activity ~= "walking" then fact.facing = 0 end end)
+                local settled = walk_token
+                after(350, function()
+                    if walk_token ~= settled then return end
+                    if activity ~= "walking" then fact.facing = 0 end
+                end)
                 return
             end
             fact.wx = x
         end)
+        walk_timer = timer
     end)
 end
 
@@ -435,18 +474,24 @@ function peek()
             local ws = okw and type(w) == "table" and tonumber(w.id) or nil
             local wins = {}
             for _, c in ipairs(list) do
-                if type(c.workspace) == "table" and tonumber(c.workspace.id) == ws and c.mapped ~= false and (tonumber(c.fullscreen) or 0) == 0
+                -- only the windows on his monitor: he cannot peek from behind one on another screen
+                if (mon_id == nil or tonumber(c.monitor) == mon_id)
+                   and type(c.workspace) == "table" and tonumber(c.workspace.id) == ws and c.mapped ~= false and (tonumber(c.fullscreen) or 0) == 0
                    and type(c.at) == "table" and type(c.size) == "table" and c.size[1] > bw() * 1.5 and c.size[2] > bh() then
                     wins[#wins + 1] = c
                 end
             end
             if #wins == 0 or activity ~= "idle" or not can_walk() then return end
             local c = wins[math.random(1, #wins)]
+            -- hyprctl's coordinates are the desktop's; his are his monitor's, so the window is moved
+            -- to where it is on his screen (mon_x, mon_y — bmo.luau's measure)
+            local cx, cy = (tonumber(c.at[1]) or 0) - mon_x, (tonumber(c.at[2]) or 0) - mon_y
+            local cw, ch = tonumber(c.size[1]) or 0, tonumber(c.size[2]) or 0
             local left = math.random() < 0.5
-            local edge = left and c.at[1] or (c.at[1] + c.size[1])
+            local edge = left and cx or (cx + cw)
             local behind = left and (edge + 6) or (edge - bw() - 6)         -- tucked out of sight
             local out_x = left and (edge - bw() * 0.55) or (edge - bw() * 0.45)   -- leaning out of it
-            local gy = c.at[2] + c.size[2] - bh() - 2
+            local gy = cy + ch - bh() - 2
             if gy < min_y() or gy > max_y() then gy = clamp(gy, min_y(), max_y()) end
             local home_x, home_y = x, y
             stop_walking()
@@ -862,7 +907,7 @@ on("bmo_ask", function()
     fact.bc_busy = true
     show_talk(true)
     react("curious", 1800)
-    run("pleamar", { "--say", "mooi-notch", "text nb_q " .. q:gsub("%s+", " "), "emit nt_bmo_q" }, function(_, code)
+    run("pleamar", { "--say", "mooi-notch", W.ask(q), "emit nt_bmo_q" }, function(_, code)
         if code ~= 0 then
             fact.bc_busy = false
             talk[#talk + 1] = { who = 1, text = "BMO can't reach Claude… is the side notch on? (Settings → Control Nexus)" }
@@ -872,7 +917,7 @@ on("bmo_ask", function()
 end)
 
 on("speak", function()
-    local words = tostring(text.bmo_line or "")
+    local words = W.said(text)          -- one token on the wire (wire.luau), whatever he is saying
     if fact.bc_busy or fact.tab == "chat" then
         fact.bc_busy = false
         talk[#talk + 1] = { who = 1, text = words }
@@ -999,20 +1044,40 @@ pcall(sys.watch, "files:" .. FILE, function()
     if fact.ready then place(x, y) end
 end)
 
--- ── Up ───────────────────────────────────────────────────────
--- The monitor's logical size, for where he may stand.
-run("hyprctl", { "-j", "monitors" }, function(out, code)
-    if code == 0 then
-        local ok, mons = pcall(json.decode, out or "")
-        if ok and type(mons) == "table" then
-            local m = mons[1]
-            for _, mon in ipairs(mons) do if mon.focused then m = mon end end
-            if m and tonumber(m.width) and tonumber(m.scale) then
-                sw = math.floor(m.width / m.scale + 0.5)
-                sh = math.floor(m.height / m.scale + 0.5)
-            end
+-- ── His monitor ──────────────────────────────────────────────
+-- Where he may stand, in the logical pixels of the monitor he is on, and which monitor that is:
+-- bmo-state.json keeps its name, so a restart puts him back on it. The scene says when its own
+-- surface changes size — a mode, a scale, a monitor plugged in or taken away — and the same measure
+-- runs then, and now and then after it, so a resolution change or a monitor that went away never
+-- leaves him walking off an edge that is no longer there, or peeking at a window that is not on his
+-- screen (found 2026-10-30: the startup's geometry was all he ever had).
+local mon, mon_id, mon_x, mon_y = nil, nil, 0, 0      -- his monitor, and where it is laid out
+local surf_w, surf_h = nil, nil                       -- what the scene last said its surface measures
+local function measure(done)
+    run("hyprctl", { "-j", "monitors" }, function(out, code)
+        local ok, list = pcall(json.decode, out or "")
+        local mons = ok and G.monitors(list) or {}
+        local pick = G.choose(mons, state.mon, surf_w, surf_h)
+        if pick then
+            local nx, ny = G.fit(mon, pick, x, y, fact.ready)
+            mon, mon_id, mon_x, mon_y = pick, pick.id, pick.x, pick.y
+            sw, sh = pick.w, pick.h
+            place(nx, ny)                             -- and clamped to the monitor he is on now
+            if state.mon ~= pick.name then state.mon = pick.name; save_state() end
         end
-    end
+        if done then done() end
+    end)
+end
+on("screen_w", function(v)
+    surf_w = tonumber(v) or surf_w
+    measure()
+end)
+on("screen_h", function(v)
+    surf_h = tonumber(v) or surf_h
+    measure()
+end)
+every(30000, function() measure() end)
+measure(function()
     sync_settings()
     place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
     show_face()

@@ -151,6 +151,8 @@ scene Bmo {
     event hov ->                 // 1 the pointer came over him, 0 it left
     event ui ->                  // a control in the panel or the menu, by code (bmo.luau UI)
     event tell ->                // the bar tells him what happened (bmo.luau, "Desktop awareness")
+    event screen_w ->            // to the logic: his surface is this wide now (a mode, a scale, a monitor)
+    event screen_h ->            // ... and this tall
     fact ddx = 0                 // how far the pointer went since the press (the logic reads it)
     fact ddy = 0
 
@@ -772,4 +774,8 @@ scene Bmo {
         size: 60, 14
         text word { at: x, y + 7; anchor: left center; size: 11; family: "JetBrains Mono"; color: ink }
     }
+    // What his surface measures is what his monitor does: a mode, a scale, a monitor plugged in or
+    // taken away changes it, and the logic measures his monitor again then (bmo.luau, "His monitor").
+    on change screen.width { emit screen_w(screen.width) }
+    on change screen.height { emit screen_h(screen.height) }
 }

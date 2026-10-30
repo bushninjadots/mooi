@@ -1631,43 +1631,132 @@ on("open_github", function() notch_sync(); run("pleamar", { "--say", "mooi-notch
 -- each time he fails at once). One already running (started by hand) is left be. A BMO that is
 -- alive but no longer answering — a logic that stopped, or a process that lost the name to a
 -- newer one — is ended and replaced: one that draws nothing is not worth keeping.
-local bmo_win, bmo_tries, bmo_token, bmo_beat, bmo_miss = nil, 0, nil, nil, 0
-local bmo_probe = 0   -- how many times we have asked before deciding nobody is there
-function bmo_sync()
-    local want = type(settings.companion) == "table" and settings.companion.bmo == true
-    if not want then
-        bmo_tries, bmo_token, bmo_beat, bmo_miss, bmo_probe = 0, nil, nil, 0, 0
-        run("pleamar", { "--say", "bmo", "quit" })
+-- What is *wanted* (`companion.bmo`) and what is *happening* (his process) are kept apart, because
+-- every step between them is asynchronous — a probe, a launch, a kill — and the setting can change
+-- while one is in flight (found 2026-10-30: a BMO that started after being turned off, a quit sent
+-- to nothing while a launch was pending, and a stop that left him running). The states are
+-- `stopped` → `starting` → `running` → `stopping`; `bmo_sync` is the only way in and looks at both,
+-- every callback comes back to it, and `bmo_gen` names the process a callback belongs to, so one
+-- from an old process cannot touch a newer one.
+local bmo_state = "stopped"
+local bmo_win, bmo_gen = nil, 0
+local bmo_tries, bmo_probe = 0, 0
+local bmo_token, bmo_beat, bmo_miss = nil, nil, 0
+
+local function bmo_wanted()
+    return type(settings.companion) == "table" and settings.companion.bmo == true
+end
+
+local bmo_launch   -- starts one, below
+
+-- Let go of the process we knew: its callbacks are stale from here, and the next start begins clean.
+local function bmo_forget()
+    bmo_gen = bmo_gen + 1
+    bmo_win, bmo_state = nil, "stopped"
+    bmo_tries, bmo_probe, bmo_token, bmo_beat, bmo_miss = 0, 0, nil, nil, 0
+end
+
+-- Start one. Only ever with `bmo_state` = starting and a generation of its own: a launch that finds
+-- either gone (turned off, or replaced by a newer start) does nothing at all.
+function bmo_launch(gen)
+    if bmo_gen ~= gen or bmo_state ~= "starting" then return end
+    local mine
+    local started = os.time()
+    local said = {}
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/bmo/bmo.plm", "--no-hud", "--stall", "0" }, function(line)
+        -- his errors are the shell's too: six of them, as they come (before, only an exit kept them)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line; log("bmo · " .. line) end
+    end, function(_, code)
+        -- a callback from a process we have already let go of changes nothing
+        if bmo_gen ~= gen or bmo_win ~= mine then return end
+        if code ~= 0 then log("bmo · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        bmo_win, bmo_state = nil, "stopped"
+        bmo_token, bmo_beat, bmo_miss = nil, nil, 0
+        if os.time() - started < 5 then bmo_tries = bmo_tries + 1 else bmo_tries = 0 end
+        if not bmo_wanted() then bmo_forget(); return end         -- turned off while he was up
+        if bmo_tries >= 5 then return end                         -- five that failed at once: let him be
+        local next_gen = bmo_gen + 1
+        bmo_gen = next_gen
+        after(1000 * (bmo_tries + 1), function()
+            if bmo_gen ~= next_gen or bmo_state ~= "stopped" then return end
+            bmo_sync()
+        end)
+    end, { errors = true })
+    if bmo_gen ~= gen or bmo_state ~= "starting" then
+        -- turned off while the spawn was being made: nothing of his is wanted
+        kill(mine, "term")
+        bmo_forget()
         return
     end
-    if bmo_win then return end
+    bmo_win = mine
+    bmo_state = "running"
+end
+
+-- Ask whether one is already there before starting another: a BMO that is up but slow to answer
+-- would otherwise get a second one spawned beside it (two lived on 2026-10-30, and the loser drew
+-- nothing while its logic kept running). Twice more before deciding nobody is there.
+local function bmo_probe_start(gen)
+    if bmo_gen ~= gen or bmo_state ~= "starting" then return end
+    if not bmo_wanted() then bmo_forget(); run("pleamar", { "--say", "bmo", "quit" }); return end
     run("pleamar", { "--say", "bmo", "get ready" }, function(_, up)
-        if up == 0 or bmo_win then bmo_probe = 0; return end
-        -- A BMO that is up but slow to answer would otherwise get a second one spawned beside it
-        -- (two lived on 2026-10-30, and the loser drew nothing while its logic kept running). Ask
-        -- twice more before starting one.
+        if bmo_gen ~= gen or bmo_state ~= "starting" then return end
+        if not bmo_wanted() then bmo_forget(); run("pleamar", { "--say", "bmo", "quit" }); return end
+        if up == 0 then
+            -- one is already there — the new one a refresh makes before the old is gone, or one
+            -- started by hand — and he is left be: running, without a handle of ours to kill (a
+            -- stop asks him to quit, and the guard takes over if he stops answering)
+            bmo_win, bmo_state = nil, "running"
+            bmo_probe, bmo_token, bmo_beat, bmo_miss = 0, nil, nil, 0
+            return
+        end
         if bmo_probe < 2 then
             bmo_probe = bmo_probe + 1
-            after(900, bmo_sync)
+            after(900, function() bmo_probe_start(gen) end)
             return
         end
         bmo_probe = 0
-        local mine
-        local started = os.time()
-        local said = {}
-        mine = spawn("pleamar", { "--scene", shell_dir() .. "/bmo/bmo.plm", "--no-hud", "--stall", "0" }, function(line)
-            -- his errors are the shell's too: six of them, as they come (before, only an exit kept them)
-            if #said < 6 and string.find(line, "error") then said[#said + 1] = line; log("bmo · " .. line) end
-        end, function(_, code)
-            if bmo_win ~= mine then return end
-            bmo_win, bmo_token, bmo_beat, bmo_miss = nil, nil, nil, 0
-            if os.time() - started < 5 then bmo_tries = bmo_tries + 1 else bmo_tries = 0 end
-            if code ~= 0 then log("bmo · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
-            -- any end while he is still wanted: a crash, or a quit that was not "turn him off"
-            if bmo_tries < 5 then after(1000 * (bmo_tries + 1), bmo_sync) end
-        end, { errors = true })
-        bmo_win = mine
+        bmo_launch(gen)
     end)
+end
+
+function bmo_sync()
+    if not bmo_wanted() then
+        -- turned off: whatever is up goes — ours killed, one started by hand asked to quit
+        bmo_tries, bmo_probe = 0, 0
+        if bmo_state == "stopped" or bmo_state == "stopping" then
+            run("pleamar", { "--say", "bmo", "quit" })
+            return
+        end
+        local gen = bmo_gen + 1
+        local win = bmo_win
+        bmo_gen = gen
+        bmo_win, bmo_state = nil, "stopping"
+        if win then kill(win, "term") end
+        run("pleamar", { "--say", "bmo", "quit" })
+        after(1200, function()
+            if bmo_gen ~= gen or bmo_state ~= "stopping" then return end
+            bmo_forget()
+            -- and not before nothing answers to his name: a next one that comes up while the old
+            -- socket still replies is the second BMO and draws nothing for a while (his spare rule).
+            -- Up to three looks, 700 ms apart, then he is started anyway.
+            local looks = 0
+            local function silent()
+                if not bmo_wanted() then bmo_sync(); return end
+                run("pleamar", { "--say", "bmo", "get token" }, function(_, code)
+                    if code ~= 0 or looks >= 3 then bmo_sync(); return end
+                    looks = looks + 1
+                    after(700, silent)
+                end)
+            end
+            silent()
+        end)
+        return
+    end
+    if bmo_state ~= "stopped" then return end                    -- already starting, running or stopping
+    local gen = bmo_gen + 1
+    bmo_gen = gen
+    bmo_state = "starting"
+    bmo_probe_start(gen)
 end
 after(2500, bmo_sync)
 -- Is the BMO we started still the one answering, and still alive? Three ways it is not:
@@ -1679,22 +1768,37 @@ after(2500, bmo_sync)
 -- (found 2026-10-29: a BMO that ran for two hours, drawing nothing and saving nothing, which no
 -- restart rule could see.)
 local function bmo_guard()
-    if not (type(settings.companion) == "table" and settings.companion.bmo == true) then return end
-    local mine = bmo_win
+    if not bmo_wanted() then return end
+    if bmo_state ~= "running" then return end                    -- a start or a stop is already under way
+    local mine, gen = bmo_win, bmo_gen
     if not mine then
-        run("pleamar", { "--say", "bmo", "get token" }, function(_, code)
-            if code ~= 0 and not bmo_win then bmo_sync() end
+        -- one that answers to `bmo` and that we did not start (see bmo_probe_start): watched, not
+        -- replaced, until it stops answering
+        run("pleamar", { "--say", "bmo", "get token" }, function(out, code)
+            if bmo_gen ~= gen or bmo_state ~= "running" then return end
+            local token = code == 0 and tonumber((out or ""):match("^%s*([%d.]+)%s*$")) or nil
+            if token then bmo_token = token; bmo_miss = 0; return end
+            bmo_miss = bmo_miss + 1
+            if bmo_miss >= 2 then replace("not answering") end
         end)
         return
     end
     local function replace(why)
-        if bmo_win ~= mine then return end
+        if bmo_gen ~= gen or bmo_win ~= mine then return end
         log("bmo · " .. why .. "; starting him again")
-        bmo_win, bmo_token, bmo_beat, bmo_miss = nil, nil, nil, 0
-        kill(mine, "term")
-        after(1500, bmo_sync)
+        local next_gen = bmo_gen + 1
+        bmo_gen = next_gen
+        bmo_win, bmo_state = nil, "stopping"
+        if mine then kill(mine, "term") end
+        run("pleamar", { "--say", "bmo", "quit" })
+        after(1500, function()
+            if bmo_gen ~= next_gen or bmo_state ~= "stopping" then return end
+            bmo_forget()
+            bmo_sync()
+        end)
     end
     run("pleamar", { "--say", "bmo", "get token" }, function(out, code)
+        if bmo_gen ~= gen or bmo_win ~= mine then return end
         local token = code == 0 and tonumber((out or ""):match("^%s*([%d.]+)%s*$")) or nil
         if not token then
             -- a BMO that has just started has not answered yet: one look is not enough
@@ -1706,6 +1810,7 @@ local function bmo_guard()
         if bmo_token and token ~= bmo_token then replace("another one has the name") return end
         bmo_token = bmo_token or token
         run("pleamar", { "--say", "bmo", "get beat" }, function(b, bc)
+            if bmo_gen ~= gen or bmo_win ~= mine then return end
             local beat = bc == 0 and tonumber((b or ""):match("^%s*([%d.]+)%s*$")) or nil
             if not beat then return end
             if bmo_beat ~= nil and beat == bmo_beat then replace("its logic stopped") return end

@@ -2918,5 +2918,65 @@ test("vizfeed: publishing is capped at 30 a second and keeps alive at 2 Hz", fun
     eq(vizfeed.should_publish(a, changed, 520, 500, 500), true, "a real change goes at once")
 end)
 
+local wire = require("bmo/wire")
+local geom = require("bmo/geom")
+test("wire: a message survives as one word, whatever it holds", function()
+    local messages = {
+        "hello",
+        [[he said "hi" and 'bye']],
+        [[back\\slash and \n literally]],
+        [[semi;colons {braces} $(echo) `x` & | > <]],
+        "line one\nline two\ttabbed\r\n",
+        "h\195\169llo \226\128\148 BMO \226\153\170 \226\152\133 \230\151\165\230\156\172\232\170\158 \240\159\142\137",
+        "",
+    }
+    for _, m in ipairs(messages) do
+        local token = wire.encode(m)
+        eq(token:find("%s"), nil, "no whitespace in a token")
+        eq(wire.decode(token), m, "round trip of " .. m)
+    end
+    local long = string.rep("BMO says a great deal. ", 400)
+    eq(#long > 8000, true, "a long one")
+    eq(wire.decode(wire.encode(long)), long, "and it comes back whole")
+    eq(wire.encode(""), wire.EMPTY, "an empty message is one mark")
+    eq(wire.decode(wire.EMPTY), "", "and reads back as nothing")
+    eq(wire.decode(""), "", "an unset text is nothing too")
+    eq(type(wire.decode("not base64!?")), "string", "garbage is skipped, not raised")
+end)
+test("wire: both ends speak one protocol", function()
+    local said = [[what's "next"?]] .. "\nand \1674; {here}\\"
+    local token = wire.ask(said):match("^text nb_q (%S+)$")
+    assert(token, "the ask is one word after the name")
+    eq(wire.asked({ nb_q = token }), said, "what the notch hears")
+    local answer = "BMO is 100% here {not JSON}; \"quoted\""
+    local atoken = wire.say(answer):match("^text bmo_line (%S+)$")
+    assert(atoken, "the answer is one word after the name")
+    eq(wire.said({ bmo_line = atoken }), answer, "what BMO says")
+    eq(wire.asked({}), "", "nothing said is nothing")
+    eq(type(wire.said({ bmo_line = "zz!!" })), "string", "garbage still reads")
+end)
+test("geom: his monitor, and where he goes when the screens change", function()
+    local mons = geom.monitors({
+        { name = "DP-1", width = 2560, height = 1440, scale = 1, x = 0, y = 0, focused = false, id = 0 },
+        { name = "HDMI-A-1", width = 3840, height = 2160, scale = 2, x = 2560, y = 0, focused = true, id = 1 },
+        { name = "DP-2", width = 1920, height = 1080, scale = 1, disabled = true, id = 2 },
+    })
+    eq(#mons, 2, "a disabled output is not a place to stand")
+    eq(mons[2].w, 1920, "logical width"); eq(mons[2].h, 1080, "logical height")
+    eq(mons[2].x, 2560, "where it is laid out")
+    eq(geom.choose(mons, "DP-1", nil, nil).name, "DP-1", "the one he was on")
+    eq(geom.choose(mons, "GONE", 1920, 1080).name, "HDMI-A-1", "gone: the one shaped like his surface")
+    eq(geom.choose(mons, "GONE", 800, 600).name, "HDMI-A-1", "no match: the focused one")
+    eq(geom.choose({}, "DP-1", 1920, 1080), nil, "nothing to stand on")
+    local prev = { name = "DP-1", w = 2560, h = 1440 }
+    local x, y = geom.fit(prev, { name = "DP-1", w = 2560, h = 1440 }, 1200, 700, true)
+    eq(x, 1200, "an ordinary measure moves him not at all"); eq(y, 700)
+    local bx, by = geom.fit(prev, { name = "DP-1", w = 5120, h = 2880 }, 1200, 700, true)
+    eq(bx, 2400, "in proportion on a bigger screen"); eq(by, 1400, "and down it")
+    local mx, my = geom.fit(prev, { name = "HDMI-A-1", w = 1920, h = 1080 }, 1200, 700, true)
+    eq(mx, 1200, "another monitor: he is not scaled"); eq(my, 700)
+    eq((geom.fit(prev, { name = "DP-1", w = 5120, h = 2880 }, 1200, 700, false)), 1200, "not standing yet: untouched")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

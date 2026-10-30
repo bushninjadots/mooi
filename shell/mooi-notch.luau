@@ -16,6 +16,7 @@ local deck = require("lib/nexusdeck")
 local claude = require("lib/claude")
 local N = require("lib/notch")
 local vizfeed = require("lib/vizfeed")
+local wire = require("bmo/wire")     -- what crosses to BMO and back: one token, never words on a line
 
 local FILE, CHAT = "settings.json", "notch-claude.json"
 
@@ -194,7 +195,7 @@ local function ask(prompt)
             if bmo then chat.bmo_session = r.session or chat.bmo_session else chat.session = r.session or chat.session end
             chat.turns[#chat.turns + 1] = { who = bmo and "bmo" or "claude", text = said }
             -- BMO says it on the desktop too
-            if bmo then launch("pleamar", { "--say", "bmo", "text bmo_line " .. said:gsub("%s+", " "), "emit speak" }) end
+            if bmo then launch("pleamar", { "--say", "bmo", wire.say(said), "emit speak" }) end
             live = nil
             text.ch_status = r.cost and string.format("$%.3f", r.cost) or ""
         elseif r.error then
@@ -222,8 +223,8 @@ on("nt_sugg", function(v) ask(SUGGEST[(tonumber(v) or -1) + 1]) end)
 -- his own session, and the answer goes back to him to be said and written in his panel.
 local bmo_asking = nil
 on("nt_bmo_q", function()
-    local q = trim(text.nb_q)
-    if q == "" or bmo_asking then return end
+    local q = wire.asked(text)          -- decoded at the door (bmo/wire): a message is one token
+    if q:match("^%s*$") or bmo_asking then return end
     local args = claude.args(q, { session = chat.bmo_session, persona = "bmo",
                                   model = type(settings.claude) == "table" and settings.claude.model ~= "default" and settings.claude.model or nil })
     local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "claude" }
@@ -240,7 +241,7 @@ on("nt_bmo_q", function()
         bmo_asking = nil
         said = said or "BMO couldn't hear Claude… try again?"
         save_chat()
-        launch("pleamar", { "--say", "bmo", "text bmo_line " .. said:gsub("%s+", " "), "emit speak" })
+        launch("pleamar", { "--say", "bmo", wire.say(said), "emit speak" })
     end)
     bmo_asking = mine
 end)
