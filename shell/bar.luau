@@ -278,6 +278,13 @@ return function(ctx)
         "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
         "[smoothing]", "noise_reduction = 66", "" }, "\n"))
     local sent = {}
+    -- D112: the rim's facts (ui/rim.plm). cava also runs for the bar's own visualiser and the
+    -- frame's swell, so rm_on says whether the rim itself is wanted, not merely that music plays.
+    local rim_on, rim_gain, rim_glow = 0, 1, 1
+    local function rest_rim()
+        for i = 0, 15 do fact["rm" .. i] = 0 end
+        fact.rm_beat = 0; fact.rm_phase = 0; fact.rm_on = 0
+    end
     local swell = nil                    -- the shared analysis: level, high, bass, beat, phase, tempo
     local last_level, last_high = -1, -1
     local seq, last_ms, prev = 0, 0, nil -- the published feed and its cadence
@@ -331,6 +338,14 @@ return function(ctx)
             if math.abs(state.level - last_level) > 0.015 then fact.fbass = state.level; last_level = state.level end
             if math.abs(state.high - last_high) > 0.02 then fact.fhigh = state.high; last_high = state.high end
             fact.fph = state.phase
+            -- the rim: the same bands folded to sixteen, and the beat and phase it rides on
+            do
+                local folded = vizfeed.map(bands, 16)
+                for j = 0, 15 do fact["rm" .. j] = folded[j + 1] end
+                fact.rm_bass, fact.rm_high = state.bass, state.high
+                fact.rm_beat, fact.rm_phase = state.beat, state.phase
+                fact.rm_gain, fact.rm_glow, fact.rm_on = rim_gain, rim_glow, rim_on
+            end
             publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,
                       phase = state.phase, playing = true, missing = viz_missing }, frame * 1000 / 30)
         end, function()
@@ -342,6 +357,7 @@ return function(ctx)
                 viz_missing = true
                 fact.viz_missing = true
                 rest_levels()
+                rest_rim()
                 rest_feed(true)
             end
         end)
@@ -350,6 +366,7 @@ return function(ctx)
     local function hush()
         if cava then kill(cava, "term"); cava = nil end
         rest_levels()
+        rest_rim()
         rest_feed(viz_missing)
     end
     rest_levels()
@@ -388,6 +405,9 @@ return function(ctx)
         if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
         local want_rim = s.music.rim == true and not still
+        rim_on = want_rim and 1 or 0
+        rim_gain = math.min(1.5, math.max(0.25, (tonumber(s.music.rim_gain) or 100) / 100))
+        rim_glow = s.music.rim_glow == true and 1 or 0
         local want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
         local want_swell = s.frame.on and s.frame.music
         if playing and (want_viz or want_swell or want_rim) and not ctx.saving() and not viz_missing then listen() else hush() end

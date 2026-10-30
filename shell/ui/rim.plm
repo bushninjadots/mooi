@@ -1,0 +1,112 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+
+// The border that steps with the music, on every surface.
+//
+// One analysis drives all of them (`shell/lib/vizfeed.luau`), so a surface only maps the feed
+// into these facts and draws the rim on its own border:
+//
+//   rm0 … rm15   the sixteen bands, 0 … 1, left to right
+//   rm_bass      the bass, 0 … 1        rm_high   the treble, 0 … 1
+//   rm_beat      1 on the beat, decaying (accent and halo ride on it)
+//   rm_phase     one turn per bar of the music, 0 … 1 (a soft wave travels along the edge)
+//   rm_gain      the strength, from music.rim_gain / 100 (0.25 … 1.5)
+//   rm_glow      0 or 1: music.rim_glow
+//   rm_on        0 or 1: music is playing and the rim is wanted
+//
+// The rule the whole thing rests on: at rest (rm_on 0) every bar is 0 tall and this library draws
+// nothing, so the border on screen is exactly the plain border the surface already had. The rim is
+// never a second border; it is that border lifting.
+//
+// Bars are boxes, not one path: a 32-bar run would pass the 64-point limit once both sides of the
+// bars are counted, and boxes give each bar its own height without rebuilding a path every frame.
+// `Edge` is the technique of the Nexus's `EdgeBars` and the bar's `BarFoot`, generalised to any
+// straight edge; `Rect` lays four of them round a plate with gaps at the corners.
+library Rim {
+    // ── One edge ─────────────────────────────────────────────────
+    // A run of `n` bars along a straight edge, from `u0` to `u1` along it, standing on the line
+    // `at` and growing `dir` (1 or -1) out of the surface. `span0`..`span1` is the whole edge, so
+    // a bar reads the band at its place on the surface and not in its run: a run cut short by a
+    // notch keeps the bands it would have had. `vertical` reads u along y and grows along x.
+    // `tint` fills the bars, `hot` is the accent they take on the beat and the halo's colour,
+    // `line_c` is the 1 px cap and the steps — pass the surface's own edge, so it reads as the
+    // border lifting rather than a strip laid beside it.
+    component Edge(u0: number, u1: number, span0: number, span1: number, at: number, dir: number,
+                   n: number, tint: color, hot: color, line_c: color, reach: number = 10, vertical: bool = false) {
+        size: 1, 1
+        let e = clamp(dir, -1, 1)
+        let g = clamp(rm_gain, 0, 1.5)
+        let el = max(1, span1 - span0)
+        let ew = max(2, (u1 - u0) / max(1, n))
+        let lift = 0.75 + 0.25 * clamp(rm_beat, 0, 1)
+        group {
+            show: rm_on > 0.5 and u1 - u0 > 2
+            glow: 7, (0.7 * clamp(rm_beat, 0, 1)) * clamp(rm_glow, 0, 1), hot
+            repeat b in 0..31 {
+                let us.$b = u0 + b * ew                                // where this bar's foot begins
+                let uc.$b = min(u1, us.$b + ew / 2)                     // its middle: which band it reads
+                let pos.$b = clamp((uc.$b - span0) / el, 0, 1)
+                let band.$b = pick(round(pos.$b * 15.99), rm0, rm1, rm2, rm3, rm4, rm5, rm6, rm7, rm8, rm9, rm10, rm11, rm12, rm13, rm14, rm15)
+                let wave.$b = 0.9 + 0.1 * sin(6.28318 * (rm_phase - pos.$b))
+                let hb.$b = reach * g * clamp(band.$b, 0, 1) * lift * wave.$b * rm_on
+                // the bar before it, so the two are joined where they meet
+                let up.$b = max(u0, us.$b - ew)
+                let ucp.$b = up.$b + ew / 2
+                let posp.$b = clamp((ucp.$b - span0) / el, 0, 1)
+                let bandp.$b = pick(round(posp.$b * 15.99), rm0, rm1, rm2, rm3, rm4, rm5, rm6, rm7, rm8, rm9, rm10, rm11, rm12, rm13, rm14, rm15)
+                let hp.$b = if(b < 1, 0, reach * g * clamp(bandp.$b, 0, 1) * lift * (0.9 + 0.1 * sin(6.28318 * (rm_phase - posp.$b))) * rm_on)
+                let on.$b = b < n - 0.5
+                // the fill: from just inside the edge (so the surface's line does not show through
+                // the foot) out to the bar's height
+                let p0.$b = at - e * 1.2
+                let p1.$b = at + e * hb.$b
+                box { from: if(vertical, min(p0.$b, p1.$b), us.$b), if(vertical, us.$b, min(p0.$b, p1.$b))
+                      size: if(vertical, abs(p1.$b - p0.$b), ew), if(vertical, ew, abs(p1.$b - p0.$b))
+                      color: mix(tint, hot, 0.35 * clamp(rm_beat, 0, 1)); show: on.$b and hb.$b > 0.4 }
+                // its cap
+                line { from: if(vertical, p1.$b, us.$b), if(vertical, us.$b, p1.$b)
+                       to: if(vertical, p1.$b, us.$b + ew), if(vertical, us.$b + ew, p1.$b)
+                       width: 1; color: line_c; show: on.$b and hb.$b > 0.2 }
+                // the step up from its neighbour
+                line { from: if(vertical, at + e * min(hp.$b, hb.$b), us.$b), if(vertical, us.$b, at + e * min(hp.$b, hb.$b))
+                       to: if(vertical, at + e * max(hp.$b, hb.$b), us.$b), if(vertical, us.$b, at + e * max(hp.$b, hb.$b))
+                       width: 1; color: line_c; show: on.$b and abs(hp.$b - hb.$b) > 0.3 }
+                // and the step back down to the surface at the run's end
+                line { from: if(vertical, at, us.$b + ew), if(vertical, us.$b + ew, at)
+                       to: if(vertical, p1.$b, us.$b + ew), if(vertical, us.$b + ew, p1.$b)
+                       width: 1; color: line_c; show: on.$b and b > n - 1.5 and hb.$b > 0.2 }
+            }
+        }
+    }
+
+    // ── Four sides of a plate ────────────────────────────────────
+    // `mask` says which sides are exposed: 1 top, 2 right, 4 bottom, 8 left. A side flush with the
+    // screen's edge is masked off — outward bars there would be clipped — and so is the bar's own
+    // top. Corners are left `r + 1` px clear so the two sets of bars do not collide in the fillet.
+    // `density` is about one bar every this many pixels (6 to 32 a side), so a mini card does not
+    // carry as many bars as a full panel.
+    component Rect(x: number, y: number, w: number, h: number, r: number, mask: number,
+                   tint: color, hot: color, line_c: color, reach: number = 10, density: number = 14) {
+        size: 1, 1
+        let gap = r + 1
+        let nw = clamp(round(w / max(1, density)), 6, 32)
+        let nh = clamp(round(h / max(1, density)), 6, 32)
+        group {
+            show: mod(mask, 2) >= 1
+            Edge(x + gap, x + w - gap, x, x + w, y, -1, nw, tint, hot, line_c, reach, false)
+        }
+        group {
+            show: mod(floor(mask / 2), 2) >= 1
+            Edge(y + gap, y + h - gap, y, y + h, x + w, 1, nh, tint, hot, line_c, reach, true)
+        }
+        group {
+            show: mod(floor(mask / 4), 2) >= 1
+            Edge(x + gap, x + w - gap, x, x + w, y + h, 1, nw, tint, hot, line_c, reach, false)
+        }
+        group {
+            show: mod(floor(mask / 8), 2) >= 1
+            Edge(y + gap, y + h - gap, y, y + h, x, -1, nh, tint, hot, line_c, reach, true)
+        }
+    }
+}

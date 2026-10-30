@@ -6,6 +6,7 @@ import "ui/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
 import "ui/stash.plm"
+import "ui/rim.plm" as rim
 
 // mooi — the Spine and its islands.
 //
@@ -299,6 +300,31 @@ scene Mooi {
     fact music_rim = true     // music.rim · the whole border steps with the music
     fact music_rim_gain = 1   // music.rim_gain · 0.25..1.5
     fact music_rim_glow = true
+    // the rim's own facts (ui/rim.plm): the sixteen bands folded from the feed's thirty-two, and
+    // the one analysis every surface shares. At rest rm_on is 0 and nothing is drawn.
+    fact rm0 = 0
+    fact rm1 = 0
+    fact rm2 = 0
+    fact rm3 = 0
+    fact rm4 = 0
+    fact rm5 = 0
+    fact rm6 = 0
+    fact rm7 = 0
+    fact rm8 = 0
+    fact rm9 = 0
+    fact rm10 = 0
+    fact rm11 = 0
+    fact rm12 = 0
+    fact rm13 = 0
+    fact rm14 = 0
+    fact rm15 = 0
+    fact rm_bass = 0
+    fact rm_high = 0
+    fact rm_beat = 0
+    fact rm_phase = 0
+    fact rm_gain = 1
+    fact rm_glow = 1
+    fact rm_on = 0
     fact bar_full = false     // bar.mode · islands, or one full panel
     fact bar_surface = 0      // bar.surface · 0 solid · 1 glass · 2 blur · 3 clear
     fact viz = 0              // bar.visualizer · 0 mirror · 1 bars · 2 line · 3 dots · 4 off
@@ -1966,6 +1992,9 @@ scene Mooi {
     let n_b = fl.top + fl.mod_h + 6              // its foot
     let n_r = st_radius + 4                      // the foot's corners
     let n_f = 10                                 // the fillets where it leaves the top edge
+    // the rim's 1 px cap: the piece's own edge (ui/rim.plm only fills and caps; the plain
+    // border stays the path above it)
+    let rim_line = mix(mix(fl.trace, fl.trace_lit, clamp(st_ocol, 0, 1)), fl.phos_fill, clamp(st_ocol - 1, 0, 1))
     let nl_e = nlx + nlw + n_pad                 // the left piece's right side
     let nc_a = ncx - n_pad
     let nc_e = ncx + ncw + n_pad
@@ -1976,86 +2005,6 @@ scene Mooi {
     // to a bar — filled with the island's hull and stroked with its own edge, so nothing is drawn
     // beside the bar. At rest every bar sits on the line and it is the plain border it was. `x0`..`x1`
     // is the straight run between the island's two foot corners; `fy` is the foot's line.
-    component BarFoot(x0: number, x1: number, fy: number) {
-        size: max(1, x1 - x0), 26
-        let wv_w = max(1, x1 - x0)
-        let steel = bar_surface > 3.5
-        let ob = clamp(st_ocol, 0, 1)
-        let oa = clamp(st_ocol - 1, 0, 1)
-        let wv_edge = mix(mix(mix(fl.trace, fl.trace_lit, ob), fl.phos_fill, oa), fl.steel_300, steel)
-        // 0 at the floor the levels rest on (0.06), 12 px at a full band
-        let wa1 = 12 * clamp(((vb0 + vb1) / 2 - 0.06) / 0.5, 0, 1)
-        let wa2 = 12 * clamp(((vb2 + vb3) / 2 - 0.06) / 0.5, 0, 1)
-        let wa3 = 12 * clamp(((vb4 + vb5) / 2 - 0.06) / 0.5, 0, 1)
-        let wa4 = 12 * clamp(((vb6 + vb7) / 2 - 0.06) / 0.5, 0, 1)
-        let wa5 = 12 * clamp(((vb8 + vb9) / 2 - 0.06) / 0.5, 0, 1)
-        let wa6 = 12 * clamp(((vb10 + vb11) / 2 - 0.06) / 0.5, 0, 1)
-        let wa7 = 12 * clamp(((vb12 + vb13) / 2 - 0.06) / 0.5, 0, 1)
-        let wa8 = 12 * clamp(((vb14 + vb15) / 2 - 0.06) / 0.5, 0, 1)
-        // the bars' feet along the run, and each bar's own line above its span
-        let wx0 = x0
-        let wx1 = x0 + wv_w * 1 / 8
-        let wx2 = x0 + wv_w * 2 / 8
-        let wx3 = x0 + wv_w * 3 / 8
-        let wx4 = x0 + wv_w * 4 / 8
-        let wx5 = x0 + wv_w * 5 / 8
-        let wx6 = x0 + wv_w * 6 / 8
-        let wx7 = x0 + wv_w * 7 / 8
-        let wx8 = x1
-        let wy1 = fy + wa1
-        let wy2 = fy + wa2
-        let wy3 = fy + wa3
-        let wy4 = fy + wa4
-        let wy5 = fy + wa5
-        let wy6 = fy + wa6
-        let wy7 = fy + wa7
-        let wy8 = fy + wa8
-        group {
-            show: bar_foot_viz
-            // the fill: the island's hull, from 3 px inside its foot out to the bars' feet
-            path { color: mix(fl.hull, fl.steel_700, steel); opacity: st_opacity
-                   move x0, fy - 3
-                   line x1, fy - 3
-                   line wx8, wy8
-                   line wx7, wy8
-                   line wx7, wy7
-                   line wx6, wy7
-                   line wx6, wy6
-                   line wx5, wy6
-                   line wx5, wy5
-                   line wx4, wy5
-                   line wx4, wy4
-                   line wx3, wy4
-                   line wx3, wy3
-                   line wx2, wy3
-                   line wx2, wy2
-                   line wx1, wy2
-                   line wx1, wy1
-                   line wx0, wy1
-                   close }
-            // and its edge, which is the border itself
-            path { stroke: st_owidth; color: wv_edge
-                   move wx0, fy
-                   line wx0, wy1
-                   line wx1, wy1
-                   line wx1, wy2
-                   line wx2, wy2
-                   line wx2, wy3
-                   line wx3, wy3
-                   line wx3, wy4
-                   line wx4, wy4
-                   line wx4, wy5
-                   line wx5, wy5
-                   line wx5, wy6
-                   line wx6, wy6
-                   line wx6, wy7
-                   line wx7, wy7
-                   line wx7, wy8
-                   line wx8, wy8
-                   line wx8, fy
-                   }
-        }
-    }
 
     // At full width the side pieces sit flush in the corners; a narrower bar hangs them free.
     // The pieces are flush with the screen's corners, so their outer edge runs past it. The body
@@ -2107,22 +2056,29 @@ scene Mooi {
                    move nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
                    line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_f; curve min(screen.width, nr_e + n_f), 0 via nr_e, 0 }
         }
-        // ── Each island's foot, as the visualiser ────────────────
-        // Three islands, three borders: every piece's own foot line steps down into the desktop with
-        // the music, filled with its hull and stroked with its own edge, so the visualiser is what the
-        // bar stands on and never a band across the screen. Not on glass, blurred or clear surfaces,
-        // which have no opaque fill to carry the swells.
+        // ── Each island's foot, as the rim ───────────────────────
+        // Three islands, three borders: every piece's own foot line lifts with the music, filled
+        // with its hull and capped with its own edge, so the rim is what the bar stands on and
+        // never a band across the screen. Not on glass, blurred or clear surfaces, which have no
+        // opaque fill to carry the swells. The bars come from ui/rim.plm — one analysis for every
+        // surface — and at rest each is 0 tall, so this is the plain border again.
         group {
             show: bar_frame < 0.5 and bar_surface < 0.5 and nlw > 1
-            BarFoot(if(full_w, 0, nl_a + n_r), nl_e - n_r, n_b)
+            rim.Edge(if(full_w, 0, nl_a + n_r), nl_e - n_r, 0, screen.width, n_b, 1,
+                     clamp(round((nl_e - n_r - if(full_w, 0, nl_a + n_r)) / 14), 6, 32),
+                     fl.hull, fl.phos, rim_line, 12)
         }
         group {
             show: bar_frame < 0.5 and bar_surface < 0.5 and ncw > 1
-            BarFoot(nc_a + n_r, nc_e - n_r, n_b)
+            rim.Edge(nc_a + n_r, nc_e - n_r, 0, screen.width, n_b, 1,
+                     clamp(round((nc_e - n_r - nc_a - n_r) / 14), 6, 32),
+                     fl.hull, fl.phos, rim_line, 12)
         }
         group {
             show: bar_frame < 0.5 and bar_surface < 0.5 and nrw > 1
-            BarFoot(nr_a + n_r, if(full_w, screen.width, nr_e - n_r), n_b)
+            rim.Edge(nr_a + n_r, if(full_w, screen.width, nr_e - n_r), 0, screen.width, n_b, 1,
+                     clamp(round((if(full_w, screen.width, nr_e - n_r) - nr_a - n_r) / 14), 6, 32),
+                     fl.hull, fl.phos, rim_line, 12)
         }
 
         // corners (bar.frame = corners): marks at each piece's foot
@@ -2147,6 +2103,8 @@ scene Mooi {
             show: not bar_full and not st_notch and not own
             group { show: not mech; Frame(fx - 3, fw + 6, 0, f.style) }
             group { show: mech; MechHousing(fx, fw, f.style) }
+            // the music on the island's border: left, right and bottom (the top is the screen's edge)
+            rim.Rect(fx - 3, fl.top, fw + 6, fl.mod_h, fl.radius, 14, fl.hull, fl.phos, rim_line, 10)
         }
         // the bay a group sits in on a mechanism (both modes)
         MechBay(fx, fw, mech and not own)
@@ -3945,7 +3903,7 @@ scene Mooi {
             show: rv.window > 0.03
             move: wi_ox, 0
 
-            IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1)) {
+            IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1), rim: true) {
                 text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
                 text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
 
@@ -4038,7 +3996,7 @@ scene Mooi {
             let sh = 144 + 52 * brightness.present
             group {
                 move: 0, 0
-                IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox) {
+                IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox, rim: true) {
                     text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
                     text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wifi }
                     text "Wired" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wired }
@@ -4074,7 +4032,7 @@ scene Mooi {
         group {
             show: rv.calendar > 0.03
             move: ca_ox, 0
-            IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox)) {
+            IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox), rim: true) {
                 zone box keep_calendar { from: 0, 0; size: 300, 292; role: region; agent: hidden }
                 IsleHead(300, cal_title, cal_sub)
                 repeat k in 0..7 {
@@ -4119,7 +4077,7 @@ scene Mooi {
         group {
             show: rv.stats > 0.03
             move: so_ox, 0
-            IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox)) {
+            IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox), rim: true) {
                 zone box keep_stats { from: 0, 0; size: 320, 300 + if(st_gpu_ok, 30, 0); role: region; agent: hidden }
                 IsleHead(320, "System", st_load)
                 IsleGauge(16, 40, 288, "Processor", "{round(res_cpu * 100), 0} % · {round(res_temp), 0} °C", res_cpu, res_cpu > 0.85 or res_temp > 85)
@@ -4156,7 +4114,7 @@ scene Mooi {
         group {
             show: rv.weather > 0.03
             move: wi_x, 0
-            IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x)) {
+            IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x), rim: true) {
                 zone box keep_weather { from: 0, 0; size: 340, 356; role: region; agent: hidden }
                 IsleHead(340, wxi_title, wxi_sub)
                 group {
@@ -4207,7 +4165,7 @@ scene Mooi {
         group {
             show: rv.sound > 0.03
             move: sn_x, 0
-            IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x)) {
+            IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x), rim: true) {
                 zone box keep_sound { from: 0, 0; size: 320, 214 + 26 * min(aouts.count, 6); role: region; agent: hidden }
                 IsleHead(320, "Sound", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"))
                 group { move: 16, 40
@@ -4252,7 +4210,7 @@ scene Mooi {
         group {
             show: rv.display > 0.03
             move: dp_x, 0
-            IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x)) {
+            IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x), rim: true) {
                 zone box keep_display { from: 0, 0; size: 300, 150 + if(brightness.present, 52, 0); role: region; agent: hidden }
                 IsleHead(300, "Display", pick(brightness.present, "No backlight", "{round(brightness.level * 100), 0} %"))
                 group { show: brightness.present
@@ -4289,7 +4247,7 @@ scene Mooi {
         group {
             show: rv.power > 0.03
             move: pw_x, 0
-            IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x)) {
+            IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x), rim: true) {
                 zone box keep_power { from: 0, 0; size: 320, 252 + if(pw_ppd, 40, 0); role: region; agent: hidden }
                 IsleHead(320, "Power", pw_state)
                 text "{round(battery.percent), 0}%" { at: 16, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"
@@ -4348,7 +4306,7 @@ scene Mooi {
         group {
             show: rv.shnet > 0.03
             move: screen.width - 56 - 300, 0
-            IslandFrame(rv.shnet, 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count))) {
+            IslandFrame(rv.shnet, 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count)), rim: true) {
                 zone box keep_shnet { from: 0, 0; size: 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count)); role: region; agent: hidden }
                 IsleHead(300, "Connections", pick(network.online, "offline", network.name))
                 zone box snw { from: 204, 36; size: 80, 22; cursor: pointer; role: toggle; checked: network.wifi; label: "Wi-Fi on or off" }
@@ -4407,7 +4365,7 @@ scene Mooi {
         group {
             show: rv.shalert > 0.03
             move: screen.width - 56 - 300, 0
-            IslandFrame(rv.shalert, 300, 152) {
+            IslandFrame(rv.shalert, 300, 152, rim: true) {
                 zone box keep_shalert { from: 0, 0; size: 300, 152; role: region; agent: hidden }
                 IsleHead(300, "Notifications", pick(dnd_now, "", "quiet"))
                 text "{note_count, 0}" { at: 16, 66; anchor: left center; size: 30; weight: 600; family: "Exo 2"; color: if(note_count > 0, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
@@ -4435,7 +4393,7 @@ scene Mooi {
         group {
             show: rv.shupd > 0.03
             move: screen.width - 56 - 300, 0
-            IslandFrame(rv.shupd, 300, 114) {
+            IslandFrame(rv.shupd, 300, 114, rim: true) {
                 zone box keep_shupd { from: 0, 0; size: 300, 114; role: region; agent: hidden }
                 IsleHead(300, "System updates", pick(upd_n > 0, "up to date", "{upd_n, 0} waiting"))
                 text upd_t { at: 16, 52; anchor: left center; size: 12; family: "Exo 2"; color: if(upd_n > 0, if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, fg.secondary, fl.muted)); width: 268; lines: 2 }
@@ -4641,7 +4599,7 @@ scene Mooi {
             follow ch = 60 + if(res.count > 0, rlist.height + 10, 36) + 30
             group {
                 move: 10, 0
-                IslandFrame(rv.command, 580, ch, centre: true, aw: 140) {
+                IslandFrame(rv.command, 580, ch, centre: true, aw: 140, rim: true) {
                     ellipse { at: 25, 29; radius: 6; stroke: 1.5; color: fg.secondary }
                     line { from: 29.5, 33.5; to: 34, 38; width: 1.5; color: fg.secondary }
                     input query { at: 46, 30; width: 510; size: 16; color: fg.primary; selection: selection.bg
