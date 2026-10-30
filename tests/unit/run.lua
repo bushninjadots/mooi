@@ -2861,5 +2861,31 @@ test("vizfeed: 32 bands map onto 16 and 24 in order", function()
     eq(vizfeed.map(b, 16)[2] < vizfeed.map(b, 16)[3], true, "order kept")
 end)
 
+test("vizfeed: analysis follows the bass and treble with an envelope", function()
+    local b = {}; for i = 1, 32 do b[i] = 0.8 end
+    local s = vizfeed.analyse(nil, b, 1 / 30)
+    eq(s.bass > 0.8, true, "bass lifted"); eq(s.level > 0, true, "level moves")
+    local quiet = {}; for i = 1, 32 do quiet[i] = 0 end
+    local down = vizfeed.analyse(s, quiet, 1 / 30)
+    eq(down.level < s.level, true, "and releases, slower than it attacked")
+end)
+test("vizfeed: a rising bass edge beats once, then waits out the refractory", function()
+    local loud = {}; for i = 1, 32 do loud[i] = 0.9 end
+    local quiet = {}; for i = 1, 32 do quiet[i] = 0 end
+    local a = vizfeed.analyse(nil, quiet, 1 / 30)
+    local beat = vizfeed.analyse(a, loud, 1 / 30)
+    eq(beat.beat > 0.9, true, "the edge beats")
+    local again = vizfeed.analyse(beat, loud, 1 / 30)
+    eq(again.beat < beat.beat, true, "it decays")
+    eq(vizfeed.analyse(again, loud, 1 / 30).beat < again.beat, true, "and keeps decaying")
+end)
+test("vizfeed: phase turns and wraps in 0..1", function()
+    local b = {}; for i = 1, 32 do b[i] = 0.2 end
+    local s = { level = 0, high = 0, bass = 0.2, beat = 0, phase = 0.98, tempo = 0, last_beat = 0, t = 0 }
+    local n = vizfeed.analyse(s, b, 0.1)
+    eq(n.phase < 0.98, true, "wrapped"); eq(n.phase >= 0, true, "and stayed in range")
+    eq(n.t > s.t, true, "time advances")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

@@ -112,4 +112,52 @@ function M.map(bands, n)
     return out
 end
 
+local function mean(b, a, z)
+    local sum = 0
+    for i = a, z do sum = sum + (tonumber(b[i]) or 0) end
+    return sum / (z - a + 1)
+end
+
+-- One envelope, one beat and one phase for every surface. Uses 1-indexed bands;
+-- `prev` may be nil. `dt` is seconds since the previous analysis.
+function M.analyse(prev, bands, dt)
+    dt = tonumber(dt) or 0
+    if type(prev) ~= "table" then prev = nil end
+    bands = bands or {}
+
+    local bass = math.min(1, math.sqrt(mean(bands, 1, 4)) * 1.4)
+    local high = math.min(1, math.sqrt(mean(bands, 27, 32)) * 1.8)
+    local level = prev and (tonumber(prev.level) or 0) or 0
+    local high_lv = prev and (tonumber(prev.high) or 0) or 0
+    level = level + (bass - level) * math.min(1, (bass > level and 16 or (2.6 + 3 * level)) * dt)
+    high_lv = high_lv + (high - high_lv) * math.min(1, (high > high_lv and 14 or 4) * dt)
+
+    local t = (prev and (tonumber(prev.t) or 0) or 0) + dt
+    local last_beat = prev and (tonumber(prev.last_beat) or -1e9) or -1e9
+    local tempo = prev and (tonumber(prev.tempo) or 0) or 0
+    local beat = prev and (tonumber(prev.beat) or 0) or 0
+    local phase = prev and (tonumber(prev.phase) or 0) or 0
+    local rise = prev and (tonumber(prev.bass) or 0) or 0
+
+    if bass > 0.55 and rise <= 0.55 and t - last_beat >= 0.25 then
+        local interval = t - last_beat
+        if interval >= 0.25 and interval <= 2 then
+            tempo = tempo > 0 and (tempo * 0.5 + interval * 0.5) or interval
+        end
+        beat = 1
+        last_beat = t
+    else
+        beat = math.max(0, beat - 4 * dt)
+    end
+
+    phase = phase + (tempo > 0 and dt / tempo or dt * (0.35 + 0.65 * level))
+    phase = phase % 1
+    if phase < 0 then phase = phase + 1 end
+
+    return {
+        level = level, high = high_lv, bass = bass, beat = beat,
+        phase = phase, tempo = tempo, last_beat = last_beat, t = t,
+    }
+end
+
 return M
