@@ -1,0 +1,37 @@
+# The audit's open issue 1 (docs/AUDIT-2026-11-01.md, A7): there was no CI, and the launcher was
+# only ever checked with `sh -n` on a machine where shellcheck is not installed.
+#
+# This runs everything `bin/mooi check` runs that does not need Pleamar — the scene compile step
+# needs the pleamar binary (0.4.6 · language 0.4) and a compositor's libraries, which this runner
+# does not have, so it is deliberately not faked here: a green run says the logic, the suites, the
+# launcher and the test scripts are sound, not that the scenes compile. Run `bin/mooi check` on a
+# machine with Pleamar for that half.
+name: check
+on:
+  push:
+  pull_request:
+jobs:
+  static-and-units:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: install what the gate needs and CI can have
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends lua5.4 shellcheck jq
+      - name: the launcher and every test script parse, and pass shellcheck's error gate
+        run: |
+          sh -n bin/mooi
+          for t in tests/*.sh; do sh -n "$t"; done
+          shellcheck -S error bin/mooi tests/*.sh
+      - name: every logic file parses with Lua 5.4 (pleamar --check does not read them)
+        run: |
+          for f in shell/*.luau shell/lib/*.luau shell/player/*.luau shell/bmo/*.luau; do
+            F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end'
+          done
+      - name: the suites that need no compositor
+        run: |
+          lua5.4 shell/bmo/test.lua
+          lua5.4 tests/unit/run.lua
+      - name: the apps-sync suite (sandboxed HOME and XDG, pkill stubbed: it touches nothing of the runner's)
+        run: sh tests/apps-sync.sh

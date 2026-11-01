@@ -402,7 +402,6 @@ scene Notch {
     event nt_hue ->              // to the logic: the colour band along the arc pressed (again: all of them)
     event nt_studio ->           // to the logic: open the wallpaper studio
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
-    event nt_refresh ->          // to the logic: read the panel again
     event nt_moved ->            // to the logic: the nub let go at this height
     event nt_show_deck ->        // from the Control Nexus: open panel n where it has just said (nt_px, pn_y, nt_ox, nt_acy, nt_dir)
 

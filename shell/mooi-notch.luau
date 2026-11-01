@@ -565,16 +565,40 @@ local function read_pictures()
         pump_hues()
     end)
 end
+-- The picker's IPC returns as soon as the work is queued (it starts wallpaper-apply and does
+-- not wait), so a successful call is not "it is on". The source link is what wallpaper-apply
+-- writes; wait for it before saying so (audit 2026-10-31).
+local function confirm_wear(target, ok, failed)
+    local function ask(n)
+        launch("readlink", { "-f", HOME .. "/.cache/current_wallpaper_source" }, function(out)
+            if tostring(out or ""):gsub("%s+$", "") == target then ok(); return end
+            if n > 0 then after(100, function() ask(n - 1) end) else failed() end
+        end)
+    end
+    ask(20)
+end
 on("nt_wall", function(v)
     local list = view()
     local p = list[(tonumber(v) or -1) + 1]
     if not p then return end
     text.wp_t = "WEARING " .. string.upper(p:match("([^/]+)$") or p) .. "…"
-    -- as the studio does (shell/mooi-wallpaper.luau): the picker, which also makes the palette; else awww
+    -- as the studio does (shell/mooi-wallpaper.luau): the picker, which also makes the palette
     launch("qs", { "-p", HOME .. "/.config/qs-wallpaperpicker", "ipc", "call", "wallpaper", "set", p }, function(_, code)
-        if code == 0 then text.wp_t = "WEARING IT · THE PALETTE FOLLOWS"; return end
-        launch("awww", { "img", p, "--transition-type", "grow", "--transition-duration", "0.8" }, function(_, acode)
-            text.wp_t = acode == 0 and "WEARING IT (AWWW · THE PICKER WAS NOT RUNNING, SO THE PALETTE WAITS)" or "COULD NOT WEAR IT: START THE WALLPAPER PICKER OR AWWW"
+        if code == 0 then
+            confirm_wear(p, function() text.wp_t = "WEARING IT · THE PALETTE FOLLOWS" end,
+                function() text.wp_t = "SENT · THE PICKER DID NOT CONFIRM IT (SEE ITS LOG)" end)
+            return
+        end
+        -- Not running: its script writes the links and the palette; awww only draws.
+        launch(HOME .. "/.config/qs-wallpaperpicker/scripts/wallpaper-apply", { p }, function(_, wcode)
+            if wcode == 0 then
+                confirm_wear(p, function() text.wp_t = "WEARING IT · THE PICKER WAS NOT RUNNING; ITS SCRIPT DID IT" end,
+                    function() text.wp_t = "SENT · THE WALLPAPER SCRIPT DID NOT CONFIRM IT" end)
+                return
+            end
+            launch("awww", { "img", p, "--transition-type", "grow", "--transition-duration", "0.8" }, function(_, acode)
+                text.wp_t = acode == 0 and "DRAWN WITH AWWW · NOTHING RECORDED (INSTALL qs-wallpaperpicker TO KEEP IT)" or "COULD NOT WEAR IT: START THE WALLPAPER PICKER"
+            end)
         end)
     end)
 end)
@@ -746,6 +770,10 @@ on("nt_show_deck", function(v)
     if READ[n] then READ[n]() end
     viz()
 end)
+-- The Wallpapers panel's button (audit 2026-11-01, A6): `nt_studio` was emitted by the scene and
+-- handled nowhere, so the button did nothing. The studio is a program of its own; the launcher
+-- opens it (it is on this scene's allowlist).
+on("nt_studio", function() launch("mooi", { "wallpaper" }) end)
 on("nt_close", function() fact.nt_open, fact.nt_tab, fact.nt_pin, fact.nt_deck = false, -1, false, false; viz() end)
 read_weather()
 after(4000, read_github)        -- the badge of what waits on GitHub, read once at the start

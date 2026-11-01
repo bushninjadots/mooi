@@ -145,10 +145,15 @@ theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdou
         exec 9>"$theme_lock"
         flock -w 20 9 || { echo "another sync is still running" >&2; return 1; }
     fi
+    # The lock belongs to the sync, not to the process. Without this the theme watch — which
+    # calls this inside its own long loop — held it for the rest of the session, so a manual
+    # `mooi theme-sync` waited 20 s and failed with "another sync is still running" while
+    # nothing was syncing (audit 2026-10-31, F4).
+    theme_unlock() { if command -v flock >/dev/null 2>&1; then flock -u 9 2>/dev/null; exec 9>&-; fi; }
     mkdir -p "$folder"
     cfg="$folder/matugen.toml"
     sed -e "s|@TPL@|$root/theme/palette.json.hbs|" -e "s|@OUT@|$folder/palette.json|" \
-        "$root/theme/matugen.toml.in" > "$cfg" || return 1
+        "$root/theme/matugen.toml.in" > "$cfg" || { theme_unlock; return 1; }
     # `--source-color-index 0` is what the user's own matugen-theme.sh passes, so mooi and the
     # rest of the desktop take their colours from the same source colour of the same wallpaper;
     # without it matugen 4.2 stops and asks.
@@ -163,7 +168,7 @@ theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdou
     fi
     matugen image "$real_image" -c "$cfg" -m "$mode" --type "scheme-$scheme" \
         --source-color-index "$index" --contrast "$contrast" >/dev/null \
-        || { echo "matugen failed" >&2; return 1; }
+        || { echo "matugen failed" >&2; theme_unlock; return 1; }
     # The mode rides in the palette itself, so the bar builds the matching set from the same write.
     if command -v jq >/dev/null 2>&1 && [ -f "$palette" ]; then
         jq --arg m "$mode" '. + {mode: $m}' "$palette" > "$palette.mooi-tmp" && mv "$palette.mooi-tmp" "$palette"
@@ -182,6 +187,7 @@ theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdou
     # mooi watches the palette file itself, so this is a courtesy: it is what makes the change
     # land in the frame after the write rather than on the next wallpaper change.
     "$pleamar" --say "$name" "emit recolor" >/dev/null 2>&1 || :
+    theme_unlock
     return 0
 }
 
@@ -572,10 +578,14 @@ snapshot() {
 pace() {
     speed=100
     [ -r "$settings" ] && command -v jq >/dev/null 2>&1 && speed=$(jq -r '.motion.speed // 100' "$settings" 2>/dev/null || echo 100)
-    case "$speed" in ''|*[!0-9]*) speed=100 ;; esac
+    case "$speed" in ''|0|*[!0-9]*) speed=100 ;; esac
     [ "$speed" -eq 100 ] && return 0
-    for f in $(find "$1" -name '*.plm'); do
-        awk -v f="$(echo "100 / $speed" | bc -l)" '
+    # No `bc` (audit 2026-10-31, F5): awk computes the factor itself, so a machine without bc
+    # no longer gets a silent division by zero and unpaced scenes. The list is read a line at a
+    # time so a path with a space is not split.
+    find "$1" -name '*.plm' | while IFS= read -r f; do
+        awk -v speed="$speed" '
+        BEGIN { f = 100 / speed }
         function ms(s, pat, pre,   out, n) {
             out = ""
             while (match(s, pat)) {
@@ -896,7 +906,22 @@ case "$cmd" in
     clipboard) exec "$pleamar" --say "$name" "emit open_clips" ;;
     record) exec "$pleamar" --say "$name" "emit record $([ "${1:-}" = area ] && echo 1 || echo 0)" ;;
     edit) exec "$pleamar" --say "$name" "emit edit_toggle" ;;
-    overview) exec "$pleamar" --say "$name" "emit open_overview" ;;
+    overview)
+        # Which Overview opens is a setting (Settings -> Overview -> Opens with): mooi's
+        # own, or Hyprdrive's plugin. Hyprdrive is only used while its plugin is actually
+        # loaded; otherwise this falls through to mooi's own rather than opening nothing.
+        engine=$(jq -r '.atlas.engine // "mooi"' "$settings" 2>/dev/null || echo mooi)
+        if [ "$engine" = hyprdrive ] && command -v hyprctl >/dev/null 2>&1 \
+           && hyprctl plugin list 2>/dev/null | grep -q hyprdrive; then
+            # mooi's own Overview must not stay behind Hyprdrive's
+            "$pleamar" --say "$name" "fact open none" >/dev/null 2>&1 || true
+            exec hyprctl dispatch hyprdrive:overview toggle all
+        fi
+        # the other way: close Hyprdrive's if it is open, then open mooi's
+        if command -v hyprctl >/dev/null 2>&1 && hyprctl plugin list 2>/dev/null | grep -q hyprdrive; then
+            hyprctl dispatch hyprdrive:overview close >/dev/null 2>&1 || true
+        fi
+        exec "$pleamar" --say "$name" "emit open_overview" ;;
     mode)   # light | dark | auto | (nothing: the other one now)
         case "${1:-}" in dark) n=0 ;; light) n=1 ;; auto) n=2 ;; ""|toggle) n=9 ;; *) echo "usage: mooi mode [light|dark|auto]" >&2; exit 2 ;; esac
         exec "$pleamar" --say "$name" "emit set_mode $n" ;;
@@ -905,6 +930,14 @@ case "$cmd" in
     say)  exec "$pleamar" --say "$name" "$@" ;;
     check)
         sh -n "$self" || exit 1
+        for t in "$root"/tests/*.sh; do sh -n "$t" || exit 1; done
+        # A gate, not a style report: errors only. The launcher holds the takeover, keeper and
+        # lock logic, and `sh -n` cannot see word splitting or a bad expansion (audit F5).
+        if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck -S error -q "$self" "$root"/tests/*.sh || exit 1
+        else
+            echo "shellcheck: not installed; syntax checked with sh -n only"
+        fi
         "$pleamar" --check "$src" || exit 1
         "$pleamar" --check "$root/shell/mooi-settings.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-wallpaper.plm" || exit 1
@@ -920,7 +953,10 @@ case "$cmd" in
         for f in "$root"/shell/*.luau "$root"/shell/lib/*.luau "$root"/shell/player/*.luau "$root"/shell/bmo/*.luau; do
             F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
         done
-        cd "$root" && lua5.4 shell/bmo/test.lua | tail -1 && lua5.4 tests/unit/run.lua
+        # Each suite must be able to fail the check (audit 2026-10-31, F1): before this the unit
+        # tests' status was thrown away and the last `echo` made the command exit 0.
+        ( cd "$root" && lua5.4 shell/bmo/test.lua ) || exit 1
+        ( cd "$root" && lua5.4 tests/unit/run.lua ) || exit 1
         # What this machine lacks: the scenes fall back quietly, so name it here rather than let a
         # visualizer or a store module look broken (audit 2026-10-29).
         missing=

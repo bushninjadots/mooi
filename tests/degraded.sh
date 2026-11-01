@@ -12,9 +12,21 @@ check() { n=$((n + 1)); if [ "$2" = "$3" ]; then echo "  ok    $1"; else echo " 
 say "get open" >/dev/null 2>&1 && { echo "mooi is already running; stop it first"; exit 2; }
 log=${TMPDIR:-/tmp}/mooi-degraded.$$.log
 HYPRLAND_INSTANCE_SIGNATURE=no-such-instance MOOI_SAFE=1 \
-    pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 20 > "$log" 2>&1 &
+    pleamar --scene "$root/shell/mooi.plm" --no-hud --stall 0 --seconds 30 > "$log" 2>&1 &
 pid=$!
-for _ in $(seq 1 20); do sleep 0.3; get open >/dev/null 2>&1 && break; done
+# Readiness is pleamar's own status, not `get`'s: `get` pipes through `tail`, whose status is 0
+# whatever pleamar said, so the loop broke on its first try and the checks below raced the scene's
+# startup — the island read 'none' and the note read '' (found 2026-11-01, re-running this suite).
+ready=no
+for _ in $(seq 1 60); do
+    if pleamar --say mooi "get open" >/dev/null 2>&1; then ready=yes; break; fi
+    sleep 0.3
+done
+if [ "$ready" != yes ]; then
+    echo "  FAIL  the shell never answered on its socket"
+    kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null
+    echo; echo "1 checks, 1 failed · log $log"; exit 1
+fi
 
 echo "Hyprland IPC unreachable"
 check "the shell starts" "$(get open)" none

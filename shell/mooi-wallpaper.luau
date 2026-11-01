@@ -769,6 +769,19 @@ local function set_tab(n)
 end
 
 local desk_layers
+-- The picker's IPC returns as soon as it has queued the work: it starts wallpaper-apply and does
+-- not wait for it, so a successful call is not "the wallpaper is on". The source link is what
+-- wallpaper-apply writes and what mooi's desk and palette follow — wait for it before saying so
+-- (audit 2026-10-31).
+local function confirm_applied(target, ok, failed)
+    local function ask(n)
+        run("readlink", { "-f", CURRENT }, function(out)
+            if tostring(out or ""):gsub("%s+$", "") == target then ok(); return end
+            if n > 0 then after(100, function() ask(n - 1) end) else failed() end
+        end)
+    end
+    ask(20)
+end
 local function apply()
     if applying or not base then return end
     applying = true
@@ -795,17 +808,35 @@ local function apply()
             save_now()
             if desk_layers then desk_layers(out) end
         end
+        local function gave_up(why)
+            applying = false
+            fact.loading = false
+            text.status = why
+        end
         run("qs", { "-p", PICKER, "ipc", "call", "wallpaper", "set", out }, function(_, qcode)
-            if qcode == 0 then applied("APPLIED · THE DESKTOP IS WEARING IT"); return end
-            -- the picker is not running: the wallpaper daemon itself takes the still (the palette
-            -- then waits for the picker, which is what makes it)
-            run("awww", { "img", out, "--transition-type", "fade", "--transition-duration", "0.6" }, function(_, acode)
-                if acode == 0 then applied("APPLIED WITH AWWW · THE PICKER WAS NOT RUNNING, SO THE PALETTE WAITS")
-                else
-                    applying = false
-                    fact.loading = false
-                    text.status = "COULD NOT APPLY · START THE WALLPAPER PICKER (qs-wallpaperpicker) OR AWWW"
+            if qcode == 0 then
+                confirm_applied(out, function() applied("APPLIED · THE DESKTOP IS WEARING IT") end, function()
+                    gave_up("SENT · THE PICKER DID NOT CONFIRM IT (SEE ITS LOG)")
+                end)
+                return
+            end
+            -- Not running: its script is what writes the links and the palette (the old fallback,
+            -- `awww img`, drew the picture but left both pointing at the old wallpaper).
+            run(PICKER .. "/scripts/wallpaper-apply", { out }, function(_, wcode)
+                if wcode == 0 then
+                    confirm_applied(out, function() applied("APPLIED · THE PICKER WAS NOT RUNNING; ITS SCRIPT DID IT") end, function()
+                        gave_up("SENT · THE WALLPAPER SCRIPT DID NOT CONFIRM IT")
+                    end)
+                    return
                 end
+                -- Last resort: draw it, and say honestly that nothing was recorded.
+                run("awww", { "img", out, "--transition-type", "fade", "--transition-duration", "0.6" }, function(_, acode)
+                    if acode == 0 then
+                        gave_up("DRAWN WITH AWWW · NOTHING RECORDED (INSTALL qs-wallpaperpicker TO KEEP IT)")
+                    else
+                        gave_up("COULD NOT APPLY · START THE WALLPAPER PICKER (qs-wallpaperpicker)")
+                    end
+                end)
             end)
         end)
     end)

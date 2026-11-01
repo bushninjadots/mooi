@@ -70,6 +70,13 @@ M.SETTERS = {
     "music.rim", "music.rim_gain", "music.rim_glow",
     -- how many bars the Control Nexus deck's border is cut into (nexus.bars)
     "nexus.bars",
+    -- which Overview Super+Tab opens: mooi's own, or Hyprdrive's plugin (atlas.engine)
+    "atlas.engine",
+    -- the ported overview (docs/OVERVIEW-PORT.md): wheel/key desktop stepping and type-to-run
+    "atlas.wheel_desktops", "atlas.search_apps", "atlas.search_files",
+    "atlas.hot_corner", "atlas.hot_corner_delay",
+    -- Hyprdrive's spring edges, ported into the Overview (docs/OVERVIEW-PORT.md)
+    "atlas.spring_edges",
 }
 
 local function row_of(path)
@@ -90,6 +97,7 @@ function M.path(code, list)
 end
 
 function M.apply(settings, n)
+    if type(settings) ~= "table" then return nil end   -- nothing to write into: a code that sets nothing
     n = math.floor(tonumber(n) or -1)
     local code, v = math.floor(n / 1000), n % 1000
     local path = M.path(code)

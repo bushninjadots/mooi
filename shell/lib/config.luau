@@ -81,8 +81,13 @@ M.SCHEMA = {
     -- (none, corners, or a line thin / regular / bold — bar.frame and bar.outline_width) and the
     -- frame's music (off, or how it moves — frame.music and frame.style). No default: they are
     -- read from what is under them, and a file that has them keeps them.
-    { path = "bar.edge", kind = "enum", values = { "none", "corners", "thin", "regular", "bold" } },
-    { path = "frame.motion", kind = "enum", values = { "off", "swell", "ripples", "pulse" } },
+    -- These two are transports for a choice, not settings anything reads: choosing an edge writes
+    -- bar.frame and bar.outline_width (lib/style `apply_edge`), and the window shows which one it is
+    -- by deriving it back (`edge_index`). They had no default until the 2026-11-01 audit: a file
+    -- that carried one kept a value that meant nothing, so `defaults()` gains the neutral one and
+    -- `validate` checks it like any other.
+    { path = "bar.edge", kind = "enum", values = { "none", "corners", "thin", "regular", "bold" }, default = "none" },
+    { path = "frame.motion", kind = "enum", values = { "off", "swell", "ripples", "pulse" }, default = "off" },
     { path = "bar.outline_width", kind = "integer", default = 2, min = 1, max = 3 },
     { path = "bar.outline_colour", kind = "enum", values = { "subtle", "bright", "accent" }, default = "subtle" },
     { path = "bar.pill", kind = "enum", values = { "soft", "outline", "underline", "glow" }, default = "soft" },
@@ -203,7 +208,7 @@ M.SCHEMA = {
     { path = "atlas.rows", kind = "integer", default = 2, min = 1, max = 3 },
     { path = "atlas.columns", kind = "integer", default = 5, min = 2, max = 6 },
     { path = "atlas.super_tab", kind = "boolean", default = true },
-    { path = "atlas.overview", kind = "enum", values = { "grid", "strip", "canvas" }, default = "grid" },
+    { path = "atlas.overview", kind = "enum", values = { "grid", "strip", "canvas", "mission" }, default = "mission" },
     { path = "atlas.private", kind = "enum", values = { "off", "sensitive", "everything" }, default = "sensitive" },
     -- Its look and feel (D44): each workspace's size as a share of the screen (iNiR's 18 %), how dark
     -- the desktop goes behind it, whether the workspace you are on zooms out into its place, and how
@@ -218,6 +223,23 @@ M.SCHEMA = {
     { path = "session.standalone", kind = "boolean", default = false },
     -- A touchpad swipe down to open it (D45): off, or with three or four fingers.
     { path = "atlas.gesture", kind = "enum", values = { "off", "three", "four" }, default = "off" },
+    -- Which Overview Super+Tab and mooi's Overview key open: Pleamar's own (mooi's, with
+    -- Hyprdrive's overview hands ported into it — docs/OVERVIEW-PORT.md), or Hyprdrive's
+    -- plugin overview when that plugin is loaded (`hyprctl plugin list`). Without the
+    -- plugin, Hyprdrive falls back to mooi's own rather than opening nothing.
+    { path = "atlas.engine", kind = "enum", values = { "mooi", "hyprdrive" }, default = "mooi" },
+    -- The ported overview (docs/OVERVIEW-PORT.md): the wheel over the grid (and ← →) steps the
+    -- desktops, and typing lists installed apps under the search row to start with Enter.
+    { path = "atlas.wheel_desktops", kind = "boolean", default = true },
+    { path = "atlas.search_apps", kind = "boolean", default = true },
+    { path = "atlas.search_files", kind = "boolean", default = true },
+    -- The hot corner (OVERVIEW-PORT stage 3): rest the pointer in a corner to open it. Off by
+    -- default; while on, a 6×6 surface takes that corner's clicks (the price of the corner).
+    { path = "atlas.hot_corner", kind = "enum", values = { "off", "top-left", "top-right", "bottom-left", "bottom-right" }, default = "off" },
+    { path = "atlas.hot_corner_delay", kind = "integer", default = 600, min = 200, max = 1500 },
+    -- Spring edges (OVERVIEW-PORT, D115): carry a window into the left or right edge of the
+    -- Overview and hold; the desktops step, and the window lands on the one you stop at.
+    { path = "atlas.spring_edges", kind = "boolean", default = true },
     { path = "keys.mode", kind = "key", default = "SUPER + ALT + T" },
     { path = "keys.overview", kind = "key", default = "SUPER + ALT + O" },
     { path = "shutter.enabled", kind = "boolean", default = true },
@@ -541,6 +563,19 @@ function M.validate(t)
     if t.version ~= nil and t.version ~= M.VERSION then
         notes[#notes + 1] = string.format("settings say version %s, this mooi reads %d", tostring(t.version), M.VERSION)
     end
+    -- A whole section of the wrong type (a hand edit, a truncated write) used to vanish without a
+    -- word, every setting in it silently back to its default (audit 2026-11-01, A1). A wrong leaf
+    -- was always reported; now a wrong section is too.
+    local known = known_paths()
+    local sections = {}
+    for path in pairs(known.sections) do sections[#sections + 1] = path end
+    table.sort(sections)
+    for _, path in ipairs(sections) do
+        local value = get(t, path)
+        if value ~= nil and type(value) ~= "table" then
+            problems[#problems + 1] = string.format("%s: expected a group of settings, got %s; using the defaults", path, type(value))
+        end
+    end
     for _, row in ipairs(M.SCHEMA) do
         local value = get(t, row.path)
         if value ~= nil then
@@ -574,7 +609,7 @@ function M.validate(t)
         for _, side in ipairs({ "left", "center", "right" }) do out.bar[side] = copy(barlayout.DEFAULT[side]) end
     end
     local unknown = {}
-    unknown_keys(t, "", known_paths(), unknown)
+    unknown_keys(t, "", known, unknown)
     table.sort(unknown)
     for _, path in ipairs(unknown) do notes[#notes + 1] = "unknown setting ignored: " .. path end
     return out, problems, notes

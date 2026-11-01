@@ -46,6 +46,11 @@ for m in battery volume brightness network bluetooth; do
     fi
 done
 if [ -z "$xd" ]; then bad "no system readout is placed on the bar"; say quit >/dev/null; exit 1; fi
+# Not every readout opens the *system* island: the battery one opens the power island (the
+# session menu with its health). What is checked is that the press opens what its module
+# says it opens — so the expectation follows the module, it is not assumed.
+want=system
+[ "$which" = battery ] && want=power
 o=$(get st_offset)
 h=$(get st_height)
 cx=$((xd + wd / 2)); cy=$((o + h - 6))
@@ -55,9 +60,9 @@ kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; pid=''
 # the one without the mouse could be the one heard.
 for _ in $(seq 1 30); do say "get open" >/dev/null 2>&1 || break; sleep 0.1; done
 
-echo "a press on the bar ($which at $cx,$cy) opens the system island"
+echo "a press on the bar ($which at $cx,$cy) opens the $want island"
 start --mouse "$cx,$cy@900 click@1200"
-if wait_open system; then ok "the click opened it"; else bad "the click did not open it (open = $(get open))"; fi
+if wait_open "$want"; then ok "the click opened it"; else bad "the click did not open it (open = $(get open), expected $want)"; fi
 moved=$(grep -c '^mouse' "$out/scene.log" || true)
 if [ "$moved" -ge 2 ]; then ok "the pointer was moved and pressed ($moved events)";
 else bad "the pointer never reached the scene ($moved events)"; fi

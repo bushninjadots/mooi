@@ -57,6 +57,7 @@ end
 local spare = false
 local spare_since = 0        -- when this one last concluded it was the second one
 local claim -- below, once show_face and save_state exist
+local come_alive -- below, once show_face and save_state exist
 -- the time, and where this process keeps a fresh table (each process its own place)
 local mark = (os.time() % 100000) * 10000 + (tonumber(tostring({}):match("(%x+)$") or "0", 16) or 0) % 10000
 fact.token = mark
@@ -88,7 +89,7 @@ local function only_one()
         -- BMO alive, beat climbing, ready false, nothing drawn — the scene defaulted it and only
         -- the spare's claim ever lifted it).
         if not theirs or theirs == mark then
-            if not fact.ready then fact.ready = true end
+            if not fact.ready then come_alive() end
             return
         end
         spare = true
@@ -180,6 +181,17 @@ local function show_face()
     fact.asleep = activity == "sleeping"
 end
 
+-- Come alive: stand where he was, remember it, and show his face. Every path that makes him ready
+-- ends here, so a BMO that has just started answers for his mood at once instead of only after the
+-- first thing that changes it (found 2026-10-31: a cold start answered `get ready` true and
+-- `get mood_t` empty for minutes — the lone-BMO path lifted `ready` and nothing wrote his texts).
+function come_alive()
+    fact.ready = true
+    place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
+    save_state()
+    show_face()
+end
+
 -- The other one ended while this one was its spare (a refresh does exactly that: the new BMO is
 -- up before the old is gone). We are what answers to "bmo" now, so take the name and come back;
 -- until we are, ask again. A spare that never is ends itself on its own name, above.
@@ -199,10 +211,7 @@ claim = function()
             -- on again left a visible BMO hidden for a quarter of a minute.
             if spare_since > 0 and os.time() - spare_since > 4 then
                 spare = false
-                fact.ready = true
-                place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
-                save_state()
-                show_face()
+                come_alive()
                 return
             end
             if theirs then misses = 0
@@ -211,20 +220,14 @@ claim = function()
                 -- may already hold the name behind a socket that answers nothing. Show him rather
                 -- than leave a running BMO invisible (2026-10-30).
                 spare = false
-                fact.ready = true
-                place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
-                save_state()
-                show_face()
+                come_alive()
                 return
             else misses = misses + 1 end
             after(1500, claim)
             return
         end
         spare = false
-        fact.ready = true
-        place(state.x >= 0 and state.x or home_x(), state.y >= 0 and state.y or home_y())
-        save_state()
-        show_face()
+        come_alive()
     end)
 end
 
