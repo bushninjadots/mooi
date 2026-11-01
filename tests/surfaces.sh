@@ -27,9 +27,20 @@ num() { case "$1" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac; }
 # The dump is spaced out on this build (`"scale": 1`), so the spaces go before the patterns.
 scale_now() { hyprctl monitors -j 2>/dev/null | tr -d ' \n' | grep -o '"scale":[0-9.]*' | head -1 | cut -d: -f2; }
 monitor_now() { hyprctl monitors -j 2>/dev/null | tr -d ' \n' | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4; }
+restore_scale() {   # puts the scale back, and says so if it could not
+    [ -z "$restored" ] && return 0
+    for _ in 1 2 3; do
+        hyprctl eval "hl.monitor({output=\"$restored\", scale=$orig})" >/dev/null 2>&1
+        sleep 1
+        [ "$(scale_now)" = "$orig" ] && { restored=''; return 0; }
+    done
+    echo "  note  the monitor is still at scale $(scale_now); put it back with:"
+    echo "        hyprctl eval 'hl.monitor({output=\"$restored\", scale=$orig})'"
+    return 1
+}
 cleanup() {
     [ -n "$pid" ] && { say quit >/dev/null 2>&1; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; pid=''; }
-    [ -n "$restored" ] && hyprctl eval "hl.monitor({output=\"$restored\", scale=$orig})" >/dev/null 2>&1
+    restore_scale >/dev/null 2>&1
 }
 trap cleanup EXIT INT TERM
 
@@ -99,7 +110,38 @@ for p in window system weather calendar power; do
     say "fact open none" >/dev/null 2>&1
 done
 
+
+# ── The frame, the shutter and the stash dock measure their own surfaces (D117) ──
+# The strip's `screen` is 1920x160, and each of these read that: the frame's foot was drawn at
+# y = 160, a full-screen shutter covered 160 px, and the 614 px stash box was centred on -227.
+PW=$(get popup_surface.width)
+for pair in "frame_surface:the screen frame" "shutter_surface:the shutter" "stash_dock:the stash dock"; do
+    surf=${pair%%:*}; what=${pair#*:}
+    sw=$(get "$surf.width"); shh=$(get "$surf.height")
+    if num "$shh" && [ "$shh" = "$H" ] && { [ "$surf" = stash_dock ] || [ "$sw" = "$PW" ]; }; then
+        ok "$what measures its own surface ($sw x $shh)"
+    else bad "$what measures ${sw:-?} x ${shh:-?} (the pop-up surface is $PW x $H)"; fi
+done
+
+# ── A shelf panel is clamped inside the surface ──
+# Beside the spine a panel is carried up to the shelf (`isl_shelf`, `isl_sy`) and the clamp keeps
+# its foot off the surface's bottom edge: at 1.5 the 292 px calendar, asked for y 600, must end at
+# or above 700 in a 720 px surface.
+say "fact isl_shelf true" >/dev/null 2>&1
+say "fact isl_sy 600" >/dev/null 2>&1
+say "fact open calendar" >/dev/null 2>&1
+sleep 0.8
+bottom=$(last popup_surface | walk bottom)
+top=$(last popup_surface | walk top)
+if num "$bottom" && [ "$bottom" -le "$H" ] && [ "$top" -ge "$S" ]; then
+    ok "a shelf panel stays inside the surface ($top...$bottom, the surface ends at $H)"
+else bad "a shelf panel runs past the surface (${top:-?}...${bottom:-?}, the surface ends at $H)"; fi
+say "fact isl_shelf false" >/dev/null 2>&1
+say "fact isl_sy 0" >/dev/null 2>&1
+say "fact open none" >/dev/null 2>&1
+
 say quit >/dev/null 2>&1; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; pid=''
+restore_scale || true
 echo
 echo "$n checks, $fail failed · log $log"
 [ "$fail" -eq 0 ]
