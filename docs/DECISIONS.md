@@ -3576,3 +3576,68 @@ paint 0.52 ms, the rest waiting for the screen. Splitting the bar's layer into a
 pop-up surface cut an active frame's paint (5.6–6.3 ms over the whole 1920×1080) to the strip alone.
 Not measured while silent: `pgrep -c cava` under playback, and the 60 s rim-on/rim-off samples — nothing
 was playing music during the pass.
+
+## D113 · 2026-10-31 · Hyprdrive's Overview in Pleamar, and the engine switch
+
+**One overview, ours.** Hyprdrive's overview is compositor C++ tied to a Hyprland ABI; mooi's is a
+Pleamar scene that is theme-aware, keyboard-owned and scriptable. The parts that belong to an
+overview were ported: the wheel and ← → step the existing desktops and keep the Overview open
+(`lib/atlas.step`), a window dropped past the last strip cell makes the next desktop, and the search
+row falls through from the board to a safe sum (`lib/calc`), ranked installed apps and bounded files
+from the folders people keep (`lib/filesearch`). Four opt-in 6×6 hot-corner surfaces open it after a
+configurable rest. `atlas.engine` chooses Pleamar or Hyprdrive's plugin, which is only a dispatch
+point while its plugin is not loaded; the Pleamar side closes the plugin's overview before opening,
+so the two never stack. Not portable, and documented as such: tap-Super (a client never sees a
+modifier release), finger-following swipes, scrolling-layout pass-through, Mosaic, and GNOME search
+providers (sums are parsed by a tiny evaluator with no `load()` and a size cap instead).
+
+## D114 · 2026-10-31 · The Mission shape: Hyprdrive's own picture
+
+**The port is visual, not only behavioural.** Settings → Overview → Shape gained **Mission**, and it
+is the default: the wallpaper behind (`blur: 14`, `brightness: 0.55`, a 52 % veil), a strip of the
+workspaces you are not on (96 px high, at most 176 wide, 12 apart), and one large card for the one
+you are (letterboxed, capped at 1480 wide, down to 44 px above the foot) whose windows sit on an
+18 px mission grid — one column for one, two up to four, three beyond. The geometry is
+`lib/atlas.mission`, pure and unit-tested; Grid, Strip and Canvas stay because each is still the
+right shape for something. Focus, close, drag-and-carry, wheel/arrow stepping, type-to-run, sums and
+file rows all work in it unchanged, and the large card follows the desktop the wheel steps to
+because the workspaces watch rebuilds the board while the Overview is up.
+
+## D115 · 2026-11-01 · Spring edges: a held window at the edge steps the desktops
+
+**Hyprdrive's `drag:spring_edges`, in the Overview.** Carrying a window into the left or right edge
+of the screen (28 px) and holding it for 420 ms steps to that desktop, and holding on keeps stepping
+every 420 ms; the edge lights, a pill names the desktop, and let go away from the board the window
+goes to the desktop the hold reached instead of gliding home (`lib/atlas.spring_target`). The scene
+only reports where the pointer is (`ov_edging`); the logic steps, through the same `step_desktop`
+the wheel and ← → use, so all three walk one list. Leaving the edge cancels the rest. `atlas.edge`
+and `spring_target` are pure and unit-tested, and `atlas.spring_edges` is a setting (on, as
+Hyprdrive has it) whose control is the last code, so no other setting moved.
+
+## D116 · 2026-11-01 · Canvas edges: the same hold pans the field
+
+**The canvas has no next desktop to step to, so the edges pan it.** The same band, in any of the
+four edges, moves the camera toward the edge — up and down as well as sideways — while a window or a
+workspace's nameplate is carried. The speed is `atlas.pan_by`'s 1100 screen px a second divided by
+the zoom, so it looks the same near or far, in a step every 16 ms that stops by itself when no edge
+is held. The scene reports both axes (`ov_edging`, `ov_edgey`); one loop in the logic moves
+`ov_cx`/`ov_cy` and emits `ov_pan`, which the scene answers with `cam_x: ov_cx ~0ms` — the camera
+must be where the pan put it, because a drop reads the world through that corner and a camera still
+gliding would land a territory off. Hyprdrive's Mosaic canvas itself stays out of scope: it is
+compositor layout, and a layer-shell client cannot park windows off screen.
+
+## D117 · 2026-11-01 · The panels are drawn *inside* the popup surface
+D112 split the bar off the pop-up layer: the strip became its own 1920×160 surface, and
+`popup_surface` (full screen, just above it) took the panels. But a named surface carries what
+is **inside its braces**, and the panels had been left loose after the declaration, so they went
+to the scene's own surface — the strip's, 160 px tall. Every island, the quick-notes pad, the
+settings panel, the spine's shelves and the press-away plate were painted on it and had their
+bottoms cut off at y = 160; `screen.height` also read 160, so the plate reached only 129 px
+down and the shelf clamps collapsed to `st_res + 6`. The declaration now sits after the hot-
+corner surfaces, its block wraps the panels and closes before `frame_surface`, and the height
+the panel content measures is `popup_surface.height` (1080) rather than the strip's.
+Checked live: with the system island open, the pop-up surface's regions are the full-screen
+plate (0, 31 → 1920, 1080) plus the island's rows, and the notes panel's rows land inside it;
+`tests/scene.sh` 60 state + 7 motion, `tests/pointer.sh` 3, both 0 failed.
+*To change back:* leave the panels loose; nothing else depends on where the block sits, and the
+cost of moving one back is the clipping this fixes.
