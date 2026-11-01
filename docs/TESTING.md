@@ -33,7 +33,7 @@ module it pressed. Not re-run: `integration.sh`, `media.sh`, `theme.sh`, `wallpa
 `nexus.sh`, which write to the session, start a player, recolour the desk or rewrite the
 wallpaper; their rows still carry the dates of their last runs.
 
-`.github/workflows/check.yml` runs the parts of the gate that need no Pleamar on every push and pull request: `sh -n` and `shellcheck -S error` over the launcher and every test script, the Lua 5.4 parse of every logic file, and both unit suites. It cannot compile the scenes — that needs the pleamar binary — and says so rather than passing without it.
+`.github/workflows/check.yml` runs the parts of the gate that need no Pleamar on every push and pull request: `sh -n` and `shellcheck -S error` over the launcher and every test script, the Lua 5.4 parse of every logic file, and both unit suites. It cannot compile the scenes — that needs the pleamar binary — and says so rather than passing without it. It ran **green** on 2026-11-01 (run 41300875532) after two fixes it found: the workflow's own YAML (a step name carrying `: `) and **SC1087** in `bin/mooi` — `$was_re[[:space:]]` read as an array index, now `${was_re}`.
 
 ## Overview port live check (2026-10-31)
 
