@@ -226,7 +226,7 @@ apps_sync() {
             was=$(sed -n "s|^include[[:space:]]\{1,\}\(colors-[A-Za-z0-9_-]*\.conf\)[[:space:]]*\$|\1|p" "$k" | head -1)
             if [ -n "$was" ]; then
                 was_re=$(printf '%s\n' "$was" | sed 's/\./\\./g')
-                sed -i "s|^include[[:space:]]\{1,\}$was_re[[:space:]]*\$|include colors-mooi.conf|" "$k"; put kitty_was "$was"
+                sed -i "s|^include[[:space:]]\{1,\}${was_re}[[:space:]]*\$|include colors-mooi.conf|" "$k"; put kitty_was "$was"
             else echo "include colors-mooi.conf" >> "$k"; put kitty_was "-"; fi
         elif [ -z "$(get kitty_was)" ]; then
             # apps.state was lost while mooi's include was already in place. Nothing records
