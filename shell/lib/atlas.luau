@@ -1,4 +1,5 @@
--- The Overview's geometry and its keeping (D37–D47): the grid, the strip and the canvas, privacy,
+-- The Overview's geometry and its keeping (D37–D47, D114): the grid, the strip, the canvas and the
+-- mission card, privacy,
 -- the keyboard's moves, search and menus, and the workspace names, accents and groups kept in
 -- workspaces.json. Pure, so tests/unit runs it. (The name is the Workspace Atlas's, which this
 -- library first served; the Atlas itself was removed in D90.)
@@ -18,7 +19,10 @@ M.SEARCH_H = 40   -- the search row on top of the panel (D41)
 function M.grid(w, h, rows, cols, top, scale)
     local gap = 6
     scale = tonumber(scale) or M.SCALE
-    rows, cols, top = math.max(1, rows), math.max(1, cols), top or 0
+    -- A dimension that is not a number is no screen yet (the scene's facts before the first
+    -- report): geometry of nothing rather than an error (audit 2026-11-01, A4).
+    w, h = tonumber(w) or 0, tonumber(h) or 0
+    rows, cols, top = math.max(1, tonumber(rows) or 1), math.max(1, tonumber(cols) or 1), tonumber(top) or 0
     local asp = w / math.max(h, 1)
     local cw = math.min(w * scale, (w * 0.94 - (cols - 1) * gap) / cols, (h * 0.8 - top - M.SEARCH_H - (rows - 1) * gap) / rows * asp)
     return { cw = cw, ch = cw / asp, gap = gap, gx = (w - (cols * cw + (cols - 1) * gap)) / 2, gy = top + 28 + M.SEARCH_H }
@@ -29,10 +33,42 @@ end
 -- Same shape as `grid`, so the scene draws both alike.
 function M.strip(w, h, n, top)
     local gap = 14
-    n = math.max(1, n)
+    w, h = tonumber(w) or 0, tonumber(h) or 0
+    n = math.max(1, tonumber(n) or 1)
     local asp = w / math.max(h, 1)
     local cw = math.min(h * 0.13 * asp, (w * 0.94 - (n - 1) * gap) / n)
     return { cw = cw, ch = cw / asp, gap = gap, gx = (w - (n * cw + (n - 1) * gap)) / 2, gy = (top or 0) + 22 }
+end
+
+-- The Pleamar Overview after Hyprdrive (D114): a top strip of the other workspaces and one large
+-- card for the active one, with its windows on a mission-control grid. `n` workspaces, `active`
+-- 1-based. Returns the cards (1-based, the active one the large card), and the measurements the
+-- scene uses for the search row and the window grid.
+M.MISSION_STRIP = 96
+M.MISSION_GAP = 12
+M.MISSION_CARD = 18
+M.MISSION_PAD = 28
+M.MISSION_HEAD = 52
+function M.mission(w, h, n, active, top)
+    w, h, top = math.max(1, w), math.max(1, h), top or 0
+    n = math.max(1, tonumber(n) or 1)
+    local gap, strip_h = M.MISSION_GAP, M.MISSION_STRIP
+    local avail = w * 0.90
+    local cw = math.min(176, (avail - (n - 1) * gap) / n)
+    cw = math.max(cw, 52)
+    local total = n * cw + (n - 1) * gap
+    local sx = (w - total) / 2
+    local sy = top + 78
+    local cards = {}
+    for k = 1, n do cards[k] = { x = sx + (k - 1) * (cw + gap), y = sy, w = cw, h = strip_h } end
+    active = math.max(1, math.min(n, tonumber(active) or 1))
+    local ay = sy + strip_h + 26
+    local ah = math.max(180, h - ay - 44)
+    local aw = math.max(w * 0.50, math.min(w * 0.84, 1480))
+    local ax = (w - aw) / 2
+    cards[active] = { x = ax, y = ay, w = aw, h = ah }
+    return { cards = cards, active = cards[active], strip = { x = sx, y = sy, w = total, h = strip_h },
+             search_y = top + 38, gap = M.MISSION_CARD, pad = M.MISSION_PAD, header = M.MISSION_HEAD }
 end
 
 -- Privacy (D38): what the Overview may show of a window. `mode` is the setting
@@ -89,6 +125,69 @@ function M.next_window(tiles, cell, current, step)
         if tiles[i + 1].ocell == cell then return i end
     end
     return -1
+end
+
+-- The desktop after `current` in the Overview's step (`dir` 1 forward, -1 back): the next existing
+-- workspace, round the ends; nil when there is none. `ids` is the page's workspace ids. The porthole
+-- for Hyprdrive's wheel and arrows (docs/OVERVIEW-PORT.md).
+function M.step(ids, current, dir)
+    local t = {}
+    for _, id in ipairs(ids or {}) do
+        id = tonumber(id)
+        if id then t[#t + 1] = id end
+    end
+    if #t == 0 then return nil end
+    table.sort(t)
+    dir = (tonumber(dir) == -1) and -1 or 1
+    current = tonumber(current)
+    if not current then return dir == 1 and t[1] or t[#t] end
+    if dir == 1 then
+        for _, id in ipairs(t) do if id > current then return id end end
+        return t[1]
+    end
+    for i = #t, 1, -1 do if t[i] < current then return t[i] end end
+    return t[#t]
+end
+
+-- ── Spring edges (D115) ────────────────────────────────────
+-- Hyprdrive's drag:spring_edges, inside the Overview: a carried window pushed into the left or
+-- right edge of the screen and held steps to the previous or next desktop, and keeps stepping
+-- while it is held. `px` is the pointer on the screen, `w` its width; `band` how near the edge
+-- counts (EDGE_BAND). Returns -1 (left), 1 (right) or 0.
+M.EDGE_BAND = 28
+M.EDGE_REST = 420     -- how long it must rest there before the first step
+M.EDGE_REPEAT = 420   -- then how often holding on keeps stepping
+M.EDGE_PAN_SPEED = 1100  -- on the canvas: screen px a second toward the edge it is held at
+M.EDGE_PAN_TICK = 16     -- and how often it moves that far
+
+-- One axis of the band: -1 near its start, 1 near its end, 0 between.
+local function axis(p, span, band)
+    p, span = tonumber(p), tonumber(span)
+    if not p or not span or span <= 0 then return 0 end
+    if p <= band then return -1 end
+    if p >= span - band then return 1 end
+    return 0
+end
+function M.edge(px, w, band) return axis(px, w, tonumber(band) or M.EDGE_BAND) end
+-- The same for the screen's height: -1 the top edge, 1 the bottom (the canvas pans both ways).
+function M.edge_y(py, h, band) return axis(py, h, tonumber(band) or M.EDGE_BAND) end
+
+-- How far the canvas's camera moves for one step of a pan toward an edge: `dx`/`dy` are the
+-- directions (-1, 0, 1), `z` the zoom. World units, so the speed on the screen is the same at any
+-- zoom; the camera moves the way the edge points (the world slides the other way).
+function M.pan_by(dx, dy, z, speed, dt)
+    z = math.max(tonumber(z) or 1, M.ZMIN)
+    speed = tonumber(speed) or M.EDGE_PAN_SPEED
+    dt = (tonumber(dt) or M.EDGE_PAN_TICK) / 1000
+    return (tonumber(dx) or 0) * speed * dt / z, (tonumber(dy) or 0) * speed * dt / z
+end
+
+-- Where a window let go while the spring edges were carrying it goes: the desktop they stepped to,
+-- unless the pointer ended over a cell of the board (that cell wins, as it always does). `landed`
+-- nil when the edges never stepped.
+function M.spring_target(landed, over_cell)
+    if landed and over_cell == nil then return landed end
+    return nil
 end
 
 -- The Overview's search (D41): `query` against each window on the page (title or app) and each
@@ -392,10 +491,13 @@ end
 -- in reading order (`cols` across) that does not touch one already placed.
 function M.territories(ids, canvas, W, H, cols)
     canvas = canvas or {}
-    cols = math.max(cols or 5, 1)
+    W, H = tonumber(W) or 0, tonumber(H) or 0
+    cols = math.max(tonumber(cols) or 5, 1)
     local sx, sy = W * (1 + M.GAP_X), H * (1 + M.GAP_Y)
     local out, placed, later = {}, {}, {}
-    for k, id in ipairs(ids) do
+    -- no list yet (the scene's facts before the first report) is no territories, not an error
+    -- (audit 2026-11-01, A4)
+    for k, id in ipairs(type(ids) == "table" and ids or {}) do
         local v = canvas[tostring(id)]
         if v then out[k] = { x = v[1], y = v[2], w = W, h = H }; placed[#placed + 1] = out[k]
         else later[#later + 1] = k end

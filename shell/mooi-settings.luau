@@ -11,9 +11,11 @@ local desktop = require("lib/desktop")
 local style = require("lib/style")
 local arrange = require("lib/arrange")
 local index = require("lib/settings_index")
+local settingsfile = require("lib/settingsfile")
 
 local FILE, PALETTE = "settings.json", "palette.json"
 local settings = config.defaults()
+local loaded = nil              -- settings.json as this window last read it: what `save` diffs against
 local palette = nil
 
 -- Each setting's position as the window's controls read it (`sv_`/`df_`): an enum's place in
@@ -42,6 +44,7 @@ end
 positions(config.defaults(), "df_")
 
 local layout                 -- the Layout page (below), rebuilt with every change
+local save                   -- writes settings.json as a read-merge-write (below)
 local show_colour, show_power -- the custom colour's sliders and the Power page (below)
 local function publish(s)
     local P = setters.position
@@ -122,9 +125,16 @@ local function paint()
     end
 end
 
+local function fresh_settings()
+    local s, _, _, state = config.parse(sys.ask("files.read", FILE), json.decode)
+    if state == "broken" then return nil end
+    return s
+end
+
 local function load()
     local s = config.parse(sys.ask("files.read", FILE), json.decode)
     settings = s
+    loaded = settingsfile.copy(s)
     publish(settings)
     local ok, t = pcall(sys.ask, "files.read", PALETTE, "json")
     palette = (ok and type(t) == "table") and t or nil
@@ -191,7 +201,7 @@ on("key_change", function(v)
     local n = math.floor(tonumber(v) or -1)
     if n == 99 then
         settings.keys = config.defaults().keys
-        sys.call("files.write", FILE, settings); publish(settings); fact.capturing = -1
+        save(); fact.capturing = -1
         return
     end
     fact.capturing = (fact.capturing == n) and -1 or n
@@ -208,8 +218,7 @@ on("key_down", function(name)
     local action = desktop.ACTIONS[fact.capturing + 1]
     if action then
         settings.keys[action.key] = table.concat(parts, " + ")
-        sys.call("files.write", FILE, settings)
-        publish(settings)
+        save()
     end
     fact.capturing = -1
     text.cap_text = "Press the new keys… (Esc cancels)"
@@ -220,8 +229,7 @@ on("key_up", function(name) if MODS[name] then held[MODS[name]] = nil end end)
 -- palette when the scheme, the colour or the contrast changed).
 on("set_value", function(n)
     if not setters.apply(settings, n) then return end
-    sys.call("files.write", FILE, settings)
-    publish(settings)
+    save()
     paint()
 end)
 
@@ -365,7 +373,17 @@ end
 
 layout(settings)
 
-local function save() sys.call("files.write", FILE, settings); publish(settings) end
+-- One write policy for settings.json (audit 2026-10-31, F3): read the file as it is now and lay
+-- this window's changes over it. Writing the in-memory copy whole reverted whatever the bar had
+-- just written (a workspace label, the wheel, day or night) while this window was open.
+function save()
+    local doc, why = settingsfile.save(sys, FILE, loaded, settings, fresh_settings)
+    if not doc then log("settings · could not save: " .. tostring(why)); publish(settings); return false end
+    settings = doc                  -- what is on disk now: another program's change is kept
+    loaded = settingsfile.copy(doc)
+    publish(settings)
+    return true
+end
 on("lay_pick", function(v)
     local c = chips[(math.floor(tonumber(v) or -1)) + 1]
     if not c then sel = nil
@@ -603,6 +621,5 @@ on("set_colour", function(v)
         if which == 1 then h = x elseif which == 2 then s = x / 100 elseif which == 3 then l = x / 100 end
         settings.bar.bg_colour = ferro.to_hex(ferro.hsl(h, s, l))
     end
-    sys.call("files.write", FILE, settings)
-    publish(settings); paint()
+    save(); paint()
 end)

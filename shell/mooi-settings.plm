@@ -736,6 +736,20 @@ scene Mooi {
     fact df_music_rim_glow = 0
     fact sv_nexus_bars = 0
     fact df_nexus_bars = 0
+    fact sv_atlas_engine = 0
+    fact df_atlas_engine = 0
+    fact sv_atlas_wheel_desktops = 0
+    fact df_atlas_wheel_desktops = 0
+    fact sv_atlas_search_apps = 0
+    fact df_atlas_search_apps = 0
+    fact sv_atlas_search_files = 0
+    fact df_atlas_search_files = 0
+    fact sv_atlas_hot_corner = 0
+    fact df_atlas_hot_corner = 0
+    fact sv_atlas_hot_corner_delay = 0
+    fact df_atlas_hot_corner_delay = 0
+    fact sv_atlas_spring_edges = 0
+    fact df_atlas_spring_edges = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
@@ -1302,36 +1316,62 @@ scene Mooi {
     follow gy_11_c0 = 112
     prop gy_11_1 = 156 ~m.reflow
     follow gy_11_1 = 112 + 44
-    prop gy_11_2 = 216 ~m.reflow
-    follow gy_11_2 = 112 + 44 + 60
-    prop gy_11_3 = 276 ~m.reflow
-    follow gy_11_3 = 112 + 44 + 60 + 60
-    prop gc_11_0 = 232 ~m.reflow
-    follow gc_11_0 = 52 + 60 + 60 + 60
-    prop gy_11_c1 = 358 ~m.reflow
-    follow gy_11_c1 = 112 + 44 + 60 + 60 + 60 + 22
+    prop gc_11_0 = 112 ~m.reflow
+    follow gc_11_0 = 52 + 60
+    prop gy_11_c1 = 238 ~m.reflow
+    follow gy_11_c1 = 112 + 44 + 60 + 22
+    prop gy_11_3 = 282 ~m.reflow
+    follow gy_11_3 = 112 + 44 + 60 + 22 + 44
+    prop gy_11_4 = 342 ~m.reflow
+    follow gy_11_4 = 112 + 44 + 60 + 22 + 44 + 60
     prop gy_11_5 = 402 ~m.reflow
-    follow gy_11_5 = 112 + 44 + 60 + 60 + 60 + 22 + 44
+    follow gy_11_5 = 112 + 44 + 60 + 22 + 44 + 60 + 60
     prop gy_11_6 = 462 ~m.reflow
-    follow gy_11_6 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60
-    prop gy_11_7 = 522 ~m.reflow
-    follow gy_11_7 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0)
-    prop gy_11_8 = 582 ~m.reflow
-    follow gy_11_8 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0)
-    prop gy_11_9 = 642 ~m.reflow
-    follow gy_11_9 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0)
-    prop gc_11_1 = 352 ~m.reflow
-    follow gc_11_1 = 52 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60
-    prop gy_11_c2 = 724 ~m.reflow
-    follow gy_11_c2 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22
-    prop gy_11_11 = 768 ~m.reflow
-    follow gy_11_11 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44
-    prop gy_11_12 = 828 ~m.reflow
-    follow gy_11_12 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60
-    prop gy_11_13 = 888 ~m.reflow
-    follow gy_11_13 = 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0)
+    follow gy_11_6 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60
+    prop gc_11_1 = 292 ~m.reflow
+    follow gc_11_1 = 52 + 60 + 60 + 60 + 60
+    prop gy_11_c2 = 544 ~m.reflow
+    follow gy_11_c2 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22
+    prop gy_11_8 = 588 ~m.reflow
+    follow gy_11_8 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gy_11_9 = 648 ~m.reflow
+    follow gy_11_9 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_11_10 = 708 ~m.reflow
+    follow gy_11_10 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60
     prop gc_11_2 = 232 ~m.reflow
-    follow gc_11_2 = 52 + 60 + if(previews, 60, 0) + 60
+    follow gc_11_2 = 52 + 60 + 60 + 60
+    prop gy_11_c3 = 790 ~m.reflow
+    follow gy_11_c3 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22
+    prop gy_11_12 = 834 ~m.reflow
+    follow gy_11_12 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44
+    prop gy_11_13 = 894 ~m.reflow
+    follow gy_11_13 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gc_11_3 = 172 ~m.reflow
+    follow gc_11_3 = 52 + 60 + if(sv_atlas_hot_corner != 0, 60, 0)
+    prop gy_11_c4 = 976 ~m.reflow
+    follow gy_11_c4 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22
+    prop gy_11_15 = 1020 ~m.reflow
+    follow gy_11_15 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44
+    prop gy_11_16 = 1080 ~m.reflow
+    follow gy_11_16 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60
+    prop gy_11_17 = 1140 ~m.reflow
+    follow gy_11_17 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0)
+    prop gy_11_18 = 1200 ~m.reflow
+    follow gy_11_18 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0)
+    prop gy_11_19 = 1260 ~m.reflow
+    follow gy_11_19 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0)
+    prop gc_11_4 = 352 ~m.reflow
+    follow gc_11_4 = 52 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60
+    prop gy_11_c5 = 1342 ~m.reflow
+    follow gy_11_c5 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22
+    prop gy_11_21 = 1386 ~m.reflow
+    follow gy_11_21 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44
+    prop gy_11_22 = 1446 ~m.reflow
+    follow gy_11_22 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60
+    prop gy_11_23 = 1506 ~m.reflow
+    follow gy_11_23 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0)
+    prop gc_11_5 = 232 ~m.reflow
+    follow gc_11_5 = 52 + 60 + if(previews, 60, 0) + 60
     prop gy_12_c0 = 112 ~m.reflow
     follow gy_12_c0 = 112
     prop gy_12_1 = 156 ~m.reflow
@@ -1647,7 +1687,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + if(not st_notch, 60, 0) + if(music_rim == 1 and not st_notch, 60, 0) + if(music_rim == 1 and not st_notch, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0 and sv_nexus_visualiser == 1, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_shelves_on == 1, 60, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + if(not st_notch, 60, 0) + if(music_rim == 1 and not st_notch, 60, 0) + if(music_rim == 1 and not st_notch, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_wallpaper_key == 1, 60, 0) + if(not sv_wallpaper_key, 28, 0) + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0 and sv_nexus_visualiser == 1, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_shelves_on == 1, 60, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -2922,105 +2962,177 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_c0 - 112
-                    SCard(112, gc_11_0, "Opening")
+                    SCard(112, gc_11_0, "Which overview")
                 }
                 group {
                     show: true
                     move: 0, gy_11_1 - 156
-                    SRow(156, "Super+Tab opens it", "Its own key (in Keys) always does", true, "", 768, false)
-                    SToggle(1092, 174, sv_atlas_super_tab, set_value, 98, "atlas.super_tab")
-                    SRevert(1062, 186, sv_atlas_super_tab != df_atlas_super_tab, set_value, 98000 + df_atlas_super_tab)
+                    SRow(156, "Opens with", "Pleamar's Overview (mooi's own, with Hyprdrive's overview hands ported in), or Hyprdrive's plugin while it is loaded", true, "", 550, false)
+                    STrack(874, 172, 264)
+                    SChoice(874, 172, 132, "Pleamar", sv_atlas_engine == 0, set_value, 371000)
+                    SChoice(1006, 172, 132, "Hyprdrive", sv_atlas_engine == 1, set_value, 371001)
+                    SRevert(844, 186, sv_atlas_engine != df_atlas_engine, set_value, 371000 + df_atlas_engine)
                 }
                 group {
                     show: true
-                    move: 0, gy_11_2 - 216
-                    SRow(216, "Zoom out of your workspace", "The workspace you are on shrinks into its place; off, the panel just comes down", true, "", 768, true)
-                    SToggle(1092, 234, sv_atlas_zoom, set_value, 303, "atlas.zoom")
-                    SRevert(1062, 246, sv_atlas_zoom != df_atlas_zoom, set_value, 303000 + df_atlas_zoom)
+                    move: 0, gy_11_c1 - 238
+                    SCard(238, gc_11_1, "Ported overview")
                 }
                 group {
                     show: true
-                    move: 0, gy_11_3 - 276
-                    SRow(276, "Touchpad swipe", "Swipe down to open it; down is the one way your desktop's own gestures leave free", true, "", 418, true)
-                    STrack(742, 292, 396)
-                    SChoice(742, 292, 132, "Off", sv_atlas_gesture == 0, set_value, 305000)
-                    SChoice(874, 292, 132, "3 fingers", sv_atlas_gesture == 1, set_value, 305001)
-                    SChoice(1006, 292, 132, "4 fingers", sv_atlas_gesture == 2, set_value, 305002)
-                    SRevert(712, 306, sv_atlas_gesture != df_atlas_gesture, set_value, 305000 + df_atlas_gesture)
+                    move: 0, gy_11_3 - 282
+                    SRow(282, "Wheel steps desktops", "The wheel over the grid, and ← →, walk the desktops; the Overview stays open on each one", true, "", 768, false)
+                    SToggle(1092, 300, sv_atlas_wheel_desktops, set_value, 372, "atlas.wheel_desktops")
+                    SRevert(1062, 312, sv_atlas_wheel_desktops != df_atlas_wheel_desktops, set_value, 372000 + df_atlas_wheel_desktops)
                 }
                 group {
                     show: true
-                    move: 0, gy_11_c1 - 358
-                    SCard(358, gc_11_1, "Shape")
+                    move: 0, gy_11_4 - 342
+                    SRow(342, "Type to run apps", "Installed apps matching the search appear under the row; Ctrl+↑↓ chooses one, Enter starts it", true, "", 768, true)
+                    SToggle(1092, 360, sv_atlas_search_apps, set_value, 373, "atlas.search_apps")
+                    SRevert(1062, 372, sv_atlas_search_apps != df_atlas_search_apps, set_value, 373000 + df_atlas_search_apps)
                 }
                 group {
                     show: true
                     move: 0, gy_11_5 - 402
-                    SRow(402, "Shape", "A grid; a strip under the bar; or a canvas — pan, zoom, and place each workspace anywhere", true, "", 418, false)
-                    STrack(742, 418, 396)
-                    SChoice(742, 418, 132, "Grid", sv_atlas_overview == 0, set_value, 99000)
-                    SChoice(874, 418, 132, "Strip", sv_atlas_overview == 1, set_value, 99001)
-                    SChoice(1006, 418, 132, "Canvas", sv_atlas_overview == 2, set_value, 99002)
-                    SRevert(712, 432, sv_atlas_overview != df_atlas_overview, set_value, 99000 + df_atlas_overview)
+                    SRow(402, "Search files too", "Documents, Downloads, Desktop and your media folders; bounded, literal, and only while nothing on the board matches", true, "", 768, true)
+                    SToggle(1092, 420, sv_atlas_search_files, set_value, 374, "atlas.search_files")
+                    SRevert(1062, 432, sv_atlas_search_files != df_atlas_search_files, set_value, 374000 + df_atlas_search_files)
                 }
                 group {
-                    show: sv_atlas_overview == 0
+                    show: true
                     move: 0, gy_11_6 - 462
-                    SRow(462, "Rows", "How many rows of workspaces", true, "", 404, true)
-                    SSlider(728, 478, 330, sv_atlas_rows, 2, set_value, 96, "Rows", "{sv_atlas_rows + 1, 0}", true)
-                    SRevert(698, 492, sv_atlas_rows != df_atlas_rows, set_value, 96000 + df_atlas_rows)
+                    SRow(462, "Spring edges", "Carry a window (or a workspace's nameplate) into an edge and hold: the desktops step, or on the canvas the view pans that way; the window lands where you stop", true, "", 768, true)
+                    SToggle(1092, 480, sv_atlas_spring_edges, set_value, 377, "atlas.spring_edges")
+                    SRevert(1062, 492, sv_atlas_spring_edges != df_atlas_spring_edges, set_value, 377000 + df_atlas_spring_edges)
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_c2 - 544
+                    SCard(544, gc_11_2, "Opening")
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_8 - 588
+                    SRow(588, "Super+Tab opens it", "Its own key (in Keys) always does", true, "", 768, false)
+                    SToggle(1092, 606, sv_atlas_super_tab, set_value, 98, "atlas.super_tab")
+                    SRevert(1062, 618, sv_atlas_super_tab != df_atlas_super_tab, set_value, 98000 + df_atlas_super_tab)
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_9 - 648
+                    SRow(648, "Zoom out of your workspace", "The workspace you are on shrinks into its place; off, the panel just comes down", true, "", 768, true)
+                    SToggle(1092, 666, sv_atlas_zoom, set_value, 303, "atlas.zoom")
+                    SRevert(1062, 678, sv_atlas_zoom != df_atlas_zoom, set_value, 303000 + df_atlas_zoom)
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_10 - 708
+                    SRow(708, "Touchpad swipe", "Swipe down to open it; down is the one way your desktop's own gestures leave free", true, "", 418, true)
+                    STrack(742, 724, 396)
+                    SChoice(742, 724, 132, "Off", sv_atlas_gesture == 0, set_value, 305000)
+                    SChoice(874, 724, 132, "3 fingers", sv_atlas_gesture == 1, set_value, 305001)
+                    SChoice(1006, 724, 132, "4 fingers", sv_atlas_gesture == 2, set_value, 305002)
+                    SRevert(712, 738, sv_atlas_gesture != df_atlas_gesture, set_value, 305000 + df_atlas_gesture)
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_c3 - 790
+                    SCard(790, gc_11_3, "Hot corner")
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_12 - 834
+                    SRow(834, "Hot corner", "Rest the pointer in a corner to open it; while on, a 6×6 surface takes that corner's clicks", true, "", 344, false)
+                    STrack(668, 850, 470)
+                    SChoice(668, 850, 94, "Off", sv_atlas_hot_corner == 0, set_value, 375000)
+                    SChoice(762, 850, 94, "Top left", sv_atlas_hot_corner == 1, set_value, 375001)
+                    SChoice(856, 850, 94, "Top right", sv_atlas_hot_corner == 2, set_value, 375002)
+                    SChoice(950, 850, 94, "Bottom left", sv_atlas_hot_corner == 3, set_value, 375003)
+                    SChoice(1044, 850, 94, "Bottom right", sv_atlas_hot_corner == 4, set_value, 375004)
+                    SRevert(638, 864, sv_atlas_hot_corner != df_atlas_hot_corner, set_value, 375000 + df_atlas_hot_corner)
+                }
+                group {
+                    show: sv_atlas_hot_corner != 0
+                    move: 0, gy_11_13 - 894
+                    SRow(894, "Rest for", "How long the pointer must rest there", true, "", 404, true)
+                    SSlider(728, 910, 330, sv_atlas_hot_corner_delay, 1300, set_value, 376, "Rest for", "{sv_atlas_hot_corner_delay + 200, 0}ms", true)
+                    SRevert(698, 924, sv_atlas_hot_corner_delay != df_atlas_hot_corner_delay, set_value, 376000 + df_atlas_hot_corner_delay)
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_c4 - 976
+                    SCard(976, gc_11_4, "Shape")
+                }
+                group {
+                    show: true
+                    move: 0, gy_11_15 - 1020
+                    SRow(1020, "Shape", "Hyprdrive's mission control; a grid; a strip under the bar; or a canvas — pan, zoom, and place each workspace anywhere", true, "", 374, false)
+                    STrack(698, 1036, 440)
+                    SChoice(698, 1036, 110, "Grid", sv_atlas_overview == 0, set_value, 99000)
+                    SChoice(808, 1036, 110, "Strip", sv_atlas_overview == 1, set_value, 99001)
+                    SChoice(918, 1036, 110, "Canvas", sv_atlas_overview == 2, set_value, 99002)
+                    SChoice(1028, 1036, 110, "Mission", sv_atlas_overview == 3, set_value, 99003)
+                    SRevert(668, 1050, sv_atlas_overview != df_atlas_overview, set_value, 99000 + df_atlas_overview)
                 }
                 group {
                     show: sv_atlas_overview == 0
-                    move: 0, gy_11_7 - 522
-                    SRow(522, "Columns", "How many workspaces in a row", true, "", 404, true)
-                    SSlider(728, 538, 330, sv_atlas_columns, 4, set_value, 97, "Columns", "{sv_atlas_columns + 2, 0}", true)
-                    SRevert(698, 552, sv_atlas_columns != df_atlas_columns, set_value, 97000 + df_atlas_columns)
+                    move: 0, gy_11_16 - 1080
+                    SRow(1080, "Rows", "How many rows of workspaces", true, "", 404, true)
+                    SSlider(728, 1096, 330, sv_atlas_rows, 2, set_value, 96, "Rows", "{sv_atlas_rows + 1, 0}", true)
+                    SRevert(698, 1110, sv_atlas_rows != df_atlas_rows, set_value, 96000 + df_atlas_rows)
                 }
                 group {
                     show: sv_atlas_overview == 0
-                    move: 0, gy_11_8 - 582
-                    SRow(582, "Size", "Each workspace, as a share of the screen; it shrinks if it would not fit", true, "", 404, true)
-                    SSlider(728, 598, 330, sv_atlas_size, 10, set_value, 301, "Size", "{sv_atlas_size + 14, 0}%", true)
-                    SRevert(698, 612, sv_atlas_size != df_atlas_size, set_value, 301000 + df_atlas_size)
+                    move: 0, gy_11_17 - 1140
+                    SRow(1140, "Columns", "How many workspaces in a row", true, "", 404, true)
+                    SSlider(728, 1156, 330, sv_atlas_columns, 4, set_value, 97, "Columns", "{sv_atlas_columns + 2, 0}", true)
+                    SRevert(698, 1170, sv_atlas_columns != df_atlas_columns, set_value, 97000 + df_atlas_columns)
+                }
+                group {
+                    show: sv_atlas_overview == 0
+                    move: 0, gy_11_18 - 1200
+                    SRow(1200, "Size", "Each workspace, as a share of the screen; it shrinks if it would not fit", true, "", 404, true)
+                    SSlider(728, 1216, 330, sv_atlas_size, 10, set_value, 301, "Size", "{sv_atlas_size + 14, 0}%", true)
+                    SRevert(698, 1230, sv_atlas_size != df_atlas_size, set_value, 301000 + df_atlas_size)
                 }
                 group {
                     show: true
-                    move: 0, gy_11_9 - 642
-                    SRow(642, "Dim behind", "How dark the desktop goes behind it", true, "", 404, true)
-                    SSlider(728, 658, 330, sv_atlas_dim, 80, set_value, 302, "Dim behind", "{sv_atlas_dim, 0}%", true)
-                    SRevert(698, 672, sv_atlas_dim != df_atlas_dim, set_value, 302000 + df_atlas_dim)
+                    move: 0, gy_11_19 - 1260
+                    SRow(1260, "Dim behind", "How dark the desktop goes behind it", true, "", 404, true)
+                    SSlider(728, 1276, 330, sv_atlas_dim, 80, set_value, 302, "Dim behind", "{sv_atlas_dim, 0}%", true)
+                    SRevert(698, 1290, sv_atlas_dim != df_atlas_dim, set_value, 302000 + df_atlas_dim)
                 }
                 group {
                     show: true
-                    move: 0, gy_11_c2 - 724
-                    SCard(724, gc_11_2, "Window pictures")
+                    move: 0, gy_11_c5 - 1342
+                    SCard(1342, gc_11_5, "Window pictures")
                 }
                 group {
                     show: true
-                    move: 0, gy_11_11 - 768
-                    SRow(768, "Pictures", "Live pictures of windows in the Overview", true, "", 768, false)
-                    SToggle(1092, 786, previews, set_value, 28, "atlas.previews")
-                    SRevert(1062, 798, sv_atlas_previews != df_atlas_previews, set_value, 28000 + df_atlas_previews)
+                    move: 0, gy_11_21 - 1386
+                    SRow(1386, "Pictures", "Live pictures of windows in the Overview", true, "", 768, false)
+                    SToggle(1092, 1404, previews, set_value, 28, "atlas.previews")
+                    SRevert(1062, 1416, sv_atlas_previews != df_atlas_previews, set_value, 28000 + df_atlas_previews)
                 }
                 group {
                     show: previews
-                    move: 0, gy_11_12 - 828
-                    SRow(828, "Taken", "As it opens and after a move (smooth), or every 3 seconds too (a small hitch each time)", true, "", 550, true)
-                    STrack(874, 844, 264)
-                    SChoice(874, 844, 132, "As it opens", sv_atlas_refresh == 0, set_value, 304000)
-                    SChoice(1006, 844, 132, "Every 3 s", sv_atlas_refresh == 1, set_value, 304001)
-                    SRevert(844, 858, sv_atlas_refresh != df_atlas_refresh, set_value, 304000 + df_atlas_refresh)
+                    move: 0, gy_11_22 - 1446
+                    SRow(1446, "Taken", "As it opens and after a move (smooth), or every 3 seconds too (a small hitch each time)", true, "", 550, true)
+                    STrack(874, 1462, 264)
+                    SChoice(874, 1462, 132, "As it opens", sv_atlas_refresh == 0, set_value, 304000)
+                    SChoice(1006, 1462, 132, "Every 3 s", sv_atlas_refresh == 1, set_value, 304001)
+                    SRevert(844, 1476, sv_atlas_refresh != df_atlas_refresh, set_value, 304000 + df_atlas_refresh)
                 }
                 group {
                     show: true
-                    move: 0, gy_11_13 - 888
-                    SRow(888, "Privacy", "Password managers and private browsing show no picture or title; or nothing does, for sharing the screen", true, "", 418, true)
-                    STrack(742, 904, 396)
-                    SChoice(742, 904, 132, "Off", sv_atlas_private == 0, set_value, 300000)
-                    SChoice(874, 904, 132, "Sensitive", sv_atlas_private == 1, set_value, 300001)
-                    SChoice(1006, 904, 132, "Everything", sv_atlas_private == 2, set_value, 300002)
-                    SRevert(712, 918, sv_atlas_private != df_atlas_private, set_value, 300000 + df_atlas_private)
+                    move: 0, gy_11_23 - 1506
+                    SRow(1506, "Privacy", "Password managers and private browsing show no picture or title; or nothing does, for sharing the screen", true, "", 418, true)
+                    STrack(742, 1522, 396)
+                    SChoice(742, 1522, 132, "Off", sv_atlas_private == 0, set_value, 300000)
+                    SChoice(874, 1522, 132, "Sensitive", sv_atlas_private == 1, set_value, 300001)
+                    SChoice(1006, 1522, 132, "Everything", sv_atlas_private == 2, set_value, 300002)
+                    SRevert(712, 1536, sv_atlas_private != df_atlas_private, set_value, 300000 + df_atlas_private)
                 }
             }
             group {

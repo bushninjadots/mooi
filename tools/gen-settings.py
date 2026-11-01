@@ -63,6 +63,13 @@ SETTERS = [
     "music.rim", "music.rim_gain", "music.rim_glow",
     # how many bars the Control Nexus deck's border is cut into
     "nexus.bars",
+    # which Overview Super+Tab opens: mooi's own, or Hyprdrive's plugin
+    "atlas.engine",
+    # the ported overview: wheel/key desktop stepping and type-to-run apps
+    "atlas.wheel_desktops", "atlas.search_apps", "atlas.search_files",
+    "atlas.hot_corner", "atlas.hot_corner_delay",
+    # Hyprdrive's spring edges, ported into the Overview (docs/OVERVIEW-PORT.md)
+    "atlas.spring_edges",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -296,12 +303,22 @@ SECTIONS = [
         ("toggle", "Connections", "Its folder, a terminal there, its repository, its other windows", "shutter.connections", "sv_shutter_connections"),
     ]),
     ("Overview", "Overview", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "DESKTOP", [
+        ("card", "Which overview"),
+        ("choice", "Opens with", "Pleamar's Overview (mooi's own, with Hyprdrive's overview hands ported in), or Hyprdrive's plugin while it is loaded", "atlas.engine", "sv_atlas_engine", ["Pleamar", "Hyprdrive"]),
+        ("card", "Ported overview"),
+        ("toggle", "Wheel steps desktops", "The wheel over the grid, and ← →, walk the desktops; the Overview stays open on each one", "atlas.wheel_desktops", "sv_atlas_wheel_desktops"),
+        ("toggle", "Type to run apps", "Installed apps matching the search appear under the row; Ctrl+↑↓ chooses one, Enter starts it", "atlas.search_apps", "sv_atlas_search_apps"),
+        ("toggle", "Search files too", "Documents, Downloads, Desktop and your media folders; bounded, literal, and only while nothing on the board matches", "atlas.search_files", "sv_atlas_search_files"),
+        ("toggle", "Spring edges", "Carry a window (or a workspace's nameplate) into an edge and hold: the desktops step, or on the canvas the view pans that way; the window lands where you stop", "atlas.spring_edges", "sv_atlas_spring_edges"),
         ("card", "Opening"),
         ("toggle", "Super+Tab opens it", "Its own key (in Keys) always does", "atlas.super_tab", "sv_atlas_super_tab"),
         ("toggle", "Zoom out of your workspace", "The workspace you are on shrinks into its place; off, the panel just comes down", "atlas.zoom", "sv_atlas_zoom"),
         ("choice", "Touchpad swipe", "Swipe down to open it; down is the one way your desktop's own gestures leave free", "atlas.gesture", "sv_atlas_gesture", ["Off", "3 fingers", "4 fingers"]),
+        ("card", "Hot corner"),
+        ("choice", "Hot corner", "Rest the pointer in a corner to open it; while on, a 6×6 surface takes that corner's clicks", "atlas.hot_corner", "sv_atlas_hot_corner", ["Off", "Top left", "Top right", "Bottom left", "Bottom right"]),
+        ("slider", "Rest for", "How long the pointer must rest there", "atlas.hot_corner_delay", 200, 1500, "{sv_atlas_hot_corner_delay + 200, 0}ms", "sv_atlas_hot_corner != 0"),
         ("card", "Shape"),
-        ("choice", "Shape", "A grid; a strip under the bar; or a canvas — pan, zoom, and place each workspace anywhere", "atlas.overview", "sv_atlas_overview", ["Grid", "Strip", "Canvas"]),
+        ("choice", "Shape", "Hyprdrive's mission control; a grid; a strip under the bar; or a canvas — pan, zoom, and place each workspace anywhere", "atlas.overview", "sv_atlas_overview", ["Grid", "Strip", "Canvas", "Mission"]),
         ("slider", "Rows", "How many rows of workspaces", "atlas.rows", 1, 3, "{sv_atlas_rows + 1, 0}", "sv_atlas_overview == 0"),
         ("slider", "Columns", "How many workspaces in a row", "atlas.columns", 2, 6, "{sv_atlas_columns + 2, 0}", "sv_atlas_overview == 0"),
         ("slider", "Size", "Each workspace, as a share of the screen; it shrinks if it would not fit", "atlas.size", 14, 24, "{sv_atlas_size + 14, 0}%", "sv_atlas_overview == 0"),

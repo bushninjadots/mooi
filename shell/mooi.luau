@@ -13,6 +13,10 @@ local atlas_geo = require("lib/atlas")
 local hypr = require("lib/hypr")
 local apps = require("lib/apps")
 local spaces = require("lib/spaces")
+local settingsfile = require("lib/settingsfile")
+local search = require("lib/search")
+local calc = require("lib/calc")
+local filesearch = require("lib/filesearch")
 
 local FILE = "settings.json"
 local KNOWN_GOOD = "settings.known-good.json"
@@ -22,6 +26,9 @@ local KNOWN_GOOD = "settings.known-good.json"
 local safe_mode = sys.ask("env", "MOOI_SAFE") == "1"
 -- Run by the keeper (bin/mooi start / takeover), which also runs the theme watch.
 local kept = (sys.ask("env", "MOOI_MODE") or "") ~= ""
+-- settings.json as this program last read or wrote it: what a save diffs against, so only what
+-- the bar changed is written over whatever another program wrote in the meantime (lib/settingsfile).
+local settings_snapshot = nil
 
 local settings = config.defaults()
 local target = nil      -- the window the island acts on (hypr.client shape)
@@ -69,6 +76,11 @@ local function apply(s)
     fact.ws_max = s.spine.max_workspaces
     fact.confirm_close = s.island.confirm_close
     fact.previews = s.atlas.previews
+    fact.ov_apps = s.atlas.search_apps                 -- the ported type-to-run (OVERVIEW-PORT)
+    fact.ov_files = s.atlas.search_files               -- and its bounded file results
+    fact.ov_wheel = s.atlas.wheel_desktops             -- and the wheel/← → desktop stepping
+    fact.ov_edges = s.atlas.spring_edges               -- and the spring edges (D115)
+    fact.hot_corner = position("atlas.hot_corner", s.atlas.hot_corner)   -- 0 off · 1–4 the corners
     fact.ov_dim, fact.ov_zoom = s.atlas.dim / 100, s.atlas.zoom   -- the Overview's look (D44)
     -- The Mechanism's own settings, which the bar reads straight from these facts.
     fact.bar_labels = s.bar.labels
@@ -173,6 +185,7 @@ local function load_settings()
     if state == "ok" then sys.call("files.write", KNOWN_GOOD, s) end
 
     settings = s
+    settings_snapshot = settingsfile.copy(s)
     fact.cfg_error = #problems > 0
     apply(settings)
 end
@@ -307,6 +320,23 @@ local function apply_theme(reason)
 end
 
 load_settings()
+
+-- One write policy for settings.json (audit 2026-10-31, F3): read the file as it is now, lay
+-- only what the bar (or a module it hosts) changed since the last read or write over it, write
+-- that. The settings window, the Nexus, the player and the studio write the same file.
+local function read_settings()
+    local s, _, _, state = config.parse(sys.ask("files.read", FILE), json.decode)
+    if state == "broken" then return nil end
+    return s
+end
+local function save_settings()
+    if safe_mode then return false end
+    local doc, why = settingsfile.save(sys, FILE, settings_snapshot or settings, settings, read_settings)
+    if not doc then log("settings · could not save: " .. tostring(why)); return false end
+    settings_snapshot = settingsfile.copy(settings)
+    return true
+end
+
 load_palette()
 apply_theme("first read")
 -- When the file changes (the settings window writes it), what Matugen is asked for may have
@@ -549,6 +579,7 @@ sys.watch("apps", function(list) app_list = list or {}; app_index = apps.index(l
 sys.watch("window", function(w) focused_class = w.class or ""; show_icon() end)
 
 local atlas_active = 0
+local build_tiles          -- the board, built below; the workspace watch asks for it too
 local ws_list = {}         -- the workspaces service's list as last told (each with its monitor)
 local ws_rows = {}
 -- The Overview's shape (D37, D38): how many workspaces it shows, and where, on monitor `m` (raw
@@ -568,6 +599,7 @@ local function ov_shape(m)
     local rows, cols = a.rows, a.columns
     if strip then rows, cols = 1, ov_per() end
     fact.ov_canvas = a.overview == "canvas"
+    fact.ov_mission = a.overview == "mission"
     local g = strip and atlas_geo.strip(w, h, cols, tonumber(fact.st_res) or 0) or atlas_geo.grid(w, h, rows, cols, tonumber(fact.st_res) or 0, a.size / 100)
     fact.ov_strip, fact.ov_rows, fact.ov_cols = strip, rows, cols
     fact.ov_W, fact.ov_H, fact.ov_cw, fact.ov_ch, fact.ov_gx, fact.ov_gy, fact.ov_gap = w, h, g.cw, g.ch, g.gx, g.gy, g.gap
@@ -619,6 +651,9 @@ sys.watch("workspaces", function(w)
     -- A switch: every switcher's arrival ping (the scene's `arrive` layer).
     if row ~= fact.active_row then fact.active_row = row; emit("ws_arrived") end
     if settings.bar.workspaces == "segments" then fill_icons() end
+    -- The Overview's active card follows the desktop it is on (the port's wheel and arrows step
+    -- the desktops while it is open): a new board puts the large card on the new one.
+    if atlas_up() then build_tiles() end
 end)
 
 -- ── The Overview's board: the windows Hyprland lists, with a picture where one is given ──
@@ -630,6 +665,22 @@ local thumbs = {}
 local thumbs_watching = false   -- the service answered and is watched
 local pictures_asked = ""       -- what the compositor was asked to copy: "" none, "all", or the ids
 local board = {}                -- the last tiles built, to open with something to show
+local run_actions = {}          -- what each type-to-run row does: app, calc or file
+local home = tostring(sys.ask("env", "HOME") or "")
+-- The Pleamar Overview's backdrop (D114): the wallpaper the desk draws, if there is one.
+local wall = home ~= "" and (home .. "/.cache/current_wallpaper") or ""
+if wall ~= "" then
+    text.ov_wall = wall
+    local ok, there = pcall(sys.ask, "files.exists", wall)
+    fact.ov_wall_ok = ok and there == true
+end
+local file_hits, file_query = {}, nil   -- the last file search, and the query it answered
+local file_token = 0                    -- a newer query makes an older find's answer stale
+local function short_path(p)
+    local h = home ~= "" and (home .. "/") or ""
+    if h ~= "" and string.sub(p, 1, #h) == h then return "~/" .. string.sub(p, #h + 1) end
+    return p
+end
 
 local function atlas_tile(index)
     return model.atlas_tiles[(tonumber(index) or -1) + 1]
@@ -682,7 +733,7 @@ local function save_identities()
     if safe_mode then return end
     sys.call("files.write", SPACES_FILE, identities)
 end
-local function build_tiles()
+function build_tiles()
     if building or fact.bd_drag >= 0 then build_again = true return end
     building = true
     build_now(function()
@@ -756,7 +807,16 @@ function build_now(done)
             local per = ov_per()
             local page = math.floor(math.max(0, atlas_active - 1) / per)
             local cells, ids, slots, rects = {}, {}, {}, {}
-            if fact.ov_canvas then
+            local mission = nil
+            if fact.ov_mission then
+                for id = 1, #ws_rows do ids[#ids + 1] = id end
+                while #ids > 18 do table.remove(ids) end
+                local ai = 1
+                for k, id in ipairs(ids) do if id == atlas_active then ai = k end end
+                mission = atlas_geo.mission(fact.ov_W, fact.ov_H, #ids, ai, tonumber(fact.st_res) or 0)
+                rects = mission.cards
+                page, per = 0, #ids
+            elseif fact.ov_canvas then
                 local seen = {}
                 for id = 1, #ws_rows do seen[id] = true end
                 for k in pairs(identities.canvas or {}) do seen[tonumber(k)] = true end
@@ -774,6 +834,13 @@ function build_now(done)
                 end
             end
             ov_ids, ov_rects = ids, rects
+            if mission then
+                fact.ov_mission_search_y = mission.search_y
+                fact.ov_mission_gap = mission.gap
+                fact.ov_mission_pad = mission.pad
+                fact.ov_mission_head = mission.header
+                fact.ov_cw, fact.ov_ch = mission.active.w, mission.active.h
+            end
             if fact.ov_canvas then
                 fact.ov_fx, fact.ov_fy, fact.ov_fz = atlas_geo.fit(rects, fact.ov_W, fact.ov_H, (tonumber(fact.st_res) or 0) + 70, 60)
                 if fit_pending then fit_pending = false; fact.ov_cx, fact.ov_cy, fact.ov_cz = fact.ov_fx, fact.ov_fy, fact.ov_fz end
@@ -819,6 +886,39 @@ function build_now(done)
                     r.fx, r.fy = (c.x - (tonumber(m.x) or 0)) / mw, (c.y - (tonumber(m.y) or 0)) / mh
                     r.fw, r.fh = c.w / mw, c.h / mh
                 else r.ocell, r.fx, r.fy, r.fw, r.fh = -1, 0, 0, 0, 0 end
+            end
+            -- The ported overview: the active workspace's windows on a mission-control grid, and
+            -- every other workspace's windows shrunk into its strip card, where they already are.
+            if mission then
+                local ak = tonumber(fact.ov_act) or 0
+                local act = mission.active
+                local pad, head, gap = mission.pad, mission.header, mission.gap
+                local iw, ih = math.max(act.w - pad * 2, 1), math.max(act.h - head - pad, 1)
+                local mine = {}
+                for i, r in ipairs(rows) do if r.ocell == ak then mine[#mine + 1] = i end end
+                local n = #mine
+                if n > 0 then
+                    local cols = n <= 1 and 1 or (n <= 4 and 2 or 3)
+                    local lines = math.ceil(n / cols)
+                    local cw = (iw - gap * (cols - 1)) / cols
+                    local ch = (ih - gap * (lines - 1)) / lines
+                    for j, i in ipairs(mine) do
+                        local c, line = (j - 1) % cols, math.floor((j - 1) / cols)
+                        local r = rows[i]
+                        r.tx, r.ty = act.x + pad + c * (cw + gap), act.y + head + line * (ch + gap)
+                        r.tw, r.th, r.fx, r.fy, r.fw, r.fh = cw, ch, 0, 0, 1, 1
+                    end
+                end
+                for _, r in ipairs(rows) do
+                    if r.ocell >= 0 and r.ocell ~= ak then
+                        local card = rects[r.ocell + 1]
+                        local p, top_h = 8, 22
+                        local w, h = math.max(card.w - p * 2, 1), math.max(card.h - top_h - p, 1)
+                        local fx, fy, fw, fh = r.fx or 0, r.fy or 0, r.fw or 0, r.fh or 0
+                        r.tx, r.ty, r.tw, r.th = card.x + p + fx * w, card.y + top_h + fy * h, w, h
+                        r.fx, r.fy, r.fw, r.fh = 0, 0, math.max(fw, 0.08), math.max(fh, 0.08)
+                    end
+                end
             end
             finish()
         end)
@@ -943,9 +1043,26 @@ on("ov_drop_xy", function(v)
     local i = math.floor(tonumber(v) or -1)
     local x, y = dropped_at()
     local item = board[i + 1]
+    local landed = edge_land    -- the desktop the spring edges stepped to, taken by this drop
+    edge_land = nil
     local wx, wy = to_world(x, y)
     local k = atlas_geo.at_world(ov_rects, wx, wy)
-    if not item or not k then return end
+    if not item then return end
+    if not k then
+        -- Held in an edge: the window goes to the desktop the stepping reached, even though the
+        -- pointer was over no cell when it was let go (lib/atlas `spring_target`).
+        local to = atlas_geo.spring_target(landed, k)
+        if to then carry(atlas_geo.carry(board, ov_marked, i, to)); return end
+        -- A window let go past the strip's last cell makes the next desktop there and goes to it
+        -- (Hyprdrive's "drop on an empty cell"): moving the window is what creates the workspace.
+        if fact.ov_strip and not fact.ov_canvas then
+            local top = 0
+            for _, id in ipairs(ov_ids) do top = math.max(top, tonumber(id) or 0) end
+            if top >= 99 then ov_say(false, "Ninety-nine desktops is every Hyprland has"); return end
+            carry(atlas_geo.carry(board, ov_marked, i, top + 1))
+        end
+        return
+    end
     k = k - 1
     local r = ov_rects[k + 1]
     if k == item.ocell then rearrange(i, (wx - r.x) / r.w, (wy - r.y) / r.h)
@@ -1123,8 +1240,59 @@ function apply_search()
     for i, t in ipairs(board) do t.hit = r.tiles[i] end
     for k, c in ipairs(cells_plain) do c.hit = r.cells[k] or false end
     fact.ov_searching, fact.ov_nfound = r.active, r.count
+    -- The ported list under the row (OVERVIEW-PORT stage 2): a sum worked out as it is typed,
+    -- installed apps, and files from the folders you keep. Board matches always win Enter; the
+    -- list only speaks when nothing on the board does.
+    local runs, actions = {}, {}
+    local function add(row, act)
+        if #runs >= 6 then return end
+        runs[#runs + 1] = row
+        actions[#actions + 1] = act
+    end
+    if r.active and r.count == 0 then
+        local q = tostring(text.ov_q or "")
+        local value = calc.eval(q)
+        if value ~= nil then
+            local shown = calc.format(value)
+            add({ title = "= " .. shown, sub = "RESULT · ENTER COPIES", icon = "", iconed = false, letter = "=" },
+                { kind = "calc", value = shown })
+        end
+        if fact.ov_apps then
+            local items = {}
+            for _, a in ipairs(app_list or {}) do
+                if a.exec and a.exec ~= "" then
+                    items[#items + 1] = {
+                        title = a.name or a.id or "?", alt = { a.local_name, a.id, a.wmclass,
+                            string.match(tostring(a.exec), "^%s*(%S+)") },
+                        key = "app:" .. tostring(a.id or a.name), exec = a.exec, icon = a.icon,
+                    }
+                end
+            end
+            for _, it in ipairs(search.rank(items, q, nil, 6)) do
+                local icon = it.icon or ""
+                add({ title = it.title, sub = "APPLICATION", icon = icon, iconed = icon ~= "",
+                      letter = icon == "" and apps.letter(it.title) or "" },
+                    { kind = "app", value = it.exec })
+            end
+        end
+        if fact.ov_files and file_query == q then
+            for _, f in ipairs(file_hits) do
+                add({ title = f.name, sub = "FILE · " .. short_path(f.path), icon = "", iconed = false, letter = "f" },
+                    { kind = "file", value = f.path })
+            end
+        end
+    end
+    if fact.ov_appsel >= #runs then fact.ov_appsel = 0 end
+    model.ov_runs = runs
+    run_actions = actions
     if r.active then
-        text.ov_found = r.count == 0 and "NOTHING FOUND" or (r.first_tile >= 0 and (r.count == 1 and "1 WINDOW · ENTER FOCUSES" or (r.count .. " WINDOWS · ENTER FOCUSES THE FIRST")) or "ENTER GOES THERE")
+        if r.count == 0 then
+            text.ov_found = #runs > 0 and (#runs == 1 and "1 RESULT · ENTER USES IT" or (#runs .. " RESULTS · ENTER USES THE FIRST")) or "NOTHING FOUND"
+        elseif r.first_tile >= 0 then
+            text.ov_found = r.count == 1 and "1 WINDOW · ENTER FOCUSES" or (r.count .. " WINDOWS · ENTER FOCUSES THE FIRST")
+        else
+            text.ov_found = "ENTER GOES THERE"
+        end
         if r.first_cell >= 0 then fact.ov_sel = r.first_cell; ov_sel_slot() end
         fact.ov_win = r.first_tile
         ov_picked = r.first_tile >= 0 and board[r.first_tile + 1].address or nil
@@ -1132,7 +1300,133 @@ function apply_search()
     model.ov_cells = cells_plain
     model.atlas_tiles = board
 end
-on("text:ov_q", function() if fact.open == "overview" then apply_search() end end)
+-- A bounded file search, a beat after typing stops: only while the Overview is up, the setting
+-- is on, and nothing on the board matched. A newer query makes an older find's answer stale.
+local function schedule_files(q)
+    file_token = file_token + 1
+    local mine = file_token
+    file_hits, file_query = {}, nil
+    if not (fact.open == "overview" and fact.ov_files and #q >= 2) then return end
+    after(240, function()
+        if mine ~= file_token or fact.open ~= "overview" then return end
+        run("find", filesearch.args(home, q), function(out)
+            if mine ~= file_token or fact.open ~= "overview" then return end
+            file_hits, file_query = filesearch.parse(out, filesearch.LIMIT), q
+            apply_search()
+        end)
+    end)
+end
+on("text:ov_q", function()
+    if fact.open == "overview" then
+        fact.ov_appsel = 0
+        schedule_files(tostring(text.ov_q or ""))
+        apply_search()
+    end
+end)
+-- Enter uses the row under the keys: an app starts, a sum is copied, a file opens in its own
+-- program. Apps go only through `apps.launch`, which accepts an application the service listed.
+on("ov_run", function(v)
+    local i = math.floor(tonumber(v) or -1)
+    local act = run_actions[i + 1]
+    local row = model.ov_runs[i + 1]
+    if not act then return end
+    if act.kind == "app" then
+        if act.value == "" then return end
+        sys.call("apps.launch", act.value)
+        ov_say(true, "Opening " .. ((row and row.title) or "the app"))
+        fact.open = "none"
+    elseif act.kind == "calc" then
+        run("wl-copy", {}, nil, { input = act.value, output = false })
+        ov_say(true, "Copied " .. act.value)
+    elseif act.kind == "file" then
+        run("xdg-open", { act.value }, function(_, code)
+            if code ~= 0 then ov_say(false, "Nothing opens that file") end
+        end)
+        fact.open = "none"
+    end
+end)
+-- The wheel, ← → and the spring edges walk the existing desktops, round the ends, keeping the
+-- Overview open on the one they reach. `from` is where the walk stands: the edges pass the desktop
+-- they last stepped to, because the compositor has not reported it back yet while a window is
+-- carried. Returns the id it went to, or nil when it could not move.
+local function step_desktop(dir, from)
+    local ids = {}
+    for _, row in ipairs(ws_rows) do ids[#ids + 1] = row.id end
+    local now = tonumber(from) or atlas_active
+    local id = atlas_geo.step(ids, now, tonumber(dir) or 1)
+    if not id or id == now then return nil end
+    for k, shown in ipairs(ov_ids) do if shown == id then fact.ov_sel = k - 1; ov_sel_slot() end end
+    sys.call("workspaces.focus", id)
+    return id
+end
+on("ov_step", function(v) step_desktop(v) end)
+-- Spring edges (D115, Hyprdrive's drag:spring_edges): a carried window pushed into the left or
+-- right edge of the screen and held steps to the previous or next desktop, and keeps stepping while
+-- it is held. Let go away from the board, it goes to the desktop the stepping reached
+-- (`lib/atlas.spring_target`). The scene writes `ov_edging` from the pointer while it carries one;
+-- leaving the edge, or letting go, is 0 and cancels the rest.
+local edge_seq, edge_land, edge_was = 0, nil, 0
+-- On the canvas the edges do not step desktops — there is no next one to step to — they pan the
+-- camera toward the edge (D116), up and down as well as sideways, at the same speed on the screen
+-- at any zoom (Hyprdrive's "push against the screen's edge while dragging to pan the canvas";
+-- `lib/atlas.pan_by`). One loop, started when an edge is held, stopped by itself once none is.
+local pan_on = false
+local function canvas_pan_tick()
+    if fact.open ~= "overview" or not fact.ov_canvas or not fact.ov_edges then pan_on = false; return end
+    local dx, dy = tonumber(fact.ov_edging) or 0, tonumber(fact.ov_edgey) or 0
+    if dx == 0 and dy == 0 then pan_on = false; return end
+    local wx, wy = atlas_geo.pan_by(dx, dy, tonumber(fact.ov_cz) or 1)
+    fact.ov_cx = (tonumber(fact.ov_cx) or 0) + wx
+    fact.ov_cy = (tonumber(fact.ov_cy) or 0) + wy
+    -- The camera takes the new corner at once, as a field drag does: a drop reads the world through
+    -- this corner, and a camera still gliding in would put it a territory off.
+    emit("ov_pan")
+    after(atlas_geo.EDGE_PAN_TICK, canvas_pan_tick)
+end
+local function canvas_pan_start()
+    if pan_on or fact.open ~= "overview" or not fact.ov_canvas then return end
+    pan_on = true
+    canvas_pan_tick()
+end
+local function edge_tick(mine, dir)
+    if mine ~= edge_seq then return end
+    if fact.open ~= "overview" or not fact.ov_edges or tonumber(fact.bd_drag) < 0 then return end
+    local id = step_desktop(dir, edge_land or atlas_active)
+    if not id then return end
+    edge_land = id
+    text.ov_edget = "WORKSPACE " .. id
+    after(atlas_geo.EDGE_REPEAT, function() edge_tick(mine, dir) end)
+end
+on("fact:ov_edging", function(v)
+    local dir = tonumber(v) or 0
+    if dir == edge_was then return end   -- the same value written again is not a move
+    edge_was = dir
+    edge_seq = edge_seq + 1
+    if fact.ov_canvas then                               -- the canvas pans instead of stepping
+        if dir ~= 0 or (tonumber(fact.ov_edgey) or 0) ~= 0 then canvas_pan_start() end
+        return
+    end
+    if dir == 0 then return end
+    if fact.open ~= "overview" or not fact.ov_edges or tonumber(fact.bd_drag) < 0 then return end
+    local mine = edge_seq
+    after(atlas_geo.EDGE_REST, function() edge_tick(mine, dir) end)
+end)
+on("fact:ov_edgey", function() canvas_pan_start() end)
+-- The hot corner (OVERVIEW-PORT stage 3): the pointer resting in the chosen corner for the set
+-- time opens the Overview. Leaving cancels; an open panel or the Overview itself is left alone.
+local hc_seq = 0
+on("hc_enter", function()
+    hc_seq = hc_seq + 1
+    local mine = hc_seq
+    if settings.atlas.hot_corner == "off" or fact.open ~= "none" then return end
+    local wait = tonumber(settings.atlas.hot_corner_delay) or 600
+    after(wait, function()
+        if mine ~= hc_seq then return end
+        if settings.atlas.hot_corner == "off" or fact.open ~= "none" then return end
+        emit("open_overview")
+    end)
+end)
+on("hc_leave", function() hc_seq = hc_seq + 1 end)
 on("ov_clear", function() text.ov_q = ""; fact.ov_win = -1; apply_search() end)
 
 -- ── A workspace's menu (D41): only what can be done there (lib/atlas `menu`). "Move here" brings
@@ -1277,7 +1571,10 @@ on("fact:open", function(v)
         fact.ov_mopen = -1
         return
     end
-    text.ov_q, fact.ov_searching = "", false
+    text.ov_q, fact.ov_searching, fact.ov_appsel = "", false, 0
+    model.ov_runs = {}
+    file_token = file_token + 1
+    file_hits, file_query = {}, nil
     -- the workspace to pull back from is the one you are on (the board comes a beat later); the canvas
     -- opens showing them all
     fact.ov_zc = math.max(fact.ov_act, 0)
@@ -1292,6 +1589,10 @@ on("fact:open", function(v)
         end
     end)
 end)
+
+-- The bar's Overview button runs the same command as Super+Tab, so Settings → Overview →
+-- Opens with is honoured there too (`mooi overview` picks mooi's own or Hyprdrive's).
+on("open_overview_cmd", function() run("mooi", { "overview" }) end)
 
 -- Pictures are asked for only while the Overview shows them: a compositor copying
 -- nothing is a compositor doing nothing. Previews off means they are given back and
@@ -1399,7 +1700,7 @@ require("command")({
 -- ── The modules' own islands (shell/islands.luau, D97) ───────
 require("islands")({
     settings = function() return settings end,
-    save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
+    save = save_settings,
 })
 
 -- ── The bar's own controls ─────────────────────────────────
@@ -1415,13 +1716,15 @@ text.bar_path = spaces.tail(tostring(sys.ask("files.folder")) .. "/settings.json
 -- (which is what the test harnesses use) never writes the user's file.
 on("toggle_labels", function()
     local on = not fact.bar_labels
-    if not safe_mode then settings.bar.labels = on; sys.call("files.write", FILE, settings) end
+    settings.bar.labels = on
+    if not safe_mode then save_settings() end
     fact.bar_labels = on
     log("bar · workspace labels " .. (on and "on" or "off"))
 end)
 on("toggle_wheel", function()
     local now = (fact.bar_wheel == "step") and "off" or "step"
-    if not safe_mode then settings.bar.wheel = now; sys.call("files.write", FILE, settings) end
+    settings.bar.wheel = now
+    if not safe_mode then save_settings() end
     fact.bar_wheel = now
     log("bar · the wheel over the chain: " .. now)
 end)
@@ -1431,14 +1734,14 @@ on("set_mode", function(v)
     local n = math.floor(tonumber(v) or 9)
     local want = ({ [0] = "dark", [1] = "light", [2] = "auto" })[n] or (day and "dark" or "light")
     settings.theme.mode = want
-    if not safe_mode then sys.call("files.write", FILE, settings) end
+    if not safe_mode then save_settings() end
     log("theme · mode " .. want)
     if not kept then extract() end
 end)
 on("toggle_theme", function()
     local wallpaper = not fact.theme_wallpaper
     settings.theme.source = wallpaper and "wallpaper" or "fixed"
-    if not safe_mode then sys.call("files.write", FILE, settings) end
+    if not safe_mode then save_settings() end
     fact.theme_wallpaper = wallpaper
     apply_theme("asked from the bar")
 end)
@@ -1517,7 +1820,7 @@ end
 on("set_value", function(raw)
     local path = setters.apply(settings, raw)
     if not path then return end
-    if not safe_mode then sys.call("files.write", FILE, settings) end
+    if not safe_mode then save_settings() end
     apply(settings)
     if path == "theme.scheme" or path == "theme.color_index" or path == "theme.contrast" then extract() end
     if string.sub(path, 1, 6) == "theme." or path == "bar.mode" or string.sub(path, 1, 6) == "bar.bg" then apply_theme("set from the settings") end
@@ -1964,7 +2267,7 @@ require("activity")({ safe_mode = safe_mode })
 loom = require("signals")({
     bmo = bmo_tell,
     settings = function() return settings end,
-    save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
+    save = save_settings,
     mode = sys.ask("env", "MOOI_MODE") or "beside",
     safe_mode = safe_mode,
 })
@@ -1975,7 +2278,7 @@ bar = require("bar")({
     signal = loom.signal,
     requiet = loom.requiet,
     settings = function() return settings end,
-    save = function() if not safe_mode then sys.call("files.write", FILE, settings) end end,
+    save = save_settings,
     mode = sys.ask("env", "MOOI_MODE") or "beside",
     space_count = function() return #ws_rows > 0 and #ws_rows or fact.ws_max end,
     outline = function(id) return outlines[id] or 0 end,
