@@ -242,3 +242,33 @@ Before calling a component reusable, verify:
 - [ ] Tests cover its state transitions and invalid inputs.
 
 The goal is not a generic component library bolted onto mooi. The goal is one coherent environment whose components can be recombined, customized and eventually edited visually without losing mooi's identity.
+
+## 12. Existing component inventory and first migration boundary
+
+The current code already contains reusable controls. Do not create a second generic library beside them.
+
+| Source | Existing pieces | Current responsibility |
+|---|---|---|
+| `shell/ui/ferrolume.plm` | `SButton`, `SToggle`, `SSlider`, `SChoice`, `STrack`, `SResult` | Ferrolume controls and selection surfaces |
+| `shell/ui/lumen.plm` | `Button`, `Slider`, `Tab`, `KeyToggle`, `BGMode`, `ColorSwatch`, `Vibe` | Wallpaper-studio controls and palette/source selection |
+| `shell/ui/loom.plm` | `CutButton`, `FieldCluster`, `FieldItem` | Notification-field-specific actions and rows |
+| `shell/ui/board.plm` | `TagDot`, `KColumn`, `KCard` | Board-specific data presentation |
+
+### What is shared already
+
+- The Settings scene imports `shell/ui/ferrolume.plm` and uses `SButton` and `SToggle` repeatedly across settings pages. These are already genuine shared primitives; the first improvement should strengthen their contract and verification rather than relocate them for appearance's sake.
+- The Wallpaper Studio imports `shell/ui/lumen.plm` and uses `Lumen.Button` across its toolbar, editing modes, browser and picker. Its variable height, tone and solid/outline treatment are intentionally different from the fixed 30 px Ferrolume action button.
+- `Loom.CutButton` is a drawing helper used inside `FieldItem`; it does not own a hit zone or emit an event. It is not interchangeable with either action-button component.
+- `Lumen.KeyToggle` and `Ferrolume.SToggle` have different geometry and motion. Keep their visual treatments distinct until a shared behaviour layer can be introduced without flattening their identities.
+
+### First migration boundary
+
+The first safe boundary is the **action-button contract**, not a forced shared appearance:
+
+1. Keep each surface's visual component and its current call signature.
+2. Define and verify the same semantic requirements: accessible button role and label, disabled state reflected in the hit zone, one explicit action event, and no hidden application workflow.
+3. Add a shared test/verification path for those requirements before migrating any consumer.
+4. Only then consider a shared low-level interaction primitive if Pleamar's component composition supports it cleanly.
+
+This is deliberately conservative. The existing source demonstrates that the components are visually related but not structurally identical. A premature merge would either break current call sites or erase the distinct Lumen and Ferrolume treatments.
+
