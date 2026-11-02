@@ -476,6 +476,7 @@ local function band()
 end
 
 local need_thumbs, pump_thumbs, pump_hues
+local wh                     -- Wallhaven, the second source (below, after `wear`)
 
 -- What the arc walks: the whole folder (shuffled afresh each time the panel opens, the worn one
 -- first), or, a colour chosen, every picture of that colour. The scene holds a window of WIN of
@@ -498,6 +499,7 @@ end
 -- first. A thumbnail or a colour arriving in the background must leave the arc where the wheel
 -- put it — otherwise every finished batch snaps the picture in the middle back to the start.
 local function show_pictures(recenter)
+    if wh and wh.on() then wh.show(recenter); return end
     local on = wearing()
     local list, all = view()
     local rows = {}
@@ -539,6 +541,7 @@ end
 local last_at = -1
 on("fact:wp_c", function()
     if not (fact.nt_open and math.floor(tonumber(fact.nt_tab) or -1) == 3) then return end
+    if wh and wh.on() then wh.show(); return end
     local at = base + math.floor(tonumber(fact.wp_c) or 0)
     if at == last_at then return end
     last_at = at
@@ -686,10 +689,14 @@ local function confirm_wear(target, ok, failed)
     end
     ask(20)
 end
+local wear
 on("nt_wall", function(v)
+    if wh and wh.on() then wh.wear(math.floor(tonumber(v) or -1)); return end
     local list = view()
     local p = list[base + (tonumber(v) or -1) + 1]
-    if not p then return end
+    if p then wear(p) end
+end)
+wear = function(p)
     text.wp_t = "WEARING " .. string.upper(p:match("([^/]+)$") or p) .. "…"
     -- as the studio does (shell/mooi-wallpaper.luau): the picker, which also makes the palette
     launch("qs", { "-p", HOME .. "/.config/qs-wallpaperpicker", "ipc", "call", "wallpaper", "set", p }, function(_, code)
@@ -710,13 +717,132 @@ on("nt_wall", function(v)
             end)
         end)
     end)
-end)
+end
 -- a colour on the arc: that band of pictures, or, pressed again, all of them
 on("nt_hue", function(v)
     local k = math.floor(tonumber(v) or -1)
     fact.wp_hue = k == band() and -1 or (k >= 0 and k < BAND_N and k or -1)
     fact.wp_c = 0
+    if wh and wh.on() then wh.restart(); return end
     show_pictures(true)
+end)
+
+-- ── Wallhaven: the panel's second source (FOLDER · WALLHAVEN under its title) ──
+-- The month's top list from wallhaven.cc (lib/notch: safe for work only, the screen's size and shape,
+-- the arc's colour when one is chosen), a page of 24 at a time as the wheel nears the end of what is
+-- loaded. Its small thumbnails are fetched and cut to the arc's 16:9 as they come near the middle and
+-- kept in the data folder (wh-<id>.jpg). A press saves the full picture into the studio's folder as
+-- wallhaven-<id>.<ext>, so it stays in the collection, and wears it as any other. Nothing is asked of
+-- Wallhaven until its source is chosen.
+wh = (function()
+    local items, page, last, busy, seq = {}, 0, 1, false, 0
+    local got, tried_t, queue, qbusy = {}, {}, {}, false
+    local self = {}
+    function self.on() return math.floor(tonumber(fact.wp_src) or 0) == 1 end
+    local function folder()
+        local w = read("wallpapers.json")
+        return type(w) == "table" and type(w.folder) == "string" and w.folder or (HOME .. "/Pictures/wallpapers")
+    end
+    local function saved_as(it) return folder() .. "/wallhaven-" .. it.id .. "." .. it.ext end
+    local fetch
+    local function pump()
+        if qbusy then return end
+        local it = table.remove(queue, 1)
+        if not it then return end
+        qbusy = true
+        local dst = data_folder .. "/wh-" .. it.id .. ".jpg"
+        launch("curl", { "-fsL", "--max-time", "12", "-o", dst, it.thumb }, function(_, code)
+            if code ~= 0 then qbusy = false; pump(); return end
+            launch("magick", { dst, "-thumbnail", "320x180^", "-gravity", "center", "-extent", "320x180", "-quality", "82", dst }, function(_, mcode)
+                qbusy = false
+                if mcode == 0 then got[it.id] = true; if self.on() then self.show() end end
+                pump()
+            end)
+        end)
+    end
+    local function need(near)
+        for _, it in ipairs(near) do
+            if not got[it.id] and not tried_t[it.id] then
+                tried_t[it.id] = true
+                local ok, there = pcall(sys.ask, "files.exists", "wh-" .. it.id .. ".jpg")
+                if ok and there then got[it.id] = true else queue[#queue + 1] = it end
+            end
+        end
+        while #queue > 24 do table.remove(queue, 1) end
+        pump()
+    end
+    function self.show(recenter)
+        local on = wearing()
+        local at = recenter and 0 or (base + math.floor(tonumber(fact.wp_c) or 0))
+        at = math.max(0, math.min(at, #items - 1))
+        base = math.max(0, math.min(at - WIN // 2, #items - WIN))
+        fact.wp_base, fact.wp_c = base, at - base
+        local rows = {}
+        for i = 1, math.min(WIN, #items - base) do
+            local it = items[base + i]
+            rows[i] = { pic = got[it.id] and (data_folder .. "/wh-" .. it.id .. ".jpg") or "",
+                        name = "wallhaven " .. it.id .. (it.res ~= "" and (" · " .. it.res) or ""), on = on == saved_as(it) }
+        end
+        model.pics = rows
+        local b = band()
+        local colour = b >= 0 and (" · " .. BAND_WORD[b + 1]) or ""
+        if busy and #items == 0 then text.wp_t = "ASKING WALLHAVEN…" .. colour
+        elseif #items == 0 then text.wp_t = "NOTHING FROM WALLHAVEN" .. colour
+        else text.wp_t = string.format("%d OF %d · WALLHAVEN · TOP OF THE MONTH%s%s", at + 1, #items, colour, page < last and " · MORE AS YOU TURN" or "") end
+        local near = {}
+        for d = 0, 8 do
+            if items[at + 1 + d] then near[#near + 1] = items[at + 1 + d] end
+            if d > 0 and items[at + 1 - d] then near[#near + 1] = items[at + 1 - d] end
+        end
+        need(near)
+        if at >= #items - 8 then fetch() end
+    end
+    fetch = function()
+        if busy or page >= last then return end
+        busy = true
+        seq = seq + 1
+        local mine, first = seq, #items == 0
+        local url = N.wallhaven_url(page + 1, band(), screen.full_w, screen.full_h)
+        launch("curl", { "-fsL", "--max-time", "12", url }, function(out, code)
+            if mine ~= seq then return end
+            busy = false
+            local list, pages = N.wallhaven_page(code == 0 and decode(out) or nil)
+            if not list then
+                if self.on() then text.wp_t = "WALLHAVEN DID NOT ANSWER · TRY AGAIN IN A MOMENT" end
+                return
+            end
+            page, last = page + 1, pages
+            for _, it in ipairs(list) do items[#items + 1] = it end
+            if self.on() then self.show(first) end
+        end)
+    end
+    -- a new search: the colour changed
+    function self.restart()
+        items, page, last, busy, queue = {}, 0, 1, false, {}
+        seq = seq + 1
+        base = 0
+        model.pics = {}
+        self.show(true)
+        fetch()
+    end
+    function self.wear(k)
+        local it = items[base + k + 1]
+        if not it then return end
+        local dst = saved_as(it)
+        text.wp_t = "SAVING WALLHAVEN " .. string.upper(it.id) .. " TO " .. string.upper(folder():match("([^/]+)/*$") or "THE FOLDER") .. "…"
+        launch("curl", { "-fsL", "--max-time", "60", "--create-dirs", "-o", dst, it.path }, function(_, code)
+            if code ~= 0 then text.wp_t = "COULD NOT FETCH IT FROM WALLHAVEN"; return end
+            wear(dst)
+        end)
+    end
+    return self
+end)()
+on("nt_src", function(v)
+    local k = math.floor(tonumber(v) or 0) == 1 and 1 or 0
+    if k == math.floor(tonumber(fact.wp_src) or 0) then return end
+    fact.wp_src, fact.wp_c, fact.wp_hue = k, 0, -1
+    base = 0
+    if k == 1 then wh.restart() else show_pictures(true) end
 end)
 -- ── Weather: the Nexus's cache (ten minutes), else open-meteo ──
 local function kind_of(code, day)

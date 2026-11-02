@@ -175,4 +175,52 @@ function M.draw(list, max, seed)
     return out
 end
 
+-- ── Wallhaven (wallhaven.cc), the Wallpapers panel's second source ──
+-- Its public search, no key: safe-for-work only (purity 100), general and anime (categories 110), the
+-- month's top list, at least the screen's size and of its shape. A colour band of the arc maps to the
+-- nearest of the colours Wallhaven lets a search ask for (it takes only those).
+M.WH_API = "https://wallhaven.cc/api/v1/search"
+M.WH_COLOURS = { "cc0000", "ff6600", "ffff00", "77cc33", "669900", "336600",
+                 "66cccc", "0099cc", "0066cc", "333399", "663399", "ea4c88" }
+-- the screen's shape, as the nearest of the ratios Wallhaven's search knows
+local RATIOS = { "16x9", "16x10", "21x9", "32x9", "48x9", "4x3", "5x4", "3x2", "1x1", "9x16", "10x16" }
+local function ratio(w, h)
+    local want, best, gap = w / h, "16x9", math.huge
+    for _, r in ipairs(RATIOS) do
+        local a, b = r:match("^(%d+)x(%d+)$")
+        local d = math.abs(tonumber(a) / tonumber(b) - want)
+        if d < gap then best, gap = r, d end
+    end
+    return best
+end
+function M.wallhaven_url(page, band, w, h)
+    w, h = math.floor(tonumber(w) or 1920), math.floor(tonumber(h) or 1080)
+    if w < 640 or h < 480 then w, h = 1920, 1080 end
+    local q = string.format("%s?sorting=toplist&topRange=1M&categories=110&purity=100&atleast=%dx%d&ratios=%s&page=%d",
+        M.WH_API, w, h, ratio(w, h), math.max(1, math.floor(tonumber(page) or 1)))
+    local b = math.floor(tonumber(band) or -1)
+    if b >= 0 and M.WH_COLOURS[b + 1] then q = q .. "&colors=" .. M.WH_COLOURS[b + 1] end
+    return q
+end
+-- One page of an answer: its pictures (only what is safe to fetch: an id of letters and digits and
+-- https links on Wallhaven's own hosts) and how many pages there are. Anything else: nil.
+local function on_wallhaven(url)
+    return type(url) == "string" and (url:match("^https://w%.wallhaven%.cc/") or url:match("^https://th%.wallhaven%.cc/")) ~= nil
+        and not url:find("[%s\"'`$]")
+end
+function M.wallhaven_page(doc)
+    if type(doc) ~= "table" or type(doc.data) ~= "table" then return nil end
+    local out = {}
+    for _, d in ipairs(doc.data) do
+        local id = type(d) == "table" and type(d.id) == "string" and d.id:match("^%w+$") and d.id or nil
+        local thumb = id and type(d.thumbs) == "table" and (d.thumbs.small or d.thumbs.large) or nil
+        if id and on_wallhaven(d.path) and on_wallhaven(thumb) and (d.purity == nil or d.purity == "sfw") then
+            out[#out + 1] = { id = id, path = d.path, thumb = thumb, res = tostring(d.resolution or ""),
+                              ext = d.path:match("%.(%w+)$") or "jpg" }
+        end
+    end
+    local meta = type(doc.meta) == "table" and doc.meta or {}
+    return out, math.max(1, math.floor(tonumber(meta.last_page) or 1))
+end
+
 return M

@@ -3870,3 +3870,22 @@ moved to workspace 7 (its card showed its last frame).
 from the notch (it was ~530 px), its left edge just clear of the colour band along the arc's inside
 (which reaches ~206 px); the cards further round stay clear of the band. The pictures were already the
 wallpapers themselves, so nothing else changed there.
+
+## D130 · 2026-11-02 · The Wallpapers panel: a source row under its title, and Wallhaven
+**Asked for:** a better Skwd Wall button in a better place, and a second button that shows pictures
+from Wallhaven.
+**Now:** under the panel's title is one row: **FOLDER · WALLHAVEN**, the two sources (the chosen one
+lit), then, past a divider, **SKWD WALL ↗**, the full picker, which opens a program of its own. The
+button used to float alone at the panel's far top corner, 560 px out and level with nothing.
+**Wallhaven** fills the same arc with the month's top list from wallhaven.cc's public search (no key):
+safe for work only (`purity=100`, and any answer not marked sfw is dropped), general and anime, at
+least the screen's size, and the screen's shape snapped to the nearest ratio Wallhaven knows. A page of
+24 at a time, the next one fetched as the wheel nears the end of what is loaded. The colour swatches
+search by the nearest Wallhaven colour. Thumbnails are fetched and cut to 16:9 as they near the middle,
+kept as `wh-<id>.jpg` in the data folder. A press saves the full picture into the studio's folder as
+`wallhaven-<id>.<ext>`, so it stays in the collection, and wears it the same way as any other (the picker,
+its script, or awww). Only ids of letters and digits and https links on Wallhaven's own hosts are taken
+from an answer (`lib/notch.wallhaven_page`, tested). Nothing is asked of Wallhaven until its source is
+chosen. **Checked live:** 24 pictures with thumbnails, paging to 48, the Blues colour, back to the
+folder; the full download checked on its own. Not checked: a press wearing one, which would have
+changed the desktop's wallpaper and palette mid-session.

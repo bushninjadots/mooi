@@ -3050,6 +3050,32 @@ end)
 
 
 local themeprofiles = require("lib/themeprofiles")
+print("notch · wallhaven")
+test("the search asks for safe pictures the screen's size and shape, a colour when one is chosen", function()
+    local u = notch.wallhaven_url(3, -1, 1920, 1080)
+    assert(u:find("purity=100", 1, true), "sfw only"); assert(u:find("atleast=1920x1080", 1, true), "size")
+    assert(u:find("ratios=16x9", 1, true), "shape"); assert(u:find("page=3", 1, true), "page"); assert(not u:find("colors="), "no colour")
+    assert(notch.wallhaven_url(1, 0, 1920, 1080):find("colors=cc0000", 1, true), "reds")
+    assert(notch.wallhaven_url(1, 11, 2560, 1080):find("ratios=21x9", 1, true), "ultrawide snaps to 21x9")
+    assert(notch.wallhaven_url(1, -1, 0, 0):find("atleast=1920x1080", 1, true), "an unknown screen falls back")
+end)
+test("an answer gives its pictures and pages; anything off Wallhaven's hosts is dropped", function()
+    local list, last = notch.wallhaven_page({
+        meta = { last_page = 40 },
+        data = {
+            { id = "yqkl97", path = "https://w.wallhaven.cc/full/yq/wallhaven-yqkl97.jpg", resolution = "2074x1166", purity = "sfw",
+              thumbs = { small = "https://th.wallhaven.cc/small/yq/yqkl97.jpg" } },
+            { id = "bad id", path = "https://w.wallhaven.cc/full/x.jpg", thumbs = { small = "https://th.wallhaven.cc/s.jpg" } },
+            { id = "evil1", path = "https://example.com/x.jpg", thumbs = { small = "https://th.wallhaven.cc/s.jpg" } },
+            { id = "nsfw1", path = "https://w.wallhaven.cc/full/a.png", purity = "nsfw", thumbs = { small = "https://th.wallhaven.cc/s.jpg" } },
+            { id = "quote1", path = "https://w.wallhaven.cc/full/a'b.jpg", thumbs = { small = "https://th.wallhaven.cc/s.jpg" } },
+        },
+    })
+    eq(#list, 1, "kept"); eq(last, 40, "pages"); eq(list[1].id, "yqkl97", "id"); eq(list[1].ext, "jpg", "ext")
+    eq(list[1].thumb, "https://th.wallhaven.cc/small/yq/yqkl97.jpg", "thumb")
+    eq(notch.wallhaven_page({ error = "x" }), nil, "not an answer")
+end)
+
 print("theme packages")
 test("capture exports a complete visual profile but no personal or behavioural settings", function()
     local current = config.defaults()

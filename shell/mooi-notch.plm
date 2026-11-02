@@ -329,6 +329,7 @@ scene Notch {
     fact wp_c = 0                // the picture in the middle: its row in the window
     fact wp_base = 0             // where the window starts in the whole list (the logic slides it)
     fact wp_hue = -1             // the colour along the arc's inside: -1 all of them, else its band
+    fact wp_src = 0              // where the arc's pictures come from: 0 the studio's folder · 1 Wallhaven
     text wp_t = ""
 
     // ── Weather ──
@@ -376,6 +377,7 @@ scene Notch {
     event nt_wall ->             // to the logic: wear picture n
     event nt_hue ->              // to the logic: the colour band along the arc pressed (again: all of them)
     event nt_studio ->           // to the logic: open the wallpaper studio
+    event nt_src ->              // to the logic: the pictures from 0 the folder · 1 Wallhaven
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
     event nt_moved ->            // to the logic: the nub let go at this height
     event nt_show_deck ->        // from the Control Nexus: open panel n where it has just said (nt_px, pn_y, nt_ox, nt_acy, nt_dir)
@@ -690,10 +692,20 @@ scene Notch {
                 // ~530 px out), just clear of the colour band along the arc's inside
                 let par = clamp(nt_h * 0.55, 470, 600)
                 let preach = 390 - par
-                text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
-                zone box wpst { from: nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312; size: 140, 24; cursor: pointer; role: button; label: "Open Skwd Wall, the wallpaper picker" }
-                Act(nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312, 140, "Skwd Wall", false, false, wpst.hover)
+                // the title, and under it one row: where the pictures come from, and the picker
+                let wl0 = nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380)
+                text pick(wp_src, "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE", "WALLHAVEN · THE WHEEL TURNS THE ARC · A PRESS SAVES AND WEARS ONE") { at: wl0, nt_acy - 306; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; width: 520; lines: 1 }
+                text wp_t { at: wl0, nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
+                zone box wpsf { from: wl0, nt_acy - 290; size: 96, 24; cursor: pointer; role: tab; selected: wp_src == 0; label: "Pictures from the studio's folder" }
+                zone box wpsh { from: wl0 + 100, nt_acy - 290; size: 112, 24; cursor: pointer; role: tab; selected: wp_src == 1; label: "Pictures from Wallhaven: the month's top list" }
+                Act(wl0, nt_acy - 290, 96, "Folder", wp_src == 0, false, wpsf.hover)
+                Act(wl0 + 100, nt_acy - 290, 112, "Wallhaven", wp_src == 1, false, wpsh.hover)
+                on press wpsf { emit nt_src(0) }
+                on press wpsh { emit nt_src(1) }
+                // the full picker, a step apart from the two sources: it opens a program of its own
+                line { from: wl0 + 226, nt_acy - 284; to: wl0 + 226, nt_acy - 272; width: 1; color: dk.line; opacity: 0.7 }
+                zone box wpst { from: wl0 + 240, nt_acy - 290; size: 140, 24; cursor: pointer; role: button; label: "Open Skwd Wall, the wallpaper picker" }
+                Act(wl0 + 240, nt_acy - 290, 140, "Skwd Wall  ↗", false, false, wpst.hover)
                 on press wpst { emit nt_studio }
                 // the colours along the arc's inside: narrow it to the reds, the blues…
                 group {
