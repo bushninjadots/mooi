@@ -557,20 +557,54 @@ reap_sockets() {
         kill -0 "$pid" 2>/dev/null || rm -f "$f"
     done
 }
+# The live copy is current when nothing under shell/ is newer than it, no file has come or gone,
+# and it was paced at today's speed by the pleamar installed now: then a login (or a refresh with
+# nothing changed) starts at once instead of compiling nine scenes first (~1.1 s of every login).
+snapshot_stamp() { echo "speed $(pace_speed) · $("$pleamar" --version 2>&1 | head -n 1)"; }
+snapshot_current() {
+    [ -f "$live/.snapshot" ] && [ "$(cat "$live/.snapshot")" = "$(snapshot_stamp)" ] || return 1
+    [ -z "$(find "$root/shell" -newer "$live/.snapshot" -print 2>/dev/null | head -n 1)" ] || return 1
+    [ "$(cd "$root/shell" && find . | sort)" = "$(cd "$live" && find . ! -name .snapshot | sort)" ]
+}
+# Every scene the shell runs, and what to call it when it does not compile.
+SCENES="mooi.plm:the repo's scene
+mooi-settings.plm:the settings window
+mooi-board.plm:the board
+mooi-nexus.plm:Control Nexus
+mooi-frame.plm:the screen frame
+mooi-desk.plm:the desk
+mooi-player.plm:the music player
+mooi-notch.plm:the side notch
+bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
-    "$pleamar" --check "$src" >/dev/null || { echo "mooi: the repo's scene does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-settings.plm" >/dev/null || { echo "mooi: the settings window does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-board.plm" >/dev/null || { echo "mooi: the board does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-frame.plm" >/dev/null || { echo "mooi: the screen frame does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-desk.plm" >/dev/null || { echo "mooi: the desk does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-player.plm" >/dev/null || { echo "mooi: the music player does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-notch.plm" >/dev/null || { echo "mooi: the side notch does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/bmo/bmo.plm" >/dev/null || { echo "mooi: BMO does not compile; the running one is kept" >&2; return 1; }
     settings_link
+    snapshot_current && return 0
+    # the stamp is taken before anything is read, so a file saved during the copy makes the next
+    # start check again rather than be missed
+    stamp_new="$state/.snapshot.new"
+    mkdir -p "$state" && snapshot_stamp > "$stamp_new" || return 1
+    # all nine at once: each check is its own pleamar, and together they take as long as the slowest
+    checks="$state/.checks.$$"
+    rm -rf "$checks" && mkdir -p "$checks" || return 1
+    n=0
+    while IFS=: read -r file what; do
+        n=$((n + 1))
+        { "$pleamar" --check "$root/shell/$file" >/dev/null 2>&1 || echo "$what" > "$checks/$n"; } &
+    done <<SCENES_EOF
+$SCENES
+SCENES_EOF
+    wait
+    failed=$(cat "$checks"/* 2>/dev/null | head -n 1)
+    rm -rf "$checks"
+    if [ -n "$failed" ]; then
+        rm -f "$stamp_new"
+        echo "mooi: $failed does not compile; the running one is kept" >&2
+        return 1
+    fi
     rm -rf "$live.new" && cp -r "$root/shell" "$live.new" || return 1
     pace "$live.new"
+    mv "$stamp_new" "$live.new/.snapshot"
     rm -rf "$live" && mv "$live.new" "$live"
 }
 # How fast everything moves (settings: motion.speed, %). Pleamar's springs are numbers in the
@@ -578,10 +612,14 @@ snapshot() {
 # spring's stiffness into k / f² and its damping into c / f (same shape, f times the duration),
 # and a `~120ms` or `for 460ms` into f times as long. The visualizer's spring (`fl.level`) follows
 # the sound and is left alone; a 1 ms snap stays a snap.
-pace() {
+pace_speed() {
     speed=100
     [ -r "$settings" ] && command -v jq >/dev/null 2>&1 && speed=$(jq -r '.motion.speed // 100' "$settings" 2>/dev/null || echo 100)
     case "$speed" in ''|0|*[!0-9]*) speed=100 ;; esac
+    echo "$speed"
+}
+pace() {
+    speed=$(pace_speed)
     [ "$speed" -eq 100 ] && return 0
     # No `bc` (audit 2026-10-31, F5): awk computes the factor itself, so a machine without bc
     # no longer gets a silent division by zero and unpaced scenes. The list is read a line at a

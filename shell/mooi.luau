@@ -1888,7 +1888,7 @@ function notch_sync()
         notch_win = mine
     end)
 end
-after(2000, notch_sync)
+after(700, notch_sync)
 
 -- The screen frame (shell/mooi-frame.plm, D119): a program of its own, under the bar, while frame.on
 -- is set. It was drawn in this scene, where every swell of the music redrew the whole bar; its border
@@ -1916,7 +1916,10 @@ function frame_sync()
     end, { errors = true })
     frame_win = mine
 end
-after(1000, frame_sync)
+-- At once: while the frame is on, the bar leaves its plates to the frame (D127), so until the frame
+-- is up the bar's pieces stand on nothing. The notch and BMO follow soon after, one at a time, so
+-- the programs do not all start together.
+after(50, frame_sync)
 -- Where the notch's nub is on the screen (it writes notch-state.json when it places it): the stash's
 -- edge strip, overlay and over the same edge, leaves that band alone so pointing at the nub opens it.
 function notch_cut()
@@ -2063,7 +2066,7 @@ function bmo_sync()
     bmo_state = "starting"
     bmo_probe_start(gen)
 end
-after(2500, bmo_sync)
+after(1400, bmo_sync)
 -- Is the BMO we started still the one answering, and still alive? Three ways it is not:
 -- nothing answers to `bmo` twice in a row (the logic is gone, or the name went to another
 -- process), the beat has not moved since the last look (his upkeep counts one every 30 s, so a

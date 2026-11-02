@@ -3820,3 +3820,33 @@ wide, `frame_b` 128 px tall), open only while the edge moves, each a strip in th
 without an outline of its own (the wave only pushes inward, so they cover the still edge) plus one
 stroked line tracing the moving edge and its corners. The top stays still (the bar is there).
 Measured: GPU 54 % playing against 43 % paused (it was ~90 %), no slow frames in 6 s.
+
+## D128 · 2026-11-02 · The frame swells on all four sides as one silhouette; a faster login
+**Asked for:** all sides of the frame to swell with the music, smoothly, with the edges joined (they
+came apart while music played), better performance, and a faster shell start at login.
+**What was wrong (audited with a forced-level debug copy on the overlay layer, zoomed):** D127's split
+left the still chassis under three moving strips with no outline of their own; its neon outline and glow
+showed beside the moving edge in every corner (two arcs, broken pieces at the top corners), and the top
+never moved. Measuring it also showed why a single moving body was so dear: pleamar draws a `body` as one
+quad over its bounding box and every pixel measures its distance to *every* segment of *every* shape in
+it (twice with a shadow), and a `curve` is flattened into length/4 segments.
+**Now:** the whole frame is one silhouette — the band's four moving edges (the top too, between and under
+the bar's pieces, which ride on it), the four corner rounds and the bar's pieces — drawn by four surfaces
+that do not overlap (`frame_t` 160 px and `frame_b` 128 px the full width, `frame_l`/`frame_r` 128 px
+between them), so each repaints only its own pixels. Each strip is cut into tiles: a body clipped to its
+stretch (the clip bounds the quad) holding only the pieces of edge within 64 px of it, cut from the same
+chain, so neighbouring tiles and strips meet exactly. The edges are straight steps every 22.5 px down the
+sides and 30 px along the ends, within 0.1 px of the wave. `tools/gen-frame.py` writes it all
+(`// <gen:frame>`). A corner now counts as covered by a piece of the bar within the side's whole swing,
+not only its round, so a side never runs up past an island it would melt into (with `frame.radius` 0 it
+did, and the etched light ran across the island); the light stops 8 px short of each round so its glow
+does not either. **Measured** (per-process GPU time from DRM fdinfo, music level held at 0.75, 8 s): the
+first single-body version of this 46 %, tiled 22 %, tiled in straight steps 10 %, the old split 7 % with
+a still top; with straight steps the shadow is nearly free again, so it stays on while the edges move.
+**Login:** `mooi session` compiled nine scenes one after another before the bar could start (~1.1 s
+of every login). The live copy now carries a stamp (pace speed and pleamar version); when nothing under
+`shell/` is newer, no file came or went and the stamp matches, it is used as it is; otherwise the nine
+checks run at once (~0.8 s → ~0.5 s). The frame starts 50 ms after the bar's logic, not 1 s (until it is
+up the bar's pieces stand on nothing, D127); the notch at 0.7 s (was 2 s), BMO at 1.4 s (was 2.5 s).
+Measured from `mooi session` to the compositor showing the surface: the bar at ~0.7–1.0 s (was ~1.6 s),
+the whole frame at ~1.0–1.2 s (was ~1.8 s). Not checked: an actual logout and login.
