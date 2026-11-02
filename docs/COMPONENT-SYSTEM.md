@@ -272,3 +272,15 @@ The first safe boundary is the **action-button contract**, not a forced shared a
 
 This is deliberately conservative. The existing source demonstrates that the components are visually related but not structurally identical. A premature merge would either break current call sites or erase the distinct Lumen and Ferrolume treatments.
 
+### Current verification
+
+`tests/components.sh` is the first executable guard for this boundary. It checks that both existing action-button components declare a button role, expose a meaningful label and enabled state on the hit target, and emit the caller-supplied action payload. It also checks that Settings and Wallpaper Studio still consume their respective components.
+
+Run it with:
+
+```sh
+sh tests/components.sh
+```
+
+This is a source-contract check, not a Pleamar runtime or pointer-interaction test. The scene compiler and live disabled-click behaviour still require verification with the installed Pleamar runtime.
+
