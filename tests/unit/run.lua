@@ -3200,7 +3200,7 @@ test("capture exports a complete visual profile but no personal or behavioural s
     current.bar.left = { "clock", "workspaces" }
     current.integration_private = { enabled = true }
     local package, why = themeprofiles.capture(current, "Foundry", "Graphite and phosphor")
-    eq(package ~= nil, true, "captured"); eq(why, nil, "no error")
+    eq(package ~= nil, true, "captured: " .. tostring(why)); eq(why, nil, "no error")
     eq(package.format, "mooi-theme", "format"); eq(package.version, 1, "version")
     eq(package.name, "Foundry", "name")
     eq(package.settings.theme.mode, current.theme.mode, "theme mode")
@@ -3266,6 +3266,7 @@ test("applying a package changes visual settings only and preserves unrelated da
 end)
 test("captured packages are independent copies and empty packages are refused", function()
     local current = config.defaults()
+    current.theme.overrides = {}
     local package = themeprofiles.capture(current, "Copy")
     package.settings.theme.overrides["accent.primary"] = "#A6F3D1"
     eq(current.theme.overrides["accent.primary"], nil, "no alias to source")
