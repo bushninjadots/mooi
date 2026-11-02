@@ -3190,6 +3190,89 @@ test("copy: a snapshot does not alias the settings", function()
 end)
 
 
+
+local themeprofiles = require("lib/themeprofiles")
+print("theme packages")
+test("capture exports a complete visual profile but no personal or behavioural settings", function()
+    local current = config.defaults()
+    current.keys = { overview = "SUPER + Tab" }
+    current.nexus = { identity = { name = "private name" } }
+    current.bar.left = { "clock", "workspaces" }
+    current.integration_private = { enabled = true }
+    local package, why = themeprofiles.capture(current, "Foundry", "Graphite and phosphor")
+    eq(package ~= nil, true, "captured"); eq(why, nil, "no error")
+    eq(package.format, "mooi-theme", "format"); eq(package.version, 1, "version")
+    eq(package.name, "Foundry", "name")
+    eq(package.settings.theme.mode, current.theme.mode, "theme mode")
+    eq(package.settings.look.corners, current.look.corners, "geometry")
+    eq(package.settings.fx.glow, current.fx.glow, "effects")
+    eq(package.settings.bar.surface, current.bar.surface, "bar material")
+    eq(package.settings.keys, nil, "shortcuts excluded")
+    eq(package.settings.nexus, nil, "identity excluded")
+    eq(package.settings.bar.left, nil, "bar layout excluded")
+    eq(package.settings.integration_private, nil, "unknown extension data excluded")
+end)
+test("theme package validation rejects malformed metadata and unsupported versions", function()
+    local p = { format = "mooi-theme", version = 1, name = "Valid", settings = { theme = { mode = "dark" } } }
+    local ok = themeprofiles.validate(p); eq(ok ~= nil, true, "valid package")
+    local bad = themeprofiles.validate({ format = "other", version = 1, name = "X", settings = { theme = { mode = "dark" } } })
+    eq(bad, nil, "wrong format")
+    local future = themeprofiles.validate({ format = "mooi-theme", version = 99, name = "X", settings = { theme = { mode = "dark" } } })
+    eq(future, nil, "future version")
+    local empty = themeprofiles.validate({ format = "mooi-theme", version = 1, name = "", settings = { theme = { mode = "dark" } } })
+    eq(empty, nil, "empty name")
+end)
+test("theme package validation refuses unknown settings and behavioural payloads", function()
+    local base = { format = "mooi-theme", version = 1, name = "Safe", settings = { theme = { mode = "dark" } } }
+    local unknown = themeprofiles.validate({ format = base.format, version = base.version, name = base.name,
+        settings = { theme = { mode = "dark" }, keys = { overview = "SUPER + Q" } } })
+    eq(unknown, nil, "shortcuts are not theme data")
+    local unknown_leaf = themeprofiles.validate({ format = base.format, version = base.version, name = base.name,
+        settings = { theme = { mode = "dark", surprise = true } } })
+    eq(unknown_leaf, nil, "unknown theme fields refused")
+    local invalid = themeprofiles.validate({ format = base.format, version = base.version, name = base.name,
+        settings = { theme = { mode = "daydream" } } })
+    eq(invalid, nil, "invalid enum refused")
+end)
+test("theme packages reject invalid colours and unknown semantic tokens", function()
+    local function package(overrides)
+        return { format = "mooi-theme", version = 1, name = "Colours", settings = { theme = { overrides = overrides } } }
+    end
+    eq(themeprofiles.validate(package({ ["accent.primary"] = "#A6F3D1" })) ~= nil, true, "known token")
+    eq(themeprofiles.validate(package({ ["accent.primary"] = "#GG00FF" })), nil, "malformed hex")
+    eq(themeprofiles.validate(package({ ["accent.unknown"] = "#A6F3D1" })), nil, "unknown token")
+end)
+test("applying a package changes visual settings only and preserves unrelated data", function()
+    local current = config.defaults()
+    current.keys = { overview = "SUPER + Tab" }
+    current.nexus = { identity = { name = "private name" } }
+    current.bar.left = { "clock", "workspaces" }
+    current.external = { retained = "yes" }
+    local package = {
+        format = "mooi-theme", version = 1, name = "Light Foundry",
+        settings = { theme = { mode = "light", overrides = { ["accent.primary"] = "#A6F3D1" } },
+                     look = { corners = "square", corner_size = 4 }, fx = { glow = 0 } }
+    }
+    local applied, why = themeprofiles.apply(current, package)
+    eq(applied ~= nil, true, "applied"); eq(why, nil, "no error")
+    eq(applied.theme.mode, "light", "mode changed")
+    eq(applied.theme.overrides["accent.primary"], "#A6F3D1", "override applied")
+    eq(applied.look.corners, "square", "geometry changed")
+    eq(applied.keys.overview, "SUPER + Tab", "shortcuts kept")
+    eq(applied.nexus.identity.name, "private name", "identity kept")
+    eq(applied.bar.left[1], "clock", "layout kept")
+    eq(applied.external.retained, "yes", "unknown extension data kept")
+    eq(current.theme.mode, "dark", "source document not mutated")
+end)
+test("captured packages are independent copies and empty packages are refused", function()
+    local current = config.defaults()
+    local package = themeprofiles.capture(current, "Copy")
+    package.settings.theme.overrides["accent.primary"] = "#A6F3D1"
+    eq(current.theme.overrides["accent.primary"], nil, "no alias to source")
+    local empty = themeprofiles.validate({ format = "mooi-theme", version = 1, name = "Empty", settings = {} })
+    eq(empty, nil, "empty package refused")
+end)
+
 local components = require("lib/components")
 print("components")
 test("catalogue lists the existing button surfaces in stable order", function()
