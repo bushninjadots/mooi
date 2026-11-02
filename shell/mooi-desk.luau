@@ -34,6 +34,8 @@ local function apply_settings()
     fact.over = desk.overscan(cfg.strength)
     fact.depth = cfg.depth and desk.DEPTH or 0
     fact.moving = not still
+    fact.clock_on = cfg.clock
+    fact.clock_pos = ({ ["top-right"] = 0, ["top-left"] = 1, ["bottom-right"] = 2, ["bottom-left"] = 3 })[cfg.clock_position] or 0
 end
 
 -- What to draw: the picture on the desktop now, and Lumen's layers while they belong to it. A new
@@ -96,5 +98,14 @@ pcall(sys.watch, "workspaces", function(w)
     fact.ws_frac = desk.workspace_fraction(w.active, ids)
 end)
 
+
+local function update_clock()
+    local now = os.date("*t")
+    text.desk_clock_time = desk.clock_text(now, cfg.clock_24h, cfg.clock_seconds)
+    text.desk_clock_date = string.upper(os.date("%A · %d %B"))
+    after(1000, update_clock)
+end
+
 apply_settings()
+update_clock()
 poll()
