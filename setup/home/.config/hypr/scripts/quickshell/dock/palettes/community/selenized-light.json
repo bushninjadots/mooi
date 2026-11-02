@@ -1,0 +1,26 @@
+{
+  "name": "selenized-light",
+  "slug": "selenized-light",
+  "author": "Jan Warchol (https://github.com/jan-warchol/selenized) / adapted to base16 by ali",
+  "background": "#fbf3db",
+  "foreground": "#53676d",
+  "base16": {
+    "color0": "#fbf3db",
+    "color1": "#cc1729",
+    "color2": "#428b00",
+    "color3": "#a78300",
+    "color4": "#bc5819",
+    "color5": "#825dc0",
+    "color6": "#00978a",
+    "color7": "#53676d",
+    "color8": "#909995",
+    "color9": "#cc1729",
+    "color10": "#428b00",
+    "color11": "#a78300",
+    "color12": "#bc5819",
+    "color13": "#825dc0",
+    "color14": "#00978a",
+    "color15": "#3a4d53"
+  },
+  "variant": "light"
+}

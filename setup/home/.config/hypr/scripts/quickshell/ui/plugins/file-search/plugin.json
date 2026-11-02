@@ -1,0 +1,17 @@
+{
+  "id": "file-search",
+  "name": "File Search",
+  "version": "0.2.0",
+  "author": "xscriptor",
+  "description": "File search panel (fd/find) with debounced queries and open-in-app actions",
+  "type": "shell",
+  "compat": { "shell": ">=0.1.0" },
+  "scope": "file-search",
+  "settings": { "page": "settings/FileSearchPage.qml", "label": "File Search", "icon": "" },
+  "provides": {
+    "panels": {
+      "file-search": { "comp": "ui/FileSearch.qml", "w": 600, "h": 500, "label": "File search" }
+    }
+  },
+  "defaultEnabled": true
+}

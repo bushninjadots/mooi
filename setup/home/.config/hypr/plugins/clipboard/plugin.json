@@ -1,0 +1,17 @@
+{
+  "id": "clipboard",
+  "name": "Clipboard",
+  "version": "0.2.0",
+  "author": "xscriptor",
+  "description": "Clipboard manager panel (cliphist): text and image history with preview, paging and paste",
+  "type": "shell",
+  "compat": { "shell": ">=0.1.0" },
+  "scope": "clipboard",
+  "settings": { "page": "settings/ClipboardPage.qml", "label": "Clipboard", "icon": "" },
+  "provides": {
+    "panels": {
+      "clipboard": { "comp": "ui/ClipboardManager.qml", "w": 800, "h": 700, "label": "Clipboard" }
+    }
+  },
+  "defaultEnabled": true
+}

@@ -1,0 +1,12 @@
+vitreus-keep /home/user/.config/pleamar/shells/vitreus/vitreus.plm "$HOME/.local/share/pleamar/vitreus/vitreus.log"
+PLEAMAR_SWAPCHAIN=1 vitreus-keep /home/user/.config/pleamar/shells/vitreus/lockscreen/lockscreen.plm
+vitreus-keep /home/user/.config/pleamar/shells/vitreus/wptrans/wptrans.plm
+vitreus-keep /home/user/.config/pleamar/shells/vitreus/desktopclock/desktopclock.plm
+vitreus-keep /home/user/.config/pleamar/shells/vitreus/desktopsysmon/desktopsysmon.plm
+vitreus-keep /home/user/.config/pleamar/shells/vitreus/desktopcava/desktopcava.plm
+# >>> vitreus (session) (added by its installer; ./install.sh --uninstall takes it out)
+pgrep -x awww-daemon > /dev/null || awww-daemon
+sleep 1; awww restore
+pgrep -x hypridle > /dev/null || hypridle
+pgrep -x wl-paste > /dev/null || wl-paste --watch cliphist store
+# <<< vitreus

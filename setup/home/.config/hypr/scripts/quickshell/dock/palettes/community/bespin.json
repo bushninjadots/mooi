@@ -1,0 +1,25 @@
+{
+  "name": "Bespin",
+  "slug": "bespin",
+  "author": "Jan T. Sott",
+  "background": "#28211c",
+  "foreground": "#8a8986",
+  "base16": {
+    "color0": "#28211c",
+    "color1": "#cf6a4c",
+    "color2": "#54be0d",
+    "color3": "#f9ee98",
+    "color4": "#cf7d34",
+    "color5": "#9b859d",
+    "color6": "#afc4db",
+    "color7": "#8a8986",
+    "color8": "#666666",
+    "color9": "#cf6a4c",
+    "color10": "#54be0d",
+    "color11": "#f9ee98",
+    "color12": "#cf7d34",
+    "color13": "#9b859d",
+    "color14": "#afc4db",
+    "color15": "#baae9e"
+  }
+}

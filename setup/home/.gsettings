@@ -1,0 +1,5 @@
+icon-theme 'Papirus-Dark'
+cursor-theme 'phinger-cursors-dark'
+gtk-theme 'adw-gtk3-dark'
+color-scheme 'prefer-dark'
+font-name 'Inter 10'

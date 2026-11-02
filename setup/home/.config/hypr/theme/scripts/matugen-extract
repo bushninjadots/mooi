@@ -1,0 +1,17 @@
+#!/bin/sh
+# One extraction for the whole desktop (audit 2026-10-31): the scheme, source colour and
+# contrast from mooi's settings, printed as matugen arguments. qs-wallpaperpicker, its swatch
+# previews and hypr's matugen-theme.sh all use these, so the apps and mooi's bar are coloured
+# from the same palette instead of two different schemes of the same wallpaper.
+#
+# Falls back to matugen's own default when mooi has no settings (or jq is missing), which is
+# what these scripts did before.
+set -u
+S="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/mooi/settings.json"
+scheme=tonal-spot; index=0; contrast=0
+if [ -r "$S" ] && command -v jq >/dev/null 2>&1; then
+    scheme=$(jq -r '.theme.scheme // "tonal-spot"' "$S" 2>/dev/null || echo tonal-spot)
+    index=$(jq -r '.theme.color_index // 0' "$S" 2>/dev/null || echo 0)
+    contrast=$(jq -r '.theme.contrast // 0' "$S" 2>/dev/null || echo 0)
+fi
+printf '%s\n' --type "scheme-$scheme" --source-color-index "$index" --contrast "$contrast"

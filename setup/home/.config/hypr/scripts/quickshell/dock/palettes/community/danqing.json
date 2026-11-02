@@ -1,0 +1,26 @@
+{
+  "name": "DanQing",
+  "slug": "danqing",
+  "author": "Wenhan Zhu (Cosmos) (zhuwenhan950913@gmail.com)",
+  "background": "#2d302f",
+  "foreground": "#e0f0eF",
+  "base16": {
+    "color0": "#2d302f",
+    "color1": "#F9906F",
+    "color2": "#8AB361",
+    "color3": "#F0C239",
+    "color4": "#B38A61",
+    "color5": "#CCA4E3",
+    "color6": "#30DFF3",
+    "color7": "#e0f0eF",
+    "color8": "#9da8a3",
+    "color9": "#F9906F",
+    "color10": "#8AB361",
+    "color11": "#F0C239",
+    "color12": "#B38A61",
+    "color13": "#CCA4E3",
+    "color14": "#30DFF3",
+    "color15": "#fcfefd"
+  },
+  "variant": "dark"
+}

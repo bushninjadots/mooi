@@ -1,0 +1,25 @@
+{
+  "name": "Atelier Seaside",
+  "slug": "atelier-seaside",
+  "author": "Bram de Haan (http://atelierbramdehaan.nl)",
+  "background": "#131513",
+  "foreground": "#8ca68c",
+  "base16": {
+    "color0": "#131513",
+    "color1": "#e6193c",
+    "color2": "#29a329",
+    "color3": "#98981b",
+    "color4": "#87711d",
+    "color5": "#ad2bee",
+    "color6": "#1999b3",
+    "color7": "#8ca68c",
+    "color8": "#687d68",
+    "color9": "#e6193c",
+    "color10": "#29a329",
+    "color11": "#98981b",
+    "color12": "#87711d",
+    "color13": "#ad2bee",
+    "color14": "#1999b3",
+    "color15": "#f4fbf4"
+  }
+}

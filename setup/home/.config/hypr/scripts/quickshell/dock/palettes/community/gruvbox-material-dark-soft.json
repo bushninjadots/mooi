@@ -1,0 +1,26 @@
+{
+  "name": "Gruvbox Material Dark, Soft",
+  "slug": "gruvbox-material-dark-soft",
+  "author": "Mayush Kumar (https://github.com/MayushKumar), sainnhe (https://github.com/sainnhe/gruvbox-material-vscode)",
+  "background": "#32302f",
+  "foreground": "#ddc7a1",
+  "base16": {
+    "color0": "#32302f",
+    "color1": "#ea6962",
+    "color2": "#a9b665",
+    "color3": "#d8a657",
+    "color4": "#e78a4e",
+    "color5": "#d3869b",
+    "color6": "#89b482",
+    "color7": "#ddc7a1",
+    "color8": "#7c6f64",
+    "color9": "#ea6962",
+    "color10": "#a9b665",
+    "color11": "#d8a657",
+    "color12": "#e78a4e",
+    "color13": "#d3869b",
+    "color14": "#89b482",
+    "color15": "#fbf1c7"
+  },
+  "variant": "dark"
+}

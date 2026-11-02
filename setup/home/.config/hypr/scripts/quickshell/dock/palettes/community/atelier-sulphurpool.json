@@ -1,0 +1,25 @@
+{
+  "name": "Atelier Sulphurpool",
+  "slug": "atelier-sulphurpool",
+  "author": "Bram de Haan (http://atelierbramdehaan.nl)",
+  "background": "#202746",
+  "foreground": "#979db4",
+  "base16": {
+    "color0": "#202746",
+    "color1": "#c94922",
+    "color2": "#ac9739",
+    "color3": "#c08b30",
+    "color4": "#c76b29",
+    "color5": "#6679cc",
+    "color6": "#22a2c9",
+    "color7": "#979db4",
+    "color8": "#6b7394",
+    "color9": "#c94922",
+    "color10": "#ac9739",
+    "color11": "#c08b30",
+    "color12": "#c76b29",
+    "color13": "#6679cc",
+    "color14": "#22a2c9",
+    "color15": "#f5f7ff"
+  }
+}

@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# preview for a sidecar row; arg 1 = key (<view>:<n>).
+set -u
+. "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
+
+key=${1:-}
+[ -n "$key" ] || exit 0
+row=$(sc_lookup "$key") || { printf '%s (no cached data — press r to refresh)%s\n' "$ST" "$R"; exit 0; }
+IFS=$'\t' read -r _k glyph col1 col2 xtra ctx <<<"$row"
+view=${key%%:*}
+W=${FZF_PREVIEW_COLUMNS:-72}
+[ "$W" -ge 20 ] || W=20
+cutw() { cut -c1-$((W - 1)); }
+sec() {
+  local t="─ $1 " pad n
+  n=$((W - ${#t})); [ "$n" -lt 1 ] && n=1
+  pad=$(printf '─%.0s' $(seq 1 "$n"))
+  printf '%s%s%s%s\n' "$ST" "$t" "$pad" "$R"
+}
+kv() { printf '%s%-8s%s %s\n' "$ST" "$1" "$R" "$(printf '%s' "$2" | sc_sane | cutw)"; }
+ghfail() { printf '%s✗ %s%s\n' "$RED" "$(printf '%s' "$1" | head -n 3 | sc_sane | cutw)" "$R"; }
+
+# error / empty rows
+case $col1 in
+  *"!"*) [ -f "$SC_STATE/err" ] && head -n 12 "$SC_STATE/err" | sc_sane | cutw; exit 0 ;;
+esac
+
+num() { local n=${col1#'#'}; printf '%s' "${n%% *}"; }
+
+case $view in
+
+prmine | prrev)
+  n=$(num); repo=$xtra
+  sc_gh_ok || { ghfail "gh not authenticated"; exit 0; }
+  if ! out=$(gh pr view "$n" --repo "$repo" --json \
+      title,state,isDraft,reviewDecision,mergeable,mergeStateStatus,headRefName,baseRefName,author,createdAt,updatedAt,url,additions,deletions,comments,statusCheckRollup 2>&1); then
+    ghfail "$out"; exit 0
+  fi
+  printf '%s' "$out" | jq -r \
+    --arg repo "$repo" --arg n "$n" \
+    --arg g "$GRN" --arg b "$RED" --arg c "$CYN" --arg o "$ST" --arg r "$R" --arg fg "$FG" '
+    def ci:
+      [.statusCheckRollup[]? | (.conclusion // .status // "unknown")] as $all
+      | if ($all | length) == 0 then "\($o)no checks\(r)"
+        else
+          ($all | map(select(. == "success")) | length) as $ok
+          | ($all | map(select(. == "failure" or . == "timed_out" or . == "startup_failure")) | length) as $bad
+          | ($all | length - $ok - $bad) as $wait
+          | (if $ok > 0 then "\($g)\($ok) ok\(r)" else "\($o)0 ok\(r)" end) + " · "
+            + (if $bad > 0 then "\($b)\($bad) fail\(r)" else "\($o)0 fail\(r)" end) + " · "
+            + (if $wait > 0 then "\($c)\($wait) pending\(r)" else "\($o)0 pending\(r)" end)
+        end;
+    def mergest:
+      if .mergeable == "DIRTY" then "\($b)conflicts\(r)"
+      elif .mergeable == "MERGEABLE" or .mergeable == "CLEAN" then "\($g)clean\(r)"
+      else "\($o)\(.mergeable // "unknown")\(r)" end;
+    def revd:
+      if .reviewDecision == "APPROVED" then "\($g)approved\(r)"
+      elif .reviewDecision == "CHANGES_REQUESTED" then "\($b)changes requested\(r)"
+      elif .reviewDecision == "REVIEW_REQUIRED" then "\($c)review required\(r)"
+      else "\($o)none\(r)" end;
+    def age:
+      (now - (try (.updatedAt | fromdateiso8601) catch 0)) as $d
+      | if $d < 0 then "?" elif $d < 3600 then "\($d/60|floor)m"
+        elif $d < 86400 then "\($d/3600|floor)h" else "\($d/86400|floor)d" end;
+    "PR \($repo)#\($n)",
+    "\($fg)\(.title)\($r)",
+    "",
+    "state   \(if .isDraft then "\($c)draft\(r)" else "\($o)open\(r)" end) · \(age) ago",
+    "review  \(revd)",
+    "ci      \(ci)",
+    "merge   \(mergest) · \(.mergeStateStatus // "?")",
+    "branch  \(.headRefName) → \(.baseRefName)",
+    "diff    +\(.additions) −\(.deletions) · \(.comments | length) comments",
+    "\(.url)"
+  ' | sc_sane | cutw
+  printf '\n'
+  sec "diff"
+  gh pr diff "$n" --repo "$repo" 2>/dev/null | head -n 40 | sc_sane | cutw
+  ;;
+
+issues | repo)
+  n=$(num); repo=$xtra
+  sc_gh_ok || { ghfail "gh not authenticated"; exit 0; }
+  if ! out=$(gh issue view "$n" --repo "$repo" --json \
+      title,state,assignees,labels,createdAt,updatedAt,url,body 2>&1); then
+    ghfail "$out"; exit 0
+  fi
+  printf '%s' "$out" | jq -r \
+    --arg repo "$repo" --arg n "$n" --arg g "$YLW" --arg o "$ST" --arg r "$R" --arg fg "$FG" '
+    def age:
+      (now - (try (.updatedAt | fromdateiso8601) catch 0)) as $d
+      | if $d < 0 then "?" elif $d < 3600 then "\($d/60|floor)m"
+        elif $d < 86400 then "\($d/3600|floor)h" else "\($d/86400|floor)d" end;
+    "ISSUE \($repo)#\($n)",
+    "\($fg)\(.title)\($r)",
+    "",
+    "state   \(if .state == "OPEN" then "\($g)open\(r)" else "\($o)closed\(r)" end) · \(age) ago",
+    "assign  \([.assignees[]?.login] | join(", ") | if . == "" then "—" else . end)",
+    "labels  \([.labels[]?.name] | join(", ") | if . == "" then "—" else . end)",
+    "\(.url)"
+  ' | sc_sane | cutw
+  printf '\n'
+  sec "body"
+  printf '%s' "$out" | jq -r '.body // ""' | head -n 18 | sc_sane | cutw
+  ;;
+
+runs)
+  id=$(num); repo=$xtra
+  sc_gh_ok || { ghfail "gh not authenticated"; exit 0; }
+  if ! out=$(gh run view "$id" --repo "$repo" --json \
+      workflowName,status,conclusion,headBranch,event,createdAt,url,jobs 2>&1); then
+    ghfail "$out"; exit 0
+  fi
+  printf '%s' "$out" | jq -r \
+    --arg repo "$repo" --arg id "$id" \
+    --arg g "$GRN" --arg b "$RED" --arg c "$CYN" --arg o "$ST" --arg r "$R" --arg fg "$FG" '
+    def stat:
+      if .conclusion == "success" then "\($g)success\(r)"
+      elif (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure") then "\($b)\(.conclusion)\(r)"
+      elif .status == "in_progress" then "\($c)running\(r)"
+      elif .status == "queued" or .status == "waiting" or .status == "pending" then "\($c)\(.status)\(r)"
+      else "\($o)\(.status)\(if .conclusion then "/" + .conclusion else "" end)\($r)" end;
+    "RUN \($repo) #\($id)",
+    "\($fg)\(.workflowName)\($r)",
+    "",
+    "status  \(stat)",
+    "branch  \(.headBranch) · \(.event)",
+    "started \(.createdAt)",
+    (.jobs // [] | .[0:10][] | "job     \(.name): \(.status)\(if .conclusion then "/" + .conclusion else "" end)"),
+    "\(.url)"
+  ' | sc_sane | cutw
+  ;;
+
+local)
+  path=$xtra; proj=$ctx
+  [ -d "$proj" ] || { printf '%s (project gone)%s\n' "$ST" "$R"; exit 0; }
+  sec "repo"
+  branch=$(git -C "$proj" branch --show-current 2>/dev/null) || branch=HEAD
+  upstream=$(git -C "$proj" rev-parse --abbrev-ref '@{u}' 2>/dev/null) || upstream=
+  ab="—"
+  [ -n "$upstream" ] && ab=$(git -C "$proj" rev-list --left-right --count '@{u}...HEAD' 2>/dev/null | awk '{ print "behind " $1 " / ahead " $2 }')
+  kv branch "$branch"; kv upstream "${upstream:-none} ($ab)"
+  kv last "$(git -C "$proj" log -1 --format='%h %s' 2>/dev/null | sc_sane | cutw)"
+  dirty=$(git -C "$proj" status --porcelain 2>/dev/null | wc -l)
+  kv dirty "$dirty paths"
+  if [ -n "$path" ]; then
+    st=$(git -C "$proj" status --porcelain -- "$path" 2>/dev/null | head -n1 | cut -c1-2)
+    printf '\n'
+    sec "file ${path} [$st]"
+    if [ -n "$st" ]; then
+      case $st in
+        ??*)
+          printf '%s untracked%s\n' "$CYN" "$R"
+          head -n 30 "$proj/$path" 2>/dev/null | sc_sane | cutw
+          ;;
+        *)
+          case $st in
+            *M*|*D*|*R*|*C*) sec "unstaged"; git -C "$proj" diff -- "$path" 2>/dev/null | head -n 30 | sc_sane | cutw ;;
+          esac
+          case $st in
+            M*|A*|D*|R*|C*) printf '\n'; sec "staged"; git -C "$proj" diff --cached -- "$path" 2>/dev/null | head -n 30 | sc_sane | cutw ;;
+          esac
+          ;;
+      esac
+    fi
+  fi
+  ;;
+
+proj)
+  path=$xtra
+  [ -d "$path" ] || { printf '%s (path gone — press r)%s\n' "$ST" "$R"; exit 0; }
+  sec "project"
+  kv path "${path/#$HOME/~}"
+  kv remote "$(git -C "$path" remote get-url origin 2>/dev/null | sc_sane)"
+  branch=$(git -C "$path" branch --show-current 2>/dev/null) || branch=HEAD
+  kv branch "$branch"
+  kv last "$(git -C "$path" log -1 --format='%h %s (%cr)' 2>/dev/null | sc_sane | cutw)"
+  dirty=$(git -C "$path" status --porcelain 2>/dev/null | wc -l)
+  kv dirty "$dirty paths"
+  repo=$(sc_repo_remote "$path" 2>/dev/null) || repo=
+  if [ -n "$repo" ] && sc_gh_ok; then
+    printf '\n'
+    sec "github"
+    open_prs=$(gh pr list --repo "$repo" --state open --limit 100 --json number 2>/dev/null | jq 'length')
+    open_iss=$(gh issue list --repo "$repo" --state open --limit 100 --json number 2>/dev/null | jq 'length')
+    kv prs "${open_prs:-?} open"
+    kv issues "${open_iss:-?} open"
+  fi
+  ;;
+
+esac

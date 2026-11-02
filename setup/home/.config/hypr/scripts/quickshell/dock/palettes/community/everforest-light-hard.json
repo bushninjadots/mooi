@@ -1,0 +1,26 @@
+{
+  "name": "Everforest Light (Hard)",
+  "slug": "everforest-light-hard",
+  "author": "Márcio Sobel (https://github.com/marciosobel)",
+  "background": "#fffbef",
+  "foreground": "#5c6a72",
+  "base16": {
+    "color0": "#fffbef",
+    "color1": "#f85552",
+    "color2": "#8da101",
+    "color3": "#dfa000",
+    "color4": "#f57d26",
+    "color5": "#df69ba",
+    "color6": "#35a77c",
+    "color7": "#5c6a72",
+    "color8": "#939f91",
+    "color9": "#f85552",
+    "color10": "#8da101",
+    "color11": "#dfa000",
+    "color12": "#f57d26",
+    "color13": "#df69ba",
+    "color14": "#35a77c",
+    "color15": "#272e33"
+  },
+  "variant": "light"
+}

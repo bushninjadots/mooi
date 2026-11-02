@@ -1,0 +1,63 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/equisdots/palettes/schema.json",
+    "title": "equisdots palette",
+    "description": "A palette file consumed by theme-sync. base16 colors plus optional background/foreground/role overrides.",
+    "type": "object",
+    "required": ["name", "slug", "base16"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Display name shown by the desktop panel"
+        },
+        "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "Identifier (file name, theme ids, settings.json dock.palette)"
+        },
+        "author": {
+            "type": "string"
+        },
+        "base16": {
+            "type": "object",
+            "required": [
+                "color0", "color1", "color2", "color3", "color4", "color5",
+                "color6", "color7", "color8", "color9", "color10", "color11",
+                "color12", "color13", "color14", "color15"
+            ],
+            "properties": {
+                "color0": {"$ref": "#/definitions/hex"},
+                "color1": {"$ref": "#/definitions/hex"},
+                "color2": {"$ref": "#/definitions/hex"},
+                "color3": {"$ref": "#/definitions/hex"},
+                "color4": {"$ref": "#/definitions/hex"},
+                "color5": {"$ref": "#/definitions/hex"},
+                "color6": {"$ref": "#/definitions/hex"},
+                "color7": {"$ref": "#/definitions/hex"},
+                "color8": {"$ref": "#/definitions/hex"},
+                "color9": {"$ref": "#/definitions/hex"},
+                "color10": {"$ref": "#/definitions/hex"},
+                "color11": {"$ref": "#/definitions/hex"},
+                "color12": {"$ref": "#/definitions/hex"},
+                "color13": {"$ref": "#/definitions/hex"},
+                "color14": {"$ref": "#/definitions/hex"},
+                "color15": {"$ref": "#/definitions/hex"}
+            },
+            "additionalProperties": false
+        },
+        "background": {"$ref": "#/definitions/hex"},
+        "foreground": {"$ref": "#/definitions/hex"},
+        "roles": {
+            "type": "object",
+            "description": "Semantic role overrides applied on top of the base16 derivation",
+            "additionalProperties": {"$ref": "#/definitions/hex"}
+        }
+    },
+    "additionalProperties": true,
+    "definitions": {
+        "hex": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+    }
+}

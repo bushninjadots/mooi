@@ -22,8 +22,8 @@ jobs:
       - name: the launcher and every test script parse, and pass shellcheck's error gate
         run: |
           sh -n bin/mooi
-          for t in tests/*.sh; do sh -n "$t"; done
-          shellcheck -S error bin/mooi tests/*.sh
+          for t in tests/*.sh setup/*.sh; do sh -n "$t"; done
+          shellcheck -S error bin/mooi tests/*.sh setup/*.sh
       - name: every logic file parses with Lua 5.4 (pleamar --check does not read them)
         run: |
           for f in shell/*.luau shell/lib/*.luau shell/player/*.luau shell/bmo/*.luau; do

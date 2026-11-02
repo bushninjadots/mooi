@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# emits the current view's rows as TSV: key \t glyph \t title \t meta \t xtra \t ctx
+# key = <view>:<n>; data for actions/preview is resolved from the atomic cache.
+set -u
+. "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
+
+v=$(sc_get_view)
+lim=$SIDECAR_LIMIT
+
+err_row() { # message
+  printf '%s:0\t%s\t%s\t%s\t\t\n' "$v" "${RED}!${R}" "${RED}$(printf '%s' "$1" | head -n1 | sc_sane | sc_wcut 60)${R}" "state/err"
+  printf '%s\n' "$1" > "$SC_STATE/err"
+}
+empty_row() {
+  printf '%s:0\t%s\t%s\t\t\t\n' "$v" "${ST}·${R}" "${ST}$(printf '%s' "$1" | sc_sane | sc_wcut 60)${R}"
+}
+
+rows_pr() { # search-based: mine | review
+  local flag=$1
+  sc_gh_ok || { err_row "gh not authenticated — run: gh auth login"; return; }
+  local out
+  if ! out=$(gh search prs "$flag" @me --state open --limit "$lim" \
+      --json number,title,repository,isDraft,updatedAt 2>&1); then
+    err_row "gh search prs failed: $out"; return
+  fi
+  if [ "$(printf '%s' "$out" | jq 'length')" = 0 ]; then
+    empty_row "no pull requests"; return
+  fi
+  printf '%s' "$out" | jq -r --arg v "$v" --arg g "$GRN" --arg gy "$CYN" --arg r "$R" --arg st "$ST" '
+    def c: gsub("[\\u0000-\\u001f\\u007f]"; "");
+    def repo: if (.repository | type) == "object"
+      then "\(.repository.owner.login)/\(.repository.name)" else .repository end;
+    def age:
+      (now - (try (.updatedAt | fromdateiso8601) catch 0)) as $d
+      | if $d < 0 then "?" elif $d < 3600 then "\($d/60|floor)m"
+        elif $d < 86400 then "\($d/3600|floor)h" else "\($d/86400|floor)d" end;
+    to_entries[] | .key as $i | .value
+    | [ "\($v):\($i+1)",
+        (if .isDraft then "\($gy)◇\($r)" else "\($g)◆\($r)" end),
+        "#\(.number) \((.title // "") | c)",
+        "\($st)\(repo | c) · \(age)\($r)",
+        (repo | c), "" ]
+    | join("\t")'
+}
+
+rows_issues_me() {
+  local scope; scope=$(sc_get_flag issue_scope assigned)
+  sc_gh_ok || { err_row "gh not authenticated — run: gh auth login"; return; }
+  local out flag
+  if [ "$scope" = created ]; then flag=--author; else flag=--assignee; fi
+  if ! out=$(gh search issues "$flag" @me --state open --limit "$lim" \
+      --json number,title,repository,updatedAt 2>&1); then
+    err_row "gh search issues failed: $out"; return
+  fi
+  if [ "$(printf '%s' "$out" | jq 'length')" = 0 ]; then
+    empty_row "no issues ($scope)"; return
+  fi
+  printf '%s' "$out" | jq -r --arg v "$v" --arg g "$YLW" --arg r "$R" --arg st "$ST" --arg sc "$scope" '
+    def c: gsub("[\\u0000-\\u001f\\u007f]"; "");
+    def repo: if (.repository | type) == "object"
+      then "\(.repository.owner.login)/\(.repository.name)" else .repository end;
+    def age:
+      (now - (try (.updatedAt | fromdateiso8601) catch 0)) as $d
+      | if $d < 0 then "?" elif $d < 3600 then "\($d/60|floor)m"
+        elif $d < 86400 then "\($d/3600|floor)h" else "\($d/86400|floor)d" end;
+    to_entries[] | .key as $i | .value
+    | [ "\($v):\($i+1)", "\($g)●\($r)",
+        "#\(.number) \((.title // "") | c)",
+        "\($st)\(repo | c) · \(age)\($r)",
+        (repo | c), "" ]
+    | join("\t")'
+}
+
+rows_repo_issues() { # active project issues
+  local proj repo state
+  proj=$(sc_resolve_project) || { empty_row "no github project — pick one in view 7"; return; }
+  repo=$(sc_repo_remote "$proj") || { empty_row "no github remote in $proj"; return; }
+  state=$(sc_get_flag repo_state open)
+  sc_gh_ok || { err_row "gh not authenticated — run: gh auth login"; return; }
+  local out
+  if ! out=$(gh issue list --repo "$repo" --state "$state" --limit "$lim" \
+      --json number,title,labels,updatedAt 2>&1); then
+    err_row "gh issue list failed: $out"; return
+  fi
+  if [ "$(printf '%s' "$out" | jq 'length')" = 0 ]; then
+    empty_row "no $state issues in $repo"; return
+  fi
+  local glyph=$YLW; [ "$state" = closed ] && glyph=$ST
+  printf '%s' "$out" | jq -r --arg v "$v" --arg g "$glyph" --arg r "$R" --arg st "$ST" --arg repo "$repo" --arg ctx "$proj" '
+    def c: gsub("[\\u0000-\\u001f\\u007f]"; "");
+    def age:
+      (now - (try (.updatedAt | fromdateiso8601) catch 0)) as $d
+      | if $d < 0 then "?" elif $d < 3600 then "\($d/60|floor)m"
+        elif $d < 86400 then "\($d/3600|floor)h" else "\($d/86400|floor)d" end;
+    to_entries[] | .key as $i | .value
+    | [ "\($v):\($i+1)", "\($g)●\($r)",
+        "#\(.number) \((.title // "") | c)",
+        "\($st)\([.labels[]?.name] | join(",") | c | .[0:28]) · \(age)\($r)",
+        ($repo | c), $ctx ]
+    | join("\t")'
+}
+
+rows_runs() {
+  local proj repo
+  proj=$(sc_resolve_project) || { empty_row "no github project — pick one in view 7"; return; }
+  repo=$(sc_repo_remote "$proj") || { empty_row "no github remote in $proj"; return; }
+  sc_gh_ok || { err_row "gh not authenticated — run: gh auth login"; return; }
+  local out
+  if ! out=$(gh run list --repo "$repo" --limit 20 \
+      --json databaseId,workflowName,status,conclusion,headBranch,createdAt 2>&1); then
+    err_row "gh run list failed: $out"; return
+  fi
+  if [ "$(printf '%s' "$out" | jq 'length')" = 0 ]; then
+    empty_row "no workflow runs in $repo"; return
+  fi
+  printf '%s' "$out" | jq -r --arg v "$v" --arg g "$GRN" --arg b "$RED" --arg c "$CYN" --arg o "$ST" --arg r "$R" --arg st "$ST" --arg repo "$repo" --arg ctx "$proj" '
+    def glyph:
+      if .conclusion == "success" then "\($g)✓\($r)"
+      elif (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure") then "\($b)✗\($r)"
+      elif .conclusion == "cancelled" then "\($o)⊘\($r)"
+      elif .status == "in_progress" then "\($c)▸\($r)"
+      elif .status == "queued" or .status == "waiting" or .status == "requested" or .status == "pending" then "\($c)…\($r)"
+      elif .conclusion == "neutral" or .conclusion == "skipped" then "\($o)○\($r)"
+      else "\($o)·\($r)" end;
+    def age:
+      (now - (try (.createdAt | fromdateiso8601) catch 0)) as $d
+      | if $d < 0 then "?" elif $d < 3600 then "\($d/60|floor)m"
+        elif $d < 86400 then "\($d/3600|floor)h" else "\($d/86400|floor)d" end;
+    def c: gsub("[\\u0000-\\u001f\\u007f]"; "");
+    to_entries[] | .key as $i | .value
+    | [ "\($v):\($i+1)", glyph,
+        "#\(.databaseId) \((.workflowName // "") | c)",
+        "\($st)\((.headBranch // "") | c) · \(.status)\(if .conclusion then "/" + .conclusion else "" end) · \(age)\($r)",
+        ($repo | c), $ctx ]
+    | join("\t")'
+}
+
+rows_local() {
+  local proj repo branch aheadbehind i=0 line st p
+  proj=$(sc_resolve_project) || { empty_row "no git project here"; return; }
+  repo=$(sc_repo_remote "$proj" 2>/dev/null) || repo="(local)"
+  if ! git -C "$proj" rev-parse --git-dir >/dev/null 2>&1; then
+    empty_row "not a git repo: $proj"; return
+  fi
+  branch=$(git -C "$proj" branch --show-current 2>/dev/null) || branch=HEAD
+  aheadbehind=$(git -C "$proj" rev-list --left-right --count '@{u}...HEAD' 2>/dev/null) || aheadbehind=
+  local ab=
+  [ -n "$aheadbehind" ] && ab=" · behind ${aheadbehind%% *}/ahead ${aheadbehind##* }"
+  while IFS= read -r line; do
+    i=$((i + 1)); [ "$i" -gt 100 ] && break
+    st=${line:0:2}; p=${line:3}
+    case $p in *" -> "*) p=${p##* -> } ;; esac
+    p=${p#\"}; p=${p%\"}
+    local glyph=$YLW
+    case $st in
+      '??'*) glyph=$CYN ;;
+      *D*) glyph=$RED ;;
+      *A*) glyph=$GRN ;;
+      *M*|*R*|*C*) glyph=$YLW ;;
+    esac
+    printf '%s:%d\t%s\t%s\t%s\t%s\t%s\n' "$v" "$i" "$glyph$st$R" "$(printf '%s' "$p" | sc_sane)" "${ST}$repo · $branch$ab$R" "$p" "$proj"
+  done < <(git -C "$proj" -c core.quotePath=false status --porcelain 2>/dev/null)
+  [ "$i" -eq 0 ] && empty_row "working tree clean — $repo $branch$ab"
+}
+
+rows_proj() {
+  local cur n=0 path repo branch
+  cur=$(sc_resolve_project 2>/dev/null) || cur=
+  while IFS=$'\t' read -r path repo branch; do
+    n=$((n + 1)); [ "$n" -gt 80 ] && break
+    local glyph=$ST mark=
+    if [ "$path" = "$cur" ]; then glyph=$GRN; mark=" *"; fi
+    printf '%s:%d\t%s\t%s%s\t%s\t%s\t%s\n' "$v" "$n" "$glyph●$R" "$repo" "$mark" \
+      "${ST}${branch:-—} · ${path/#$HOME/~}$R" "$path" "$repo"
+  done < <(sc_projects | sort -t$'\t' -k2)
+  [ "$n" -eq 0 ] && empty_row "no git repos with github remotes found"
+}
+
+# --- emit: cache atomically, then print --------------------------------------
+out_file=$(sc_cache_file "$v").tmp
+case $v in
+  prmine)  rows_pr --author        > "$out_file" ;;
+  prrev)   rows_pr --review-requested > "$out_file" ;;
+  issues)  rows_issues_me          > "$out_file" ;;
+  repo)    rows_repo_issues        > "$out_file" ;;
+  runs)    rows_runs               > "$out_file" ;;
+  local)   rows_local              > "$out_file" ;;
+  proj)    rows_proj               > "$out_file" ;;
+  *)       empty_row "unknown view $v" > "$out_file" ;;
+esac
+mv -f "$out_file" "$(sc_cache_file "$v")"
+cat "$(sc_cache_file "$v")"

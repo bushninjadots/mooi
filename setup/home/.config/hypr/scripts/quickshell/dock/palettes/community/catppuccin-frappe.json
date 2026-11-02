@@ -1,0 +1,25 @@
+{
+  "name": "Catppuccin Frappe",
+  "slug": "catppuccin-frappe",
+  "author": "https://github.com/catppuccin/catppuccin",
+  "background": "#303446",
+  "foreground": "#c6d0f5",
+  "base16": {
+    "color0": "#303446",
+    "color1": "#e78284",
+    "color2": "#a6d189",
+    "color3": "#e5c890",
+    "color4": "#ef9f76",
+    "color5": "#ca9ee6",
+    "color6": "#81c8be",
+    "color7": "#c6d0f5",
+    "color8": "#51576d",
+    "color9": "#e78284",
+    "color10": "#a6d189",
+    "color11": "#e5c890",
+    "color12": "#ef9f76",
+    "color13": "#ca9ee6",
+    "color14": "#81c8be",
+    "color15": "#babbf1"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Tokyo Night Storm",
+  "slug": "tokyo-night-storm",
+  "author": "Michaël Ball",
+  "background": "#24283B",
+  "foreground": "#A9B1D6",
+  "base16": {
+    "color0": "#24283B",
+    "color1": "#C0CAF5",
+    "color2": "#9ECE6A",
+    "color3": "#0DB9D7",
+    "color4": "#A9B1D6",
+    "color5": "#BB9AF7",
+    "color6": "#B4F9F8",
+    "color7": "#A9B1D6",
+    "color8": "#444B6A",
+    "color9": "#C0CAF5",
+    "color10": "#9ECE6A",
+    "color11": "#0DB9D7",
+    "color12": "#A9B1D6",
+    "color13": "#BB9AF7",
+    "color14": "#B4F9F8",
+    "color15": "#D5D6DB"
+  }
+}

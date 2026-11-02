@@ -1,0 +1,22 @@
+{
+  "id": "sysmon",
+  "name": "Sysmon",
+  "version": "0.1.0",
+  "author": "xscriptor",
+  "description": "A configurable floating system monitor (CPU / RAM / temperature) with live bars",
+  "type": "shell",
+  "compat": { "host": ">=1.0.0 <2.0.0" },
+  "api": { "requires": ["colors", "settings", "stats", "surface", "log"] },
+  "toggle": "sysmon.enabled",
+  "scope": "sysmon",
+  "defaultEnabled": true,
+  "settings": { "page": "settings/SysmonPage.qml", "label": "Sysmon", "icon": "" },
+  "host": "host/Sysmon.qml",
+  "provides": {
+    "bar": {
+      "modules": {
+        "sysmon": { "comp": "bar/Sysmon.qml", "label": "Resources", "icon": "\uf035b" }
+      }
+    }
+  }
+}

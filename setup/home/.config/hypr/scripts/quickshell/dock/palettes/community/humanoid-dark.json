@@ -1,0 +1,26 @@
+{
+  "name": "Humanoid dark",
+  "slug": "humanoid-dark",
+  "author": "Thomas (tasmo) Friese",
+  "background": "#232629",
+  "foreground": "#f8f8f2",
+  "base16": {
+    "color0": "#232629",
+    "color1": "#f11235",
+    "color2": "#02d849",
+    "color3": "#ffb627",
+    "color4": "#ff9505",
+    "color5": "#f15ee3",
+    "color6": "#0dd9d6",
+    "color7": "#f8f8f2",
+    "color8": "#60615d",
+    "color9": "#f11235",
+    "color10": "#02d849",
+    "color11": "#ffb627",
+    "color12": "#ff9505",
+    "color13": "#f15ee3",
+    "color14": "#0dd9d6",
+    "color15": "#fcfcfc"
+  },
+  "variant": "dark"
+}

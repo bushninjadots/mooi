@@ -1,0 +1,25 @@
+{
+  "name": "Dracula",
+  "slug": "dracula",
+  "author": "Mike Barkmin (http://github.com/mikebarkmin) based on Dracula Theme (http://github.com/dracula)",
+  "background": "#282936",
+  "foreground": "#e9e9f4",
+  "base16": {
+    "color0": "#282936",
+    "color1": "#ea51b2",
+    "color2": "#ebff87",
+    "color3": "#00f769",
+    "color4": "#b45bcf",
+    "color5": "#b45bcf",
+    "color6": "#a1efe4",
+    "color7": "#e9e9f4",
+    "color8": "#626483",
+    "color9": "#ea51b2",
+    "color10": "#ebff87",
+    "color11": "#00f769",
+    "color12": "#b45bcf",
+    "color13": "#b45bcf",
+    "color14": "#a1efe4",
+    "color15": "#f7f7fb"
+  }
+}

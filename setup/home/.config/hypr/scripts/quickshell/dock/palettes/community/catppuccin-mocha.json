@@ -1,0 +1,25 @@
+{
+  "name": "Catppuccin Mocha",
+  "slug": "catppuccin-mocha",
+  "author": "https://github.com/catppuccin/catppuccin",
+  "background": "#1e1e2e",
+  "foreground": "#cdd6f4",
+  "base16": {
+    "color0": "#1e1e2e",
+    "color1": "#f38ba8",
+    "color2": "#a6e3a1",
+    "color3": "#f9e2af",
+    "color4": "#fab387",
+    "color5": "#cba6f7",
+    "color6": "#94e2d5",
+    "color7": "#cdd6f4",
+    "color8": "#45475a",
+    "color9": "#f38ba8",
+    "color10": "#a6e3a1",
+    "color11": "#f9e2af",
+    "color12": "#fab387",
+    "color13": "#cba6f7",
+    "color14": "#94e2d5",
+    "color15": "#b4befe"
+  }
+}

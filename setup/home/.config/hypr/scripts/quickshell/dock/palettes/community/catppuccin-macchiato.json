@@ -1,0 +1,25 @@
+{
+  "name": "Catppuccin Macchiato",
+  "slug": "catppuccin-macchiato",
+  "author": "https://github.com/catppuccin/catppuccin",
+  "background": "#24273a",
+  "foreground": "#cad3f5",
+  "base16": {
+    "color0": "#24273a",
+    "color1": "#ed8796",
+    "color2": "#a6da95",
+    "color3": "#eed49f",
+    "color4": "#f5a97f",
+    "color5": "#c6a0f6",
+    "color6": "#8bd5ca",
+    "color7": "#cad3f5",
+    "color8": "#494d64",
+    "color9": "#ed8796",
+    "color10": "#a6da95",
+    "color11": "#eed49f",
+    "color12": "#f5a97f",
+    "color13": "#c6a0f6",
+    "color14": "#8bd5ca",
+    "color15": "#b7bdf8"
+  }
+}

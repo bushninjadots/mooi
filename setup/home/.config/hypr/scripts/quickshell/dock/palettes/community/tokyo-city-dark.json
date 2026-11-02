@@ -1,0 +1,26 @@
+{
+  "name": "Tokyo City Dark",
+  "slug": "tokyo-city-dark",
+  "author": "Michaël Ball",
+  "background": "#171D23",
+  "foreground": "#D8E2EC",
+  "base16": {
+    "color0": "#171D23",
+    "color1": "#F7768E",
+    "color2": "#9ECE6A",
+    "color3": "#B7C5D3",
+    "color4": "#FF9E64",
+    "color5": "#BB9AF7",
+    "color6": "#89DDFF",
+    "color7": "#D8E2EC",
+    "color8": "#526270",
+    "color9": "#F7768E",
+    "color10": "#9ECE6A",
+    "color11": "#B7C5D3",
+    "color12": "#FF9E64",
+    "color13": "#BB9AF7",
+    "color14": "#89DDFF",
+    "color15": "#FBFBFD"
+  },
+  "variant": "dark"
+}

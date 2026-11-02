@@ -1,0 +1,26 @@
+{
+  "name": "Tokyo Night Moon",
+  "slug": "tokyo-night-moon",
+  "author": "Ólafur Bjarki Bogason",
+  "background": "#222436",
+  "foreground": "#828bb8",
+  "base16": {
+    "color0": "#222436",
+    "color1": "#ff757f",
+    "color2": "#c3e88d",
+    "color3": "#ffdf77",
+    "color4": "#ffc777",
+    "color5": "#fca7ea",
+    "color6": "#86e1fc",
+    "color7": "#828bb8",
+    "color8": "#3b4261",
+    "color9": "#ff757f",
+    "color10": "#c3e88d",
+    "color11": "#ffdf77",
+    "color12": "#ffc777",
+    "color13": "#fca7ea",
+    "color14": "#86e1fc",
+    "color15": "#c8d3f5"
+  },
+  "variant": "dark"
+}

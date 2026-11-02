@@ -1,0 +1,25 @@
+{
+  "name": "Tokyodark",
+  "slug": "tokyodark",
+  "author": "Tiagovla (https://github.com/tiagovla/)",
+  "background": "#11121d",
+  "foreground": "#abb2bf",
+  "base16": {
+    "color0": "#11121d",
+    "color1": "#a485dd",
+    "color2": "#d7A65f",
+    "color3": "#7199ee",
+    "color4": "#a485dd",
+    "color5": "#ee6d85",
+    "color6": "#a485dd",
+    "color7": "#abb2bf",
+    "color8": "#393a45",
+    "color9": "#a485dd",
+    "color10": "#d7A65f",
+    "color11": "#7199ee",
+    "color12": "#a485dd",
+    "color13": "#ee6d85",
+    "color14": "#a485dd",
+    "color15": "#2c2d38"
+  }
+}

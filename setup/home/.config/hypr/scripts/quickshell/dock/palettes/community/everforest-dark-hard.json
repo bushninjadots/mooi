@@ -1,0 +1,25 @@
+{
+  "name": "Everforest Dark Hard",
+  "slug": "everforest-dark-hard",
+  "author": "Oskar Liew (https://github.com/OskarLiew)",
+  "background": "#272e33",
+  "foreground": "#d3c6aa",
+  "base16": {
+    "color0": "#272e33",
+    "color1": "#7fbbb3",
+    "color2": "#83c092",
+    "color3": "#dbbc7f",
+    "color4": "#d699b6",
+    "color5": "#e67e80",
+    "color6": "#e69875",
+    "color7": "#d3c6aa",
+    "color8": "#859289",
+    "color9": "#7fbbb3",
+    "color10": "#83c092",
+    "color11": "#dbbc7f",
+    "color12": "#d699b6",
+    "color13": "#e67e80",
+    "color14": "#e69875",
+    "color15": "#fdf6e3"
+  }
+}

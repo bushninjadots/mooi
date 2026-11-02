@@ -1,0 +1,29 @@
+#!/bin/sh
+# The session's polkit agent: pleamar's themed dialog
+# (~/.config/pleamar/shells/polkit), or hyprpolkitagent if it cannot be.
+#
+#   polkit-agent           start pleamar's; fall back to hyprpolkitagent
+#   polkit-agent classic   use hyprpolkitagent (stops pleamar's)
+#
+# There is one agent per session, so the other one is stopped first.
+scene="$HOME/.config/pleamar/shells/polkit/polkit.plm"
+
+classic() {
+    pleamar --say polkit quit >/dev/null 2>&1
+    systemctl --user start hyprpolkitagent
+}
+
+if [ "${1:-}" = "classic" ]; then
+    classic
+    exit 0
+fi
+
+systemctl --user stop hyprpolkitagent 2>/dev/null
+setsid -f "$HOME/.config/pleamar/bin/pleamar-keep" "$scene"
+# It has a few seconds to become the agent; if it does not, the classic one.
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    sleep 0.5
+    [ "$(pleamar --say polkit 'get auth.ready' 2>/dev/null)" = "true" ] && exit 0
+done
+echo "polkit-agent: pleamar's dialog did not become the agent; using hyprpolkitagent" >&2
+classic

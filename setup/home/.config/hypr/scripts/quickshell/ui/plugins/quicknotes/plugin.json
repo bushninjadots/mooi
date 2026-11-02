@@ -1,0 +1,17 @@
+{
+  "id": "quicknotes",
+  "name": "QuickNotes",
+  "version": "0.2.0",
+  "author": "xscriptor",
+  "description": "Scratch notepad panel with auto-save",
+  "type": "shell",
+  "compat": { "shell": ">=0.1.0" },
+  "scope": "quicknotes",
+  "settings": { "page": "settings/QuickNotesPage.qml", "label": "QuickNotes", "icon": "" },
+  "provides": {
+    "panels": {
+      "quicknotes": { "comp": "ui/QuickNotes.qml", "w": 480, "h": 460, "label": "Notepad" }
+    }
+  },
+  "defaultEnabled": true
+}

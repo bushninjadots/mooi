@@ -1,0 +1,26 @@
+{
+  "name": "Edge Dark",
+  "slug": "edge-dark",
+  "author": "cjayross (https://github.com/cjayross), Tinted Theming (https://github.com/tinted-theming)",
+  "background": "#262729",
+  "foreground": "#afb2b5",
+  "base16": {
+    "color0": "#262729",
+    "color1": "#e77171",
+    "color2": "#a1bf78",
+    "color3": "#dbb774",
+    "color4": "#eba31a",
+    "color5": "#d390e7",
+    "color6": "#5ebaa5",
+    "color7": "#afb2b5",
+    "color8": "#4a4c4f",
+    "color9": "#e77171",
+    "color10": "#a1bf78",
+    "color11": "#dbb774",
+    "color12": "#eba31a",
+    "color13": "#d390e7",
+    "color14": "#5ebaa5",
+    "color15": "#e4e5e6"
+  },
+  "variant": "dark"
+}

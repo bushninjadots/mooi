@@ -1,0 +1,26 @@
+{
+  "name": "Tokyo City Light",
+  "slug": "tokyo-city-light",
+  "author": "Michaël Ball",
+  "background": "#FBFBFD",
+  "foreground": "#343B59",
+  "base16": {
+    "color0": "#FBFBFD",
+    "color1": "#8C4351",
+    "color2": "#485E30",
+    "color3": "#4C505E",
+    "color4": "#965027",
+    "color5": "#5A4A78",
+    "color6": "#4C505E",
+    "color7": "#343B59",
+    "color8": "#9699A3",
+    "color9": "#8C4351",
+    "color10": "#485E30",
+    "color11": "#4C505E",
+    "color12": "#965027",
+    "color13": "#5A4A78",
+    "color14": "#4C505E",
+    "color15": "#171D23"
+  },
+  "variant": "light"
+}

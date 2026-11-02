@@ -67,3 +67,10 @@ Most settings are easier to change from the settings window (the tab at the bar'
 ## Docs
 
 [Vision](docs/VISION.md) · [Philosophy](docs/PHILOSOPHY.md) · [Ferrolume bar](docs/FERROLUME.md) · [Brief](docs/BRIEF.md) · [Audit](docs/AUDIT.md) · [Spec](docs/SPEC.md) · [Architecture](docs/ARCHITECTURE.md) · [Mechanism](docs/MECHANISM.md) · [Switching](docs/SWITCHING.md) · [Decisions](docs/DECISIONS.md) · [Testing](docs/TESTING.md)
+
+## A new machine
+
+`setup/` holds the rest of this desktop (Hyprland's config, mooi's settings and state, fonts, the
+package lists, the pleamar commit). On a fresh EndeavourOS/Arch install: clone this repo to
+`~/Projects/mooi` and run `setup/install.sh`. Run `setup/capture.sh` before committing to keep it
+current. See [setup/README.md](setup/README.md).

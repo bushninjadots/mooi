@@ -1,0 +1,26 @@
+{
+  "name": "Atelier Seaside Light",
+  "slug": "atelier-seaside-light",
+  "author": "Bram de Haan (http://atelierbramdehaan.nl)",
+  "background": "#f4fbf4",
+  "foreground": "#5e6e5e",
+  "base16": {
+    "color0": "#f4fbf4",
+    "color1": "#e6193c",
+    "color2": "#29a329",
+    "color3": "#98981b",
+    "color4": "#87711d",
+    "color5": "#ad2bee",
+    "color6": "#1999b3",
+    "color7": "#5e6e5e",
+    "color8": "#809980",
+    "color9": "#e6193c",
+    "color10": "#29a329",
+    "color11": "#98981b",
+    "color12": "#87711d",
+    "color13": "#ad2bee",
+    "color14": "#1999b3",
+    "color15": "#131513"
+  },
+  "variant": "light"
+}

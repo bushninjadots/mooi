@@ -1,0 +1,23 @@
+#!/bin/sh
+# pleamar-keep SCENE.plm [pleamar options]: runs a scene and starts it again if
+# it dies (a crash, a GPU reset when a monitor wakes). A clean exit (exit 0:
+# `pleamar --say <name> quit`) ends it. One keeper per scene: a second one for
+# the same file leaves at once.
+scene="$1"; shift
+name=$(basename "$scene" .plm)
+lock="${XDG_RUNTIME_DIR:-/tmp}/pleamar-keep-$name.lock"
+exec 9>"$lock"
+flock -n 9 || exit 0
+log="${XDG_STATE_HOME:-$HOME/.local/state}/pleamar/$name.log"
+mkdir -p "$(dirname "$log")"
+tries=0
+while :; do
+    start=$(date +%s)
+    pleamar --scene "$scene" --no-hud "$@" > "$log" 2>&1 9>&-
+    code=$?
+    [ "$code" -eq 0 ] && exit 0
+    # Crashing over and over (a broken install): back off, then give up.
+    if [ $(( $(date +%s) - start )) -lt 10 ]; then tries=$((tries + 1)); else tries=0; fi
+    [ "$tries" -ge 5 ] && { echo "pleamar-keep: $name keeps dying, see $log" >&2; exit 1; }
+    sleep $((tries + 1))
+done

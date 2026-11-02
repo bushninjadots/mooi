@@ -1,0 +1,47 @@
+import QtQuick
+import Quickshell
+import "../../../core"
+import ".."
+
+// Bluetooth — orange accent island when on. Hidden on desktops (no BT hardware).
+// Compact (vertical): icon only.
+ModulePill {
+    id: mod
+    moduleId: "bluetooth"
+
+    accentRole: "color4"
+    accentActive: bar.isBtOn
+    showState: !bar.isDesktop
+
+    onClicked: Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/qs_manager.sh toggle network bt"])
+
+    Row {
+        visible: mod.horizontal
+        spacing: bar.s(10)
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: mod.glyph(bar.btIcon)
+            font.family: bar.fontFamily
+            font.pixelSize: bar.s(16)
+            color: mod.contentColor
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: bar.btDevice
+            font.family: bar.fontFamily
+            font.pixelSize: bar.s(13)
+            font.weight: Font.Black
+            width: Math.min(implicitWidth, bar.s(100)); elide: Text.ElideRight
+            color: mod.contentColor
+        }
+    }
+
+    Text {
+        visible: mod.compact
+        text: mod.glyph(bar.btIcon)
+        font.family: bar.fontFamily
+        font.pixelSize: bar.s(20)
+        color: mod.contentColor
+    }
+}

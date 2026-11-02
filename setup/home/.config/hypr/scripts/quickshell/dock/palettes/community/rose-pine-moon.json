@@ -1,0 +1,26 @@
+{
+  "name": "Rosé Pine Moon",
+  "slug": "rose-pine-moon",
+  "author": "Emilia Dunfelt <edun@dunfelt.se>",
+  "background": "#232136",
+  "foreground": "#e0def4",
+  "base16": {
+    "color0": "#232136",
+    "color1": "#eb6f92",
+    "color2": "#3e8fb0",
+    "color3": "#ea9a97",
+    "color4": "#f6c177",
+    "color5": "#f6c177",
+    "color6": "#9ccfd8",
+    "color7": "#e0def4",
+    "color8": "#6e6a86",
+    "color9": "#eb6f92",
+    "color10": "#3e8fb0",
+    "color11": "#ea9a97",
+    "color12": "#f6c177",
+    "color13": "#f6c177",
+    "color14": "#9ccfd8",
+    "color15": "#56526e"
+  },
+  "variant": "dark"
+}

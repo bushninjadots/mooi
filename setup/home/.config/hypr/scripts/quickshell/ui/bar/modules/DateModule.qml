@@ -1,0 +1,28 @@
+import QtQuick
+import Quickshell
+import "../../../core"
+import ".."
+
+// Date — soft base-tone island with the typewriter date. Hidden in vertical bars
+// (the clock already carries the day info; reduced = less clutter).
+ModulePill {
+    id: mod
+    moduleId: "date"
+
+    fullHeight: true
+    bgRole: "base"
+    bgHoverRole: "base"
+    idleRole: "subtext0"
+    padH: bar.s(18)
+    showState: mod.horizontal
+
+    onClicked: Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/qs_manager.sh toggle calendar"])
+
+    Text {
+        text: bar.dateStr
+        font.family: bar.fontFamily
+        font.pixelSize: bar.s(mod.moduleCfg.size > 0 ? mod.moduleCfg.size : 11)
+        font.weight: Font.Bold
+        color: mod.contentColor
+    }
+}

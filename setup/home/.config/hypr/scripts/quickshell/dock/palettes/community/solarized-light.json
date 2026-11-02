@@ -1,0 +1,25 @@
+{
+  "name": "Solarized Light",
+  "slug": "solarized-light",
+  "author": "Ethan Schoonover (modified by aramisgithub)",
+  "background": "#fdf6e3",
+  "foreground": "#586e75",
+  "base16": {
+    "color0": "#fdf6e3",
+    "color1": "#dc322f",
+    "color2": "#859900",
+    "color3": "#b58900",
+    "color4": "#cb4b16",
+    "color5": "#6c71c4",
+    "color6": "#2aa198",
+    "color7": "#586e75",
+    "color8": "#839496",
+    "color9": "#dc322f",
+    "color10": "#859900",
+    "color11": "#b58900",
+    "color12": "#cb4b16",
+    "color13": "#6c71c4",
+    "color14": "#2aa198",
+    "color15": "#002b36"
+  }
+}

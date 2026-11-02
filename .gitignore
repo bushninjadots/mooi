@@ -29,3 +29,6 @@ agentdb.rvf.idmap.json
 __pycache__/
 
 .superpowers/
+
+# setup/: the desktop as captured (setup/capture.sh) is kept whole, settings and pictures included
+!setup/home/**

@@ -1,0 +1,26 @@
+{
+  "name": "Gruvbox Material Light, Hard",
+  "slug": "gruvbox-material-light-hard",
+  "author": "Mayush Kumar (https://github.com/MayushKumar), sainnhe (https://github.com/sainnhe/gruvbox-material-vscode)",
+  "background": "#f9f5d7",
+  "foreground": "#654735",
+  "base16": {
+    "color0": "#f9f5d7",
+    "color1": "#c14a4a",
+    "color2": "#6c782e",
+    "color3": "#b47109",
+    "color4": "#c35e0a",
+    "color5": "#945e80",
+    "color6": "#4c7a5d",
+    "color7": "#654735",
+    "color8": "#a89984",
+    "color9": "#c14a4a",
+    "color10": "#6c782e",
+    "color11": "#b47109",
+    "color12": "#c35e0a",
+    "color13": "#945e80",
+    "color14": "#4c7a5d",
+    "color15": "#282828"
+  },
+  "variant": "light"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Horizon Dark",
+  "slug": "horizon-dark",
+  "author": "Michaël Ball (http://github.com/michael-ball/)",
+  "background": "#1C1E26",
+  "foreground": "#CBCED0",
+  "base16": {
+    "color0": "#1C1E26",
+    "color1": "#E93C58",
+    "color2": "#EFAF8E",
+    "color3": "#EFB993",
+    "color4": "#E58D7D",
+    "color5": "#B072D1",
+    "color6": "#24A8B4",
+    "color7": "#CBCED0",
+    "color8": "#6F6F70",
+    "color9": "#E93C58",
+    "color10": "#EFAF8E",
+    "color11": "#EFB993",
+    "color12": "#E58D7D",
+    "color13": "#B072D1",
+    "color14": "#24A8B4",
+    "color15": "#E3E6EE"
+  },
+  "variant": "dark"
+}

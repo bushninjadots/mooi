@@ -1,0 +1,26 @@
+{
+  "name": "Tokyo Night Terminal Light",
+  "slug": "tokyo-night-terminal-light",
+  "author": "Michaël Ball",
+  "background": "#D5D6DB",
+  "foreground": "#4C505E",
+  "base16": {
+    "color0": "#D5D6DB",
+    "color1": "#8C4351",
+    "color2": "#33635C",
+    "color3": "#8F5E15",
+    "color4": "#965027",
+    "color5": "#5A4A78",
+    "color6": "#0F4B6E",
+    "color7": "#4C505E",
+    "color8": "#9699A3",
+    "color9": "#8C4351",
+    "color10": "#33635C",
+    "color11": "#8F5E15",
+    "color12": "#965027",
+    "color13": "#5A4A78",
+    "color14": "#0F4B6E",
+    "color15": "#1A1B26"
+  },
+  "variant": "light"
+}

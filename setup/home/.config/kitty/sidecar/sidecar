@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# kitty github sidecar — fzf control panel. also provides:
+#   sidecar header   (dynamic fzf header)
+#   sidecar tick     (periodic reload decision for the RUNS view)
+set -u
+. "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
+
+sc_header() {
+  local v proj
+  v=$(sc_get_view)
+  proj=$(sc_resolve_project 2>/dev/null) || proj=
+  printf '%s1 mine  2 review  3 issues  4 repo  5 runs  6 local  7 proj%s\n' "$ST" "$R"
+  printf '%senter open · d detail · c checkout · m merge · a approve · x req-changes · C comment%s\n' "$ST" "$R"
+  printf '%sl lazygit · s/u stage/unstage · e edit · w watch · g logs · i toggle · b main · r refresh · q quit%s\n' "$ST" "$R"
+  printf '%sview %s%s%s · proj %s%s%s · auto-refresh %ss%s' \
+    "$ST" "$GRN" "$v" "$R" "$CYN" "${proj:-none}" "$R" "$SIDECAR_REFRESH" "$R"
+}
+
+sc_tick() {
+  [ "$(sc_get_view)" = runs ] || exit 0
+  [ "$SIDECAR_REFRESH" -gt 0 ] || exit 0
+  printf 'reload(%s/sidecar-list)' "$SC_DIR"
+}
+
+case ${1:-} in
+  header) sc_header; exit 0 ;;
+  tick)   sc_tick;   exit 0 ;;
+esac
+
+unset FZF_DEFAULT_OPTS FZF_DEFAULT_OPTS_FILE
+
+declare -A PROMPT=(
+  [prmine]='PR·mine ▸ '
+  [prrev]='PR·review ▸ '
+  [issues]='ISS·me ▸ '
+  [repo]='ISS·repo ▸ '
+  [runs]='RUNS ▸ '
+  [local]='LOCAL ▸ '
+  [proj]='PROJ ▸ '
+)
+
+view=$(sc_get_view)
+reload="$SC_DIR/sidecar-list"
+header_cmd="$SC_DIR/sidecar header"
+actions="$SC_DIR/sidecar-actions"
+
+binds=()
+i=1
+for v in "${SC_VIEWS[@]}"; do
+  binds+=("$i:execute-silent(printf %s $v > $SC_STATE/view)+reload($reload)+change-header($header_cmd)+change-prompt(${PROMPT[$v]})")
+  i=$((i + 1))
+done
+binds+=(
+  "enter:execute-silent($actions enter {1})+reload($reload)"
+  "o:execute-silent($actions open {1})"
+  "d:execute($actions diff {1})"
+  "c:execute($actions checkout {1})+reload($reload)"
+  "m:execute($actions merge {1})+reload($reload)"
+  "a:execute($actions approve {1})+reload($reload)"
+  "x:execute($actions reqchg {1})+reload($reload)"
+  "C:execute($actions comment {1})+reload($reload)"
+  "w:execute($actions watch {1})+reload($reload)"
+  "g:execute($actions logs {1})"
+  "l:execute($actions lazygit {1})"
+  "s:execute-silent($actions stage {1})+reload($reload)"
+  "u:execute-silent($actions unstage {1})+reload($reload)"
+  "e:execute-silent($actions editor {1})"
+  "b:execute-silent($actions focusmain {1})"
+  "i:execute-silent($actions toggle-scope {1})+reload($reload)"
+  "r:reload($reload)"
+  "ctrl-r:reload($reload)"
+  "q:abort"
+)
+if [ "$SIDECAR_REFRESH" -gt 0 ]; then
+  binds+=("every(${SIDECAR_REFRESH}):transform($SC_DIR/sidecar tick)")
+fi
+bindstr=$(IFS=,; printf '%s' "${binds[*]}")
+
+colors='bg:#101510,fg:#8b938a,hl:#98d4a4,hl+:#98d4a4,fg+:#dfe4dc,pointer:#98d4a4,marker:#a2ced9,spinner:#a2ced9,info:#414941,header:#414941,prompt:#98d4a4,gutter:#101510,border:#2a322a,selected-fg:#dfe4dc,selected-bg:#1d2a1d,preview-bg:#101510,preview-fg:#c1c9bf'
+
+exec 2> "$SC_STATE/fzf.err"
+"$SC_DIR/sidecar-list" | fzf \
+  --layout=reverse --border=none --margin=0 --padding=0 \
+  --info=inline --cycle --ansi \
+  --delimiter=$'\t' --with-nth=2..4 --id-nth=0 \
+  --prompt "${PROMPT[$view]}" \
+  --header "$(sc_header)" \
+  --preview "$SC_DIR/sidecar-preview {1}" \
+  --preview-window 'down:60%:wrap' \
+  --color "$colors" \
+  --bind "$bindstr"
+rc=$?
+exec 2>&-
+exit $rc

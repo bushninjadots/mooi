@@ -1,0 +1,26 @@
+{
+  "name": "Apprentice",
+  "slug": "apprentice",
+  "author": "Romain Lafourcade (https://github.com/romainl)",
+  "background": "#262626",
+  "foreground": "#BCBCBC",
+  "base16": {
+    "color0": "#262626",
+    "color1": "#AF5F5F",
+    "color2": "#5F875F",
+    "color3": "#87875F",
+    "color4": "#FF8700",
+    "color5": "#5F5F87",
+    "color6": "#5F8787",
+    "color7": "#BCBCBC",
+    "color8": "#444444",
+    "color9": "#AF5F5F",
+    "color10": "#5F875F",
+    "color11": "#87875F",
+    "color12": "#FF8700",
+    "color13": "#5F5F87",
+    "color14": "#5F8787",
+    "color15": "#FFFFFF"
+  },
+  "variant": "dark"
+}

@@ -1,0 +1,76 @@
+/* ArchEclipse palette (from Ryoku, GPL-3.0) -> classic GTK 3. Rendered by matugen; do not hand-edit.
+   GTK 3 has no CSS custom properties, so @define-color is the whole story here:
+   the :root { --* } form the GTK 4 template leads with would not parse. The
+   theme this pairs with must derive its widget colours from these named colours,
+   which adw-gtk3 does; stock Adwaita hardcodes literals and mostly ignores them.
+   Values match the GTK 4 template's @define-color block exactly. Roles are
+   Material 3 names, the same ones the shell paints with. */
+
+@define-color accent_bg_color #ffb2ba;
+@define-color accent_fg_color #230609;
+@define-color accent_color #ffb2ba;
+@define-color destructive_bg_color #36e2d0;
+@define-color destructive_fg_color #230609;
+@define-color destructive_color #36e2d0;
+@define-color success_bg_color #e09da4;
+@define-color success_fg_color #230609;
+@define-color success_color #e09da4;
+@define-color warning_bg_color #36e2d0;
+@define-color warning_fg_color #230609;
+@define-color warning_color #36e2d0;
+@define-color error_bg_color #36e2d0;
+@define-color error_fg_color #230609;
+@define-color error_color #36e2d0;
+@define-color window_bg_color #070405;
+@define-color window_fg_color #ab9c9d;
+@define-color view_bg_color #070405;
+@define-color view_fg_color #ab9c9d;
+@define-color headerbar_bg_color #070405;
+@define-color headerbar_fg_color #ab9c9d;
+@define-color headerbar_border_color #351d1f;
+@define-color headerbar_backdrop_color #070405;
+@define-color sidebar_bg_color #040303;
+@define-color sidebar_fg_color #ab9c9d;
+@define-color sidebar_backdrop_color #070405;
+@define-color secondary_sidebar_bg_color #000000;
+@define-color secondary_sidebar_fg_color #ab9c9d;
+@define-color secondary_sidebar_backdrop_color #070405;
+@define-color card_bg_color #040303;
+@define-color card_fg_color #ab9c9d;
+@define-color dialog_bg_color #0e0a0a;
+@define-color dialog_fg_color #ab9c9d;
+@define-color popover_bg_color #070405;
+@define-color popover_fg_color #ab9c9d;
+@define-color thumbnail_bg_color #0e0a0a;
+@define-color thumbnail_fg_color #ab9c9d;
+@define-color scrollbar_outline_color #351d1f;
+
+/* Shades are the palette scrim at a fixed alpha, not a flat role, because the
+   toolkit paints them as translucent overlays for edges and elevation and they
+   must read through whatever surface happens to sit beneath them. */
+@define-color shade_color alpha(#000000, 0.16);
+@define-color headerbar_shade_color alpha(#000000, 0.36);
+@define-color headerbar_darker_shade_color alpha(#000000, 0.36);
+@define-color sidebar_shade_color alpha(#000000, 0.16);
+@define-color secondary_sidebar_shade_color alpha(#000000, 0.16);
+@define-color card_shade_color alpha(#000000, 0.16);
+@define-color popover_shade_color alpha(#000000, 0.16);
+
+/* Classic GTK 3 named palette that stock Adwaita and older apps still read. */
+@define-color theme_bg_color #070405;
+@define-color theme_fg_color #ab9c9d;
+@define-color theme_base_color #070405;
+@define-color theme_text_color #ab9c9d;
+@define-color theme_selected_bg_color #ffb2ba;
+@define-color theme_selected_fg_color #230609;
+@define-color theme_unfocused_bg_color #070405;
+@define-color theme_unfocused_fg_color #ab9c9d;
+@define-color theme_unfocused_base_color #070405;
+@define-color theme_unfocused_text_color #ab9c9d;
+@define-color theme_unfocused_selected_bg_color #ffb2ba;
+@define-color theme_unfocused_selected_fg_color #230609;
+@define-color insensitive_bg_color #070405;
+@define-color insensitive_fg_color #a26d72;
+@define-color insensitive_base_color #070405;
+@define-color borders #351d1f;
+@define-color unfocused_borders #351d1f;

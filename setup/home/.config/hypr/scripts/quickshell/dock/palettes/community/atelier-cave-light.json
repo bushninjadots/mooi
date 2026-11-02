@@ -1,0 +1,26 @@
+{
+  "name": "Atelier Cave Light",
+  "slug": "atelier-cave-light",
+  "author": "Bram de Haan (http://atelierbramdehaan.nl)",
+  "background": "#efecf4",
+  "foreground": "#585260",
+  "base16": {
+    "color0": "#efecf4",
+    "color1": "#be4678",
+    "color2": "#2a9292",
+    "color3": "#a06e3b",
+    "color4": "#aa573c",
+    "color5": "#955ae7",
+    "color6": "#398bc6",
+    "color7": "#585260",
+    "color8": "#7e7887",
+    "color9": "#be4678",
+    "color10": "#2a9292",
+    "color11": "#a06e3b",
+    "color12": "#aa573c",
+    "color13": "#955ae7",
+    "color14": "#398bc6",
+    "color15": "#19171c"
+  },
+  "variant": "light"
+}

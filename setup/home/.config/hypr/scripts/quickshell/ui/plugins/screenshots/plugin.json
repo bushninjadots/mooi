@@ -1,0 +1,18 @@
+{
+  "id": "screenshots",
+  "name": "Screenshots & Recording",
+  "version": "0.1.0",
+  "author": "equisdots",
+  "description": "Screenshots (area/full/edit) and screen recording with virtual audio",
+  "type": "mixed",
+  "compat": { "hyprland": ">=0.55" },
+  "standalone": ["ui/ScreenshotOverlay.qml"],
+  "provides": {
+    "bar": {
+      "modules": {
+        "recording": { "comp": "bar/Recording.qml", "label": "Recording", "icon": "\uf28d" }
+      }
+    }
+  },
+  "defaultEnabled": true
+}

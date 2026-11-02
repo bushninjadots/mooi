@@ -1,0 +1,26 @@
+{
+  "name": "Framer",
+  "slug": "framer",
+  "author": "Framer (Maintained by Jesse Hoyos)",
+  "background": "#181818",
+  "foreground": "#D0D0D0",
+  "base16": {
+    "color0": "#181818",
+    "color1": "#FD886B",
+    "color2": "#32CCDC",
+    "color3": "#FECB6E",
+    "color4": "#FC4769",
+    "color5": "#BA8CFC",
+    "color6": "#ACDDFD",
+    "color7": "#D0D0D0",
+    "color8": "#747474",
+    "color9": "#FD886B",
+    "color10": "#32CCDC",
+    "color11": "#FECB6E",
+    "color12": "#FC4769",
+    "color13": "#BA8CFC",
+    "color14": "#ACDDFD",
+    "color15": "#EEEEEE"
+  },
+  "variant": "dark"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Tokyo City Terminal Dark",
+  "slug": "tokyo-city-terminal-dark",
+  "author": "Michaël Ball",
+  "background": "#171D23",
+  "foreground": "#D8E2EC",
+  "base16": {
+    "color0": "#171D23",
+    "color1": "#D95468",
+    "color2": "#8BD49C",
+    "color3": "#EBBF83",
+    "color4": "#FF9E64",
+    "color5": "#B62D65",
+    "color6": "#70E1E8",
+    "color7": "#D8E2EC",
+    "color8": "#526270",
+    "color9": "#D95468",
+    "color10": "#8BD49C",
+    "color11": "#EBBF83",
+    "color12": "#FF9E64",
+    "color13": "#B62D65",
+    "color14": "#70E1E8",
+    "color15": "#FBFBFD"
+  },
+  "variant": "dark"
+}

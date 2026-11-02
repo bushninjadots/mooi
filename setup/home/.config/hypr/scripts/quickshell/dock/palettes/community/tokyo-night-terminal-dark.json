@@ -1,0 +1,26 @@
+{
+  "name": "Tokyo Night Terminal Dark",
+  "slug": "tokyo-night-terminal-dark",
+  "author": "Michaël Ball",
+  "background": "#16161E",
+  "foreground": "#787C99",
+  "base16": {
+    "color0": "#16161E",
+    "color1": "#F7768E",
+    "color2": "#41A6B5",
+    "color3": "#E0AF68",
+    "color4": "#FF9E64",
+    "color5": "#BB9AF7",
+    "color6": "#7DCFFF",
+    "color7": "#787C99",
+    "color8": "#444B6A",
+    "color9": "#F7768E",
+    "color10": "#41A6B5",
+    "color11": "#E0AF68",
+    "color12": "#FF9E64",
+    "color13": "#BB9AF7",
+    "color14": "#7DCFFF",
+    "color15": "#D5D6DB"
+  },
+  "variant": "dark"
+}

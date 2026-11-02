@@ -1,0 +1,2182 @@
+[
+ {
+  "slug": "berlin",
+  "name": "Berlin",
+  "colors": [
+   "#000000",
+   "#999999",
+   "#bbbbbb",
+   "#dddddd",
+   "#888888",
+   "#aaaaaa",
+   "#cccccc",
+   "#ffffff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "bogota",
+  "name": "Bogota",
+  "colors": [
+   "#200b0a",
+   "#fc618d",
+   "#7bd88f",
+   "#ffed89",
+   "#47e6ff",
+   "#ff9999",
+   "#47e6ff",
+   "#f7f1ff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "helsinki",
+  "name": "Helsinki",
+  "colors": [
+   "#f8fafe",
+   "#1faa9e",
+   "#733d9a",
+   "#2e70ad",
+   "#b55a0f",
+   "#3e9d21",
+   "#bd4c3d",
+   "#544d40"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "lahabana",
+  "name": "Lahabana",
+  "colors": [
+   "#19191a",
+   "#fc618d",
+   "#7bd88f",
+   "#e5ff9d",
+   "#fd9353",
+   "#948ae3",
+   "#5ad4e6",
+   "#f7f1ff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "london",
+  "name": "London",
+  "colors": [
+   "#ffffff",
+   "#333333",
+   "#444444",
+   "#555555",
+   "#666666",
+   "#777777",
+   "#888888",
+   "#333333"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "madrid",
+  "name": "Madrid",
+  "colors": [
+   "#fafafa",
+   "#990026",
+   "#007a28",
+   "#8a6408",
+   "#007a9e",
+   "#4d2699",
+   "#007a9e",
+   "#1a1a1a"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "miami",
+  "name": "Miami",
+  "colors": [
+   "#000000",
+   "#ff4c8b",
+   "#7fffd4",
+   "#ffd84c",
+   "#00ffa8",
+   "#d36cff",
+   "#47cfff",
+   "#f7f1ff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "oslo",
+  "name": "Oslo",
+  "colors": [
+   "#3f4451",
+   "#e05561",
+   "#8cc265",
+   "#d18f52",
+   "#4aa5f0",
+   "#c162de",
+   "#42b3c2",
+   "#e6e6e6"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "paris",
+  "name": "Paris",
+  "colors": [
+   "#1a0a30",
+   "#fc618d",
+   "#7bd88f",
+   "#fce566",
+   "#a3f3ff",
+   "#c4bdff",
+   "#a3f3ff",
+   "#1a0a30"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "praha",
+  "name": "Praha",
+  "colors": [
+   "#1a1a1a",
+   "#ff5555",
+   "#b8e6a0",
+   "#ffe4a3",
+   "#bd93f9",
+   "#ff9aa2",
+   "#8be9fd",
+   "#ffffff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "tokio",
+  "name": "Tokio",
+  "colors": [
+   "#1c1c1d",
+   "#fc618d",
+   "#7bd88f",
+   "#fce566",
+   "#fd9353",
+   "#948ae3",
+   "#5ad4e6",
+   "#f7f1ff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "x",
+  "name": "X",
+  "colors": [
+   "#0a0a0a",
+   "#fc618d",
+   "#7bd88f",
+   "#fce566",
+   "#fd9353",
+   "#948ae3",
+   "#5ad4e6",
+   "#f7f1ff"
+  ],
+  "category": "x"
+ },
+ {
+  "slug": "3024",
+  "name": "3024",
+  "category": "custom",
+  "path": "community/3024.json",
+  "colors": [
+   "#090300",
+   "#db2d20",
+   "#01a252",
+   "#fded02",
+   "#e8bbd0",
+   "#a16a94",
+   "#b5e4f4",
+   "#a5a2a2"
+  ]
+ },
+ {
+  "slug": "apathy",
+  "name": "Apathy",
+  "category": "custom",
+  "path": "community/apathy.json",
+  "colors": [
+   "#031A16",
+   "#3E9688",
+   "#883E96",
+   "#3E4C96",
+   "#3E7996",
+   "#4C963E",
+   "#963E4C",
+   "#81B5AC"
+  ]
+ },
+ {
+  "slug": "apprentice",
+  "name": "Apprentice",
+  "category": "custom",
+  "path": "community/apprentice.json",
+  "colors": [
+   "#262626",
+   "#AF5F5F",
+   "#5F875F",
+   "#87875F",
+   "#FF8700",
+   "#5F5F87",
+   "#5F8787",
+   "#BCBCBC"
+  ]
+ },
+ {
+  "slug": "ashes",
+  "name": "Ashes",
+  "category": "custom",
+  "path": "community/ashes.json",
+  "colors": [
+   "#1C2023",
+   "#C7AE95",
+   "#95C7AE",
+   "#AEC795",
+   "#C7C795",
+   "#C795AE",
+   "#95AEC7",
+   "#C7CCD1"
+  ]
+ },
+ {
+  "slug": "atelier-cave-light",
+  "name": "Atelier Cave Light",
+  "category": "custom",
+  "path": "community/atelier-cave-light.json",
+  "colors": [
+   "#efecf4",
+   "#be4678",
+   "#2a9292",
+   "#a06e3b",
+   "#aa573c",
+   "#955ae7",
+   "#398bc6",
+   "#585260"
+  ]
+ },
+ {
+  "slug": "atelier-cave",
+  "name": "Atelier Cave",
+  "category": "custom",
+  "path": "community/atelier-cave.json",
+  "colors": [
+   "#19171c",
+   "#be4678",
+   "#2a9292",
+   "#a06e3b",
+   "#aa573c",
+   "#955ae7",
+   "#398bc6",
+   "#8b8792"
+  ]
+ },
+ {
+  "slug": "atelier-dune-light",
+  "name": "Atelier Dune Light",
+  "category": "custom",
+  "path": "community/atelier-dune-light.json",
+  "colors": [
+   "#fefbec",
+   "#d73737",
+   "#60ac39",
+   "#ae9513",
+   "#b65611",
+   "#b854d4",
+   "#1fad83",
+   "#6e6b5e"
+  ]
+ },
+ {
+  "slug": "atelier-dune",
+  "name": "Atelier Dune",
+  "category": "custom",
+  "path": "community/atelier-dune.json",
+  "colors": [
+   "#20201d",
+   "#d73737",
+   "#60ac39",
+   "#ae9513",
+   "#b65611",
+   "#b854d4",
+   "#1fad83",
+   "#a6a28c"
+  ]
+ },
+ {
+  "slug": "atelier-heath-light",
+  "name": "Atelier Heath Light",
+  "category": "custom",
+  "path": "community/atelier-heath-light.json",
+  "colors": [
+   "#f7f3f7",
+   "#ca402b",
+   "#918b3b",
+   "#bb8a35",
+   "#a65926",
+   "#7b59c0",
+   "#159393",
+   "#695d69"
+  ]
+ },
+ {
+  "slug": "atelier-heath",
+  "name": "Atelier Heath",
+  "category": "custom",
+  "path": "community/atelier-heath.json",
+  "colors": [
+   "#1b181b",
+   "#ca402b",
+   "#918b3b",
+   "#bb8a35",
+   "#a65926",
+   "#7b59c0",
+   "#159393",
+   "#ab9bab"
+  ]
+ },
+ {
+  "slug": "atelier-lakeside-light",
+  "name": "Atelier Lakeside Light",
+  "category": "custom",
+  "path": "community/atelier-lakeside-light.json",
+  "colors": [
+   "#ebf8ff",
+   "#d22d72",
+   "#568c3b",
+   "#8a8a0f",
+   "#935c25",
+   "#6b6bb8",
+   "#2d8f6f",
+   "#516d7b"
+  ]
+ },
+ {
+  "slug": "atelier-lakeside",
+  "name": "Atelier Lakeside",
+  "category": "custom",
+  "path": "community/atelier-lakeside.json",
+  "colors": [
+   "#161b1d",
+   "#d22d72",
+   "#568c3b",
+   "#8a8a0f",
+   "#935c25",
+   "#6b6bb8",
+   "#2d8f6f",
+   "#7ea2b4"
+  ]
+ },
+ {
+  "slug": "atelier-seaside-light",
+  "name": "Atelier Seaside Light",
+  "category": "custom",
+  "path": "community/atelier-seaside-light.json",
+  "colors": [
+   "#f4fbf4",
+   "#e6193c",
+   "#29a329",
+   "#98981b",
+   "#87711d",
+   "#ad2bee",
+   "#1999b3",
+   "#5e6e5e"
+  ]
+ },
+ {
+  "slug": "atelier-seaside",
+  "name": "Atelier Seaside",
+  "category": "custom",
+  "path": "community/atelier-seaside.json",
+  "colors": [
+   "#131513",
+   "#e6193c",
+   "#29a329",
+   "#98981b",
+   "#87711d",
+   "#ad2bee",
+   "#1999b3",
+   "#8ca68c"
+  ]
+ },
+ {
+  "slug": "atelier-sulphurpool-light",
+  "name": "Atelier Sulphurpool Light",
+  "category": "custom",
+  "path": "community/atelier-sulphurpool-light.json",
+  "colors": [
+   "#f5f7ff",
+   "#c94922",
+   "#ac9739",
+   "#c08b30",
+   "#c76b29",
+   "#6679cc",
+   "#22a2c9",
+   "#5e6687"
+  ]
+ },
+ {
+  "slug": "atelier-sulphurpool",
+  "name": "Atelier Sulphurpool",
+  "category": "custom",
+  "path": "community/atelier-sulphurpool.json",
+  "colors": [
+   "#202746",
+   "#c94922",
+   "#ac9739",
+   "#c08b30",
+   "#c76b29",
+   "#6679cc",
+   "#22a2c9",
+   "#979db4"
+  ]
+ },
+ {
+  "slug": "bespin",
+  "name": "Bespin",
+  "category": "custom",
+  "path": "community/bespin.json",
+  "colors": [
+   "#28211c",
+   "#cf6a4c",
+   "#54be0d",
+   "#f9ee98",
+   "#cf7d34",
+   "#9b859d",
+   "#afc4db",
+   "#8a8986"
+  ]
+ },
+ {
+  "slug": "brewer",
+  "name": "Brewer",
+  "category": "custom",
+  "path": "community/brewer.json",
+  "colors": [
+   "#0c0d0e",
+   "#e31a1c",
+   "#31a354",
+   "#dca060",
+   "#e6550d",
+   "#756bb1",
+   "#80b1d3",
+   "#b7b8b9"
+  ]
+ },
+ {
+  "slug": "bright",
+  "name": "Bright",
+  "category": "custom",
+  "path": "community/bright.json",
+  "colors": [
+   "#000000",
+   "#fb0120",
+   "#a1c659",
+   "#fda331",
+   "#fc6d24",
+   "#d381c3",
+   "#76c7b7",
+   "#e0e0e0"
+  ]
+ },
+ {
+  "slug": "brushtrees-dark",
+  "name": "Brush Trees Dark",
+  "category": "custom",
+  "path": "community/brushtrees-dark.json",
+  "colors": [
+   "#485867",
+   "#b38686",
+   "#87b386",
+   "#aab386",
+   "#d8bba2",
+   "#b386b2",
+   "#86b3b3",
+   "#B0C5C8"
+  ]
+ },
+ {
+  "slug": "brushtrees",
+  "name": "Brush Trees",
+  "category": "custom",
+  "path": "community/brushtrees.json",
+  "colors": [
+   "#E3EFEF",
+   "#b38686",
+   "#87b386",
+   "#aab386",
+   "#d8bba2",
+   "#b386b2",
+   "#86b3b3",
+   "#6D828E"
+  ]
+ },
+ {
+  "slug": "catppuccin-frappe",
+  "name": "Catppuccin Frappe",
+  "category": "custom",
+  "path": "community/catppuccin-frappe.json",
+  "colors": [
+   "#303446",
+   "#e78284",
+   "#a6d189",
+   "#e5c890",
+   "#ef9f76",
+   "#ca9ee6",
+   "#81c8be",
+   "#c6d0f5"
+  ]
+ },
+ {
+  "slug": "catppuccin-latte",
+  "name": "Catppuccin Latte",
+  "category": "custom",
+  "path": "community/catppuccin-latte.json",
+  "colors": [
+   "#eff1f5",
+   "#d20f39",
+   "#40a02b",
+   "#df8e1d",
+   "#fe640b",
+   "#8839ef",
+   "#179299",
+   "#4c4f69"
+  ]
+ },
+ {
+  "slug": "catppuccin-macchiato",
+  "name": "Catppuccin Macchiato",
+  "category": "custom",
+  "path": "community/catppuccin-macchiato.json",
+  "colors": [
+   "#24273a",
+   "#ed8796",
+   "#a6da95",
+   "#eed49f",
+   "#f5a97f",
+   "#c6a0f6",
+   "#8bd5ca",
+   "#cad3f5"
+  ]
+ },
+ {
+  "slug": "catppuccin-mocha",
+  "name": "Catppuccin Mocha",
+  "category": "custom",
+  "path": "community/catppuccin-mocha.json",
+  "colors": [
+   "#1e1e2e",
+   "#f38ba8",
+   "#a6e3a1",
+   "#f9e2af",
+   "#fab387",
+   "#cba6f7",
+   "#94e2d5",
+   "#cdd6f4"
+  ]
+ },
+ {
+  "slug": "chalk",
+  "name": "Chalk",
+  "category": "custom",
+  "path": "community/chalk.json",
+  "colors": [
+   "#151515",
+   "#fb9fb1",
+   "#acc267",
+   "#ddb26f",
+   "#eda987",
+   "#e1a3ee",
+   "#12cfc0",
+   "#d0d0d0"
+  ]
+ },
+ {
+  "slug": "codeschool",
+  "name": "Codeschool",
+  "category": "custom",
+  "path": "community/codeschool.json",
+  "colors": [
+   "#232c31",
+   "#2a5491",
+   "#237986",
+   "#a03b1e",
+   "#43820d",
+   "#c59820",
+   "#b02f30",
+   "#9ea7a6"
+  ]
+ },
+ {
+  "slug": "cupcake",
+  "name": "Cupcake",
+  "category": "custom",
+  "path": "community/cupcake.json",
+  "colors": [
+   "#fbf1f2",
+   "#D57E85",
+   "#A3B367",
+   "#DCB16C",
+   "#EBB790",
+   "#BB99B4",
+   "#69A9A7",
+   "#8b8198"
+  ]
+ },
+ {
+  "slug": "danqing-light",
+  "name": "DanQing Light",
+  "category": "custom",
+  "path": "community/danqing-light.json",
+  "colors": [
+   "#fcfefd",
+   "#F9906F",
+   "#8AB361",
+   "#F0C239",
+   "#B38A61",
+   "#CCA4E3",
+   "#30DFF3",
+   "#5a605d"
+  ]
+ },
+ {
+  "slug": "danqing",
+  "name": "DanQing",
+  "category": "custom",
+  "path": "community/danqing.json",
+  "colors": [
+   "#2d302f",
+   "#F9906F",
+   "#8AB361",
+   "#F0C239",
+   "#B38A61",
+   "#CCA4E3",
+   "#30DFF3",
+   "#e0f0eF"
+  ]
+ },
+ {
+  "slug": "darcula",
+  "name": "Darcula",
+  "category": "custom",
+  "path": "community/darcula.json",
+  "colors": [
+   "#2b2b2b",
+   "#4eade5",
+   "#6a8759",
+   "#bbb529",
+   "#689757",
+   "#cc7832",
+   "#629755",
+   "#a9b7c6"
+  ]
+ },
+ {
+  "slug": "darkmoss",
+  "name": "darkmoss",
+  "category": "custom",
+  "path": "community/darkmoss.json",
+  "colors": [
+   "#171e1f",
+   "#ff4658",
+   "#499180",
+   "#fdb11f",
+   "#e6db74",
+   "#9bc0c8",
+   "#66d9ef",
+   "#c7c7a5"
+  ]
+ },
+ {
+  "slug": "decaf",
+  "name": "Decaf",
+  "category": "custom",
+  "path": "community/decaf.json",
+  "colors": [
+   "#2d2d2d",
+   "#ff7f7b",
+   "#beda78",
+   "#ffd67c",
+   "#ffbf70",
+   "#efb3f7",
+   "#bed6ff",
+   "#cccccc"
+  ]
+ },
+ {
+  "slug": "default-dark",
+  "name": "Default Dark",
+  "category": "custom",
+  "path": "community/default-dark.json",
+  "colors": [
+   "#181818",
+   "#ab4642",
+   "#a1b56c",
+   "#f7ca88",
+   "#dc9656",
+   "#ba8baf",
+   "#86c1b9",
+   "#d8d8d8"
+  ]
+ },
+ {
+  "slug": "dracula",
+  "name": "Dracula",
+  "category": "custom",
+  "path": "community/dracula.json",
+  "colors": [
+   "#282936",
+   "#ea51b2",
+   "#ebff87",
+   "#00f769",
+   "#b45bcf",
+   "#b45bcf",
+   "#a1efe4",
+   "#e9e9f4"
+  ]
+ },
+ {
+  "slug": "edge-dark",
+  "name": "Edge Dark",
+  "category": "custom",
+  "path": "community/edge-dark.json",
+  "colors": [
+   "#262729",
+   "#e77171",
+   "#a1bf78",
+   "#dbb774",
+   "#eba31a",
+   "#d390e7",
+   "#5ebaa5",
+   "#afb2b5"
+  ]
+ },
+ {
+  "slug": "edge-light",
+  "name": "Edge Light",
+  "category": "custom",
+  "path": "community/edge-light.json",
+  "colors": [
+   "#fafafa",
+   "#db7070",
+   "#7c9f4b",
+   "#ebcc1a",
+   "#eba31a",
+   "#b870ce",
+   "#509c93",
+   "#474752"
+  ]
+ },
+ {
+  "slug": "eighties",
+  "name": "Eighties",
+  "category": "custom",
+  "path": "community/eighties.json",
+  "colors": [
+   "#2d2d2d",
+   "#f2777a",
+   "#99cc99",
+   "#ffcc66",
+   "#f99157",
+   "#cc99cc",
+   "#66cccc",
+   "#d3d0c8"
+  ]
+ },
+ {
+  "slug": "embers",
+  "name": "Embers",
+  "category": "custom",
+  "path": "community/embers.json",
+  "colors": [
+   "#16130F",
+   "#826D57",
+   "#57826D",
+   "#6D8257",
+   "#828257",
+   "#82576D",
+   "#576D82",
+   "#A39A90"
+  ]
+ },
+ {
+  "slug": "equilibrium-dark",
+  "name": "Equilibrium Dark",
+  "category": "custom",
+  "path": "community/equilibrium-dark.json",
+  "colors": [
+   "#0c1118",
+   "#f04339",
+   "#7f8b00",
+   "#bb8801",
+   "#df5923",
+   "#6a7fd2",
+   "#00948b",
+   "#afaba2"
+  ]
+ },
+ {
+  "slug": "equilibrium-light",
+  "name": "Equilibrium Light",
+  "category": "custom",
+  "path": "community/equilibrium-light.json",
+  "colors": [
+   "#f5f0e7",
+   "#d02023",
+   "#637200",
+   "#9d6f00",
+   "#bf3e05",
+   "#4e66b6",
+   "#007a72",
+   "#43474e"
+  ]
+ },
+ {
+  "slug": "espresso",
+  "name": "Espresso",
+  "category": "custom",
+  "path": "community/espresso.json",
+  "colors": [
+   "#2d2d2d",
+   "#d25252",
+   "#a5c261",
+   "#ffc66d",
+   "#f9a959",
+   "#d197d9",
+   "#bed6ff",
+   "#cccccc"
+  ]
+ },
+ {
+  "slug": "everforest-dark-hard",
+  "name": "Everforest Dark Hard",
+  "category": "custom",
+  "path": "community/everforest-dark-hard.json",
+  "colors": [
+   "#272e33",
+   "#7fbbb3",
+   "#83c092",
+   "#dbbc7f",
+   "#d699b6",
+   "#e67e80",
+   "#e69875",
+   "#d3c6aa"
+  ]
+ },
+ {
+  "slug": "everforest-dark-medium",
+  "name": "Everforest Dark Medium",
+  "category": "custom",
+  "path": "community/everforest-dark-medium.json",
+  "colors": [
+   "#2d353b",
+   "#e67e80",
+   "#a7c080",
+   "#dbbc7f",
+   "#e69875",
+   "#d699b6",
+   "#83c092",
+   "#859289"
+  ]
+ },
+ {
+  "slug": "everforest-dark-soft",
+  "name": "Everforest Dark Soft",
+  "category": "custom",
+  "path": "community/everforest-dark-soft.json",
+  "colors": [
+   "#333c43",
+   "#e67e80",
+   "#a7c080",
+   "#dbbc7f",
+   "#e69875",
+   "#d699b6",
+   "#83c092",
+   "#d3c6aa"
+  ]
+ },
+ {
+  "slug": "everforest-light-hard",
+  "name": "Everforest Light (Hard)",
+  "category": "custom",
+  "path": "community/everforest-light-hard.json",
+  "colors": [
+   "#fffbef",
+   "#f85552",
+   "#8da101",
+   "#dfa000",
+   "#f57d26",
+   "#df69ba",
+   "#35a77c",
+   "#5c6a72"
+  ]
+ },
+ {
+  "slug": "everforest-light-medium",
+  "name": "Everforest Light (Medium)",
+  "category": "custom",
+  "path": "community/everforest-light-medium.json",
+  "colors": [
+   "#fdf6e3",
+   "#f85552",
+   "#8da101",
+   "#dfa000",
+   "#f57d26",
+   "#df69ba",
+   "#35a77c",
+   "#5c6a72"
+  ]
+ },
+ {
+  "slug": "everforest-light-soft",
+  "name": "Everforest Light (Soft)",
+  "category": "custom",
+  "path": "community/everforest-light-soft.json",
+  "colors": [
+   "#f3ead3",
+   "#f85552",
+   "#8da101",
+   "#dfa000",
+   "#f57d26",
+   "#df69ba",
+   "#35a77c",
+   "#5c6a72"
+  ]
+ },
+ {
+  "slug": "flat",
+  "name": "Flat",
+  "category": "custom",
+  "path": "community/flat.json",
+  "colors": [
+   "#2C3E50",
+   "#E74C3C",
+   "#2ECC71",
+   "#F1C40F",
+   "#E67E22",
+   "#9B59B6",
+   "#1ABC9C",
+   "#e0e0e0"
+  ]
+ },
+ {
+  "slug": "framer",
+  "name": "Framer",
+  "category": "custom",
+  "path": "community/framer.json",
+  "colors": [
+   "#181818",
+   "#FD886B",
+   "#32CCDC",
+   "#FECB6E",
+   "#FC4769",
+   "#BA8CFC",
+   "#ACDDFD",
+   "#D0D0D0"
+  ]
+ },
+ {
+  "slug": "gigavolt",
+  "name": "Gigavolt",
+  "category": "custom",
+  "path": "community/gigavolt.json",
+  "colors": [
+   "#202126",
+   "#ff661a",
+   "#f2e6a9",
+   "#ffdc2d",
+   "#19f988",
+   "#ae94f9",
+   "#fb6acb",
+   "#e9e7e1"
+  ]
+ },
+ {
+  "slug": "github-dark-dimmed",
+  "name": "Github Dark Dimmed",
+  "category": "custom",
+  "path": "community/github-dark-dimmed.json",
+  "colors": [
+   "#22272e",
+   "#f69d50",
+   "#96d0ff",
+   "#ae7c14",
+   "#6cb6ff",
+   "#f47067",
+   "#8ddb8c",
+   "#adbac7"
+  ]
+ },
+ {
+  "slug": "github-dark",
+  "name": "Github Dark",
+  "category": "custom",
+  "path": "community/github-dark.json",
+  "colors": [
+   "#0d1117",
+   "#ffa657",
+   "#a5d6ff",
+   "#bb8009",
+   "#79c0ff",
+   "#ff7b72",
+   "#7ee787",
+   "#c9d1d9"
+  ]
+ },
+ {
+  "slug": "github",
+  "name": "Github",
+  "category": "custom",
+  "path": "community/github.json",
+  "colors": [
+   "#ffffff",
+   "#ed6a43",
+   "#183691",
+   "#795da3",
+   "#0086b3",
+   "#a71d5d",
+   "#183691",
+   "#333333"
+  ]
+ },
+ {
+  "slug": "gruvbox-dark-hard",
+  "name": "Gruvbox dark, hard",
+  "category": "custom",
+  "path": "community/gruvbox-dark-hard.json",
+  "colors": [
+   "#1d2021",
+   "#fb4934",
+   "#b8bb26",
+   "#fabd2f",
+   "#fe8019",
+   "#d3869b",
+   "#8ec07c",
+   "#d5c4a1"
+  ]
+ },
+ {
+  "slug": "gruvbox-dark-medium",
+  "name": "Gruvbox dark, medium",
+  "category": "custom",
+  "path": "community/gruvbox-dark-medium.json",
+  "colors": [
+   "#282828",
+   "#fb4934",
+   "#b8bb26",
+   "#fabd2f",
+   "#fe8019",
+   "#d3869b",
+   "#8ec07c",
+   "#d5c4a1"
+  ]
+ },
+ {
+  "slug": "gruvbox-dark-pale",
+  "name": "Gruvbox dark, pale",
+  "category": "custom",
+  "path": "community/gruvbox-dark-pale.json",
+  "colors": [
+   "#262626",
+   "#d75f5f",
+   "#afaf00",
+   "#ffaf00",
+   "#ff8700",
+   "#d485ad",
+   "#85ad85",
+   "#dab997"
+  ]
+ },
+ {
+  "slug": "gruvbox-dark-soft",
+  "name": "Gruvbox dark, soft",
+  "category": "custom",
+  "path": "community/gruvbox-dark-soft.json",
+  "colors": [
+   "#32302f",
+   "#fb4934",
+   "#b8bb26",
+   "#fabd2f",
+   "#fe8019",
+   "#d3869b",
+   "#8ec07c",
+   "#d5c4a1"
+  ]
+ },
+ {
+  "slug": "gruvbox-dark",
+  "name": "Gruvbox dark",
+  "category": "custom",
+  "path": "community/gruvbox-dark.json",
+  "colors": [
+   "#282828",
+   "#cc241d",
+   "#98971a",
+   "#d79921",
+   "#d65d0e",
+   "#b16286",
+   "#689d6a",
+   "#ebdbb2"
+  ]
+ },
+ {
+  "slug": "gruvbox-light-hard",
+  "name": "Gruvbox light, hard",
+  "category": "custom",
+  "path": "community/gruvbox-light-hard.json",
+  "colors": [
+   "#f9f5d7",
+   "#9d0006",
+   "#79740e",
+   "#b57614",
+   "#af3a03",
+   "#8f3f71",
+   "#427b58",
+   "#504945"
+  ]
+ },
+ {
+  "slug": "gruvbox-light-medium",
+  "name": "Gruvbox light, medium",
+  "category": "custom",
+  "path": "community/gruvbox-light-medium.json",
+  "colors": [
+   "#fbf1c7",
+   "#9d0006",
+   "#79740e",
+   "#b57614",
+   "#af3a03",
+   "#8f3f71",
+   "#427b58",
+   "#504945"
+  ]
+ },
+ {
+  "slug": "gruvbox-light-soft",
+  "name": "Gruvbox light, soft",
+  "category": "custom",
+  "path": "community/gruvbox-light-soft.json",
+  "colors": [
+   "#f2e5bc",
+   "#9d0006",
+   "#79740e",
+   "#b57614",
+   "#af3a03",
+   "#8f3f71",
+   "#427b58",
+   "#504945"
+  ]
+ },
+ {
+  "slug": "gruvbox-light",
+  "name": "Gruvbox Light",
+  "category": "custom",
+  "path": "community/gruvbox-light.json",
+  "colors": [
+   "#fbf1c7",
+   "#cc241d",
+   "#98971a",
+   "#d79921",
+   "#d65d0e",
+   "#b16286",
+   "#689d6a",
+   "#3c3836"
+  ]
+ },
+ {
+  "slug": "gruvbox-material-dark-hard",
+  "name": "Gruvbox Material Dark, Hard",
+  "category": "custom",
+  "path": "community/gruvbox-material-dark-hard.json",
+  "colors": [
+   "#202020",
+   "#ea6962",
+   "#a9b665",
+   "#d8a657",
+   "#e78a4e",
+   "#d3869b",
+   "#89b482",
+   "#ddc7a1"
+  ]
+ },
+ {
+  "slug": "gruvbox-material-dark-medium",
+  "name": "Gruvbox Material Dark, Medium",
+  "category": "custom",
+  "path": "community/gruvbox-material-dark-medium.json",
+  "colors": [
+   "#292828",
+   "#ea6962",
+   "#a9b665",
+   "#d8a657",
+   "#e78a4e",
+   "#d3869b",
+   "#89b482",
+   "#ddc7a1"
+  ]
+ },
+ {
+  "slug": "gruvbox-material-dark-soft",
+  "name": "Gruvbox Material Dark, Soft",
+  "category": "custom",
+  "path": "community/gruvbox-material-dark-soft.json",
+  "colors": [
+   "#32302f",
+   "#ea6962",
+   "#a9b665",
+   "#d8a657",
+   "#e78a4e",
+   "#d3869b",
+   "#89b482",
+   "#ddc7a1"
+  ]
+ },
+ {
+  "slug": "gruvbox-material-light-hard",
+  "name": "Gruvbox Material Light, Hard",
+  "category": "custom",
+  "path": "community/gruvbox-material-light-hard.json",
+  "colors": [
+   "#f9f5d7",
+   "#c14a4a",
+   "#6c782e",
+   "#b47109",
+   "#c35e0a",
+   "#945e80",
+   "#4c7a5d",
+   "#654735"
+  ]
+ },
+ {
+  "slug": "gruvbox-material-light-medium",
+  "name": "Gruvbox Material Light, Medium",
+  "category": "custom",
+  "path": "community/gruvbox-material-light-medium.json",
+  "colors": [
+   "#fbf1c7",
+   "#c14a4a",
+   "#6c782e",
+   "#b47109",
+   "#c35e0a",
+   "#945e80",
+   "#4c7a5d",
+   "#654735"
+  ]
+ },
+ {
+  "slug": "harmonic16-light",
+  "name": "Harmonic16 Light",
+  "category": "custom",
+  "path": "community/harmonic16-light.json",
+  "colors": [
+   "#f7f9fb",
+   "#bf8b56",
+   "#56bf8b",
+   "#8bbf56",
+   "#bfbf56",
+   "#bf568b",
+   "#568bbf",
+   "#405c79"
+  ]
+ },
+ {
+  "slug": "horizon-dark",
+  "name": "Horizon Dark",
+  "category": "custom",
+  "path": "community/horizon-dark.json",
+  "colors": [
+   "#1C1E26",
+   "#E93C58",
+   "#EFAF8E",
+   "#EFB993",
+   "#E58D7D",
+   "#B072D1",
+   "#24A8B4",
+   "#CBCED0"
+  ]
+ },
+ {
+  "slug": "horizon-light",
+  "name": "Horizon Light",
+  "category": "custom",
+  "path": "community/horizon-light.json",
+  "colors": [
+   "#FDF0ED",
+   "#F7939B",
+   "#94E1B0",
+   "#FBE0D9",
+   "#F6661E",
+   "#1D8991",
+   "#DC3318",
+   "#403C3D"
+  ]
+ },
+ {
+  "slug": "horizon-terminal-dark",
+  "name": "Horizon Terminal Dark",
+  "category": "custom",
+  "path": "community/horizon-terminal-dark.json",
+  "colors": [
+   "#1C1E26",
+   "#E95678",
+   "#29D398",
+   "#FAC29A",
+   "#FAB795",
+   "#EE64AC",
+   "#59E1E3",
+   "#CBCED0"
+  ]
+ },
+ {
+  "slug": "horizon-terminal-light",
+  "name": "Horizon Terminal Light",
+  "category": "custom",
+  "path": "community/horizon-terminal-light.json",
+  "colors": [
+   "#FDF0ED",
+   "#E95678",
+   "#29D398",
+   "#FADAD1",
+   "#F9CEC3",
+   "#EE64AC",
+   "#59E1E3",
+   "#403C3D"
+  ]
+ },
+ {
+  "slug": "humanoid-dark",
+  "name": "Humanoid dark",
+  "category": "custom",
+  "path": "community/humanoid-dark.json",
+  "colors": [
+   "#232629",
+   "#f11235",
+   "#02d849",
+   "#ffb627",
+   "#ff9505",
+   "#f15ee3",
+   "#0dd9d6",
+   "#f8f8f2"
+  ]
+ },
+ {
+  "slug": "humanoid-light",
+  "name": "Humanoid light",
+  "category": "custom",
+  "path": "community/humanoid-light.json",
+  "colors": [
+   "#f8f8f2",
+   "#b0151a",
+   "#388e3c",
+   "#ffb627",
+   "#ff3d00",
+   "#700f98",
+   "#008e8e",
+   "#232629"
+  ]
+ },
+ {
+  "slug": "irblack",
+  "name": "IR Black",
+  "category": "custom",
+  "path": "community/irblack.json",
+  "colors": [
+   "#000000",
+   "#ff6c60",
+   "#a8ff60",
+   "#ffffb6",
+   "#e9c062",
+   "#ff73fd",
+   "#c6c5fe",
+   "#b5b3aa"
+  ]
+ },
+ {
+  "slug": "kanagawa-dragon",
+  "name": "Kanagawa Dragon",
+  "category": "custom",
+  "path": "community/kanagawa-dragon.json",
+  "colors": [
+   "#181616",
+   "#c4746e",
+   "#8a9a7b",
+   "#c4b28a",
+   "#b6927b",
+   "#a292a3",
+   "#8ea4a2",
+   "#c5c9c5"
+  ]
+ },
+ {
+  "slug": "kanagawa",
+  "name": "Kanagawa",
+  "category": "custom",
+  "path": "community/kanagawa.json",
+  "colors": [
+   "#1F1F28",
+   "#C34043",
+   "#76946A",
+   "#C0A36E",
+   "#FFA066",
+   "#957FB8",
+   "#6A9589",
+   "#DCD7BA"
+  ]
+ },
+ {
+  "slug": "material-darker",
+  "name": "Material Darker",
+  "category": "custom",
+  "path": "community/material-darker.json",
+  "colors": [
+   "#212121",
+   "#F07178",
+   "#C3E88D",
+   "#FFCB6B",
+   "#F78C6C",
+   "#C792EA",
+   "#89DDFF",
+   "#EEFFFF"
+  ]
+ },
+ {
+  "slug": "material-lighter",
+  "name": "Material Lighter",
+  "category": "custom",
+  "path": "community/material-lighter.json",
+  "colors": [
+   "#FAFAFA",
+   "#FF5370",
+   "#91B859",
+   "#FFB62C",
+   "#F76D47",
+   "#7C4DFF",
+   "#39ADB5",
+   "#80CBC4"
+  ]
+ },
+ {
+  "slug": "material-palenight",
+  "name": "Material Palenight",
+  "category": "custom",
+  "path": "community/material-palenight.json",
+  "colors": [
+   "#292D3E",
+   "#F07178",
+   "#C3E88D",
+   "#FFCB6B",
+   "#F78C6C",
+   "#C792EA",
+   "#89DDFF",
+   "#959DCB"
+  ]
+ },
+ {
+  "slug": "material-vivid",
+  "name": "Material Vivid",
+  "category": "custom",
+  "path": "community/material-vivid.json",
+  "colors": [
+   "#202124",
+   "#f44336",
+   "#00e676",
+   "#ffeb3b",
+   "#ff9800",
+   "#673ab7",
+   "#00bcd4",
+   "#80868b"
+  ]
+ },
+ {
+  "slug": "material",
+  "name": "Material",
+  "category": "custom",
+  "path": "community/material.json",
+  "colors": [
+   "#263238",
+   "#F07178",
+   "#C3E88D",
+   "#FFCB6B",
+   "#F78C6C",
+   "#C792EA",
+   "#89DDFF",
+   "#EEFFFF"
+  ]
+ },
+ {
+  "slug": "monokai",
+  "name": "Monokai",
+  "category": "custom",
+  "path": "community/monokai.json",
+  "colors": [
+   "#272822",
+   "#f92672",
+   "#a6e22e",
+   "#f4bf75",
+   "#fd971f",
+   "#ae81ff",
+   "#a1efe4",
+   "#f8f8f2"
+  ]
+ },
+ {
+  "slug": "nord",
+  "name": "Nord",
+  "category": "custom",
+  "path": "community/nord.json",
+  "colors": [
+   "#2E3440",
+   "#BF616A",
+   "#A3BE8C",
+   "#EBCB8B",
+   "#D08770",
+   "#B48EAD",
+   "#88C0D0",
+   "#E5E9F0"
+  ]
+ },
+ {
+  "slug": "ocean",
+  "name": "Ocean",
+  "category": "custom",
+  "path": "community/ocean.json",
+  "colors": [
+   "#2b303b",
+   "#bf616a",
+   "#a3be8c",
+   "#ebcb8b",
+   "#d08770",
+   "#b48ead",
+   "#96b5b4",
+   "#c0c5ce"
+  ]
+ },
+ {
+  "slug": "oceanicnext",
+  "name": "OceanicNext",
+  "category": "custom",
+  "path": "community/oceanicnext.json",
+  "colors": [
+   "#1B2B34",
+   "#EC5f67",
+   "#99C794",
+   "#FAC863",
+   "#F99157",
+   "#C594C5",
+   "#5FB3B3",
+   "#C0C5CE"
+  ]
+ },
+ {
+  "slug": "one-light",
+  "name": "One Light",
+  "category": "custom",
+  "path": "community/one-light.json",
+  "colors": [
+   "#fafafa",
+   "#ca1243",
+   "#50a14f",
+   "#c18401",
+   "#d75f00",
+   "#a626a4",
+   "#0184bc",
+   "#383a42"
+  ]
+ },
+ {
+  "slug": "onedark",
+  "name": "OneDark",
+  "category": "custom",
+  "path": "community/onedark.json",
+  "colors": [
+   "#282c34",
+   "#e06c75",
+   "#98c379",
+   "#e5c07b",
+   "#d19a66",
+   "#c678dd",
+   "#56b6c2",
+   "#abb2bf"
+  ]
+ },
+ {
+  "slug": "pinky",
+  "name": "pinky",
+  "category": "custom",
+  "path": "community/pinky.json",
+  "colors": [
+   "#171517",
+   "#ffa600",
+   "#ff0066",
+   "#20df6c",
+   "#00ff66",
+   "#007fff",
+   "#6600ff",
+   "#f5f5f5"
+  ]
+ },
+ {
+  "slug": "railscasts",
+  "name": "Railscasts",
+  "category": "custom",
+  "path": "community/railscasts.json",
+  "colors": [
+   "#2b2b2b",
+   "#da4939",
+   "#a5c261",
+   "#ffc66d",
+   "#cc7833",
+   "#b6b3eb",
+   "#519f50",
+   "#e6e1dc"
+  ]
+ },
+ {
+  "slug": "rebecca",
+  "name": "Rebecca",
+  "category": "custom",
+  "path": "community/rebecca.json",
+  "colors": [
+   "#292a44",
+   "#a0a0c5",
+   "#6dfedf",
+   "#ae81ff",
+   "#efe4a1",
+   "#7aa5ff",
+   "#8eaee0",
+   "#f1eff8"
+  ]
+ },
+ {
+  "slug": "rose-pine-dawn",
+  "name": "Rosé Pine Dawn",
+  "category": "custom",
+  "path": "community/rose-pine-dawn.json",
+  "colors": [
+   "#faf4ed",
+   "#b4637a",
+   "#286983",
+   "#d7827e",
+   "#ea9d34",
+   "#ea9d34",
+   "#56949f",
+   "#575279"
+  ]
+ },
+ {
+  "slug": "rose-pine-moon",
+  "name": "Rosé Pine Moon",
+  "category": "custom",
+  "path": "community/rose-pine-moon.json",
+  "colors": [
+   "#232136",
+   "#eb6f92",
+   "#3e8fb0",
+   "#ea9a97",
+   "#f6c177",
+   "#f6c177",
+   "#9ccfd8",
+   "#e0def4"
+  ]
+ },
+ {
+  "slug": "rose-pine",
+  "name": "Rosé Pine",
+  "category": "custom",
+  "path": "community/rose-pine.json",
+  "colors": [
+   "#191724",
+   "#eb6f92",
+   "#31748f",
+   "#ebbcba",
+   "#f6c177",
+   "#f6c177",
+   "#9ccfd8",
+   "#e0def4"
+  ]
+ },
+ {
+  "slug": "selenized-black",
+  "name": "selenized-black",
+  "category": "custom",
+  "path": "community/selenized-black.json",
+  "colors": [
+   "#181818",
+   "#ed4a46",
+   "#70b433",
+   "#dbb32d",
+   "#e67f43",
+   "#a580e2",
+   "#3fc5b7",
+   "#b9b9b9"
+  ]
+ },
+ {
+  "slug": "selenized-dark",
+  "name": "selenized-dark",
+  "category": "custom",
+  "path": "community/selenized-dark.json",
+  "colors": [
+   "#103c48",
+   "#fa5750",
+   "#75b938",
+   "#dbb32d",
+   "#ed8649",
+   "#af88eb",
+   "#41c7b9",
+   "#adbcbc"
+  ]
+ },
+ {
+  "slug": "selenized-light",
+  "name": "selenized-light",
+  "category": "custom",
+  "path": "community/selenized-light.json",
+  "colors": [
+   "#fbf3db",
+   "#cc1729",
+   "#428b00",
+   "#a78300",
+   "#bc5819",
+   "#825dc0",
+   "#00978a",
+   "#53676d"
+  ]
+ },
+ {
+  "slug": "selenized-white",
+  "name": "selenized-white",
+  "category": "custom",
+  "path": "community/selenized-white.json",
+  "colors": [
+   "#ffffff",
+   "#bf0000",
+   "#008400",
+   "#af8500",
+   "#ba3700",
+   "#6b40c3",
+   "#009a8a",
+   "#474747"
+  ]
+ },
+ {
+  "slug": "seti",
+  "name": "Seti UI",
+  "category": "custom",
+  "path": "community/seti.json",
+  "colors": [
+   "#151718",
+   "#Cd3f45",
+   "#9fca56",
+   "#e6cd69",
+   "#db7b55",
+   "#a074c4",
+   "#55dbbe",
+   "#d6d6d6"
+  ]
+ },
+ {
+  "slug": "silk-dark",
+  "name": "Silk Dark",
+  "category": "custom",
+  "path": "community/silk-dark.json",
+  "colors": [
+   "#0e3c46",
+   "#fb6953",
+   "#73d8ad",
+   "#fce380",
+   "#fcab74",
+   "#756b8a",
+   "#3fb2b9",
+   "#C7DBDD"
+  ]
+ },
+ {
+  "slug": "silk-light",
+  "name": "Silk Light",
+  "category": "custom",
+  "path": "community/silk-light.json",
+  "colors": [
+   "#E9F1EF",
+   "#CF432E",
+   "#6CA38C",
+   "#CFAD25",
+   "#D27F46",
+   "#6E6582",
+   "#329CA2",
+   "#385156"
+  ]
+ },
+ {
+  "slug": "solarized-dark",
+  "name": "Solarized Dark",
+  "category": "custom",
+  "path": "community/solarized-dark.json",
+  "colors": [
+   "#002b36",
+   "#dc322f",
+   "#859900",
+   "#b58900",
+   "#cb4b16",
+   "#6c71c4",
+   "#2aa198",
+   "#93a1a1"
+  ]
+ },
+ {
+  "slug": "solarized-light",
+  "name": "Solarized Light",
+  "category": "custom",
+  "path": "community/solarized-light.json",
+  "colors": [
+   "#fdf6e3",
+   "#dc322f",
+   "#859900",
+   "#b58900",
+   "#cb4b16",
+   "#6c71c4",
+   "#2aa198",
+   "#586e75"
+  ]
+ },
+ {
+  "slug": "spaceduck",
+  "name": "Spaceduck",
+  "category": "custom",
+  "path": "community/spaceduck.json",
+  "colors": [
+   "#16172d",
+   "#e33400",
+   "#5ccc96",
+   "#f2ce00",
+   "#e39400",
+   "#b3a1e6",
+   "#00a3cc",
+   "#ecf0c1"
+  ]
+ },
+ {
+  "slug": "summerfruit-light",
+  "name": "Summerfruit Light",
+  "category": "custom",
+  "path": "community/summerfruit-light.json",
+  "colors": [
+   "#FFFFFF",
+   "#FF0086",
+   "#00C918",
+   "#ABA800",
+   "#FD8900",
+   "#AD00A1",
+   "#1FAAAA",
+   "#101010"
+  ]
+ },
+ {
+  "slug": "synth-midnight-dark",
+  "name": "Synth Midnight Terminal Dark",
+  "category": "custom",
+  "path": "community/synth-midnight-dark.json",
+  "colors": [
+   "#050608",
+   "#b53b50",
+   "#06ea61",
+   "#c9d364",
+   "#ea770d",
+   "#ea5ce2",
+   "#42fff9",
+   "#c1c3c4"
+  ]
+ },
+ {
+  "slug": "synth-midnight-light",
+  "name": "Synth Midnight Terminal Light",
+  "category": "custom",
+  "path": "community/synth-midnight-light.json",
+  "colors": [
+   "#dddfe0",
+   "#b53b50",
+   "#06ea61",
+   "#c9d364",
+   "#ea770d",
+   "#ea5ce2",
+   "#42fff9",
+   "#28292a"
+  ]
+ },
+ {
+  "slug": "tokyo-city-dark",
+  "name": "Tokyo City Dark",
+  "category": "custom",
+  "path": "community/tokyo-city-dark.json",
+  "colors": [
+   "#171D23",
+   "#F7768E",
+   "#9ECE6A",
+   "#B7C5D3",
+   "#FF9E64",
+   "#BB9AF7",
+   "#89DDFF",
+   "#D8E2EC"
+  ]
+ },
+ {
+  "slug": "tokyo-city-light",
+  "name": "Tokyo City Light",
+  "category": "custom",
+  "path": "community/tokyo-city-light.json",
+  "colors": [
+   "#FBFBFD",
+   "#8C4351",
+   "#485E30",
+   "#4C505E",
+   "#965027",
+   "#5A4A78",
+   "#4C505E",
+   "#343B59"
+  ]
+ },
+ {
+  "slug": "tokyo-city-terminal-dark",
+  "name": "Tokyo City Terminal Dark",
+  "category": "custom",
+  "path": "community/tokyo-city-terminal-dark.json",
+  "colors": [
+   "#171D23",
+   "#D95468",
+   "#8BD49C",
+   "#EBBF83",
+   "#FF9E64",
+   "#B62D65",
+   "#70E1E8",
+   "#D8E2EC"
+  ]
+ },
+ {
+  "slug": "tokyo-city-terminal-light",
+  "name": "Tokyo City Terminal Light",
+  "category": "custom",
+  "path": "community/tokyo-city-terminal-light.json",
+  "colors": [
+   "#FBFBFD",
+   "#8C4351",
+   "#33635C",
+   "#8f5E15",
+   "#965027",
+   "#5A4A78",
+   "#0F4B6E",
+   "#28323A"
+  ]
+ },
+ {
+  "slug": "tokyo-night-dark",
+  "name": "Tokyo Night Dark",
+  "category": "custom",
+  "path": "community/tokyo-night-dark.json",
+  "colors": [
+   "#1A1B26",
+   "#C0CAF5",
+   "#9ECE6A",
+   "#0DB9D7",
+   "#A9B1D6",
+   "#BB9AF7",
+   "#B4F9F8",
+   "#A9B1D6"
+  ]
+ },
+ {
+  "slug": "tokyo-night-light",
+  "name": "Tokyo Night Light",
+  "category": "custom",
+  "path": "community/tokyo-night-light.json",
+  "colors": [
+   "#D5D6DB",
+   "#343B58",
+   "#485E30",
+   "#166775",
+   "#965027",
+   "#5A4A78",
+   "#3E6968",
+   "#343B59"
+  ]
+ },
+ {
+  "slug": "tokyo-night-moon",
+  "name": "Tokyo Night Moon",
+  "category": "custom",
+  "path": "community/tokyo-night-moon.json",
+  "colors": [
+   "#222436",
+   "#ff757f",
+   "#c3e88d",
+   "#ffdf77",
+   "#ffc777",
+   "#fca7ea",
+   "#86e1fc",
+   "#828bb8"
+  ]
+ },
+ {
+  "slug": "tokyo-night-storm",
+  "name": "Tokyo Night Storm",
+  "category": "custom",
+  "path": "community/tokyo-night-storm.json",
+  "colors": [
+   "#24283B",
+   "#C0CAF5",
+   "#9ECE6A",
+   "#0DB9D7",
+   "#A9B1D6",
+   "#BB9AF7",
+   "#B4F9F8",
+   "#A9B1D6"
+  ]
+ },
+ {
+  "slug": "tokyo-night-terminal-dark",
+  "name": "Tokyo Night Terminal Dark",
+  "category": "custom",
+  "path": "community/tokyo-night-terminal-dark.json",
+  "colors": [
+   "#16161E",
+   "#F7768E",
+   "#41A6B5",
+   "#E0AF68",
+   "#FF9E64",
+   "#BB9AF7",
+   "#7DCFFF",
+   "#787C99"
+  ]
+ },
+ {
+  "slug": "tokyo-night-terminal-light",
+  "name": "Tokyo Night Terminal Light",
+  "category": "custom",
+  "path": "community/tokyo-night-terminal-light.json",
+  "colors": [
+   "#D5D6DB",
+   "#8C4351",
+   "#33635C",
+   "#8F5E15",
+   "#965027",
+   "#5A4A78",
+   "#0F4B6E",
+   "#4C505E"
+  ]
+ },
+ {
+  "slug": "tokyo-night-terminal-storm",
+  "name": "Tokyo Night Terminal Storm",
+  "category": "custom",
+  "path": "community/tokyo-night-terminal-storm.json",
+  "colors": [
+   "#24283B",
+   "#F7768E",
+   "#41A6B5",
+   "#E0AF68",
+   "#FF9E64",
+   "#BB9AF7",
+   "#7DCFFF",
+   "#787C99"
+  ]
+ },
+ {
+  "slug": "tokyodark-terminal",
+  "name": "Tokyodark Terminal",
+  "category": "custom",
+  "path": "community/tokyodark-terminal.json",
+  "colors": [
+   "#11121d",
+   "#ee6d85",
+   "#95c561",
+   "#d7a65f",
+   "#f6955b",
+   "#a485dd",
+   "#38a89d",
+   "#a0a8cd"
+  ]
+ },
+ {
+  "slug": "tokyodark",
+  "name": "Tokyodark",
+  "category": "custom",
+  "path": "community/tokyodark.json",
+  "colors": [
+   "#11121d",
+   "#a485dd",
+   "#d7A65f",
+   "#7199ee",
+   "#a485dd",
+   "#ee6d85",
+   "#a485dd",
+   "#abb2bf"
+  ]
+ },
+ {
+  "slug": "tomorrow-night",
+  "name": "Tomorrow Night",
+  "category": "custom",
+  "path": "community/tomorrow-night.json",
+  "colors": [
+   "#1d1f21",
+   "#cc6666",
+   "#b5bd68",
+   "#f0c674",
+   "#de935f",
+   "#b294bb",
+   "#8abeb7",
+   "#c5c8c6"
+  ]
+ },
+ {
+  "slug": "tomorrow",
+  "name": "Tomorrow",
+  "category": "custom",
+  "path": "community/tomorrow.json",
+  "colors": [
+   "#ffffff",
+   "#c82829",
+   "#718c00",
+   "#eab700",
+   "#f5871f",
+   "#8959a8",
+   "#3e999f",
+   "#4d4d4c"
+  ]
+ },
+ {
+  "slug": "unikitty-light",
+  "name": "Unikitty Light",
+  "category": "custom",
+  "path": "community/unikitty-light.json",
+  "colors": [
+   "#ffffff",
+   "#d8137f",
+   "#17ad98",
+   "#dc8a0e",
+   "#d65407",
+   "#aa17e6",
+   "#149bda",
+   "#6c696e"
+  ]
+ },
+ {
+  "slug": "zenburn",
+  "name": "Zenburn",
+  "category": "custom",
+  "path": "community/zenburn.json",
+  "colors": [
+   "#383838",
+   "#dca3a3",
+   "#5f7f5f",
+   "#e0cf9f",
+   "#dfaf8f",
+   "#dc8cc3",
+   "#93e0e3",
+   "#dcdccc"
+  ]
+ }
+]

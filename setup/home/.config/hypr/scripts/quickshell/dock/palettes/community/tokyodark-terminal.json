@@ -1,0 +1,26 @@
+{
+  "name": "Tokyodark Terminal",
+  "slug": "tokyodark-terminal",
+  "author": "Tiagovla (https://github.com/tiagovla/)",
+  "background": "#11121d",
+  "foreground": "#a0a8cd",
+  "base16": {
+    "color0": "#11121d",
+    "color1": "#ee6d85",
+    "color2": "#95c561",
+    "color3": "#d7a65f",
+    "color4": "#f6955b",
+    "color5": "#a485dd",
+    "color6": "#38a89d",
+    "color7": "#a0a8cd",
+    "color8": "#282c34",
+    "color9": "#ee6d85",
+    "color10": "#95c561",
+    "color11": "#d7a65f",
+    "color12": "#f6955b",
+    "color13": "#a485dd",
+    "color14": "#38a89d",
+    "color15": "#a0a8cd"
+  },
+  "variant": "dark"
+}

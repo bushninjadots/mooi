@@ -1,0 +1,172 @@
+{
+  "uiScale": 0.7,
+  "appScale": 1.0,
+  "workspaceCount": 9,
+  "unifiedDesktops": true,
+  "wallpaperDir": "~/.config/hypr/wallpapers",
+  "language": "",
+  "kbOptions": "grp:alt_shift_toggle",
+  "plugins": {},
+  "glass": {
+    "enabled": false,
+    "opacity": 0.85
+  },
+  "shadows": {
+    "enabled": true,
+    "blur": 26,
+    "spread": 0,
+    "offsetX": 0,
+    "offsetY": 6,
+    "opacity": 0.5,
+    "radius": 18
+  },
+  "bar": {
+    "enabled": true,
+    "position": "left",
+    "palette": "x",
+    "thickness": 48,
+    "edgeGap": 10,
+    "roundness": 1,
+    "pillBg": true,
+    "pillSolid": true,
+    "barBg": false,
+    "stylePreset": "modular",
+    "barOpacity": 1,
+    "dragModules": true,
+    "borderWidth": 0,
+    "borderColor": "text",
+    "borderFollowPalette": true,
+    "workspacesMarker": "dot",
+    "workspacesMarkerText": "",
+    "borderActive": "#79c0ff",
+    "borderInactive": "#79c0ff",
+    "borderGradientActive": false,
+    "borderGradientInactive": false,
+    "borderActive2": "",
+    "borderInactive2": "",
+    "borderAngleActive": 45,
+    "borderAngleInactive": 45,
+    "font": "Hack Nerd Font",
+    "timeFormat": "HH:mm:ss",
+    "dateFormat": "dddd, MMMM dd",
+    "modules": {
+      "time": {
+        "icon": "",
+        "color": "",
+        "accent": "teal",
+        "fill": "on",
+        "colors": {},
+        "size": 0,
+        "effect": "",
+        "cursor": true
+      }
+    },
+    "zones": [
+      {
+        "id": "start",
+        "align": "start",
+        "unify": false,
+        "zoneBg": "",
+        "zoneBgSolid": false,
+        "borderWidth": 0,
+        "borderColor": "surface1",
+        "modules": [
+          {
+            "id": "wifi",
+            "enabled": true
+          },
+          {
+            "id": "bluetooth",
+            "enabled": true
+          },
+          {
+            "id": "search",
+            "enabled": true
+          },
+          {
+            "id": "settings",
+            "enabled": true
+          },
+          {
+            "id": "help",
+            "enabled": true
+          },
+          {
+            "id": "update",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "id": "center",
+        "align": "center",
+        "unify": false,
+        "zoneBg": "surface0",
+        "zoneBgSolid": true,
+        "borderWidth": 0,
+        "borderColor": "surface1",
+        "modules": [
+          {
+            "id": "media",
+            "enabled": true
+          },
+          {
+            "id": "workspaces",
+            "enabled": true
+          },
+          {
+            "id": "tray",
+            "enabled": false
+          },
+          {
+            "id": "keyboard",
+            "enabled": false
+          },
+          {
+            "id": "recording",
+            "enabled": true
+          },
+          {
+            "id": "time",
+            "enabled": false
+          }
+        ]
+      },
+      {
+        "id": "end",
+        "align": "end",
+        "unify": false,
+        "zoneBg": "",
+        "zoneBgSolid": false,
+        "borderWidth": 0,
+        "borderColor": "surface1",
+        "modules": [
+          {
+            "id": "date",
+            "enabled": true
+          },
+          {
+            "id": "volume",
+            "enabled": true
+          },
+          {
+            "id": "battery",
+            "enabled": true
+          },
+          {
+            "id": "sysmon",
+            "enabled": true
+          },
+          {
+            "id": "weather",
+            "enabled": false
+          },
+          {
+            "id": "focus",
+            "enabled": false
+          }
+        ]
+      }
+    ]
+  }
+}

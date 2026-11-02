@@ -1,0 +1,26 @@
+{
+  "name": "selenized-dark",
+  "slug": "selenized-dark",
+  "author": "Jan Warchol (https://github.com/jan-warchol/selenized) / adapted to base16 by ali",
+  "background": "#103c48",
+  "foreground": "#adbcbc",
+  "base16": {
+    "color0": "#103c48",
+    "color1": "#fa5750",
+    "color2": "#75b938",
+    "color3": "#dbb32d",
+    "color4": "#ed8649",
+    "color5": "#af88eb",
+    "color6": "#41c7b9",
+    "color7": "#adbcbc",
+    "color8": "#72898f",
+    "color9": "#fa5750",
+    "color10": "#75b938",
+    "color11": "#dbb32d",
+    "color12": "#ed8649",
+    "color13": "#af88eb",
+    "color14": "#41c7b9",
+    "color15": "#cad8d9"
+  },
+  "variant": "dark"
+}

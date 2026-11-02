@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Open Skwd-wall as one of SUPER+W's picker styles. Its engine is started only for
+# this session: when the picker closes the daemon stops, and the qs picker (which
+# skwd-sync kept on the same file) is left as the desktop's drawer again. That way
+# two wallpaper layers never stay stacked, and choosing another style is a no-op
+# for Skwd. Everything lives in ~/.local, so removing it is a directory delete.
+set -u
+export PATH="$HOME/.local/bin:$PATH"
+export XDG_DATA_DIRS="$HOME/.local/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+export LD_LIBRARY_PATH="$HOME/.local/lib/skwd-paper${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+started=0
+if ! systemctl --user is-active --quiet skwd-walld.service 2>/dev/null; then
+    if systemctl --user start skwd-walld.service 2>/dev/null; then
+        started=1
+    elif skwd-walld --wait-for-session >/dev/null 2>&1 & then
+        started=1
+    fi
+fi
+
+cleanup() {
+    [ "$started" = 1 ] || return 0
+    systemctl --user stop skwd-walld.service >/dev/null 2>&1 || pkill -x skwd-walld >/dev/null 2>&1 || true
+}
+trap cleanup EXIT INT TERM
+
+exec 3>&1 4>&2
+skwd-wall-v2 "$@" 1>&3 2>&4
+status=$?
+exec 3>&- 4>&-
+exit "$status"

@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+# fzf action dispatcher: sidecar-actions <op> <key>
+# remote-mutating ops (checkout/merge/approve/request-changes) require a typed yes.
+set -u
+. "$(dirname -- "${BASH_SOURCE[0]}")/lib.sh"
+
+op=${1:-}; key=${2:-}
+[ -n "$op" ] && [ -n "$key" ] || exit 0
+row=$(sc_lookup "$key") || exit 0
+IFS=$'\t' read -r _k glyph col1 col2 xtra ctx <<<"$row"
+view=${key%%:*}
+
+num() { local n=${col1#'#'}; printf '%s' "${n%% *}"; }
+
+confirm() { # $1 = description
+  printf '\n%s─ confirm %s\n' "$ST" "─────────────────────────────────────$R"
+  printf '%s\n' "$1" | sc_sane
+  printf '%stype %sy%s to proceed, anything else aborts: ' "$ST" "$GRN" "$R"
+  local a
+  read -r a
+  [ "$a" = y ]
+}
+pause() { printf '\n%s· press enter%s' "$ST" "$R"; read -r _; }
+run_i() { # interactive: run, show failure, wait
+  "$@"
+  local rc=$?
+  [ "$rc" -ne 0 ] && printf '\n%scommand failed (exit %s)%s' "$RED" "$rc" "$R"
+  pause
+}
+
+case $op in
+
+enter | open)
+  case $view in
+    prmine | prrev) gh pr view "$(num)" --repo "$xtra" --web >/dev/null 2>&1 || sc_note "open pr failed" ;;
+    issues | repo)  gh issue view "$(num)" --repo "$xtra" --web >/dev/null 2>&1 || sc_note "open issue failed" ;;
+    runs)           gh run view "$(num)" --repo "$xtra" --web >/dev/null 2>&1 || sc_note "open run failed" ;;
+    proj)           sc_set_project "$xtra" || sc_note "bad project path" ;;
+  esac
+  ;;
+
+diff)
+  case $view in
+    prmine | prrev)
+      run_i bash -c 'gh pr diff "$1" --repo "$2" 2>&1 | head -n 800 | less -R' _ "$(num)" "$xtra" ;;
+    issues | repo)
+      run_i bash -c 'gh issue view "$1" --repo "$2" --comments 2>&1 | less -R' _ "$(num)" "$xtra" ;;
+    runs)
+      run_i bash -c 'gh run view "$1" --repo "$2" --log 2>&1 | head -n 2000 | less -R' _ "$(num)" "$xtra" ;;
+    local)
+      run_i bash -c 'cd "$1" && { git diff -- "$2"; git diff --cached -- "$2"; } | less -R' _ "$ctx" "$xtra" ;;
+    proj) printf '%s (nothing to diff)%s' "$ST" "$R"; pause ;;
+  esac
+  ;;
+
+checkout)
+  [ "$view" = prmine ] || [ "$view" = prrev ] || exit 0
+  n=$(num); repo=$xtra
+  path=$(sc_find_local "$repo")
+  if [ -z "$path" ]; then
+    printf '%sno local clone of %s found%s\n' "$RED" "$repo" "$R"; pause; exit 0
+  fi
+  confirm "checkout PR #$n of $repo in $path
+runs: cd '$path' && gh pr checkout $n
+refuses to run if it would clobber local changes." || exit 0
+  run_i bash -c 'cd "$1" && gh pr checkout "$2"' _ "$path" "$n"
+  ;;
+
+merge)
+  [ "$view" = prmine ] || [ "$view" = prrev ] || exit 0
+  n=$(num); repo=$xtra
+  confirm "MERGE pull request #$n on github ($repo)
+runs: gh pr merge $n --repo $repo
+gh may ask for the merge method (merge/squash/rebase)." || exit 0
+  run_i gh pr merge "$n" --repo "$repo"
+  ;;
+
+approve)
+  [ "$view" = prmine ] || [ "$view" = prrev ] || exit 0
+  n=$(num); repo=$xtra
+  confirm "APPROVE pull request #$n on github ($repo)
+runs: gh pr review $n --repo $repo --approve" || exit 0
+  run_i gh pr review "$n" --repo "$repo" --approve
+  ;;
+
+reqchg)
+  [ "$view" = prmine ] || [ "$view" = prrev ] || exit 0
+  n=$(num); repo=$xtra
+  printf 'review comment (single line, enter to abort): '
+  read -r body
+  [ -n "$body" ] || exit 0
+  confirm "REQUEST CHANGES on pull request #$n ($repo) with:
+  $body" || exit 0
+  run_i gh pr review "$n" --repo "$repo" --request-changes --body "$body"
+  ;;
+
+comment)
+  [ "$view" = prmine ] || [ "$view" = prrev ] || exit 0
+  n=$(num); repo=$xtra
+  printf 'comment (single line, enter to abort): '
+  read -r body
+  [ -n "$body" ] || exit 0
+  confirm "comment on pull request #$n ($repo):
+  $body" || exit 0
+  run_i gh pr comment "$n" --repo "$repo" --body "$body"
+  ;;
+
+watch)
+  [ "$view" = runs ] || exit 0
+  run_i gh run watch "$(num)" --repo "$xtra"
+  ;;
+
+logs)
+  [ "$view" = runs ] || exit 0
+  id=$(num); repo=$xtra
+  concl=$(gh run view "$id" --repo "$repo" --json conclusion --jq '.conclusion // ""' 2>/dev/null)
+  if [ "$concl" = failure ] || [ "$concl" = timed_out ] || [ "$concl" = startup_failure ]; then
+    run_i bash -c 'gh run view "$1" --repo "$2" --log-failed 2>&1 | head -n 2000 | less -R' _ "$id" "$repo"
+  else
+    run_i bash -c 'gh run view "$1" --repo "$2" --log 2>&1 | head -n 2000 | less -R' _ "$id" "$repo"
+  fi
+  ;;
+
+stage)
+  [ "$view" = local ] || exit 0
+  [ -d "$ctx" ] || exit 0
+  git -C "$ctx" add -- "$xtra" 2> "$SC_STATE/err" || true
+  ;;
+
+unstage)
+  [ "$view" = local ] || exit 0
+  [ -d "$ctx" ] || exit 0
+  git -C "$ctx" restore --staged -- "$xtra" 2> "$SC_STATE/err" || true
+  ;;
+
+editor)
+  [ "$view" = local ] || exit 0
+  [ -d "$ctx" ] || exit 0
+  main=$(sc_main_window_id)
+  [ -n "$main" ] || { sc_note "no main window to send to"; exit 0; }
+  ed=${VISUAL:-${EDITOR:-nvim}}
+  # send to the main pane: it must be sitting at a shell prompt
+  kitty @ send-text --match "id:$main" -- "$ed '$xtra'" || sc_note "send-text failed"
+  sleep 0.05
+  kitty @ send-key --match "id:$main" enter || true
+  ;;
+
+lazygit)
+  case $view in
+    proj) path=$xtra ;;
+    *)    path=$ctx ;;
+  esac
+  [ -n "$path" ] && [ -d "$path" ] || path=$(sc_resolve_project) || path=
+  [ -n "$path" ] && [ -d "$path" ] || exit 0
+  run_i bash -c 'cd "$1" && lazygit' _ "$path"
+  ;;
+
+focusmain)
+  main=$(sc_main_window_id)
+  [ -n "$main" ] && kitty @ focus-window --match "id:$main" || true
+  ;;
+
+toggle-scope)
+  case $view in
+    issues)
+      s=$(sc_get_flag issue_scope assigned)
+      [ "$s" = assigned ] && sc_set_flag issue_scope created || sc_set_flag issue_scope assigned
+      ;;
+    repo)
+      s=$(sc_get_flag repo_state open)
+      [ "$s" = open ] && sc_set_flag repo_state closed || sc_set_flag repo_state open
+      ;;
+  esac
+  ;;
+
+esac
+exit 0

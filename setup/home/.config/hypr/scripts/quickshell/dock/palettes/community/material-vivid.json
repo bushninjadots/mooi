@@ -1,0 +1,26 @@
+{
+  "name": "Material Vivid",
+  "slug": "material-vivid",
+  "author": "joshyrobot",
+  "background": "#202124",
+  "foreground": "#80868b",
+  "base16": {
+    "color0": "#202124",
+    "color1": "#f44336",
+    "color2": "#00e676",
+    "color3": "#ffeb3b",
+    "color4": "#ff9800",
+    "color5": "#673ab7",
+    "color6": "#00bcd4",
+    "color7": "#80868b",
+    "color8": "#44464d",
+    "color9": "#f44336",
+    "color10": "#00e676",
+    "color11": "#ffeb3b",
+    "color12": "#ff9800",
+    "color13": "#673ab7",
+    "color14": "#00bcd4",
+    "color15": "#ffffff"
+  },
+  "variant": "dark"
+}

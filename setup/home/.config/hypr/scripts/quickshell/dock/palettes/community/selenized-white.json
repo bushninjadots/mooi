@@ -1,0 +1,26 @@
+{
+  "name": "selenized-white",
+  "slug": "selenized-white",
+  "author": "Jan Warchol (https://github.com/jan-warchol/selenized) / adapted to base16 by ali",
+  "background": "#ffffff",
+  "foreground": "#474747",
+  "base16": {
+    "color0": "#ffffff",
+    "color1": "#bf0000",
+    "color2": "#008400",
+    "color3": "#af8500",
+    "color4": "#ba3700",
+    "color5": "#6b40c3",
+    "color6": "#009a8a",
+    "color7": "#474747",
+    "color8": "#878787",
+    "color9": "#bf0000",
+    "color10": "#008400",
+    "color11": "#af8500",
+    "color12": "#ba3700",
+    "color13": "#6b40c3",
+    "color14": "#009a8a",
+    "color15": "#282828"
+  },
+  "variant": "light"
+}

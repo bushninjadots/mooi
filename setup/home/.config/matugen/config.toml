@@ -1,0 +1,72 @@
+# matugen: recolours the desktop from the wallpaper. qs-wallpaperpicker runs
+# `matugen image <wallpaper>` every time you set a wallpaper.
+
+[config]
+
+# The wallpaper picker's own colours.
+[templates.qs-wallpaperpicker]
+input_path = "~/.config/qs-wallpaperpicker/extras/matugen/quickshell.json.hbs"
+output_path = "~/.config/qs-wallpaperpicker/colors/Colors.json"
+
+# The palette as JSON: the wallpaper picker and the desktop widgets read it (ArchEclipse is gone;
+# the template keeps its old name).
+[templates.archeclipse]
+input_path = "~/.config/qs-wallpaperpicker/extras/matugen/quickshell.json.hbs"
+output_path = "~/.cache/quickshell/colors.json"
+
+# kitty: kitty.conf includes this; SIGUSR1 makes open windows reload it.
+[templates.kitty]
+input_path = "~/.config/matugen/templates/kitty-colors.conf"
+output_path = "~/.config/kitty/colors-matugen.conf"
+post_hook = "pkill -USR1 -x kitty || true"
+
+# Desktop widgets (~/.config/desktop-widgets): the Material roles in
+# camelCase plus terminal colours, the shape the widgets read.
+[templates.desktop-widgets]
+input_path = "~/.config/matugen/templates/desktop-widgets-colors.json"
+output_path = "~/.cache/desktop-widgets/colors.json"
+# The wallpaper's lightness map: the widgets pick light/dark text from it.
+post_hook = "~/.config/desktop-widgets/bin/wallpaper-tone"
+
+# ---- apps: everything else follows the wallpaper too ----
+# Each writes its own file; apply-apps.sh (the last hook) wires the apps to
+# those files once and pokes the running ones. Backups of what these replaced:
+# ~/.config/matugen/bak-*/.
+
+# GTK 3 / GTK 4 (libadwaita): the user stylesheet, read at app start.
+[templates.gtk3]
+input_path = "~/.config/matugen/templates/gtk3.css"
+output_path = "~/.cache/mooi/matugen-gtk-3.0.css"  # mooi: GTK follows mooi while it is on (was ~/.config/gtk-3.0/gtk.css)
+
+[templates.gtk4]
+input_path = "~/.config/matugen/templates/gtk4.css"
+output_path = "~/.cache/mooi/matugen-gtk-4.0.css"  # mooi: GTK follows mooi while it is on (was ~/.config/gtk-4.0/gtk.css)
+
+# Vesktop (Discord): a Vencord theme, ticked once by apply-apps.sh.
+[templates.vesktop]
+input_path = "~/.config/matugen/templates/discord.css"
+output_path = "~/.config/vesktop/themes/archeclipse.theme.css"
+
+# fish syntax colours (conf.d is sourced on its own).
+[templates.fish]
+input_path = "~/.config/matugen/templates/colors.fish"
+output_path = "~/.config/fish/conf.d/archeclipse-colors.fish"
+
+[templates.btop]
+input_path = "~/.config/matugen/templates/btop.theme"
+output_path = "~/.config/btop/themes/archeclipse.theme"
+
+[templates.cava]
+input_path = "~/.config/matugen/templates/cava-theme"
+output_path = "~/.config/cava/themes/archeclipse"
+
+# Spotify (spicetify theme "ArchEclipse").
+[templates.spicetify]
+input_path = "~/.config/matugen/templates/spicetify-color.ini"
+output_path = "~/.config/spicetify/Themes/ArchEclipse/color.ini"
+
+# Zen browser chrome; the hook copies it into the active profile.
+[templates.zen]
+input_path = "~/.config/matugen/templates/zen-colors.css"
+output_path = "~/.cache/archeclipse/zen-colors.css"
+post_hook = "~/.config/matugen/apply-apps.sh"

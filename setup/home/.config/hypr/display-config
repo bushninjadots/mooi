@@ -1,0 +1,6 @@
+# Monitor layout: desc|x|y|scale|mode|transform|vrr|bitdepth|cm|mirror|disabled
+#   desc = hyprctl description (EDID model+serial, survives connector renames)
+#   x,y  = logical position | scale = fractional scale
+#   mode = exact Hyprland mode, e.g. 1920x1080@144.11Hz (empty = highest RR)
+#   extra: transform | vrr(0/1/2) | bitdepth(8/10) | cm | mirror(desc) | disabled(0/1)
+Chimei Innolux Corporation 0x15E7|0|0|1.5|1920x1080@60.00Hz|0|0|8|srgb||0

@@ -1,0 +1,25 @@
+{
+  "name": "Seti UI",
+  "slug": "seti",
+  "author": "",
+  "background": "#151718",
+  "foreground": "#d6d6d6",
+  "base16": {
+    "color0": "#151718",
+    "color1": "#Cd3f45",
+    "color2": "#9fca56",
+    "color3": "#e6cd69",
+    "color4": "#db7b55",
+    "color5": "#a074c4",
+    "color6": "#55dbbe",
+    "color7": "#d6d6d6",
+    "color8": "#41535B",
+    "color9": "#Cd3f45",
+    "color10": "#9fca56",
+    "color11": "#e6cd69",
+    "color12": "#db7b55",
+    "color13": "#a074c4",
+    "color14": "#55dbbe",
+    "color15": "#ffffff"
+  }
+}

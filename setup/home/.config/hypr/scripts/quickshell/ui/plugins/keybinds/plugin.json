@@ -1,0 +1,11 @@
+{
+  "id": "keybinds",
+  "name": "Keybinds",
+  "version": "0.1.0",
+  "author": "equisdots",
+  "description": "Plugin shortcuts: see every bind, change its key or mute a single one — the plugin owns the action, you own the key",
+  "type": "shell",
+  "scope": "keybinds",
+  "settings": { "page": "settings/KeybindsPage.qml", "label": "Keybinds", "icon": "󰌌" },
+  "defaultEnabled": true
+}

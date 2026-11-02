@@ -1,0 +1,205 @@
+{
+  "uiScale": 0.6,
+  "appScale": 1,
+  "workspaceCount": 5,
+  "unifiedDesktops": true,
+  "wallpaperDir": "/home/user/.config/hypr/wallpapers",
+  "language": "",
+  "kbOptions": "grp:alt_shift_toggle",
+  "plugins": {},
+  "glass": {
+    "enabled": true,
+    "opacity": 0.85
+  },
+  "shadows": {
+    "enabled": true,
+    "blur": 26,
+    "spread": 0,
+    "offsetX": 0,
+    "offsetY": 6,
+    "opacity": 0.5,
+    "radius": 22
+  },
+  "bar": {
+    "enabled": true,
+    "position": "top",
+    "palette": "github-dark",
+    "thickness": 48,
+    "edgeGap": 0,
+    "roundness": 0.2,
+    "pillBg": true,
+    "pillSolid": false,
+    "barBg": false,
+    "stylePreset": "modular",
+    "barOpacity": 0.2,
+    "dragModules": true,
+    "borderWidth": 0,
+    "borderColor": "text",
+    "borderFollowPalette": true,
+    "workspacesMarker": "dot",
+    "workspacesMarkerText": "",
+    "borderActive": "#79c0ff",
+    "borderInactive": "#79c0ff",
+    "borderGradientActive": false,
+    "borderGradientInactive": false,
+    "borderActive2": "",
+    "borderInactive2": "",
+    "borderAngleActive": 45,
+    "borderAngleInactive": 45,
+    "font": "Hack Nerd Font",
+    "timeFormat": "HH:mm:ss",
+    "dateFormat": "dddd, MMMM dd",
+    "modules": {
+      "time": {
+        "icon": "",
+        "color": "",
+        "accent": "teal",
+        "fill": "on",
+        "colors": {},
+        "size": 0,
+        "effect": "",
+        "cursor": true
+      }
+    },
+    "zones": [
+      {
+        "id": "start",
+        "align": "start",
+        "unify": false,
+        "zoneBg": "",
+        "zoneBgSolid": false,
+        "borderWidth": 0,
+        "borderColor": "surface1",
+        "modules": [
+          {
+            "id": "wifi",
+            "enabled": true
+          },
+          {
+            "id": "bluetooth",
+            "enabled": true
+          },
+          {
+            "id": "search",
+            "enabled": true
+          },
+          {
+            "id": "settings",
+            "enabled": true
+          },
+          {
+            "id": "help",
+            "enabled": true
+          },
+          {
+            "id": "update",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "id": "center",
+        "align": "center",
+        "unify": false,
+        "zoneBg": "surface0",
+        "zoneBgSolid": true,
+        "borderWidth": 0,
+        "borderColor": "surface1",
+        "modules": [
+          {
+            "id": "media",
+            "enabled": true
+          },
+          {
+            "id": "workspaces",
+            "enabled": true
+          },
+          {
+            "id": "tray",
+            "enabled": false
+          },
+          {
+            "id": "keyboard",
+            "enabled": false
+          },
+          {
+            "id": "recording",
+            "enabled": true
+          },
+          {
+            "id": "time",
+            "enabled": false
+          }
+        ]
+      },
+      {
+        "id": "end",
+        "align": "end",
+        "unify": false,
+        "zoneBg": "",
+        "zoneBgSolid": false,
+        "borderWidth": 0,
+        "borderColor": "surface1",
+        "modules": [
+          {
+            "id": "date",
+            "enabled": true
+          },
+          {
+            "id": "volume",
+            "enabled": true
+          },
+          {
+            "id": "battery",
+            "enabled": true
+          },
+          {
+            "id": "sysmon",
+            "enabled": true
+          },
+          {
+            "id": "weather",
+            "enabled": false
+          },
+          {
+            "id": "focus",
+            "enabled": false
+          }
+        ]
+      }
+    ]
+  },
+  "monitors": [
+    {
+      "name": "eDP-1",
+      "resW": 1920,
+      "resH": 1080,
+      "rate": 60,
+      "x": 0,
+      "y": 0,
+      "scale": 1.5,
+      "transform": 0,
+      "vrr": 0,
+      "disabled": false,
+      "mirrorOf": "none",
+      "cm": "srgb",
+      "bitdepth": 8
+    }
+  ],
+  "appearance": {
+    "shapeScale": 1,
+    "densityScale": 1,
+    "motionScale": 1
+  },
+  "animations": {
+    "enabled": true,
+    "speed": 0.6
+  },
+  "frame": {
+    "enabled": true,
+    "thickness": 11,
+    "sideThickness": 4,
+    "alpha": 0.95,
+    "color": "mauve"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Github Dark Dimmed",
+  "slug": "github-dark-dimmed",
+  "author": "Tinted Theming (https://github.com/tinted-theming)",
+  "background": "#22272e",
+  "foreground": "#adbac7",
+  "base16": {
+    "color0": "#22272e",
+    "color1": "#f69d50",
+    "color2": "#96d0ff",
+    "color3": "#ae7c14",
+    "color4": "#6cb6ff",
+    "color5": "#f47067",
+    "color6": "#8ddb8c",
+    "color7": "#adbac7",
+    "color8": "#636e7b",
+    "color9": "#f69d50",
+    "color10": "#96d0ff",
+    "color11": "#ae7c14",
+    "color12": "#6cb6ff",
+    "color13": "#f47067",
+    "color14": "#8ddb8c",
+    "color15": "#ffffff"
+  },
+  "variant": "dark"
+}

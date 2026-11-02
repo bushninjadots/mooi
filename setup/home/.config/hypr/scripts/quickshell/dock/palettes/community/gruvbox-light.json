@@ -1,0 +1,26 @@
+{
+  "name": "Gruvbox Light",
+  "slug": "gruvbox-light",
+  "author": "Tinted Theming (https://github.com/tinted-theming), morhetz (https://github.com/morhetz/gruvbox)",
+  "background": "#fbf1c7",
+  "foreground": "#3c3836",
+  "base16": {
+    "color0": "#fbf1c7",
+    "color1": "#cc241d",
+    "color2": "#98971a",
+    "color3": "#d79921",
+    "color4": "#d65d0e",
+    "color5": "#b16286",
+    "color6": "#689d6a",
+    "color7": "#3c3836",
+    "color8": "#bdae93",
+    "color9": "#cc241d",
+    "color10": "#98971a",
+    "color11": "#d79921",
+    "color12": "#d65d0e",
+    "color13": "#b16286",
+    "color14": "#689d6a",
+    "color15": "#1d2021"
+  },
+  "variant": "light"
+}

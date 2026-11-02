@@ -1,0 +1,17 @@
+{
+  "id": "rss-reader",
+  "name": "RSS Reader",
+  "version": "0.2.0",
+  "author": "xscriptor",
+  "description": "Feed reader panel with search, per-feed filters and its own feed manager",
+  "type": "shell",
+  "compat": { "shell": ">=0.1.0" },
+  "scope": "rss-reader",
+  "settings": { "page": "settings/ReaderPage.qml", "label": "RSS Reader", "icon": "" },
+  "provides": {
+    "panels": {
+      "rss-reader": { "comp": "ui/RssReader.qml", "w": 650, "h": 560, "label": "RSS reader" }
+    }
+  },
+  "defaultEnabled": true
+}
