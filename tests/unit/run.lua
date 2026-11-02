@@ -3197,7 +3197,6 @@ test("capture exports a complete visual profile but no personal or behavioural s
     local current = config.defaults()
     current.keys = { overview = "SUPER + Tab" }
     current.nexus = { identity = { name = "private name" } }
-    current.bar.left = { "clock", "workspaces" }
     current.integration_private = { enabled = true }
     local package, why = themeprofiles.capture(current, "Foundry", "Graphite and phosphor")
     eq(package ~= nil, true, "captured: " .. tostring(why)); eq(why, nil, "no error")
