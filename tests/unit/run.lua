@@ -3220,6 +3220,11 @@ test("theme package validation rejects malformed metadata and unsupported versio
     eq(future, nil, "future version")
     local empty = themeprofiles.validate({ format = "mooi-theme", version = 1, name = "", settings = { theme = { mode = "dark" } } })
     eq(empty, nil, "empty name")
+    local blank = themeprofiles.validate({ format = "mooi-theme", version = 1, name = "   ", settings = { theme = { mode = "dark" } } })
+    eq(blank, nil, "blank name")
+    local extra = themeprofiles.validate({ format = "mooi-theme", version = 1, name = "X", execute = "anything",
+        settings = { theme = { mode = "dark" } } })
+    eq(extra, nil, "unknown metadata refused")
 end)
 test("theme package validation refuses unknown settings and behavioural payloads", function()
     local base = { format = "mooi-theme", version = 1, name = "Safe", settings = { theme = { mode = "dark" } } }
