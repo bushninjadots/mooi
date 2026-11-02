@@ -3910,3 +3910,21 @@ BMO alone, breathing: ~22 % → ~4.6 %; everything running with the plain blur: 
 Settings → Windows → Blur finish now groups the finishes by what they cost: the still ones (Fluid jar
 added, it was never offered), and the three moving ones in a row of their own that says they redraw all
 the time (~25–70 % of the GPU, idle). The blur finish itself is the user's choice and is left as it is.
+
+## D132 · 2026-11-03 · Islands that stayed on screen, BMO's copies: pleamar's frame pool
+**Asked for:** the bar's islands glitch and get stuck, and so does BMO when he is moved a lot.
+**Seen:** opening islands one after another (resources, weather, calendar, sound, power) left them on
+screen after they closed, some frozen mid-fade or drawn half-cut; Escape closed none of them, and the
+bar's state said nothing was open (`open = none`, every island's `rv` 0). Islands from before the test
+were already stuck.
+**Found, by elimination:** not the bar's drawing (a debug build of pleamar listed nothing on
+`popup_surface` once the islands closed, and repainting it whole every frame changed nothing), not the
+notch, Nexus, frame or BMO (ending each left the ghosts), not Hyprland's layer animations (off, still
+there); gone with the whole shell stopped. With `PLEAMAR_SWAPCHAIN=1` — the surfaces presented through
+the standard swapchain instead of pleamar's own pool of reused frames — the same sequence, run three
+times, left nothing, the islands open and close normally, and BMO thrown about seven times in four
+seconds left no copies. So under quick changes the pool showed a frame still holding an older frame's
+pixels. **Now:** `bin/mooi` starts the shell with `PLEAMAR_SWAPCHAIN=1` (the keeper and `mooi run`);
+every program the bar starts inherits it. The bar itself costs 0.4 % of the GPU this way.
+**Not done:** the pool's bug itself is pleamar's (k4ditano/pleamar); worth reporting upstream with this
+reproduction rather than patching the installed copy.

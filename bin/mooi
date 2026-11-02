@@ -678,7 +678,12 @@ keep() {
     tries=0
     while :; do
         start=$(date +%s)
-        MOOI_MODE=$mode MOOI_SHELL=$live MOOI_BIN=$self "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1 8>&- &
+        # PLEAMAR_SWAPCHAIN=1 (D132): the surfaces present through the standard swapchain, not
+        # pleamar's own pool of reused frames. With the pool, under quick changes a frame was shown
+        # holding an older one's pixels: the bar's islands stayed on screen after they closed (frozen
+        # mid-fade, half-cut), and BMO left copies when thrown about. Every program the bar starts
+        # (frame, notch, Nexus, BMO, settings) inherits it.
+        PLEAMAR_SWAPCHAIN=1 MOOI_MODE=$mode MOOI_SHELL=$live MOOI_BIN=$self "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1 8>&- &
         child=$!
         wait "$child"; code=$?
         [ "$code" -eq 0 ] && break
@@ -819,7 +824,7 @@ case "$cmd" in
         if [ "${1:-}" = --safe ]; then shift; export MOOI_SAFE=1; fi
         # shellcheck disable=SC2046
         settings_link
-        MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
+        PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
