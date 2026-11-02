@@ -3850,3 +3850,19 @@ checks run at once (~0.8 s → ~0.5 s). The frame starts 50 ms after the bar's l
 up the bar's pieces stand on nothing, D127); the notch at 0.7 s (was 2 s), BMO at 1.4 s (was 2.5 s).
 Measured from `mooi session` to the compositor showing the surface: the bar at ~0.7–1.0 s (was ~1.6 s),
 the whole frame at ~1.0–1.2 s (was ~1.8 s). Not checked: an actual logout and login.
+
+## D129 · 2026-11-02 · The notch's workspaces show the windows themselves, live, and stand closer
+**Asked for:** live previews in the left side notch's Workspaces panel, and the panel brought in, as
+it stood very far out.
+**Now:** each miniature window paints the window itself (pleamar's `thumbnails` service). While the
+Workspaces panel is up, the windows of the three workspaces round the arc's middle are asked for live
+(`thumbnails.live`, copied when they change, up to 30 a second) and the rest on the arc for a still;
+when the panel closes or changes, nothing is copied. Settings → Overview's previews and privacy
+(`atlas.previews`, `atlas.private`) apply as in the Overview and the Nexus. A window is paired with its
+picture by app and title, else by an unused one of the same app (a terminal's title spinner changes
+between Hyprland's list and the compositor's). Hyprland does not draw a workspace that is not shown, so
+a window there keeps its last frame (or, never seen, its plain box). The arc's middle card now stands a
+fixed 260 px out from the notch (its centre was the arc's radius out, ~530 px on a 1080 px screen).
+**Measured:** the notch at ~2.7 % GPU with the panel open on a busy terminal, 0 % closed; frames
+advanced ?448 → ?458 in a second while open and stopped once closed. Checked live with a test window
+moved to workspace 7 (its card showed its last frame).

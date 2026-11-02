@@ -14,6 +14,7 @@ local weathercache = require("lib/weathercache")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
 local deck = require("lib/nexusdeck")
+local atlas = require("lib/atlas")
 local claude = require("lib/claude")
 local N = require("lib/notch")
 local vizfeed = require("lib/vizfeed")
@@ -304,6 +305,8 @@ local function viz()
         if ask_timer then cancel(ask_timer); ask_timer = nil end
         rest_viz()
     end
+    -- every opening, closing and change of panel comes through here: the windows' pictures follow it
+    if ask_pictures then ask_pictures() end
 end
 pcall(sys.watch, "media", function(m)
     media = type(m) == "table" and m or {}
@@ -333,10 +336,75 @@ on("nt_media", function(v)
     local n = tonumber(v)
     pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
 end)
-on("nt_open_player", function() fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; launch("mooi", { "player" }) end)
+on("nt_open_player", function() fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; viz(); launch("mooi", { "player" }) end)
 
 -- ── Workspaces: every one of this monitor's, its windows where they are, the one you are on in the middle ──
 local spaces = {}
+-- The windows in the miniatures are the windows themselves, live (pleamar's `thumbnails.live`): only
+-- while the Workspaces panel is up, only those of the three workspaces round the arc's middle (the rest
+-- on the arc get a still), and never one that Settings → Overview's privacy keeps back or with previews
+-- off. A window the compositor is not drawing (another workspace, on Hyprland) keeps its last picture,
+-- or none: its miniature is the plain box it always was.
+local minis, thumbs, asked = {}, {}, nil
+local function previews_on() return type(settings.atlas) ~= "table" or settings.atlas.previews ~= false end
+local function privacy() return type(settings.atlas) == "table" and settings.atlas.private or "off" end
+-- Each miniature's picture: the window of the same app and title, else one of the same app not yet
+-- taken (a title can change between Hyprland's list and the compositor's: a terminal's spinner).
+local function pair()
+    local got, used = {}, {}
+    for pass = 1, 2 do
+        for i, b in ipairs(minis) do
+            if not got[i] and not atlas.private(privacy(), b.app, b.title) then
+                for _, t in ipairs(thumbs) do
+                    if not used[t.id] and t.app == b.app and (pass == 2 or t.title == b.title) then
+                        got[i], used[t.id] = t, true
+                        break
+                    end
+                end
+            end
+        end
+    end
+    return got
+end
+function publish_minis()
+    local got, out = previews_on() and pair() or {}, {}
+    for i, b in ipairs(minis) do
+        local pic = got[i] and got[i].picture or ""
+        out[i] = { k = b.k, nx = b.nx, ny = b.ny, nw = b.nw, nh = b.nh, focused = b.focused, pic = pic, pictured = pic ~= "" }
+    end
+    model.wbox = out
+end
+local watching = false
+function ask_pictures()
+    local up = fact.nt_open == true and math.floor(tonumber(fact.nt_tab) or -1) == 2 and previews_on() and privacy() ~= "everything"
+    local live, still = {}, {}
+    if up then
+        if not watching then
+            watching = pcall(sys.watch, "thumbnails", function(state)
+                thumbs = type(state) == "table" and type(state.list) == "table" and state.list or {}
+                publish_minis()
+                ask_pictures()
+            end)
+        end
+        local c = tonumber(fact.sp_c) or 0
+        local got = pair()
+        for i, b in ipairs(minis) do
+            local t = got[i]
+            local d = math.abs(b.k - c)
+            if t and d <= 3 then
+                if d <= 1 then live[#live + 1] = t.id else still[#still + 1] = t.id end
+            end
+        end
+    end
+    table.sort(live); table.sort(still)
+    local key = table.concat(live, ",") .. "|" .. table.concat(still, ",")
+    if key == asked then return end
+    asked = key
+    if #live > 0 then pcall(sys.call, "thumbnails.live", live) else pcall(sys.call, "thumbnails.live") end
+    if #still > 0 then pcall(sys.call, "thumbnails.want", still) else pcall(sys.call, "thumbnails.want") end
+end
+on("fact:nt_tab", function() ask_pictures() end)
+on("fact:sp_c", function() ask_pictures() end)
 local function read_spaces()
     launch("hyprctl", { "-j", "workspaces" }, function(wo)
         launch("hyprctl", { "-j", "clients" }, function(co)
@@ -352,9 +420,13 @@ local function read_spaces()
             model.warc = rows
             local boxes = {}
             for _, w in ipairs(deck.windows(decode(co), mon)) do
-                if at[w.ws] and #boxes < 60 then boxes[#boxes + 1] = { k = at[w.ws], nx = w.nx, ny = w.ny, nw = w.nw, nh = w.nh, focused = w.focused } end
+                if at[w.ws] and #boxes < 60 then
+                    boxes[#boxes + 1] = { k = at[w.ws], nx = w.nx, ny = w.ny, nw = w.nw, nh = w.nh, focused = w.focused, app = w.app, title = w.title }
+                end
             end
-            model.wbox = boxes
+            minis = boxes
+            publish_minis()
+            ask_pictures()
         end)
     end)
 end
@@ -777,7 +849,7 @@ end
 on("nt_gh", function(v)
     local n = math.floor(tonumber(v) or -1)
     local url = n == 0 and gh_user and ("https://github.com/" .. gh_user) or (n == 10 and "https://github.com/notifications") or gh_urls[n]
-    if url then launch("xdg-open", { url }); fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false end
+    if url then launch("xdg-open", { url }); fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; viz() end
 end)
 
 -- ── Opening a panel: read what it shows ──

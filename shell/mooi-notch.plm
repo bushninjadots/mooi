@@ -15,7 +15,7 @@ import "ui/edgetab.plm" as edge
 scene Notch {
     permissions {
         run: "pleamar", "env", "claude", "gh", "hyprctl", "magick", "find", "curl", "qs", "awww", "xdg-open", "mooi"
-        services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env"
+        services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want", "thumbnails.live"
     }
 
 
@@ -323,7 +323,7 @@ scene Notch {
     fact nt_wall_on = false
     image wall = from nt_wall, 480, 270
     model warc max 12 { id: number; label: text; n: text; active: bool }
-    model wbox max 60 { k: number; nx: number; ny: number; nw: number; nh: number; focused: bool }
+    model wbox max 60 { k: number; nx: number; ny: number; nw: number; nh: number; focused: bool; pic: image 320, 180; pictured: bool }
     fact sp_c = 0                // the workspace in the middle
     model pics max 40 { pic: image 320, 180; name: text; on: bool }
     fact wp_c = 0                // the picture in the middle: its row in the window
@@ -635,13 +635,16 @@ scene Notch {
                 show: nt_tab == 2
                 zone box keep2 { from: nt_ox + if(nt_dir > 0, 0, -760), 40; size: 760, nt_h - 80; role: region; label: "Workspaces" }
                 on scroll keep2 { sp_c = clamp(sp_c - wheel, 0, max(0, warc.count - 1)) }
-                // the arc's radius, made to the screen: the same shape on a laptop and on a 4K
+                // the arc's radius, made to the screen: the same shape on a laptop and on a 4K; its middle
+                // card stands a fixed 260 px out from the notch whatever the radius (it stood ~530 px out,
+                // far from the panel's title and the notch it came from)
                 let war = clamp(nt_h * 0.55, 470, 600)
+                let wreach = 260 - war
                 text "WORKSPACES · THE WHEEL TURNS THE ARC · A PRESS GOES THERE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 for w in warc {
                     let wa = (w.index - spc) * 13
                     let ws = 1 - min(abs(wa), 60) / 110
-                    let wx = nt_ox + nt_dir * (cos(wa) * war - 212 + 168) - 120 * ws
+                    let wx = nt_ox + nt_dir * (cos(wa) * war + wreach) - 120 * ws
                     let wy = nt_acy + sin(wa) * war - 70 * ws
                     group {
                         show: abs(wa) < 48
@@ -662,14 +665,17 @@ scene Notch {
                         on press wz { emit nt_ws(w.index) }
                     }
                 }
-                // each workspace's windows, where they are, in its miniature
+                // each workspace's windows, where they are, in its miniature: the window itself, live, while
+                // the compositor can copy it (the logic asks only for the ones on the arc's middle)
                 for b in wbox {
                     let ba = (b.k - spc) * 13
                     let bs = 1 - min(abs(ba), 60) / 110
-                    let bx = nt_ox + nt_dir * (cos(ba) * war - 212 + 168) - 120 * bs
+                    let bx = nt_ox + nt_dir * (cos(ba) * war + wreach) - 120 * bs
                     let by = nt_acy + sin(ba) * war - 70 * bs
                     box { from: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs); corner: 1
                           color: mix(dk.raised, #000000, 0.2); opacity: 0.8 * (1 - abs(ba) / 60); show: abs(ba) < 48 }
+                    image b.pic { at: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs)
+                                  opacity: 1 - abs(ba) / 60; show: b.pictured and abs(ba) < 48 }
                     box { from: bx + b.nx * 240 * bs, by + b.ny * 135 * bs; size: max(3, b.nw * 240 * bs), max(3, b.nh * 135 * bs); corner: 1; stroke: 1
                           color: if(b.focused, dk.acc, dk.line); opacity: 1 - abs(ba) / 60; show: abs(ba) < 48 }
                 }
