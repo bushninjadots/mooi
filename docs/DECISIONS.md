@@ -3752,3 +3752,20 @@ gain is in the code, not the runtime, which was already small. The `cat /proc/�
 slots with it (Workspaces took two columns in the narrow slot); a corner pulled to 211×205 settled
 210×214 on the band's foot; a card let go at (326, 34) met Profile's side at (320, 30). `tests/nexus.sh`
 not run (it clashes with the resident Nexus by name); 284 unit tests, `mooi check`.
+
+## D126 · 2026-11-02 · The left edge's tabs as they were, as a pair; no border visualiser on the player
+
+**The tabs.** D121 turned the side notch's nub and the stash's tab into 2 px hairlines; the user wanted
+the earlier design back, the two the same, following the wallpaper. `ui/edgetab.plm`'s `Tab` is the nub
+as it was before D121 — a raised sliver standing out of the edge, lit, three grip marks, a little larger
+and brighter while pointed at or open — and both use it at the same 92 px. Its colour is the palette's
+(Ferrolume's phosphor in Plate, the accent in Tether), so a new wallpaper relights it with everything
+else. Something waiting (a notch badge, items in the stash) is a small dot near its top in the
+counter-signal rather than a different colour, so the pair never shows two colours (with a GitHub badge
+nearly always present, the notch's "warm" tab had become permanently the second accent). The nub's zone
+is 14×140 again. The track of tabs that slides out is unchanged.
+**The player.** Its mini, panel and full views still drew `rim.Rect` on their own border (D112). Under
+D123's automatic gain those bars, at ~1/1000 before, started to move, so the bordered visualiser looked
+"brought back". The user wants visualisers inside the music components only: the three `rim.Rect`s, the
+player's `rm*` facts and their feed are removed; the player's own visualisers (`nv*`) stay. With this no
+surface draws the rim except the screen frame's `frame.music` / `music.rim` (opt-in).

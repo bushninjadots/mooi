@@ -4,6 +4,7 @@ import "theme/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/island.plm"
 import "ui/deck.plm"
+import "ui/edgetab.plm" as edge
 
 // mooi's side notch (D106): a lit sliver on the left edge that, pointed at, fans out into six tabs on
 // an arc — Claude (a chat with your own Claude, through Claude Code), Music (the player slid out),
@@ -454,23 +455,17 @@ scene Notch {
 
         on key Escape { nt_pin = false; nt_open = false; nt_tab = -1; blur }
 
-        // ═══ The nub: the same hairline the spine keeps on the right edge (D119) ═══
-        // The side notch and the spine are one family now, mirrored: a lit hairline on the edge at
-        // rest (warm when a tab has something waiting); touched, a track of flat hexagonal tabs
-        // slides out; a tab pointed at for 140 ms opens its panel beside the track, a press pins
-        // it, and it goes home half a second after the pointer leaves. Drag the hairline along the
-        // edge to move it; it stays there (notch-state.json).
-        let nb_warm = nt_badged
-        zone box nubz { from: 0, nt_cy + nt_gdy - 130; size: 6, 260; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
+        // ═══ The nub: the left edge's tab (ui/edgetab.plm, D126), the same as the stash's ═══
+        // Raised out of the edge with three grip marks, lit and a little larger while the tabs are out,
+        // warm when a tab has something waiting. Touched, the track of tabs slides out; a tab pointed at
+        // for 140 ms opens its panel beside it, a press pins it, and it goes home half a second after
+        // the pointer leaves. Drag the nub along the edge to move it; it stays there (notch-state.json).
+        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
         on hover nubz for 60ms while nt_gdy == 0 { nt_open = true; nt_deck = false }
         on press nubz { nt_open = true; nt_deck = false; nt_pin = not nt_pin }
         on drag nubz { nt_gdy = drag.dy; nt_open = false; nt_tab = -1; nt_pin = false }
         on release nubz while nt_gdy != 0 { emit nt_moved(round(nt_cy + nt_gdy)); nt_gdy = 0 }
-        group {
-            opacity: 1 - fan_in * (1 - if(nt_deck, 1, 0))
-            glow: 6, (0.4 + 0.5 * if(nb_warm, 1, 0)) * st_glow, if(nb_warm, dk.hot, dk.acc)
-            line { from: 1.5, nt_cy + nt_gdy - 120; to: 1.5, nt_cy + nt_gdy + 120; width: 2; color: if(nb_warm, dk.hot, dk.acc); opacity: 0.7 }
-        }
+        edge.Tab(nt_cy + nt_gdy - 46, 92, max(nub_lit, nubz.hover), nt_badged)
 
         // ═══ The track: the tabs in a column, as the spine's ═══
         group {

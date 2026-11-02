@@ -1,0 +1,29 @@
+language 0.4
+import "../theme/tokens.plm"
+import "../theme/ferrolume.plm"
+
+// The left edge's tabs (D126): the side notch's nub and the stash's tab are one design, the nub as it
+// was before D121 — a raised sliver standing out of the edge, lit, with three grip marks — so the two
+// read as a pair, always in the same colour: the palette's (Plate: Ferrolume's phosphor; Tether: the
+// accent), so they follow the wallpaper. Something waiting behind one is a small dot on it in the
+// counter-signal (ember / the second accent), so the pair never turns two different colours.
+library EdgeTab {
+    // `y`, `h`: where it stands on the edge; `lit` 0..1 (pointed at); `warm`: something is waiting.
+    component Tab(y: number, h: number, lit: number, warm: bool) {
+        size: 12, h
+        group {
+            glow: 8, (0.35 + 0.5 * lit) * st_glow, mix(fl.phos, accent.primary, isl_style)
+            box { from: -3, y - 8 * lit; size: 8 + 3 * lit, h + 16 * lit; corner: 4
+                  color: mix(mix(fl.hull_raised, surface.elevated, isl_style), mix(fl.phos, accent.primary, isl_style), 0.35 + 0.5 * lit) }
+        }
+        // something waiting: a dot near its top, in the counter-signal
+        group {
+            show: warm
+            glow: 5, 0.7 * st_glow, mix(fl.ember, accent.secondary, isl_style)
+            ellipse { at: 2.5 + 1.5 * lit, y + 9 - 8 * lit; radius: 2.2; color: mix(fl.ember, accent.secondary, isl_style) }
+        }
+        repeat g in 0..3 {
+            box { from: 1.5, y + h / 2 - 8 + g * 6; size: 2, 3; color: mix(fl.engrave, fg.primary, isl_style); opacity: 0.55 * (1 - lit) }
+        }
+    }
+}

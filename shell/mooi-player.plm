@@ -4,7 +4,6 @@ import "theme/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
 import "ui/playerviews.plm" as views
-import "ui/rim.plm" as rim
 
 // mooi's music player (docs/PLAYER.md): a program of its own, opened from the bar's media module.
 // Your mpd library first — the queue, seek, volume, shuffle and repeat through mpc — and a remote
@@ -430,33 +429,6 @@ scene Player {
     text video_why = ""
     fact eq_ok = true            // EasyEffects is there
     fact viz_still = false       // reduced motion or the saver: the visualisers rest
-    fact music_rim = true        // music.rim: the master, published by mooi-player.luau
-    fact music_rim_gain = 1      // music.rim_gain / 100
-    fact music_rim_glow = true   // music.rim_glow
-    // the rim's facts (ui/rim.plm): rest is rm_on 0, and then nothing is drawn
-    fact rm0 = 0
-    fact rm1 = 0
-    fact rm2 = 0
-    fact rm3 = 0
-    fact rm4 = 0
-    fact rm5 = 0
-    fact rm6 = 0
-    fact rm7 = 0
-    fact rm8 = 0
-    fact rm9 = 0
-    fact rm10 = 0
-    fact rm11 = 0
-    fact rm12 = 0
-    fact rm13 = 0
-    fact rm14 = 0
-    fact rm15 = 0
-    fact rm_bass = 0
-    fact rm_high = 0
-    fact rm_beat = 0
-    fact rm_phase = 0
-    fact rm_gain = 1
-    fact rm_glow = 1
-    fact rm_on = 0
     fact video_busy = false
     fact video_ok = true
     fact vbx = 0

@@ -6,6 +6,7 @@ import "ui/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
 import "ui/stash.plm"
+import "ui/edgetab.plm" as edge
 
 // mooi — the Spine and its islands.
 //
@@ -4652,13 +4653,11 @@ scene Mooi {
         zone box zstash_catch2 { from: 0, sc_y1; size: 12, sc_h1; role: region; label: "The stash's edge — drop here" }
         box { from: 0, sc_y1; size: 12, sc_h1; color: fl.hull; opacity: 0.01; show: sc_h1 > 0 }
         zone box zstash_tab { from: 0, sb_tab_y; size: 9, sb_tab_h; cursor: pointer; role: button; label: "Stash — drop files, links and pictures here" }
-        // At rest, the family's hairline (D119): the side notch, the spine and the stash all keep the
-        // same lit line on their edge, brighter while pointed at, warm when the box holds something.
+        // At rest, the left edge's tab (ui/edgetab.plm, D126): the same as the side notch's nub, lit while
+        // pointed at, warm when the box holds something; it gives way as the box opens.
         group {
             opacity: 1 - 0.8 * stash_a
-            glow: 6, (0.4 + 0.5 * max(zstash_tab.hover, if(stash_count > 0, 1, 0))) * st_glow, if(stash_count > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos))
-            line { from: 1.5, sb_tab_y - 16; to: 1.5, sb_tab_y + sb_tab_h + 16; width: 2 + zstash_tab.hover
-                   color: if(stash_count > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos)); opacity: 0.7 + 0.3 * zstash_tab.hover }
+            edge.Tab(sb_tab_y + (sb_tab_h - 92) / 2, 92, zstash_tab.hover, stash_count > 0)
         }
 
         // The box: a plate with a light running round it, cut from the same chamfer as the

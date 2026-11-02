@@ -33,11 +33,6 @@ part Panel {
                     glow: 22, 30% * st_glow, fl.phos
                     Chamfer(0, 0, pw, ph, 14, fl.hull, mix(fl.trace, fl.phos, 0.35), 1, 1.4)
                 }
-                // the music on the plate's own border (ui/rim.plm), all four exposed sides
-                group {
-                    show: not video_on
-                    rim.Rect(0, 0, pw, ph, 16, 15, fl.hull, fl.phos, mix(fl.trace, fl.phos, 0.35), 10)
-                }
                 group {
                     show: cover_on and not video_on
                     clip box { from: 2, 2; size: pw - 4, ph - 4 }
