@@ -221,6 +221,7 @@ local BY_CODE = {}
 for id, c in pairs(CODE) do BY_CODE[c] = id end
 local parts, hidden
 local sizes = {}             -- each card's size along a strip (✎ ⇔): id → s · m · l
+local canvas = {}            -- two rows (D119): each card's place and size on the free canvas, as shares of it
 local function read_parts()
     local n = type(settings.nexus) == "table" and settings.nexus or {}
     parts = deck.clean_parts(n.parts)
@@ -230,6 +231,7 @@ local function read_parts()
     fact.nx_large = n.profile == "large"
     fact.dk_notches = n.notches ~= false
     sizes = deck.clean_sizes(n.sizes)
+    canvas = deck.clean_canvas(n.canvas)
 end
 read_parts()
 local function save_settings(change)
@@ -265,9 +267,13 @@ local spaces = {}        -- the workspaces of this monitor (lib/nexusdeck spaces
 local function aspect() return screen.full_w and (screen.full_w / screen.full_h) or 16 / 9 end
 local function place()
     local top = 0                -- the bar's reserve is already outside the surface
-    d = deck.layout(edge(), screen.w, screen.h, top, { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
-                                                    tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n,
-                                                    rows = fact.dk_rows, large = fact.nx_large, sizes = sizes })
+    local opts = { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
+                   tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n,
+                   rows = fact.dk_rows, large = fact.nx_large, sizes = sizes, canvas = canvas }
+    -- two rows: a free canvas, every card where you put it and as big as you made it (D119)
+    if fact.dk_rows == 2 then d = deck.canvas_layout(edge(), screen.w, screen.h, top, opts)
+    else d = deck.layout(edge(), screen.w, screen.h, top, opts) end
+    fact.dk_canvas = d.canvas == true
     d.top, d.faders = top, faders_n
     fact.dk_edge = ({ bottom = 0, top = 1, left = 2, right = 3 })[d.edge]
     fact.dk_vert = d.vertical
@@ -311,6 +317,13 @@ on("dk_drop", function(v)
     local id = BY_CODE[math.floor(n / 100000000)]
     if not id or not d then return end
     local x, y = math.floor(n % 100000000 / 10000), n % 10000
+    if d.canvas then
+        -- on the canvas a card stays exactly where it is let go (its middle there, on the grid)
+        canvas[id] = deck.canvas_drop(d, id, x, y)
+        save_settings(function(s) s.canvas = deck.canvas_list(canvas) end)
+        place()
+        return
+    end
     parts = deck.move(parts, id, deck.place_at(d, x, y), hidden)
     save_parts(); place()
 end)
@@ -331,9 +344,19 @@ on("dk_show", function(v)
     save_parts(); place()
 end)
 on("dk_reset", function()
-    parts, hidden, sizes = deck.clean_parts(nil), deck.clean_hidden(nil, false), {}
+    parts, hidden, sizes, canvas = deck.clean_parts(nil), deck.clean_hidden(nil, false), {}, {}
+    save_settings(function(s) s.sizes = {}; s.canvas = {} end)
     save_parts(); place()
     notice("every part back")
+end)
+-- the canvas: a card's corner let go (n = 100000000 · code + 10000 · width + height)
+on("dk_resize", function(v)
+    local n = math.floor(tonumber(v) or -1)
+    local id = BY_CODE[math.floor(n / 100000000)]
+    if not id or not d or not d.canvas then return end
+    canvas[id] = deck.canvas_resize(d, id, math.floor(n % 100000000 / 10000), n % 10000)
+    save_settings(function(s) s.canvas = deck.canvas_list(canvas) end)
+    place()
 end)
 on("dk_size", function(v)
     local id = BY_CODE[math.floor(tonumber(v) or -1)]

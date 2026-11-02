@@ -340,6 +340,9 @@ M.SCHEMA = {
     { path = "nexus.notches", kind = "boolean", default = true },
     -- each card's size along a strip, as "id_s" / "id_l" (medium is not listed)
     { path = "nexus.sizes", kind = "ids", max = 12 },
+    -- D119: with two rows the deck is a free canvas; each card's place and size there, as
+    -- "c<n>_<x>_<y>_<w>_<h>" in thousandths of the canvas (lib/nexusdeck clean_canvas)
+    { path = "nexus.canvas", kind = "ids", max = 12 },
     -- The desk (D85, lib/desk): mooi draws the wallpaper so it can travel, and lays Lumen's
     -- cutout over the desktop widgets.
     { path = "desk.on", kind = "boolean", default = false },
@@ -525,7 +528,7 @@ local function migrate(t)
         for k in pairs(t.nexus) do
             if k ~= "identity" and k ~= "mode" and k ~= "edge" and k ~= "parts" and k ~= "hidden"
                and k ~= "rows" and k ~= "profile" and k ~= "visualiser" and k ~= "bars"
-               and k ~= "notches" and k ~= "sizes" then t.nexus[k] = nil end
+               and k ~= "notches" and k ~= "sizes" and k ~= "canvas" then t.nexus[k] = nil end
         end
     end
     local b = t.bar

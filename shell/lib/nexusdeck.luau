@@ -232,10 +232,11 @@ function M.layout(edge, sw, sh, top, opts)
         local room = sh - d.y - M.GAP
         local tw = (colw - 28 - M.TILE_GAP) / 2
         local spaces_h = 30 + math.ceil(ntiles / 2) * (tw / aspect + 16 + M.TILE_GAP) + 10
+        -- a card's size (s, m, l) is its height down a column, as it is its width along a strip (D119)
         local function height(id)
-            if id == "spaces" then return spaces_h end
-            if id == "profile" and opts.large then return M.PARTS.profile.hl end
-            return M.PARTS[id].h
+            if id == "spaces" then return math.floor(spaces_h * factor(id) + 0.5) end
+            if id == "profile" and opts.large then return math.floor(M.PARTS.profile.hl * factor(id) + 0.5) end
+            return math.floor(M.PARTS[id].h * factor(id) + 0.5)
         end
         -- where the second column begins: the most even split that keeps both inside the height
         local function split_at()
@@ -279,6 +280,97 @@ function M.layout(edge, sw, sh, top, opts)
     return d
 end
 
+-- ── The canvas (D119): two rows make the deck a free canvas ──
+-- The deck fills the screen below the bar and every card is where you put it and as big as you made
+-- it: a place and a size each, as thousandths of the canvas (nexus.canvas: "c<n>_<x>_<y>_<w>_<h>",
+-- `n` the card's place in M.ORDER), so they hold on another screen. A card never placed takes its
+-- place in the two-row deck, centred on the canvas. Moves snap to an 8 px grid and stay inside.
+M.GRID = 8
+M.MIN_H = 96
+function M.clean_canvas(list)
+    local out = {}
+    for _, v in ipairs(type(list) == "table" and list or {}) do
+        local n, x, y, w, h = tostring(v):match("^c(%d+)_(%d+)_(%d+)_(%d+)_(%d+)$")
+        local id = n and M.ORDER[tonumber(n) + 1]
+        if id then
+            local f = function(k) return math.max(0, math.min(1000, tonumber(k) or 0)) / 1000 end
+            out[id] = { x = f(x), y = f(y), w = f(w), h = f(h) }
+        end
+    end
+    return out
+end
+function M.canvas_list(t)
+    local out = {}
+    for i, id in ipairs(M.ORDER) do
+        local r = t[id]
+        if r then
+            local k = function(v) return math.max(0, math.min(1000, math.floor((tonumber(v) or 0) * 1000 + 0.5))) end
+            out[#out + 1] = string.format("c%d_%d_%d_%d_%d", i - 1, k(r.x), k(r.y), k(r.w), k(r.h))
+        end
+    end
+    return out
+end
+local function snap(v) return math.floor(v / M.GRID + 0.5) * M.GRID end
+-- a rect kept inside the canvas `d` (its own coordinates), at least the smallest card
+local function inside(d, x, y, w, h)
+    local maxw, maxh = d.w - 2 * M.PAD, d.h - M.RAIL - M.PAD
+    w = math.max(M.MIN_W, math.min(maxw, snap(w)))
+    h = math.max(M.MIN_H, math.min(maxh, snap(h)))
+    x = math.max(M.PAD, math.min(d.w - M.PAD - w, snap(x)))
+    y = math.max(M.RAIL, math.min(d.h - M.PAD - h, snap(y)))
+    return x, y, w, h
+end
+function M.canvas_layout(edge, sw, sh, top, opts)
+    opts = opts or {}
+    local o = {}
+    for k, v in pairs(opts) do o[k] = v end
+    o.rows = 2
+    -- where a card never placed goes: the two-row deck along the bottom, as a start
+    local base = M.layout("bottom", sw, sh, top, o)
+    local d = { edge = M.edge_of(edge), vertical = false, canvas = true, rows = 2, parts = {}, dropped = {}, bays = {} }
+    d.x = M.GAP
+    d.y = (tonumber(top) or 0) + 6
+    d.w = (tonumber(sw) or 1920) - 2 * M.GAP - (opts.spine and M.SPINE_W or 0)
+    d.h = (tonumber(sh) or 1080) - d.y - M.GAP
+    local ox = (d.w - base.w) / 2
+    local oy = (d.h - base.h) / 2
+    local placed = opts.canvas or {}
+    local order = M.clean_parts(opts.parts)
+    local hidden = opts.hidden or {}
+    for _, id in ipairs(order) do
+        if not hidden[id] then
+            local x, y, w, h
+            local r = placed[id]
+            if r then x, y, w, h = r.x * d.w, r.y * d.h, r.w * d.w, r.h * d.h
+            else
+                local b = base.bays[id]
+                if b then x, y, w, h = b.x + ox, b.y + oy, b.w, b.h
+                else x, y, w, h = ox + M.PAD, oy + M.RAIL, M.PARTS[id].w or 260, M.PARTS[id].h or 160 end
+            end
+            x, y, w, h = inside(d, x, y, w, h)
+            d.parts[#d.parts + 1] = { id = id, row = 1, x = x, y = y, w = w, h = h }
+        end
+    end
+    for _, part in ipairs(d.parts) do d.bays[part.id] = part end
+    d.out_x = d.edge == "left" and -1 or (d.edge == "right" and 1 or 0)
+    d.out_y = d.edge == "top" and -1 or (d.edge == "bottom" and 1 or 0)
+    return d
+end
+-- A card let go with its middle at (cx, cy) in the canvas: its place, as the canvas keeps it.
+function M.canvas_drop(d, id, cx, cy)
+    local b = d.bays[id]
+    if not b then return nil end
+    local x, y, w, h = inside(d, cx - b.w / 2, cy - b.h / 2, b.w, b.h)
+    return { x = x / d.w, y = y / d.h, w = w / d.w, h = h / d.h }
+end
+-- A card's corner let go at a new size.
+function M.canvas_resize(d, id, w, h)
+    local b = d.bays[id]
+    if not b then return nil end
+    local x, y, nw, nh = inside(d, b.x, b.y, w, h)
+    return { x = x / d.w, y = y / d.h, w = nw / d.w, h = nh / d.h }
+end
+
 -- Which place among the shown parts a card let go at (x, y) (the deck's coordinates) takes: before the
 -- first card it lands ahead of — in an earlier row, or further along the same row (down a column: by y).
 function M.place_at(d, x, y)
@@ -303,7 +395,7 @@ function M.circuit(d)
     for i, part in ipairs(d.parts) do
         nodes[#nodes + 1] = { x = part.x + 8, y = part.y + 17, bx = part.x + 8, by = M.RAIL - 7 }
         local nxt = d.parts[i + 1]
-        if nxt and nxt.row == part.row and not d.vertical then
+        if nxt and nxt.row == part.row and not d.vertical and not d.canvas then
             local gx = part.x + part.w + M.CARD_GAP / 2
             local y1 = part.y + part.h * 0.42
             local y2 = part.y + part.h * 0.62

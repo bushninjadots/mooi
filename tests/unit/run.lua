@@ -2670,6 +2670,45 @@ test("claude: asked lean, carried on by session, and its stream read", function(
     eq(w[1], "one two"); eq(w[2], "three"); eq(w[4], ""); eq(w[5], "six")
 end)
 
+test("nexus canvas: two rows are a free canvas, every card where it was put, inside it", function()
+    local nd = require("lib/nexusdeck")
+    local d = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {} })
+    eq(d.canvas, true, "a canvas")
+    eq(d.w, 1920 - 2 * nd.GAP, "the screen's width")
+    for _, p in ipairs(d.parts) do
+        assert(p.x >= nd.PAD and p.x + p.w <= d.w - nd.PAD, p.id .. " inside, across")
+        assert(p.y >= nd.RAIL and p.y + p.h <= d.h - nd.PAD, p.id .. " inside, down")
+    end
+    -- carried to the middle: it is there, snapped, and it is still there in the next layout
+    local r = nd.canvas_drop(d, "music", d.w / 2, d.h / 2)
+    local list = nd.canvas_list({ music = r })
+    eq(#list, 1, "one card placed")
+    local back = nd.clean_canvas(list)
+    local d2 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = back })
+    local m = d2.bays.music
+    eq(math.abs(m.x + m.w / 2 - d2.w / 2) <= nd.GRID, true, "in the middle across")
+    eq(math.abs(m.y + m.h / 2 - d2.h / 2) <= nd.GRID, true, "and down")
+    eq(m.x % nd.GRID, 0, "on the grid")
+    -- carried off the screen, it stays on the canvas; made tiny, it keeps the smallest size
+    local off = nd.canvas_drop(d2, "music", -500, 99999)
+    local d3 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = { music = off } })
+    eq(d3.bays.music.x, nd.PAD, "kept at the left"); eq(d3.bays.music.y + d3.bays.music.h <= d3.h - nd.PAD, true, "and above the foot")
+    local tiny = nd.canvas_resize(d3, "music", 3, 3)
+    local d4 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = { music = tiny } })
+    eq(d4.bays.music.w, nd.MIN_W, "never narrower than a card can be"); eq(d4.bays.music.h, nd.MIN_H, "or shorter")
+    -- a list that is not one is nothing; a name past the parts is nothing
+    eq(next(nd.clean_canvas({ "c99_1_1_1_1", "music", 4 })), nil, "nonsense places nothing")
+end)
+test("nexus deck: a card's size is its height down a side, as its width along a strip", function()
+    local nd = require("lib/nexusdeck")
+    local few = {}
+    for _, id in ipairs(nd.ORDER) do if id ~= "music" and id ~= "profile" then few[id] = true end end
+    local s = nd.layout("right", 1920, 1049, 0, { rows = 1, hidden = few, sizes = { music = "s" } })
+    local l = nd.layout("right", 1920, 1049, 0, { rows = 1, hidden = few, sizes = { music = "l" } })
+    eq(l.bays.music.h > s.bays.music.h, true, "large is taller than small")
+    eq(l.bays.music.w, s.bays.music.w, "and as wide: the column's width")
+end)
+
 local notch = require("lib/notch")
 test("notch: the fan's tabs on their arc, panels on the screen, the carousel, the weather's bars", function()
     local f = notch.fan(500)

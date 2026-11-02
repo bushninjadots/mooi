@@ -3698,10 +3698,10 @@ scene Mooi {
                 group {
                     show: sv_nexus_mode == 0
                     move: 0, gy_21_3 - 276
-                    SRow(276, "Rows", "The cards on one row, or split over two — down a side that is two columns of them, growing out towards the desktop", true, "", 550, true)
+                    SRow(276, "Layout", "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", true, "", 550, true)
                     STrack(874, 292, 264)
-                    SChoice(874, 292, 132, "One", sv_nexus_rows == 0, set_value, 360000)
-                    SChoice(1006, 292, 132, "Two", sv_nexus_rows == 1, set_value, 360001)
+                    SChoice(874, 292, 132, "One row", sv_nexus_rows == 0, set_value, 360000)
+                    SChoice(1006, 292, 132, "Free canvas", sv_nexus_rows == 1, set_value, 360001)
                     SRevert(844, 306, sv_nexus_rows != df_nexus_rows, set_value, 360000 + df_nexus_rows)
                 }
                 group {

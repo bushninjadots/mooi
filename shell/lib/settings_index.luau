@@ -166,7 +166,7 @@ local rows = {
     { title = "mooi is the whole desktop", desc = "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", tab = 20, page = "Advanced", y = 156 },
     { title = "The mark opens", desc = "The deck: everything along one edge. Cascade: every shelf of the spine out at once", tab = 21, page = "Control Nexus", y = 156 },
     { title = "Edge", desc = "Where the deck comes from: a strip along the bottom or the top, or a column down a side", tab = 21, page = "Control Nexus", y = 216 },
-    { title = "Rows", desc = "The cards on one row, or split over two — down a side that is two columns of them, growing out towards the desktop", tab = 21, page = "Control Nexus", y = 276 },
+    { title = "Layout", desc = "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", tab = 21, page = "Control Nexus", y = 276 },
     { title = "Profile", desc = "Your banner and picture, small or large", tab = 21, page = "Control Nexus", y = 336 },
     { title = "Notches off the deck", desc = "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", tab = 21, page = "Control Nexus", y = 396 },
     { title = "The spine", desc = "Tabs down the right edge: hover one and its shelf slides out (sound, network, power, machine, calendar…)", tab = 21, page = "Control Nexus", y = 550 },

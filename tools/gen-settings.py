@@ -426,7 +426,7 @@ SECTIONS = [
         ("card", "The deck"),
         ("choice", "The mark opens", "The deck: everything along one edge. Cascade: every shelf of the spine out at once", "nexus.mode", "sv_nexus_mode", ["The deck", "Cascade"]),
         ("choice", "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
-        ("choice", "Rows", "The cards on one row, or split over two — down a side that is two columns of them, growing out towards the desktop", "nexus.rows", "sv_nexus_rows", ["One", "Two"], "sv_nexus_mode == 0"),
+        ("choice", "Layout", "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", "nexus.rows", "sv_nexus_rows", ["One row", "Free canvas"], "sv_nexus_mode == 0"),
         ("choice", "Profile", "Your banner and picture, small or large", "nexus.profile", "sv_nexus_profile", ["Small", "Large"], "sv_nexus_mode == 0"),
         ("toggle", "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", "nexus.notches", "sv_nexus_notches", None, "sv_nexus_mode == 0"),
         ("note", "sv_nexus_mode == 0", "ON THE DECK: ✎ CARRIES A CARD BY MOVE, × SHELVES IT, ⇔ RESIZES IT"),
