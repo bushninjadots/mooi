@@ -3801,3 +3801,12 @@ are gone from Settings (Moves with music: Off / Wave; the outline: line, neon, n
 Checked live in islands, full and notch modes (screenshots), the wave with music playing (level ~0.5).
 **Also:** the stash now opens when its tab is pointed at (60 ms), as the side notch does — the user had
 asked that both "open on hover"; a press pins it, leaving closes it (checked with the real pointer).
+**The corners (same day, the user's screenshot).** Two faults: the etched light ran the whole height of
+each side, through the corners and the top and foot bands; and the corners were made by blending the
+four edges, which bulged, and the top two took the 12 px fillet of the island sitting in them while the
+foot's took the 35 px blend, so top and bottom differed. Now the edges join plainly and each inner
+corner is an explicit quarter round of `frame.radius`, set where the moving side meets the top's inner
+edge (the foot of a piece sitting in that corner, else the band) or the foot, computed in two steps so
+its ends land on the moving edges; each corner piece reaches back to the screen's corner, so only its
+round is ever an edge. The light runs only along the straight part of each side. Checked with a red
+debug copy at full music level and live.

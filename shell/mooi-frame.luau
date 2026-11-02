@@ -133,10 +133,13 @@ local function geo()
     fact.gr_x, fact.gr_w = piece(g.right)
     fact.gp_x, fact.gp_w = piece(g.panel)
     local isl = type(g.islands) == "table" and g.islands or {}
+    local first, last = nil, nil          -- where the islands begin and end: does one sit in a corner?
     for i = 0, SLOTS - 1 do
         local x, w = piece(isl[i + 1])
         fact["ix" .. i], fact["iw" .. i] = x, w
+        if w > 0 then first = first or x; last = x + w end
     end
+    fact.il_x, fact.ir_e = first or -1, last or -1
     local was = saving
     saving = g.saving == true
     if was ~= saving then listen() end
