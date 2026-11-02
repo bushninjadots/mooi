@@ -77,8 +77,6 @@ M.SETTERS = {
     "atlas.hot_corner", "atlas.hot_corner_delay",
     -- Hyprdrive's spring edges, ported into the Overview (docs/OVERVIEW-PORT.md)
     "atlas.spring_edges",
-    -- D118: the first desktop widget and its display preferences.
-    "desk.clock", "desk.clock_position", "desk.clock_24h", "desk.clock_seconds",
 }
 
 local function row_of(path)
