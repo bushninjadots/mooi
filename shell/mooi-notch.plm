@@ -686,7 +686,10 @@ scene Notch {
                 show: nt_tab == 3
                 zone box keep3 { from: nt_ox + if(nt_dir > 0, 0, -800), 40; size: 800, nt_h - 80; role: region; label: "Wallpapers" }
                 on scroll keep3 { wp_c = clamp(wp_c - wheel, 0, max(0, pics.count - 1)) }
+                // the middle picture's centre a fixed 390 px out from the notch whatever the radius (it was
+                // ~530 px out), just clear of the colour band along the arc's inside
                 let par = clamp(nt_h * 0.55, 470, 600)
+                let preach = 390 - par
                 text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
                 zone box wpst { from: nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312; size: 140, 24; cursor: pointer; role: button; label: "Open Skwd Wall, the wallpaper picker" }
@@ -719,7 +722,7 @@ scene Notch {
                 for p in pics {
                     let pa = (p.index + wp_base - wpc) * 12
                     let ps = 1 - min(abs(pa), 60) / 100
-                    let px = nt_ox + nt_dir * (cos(pa) * par - 212 + 168) - 140 * ps
+                    let px = nt_ox + nt_dir * (cos(pa) * par + preach) - 140 * ps
                     let py = nt_acy + sin(pa) * par - 79 * ps
                     group {
                         show: abs(pa) < 50

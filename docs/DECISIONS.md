@@ -3866,3 +3866,7 @@ fixed 260 px out from the notch (its centre was the arc's radius out, ~530 px on
 **Measured:** the notch at ~2.7 % GPU with the panel open on a busy terminal, 0 % closed; frames
 advanced ?448 → ?458 in a second while open and stopped once closed. Checked live with a test window
 moved to workspace 7 (its card showed its last frame).
+**The Wallpapers panel too (same day):** its middle picture's centre now stands a fixed 390 px out
+from the notch (it was ~530 px), its left edge just clear of the colour band along the arc's inside
+(which reaches ~206 px); the cards further round stay clear of the band. The pictures were already the
+wallpapers themselves, so nothing else changed there.
