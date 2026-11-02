@@ -284,3 +284,45 @@ sh tests/components.sh
 
 This is a source-contract check, not a Pleamar runtime or pointer-interaction test. The scene compiler and live disabled-click behaviour still require verification with the installed Pleamar runtime.
 
+## 13. Editor-ready component descriptor registry
+
+The first descriptor registry now lives in `shell/lib/components.luau`. It describes the two existing action buttons without changing their Pleamar implementations:
+
+- `ferrolume.button` → `FerrolumeParts.SButton`
+- `lumen.button` → `Lumen.Button`
+
+Each descriptor carries:
+
+- Stable ID, category, name, description and exact source location.
+- Design direction and surface identity, so an editor can preserve each treatment.
+- Geometry mode, preferred dimensions, resize rules and hard constraints.
+- Typed properties with defaults, editor visibility, ranges, groups and units.
+- Separate non-editable event/data bindings.
+- Implemented and not-yet-implemented interaction states.
+- Event names and payload descriptions.
+- Theme-role dependencies and motion notes.
+- A preview recipe suitable for a future scene-backed preview renderer.
+
+### Registry API
+
+The module is pure Lua/Luau and has no Pleamar globals or filesystem side effects:
+
+- `components.ids()` — stable, sorted IDs.
+- `components.list(category?)` — descriptor copies for a category or the full catalogue.
+- `components.get(id)` — one defensive descriptor copy.
+- `components.defaults(id)` — editable property defaults only.
+- `components.validate(id, values)` — validates typed, bounded editor values and rejects unknown fields.
+
+The validator deliberately accepts only property data. It does not accept event callbacks, code, scene fragments or arbitrary executable values. The event/data wiring remains owned by the scene and its logic. This is a metadata and validation foundation, not yet a visual editor, live preview renderer, persistence format or undo/redo implementation.
+
+### First supported editor properties
+
+| Component | Editable properties | Geometry |
+|---|---|---|
+| `ferrolume.button` | width, label, hot treatment, enabled | Fixed 30 px height; width 32–720 px |
+| `lumen.button` | width, height, label, tone, solid treatment, enabled | Width 32–720 px; height 24–120 px |
+
+Position (`x`, `y`) is supplied by the layout engine and is not exposed as a style control. Event handler and payload bindings are not editable properties. The descriptors explicitly mark hover/enabled as implemented and focus/pressed visuals as not yet implemented; the editor must not present planned states as working features.
+
+The registry is covered by the pure unit suite in `tests/unit/run.lua`, which is already part of CI. It tests stable discovery, defensive copies, valid and invalid property values, safe defaults and honest state metadata.
+
