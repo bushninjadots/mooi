@@ -200,8 +200,6 @@ local GO = {
     [13] = function() close(); bar("emit run_updates") end,
     [20] = function() close(); launch("mooi", { "player" }) end,
     [30] = function() close(); bar("emit open_notes") end,
-    -- the spine's own connections shelf (D100), beside its tab
-    [50] = function() bar("fact isl_sy " .. tostring(math.floor(screen.h / 2 - 140)), "fact isl_shelf true", "fact open shnet"); close() end,
     -- Hyprland reads its config again, then the bar comes back on it (bin/mooi restart-hypr). Asked
     -- first and ended after: the deck is the bar's child, so the refresh takes it away mid-slide.
     [60] = function() launch("mooi", { "restart-hypr" }); close("restarting Hyprland") end,
@@ -257,7 +255,7 @@ local spaces = {}        -- the workspaces of this monitor (lib/nexusdeck spaces
 local function aspect() return screen.full_w and (screen.full_w / screen.full_h) or 16 / 9 end
 local function place()
     local top = 0                -- the bar's reserve is already outside the surface
-    local opts = { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
+    local opts = { scenes = #scenes + 1,
                    tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n,
                    rows = fact.dk_rows, large = fact.nx_large, sizes = sizes, canvas = canvas }
     -- two rows: a free canvas inside the two rows' band, every card where you put it and as big as you made it (D122)
@@ -299,15 +297,21 @@ on("dk_notch", function(v)
                         "fact nt_acy " .. r.acy, "fact nt_dir " .. r.dir, "emit nt_show_deck " .. tab })
 end)
 
+-- A card's event from the scene: which card, and the two numbers it carries (deck.unpack_event)
+local function card_event(v)
+    local code, a, b = deck.unpack_event(v)
+    return code and BY_CODE[code], a, b
+end
+
 -- ── Arranging (✎): parts carried to a new place, hidden, shown again; the edge; the first order ──
-on("dk_edit_on", function(v) fact.dk_edit = tonumber(v) == 1; fact.dk_hws, fact.dk_hsc = -1, -1 end)
+on("dk_edit_on", function(v) fact.dk_edit = tonumber(v) == 1; fact.dk_hws, fact.dk_hsc = -1, -1; fact.dk_lon, fact.dk_l2on = false, false end)
 on("dk_drop", function(v)
-    local code, x, y = deck.unpack_event(v)
-    local id = code and BY_CODE[code]
+    local id, x, y = card_event(v)
     if not id or not d then return end
+    fact.dk_lon, fact.dk_l2on = false, false
     if d.canvas then
-        -- on the canvas a card stays exactly where it is let go (its middle there, on the grid)
-        canvas[id] = deck.canvas_drop(d, id, x, y)
+        -- on the canvas a card settles where the landing showed it (grid, neighbours' edges, never on one)
+        for k, r in pairs(deck.canvas_plan(d, id, x, y) or {}) do canvas[k] = deck.canvas_share(d, r) end
         save_settings(function(s) s.canvas = deck.canvas_list(canvas) end)
         place()
         return
@@ -337,10 +341,34 @@ on("dk_reset", function()
     save_parts(); place()
     notice("every part back")
 end)
+-- The landing (D125): while a card is carried (its middle) or its corner pulled (its size), where it
+-- would settle, for the deck to outline under the hand. Only the canvas has one.
+local function landing(id, x, y, w, h)
+    fact.dk_lx, fact.dk_ly, fact.dk_lw, fact.dk_lh = x, y, w, h
+    fact.dk_lon = true
+    fact.dk_l2on = false
+end
+on("dk_drag", function(v)
+    local id, x, y = card_event(v)
+    if not id or not d or not d.canvas or not d.bays[id] then return end
+    local plan, swap = deck.canvas_plan(d, id, x, y)
+    local r = plan[id]
+    landing(id, r.x, r.y, r.w, r.h)
+    -- changing places: the other card's landing too, where this one was
+    local o = swap and plan[swap]
+    fact.dk_l2on = o ~= nil
+    if o then fact.dk_l2x, fact.dk_l2y, fact.dk_l2w, fact.dk_l2h = o.x, o.y, o.w, o.h end
+end)
+on("dk_sizing", function(v)
+    local id, w, h = card_event(v)
+    if not id or not d or not d.canvas or not d.bays[id] then return end
+    local _, lx, ly, lw, lh = deck.canvas_resize(d, id, w, h)
+    landing(id, lx, ly, lw, lh)
+end)
 -- the canvas: a card's corner let go (deck.unpack_event: its code, width and height)
 on("dk_resize", function(v)
-    local code, w, h = deck.unpack_event(v)
-    local id = code and BY_CODE[code]
+    local id, w, h = card_event(v)
+    fact.dk_lon, fact.dk_l2on = false, false
     if not id or not d or not d.canvas then return end
     canvas[id] = deck.canvas_resize(d, id, w, h)
     save_settings(function(s) s.canvas = deck.canvas_list(canvas) end)
@@ -897,8 +925,8 @@ end
 function relayout_rest()
     if not d then return end
     publish_scenes(); publish_wait()
-    local bay = d.bays.spaces or { x = 0, y = 0, w = 600, h = deck.ROW }   -- hidden: the tiles for Cascade
-    local rects = deck.tiles(#spaces, bay, d.vertical, aspect())
+    local bay = d.bays.spaces or { x = 0, y = 0, w = 600, h = deck.ROW }   -- hidden: tiles still measured, for the notch
+    local rects = deck.tiles(#spaces, bay, nil, aspect())       -- row or columns, by the bay's own shape
     tiles_at = {}
     local rows = {}
     local wins = deck.windows(clients, screen.mon)

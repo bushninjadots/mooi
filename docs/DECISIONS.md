@@ -3720,3 +3720,35 @@ numbers are float32 (whole only up to 2^24 = 16,777,216), so drops and corner pu
 depending on the card. They are now `1000000·code + 1000·(x/4) + y/4` (at most 10,999,999: exact, to
 4 px — finer than the 8 px grid), read by `lib/nexusdeck.unpack_event`. Checked in an isolated Nexus: a
 card dropped at (920, 236) centred there; a corner pulled to 300×152 gave 304×152 (it gave 304×128).
+
+## D125 · 2026-11-02 · Arranging the canvas made easy; every card the same on every edge; one Part
+
+**Easier to place (asked).** While a card is carried or its corner pulled, the logic answers each move
+(`dk_drag`, `dk_sizing`) with where it would settle, and the deck outlines that spot over the cards (the
+landing; `dk_l*`, gliding on `m.select`). It settles by `lib/nexusdeck`: a **16 px grid** counted from the
+first card's corner; edges within **14 px** of a neighbour's (side by side at the deck's 8 px gap, or lined
+up with it) or of the band's ends **meet** them; a gap nearly its size **narrows it to fit** (to 60 %);
+otherwise the **nearest free place**, never on another card. Let go with its middle **on a card, the two
+change slots** (place and size together), since a full band has no free place; the other card's landing
+shows in the warm tone. A corner stops a gap short of a card it would run into. The dropped card glides
+from the hand to its place (its spring is set where it was let go), no longer from where it started.
+Places are saved in ten-thousandths (`k<n>_…`; 1/1000 of the band was 2 px off the grid); `c<n>_…` still
+reads.
+**The same on every edge (asked: "why is the top and bottom one different to the sides?").** Cards chose
+their layout by the deck's edge (`dk_vert`): down a side Music lost its visualiser, play plate and times,
+the rail its date. Each card now lays itself out by **its own size**: Music is compact under 196 px tall
+and keeps everything; Machine puts its graphs side by side when short; the workspaces' miniatures take a
+row or columns, whichever makes them bigger in the bay (`tiles(…, nil, …)`); the date shows when the rail
+is 560 px wide. `dk_vert` is left only for geometry (the sweep, the notch tabs).
+**Redundancy.** The eleven cards each carried ~30 hand-copied lines of arranging controls and two glide
+props; they are one `component Part` (children = the card's content), and `EditFrame` is gone: the scene
+is 1806 → 1523 lines. The spine's leftovers are removed: `SPINE_W`/`opts.spine` (it still took 58 px off a
+right-hand or canvas deck), the dead `GO[50]` shelf, a Cascade comment; the card events decode in one
+`card_event`.
+**Performance:** measured the same, open ~1.5–1.9 % and hidden ~0.5–0.7 % of a core, before and after; the
+gain is in the code, not the runtime, which was already small. The `cat /proc/…` readers stay:
+`files.read` is limited to the scene's own folder.
+**Checked** with the real pointer (ydotool) on an isolated Nexus: a card carried onto Workspaces changed
+slots with it (Workspaces took two columns in the narrow slot); a corner pulled to 211×205 settled
+210×214 on the band's foot; a card let go at (326, 34) met Profile's side at (320, 30). `tests/nexus.sh`
+not run (it clashes with the resident Nexus by name); 284 unit tests, `mooi check`.

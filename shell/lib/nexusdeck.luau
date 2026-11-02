@@ -12,7 +12,6 @@ M.ROW = 214            -- a row of cards along a strip
 M.CARD_GAP = 8         -- between cards: the circuit's traces run there
 M.PAD = 8              -- round the cards, inside the deck
 M.CHIP_W, M.CHIP_H, M.CHIP_GAP = 76, 24, 4
-M.SPINE_W = 58         -- the spine's tabs on the right edge (D100), kept clear on that side
 M.TILE_GAP = 10        -- between the workspaces' miniatures
 
 -- The deck's parts, every one a card that can be carried anywhere (✎ on the deck): its name, its
@@ -119,7 +118,7 @@ function M.next_size(k) return ({ s = "m", m = "l", l = "s" })[k or "m"] or "m" 
 
 -- Where the deck sits and where each card is, inside a screen `sw` × `sh` whose top `top` px the bar
 -- keeps. `opts`: `parts` (the order), `hidden` (a set), `rows` (1 or 2 along a strip), `large` (the
--- large profile), `faders`, `tiles` and `aspect` (the workspaces' miniatures), `spine`. Along a strip
+-- large profile), `faders`, `tiles` and `aspect` (the workspaces' miniatures). Along a strip
 -- the cards flow into the rows in your order, each row filled out to the deck's width; what cannot fit
 -- gives way, the least kept first (`d.dropped`). Rects are the deck's.
 function M.layout(edge, sw, sh, top, opts)
@@ -227,7 +226,7 @@ function M.layout(edge, sw, sh, top, opts)
         local cols = rows >= 2 and 2 or 1
         local colw = M.COLUMN_W - 2 * M.PAD                 -- a card's width down a column
         d.w = cols == 2 and (2 * colw + M.CARD_GAP + 2 * M.PAD) or M.COLUMN_W
-        d.x = edge == "left" and M.GAP or sw - d.w - M.GAP - (opts.spine and M.SPINE_W or 0)
+        d.x = edge == "left" and M.GAP or sw - d.w - M.GAP
         d.y = top + 6
         local room = sh - d.y - M.GAP
         local tw = (colw - 28 - M.TILE_GAP) / 2
@@ -286,15 +285,19 @@ end
 -- size each, as thousandths of the band (nexus.canvas: "c<n>_<x>_<y>_<w>_<h>", `n` the card's place in
 -- M.ORDER), so they hold on another screen. A card never placed takes its place in the two-row deck.
 -- Moves snap to an 8 px grid and stay inside the band.
-M.GRID = 8
+M.GRID = 16             -- the canvas's grid, counted from the first card's corner (PAD, RAIL)
+M.MAGNET = 14           -- how near an edge must come to another card's (or the band's) to meet it
 M.MIN_H = 96
+-- Saved as ten-thousandths ("k<n>_…", D125) so a card on the grid comes back on it (a thousandth of
+-- a 1902 px band is 2 px); the older thousandths ("c<n>_…") are still read.
 function M.clean_canvas(list)
     local out = {}
     for _, v in ipairs(type(list) == "table" and list or {}) do
-        local n, x, y, w, h = tostring(v):match("^c(%d+)_(%d+)_(%d+)_(%d+)_(%d+)$")
+        local kind, n, x, y, w, h = tostring(v):match("^([ck])(%d+)_(%d+)_(%d+)_(%d+)_(%d+)$")
         local id = n and M.ORDER[tonumber(n) + 1]
         if id then
-            local f = function(k) return math.max(0, math.min(1000, tonumber(k) or 0)) / 1000 end
+            local scale = kind == "k" and 10000 or 1000
+            local f = function(k) return math.max(0, math.min(scale, tonumber(k) or 0)) / scale end
             out[id] = { x = f(x), y = f(y), w = f(w), h = f(h) }
         end
     end
@@ -305,21 +308,116 @@ function M.canvas_list(t)
     for i, id in ipairs(M.ORDER) do
         local r = t[id]
         if r then
-            local k = function(v) return math.max(0, math.min(1000, math.floor((tonumber(v) or 0) * 1000 + 0.5))) end
-            out[#out + 1] = string.format("c%d_%d_%d_%d_%d", i - 1, k(r.x), k(r.y), k(r.w), k(r.h))
+            local k = function(v) return math.max(0, math.min(10000, math.floor((tonumber(v) or 0) * 10000 + 0.5))) end
+            out[#out + 1] = string.format("k%d_%d_%d_%d_%d", i - 1, k(r.x), k(r.y), k(r.w), k(r.h))
         end
     end
     return out
 end
-local function snap(v) return math.floor(v / M.GRID + 0.5) * M.GRID end
+local function snap(v, origin) return origin + math.floor((v - origin) / M.GRID + 0.5) * M.GRID end
+local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
 -- a rect kept inside the canvas `d` (its own coordinates), at least the smallest card
 local function inside(d, x, y, w, h)
     local maxw, maxh = d.w - 2 * M.PAD, d.h - M.RAIL - M.PAD
-    w = math.max(M.MIN_W, math.min(maxw, snap(w)))
-    h = math.max(M.MIN_H, math.min(maxh, snap(h)))
-    x = math.max(M.PAD, math.min(d.w - M.PAD - w, snap(x)))
-    y = math.max(M.RAIL, math.min(d.h - M.PAD - h, snap(y)))
-    return x, y, w, h
+    w = clamp(w, M.MIN_W, maxw)
+    h = clamp(h, M.MIN_H, maxh)
+    return clamp(x, M.PAD, d.w - M.PAD - w), clamp(y, M.RAIL, d.h - M.PAD - h), w, h
+end
+-- do two rects come closer than a card's gap?
+local function touching(a, b)
+    return a.x < b.x + b.w + M.CARD_GAP and b.x < a.x + a.w + M.CARD_GAP
+       and a.y < b.y + b.h + M.CARD_GAP and b.y < a.y + a.h + M.CARD_GAP
+end
+local function others(d, id)
+    local out = {}
+    for _, p in ipairs(d.parts) do if p.id ~= id then out[#out + 1] = p end end
+    return out
+end
+-- The nearest of `marks` to `v` within the magnet, or the grid's nearest line.
+local function nearest(v, marks, origin)
+    local best, dist = nil, M.MAGNET + 0.001
+    for _, m in ipairs(marks) do
+        local e = math.abs(m - v)
+        if e < dist then best, dist = m, e end
+    end
+    return best or snap(v, origin)
+end
+-- Where a card carried to (x, y) settles on the canvas: its edges meet a neighbour's (side by side
+-- at the deck's gap, or lined up with it) or the band's when they come within the magnet, otherwise
+-- the grid; and if that would lay it over another card, the nearest place that does not. A pure
+-- function of the canvas, so the scene can show the landing while the card is still in the hand.
+function M.canvas_snap_move(d, id, x, y, w, h)
+    x, y, w, h = inside(d, x, y, w, h)
+    local rest = others(d, id)
+    local xs, ys = { M.PAD, d.w - M.PAD - w }, { M.RAIL, d.h - M.PAD - h }
+    for _, o in ipairs(rest) do
+        for _, v in ipairs({ o.x, o.x + o.w - w, o.x + o.w + M.CARD_GAP, o.x - M.CARD_GAP - w }) do xs[#xs + 1] = v end
+        for _, v in ipairs({ o.y, o.y + o.h - h, o.y + o.h + M.CARD_GAP, o.y - M.CARD_GAP - h }) do ys[#ys + 1] = v end
+    end
+    local fx, fy = inside(d, nearest(x, xs, M.PAD), nearest(y, ys, M.RAIL), w, h)
+    local function free(cx, cy)
+        local r = { x = cx, y = cy, w = w, h = h }
+        for _, o in ipairs(rest) do if touching(r, o) then return false end end
+        return true
+    end
+    if free(fx, fy) then return fx, fy, w, h end
+    -- a gap nearly its size: it narrows (or shortens) to fit there, down to 60 % of itself
+    local fw, fh = w, h
+    for _, o in ipairs(rest) do
+        if touching({ x = fx, y = fy, w = fw, h = fh }, o) then
+            local cw = o.x > fx and o.x - M.CARD_GAP - fx or -1
+            local ch = o.y > fy and o.y - M.CARD_GAP - fy or -1
+            if cw > 0 and (ch <= 0 or cw * fh >= fw * ch) then fw = cw elseif ch > 0 then fh = ch end
+        end
+    end
+    local function bf(fw2, fh2)
+        local r = { x = fx, y = fy, w = fw2, h = fh2 }
+        for _, o in ipairs(rest) do if touching(r, o) then return false end end
+        return true
+    end
+    if fw >= math.max(M.MIN_W, 0.6 * w) and fh >= math.max(M.MIN_H, 0.6 * h) and bf(fw, fh) then
+        return fx, fy, fw, fh
+    end
+    -- no room here: the nearest free place among the neighbours' sides and the band's ends
+    local bx, by, bd = nil, nil, math.huge
+    for _, cx in ipairs(xs) do
+        for _, cy in ipairs(ys) do
+            local ix, iy = inside(d, cx, cy, w, h)
+            if ix == cx and iy == cy and free(cx, cy) then
+                local e = (cx - x) ^ 2 + (cy - y) ^ 2
+                if e < bd then bx, by, bd = cx, cy, e end
+            end
+        end
+    end
+    if bx then return bx, by, w, h end
+    return fx, fy, w, h                                  -- no room anywhere: where it was put
+end
+-- What a card's corner pulled to (w, h) settles at: its far edges meet a neighbour's or the band's
+-- within the magnet, otherwise the grid, and it stops short of a card it would run into.
+function M.canvas_snap_size(d, id, x, y, w, h)
+    local rest = others(d, id)
+    local rs, bs = { d.w - M.PAD }, { d.h - M.PAD }
+    for _, o in ipairs(rest) do
+        for _, v in ipairs({ o.x - M.CARD_GAP, o.x + o.w }) do rs[#rs + 1] = v end
+        for _, v in ipairs({ o.y - M.CARD_GAP, o.y + o.h }) do bs[#bs + 1] = v end
+    end
+    local r = nearest(x + w, rs, M.PAD)
+    local b = nearest(y + h, bs, M.RAIL)
+    local _, _, nw, nh = inside(d, x, y, r - x, b - y)
+    nw = math.min(nw, d.w - M.PAD - x)
+    nh = math.min(nh, d.h - M.PAD - y)
+    -- grown into a neighbour it was clear of: stop at it, on whichever side costs less
+    local was = { x = x, y = y, w = (d.bays[id] or {}).w or nw, h = (d.bays[id] or {}).h or nh }
+    for _, o in ipairs(rest) do
+        local now = { x = x, y = y, w = nw, h = nh }
+        if touching(now, o) and not touching(was, o) then
+            local cw, ch = o.x - M.CARD_GAP - x, o.y - M.CARD_GAP - y
+            local okw, okh = cw >= M.MIN_W and o.x > x, ch >= M.MIN_H and o.y > y
+            if okw and (not okh or cw * nh >= nw * ch) then nw = cw
+            elseif okh then nh = ch end
+        end
+    end
+    return x, y, nw, nh
 end
 function M.canvas_layout(edge, sw, sh, top, opts)
     opts = opts or {}
@@ -338,7 +436,7 @@ function M.canvas_layout(edge, sw, sh, top, opts)
     else
         -- along the top or bottom: the screen's width, two rows tall (even while the cards fit in one)
         d.x = M.GAP
-        d.w = sw - 2 * M.GAP - (opts.spine and M.SPINE_W or 0)
+        d.w = sw - 2 * M.GAP
         d.h = M.RAIL + 2 * M.ROW + M.CARD_GAP + M.PAD
         d.y = d.edge == "top" and top + 6 or sh - d.h - M.GAP
     end
@@ -351,7 +449,8 @@ function M.canvas_layout(edge, sw, sh, top, opts)
         if not hidden[id] then
             local x, y, w, h
             local r = placed[id]
-            if r then x, y, w, h = r.x * d.w, r.y * d.h, r.w * d.w, r.h * d.h
+            local px = function(v) return math.floor(v + 0.5) end
+            if r then x, y, w, h = px(r.x * d.w), px(r.y * d.h), px(r.w * d.w), px(r.h * d.h)
             else
                 local b = base.bays[id]
                 if b then x, y, w, h = b.x + ox, b.y + oy, b.w, b.h
@@ -374,19 +473,35 @@ function M.unpack_event(v)
     if n < 0 then return nil end
     return n // 1000000, (n % 1000000) // 1000 * 4, n % 1000 * 4
 end
--- A card let go with its middle at (cx, cy) in the canvas: its place, as the canvas keeps it.
-function M.canvas_drop(d, id, cx, cy)
+-- A card let go with its middle at (cx, cy): where every card it moves settles, in pixels, as
+-- { [id] = { x, y, w, h } }. Over another card the two change slots, place and size together, so
+-- a full band (which has no free place to go to) stays as tidy as it was: each card lays itself out
+-- by its own size. Anywhere else it settles by canvas_snap_move.
+function M.canvas_plan(d, id, cx, cy)
     local b = d.bays[id]
     if not b then return nil end
-    local x, y, w, h = inside(d, cx - b.w / 2, cy - b.h / 2, b.w, b.h)
-    return { x = x / d.w, y = y / d.h, w = w / d.w, h = h / d.h }
+    for _, o in ipairs(others(d, id)) do
+        if cx >= o.x and cx <= o.x + o.w and cy >= o.y and cy <= o.y + o.h then
+            return { [id] = { x = o.x, y = o.y, w = o.w, h = o.h }, [o.id] = { x = b.x, y = b.y, w = b.w, h = b.h } }, o.id
+        end
+    end
+    local x, y, w, h = M.canvas_snap_move(d, id, cx - b.w / 2, cy - b.h / 2, b.w, b.h)
+    return { [id] = { x = x, y = y, w = w, h = h } }
+end
+-- A rect in pixels as the canvas keeps it: shares of the band.
+function M.canvas_share(d, r) return { x = r.x / d.w, y = r.y / d.h, w = r.w / d.w, h = r.h / d.h } end
+function M.canvas_drop(d, id, cx, cy)
+    local plan = M.canvas_plan(d, id, cx, cy)
+    if not plan then return nil end
+    local r = plan[id]
+    return M.canvas_share(d, r), r.x, r.y, r.w, r.h
 end
 -- A card's corner let go at a new size.
 function M.canvas_resize(d, id, w, h)
     local b = d.bays[id]
     if not b then return nil end
-    local x, y, nw, nh = inside(d, b.x, b.y, w, h)
-    return { x = x / d.w, y = y / d.h, w = nw / d.w, h = nh / d.h }
+    local x, y, nw, nh = M.canvas_snap_size(d, id, b.x, b.y, w, h)
+    return { x = x / d.w, y = y / d.h, w = nw / d.w, h = nh / d.h }, x, y, nw, nh
 end
 
 -- Which place among the shown parts a card let go at (x, y) (the deck's coordinates) takes: before the
@@ -481,9 +596,15 @@ function M.free_space(spaces)
     return 1
 end
 
--- The tiles' places in the workspaces bay, one more for "+": a row along a strip, columns down a
--- column, each the monitor's shape (`aspect` = width / height), as large as the room allows.
+-- The tiles' places in the workspaces bay, one more for "+", each the monitor's shape (`aspect` =
+-- width / height), as large as the room allows: in one row or in columns, whichever makes them
+-- bigger in the bay's own shape (D125: on a canvas the bay can be any shape, on any edge).
+-- `vertical` forces columns (true) or a row (false); nil chooses.
 function M.tiles(n, bay, vertical, aspect)
+    if vertical == nil then
+        local row, cols = M.tiles(n, bay, false, aspect), M.tiles(n, bay, true, aspect)
+        return ((cols[1] and cols[1].w or 0) > (row[1] and row[1].w or 0)) and cols or row
+    end
     aspect = (tonumber(aspect) or 0) > 0 and aspect or 16 / 9
     local count = n + 1
     local pad_x, top, bottom = 14, 30, 10

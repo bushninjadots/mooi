@@ -2506,19 +2506,19 @@ test("nexus deck: the circuit wires every card to the bus and neighbours to each
     eq(#nodes, #d.parts); eq(#traces, 3 * (#d.parts - 1), "three segments between each pair in a row")
     eq(nodes[1].by, deck.RAIL - 7)
 end)
-test("nexus deck: a column down either side, its cards stacked, the spine kept clear", function()
+test("nexus deck: a column down either side, its cards stacked, against the screen's edge", function()
     local l = deck.layout("left", 1920, 1080, 52, { hidden = deck.clean_hidden(nil, false) })
     eq(l.vertical, true); eq(l.x, deck.GAP); eq(l.y, 58); eq(l.out_x, -1)
     eq(l.parts[1].y, deck.RAIL)
     for i = 2, #l.parts do eq(l.parts[i].y, l.parts[i - 1].y + l.parts[i - 1].h + deck.CARD_GAP) end
     assert(l.h <= 1080 - 58 - deck.GAP, "never past the screen")
     assert(#deck.layout("left", 1920, 1080, 52, { hidden = {}, tiles = 6 }).dropped > 0, "every part with many workspaces gives way down a side")
-    eq(deck.layout("right", 1920, 1080, 52, { spine = true }).x, 1920 - deck.COLUMN_W - deck.GAP - deck.SPINE_W, "the spine's tabs stay clear")
+    eq(deck.layout("right", 1920, 1080, 52, {}).x, 1920 - deck.COLUMN_W - deck.GAP, "against the right edge")
     -- two rows down a side are two columns: twice as wide, half as tall, the spine still clear
-    local one = deck.layout("right", 1920, 1080, 52, { hidden = {}, spine = true })
-    local two = deck.layout("right", 1920, 1080, 52, { hidden = {}, spine = true, rows = 2 })
+    local one = deck.layout("right", 1920, 1080, 52, { hidden = {} })
+    local two = deck.layout("right", 1920, 1080, 52, { hidden = {}, rows = 2 })
     eq(two.w, 2 * (deck.COLUMN_W - 2 * deck.PAD) + deck.CARD_GAP + 2 * deck.PAD, "two columns wide")
-    eq(two.x, 1920 - two.w - deck.GAP - deck.SPINE_W, "the spine's tabs stay clear of both")
+    eq(two.x, 1920 - two.w - deck.GAP, "both columns against the right edge")
     assert(#two.dropped < #one.dropped, "two columns hold more")
     local cols, bottom = {}, 0
     for _, p in ipairs(two.parts) do
@@ -2584,6 +2584,11 @@ test("nexus deck: tiles the screen's shape, fitted to the bay in a row or in col
     local col = deck.tiles(9, { x = 0, y = 0, w = 404, h = 380 }, true, 16 / 9)
     local last = col[#col]
     assert(last.y + last.h + 16 <= 380, "every tile and its name fit down the column")
+    -- left to choose, the bay's shape decides: a wide one a row, a tall one columns
+    local wide = deck.tiles(3, { x = 0, y = 0, w = 948, h = 200 }, nil, 16 / 9)
+    eq(wide[2].y, wide[1].y, "a wide bay: one row")
+    local tall = deck.tiles(5, { x = 0, y = 0, w = 404, h = 600 }, nil, 16 / 9)
+    eq(tall[2].y, tall[1].y, "a tall bay: two across"); eq(tall[3].y > tall[1].y, true, "and down")
 end)
 test("nexus deck: windows as parts of their screen, floating ones over the tiled", function()
     local mon = { id = 0, x = 0, y = 0, width = 1920, height = 1080, scale = 1 }
@@ -2690,22 +2695,26 @@ test("nexus canvas: two rows are a free canvas inside their band, every card whe
         assert(p.x >= nd.PAD and p.x + p.w <= d.w - nd.PAD, p.id .. " inside, across")
         assert(p.y >= nd.RAIL and p.y + p.h <= d.h - nd.PAD, p.id .. " inside, down")
     end
-    -- carried to the middle: it is there, snapped, and it is still there in the next layout
-    local r = nd.canvas_drop(d, "music", d.w / 2, d.h / 2)
+    -- alone on the canvas, carried to the middle: it is there, on the grid, and still there next time
+    local alone = {}
+    for _, id in ipairs(nd.ORDER) do if id ~= "music" then alone[id] = true end end
+    local da = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = alone })
+    local r = nd.canvas_drop(da, "music", da.w / 2, da.h / 2)
     local list = nd.canvas_list({ music = r })
     eq(#list, 1, "one card placed")
     local back = nd.clean_canvas(list)
-    local d2 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = back })
+    local d2 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = alone, canvas = back })
     local m = d2.bays.music
     eq(math.abs(m.x + m.w / 2 - d2.w / 2) <= nd.GRID, true, "in the middle across")
     eq(math.abs(m.y + m.h / 2 - d2.h / 2) <= nd.GRID, true, "and down")
-    eq(m.x % nd.GRID, 0, "on the grid")
+    eq((m.x - nd.PAD) % nd.GRID, 0, "on the grid, after being saved and read")
+    eq(nd.clean_canvas({ "c6_500_500_100_100" }).music.x, 0.5, "the older thousandths still read")
     -- carried off the screen, it stays on the canvas; made tiny, it keeps the smallest size
     local off = nd.canvas_drop(d2, "music", -500, 99999)
-    local d3 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = { music = off } })
+    local d3 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = alone, canvas = { music = off } })
     eq(d3.bays.music.x, nd.PAD, "kept at the left"); eq(d3.bays.music.y + d3.bays.music.h <= d3.h - nd.PAD, true, "and above the foot")
     local tiny = nd.canvas_resize(d3, "music", 3, 3)
-    local d4 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = { music = tiny } })
+    local d4 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = alone, canvas = { music = tiny } })
     eq(d4.bays.music.w, nd.MIN_W, "never narrower than a card can be"); eq(d4.bays.music.h, nd.MIN_H, "or shorter")
     -- a card and a place as one number the scene can hold exactly (float32: whole up to 2^24)
     local c, x, y = nd.unpack_event(10 * 1000000 + 480 * 1000 + 269)
@@ -2714,6 +2723,45 @@ test("nexus canvas: two rows are a free canvas inside their band, every card whe
     eq(nd.unpack_event("nonsense"), nil, "nonsense is nothing")
     -- a list that is not one is nothing; a name past the parts is nothing
     eq(next(nd.clean_canvas({ "c99_1_1_1_1", "music", 4 })), nil, "nonsense places nothing")
+end)
+test("nexus canvas: edges meet their neighbours, cards never land on each other", function()
+    local nd = require("lib/nexusdeck")
+    local two = {}
+    for _, id in ipairs(nd.ORDER) do if id ~= "music" and id ~= "today" then two[id] = true end end
+    local d = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = two,
+        canvas = { music = { x = 100 / 1902, y = 30 / 474, w = 272 / 1902, h = 216 / 474 } } })
+    local m = d.bays.music
+    -- let go 9 px past music's right side: it meets it at the deck's gap, its top lined up with music's
+    local x, y = nd.canvas_snap_move(d, "today", m.x + m.w + nd.CARD_GAP + 9, m.y + 5, 222, 134)
+    eq(x, m.x + m.w + nd.CARD_GAP, "side by side, at the gap"); eq(y, m.y, "tops lined up")
+    -- far from anything: the grid
+    local gx, gy = nd.canvas_snap_move(d, "today", 1203, 180, 222, 134)
+    eq((gx - nd.PAD) % nd.GRID, 0, "on the grid across"); eq((gy - nd.RAIL) % nd.GRID, 0, "and down")
+    -- settling over music (not dropped on its middle): the nearest place beside it instead
+    local ox, oy = nd.canvas_snap_move(d, "today", m.x + 20, m.y + 20, 222, 134)
+    local clear = ox >= m.x + m.w + nd.CARD_GAP or ox + 222 + nd.CARD_GAP <= m.x or oy >= m.y + m.h + nd.CARD_GAP or oy + 134 + nd.CARD_GAP <= m.y
+    eq(clear, true, "not over music")
+    -- a gap a little narrower than it: it narrows to fit there rather than going far away
+    local d5 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = two,
+        canvas = { music = { x = 600 / 1900, y = 30 / 474, w = 272 / 1900, h = 216 / 474 } } })
+    local m5 = d5.bays.music
+    local gx2, _, gw2 = nd.canvas_snap_move(d5, "today", m5.x - nd.CARD_GAP - 200, m5.y, 222, 134)
+    eq(gx2 + gw2 + nd.CARD_GAP <= m5.x, true, "fits beside music"); eq(gw2 >= 0.6 * 222 and gw2 < 222, true, "narrowed, not past 60 %")
+    -- let go with its middle over music: the two change slots, place and size together
+    local t0 = d.bays.today
+    local plan, other = nd.canvas_plan(d, "today", m.x + m.w / 2, m.y + m.h / 2)
+    eq(other, "music", "dropped on music")
+    eq(plan.today.x .. "," .. plan.today.y .. "," .. plan.today.w .. "," .. plan.today.h, m.x .. "," .. m.y .. "," .. m.w .. "," .. m.h, "today in music's slot")
+    eq(plan.music.x .. "," .. plan.music.y .. "," .. plan.music.w .. "," .. plan.music.h, t0.x .. "," .. t0.y .. "," .. t0.w .. "," .. t0.h, "music in today's")
+    -- a corner pulled into music stops at it; near the band's end it meets the end
+    local d2 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = two,
+        canvas = { music = { x = 600 / 1902, y = 30 / 474, w = 272 / 1902, h = 216 / 474 },
+                   today = { x = 200 / 1902, y = 30 / 474, w = 222 / 1902, h = 134 / 474 } } })
+    local t, mm = d2.bays.today, d2.bays.music
+    local _, _, w = nd.canvas_snap_size(d2, "today", t.x, t.y, 800, 134)
+    eq(t.x + w, mm.x - nd.CARD_GAP, "stops a gap short of music")
+    local _, _, _, h = nd.canvas_snap_size(d2, "today", t.x, t.y, 222, d2.h - t.y - nd.PAD - 6)
+    eq(t.y + h, d2.h - nd.PAD, "meets the band's foot")
 end)
 test("nexus deck: a card's size is its height down a side, as its width along a strip", function()
     local nd = require("lib/nexusdeck")
