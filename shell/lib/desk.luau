@@ -13,7 +13,11 @@ local M = {}
 
 M.PARALLAX = { "off", "workspaces", "pointer", "both" }
 M.PARALLAX_INDEX = { off = 0, workspaces = 1, pointer = 2, both = 3 }
-M.DEFAULTS = { on = false, parallax = "workspaces", strength = 45, cutout = true, depth = true }
+M.CLOCK_POSITIONS = { "top-right", "top-left", "bottom-right", "bottom-left" }
+M.DEFAULTS = {
+    on = false, parallax = "workspaces", strength = 45, cutout = true, depth = true,
+    clock = true, clock_position = "top-right", clock_24h = true, clock_seconds = false,
+}
 
 local function clamp(v, lo, hi) if v < lo then return lo end; if v > hi then return hi end; return v end
 
@@ -26,6 +30,12 @@ function M.normalize(v)
     out.strength = (s and s == s) and clamp(math.floor(s + 0.5), 0, 100) or M.DEFAULTS.strength
     out.cutout = v.cutout ~= false
     out.depth = v.depth ~= false
+    out.clock = v.clock ~= false
+    local valid_position = false
+    for _, position in ipairs(M.CLOCK_POSITIONS) do if v.clock_position == position then valid_position = true end end
+    out.clock_position = valid_position and v.clock_position or M.DEFAULTS.clock_position
+    out.clock_24h = v.clock_24h ~= false
+    out.clock_seconds = v.clock_seconds == true
     return out
 end
 
@@ -73,6 +83,27 @@ function M.layers(state, current, cfg)
         end
     end
     return out
+end
+
+
+-- The first built-in desktop instrument. Kept pure so display formatting is deterministic in tests.
+function M.clock_text(parts, use_24h, seconds)
+    if type(parts) ~= "table" then return "--:--" end
+    local hour = tonumber(parts.hour)
+    local minute = tonumber(parts.min)
+    local second = tonumber(parts.sec) or 0
+    if not hour or not minute or hour < 0 or hour > 23 or minute < 0 or minute > 59
+        or second < 0 or second > 59 then return "--:--" end
+    hour, minute, second = math.floor(hour), math.floor(minute), math.floor(second)
+    local suffix = ""
+    if use_24h == false then
+        suffix = hour >= 12 and " PM" or " AM"
+        hour = hour % 12
+        if hour == 0 then hour = 12 end
+    end
+    local out = string.format("%02d:%02d", hour, minute)
+    if seconds == true then out = out .. string.format(":%02d", second) end
+    return out .. suffix
 end
 
 return M
