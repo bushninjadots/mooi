@@ -280,11 +280,12 @@ function M.layout(edge, sw, sh, top, opts)
     return d
 end
 
--- ── The canvas (D119): two rows make the deck a free canvas ──
--- The deck fills the screen below the bar and every card is where you put it and as big as you made
--- it: a place and a size each, as thousandths of the canvas (nexus.canvas: "c<n>_<x>_<y>_<w>_<h>",
--- `n` the card's place in M.ORDER), so they hold on another screen. A card never placed takes its
--- place in the two-row deck, centred on the canvas. Moves snap to an 8 px grid and stay inside.
+-- ── The canvas (D122): two rows are a free canvas inside the two rows' own band ──
+-- The deck keeps its two-row band on its edge (the screen's width along the top or bottom, two columns
+-- down a side) and inside it every card is where you put it and as big as you made it: a place and a
+-- size each, as thousandths of the band (nexus.canvas: "c<n>_<x>_<y>_<w>_<h>", `n` the card's place in
+-- M.ORDER), so they hold on another screen. A card never placed takes its place in the two-row deck.
+-- Moves snap to an 8 px grid and stay inside the band.
 M.GRID = 8
 M.MIN_H = 96
 function M.clean_canvas(list)
@@ -325,15 +326,24 @@ function M.canvas_layout(edge, sw, sh, top, opts)
     local o = {}
     for k, v in pairs(opts) do o[k] = v end
     o.rows = 2
-    -- where a card never placed goes: the two-row deck along the bottom, as a start
-    local base = M.layout("bottom", sw, sh, top, o)
-    local d = { edge = M.edge_of(edge), vertical = false, canvas = true, rows = 2, parts = {}, dropped = {}, bays = {} }
-    d.x = M.GAP
-    d.y = (tonumber(top) or 0) + 6
-    d.w = (tonumber(sw) or 1920) - 2 * M.GAP - (opts.spine and M.SPINE_W or 0)
-    d.h = (tonumber(sh) or 1080) - d.y - M.GAP
-    local ox = (d.w - base.w) / 2
-    local oy = (d.h - base.h) / 2
+    -- where a card never placed goes: its place in the two-row deck on this edge
+    local base = M.layout(edge, sw, sh, top, o)
+    local d = { edge = base.edge, vertical = base.vertical, canvas = true, rows = 2, parts = {}, dropped = {}, bays = {} }
+    sw, sh, top = tonumber(sw) or 1920, tonumber(sh) or 1080, tonumber(top) or 0
+    if base.vertical then
+        -- down a side: the two columns' width, from under the bar to the foot
+        d.w, d.x = base.w, base.x
+        d.y = top + 6
+        d.h = sh - d.y - M.GAP
+    else
+        -- along the top or bottom: the screen's width, two rows tall (even while the cards fit in one)
+        d.x = M.GAP
+        d.w = sw - 2 * M.GAP - (opts.spine and M.SPINE_W or 0)
+        d.h = M.RAIL + 2 * M.ROW + M.CARD_GAP + M.PAD
+        d.y = d.edge == "top" and top + 6 or sh - d.h - M.GAP
+    end
+    local ox = base.x - d.x
+    local oy = base.y - d.y
     local placed = opts.canvas or {}
     local order = M.clean_parts(opts.parts)
     local hidden = opts.hidden or {}
@@ -355,6 +365,14 @@ function M.canvas_layout(edge, sw, sh, top, opts)
     d.out_x = d.edge == "left" and -1 or (d.edge == "right" and 1 or 0)
     d.out_y = d.edge == "top" and -1 or (d.edge == "bottom" and 1 or 0)
     return d
+end
+-- A card's code and a point or a size, from the scene as one number: 1000000 · code + 1000 · (x / 4)
+-- + y / 4. Scene numbers are float32 (whole only up to 2^24), so this keeps every value exact to 4 px,
+-- up to 3996 px each way.
+function M.unpack_event(v)
+    local n = math.floor(tonumber(v) or -1)
+    if n < 0 then return nil end
+    return n // 1000000, (n % 1000000) // 1000 * 4, n % 1000 * 4
 end
 -- A card let go with its middle at (cx, cy) in the canvas: its place, as the canvas keeps it.
 function M.canvas_drop(d, id, cx, cy)

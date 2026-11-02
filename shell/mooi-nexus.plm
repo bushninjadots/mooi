@@ -522,7 +522,7 @@ scene Nexus {
     event dk_big ->              // to the logic: window n of the preview — focus it
     event dk_wdrop ->            // to the logic: a miniature window let go at 10000 · x + y (the screen's)
     event dk_edit_on ->          // to the logic: ✎ — arranging, on or off
-    event dk_resize ->           // to the logic: a card's corner let go on the canvas (100000000 · code + 10000 · w + h)
+    event dk_resize ->           // to the logic: a card's corner let go on the canvas (1000000 · code + 1000 · w/4 + h/4)
     event dk_drop ->             // to the logic: the part carried let go at this place along the deck
     event dk_hide ->             // to the logic: hide part n
     event dk_show ->             // to the logic: show hidden part n again
@@ -743,8 +743,6 @@ scene Nexus {
         body {
             gradient: 0, 0 to 0, h, topc, botc
             shadow: 0, 7, 24, 44%
-            // as a canvas the plate covers the screen: the desktop shows through it, the cards stand on it
-            opacity: if(dk_canvas, 0.62, 1)
             box { from: 0, 0; size: w, h; corner: r }
         }
         // its edge, the plain line the bars stand on and cover where they rise
@@ -922,7 +920,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pw_w + dk_rdx), max(96, pw_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 0 }
                     on drag er0 while dk_edit and dk_canvas { dk_rid = 0; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er0 while dk_rid == 0 { emit dk_resize(0 * 100000000 + round(max(1, pw_w + dk_rdx)) * 10000 + round(max(1, pw_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er0 while dk_rid == 0 { emit dk_resize(0 * 1000000 + min(999, round(max(0, max(1, pw_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pw_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -931,7 +929,7 @@ scene Nexus {
                     }
                     on press es0 { emit dk_size(0) }
                     on drag eg0 while dk_edit { dk_gid = 0; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg0 while dk_edit and dk_gid == 0 { emit dk_drop(0 * 100000000 + round(gx.0 + dk_gdx + pw_w / 2) * 10000 + round(gy.0 + dk_gdy + pw_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg0 while dk_edit and dk_gid == 0 { emit dk_drop(0 * 1000000 + min(999, round(max(0, gx.0 + dk_gdx + pw_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.0 + dk_gdy + pw_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee0 { emit dk_hide(0) }
                 }
 
@@ -1014,7 +1012,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, ps_w + dk_rdx), max(96, ps_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 1 }
                     on drag er1 while dk_edit and dk_canvas { dk_rid = 1; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er1 while dk_rid == 1 { emit dk_resize(1 * 100000000 + round(max(1, ps_w + dk_rdx)) * 10000 + round(max(1, ps_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er1 while dk_rid == 1 { emit dk_resize(1 * 1000000 + min(999, round(max(0, max(1, ps_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, ps_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1023,7 +1021,7 @@ scene Nexus {
                     }
                     on press es1 { emit dk_size(1) }
                     on drag eg1 while dk_edit { dk_gid = 1; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg1 while dk_edit and dk_gid == 1 { emit dk_drop(1 * 100000000 + round(gx.1 + dk_gdx + ps_w / 2) * 10000 + round(gy.1 + dk_gdy + ps_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg1 while dk_edit and dk_gid == 1 { emit dk_drop(1 * 1000000 + min(999, round(max(0, gx.1 + dk_gdx + ps_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.1 + dk_gdy + ps_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee1 { emit dk_hide(1) }
                 }
 
@@ -1053,7 +1051,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pm_w + dk_rdx), max(96, pm_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 2 }
                     on drag er2 while dk_edit and dk_canvas { dk_rid = 2; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er2 while dk_rid == 2 { emit dk_resize(2 * 100000000 + round(max(1, pm_w + dk_rdx)) * 10000 + round(max(1, pm_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er2 while dk_rid == 2 { emit dk_resize(2 * 1000000 + min(999, round(max(0, max(1, pm_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pm_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1062,7 +1060,7 @@ scene Nexus {
                     }
                     on press es2 { emit dk_size(2) }
                     on drag eg2 while dk_edit { dk_gid = 2; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg2 while dk_edit and dk_gid == 2 { emit dk_drop(2 * 100000000 + round(gx.2 + dk_gdx + pm_w / 2) * 10000 + round(gy.2 + dk_gdy + pm_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg2 while dk_edit and dk_gid == 2 { emit dk_drop(2 * 1000000 + min(999, round(max(0, gx.2 + dk_gdx + pm_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.2 + dk_gdy + pm_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee2 { emit dk_hide(2) }
                 }
 
@@ -1112,7 +1110,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pq_w + dk_rdx), max(96, pq_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 3 }
                     on drag er3 while dk_edit and dk_canvas { dk_rid = 3; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er3 while dk_rid == 3 { emit dk_resize(3 * 100000000 + round(max(1, pq_w + dk_rdx)) * 10000 + round(max(1, pq_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er3 while dk_rid == 3 { emit dk_resize(3 * 1000000 + min(999, round(max(0, max(1, pq_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pq_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1121,7 +1119,7 @@ scene Nexus {
                     }
                     on press es3 { emit dk_size(3) }
                     on drag eg3 while dk_edit { dk_gid = 3; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg3 while dk_edit and dk_gid == 3 { emit dk_drop(3 * 100000000 + round(gx.3 + dk_gdx + pq_w / 2) * 10000 + round(gy.3 + dk_gdy + pq_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg3 while dk_edit and dk_gid == 3 { emit dk_drop(3 * 1000000 + min(999, round(max(0, gx.3 + dk_gdx + pq_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.3 + dk_gdy + pq_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee3 { emit dk_hide(3) }
                 }
 
@@ -1212,7 +1210,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pu_w + dk_rdx), max(96, pu_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 4 }
                     on drag er4 while dk_edit and dk_canvas { dk_rid = 4; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er4 while dk_rid == 4 { emit dk_resize(4 * 100000000 + round(max(1, pu_w + dk_rdx)) * 10000 + round(max(1, pu_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er4 while dk_rid == 4 { emit dk_resize(4 * 1000000 + min(999, round(max(0, max(1, pu_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pu_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1221,7 +1219,7 @@ scene Nexus {
                     }
                     on press es4 { emit dk_size(4) }
                     on drag eg4 while dk_edit { dk_gid = 4; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg4 while dk_edit and dk_gid == 4 { emit dk_drop(4 * 100000000 + round(gx.4 + dk_gdx + pu_w / 2) * 10000 + round(gy.4 + dk_gdy + pu_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg4 while dk_edit and dk_gid == 4 { emit dk_drop(4 * 1000000 + min(999, round(max(0, gx.4 + dk_gdx + pu_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.4 + dk_gdy + pu_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee4 { emit dk_hide(4) }
                 }
 
@@ -1277,7 +1275,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pc_w + dk_rdx), max(96, pc_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 5 }
                     on drag er5 while dk_edit and dk_canvas { dk_rid = 5; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er5 while dk_rid == 5 { emit dk_resize(5 * 100000000 + round(max(1, pc_w + dk_rdx)) * 10000 + round(max(1, pc_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er5 while dk_rid == 5 { emit dk_resize(5 * 1000000 + min(999, round(max(0, max(1, pc_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pc_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1286,7 +1284,7 @@ scene Nexus {
                     }
                     on press es5 { emit dk_size(5) }
                     on drag eg5 while dk_edit { dk_gid = 5; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg5 while dk_edit and dk_gid == 5 { emit dk_drop(5 * 100000000 + round(gx.5 + dk_gdx + pc_w / 2) * 10000 + round(gy.5 + dk_gdy + pc_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg5 while dk_edit and dk_gid == 5 { emit dk_drop(5 * 1000000 + min(999, round(max(0, gx.5 + dk_gdx + pc_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.5 + dk_gdy + pc_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee5 { emit dk_hide(5) }
                 }
 
@@ -1331,7 +1329,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pt_w + dk_rdx), max(96, pt_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 6 }
                     on drag er6 while dk_edit and dk_canvas { dk_rid = 6; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er6 while dk_rid == 6 { emit dk_resize(6 * 100000000 + round(max(1, pt_w + dk_rdx)) * 10000 + round(max(1, pt_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er6 while dk_rid == 6 { emit dk_resize(6 * 1000000 + min(999, round(max(0, max(1, pt_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pt_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1340,7 +1338,7 @@ scene Nexus {
                     }
                     on press es6 { emit dk_size(6) }
                     on drag eg6 while dk_edit { dk_gid = 6; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg6 while dk_edit and dk_gid == 6 { emit dk_drop(6 * 100000000 + round(gx.6 + dk_gdx + pt_w / 2) * 10000 + round(gy.6 + dk_gdy + pt_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg6 while dk_edit and dk_gid == 6 { emit dk_drop(6 * 1000000 + min(999, round(max(0, gx.6 + dk_gdx + pt_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.6 + dk_gdy + pt_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee6 { emit dk_hide(6) }
                 }
 
@@ -1407,7 +1405,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pf_w + dk_rdx), max(96, pf_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 7 }
                     on drag er7 while dk_edit and dk_canvas { dk_rid = 7; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er7 while dk_rid == 7 { emit dk_resize(7 * 100000000 + round(max(1, pf_w + dk_rdx)) * 10000 + round(max(1, pf_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er7 while dk_rid == 7 { emit dk_resize(7 * 1000000 + min(999, round(max(0, max(1, pf_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pf_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1416,7 +1414,7 @@ scene Nexus {
                     }
                     on press es7 { emit dk_size(7) }
                     on drag eg7 while dk_edit { dk_gid = 7; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg7 while dk_edit and dk_gid == 7 { emit dk_drop(7 * 100000000 + round(gx.7 + dk_gdx + pf_w / 2) * 10000 + round(gy.7 + dk_gdy + pf_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg7 while dk_edit and dk_gid == 7 { emit dk_drop(7 * 1000000 + min(999, round(max(0, gx.7 + dk_gdx + pf_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.7 + dk_gdy + pf_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee7 { emit dk_hide(7) }
                 }
 
@@ -1461,7 +1459,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pn_w + dk_rdx), max(96, pn_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 8 }
                     on drag er8 while dk_edit and dk_canvas { dk_rid = 8; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er8 while dk_rid == 8 { emit dk_resize(8 * 100000000 + round(max(1, pn_w + dk_rdx)) * 10000 + round(max(1, pn_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er8 while dk_rid == 8 { emit dk_resize(8 * 1000000 + min(999, round(max(0, max(1, pn_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pn_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1470,7 +1468,7 @@ scene Nexus {
                     }
                     on press es8 { emit dk_size(8) }
                     on drag eg8 while dk_edit { dk_gid = 8; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg8 while dk_edit and dk_gid == 8 { emit dk_drop(8 * 100000000 + round(gx.8 + dk_gdx + pn_w / 2) * 10000 + round(gy.8 + dk_gdy + pn_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg8 while dk_edit and dk_gid == 8 { emit dk_drop(8 * 1000000 + min(999, round(max(0, gx.8 + dk_gdx + pn_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.8 + dk_gdy + pn_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee8 { emit dk_hide(8) }
                 }
 
@@ -1511,7 +1509,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, pa_w + dk_rdx), max(96, pa_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 9 }
                     on drag er9 while dk_edit and dk_canvas { dk_rid = 9; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er9 while dk_rid == 9 { emit dk_resize(9 * 100000000 + round(max(1, pa_w + dk_rdx)) * 10000 + round(max(1, pa_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er9 while dk_rid == 9 { emit dk_resize(9 * 1000000 + min(999, round(max(0, max(1, pa_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, pa_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1520,7 +1518,7 @@ scene Nexus {
                     }
                     on press es9 { emit dk_size(9) }
                     on drag eg9 while dk_edit { dk_gid = 9; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg9 while dk_edit and dk_gid == 9 { emit dk_drop(9 * 100000000 + round(gx.9 + dk_gdx + pa_w / 2) * 10000 + round(gy.9 + dk_gdy + pa_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg9 while dk_edit and dk_gid == 9 { emit dk_drop(9 * 1000000 + min(999, round(max(0, gx.9 + dk_gdx + pa_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.9 + dk_gdy + pa_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee9 { emit dk_hide(9) }
                 }
 
@@ -1571,7 +1569,7 @@ scene Nexus {
                     }
                     box { from: 0, 0; size: max(168, py_w + dk_rdx), max(96, py_h + dk_rdy); corner: dk.r; stroke: 1.4; color: dk.acc; show: dk_rid == 10 }
                     on drag er10 while dk_edit and dk_canvas { dk_rid = 10; dk_rdx = drag.dx; dk_rdy = drag.dy }
-                    on release er10 while dk_rid == 10 { emit dk_resize(10 * 100000000 + round(max(1, py_w + dk_rdx)) * 10000 + round(max(1, py_h + dk_rdy))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
+                    on release er10 while dk_rid == 10 { emit dk_resize(10 * 1000000 + min(999, round(max(0, max(1, py_w + dk_rdx)) / 4)) * 1000 + min(999, round(max(0, max(1, py_h + dk_rdy)) / 4))); dk_rid = -1; dk_rdx = 0; dk_rdy = 0 }
                     group {
                         show: ed_in > 0.01
                         opacity: ed_in
@@ -1580,7 +1578,7 @@ scene Nexus {
                     }
                     on press es10 { emit dk_size(10) }
                     on drag eg10 while dk_edit { dk_gid = 10; dk_gdx = drag.dx; dk_gdy = drag.dy }
-                    on release eg10 while dk_edit and dk_gid == 10 { emit dk_drop(10 * 100000000 + round(gx.10 + dk_gdx + py_w / 2) * 10000 + round(gy.10 + dk_gdy + py_h / 2)); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
+                    on release eg10 while dk_edit and dk_gid == 10 { emit dk_drop(10 * 1000000 + min(999, round(max(0, gx.10 + dk_gdx + py_w / 2) / 4)) * 1000 + min(999, round(max(0, gy.10 + dk_gdy + py_h / 2) / 4))); dk_gid = -1; dk_gdx = 0; dk_gdy = 0 }
                     on press ee10 { emit dk_hide(10) }
                 }
 

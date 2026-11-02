@@ -96,7 +96,7 @@ say "emit dk_hide 4" >/dev/null; sleep 0.4
 is "a part hidden" "$(get pu_on)" false
 is "and listed to show again" "$(get hid.count)" 5
 is "kept in settings.json" "$(jq -r '.nexus.hidden[0]' "$settings")" music
-say "emit dk_drop 800000100" >/dev/null; sleep 0.4     # Scenes let go before everything (code 8, x 0, y 100)
+say "emit dk_drop 8000025" >/dev/null; sleep 0.4       # Scenes let go before everything (code 8, x 0, y 100: 1000000·code + 1000·x/4 + y/4)
 is "a card carried to the front" "$(jq -r '.nexus.parts[0]' "$settings")" scenes
 is "numbered first" "$(get pn_n)" 01
 say "emit dk_show 4" "emit dk_reset" >/dev/null; sleep 0.4

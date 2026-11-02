@@ -2670,11 +2670,22 @@ test("claude: asked lean, carried on by session, and its stream read", function(
     eq(w[1], "one two"); eq(w[2], "three"); eq(w[4], ""); eq(w[5], "six")
 end)
 
-test("nexus canvas: two rows are a free canvas, every card where it was put, inside it", function()
+test("nexus canvas: two rows are a free canvas inside their band, every card where it was put", function()
     local nd = require("lib/nexusdeck")
     local d = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {} })
     eq(d.canvas, true, "a canvas")
     eq(d.w, 1920 - 2 * nd.GAP, "the screen's width")
+    eq(d.h, nd.RAIL + 2 * nd.ROW + nd.CARD_GAP + nd.PAD, "two rows tall, not the screen")
+    eq(d.y + d.h, 1049 - nd.GAP, "on the bottom edge")
+    local t = nd.canvas_layout("top", 1920, 1049, 0, { rows = 2, hidden = {} })
+    eq(t.y, 6, "on the top edge, under the bar"); eq(t.h, d.h, "the same two rows")
+    -- down a side: two columns wide, under the bar to the foot
+    local side = nd.layout("right", 1920, 1049, 0, { rows = 2, hidden = {} })
+    local r2 = nd.canvas_layout("right", 1920, 1049, 0, { rows = 2, hidden = {} })
+    eq(r2.w, side.w, "the two columns' width"); eq(r2.x, side.x, "on the right edge"); eq(r2.vertical, true, "a column")
+    for _, p in ipairs(r2.parts) do
+        assert(p.x >= nd.PAD and p.x + p.w <= r2.w - nd.PAD, p.id .. " inside the side band")
+    end
     for _, p in ipairs(d.parts) do
         assert(p.x >= nd.PAD and p.x + p.w <= d.w - nd.PAD, p.id .. " inside, across")
         assert(p.y >= nd.RAIL and p.y + p.h <= d.h - nd.PAD, p.id .. " inside, down")
@@ -2696,6 +2707,11 @@ test("nexus canvas: two rows are a free canvas, every card where it was put, ins
     local tiny = nd.canvas_resize(d3, "music", 3, 3)
     local d4 = nd.canvas_layout("bottom", 1920, 1049, 0, { rows = 2, hidden = {}, canvas = { music = tiny } })
     eq(d4.bays.music.w, nd.MIN_W, "never narrower than a card can be"); eq(d4.bays.music.h, nd.MIN_H, "or shorter")
+    -- a card and a place as one number the scene can hold exactly (float32: whole up to 2^24)
+    local c, x, y = nd.unpack_event(10 * 1000000 + 480 * 1000 + 269)
+    eq(c .. "," .. x .. "," .. y, "10,1920,1076", "the last card, at the far corner")
+    eq(10 * 1000000 + 999 * 1000 + 999 < 2 ^ 24, true, "the largest fits a float32 exactly")
+    eq(nd.unpack_event("nonsense"), nil, "nonsense is nothing")
     -- a list that is not one is nothing; a name past the parts is nothing
     eq(next(nd.clean_canvas({ "c99_1_1_1_1", "music", 4 })), nil, "nonsense places nothing")
 end)

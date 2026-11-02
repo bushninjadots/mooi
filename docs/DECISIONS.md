@@ -3705,3 +3705,18 @@ and D103's spine autohide.
 **Gain:** cava hears the music after mpd's own volume, and the mooi player runs mpd quietly, so the bands
 sat near 1/1000 of their range and nothing moved. `lib/vizfeed` now reads them against a ceiling that
 rises at once and sinks over seconds, with a silence gate (unit-tested).
+
+## D124 · 2026-11-02 · The two-row canvas stays inside the two rows; exact drops
+
+**The user did not want the canvas over the whole screen** (D122): two rows keep the deck's own band on
+its edge — the screen's width and two rows tall along the top or bottom, two columns wide from under the
+bar to the foot down a side — and the free placement happens *inside* it. `canvas_layout` lays the normal
+two-row deck on that edge for any card never placed, then lets each placed card keep its spot and size,
+kept inside the band. The plate is opaque again (it no longer covers the desktop). Places saved under D122
+were shares of the whole screen; they now read as shares of the band and are kept inside it (✎ → Reset
+starts clean).
+**Drops were rounded.** A card and a point went to the logic as `100000000·code + 10000·x + y`, but scene
+numbers are float32 (whole only up to 2^24 = 16,777,216), so drops and corner pulls landed 32–128 px off
+depending on the card. They are now `1000000·code + 1000·(x/4) + y/4` (at most 10,999,999: exact, to
+4 px — finer than the 8 px grid), read by `lib/nexusdeck.unpack_event`. Checked in an isolated Nexus: a
+card dropped at (920, 236) centred there; a corner pulled to 300×152 gave 304×152 (it gave 304×128).

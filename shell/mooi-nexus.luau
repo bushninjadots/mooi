@@ -222,7 +222,7 @@ local BY_CODE = {}
 for id, c in pairs(CODE) do BY_CODE[c] = id end
 local parts, hidden
 local sizes = {}             -- each card's size along a strip (✎ ⇔): id → s · m · l
-local canvas = {}            -- two rows (D119): each card's place and size on the free canvas, as shares of it
+local canvas = {}            -- two rows (D122): each card's place and size inside the two rows' band, as shares of it
 local function read_parts()
     local n = type(settings.nexus) == "table" and settings.nexus or {}
     parts = deck.clean_parts(n.parts)
@@ -260,7 +260,7 @@ local function place()
     local opts = { spine = settings.shelves and settings.shelves.on == true, scenes = #scenes + 1,
                    tiles = #spaces + 1, aspect = aspect(), parts = parts, hidden = hidden, faders = faders_n,
                    rows = fact.dk_rows, large = fact.nx_large, sizes = sizes, canvas = canvas }
-    -- two rows: a free canvas, every card where you put it and as big as you made it (D119)
+    -- two rows: a free canvas inside the two rows' band, every card where you put it and as big as you made it (D122)
     if fact.dk_rows == 2 then d = deck.canvas_layout(edge(), screen.w, screen.h, top, opts)
     else d = deck.layout(edge(), screen.w, screen.h, top, opts) end
     fact.dk_canvas = d.canvas == true
@@ -302,10 +302,9 @@ end)
 -- ── Arranging (✎): parts carried to a new place, hidden, shown again; the edge; the first order ──
 on("dk_edit_on", function(v) fact.dk_edit = tonumber(v) == 1; fact.dk_hws, fact.dk_hsc = -1, -1 end)
 on("dk_drop", function(v)
-    local n = math.floor(tonumber(v) or -1)
-    local id = BY_CODE[math.floor(n / 100000000)]
+    local code, x, y = deck.unpack_event(v)
+    local id = code and BY_CODE[code]
     if not id or not d then return end
-    local x, y = math.floor(n % 100000000 / 10000), n % 10000
     if d.canvas then
         -- on the canvas a card stays exactly where it is let go (its middle there, on the grid)
         canvas[id] = deck.canvas_drop(d, id, x, y)
@@ -338,12 +337,12 @@ on("dk_reset", function()
     save_parts(); place()
     notice("every part back")
 end)
--- the canvas: a card's corner let go (n = 100000000 · code + 10000 · width + height)
+-- the canvas: a card's corner let go (deck.unpack_event: its code, width and height)
 on("dk_resize", function(v)
-    local n = math.floor(tonumber(v) or -1)
-    local id = BY_CODE[math.floor(n / 100000000)]
+    local code, w, h = deck.unpack_event(v)
+    local id = code and BY_CODE[code]
     if not id or not d or not d.canvas then return end
-    canvas[id] = deck.canvas_resize(d, id, math.floor(n % 100000000 / 10000), n % 10000)
+    canvas[id] = deck.canvas_resize(d, id, w, h)
     save_settings(function(s) s.canvas = deck.canvas_list(canvas) end)
     place()
 end)
