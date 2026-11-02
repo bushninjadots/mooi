@@ -2695,8 +2695,7 @@ test("notch: the fan's tabs on their arc, panels on the screen, the carousel, th
     local okall, got = true, {}
     for _, v in ipairs(d1) do if got[v] then okall = false end; got[v] = true; if not v:find("^/w/p%d+%.jpg$") then okall = false end end
     eq(okall, true, "each picture once, out of the folder")
-    eq(notch.tab_index("walls"), nil, "no Wallpapers panel: Skwd Wall is the one picker (D118)")
-    eq(notch.tab_index("weather"), 4, "the panels keep their numbers")
+    eq(notch.tab_index("walls"), 3)
     -- the colours: a mean colour's hue, and how grey it is; the band it is filed under
     local hh, ss = notch.hue(1, 0, 0); eq(hh, 0, "red"); eq(ss, 1)
     local hg = notch.hue(0, 1, 0); eq(hg, 120, "green")

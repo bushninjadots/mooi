@@ -1,17 +1,16 @@
 -- The side notch (D106): a nub on the left edge that fans out into tabs on an arc when pointed at —
--- Claude, Music, Workspaces, Weather, GitHub — each opening its panel beside the fan.
+-- Claude, Music, Workspaces, Wallpapers, Weather, GitHub — each opening its panel beside the fan.
 -- Pure, so tests/unit runs it; shell/mooi-notch.luau reads the system and hands this what it found.
 
 local M = {}
 
--- `n` is the panel's number (nt_tab), kept as it was when Wallpapers (3) was a panel too: the bar,
--- `mooi notch` and the Nexus open panels by it. The one wallpaper picker is Skwd Wall now (D118).
 M.TABS = {
-    { id = "claude", word = "Claude", n = 0 },
-    { id = "music", word = "Music", n = 1 },
-    { id = "spaces", word = "Workspaces", n = 2 },
-    { id = "weather", word = "Weather", n = 4 },
-    { id = "github", word = "GitHub", n = 5 },
+    { id = "claude", word = "Claude" },
+    { id = "music", word = "Music" },
+    { id = "spaces", word = "Workspaces" },
+    { id = "walls", word = "Wallpapers" },
+    { id = "weather", word = "Weather" },
+    { id = "github", word = "GitHub" },
 }
 M.FAN_R = 100         -- the fan's radius round the nub (its hexagons a finger apart)
 M.FAN_SPAN = 120      -- degrees, top tab to bottom tab
@@ -46,7 +45,7 @@ function M.cut(cy, top)
 end
 
 function M.tab_index(id)
-    for _, t in ipairs(M.TABS) do if t.id == id then return t.n end end
+    for i, t in ipairs(M.TABS) do if t.id == id then return i - 1 end end
     return nil
 end
 

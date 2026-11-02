@@ -363,8 +363,12 @@ local function take_viz()
     for i = 0, 23 do fact["nv" .. i] = bands[i + 1] end
 end
 pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
+-- The watch coalesces quick writes (about 4 of the feed's 30 lines a second came through, so the
+-- bars moved once or twice a beat): while the visualiser is shown it is read at the feed's pace.
+every(33, function()
+    if fact.pl_open ~= 0 and fact.pstate == "playing" and not fact.viz_still then take_viz() end
+end)
 every(400, function()
-    take_viz()   -- the watch coalesces quick writes; this read is what keeps the player true
     if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; hush() end
 end)
 function viz()

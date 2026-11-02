@@ -116,19 +116,31 @@ on("nx_pick", function(v)
 end)
 
 -- ── Opening and closing ──
-local closing = false
+-- The Nexus stays running while it is away (D118): the bar starts it once, hidden, and opening it
+-- is a fact flipped, not a program started — no second of compiling before the deck appears, the
+-- cards already hold their data, and the machine's graphs keep their history. `closing` is true
+-- while it is away; the readers below rest then (the machine's graph keeps a slow sample).
+local closing = true
+local open_hooks = {}          -- what refreshes as it opens (registered with the readers, below)
+local function tell_bar(on) pcall(run, "pleamar", { "--say", "mooi", "fact nexus_open " .. tostring(on) }, function() end) end
 local function close(why)
     if closing then return end
     closing = true
-    log("nexus · closing: " .. tostring(why or "asked"))
+    log("nexus · away: " .. tostring(why or "asked"))
     pcall(run, "pleamar", { "--say", "mooi-notch", "emit nt_close" }, function() end)   -- a panel it opened goes with it
     fact.dk_open = false
     pcall(sys.call, "thumbnails.want")
-    -- gone from sight in ~220 ms; it ends later, so what a press just asked of the bar or started
-    -- (a `pleamar --say` takes ~250 ms) is not cut off with it
-    after(900, function() launch("pleamar", { "--say", "mooi-nexus", "quit" }) end)
+    tell_bar(false)
+end
+local function open()
+    if not closing then return end
+    closing = false
+    for _, f in ipairs(open_hooks) do f() end
+    fact.dk_open = true
+    tell_bar(true)
 end
 on("nx_close", function() close("asked (Esc, × or the mark)") end)
+on("nx_toggle", function() if closing then open() else close("asked (the mark)") end end)
 
 -- ── The switches: their state, from the services and from the bar ──
 local lit = {}               -- each switch's state by its nx_tog code (0 Wi-Fi … 8 record)
@@ -282,13 +294,9 @@ end
 
 -- ── The notches off the deck's ends: the side notch (shell/mooi-notch) opens that panel beside the deck ──
 -- tab n of the deck: 0 Claude · 1 Music · 2 Weather (the left end) · 3 Workspaces · 4 Wallpapers · 5 GitHub
-local NOTCH_TAB = { [0] = 0, [1] = 1, [2] = 4, [3] = 2, [5] = 5 }   -- 4, Wallpapers, opens Skwd Wall
--- The Wallpapers notch (4) is a door, not a panel: it opens the one wallpaper picker, Skwd Wall,
--- on a press only (D118). The other five open the side notch's panel beside the deck.
-on("dk_wallpapers", function() launch("mooi", { "wallpaper" }) end)
+local NOTCH_TAB = { [0] = 0, [1] = 1, [2] = 4, [3] = 2, [4] = 3, [5] = 5 }
 on("dk_notch", function(v)
     local n = math.floor(tonumber(v) or -1)
-    if n == 4 then return end
     local tab = NOTCH_TAB[n]
     if not tab or not d then return end
     local r = notch.from_deck(d, tab, n < 3, screen.w, screen.h)
@@ -501,6 +509,7 @@ pcall(sys.watch, "media", function(m)
     publish_status()
 end)
 every(1000, function()
+    if closing then return end
     local len = tonumber(media.length) or 0
     if len <= 0 then fact.nx_prog = 0; return end
     local p = pos + (media.playing and (os.time() - pos_at) * (tonumber(media.rate) or 1) or 0)
@@ -523,7 +532,10 @@ local function take_viz()
     for i = 0, 15 do fact["dv" .. i] = bands[i + 1] end
 end
 pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
+-- the watch coalesces quick writes (~4 of 30 lines a second): open and playing, it reads at the feed's pace
+every(33, function() if not closing and media.playing == true then take_viz() end end)
 every(3000, function()
+    if closing then return end
     if fact.dk_open and media.playing == true then run("pleamar", { "--say", "mooi", "emit feed_want" }) end
     if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; rest_viz() end
 end)
@@ -532,7 +544,7 @@ on("nx_media", function(v)
     pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
 end)
 
--- ── The machine, every 2 s ──
+-- ── The machine: the processor and memory every second while open (every 5 s away), the rest every 4 s ──
 local cpu_prev = nil
 -- the last 40 s of the processor and the memory (every second), drawn as lines in their part
 local HIST = 40
@@ -569,9 +581,12 @@ local function machine()
     end)
 end
 pulse(); machine()
-every(1000, pulse)
-every(4000, machine)
-every(1000, function() publish_status() end)
+-- open: every second; away: one sample in five, so the graphs have their history when it opens
+local pulses = 0
+every(1000, function() pulses = pulses + 1; if not closing or pulses % 5 == 0 then pulse() end end)
+every(4000, function() if not closing then machine() end end)
+every(1000, function() if not closing then publish_status() end end)
+open_hooks[#open_hooks + 1] = function() pulse(); machine(); publish_status() end
 pcall(sys.watch, "battery", function(b)
     battery = type(b) == "table" and b or { present = false }
     if not battery.present then text.m_bat_t = "AC"; fact.m_bat = 1; fact.m_bat_hot = false
@@ -1063,8 +1078,15 @@ pcall(sys.watch, "files:palette.json", paint)
 
 show_feed(); show_updates()
 bar_states()
-every(2000, bar_states)
+every(2000, function() if not closing then bar_states() end end)
 read_desktop()
-every(1500, read_desktop)
-after(40, function() fact.dk_open = true; burst(); if media.playing == true then run("pleamar", { "--say", "mooi", "emit feed_want" }) end end)
-after(1300, burst)           -- the compositor's pictures often arrive on the second asking
+every(1500, function() if not closing then read_desktop() end end)
+open_hooks[#open_hooks + 1] = function()
+    show_feed(); show_updates(); bar_states(); read_desktop()
+    after(40, burst)
+    after(1300, burst)       -- the compositor's pictures often arrive on the second asking
+    if media.playing == true then run("pleamar", { "--say", "mooi", "emit feed_want" }) end
+end
+-- Started to be seen at once (`MOOI_NEXUS_OPEN=1`: the bar had no Nexus running when it was asked
+-- for), or started hidden, to wait for the mark.
+if tostring(sys.ask("env", "MOOI_NEXUS_OPEN") or "") == "1" then after(40, open) end

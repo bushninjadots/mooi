@@ -260,7 +260,7 @@ scene Notch {
     fact nt_open = false         // the fan is out
     fact nt_tab = -1             // the panel out (lib/notch TABS, from 0), -1 none
     fact nt_pin = false          // kept out: a tab pressed, typing, Claude answering
-    model tabs max 6 { word: text; x: number; y: number; glyph: number; tab: number; badge: text; badged: bool }
+    model tabs max 6 { word: text; x: number; y: number; glyph: number; badge: text; badged: bool }
     // the deck's pieces (ui/deck.plm) read these: the notch is never a column and never being arranged
     fact dk_vert = false
     fact ed_in = 0
@@ -291,6 +291,7 @@ scene Notch {
     text mu_el = ""
     text mu_len = ""
     fact mv0 = 0
+    fact mu_viz_missing = false // cava is not installed: the panel says so (shell/mooi-notch.luau)
     fact mv1 = 0
     fact mv2 = 0
     fact mv3 = 0
@@ -314,12 +315,19 @@ scene Notch {
     fact mv21 = 0
     fact mv22 = 0
     fact mv23 = 0
-    fact mu_viz_missing = false // cava is not installed: the panel says so (shell/mooi-notch.luau)
 
-    // ── The carousel: workspaces on an arc, the middle one large ──
+    // ── The carousels: workspaces and wallpapers on an arc, the middle one large ──
+    text nt_wall = ""
+    fact nt_wall_on = false
+    image wall = from nt_wall, 480, 270
     model warc max 12 { id: number; label: text; n: text; active: bool }
     model wbox max 60 { k: number; nx: number; ny: number; nw: number; nh: number; focused: bool }
     fact sp_c = 0                // the workspace in the middle
+    model pics max 40 { pic: image 320, 180; name: text; on: bool }
+    fact wp_c = 0                // the picture in the middle: its row in the window
+    fact wp_base = 0             // where the window starts in the whole list (the logic slides it)
+    fact wp_hue = -1             // the colour along the arc's inside: -1 all of them, else its band
+    text wp_t = ""
 
     // ── Weather ──
     fact wx_ok = false
@@ -363,6 +371,9 @@ scene Notch {
     event nt_media ->            // to the logic: 0 previous · 1 play/pause · 2 next
     event nt_open_player ->      // to the logic: open the music player
     event nt_ws ->               // to the logic: go to workspace (its place on the arc)
+    event nt_wall ->             // to the logic: wear picture n
+    event nt_hue ->              // to the logic: the colour band along the arc pressed (again: all of them)
+    event nt_studio ->           // to the logic: open the wallpaper studio
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
     event nt_moved ->            // to the logic: the nub let go at this height
     event nt_show_deck ->        // from the Control Nexus: open panel n where it has just said (nt_px, pn_y, nt_ox, nt_acy, nt_dir)
@@ -370,6 +381,7 @@ scene Notch {
     figure i_claude = file "icons/claude.svg"
     figure i_music = file "icons/music.svg"
     figure i_ws = file "icons/workspace.svg"
+    figure i_wall = file "icons/wallpaper.svg"
     figure i_cloud = file "icons/cloud.svg"
     figure i_git = file "icons/git.svg"
     figure i_clear = file "icons/clear.svg"
@@ -386,6 +398,8 @@ scene Notch {
     follow pv = if(nt_open and nt_tab >= 0, 1, 0)
     prop spc = 0 ~m.reflow
     follow spc = sp_c
+    prop wpc = 0 ~m.reflow
+    follow wpc = wp_c + wp_base     // the middle in the whole list: the window sliding does not move the arc
     prop mup = 0 ~m.reflow
     follow mup = mu_prog
     prop nub_lit = 0 ~m.select
@@ -397,9 +411,28 @@ scene Notch {
         figure i_claude { at: x, y; size: 16, 16; color: c; show: g < 0.5 }
         figure i_music { at: x, y; size: 16, 16; color: c; show: g > 0.5 and g < 1.5 }
         figure i_ws { at: x, y; size: 16, 16; color: c; show: g > 1.5 and g < 2.5 }
+        figure i_wall { at: x, y; size: 16, 16; color: c; show: g > 2.5 and g < 3.5 }
         figure i_cloud { at: x, y; size: 16, 16; color: c; show: g > 3.5 and g < 4.5 }
         figure i_git { at: x, y; size: 16, 16; color: c; show: g > 4.5 }
     }
+    // A colour on the arc's inside: the band's hue, lit when it is the one chosen. `k` is the band.
+    component Swatch(k: number, word: text, c: color) {
+        let ha = -52 + k * 104 / 11
+        // the ring inside the arc, made to the screen: twelve chips a finger apart on any height
+        let rr = min(380, max(250, (nt_acy - 90) * 0.62))
+        let sx = nt_ox - nt_dir * 44 + nt_dir * cos(ha) * rr
+        let sy = nt_acy + sin(ha) * rr
+        let on = wp_hue == k
+        size: 22, 22
+        zone box swz { from: sx - 11, sy - 11; size: 22, 22; cursor: pointer; role: item; selected: on; label: word }
+        group {
+            glow: 8, if(on, 0.9, 0.5 * swz.hover) * st_glow, c
+            box { from: sx - 8, sy - 8; size: 16, 16; corner: 8; color: c; opacity: if(on, 1, 0.55 + 0.45 * swz.hover) }
+        }
+        box { from: sx - 8, sy - 8; size: 16, 16; corner: 8; stroke: if(on, 2, 1); color: if(on, dk.ink, mix(c, dk.ink, 0.35)); opacity: if(on, 1, 0.5 + 0.5 * swz.hover) }
+        on press swz { emit nt_hue(k) }
+    }
+
     component WGlyph(x: number, y: number, sz: number, k: number) {
         size: sz, sz
         figure i_clear { at: x, y; size: sz, sz; color: fl.flare; show: k < 0.5 }
@@ -422,7 +455,7 @@ scene Notch {
 
         // ═══ The nub: a lit sliver on the edge; pointed at, the fan comes out ═══
         // drag it along the edge to put it somewhere else; it stays there (notch-state.json)
-        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, weather, GitHub. Drag it along the edge" }
+        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
         on hover nubz for 110ms while nt_gdy == 0 { nt_open = true; nt_deck = false }
         on press nubz { nt_open = true; nt_deck = false; nt_pin = not nt_pin }
         on drag nubz { nt_gdy = drag.dy; nt_open = false; nt_tab = -1; nt_pin = false }
@@ -449,7 +482,7 @@ scene Notch {
             for t in tabs {
                 let tx = 10 * (1 - fan_in) + t.x * fan_in
                 let ty = nt_cy + (t.y - nt_cy) * fan_in
-                let on = nt_tab == t.tab
+                let on = nt_tab == t.index
                 zone box tz { from: tx - 19, ty - 19; size: 38, 38; cursor: pointer; role: tab; selected: on; label: t.word }
                 line { from: 4, nt_cy; to: tx - 18, ty; width: 1; color: dk.acc; opacity: 0.18 + 0.4 * if(on, 1, 0) }
                 group {
@@ -466,8 +499,8 @@ scene Notch {
                     box { from: tx + 7, ty - 18; size: 16, 11; corner: 3; color: dk.hot }
                     text t.badge { at: tx + 15, ty - 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: dk.well }
                 }
-                on hover tz for 140ms { nt_tab = t.tab; emit nt_tab_open(t.tab) }
-                on press tz { nt_tab = t.tab; nt_pin = true; emit nt_tab_open(t.tab) }
+                on hover tz for 140ms { nt_tab = t.index; emit nt_tab_open(t.index) }
+                on press tz { nt_tab = t.index; nt_pin = true; emit nt_tab_open(t.index) }
             }
         }
 
@@ -621,6 +654,7 @@ scene Notch {
                         group {
                             clip box { from: wx, wy; size: 240 * ws, 135 * ws; corner: dk.r }
                             box { from: wx, wy; size: 240 * ws, 135 * ws; color: dk.well }
+                            image wall { at: wx, wy; size: 240 * ws, 135 * ws; opacity: 0.85; show: nt_wall_on }
                             box { from: wx, wy; size: 240 * ws, 135 * ws; color: #000000; opacity: if(w.active, 0.1, 0.35 - 0.2 * wz.hover) }
                         }
                         group {
@@ -645,6 +679,68 @@ scene Notch {
                 }
             }
 
+            // ── Wallpapers on an arc: the wheel turns it, a press wears one ──
+            group {
+                show: nt_tab == 3
+                zone box keep3 { from: nt_ox + if(nt_dir > 0, 0, -800), 40; size: 800, nt_h - 80; role: region; label: "Wallpapers" }
+                on scroll keep3 { wp_c = clamp(wp_c - wheel, 0, max(0, pics.count - 1)) }
+                let par = clamp(nt_h * 0.55, 470, 600)
+                text "WALLPAPERS · THE WHEEL TURNS THE ARC · A PRESS WEARS ONE" { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy - 300; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
+                text wp_t { at: nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380), nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
+                zone box wpst { from: nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312; size: 140, 24; cursor: pointer; role: button; label: "Open Skwd Wall, the wallpaper picker" }
+                Act(nt_ox + nt_dir * 560 - if(nt_dir > 0, 0, 140), nt_acy - 312, 140, "Skwd Wall", false, false, wpst.hover)
+                on press wpst { emit nt_studio }
+                // the colours along the arc's inside: narrow it to the reds, the blues…
+                group {
+                    show: nt_dir != 0
+                    let srr = min(380, max(250, (nt_acy - 90) * 0.62))
+                    repeat c in 0..23 {
+                        let ca0.$c = -52 + c * 104 / 24
+                        let ca1.$c = -52 + (c + 1) * 104 / 24
+                        line { from: nt_ox - nt_dir * 44 + nt_dir * cos(ca0.$c) * srr, nt_acy + sin(ca0.$c) * srr
+                               to: nt_ox - nt_dir * 44 + nt_dir * cos(ca1.$c) * srr, nt_acy + sin(ca1.$c) * srr
+                               width: 1; color: dk.line; opacity: 0.45 }
+                    }
+                    Swatch(0, "Reds", #ec1313)
+                    Swatch(1, "Oranges", #ec8013)
+                    Swatch(2, "Yellows", #ecec13)
+                    Swatch(3, "Limes", #80ec13)
+                    Swatch(4, "Greens", #13ec13)
+                    Swatch(5, "Springs", #13ec80)
+                    Swatch(6, "Cyans", #13ecec)
+                    Swatch(7, "Azures", #1380ec)
+                    Swatch(8, "Blues", #1313ec)
+                    Swatch(9, "Violets", #8013ec)
+                    Swatch(10, "Purples", #ec13ec)
+                    Swatch(11, "Pinks", #ec1380)
+                }
+                for p in pics {
+                    let pa = (p.index + wp_base - wpc) * 12
+                    let ps = 1 - min(abs(pa), 60) / 100
+                    let px = nt_ox + nt_dir * (cos(pa) * par - 212 + 168) - 140 * ps
+                    let py = nt_acy + sin(pa) * par - 79 * ps
+                    group {
+                        show: abs(pa) < 50
+                        opacity: 1 - abs(pa) / 62
+                        zone box pz { from: px, py; size: 280 * ps, 158 * ps; cursor: pointer; role: item; selected: p.on; label: "Wear {p.name}" }
+                        body {
+                            color: dk.well
+                            shadow: 0, 6 * ps, 18 * ps, 50%
+                            box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r }
+                        }
+                        group {
+                            clip box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r }
+                            image p.pic { at: px, py; size: 280 * ps, 158 * ps }
+                        }
+                        group {
+                            glow: 8, if(p.on, 0.7, 0.5 * pz.hover) * st_glow, dk.acc
+                            box { from: px, py; size: 280 * ps, 158 * ps; corner: dk.r; stroke: if(p.on, 1.8, 1); color: if(p.on, dk.acc, mix(dk.line, dk.acc, pz.hover)) }
+                        }
+                        text "WEARING" { at: px + 280 * ps - 8, py + 12; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: p.on }
+                        on press pz { emit nt_wall(p.index) }
+                    }
+                }
+            }
 
             // ── Weather: now, the next hours, the days ──
             group {
@@ -744,7 +840,7 @@ scene Notch {
         }
 
         // folding away: the pointer off the nub, the fan and the panel for a moment (unless kept out)
-        let nt_over = max(max(nubz.hover, fanz.hover), max(max(keep0.hover, keep1.hover), max(keep2.hover, max(keep4.hover, keep5.hover))))
+        let nt_over = max(max(nubz.hover, fanz.hover), max(max(keep0.hover, keep1.hover), max(max(keep2.hover, keep3.hover), max(keep4.hover, keep5.hover))))
         on change nt_over while nt_over > 0.5 and nt_tab >= 0 { nt_entered = true }
         on still nt_over for 650ms while nt_open and not nt_pin and nt_over < 0.5 and (nt_entered or not nt_deck) { nt_open = false; nt_tab = -1 }
         // opened from the Nexus and never pointed at: it goes after a while

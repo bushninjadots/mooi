@@ -286,7 +286,9 @@ return function(ctx)
     local want_feed = false              -- a reader is up (the player, the notch, the Nexus): publish
     local want_viz = false               -- the media module's visualizer is placed and shown
     local feed_wanted = 0                -- until when a music panel elsewhere asked for the feed
+    local rim_sent, rim_quiet = {}, false   -- the bands last written, and whether the last line was silence
     local function rest_rim()
+        rim_sent, rim_quiet = {}, false
         for i = 0, 15 do fact["rm" .. i] = 0 end
         fact.rm_beat = 0; fact.rm_phase = 0; fact.rm_on = 0
     end
@@ -346,12 +348,22 @@ return function(ctx)
             if math.abs(state.high - last_high) > 0.02 then fact.fhigh = state.high; last_high = state.high end
             -- the bar's border (ui/rim.plm), only while it joins the frame: a fact set is a scene
             -- re-read, so nothing is written for a rim nobody draws
+            -- Silence writes nothing: the rim's phase turns even at rest, and a fact that changes 30
+            -- times a second redraws the whole bar 30 times a second (~17% of a core, measured
+            -- 2026-11-02 with the frame on and the music paused). A band is written when it moves.
             if rim_on > 0 then
-                local folded = vizfeed.map(bands, 16)
-                for j = 0, 15 do fact["rm" .. j] = folded[j + 1] end
-                fact.rm_bass, fact.rm_high = state.bass, state.high
-                fact.rm_beat, fact.rm_phase = state.beat, state.phase
-                fact.rm_gain, fact.rm_glow, fact.rm_on = rim_gain, rim_glow, rim_on
+                local quiet = state.level < 0.01 and state.high < 0.01 and state.beat < 0.01
+                if not (quiet and rim_quiet) then
+                    local folded = vizfeed.map(bands, 16)
+                    for j = 0, 15 do
+                        local x = folded[j + 1]
+                        if math.abs(x - (rim_sent[j] or -1)) > 0.02 then fact["rm" .. j] = x; rim_sent[j] = x end
+                    end
+                    fact.rm_bass, fact.rm_high = state.bass, state.high
+                    fact.rm_beat, fact.rm_phase = state.beat, state.phase
+                    fact.rm_gain, fact.rm_glow, fact.rm_on = rim_gain, rim_glow, rim_on
+                end
+                rim_quiet = quiet
             end
             if want_feed then
                 publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,

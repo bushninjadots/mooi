@@ -2109,33 +2109,29 @@ end
 -- full-screen surface. The bar starts it from the Arch mark; `mooi nexus` again, its ×, an
 -- outside press or Escape ends it. The start waits for the bar to let go of the keyboard.
 local nexus_win = nil
-local nexus_pending = false -- the keyboard hand-off is delayed; don't launch two scenes in that gap
-on("open_nexus", function()
-    -- open: it slides away and ends itself (D98)
-    if nexus_win then run("pleamar", { "--say", "mooi-nexus", "emit nx_close" }); return end
-    -- The bar releases its keyboard before Nexus starts. Multiple clicks/events can arrive during
-    -- that short hand-off; only the first may schedule a launch.
-    if nexus_pending then return end
-    nexus_pending = true
+-- D118: the Nexus is started once and stays running, hidden; the mark (or `mooi nexus`) toggles it.
+-- It tells the bar when it is open (fact nexus_open). Started with MOOI_NEXUS_OPEN=1 it opens as
+-- soon as it is up: that is the path when it was not running yet (first press, or after a crash).
+local function nexus_start(open_now)
     local mine
     local said = {}
-    after(90, function()
-        if nexus_win then nexus_pending = false; return end
-        -- --stall 0: the default holds the logic for 600 ms after every decision to prove the
-        -- renderer is decoupled, which is a demonstration, not a desktop. The bar runs the
-        -- same way, so a press in the Nexus answers as fast as a press in the bar.
-        mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-nexus.plm", "--no-hud", "--stall", "0" }, function(line)
-            if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
-        end, function(_, code)
-            if nexus_win == mine then nexus_win = nil; fact.nexus_open = false end
-            nexus_pending = false
-            if code ~= 0 then log("nexus · the command centre ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
-        end, { errors = true })
-        nexus_win = mine
-        fact.nexus_open = true
-        nexus_pending = false
-    end)
+    -- --stall 0: the default holds the logic for 600 ms after every decision to prove the
+    -- renderer is decoupled, which is a demonstration, not a desktop. The bar runs the
+    -- same way, so a press in the Nexus answers as fast as a press in the bar.
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-nexus.plm", "--no-hud", "--stall", "0" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if nexus_win == mine then nexus_win = nil; fact.nexus_open = false end
+        if code ~= 0 then log("nexus · the command centre ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+    end, { errors = true, env = { MOOI_NEXUS_OPEN = open_now and "1" or "0" } })
+    nexus_win = mine
+end
+on("open_nexus", function()
+    if nexus_win then run("pleamar", { "--say", "mooi-nexus", "emit nx_toggle" }); return end
+    nexus_start(true)
 end)
+-- started hidden a little after the bar, so the first press opens it at once
+after(4000, function() if not nexus_win then nexus_start(false) end end)
 
 -- ── The board (D52, D64): a Kanban board, a program of its own (shell/mooi-board.plm) ──
 -- The bar no longer draws it: it starts that program (and closes it again), and keeps only what the

@@ -518,6 +518,7 @@ scene Nexus {
     text wx_t = ""
     text wx_word = ""
 
+    event nx_toggle ->           // from the bar (the mark, `mooi nexus`): open it, or send it away
     event nx_close ->            // to the logic: slide away and end
     event nx_tog ->              // to the logic: quick setting n (mooi-nexus.luau QUICK)
     event nx_go ->               // to the logic: open something (codes in mooi-nexus.luau GO)
@@ -546,7 +547,6 @@ scene Nexus {
     event dk_large_set ->        // to the logic: the profile small (0) or large (1)
     event nx_pick ->             // to the logic: choose a picture — 0 the avatar · 1 the banner
     event dk_size ->             // to the logic: card n to its next size (small, medium, large)
-    event dk_wallpapers ->       // to the logic: open the wallpaper picker, Skwd Wall (the Wallpapers notch, D118)
     event dk_notch ->            // to the logic: notch tab n off the deck's end (0 Claude · 1 Music · 2 Weather · 3 Workspaces · 4 Wallpapers · 5 GitHub)
 
     figure i_set = file "icons/cog.svg"
@@ -595,7 +595,9 @@ scene Nexus {
     }
 
     // ── Motion ──
-    spring nx.slide = 900, 62        // ~220 ms in and out
+    // ~420 ms in: long enough to be seen arriving (it was 220 ms and read as a blink, D118);
+    // a touch under critical damping, so it settles with the faintest give and no bounce
+    spring nx.slide = 260, 30
     prop nx_in = 0 ~nx.slide
     follow nx_in = if(dk_open, 1, 0)
     prop gs_in = 0 ~m.expand         // what grows out: a scene's changes, a workspace's preview, naming
@@ -608,21 +610,28 @@ scene Nexus {
     follow ed_in = if(dk_edit, 1, 0)
     // Powering on: a scan line sweeps the deck once as it opens, and each part comes online after it
     // (springs settle at once with reduced motion, so it is simply there)
-    prop scan = 0 ~620ms
-    prop rp.0 = 0 ~m.enter
-    prop rp.1 = 0 ~m.enter
-    prop rp.2 = 0 ~m.enter
-    prop rp.3 = 0 ~m.enter
-    prop rp.4 = 0 ~m.enter
-    prop rp.5 = 0 ~m.enter
-    prop rp.6 = 0 ~m.enter
-    prop rp.7 = 0 ~m.enter
-    prop rp.8 = 0 ~m.enter
-    prop rp.9 = 0 ~m.enter
-    prop rp.10 = 0 ~m.enter
+    prop scan = 0 ~760ms
+    spring nx.part = 420, 34         // ~320 ms: each card coming online
+    prop rp.0 = 0 ~nx.part
+    prop rp.1 = 0 ~nx.part
+    prop rp.2 = 0 ~nx.part
+    prop rp.3 = 0 ~nx.part
+    prop rp.4 = 0 ~nx.part
+    prop rp.5 = 0 ~nx.part
+    prop rp.6 = 0 ~nx.part
+    prop rp.7 = 0 ~nx.part
+    prop rp.8 = 0 ~nx.part
+    prop rp.9 = 0 ~nx.part
+    prop rp.10 = 0 ~nx.part
+    // The Nexus stays running while it is away (D118), so every opening starts from nothing:
+    // the deck slides in, the scan sweeps it once it is most of the way in, and the cards come
+    // online one after another behind the scan.
     on change dk_open while dk_open {
-        scan: 1 after 90ms
-        rp.0: 1 after 120ms;  rp.1: 1 after 160ms;  rp.2: 1 after 200ms;  rp.3: 1 after 240ms;  rp.4: 1 after 280ms;  rp.5: 1 after 320ms;  rp.6: 1 after 360ms;  rp.7: 1 after 400ms;  rp.8: 1 after 440ms;  rp.9: 1 after 480ms;  rp.10: 1 after 520ms
+        scan: 0 ~0ms; rp.0: 0 ~0ms; rp.1: 0 ~0ms; rp.2: 0 ~0ms; rp.3: 0 ~0ms; rp.4: 0 ~0ms; rp.5: 0 ~0ms; rp.6: 0 ~0ms; rp.7: 0 ~0ms; rp.8: 0 ~0ms; rp.9: 0 ~0ms; rp.10: 0 ~0ms
+        scan: 1 after 200ms
+        rp.0: 1 after 240ms; rp.1: 1 after 295ms; rp.2: 1 after 350ms; rp.3: 1 after 405ms
+        rp.4: 1 after 460ms; rp.5: 1 after 515ms; rp.6: 1 after 570ms; rp.7: 1 after 625ms
+        rp.8: 1 after 680ms; rp.9: 1 after 735ms; rp.10: 1 after 790ms
     }
     // the lock-on: brackets that close on the workspace pointed at, again for each new one
     prop lk = 0 ~m.select
@@ -796,6 +805,9 @@ scene Nexus {
         anchor: top_left
         level: top
         keyboard: on_demand
+        // the program stays running while the Nexus is away (D118): the surface is there only while
+        // it is open or still sliding out, so nothing of it takes a press or a key when it is gone
+        open: dk_open or nx_in > 0.004
 
         on key Escape while dk_naming { dk_naming = false; blur }
         on key Escape while not dk_naming and dk_edit { emit dk_edit_on(0) }
@@ -880,7 +892,7 @@ scene Nexus {
                 // ── This window ──
                 group {
                     show: pw_on
-                    move: gx.0 + dk_gdx * if(dk_gid == 0, 1, 0) - dk_ox * (1 - rp.0) * 14, gy.0 + dk_gdy * if(dk_gid == 0, 1, 0) - dk_oy * (1 - rp.0) * 14
+                    move: gx.0 + dk_gdx * if(dk_gid == 0, 1, 0) - dk_ox * (1 - rp.0) * 34, gy.0 + dk_gdy * if(dk_gid == 0, 1, 0) - dk_oy * (1 - rp.0) * 34
                     opacity: smooth(0, 1, rp.0)
                     Card(pw_w, pw_h, if(dk_gid == 0, 1, 0))
                     PartHead(pw_w, pw_n, "This window", "", lamp: lp_w)
@@ -946,7 +958,7 @@ scene Nexus {
                 // ── Workspaces ──
                 group {
                     show: ps_on
-                    move: gx.1 + dk_gdx * if(dk_gid == 1, 1, 0) - dk_ox * (1 - rp.1) * 14, gy.1 + dk_gdy * if(dk_gid == 1, 1, 0) - dk_oy * (1 - rp.1) * 14
+                    move: gx.1 + dk_gdx * if(dk_gid == 1, 1, 0) - dk_ox * (1 - rp.1) * 34, gy.1 + dk_gdy * if(dk_gid == 1, 1, 0) - dk_oy * (1 - rp.1) * 34
                     opacity: smooth(0, 1, rp.1)
                     Card(ps_w, ps_h, if(dk_gid == 1, 1, 0))
                     zone box wsbay { from: 0, 0; size: ps_w, ps_h; role: region; label: "Workspaces" }
@@ -1027,7 +1039,7 @@ scene Nexus {
                 // ── Mixer ──
                 group {
                     show: pm_on
-                    move: gx.2 + dk_gdx * if(dk_gid == 2, 1, 0) - dk_ox * (1 - rp.2) * 14, gy.2 + dk_gdy * if(dk_gid == 2, 1, 0) - dk_oy * (1 - rp.2) * 14
+                    move: gx.2 + dk_gdx * if(dk_gid == 2, 1, 0) - dk_ox * (1 - rp.2) * 34, gy.2 + dk_gdy * if(dk_gid == 2, 1, 0) - dk_oy * (1 - rp.2) * 34
                     opacity: smooth(0, 1, rp.2)
                     Card(pm_w, pm_h, if(dk_gid == 2, 1, 0))
                     PartHead(pm_w, pm_n, "Mixer", "", lamp: lp_m)
@@ -1055,7 +1067,7 @@ scene Nexus {
                 // ── Quick settings ──
                 group {
                     show: pq_on
-                    move: gx.3 + dk_gdx * if(dk_gid == 3, 1, 0) - dk_ox * (1 - rp.3) * 14, gy.3 + dk_gdy * if(dk_gid == 3, 1, 0) - dk_oy * (1 - rp.3) * 14
+                    move: gx.3 + dk_gdx * if(dk_gid == 3, 1, 0) - dk_ox * (1 - rp.3) * 34, gy.3 + dk_gdy * if(dk_gid == 3, 1, 0) - dk_oy * (1 - rp.3) * 34
                     opacity: smooth(0, 1, rp.3)
                     Card(pq_w, pq_h, if(dk_gid == 3, 1, 0))
                     PartHead(pq_w, pq_n, "Quick settings", "", lamp: lp_q)
@@ -1076,10 +1088,12 @@ scene Nexus {
                         group {
                             glow: 6, if(q.on, 0.7, 0) * st_glow, mix(dk.acc, dk.hot, q.hot)
                             box { from: qx + 8, qy; size: qw - 16, 2; color: mix(dk.acc, dk.hot, q.hot); show: q.on }
-                            QGlyph(qx + 15, qy + 15, q.glyph, if(q.on, mix(dk.acc, dk.hot, q.hot), mix(dk.ink2, dk.ink, qz.hover)), 14)
+                            QGlyph(qx + 15, qy + 33, q.glyph, if(q.on, mix(dk.acc, dk.hot, q.hot), mix(dk.ink2, dk.ink, qz.hover)), 13)
                         }
-                        text "{upper(q.word)}" { at: qx + 28, qy + 15.5; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(q.on, mix(dk.acc, dk.hot, q.hot), dk.ink); width: qw - 32; lines: 1 }
-                        text q.state { at: qx + 9, qy + 34; anchor: left center; size: 10; family: "Exo 2"; color: if(q.on, dk.ink, dk.mute); width: qw - 14; lines: 1 }
+                        // the name has the tile's whole width (with the glyph beside it, "BLUETOOTH" and
+                        // "SCREENSHOT" were cut to "BLUETO…"); the glyph sits with the state below
+                        text "{upper(q.word)}" { at: qx + 9, qy + 15.5; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(q.on, mix(dk.acc, dk.hot, q.hot), dk.ink); width: qw - 14; lines: 1 }
+                        text q.state { at: qx + 27, qy + 33; anchor: left center; size: 10; family: "Exo 2"; color: if(q.on, dk.ink, dk.mute); width: qw - 32; lines: 1 }
                         on press qz { emit nx_tog(q.code) }
                     }
                     zone box eg3 { from: pq_w - 122, 8; size: 82, 20; cursor: grab; role: button; label: "Move Quick settings"; active: dk_edit }
@@ -1101,7 +1115,7 @@ scene Nexus {
                 // ── Music ──
                 group {
                     show: pu_on
-                    move: gx.4 + dk_gdx * if(dk_gid == 4, 1, 0) - dk_ox * (1 - rp.4) * 14, gy.4 + dk_gdy * if(dk_gid == 4, 1, 0) - dk_oy * (1 - rp.4) * 14
+                    move: gx.4 + dk_gdx * if(dk_gid == 4, 1, 0) - dk_ox * (1 - rp.4) * 34, gy.4 + dk_gdy * if(dk_gid == 4, 1, 0) - dk_oy * (1 - rp.4) * 34
                     opacity: smooth(0, 1, rp.4)
                     Card(pu_w, pu_h, if(dk_gid == 4, 1, 0))
                     PartHead(pu_w, pu_n, "Music", "", lamp: lp_u)
@@ -1190,7 +1204,7 @@ scene Nexus {
                 // ── Machine ──
                 group {
                     show: pc_on
-                    move: gx.5 + dk_gdx * if(dk_gid == 5, 1, 0) - dk_ox * (1 - rp.5) * 14, gy.5 + dk_gdy * if(dk_gid == 5, 1, 0) - dk_oy * (1 - rp.5) * 14
+                    move: gx.5 + dk_gdx * if(dk_gid == 5, 1, 0) - dk_ox * (1 - rp.5) * 34, gy.5 + dk_gdy * if(dk_gid == 5, 1, 0) - dk_oy * (1 - rp.5) * 34
                     opacity: smooth(0, 1, rp.5)
                     Card(pc_w, pc_h, if(dk_gid == 5, 1, 0))
                     PartHead(pc_w, pc_n, "Machine", m_up_t, lamp: lp_c)
@@ -1244,7 +1258,7 @@ scene Nexus {
                 // ── Today ──
                 group {
                     show: pt_on
-                    move: gx.6 + dk_gdx * if(dk_gid == 6, 1, 0) - dk_ox * (1 - rp.6) * 14, gy.6 + dk_gdy * if(dk_gid == 6, 1, 0) - dk_oy * (1 - rp.6) * 14
+                    move: gx.6 + dk_gdx * if(dk_gid == 6, 1, 0) - dk_ox * (1 - rp.6) * 34, gy.6 + dk_gdy * if(dk_gid == 6, 1, 0) - dk_oy * (1 - rp.6) * 34
                     opacity: smooth(0, 1, rp.6)
                     Card(pt_w, pt_h, if(dk_gid == 6, 1, 0))
                     PartHead(pt_w, pt_n, "Today", clock.time, lamp: lp_t)
@@ -1287,7 +1301,7 @@ scene Nexus {
                 // ── Profile ──
                 group {
                     show: pf_on
-                    move: gx.7 + dk_gdx * if(dk_gid == 7, 1, 0) - dk_ox * (1 - rp.7) * 14, gy.7 + dk_gdy * if(dk_gid == 7, 1, 0) - dk_oy * (1 - rp.7) * 14
+                    move: gx.7 + dk_gdx * if(dk_gid == 7, 1, 0) - dk_ox * (1 - rp.7) * 34, gy.7 + dk_gdy * if(dk_gid == 7, 1, 0) - dk_oy * (1 - rp.7) * 34
                     opacity: smooth(0, 1, rp.7)
                     Card(pf_w, pf_h, if(dk_gid == 7, 1, 0))
                     PartHead(pf_w, pf_n, "Profile", "", lamp: lp_f)
@@ -1352,7 +1366,7 @@ scene Nexus {
                 // ── Scenes ──
                 group {
                     show: pn_on
-                    move: gx.8 + dk_gdx * if(dk_gid == 8, 1, 0) - dk_ox * (1 - rp.8) * 14, gy.8 + dk_gdy * if(dk_gid == 8, 1, 0) - dk_oy * (1 - rp.8) * 14
+                    move: gx.8 + dk_gdx * if(dk_gid == 8, 1, 0) - dk_ox * (1 - rp.8) * 34, gy.8 + dk_gdy * if(dk_gid == 8, 1, 0) - dk_oy * (1 - rp.8) * 34
                     opacity: smooth(0, 1, rp.8)
                     Card(pn_w, pn_h, if(dk_gid == 8, 1, 0))
                     PartHead(pn_w, pn_n, "Scenes", "ONE PRESS, WHOLE SETUP", lamp: lp_n)
@@ -1395,7 +1409,7 @@ scene Nexus {
                 // ── Waiting ──
                 group {
                     show: pa_on
-                    move: gx.9 + dk_gdx * if(dk_gid == 9, 1, 0) - dk_ox * (1 - rp.9) * 14, gy.9 + dk_gdy * if(dk_gid == 9, 1, 0) - dk_oy * (1 - rp.9) * 14
+                    move: gx.9 + dk_gdx * if(dk_gid == 9, 1, 0) - dk_ox * (1 - rp.9) * 34, gy.9 + dk_gdy * if(dk_gid == 9, 1, 0) - dk_oy * (1 - rp.9) * 34
                     opacity: smooth(0, 1, rp.9)
                     Card(pa_w, pa_h, if(dk_gid == 9, 1, 0))
                     PartHead(pa_w, pa_n, "Waiting", "", lamp: lp_a)
@@ -1434,7 +1448,7 @@ scene Nexus {
                 // ── Activity ──
                 group {
                     show: py_on
-                    move: gx.10 + dk_gdx * if(dk_gid == 10, 1, 0) - dk_ox * (1 - rp.10) * 14, gy.10 + dk_gdy * if(dk_gid == 10, 1, 0) - dk_oy * (1 - rp.10) * 14
+                    move: gx.10 + dk_gdx * if(dk_gid == 10, 1, 0) - dk_ox * (1 - rp.10) * 34, gy.10 + dk_gdy * if(dk_gid == 10, 1, 0) - dk_oy * (1 - rp.10) * 34
                     opacity: smooth(0, 1, rp.10)
                     Card(py_w, py_h, if(dk_gid == 10, 1, 0))
                     PartHead(py_w, py_n, "Activity", act_t, lamp: lp_y)
@@ -1528,7 +1542,7 @@ scene Nexus {
                     let te.$t = floor(t / 3)
                     let tx.$t = if(dk_vert, if(dk_edge == 3, -17, dk_w + 17), if(te.$t == 0, 22, dk_w - 190) + 36 + mod(t, 3) * 48)
                     let ty.$t = if(dk_vert, 40 + te.$t * 184 + 36 + mod(t, 3) * 48, if(dk_edge == 1, dk_h + 17, -17))
-                    zone box nz.$t { from: tx.$t - 18, ty.$t - 17; size: 36, 34; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers — open Skwd Wall", "GitHub") }
+                    zone box nz.$t { from: tx.$t - 18, ty.$t - 17; size: 36, 34; cursor: pointer; role: button; label: pick(t, "Claude", "Music", "Weather", "Workspaces", "Wallpapers", "GitHub") }
                     group {
                         glow: 6, (0.25 + 0.6 * max(nz.$t.hover, if(dk_ntab == t, 1, 0))) * st_glow, dk.acc
                         path { color: mix(dk.raised, dk.acc, 0.1 + 0.35 * max(nz.$t.hover, if(dk_ntab == t, 1, 0)))
@@ -1537,9 +1551,8 @@ scene Nexus {
                                move tx.$t, ty.$t - 13; line tx.$t + 11.3, ty.$t - 6.5; line tx.$t + 11.3, ty.$t + 6.5; line tx.$t, ty.$t + 13; line tx.$t - 11.3, ty.$t + 6.5; line tx.$t - 11.3, ty.$t - 6.5; close }
                     }
                     NGlyph(tx.$t, ty.$t, t, mix(dk.ink2, dk.acc, nz.$t.hover))
-                    on hover nz.$t for 160ms while t != 4 { dk_ntab = t; emit dk_notch(t) }
-                    on press nz.$t while t != 4 { dk_ntab = t; emit dk_notch(t) }
-                    on press nz.$t while t == 4 { emit dk_wallpapers }
+                    on hover nz.$t for 160ms { dk_ntab = t; emit dk_notch(t) }
+                    on press nz.$t { dk_ntab = t; emit dk_notch(t) }
                 }
             }
 
