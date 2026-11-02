@@ -22,11 +22,16 @@ STATE="settings.json board.json notes.json wallpapers.json environments.json sta
 
 rm -rf "$out.new"
 mkdir -p "$out.new/.config" "$out.new/.local/share/pleamar/mooi"
+# A link that points out of its folder is taken as the file it names (a clone would have nothing at
+# the other end); a link that already names nothing here is left out, as it does nothing here either.
+dead=$(mktemp)
 for d in $CONFIG; do
     [ -e "$HOME/.config/$d" ] || { echo "capture: ~/.config/$d is not here; skipped" >&2; continue; }
+    (cd "$HOME/.config" && find "$d" -xtype l) | sed 's|^|/|' > "$dead"
     # shellcheck disable=SC2086
-    rsync -a $EXCLUDE "$HOME/.config/$d" "$out.new/.config/"
+    rsync -a --copy-unsafe-links --exclude-from="$dead" $EXCLUDE "$HOME/.config/$d" "$out.new/.config/"
 done
+rm -f "$dead"
 for f in $STATE; do
     [ -e "$data/$f" ] && cp -r "$data/$f" "$out.new/.local/share/pleamar/mooi/"
 done
