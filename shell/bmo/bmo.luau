@@ -831,6 +831,24 @@ local function paint()
     fact.s_variant = index_of_name(B.VARIANTS, cfg.variant) - 1
 end
 
+-- His breath (lively motion): a breath in, held half a second, then out; every 3.4–4.2 s while
+-- `breathing`. Between breaths nothing of him moves, so his surface sends no frames (D131).
+local breath_timer = nil
+local function breathe()
+    if fact.breathing and not breath_timer then
+        local function one()
+            if not fact.breathing then return end
+            fact.inhale = true
+            after(560, function() fact.inhale = false end)
+            breath_timer = after(3400 + math.random(0, 800), one)
+        end
+        breath_timer = after(1200, one)
+    elseif not fact.breathing and breath_timer then
+        cancel(breath_timer); breath_timer = nil
+        fact.inhale = false
+    end
+end
+
 local function sync_settings()
     fact.s_wander = cfg.wander
     fact.s_locked = cfg.locked
@@ -843,6 +861,7 @@ local function sync_settings()
     fact.on_bar = cfg.place == "bar"
     fact.size = eff_size()
     fact.breathing = cfg.motion == "lively"
+    breathe()
     paint()
 end
 

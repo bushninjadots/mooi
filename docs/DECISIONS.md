@@ -3889,3 +3889,24 @@ from an answer (`lib/notch.wallhaven_page`, tested). Nothing is asked of Wallhav
 chosen. **Checked live:** 24 pictures with thumbnails, paging to 48, the Blues colour, back to the
 folder; the full download checked on its own. Not checked: a press wearing one, which would have
 changed the desktop's wallpaper and palette mid-session.
+
+## D131 · 2026-11-03 · Why the GPU sat at its top clock with nothing happening
+**Asked for:** find and fix the idle GPU use (Hyprland ~35 % of the GPU, the card at 1800 MHz, nothing
+moving).
+**Measured** (Hyprland's own GPU time from DRM fdinfo, on an empty workspace, clients paused with
+SIGSTOP one at a time; `debug:damage_blink` to see what was repainted):
+- Hyprland redrew the whole screen 60 times a second. With every client paused it still cost ~25 %:
+  the **blur finish**. Only three of Hyprland 0.57's variants animate, and they redraw forever even on a
+  still desktop: `drops` ~72 %, `aurora` ~30 %, `heat_shimmer` ~24 % (the one set here). Plain/kawase,
+  haze, acrylic, frost, prism, water, fluid_jar and ripple cost 0 % when nothing moves.
+- With the blur plain, pausing **BMO** alone took Hyprland from ~22 % to ~0 %. His "lively" breath was
+  an endless posture (1.5 px over 3.6 s); while anything animates, a pleamar scene asks the compositor
+  for a frame every tick even when nothing visible changed, so Hyprland drew 60 frames a second, and
+  with blur each re-blurred the screen. (pleamar's own damage was small; snapping his height to half
+  pixels did not help, the ticking is what costs.)
+**Now:** his breath is a breath now and then: the logic raises `inhale` for 0.56 s every 3.4–4.2 s while
+breathing, a 520 ms spring follows it, and he is still in between (bmo.luau `breathe`, bmo.plm `chest`).
+BMO alone, breathing: ~22 % → ~4.6 %; everything running with the plain blur: ~22 % → ~9 %.
+Settings → Windows → Blur finish now groups the finishes by what they cost: the still ones (Fluid jar
+added, it was never offered), and the three moving ones in a row of their own that says they redraw all
+the time (~25–70 % of the GPU, idle). The blur finish itself is the user's choice and is left as it is.

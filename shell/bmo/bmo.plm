@@ -75,6 +75,7 @@ scene Bmo {
     fact walking = false
     fact dancing = false
     fact breathing = false
+    fact inhale = false          // the logic: a breath in now (while breathing)
     fact dragged = false
     fact flying = false          // thrown: in the air, bouncing (the logic flies him; brain.luau fly)
     fact lean = 0                // -1 … 1, from how fast he is carried
@@ -321,11 +322,12 @@ scene Bmo {
         300ms in_out_sine { gy: -4; tilt: -4; arml: 30; armr: 110 }
         300ms in_out_sine { gy: 0; tilt: 0; arml: 70; armr: 70 }
     }
-    // "lively" motion only: a slow breath while he stands about
-    posture breathe while breathing {
-        1800ms in_out_sine { gy: -1.5 }
-        1800ms in_out_sine
-    }
+    // "lively" motion only: a breath while he stands about — a rise and fall now and then, the logic's
+    // `inhale` (bmo.luau). It was an endless posture: anything moving keeps a scene asking the compositor
+    // for a frame every tick, so Hyprland drew sixty a second for a breath of a pixel and a half, ~20 % of
+    // the GPU with blur (D131). Now he moves ~1 s in every ~4 and is still in between.
+    prop chest = 0 ~520ms
+    follow chest = if(inhale and breathing, 1, 0)
 
     // ── Pieces ───────────────────────────────────────────────
 
@@ -401,7 +403,7 @@ scene Bmo {
                     pivot: 0, 0
                     scale: S
                     group {
-                        move: gx, gy + bob + sit_p * 20
+                        move: gx, gy + bob + sit_p * 20 - chest * 1.5
                         group {
                             pivot: 80, 196
                             rotate: tlt * 1deg
@@ -564,7 +566,7 @@ scene Bmo {
                 show: bub_a > 0.01
                 opacity: bub_a
                 let bx = px + bw / 2
-                let by = py + (gy - 8) * S
+                let by = py + (gy - chest * 1.5 - 8) * S
                 box { from: bx - bub.width / 2 - 9, by - 26; size: bub.width + 18, 22; corner: 8; color: paper }
                 box { from: bx - bub.width / 2 - 9, by - 26; size: bub.width + 18, 22; corner: 8; stroke: 2; color: ink }
                 path { color: paper

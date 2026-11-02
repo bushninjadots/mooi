@@ -260,9 +260,11 @@ SECTIONS = [
          'pick(sv_desktop_blur_vibrancy == 0, "{sv_desktop_blur_vibrancy, 0}%", "KEEP")', "sv_desktop_blur != 1"),
         ("choice", "Floating see-through", "On: a floating window blurs the wallpaper, not the windows under it", "desktop.blur_xray", "sv_desktop_blur_xray", ["Keep mine", "On", "Off"], "sv_desktop_blur != 1"),
         ("choice", "Blur menus", "Right-click menus and popups blurred behind", "desktop.blur_popups", "sv_desktop_blur_popups", ["Keep mine", "On", "Off"], "sv_desktop_blur != 1"),
-        ("choice", "Blur finish", "Hyprland 0.57: a material over the blur (the animated ones cost more)", "desktop.blur_variant", "sv_desktop_blur_variant",
+        ("choice", "Blur finish", "Hyprland 0.57: a material over the blur", "desktop.blur_variant", "sv_desktop_blur_variant",
          [("Keep mine", 0), ("Plain", 1), ("Glass", 2), ("Acrylic", 3), ("Water", 4)], "sv_desktop_blur != 1"),
-        ("choice", "", "…or a moving one", "desktop.blur_variant", "sv_desktop_blur_variant", [("Ripple", 5), ("Aurora", 6), ("Haze", 7), ("Heat", 8), ("Drops", 9)], "sv_desktop_blur != 1"),
+        ("choice", "", "…or another still one", "desktop.blur_variant", "sv_desktop_blur_variant", [("Ripple", 5), ("Haze", 7), ("Fluid jar", 10)], "sv_desktop_blur != 1"),
+        # measured (D131): these three animate, so Hyprland redraws every frame even when nothing moves
+        ("choice", "", "…or a moving one: Hyprland redraws all the time (~25–70 % of the GPU, idle)", "desktop.blur_variant", "sv_desktop_blur_variant", [("Aurora", 6), ("Heat", 8), ("Drops", 9)], "sv_desktop_blur != 1"),
         ("toggle", "Dim the others", "Shade every window but the one you are using", "desktop.dim_inactive", "dk_dim"),
         ("card", "Motion", "dk_manage"),
         ("choice", "Wobble", "Windows bend as you drag them (Hyprland 0.57) and bounce as they open and move", "desktop.wobble", "sv_desktop_wobble", ["Keep mine", "Off", "Subtle", "Wobbly", "Jelly"]),

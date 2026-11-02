@@ -1,5 +1,7 @@
 # Status
 
+_Last updated 2026-11-03, newest: **idle GPU found (D131)**. The animated blur finish (`heat_shimmer`, ~24 %) and BMO's endless breathing (Hyprland redrew 60 fps for it, ~20 % with blur) kept the GPU at its top clock with nothing happening. BMO now breathes in short pulses (~22 % → ~4.6 %); Settings labels the three moving blur finishes with their cost. Unit 286/0, BMO 27/0, components, `mooi check`._
+
 _Last updated 2026-11-02, newest: **Wallpapers panel: FOLDER · WALLHAVEN · SKWD WALL ↗ under its title (D130)**. Wallhaven's month top list (SFW, screen-sized) fills the arc, paged as the wheel turns, colour swatches search by colour, and a press saves the picture into the studio's folder and wears it. Unit 286/0 (two new Wallhaven tests), BMO 27/0, components, apps-sync, `mooi check`; checked live except wearing a Wallhaven picture._
 
 _Last updated 2026-11-02, newest: **the notch's Workspaces panel shows the windows live and stands closer (D129)**. Miniature windows paint the windows themselves via `thumbnails.live` while the panel is open (current workspace live; other workspaces their last frame, as Hyprland does not draw them); copying stops when it closes. The arc's middle card is 260 px from the notch instead of ~530. Checked live; unit 284/0, components, `mooi check`._
