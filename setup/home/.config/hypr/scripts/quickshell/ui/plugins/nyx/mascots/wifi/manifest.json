@@ -1,1 +1,0 @@
-{ "id": "wifi", "label": "Wi-Fi", "icon": "󰤨", "order": 90, "entry": "WifiMascot.qml", "customizable": ["color", "size"], "author": "xscriptor", "description": "Connected Wi-Fi signal strength." }
