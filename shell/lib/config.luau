@@ -319,9 +319,8 @@ M.SCHEMA = {
     -- `saturation` pushes the whole palette's colour up or down.
     { path = "theme.finish", kind = "enum", values = { "luminous", "matte", "neon" }, default = "luminous" },
     { path = "theme.saturation", kind = "integer", default = 0, min = -50, max = 50 },
-    -- The wallpaper studio's defaults (D61): how a picture with no recipe of its own opens. A
-    -- matte (0 leaves it full-bleed), what fills the matte, and whether the picture's own
-    -- background — the colour read from its corners — is keyed out into the backdrop.
+    -- Retired with the wallpaper studio (D118): nothing reads these now. They stay in the schema
+    -- so a settings file that carries them still validates, and settings codes do not move.
     { path = "wallpaper.matte", kind = "integer", default = 0, min = 0, max = 25 },
     { path = "wallpaper.backdrop", kind = "enum", values = { "black", "picture", "corners", "edges", "both" }, default = "black" },
     { path = "wallpaper.key", kind = "boolean", default = false },

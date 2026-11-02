@@ -1,7 +1,6 @@
 language 0.4
 import "../theme/tokens.plm"
 import "../theme/ferrolume.plm"
-import "rim.plm" as rim
 
 // The pieces every island shares. An island is drawn in the bar's surface; inside it,
 // IslandFrame draws the body that grows out of its anchor and fades its content in. Two styles
@@ -17,9 +16,7 @@ library Island {
     // such as the command membrane, which sits at a fixed place).
     // `tx`: where its module is, from the island's left — the tether drops there (−1: no tether).
     // A tethered island sits 12 px lower, so the tether shows; its children move with it.
-    // `rim`: the music on this island's border (ui/rim.plm), drawn inside the grown body so the
-    // bars travel and clip with it. Off by default: only the bar's pop-ups ask for it.
-    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1, rim: bool = false) {
+    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1) {
         size: w, h
         let tether = isl_style > 0.5
         let drop = if(tether and not up and not centre, 12, 0)
@@ -74,11 +71,6 @@ library Island {
             opacity: smooth(0.45, 1, rv)
             move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0) + drop
             clip box { from: left, top - drop; size: iw, ih; corner: if(tether, irad, 0) }
-            // the music on the island's own border: left, right and bottom (its top is the bar
-            group {
-                show: rim
-                rim.Rect(left, top, iw, ih, if(tether, irad, k), 14, fl.hull, accent.primary, mix(fl.trace, accent.primary, 0.4), 9, 14)
-            }
             children
         }
     }

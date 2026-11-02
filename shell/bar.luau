@@ -278,9 +278,14 @@ return function(ctx)
         "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
         "[smoothing]", "noise_reduction = 66", "" }, "\n"))
     local sent = {}
-    -- D112: the rim's facts (ui/rim.plm). cava also runs for the bar's own visualiser and the
-    -- frame's swell, so rm_on says whether the rim itself is wanted, not merely that music plays.
+    -- The music shows inside the music components (the bar's media module, the notch's and the
+    -- Nexus's music panels, the player) and, outside them, only on the screen frame (frame.on +
+    -- frame.music) and the bar's border when it joins the frame (music.rim, D118). No other
+    -- border moves with it.
     local rim_on, rim_gain, rim_glow = 0, 1, 1
+    local want_feed = false              -- a reader is up (the player, the notch, the Nexus): publish
+    local want_viz = false               -- the media module's visualizer is placed and shown
+    local feed_wanted = 0                -- until when a music panel elsewhere asked for the feed
     local function rest_rim()
         for i = 0, 15 do fact["rm" .. i] = 0 end
         fact.rm_beat = 0; fact.rm_phase = 0; fact.rm_on = 0
@@ -308,7 +313,7 @@ return function(ctx)
     local function rest_levels()
         for i = 0, 15 do fact["lv" .. i] = 0.06; sent[i] = 0.06 end
         swell, last_level, last_high = nil, -1, -1
-        fact.fbass = 0; fact.fhigh = 0; fact.fph = 0
+        fact.fbass = 0; fact.fhigh = 0
     end
     local function listen()
         if cava then return end
@@ -327,27 +332,31 @@ return function(ctx)
             if i < 32 then return end
             local bands = {}
             for j = 1, 32 do bands[j] = b[j - 1] or 0 end
-            -- The bar's own bands keep their first 16, exactly as before.
-            for j = 0, 15 do
-                local x = bands[j + 1]
-                if math.abs(x - (sent[j] or 0)) > 0.02 then fact["lv" .. j] = x; sent[j] = x end
+            -- the media module's own visualizer: the first 16 bands, only when they moved
+            if want_viz then
+                for j = 0, 15 do
+                    local x = bands[j + 1]
+                    if math.abs(x - (sent[j] or 0)) > 0.02 then fact["lv" .. j] = x; sent[j] = x end
+                end
             end
-            -- One analysis for every surface: the bass, the treble, the beat and the phase.
+            -- One analysis: the bass and treble swell the frame; the rest rides the bar's border.
             local state = vizfeed.analyse(swell, bands, 1 / 30)
             swell = state
             if math.abs(state.level - last_level) > 0.015 then fact.fbass = state.level; last_level = state.level end
             if math.abs(state.high - last_high) > 0.02 then fact.fhigh = state.high; last_high = state.high end
-            fact.fph = state.phase
-            -- the rim: the same bands folded to sixteen, and the beat and phase it rides on
-            do
+            -- the bar's border (ui/rim.plm), only while it joins the frame: a fact set is a scene
+            -- re-read, so nothing is written for a rim nobody draws
+            if rim_on > 0 then
                 local folded = vizfeed.map(bands, 16)
                 for j = 0, 15 do fact["rm" .. j] = folded[j + 1] end
                 fact.rm_bass, fact.rm_high = state.bass, state.high
                 fact.rm_beat, fact.rm_phase = state.beat, state.phase
                 fact.rm_gain, fact.rm_glow, fact.rm_on = rim_gain, rim_glow, rim_on
             end
-            publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,
-                      phase = state.phase, playing = true, missing = viz_missing }, frame * 1000 / 30)
+            if want_feed then
+                publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,
+                          phase = state.phase, playing = true, missing = viz_missing }, frame * 1000 / 30)
+            end
         end, function()
             if cava ~= mine then return end
             cava = nil
@@ -355,7 +364,6 @@ return function(ctx)
             -- restart tries again once it is installed.
             if cava_lines == 0 then
                 viz_missing = true
-                fact.viz_missing = true
                 rest_levels()
                 rest_rim()
                 rest_feed(true)
@@ -404,19 +412,32 @@ return function(ctx)
         if placed.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
         if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
-        local want_rim = s.music.rim == true and not still
-        rim_on = want_rim and 1 or 0
+        local want_swell = s.frame.on and s.frame.music
+        rim_on = (want_swell and s.music.rim == true and not still) and 1 or 0
+        if rim_on == 0 then rest_rim() end
         rim_gain = math.min(1.5, math.max(0.25, (tonumber(s.music.rim_gain) or 100) / 100))
         rim_glow = s.music.rim_glow == true and 1 or 0
-        local want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
-        local want_swell = s.frame.on and s.frame.music
         -- The frame's music follows whatever is audible, not only what the media module knows
         -- about: with frame.music on, cava runs whether or not that module says anything is
-        -- playing, so a browser, a game or a video moves the frame too. The rim and the bar's
-        -- own visualiser still start with the module. Neither runs while the saver is on.
-        local want_audio = want_viz or want_swell or want_rim
+        -- playing, so a browser, a game or a video moves the frame too. For the player it runs
+        -- only while something plays. Neither runs while the saver is on.
+        want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
+        if not want_viz then for i = 0, 15 do fact["lv" .. i] = 0.06; sent[i] = 0.06 end end
+        -- the feed file is for the other programs' music panels; it is written only while one is
+        -- up to read it (the player; the notch and the Nexus say so with `mooi say … feed`)
+        want_feed = (ctx.player_up ~= nil and ctx.player_up() == true) or feed_wanted > os.time()
+        if not want_feed then rest_feed(viz_missing) end
+        local want_audio = want_viz or want_swell or want_feed
         if want_audio and (playing or want_swell) and not ctx.saving() and not viz_missing then listen() else hush() end
     end
+
+    -- the notch's or the Nexus's music panel is open: it asks again every few seconds while it is
+    on("feed_want", function()
+        local was = feed_wanted > os.time()
+        feed_wanted = os.time() + 6
+        if not was and readers then readers() end
+    end)
+    every(3000, function() if feed_wanted > 0 and feed_wanted <= os.time() then feed_wanted = 0; if readers then readers() end end end)
 
     -- ── Actions ────────────────────────────────────────────────
     local function stamp(fn) run("date", { "+%Y%m%d_%H%M%S" }, function(out) fn((out or "now"):gsub("%s+", "")) end) end

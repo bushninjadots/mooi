@@ -76,4 +76,16 @@ function M.layers(state, current, cfg)
 end
 
 
+-- Whether a file is a picture the desk can draw, by its extension (no file is opened to decide).
+M.IMAGE_EXTS = {
+    png = true, jpg = true, jpeg = true, jfif = true, jpe = true, webp = true, avif = true,
+    gif = true, apng = true, jxl = true, bmp = true, tif = true, tiff = true, heic = true,
+    heif = true, svg = true, ico = true, tga = true, dds = true, exr = true, hdr = true,
+    pnm = true, ppm = true, pgm = true, pbm = true,
+}
+function M.is_image(name)
+    local ext = tostring(name or ""):match("%.([%w]+)$")
+    return ext ~= nil and M.IMAGE_EXTS[string.lower(ext)] == true
+end
+
 return M

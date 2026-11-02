@@ -80,7 +80,7 @@ M.MODULES = {
     settings = { width = 32 },
     -- Quick notes (D51): the pad's page and how many are on it; a press opens the dropdown.
     notes = { width = 46 },
-    -- Lumen, the wallpaper studio (D57): a framed picture; a press opens the studio.
+    -- Wallpapers: a framed picture; a press opens Skwd Wall, the one wallpaper picker (D118).
     wallpaper = { width = 32 },
     -- Control Nexus (D65): the Arch mark; a press opens the system command centre.
     nexus = { width = 32 },

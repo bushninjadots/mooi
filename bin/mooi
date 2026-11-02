@@ -22,14 +22,14 @@
 #   mooi overview          every workspace zoomed out (Super+Tab)
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
 #                          one under the pointer (Super+Alt+right-click)
-#   mooi wallpaper         the wallpaper studio (Lumen, Super+Alt+P): pick a picture, grade it, apply it
+#   mooi wallpaper         the wallpaper picker: Skwd Wall (skwd-wall-v2), the one picker (D118)
 #   mooi settings | edit   open or close the settings window; the bar's edit mode on or off
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
 #   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
-#   mooi notch [panel]    the side notch on a panel: claude (default), music, spaces, walls, weather, github
+#   mooi notch [panel]    the side notch on a panel: claude (default), music, spaces, weather, github
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
@@ -517,14 +517,14 @@ not() { ! "$@"; }
 # scene whenever its file is saved, so a desktop running the repo reloaded on every edit — half
 # a change at a time, logic errors and all (found 2026-10-19, the Atlas "glitch"). `start`,
 # `takeover` and `refresh` take a fresh snapshot; nothing else touches it.
-# The settings window, the wallpaper studio and the board are programs of their own (their .plm
+# The settings window, the board and the other tools are programs of their own (their .plm
 # files) and pleamar gives each the data folder of its file's name: those folders are links to
-# mooi's, so they read and write mooi's settings.json, palette.json, wallpapers.json and
+# mooi's, so they read and write mooi's settings.json, palette.json and
 # board.json. Made here, idempotently; a real folder in the way is moved aside.
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-wallpaper mooi-board mooi-nexus mooi-desk mooi-player mooi-notch; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -561,7 +561,6 @@ snapshot() {
     reap_sockets
     "$pleamar" --check "$src" >/dev/null || { echo "mooi: the repo's scene does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-settings.plm" >/dev/null || { echo "mooi: the settings window does not compile; the running one is kept" >&2; return 1; }
-    "$pleamar" --check "$root/shell/mooi-wallpaper.plm" >/dev/null || { echo "mooi: the wallpaper studio does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-board.plm" >/dev/null || { echo "mooi: the board does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-nexus.plm" >/dev/null || { echo "mooi: Control Nexus does not compile; the running one is kept" >&2; return 1; }
     "$pleamar" --check "$root/shell/mooi-desk.plm" >/dev/null || { echo "mooi: the desk does not compile; the running one is kept" >&2; return 1; }
@@ -785,16 +784,17 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
-    wallpaper) running || { echo "mooi is not running; start it first" >&2; exit 1; }
-               exec "$pleamar" --say "$name" "emit open_wallpaper" ;;
+    wallpaper) # the one wallpaper picker (D118): Lumen, the studio, is gone; Skwd Wall picks
+               command -v skwd-wall-v2 >/dev/null 2>&1 || { echo "skwd-wall-v2 is not installed" >&2; exit 1; }
+               exec skwd-wall-v2 ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }
             exec "$pleamar" --say "$name" "emit open_player 1" ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
-    notch) # the side notch on a panel: claude music spaces walls weather github (Claude by default)
-        case "${1:-claude}" in claude) n=0 ;; music) n=1 ;; spaces|workspaces) n=2 ;; walls|wallpapers) n=3 ;; weather) n=4 ;; github) n=5 ;;
-            *) echo "usage: mooi notch [claude|music|spaces|walls|weather|github]" >&2; exit 2 ;; esac
+    notch) # the side notch on a panel: claude music spaces weather github (Claude by default)
+        case "${1:-claude}" in claude) n=0 ;; music) n=1 ;; spaces|workspaces) n=2 ;; weather) n=4 ;; github) n=5 ;;
+            *) echo "usage: mooi notch [claude|music|spaces|weather|github]" >&2; exit 2 ;; esac
         exec "$pleamar" --say mooi-notch "emit nt_show $n" ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_nexus" ;;
@@ -943,7 +943,6 @@ case "$cmd" in
         fi
         "$pleamar" --check "$src" || exit 1
         "$pleamar" --check "$root/shell/mooi-settings.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-wallpaper.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-board.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1

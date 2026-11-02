@@ -21,7 +21,7 @@ import "ui/rim.plm" as rim
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
+        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "skwd-wall-v2", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -604,7 +604,6 @@ scene Mooi {
     fact note_server = 0      // notifications.server · 0 takeover · 1 always · 2 never
     fact fbass = 0            // cava, for the frame's swell (shell/bar.luau)
     fact fhigh = 0
-    fact fph = 0
     fact pw = 0
     model frames max 24 { x: number; w: number; style: number; a: number; b: number }
     model dividers max 40 { x: number; strong: bool; p: number; m: number; gap: number }
@@ -1126,8 +1125,9 @@ scene Mooi {
     event mic_mute ->          // to the logic: the microphone, muted or not
     event mic_vol ->           // to the logic: the microphone's level (0..1)
     event open_settings ->     // to the logic: start the settings program, or close it
-    event open_wallpaper ->    // to the logic: start Lumen, the wallpaper studio, or close it (`mooi wallpaper`)
+    event open_wallpaper ->    // to the logic: open the wallpaper picker, Skwd Wall (`mooi wallpaper`, D118)
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
+    event feed_want ->         // from the notch or the Nexus: a music panel is open and wants the feed (D118)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal
     event open_claude ->       // to the logic: the side notch's Claude panel
@@ -1773,13 +1773,11 @@ scene Mooi {
     // glass itself: see frame_surface).
     prop flvl = 0 ~fl.level
     prop fhi = 0 ~fl.level
-    prop fphs = 0 ~fl.level
     // cava, not the media module: the frame's music follows whatever is audible (fbass/fhigh are
     // the analysis in bar.luau), so a track from a browser, a video or anything else the media
     // module does not track still moves the frame. `frame.music` is the only switch.
     follow flvl = if(frame_music, fbass, 0)
     follow fhi = if(frame_music, fhigh, 0)
-    follow fphs = fph
     // What the frame's music is made of: the band's thickness and the border that follows it.
     // `swell` rides the bass (slow and wide), `crests` the treble (quick and shallow), `pulse`
     // widens on the beat with the bass underneath it (so it never sits still between drums).
@@ -3060,15 +3058,14 @@ scene Mooi {
         on press zqn { emit qn_toggle; side = none; mark_open = false; open = none }
     }
 
-    // ── Wallpaper studio (D57) ───────────────────────────────
-    // Lumen's door: a framed picture. A press opens the studio (a program of its own); it is
-    // closed from inside, by Esc or the corner.
+    // ── Wallpaper ────────────────────────────────────────────
+    // A framed picture: a press opens the one wallpaper picker, Skwd Wall (D118).
     group {
         show: p_wallpaper
         move: xs_wallpaper, 0
         opacity: pv_wallpaper
         zone box zwp { from: 0, fl.top; size: ws_wallpaper, fl.mod_h; cursor: pointer; role: button
-                       label: "Wallpaper studio — pick a picture and grade it" }
+                       label: "Wallpapers — open Skwd Wall" }
         Pill(ws_wallpaper, zwp.hover)
         // a figure's `at` is its centre (D84), so the picture sits in the middle of its pill
         figure i_wallpaper { at: ws_wallpaper / 2, fl.cy; size: 17, 17
@@ -4097,7 +4094,7 @@ scene Mooi {
                 show: rv.window > 0.03
                 move: wi_ox, 0
 
-                IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1), rim: true) {
+                IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1)) {
                     text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
                     text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
 
@@ -4190,7 +4187,7 @@ scene Mooi {
                 let sh = 144 + 52 * brightness.present
                 group {
                     move: 0, 0
-                    IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox, rim: true) {
+                    IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox) {
                         text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
                         text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wifi }
                         text "Wired" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wired }
@@ -4226,7 +4223,7 @@ scene Mooi {
             group {
                 show: rv.calendar > 0.03
                 move: ca_ox, 0
-                IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox), rim: true) {
+                IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox)) {
                     zone box keep_calendar { from: 0, 0; size: 300, 292; role: region; agent: hidden }
                     IsleHead(300, cal_title, cal_sub)
                     repeat k in 0..7 {
@@ -4271,7 +4268,7 @@ scene Mooi {
             group {
                 show: rv.stats > 0.03
                 move: so_ox, 0
-                IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox), rim: true) {
+                IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox)) {
                     zone box keep_stats { from: 0, 0; size: 320, 300 + if(st_gpu_ok, 30, 0); role: region; agent: hidden }
                     IsleHead(320, "System", st_load)
                     IsleGauge(16, 40, 288, "Processor", "{round(res_cpu * 100), 0} % · {round(res_temp), 0} °C", res_cpu, res_cpu > 0.85 or res_temp > 85)
@@ -4308,7 +4305,7 @@ scene Mooi {
             group {
                 show: rv.weather > 0.03
                 move: wi_x, 0
-                IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x), rim: true) {
+                IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x)) {
                     zone box keep_weather { from: 0, 0; size: 340, 356; role: region; agent: hidden }
                     IsleHead(340, wxi_title, wxi_sub)
                     group {
@@ -4359,7 +4356,7 @@ scene Mooi {
             group {
                 show: rv.sound > 0.03
                 move: sn_x, 0
-                IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x), rim: true) {
+                IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x)) {
                     zone box keep_sound { from: 0, 0; size: 320, 214 + 26 * min(aouts.count, 6); role: region; agent: hidden }
                     IsleHead(320, "Sound", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"))
                     group { move: 16, 40
@@ -4404,7 +4401,7 @@ scene Mooi {
             group {
                 show: rv.display > 0.03
                 move: dp_x, 0
-                IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x), rim: true) {
+                IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x)) {
                     zone box keep_display { from: 0, 0; size: 300, 150 + if(brightness.present, 52, 0); role: region; agent: hidden }
                     IsleHead(300, "Display", pick(brightness.present, "No backlight", "{round(brightness.level * 100), 0} %"))
                     group { show: brightness.present
@@ -4441,7 +4438,7 @@ scene Mooi {
             group {
                 show: rv.power > 0.03
                 move: pw_x, 0
-                IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x), rim: true) {
+                IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x)) {
                     zone box keep_power { from: 0, 0; size: 320, 252 + if(pw_ppd, 40, 0); role: region; agent: hidden }
                     IsleHead(320, "Power", pw_state)
                     text "{round(battery.percent), 0}%" { at: 16, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"
@@ -4500,7 +4497,7 @@ scene Mooi {
             group {
                 show: rv.shnet > 0.03
                 move: screen.width - 56 - 300, 0
-                IslandFrame(rv.shnet, 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count)), rim: true) {
+                IslandFrame(rv.shnet, 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count))) {
                     zone box keep_shnet { from: 0, 0; size: 300, 112 + 28 * max(1, min(5, nets.count)) + 28 * max(1, min(5, btd.count)); role: region; agent: hidden }
                     IsleHead(300, "Connections", pick(network.online, "offline", network.name))
                     zone box snw { from: 204, 36; size: 80, 22; cursor: pointer; role: toggle; checked: network.wifi; label: "Wi-Fi on or off" }
@@ -4559,7 +4556,7 @@ scene Mooi {
             group {
                 show: rv.shalert > 0.03
                 move: screen.width - 56 - 300, 0
-                IslandFrame(rv.shalert, 300, 152, rim: true) {
+                IslandFrame(rv.shalert, 300, 152) {
                     zone box keep_shalert { from: 0, 0; size: 300, 152; role: region; agent: hidden }
                     IsleHead(300, "Notifications", pick(dnd_now, "", "quiet"))
                     text "{note_count, 0}" { at: 16, 66; anchor: left center; size: 30; weight: 600; family: "Exo 2"; color: if(note_count > 0, if(isl_style > 0.5, accent.primary, fl.phos), if(isl_style > 0.5, fg.muted, fl.muted)) }
@@ -4587,7 +4584,7 @@ scene Mooi {
             group {
                 show: rv.shupd > 0.03
                 move: screen.width - 56 - 300, 0
-                IslandFrame(rv.shupd, 300, 114, rim: true) {
+                IslandFrame(rv.shupd, 300, 114) {
                     zone box keep_shupd { from: 0, 0; size: 300, 114; role: region; agent: hidden }
                     IsleHead(300, "System updates", pick(upd_n > 0, "up to date", "{upd_n, 0} waiting"))
                     text upd_t { at: 16, 52; anchor: left center; size: 12; family: "Exo 2"; color: if(upd_n > 0, if(isl_style > 0.5, fg.primary, fl.engrave), if(isl_style > 0.5, fg.secondary, fl.muted)); width: 268; lines: 2 }
@@ -4793,7 +4790,7 @@ scene Mooi {
                 follow ch = 60 + if(res.count > 0, rlist.height + 10, 36) + 30
                 group {
                     move: 10, 0
-                    IslandFrame(rv.command, 580, ch, centre: true, aw: 140, rim: true) {
+                    IslandFrame(rv.command, 580, ch, centre: true, aw: 140) {
                         ellipse { at: 25, 29; radius: 6; stroke: 1.5; color: fg.secondary }
                         line { from: 29.5, 33.5; to: 34, 38; width: 1.5; color: fg.secondary }
                         input query { at: 46, 30; width: 510; size: 16; color: fg.primary; selection: selection.bg

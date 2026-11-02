@@ -1,13 +1,10 @@
 #!/bin/sh
-# Static contract checks for the two action-button components used by Settings and Lumen.
-# This deliberately checks semantic behaviour, not geometry or palette: the two surfaces
-# must remain visually distinct.
+# Static contract checks for the action-button component used by Settings (Lumen's went with
+# the wallpaper studio, D118). This checks semantic behaviour, not geometry or palette.
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
 ferro="$root/shell/ui/ferrolume.plm"
-lumen="$root/shell/ui/lumen.plm"
 settings="$root/shell/mooi-settings.plm"
-wallpaper="$root/shell/mooi-wallpaper.plm"
 n=0
 
 has() {
@@ -46,11 +43,5 @@ has "$ferro" 'role: button; label: label; active: en' "Ferrolume hit target decl
 has "$ferro" 'on press hit { emit press(n) }' "Ferrolume emits the supplied action payload"
 uses "$settings" 'SButton(' 2 "Settings consumes the shared Ferrolume button"
 
-# Lumen / Wallpaper Studio keeps its own shape, tone and sizing while meeting the same
-# interaction contract.
-has "$lumen" 'component Button(' "Lumen exposes its own Button treatment"
-has "$lumen" 'role: button; label: label; active: en' "Lumen hit target declares role, label and enabled state"
-has "$lumen" 'on press hit { emit press(n) }' "Lumen emits the supplied action payload"
-uses "$wallpaper" 'Button(' 2 "Wallpaper Studio consumes Lumen buttons"
 
 printf '  %s checks passed\n' "$n"

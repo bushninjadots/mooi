@@ -5,7 +5,6 @@
 
 local config = require("lib/config")
 local desk = require("lib/desk")
-local W = require("lib/wallpaper")
 
 local HOME = tostring(sys.ask("env", "HOME"))
 -- what the picker draws (`current_wallpaper` is a still made of it, for lock screens)
@@ -61,7 +60,7 @@ local function read_current()
         local p = tostring(out or ""):gsub("%s+$", "")
         if code == 0 and p ~= "" and p ~= current then current = p end
         -- a moving wallpaper (a video, a GIF) is the picker's to play: the desk steps aside
-        fact.drawable = current ~= nil and W.is_image(current) and not current:lower():match("%.gif$")
+        fact.drawable = current ~= nil and desk.is_image(current) and not current:lower():match("%.gif$")
         refresh()
     end)
 end

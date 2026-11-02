@@ -1864,21 +1864,14 @@ on("open_settings", function()
     fact.settings_open = true
 end)
 
--- The wallpaper studio (shell/mooi-wallpaper.plm, Lumen). Its own full-screen program for the
--- same reason: it holds the keyboard exclusively and declares a surface of its own, so it
--- cannot share the bar's single keyboard clause. `mooi wallpaper` again, or ESC in it, ends it.
-local wallpaper_win = nil
+-- The wallpaper button opens the one wallpaper picker, Skwd Wall (D118: Lumen, the studio, and
+-- mooi's other pickers are gone). It is a program of its own; a second press while it is up is
+-- its own business (it keeps one instance).
 on("open_wallpaper", function()
-    if wallpaper_win then run("pleamar", { "--say", "mooi-wallpaper", "quit" }); return end
-    local mine
-    local said = {}
-    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-wallpaper.plm", "--no-hud" }, function(line)
-        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
-    end, function(_, code)
-        if wallpaper_win == mine then wallpaper_win = nil end
-        if code ~= 0 then log("wallpaper · the studio ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
-    end, { errors = true })
-    wallpaper_win = mine
+    local ok = pcall(spawn, "skwd-wall-v2", {}, function() end, function(_, code)
+        if code ~= 0 then log("wallpaper · skwd-wall-v2 ended (" .. tostring(code) .. ")") end
+    end)
+    if not ok then log("wallpaper · skwd-wall-v2 could not be started (is it on the PATH?)") end
 end)
 
 -- The music player (shell/mooi-player.plm, D88): mpd's library and a remote for any other
@@ -1895,11 +1888,12 @@ local function start_player(v)
     mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-player.plm", "--no-hud", "--stall", "0" }, function(line)
         if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
     end, function(_, code)
-        if player_win == mine then player_win = nil end
+        if player_win == mine then player_win = nil; if bar then bar.relayout() end end
         if code ~= 0 then log("player · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
     end, { errors = true })
     player_win = mine
     player_started = os.time()
+    if bar then bar.relayout() end   -- the bar's cava feeds the player's visualizer while it is up
 end
 on("open_player", function(v)
     if not player_win then start_player(v); return end
@@ -2301,6 +2295,7 @@ bar = require("bar")({
     space_count = function() return #ws_rows > 0 and #ws_rows or fact.ws_max end,
     outline = function(id) return outlines[id] or 0 end,
     saving = function() return saving() end,
+    player_up = function() return player_win ~= nil end,
 })
 
 -- ── The Mechanical Shutter: a window's controls, unfolding from its edge (shell/shutter.luau) ──

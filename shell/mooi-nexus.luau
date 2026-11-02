@@ -19,7 +19,6 @@ local hypr = require("lib/hypr")
 local atlas = require("lib/atlas")
 local deck = require("lib/nexusdeck")
 local notch = require("lib/notch")
-local vizfeed = require("lib/vizfeed")
 
 local FILE, SCENES = "settings.json", "nexus-scenes.json"
 
@@ -210,7 +209,6 @@ local BY_CODE = {}
 for id, c in pairs(CODE) do BY_CODE[c] = id end
 local parts, hidden
 local sizes = {}             -- each card's size along a strip (✎ ⇔): id → s · m · l
-local BARS = { eight = 8, twelve = 12, sixteen = 16, twentyfour = 24 }   -- nexus.bars, the edge's bars
 local function read_parts()
     local n = type(settings.nexus) == "table" and settings.nexus or {}
     parts = deck.clean_parts(n.parts)
@@ -218,12 +216,7 @@ local function read_parts()
     hidden = deck.clean_hidden(n.hidden, type(n.parts) == "table" and #n.parts > 0)
     fact.dk_rows = tonumber(n.rows) == 2 and 2 or 1
     fact.nx_large = n.profile == "large"
-    fact.dk_viz = n.visualiser ~= false
-    fact.dk_bars = BARS[n.bars] or 16
     fact.dk_notches = n.notches ~= false
-    fact.music_rim = settings.music.rim == true
-    fact.music_rim_gain = settings.music.rim_gain / 100
-    fact.music_rim_glow = settings.music.rim_glow == true
     sizes = deck.clean_sizes(n.sizes)
 end
 read_parts()
@@ -289,9 +282,13 @@ end
 
 -- ── The notches off the deck's ends: the side notch (shell/mooi-notch) opens that panel beside the deck ──
 -- tab n of the deck: 0 Claude · 1 Music · 2 Weather (the left end) · 3 Workspaces · 4 Wallpapers · 5 GitHub
-local NOTCH_TAB = { [0] = 0, [1] = 1, [2] = 4, [3] = 2, [4] = 3, [5] = 5 }
+local NOTCH_TAB = { [0] = 0, [1] = 1, [2] = 4, [3] = 2, [5] = 5 }   -- 4, Wallpapers, opens Skwd Wall
+-- The Wallpapers notch (4) is a door, not a panel: it opens the one wallpaper picker, Skwd Wall,
+-- on a press only (D118). The other five open the side notch's panel beside the deck.
+on("dk_wallpapers", function() launch("mooi", { "wallpaper" }) end)
 on("dk_notch", function(v)
     local n = math.floor(tonumber(v) or -1)
+    if n == 4 then return end
     local tab = NOTCH_TAB[n]
     if not tab or not d then return end
     local r = notch.from_deck(d, tab, n < 3, screen.w, screen.h)
@@ -509,45 +506,27 @@ every(1000, function()
     local p = pos + (media.playing and (os.time() - pos_at) * (tonumber(media.rate) or 1) or 0)
     fact.nx_prog = math.min(1, p / len)
 end)
--- D112: the bar owns the one cava. The deck reads the line it publishes, and only while open.
-local viz_seq, viz_at, viz_missing = nil, 0, false
-local still = type(settings.motion) == "table" and (settings.motion.reduced == true or settings.motion.saver == "always")
-local function rest_viz()
-    for i = 0, 31 do fact["dv" .. i] = 0 end
-end
-local function rest_rim()
-    fact.rm_beat, fact.rm_phase = 0, 0
-    fact.rm_on = 0
-end
+-- The Music card's visualiser (D118): the bar owns the one cava and writes the feed while someone
+-- asks; the deck asks while it is open and something plays, and reads it then.
+local vizfeed = require("lib/vizfeed")
+local viz_seq, viz_at = nil, 0
+local function rest_viz() for i = 0, 15 do fact["dv" .. i] = 0 end end
 local function take_viz()
+    if not fact.dk_open then return end
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
     if not ok or type(raw) ~= "string" then return end
     local t = vizfeed.decode(raw)
     if not t or not vizfeed.newer(viz_seq, t.seq) then return end
     viz_seq, viz_at = t.seq, os.time()
-    if t.missing and not viz_missing then notice("CAVA MISSING · pacman -S cava") end
-    viz_missing = t.missing == true
-    -- a silent frame rests the bars even while the deck is shut, so it cannot freeze on reopen
-    if not t.playing then rest_viz(); rest_rim(); return end
-    -- the rim's facts (ui/rim.plm): the master, the deck's own override, and reduced motion
-    local folded = vizfeed.map(t.bands, 16)
-    for i = 0, 15 do fact["rm" .. i] = folded[i + 1] end
-    fact.rm_bass, fact.rm_high, fact.rm_beat, fact.rm_phase = t.bass, t.high, t.beat, t.phase
-    fact.rm_gain = tonumber(fact.music_rim_gain) or 1
-    fact.rm_glow = fact.music_rim_glow == true and 1 or 0
-    fact.rm_on = (fact.music_rim == true and fact.dk_viz and not still) and 1 or 0
-    if not (fact.dk_open and fact.dk_viz) then return end
-    for i = 0, 31 do fact["dv" .. i] = t.bands[i + 1] end
+    if not t.playing then rest_viz(); return end
+    local bands = vizfeed.map(t.bands, 16)
+    for i = 0, 15 do fact["dv" .. i] = bands[i + 1] end
 end
 pcall(sys.watch, "files:" .. vizfeed.FILE, take_viz)
-every(400, function()
-    if fact.dk_open then take_viz() end   -- the watch coalesces quick writes; this read keeps it true
-    if fact.dk_open and fact.dk_viz and viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then
-        viz_seq, viz_at = nil, 0
-        rest_viz(); rest_rim()
-    end
+every(3000, function()
+    if fact.dk_open and media.playing == true then run("pleamar", { "--say", "mooi", "emit feed_want" }) end
+    if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; rest_viz() end
 end)
-take_viz()
 on("nx_media", function(v)
     local n = tonumber(v)
     pcall(sys.call, n == 0 and "media.previous" or (n == 2 and "media.next" or "media.toggle"))
@@ -1064,7 +1043,7 @@ end)
 
 -- ── The wallpaper under the miniatures, and keeping up with the settings ──
 do
-    -- the picture the wallpaper studio last applied, made small (and given a name an image is known
+    -- the picture the desktop wears now, made small (and given a name an image is known
     -- by: the studio's copy has none) for the miniatures
     local small = data_folder .. "/nexus-wall.jpg"
     launch("magick", { env("HOME", "") .. "/.cache/current_wallpaper[0]", "-resize", "640x360^", "-gravity", "center", "-extent", "640x360", "-quality", "82", small }, function(ok)
@@ -1087,5 +1066,5 @@ bar_states()
 every(2000, bar_states)
 read_desktop()
 every(1500, read_desktop)
-after(40, function() fact.dk_open = true; burst(); take_viz() end)
+after(40, function() fact.dk_open = true; burst(); if media.playing == true then run("pleamar", { "--say", "mooi", "emit feed_want" }) end end)
 after(1300, burst)           -- the compositor's pictures often arrive on the second asking

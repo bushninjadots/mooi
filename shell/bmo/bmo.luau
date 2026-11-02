@@ -467,6 +467,9 @@ local decide
 -- Peeking (D109): he lives under the windows, so a window hides him — he goes to one's edge on the
 -- workspace you are on, tucked behind it, leans out to look, and goes back where he was.
 local peek_token = 0
+-- His monitor, and where it is laid out (measure, below). Declared here, before `peek` reads
+-- them: declared after it, `peek` saw unset globals and threw on its first sum.
+local mon, mon_id, mon_x, mon_y = nil, nil, 0, 0
 function peek()
     run("hyprctl", { "-j", "clients" }, function(out, code)
         if code ~= 0 then return end
@@ -1054,7 +1057,7 @@ end)
 -- runs then, and now and then after it, so a resolution change or a monitor that went away never
 -- leaves him walking off an edge that is no longer there, or peeking at a window that is not on his
 -- screen (found 2026-10-30: the startup's geometry was all he ever had).
-local mon, mon_id, mon_x, mon_y = nil, nil, 0, 0      -- his monitor, and where it is laid out
+-- (his monitor and where it is laid out: declared above `peek`, which reads them)
 local surf_w, surf_h = nil, nil                       -- what the scene last said its surface measures
 local function measure(done)
     run("hyprctl", { "-j", "monitors" }, function(out, code)

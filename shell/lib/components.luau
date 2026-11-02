@@ -49,47 +49,6 @@ local registry = {
         preview = { kind = "component", label = "Action", variant = "compact", background = "surface.primary" },
         constraints = { min_width = 32, max_width = 720, fixed_height = 30, resizable = { "w" } },
     },
-    ["lumen.button"] = {
-        id = "lumen.button",
-        name = "Lumen Action",
-        category = "actions",
-        description = "Variable-height cut plate with solid or outlined tone treatment for Wallpaper Studio.",
-        source = { file = "shell/ui/lumen.plm", library = "Lumen", component = "Button" },
-        design = { direction = "minimal-elegant", surface = "lumen" },
-        geometry = {
-            mode = "explicit",
-            min_width = 32,
-            min_height = 24,
-            preferred_width = 112,
-            preferred_height = 34,
-            bounds = "component",
-        },
-        properties = {
-            { name = "x", type = "number", required = true, editor = false, unit = "px" },
-            { name = "y", type = "number", required = true, editor = false, unit = "px" },
-            { name = "w", type = "number", required = true, min = 32, max = 720, default = 112, editor = true, unit = "px", group = "layout" },
-            { name = "h", type = "number", required = true, min = 24, max = 120, default = 34, editor = true, unit = "px", group = "layout" },
-            { name = "label", type = "string", required = true, max_length = 48, default = "Action", editor = true, group = "content" },
-            { name = "tone", type = "color", required = true, default = "accent.primary", editor = true, group = "appearance" },
-            { name = "solid", type = "boolean", required = true, default = false, editor = true, group = "appearance" },
-            { name = "en", type = "boolean", default = true, editor = true, group = "behaviour" },
-        },
-        bindings = {
-            { name = "press", type = "event", required = true, editor = false },
-            { name = "n", type = "number", required = true, editor = false, description = "Payload emitted through press." },
-        },
-        states = {
-            { name = "enabled", source = "en", implemented = true },
-            { name = "hovered", source = "hit.hover", implemented = true },
-            { name = "pressed", source = "hit.pressed", implemented = false, note = "No pressed visual is currently drawn." },
-            { name = "focused", source = "keyboard focus", implemented = false },
-        },
-        events = { { name = "press", payload = "n", trigger = "pointer press", implemented = true } },
-        theme = { roles = { "hull_raised", "well", "trace", "flare", "engrave", "ink" }, accepts_user_tone = true },
-        motion = { hover = "immediate", press = "none", reduced_motion_safe = true },
-        preview = { kind = "component", label = "Action", variant = "solid-or-outline", background = "surface.primary" },
-        constraints = { min_width = 32, max_width = 720, min_height = 24, max_height = 120, resizable = { "w", "h" } },
-    },
 }
 
 local function descriptor(id)

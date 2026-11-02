@@ -592,7 +592,7 @@ scene Bmo {
             MenuItem(mx0 + 5, my0 + 125, "Hide for 10 min", 6)
             MenuItem(mx0 + 5, my0 + 149, "Talk to BMO…", 8)
             MenuItem(mx0 + 5, my0 + 173, "Chat with Claude", 9)
-            MenuItem(mx0 + 5, my0 + 197, "Quit BMO", 7)
+            MenuItem(mx0 + 5, my0 + 197, "Turn BMO off", 7)   // stays off: Settings → BMO brings him back
         }
 
         // ── The panel: a second little console screen beside him ──
