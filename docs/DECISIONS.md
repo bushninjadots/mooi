@@ -3641,3 +3641,67 @@ plate (0, 31 → 1920, 1080) plus the island's rows, and the notes panel's rows 
 `tests/scene.sh` 60 state + 7 motion, `tests/pointer.sh` 3, both 0 failed.
 *To change back:* leave the panels loose; nothing else depends on where the block sits, and the
 cost of moving one back is the clipping this fixes.
+
+## D118 · 2026-11-02 · Visualisers live inside music components; one wallpaper picker
+
+**Borders no longer move with the music.** The rim of D112 is gone from the bar's pop-ups, the notch's
+panels and the Nexus (deck, notches, the carried card). What stays, by the user's choice, are the
+visualisers *inside* the music components: the bar's media module, the notch's Music panel, the Nexus
+Music card and the player. Outside them only the screen frame moves (D119), with the bar's border joining
+it when `frame.music` is on. The feed (`viz-levels.txt`) is written only while a reader asks for it
+(`feed_want`), and the theme watcher no longer wakes on it (it cost ~60 % of a core while playing).
+The Nexus fell from 14,996 to 807 properties.
+**Wallpapers:** Lumen (the studio, its library, kit and settings page) is removed. Skwd Wall is the one
+other picker (`mooi wallpaper`, the bar's button, the notch panel's button); the notch's own Wallpapers
+arc stays (the user asked for it back), walking the whole folder through a sliding 40-row window.
+**Also removed:** the Overview's Mission shape (D114) and the Hyprdrive engine switch (D113) — the plugin
+never built here. `atlas.engine` stays in the schema only so later setting codes keep their places; a
+file that chose mission or hyprdrive is migrated to the grid.
+*To change back:* the rim library (`ui/rim.plm`) is still used by the frame; re-adding it to a surface is
+a matter of folding the feed there again, at the property cost above.
+
+## D119 · 2026-11-02 · The screen frame is its own program; its border is one line with the bar's
+
+Pleamar's per-frame cost grows with the scene, and the bar's scene held ~17k properties, so anything
+animating all the time (the frame's swell) cost ~20 % of a core. `shell/mooi-frame.plm/.luau` is now a
+separate small scene, started by the bar while `frame.on` is set, under it. The bar writes `bar-geo.json`
+(its pieces) when its layout changes; the frame reads it and draws the sides, the foot and the top. In
+notch mode the frame's line turns into a fillet at each piece and the piece's own outline (open strokes
+starting where the fillet ends) carries it round to the next, so frame and bar read as one border in
+every mode; in islands and full mode the top line is the bar row's foot. Bar scene: 17,393 → 7,007
+properties. Measured with music: bar 10 % + frame 6.8 % (was ~28 % for the bar alone); paused, frame 0.5 %.
+
+## D120 · 2026-11-02 · The Nexus stays running
+
+The bar starts the Nexus once, hidden; the mark toggles it (`emit nx_toggle`), ~0.1 s to the first frame
+instead of ~1.1 s of compiling, and cards keep their data and graphs their history. Hidden, its readers
+rest (0.5 % CPU). `MOOI_NEXUS_OPEN=1` opens it on spawn (tests). The opening is staged: a ~420 ms slide,
+the scan once the deck is in, cards coming online behind it. Visualisers read the feed at its own pace
+while shown (a coalesced file watch had held them to ~4 updates a second).
+
+## D121 · 2026-11-02 · The side notch and the stash: one family
+
+At rest each keeps the same lit hairline on its edge — brighter when pointed at, warm when something
+waits (a badge on the notch, items in the stash). The notch's arc fan became a track of flat hexagonal
+tabs, mirrored on the left edge, its panels opening beside the track (`lib/notch` PANEL_X 168 → 60).
+One set of timings: revealed 60 ms after the edge is touched, a tab opens its panel after 140 ms, a
+press pins it, and it goes home 500 ms after the pointer leaves.
+
+## D122 · 2026-11-02 · Nexus: two rows are a free canvas
+
+With two rows the deck becomes a canvas over the screen below the bar (`lib/nexusdeck.canvas_layout`).
+In edit mode a card carried anywhere stays there (its middle where it was let go, on an 8 px grid, kept
+on the canvas), and a corner handle sizes it (at least 168×96). Places and sizes are saved in
+thousandths of the canvas (`nexus.canvas`, `c<n>_<x>_<y>_<w>_<h>`) so they hold on another screen; a card
+never placed starts from the two-row deck, centred. The s/m/l size now works down a side too (it scales
+the card's height), which gives the left and right edges the options the top and bottom had.
+
+## D123 · 2026-11-02 · The spine is removed; visualisers gain automatically
+
+**The spine (D100) is gone** — its tabs, hairline, three shelves, the Nexus's Cascade mode and their
+settings. Islands open under the bar only; a file with `nexus.mode = cascade` gets the deck. (The scene
+had `shelves_on` start true, which is why it showed while switched off.) This supersedes D102's Cascade
+and D103's spine autohide.
+**Gain:** cava hears the music after mpd's own volume, and the mooi player runs mpd quietly, so the bands
+sat near 1/1000 of their range and nothing moved. `lib/vizfeed` now reads them against a ceiling that
+rises at once and sinks over seconds, with a silence gate (unit-tested).

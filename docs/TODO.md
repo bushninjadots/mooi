@@ -22,8 +22,13 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Settings → SHELL → Nexus; angular notches; cards resized (D108); Hyprland 0.57 wobble and blur finishes (D107)
 - [x] BMO: his own chat, game pop-ups, a tantrum, peeking (D109)
 - [ ] Log out and in to run Hyprland 0.57, then check Wobble and Blur finish look right (the variant's spelling)
-- [ ] Later: one deck per monitor; the spine's hairline warm on a hot CPU; the notch
-      on the right edge as a choice; the GitHub panel's issues assigned to you
+- [x] The frame and the bar as one border in every mode; the frame its own program (D119)
+- [x] The side notch and the stash behave and look as one family (D121)
+- [x] Nexus: two rows are a free canvas, cards sized by hand; sizes down a side (D122)
+- [x] The spine and Cascade removed at the user's request (D123)
+- [ ] Run `sudo hyprpm remove Hyprdrive` (the plugin is no longer used, D118)
+- [ ] Later: one deck per monitor; the notch on the right edge as a choice; the GitHub panel's
+      issues assigned to you
 
 ## Bar islands (asked 2026-10-27) — built (D97)
 
@@ -41,7 +46,7 @@ what was done, and why, is docs/DECISIONS.md.
       items in docs/superpowers/plans/2026-10-27-music-player.md's ledger, and: EasyEffects dies with the
       player, so the EQ only applies while it is open).
 - [ ] Settings
-- [ ] Wallpaper editor (Lumen) and our own wallpaper switcher, removing the other pickers
+- [x] Wallpapers: Lumen removed; Skwd Wall is the one picker beside the notch's arc (D118)
 - [x] Control Nexus — the drawer (D98)
 - [ ] The bar ("needs big work") — islands done (D97); next the Control Nexus
 - [x] BMO — starts with mooi, throwing, sizes, the bar, variants, awareness, idle life, talk, Settings page (D94)
