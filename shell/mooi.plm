@@ -5428,7 +5428,10 @@ scene Mooi {
             // (a layer that cannot be seen is not drawn: the whole screen, blended, is the costly part)
             box { from: 0, 0; size: ov_W, ov_H; color: mix(fl.ground, #000000, 0.5); opacity: if(ov_strip, ov_dim * 0.55, ov_dim) * ov_z * ov_z; show: not ov_canvas and not ov_mission and ov_z > 0.05 }
             box { from: 0, 0; size: ov_W, ov_H; color: fl.ground; opacity: 0.97 * ov_z * ov_z; show: ov_canvas and ov_z > 0.05 }
-            // the ported overview's backdrop: the wallpaper, out of focus and dimmed, as Hyprdrive's
+            // the ported overview's backdrop: the wallpaper, out of focus and dimmed, as Hyprdrive's.
+            // The image cell is 16:9 and keeps the picture's proportions, so a wallpaper of another
+            // shape leaves bands: the ground under it keeps the live windows from showing through them.
+            box { from: 0, 0; size: ov_W, ov_H; color: fl.ground; opacity: ov_z; show: ov_mission and ov_wall_ok and ov_z > 0.05 }
             group {
                 show: ov_mission and ov_wall_ok and ov_z > 0.05
                 opacity: ov_z

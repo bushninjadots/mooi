@@ -355,8 +355,10 @@ sys.watch("files:" .. FILE, function()
     if notch_sync then notch_sync() end
     if notch_cut then notch_cut() end
 end)
+local ov_wall_refresh -- the Overview's wallpaper backdrop, asked for again; defined with the Overview, below
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
+    if ov_wall_refresh then ov_wall_refresh() end
 end)
 on("recolor", function() load_palette(); apply_theme("asked to recolour") end)
 -- Alert: a critical battery re-lights the whole bar (Ferrolume's Alert theme).
@@ -669,11 +671,27 @@ local run_actions = {}          -- what each type-to-run row does: app, calc or 
 local home = tostring(sys.ask("env", "HOME") or "")
 -- The Pleamar Overview's backdrop (D114): the wallpaper the desk draws, if there is one.
 local wall = home ~= "" and (home .. "/.cache/current_wallpaper") or ""
-if wall ~= "" then
-    text.ov_wall = wall
-    local ok, there = pcall(sys.ask, "files.exists", wall)
-    fact.ov_wall_ok = ok and there == true
+-- The path is a link that every wallpaper setter repoints, and Pleamar keeps an image by its
+-- name: without a new `?n` the Overview showed the wallpaper mooi started with until a restart.
+-- A new palette is what a new wallpaper brings, so that is when the picture is asked for again.
+-- `files.exists` only answers for names inside the scene's folder (a full path is an error), so
+-- it said "no" to this one every time and the backdrop never showed. `readlink -e` answers only
+-- for a file that exists, and names its target: the picture is asked for again only when that
+-- target moved (the same `?n` slot is reused, so a hundred wallpapers cost one).
+local ov_wall_n, ov_wall_target = 0, nil
+function ov_wall_refresh()
+    if wall == "" then return end
+    run("readlink", { "-e", wall }, function(out, code)
+        local target = code == 0 and string.match(tostring(out or ""), "^%s*(.-)%s*$") or ""
+        fact.ov_wall_ok = target ~= ""
+        if target ~= "" and target ~= ov_wall_target then
+            ov_wall_target = target
+            ov_wall_n = ov_wall_n + 1
+            text.ov_wall = wall .. "?" .. ov_wall_n
+        end
+    end)
 end
+ov_wall_refresh()
 local file_hits, file_query = {}, nil   -- the last file search, and the query it answered
 local file_token = 0                    -- a newer query makes an older find's answer stale
 local function short_path(p)
