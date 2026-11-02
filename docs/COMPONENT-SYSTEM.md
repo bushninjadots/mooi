@@ -1,0 +1,244 @@
+# Component system
+
+_Status: foundation contract, phase 1. Last checked against main: 2026-11-02._
+
+This document defines how reusable visual components in mooi should be built and how they will grow into the future visual editor, widget system and layout editor. It is a contract for new work and a migration target for existing work; it does **not** claim that every current component already conforms.
+
+Related documents:
+- [Architecture](ARCHITECTURE.md) — runtime and state ownership
+- [Philosophy](PHILOSOPHY.md) — the six permanent design directions
+- [Ferrolume](FERROLUME.md) — the current bar's specific visual language
+- [Testing](TESTING.md) — verification commands and evidence
+
+## 1. The central idea
+
+A mooi component is a reusable visual and interaction unit. It should be possible to place the same component in a settings surface, a floating panel, a desktop widget or a future visual editor without rebuilding its behaviour from scratch.
+
+The system shares **contracts**, not one appearance.
+
+A component may have a distinct silhouette, material, density, motion character and expressive treatment. It must still understand the same semantic theme roles, interaction states, sizing rules, input expectations and motion preferences as the rest of mooi.
+
+The six design directions remain inseparable:
+
+1. **Spatial & Futuristic** — components communicate hierarchy, depth and relationships.
+2. **Industrial & Technical** — geometry, alignment, construction and detail feel deliberate.
+3. **Organic & Fluid** — state changes and rearrangement feel continuous and interruptible.
+4. **Minimal & Elegant** — default states remain clear, compact and purposeful.
+5. **Cyberpunk & Expressive** — accent, glow and effects communicate state rather than decorate everything.
+6. **Playful & Interactive** — components invite exploration and customization without hiding essential controls.
+
+## 2. Component layers
+
+Keep four layers distinct.
+
+| Layer | Owns | Examples in the current repository |
+| --- | --- | --- |
+| **Tokens and materials** | Semantic colour roles, geometry scales, motion intents and named material recipes | `shell/theme/tokens.plm`, `shell/theme/ferrolume.plm`, `shell/lib/theme.luau`, `shell/lib/ferro.luau` |
+| **Primitives** | Small reusable visual/interaction building blocks with stable inputs | Buttons, toggles, sliders, readouts, frames, rules, status marks |
+| **Compositions** | Feature-specific arrangements assembled from primitives and domain components | Islands, Nexus cards, Board columns, player views, Ferrolume workspace instrument |
+| **Surfaces and applications** | Window/surface lifecycle, data loading, business rules, persistence and system integration | Main shell, Settings, Nexus, Notch, Lumen, Board, Player |
+
+A lower layer must not depend on a higher layer. A primitive must not know about a particular application, invoke system commands, write user settings or decide which window/workspace should be active.
+
+The current `shell/ui/` directory contains a mixture of primitives and feature-specific compositions. That is acceptable during migration. Do not rename or move everything in one sweep.
+
+## 3. Public component contract
+
+New reusable components should follow these rules.
+
+### Inputs
+
+- Declare every variable input in the component signature with a concrete type.
+- Pass changing data in as props/parameters; do not duplicate application state inside a visual component.
+- Pass actions as typed `event` inputs. The component emits an intent; the owning scene decides what that intent means.
+- Provide safe defaults only for genuinely optional visual details.
+- Prefer semantic inputs such as `selected`, `disabled`, `busy`, `value`, `label` and `on_change` over unexplained numeric mode codes.
+- Keep dimensions explicit where the Pleamar component model requires them. Avoid baking a screen position or monitor size into a reusable control.
+
+Existing Pleamar components sometimes read scene facts directly. Treat those as legacy scene context. New cross-surface primitives should receive their changing values explicitly; only stable imported design tokens and documented scene context may remain ambient.
+
+### Outputs and side effects
+
+- A component may draw, animate, expose hit zones and emit user-intent events.
+- It must not execute shell commands, call Hyprland, access the filesystem, fetch remote data or mutate persistent settings.
+- It must not own application workflows or make irreversible decisions.
+- The containing scene or application handles validation, persistence, system calls, error reporting and recovery.
+
+This keeps a component safe to reuse in a bar, panel, widget or editor preview.
+
+### State model
+
+Where relevant, components should represent these states consistently:
+
+| State | Meaning | Expected treatment |
+| --- | --- | --- |
+| Rest | Available, not currently targeted | Normal material and contrast |
+| Hover | Pointer is over the target | Small, clear response; never the only indication of availability |
+| Focus | Keyboard/controller focus | Visible focus treatment using the semantic focus role |
+| Pressed | Input is currently activating the target | Immediate tactile feedback |
+| Selected | The represented option or destination is active | Persistent selected treatment, not just hover |
+| Disabled | Action is unavailable | Reduced emphasis and no activation event |
+| Busy | Action is in progress | Clear progress/busy feedback; prevent duplicate activation where appropriate |
+| Warning / error | Attention or failure needs communicating | Semantic status treatment and explanatory text where possible |
+
+Not every component needs every state. Do not create state visuals that the component cannot actually reach.
+
+### Input behaviour
+
+- A control that can be operated by pointer should have an equivalent keyboard path when the surface supports keyboard input.
+- Disabled controls must not emit activation events.
+- Focus must remain visible independently of pointer hover.
+- Hit areas should be intentional and documented. Use the shared compact/standard/comfortable target sizes rather than shrinking the interactive zone to the visible glyph.
+- Drag, scroll and gesture behaviours must not steal input from the containing surface unexpectedly.
+
+## 4. Theme contract
+
+### Semantic roles
+
+Use the shared `Theme` roles for general interface meaning:
+
+- Backgrounds: `bg.primary`, `surface.primary`, `surface.elevated`
+- Text: `fg.primary`, `fg.secondary`, `fg.muted`
+- Structure: `border.subtle`
+- Emphasis: `accent.primary`, `accent.secondary`
+- State: `status.ok`, `status.error`, `focus.ring`, `selection.bg`
+
+These roles are resolved centrally by `shell/lib/theme.luau`. A component should not invent a parallel wallpaper palette or hard-code its own general-purpose foreground/background colours.
+
+### Materials and identity
+
+Semantic roles are not a demand that every surface look the same. A design language may define named materials and translate semantic roles into them. Ferrolume is the current example: its steel, trace, phosphor and ember materials create a distinct mechanical instrument while remaining connected to the shared palette.
+
+Feature-specific materials should be:
+- named and documented;
+- derived from semantic roles or a deliberate theme input;
+- contrast-checked for text and important marks;
+- responsive to theme changes without a scene restart where the host supports live updates.
+
+Do not use glow, blur, gradients or chromatic effects as substitutes for hierarchy or state.
+
+## 5. Geometry and density
+
+The shared geometry vocabulary lives in `Theme` in `shell/theme/tokens.plm`. Use it for spacing, hit targets, strokes and the common radius family.
+
+- Use the spacing scale for gaps and padding; do not introduce arbitrary values when a scale value fits.
+- Use the radius family as a baseline. A component's silhouette may intentionally be angular, chamfered or unrounded.
+- Use the stroke scale for outlines and separators.
+- Size the interactive target separately from the visible icon or decorative mark.
+- A component may offer compact, standard and comfortable density, but density must change spacing and hit areas coherently, not merely shrink text.
+
+The scale is a shared starting point, not a ban on measured exceptions. A special instrument, timeline, visualiser or diagram may need its own geometry. Document why.
+
+## 6. Motion contract
+
+Use named motion intents from `Theme` rather than assigning unrelated spring values to every new control.
+
+Current shared intents include:
+- `m.select` — selection and focus change
+- `m.enter` / `m.exit` — surface arrival and departure
+- `m.expand` / `m.collapse` — disclosure and expansion
+- `m.confirm` — confirmation feedback
+- `m.reflow` — lists and layouts gaining or losing items
+
+Motion rules:
+- Motion communicates cause and state; it is not decoration running continuously without purpose.
+- Prefer interruptible springs for spatial movement and layout changes.
+- A new input should take control immediately; stale animations must not block interaction.
+- Enter and exit may have different timing, but the pair should feel related.
+- Respect reduced-motion settings. A reduced-motion path should preserve state feedback and spatial clarity without requiring the full animation.
+- Measure important transitions on the real scene. Do not describe an unmeasured spring as smooth or 60 FPS.
+
+Feature-specific motion such as Ferrolume's workspace helix may use its own named spring because it is a defining instrument, not a generic control transition.
+
+## 7. Layout and composition
+
+- Primitives should fit the space their parent gives them and expose their required dimensions.
+- Compositions own internal arrangement; the host surface owns placement on screen.
+- Avoid coupling a reusable component to a specific monitor resolution, bar position or application window.
+- Support clipping and overflow deliberately. Interactive content must remain inside the hit surface that visually contains it.
+- Keep layout changes separate from domain actions: moving a card is a layout intent; saving a board is an application responsibility.
+
+This boundary is essential for future freeform desktop widgets and workspace layouts.
+
+## 8. Persistence and customization
+
+A component does not write its own configuration. Its host owns the settings schema, validation, persistence and migrations.
+
+Future editor-facing components will need a descriptor layer containing, at minimum:
+- stable component ID and version;
+- display name and category;
+- supported size/density variants;
+- configurable properties with types, defaults and validation;
+- exposed events/actions;
+- theme roles and material dependencies;
+- motion intents;
+- minimum/maximum size and resize behaviour;
+- accessibility/input capabilities;
+- preview and safe fallback behaviour.
+
+This descriptor layer is **not implemented yet**. Do not pretend that a Pleamar component signature alone is enough for a safe visual editor. Build the descriptor system only after the runtime contract has been exercised by real components.
+
+## 9. Current implementation map
+
+Already present:
+- A shared semantic colour vocabulary and contrast validation.
+- A small geometry and spring vocabulary in `shell/theme/tokens.plm`.
+- A separate Ferrolume material and motion vocabulary.
+- Reusable Pleamar libraries in `shell/ui/`.
+- Examples of event-driven components that receive events from their host, including Board parts and island controls.
+- A clear separation between many domain logic modules and their visual compositions.
+
+Still inconsistent or missing:
+- A complete spacing, stroke and hit-target scale.
+- Consistent state naming and presentation across surfaces.
+- A systematic compact/standard/comfortable density contract.
+- A component descriptor/registry for discovery and visual editing.
+- Shared primitive implementations for common controls across Settings, Nexus, Board and future widgets.
+- A reusable motion/reduced-motion contract across all standalone scenes.
+- Automated checks that enforce the component contract.
+
+## 10. Migration plan
+
+Do this in small, verifiable steps.
+
+### Phase 1 — shared vocabulary (current)
+
+- Complete the common geometry scale without changing existing component appearance.
+- Document the contract and its boundaries.
+- Keep existing names such as `g.radius` and `g.radius.item` working.
+
+### Phase 2 — primitive pilot
+
+Choose one repeated control with clear use in more than one surface. Build a shared primitive with explicit props and event outputs. Migrate two consumers and compare behaviour and appearance before migrating more.
+
+Good first candidates are a button/action surface, a toggle, a slider or a section header. Choose based on actual duplication, not aesthetics alone.
+
+### Phase 3 — state and motion consistency
+
+Unify focus, hover, pressed, selected, disabled and busy behaviour. Add reduced-motion handling and tests. Keep feature-specific visual character.
+
+### Phase 4 — composition and density
+
+Create reusable layout primitives and density variants. Move repeated patterns out of feature-specific files only when the shared contract is proven.
+
+### Phase 5 — editor-ready descriptors
+
+Add component metadata, safe property schemas, previews, placement constraints, persistence and undo/redo. This is the foundation for the visual component editor and widget ecosystem.
+
+## 11. Acceptance checklist for new shared components
+
+Before calling a component reusable, verify:
+
+- [ ] It has a stable name and a clear responsibility.
+- [ ] Changing data and actions are explicit inputs.
+- [ ] It owns no system calls, persistence or application workflow.
+- [ ] It uses semantic theme roles or a documented material mapping.
+- [ ] It follows shared geometry and density rules, or documents a measured exception.
+- [ ] Focus, disabled and selected states are correct where relevant.
+- [ ] Pointer and keyboard behaviour are coherent where supported.
+- [ ] Motion is interruptible and respects reduced motion.
+- [ ] Its hit region matches its visible and interactive bounds.
+- [ ] At least two real consumers use it before it is treated as a general primitive.
+- [ ] Tests cover its state transitions and invalid inputs.
+
+The goal is not a generic component library bolted onto mooi. The goal is one coherent environment whose components can be recombined, customized and eventually edited visually without losing mooi's identity.
