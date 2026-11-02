@@ -3810,3 +3810,13 @@ edge (the foot of a piece sitting in that corner, else the band) or the foot, co
 its ends land on the moving edges; each corner piece reaches back to the screen's corner, so only its
 round is ever an edge. The light runs only along the straight part of each side. Checked with a red
 debug copy at full music level and live.
+**The lag (same day).** With the music on, the GPU went from ~45 % to ~90 % and frames took ~117 ms: the
+whole chassis was one full-screen body on one surface, so every step of the wave repainted the whole
+screen. Measured by elimination: freezing the wave brought it back; removing the moving strips' bodies
+or the glow and shadow did not; moving the moving parts to a second full-screen surface halved it. Now
+the still chassis (band, pieces, corners at rest, the one outline) is on `frame` and is painted only
+when the bar's layout changes; the moving edges are three narrow surfaces (`frame_l`, `frame_r` 128 px
+wide, `frame_b` 128 px tall), open only while the edge moves, each a strip in the chassis's material
+without an outline of its own (the wave only pushes inward, so they cover the still edge) plus one
+stroked line tracing the moving edge and its corners. The top stays still (the bar is there).
+Measured: GPU 54 % playing against 43 % paused (it was ~90 %), no slow frames in 6 s.
