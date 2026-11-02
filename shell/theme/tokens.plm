@@ -68,6 +68,30 @@ library Theme {
     // ── Geometry ──────────────────────────────────────────────
     // Corners follow the shell's rounding (bar.radius, in Appearance): islands a step rounder
     // than the bar's modules, tiles inside them as round as the modules.
-    let g.radius = st_radius + 2    // islands
-    let g.radius.item = st_radius   // tiles inside them
+    let g.radius = st_radius + 2    // legacy alias: islands and panels
+    let g.radius.panel = st_radius + 2
+    let g.radius.control = st_radius
+    let g.radius.item = st_radius   // legacy alias: tiles inside panels
+
+    // ── Shared geometry scale ─────────────────────────────────
+    // Baseline values for new reusable components. These are not a mandate that every
+    // surface must be rounded or use identical spacing; feature-specific geometry is valid
+    // when it is intentional and documented. Values are in logical pixels.
+    let g.space.1 = 4
+    let g.space.2 = 6
+    let g.space.3 = 8
+    let g.space.4 = 10
+    let g.space.5 = 12
+    let g.space.6 = 16
+    let g.space.7 = 24
+    let g.space.8 = 32
+
+    let g.stroke.hairline = 1
+    let g.stroke.default = 1.25
+    let g.stroke.strong = 1.75
+
+    // Interactive bounds are independent of the visible icon/mark.
+    let g.hit.compact = 24
+    let g.hit.standard = 32
+    let g.hit.comfortable = 40
 }
