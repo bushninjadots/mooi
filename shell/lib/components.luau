@@ -143,8 +143,10 @@ function M.validate(id, values)
                 if prop.max and value > prop.max then problems[#problems + 1] = name .. " is above " .. prop.max end
             elseif kind == "string" and prop.max_length and #value > prop.max_length then
                 problems[#problems + 1] = name .. " is longer than " .. prop.max_length .. " characters"
-            elseif kind == "color" and not value:match("^[%w_%.%-#]+$") then
-                problems[#problems + 1] = name .. " must be a theme role or hex colour"
+            elseif kind == "color" then
+                local hex = value:match("^#%x%x%x%x%x%x$") ~= nil
+                local role = value:match("^[%a_][%w_]*%.[%a_][%w_]*$") ~= nil
+                if not hex and not role then problems[#problems + 1] = name .. " must be a semantic theme role or #RRGGBB colour" end
             end
         end
     end
