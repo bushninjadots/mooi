@@ -1,4 +1,5 @@
 language 0.4
+import "theme/tokens.plm"
 
 // mooi's desk (D85): the wallpaper drawn by mooi so it can move, and the picture's subject laid
 // over the desktop widgets. Two surfaces and no zones, so every click goes through to the desk:
@@ -34,6 +35,10 @@ scene Desk {
     fact ws_frac = 0
     // false while the wallpaper is a video or an animation: the picker plays it, the desk steps aside
     fact drawable = true
+    fact clock_on = false
+    fact clock_pos = 0
+    text desk_clock_time = "--:--"
+    text desk_clock_date = ""
 
     // A slow, heavy glide between workspaces; a lighter drift after the pointer.
     spring dk.glide = 90, 19
@@ -85,6 +90,18 @@ scene Desk {
         // the subject travels round the middle of the picture's travel, further by `depth`
         let tx = 0.5 + (qx - 0.5) * (1 + depth)
         let ty = 0.5 + (qy - 0.5) * (1 + depth)
+        let clock_x = if(clock_pos == 0 or clock_pos == 2, fw - 300, 48)
+        let clock_y = if(clock_pos >= 2, fh - 156, 64)
+        // The clock is a real desktop instrument, not a bar duplicate. It lives on the
+        // click-through foreground layer; Lumen's cutout is drawn after it and can pass over it.
+        group {
+            show: clock_on
+            move: clock_x, clock_y
+            box { from: 0, 0; size: 248, 96; color: Theme.surface.primary }
+            box { from: 0, 0; size: 3, 96; color: Theme.accent.primary }
+            text desk_clock_date { at: 18, 27; anchor: left center; size: 10; family: "Share Tech Mono"; color: Theme.fg.secondary }
+            text desk_clock_time { at: 18, 67; anchor: left center; size: 38; family: "Share Tech Mono"; color: Theme.fg.primary }
+        }
         group {
             show: has_cut and mode > 0 and drawable
             image cut { at: -over * fw * tx, -over * fh * ty; size: fw * (1 + over), fh * (1 + over) }
