@@ -19,6 +19,7 @@ return function(ctx)
     local placed = {}         -- id → true for every module the last layout placed
     local env = { screen = 1920, tray = 0, battery = false, brightness = false, bluetooth = true, playing = false }
     local readers = nil       -- starts and stops the readers; defined below, once they exist
+    local geo_sent = nil      -- bar-geo.json as last written (the frame's program reads it)
     local dnd_hook = nil      -- do not disturb, looked at again when a focus block starts or ends
 
     -- ── Layout ─────────────────────────────────────────────────
@@ -74,6 +75,14 @@ return function(ctx)
         fact.nl_x, fact.nl_w = cl.left and cl.left.x or 0, cl.left and cl.left.w or 0
         fact.nc_x, fact.nc_w = cl.center and cl.center.x or 0, cl.center and cl.center.w or 0
         fact.nr_x, fact.nr_w = cl.right and cl.right.x or 0, cl.right and cl.right.w or 0
+        -- the screen frame is a program of its own (D119): where the pieces are, for its border to
+        -- run round them; written only when it changes
+        local geo = { left = cl.left and { x = cl.left.x, w = cl.left.w } or nil,
+                      center = cl.center and { x = cl.center.x, w = cl.center.w } or nil,
+                      right = cl.right and { x = cl.right.x, w = cl.right.w } or nil,
+                      saving = ctx.saving() == true }
+        local enc = json.encode(geo)
+        if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
         fact.px = out.panel and out.panel.x or 0
         fact.pw = out.panel and out.panel.w or 0
         -- the spacers and gaps, which edit mode shows (and can take out): `n` = 100 · side + entry
@@ -280,20 +289,13 @@ return function(ctx)
     local sent = {}
     -- The music shows inside the music components (the bar's media module, the notch's and the
     -- Nexus's music panels, the player) and, outside them, only on the screen frame (frame.on +
-    -- frame.music) and the bar's border when it joins the frame (music.rim, D118). No other
-    -- border moves with it.
-    local rim_on, rim_gain, rim_glow = 0, 1, 1
+    -- frame.music) and the bar's border where it joins the frame (music.rim). Both of those are the
+    -- frame's own program now (D119): the bar only writes the feed it reads. No other border moves.
+    local want_swell = false             -- the screen frame moves with the music: the feed is written
     local want_feed = false              -- a reader is up (the player, the notch, the Nexus): publish
     local want_viz = false               -- the media module's visualizer is placed and shown
     local feed_wanted = 0                -- until when a music panel elsewhere asked for the feed
-    local rim_sent, rim_quiet = {}, false   -- the bands last written, and whether the last line was silence
-    local function rest_rim()
-        rim_sent, rim_quiet = {}, false
-        for i = 0, 15 do fact["rm" .. i] = 0 end
-        fact.rm_beat = 0; fact.rm_phase = 0; fact.rm_on = 0
-    end
     local swell = nil                    -- the shared analysis: level, high, bass, beat, phase, tempo
-    local last_level, last_high = -1, -1
     local seq, last_ms, prev = 0, 0, nil -- the published feed and its cadence
     local silent_written = nil           -- the missing flag last written at rest
     local function publish(cand, now_ms)
@@ -314,8 +316,7 @@ return function(ctx)
     end
     local function rest_levels()
         for i = 0, 15 do fact["lv" .. i] = 0.06; sent[i] = 0.06 end
-        swell, last_level, last_high = nil, -1, -1
-        fact.fbass = 0; fact.fhigh = 0
+        swell = nil
     end
     local function listen()
         if cava then return end
@@ -341,31 +342,11 @@ return function(ctx)
                     if math.abs(x - (sent[j] or 0)) > 0.02 then fact["lv" .. j] = x; sent[j] = x end
                 end
             end
-            -- One analysis: the bass and treble swell the frame; the rest rides the bar's border.
+            -- One analysis, for whoever reads the feed: the frame's program (its swell and the bar's
+            -- border joining it, D119), the notch's and the Nexus's music panels, the player.
             local state = vizfeed.analyse(swell, bands, 1 / 30)
             swell = state
-            if math.abs(state.level - last_level) > 0.015 then fact.fbass = state.level; last_level = state.level end
-            if math.abs(state.high - last_high) > 0.02 then fact.fhigh = state.high; last_high = state.high end
-            -- the bar's border (ui/rim.plm), only while it joins the frame: a fact set is a scene
-            -- re-read, so nothing is written for a rim nobody draws
-            -- Silence writes nothing: the rim's phase turns even at rest, and a fact that changes 30
-            -- times a second redraws the whole bar 30 times a second (~17% of a core, measured
-            -- 2026-11-02 with the frame on and the music paused). A band is written when it moves.
-            if rim_on > 0 then
-                local quiet = state.level < 0.01 and state.high < 0.01 and state.beat < 0.01
-                if not (quiet and rim_quiet) then
-                    local folded = vizfeed.map(bands, 16)
-                    for j = 0, 15 do
-                        local x = folded[j + 1]
-                        if math.abs(x - (rim_sent[j] or -1)) > 0.02 then fact["rm" .. j] = x; rim_sent[j] = x end
-                    end
-                    fact.rm_bass, fact.rm_high = state.bass, state.high
-                    fact.rm_beat, fact.rm_phase = state.beat, state.phase
-                    fact.rm_gain, fact.rm_glow, fact.rm_on = rim_gain, rim_glow, rim_on
-                end
-                rim_quiet = quiet
-            end
-            if want_feed then
+            if want_feed or want_swell then
                 publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,
                           phase = state.phase, playing = true, missing = viz_missing }, frame * 1000 / 30)
             end
@@ -377,7 +358,6 @@ return function(ctx)
             if cava_lines == 0 then
                 viz_missing = true
                 rest_levels()
-                rest_rim()
                 rest_feed(true)
             end
         end)
@@ -386,7 +366,6 @@ return function(ctx)
     local function hush()
         if cava then kill(cava, "term"); cava = nil end
         rest_levels()
-        rest_rim()
         rest_feed(viz_missing)
     end
     rest_levels()
@@ -424,11 +403,7 @@ return function(ctx)
         if placed.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
         if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
-        local want_swell = s.frame.on and s.frame.music
-        rim_on = (want_swell and s.music.rim == true and not still) and 1 or 0
-        if rim_on == 0 then rest_rim() end
-        rim_gain = math.min(1.5, math.max(0.25, (tonumber(s.music.rim_gain) or 100) / 100))
-        rim_glow = s.music.rim_glow == true and 1 or 0
+        want_swell = s.frame.on and s.frame.music and not still
         -- The frame's music follows whatever is audible, not only what the media module knows
         -- about: with frame.music on, cava runs whether or not that module says anything is
         -- playing, so a browser, a game or a video moves the frame too. For the player it runs
@@ -438,7 +413,7 @@ return function(ctx)
         -- the feed file is for the other programs' music panels; it is written only while one is
         -- up to read it (the player; the notch and the Nexus say so with `mooi say … feed`)
         want_feed = (ctx.player_up ~= nil and ctx.player_up() == true) or feed_wanted > os.time()
-        if not want_feed then rest_feed(viz_missing) end
+        if not (want_feed or want_swell) then rest_feed(viz_missing) end
         local want_audio = want_viz or want_swell or want_feed
         if want_audio and (playing or want_swell) and not ctx.saving() and not viz_missing then listen() else hush() end
     end

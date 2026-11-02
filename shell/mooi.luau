@@ -353,6 +353,7 @@ sys.watch("files:" .. FILE, function()
     if desk_sync then desk_sync() end
     if bmo_sync then bmo_sync() end
     if notch_sync then notch_sync() end
+    if frame_sync then frame_sync() end
     if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()
@@ -1890,6 +1891,34 @@ function notch_sync()
     end)
 end
 after(2000, notch_sync)
+
+-- The screen frame (shell/mooi-frame.plm, D119): a program of its own, under the bar, while frame.on
+-- is set. It was drawn in this scene, where every swell of the music redrew the whole bar; its border
+-- now runs round the bar's pieces from bar-geo.json, which the bar writes (shell/bar.luau).
+local frame_win, frame_tries = nil, 0
+function frame_sync()
+    local want = type(settings.frame) == "table" and settings.frame.on == true
+    if not want then
+        frame_tries = 0
+        if frame_win then kill(frame_win, "term"); frame_win = nil end
+        return
+    end
+    if frame_win then return end
+    local mine
+    local started = os.time()
+    local said = {}
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-frame.plm", "--no-hud", "--stall", "0" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if frame_win ~= mine then return end
+        frame_win = nil
+        if os.time() - started < 5 then frame_tries = frame_tries + 1 else frame_tries = 0 end
+        if code ~= 0 then log("frame · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        if code ~= 0 and frame_tries < 5 then after(1000 * (frame_tries + 1), frame_sync) end
+    end, { errors = true })
+    frame_win = mine
+end
+after(1000, frame_sync)
 -- Where the notch's nub is on the screen (it writes notch-state.json when it places it): the stash's
 -- edge strip, overlay and over the same edge, leaves that band alone so pointing at the nub opens it.
 function notch_cut()

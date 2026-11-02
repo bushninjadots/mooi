@@ -237,9 +237,9 @@ SECTIONS = [
         ("choice", "Moves with music", "Still, a rolling swell, ripples, or the edge pulsing", "frame.motion", "sv_frame_motion", ["Off", "Swell", "Ripples", "Pulse"]),
         ("slider", "Strength", "How far it moves at full volume", "frame.reach", 6, 40, "{sv_frame_reach + 6, 0} px", "frame_music"),
         ("choice", "Which edges", "All of them, the sides, or top and bottom", "frame.edges", "frame_edges", ["All", "Sides", "Top & bottom"], "frame_music"),
-        ("toggle", "The bar joins in", "The bar's own border lifts with the music too, so the bar and the frame are one border that moves", "music.rim", "music_rim", None, "frame_music and not st_notch"),
-        ("slider", "Bar strength", "How far the bar's border lifts", "music.rim_gain", 25, 150, "{sv_music_rim_gain + 25, 0}%", "frame_music and music_rim == 1 and not st_notch"),
-        ("toggle", "Bar glow", "A halo on the bar's lit border, only while music plays", "music.rim_glow", "music_rim_glow", None, "frame_music and music_rim == 1 and not st_notch"),
+        ("toggle", "The bar joins in", "The bar's own border lifts with the music too, so the bar and the frame are one border that moves", "music.rim", "music_rim", None, "frame_music"),
+        ("slider", "Bar strength", "How far the bar's border lifts", "music.rim_gain", 25, 150, "{sv_music_rim_gain + 25, 0}%", "frame_music and music_rim == 1"),
+        ("toggle", "Bar glow", "A halo on the bar's lit border, only while music plays", "music.rim_glow", "music_rim_glow", None, "frame_music and music_rim == 1"),
     ]),
     ("Windows", "Windows", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "DESKTOP", [
         ("card", "Styling"),
