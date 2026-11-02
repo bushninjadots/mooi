@@ -1,6 +1,6 @@
 # Architecture
 
-_Last checked against `main`: 2026-11-02. This describes the implementation that exists now, not the original proposed architecture. For intended future behaviour, see [VISION.md](VISION.md), [PHILOSOPHY.md](PHILOSOPHY.md) and [BRIEF.md](BRIEF.md). For verified test results and their dates, see [TESTING.md](TESTING.md) and [STATUS.md](../STATUS.md)._
+_Last checked against `main`: 2026-11-02. This describes the implementation that exists now, not the original proposed architecture. For intended future behaviour, see [VISION.md](VISION.md), [PHILOSOPHY.md](PHILOSOPHY.md) and [BRIEF.md](BRIEF.md). For reusable visual component rules, see [COMPONENT-SYSTEM.md](COMPONENT-SYSTEM.md). For verified test results and their dates, see [TESTING.md](TESTING.md) and [STATUS.md](../STATUS.md)._
 
 ## 1. System boundary
 
@@ -28,7 +28,7 @@ The implementation is no longer the original one-scene prototype. The persistent
 | `shell/mooi-board.plm` + `shell/mooi-board.luau` | Kanban board |
 | `shell/mooi-desk.plm` + `shell/mooi-desk.luau` | Desk scene / desktop integration |
 
-BMO has its own logic and UI resources under `shell/bmo/`. Shared visual building blocks live under `shell/ui/`; theme definitions and Ferrolume styling live under `shell/theme/`. Player-specific code is grouped under `shell/player/`.
+BMO has its own logic and UI resources under `shell/bmo/`. Shared visual building blocks live under `shell/ui/`; the component contract is documented in [COMPONENT-SYSTEM.md](COMPONENT-SYSTEM.md). Theme definitions and Ferrolume styling live under `shell/theme/`. Player-specific code is grouped under `shell/player/`.
 
 The separate programs are intentional: large, independently opened tools should not take keyboard routing or lifecycle ownership away from the persistent bar. They are not separate desktop environments. The launcher creates links so the programs share mooi's data directory and therefore the same settings, palette and relevant saved documents.
 
