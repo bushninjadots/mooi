@@ -350,10 +350,6 @@ M.SCHEMA = {
     { path = "desk.strength", kind = "integer", default = 45, min = 0, max = 100 },
     { path = "desk.cutout", kind = "boolean", default = true },
     { path = "desk.depth", kind = "boolean", default = true },
-    { path = "desk.clock", kind = "boolean", default = true },
-    { path = "desk.clock_position", kind = "enum", values = { "top-right", "top-left", "bottom-right", "bottom-left" }, default = "top-right" },
-    { path = "desk.clock_24h", kind = "boolean", default = true },
-    { path = "desk.clock_seconds", kind = "boolean", default = false },
     -- The music player (D88): its colours from the shell's palette, or from the album cover.
     { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
     -- each place's visualiser (the music player overhaul; lib/vizbands STYLES, shell/ui/viz.plm)
