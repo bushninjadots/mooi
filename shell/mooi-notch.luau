@@ -120,6 +120,9 @@ local function badge(tab, word)
     if not rows[tab + 1] then return end
     rows[tab + 1].badge, rows[tab + 1].badged = word or "", (word or "") ~= ""
     model.tabs = rows
+    local any = false
+    for _, r in ipairs(rows) do if r.badged then any = true end end
+    fact.nt_badged = any
 end
 
 -- ── Claude: the conversation, kept in notch-claude.json; asked through `claude` ──

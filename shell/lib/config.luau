@@ -120,7 +120,7 @@ M.SCHEMA = {
     -- the spine on the right edge, whose shelves slide out on hover (D100)
     { path = "shelves.on", kind = "boolean", default = true },
     -- and whether it keeps out of sight until the pointer touches the right edge (a hairline shows it is there)
-    { path = "shelves.autohide", kind = "boolean", default = false },
+    { path = "shelves.autohide", kind = "boolean", default = true },   -- D119: a hairline at rest, like the notch and the stash
     -- the side notch (D106): a sliver on the left edge that fans out into Claude, music, workspaces,
     -- wallpapers, weather and GitHub; the Claude it asks (an alias `claude --model` takes; empty: its default)
     { path = "notch.on", kind = "boolean", default = true },

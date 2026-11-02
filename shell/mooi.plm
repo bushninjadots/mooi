@@ -4445,7 +4445,7 @@ scene Mooi {
             zone box sp_edge { from: screen.width - 3, spe0 - 40; size: 3, 400; role: region; label: "The spine (hidden): touch the edge"; active: sp_in < 0.5 }
             zone box sp_body { from: screen.width - 46, spe0 - 26; size: 46, 372; role: region; label: "The spine"; active: sp_in > 0.5 }
             on hover sp_edge for 60ms { sp_reveal = true }
-            on still max(max(sp_body.hover, sp_edge.hover), if(isl_shelf and open != none, 1, 0)) for 700ms while sp_reveal and max(max(sp_body.hover, sp_edge.hover), if(isl_shelf and open != none, 1, 0)) < 0.5 { sp_reveal = false }
+            on still max(max(sp_body.hover, sp_edge.hover), if(isl_shelf and open != none, 1, 0)) for 500ms while sp_reveal and max(max(sp_body.hover, sp_edge.hover), if(isl_shelf and open != none, 1, 0)) < 0.5 { sp_reveal = false }
             group {
                 opacity: 1 - sp_in
                 glow: 6, (0.4 + 0.5 * if(note_count > 0 or upd_n > 0, 1, 0)) * st_glow, if(note_count > 0 or upd_n > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos))
@@ -4955,15 +4955,13 @@ scene Mooi {
         zone box zstash_catch2 { from: 0, sc_y1; size: 12, sc_h1; role: region; label: "The stash's edge — drop here" }
         box { from: 0, sc_y1; size: 12, sc_h1; color: fl.hull; opacity: 0.01; show: sc_h1 > 0 }
         zone box zstash_tab { from: 0, sb_tab_y; size: 9, sb_tab_h; cursor: pointer; role: button; label: "Stash — drop files, links and pictures here" }
-        box { from: 0, sb_tab_y; size: 9, sb_tab_h; corner: 2; color: fl.hull_raised; opacity: 0.55 }
+        // At rest, the family's hairline (D119): the side notch, the spine and the stash all keep the
+        // same lit line on their edge, brighter while pointed at, warm when the box holds something.
         group {
-            glow: 9, 0.12 * st_glow + 0.35 * st_glow * if(zstash_tab.hover, 1, 0), fl.phos
-            box { from: 2, sb_tab_y + 10; size: 3, sb_tab_h - 20; corner: 1.5
-                  color: mix(fl.trace_dim, fl.phos, max(0.34, max(zstash_tab.hover, 0.38 * stash_a))) }
-        }
-        repeat t in 0..3 {
-            line { from: 5, sb_tab_y + sb_tab_h / 2 - 9 + t * 6; to: 9, sb_tab_y + sb_tab_h / 2 - 9 + t * 6; width: 1
-                   color: mix(fl.trace_lit, fl.phos, max(zstash_tab.hover, 0.3 * stash_a)) }
+            opacity: 1 - 0.8 * stash_a
+            glow: 6, (0.4 + 0.5 * max(zstash_tab.hover, if(stash_count > 0, 1, 0))) * st_glow, if(stash_count > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos))
+            line { from: 1.5, sb_tab_y - 16; to: 1.5, sb_tab_y + sb_tab_h + 16; width: 2 + zstash_tab.hover
+                   color: if(stash_count > 0, fl.ember, if(isl_style > 0.5, accent.primary, fl.phos)); opacity: 0.7 + 0.3 * zstash_tab.hover }
         }
 
         // The box: a plate with a light running round it, cut from the same chamfer as the

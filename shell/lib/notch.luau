@@ -14,7 +14,7 @@ M.TABS = {
 }
 M.FAN_R = 100         -- the fan's radius round the nub (its hexagons a finger apart)
 M.FAN_SPAN = 120      -- degrees, top tab to bottom tab
-M.PANEL_X = 168       -- a panel's left edge: past the fan
+M.PANEL_X = 60        -- a panel's left edge: past the track of tabs (D119: a column, as the spine's)
 M.NUB_Y = 0.3         -- where the nub starts, as a share of the screen's height (above the stash)
 -- each panel's size (the carousels have none: they are arcs across the screen)
 M.PANELS = { [0] = { w = 440, h = 600 }, [1] = { w = 440, h = 220 }, [4] = { w = 440, h = 340 }, [5] = { w = 460, h = 600 } }
@@ -50,12 +50,13 @@ function M.tab_index(id)
 end
 
 -- Each tab's centre on the fan round (0, cy).
+-- Each tab's centre in the track round (0, cy): a column 40 px apart, as the spine's on the right
+-- edge (D119; it was a fan on an arc). `x` is where the logic adds its 22 to reach the tabs' middle.
+M.TAB_STEP = 40
 function M.fan(cy)
     local out, n = {}, #M.TABS
     for i = 0, n - 1 do
-        local a = -M.FAN_SPAN / 2 + M.FAN_SPAN * i / (n - 1)
-        local r = math.rad(a)
-        out[#out + 1] = { x = math.cos(r) * M.FAN_R + 10, y = cy + math.sin(r) * M.FAN_R, angle = a }
+        out[#out + 1] = { x = 1, y = cy + (i - (n - 1) / 2) * M.TAB_STEP, angle = 0 }
     end
     return out
 end

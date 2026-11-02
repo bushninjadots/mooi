@@ -258,6 +258,7 @@ scene Notch {
     fact nt_cy = 520             // the nub's middle (half the screen)
     fact nt_h = 1049             // the screen's height (what the surface measures)
     fact nt_open = false         // the fan is out
+    fact nt_badged = false       // a tab has something waiting: the hairline is warm
     fact nt_tab = -1             // the panel out (lib/notch TABS, from 0), -1 none
     fact nt_pin = false          // kept out: a tab pressed, typing, Claude answering
     model tabs max 6 { word: text; x: number; y: number; glyph: number; badge: text; badged: bool }
@@ -453,51 +454,51 @@ scene Notch {
 
         on key Escape { nt_pin = false; nt_open = false; nt_tab = -1; blur }
 
-        // ═══ The nub: a lit sliver on the edge; pointed at, the fan comes out ═══
-        // drag it along the edge to put it somewhere else; it stays there (notch-state.json)
-        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
-        on hover nubz for 110ms while nt_gdy == 0 { nt_open = true; nt_deck = false }
+        // ═══ The nub: the same hairline the spine keeps on the right edge (D119) ═══
+        // The side notch and the spine are one family now, mirrored: a lit hairline on the edge at
+        // rest (warm when a tab has something waiting); touched, a track of flat hexagonal tabs
+        // slides out; a tab pointed at for 140 ms opens its panel beside the track, a press pins
+        // it, and it goes home half a second after the pointer leaves. Drag the hairline along the
+        // edge to move it; it stays there (notch-state.json).
+        let nb_warm = nt_badged
+        zone box nubz { from: 0, nt_cy + nt_gdy - 130; size: 6, 260; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
+        on hover nubz for 60ms while nt_gdy == 0 { nt_open = true; nt_deck = false }
         on press nubz { nt_open = true; nt_deck = false; nt_pin = not nt_pin }
         on drag nubz { nt_gdy = drag.dy; nt_open = false; nt_tab = -1; nt_pin = false }
         on release nubz while nt_gdy != 0 { emit nt_moved(round(nt_cy + nt_gdy)); nt_gdy = 0 }
         group {
-            glow: 8, (0.5 + 0.5 * nub_lit) * st_glow, dk.acc
-            box { from: -3, nt_cy + nt_gdy - 46 - 8 * nub_lit; size: 8 + 3 * nub_lit, 92 + 16 * nub_lit; corner: 4; color: mix(dk.raised, dk.acc, 0.35 + 0.5 * nub_lit) }
-        }
-        repeat g in 0..3 {
-            box { from: 1.5, nt_cy + nt_gdy - 8 + g * 6; size: 2, 3; color: dk.ink; opacity: 0.55 * (1 - nub_lit) }
+            opacity: 1 - fan_in * (1 - if(nt_deck, 1, 0))
+            glow: 6, (0.4 + 0.5 * if(nb_warm, 1, 0)) * st_glow, if(nb_warm, dk.hot, dk.acc)
+            line { from: 1.5, nt_cy + nt_gdy - 120; to: 1.5, nt_cy + nt_gdy + 120; width: 2; color: if(nb_warm, dk.hot, dk.acc); opacity: 0.7 }
         }
 
-        // ═══ The fan: the tabs on their arc, a trace of the arc behind them ═══
+        // ═══ The track: the tabs in a column, as the spine's ═══
         group {
             show: fan_in > 0.01 and not nt_deck
+            move: -(1 - fan_in) * 60, 0
             opacity: smooth(0, 0.6, fan_in)
-            zone box fanz { from: 0, nt_cy - 150; size: 160, 300; role: region; label: "The notch's tabs" }
-            // the arc they sit on, and its traces back to the nub
-            repeat s in 0..24 {
-                let a0.$s = -66 + s * 5.5
-                let a1.$s = -66 + (s + 1) * 5.5
-                line { from: 10 + cos(a0.$s) * 100 * fan_in, nt_cy + sin(a0.$s) * 100 * fan_in; to: 10 + cos(a1.$s) * 100 * fan_in, nt_cy + sin(a1.$s) * 100 * fan_in; width: 1; color: dk.acc; opacity: 0.35 }
-            }
+            let tk0 = nt_cy - (tabs.count - 1) * 20          // the first tab's middle
+            zone box fanz { from: 0, tk0 - 30; size: 50, tabs.count * 40 + 20; role: region; label: "The notch's tabs" }
+            box { from: 4, tk0 - 26; size: 38, tabs.count * 40 + 12; corner: 19; color: dk.raised; opacity: 0.55 }
+            box { from: 4, tk0 - 26; size: 38, tabs.count * 40 + 12; corner: 19; stroke: 1; color: dk.line; opacity: 0.7 }
+            line { from: 23, tk0 - 14; to: 23, tk0 + (tabs.count - 1) * 40 + 14; width: 1; color: dk.acc; opacity: 0.22 }
             for t in tabs {
-                let tx = 10 * (1 - fan_in) + t.x * fan_in
-                let ty = nt_cy + (t.y - nt_cy) * fan_in
+                let ty = tk0 + t.index * 40
                 let on = nt_tab == t.index
-                zone box tz { from: tx - 19, ty - 19; size: 38, 38; cursor: pointer; role: tab; selected: on; label: t.word }
-                line { from: 4, nt_cy; to: tx - 18, ty; width: 1; color: dk.acc; opacity: 0.18 + 0.4 * if(on, 1, 0) }
+                zone box tz { from: 6, ty - 17; size: 34, 34; cursor: pointer; role: tab; selected: on; label: t.word }
                 group {
-                    glow: 7, (if(on, 0.9, 0.3 * tz.hover)) * st_glow, dk.acc
-                    path { color: if(on, mix(dk.raised, dk.acc, 0.35), mix(dk.raised, dk.acc, 0.08 + 0.15 * tz.hover))
-                           move tx, ty - 19; line tx + 16.5, ty - 9.5; line tx + 16.5, ty + 9.5; line tx, ty + 19; line tx - 16.5, ty + 9.5; line tx - 16.5, ty - 9.5; close }
-                    path { stroke: 1.2; color: if(on, dk.acc, mix(dk.line, dk.acc, 0.5 + 0.5 * tz.hover))
-                           move tx, ty - 19; line tx + 16.5, ty - 9.5; line tx + 16.5, ty + 9.5; line tx, ty + 19; line tx - 16.5, ty + 9.5; line tx - 16.5, ty - 9.5; close }
+                    glow: 7, (if(on, 0.8, 0)) * st_glow, dk.acc
+                    path { color: if(on, dk.acc, mix(dk.raised, dk.acc, 0.1 + 0.25 * tz.hover))
+                           move 39, ty; line 31, ty + 14; line 15, ty + 14; line 7, ty; line 15, ty - 14; line 31, ty - 14; close }
                 }
-                TGlyph(tx, ty, t.glyph, if(on, dk.ink, mix(dk.ink2, dk.acc, tz.hover)))
-                text "{upper(t.word)}" { at: tx + 24, ty; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: tz.hover * (1 - pv) }
+                path { stroke: 1.2; color: if(on, dk.acc, mix(dk.ink2, dk.acc, tz.hover)); opacity: 0.9
+                       move 39, ty; line 31, ty + 14; line 15, ty + 14; line 7, ty; line 15, ty - 14; line 31, ty - 14; close }
+                TGlyph(23, ty, t.glyph, if(on, dk.raised, mix(dk.ink, dk.acc, tz.hover)))
+                text "{upper(t.word)}" { at: 50, ty; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: tz.hover * (1 - pv) }
                 group {
                     show: t.badged
-                    box { from: tx + 7, ty - 18; size: 16, 11; corner: 3; color: dk.hot }
-                    text t.badge { at: tx + 15, ty - 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: dk.well }
+                    box { from: 28, ty - 18; size: 16, 11; corner: 3; color: dk.hot }
+                    text t.badge { at: 36, ty - 12.5; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: dk.well }
                 }
                 on hover tz for 140ms { nt_tab = t.index; emit nt_tab_open(t.index) }
                 on press tz { nt_tab = t.index; nt_pin = true; emit nt_tab_open(t.index) }
@@ -842,7 +843,7 @@ scene Notch {
         // folding away: the pointer off the nub, the fan and the panel for a moment (unless kept out)
         let nt_over = max(max(nubz.hover, fanz.hover), max(max(keep0.hover, keep1.hover), max(max(keep2.hover, keep3.hover), max(keep4.hover, keep5.hover))))
         on change nt_over while nt_over > 0.5 and nt_tab >= 0 { nt_entered = true }
-        on still nt_over for 650ms while nt_open and not nt_pin and nt_over < 0.5 and (nt_entered or not nt_deck) { nt_open = false; nt_tab = -1 }
+        on still nt_over for 500ms while nt_open and not nt_pin and nt_over < 0.5 and (nt_entered or not nt_deck) { nt_open = false; nt_tab = -1 }
         // opened from the Nexus and never pointed at: it goes after a while
         on still nt_over for 2200ms while nt_open and nt_deck and not nt_pin and not nt_entered and nt_over < 0.5 { nt_open = false; nt_tab = -1 }
     }
