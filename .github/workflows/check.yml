@@ -33,5 +33,7 @@ jobs:
         run: |
           lua5.4 shell/bmo/test.lua
           lua5.4 tests/unit/run.lua
+      - name: action-button semantic contracts across Settings and Wallpaper Studio
+        run: sh tests/components.sh
       - name: the apps-sync suite (sandboxed HOME and XDG, pkill stubbed so it touches nothing of the runner's)
         run: sh tests/apps-sync.sh
