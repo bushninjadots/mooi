@@ -77,7 +77,7 @@ When adding a setting:
 
 ## 5. Theme system
 
-The theme system is a shared platform feature, not a collection of unrelated component colours.
+The theme system is a shared platform feature, not a collection of unrelated component colours. The portable theme-package data model is documented in [THEME-PACKAGES.md](THEME-PACKAGES.md); it captures visual settings only and preserves unrelated user configuration when applied.
 
 - Matugen derives a palette from the selected wallpaper when wallpaper theming is enabled.
 - mooi maps palette values to semantic roles in its theme layer.
