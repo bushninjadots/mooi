@@ -68,7 +68,7 @@ end
 
 local function plain_text(value, max)
     return type(value) == "string" and #value > 0 and #value <= max
-        and not string.find(value, "[%c]")
+        and string.find(value, "%S") ~= nil and not string.find(value, "[%c]")
 end
 
 local function known_overrides(settings)
@@ -103,6 +103,10 @@ end
 -- Validate and canonicalize a decoded package. Returns package, nil or nil, reason.
 function M.validate(raw)
     if type(raw) ~= "table" then return nil, "package must be a JSON object" end
+    local top_level = { format = true, version = true, name = true, description = true, settings = true }
+    for key in pairs(raw) do
+        if not top_level[key] then return nil, "unsupported package field: " .. tostring(key) end
+    end
     if raw.format ~= M.FORMAT then return nil, "not a mooi theme package" end
     if raw.version ~= M.VERSION then return nil, "unsupported theme package version" end
     if not plain_text(raw.name, 48) then return nil, "package name must be 1–48 plain characters" end
