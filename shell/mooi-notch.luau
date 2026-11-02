@@ -10,6 +10,7 @@ local theme = require("lib/theme")
 local style = require("lib/style")
 local sysinfo = require("lib/sysinfo")
 local forecast = require("lib/forecast")
+local weathercache = require("lib/weathercache")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
 local deck = require("lib/nexusdeck")
@@ -643,11 +644,10 @@ end
 local function read_weather()
     local cached = read("nexus-weather.json")
     if type(cached) == "table" and type(cached.answer) == "table" then show_weather(cached) end
-    if type(cached) == "table" and os.time() - (tonumber(cached.at) or 0) < 600 then return end
+    if weathercache.fresh(cached, os.time(), 600) then return end
     launch("curl", { "-fsSL", "--max-time", "8", "https://ipinfo.io/json" }, function(out)
         local where = decode(out)
-        local lat, lon = nil, nil
-        if type(where) == "table" then lat, lon = tostring(where.loc or ""):match("^([%d%.%-]+),([%d%.%-]+)$") end
+        local lat, lon = weathercache.coordinates(where)
         if not lat then return end
         launch("curl", { "-fsSL", "--max-time", "12", forecast.url(lat, lon) }, function(ans)
             local t = decode(ans)
