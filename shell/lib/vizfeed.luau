@@ -143,6 +143,27 @@ end
 
 -- One envelope, one beat and one phase for every surface. Uses 1-indexed bands;
 -- `prev` may be nil. `dt` is seconds since the previous analysis.
+-- Automatic gain (D119): cava hears the music after the player's own volume, and the mooi player
+-- runs mpd quietly, so its bands sat at a thousandth of their range and every visualiser stood still
+-- with music playing. The loudest band of each line sets a ceiling that rises at once and sinks slowly
+-- (half in about eight seconds at 30 lines a second), and the bands are read against it; under a floor
+-- it is silence, not something to amplify. Returns the bands (a new table) and the ceiling to keep.
+M.GAIN_DECAY = 0.997
+M.GAIN_FLOOR = 0.0015
+function M.gain(peak, bands)
+    local m = 0
+    for _, b in ipairs(bands or {}) do m = math.max(m, tonumber(b) or 0) end
+    peak = math.max(m, (tonumber(peak) or 0) * M.GAIN_DECAY)
+    local out = {}
+    if peak < M.GAIN_FLOOR then
+        for i = 1, #(bands or {}) do out[i] = 0 end
+        return out, peak
+    end
+    local ceiling = math.max(peak, 0.002)
+    for i, b in ipairs(bands or {}) do out[i] = math.min(1, (tonumber(b) or 0) / ceiling * 0.92) end
+    return out, peak
+end
+
 function M.analyse(prev, bands, dt)
     dt = tonumber(dt) or 0
     if type(prev) ~= "table" then prev = nil end

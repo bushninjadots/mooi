@@ -2709,6 +2709,21 @@ test("nexus deck: a card's size is its height down a side, as its width along a 
     eq(l.bays.music.w, s.bays.music.w, "and as wide: the column's width")
 end)
 
+test("vizfeed gain: quiet music fills the range, silence stays silent, a loud hit is not clipped forever", function()
+    local vf = require("lib/vizfeed")
+    local quiet = { 0.001, 0.003, 0.002, 0.0005 }
+    local out, peak = vf.gain(0, quiet)
+    eq(out[2] > 0.9, true, "the loudest band of quiet music reaches the top")
+    eq(out[4] < out[1], true, "and the rest keep their order")
+    local sil = vf.gain(0, { 0.0002, 0.0001 })
+    eq(sil[1], 0, "under the floor it is silence")
+    local _, p2 = vf.gain(peak, { 0.9 })
+    eq(p2, 0.9, "a loud hit raises the ceiling at once")
+    local p3 = p2
+    for _ = 1, 300 do _, p3 = vf.gain(p3, { 0.01 }) end
+    eq(p3 < 0.4, true, "and it sinks back within seconds")
+end)
+
 local notch = require("lib/notch")
 test("notch: the fan's tabs on their arc, panels on the screen, the carousel, the weather's bars", function()
     local f = notch.fan(500)

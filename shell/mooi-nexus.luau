@@ -145,6 +145,7 @@ on("nx_toggle", function() if closing then open() else close("asked (the mark)")
 -- ── The switches: their state, from the services and from the bar ──
 local lit = {}               -- each switch's state by its nx_tog code (0 Wi-Fi … 8 record)
 local wifi_on, bt_powered, bt_on = true, false, 0
+local net_word = ""          -- what the Wi-Fi tile says it is on: the network, wired, or none
 local levels = { volume = 0, muted = false, input = 0, bright = nil }
 local apps, media = {}, {}
 local publish_console, publish_wait, publish_scenes   -- defined below
@@ -252,17 +253,6 @@ local function save_parts()
 end
 local function edge() return deck.edge_of(type(settings.nexus) == "table" and settings.nexus.edge or nil) end
 local relayout_rest      -- the tiles and chips, which follow the bays
--- Cascade (nexus.mode): the spine's shelves all out at once, centred down the right edge. Their
--- heights are the scene's (mooi-nexus.plm, Cascade): the song's shelf is taller while one plays.
-local function place_cascade()
-    fact.dk_cascade = type(settings.nexus) == "table" and settings.nexus.mode == "cascade"
-    local heights = { 66, 56, 56, fact.mus_on and 88 or 44, 60, 56, 56, 44, 48 }
-    local total = -10
-    for _, h in ipairs(heights) do total = total + h + 10 end
-    local y = math.max(10, math.floor((screen.h - total) / 2))
-    for k, h in ipairs(heights) do fact["cy_" .. (k - 1)] = y; y = y + h + 10 end
-    fact.cs_r = screen.w - ((settings.shelves and settings.shelves.on) and 66 or 34)
-end
 local spaces = {}        -- the workspaces of this monitor (lib/nexusdeck spaces)
 local function aspect() return screen.full_w and (screen.full_w / screen.full_h) or 16 / 9 end
 local function place()
@@ -295,7 +285,6 @@ local function place()
     for _, id in ipairs(d.dropped) do rows[#rows + 1] = { word = deck.PARTS[id].word, code = CODE[id], room = true } end
     model.hid = rows
     if relayout_rest then relayout_rest() end
-    place_cascade()
 end
 
 -- ── The notches off the deck's ends: the side notch (shell/mooi-notch) opens that panel beside the deck ──
@@ -410,7 +399,7 @@ function publish_console()
     if d and d.faders ~= #rows then place() end
     -- the quick settings: { word, state, on, hot, glyph, code }
     local q = {
-        { "Wi-Fi", not wifi_on and "Off" or (lit[0] and (text.c_net ~= "" and text.c_net or "On") or "No network"), lit[0] == true, false, 0, 0 },
+        { "Wi-Fi", not wifi_on and "Off" or (lit[0] and (net_word ~= "" and net_word or "On") or "No network"), lit[0] == true, false, 0, 0 },
         { "Bluetooth", bt_powered and (bt_on > 0 and string.format("%d connected", bt_on) or "On") or "Off", bt_powered, false, 1, 1 },
         { "Sound", levels.muted and "Muted" or pct(levels.volume), not levels.muted, false, levels.muted and 12 or 2, 2 },
         { "Mic", lit[3] == false and "Muted" or "Live", lit[3] ~= false, false, 3, 3 },
@@ -473,10 +462,10 @@ end
 -- ── What the services say ──
 pcall(sys.watch, "network", function(n)
     wifi_on = not (type(n) == "table" and n.wifi == false)
-    if not wifi_on then text.c_net = "Wi-Fi is off"
+    if not wifi_on then net_word = "Wi-Fi is off"
     elseif type(n) == "table" and n.online then
-        text.c_net = n.kind == "wired" and "Wired" or (tonumber(n.strength) or 0) > 0 and string.format("%s · %d%%", tostring(n.name or "Connected"), math.floor(tonumber(n.strength))) or tostring(n.name or "Connected")
-    else text.c_net = "No network" end
+        net_word = n.kind == "wired" and "Wired" or (tonumber(n.strength) or 0) > 0 and string.format("%s · %d%%", tostring(n.name or "Connected"), math.floor(tonumber(n.strength))) or tostring(n.name or "Connected")
+    else net_word = "No network" end
     lit[0] = wifi_on and type(n) == "table" and n.online == true
     publish_console(); publish_scenes()
 end)
@@ -485,15 +474,12 @@ pcall(sys.watch, "bluetooth", function(b)
     local on_now = 0
     for _, dv in ipairs(type(b) == "table" and type(b.devices) == "table" and b.devices or {}) do if dv.connected then on_now = on_now + 1 end end
     bt_on = on_now
-    text.c_bt = not (type(b) == "table" and b.present) and "NO BLUETOOTH" or (bt_powered and string.format("BT · %d CONNECTED", on_now) or "BT OFF")
     lit[1] = bt_powered
     publish_console(); publish_scenes()
 end)
 pcall(sys.watch, "audio", function(a)
     if type(a) ~= "table" then return end
     apps = type(a.apps) == "table" and a.apps or {}
-    text.c_out = ""
-    for _, o in ipairs(type(a.outputs) == "table" and a.outputs or {}) do if o.default then text.c_out = string.upper(tostring(o.name or "")) end end
     levels.volume, levels.muted, levels.input = tonumber(a.volume) or 0, a.muted == true, tonumber(a.input) or 0
     lit[2], lit[3] = not a.muted, not a.input_muted
     publish_console(); publish_scenes()
@@ -524,9 +510,7 @@ end
 local pos, pos_at = 0, os.time()
 pcall(sys.watch, "media", function(m)
     media = type(m) == "table" and m or {}
-    local was = fact.mus_on
     fact.mus_on = tostring(media.title or "") ~= ""
-    if was ~= fact.mus_on then place_cascade() end
     cover(media.art)
     pos, pos_at = tonumber(media.position) or 0, os.time()
     publish_status()
@@ -643,13 +627,6 @@ function publish_wait()
     fact.lp_a = hot and 2 or (#items > 0 and items[1].act ~= "WEEK" and 1 or 0)
     model.wait = rows
     waiting_items = items
-    -- Cascade's words for the same things
-    text.c_notes = feed.count > 0 and string.format("%d new%s", feed.count, first and (" · " .. (first.app ~= "" and first.app or first.title) .. " — " .. first.title) or "") or "Nothing new"
-    fact.c_notes_n = feed.count
-    text.c_upd = updates > 0 and string.format("%d waiting", updates) or "Up to date"
-    fact.c_upd_n = updates
-    local okd, day = pcall(os.date, "%A %d %B")
-    text.c_today = (okd and day or "") .. (weather ~= "" and (" · " .. weather) or "")
 end
 on("dk_wait", function(v)
     local it = (waiting_items or {})[(tonumber(v) or -1) + 1]

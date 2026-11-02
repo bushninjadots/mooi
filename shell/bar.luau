@@ -296,6 +296,7 @@ return function(ctx)
     local want_viz = false               -- the media module's visualizer is placed and shown
     local feed_wanted = 0                -- until when a music panel elsewhere asked for the feed
     local swell = nil                    -- the shared analysis: level, high, bass, beat, phase, tempo
+    local gain_peak = 0                  -- the automatic gain's ceiling (lib/vizfeed gain)
     local seq, last_ms, prev = 0, 0, nil -- the published feed and its cadence
     local silent_written = nil           -- the missing flag last written at rest
     local function publish(cand, now_ms)
@@ -335,6 +336,8 @@ return function(ctx)
             if i < 32 then return end
             local bands = {}
             for j = 1, 32 do bands[j] = b[j - 1] or 0 end
+            -- read against what this music reaches, not against cava's full range (lib/vizfeed gain)
+            bands, gain_peak = vizfeed.gain(gain_peak, bands)
             -- the media module's own visualizer: the first 16 bands, only when they moved
             if want_viz then
                 for j = 0, 15 do

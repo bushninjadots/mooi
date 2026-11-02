@@ -506,6 +506,8 @@ local function migrate(t)
         if t.atlas.overview == "mission" then t.atlas.overview = "grid" end
         if t.atlas.engine == "hyprdrive" then t.atlas.engine = "mooi" end
     end
+    -- D119: the spine and the Nexus's Cascade (its shelves all out at once) are gone: the deck
+    if type(t.nexus) == "table" and t.nexus.mode == "cascade" then t.nexus.mode = "deck" end
     -- the desktop's named choices of 2026-10-20, now numbers on sliders
     if type(t.desktop) == "table" then
         for key, map in pairs(NUMBERED) do

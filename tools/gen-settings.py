@@ -422,17 +422,13 @@ SECTIONS = [
     ]),
     # D108: everything round the Control Nexus in one place — the deck, its cards and notches, the
     # spine, the side notch and the Claude they ask
-    ("Nexus", "Control Nexus", "The deck from the bar's mark, its cards and notches, the spine, the side notch, and Claude", "SHELL", [
+    ("Nexus", "Control Nexus", "The deck from the bar's mark, its cards and notches, the side notch, and Claude", "SHELL", [
         ("card", "The deck"),
-        ("choice", "The mark opens", "The deck: everything along one edge. Cascade: every shelf of the spine out at once", "nexus.mode", "sv_nexus_mode", ["The deck", "Cascade"]),
         ("choice", "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", "nexus.edge", "sv_nexus_edge", ["Bottom", "Top", "Left", "Right"], "sv_nexus_mode == 0"),
         ("choice", "Layout", "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", "nexus.rows", "sv_nexus_rows", ["One row", "Free canvas"], "sv_nexus_mode == 0"),
         ("choice", "Profile", "Your banner and picture, small or large", "nexus.profile", "sv_nexus_profile", ["Small", "Large"], "sv_nexus_mode == 0"),
         ("toggle", "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", "nexus.notches", "sv_nexus_notches", None, "sv_nexus_mode == 0"),
         ("note", "sv_nexus_mode == 0", "ON THE DECK: ✎ CARRIES A CARD BY MOVE, × SHELVES IT, ⇔ RESIZES IT"),
-        ("card", "The spine"),
-        ("toggle", "The spine", "Tabs down the right edge: hover one and its shelf slides out (sound, network, power, machine, calendar…)", "shelves.on", "sv_shelves_on"),
-        ("toggle", "Hide the spine", "Out of sight until the pointer touches the right edge; a hairline keeps its place", "shelves.autohide", "sv_shelves_autohide", None, "sv_shelves_on == 1"),
         ("card", "The side notch"),
         ("toggle", "The side notch", "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", "notch.on", "sv_notch_on"),
         ("note", "sv_notch_on == 1", "DRAG IT ALONG THE EDGE TO MOVE IT; IT STAYS WHERE YOU LEAVE IT"),

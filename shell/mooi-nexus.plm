@@ -410,26 +410,6 @@ scene Nexus {
     fact dk_gdy = 0
     model hid max 12 { word: text; code: number; room: bool }   // hidden cards (room: no room for it here)
 
-    // ── Cascade (nexus.mode): the spine's shelves, every one out at once, down the right edge ──
-    fact dk_cascade = false
-    fact cs_r = 1860             // the shelves' right edge (the spine's tabs beyond it)
-    fact cy_0 = 0
-    fact cy_1 = 0
-    fact cy_2 = 0
-    fact cy_3 = 0
-    fact cy_4 = 0
-    fact cy_5 = 0
-    fact cy_6 = 0
-    fact cy_7 = 0
-    fact cy_8 = 0
-    text c_net = ""
-    text c_bt = ""
-    text c_out = ""
-    text c_today = ""
-    text c_notes = ""
-    fact c_notes_n = 0
-    text c_upd = ""
-    fact c_upd_n = 0
 
     // ── Who you are ──
     text nx_name = "mooi"
@@ -687,23 +667,6 @@ scene Nexus {
     follow gx.10 = py_x
     prop gy.10 = 0 ~m.reflow
     follow gy.10 = py_y
-    // Cascade's shelves come out one after another, 30 ms apart, and go home together
-    prop cs.0 = 0 ~m.expand
-    prop cs.1 = 0 ~m.expand
-    prop cs.2 = 0 ~m.expand
-    prop cs.3 = 0 ~m.expand
-    prop cs.4 = 0 ~m.expand
-    prop cs.5 = 0 ~m.expand
-    prop cs.6 = 0 ~m.expand
-    prop cs.7 = 0 ~m.expand
-    prop cs.8 = 0 ~m.expand
-    on change dk_open while dk_open {
-        cs.0: 1 after 0ms;  cs.1: 1 after 30ms;  cs.2: 1 after 60ms;  cs.3: 1 after 90ms;  cs.4: 1 after 120ms
-        cs.5: 1 after 150ms;  cs.6: 1 after 180ms;  cs.7: 1 after 210ms;  cs.8: 1 after 240ms
-    }
-    on change dk_open while not dk_open {
-        cs.0: 0;  cs.1: 0;  cs.2: 0;  cs.3: 0;  cs.4: 0;  cs.5: 0;  cs.6: 0;  cs.7: 0;  cs.8: 0
-    }
     prop rc_cpu = 0 ~m.reflow
     follow rc_cpu = m_cpu
     prop rc_mem = 0 ~m.reflow
@@ -822,7 +785,6 @@ scene Nexus {
 
         // ═══ The deck ═══
         group {
-            show: not dk_cascade
             move: dk_x + dk_ox * (1 - nx_in) * (dk_w + 40), dk_y + dk_oy * (1 - nx_in) * (dk_h + 40)
             opacity: smooth(0, 0.5, nx_in)
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
@@ -1734,157 +1696,6 @@ scene Nexus {
                         box { from: hx, 72; size: 82, 24; corner: dk.r; stroke: 1; color: if(h.room, dk.line, mix(dk.line, dk.acc, 0.4 + 0.6 * hz.hover)) }
                         text "+ {upper(h.word)}" { at: hx + 41, 84.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(h.room, dk.mute, dk.ink); width: 78; lines: 1 }
                         on press hz { emit dk_show(h.code) }
-                    }
-                }
-            }
-        }
-        // ═══ Cascade: every shelf out at once, staggered down the spine ═══
-        group {
-            show: dk_cascade
-            // the spine's line, where the shelves are tied (the bar draws its tabs when the spine is on)
-            line { from: cs_r + 24, cy_0; to: cs_r + 24, cy_8 + 44; width: 1; color: dk.acc; opacity: 0.25 * cs.0 }
-            // each shelf's place at rest, where the pointer is looked for (its plate leans out of it)
-            repeat k in 0..9 {
-                let cw.$k = pick(k, 452, 360, 360, pick(mus_on, 300, 460), 420, 360, 400, 300, 380)
-                let ch.$k = pick(k, 66, 56, 56, pick(mus_on, 44, 88), 60, 56, 56, 44, 48)
-                let cy.$k = pick(k, cy_0, cy_1, cy_2, cy_3, cy_4, cy_5, cy_6, cy_7, cy_8)
-                zone box shz.$k { from: cs_r - cw.$k - 10, cy.$k; size: cw.$k + 34, ch.$k; role: region; active: cs.$k > 0.5
-                                  label: pick(k, "Switches", "Connections", "Sound", "Now playing", "The machine", "Today", "Notifications", "Updates", "Workspaces") }
-                group {
-                    show: cs.$k > 0.01
-                    move: cs_r - cw.$k + (1 - cs.$k) * (cw.$k + 60) - 10 * shz.$k.hover, cy.$k
-                    opacity: smooth(0, 0.6, cs.$k)
-                    Chamfer(0, 0, cw.$k, ch.$k, fl.chamfer * 1.4, mix(dk.raised, #000000, 0.35), mix(dk.line, dk.acc, 0.25 + 0.75 * shz.$k.hover), 0.94, 1)
-                    group {
-                        glow: 6, (0.5 * shz.$k.hover) * st_glow, dk.acc
-                        line { from: cw.$k, ch.$k / 2; to: cw.$k + 24, ch.$k / 2; width: 1 + shz.$k.hover; color: mix(dk.line, dk.acc, 0.4 + 0.6 * shz.$k.hover) }
-                        ellipse { at: cw.$k + 24, ch.$k / 2; radius: 2.6; color: mix(dk.line, dk.acc, 0.4 + 0.6 * shz.$k.hover) }
-                    }
-                }
-            }
-            // each shelf's own contents, over its plate (in the same places as above)
-            let cx0 = cs_r - 452 + (1 - cs.0) * 512 - 10 * shz.0.hover
-            group {
-                move: cx0, cy_0
-                opacity: smooth(0, 0.6, cs.0)
-                text "// SWITCHES_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                for k in quick {
-                    let kx = 14 + k.index * 54
-                    group {
-                    show: k.index < 8
-                    zone box ckz { from: kx, 28; size: 50, 26; cursor: pointer; role: toggle; checked: k.on; label: k.word }
-                    box { from: kx, 28; size: 50, 26; corner: dk.r; color: if(k.on, mix(dk.well, dk.acc, 0.14), dk.well) }
-                    box { from: kx, 28; size: 50, 26; corner: dk.r; stroke: 1; color: if(k.on, dk.acc, mix(dk.line, dk.acc, 0.5 * ckz.hover)) }
-                    text "{upper(k.word)}" { at: kx + 25, 41.5; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(k.on, dk.acc, dk.ink2); width: 46; lines: 1 }
-                    on press ckz { emit nx_tog(k.code) }
-                    }
-                }
-            }
-            group {
-                move: cs_r - 360 + (1 - cs.1) * 420 - 10 * shz.1.hover, cy_1
-                opacity: smooth(0, 0.6, cs.1)
-                zone box cnz { from: 0, 0; size: 360, 56; cursor: pointer; role: button; label: "Connections" }
-                text "// CONNECTIONS_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text c_net { at: 14, 34; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dk.ink; width: 330; lines: 1 }
-                text c_bt { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: 200; lines: 1; align: right }
-                on press cnz { emit nx_go(50) }
-            }
-            group {
-                move: cs_r - 360 + (1 - cs.2) * 420 - 10 * shz.2.hover, cy_2
-                opacity: smooth(0, 0.6, cs.2)
-                text "// SOUND_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text c_out { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2; width: 220; lines: 1; align: right }
-                zone box csv { from: 14, 30; size: 290, 16; cursor: pointer; role: slider; value: audio.volume; label: "Volume" }
-                box { from: 14, 36; size: 290, 4; corner: 2; color: dk.well }
-                group {
-                    glow: 5, 0.4 * st_glow, dk.acc
-                    box { from: 14, 36; size: 290 * clamp(audio.volume * (1 - audio.muted), 0, 1), 4; corner: 2; color: dk.acc }
-                }
-                ellipse { at: 14 + 290 * clamp(audio.volume * (1 - audio.muted), 0, 1), 38; radius: 4 + csv.hover; color: dk.ink }
-                text pick(audio.muted, "{round(audio.volume * 100), 0}%", "mute") { at: 346, 38; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
-                on press csv { emit dk_level(round(clamp(local.x / 290, 0, 1) * 1000)) }
-                on drag csv { emit dk_level(round(clamp(local.x / 290, 0, 1) * 1000)) }
-                on scroll csv { emit dk_level(round(clamp(audio.volume + wheel * 0.05, 0, 1) * 1000)) }
-            }
-            group {
-                move: cs_r - pick(mus_on, 300, 460) + (1 - cs.3) * (pick(mus_on, 300, 460) + 60) - 10 * shz.3.hover, cy_3
-                opacity: smooth(0, 0.6, cs.3)
-                group {
-                    show: mus_on
-                    zone box cmart { from: 14, 12; size: 64, 64; cursor: pointer; role: button; label: "Open the music player" }
-                    box { from: 14, 12; size: 64, 64; corner: dk.r; color: dk.well }
-                    image cover { at: 14, 12; size: 64, 64; show: nx_art_on }
-                    on press cmart { emit nx_go(20) }
-                    text "// NOW PLAYING_" { at: 92, 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.hot }
-                    text med.title { at: 92, 38; anchor: left center; size: 15; weight: 600; family: "Exo 2"; color: dk.ink; width: 350; lines: 1 }
-                    text med.artist { at: 92, 55; anchor: left center; size: 10; family: "Exo 2"; color: dk.ink2; width: 250; lines: 1 }
-                    box { from: 92, 70; size: 270, 2; color: dk.line }
-                    box { from: 92, 70; size: 270 * clamp(rc_song, 0, 1), 2; color: dk.hot }
-                    repeat b in 0..3 {
-                        zone box cmb.$b { from: 372 + b * 26, 58; size: 24, 24; cursor: pointer; role: button; label: pick(b, "Previous", "Play or pause", "Next") }
-                        text pick(b, "⏮", "", "⏭") { at: 384 + b * 26, 70; anchor: center; align: center; size: 12; color: mix(dk.ink2, dk.ink, cmb.$b.hover) }
-                        on press cmb.$b { emit nx_media(b) }
-                    }
-                    text pick(med.playing, "▶", "⏸") { at: 410, 70; anchor: center; align: center; size: 14; color: mix(dk.hot, dk.ink, cmb.1.hover) }
-                }
-                group {
-                    show: not mus_on
-                    zone box cmopen { from: 0, 0; size: 300, 44; cursor: pointer; role: button; label: "Open the music player" }
-                    text "// NOTHING PLAYING · OPEN THE PLAYER_" { at: 14, 22; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(dk.mute, dk.acc, cmopen.hover) }
-                    on press cmopen { emit nx_go(20) }
-                }
-            }
-            group {
-                move: cs_r - 420 + (1 - cs.4) * 480 - 10 * shz.4.hover, cy_4
-                opacity: smooth(0, 0.6, cs.4)
-                zone box cmz { from: 0, 0; size: 420, 60; cursor: pointer; role: button; label: "The machine: open btop" }
-                text "// MACHINE_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                Reading(14, 22, 98, "CPU", m_cpu_t, rc_cpu, m_cpu > 0.85 or m_temp > 85)
-                Reading(112, 22, 98, "Memory", m_mem_t, rc_mem, m_mem > 0.9)
-                Reading(210, 22, 98, "Battery", m_bat_t, m_bat, m_bat_hot)
-                Reading(308, 22, 98, "Disk", m_disk_t, m_disk, m_disk > 0.9)
-                on press cmz { emit nx_go(10) }
-            }
-            group {
-                move: cs_r - 360 + (1 - cs.5) * 420 - 10 * shz.5.hover, cy_5
-                opacity: smooth(0, 0.6, cs.5)
-                zone box ctz { from: 0, 0; size: 360, 56; cursor: pointer; role: button; label: "Today: the calendar" }
-                text "// TODAY_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text clock.time { at: 346, 14; anchor: right center; size: 10; family: "Share Tech Mono"; color: dk.ink2 }
-                text c_today { at: 14, 35; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dk.ink; width: 330; lines: 1 }
-                on press ctz { emit nx_go(11) }
-            }
-            group {
-                move: cs_r - 400 + (1 - cs.6) * 460 - 10 * shz.6.hover, cy_6
-                opacity: smooth(0, 0.6, cs.6)
-                zone box cnt { from: 0, 0; size: 400, 56; cursor: pointer; role: button; label: "Notifications: open the Signal Field" }
-                text "// NOTIFICATIONS_" { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(c_notes_n > 0, dk.hot, dk.acc) }
-                text c_notes { at: 14, 35; anchor: left center; size: 12; family: "Exo 2"; color: dk.ink; width: 300; lines: 1 }
-                Act(316, 23, 70, "Open", false, c_notes_n > 0, cnt.hover)
-                on press cnt { emit nx_go(30) }
-            }
-            group {
-                move: cs_r - 300 + (1 - cs.7) * 360 - 10 * shz.7.hover, cy_7
-                opacity: smooth(0, 0.6, cs.7)
-                zone box cup { from: 0, 0; size: 300, 44; cursor: pointer; role: button; label: "Updates" }
-                text "// UPDATES_" { at: 14, 22; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                text c_upd { at: 106, 22; anchor: left center; size: 11; family: "Share Tech Mono"; color: dk.ink; width: 110; lines: 1 }
-                Act(216, 10, 70, "Update", c_upd_n > 0, false, cup.hover) { show: c_upd_n > 0 }
-                on press cup while c_upd_n > 0 { emit nx_go(13) }
-            }
-            group {
-                move: cs_r - 380 + (1 - cs.8) * 440 - 10 * shz.8.hover, cy_8
-                opacity: smooth(0, 0.6, cs.8)
-                text "// WORKSPACES_" { at: 14, 24; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
-                for t in tiles {
-                    let tx = 130 + t.index * 32
-                    group {
-                        show: t.index < 7
-                        zone box cwz { from: tx, 12; size: 28, 24; cursor: pointer; role: item; selected: t.active; label: pick(t.plus, "Workspace {t.id}", "A new workspace") }
-                        box { from: tx, 12; size: 28, 24; corner: dk.r; color: if(t.active, mix(dk.well, dk.acc, 0.2), dk.well) }
-                        box { from: tx, 12; size: 28, 24; corner: dk.r; stroke: 1; color: if(t.active, dk.acc, mix(dk.line, dk.acc, cwz.hover)) }
-                        text pick(t.plus, "{t.id}", "+") { at: tx + 14, 24.5; anchor: center; align: center; size: 10.5; family: "Share Tech Mono"; color: if(t.active, dk.acc, dk.ink2) }
-                        on press cwz { emit dk_ws(t.index) }
                     }
                 }
             }

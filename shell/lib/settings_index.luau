@@ -164,15 +164,12 @@ local rows = {
     { title = "Glow", desc = "The light along an arriving signal and an urgent one's edge (notices still come without it)", tab = 19, page = "Signal Loom", y = 642 },
     { title = "Hide what they say", desc = "Pop-ups show only who it is from; the Signal Field shows the rest", tab = 19, page = "Signal Loom", y = 768 },
     { title = "mooi is the whole desktop", desc = "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", tab = 20, page = "Advanced", y = 156 },
-    { title = "The mark opens", desc = "The deck: everything along one edge. Cascade: every shelf of the spine out at once", tab = 21, page = "Control Nexus", y = 156 },
-    { title = "Edge", desc = "Where the deck comes from: a strip along the bottom or the top, or a column down a side", tab = 21, page = "Control Nexus", y = 216 },
-    { title = "Layout", desc = "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", tab = 21, page = "Control Nexus", y = 276 },
-    { title = "Profile", desc = "Your banner and picture, small or large", tab = 21, page = "Control Nexus", y = 336 },
-    { title = "Notches off the deck", desc = "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", tab = 21, page = "Control Nexus", y = 396 },
-    { title = "The spine", desc = "Tabs down the right edge: hover one and its shelf slides out (sound, network, power, machine, calendar…)", tab = 21, page = "Control Nexus", y = 550 },
-    { title = "Hide the spine", desc = "Out of sight until the pointer touches the right edge; a hairline keeps its place", tab = 21, page = "Control Nexus", y = 610 },
-    { title = "The side notch", desc = "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", tab = 21, page = "Control Nexus", y = 736 },
-    { title = "Model", desc = "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", tab = 21, page = "Control Nexus", y = 890 },
+    { title = "Edge", desc = "Where the deck comes from: a strip along the bottom or the top, or a column down a side", tab = 21, page = "Control Nexus", y = 156 },
+    { title = "Layout", desc = "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", tab = 21, page = "Control Nexus", y = 216 },
+    { title = "Profile", desc = "Your banner and picture, small or large", tab = 21, page = "Control Nexus", y = 276 },
+    { title = "Notches off the deck", desc = "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", tab = 21, page = "Control Nexus", y = 336 },
+    { title = "The side notch", desc = "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", tab = 21, page = "Control Nexus", y = 490 },
+    { title = "Model", desc = "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", tab = 21, page = "Control Nexus", y = 644 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -196,7 +193,7 @@ rows.resets = {
     [18] = { "notifications.server", "notifications.dnd", "notifications.quiet_from", "notifications.quiet_to", "tray.style", "island.confirm_close", "island.follow_on_send", "command.max_results" },
     [19] = { "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density", "signals.chamfer", "signals.travel", "signals.effects", "signals.private" },
     [20] = { "session.standalone" },
-    [21] = { "nexus.mode", "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "shelves.on", "shelves.autohide", "notch.on", "claude.model" },
+    [21] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model" },
 }
 rows.layout_tab = 4
 return rows

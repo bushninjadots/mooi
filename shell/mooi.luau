@@ -131,8 +131,6 @@ local function apply(s)
     fact.isl_style = position("island.style", s.island.style)   -- 0 plate · 1 tether (ui/island.plm)
     fact.clock_view = position("clock.view", s.clock.view)      -- 0 full · 1 time · 2 seconds
     fact.th_mode = position("theme.mode", s.theme.mode)         -- 0 dark · 1 light · 2 auto (the display island)
-    fact.shelves_on = s.shelves.on                              -- the spine and its shelves (D100)
-    fact.shelves_hide = s.shelves.autohide == true              -- and out of sight until the edge is touched
     fact.pw_saver = position("motion.saver", s.motion.saver)    -- 0 off · 1 on battery · 2 always (the power island)
     fact.pw_prof = position("power.profile", s.power.profile)   -- 0 keep · 1 saver · 2 balanced · 3 performance
     -- The battery saver (motion.saver): what costs frames and a process goes quiet.
