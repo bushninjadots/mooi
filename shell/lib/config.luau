@@ -208,7 +208,7 @@ M.SCHEMA = {
     { path = "atlas.rows", kind = "integer", default = 2, min = 1, max = 3 },
     { path = "atlas.columns", kind = "integer", default = 5, min = 2, max = 6 },
     { path = "atlas.super_tab", kind = "boolean", default = true },
-    { path = "atlas.overview", kind = "enum", values = { "grid", "strip", "canvas", "mission" }, default = "mission" },
+    { path = "atlas.overview", kind = "enum", values = { "grid", "strip", "canvas" }, default = "grid" },
     { path = "atlas.private", kind = "enum", values = { "off", "sensitive", "everything" }, default = "sensitive" },
     -- Its look and feel (D44): each workspace's size as a share of the screen (iNiR's 18 %), how dark
     -- the desktop goes behind it, whether the workspace you are on zooms out into its place, and how
@@ -223,11 +223,9 @@ M.SCHEMA = {
     { path = "session.standalone", kind = "boolean", default = false },
     -- A touchpad swipe down to open it (D45): off, or with three or four fingers.
     { path = "atlas.gesture", kind = "enum", values = { "off", "three", "four" }, default = "off" },
-    -- Which Overview Super+Tab and mooi's Overview key open: Pleamar's own (mooi's, with
-    -- Hyprdrive's overview hands ported into it — docs/OVERVIEW-PORT.md), or Hyprdrive's
-    -- plugin overview when that plugin is loaded (`hyprctl plugin list`). Without the
-    -- plugin, Hyprdrive falls back to mooi's own rather than opening nothing.
-    { path = "atlas.engine", kind = "enum", values = { "mooi", "hyprdrive" }, default = "mooi" },
+    -- Retired with Hyprdrive (D118): mooi's Overview is the only one. Kept in the schema so its
+    -- settings code does not move; nothing reads it, and the migration drops it from files.
+    { path = "atlas.engine", kind = "enum", values = { "mooi" }, default = "mooi" },
     -- The ported overview (docs/OVERVIEW-PORT.md): the wheel over the grid (and ← →) steps the
     -- desktops, and typing lists installed apps under the search row to start with Enter.
     { path = "atlas.wheel_desktops", kind = "boolean", default = true },
@@ -499,6 +497,12 @@ local NUMBERED = {
 }
 local function migrate(t)
     if type(t) ~= "table" then return end
+    -- D118: the Mission shape and Hyprdrive's engine are gone; a file that chose them gets the grid
+    -- and mooi's own Overview, quietly (they were choices, not mistakes).
+    if type(t.atlas) == "table" then
+        if t.atlas.overview == "mission" then t.atlas.overview = "grid" end
+        if t.atlas.engine == "hyprdrive" then t.atlas.engine = "mooi" end
+    end
     -- the desktop's named choices of 2026-10-20, now numbers on sliders
     if type(t.desktop) == "table" then
         for key, map in pairs(NUMBERED) do

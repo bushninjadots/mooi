@@ -70,12 +70,12 @@ M.SETTERS = {
     "music.rim", "music.rim_gain", "music.rim_glow",
     -- how many bars the Control Nexus deck's border is cut into (nexus.bars)
     "nexus.bars",
-    -- which Overview Super+Tab opens: mooi's own, or Hyprdrive's plugin (atlas.engine)
+    -- retired (D118): which Overview opened (atlas.engine); kept so the codes after it do not move
     "atlas.engine",
-    -- the ported overview (docs/OVERVIEW-PORT.md): wheel/key desktop stepping and type-to-run
+    -- the Overview's wheel/key desktop stepping and type-to-run
     "atlas.wheel_desktops", "atlas.search_apps", "atlas.search_files",
     "atlas.hot_corner", "atlas.hot_corner_delay",
-    -- Hyprdrive's spring edges, ported into the Overview (docs/OVERVIEW-PORT.md)
+    -- spring edges: a carried window held at an edge steps the desktops (D115)
     "atlas.spring_edges",
 }
 

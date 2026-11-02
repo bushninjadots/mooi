@@ -910,20 +910,6 @@ case "$cmd" in
     record) exec "$pleamar" --say "$name" "emit record $([ "${1:-}" = area ] && echo 1 || echo 0)" ;;
     edit) exec "$pleamar" --say "$name" "emit edit_toggle" ;;
     overview)
-        # Which Overview opens is a setting (Settings -> Overview -> Opens with): mooi's
-        # own, or Hyprdrive's plugin. Hyprdrive is only used while its plugin is actually
-        # loaded; otherwise this falls through to mooi's own rather than opening nothing.
-        engine=$(jq -r '.atlas.engine // "mooi"' "$settings" 2>/dev/null || echo mooi)
-        if [ "$engine" = hyprdrive ] && command -v hyprctl >/dev/null 2>&1 \
-           && hyprctl plugin list 2>/dev/null | grep -q hyprdrive; then
-            # mooi's own Overview must not stay behind Hyprdrive's
-            "$pleamar" --say "$name" "fact open none" >/dev/null 2>&1 || true
-            exec hyprctl dispatch hyprdrive:overview toggle all
-        fi
-        # the other way: close Hyprdrive's if it is open, then open mooi's
-        if command -v hyprctl >/dev/null 2>&1 && hyprctl plugin list 2>/dev/null | grep -q hyprdrive; then
-            hyprctl dispatch hyprdrive:overview close >/dev/null 2>&1 || true
-        fi
         exec "$pleamar" --say "$name" "emit open_overview" ;;
     mode)   # light | dark | auto | (nothing: the other one now)
         case "${1:-}" in dark) n=0 ;; light) n=1 ;; auto) n=2 ;; ""|toggle) n=9 ;; *) echo "usage: mooi mode [light|dark|auto]" >&2; exit 2 ;; esac

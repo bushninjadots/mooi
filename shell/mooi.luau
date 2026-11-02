@@ -355,10 +355,8 @@ sys.watch("files:" .. FILE, function()
     if notch_sync then notch_sync() end
     if notch_cut then notch_cut() end
 end)
-local ov_wall_refresh -- the Overview's wallpaper backdrop, asked for again; defined with the Overview, below
 sys.watch("files:" .. PALETTE, function()
     load_palette(); apply_theme("a new palette arrived")
-    if ov_wall_refresh then ov_wall_refresh() end
 end)
 on("recolor", function() load_palette(); apply_theme("asked to recolour") end)
 -- Alert: a critical battery re-lights the whole bar (Ferrolume's Alert theme).
@@ -601,7 +599,6 @@ local function ov_shape(m)
     local rows, cols = a.rows, a.columns
     if strip then rows, cols = 1, ov_per() end
     fact.ov_canvas = a.overview == "canvas"
-    fact.ov_mission = a.overview == "mission"
     local g = strip and atlas_geo.strip(w, h, cols, tonumber(fact.st_res) or 0) or atlas_geo.grid(w, h, rows, cols, tonumber(fact.st_res) or 0, a.size / 100)
     fact.ov_strip, fact.ov_rows, fact.ov_cols = strip, rows, cols
     fact.ov_W, fact.ov_H, fact.ov_cw, fact.ov_ch, fact.ov_gx, fact.ov_gy, fact.ov_gap = w, h, g.cw, g.ch, g.gx, g.gy, g.gap
@@ -669,29 +666,6 @@ local pictures_asked = ""       -- what the compositor was asked to copy: "" non
 local board = {}                -- the last tiles built, to open with something to show
 local run_actions = {}          -- what each type-to-run row does: app, calc or file
 local home = tostring(sys.ask("env", "HOME") or "")
--- The Pleamar Overview's backdrop (D114): the wallpaper the desk draws, if there is one.
-local wall = home ~= "" and (home .. "/.cache/current_wallpaper") or ""
--- The path is a link that every wallpaper setter repoints, and Pleamar keeps an image by its
--- name: without a new `?n` the Overview showed the wallpaper mooi started with until a restart.
--- A new palette is what a new wallpaper brings, so that is when the picture is asked for again.
--- `files.exists` only answers for names inside the scene's folder (a full path is an error), so
--- it said "no" to this one every time and the backdrop never showed. `readlink -e` answers only
--- for a file that exists, and names its target: the picture is asked for again only when that
--- target moved (the same `?n` slot is reused, so a hundred wallpapers cost one).
-local ov_wall_n, ov_wall_target = 0, nil
-function ov_wall_refresh()
-    if wall == "" then return end
-    run("readlink", { "-e", wall }, function(out, code)
-        local target = code == 0 and string.match(tostring(out or ""), "^%s*(.-)%s*$") or ""
-        fact.ov_wall_ok = target ~= ""
-        if target ~= "" and target ~= ov_wall_target then
-            ov_wall_target = target
-            ov_wall_n = ov_wall_n + 1
-            text.ov_wall = wall .. "?" .. ov_wall_n
-        end
-    end)
-end
-ov_wall_refresh()
 local file_hits, file_query = {}, nil   -- the last file search, and the query it answered
 local file_token = 0                    -- a newer query makes an older find's answer stale
 local function short_path(p)
@@ -825,16 +799,7 @@ function build_now(done)
             local per = ov_per()
             local page = math.floor(math.max(0, atlas_active - 1) / per)
             local cells, ids, slots, rects = {}, {}, {}, {}
-            local mission = nil
-            if fact.ov_mission then
-                for id = 1, #ws_rows do ids[#ids + 1] = id end
-                while #ids > 18 do table.remove(ids) end
-                local ai = 1
-                for k, id in ipairs(ids) do if id == atlas_active then ai = k end end
-                mission = atlas_geo.mission(fact.ov_W, fact.ov_H, #ids, ai, tonumber(fact.st_res) or 0)
-                rects = mission.cards
-                page, per = 0, #ids
-            elseif fact.ov_canvas then
+            if fact.ov_canvas then
                 local seen = {}
                 for id = 1, #ws_rows do seen[id] = true end
                 for k in pairs(identities.canvas or {}) do seen[tonumber(k)] = true end
@@ -852,13 +817,6 @@ function build_now(done)
                 end
             end
             ov_ids, ov_rects = ids, rects
-            if mission then
-                fact.ov_mission_search_y = mission.search_y
-                fact.ov_mission_gap = mission.gap
-                fact.ov_mission_pad = mission.pad
-                fact.ov_mission_head = mission.header
-                fact.ov_cw, fact.ov_ch = mission.active.w, mission.active.h
-            end
             if fact.ov_canvas then
                 fact.ov_fx, fact.ov_fy, fact.ov_fz = atlas_geo.fit(rects, fact.ov_W, fact.ov_H, (tonumber(fact.st_res) or 0) + 70, 60)
                 if fit_pending then fit_pending = false; fact.ov_cx, fact.ov_cy, fact.ov_cz = fact.ov_fx, fact.ov_fy, fact.ov_fz end
@@ -904,39 +862,6 @@ function build_now(done)
                     r.fx, r.fy = (c.x - (tonumber(m.x) or 0)) / mw, (c.y - (tonumber(m.y) or 0)) / mh
                     r.fw, r.fh = c.w / mw, c.h / mh
                 else r.ocell, r.fx, r.fy, r.fw, r.fh = -1, 0, 0, 0, 0 end
-            end
-            -- The ported overview: the active workspace's windows on a mission-control grid, and
-            -- every other workspace's windows shrunk into its strip card, where they already are.
-            if mission then
-                local ak = tonumber(fact.ov_act) or 0
-                local act = mission.active
-                local pad, head, gap = mission.pad, mission.header, mission.gap
-                local iw, ih = math.max(act.w - pad * 2, 1), math.max(act.h - head - pad, 1)
-                local mine = {}
-                for i, r in ipairs(rows) do if r.ocell == ak then mine[#mine + 1] = i end end
-                local n = #mine
-                if n > 0 then
-                    local cols = n <= 1 and 1 or (n <= 4 and 2 or 3)
-                    local lines = math.ceil(n / cols)
-                    local cw = (iw - gap * (cols - 1)) / cols
-                    local ch = (ih - gap * (lines - 1)) / lines
-                    for j, i in ipairs(mine) do
-                        local c, line = (j - 1) % cols, math.floor((j - 1) / cols)
-                        local r = rows[i]
-                        r.tx, r.ty = act.x + pad + c * (cw + gap), act.y + head + line * (ch + gap)
-                        r.tw, r.th, r.fx, r.fy, r.fw, r.fh = cw, ch, 0, 0, 1, 1
-                    end
-                end
-                for _, r in ipairs(rows) do
-                    if r.ocell >= 0 and r.ocell ~= ak then
-                        local card = rects[r.ocell + 1]
-                        local p, top_h = 8, 22
-                        local w, h = math.max(card.w - p * 2, 1), math.max(card.h - top_h - p, 1)
-                        local fx, fy, fw, fh = r.fx or 0, r.fy or 0, r.fw or 0, r.fh or 0
-                        r.tx, r.ty, r.tw, r.th = card.x + p + fx * w, card.y + top_h + fy * h, w, h
-                        r.fx, r.fy, r.fw, r.fh = 0, 0, math.max(fw, 0.08), math.max(fh, 0.08)
-                    end
-                end
             end
             finish()
         end)
@@ -1608,8 +1533,7 @@ on("fact:open", function(v)
     end)
 end)
 
--- The bar's Overview button runs the same command as Super+Tab, so Settings → Overview →
--- Opens with is honoured there too (`mooi overview` picks mooi's own or Hyprdrive's).
+-- The bar's Overview button runs the same command as Super+Tab (`mooi overview`).
 on("open_overview_cmd", function() run("mooi", { "overview" }) end)
 
 -- Pictures are asked for only while the Overview shows them: a compositor copying

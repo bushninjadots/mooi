@@ -135,16 +135,6 @@ scene Mooi {
     fact ov_gx = 0
     fact ov_gy = 0
     fact ov_strip = false     // settings: atlas.overview — one row under the bar, the desktop left in view (D38)
-    // The Pleamar Overview after Hyprdrive (D114): the wallpaper behind, a strip of the workspaces the
-    // active one is not, and its windows on a mission-control grid.
-    fact ov_mission = false
-    fact ov_mission_search_y = 38
-    fact ov_mission_gap = 18
-    fact ov_mission_pad = 28
-    fact ov_mission_head = 52
-    text ov_wall = ""
-    image ov_wall_img = from ov_wall, 1920, 1080
-    fact ov_wall_ok = false
     // Its hands (D39): a window picked by the keyboard, windows marked to go together, the last move
     // undone, a workspace named and given an accent (lib/atlas; the names in mooi's workspaces.json).
     event ov_mark ->          // to the logic: mark or unmark tile n
@@ -5391,8 +5381,6 @@ scene Mooi {
     // you are on (that miniature starts as the whole screen), and closes by zooming into the one
     // chosen, so the desktop is the same picture before, during and after. A window carried into
     // another miniature goes to that workspace; a press on a miniature goes there; arrows and Enter.
-    // The **mission** shape (D114) is Hyprdrive's picture: the wallpaper blurred behind, a strip of
-    // the other workspaces, and the one you are on as a large card with its windows on a grid.
     surface overview_surface {
         size: full, full
         anchor: top
@@ -5423,21 +5411,8 @@ scene Mooi {
             // ── the field: the grid's dim, or the canvas's near-black ground with its coordinate grid —
             // late, so the first of the pull-back is the desktop itself
             // (a layer that cannot be seen is not drawn: the whole screen, blended, is the costly part)
-            box { from: 0, 0; size: ov_W, ov_H; color: mix(fl.ground, #000000, 0.5); opacity: if(ov_strip, ov_dim * 0.55, ov_dim) * ov_z * ov_z; show: not ov_canvas and not ov_mission and ov_z > 0.05 }
+            box { from: 0, 0; size: ov_W, ov_H; color: mix(fl.ground, #000000, 0.5); opacity: if(ov_strip, ov_dim * 0.55, ov_dim) * ov_z * ov_z; show: not ov_canvas and ov_z > 0.05 }
             box { from: 0, 0; size: ov_W, ov_H; color: fl.ground; opacity: 0.97 * ov_z * ov_z; show: ov_canvas and ov_z > 0.05 }
-            // the ported overview's backdrop: the wallpaper, out of focus and dimmed, as Hyprdrive's.
-            // The image cell is 16:9 and keeps the picture's proportions, so a wallpaper of another
-            // shape leaves bands: the ground under it keeps the live windows from showing through them.
-            box { from: 0, 0; size: ov_W, ov_H; color: fl.ground; opacity: ov_z; show: ov_mission and ov_wall_ok and ov_z > 0.05 }
-            group {
-                show: ov_mission and ov_wall_ok and ov_z > 0.05
-                opacity: ov_z
-                blur: 14
-                brightness: 0.55
-                image ov_wall_img { at: 0, 0; size: ov_W, ov_H }
-            }
-            box { from: 0, 0; size: ov_W, ov_H; color: #000000; opacity: 0.52 * ov_z * ov_z; show: ov_mission }
-            box { from: 0, 0; size: ov_W, ov_H; color: fl.ground; opacity: 0.88 * ov_z * ov_z; show: ov_mission and not ov_wall_ok }
             // grid lines every 240 (close), 960 or 3840 (far) of the world, quieter as it pulls back,
             // clearer while something is carried
             let ov_gs = if(cam_z > 0.25, 240, if(cam_z > 0.07, 960, 3840))
@@ -5478,7 +5453,7 @@ scene Mooi {
 
             // ── the grid's plate (the canvas has none: its territories stand on the field)
             group {
-                show: not ov_canvas and not ov_mission
+                show: not ov_canvas
                 opacity: ov_oa
                 move: 0, ov_slide
                 // machined like the islands (ui/island.plm): lighter at the top, a lit lip, a soft shadow; the
@@ -5521,7 +5496,7 @@ scene Mooi {
                                       label: "Workspace {ov_cells.$k.id}{? · {ov_cells.$k.windows} windows}" }
                     // the grid's plate
                     group {
-                        show: not ov_canvas and not ov_mission
+                        show: not ov_canvas
                         box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: g.radius.item * ov_z; opacity: if(zc.$k, clamp(ov_z * 2 - 1, 0, 1), 1)
                               color: if(hot.$k, mix(surface.elevated, accent.primary, 0.16), mix(surface.elevated, fg.primary, 0.05 * ovc.$k.hover)); show: not zc.$k or ov_z > 0.5 }
                         box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: g.radius.item * ov_z; stroke: if(lit.$k, 2, 1); color: if(lit.$k, accent.primary, border.subtle)
@@ -5529,23 +5504,6 @@ scene Mooi {
                     }
                     // the ported overview's cards: the active workspace is one large card, the others
                     // are chips in the strip above it
-                    group {
-                        show: ov_mission
-                        body {
-                            show: ov_cells.$k.active
-                            gradient: 0, ly.$k to 0, ly.$k + lh.$k, surface.elevated, surface.primary 45%, bg.primary
-                            border: 1, border.subtle
-                            shadow: 0, 18, 48, 34%
-                            opacity: 0.96
-                            box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: 18 }
-                        }
-                        box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: if(ov_cells.$k.active, 18, 12)
-                              color: if(hot.$k, mix(surface.primary, accent.primary, 0.14), surface.primary); opacity: if(ov_cells.$k.active, 0, 0.9) }
-                        box { from: lx.$k, ly.$k; size: lw.$k, lh.$k; corner: if(ov_cells.$k.active, 18, 12); stroke: if(hot.$k or ov_cells.$k.active, 1.6, 1)
-                              color: if(hot.$k or ov_cells.$k.active, accent.primary, border.subtle); opacity: if(ov_cells.$k.active, 0.75, 1) }
-                        box { from: lx.$k + 18, ly.$k + 1; size: if(ov_cells.$k.active, 64, min(lw.$k - 20, 48)), 2
-                              color: if(ov_cells.$k.active, accent.primary, mix(border.subtle, accent.primary, 0.4)); show: ov_cells.$k.active }
-                    }
                     // the canvas's territory
                     group {
                         show: ov_canvas and (not zc.$k or ov_z > 0.5)
@@ -5602,7 +5560,7 @@ scene Mooi {
                 group {
                     show: i < atlas_tiles.count and tk.$i >= 0 and tk.$i < ov_cells.count and to.$i > 0.01
                     z: if(car.$i, 10, if(tdr.$i or picked.$i, 9, if(atlas_tiles.$i.floating, 2, 0)))   // floating over tiled, as Hyprland shows them
-                    move: 0, if(tk.$i == ov_zc or car.$i or ov_canvas or ov_mission, 0, ov_slide)
+                    move: 0, if(tk.$i == ov_zc or car.$i or ov_canvas, 0, ov_slide)
                     zone box otile.$i { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: 4; cursor: grab; role: button
                                         label: "{atlas_tiles.$i.app}: {atlas_tiles.$i.title}, workspace {atlas_tiles.$i.ws}" }
                     box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: max(g.radius.item - 3, 2); color: surface.primary; opacity: to.$i }
@@ -5618,12 +5576,6 @@ scene Mooi {
                         text "{atlas_tiles.$i.app} · {atlas_tiles.$i.title}" { at: dx.$i + 8, dy.$i + 9; anchor: left center; size: 10; color: fg.secondary; width: dw.$i - 16; lines: 1; opacity: to.$i }
                     }
                     // the ported overview: every window says what it is, along the foot of its card
-                    group {
-                        show: ov_mission and dw.$i > 130
-                        box { from: dx.$i, dy.$i + dh.$i - 26; size: dw.$i, 26; color: bg.primary; opacity: 0.82 * to.$i }
-                        text "{atlas_tiles.$i.app} · {atlas_tiles.$i.title}" { at: dx.$i + 10, dy.$i + dh.$i - 13; anchor: left center; size: 10.5
-                                                                         color: fg.secondary; width: dw.$i - 20; lines: 1; opacity: to.$i }
-                    }
                     text "PRIVATE" { at: dx.$i + dw.$i / 2, dy.$i + dh.$i / 2 + is.$i / 2 + 9; anchor: center; size: 10; family: "Share Tech Mono"; color: fg.muted
                                      opacity: to.$i; show: atlas_tiles.$i.priv and dw.$i > 56 }
                     box { from: dx.$i, dy.$i; size: dw.$i, dh.$i; corner: max(g.radius.item - 3, 2); opacity: to.$i; stroke: if(car.$i or atlas_tiles.$i.mark or found.$i or picked.$i, 1.6, 1)
@@ -5692,7 +5644,7 @@ scene Mooi {
 
             // ── the active workspace: in the grid a border sliding to it; on the canvas its territory is lit
             box { from: (ov_ax - cam_x) * cam_z - 1, (ov_ay - cam_y) * cam_z - 1; size: ov_aww * cam_z + 2, ov_awh * cam_z + 2; corner: (g.radius.item + 1) * ov_z; stroke: 2; color: accent.primary
-                  show: ov_act >= 0 and not ov_canvas and not ov_mission; opacity: if(ov_act == ov_zc and ov_z < 0.999, clamp(ov_z * 2 - 1, 0, 1), ov_oa) }
+                  show: ov_act >= 0 and not ov_canvas; opacity: if(ov_act == ov_zc and ov_z < 0.999, clamp(ov_z * 2 - 1, 0, 1), ov_oa) }
 
             // ── over each workspace: in the grid its number, name, accent, group and monitor; on the
             // canvas a nameplate over its top edge — "01 / NAME · 3 WINDOWS", its group, carried to move it
@@ -5709,7 +5661,7 @@ scene Mooi {
                     move: 0, if(ov_canvas, 0, ov_slide)
                     // ·· the grid's labels
                     group {
-                        show: not ov_canvas and not ov_mission
+                        show: not ov_canvas
                         box { from: lx.$k + 10, ly.$k - 1; size: min(lw.$k * 0.3, 90), 2; color: if(ov_cells.$k.acc == 2, fl.ember, fl.phos); show: ov_cells.$k.acc > 0 }
                         box { from: lx.$k + 6, ly.$k + 6; size: 24, 16; corner: 4; color: bg.primary; opacity: 0.85; show: ov_cells.$k.windows > 0 or ov_cells.$k.acc > 0 or ov_cells.$k.named }
                         text "{ov_cells.$k.id}" { at: lx.$k + 18, ly.$k + 14; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
@@ -5735,24 +5687,6 @@ scene Mooi {
                     }
                     // ·· the ported overview's labels: the active card's heading, a chip's number and
                     // how many windows it holds
-                    group {
-                        show: ov_mission
-                        group {
-                            show: ov_cells.$k.active
-                            text "{ov_cells.$k.label}" { at: lx.$k + 28, ly.$k + 26; anchor: left center; size: 15; weight: 600; color: fg.primary
-                                                          width: lw.$k - 210; lines: 1 }
-                            text ov_cells.$k.sub { at: lx.$k + lw.$k - 28, ly.$k + 26; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                            text "{ov_cells.$k.id}" { at: lx.$k + lw.$k / 2, ly.$k + lh.$k / 2; anchor: center; size: 44; weight: 600
-                                                      family: "Share Tech Mono"; color: fg.muted; opacity: 0.2; show: ov_cells.$k.windows < 1 }
-                        }
-                        group {
-                            show: not ov_cells.$k.active
-                            text "{ov_cells.$k.label}" { at: lx.$k + 10, ly.$k + 12; anchor: left center; size: 9.5; weight: 600; family: "Share Tech Mono"
-                                                          color: if(ov_cells.$k.active, accent.primary, fg.secondary); width: lw.$k - 20; lines: 1 }
-                            text "{ov_cells.$k.windows}" { at: lx.$k + lw.$k - 9, ly.$k + 12; anchor: right center; size: 9; family: "Share Tech Mono"
-                                                           color: fl.muted; show: ov_cells.$k.windows > 0 }
-                        }
-                    }
                     // ·· the canvas's nameplate: its handle
                     group {
                         show: ov_canvas
@@ -5809,9 +5743,9 @@ scene Mooi {
             }
 
             // ── the search row: on the grid's plate, or floating over the canvas's top
-            let srw = if(ov_mission, min(ov_W * 0.46, 640), if(ov_canvas, 680, ov_pw))
-            let srx = if(ov_mission, ov_W / 2 - srw / 2, if(ov_canvas, ov_W / 2 - 340, ov_gx))
-            let sry = if(ov_mission, ov_mission_search_y, if(ov_canvas, ov_top + 34, ov_gy - 30))
+            let srw = if(ov_canvas, 680, ov_pw)
+            let srx = if(ov_canvas, ov_W / 2 - 340, ov_gx)
+            let sry = if(ov_canvas, ov_top + 34, ov_gy - 30)
             group {
                 opacity: ov_oa
                 move: 0, ov_slide
@@ -5819,11 +5753,10 @@ scene Mooi {
                     gradient: 0, sry - 18 to 0, sry + 18, surface.elevated, surface.primary 40%, bg.primary
                     border: 1, border.subtle
                     shadow: 0, 4, 16, 34%
-                    show: ov_canvas or ov_mission
-                    box { from: srx - 10, sry - 18; size: srw + 20, 36; corner: if(ov_mission, 20, g.radius.item) }
+                    show: ov_canvas
+                    box { from: srx - 10, sry - 18; size: srw + 20, 36; corner: g.radius.item }
                 }
                 box { from: srx + 4, sry - 19; size: 48, 2; color: fl.phos; show: ov_canvas }
-                box { from: srx - 10, sry - 18; size: srw + 20, 36; corner: 20; stroke: 1; color: border.subtle; opacity: 0.9; show: ov_mission }
                 ellipse { at: srx + 12, sry; radius: 5.5; stroke: 1.5; color: if(ov_searching, accent.primary, fg.secondary) }
                 line { from: srx + 16, sry + 4; to: srx + 20, sry + 8; width: 1.5; color: if(ov_searching, accent.primary, fg.secondary) }
                 input ov_q { at: srx + 30, sry; width: srw - 210; size: 13; color: fg.primary; selection: selection.bg

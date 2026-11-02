@@ -1,5 +1,4 @@
--- The Overview's geometry and its keeping (D37–D47, D114): the grid, the strip, the canvas and the
--- mission card, privacy,
+-- The Overview's geometry and its keeping (D37–D47): the grid, the strip, the canvas, privacy,
 -- the keyboard's moves, search and menus, and the workspace names, accents and groups kept in
 -- workspaces.json. Pure, so tests/unit runs it. (The name is the Workspace Atlas's, which this
 -- library first served; the Atlas itself was removed in D90.)
@@ -38,37 +37,6 @@ function M.strip(w, h, n, top)
     local asp = w / math.max(h, 1)
     local cw = math.min(h * 0.13 * asp, (w * 0.94 - (n - 1) * gap) / n)
     return { cw = cw, ch = cw / asp, gap = gap, gx = (w - (n * cw + (n - 1) * gap)) / 2, gy = (top or 0) + 22 }
-end
-
--- The Pleamar Overview after Hyprdrive (D114): a top strip of the other workspaces and one large
--- card for the active one, with its windows on a mission-control grid. `n` workspaces, `active`
--- 1-based. Returns the cards (1-based, the active one the large card), and the measurements the
--- scene uses for the search row and the window grid.
-M.MISSION_STRIP = 96
-M.MISSION_GAP = 12
-M.MISSION_CARD = 18
-M.MISSION_PAD = 28
-M.MISSION_HEAD = 52
-function M.mission(w, h, n, active, top)
-    w, h, top = math.max(1, w), math.max(1, h), top or 0
-    n = math.max(1, tonumber(n) or 1)
-    local gap, strip_h = M.MISSION_GAP, M.MISSION_STRIP
-    local avail = w * 0.90
-    local cw = math.min(176, (avail - (n - 1) * gap) / n)
-    cw = math.max(cw, 52)
-    local total = n * cw + (n - 1) * gap
-    local sx = (w - total) / 2
-    local sy = top + 78
-    local cards = {}
-    for k = 1, n do cards[k] = { x = sx + (k - 1) * (cw + gap), y = sy, w = cw, h = strip_h } end
-    active = math.max(1, math.min(n, tonumber(active) or 1))
-    local ay = sy + strip_h + 26
-    local ah = math.max(180, h - ay - 44)
-    local aw = math.max(w * 0.50, math.min(w * 0.84, 1480))
-    local ax = (w - aw) / 2
-    cards[active] = { x = ax, y = ay, w = aw, h = ah }
-    return { cards = cards, active = cards[active], strip = { x = sx, y = sy, w = total, h = strip_h },
-             search_y = top + 38, gap = M.MISSION_CARD, pad = M.MISSION_PAD, header = M.MISSION_HEAD }
 end
 
 -- Privacy (D38): what the Overview may show of a window. `mode` is the setting
