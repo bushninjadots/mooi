@@ -1,16 +1,13 @@
 language 0.4
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
-import "ui/rim.plm" as rim
 
-// mooi's screen frame (D119): a band round the screen whose inner border is ONE line with the bar's.
-// It was drawn inside the bar's scene, which made every swell of the music redraw the whole bar (~20%
-// of a core), and its border only met the bar in one of the bar's layouts. Here it is a program of
-// its own, under the bar (level bottom): the band fills the screen's edge and the top band behind the
-// bar; its border runs down the sides, along the foot, and across the top under the bar — in notch
-// mode it leaves the top where each piece hangs, round the fillet, and the piece's own outline (the
-// bar's, drawn above) carries it round the foot and back up into the next fillet. The bar hands over
-// where its pieces are (bar-geo.json); the music comes from the bar's feed (shell/mooi-frame.luau).
+// mooi's screen frame (D119, D127): the chassis, after iNiR's iRiS frame. The band round the screen and
+// every piece of the bar are one body — melted together, one fill, one border, one shadow — so the bar
+// grows out of the frame instead of floating over it, in every mode (islands, full, notch). It is a
+// program of its own under the bar (level bottom): still it costs nothing, and only it moves with the
+// music. The bar hands over where its pieces are (bar-geo.json) and paints only what stands on them
+// while the frame is on; the music is the bar's feed, made into iNiR's level and wave by the logic.
 
 scene Frame {
     permissions {
@@ -252,7 +249,6 @@ scene Frame {
     fact bar_frame = 0           // the bar's outline: 0 a line (the only one that joins the frame)
     fact bar_rail = false
     fact frame_band = 6
-    fact frame_style = 0         // 0 swell · 1 crests · 2 pulse
     fact frame_reach = 18
     fact frame_edges = 0         // 0 all · 1 sides · 2 the ends
     fact frame_music = true
@@ -265,44 +261,54 @@ scene Frame {
     fact gr_x = 0
     fact gr_w = 0
 
-    // the music: the bar's feed, read by the logic at its own pace while the frame moves with it
-    fact fbass = 0
-    fact fhigh = 0
-    fact fbeat = 0
-    // the bar's border joining the frame (music.rim): ui/rim.plm's facts
-    fact rm0 = 0
-    fact rm1 = 0
-    fact rm2 = 0
-    fact rm3 = 0
-    fact rm4 = 0
-    fact rm5 = 0
-    fact rm6 = 0
-    fact rm7 = 0
-    fact rm8 = 0
-    fact rm9 = 0
-    fact rm10 = 0
-    fact rm11 = 0
-    fact rm12 = 0
-    fact rm13 = 0
-    fact rm14 = 0
-    fact rm15 = 0
-    fact rm_bass = 0
-    fact rm_high = 0
-    fact rm_beat = 0
-    fact rm_phase = 0
-    fact rm_gain = 1
-    fact rm_glow = 1
-    fact rm_on = 0
+    // the music (iNiR's IrisFramePulse): the level, fast up and slow down, and the wave's phase
+    fact flev = 0
+    fact fph = 0
+    // the bar's islands and its full panel (bar-geo.json), and which the bar is: 0 islands · 1 full · 2 notch
+    fact ix0 = 0
+    fact iw0 = 0
+    fact ix1 = 0
+    fact iw1 = 0
+    fact ix2 = 0
+    fact iw2 = 0
+    fact ix3 = 0
+    fact iw3 = 0
+    fact ix4 = 0
+    fact iw4 = 0
+    fact ix5 = 0
+    fact iw5 = 0
+    fact ix6 = 0
+    fact iw6 = 0
+    fact ix7 = 0
+    fact iw7 = 0
+    fact ix8 = 0
+    fact iw8 = 0
+    fact ix9 = 0
+    fact iw9 = 0
+    fact ix10 = 0
+    fact iw10 = 0
+    fact ix11 = 0
+    fact iw11 = 0
+    fact ix12 = 0
+    fact iw12 = 0
+    fact ix13 = 0
+    fact iw13 = 0
+    fact ix14 = 0
+    fact iw14 = 0
+    fact ix15 = 0
+    fact iw15 = 0
+    fact gp_x = 0
+    fact gp_w = 0
+    fact bar_mode = 0
+    fact st_opacity = 1
+    fact st_sh_y = 4
+    fact st_sh_blur = 14
+    fact st_sh_a = 0.35
+    fact st_frost = 0
+    fact st_smoke = 0
 
     // ── Motion ──
-    spring fr.level = 1200, 60      // the music's levels glide
     spring fr.flow = 640, 46        // the pieces move as the bar's do (its fl.flow)
-    prop flvl = 0 ~fr.level
-    follow flvl = if(frame_music, fbass, 0)
-    prop fhi = 0 ~fr.level
-    follow fhi = if(frame_music, fhigh, 0)
-    prop fbt = 0 ~fr.level
-    follow fbt = if(frame_music, fbeat, 0)
     prop plx = 0 ~fr.flow
     follow plx = gl_x
     prop plw = 0 ~fr.flow
@@ -321,120 +327,349 @@ scene Frame {
         anchor: top
         level: bottom
         reserve: -1
-        // the music it follows changes 30 times a second; drawing it 60 times a second only cost
-        // more (11% of a core measured at 60, the work itself is ~1.5 ms a frame)
+        // still, it costs nothing; with the music it moves at the feed's pace
         rate: 30
 
         let W = frame.width
         let H = frame.height
 
-        // ── How thick the band is, now: the music swells it ──
-        // swell rides the bass, crests the treble, pulse widens on the beat over the bass
-        let famp = pick(frame_style, flvl, fhi, 0.45 * flvl + 0.9 * fbt) * frame_reach * 1.6
-        let aside = if(frame_edges != 2, famp, 0)
-        let aflat = if(frame_edges != 1, famp, 0)
-        let bt = frame_band + aflat * pick(frame_style, 0.6, 0.15, 0.45)     // the foot
-        let bs = frame_band + aside * 0.6                                     // the sides
-        // the top: in notch mode a band like the foot, the pieces hanging through it; in the other
-        // modes the bar lives inside it and its inner line is the bar row's own foot, so a full
-        // panel's bottom border and the frame's top line are one line (and islands stand on it)
-        let yT = if(st_notch, bt, fl.top + fl.mod_h + (bt - frame_band))
-        let frr = clamp(st_frame_r, 0, 40)
+        // ── The chassis (D127): iNiR's iRiS frame, in pleamar ──
+        // Everything on the screen's edge is one body: the band round the screen and every piece of
+        // the bar, melted together (pleamar's `blend` is the smooth union iNiR's shader computes), so
+        // the bar grows out of the frame with a fillet on each side instead of floating over it. One
+        // fill, one border round the whole silhouette, one shadow. The bar paints only what sits on
+        // its plates while the frame is on (shell/mooi.plm), so nothing is drawn twice.
+        //
+        // The music (iNiR's IrisFramePulse, exactly): the band's inner edge is pushed in by
+        // level × reach, varying along the edge as 0.60 + 0.24·sin(y·0.011 + t) + 0.16·sin(y·0.027 − 1.4t)
+        // (x·0.009 − t and x·0.023 + 1.2t along the top and foot). The level and the phase `t` come
+        // from the logic (shell/mooi-frame.luau); sin here takes degrees, hence the factors.
+        let bs = frame_band                                        // the sides
+        let bb = frame_band                                        // the foot
+        let bt = frame_band                                        // the top
+        let frr = clamp(st_frame_r, 0, 40)                         // the inner corners
+        let reach = frame_reach * 1.6
+        let wl = if(frame_edges != 2, flev * reach, 0)             // sides (all, sides)
+        let wt = if(frame_edges != 1, flev * reach, 0)             // top and foot (all, ends)
+        let wa = fph * 57.29578
+        let wb = fph * 80.21409
+        let wc = fph * 68.75494
+        let kf = 12                                                // the fillet where a piece meets the band
 
-        // ── The bar's pieces (notch mode), as the bar draws them (shell/mooi.plm, n_pad n_r n_f) ──
-        let full_w = st_width > 0.995
+        // the bar's row, as the bar lays it out (theme/ferrolume.plm)
+        let row_b = fl.top + fl.mod_h                              // an island's foot, the full panel's
         let n_pad = 10
         let n_r = st_radius + 4
-        let n_f = 10
-        let n_b = st_res                       // a piece's foot, with the frame on
-        let Lp = st_notch and plw > 1
-        let Cp = st_notch and pcw > 1
-        let Rp = st_notch and prw > 1
-        let Lf = Lp and full_w                 // flush in the corner: the side line meets its foot
-        let Rf = Rp and full_w
-        // where each piece's sides are; a piece that is not there is a point on the top line, so
-        // the runs either side of it simply meet
-        let la = if(Lp, if(full_w, frame_band, plx - n_pad), bs + frr)
-        let le = if(Lp, plx + plw + n_pad, bs + frr)
-        let ra = if(Rp, prx - n_pad, W - bs - frr)
-        let re = if(Rp, if(full_w, W - frame_band, prx + prw + n_pad), W - bs - frr)
-        let ca = if(Cp, pcx - n_pad, (le + ra) / 2)
-        let ce = if(Cp, pcx + pcw + n_pad, (le + ra) / 2)
-        let fl_ = if(Lp, n_f, 0)
-        let fc_ = if(Cp, n_f, 0)
-        let fr_ = if(Rp, n_f, 0)
+        let n_b = st_res                                           // a notch piece's foot
 
-        // ── The material ──
+        // the material: the bar's own, so the bar and the frame are one thing
         let mech = bar_surface > 3.5
         let fcol = mix(mix(fl.hull, fl.ground, bar_ground < 0.5), fl.steel_900, mech)
-        // glass and frosted bars: the band takes their translucency (a band a few pixels wide shows
-        // no refraction, and glass behind the whole edge cost a third of a frame)
-        let fthin = if(bar_surface > 0.5 and bar_surface < 3.5, 0.72, 1)
-        // the one border colour: the bar's own outline colour, so the joint cannot change colour
         let fnec = mix(mix(mix(fl.trace, fl.trace_lit, clamp(st_ocol, 0, 1)), fl.phos_fill, clamp(st_ocol - 1, 0, 1)), fl.steel_300, mech)
-        let neon = st_frame_edge > 0.5 and st_frame_edge < 1.5
+        let glassy = bar_surface > 0.5 and bar_surface < 2.5
 
-        // ── The band ──
         group {
-            opacity: st_frame_op * fthin
-            box { from: 0, 0; size: W, yT; color: fcol }                       // the top band
-            box { from: 0, H - bt; size: W, bt; color: fcol }                  // the foot
-            box { from: 0, 0; size: bs, H; color: fcol }                       // the sides
-            box { from: W - bs, 0; size: bs, H; color: fcol }
-            // the inner corners, concave: the foot's two always, the top's where no piece is flush
-            path { color: fcol; move bs, H - bt; line bs, H - bt - frr; curve bs + frr, H - bt via bs, H - bt; close }
-            path { color: fcol; move W - bs, H - bt; line W - bs - frr, H - bt; curve W - bs, H - bt - frr via W - bs, H - bt; close }
-            path { color: fcol; show: not Lf; move bs, yT; line bs + frr, yT; curve bs, yT + frr via bs, yT; close }
-            path { color: fcol; show: not Rf; move W - bs, yT; line W - bs, yT + frr; curve W - bs - frr, yT via W - bs, yT; close }
-            // where a piece leaves the top band: a fillet each side, as the bar's own pieces have
-            path { color: fcol; show: Lp and not Lf; move la, yT; line la - n_f, yT; curve la, yT + n_f via la, yT; close }
-            path { color: fcol; show: Lp; move le, yT; line le, yT + n_f; curve le + n_f, yT via le, yT; close }
-            path { color: fcol; show: Cp; move ca, yT; line ca - n_f, yT; curve ca, yT + n_f via ca, yT; close }
-            path { color: fcol; show: Cp; move ce, yT; line ce, yT + n_f; curve ce + n_f, yT via ce, yT; close }
-            path { color: fcol; show: Rp; move ra, yT; line ra - n_f, yT; curve ra, yT + n_f via ra, yT; close }
-            path { color: fcol; show: Rp and not Rf; move re, yT; line re, yT + n_f; curve re + n_f, yT via re, yT; close }
+            glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
+            body {
+                color: fcol
+                opacity: max(st_opacity, 0.3) * if(bar_surface > 2.5 and not mech, 0, 1)
+                glass: if(glassy, 100%, 0%)
+                lens: false
+                frost: 1% * st_frost
+                smoke: 1% * st_smoke
+                shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                // the band: the top, then each side and the foot melted into it (the inner corners)
+                path { move -40, -40
+                   line W * 0.000, bt + wt * (0.6 + 0.24 * sin(W * 0.000 * 0.515662 - wa) + 0.16 * sin(W * 0.000 * 1.317803 + wc))
+                   line W * 0.025, bt + wt * (0.6 + 0.24 * sin(W * 0.025 * 0.515662 - wa) + 0.16 * sin(W * 0.025 * 1.317803 + wc))
+                   line W * 0.050, bt + wt * (0.6 + 0.24 * sin(W * 0.050 * 0.515662 - wa) + 0.16 * sin(W * 0.050 * 1.317803 + wc))
+                   line W * 0.075, bt + wt * (0.6 + 0.24 * sin(W * 0.075 * 0.515662 - wa) + 0.16 * sin(W * 0.075 * 1.317803 + wc))
+                   line W * 0.100, bt + wt * (0.6 + 0.24 * sin(W * 0.100 * 0.515662 - wa) + 0.16 * sin(W * 0.100 * 1.317803 + wc))
+                   line W * 0.125, bt + wt * (0.6 + 0.24 * sin(W * 0.125 * 0.515662 - wa) + 0.16 * sin(W * 0.125 * 1.317803 + wc))
+                   line W * 0.150, bt + wt * (0.6 + 0.24 * sin(W * 0.150 * 0.515662 - wa) + 0.16 * sin(W * 0.150 * 1.317803 + wc))
+                   line W * 0.175, bt + wt * (0.6 + 0.24 * sin(W * 0.175 * 0.515662 - wa) + 0.16 * sin(W * 0.175 * 1.317803 + wc))
+                   line W * 0.200, bt + wt * (0.6 + 0.24 * sin(W * 0.200 * 0.515662 - wa) + 0.16 * sin(W * 0.200 * 1.317803 + wc))
+                   line W * 0.225, bt + wt * (0.6 + 0.24 * sin(W * 0.225 * 0.515662 - wa) + 0.16 * sin(W * 0.225 * 1.317803 + wc))
+                   line W * 0.250, bt + wt * (0.6 + 0.24 * sin(W * 0.250 * 0.515662 - wa) + 0.16 * sin(W * 0.250 * 1.317803 + wc))
+                   line W * 0.275, bt + wt * (0.6 + 0.24 * sin(W * 0.275 * 0.515662 - wa) + 0.16 * sin(W * 0.275 * 1.317803 + wc))
+                   line W * 0.300, bt + wt * (0.6 + 0.24 * sin(W * 0.300 * 0.515662 - wa) + 0.16 * sin(W * 0.300 * 1.317803 + wc))
+                   line W * 0.325, bt + wt * (0.6 + 0.24 * sin(W * 0.325 * 0.515662 - wa) + 0.16 * sin(W * 0.325 * 1.317803 + wc))
+                   line W * 0.350, bt + wt * (0.6 + 0.24 * sin(W * 0.350 * 0.515662 - wa) + 0.16 * sin(W * 0.350 * 1.317803 + wc))
+                   line W * 0.375, bt + wt * (0.6 + 0.24 * sin(W * 0.375 * 0.515662 - wa) + 0.16 * sin(W * 0.375 * 1.317803 + wc))
+                   line W * 0.400, bt + wt * (0.6 + 0.24 * sin(W * 0.400 * 0.515662 - wa) + 0.16 * sin(W * 0.400 * 1.317803 + wc))
+                   line W * 0.425, bt + wt * (0.6 + 0.24 * sin(W * 0.425 * 0.515662 - wa) + 0.16 * sin(W * 0.425 * 1.317803 + wc))
+                   line W * 0.450, bt + wt * (0.6 + 0.24 * sin(W * 0.450 * 0.515662 - wa) + 0.16 * sin(W * 0.450 * 1.317803 + wc))
+                   line W * 0.475, bt + wt * (0.6 + 0.24 * sin(W * 0.475 * 0.515662 - wa) + 0.16 * sin(W * 0.475 * 1.317803 + wc))
+                   line W * 0.500, bt + wt * (0.6 + 0.24 * sin(W * 0.500 * 0.515662 - wa) + 0.16 * sin(W * 0.500 * 1.317803 + wc))
+                   line W * 0.525, bt + wt * (0.6 + 0.24 * sin(W * 0.525 * 0.515662 - wa) + 0.16 * sin(W * 0.525 * 1.317803 + wc))
+                   line W * 0.550, bt + wt * (0.6 + 0.24 * sin(W * 0.550 * 0.515662 - wa) + 0.16 * sin(W * 0.550 * 1.317803 + wc))
+                   line W * 0.575, bt + wt * (0.6 + 0.24 * sin(W * 0.575 * 0.515662 - wa) + 0.16 * sin(W * 0.575 * 1.317803 + wc))
+                   line W * 0.600, bt + wt * (0.6 + 0.24 * sin(W * 0.600 * 0.515662 - wa) + 0.16 * sin(W * 0.600 * 1.317803 + wc))
+                   line W * 0.625, bt + wt * (0.6 + 0.24 * sin(W * 0.625 * 0.515662 - wa) + 0.16 * sin(W * 0.625 * 1.317803 + wc))
+                   line W * 0.650, bt + wt * (0.6 + 0.24 * sin(W * 0.650 * 0.515662 - wa) + 0.16 * sin(W * 0.650 * 1.317803 + wc))
+                   line W * 0.675, bt + wt * (0.6 + 0.24 * sin(W * 0.675 * 0.515662 - wa) + 0.16 * sin(W * 0.675 * 1.317803 + wc))
+                   line W * 0.700, bt + wt * (0.6 + 0.24 * sin(W * 0.700 * 0.515662 - wa) + 0.16 * sin(W * 0.700 * 1.317803 + wc))
+                   line W * 0.725, bt + wt * (0.6 + 0.24 * sin(W * 0.725 * 0.515662 - wa) + 0.16 * sin(W * 0.725 * 1.317803 + wc))
+                   line W * 0.750, bt + wt * (0.6 + 0.24 * sin(W * 0.750 * 0.515662 - wa) + 0.16 * sin(W * 0.750 * 1.317803 + wc))
+                   line W * 0.775, bt + wt * (0.6 + 0.24 * sin(W * 0.775 * 0.515662 - wa) + 0.16 * sin(W * 0.775 * 1.317803 + wc))
+                   line W * 0.800, bt + wt * (0.6 + 0.24 * sin(W * 0.800 * 0.515662 - wa) + 0.16 * sin(W * 0.800 * 1.317803 + wc))
+                   line W * 0.825, bt + wt * (0.6 + 0.24 * sin(W * 0.825 * 0.515662 - wa) + 0.16 * sin(W * 0.825 * 1.317803 + wc))
+                   line W * 0.850, bt + wt * (0.6 + 0.24 * sin(W * 0.850 * 0.515662 - wa) + 0.16 * sin(W * 0.850 * 1.317803 + wc))
+                   line W * 0.875, bt + wt * (0.6 + 0.24 * sin(W * 0.875 * 0.515662 - wa) + 0.16 * sin(W * 0.875 * 1.317803 + wc))
+                   line W * 0.900, bt + wt * (0.6 + 0.24 * sin(W * 0.900 * 0.515662 - wa) + 0.16 * sin(W * 0.900 * 1.317803 + wc))
+                   line W * 0.925, bt + wt * (0.6 + 0.24 * sin(W * 0.925 * 0.515662 - wa) + 0.16 * sin(W * 0.925 * 1.317803 + wc))
+                   line W * 0.950, bt + wt * (0.6 + 0.24 * sin(W * 0.950 * 0.515662 - wa) + 0.16 * sin(W * 0.950 * 1.317803 + wc))
+                   line W * 0.975, bt + wt * (0.6 + 0.24 * sin(W * 0.975 * 0.515662 - wa) + 0.16 * sin(W * 0.975 * 1.317803 + wc))
+                   line W * 1.000, bt + wt * (0.6 + 0.24 * sin(W * 1.000 * 0.515662 - wa) + 0.16 * sin(W * 1.000 * 1.317803 + wc))
+                   line W + 40, -40; close }
+                path { blend: frr
+                       move -40, -40
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.000 * 0.630254 + wa) + 0.16 * sin(H * 0.000 * 1.546986 - wb)), H * 0.000
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.025 * 0.630254 + wa) + 0.16 * sin(H * 0.025 * 1.546986 - wb)), H * 0.025
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.050 * 0.630254 + wa) + 0.16 * sin(H * 0.050 * 1.546986 - wb)), H * 0.050
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.075 * 0.630254 + wa) + 0.16 * sin(H * 0.075 * 1.546986 - wb)), H * 0.075
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.100 * 0.630254 + wa) + 0.16 * sin(H * 0.100 * 1.546986 - wb)), H * 0.100
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.125 * 0.630254 + wa) + 0.16 * sin(H * 0.125 * 1.546986 - wb)), H * 0.125
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.150 * 0.630254 + wa) + 0.16 * sin(H * 0.150 * 1.546986 - wb)), H * 0.150
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.175 * 0.630254 + wa) + 0.16 * sin(H * 0.175 * 1.546986 - wb)), H * 0.175
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.200 * 0.630254 + wa) + 0.16 * sin(H * 0.200 * 1.546986 - wb)), H * 0.200
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.225 * 0.630254 + wa) + 0.16 * sin(H * 0.225 * 1.546986 - wb)), H * 0.225
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.250 * 0.630254 + wa) + 0.16 * sin(H * 0.250 * 1.546986 - wb)), H * 0.250
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.275 * 0.630254 + wa) + 0.16 * sin(H * 0.275 * 1.546986 - wb)), H * 0.275
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.300 * 0.630254 + wa) + 0.16 * sin(H * 0.300 * 1.546986 - wb)), H * 0.300
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.325 * 0.630254 + wa) + 0.16 * sin(H * 0.325 * 1.546986 - wb)), H * 0.325
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.350 * 0.630254 + wa) + 0.16 * sin(H * 0.350 * 1.546986 - wb)), H * 0.350
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.375 * 0.630254 + wa) + 0.16 * sin(H * 0.375 * 1.546986 - wb)), H * 0.375
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.400 * 0.630254 + wa) + 0.16 * sin(H * 0.400 * 1.546986 - wb)), H * 0.400
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.425 * 0.630254 + wa) + 0.16 * sin(H * 0.425 * 1.546986 - wb)), H * 0.425
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.450 * 0.630254 + wa) + 0.16 * sin(H * 0.450 * 1.546986 - wb)), H * 0.450
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.475 * 0.630254 + wa) + 0.16 * sin(H * 0.475 * 1.546986 - wb)), H * 0.475
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.500 * 0.630254 + wa) + 0.16 * sin(H * 0.500 * 1.546986 - wb)), H * 0.500
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.525 * 0.630254 + wa) + 0.16 * sin(H * 0.525 * 1.546986 - wb)), H * 0.525
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.550 * 0.630254 + wa) + 0.16 * sin(H * 0.550 * 1.546986 - wb)), H * 0.550
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.575 * 0.630254 + wa) + 0.16 * sin(H * 0.575 * 1.546986 - wb)), H * 0.575
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.600 * 0.630254 + wa) + 0.16 * sin(H * 0.600 * 1.546986 - wb)), H * 0.600
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.625 * 0.630254 + wa) + 0.16 * sin(H * 0.625 * 1.546986 - wb)), H * 0.625
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.650 * 0.630254 + wa) + 0.16 * sin(H * 0.650 * 1.546986 - wb)), H * 0.650
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.675 * 0.630254 + wa) + 0.16 * sin(H * 0.675 * 1.546986 - wb)), H * 0.675
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.700 * 0.630254 + wa) + 0.16 * sin(H * 0.700 * 1.546986 - wb)), H * 0.700
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.725 * 0.630254 + wa) + 0.16 * sin(H * 0.725 * 1.546986 - wb)), H * 0.725
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.750 * 0.630254 + wa) + 0.16 * sin(H * 0.750 * 1.546986 - wb)), H * 0.750
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.775 * 0.630254 + wa) + 0.16 * sin(H * 0.775 * 1.546986 - wb)), H * 0.775
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.800 * 0.630254 + wa) + 0.16 * sin(H * 0.800 * 1.546986 - wb)), H * 0.800
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.825 * 0.630254 + wa) + 0.16 * sin(H * 0.825 * 1.546986 - wb)), H * 0.825
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.850 * 0.630254 + wa) + 0.16 * sin(H * 0.850 * 1.546986 - wb)), H * 0.850
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.875 * 0.630254 + wa) + 0.16 * sin(H * 0.875 * 1.546986 - wb)), H * 0.875
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.900 * 0.630254 + wa) + 0.16 * sin(H * 0.900 * 1.546986 - wb)), H * 0.900
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.925 * 0.630254 + wa) + 0.16 * sin(H * 0.925 * 1.546986 - wb)), H * 0.925
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.950 * 0.630254 + wa) + 0.16 * sin(H * 0.950 * 1.546986 - wb)), H * 0.950
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.975 * 0.630254 + wa) + 0.16 * sin(H * 0.975 * 1.546986 - wb)), H * 0.975
+                   line bs + wl * (0.6 + 0.24 * sin(H * 1.000 * 0.630254 + wa) + 0.16 * sin(H * 1.000 * 1.546986 - wb)), H * 1.000
+                   line -40, H + 40; close }
+                path { blend: frr
+                       move W + 40, -40
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.000 * 0.630254 + wa) + 0.16 * sin(H * 0.000 * 1.546986 - wb)), H * 0.000
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.025 * 0.630254 + wa) + 0.16 * sin(H * 0.025 * 1.546986 - wb)), H * 0.025
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.050 * 0.630254 + wa) + 0.16 * sin(H * 0.050 * 1.546986 - wb)), H * 0.050
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.075 * 0.630254 + wa) + 0.16 * sin(H * 0.075 * 1.546986 - wb)), H * 0.075
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.100 * 0.630254 + wa) + 0.16 * sin(H * 0.100 * 1.546986 - wb)), H * 0.100
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.125 * 0.630254 + wa) + 0.16 * sin(H * 0.125 * 1.546986 - wb)), H * 0.125
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.150 * 0.630254 + wa) + 0.16 * sin(H * 0.150 * 1.546986 - wb)), H * 0.150
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.175 * 0.630254 + wa) + 0.16 * sin(H * 0.175 * 1.546986 - wb)), H * 0.175
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.200 * 0.630254 + wa) + 0.16 * sin(H * 0.200 * 1.546986 - wb)), H * 0.200
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.225 * 0.630254 + wa) + 0.16 * sin(H * 0.225 * 1.546986 - wb)), H * 0.225
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.250 * 0.630254 + wa) + 0.16 * sin(H * 0.250 * 1.546986 - wb)), H * 0.250
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.275 * 0.630254 + wa) + 0.16 * sin(H * 0.275 * 1.546986 - wb)), H * 0.275
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.300 * 0.630254 + wa) + 0.16 * sin(H * 0.300 * 1.546986 - wb)), H * 0.300
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.325 * 0.630254 + wa) + 0.16 * sin(H * 0.325 * 1.546986 - wb)), H * 0.325
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.350 * 0.630254 + wa) + 0.16 * sin(H * 0.350 * 1.546986 - wb)), H * 0.350
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.375 * 0.630254 + wa) + 0.16 * sin(H * 0.375 * 1.546986 - wb)), H * 0.375
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.400 * 0.630254 + wa) + 0.16 * sin(H * 0.400 * 1.546986 - wb)), H * 0.400
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.425 * 0.630254 + wa) + 0.16 * sin(H * 0.425 * 1.546986 - wb)), H * 0.425
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.450 * 0.630254 + wa) + 0.16 * sin(H * 0.450 * 1.546986 - wb)), H * 0.450
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.475 * 0.630254 + wa) + 0.16 * sin(H * 0.475 * 1.546986 - wb)), H * 0.475
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.500 * 0.630254 + wa) + 0.16 * sin(H * 0.500 * 1.546986 - wb)), H * 0.500
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.525 * 0.630254 + wa) + 0.16 * sin(H * 0.525 * 1.546986 - wb)), H * 0.525
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.550 * 0.630254 + wa) + 0.16 * sin(H * 0.550 * 1.546986 - wb)), H * 0.550
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.575 * 0.630254 + wa) + 0.16 * sin(H * 0.575 * 1.546986 - wb)), H * 0.575
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.600 * 0.630254 + wa) + 0.16 * sin(H * 0.600 * 1.546986 - wb)), H * 0.600
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.625 * 0.630254 + wa) + 0.16 * sin(H * 0.625 * 1.546986 - wb)), H * 0.625
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.650 * 0.630254 + wa) + 0.16 * sin(H * 0.650 * 1.546986 - wb)), H * 0.650
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.675 * 0.630254 + wa) + 0.16 * sin(H * 0.675 * 1.546986 - wb)), H * 0.675
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.700 * 0.630254 + wa) + 0.16 * sin(H * 0.700 * 1.546986 - wb)), H * 0.700
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.725 * 0.630254 + wa) + 0.16 * sin(H * 0.725 * 1.546986 - wb)), H * 0.725
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.750 * 0.630254 + wa) + 0.16 * sin(H * 0.750 * 1.546986 - wb)), H * 0.750
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.775 * 0.630254 + wa) + 0.16 * sin(H * 0.775 * 1.546986 - wb)), H * 0.775
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.800 * 0.630254 + wa) + 0.16 * sin(H * 0.800 * 1.546986 - wb)), H * 0.800
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.825 * 0.630254 + wa) + 0.16 * sin(H * 0.825 * 1.546986 - wb)), H * 0.825
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.850 * 0.630254 + wa) + 0.16 * sin(H * 0.850 * 1.546986 - wb)), H * 0.850
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.875 * 0.630254 + wa) + 0.16 * sin(H * 0.875 * 1.546986 - wb)), H * 0.875
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.900 * 0.630254 + wa) + 0.16 * sin(H * 0.900 * 1.546986 - wb)), H * 0.900
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.925 * 0.630254 + wa) + 0.16 * sin(H * 0.925 * 1.546986 - wb)), H * 0.925
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.950 * 0.630254 + wa) + 0.16 * sin(H * 0.950 * 1.546986 - wb)), H * 0.950
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.975 * 0.630254 + wa) + 0.16 * sin(H * 0.975 * 1.546986 - wb)), H * 0.975
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 1.000 * 0.630254 + wa) + 0.16 * sin(H * 1.000 * 1.546986 - wb)), H * 1.000
+                   line W + 40, H + 40; close }
+                path { blend: frr
+                       move -40, H + 40
+                   line W * 0.000, H - bb - wt * (0.6 + 0.24 * sin(W * 0.000 * 0.515662 - wa) + 0.16 * sin(W * 0.000 * 1.317803 + wc))
+                   line W * 0.025, H - bb - wt * (0.6 + 0.24 * sin(W * 0.025 * 0.515662 - wa) + 0.16 * sin(W * 0.025 * 1.317803 + wc))
+                   line W * 0.050, H - bb - wt * (0.6 + 0.24 * sin(W * 0.050 * 0.515662 - wa) + 0.16 * sin(W * 0.050 * 1.317803 + wc))
+                   line W * 0.075, H - bb - wt * (0.6 + 0.24 * sin(W * 0.075 * 0.515662 - wa) + 0.16 * sin(W * 0.075 * 1.317803 + wc))
+                   line W * 0.100, H - bb - wt * (0.6 + 0.24 * sin(W * 0.100 * 0.515662 - wa) + 0.16 * sin(W * 0.100 * 1.317803 + wc))
+                   line W * 0.125, H - bb - wt * (0.6 + 0.24 * sin(W * 0.125 * 0.515662 - wa) + 0.16 * sin(W * 0.125 * 1.317803 + wc))
+                   line W * 0.150, H - bb - wt * (0.6 + 0.24 * sin(W * 0.150 * 0.515662 - wa) + 0.16 * sin(W * 0.150 * 1.317803 + wc))
+                   line W * 0.175, H - bb - wt * (0.6 + 0.24 * sin(W * 0.175 * 0.515662 - wa) + 0.16 * sin(W * 0.175 * 1.317803 + wc))
+                   line W * 0.200, H - bb - wt * (0.6 + 0.24 * sin(W * 0.200 * 0.515662 - wa) + 0.16 * sin(W * 0.200 * 1.317803 + wc))
+                   line W * 0.225, H - bb - wt * (0.6 + 0.24 * sin(W * 0.225 * 0.515662 - wa) + 0.16 * sin(W * 0.225 * 1.317803 + wc))
+                   line W * 0.250, H - bb - wt * (0.6 + 0.24 * sin(W * 0.250 * 0.515662 - wa) + 0.16 * sin(W * 0.250 * 1.317803 + wc))
+                   line W * 0.275, H - bb - wt * (0.6 + 0.24 * sin(W * 0.275 * 0.515662 - wa) + 0.16 * sin(W * 0.275 * 1.317803 + wc))
+                   line W * 0.300, H - bb - wt * (0.6 + 0.24 * sin(W * 0.300 * 0.515662 - wa) + 0.16 * sin(W * 0.300 * 1.317803 + wc))
+                   line W * 0.325, H - bb - wt * (0.6 + 0.24 * sin(W * 0.325 * 0.515662 - wa) + 0.16 * sin(W * 0.325 * 1.317803 + wc))
+                   line W * 0.350, H - bb - wt * (0.6 + 0.24 * sin(W * 0.350 * 0.515662 - wa) + 0.16 * sin(W * 0.350 * 1.317803 + wc))
+                   line W * 0.375, H - bb - wt * (0.6 + 0.24 * sin(W * 0.375 * 0.515662 - wa) + 0.16 * sin(W * 0.375 * 1.317803 + wc))
+                   line W * 0.400, H - bb - wt * (0.6 + 0.24 * sin(W * 0.400 * 0.515662 - wa) + 0.16 * sin(W * 0.400 * 1.317803 + wc))
+                   line W * 0.425, H - bb - wt * (0.6 + 0.24 * sin(W * 0.425 * 0.515662 - wa) + 0.16 * sin(W * 0.425 * 1.317803 + wc))
+                   line W * 0.450, H - bb - wt * (0.6 + 0.24 * sin(W * 0.450 * 0.515662 - wa) + 0.16 * sin(W * 0.450 * 1.317803 + wc))
+                   line W * 0.475, H - bb - wt * (0.6 + 0.24 * sin(W * 0.475 * 0.515662 - wa) + 0.16 * sin(W * 0.475 * 1.317803 + wc))
+                   line W * 0.500, H - bb - wt * (0.6 + 0.24 * sin(W * 0.500 * 0.515662 - wa) + 0.16 * sin(W * 0.500 * 1.317803 + wc))
+                   line W * 0.525, H - bb - wt * (0.6 + 0.24 * sin(W * 0.525 * 0.515662 - wa) + 0.16 * sin(W * 0.525 * 1.317803 + wc))
+                   line W * 0.550, H - bb - wt * (0.6 + 0.24 * sin(W * 0.550 * 0.515662 - wa) + 0.16 * sin(W * 0.550 * 1.317803 + wc))
+                   line W * 0.575, H - bb - wt * (0.6 + 0.24 * sin(W * 0.575 * 0.515662 - wa) + 0.16 * sin(W * 0.575 * 1.317803 + wc))
+                   line W * 0.600, H - bb - wt * (0.6 + 0.24 * sin(W * 0.600 * 0.515662 - wa) + 0.16 * sin(W * 0.600 * 1.317803 + wc))
+                   line W * 0.625, H - bb - wt * (0.6 + 0.24 * sin(W * 0.625 * 0.515662 - wa) + 0.16 * sin(W * 0.625 * 1.317803 + wc))
+                   line W * 0.650, H - bb - wt * (0.6 + 0.24 * sin(W * 0.650 * 0.515662 - wa) + 0.16 * sin(W * 0.650 * 1.317803 + wc))
+                   line W * 0.675, H - bb - wt * (0.6 + 0.24 * sin(W * 0.675 * 0.515662 - wa) + 0.16 * sin(W * 0.675 * 1.317803 + wc))
+                   line W * 0.700, H - bb - wt * (0.6 + 0.24 * sin(W * 0.700 * 0.515662 - wa) + 0.16 * sin(W * 0.700 * 1.317803 + wc))
+                   line W * 0.725, H - bb - wt * (0.6 + 0.24 * sin(W * 0.725 * 0.515662 - wa) + 0.16 * sin(W * 0.725 * 1.317803 + wc))
+                   line W * 0.750, H - bb - wt * (0.6 + 0.24 * sin(W * 0.750 * 0.515662 - wa) + 0.16 * sin(W * 0.750 * 1.317803 + wc))
+                   line W * 0.775, H - bb - wt * (0.6 + 0.24 * sin(W * 0.775 * 0.515662 - wa) + 0.16 * sin(W * 0.775 * 1.317803 + wc))
+                   line W * 0.800, H - bb - wt * (0.6 + 0.24 * sin(W * 0.800 * 0.515662 - wa) + 0.16 * sin(W * 0.800 * 1.317803 + wc))
+                   line W * 0.825, H - bb - wt * (0.6 + 0.24 * sin(W * 0.825 * 0.515662 - wa) + 0.16 * sin(W * 0.825 * 1.317803 + wc))
+                   line W * 0.850, H - bb - wt * (0.6 + 0.24 * sin(W * 0.850 * 0.515662 - wa) + 0.16 * sin(W * 0.850 * 1.317803 + wc))
+                   line W * 0.875, H - bb - wt * (0.6 + 0.24 * sin(W * 0.875 * 0.515662 - wa) + 0.16 * sin(W * 0.875 * 1.317803 + wc))
+                   line W * 0.900, H - bb - wt * (0.6 + 0.24 * sin(W * 0.900 * 0.515662 - wa) + 0.16 * sin(W * 0.900 * 1.317803 + wc))
+                   line W * 0.925, H - bb - wt * (0.6 + 0.24 * sin(W * 0.925 * 0.515662 - wa) + 0.16 * sin(W * 0.925 * 1.317803 + wc))
+                   line W * 0.950, H - bb - wt * (0.6 + 0.24 * sin(W * 0.950 * 0.515662 - wa) + 0.16 * sin(W * 0.950 * 1.317803 + wc))
+                   line W * 0.975, H - bb - wt * (0.6 + 0.24 * sin(W * 0.975 * 0.515662 - wa) + 0.16 * sin(W * 0.975 * 1.317803 + wc))
+                   line W * 1.000, H - bb - wt * (0.6 + 0.24 * sin(W * 1.000 * 0.515662 - wa) + 0.16 * sin(W * 1.000 * 1.317803 + wc))
+                   line W + 40, H + 40; close }
+                // the bar's pieces, each grown out of the band
+                // <gen:islands> sixteen slots (a `for` cannot stand inside a body); 0 wide when unused
+                box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 }
+                box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 }
+                box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 }
+                box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 }
+                box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 }
+                box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 }
+                box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 }
+                box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 }
+                box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 }
+                box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 }
+                box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 }
+                box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 }
+                box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 }
+                box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 }
+                box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 }
+                box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 }
+                // </gen:islands>
+                box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 }
+                box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 }
+                box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 }
+                box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 }
+            }
         }
 
-        // ── The border: one line with the bar's ──
-        // open strokes (a path holds 64 points, so the line is cut where it turns), each ending where
-        // the next begins; round caps hide every joint
+        // the etched light along the moving edge (iNiR's "etched", 35 %), only while it moves
         group {
-            show: st_frame_edge < 1.5
-            glow: 8, if(neon, 0.9, 0) * st_glow, fl.phos
-            // the left side and the left half of the foot; the right side and the right half
-            path { stroke: st_owidth; color: fnec
-                   move bs, if(Lf, n_b, yT + frr); line bs, H - bt - frr; curve bs + frr, H - bt via bs, H - bt; line W / 2, H - bt }
-            path { stroke: st_owidth; color: fnec
-                   move W / 2, H - bt; line W - bs - frr, H - bt; curve W - bs, H - bt - frr via W - bs, H - bt; line W - bs, if(Rf, n_b, yT + frr) }
-            // a flush corner piece: the side line turns along its foot (the bar draws the rest of it)
-            line { from: bs, n_b; to: la + 0.5, n_b; width: st_owidth; color: fnec; show: Lf and bs > la + 0.5 }
-            line { from: re - 0.5, n_b; to: W - bs, n_b; width: st_owidth; color: fnec; show: Rf and W - bs < re - 0.5 }
-            // the top: from the left corner (or the left piece) to the next piece, and so on
-            path { stroke: st_owidth; color: fnec; show: not Lf
-                   move bs, yT + frr; curve bs + frr, yT via bs, yT; line la - fl_, yT; curve la, yT + fl_ via la, yT }
-            path { stroke: st_owidth; color: fnec
-                   move le, yT + fl_; curve le + fl_, yT via le, yT; line ca - fc_, yT; curve ca, yT + fc_ via ca, yT }
-            path { stroke: st_owidth; color: fnec
-                   move ce, yT + fc_; curve ce + fc_, yT via ce, yT; line ra - fr_, yT; curve ra, yT + fr_ via ra, yT }
-            path { stroke: st_owidth; color: fnec; show: not Rf
-                   move re, yT + fr_; curve re + fr_, yT via re, yT; line W - bs - frr, yT; curve W - bs, yT + frr via W - bs, yT }
-        }
-
-        // ── The bar's border joining in (music.rim): it lifts where the bar meets the frame ──
-        // notch mode: off each piece's foot, into the desktop; the other modes: off the top line
-        // under the bar. The bars read the band at their place on the screen.
-        group {
-            show: rm_on > 0.5
-            group {
-                show: st_notch
-                rim.Edge(la + n_r, le - n_r, 0, W, n_b, 1, clamp(round((le - la - 2 * n_r) / 14), 6, 24), fcol, fl.phos, fnec, 10)
-                rim.Edge(ca + n_r, ce - n_r, 0, W, n_b, 1, clamp(round((ce - ca - 2 * n_r) / 14), 6, 24), fcol, fl.phos, fnec, 10)
-                rim.Edge(ra + n_r, re - n_r, 0, W, n_b, 1, clamp(round((re - ra - 2 * n_r) / 14), 6, 24), fcol, fl.phos, fnec, 10)
-            }
-            group {
-                show: not st_notch
-                rim.Edge(bs + frr, W - bs - frr, 0, W, yT, 1, 40, fcol, fl.phos, fnec, 10)
-            }
+            show: wl > 0.5
+            opacity: 0.35 * clamp(flev * 2, 0, 1)
+            glow: 5, 0.6 * st_glow, fg.primary
+            path { stroke: 1.4; color: fg.primary
+                   move bs + wl * (0.6 + 0.24 * sin(H * 0.000 * 0.630254 + wa) + 0.16 * sin(H * 0.000 * 1.546986 - wb)), H * 0.000
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.025 * 0.630254 + wa) + 0.16 * sin(H * 0.025 * 1.546986 - wb)), H * 0.025
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.050 * 0.630254 + wa) + 0.16 * sin(H * 0.050 * 1.546986 - wb)), H * 0.050
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.075 * 0.630254 + wa) + 0.16 * sin(H * 0.075 * 1.546986 - wb)), H * 0.075
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.100 * 0.630254 + wa) + 0.16 * sin(H * 0.100 * 1.546986 - wb)), H * 0.100
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.125 * 0.630254 + wa) + 0.16 * sin(H * 0.125 * 1.546986 - wb)), H * 0.125
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.150 * 0.630254 + wa) + 0.16 * sin(H * 0.150 * 1.546986 - wb)), H * 0.150
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.175 * 0.630254 + wa) + 0.16 * sin(H * 0.175 * 1.546986 - wb)), H * 0.175
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.200 * 0.630254 + wa) + 0.16 * sin(H * 0.200 * 1.546986 - wb)), H * 0.200
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.225 * 0.630254 + wa) + 0.16 * sin(H * 0.225 * 1.546986 - wb)), H * 0.225
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.250 * 0.630254 + wa) + 0.16 * sin(H * 0.250 * 1.546986 - wb)), H * 0.250
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.275 * 0.630254 + wa) + 0.16 * sin(H * 0.275 * 1.546986 - wb)), H * 0.275
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.300 * 0.630254 + wa) + 0.16 * sin(H * 0.300 * 1.546986 - wb)), H * 0.300
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.325 * 0.630254 + wa) + 0.16 * sin(H * 0.325 * 1.546986 - wb)), H * 0.325
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.350 * 0.630254 + wa) + 0.16 * sin(H * 0.350 * 1.546986 - wb)), H * 0.350
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.375 * 0.630254 + wa) + 0.16 * sin(H * 0.375 * 1.546986 - wb)), H * 0.375
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.400 * 0.630254 + wa) + 0.16 * sin(H * 0.400 * 1.546986 - wb)), H * 0.400
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.425 * 0.630254 + wa) + 0.16 * sin(H * 0.425 * 1.546986 - wb)), H * 0.425
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.450 * 0.630254 + wa) + 0.16 * sin(H * 0.450 * 1.546986 - wb)), H * 0.450
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.475 * 0.630254 + wa) + 0.16 * sin(H * 0.475 * 1.546986 - wb)), H * 0.475
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.500 * 0.630254 + wa) + 0.16 * sin(H * 0.500 * 1.546986 - wb)), H * 0.500
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.525 * 0.630254 + wa) + 0.16 * sin(H * 0.525 * 1.546986 - wb)), H * 0.525
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.550 * 0.630254 + wa) + 0.16 * sin(H * 0.550 * 1.546986 - wb)), H * 0.550
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.575 * 0.630254 + wa) + 0.16 * sin(H * 0.575 * 1.546986 - wb)), H * 0.575
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.600 * 0.630254 + wa) + 0.16 * sin(H * 0.600 * 1.546986 - wb)), H * 0.600
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.625 * 0.630254 + wa) + 0.16 * sin(H * 0.625 * 1.546986 - wb)), H * 0.625
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.650 * 0.630254 + wa) + 0.16 * sin(H * 0.650 * 1.546986 - wb)), H * 0.650
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.675 * 0.630254 + wa) + 0.16 * sin(H * 0.675 * 1.546986 - wb)), H * 0.675
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.700 * 0.630254 + wa) + 0.16 * sin(H * 0.700 * 1.546986 - wb)), H * 0.700
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.725 * 0.630254 + wa) + 0.16 * sin(H * 0.725 * 1.546986 - wb)), H * 0.725
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.750 * 0.630254 + wa) + 0.16 * sin(H * 0.750 * 1.546986 - wb)), H * 0.750
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.775 * 0.630254 + wa) + 0.16 * sin(H * 0.775 * 1.546986 - wb)), H * 0.775
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.800 * 0.630254 + wa) + 0.16 * sin(H * 0.800 * 1.546986 - wb)), H * 0.800
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.825 * 0.630254 + wa) + 0.16 * sin(H * 0.825 * 1.546986 - wb)), H * 0.825
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.850 * 0.630254 + wa) + 0.16 * sin(H * 0.850 * 1.546986 - wb)), H * 0.850
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.875 * 0.630254 + wa) + 0.16 * sin(H * 0.875 * 1.546986 - wb)), H * 0.875
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.900 * 0.630254 + wa) + 0.16 * sin(H * 0.900 * 1.546986 - wb)), H * 0.900
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.925 * 0.630254 + wa) + 0.16 * sin(H * 0.925 * 1.546986 - wb)), H * 0.925
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.950 * 0.630254 + wa) + 0.16 * sin(H * 0.950 * 1.546986 - wb)), H * 0.950
+                   line bs + wl * (0.6 + 0.24 * sin(H * 0.975 * 0.630254 + wa) + 0.16 * sin(H * 0.975 * 1.546986 - wb)), H * 0.975
+                   line bs + wl * (0.6 + 0.24 * sin(H * 1.000 * 0.630254 + wa) + 0.16 * sin(H * 1.000 * 1.546986 - wb)), H * 1.000 }
+            path { stroke: 1.4; color: fg.primary
+                   move W - bs - wl * (0.6 + 0.24 * sin(H * 0.000 * 0.630254 + wa) + 0.16 * sin(H * 0.000 * 1.546986 - wb)), H * 0.000
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.025 * 0.630254 + wa) + 0.16 * sin(H * 0.025 * 1.546986 - wb)), H * 0.025
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.050 * 0.630254 + wa) + 0.16 * sin(H * 0.050 * 1.546986 - wb)), H * 0.050
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.075 * 0.630254 + wa) + 0.16 * sin(H * 0.075 * 1.546986 - wb)), H * 0.075
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.100 * 0.630254 + wa) + 0.16 * sin(H * 0.100 * 1.546986 - wb)), H * 0.100
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.125 * 0.630254 + wa) + 0.16 * sin(H * 0.125 * 1.546986 - wb)), H * 0.125
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.150 * 0.630254 + wa) + 0.16 * sin(H * 0.150 * 1.546986 - wb)), H * 0.150
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.175 * 0.630254 + wa) + 0.16 * sin(H * 0.175 * 1.546986 - wb)), H * 0.175
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.200 * 0.630254 + wa) + 0.16 * sin(H * 0.200 * 1.546986 - wb)), H * 0.200
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.225 * 0.630254 + wa) + 0.16 * sin(H * 0.225 * 1.546986 - wb)), H * 0.225
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.250 * 0.630254 + wa) + 0.16 * sin(H * 0.250 * 1.546986 - wb)), H * 0.250
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.275 * 0.630254 + wa) + 0.16 * sin(H * 0.275 * 1.546986 - wb)), H * 0.275
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.300 * 0.630254 + wa) + 0.16 * sin(H * 0.300 * 1.546986 - wb)), H * 0.300
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.325 * 0.630254 + wa) + 0.16 * sin(H * 0.325 * 1.546986 - wb)), H * 0.325
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.350 * 0.630254 + wa) + 0.16 * sin(H * 0.350 * 1.546986 - wb)), H * 0.350
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.375 * 0.630254 + wa) + 0.16 * sin(H * 0.375 * 1.546986 - wb)), H * 0.375
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.400 * 0.630254 + wa) + 0.16 * sin(H * 0.400 * 1.546986 - wb)), H * 0.400
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.425 * 0.630254 + wa) + 0.16 * sin(H * 0.425 * 1.546986 - wb)), H * 0.425
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.450 * 0.630254 + wa) + 0.16 * sin(H * 0.450 * 1.546986 - wb)), H * 0.450
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.475 * 0.630254 + wa) + 0.16 * sin(H * 0.475 * 1.546986 - wb)), H * 0.475
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.500 * 0.630254 + wa) + 0.16 * sin(H * 0.500 * 1.546986 - wb)), H * 0.500
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.525 * 0.630254 + wa) + 0.16 * sin(H * 0.525 * 1.546986 - wb)), H * 0.525
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.550 * 0.630254 + wa) + 0.16 * sin(H * 0.550 * 1.546986 - wb)), H * 0.550
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.575 * 0.630254 + wa) + 0.16 * sin(H * 0.575 * 1.546986 - wb)), H * 0.575
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.600 * 0.630254 + wa) + 0.16 * sin(H * 0.600 * 1.546986 - wb)), H * 0.600
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.625 * 0.630254 + wa) + 0.16 * sin(H * 0.625 * 1.546986 - wb)), H * 0.625
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.650 * 0.630254 + wa) + 0.16 * sin(H * 0.650 * 1.546986 - wb)), H * 0.650
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.675 * 0.630254 + wa) + 0.16 * sin(H * 0.675 * 1.546986 - wb)), H * 0.675
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.700 * 0.630254 + wa) + 0.16 * sin(H * 0.700 * 1.546986 - wb)), H * 0.700
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.725 * 0.630254 + wa) + 0.16 * sin(H * 0.725 * 1.546986 - wb)), H * 0.725
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.750 * 0.630254 + wa) + 0.16 * sin(H * 0.750 * 1.546986 - wb)), H * 0.750
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.775 * 0.630254 + wa) + 0.16 * sin(H * 0.775 * 1.546986 - wb)), H * 0.775
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.800 * 0.630254 + wa) + 0.16 * sin(H * 0.800 * 1.546986 - wb)), H * 0.800
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.825 * 0.630254 + wa) + 0.16 * sin(H * 0.825 * 1.546986 - wb)), H * 0.825
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.850 * 0.630254 + wa) + 0.16 * sin(H * 0.850 * 1.546986 - wb)), H * 0.850
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.875 * 0.630254 + wa) + 0.16 * sin(H * 0.875 * 1.546986 - wb)), H * 0.875
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.900 * 0.630254 + wa) + 0.16 * sin(H * 0.900 * 1.546986 - wb)), H * 0.900
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.925 * 0.630254 + wa) + 0.16 * sin(H * 0.925 * 1.546986 - wb)), H * 0.925
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.950 * 0.630254 + wa) + 0.16 * sin(H * 0.950 * 1.546986 - wb)), H * 0.950
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 0.975 * 0.630254 + wa) + 0.16 * sin(H * 0.975 * 1.546986 - wb)), H * 0.975
+                   line W - bs - wl * (0.6 + 0.24 * sin(H * 1.000 * 0.630254 + wa) + 0.16 * sin(H * 1.000 * 1.546986 - wb)), H * 1.000 }
         }
     }
 }

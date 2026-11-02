@@ -1,7 +1,6 @@
--- mooi's screen frame (D119): its logic. The look comes from the same palette and settings as the bar
--- (lib/ferro, lib/style), where the bar's notch pieces are from bar-geo.json (the bar writes it when
--- its layout changes), and the music from the bar's feed (lib/vizfeed), read at the feed's own pace
--- while the frame moves with it — a file watch alone delivered a few of its thirty lines a second.
+-- mooi's screen frame (D119, D127): its logic. The chassis takes the bar's palette and material (lib/ferro,
+-- lib/style), the bar's pieces from bar-geo.json (the bar writes it when its layout changes), and the
+-- music from the bar's feed (lib/vizfeed), turned into iNiR's level and wave phase every 33 ms.
 
 local config = require("lib/config")
 local ferro = require("lib/ferro")
@@ -43,69 +42,64 @@ local function paint()
     end
 end
 
--- ── The settings: the frame's own, and the bar's that its border shares ──
+-- ── The settings: the frame's own, and the bar's: the chassis is the bar's material ──
 local function apply()
     local look = style.facts(settings) or {}
     for _, k in ipairs({ "st_offset", "st_notch", "st_height", "st_radius", "st_res", "st_glow", "st_width",
-                         "st_owidth", "st_ocol", "st_frame_r", "st_frame_edge", "st_frame_op" }) do
+                         "st_owidth", "st_ocol", "st_frame_r", "st_frame_edge", "st_frame_op", "st_opacity",
+                         "st_sh_y", "st_sh_blur", "st_sh_a", "st_frost", "st_smoke" }) do
         if look[k] ~= nil then fact[k] = look[k] end
     end
     local f = settings.frame
     fact.frame_band = f.band
-    fact.frame_style = position("frame.style", f.style)
     fact.frame_reach = f.reach
     fact.frame_edges = position("frame.edges", f.edges)
     fact.bar_surface = position("bar.surface", settings.bar.surface)
     fact.bar_ground = position("bar.ground", settings.bar.ground)
     fact.bar_frame = position("bar.frame", settings.bar.frame)
     fact.bar_rail = settings.bar.rail == true
+    fact.bar_mode = ({ islands = 0, full = 1, notch = 2 })[settings.bar.mode] or 0
 end
 
--- ── The music ──
+-- ── The music: iNiR's IrisFramePulse, as it is ──
+-- bass = the mean of the lowest four of sixteen bands, square-rooted, × 1.4 (its sensitivity);
+-- the level follows it at 18 a second rising and 3.2 falling; the wave's phase runs at
+-- (0.6 + 2.4 · level) a second. The bar's feed is already levelled (lib/vizfeed's gain).
 local still = false
 local function music_wanted()
     return settings.frame.music == true and not saving and not still
 end
-local function rim_wanted()
-    return music_wanted() and settings.music.rim == true
-end
+local SENSITIVITY = 1.4
 local seq, at = nil, 0
-local last = { bass = -1, high = -1, beat = -1 }
-local rim_sent, rim_quiet = {}, false
+local bass, level, phase = 0, 0, 0
 local function rest()
-    fact.fbass, fact.fhigh, fact.fbeat = 0, 0, 0
-    last = { bass = -1, high = -1, beat = -1 }
-    fact.rm_on = 0
-    rim_sent, rim_quiet = {}, false
+    bass, level, phase = 0, 0, 0
+    fact.flev, fact.fph = 0, 0
 end
-local function take()
+local function read_feed()
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
     if not ok or type(raw) ~= "string" then return end
     local t = vizfeed.decode(raw)
     if not t or not vizfeed.newer(seq, t.seq) then return end
     seq, at = t.seq, os.time()
-    if not t.playing then rest(); return end
-    -- only what moved is written: a fact that changes is the scene read again
-    local function put(name, key, v, step)
-        if math.abs(v - last[key]) > step then fact[name] = v; last[key] = v end
-    end
-    put("fbass", "bass", tonumber(t.bass) or 0, 0.015)
-    put("fhigh", "high", tonumber(t.high) or 0, 0.02)
-    put("fbeat", "beat", tonumber(t.beat) or 0, 0.02)
-    if rim_wanted() then
-        local quiet = (tonumber(t.bass) or 0) < 0.01 and (tonumber(t.high) or 0) < 0.01
-        if not (quiet and rim_quiet) then
-            local folded = vizfeed.map(t.bands, 16)
-            for j = 0, 15 do
-                local x = folded[j + 1]
-                if math.abs(x - (rim_sent[j] or -1)) > 0.02 then fact["rm" .. j] = x; rim_sent[j] = x end
-            end
-            fact.rm_bass, fact.rm_high, fact.rm_beat, fact.rm_phase = t.bass, t.high, t.beat, t.phase
-            fact.rm_gain = math.min(1.5, math.max(0.25, (tonumber(settings.music.rim_gain) or 100) / 100))
-            fact.rm_glow = settings.music.rim_glow == true and 1 or 0
-            fact.rm_on = 1
-        end
-        rim_quiet = quiet
+    if not t.playing then bass = 0; return end
+    local b16 = vizfeed.map(t.bands, 16)
+    local sum = 0
+    for i = 1, 4 do sum = sum + (tonumber(b16[i]) or 0) end
+    bass = math.min(1, math.sqrt(math.max(0, sum / 4)) * SENSITIVITY)
+end
+local function step()
+    read_feed()
+    local dt = 0.033                  -- the timer's step (iNiR caps a frame's step at 0.05)
+    local rate = bass > level and 18 or 3.2
+    level = level + (bass - level) * math.min(1, rate * dt)
+    if level < 0.002 and bass <= 0 then level = 0 end
+    phase = (phase + dt * (0.6 + 2.4 * level)) % 6283.185
+    -- only what moved is written: a fact that changes is the scene drawn again
+    if math.abs(level - (fact.flev or 0)) > 0.004 or (level > 0 and math.abs(phase - (fact.fph or 0)) > 0.01) then
+        fact.flev, fact.fph = level, phase
+    elseif level == 0 and (fact.flev or 0) ~= 0 then
+        fact.flev = 0
     end
 end
 local timer, asker = nil, nil
@@ -114,11 +108,11 @@ local function listen()
     fact.frame_music = music_wanted()
     if music_wanted() then
         if not timer then
-            timer = every(33, take)
+            timer = every(33, step)
             -- the bar writes the feed while someone asks for it (and always while frame.music is on)
             asker = every(3000, function()
                 run("pleamar", { "--say", "mooi", "emit feed_want" })
-                if seq and not vizfeed.fresh(at * 1000, os.time() * 1000) then seq = nil; rest() end
+                if seq and not vizfeed.fresh(at * 1000, os.time() * 1000) then seq = nil; bass = 0 end
             end)
         end
     else
@@ -126,10 +120,10 @@ local function listen()
         if asker then cancel(asker); asker = nil end
         rest()
     end
-    if not rim_wanted() then fact.rm_on = 0 end
 end
 
--- ── Where the bar's pieces are ──
+-- ── Where the bar's pieces are (bar-geo.json, written by shell/bar.luau) ──
+local SLOTS = 16
 local function geo()
     local g = read(GEO, "json")
     if type(g) ~= "table" then return end
@@ -137,6 +131,12 @@ local function geo()
     fact.gl_x, fact.gl_w = piece(g.left)
     fact.gc_x, fact.gc_w = piece(g.center)
     fact.gr_x, fact.gr_w = piece(g.right)
+    fact.gp_x, fact.gp_w = piece(g.panel)
+    local isl = type(g.islands) == "table" and g.islands or {}
+    for i = 0, SLOTS - 1 do
+        local x, w = piece(isl[i + 1])
+        fact["ix" .. i], fact["iw" .. i] = x, w
+    end
     local was = saving
     saving = g.saving == true
     if was ~= saving then listen() end

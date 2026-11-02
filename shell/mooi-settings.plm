@@ -1178,26 +1178,18 @@ scene Mooi {
     follow gy_7_6 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0)
     prop gy_7_7 = 458 ~m.reflow
     follow gy_7_7 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0)
-    prop gy_7_8 = 518 ~m.reflow
-    follow gy_7_8 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0)
-    prop gc_7_1 = 292 ~m.reflow
-    follow gc_7_1 = 52 + 60 + 60 + 60 + 60
-    prop gy_7_c2 = 600 ~m.reflow
-    follow gy_7_c2 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0)
+    prop gc_7_1 = 232 ~m.reflow
+    follow gc_7_1 = 52 + 60 + 60 + 60
+    prop gy_7_c2 = 540 ~m.reflow
+    follow gy_7_c2 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0)
+    prop gy_7_9 = 584 ~m.reflow
+    follow gy_7_9 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0)
     prop gy_7_10 = 644 ~m.reflow
-    follow gy_7_10 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0)
+    follow gy_7_10 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0)
     prop gy_7_11 = 704 ~m.reflow
-    follow gy_7_11 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0)
-    prop gy_7_12 = 764 ~m.reflow
-    follow gy_7_12 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0)
-    prop gy_7_13 = 824 ~m.reflow
-    follow gy_7_13 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0)
-    prop gy_7_14 = 884 ~m.reflow
-    follow gy_7_14 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0)
-    prop gy_7_15 = 944 ~m.reflow
-    follow gy_7_15 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music and music_rim == 1), 60, 0)
-    prop gc_7_2 = 412 ~m.reflow
-    follow gc_7_2 = 52 + 60 + if(frame_music, 60, 0) + if(frame_music, 60, 0) + if(frame_music, 60, 0) + if(frame_music and music_rim == 1, 60, 0) + if(frame_music and music_rim == 1, 60, 0)
+    follow gy_7_11 = 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0)
+    prop gc_7_2 = 232 ~m.reflow
+    follow gc_7_2 = 52 + 60 + if(frame_music, 60, 0) + if(frame_music, 60, 0)
     prop gy_8_c0 = 112 ~m.reflow
     follow gy_8_c0 = 112
     prop gy_8_1 = 156 ~m.reflow
@@ -1645,7 +1637,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music and music_rim == 1), 60, 0) + if((frame_on) and (frame_music and music_rim == 1), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -2476,7 +2468,7 @@ scene Mooi {
                 group {
                     show: frame_on
                     move: 0, gy_7_7 - 458
-                    SRow(458, "Inner edge", "A quiet line, a neon one, or none", true, "", 418, true)
+                    SRow(458, "Outline", "One line round the frame and the bar together: quiet, neon, or none", true, "", 418, true)
                     STrack(742, 474, 396)
                     SChoice(742, 474, 132, "Line", sv_frame_edge == 0, set_value, 74000)
                     SChoice(874, 474, 132, "Neon", sv_frame_edge == 1, set_value, 74001)
@@ -2485,64 +2477,34 @@ scene Mooi {
                 }
                 group {
                     show: frame_on
-                    move: 0, gy_7_8 - 518
-                    SRow(518, "Solidity", "How solid the band is", true, "", 404, true)
-                    SSlider(728, 534, 330, sv_frame_opacity, 70, set_value, 75, "Solidity", "{sv_frame_opacity + 30, 0}%", true)
-                    SRevert(698, 548, sv_frame_opacity != df_frame_opacity, set_value, 75000 + df_frame_opacity)
+                    move: 0, gy_7_c2 - 540
+                    SCard(540, gc_7_2, "Music")
                 }
                 group {
                     show: frame_on
-                    move: 0, gy_7_c2 - 600
-                    SCard(600, gc_7_2, "Music")
+                    move: 0, gy_7_9 - 584
+                    SRow(584, "Moves with music", "Still, or its inner edge rolling with the bass (iNiR's frame music)", true, "", 550, false)
+                    STrack(874, 600, 264)
+                    SChoice(874, 600, 132, "Off", sv_frame_motion == 0, set_value, 72000)
+                    SChoice(1006, 600, 132, "Wave", sv_frame_motion == 1, set_value, 72001)
+                    SRevert(844, 614, sv_frame_motion != df_frame_motion, set_value, 72000 + df_frame_motion)
                 }
                 group {
-                    show: frame_on
+                    show: (frame_on) and (frame_music)
                     move: 0, gy_7_10 - 644
-                    SRow(644, "Moves with music", "Still, a rolling swell, ripples, or the edge pulsing", true, "", 374, false)
-                    STrack(698, 660, 440)
-                    SChoice(698, 660, 110, "Off", sv_frame_motion == 0, set_value, 72000)
-                    SChoice(808, 660, 110, "Swell", sv_frame_motion == 1, set_value, 72001)
-                    SChoice(918, 660, 110, "Ripples", sv_frame_motion == 2, set_value, 72002)
-                    SChoice(1028, 660, 110, "Pulse", sv_frame_motion == 3, set_value, 72003)
-                    SRevert(668, 674, sv_frame_motion != df_frame_motion, set_value, 72000 + df_frame_motion)
+                    SRow(644, "Strength", "How far it moves at full volume", true, "", 404, true)
+                    SSlider(728, 660, 330, sv_frame_reach, 34, set_value, 19, "Strength", "{sv_frame_reach + 6, 0} px", true)
+                    SRevert(698, 674, sv_frame_reach != df_frame_reach, set_value, 19000 + df_frame_reach)
                 }
                 group {
                     show: (frame_on) and (frame_music)
                     move: 0, gy_7_11 - 704
-                    SRow(704, "Strength", "How far it moves at full volume", true, "", 404, true)
-                    SSlider(728, 720, 330, sv_frame_reach, 34, set_value, 19, "Strength", "{sv_frame_reach + 6, 0} px", true)
-                    SRevert(698, 734, sv_frame_reach != df_frame_reach, set_value, 19000 + df_frame_reach)
-                }
-                group {
-                    show: (frame_on) and (frame_music)
-                    move: 0, gy_7_12 - 764
-                    SRow(764, "Which edges", "All of them, the sides, or top and bottom", true, "", 418, true)
-                    STrack(742, 780, 396)
-                    SChoice(742, 780, 132, "All", frame_edges == 0, set_value, 20000)
-                    SChoice(874, 780, 132, "Sides", frame_edges == 1, set_value, 20001)
-                    SChoice(1006, 780, 132, "Top & bottom", frame_edges == 2, set_value, 20002)
-                    SRevert(712, 794, sv_frame_edges != df_frame_edges, set_value, 20000 + df_frame_edges)
-                }
-                group {
-                    show: (frame_on) and (frame_music)
-                    move: 0, gy_7_13 - 824
-                    SRow(824, "The bar joins in", "The bar's own border lifts with the music too, so the bar and the frame are one border that moves", true, "", 768, true)
-                    SToggle(1092, 842, music_rim, set_value, 367, "music.rim")
-                    SRevert(1062, 854, sv_music_rim != df_music_rim, set_value, 367000 + df_music_rim)
-                }
-                group {
-                    show: (frame_on) and (frame_music and music_rim == 1)
-                    move: 0, gy_7_14 - 884
-                    SRow(884, "Bar strength", "How far the bar's border lifts", true, "", 404, true)
-                    SSlider(728, 900, 330, sv_music_rim_gain, 125, set_value, 368, "Bar strength", "{sv_music_rim_gain + 25, 0}%", true)
-                    SRevert(698, 914, sv_music_rim_gain != df_music_rim_gain, set_value, 368000 + df_music_rim_gain)
-                }
-                group {
-                    show: (frame_on) and (frame_music and music_rim == 1)
-                    move: 0, gy_7_15 - 944
-                    SRow(944, "Bar glow", "A halo on the bar's lit border, only while music plays", true, "", 768, true)
-                    SToggle(1092, 962, music_rim_glow, set_value, 369, "music.rim_glow")
-                    SRevert(1062, 974, sv_music_rim_glow != df_music_rim_glow, set_value, 369000 + df_music_rim_glow)
+                    SRow(704, "Which edges", "All of them, the sides, or top and bottom", true, "", 418, true)
+                    STrack(742, 720, 396)
+                    SChoice(742, 720, 132, "All", frame_edges == 0, set_value, 20000)
+                    SChoice(874, 720, 132, "Sides", frame_edges == 1, set_value, 20001)
+                    SChoice(1006, 720, 132, "Top & bottom", frame_edges == 2, set_value, 20002)
+                    SRevert(712, 734, sv_frame_edges != df_frame_edges, set_value, 20000 + df_frame_edges)
                 }
             }
             group {
@@ -3757,7 +3719,7 @@ scene Mooi {
         // The header, over the scrolled rows: the page's name, what it is for, and its Reset.
         box { from: 233, 0; size: screen.width - 233, 96; color: mix(fl.ground, fl.steel_900, 0.6) }
         text pick(set_tab, "Quick settings", "Colour", "Motion & effects", "The bar", "Layout", "Workspaces", "Media", "Screen frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Desk", "BMO", "Sound", "Power", "Keys", "System", "Signal Loom", "Advanced", "Control Nexus") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
-        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "A style sets the surface and the edges at once; change any of them and it reads Custom", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "The switcher on the bar", "The player on the bar", "A band round the screen, the bar its top edge; it can move with the music", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "mooi's own drawing of the wallpaper, so it can travel with you. Pictures are picked in Skwd Wall", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log", "The deck from the bar's mark, its cards and notches, the side notch, and Claude") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
+        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "A style sets the surface and the edges at once; change any of them and it reads Custom", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "The switcher on the bar", "The player on the bar", "One body with the bar: a band round the screen the bar grows out of; it can move with the music", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "mooi's own drawing of the wallpaper, so it can travel with you. Pictures are picked in Skwd Wall", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log", "The deck from the bar's mark, its cards and notches, the side notch, and Claude") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
         box { from: 233, 95; size: screen.width - 233, 1; color: fl.trace_dim }
         group {
             show: not searching

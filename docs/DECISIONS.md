@@ -3769,3 +3769,35 @@ D123's automatic gain those bars, at ~1/1000 before, started to move, so the bor
 "brought back". The user wants visualisers inside the music components only: the three `rim.Rect`s, the
 player's `rm*` facts and their feed are removed; the player's own visualisers (`nv*`) stay. With this no
 surface draws the rim except the screen frame's `frame.music` / `music.rim` (opt-in).
+
+## D127 · 2026-11-02 · The frame is a chassis: iNiR's iRiS frame, in pleamar
+
+**What the user had asked, and what had been missed.** At 12:52 the user asked for iNiR's music frame
+"recreated exactly" (github.com/snowarch/iNiR), and at 13:05 confirmed a plan that included deleting the
+bars along the bar's foot and building that frame; neither was done (the next commit removed the spine).
+The audit of `mooi-frame` against iNiR found: the frame and the bar were two objects (islands floating
+over a line under them); the band at 31 % read as smoke beside opaque islands; "swell" moved each side
+in and out as a straight line; the streak under the bar was the old border visualiser (`rim.Edge`); the
+outline was eight strokes glued with round caps, the neon halo doubling where they met; and the frame's
+40 px round corners sat beside chamfered islands.
+**iNiR's model** (`modules/iris/field/IrisField.frag`, `frame/IrisFramePulse.qml`): everything on an edge
+is one signed-distance field — the band is the outside of an inset rounded rectangle, the bar's pieces
+rounded boxes smooth-unioned into it, painted with one tint, one hairline round the union, one shadow.
+Pleamar's `body` is the same thing (its shapes melt with `blend`, `border` outlines the silhouette), so
+`mooi-frame.plm` is now one body: the band's four edges as closed paths (their blend rounds the inner
+corners), then each of the bar's islands (islands mode), its three pieces (notch) or its panel (full)
+as a box rising off the screen, blended into the band (12 px fillets). Fill, opacity, glass, frost,
+smoke and shadow are the bar's own, so the bar and the frame are one material; while the frame is on
+the bar paints none of those plates or outlines (`frame_on` in `shell/mooi.plm`) and only draws what
+stands on them. `bar-geo.json` now carries the islands and the panel as well as the notch clusters.
+**The music is iNiR's, exactly:** bass = the mean of the lowest four of sixteen bands, √, × 1.4; the
+level follows it at 18/s rising and 3.2/s falling; the phase runs at (0.6 + 2.4·level)/s; the band's
+inner edge is pushed in by level × reach (`frame.reach` × 1.6, 29 px by default) times
+0.60 + 0.24·sin(y·0.011 + t) + 0.16·sin(y·0.027 − 1.4t) along the sides (x·0.009 − t, x·0.023 + 1.2t along
+the top and foot, with `frame.edges`), and an etched light at 35 % runs along the moving edge. The old
+swell/crests/pulse, the bar's border joining in (`music.rim` for the frame) and the band's own opacity
+are gone from Settings (Moves with music: Off / Wave; the outline: line, neon, none).
+**Measured:** with music, frame 4.5 % of a core (the old one 6.8 %), the bar unchanged; paused 0.4 %.
+Checked live in islands, full and notch modes (screenshots), the wave with music playing (level ~0.5).
+**Also:** the stash now opens when its tab is pointed at (60 ms), as the side notch does — the user had
+asked that both "open on hover"; a press pins it, leaving closes it (checked with the real pointer).

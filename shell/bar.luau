@@ -77,9 +77,15 @@ return function(ctx)
         fact.nr_x, fact.nr_w = cl.right and cl.right.x or 0, cl.right and cl.right.w or 0
         -- the screen frame is a program of its own (D119): where the pieces are, for its border to
         -- run round them; written only when it changes
+        -- the islands and the full panel too (D127): with the frame on, the frame paints every plate
+        -- as part of one silhouette (the chassis) and the bar draws only what is on them
+        local isl = {}
+        for _, f in ipairs(out.frames) do isl[#isl + 1] = { x = f.x, w = f.w } end
         local geo = { left = cl.left and { x = cl.left.x, w = cl.left.w } or nil,
                       center = cl.center and { x = cl.center.x, w = cl.center.w } or nil,
                       right = cl.right and { x = cl.right.x, w = cl.right.w } or nil,
+                      islands = isl,
+                      panel = out.panel and { x = out.panel.x, w = out.panel.w } or nil,
                       saving = ctx.saving() == true }
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end

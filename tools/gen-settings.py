@@ -223,7 +223,7 @@ SECTIONS = [
         ("choice", "When nothing plays", "Shrink to a note, stay, or leave the bar", "media.idle", "media_idle", ["Shrink", "Stay", "Hide"]),
         ("choice", "Visualizer", "Moves with the sound", "bar.visualizer", "viz", ["Mirror", "Bars", "Line", "Dots", "Off"], "media_mode != 2"),
     ]),
-    ("Frame", "Screen frame", "A band round the screen, the bar its top edge; it can move with the music", "DESKTOP", [
+    ("Frame", "Screen frame", "One body with the bar: a band round the screen the bar grows out of; it can move with the music", "DESKTOP", [
         ("card", "Frame"),
         ("toggle", "Screen frame", "Draw the band round the screen", "frame.on", "frame_on"),
         ("note", "not frame_on", "TURN IT ON FOR ITS THICKNESS, CORNERS, EDGE AND MUSIC"),
@@ -231,15 +231,11 @@ SECTIONS = [
         ("card", "Band", "frame_on"),
         ("slider", "Thickness", "How wide the band is", "frame.band", 2, 16, "{sv_frame_band + 2, 0} px"),
         ("slider", "Corners", "How round its inner corners are", "frame.radius", 0, 40, "{sv_frame_radius, 0} px"),
-        ("choice", "Inner edge", "A quiet line, a neon one, or none", "frame.edge", "sv_frame_edge", ["Line", "Neon", "None"]),
-        ("slider", "Solidity", "How solid the band is", "frame.opacity", 30, 100, "{sv_frame_opacity + 30, 0}%"),
+        ("choice", "Outline", "One line round the frame and the bar together: quiet, neon, or none", "frame.edge", "sv_frame_edge", ["Line", "Neon", "None"]),
         ("card", "Music", "frame_on"),
-        ("choice", "Moves with music", "Still, a rolling swell, ripples, or the edge pulsing", "frame.motion", "sv_frame_motion", ["Off", "Swell", "Ripples", "Pulse"]),
+        ("choice", "Moves with music", "Still, or its inner edge rolling with the bass (iNiR's frame music)", "frame.motion", "sv_frame_motion", ["Off", "Wave"]),
         ("slider", "Strength", "How far it moves at full volume", "frame.reach", 6, 40, "{sv_frame_reach + 6, 0} px", "frame_music"),
         ("choice", "Which edges", "All of them, the sides, or top and bottom", "frame.edges", "frame_edges", ["All", "Sides", "Top & bottom"], "frame_music"),
-        ("toggle", "The bar joins in", "The bar's own border lifts with the music too, so the bar and the frame are one border that moves", "music.rim", "music_rim", None, "frame_music"),
-        ("slider", "Bar strength", "How far the bar's border lifts", "music.rim_gain", 25, 150, "{sv_music_rim_gain + 25, 0}%", "frame_music and music_rim == 1"),
-        ("toggle", "Bar glow", "A halo on the bar's lit border, only while music plays", "music.rim_glow", "music_rim_glow", None, "frame_music and music_rim == 1"),
     ]),
     ("Windows", "Windows", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "DESKTOP", [
         ("card", "Styling"),

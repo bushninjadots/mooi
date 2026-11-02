@@ -1827,14 +1827,14 @@ scene Mooi {
             smoke: 1% * if(bar_surface < 1.5, st_smoke, st_smoke + 8)
             frost: 1% * st_frost
             shadow: 0, st_sh_y, min(st_sh_blur, 16), 100% * st_sh_a * (bar_surface < 2.5)
-            show: not mech
+            show: not mech and not (frame_on and bar_full)
             box { from: hc_x, pt; size: if(helix_edges, hx_a + 10 - hc_x, hc_w), fl.mod_h; corner: hc_r }
             box { from: hx_b - 10, pt; size: hc_x + hc_w - hx_b + 10, fl.mod_h; corner: hc_r; show: helix_edges }
         }
         body {
             gradient: 0, pt to 0, pb, fl.steel_500, fl.steel_700 22%, fl.steel_900
             shadow: 0, st_sh_y, min(st_sh_blur, 16), 100% * st_sh_a
-            show: mech
+            show: mech and not (frame_on and bar_full)
             box { from: hc_x - 5, pt; size: if(helix_edges, hx_a + 10 - hc_x + 5, hc_w + 10), fl.mod_h; corner: hc_r }
             box { from: hx_b - 10, pt; size: hc_x + hc_w - hx_b + 15, fl.mod_h; corner: hc_r; show: helix_edges }
         }
@@ -1936,6 +1936,7 @@ scene Mooi {
     group {
         show: st_notch
         body {
+            show: not frame_on                       // with the frame on, the pieces are the chassis's (D127)
             color: if(mech, fl.steel_700, fl.hull)
             opacity: if(bar_surface > 2.5 and not mech, 0, if(bar_surface > 0.5 and not mech, 0.9, 1)) * st_opacity
             glass: if(bar_surface > 0.5 and bar_surface < 2.5, 100%, 0%)
@@ -1977,35 +1978,6 @@ scene Mooi {
                    move nr_a - n_f, 0; curve nr_a, n_f via nr_a, 0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
                    line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_f; curve min(screen.width, nr_e + n_f), 0 via nr_e, 0 }
         }
-        // ── The pieces' outline, as the frame's border (D119) ──────────
-        // The screen frame is its own program (shell/mooi-frame.plm), under the bar; its border runs
-        // along the top band and turns down into a fillet at each piece, ending on the piece's flank
-        // `frame_band + n_f` down. From there this draws the piece's part of the same line — down
-        // the flank, round the foot, up the other flank to the next fillet — above the piece's body,
-        // as open strokes (no closing segment across the top). A piece flush in a corner starts at
-        // its outer foot corner, where the frame's side line arrives. Same colour, same width, and
-        // the same halo when the frame's edge is the neon one.
-        group {
-            show: frame_on and bar_frame < 0.5 and st_frame_edge < 1.5
-            glow: 8, if(st_frame_edge > 0.5, 0.9, 0) * st_glow, fl.phos
-            let n_y0 = frame_band + n_f              // where the frame's fillet meets a flank
-            path { stroke: st_owidth; color: nec; show: nlw > 1 and full_w
-                   move nl_a, n_b; line nl_e - n_r, n_b; curve nl_e, n_b - n_r via nl_e, n_b; line nl_e, n_y0 }
-            path { stroke: st_owidth; color: nec; show: nlw > 1 and not full_w
-                   move nl_a, n_y0; line nl_a, n_b - n_r; curve nl_a + n_r, n_b via nl_a, n_b
-                   line nl_e - n_r, n_b; curve nl_e, n_b - n_r via nl_e, n_b; line nl_e, n_y0 }
-            path { stroke: st_owidth; color: nec; show: ncw > 1
-                   move nc_a, n_y0; line nc_a, n_b - n_r; curve nc_a + n_r, n_b via nc_a, n_b
-                   line nc_e - n_r, n_b; curve nc_e, n_b - n_r via nc_e, n_b; line nc_e, n_y0 }
-            path { stroke: st_owidth; color: nec; show: nrw > 1 and full_w
-                   move nr_a, n_y0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b; line nr_e, n_b }
-            path { stroke: st_owidth; color: nec; show: nrw > 1 and not full_w
-                   move nr_a, n_y0; line nr_a, n_b - n_r; curve nr_a + n_r, n_b via nr_a, n_b
-                   line nr_e - n_r, n_b; curve nr_e, n_b - n_r via nr_e, n_b; line nr_e, n_y0 }
-        }
-
-
-
         // No bars on this border any more: the frame's edge is one line and the music moves it
         // (the frame.motion modes below), rather than a run of bars laid along it.
 
@@ -2029,7 +2001,8 @@ scene Mooi {
         let fw = (pick(f.b, xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper) + pick(f.b, ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper)) - fx
         let own = helix_edges and f.a == wsf_a        // the workspaces' island, drawn as the helix
         group {
-            show: not bar_full and not st_notch and not own
+            // with the screen frame on, the plate is the chassis's (shell/mooi-frame.plm, D127)
+            show: not bar_full and not st_notch and not own and not frame_on
             group { show: not mech; Frame(fx - 3, fw + 6, 0, f.style) }
             group { show: mech; MechHousing(fx, fw, f.style) }
         }
@@ -3134,424 +3107,424 @@ scene Mooi {
             box { at: ed_x, ed_y + 2; size: 132, 34; corner: 7; color: if(ed_y > st_res + 4, fl.muted, if(ed_merge, fl.ember_fill, fl.phos_fill)); opacity: 0.95 }
         }
         // <gen:edit>
-        group {
-            show: bar_edit and p_workspaces
-            zone box ez_workspaces { from: xs_workspaces, fl.top; size: ws_workspaces, fl.mod_h; cursor: grab; role: button; label: "Move Workspaces" }
-            box { from: xs_workspaces + 1, fl.top + 1; size: ws_workspaces - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 0 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 0, 0.6, if(ed_sel == 0, 0.4, 0.2 * ez_workspaces.hover)) }
-            box { from: xs_workspaces + 1, fl.top + 1; size: ws_workspaces - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 0, 2, 1.2)
-                  color: if(ed_sel == 0 or ed_drag == 0, fl.flare, mix(fl.trace_lit, fl.flare, ez_workspaces.hover)); opacity: if(ed_drag >= 0 and ed_drag != 0, 0.45, 0.85) }
-        }
-        on press ez_workspaces while bar_edit { ed_press = 0; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_workspaces while ed_press == 0 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 0; ed_sel = -1 }
-        on release ez_workspaces while ed_drag == 0 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_workspaces while ed_drag < 0 and ed_press == 0 { ed_sel = if(ed_sel == 0, -1, 0); ed_press = -1 }
-        group {
-            show: bar_edit and p_window
-            zone box ez_window { from: xs_window, fl.top; size: ws_window, fl.mod_h; cursor: grab; role: button; label: "Move Window title" }
-            box { from: xs_window + 1, fl.top + 1; size: ws_window - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 1 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 1, 0.6, if(ed_sel == 1, 0.4, 0.2 * ez_window.hover)) }
-            box { from: xs_window + 1, fl.top + 1; size: ws_window - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 1, 2, 1.2)
-                  color: if(ed_sel == 1 or ed_drag == 1, fl.flare, mix(fl.trace_lit, fl.flare, ez_window.hover)); opacity: if(ed_drag >= 0 and ed_drag != 1, 0.45, 0.85) }
-        }
-        on press ez_window while bar_edit { ed_press = 1; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_window while ed_press == 1 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 1; ed_sel = -1 }
-        on release ez_window while ed_drag == 1 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_window while ed_drag < 0 and ed_press == 1 { ed_sel = if(ed_sel == 1, -1, 1); ed_press = -1 }
-        group {
-            show: bar_edit and p_media
-            zone box ez_media { from: xs_media, fl.top; size: ws_media, fl.mod_h; cursor: grab; role: button; label: "Move Media player" }
-            box { from: xs_media + 1, fl.top + 1; size: ws_media - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 2 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 2, 0.6, if(ed_sel == 2, 0.4, 0.2 * ez_media.hover)) }
-            box { from: xs_media + 1, fl.top + 1; size: ws_media - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 2, 2, 1.2)
-                  color: if(ed_sel == 2 or ed_drag == 2, fl.flare, mix(fl.trace_lit, fl.flare, ez_media.hover)); opacity: if(ed_drag >= 0 and ed_drag != 2, 0.45, 0.85) }
-        }
-        on press ez_media while bar_edit { ed_press = 2; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_media while ed_press == 2 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 2; ed_sel = -1 }
-        on release ez_media while ed_drag == 2 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_media while ed_drag < 0 and ed_press == 2 { ed_sel = if(ed_sel == 2, -1, 2); ed_press = -1 }
-        group {
-            show: bar_edit and p_resources
-            zone box ez_resources { from: xs_resources, fl.top; size: ws_resources, fl.mod_h; cursor: grab; role: button; label: "Move Resources" }
-            box { from: xs_resources + 1, fl.top + 1; size: ws_resources - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 3 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 3, 0.6, if(ed_sel == 3, 0.4, 0.2 * ez_resources.hover)) }
-            box { from: xs_resources + 1, fl.top + 1; size: ws_resources - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 3, 2, 1.2)
-                  color: if(ed_sel == 3 or ed_drag == 3, fl.flare, mix(fl.trace_lit, fl.flare, ez_resources.hover)); opacity: if(ed_drag >= 0 and ed_drag != 3, 0.45, 0.85) }
-        }
-        on press ez_resources while bar_edit { ed_press = 3; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_resources while ed_press == 3 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 3; ed_sel = -1 }
-        on release ez_resources while ed_drag == 3 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_resources while ed_drag < 0 and ed_press == 3 { ed_sel = if(ed_sel == 3, -1, 3); ed_press = -1 }
-        group {
-            show: bar_edit and p_bandwidth
-            zone box ez_bandwidth { from: xs_bandwidth, fl.top; size: ws_bandwidth, fl.mod_h; cursor: grab; role: button; label: "Move Bandwidth" }
-            box { from: xs_bandwidth + 1, fl.top + 1; size: ws_bandwidth - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 4 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 4, 0.6, if(ed_sel == 4, 0.4, 0.2 * ez_bandwidth.hover)) }
-            box { from: xs_bandwidth + 1, fl.top + 1; size: ws_bandwidth - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 4, 2, 1.2)
-                  color: if(ed_sel == 4 or ed_drag == 4, fl.flare, mix(fl.trace_lit, fl.flare, ez_bandwidth.hover)); opacity: if(ed_drag >= 0 and ed_drag != 4, 0.45, 0.85) }
-        }
-        on press ez_bandwidth while bar_edit { ed_press = 4; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_bandwidth while ed_press == 4 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 4; ed_sel = -1 }
-        on release ez_bandwidth while ed_drag == 4 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_bandwidth while ed_drag < 0 and ed_press == 4 { ed_sel = if(ed_sel == 4, -1, 4); ed_press = -1 }
-        group {
-            show: bar_edit and p_keyboard
-            zone box ez_keyboard { from: xs_keyboard, fl.top; size: ws_keyboard, fl.mod_h; cursor: grab; role: button; label: "Move Keyboard layout" }
-            box { from: xs_keyboard + 1, fl.top + 1; size: ws_keyboard - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 5 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 5, 0.6, if(ed_sel == 5, 0.4, 0.2 * ez_keyboard.hover)) }
-            box { from: xs_keyboard + 1, fl.top + 1; size: ws_keyboard - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 5, 2, 1.2)
-                  color: if(ed_sel == 5 or ed_drag == 5, fl.flare, mix(fl.trace_lit, fl.flare, ez_keyboard.hover)); opacity: if(ed_drag >= 0 and ed_drag != 5, 0.45, 0.85) }
-        }
-        on press ez_keyboard while bar_edit { ed_press = 5; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_keyboard while ed_press == 5 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 5; ed_sel = -1 }
-        on release ez_keyboard while ed_drag == 5 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_keyboard while ed_drag < 0 and ed_press == 5 { ed_sel = if(ed_sel == 5, -1, 5); ed_press = -1 }
-        group {
-            show: bar_edit and p_weather
-            zone box ez_weather { from: xs_weather, fl.top; size: ws_weather, fl.mod_h; cursor: grab; role: button; label: "Move Weather" }
-            box { from: xs_weather + 1, fl.top + 1; size: ws_weather - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 6 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 6, 0.6, if(ed_sel == 6, 0.4, 0.2 * ez_weather.hover)) }
-            box { from: xs_weather + 1, fl.top + 1; size: ws_weather - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 6, 2, 1.2)
-                  color: if(ed_sel == 6 or ed_drag == 6, fl.flare, mix(fl.trace_lit, fl.flare, ez_weather.hover)); opacity: if(ed_drag >= 0 and ed_drag != 6, 0.45, 0.85) }
-        }
-        on press ez_weather while bar_edit { ed_press = 6; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_weather while ed_press == 6 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 6; ed_sel = -1 }
-        on release ez_weather while ed_drag == 6 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_weather while ed_drag < 0 and ed_press == 6 { ed_sel = if(ed_sel == 6, -1, 6); ed_press = -1 }
-        group {
-            show: bar_edit and p_tray
-            zone box ez_tray { from: xs_tray, fl.top; size: ws_tray, fl.mod_h; cursor: grab; role: button; label: "Move Tray" }
-            box { from: xs_tray + 1, fl.top + 1; size: ws_tray - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 7 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 7, 0.6, if(ed_sel == 7, 0.4, 0.2 * ez_tray.hover)) }
-            box { from: xs_tray + 1, fl.top + 1; size: ws_tray - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 7, 2, 1.2)
-                  color: if(ed_sel == 7 or ed_drag == 7, fl.flare, mix(fl.trace_lit, fl.flare, ez_tray.hover)); opacity: if(ed_drag >= 0 and ed_drag != 7, 0.45, 0.85) }
-        }
-        on press ez_tray while bar_edit { ed_press = 7; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_tray while ed_press == 7 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 7; ed_sel = -1 }
-        on release ez_tray while ed_drag == 7 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_tray while ed_drag < 0 and ed_press == 7 { ed_sel = if(ed_sel == 7, -1, 7); ed_press = -1 }
-        group {
-            show: bar_edit and p_notifications
-            zone box ez_notifications { from: xs_notifications, fl.top; size: ws_notifications, fl.mod_h; cursor: grab; role: button; label: "Move Notifications" }
-            box { from: xs_notifications + 1, fl.top + 1; size: ws_notifications - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 8 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 8, 0.6, if(ed_sel == 8, 0.4, 0.2 * ez_notifications.hover)) }
-            box { from: xs_notifications + 1, fl.top + 1; size: ws_notifications - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 8, 2, 1.2)
-                  color: if(ed_sel == 8 or ed_drag == 8, fl.flare, mix(fl.trace_lit, fl.flare, ez_notifications.hover)); opacity: if(ed_drag >= 0 and ed_drag != 8, 0.45, 0.85) }
-        }
-        on press ez_notifications while bar_edit { ed_press = 8; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_notifications while ed_press == 8 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 8; ed_sel = -1 }
-        on release ez_notifications while ed_drag == 8 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_notifications while ed_drag < 0 and ed_press == 8 { ed_sel = if(ed_sel == 8, -1, 8); ed_press = -1 }
-        group {
-            show: bar_edit and p_mic
-            zone box ez_mic { from: xs_mic, fl.top; size: ws_mic, fl.mod_h; cursor: grab; role: button; label: "Move Microphone" }
-            box { from: xs_mic + 1, fl.top + 1; size: ws_mic - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 9 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 9, 0.6, if(ed_sel == 9, 0.4, 0.2 * ez_mic.hover)) }
-            box { from: xs_mic + 1, fl.top + 1; size: ws_mic - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 9, 2, 1.2)
-                  color: if(ed_sel == 9 or ed_drag == 9, fl.flare, mix(fl.trace_lit, fl.flare, ez_mic.hover)); opacity: if(ed_drag >= 0 and ed_drag != 9, 0.45, 0.85) }
-        }
-        on press ez_mic while bar_edit { ed_press = 9; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_mic while ed_press == 9 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 9; ed_sel = -1 }
-        on release ez_mic while ed_drag == 9 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_mic while ed_drag < 0 and ed_press == 9 { ed_sel = if(ed_sel == 9, -1, 9); ed_press = -1 }
-        group {
-            show: bar_edit and p_volume
-            zone box ez_volume { from: xs_volume, fl.top; size: ws_volume, fl.mod_h; cursor: grab; role: button; label: "Move Volume" }
-            box { from: xs_volume + 1, fl.top + 1; size: ws_volume - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 10 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 10, 0.6, if(ed_sel == 10, 0.4, 0.2 * ez_volume.hover)) }
-            box { from: xs_volume + 1, fl.top + 1; size: ws_volume - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 10, 2, 1.2)
-                  color: if(ed_sel == 10 or ed_drag == 10, fl.flare, mix(fl.trace_lit, fl.flare, ez_volume.hover)); opacity: if(ed_drag >= 0 and ed_drag != 10, 0.45, 0.85) }
-        }
-        on press ez_volume while bar_edit { ed_press = 10; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_volume while ed_press == 10 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 10; ed_sel = -1 }
-        on release ez_volume while ed_drag == 10 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_volume while ed_drag < 0 and ed_press == 10 { ed_sel = if(ed_sel == 10, -1, 10); ed_press = -1 }
-        group {
-            show: bar_edit and p_brightness
-            zone box ez_brightness { from: xs_brightness, fl.top; size: ws_brightness, fl.mod_h; cursor: grab; role: button; label: "Move Brightness" }
-            box { from: xs_brightness + 1, fl.top + 1; size: ws_brightness - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 11 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 11, 0.6, if(ed_sel == 11, 0.4, 0.2 * ez_brightness.hover)) }
-            box { from: xs_brightness + 1, fl.top + 1; size: ws_brightness - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 11, 2, 1.2)
-                  color: if(ed_sel == 11 or ed_drag == 11, fl.flare, mix(fl.trace_lit, fl.flare, ez_brightness.hover)); opacity: if(ed_drag >= 0 and ed_drag != 11, 0.45, 0.85) }
-        }
-        on press ez_brightness while bar_edit { ed_press = 11; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_brightness while ed_press == 11 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 11; ed_sel = -1 }
-        on release ez_brightness while ed_drag == 11 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_brightness while ed_drag < 0 and ed_press == 11 { ed_sel = if(ed_sel == 11, -1, 11); ed_press = -1 }
-        group {
-            show: bar_edit and p_battery
-            zone box ez_battery { from: xs_battery, fl.top; size: ws_battery, fl.mod_h; cursor: grab; role: button; label: "Move Battery" }
-            box { from: xs_battery + 1, fl.top + 1; size: ws_battery - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 12 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 12, 0.6, if(ed_sel == 12, 0.4, 0.2 * ez_battery.hover)) }
-            box { from: xs_battery + 1, fl.top + 1; size: ws_battery - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 12, 2, 1.2)
-                  color: if(ed_sel == 12 or ed_drag == 12, fl.flare, mix(fl.trace_lit, fl.flare, ez_battery.hover)); opacity: if(ed_drag >= 0 and ed_drag != 12, 0.45, 0.85) }
-        }
-        on press ez_battery while bar_edit { ed_press = 12; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_battery while ed_press == 12 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 12; ed_sel = -1 }
-        on release ez_battery while ed_drag == 12 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_battery while ed_drag < 0 and ed_press == 12 { ed_sel = if(ed_sel == 12, -1, 12); ed_press = -1 }
-        group {
-            show: bar_edit and p_network
-            zone box ez_network { from: xs_network, fl.top; size: ws_network, fl.mod_h; cursor: grab; role: button; label: "Move Network" }
-            box { from: xs_network + 1, fl.top + 1; size: ws_network - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 13 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 13, 0.6, if(ed_sel == 13, 0.4, 0.2 * ez_network.hover)) }
-            box { from: xs_network + 1, fl.top + 1; size: ws_network - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 13, 2, 1.2)
-                  color: if(ed_sel == 13 or ed_drag == 13, fl.flare, mix(fl.trace_lit, fl.flare, ez_network.hover)); opacity: if(ed_drag >= 0 and ed_drag != 13, 0.45, 0.85) }
-        }
-        on press ez_network while bar_edit { ed_press = 13; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_network while ed_press == 13 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 13; ed_sel = -1 }
-        on release ez_network while ed_drag == 13 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_network while ed_drag < 0 and ed_press == 13 { ed_sel = if(ed_sel == 13, -1, 13); ed_press = -1 }
-        group {
-            show: bar_edit and p_bluetooth
-            zone box ez_bluetooth { from: xs_bluetooth, fl.top; size: ws_bluetooth, fl.mod_h; cursor: grab; role: button; label: "Move Bluetooth" }
-            box { from: xs_bluetooth + 1, fl.top + 1; size: ws_bluetooth - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 14 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 14, 0.6, if(ed_sel == 14, 0.4, 0.2 * ez_bluetooth.hover)) }
-            box { from: xs_bluetooth + 1, fl.top + 1; size: ws_bluetooth - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 14, 2, 1.2)
-                  color: if(ed_sel == 14 or ed_drag == 14, fl.flare, mix(fl.trace_lit, fl.flare, ez_bluetooth.hover)); opacity: if(ed_drag >= 0 and ed_drag != 14, 0.45, 0.85) }
-        }
-        on press ez_bluetooth while bar_edit { ed_press = 14; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_bluetooth while ed_press == 14 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 14; ed_sel = -1 }
-        on release ez_bluetooth while ed_drag == 14 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_bluetooth while ed_drag < 0 and ed_press == 14 { ed_sel = if(ed_sel == 14, -1, 14); ed_press = -1 }
-        group {
-            show: bar_edit and p_clock
-            zone box ez_clock { from: xs_clock, fl.top; size: ws_clock, fl.mod_h; cursor: grab; role: button; label: "Move Clock" }
-            box { from: xs_clock + 1, fl.top + 1; size: ws_clock - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 15 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 15, 0.6, if(ed_sel == 15, 0.4, 0.2 * ez_clock.hover)) }
-            box { from: xs_clock + 1, fl.top + 1; size: ws_clock - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 15, 2, 1.2)
-                  color: if(ed_sel == 15 or ed_drag == 15, fl.flare, mix(fl.trace_lit, fl.flare, ez_clock.hover)); opacity: if(ed_drag >= 0 and ed_drag != 15, 0.45, 0.85) }
-        }
-        on press ez_clock while bar_edit { ed_press = 15; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_clock while ed_press == 15 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 15; ed_sel = -1 }
-        on release ez_clock while ed_drag == 15 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_clock while ed_drag < 0 and ed_press == 15 { ed_sel = if(ed_sel == 15, -1, 15); ed_press = -1 }
-        group {
-            show: bar_edit and p_caffeine
-            zone box ez_caffeine { from: xs_caffeine, fl.top; size: ws_caffeine, fl.mod_h; cursor: grab; role: button; label: "Move Keep awake" }
-            box { from: xs_caffeine + 1, fl.top + 1; size: ws_caffeine - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 16 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 16, 0.6, if(ed_sel == 16, 0.4, 0.2 * ez_caffeine.hover)) }
-            box { from: xs_caffeine + 1, fl.top + 1; size: ws_caffeine - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 16, 2, 1.2)
-                  color: if(ed_sel == 16 or ed_drag == 16, fl.flare, mix(fl.trace_lit, fl.flare, ez_caffeine.hover)); opacity: if(ed_drag >= 0 and ed_drag != 16, 0.45, 0.85) }
-        }
-        on press ez_caffeine while bar_edit { ed_press = 16; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_caffeine while ed_press == 16 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 16; ed_sel = -1 }
-        on release ez_caffeine while ed_drag == 16 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_caffeine while ed_drag < 0 and ed_press == 16 { ed_sel = if(ed_sel == 16, -1, 16); ed_press = -1 }
-        group {
-            show: bar_edit and p_recorder
-            zone box ez_recorder { from: xs_recorder, fl.top; size: ws_recorder, fl.mod_h; cursor: grab; role: button; label: "Move Screen recorder" }
-            box { from: xs_recorder + 1, fl.top + 1; size: ws_recorder - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 17 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 17, 0.6, if(ed_sel == 17, 0.4, 0.2 * ez_recorder.hover)) }
-            box { from: xs_recorder + 1, fl.top + 1; size: ws_recorder - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 17, 2, 1.2)
-                  color: if(ed_sel == 17 or ed_drag == 17, fl.flare, mix(fl.trace_lit, fl.flare, ez_recorder.hover)); opacity: if(ed_drag >= 0 and ed_drag != 17, 0.45, 0.85) }
-        }
-        on press ez_recorder while bar_edit { ed_press = 17; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_recorder while ed_press == 17 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 17; ed_sel = -1 }
-        on release ez_recorder while ed_drag == 17 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_recorder while ed_drag < 0 and ed_press == 17 { ed_sel = if(ed_sel == 17, -1, 17); ed_press = -1 }
-        group {
-            show: bar_edit and p_screenshot
-            zone box ez_screenshot { from: xs_screenshot, fl.top; size: ws_screenshot, fl.mod_h; cursor: grab; role: button; label: "Move Screenshot" }
-            box { from: xs_screenshot + 1, fl.top + 1; size: ws_screenshot - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 18 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 18, 0.6, if(ed_sel == 18, 0.4, 0.2 * ez_screenshot.hover)) }
-            box { from: xs_screenshot + 1, fl.top + 1; size: ws_screenshot - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 18, 2, 1.2)
-                  color: if(ed_sel == 18 or ed_drag == 18, fl.flare, mix(fl.trace_lit, fl.flare, ez_screenshot.hover)); opacity: if(ed_drag >= 0 and ed_drag != 18, 0.45, 0.85) }
-        }
-        on press ez_screenshot while bar_edit { ed_press = 18; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_screenshot while ed_press == 18 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 18; ed_sel = -1 }
-        on release ez_screenshot while ed_drag == 18 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_screenshot while ed_drag < 0 and ed_press == 18 { ed_sel = if(ed_sel == 18, -1, 18); ed_press = -1 }
-        group {
-            show: bar_edit and p_clipboard
-            zone box ez_clipboard { from: xs_clipboard, fl.top; size: ws_clipboard, fl.mod_h; cursor: grab; role: button; label: "Move Clipboard" }
-            box { from: xs_clipboard + 1, fl.top + 1; size: ws_clipboard - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 19 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 19, 0.6, if(ed_sel == 19, 0.4, 0.2 * ez_clipboard.hover)) }
-            box { from: xs_clipboard + 1, fl.top + 1; size: ws_clipboard - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 19, 2, 1.2)
-                  color: if(ed_sel == 19 or ed_drag == 19, fl.flare, mix(fl.trace_lit, fl.flare, ez_clipboard.hover)); opacity: if(ed_drag >= 0 and ed_drag != 19, 0.45, 0.85) }
-        }
-        on press ez_clipboard while bar_edit { ed_press = 19; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_clipboard while ed_press == 19 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 19; ed_sel = -1 }
-        on release ez_clipboard while ed_drag == 19 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_clipboard while ed_drag < 0 and ed_press == 19 { ed_sel = if(ed_sel == 19, -1, 19); ed_press = -1 }
-        group {
-            show: bar_edit and p_power
-            zone box ez_power { from: xs_power, fl.top; size: ws_power, fl.mod_h; cursor: grab; role: button; label: "Move Session" }
-            box { from: xs_power + 1, fl.top + 1; size: ws_power - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 20 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 20, 0.6, if(ed_sel == 20, 0.4, 0.2 * ez_power.hover)) }
-            box { from: xs_power + 1, fl.top + 1; size: ws_power - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 20, 2, 1.2)
-                  color: if(ed_sel == 20 or ed_drag == 20, fl.flare, mix(fl.trace_lit, fl.flare, ez_power.hover)); opacity: if(ed_drag >= 0 and ed_drag != 20, 0.45, 0.85) }
-        }
-        on press ez_power while bar_edit { ed_press = 20; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_power while ed_press == 20 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 20; ed_sel = -1 }
-        on release ez_power while ed_drag == 20 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_power while ed_drag < 0 and ed_press == 20 { ed_sel = if(ed_sel == 20, -1, 20); ed_press = -1 }
-        group {
-            show: bar_edit and p_actions
-            zone box ez_actions { from: xs_actions, fl.top; size: ws_actions, fl.mod_h; cursor: grab; role: button; label: "Move Window actions" }
-            box { from: xs_actions + 1, fl.top + 1; size: ws_actions - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 21 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 21, 0.6, if(ed_sel == 21, 0.4, 0.2 * ez_actions.hover)) }
-            box { from: xs_actions + 1, fl.top + 1; size: ws_actions - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 21, 2, 1.2)
-                  color: if(ed_sel == 21 or ed_drag == 21, fl.flare, mix(fl.trace_lit, fl.flare, ez_actions.hover)); opacity: if(ed_drag >= 0 and ed_drag != 21, 0.45, 0.85) }
-        }
-        on press ez_actions while bar_edit { ed_press = 21; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_actions while ed_press == 21 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 21; ed_sel = -1 }
-        on release ez_actions while ed_drag == 21 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_actions while ed_drag < 0 and ed_press == 21 { ed_sel = if(ed_sel == 21, -1, 21); ed_press = -1 }
-        group {
-            show: bar_edit and p_overview
-            zone box ez_overview { from: xs_overview, fl.top; size: ws_overview, fl.mod_h; cursor: grab; role: button; label: "Move Overview" }
-            box { from: xs_overview + 1, fl.top + 1; size: ws_overview - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 22 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 22, 0.6, if(ed_sel == 22, 0.4, 0.2 * ez_overview.hover)) }
-            box { from: xs_overview + 1, fl.top + 1; size: ws_overview - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 22, 2, 1.2)
-                  color: if(ed_sel == 22 or ed_drag == 22, fl.flare, mix(fl.trace_lit, fl.flare, ez_overview.hover)); opacity: if(ed_drag >= 0 and ed_drag != 22, 0.45, 0.85) }
-        }
-        on press ez_overview while bar_edit { ed_press = 22; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_overview while ed_press == 22 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 22; ed_sel = -1 }
-        on release ez_overview while ed_drag == 22 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_overview while ed_drag < 0 and ed_press == 22 { ed_sel = if(ed_sel == 22, -1, 22); ed_press = -1 }
-        group {
-            show: bar_edit and p_core
-            zone box ez_core { from: xs_core, fl.top; size: ws_core, fl.mod_h; cursor: grab; role: button; label: "Move Search" }
-            box { from: xs_core + 1, fl.top + 1; size: ws_core - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 23 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 23, 0.6, if(ed_sel == 23, 0.4, 0.2 * ez_core.hover)) }
-            box { from: xs_core + 1, fl.top + 1; size: ws_core - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 23, 2, 1.2)
-                  color: if(ed_sel == 23 or ed_drag == 23, fl.flare, mix(fl.trace_lit, fl.flare, ez_core.hover)); opacity: if(ed_drag >= 0 and ed_drag != 23, 0.45, 0.85) }
-        }
-        on press ez_core while bar_edit { ed_press = 23; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_core while ed_press == 23 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 23; ed_sel = -1 }
-        on release ez_core while ed_drag == 23 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_core while ed_drag < 0 and ed_press == 23 { ed_sel = if(ed_sel == 23, -1, 23); ed_press = -1 }
-        group {
-            show: bar_edit and p_focus
-            zone box ez_focus { from: xs_focus, fl.top; size: ws_focus, fl.mod_h; cursor: grab; role: button; label: "Move Focus timer" }
-            box { from: xs_focus + 1, fl.top + 1; size: ws_focus - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 24 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 24, 0.6, if(ed_sel == 24, 0.4, 0.2 * ez_focus.hover)) }
-            box { from: xs_focus + 1, fl.top + 1; size: ws_focus - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 24, 2, 1.2)
-                  color: if(ed_sel == 24 or ed_drag == 24, fl.flare, mix(fl.trace_lit, fl.flare, ez_focus.hover)); opacity: if(ed_drag >= 0 and ed_drag != 24, 0.45, 0.85) }
-        }
-        on press ez_focus while bar_edit { ed_press = 24; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_focus while ed_press == 24 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 24; ed_sel = -1 }
-        on release ez_focus while ed_drag == 24 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_focus while ed_drag < 0 and ed_press == 24 { ed_sel = if(ed_sel == 24, -1, 24); ed_press = -1 }
-        group {
-            show: bar_edit and p_settings
-            zone box ez_settings { from: xs_settings, fl.top; size: ws_settings, fl.mod_h; cursor: grab; role: button; label: "Move Settings" }
-            box { from: xs_settings + 1, fl.top + 1; size: ws_settings - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 25 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 25, 0.6, if(ed_sel == 25, 0.4, 0.2 * ez_settings.hover)) }
-            box { from: xs_settings + 1, fl.top + 1; size: ws_settings - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 25, 2, 1.2)
-                  color: if(ed_sel == 25 or ed_drag == 25, fl.flare, mix(fl.trace_lit, fl.flare, ez_settings.hover)); opacity: if(ed_drag >= 0 and ed_drag != 25, 0.45, 0.85) }
-        }
-        on press ez_settings while bar_edit { ed_press = 25; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_settings while ed_press == 25 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 25; ed_sel = -1 }
-        on release ez_settings while ed_drag == 25 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_settings while ed_drag < 0 and ed_press == 25 { ed_sel = if(ed_sel == 25, -1, 25); ed_press = -1 }
-        group {
-            show: bar_edit and p_notes
-            zone box ez_notes { from: xs_notes, fl.top; size: ws_notes, fl.mod_h; cursor: grab; role: button; label: "Move Quick notes" }
-            box { from: xs_notes + 1, fl.top + 1; size: ws_notes - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 26 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 26, 0.6, if(ed_sel == 26, 0.4, 0.2 * ez_notes.hover)) }
-            box { from: xs_notes + 1, fl.top + 1; size: ws_notes - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 26, 2, 1.2)
-                  color: if(ed_sel == 26 or ed_drag == 26, fl.flare, mix(fl.trace_lit, fl.flare, ez_notes.hover)); opacity: if(ed_drag >= 0 and ed_drag != 26, 0.45, 0.85) }
-        }
-        on press ez_notes while bar_edit { ed_press = 26; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_notes while ed_press == 26 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 26; ed_sel = -1 }
-        on release ez_notes while ed_drag == 26 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_notes while ed_drag < 0 and ed_press == 26 { ed_sel = if(ed_sel == 26, -1, 26); ed_press = -1 }
-        group {
-            show: bar_edit and p_wallpaper
-            zone box ez_wallpaper { from: xs_wallpaper, fl.top; size: ws_wallpaper, fl.mod_h; cursor: grab; role: button; label: "Move Wallpaper studio" }
-            box { from: xs_wallpaper + 1, fl.top + 1; size: ws_wallpaper - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 27 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 27, 0.6, if(ed_sel == 27, 0.4, 0.2 * ez_wallpaper.hover)) }
-            box { from: xs_wallpaper + 1, fl.top + 1; size: ws_wallpaper - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 27, 2, 1.2)
-                  color: if(ed_sel == 27 or ed_drag == 27, fl.flare, mix(fl.trace_lit, fl.flare, ez_wallpaper.hover)); opacity: if(ed_drag >= 0 and ed_drag != 27, 0.45, 0.85) }
-        }
-        on press ez_wallpaper while bar_edit { ed_press = 27; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_wallpaper while ed_press == 27 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 27; ed_sel = -1 }
-        on release ez_wallpaper while ed_drag == 27 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_wallpaper while ed_drag < 0 and ed_press == 27 { ed_sel = if(ed_sel == 27, -1, 27); ed_press = -1 }
-        group {
-            show: bar_edit and p_nexus
-            zone box ez_nexus { from: xs_nexus, fl.top; size: ws_nexus, fl.mod_h; cursor: grab; role: button; label: "Move Control Nexus" }
-            box { from: xs_nexus + 1, fl.top + 1; size: ws_nexus - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 28 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 28, 0.6, if(ed_sel == 28, 0.4, 0.2 * ez_nexus.hover)) }
-            box { from: xs_nexus + 1, fl.top + 1; size: ws_nexus - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 28, 2, 1.2)
-                  color: if(ed_sel == 28 or ed_drag == 28, fl.flare, mix(fl.trace_lit, fl.flare, ez_nexus.hover)); opacity: if(ed_drag >= 0 and ed_drag != 28, 0.45, 0.85) }
-        }
-        on press ez_nexus while bar_edit { ed_press = 28; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_nexus while ed_press == 28 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 28; ed_sel = -1 }
-        on release ez_nexus while ed_drag == 28 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_nexus while ed_drag < 0 and ed_press == 28 { ed_sel = if(ed_sel == 28, -1, 28); ed_press = -1 }
-        group {
-            show: bar_edit and p_updates
-            zone box ez_updates { from: xs_updates, fl.top; size: ws_updates, fl.mod_h; cursor: grab; role: button; label: "Move System updates" }
-            box { from: xs_updates + 1, fl.top + 1; size: ws_updates - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 29 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 29, 0.6, if(ed_sel == 29, 0.4, 0.2 * ez_updates.hover)) }
-            box { from: xs_updates + 1, fl.top + 1; size: ws_updates - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 29, 2, 1.2)
-                  color: if(ed_sel == 29 or ed_drag == 29, fl.flare, mix(fl.trace_lit, fl.flare, ez_updates.hover)); opacity: if(ed_drag >= 0 and ed_drag != 29, 0.45, 0.85) }
-        }
-        on press ez_updates while bar_edit { ed_press = 29; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_updates while ed_press == 29 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 29; ed_sel = -1 }
-        on release ez_updates while ed_drag == 29 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_updates while ed_drag < 0 and ed_press == 29 { ed_sel = if(ed_sel == 29, -1, 29); ed_press = -1 }
-        group {
-            show: bar_edit and p_claude
-            zone box ez_claude { from: xs_claude, fl.top; size: ws_claude, fl.mod_h; cursor: grab; role: button; label: "Move Claude" }
-            box { from: xs_claude + 1, fl.top + 1; size: ws_claude - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 30 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 30, 0.6, if(ed_sel == 30, 0.4, 0.2 * ez_claude.hover)) }
-            box { from: xs_claude + 1, fl.top + 1; size: ws_claude - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 30, 2, 1.2)
-                  color: if(ed_sel == 30 or ed_drag == 30, fl.flare, mix(fl.trace_lit, fl.flare, ez_claude.hover)); opacity: if(ed_drag >= 0 and ed_drag != 30, 0.45, 0.85) }
-        }
-        on press ez_claude while bar_edit { ed_press = 30; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_claude while ed_press == 30 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 30; ed_sel = -1 }
-        on release ez_claude while ed_drag == 30 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_claude while ed_drag < 0 and ed_press == 30 { ed_sel = if(ed_sel == 30, -1, 30); ed_press = -1 }
-        group {
-            show: bar_edit and p_github
-            zone box ez_github { from: xs_github, fl.top; size: ws_github, fl.mod_h; cursor: grab; role: button; label: "Move GitHub" }
-            box { from: xs_github + 1, fl.top + 1; size: ws_github - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 31 and ed_merge, fl.ember_fill, fl.well)
-                  opacity: if(ed_drag == 31, 0.6, if(ed_sel == 31, 0.4, 0.2 * ez_github.hover)) }
-            box { from: xs_github + 1, fl.top + 1; size: ws_github - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 31, 2, 1.2)
-                  color: if(ed_sel == 31 or ed_drag == 31, fl.flare, mix(fl.trace_lit, fl.flare, ez_github.hover)); opacity: if(ed_drag >= 0 and ed_drag != 31, 0.45, 0.85) }
-        }
-        on press ez_github while bar_edit { ed_press = 31; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
-        on drag ez_github while ed_press == 31 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 31; ed_sel = -1 }
-        on release ez_github while ed_drag == 31 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
-        on release ez_github while ed_drag < 0 and ed_press == 31 { ed_sel = if(ed_sel == 31, -1, 31); ed_press = -1 }
-        // The ghost's word: what letting go now will do.
-        text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates", "Claude", "GitHub") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
-        text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
-        // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-        let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates, xs_claude, xs_github) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates, ws_claude, ws_github) / 2 - 170, 12, screen.width - 352)
-        let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates, fi_claude, fi_github)
-        let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates, g_claude, g_github)
-        group {
-            show: bar_edit and ed_sel >= 0 and ed_drag < 0
-            move: ed_ix, st_res + 92
-            FlPlate(340, 128) {
-                text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpaper studio", "Control Nexus", "System updates", "Claude", "GitHub") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
-                text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
-                SChoice(144, 32, 64, "Line", ed_fi == 1, set_value, (200 + ed_sel) * 1000 + 1)
-                SChoice(208, 32, 64, "Corners", ed_fi == 2, set_value, (200 + ed_sel) * 1000 + 2)
-                SChoice(272, 32, 64, "None", ed_fi == 3, set_value, (200 + ed_sel) * 1000 + 3)
-                SButton(14, 72, 40, "◀", edit_op, ed_sel * 10 + 0)
-                SButton(58, 72, 40, "▶", edit_op, ed_sel * 10 + 1)
-                SButton(106, 72, 70, "Join ◀", edit_op, ed_sel * 10 + 2)
-                SButton(180, 72, 70, "Join ▶", edit_op, ed_sel * 10 + 3)
-                SButton(254, 72, 72, "Hide", edit_op, ed_sel * 10 + 5, true)
-                group {
-                    opacity: if(ed_g, 1, 0.35)
-                    SButton(106, 104, 144, "Split from group", edit_op, ed_sel * 10 + 4)
-                }
-                text "← → MOVE · DEL HIDE" { at: 326, 115; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+    group {
+        show: bar_edit and p_workspaces
+        zone box ez_workspaces { from: xs_workspaces, fl.top; size: ws_workspaces, fl.mod_h; cursor: grab; role: button; label: "Move Workspaces" }
+        box { from: xs_workspaces + 1, fl.top + 1; size: ws_workspaces - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 0 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 0, 0.6, if(ed_sel == 0, 0.4, 0.2 * ez_workspaces.hover)) }
+        box { from: xs_workspaces + 1, fl.top + 1; size: ws_workspaces - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 0, 2, 1.2)
+              color: if(ed_sel == 0 or ed_drag == 0, fl.flare, mix(fl.trace_lit, fl.flare, ez_workspaces.hover)); opacity: if(ed_drag >= 0 and ed_drag != 0, 0.45, 0.85) }
+    }
+    on press ez_workspaces while bar_edit { ed_press = 0; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_workspaces while ed_press == 0 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 0; ed_sel = -1 }
+    on release ez_workspaces while ed_drag == 0 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_workspaces while ed_drag < 0 and ed_press == 0 { ed_sel = if(ed_sel == 0, -1, 0); ed_press = -1 }
+    group {
+        show: bar_edit and p_window
+        zone box ez_window { from: xs_window, fl.top; size: ws_window, fl.mod_h; cursor: grab; role: button; label: "Move Window title" }
+        box { from: xs_window + 1, fl.top + 1; size: ws_window - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 1 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 1, 0.6, if(ed_sel == 1, 0.4, 0.2 * ez_window.hover)) }
+        box { from: xs_window + 1, fl.top + 1; size: ws_window - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 1, 2, 1.2)
+              color: if(ed_sel == 1 or ed_drag == 1, fl.flare, mix(fl.trace_lit, fl.flare, ez_window.hover)); opacity: if(ed_drag >= 0 and ed_drag != 1, 0.45, 0.85) }
+    }
+    on press ez_window while bar_edit { ed_press = 1; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_window while ed_press == 1 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 1; ed_sel = -1 }
+    on release ez_window while ed_drag == 1 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_window while ed_drag < 0 and ed_press == 1 { ed_sel = if(ed_sel == 1, -1, 1); ed_press = -1 }
+    group {
+        show: bar_edit and p_media
+        zone box ez_media { from: xs_media, fl.top; size: ws_media, fl.mod_h; cursor: grab; role: button; label: "Move Media player" }
+        box { from: xs_media + 1, fl.top + 1; size: ws_media - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 2 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 2, 0.6, if(ed_sel == 2, 0.4, 0.2 * ez_media.hover)) }
+        box { from: xs_media + 1, fl.top + 1; size: ws_media - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 2, 2, 1.2)
+              color: if(ed_sel == 2 or ed_drag == 2, fl.flare, mix(fl.trace_lit, fl.flare, ez_media.hover)); opacity: if(ed_drag >= 0 and ed_drag != 2, 0.45, 0.85) }
+    }
+    on press ez_media while bar_edit { ed_press = 2; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_media while ed_press == 2 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 2; ed_sel = -1 }
+    on release ez_media while ed_drag == 2 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_media while ed_drag < 0 and ed_press == 2 { ed_sel = if(ed_sel == 2, -1, 2); ed_press = -1 }
+    group {
+        show: bar_edit and p_resources
+        zone box ez_resources { from: xs_resources, fl.top; size: ws_resources, fl.mod_h; cursor: grab; role: button; label: "Move Resources" }
+        box { from: xs_resources + 1, fl.top + 1; size: ws_resources - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 3 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 3, 0.6, if(ed_sel == 3, 0.4, 0.2 * ez_resources.hover)) }
+        box { from: xs_resources + 1, fl.top + 1; size: ws_resources - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 3, 2, 1.2)
+              color: if(ed_sel == 3 or ed_drag == 3, fl.flare, mix(fl.trace_lit, fl.flare, ez_resources.hover)); opacity: if(ed_drag >= 0 and ed_drag != 3, 0.45, 0.85) }
+    }
+    on press ez_resources while bar_edit { ed_press = 3; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_resources while ed_press == 3 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 3; ed_sel = -1 }
+    on release ez_resources while ed_drag == 3 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_resources while ed_drag < 0 and ed_press == 3 { ed_sel = if(ed_sel == 3, -1, 3); ed_press = -1 }
+    group {
+        show: bar_edit and p_bandwidth
+        zone box ez_bandwidth { from: xs_bandwidth, fl.top; size: ws_bandwidth, fl.mod_h; cursor: grab; role: button; label: "Move Bandwidth" }
+        box { from: xs_bandwidth + 1, fl.top + 1; size: ws_bandwidth - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 4 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 4, 0.6, if(ed_sel == 4, 0.4, 0.2 * ez_bandwidth.hover)) }
+        box { from: xs_bandwidth + 1, fl.top + 1; size: ws_bandwidth - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 4, 2, 1.2)
+              color: if(ed_sel == 4 or ed_drag == 4, fl.flare, mix(fl.trace_lit, fl.flare, ez_bandwidth.hover)); opacity: if(ed_drag >= 0 and ed_drag != 4, 0.45, 0.85) }
+    }
+    on press ez_bandwidth while bar_edit { ed_press = 4; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_bandwidth while ed_press == 4 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 4; ed_sel = -1 }
+    on release ez_bandwidth while ed_drag == 4 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_bandwidth while ed_drag < 0 and ed_press == 4 { ed_sel = if(ed_sel == 4, -1, 4); ed_press = -1 }
+    group {
+        show: bar_edit and p_keyboard
+        zone box ez_keyboard { from: xs_keyboard, fl.top; size: ws_keyboard, fl.mod_h; cursor: grab; role: button; label: "Move Keyboard layout" }
+        box { from: xs_keyboard + 1, fl.top + 1; size: ws_keyboard - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 5 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 5, 0.6, if(ed_sel == 5, 0.4, 0.2 * ez_keyboard.hover)) }
+        box { from: xs_keyboard + 1, fl.top + 1; size: ws_keyboard - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 5, 2, 1.2)
+              color: if(ed_sel == 5 or ed_drag == 5, fl.flare, mix(fl.trace_lit, fl.flare, ez_keyboard.hover)); opacity: if(ed_drag >= 0 and ed_drag != 5, 0.45, 0.85) }
+    }
+    on press ez_keyboard while bar_edit { ed_press = 5; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_keyboard while ed_press == 5 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 5; ed_sel = -1 }
+    on release ez_keyboard while ed_drag == 5 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_keyboard while ed_drag < 0 and ed_press == 5 { ed_sel = if(ed_sel == 5, -1, 5); ed_press = -1 }
+    group {
+        show: bar_edit and p_weather
+        zone box ez_weather { from: xs_weather, fl.top; size: ws_weather, fl.mod_h; cursor: grab; role: button; label: "Move Weather" }
+        box { from: xs_weather + 1, fl.top + 1; size: ws_weather - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 6 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 6, 0.6, if(ed_sel == 6, 0.4, 0.2 * ez_weather.hover)) }
+        box { from: xs_weather + 1, fl.top + 1; size: ws_weather - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 6, 2, 1.2)
+              color: if(ed_sel == 6 or ed_drag == 6, fl.flare, mix(fl.trace_lit, fl.flare, ez_weather.hover)); opacity: if(ed_drag >= 0 and ed_drag != 6, 0.45, 0.85) }
+    }
+    on press ez_weather while bar_edit { ed_press = 6; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_weather while ed_press == 6 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 6; ed_sel = -1 }
+    on release ez_weather while ed_drag == 6 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_weather while ed_drag < 0 and ed_press == 6 { ed_sel = if(ed_sel == 6, -1, 6); ed_press = -1 }
+    group {
+        show: bar_edit and p_tray
+        zone box ez_tray { from: xs_tray, fl.top; size: ws_tray, fl.mod_h; cursor: grab; role: button; label: "Move Tray" }
+        box { from: xs_tray + 1, fl.top + 1; size: ws_tray - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 7 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 7, 0.6, if(ed_sel == 7, 0.4, 0.2 * ez_tray.hover)) }
+        box { from: xs_tray + 1, fl.top + 1; size: ws_tray - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 7, 2, 1.2)
+              color: if(ed_sel == 7 or ed_drag == 7, fl.flare, mix(fl.trace_lit, fl.flare, ez_tray.hover)); opacity: if(ed_drag >= 0 and ed_drag != 7, 0.45, 0.85) }
+    }
+    on press ez_tray while bar_edit { ed_press = 7; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_tray while ed_press == 7 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 7; ed_sel = -1 }
+    on release ez_tray while ed_drag == 7 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_tray while ed_drag < 0 and ed_press == 7 { ed_sel = if(ed_sel == 7, -1, 7); ed_press = -1 }
+    group {
+        show: bar_edit and p_notifications
+        zone box ez_notifications { from: xs_notifications, fl.top; size: ws_notifications, fl.mod_h; cursor: grab; role: button; label: "Move Notifications" }
+        box { from: xs_notifications + 1, fl.top + 1; size: ws_notifications - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 8 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 8, 0.6, if(ed_sel == 8, 0.4, 0.2 * ez_notifications.hover)) }
+        box { from: xs_notifications + 1, fl.top + 1; size: ws_notifications - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 8, 2, 1.2)
+              color: if(ed_sel == 8 or ed_drag == 8, fl.flare, mix(fl.trace_lit, fl.flare, ez_notifications.hover)); opacity: if(ed_drag >= 0 and ed_drag != 8, 0.45, 0.85) }
+    }
+    on press ez_notifications while bar_edit { ed_press = 8; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_notifications while ed_press == 8 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 8; ed_sel = -1 }
+    on release ez_notifications while ed_drag == 8 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_notifications while ed_drag < 0 and ed_press == 8 { ed_sel = if(ed_sel == 8, -1, 8); ed_press = -1 }
+    group {
+        show: bar_edit and p_mic
+        zone box ez_mic { from: xs_mic, fl.top; size: ws_mic, fl.mod_h; cursor: grab; role: button; label: "Move Microphone" }
+        box { from: xs_mic + 1, fl.top + 1; size: ws_mic - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 9 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 9, 0.6, if(ed_sel == 9, 0.4, 0.2 * ez_mic.hover)) }
+        box { from: xs_mic + 1, fl.top + 1; size: ws_mic - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 9, 2, 1.2)
+              color: if(ed_sel == 9 or ed_drag == 9, fl.flare, mix(fl.trace_lit, fl.flare, ez_mic.hover)); opacity: if(ed_drag >= 0 and ed_drag != 9, 0.45, 0.85) }
+    }
+    on press ez_mic while bar_edit { ed_press = 9; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_mic while ed_press == 9 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 9; ed_sel = -1 }
+    on release ez_mic while ed_drag == 9 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_mic while ed_drag < 0 and ed_press == 9 { ed_sel = if(ed_sel == 9, -1, 9); ed_press = -1 }
+    group {
+        show: bar_edit and p_volume
+        zone box ez_volume { from: xs_volume, fl.top; size: ws_volume, fl.mod_h; cursor: grab; role: button; label: "Move Volume" }
+        box { from: xs_volume + 1, fl.top + 1; size: ws_volume - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 10 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 10, 0.6, if(ed_sel == 10, 0.4, 0.2 * ez_volume.hover)) }
+        box { from: xs_volume + 1, fl.top + 1; size: ws_volume - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 10, 2, 1.2)
+              color: if(ed_sel == 10 or ed_drag == 10, fl.flare, mix(fl.trace_lit, fl.flare, ez_volume.hover)); opacity: if(ed_drag >= 0 and ed_drag != 10, 0.45, 0.85) }
+    }
+    on press ez_volume while bar_edit { ed_press = 10; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_volume while ed_press == 10 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 10; ed_sel = -1 }
+    on release ez_volume while ed_drag == 10 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_volume while ed_drag < 0 and ed_press == 10 { ed_sel = if(ed_sel == 10, -1, 10); ed_press = -1 }
+    group {
+        show: bar_edit and p_brightness
+        zone box ez_brightness { from: xs_brightness, fl.top; size: ws_brightness, fl.mod_h; cursor: grab; role: button; label: "Move Brightness" }
+        box { from: xs_brightness + 1, fl.top + 1; size: ws_brightness - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 11 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 11, 0.6, if(ed_sel == 11, 0.4, 0.2 * ez_brightness.hover)) }
+        box { from: xs_brightness + 1, fl.top + 1; size: ws_brightness - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 11, 2, 1.2)
+              color: if(ed_sel == 11 or ed_drag == 11, fl.flare, mix(fl.trace_lit, fl.flare, ez_brightness.hover)); opacity: if(ed_drag >= 0 and ed_drag != 11, 0.45, 0.85) }
+    }
+    on press ez_brightness while bar_edit { ed_press = 11; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_brightness while ed_press == 11 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 11; ed_sel = -1 }
+    on release ez_brightness while ed_drag == 11 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_brightness while ed_drag < 0 and ed_press == 11 { ed_sel = if(ed_sel == 11, -1, 11); ed_press = -1 }
+    group {
+        show: bar_edit and p_battery
+        zone box ez_battery { from: xs_battery, fl.top; size: ws_battery, fl.mod_h; cursor: grab; role: button; label: "Move Battery" }
+        box { from: xs_battery + 1, fl.top + 1; size: ws_battery - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 12 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 12, 0.6, if(ed_sel == 12, 0.4, 0.2 * ez_battery.hover)) }
+        box { from: xs_battery + 1, fl.top + 1; size: ws_battery - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 12, 2, 1.2)
+              color: if(ed_sel == 12 or ed_drag == 12, fl.flare, mix(fl.trace_lit, fl.flare, ez_battery.hover)); opacity: if(ed_drag >= 0 and ed_drag != 12, 0.45, 0.85) }
+    }
+    on press ez_battery while bar_edit { ed_press = 12; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_battery while ed_press == 12 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 12; ed_sel = -1 }
+    on release ez_battery while ed_drag == 12 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_battery while ed_drag < 0 and ed_press == 12 { ed_sel = if(ed_sel == 12, -1, 12); ed_press = -1 }
+    group {
+        show: bar_edit and p_network
+        zone box ez_network { from: xs_network, fl.top; size: ws_network, fl.mod_h; cursor: grab; role: button; label: "Move Network" }
+        box { from: xs_network + 1, fl.top + 1; size: ws_network - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 13 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 13, 0.6, if(ed_sel == 13, 0.4, 0.2 * ez_network.hover)) }
+        box { from: xs_network + 1, fl.top + 1; size: ws_network - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 13, 2, 1.2)
+              color: if(ed_sel == 13 or ed_drag == 13, fl.flare, mix(fl.trace_lit, fl.flare, ez_network.hover)); opacity: if(ed_drag >= 0 and ed_drag != 13, 0.45, 0.85) }
+    }
+    on press ez_network while bar_edit { ed_press = 13; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_network while ed_press == 13 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 13; ed_sel = -1 }
+    on release ez_network while ed_drag == 13 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_network while ed_drag < 0 and ed_press == 13 { ed_sel = if(ed_sel == 13, -1, 13); ed_press = -1 }
+    group {
+        show: bar_edit and p_bluetooth
+        zone box ez_bluetooth { from: xs_bluetooth, fl.top; size: ws_bluetooth, fl.mod_h; cursor: grab; role: button; label: "Move Bluetooth" }
+        box { from: xs_bluetooth + 1, fl.top + 1; size: ws_bluetooth - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 14 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 14, 0.6, if(ed_sel == 14, 0.4, 0.2 * ez_bluetooth.hover)) }
+        box { from: xs_bluetooth + 1, fl.top + 1; size: ws_bluetooth - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 14, 2, 1.2)
+              color: if(ed_sel == 14 or ed_drag == 14, fl.flare, mix(fl.trace_lit, fl.flare, ez_bluetooth.hover)); opacity: if(ed_drag >= 0 and ed_drag != 14, 0.45, 0.85) }
+    }
+    on press ez_bluetooth while bar_edit { ed_press = 14; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_bluetooth while ed_press == 14 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 14; ed_sel = -1 }
+    on release ez_bluetooth while ed_drag == 14 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_bluetooth while ed_drag < 0 and ed_press == 14 { ed_sel = if(ed_sel == 14, -1, 14); ed_press = -1 }
+    group {
+        show: bar_edit and p_clock
+        zone box ez_clock { from: xs_clock, fl.top; size: ws_clock, fl.mod_h; cursor: grab; role: button; label: "Move Clock" }
+        box { from: xs_clock + 1, fl.top + 1; size: ws_clock - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 15 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 15, 0.6, if(ed_sel == 15, 0.4, 0.2 * ez_clock.hover)) }
+        box { from: xs_clock + 1, fl.top + 1; size: ws_clock - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 15, 2, 1.2)
+              color: if(ed_sel == 15 or ed_drag == 15, fl.flare, mix(fl.trace_lit, fl.flare, ez_clock.hover)); opacity: if(ed_drag >= 0 and ed_drag != 15, 0.45, 0.85) }
+    }
+    on press ez_clock while bar_edit { ed_press = 15; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_clock while ed_press == 15 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 15; ed_sel = -1 }
+    on release ez_clock while ed_drag == 15 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_clock while ed_drag < 0 and ed_press == 15 { ed_sel = if(ed_sel == 15, -1, 15); ed_press = -1 }
+    group {
+        show: bar_edit and p_caffeine
+        zone box ez_caffeine { from: xs_caffeine, fl.top; size: ws_caffeine, fl.mod_h; cursor: grab; role: button; label: "Move Keep awake" }
+        box { from: xs_caffeine + 1, fl.top + 1; size: ws_caffeine - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 16 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 16, 0.6, if(ed_sel == 16, 0.4, 0.2 * ez_caffeine.hover)) }
+        box { from: xs_caffeine + 1, fl.top + 1; size: ws_caffeine - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 16, 2, 1.2)
+              color: if(ed_sel == 16 or ed_drag == 16, fl.flare, mix(fl.trace_lit, fl.flare, ez_caffeine.hover)); opacity: if(ed_drag >= 0 and ed_drag != 16, 0.45, 0.85) }
+    }
+    on press ez_caffeine while bar_edit { ed_press = 16; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_caffeine while ed_press == 16 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 16; ed_sel = -1 }
+    on release ez_caffeine while ed_drag == 16 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_caffeine while ed_drag < 0 and ed_press == 16 { ed_sel = if(ed_sel == 16, -1, 16); ed_press = -1 }
+    group {
+        show: bar_edit and p_recorder
+        zone box ez_recorder { from: xs_recorder, fl.top; size: ws_recorder, fl.mod_h; cursor: grab; role: button; label: "Move Screen recorder" }
+        box { from: xs_recorder + 1, fl.top + 1; size: ws_recorder - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 17 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 17, 0.6, if(ed_sel == 17, 0.4, 0.2 * ez_recorder.hover)) }
+        box { from: xs_recorder + 1, fl.top + 1; size: ws_recorder - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 17, 2, 1.2)
+              color: if(ed_sel == 17 or ed_drag == 17, fl.flare, mix(fl.trace_lit, fl.flare, ez_recorder.hover)); opacity: if(ed_drag >= 0 and ed_drag != 17, 0.45, 0.85) }
+    }
+    on press ez_recorder while bar_edit { ed_press = 17; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_recorder while ed_press == 17 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 17; ed_sel = -1 }
+    on release ez_recorder while ed_drag == 17 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_recorder while ed_drag < 0 and ed_press == 17 { ed_sel = if(ed_sel == 17, -1, 17); ed_press = -1 }
+    group {
+        show: bar_edit and p_screenshot
+        zone box ez_screenshot { from: xs_screenshot, fl.top; size: ws_screenshot, fl.mod_h; cursor: grab; role: button; label: "Move Screenshot" }
+        box { from: xs_screenshot + 1, fl.top + 1; size: ws_screenshot - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 18 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 18, 0.6, if(ed_sel == 18, 0.4, 0.2 * ez_screenshot.hover)) }
+        box { from: xs_screenshot + 1, fl.top + 1; size: ws_screenshot - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 18, 2, 1.2)
+              color: if(ed_sel == 18 or ed_drag == 18, fl.flare, mix(fl.trace_lit, fl.flare, ez_screenshot.hover)); opacity: if(ed_drag >= 0 and ed_drag != 18, 0.45, 0.85) }
+    }
+    on press ez_screenshot while bar_edit { ed_press = 18; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_screenshot while ed_press == 18 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 18; ed_sel = -1 }
+    on release ez_screenshot while ed_drag == 18 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_screenshot while ed_drag < 0 and ed_press == 18 { ed_sel = if(ed_sel == 18, -1, 18); ed_press = -1 }
+    group {
+        show: bar_edit and p_clipboard
+        zone box ez_clipboard { from: xs_clipboard, fl.top; size: ws_clipboard, fl.mod_h; cursor: grab; role: button; label: "Move Clipboard" }
+        box { from: xs_clipboard + 1, fl.top + 1; size: ws_clipboard - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 19 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 19, 0.6, if(ed_sel == 19, 0.4, 0.2 * ez_clipboard.hover)) }
+        box { from: xs_clipboard + 1, fl.top + 1; size: ws_clipboard - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 19, 2, 1.2)
+              color: if(ed_sel == 19 or ed_drag == 19, fl.flare, mix(fl.trace_lit, fl.flare, ez_clipboard.hover)); opacity: if(ed_drag >= 0 and ed_drag != 19, 0.45, 0.85) }
+    }
+    on press ez_clipboard while bar_edit { ed_press = 19; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_clipboard while ed_press == 19 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 19; ed_sel = -1 }
+    on release ez_clipboard while ed_drag == 19 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_clipboard while ed_drag < 0 and ed_press == 19 { ed_sel = if(ed_sel == 19, -1, 19); ed_press = -1 }
+    group {
+        show: bar_edit and p_power
+        zone box ez_power { from: xs_power, fl.top; size: ws_power, fl.mod_h; cursor: grab; role: button; label: "Move Session" }
+        box { from: xs_power + 1, fl.top + 1; size: ws_power - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 20 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 20, 0.6, if(ed_sel == 20, 0.4, 0.2 * ez_power.hover)) }
+        box { from: xs_power + 1, fl.top + 1; size: ws_power - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 20, 2, 1.2)
+              color: if(ed_sel == 20 or ed_drag == 20, fl.flare, mix(fl.trace_lit, fl.flare, ez_power.hover)); opacity: if(ed_drag >= 0 and ed_drag != 20, 0.45, 0.85) }
+    }
+    on press ez_power while bar_edit { ed_press = 20; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_power while ed_press == 20 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 20; ed_sel = -1 }
+    on release ez_power while ed_drag == 20 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_power while ed_drag < 0 and ed_press == 20 { ed_sel = if(ed_sel == 20, -1, 20); ed_press = -1 }
+    group {
+        show: bar_edit and p_actions
+        zone box ez_actions { from: xs_actions, fl.top; size: ws_actions, fl.mod_h; cursor: grab; role: button; label: "Move Window actions" }
+        box { from: xs_actions + 1, fl.top + 1; size: ws_actions - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 21 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 21, 0.6, if(ed_sel == 21, 0.4, 0.2 * ez_actions.hover)) }
+        box { from: xs_actions + 1, fl.top + 1; size: ws_actions - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 21, 2, 1.2)
+              color: if(ed_sel == 21 or ed_drag == 21, fl.flare, mix(fl.trace_lit, fl.flare, ez_actions.hover)); opacity: if(ed_drag >= 0 and ed_drag != 21, 0.45, 0.85) }
+    }
+    on press ez_actions while bar_edit { ed_press = 21; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_actions while ed_press == 21 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 21; ed_sel = -1 }
+    on release ez_actions while ed_drag == 21 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_actions while ed_drag < 0 and ed_press == 21 { ed_sel = if(ed_sel == 21, -1, 21); ed_press = -1 }
+    group {
+        show: bar_edit and p_overview
+        zone box ez_overview { from: xs_overview, fl.top; size: ws_overview, fl.mod_h; cursor: grab; role: button; label: "Move Overview" }
+        box { from: xs_overview + 1, fl.top + 1; size: ws_overview - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 22 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 22, 0.6, if(ed_sel == 22, 0.4, 0.2 * ez_overview.hover)) }
+        box { from: xs_overview + 1, fl.top + 1; size: ws_overview - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 22, 2, 1.2)
+              color: if(ed_sel == 22 or ed_drag == 22, fl.flare, mix(fl.trace_lit, fl.flare, ez_overview.hover)); opacity: if(ed_drag >= 0 and ed_drag != 22, 0.45, 0.85) }
+    }
+    on press ez_overview while bar_edit { ed_press = 22; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_overview while ed_press == 22 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 22; ed_sel = -1 }
+    on release ez_overview while ed_drag == 22 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_overview while ed_drag < 0 and ed_press == 22 { ed_sel = if(ed_sel == 22, -1, 22); ed_press = -1 }
+    group {
+        show: bar_edit and p_core
+        zone box ez_core { from: xs_core, fl.top; size: ws_core, fl.mod_h; cursor: grab; role: button; label: "Move Search" }
+        box { from: xs_core + 1, fl.top + 1; size: ws_core - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 23 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 23, 0.6, if(ed_sel == 23, 0.4, 0.2 * ez_core.hover)) }
+        box { from: xs_core + 1, fl.top + 1; size: ws_core - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 23, 2, 1.2)
+              color: if(ed_sel == 23 or ed_drag == 23, fl.flare, mix(fl.trace_lit, fl.flare, ez_core.hover)); opacity: if(ed_drag >= 0 and ed_drag != 23, 0.45, 0.85) }
+    }
+    on press ez_core while bar_edit { ed_press = 23; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_core while ed_press == 23 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 23; ed_sel = -1 }
+    on release ez_core while ed_drag == 23 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_core while ed_drag < 0 and ed_press == 23 { ed_sel = if(ed_sel == 23, -1, 23); ed_press = -1 }
+    group {
+        show: bar_edit and p_focus
+        zone box ez_focus { from: xs_focus, fl.top; size: ws_focus, fl.mod_h; cursor: grab; role: button; label: "Move Focus timer" }
+        box { from: xs_focus + 1, fl.top + 1; size: ws_focus - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 24 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 24, 0.6, if(ed_sel == 24, 0.4, 0.2 * ez_focus.hover)) }
+        box { from: xs_focus + 1, fl.top + 1; size: ws_focus - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 24, 2, 1.2)
+              color: if(ed_sel == 24 or ed_drag == 24, fl.flare, mix(fl.trace_lit, fl.flare, ez_focus.hover)); opacity: if(ed_drag >= 0 and ed_drag != 24, 0.45, 0.85) }
+    }
+    on press ez_focus while bar_edit { ed_press = 24; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_focus while ed_press == 24 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 24; ed_sel = -1 }
+    on release ez_focus while ed_drag == 24 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_focus while ed_drag < 0 and ed_press == 24 { ed_sel = if(ed_sel == 24, -1, 24); ed_press = -1 }
+    group {
+        show: bar_edit and p_settings
+        zone box ez_settings { from: xs_settings, fl.top; size: ws_settings, fl.mod_h; cursor: grab; role: button; label: "Move Settings" }
+        box { from: xs_settings + 1, fl.top + 1; size: ws_settings - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 25 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 25, 0.6, if(ed_sel == 25, 0.4, 0.2 * ez_settings.hover)) }
+        box { from: xs_settings + 1, fl.top + 1; size: ws_settings - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 25, 2, 1.2)
+              color: if(ed_sel == 25 or ed_drag == 25, fl.flare, mix(fl.trace_lit, fl.flare, ez_settings.hover)); opacity: if(ed_drag >= 0 and ed_drag != 25, 0.45, 0.85) }
+    }
+    on press ez_settings while bar_edit { ed_press = 25; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_settings while ed_press == 25 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 25; ed_sel = -1 }
+    on release ez_settings while ed_drag == 25 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_settings while ed_drag < 0 and ed_press == 25 { ed_sel = if(ed_sel == 25, -1, 25); ed_press = -1 }
+    group {
+        show: bar_edit and p_notes
+        zone box ez_notes { from: xs_notes, fl.top; size: ws_notes, fl.mod_h; cursor: grab; role: button; label: "Move Quick notes" }
+        box { from: xs_notes + 1, fl.top + 1; size: ws_notes - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 26 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 26, 0.6, if(ed_sel == 26, 0.4, 0.2 * ez_notes.hover)) }
+        box { from: xs_notes + 1, fl.top + 1; size: ws_notes - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 26, 2, 1.2)
+              color: if(ed_sel == 26 or ed_drag == 26, fl.flare, mix(fl.trace_lit, fl.flare, ez_notes.hover)); opacity: if(ed_drag >= 0 and ed_drag != 26, 0.45, 0.85) }
+    }
+    on press ez_notes while bar_edit { ed_press = 26; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_notes while ed_press == 26 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 26; ed_sel = -1 }
+    on release ez_notes while ed_drag == 26 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_notes while ed_drag < 0 and ed_press == 26 { ed_sel = if(ed_sel == 26, -1, 26); ed_press = -1 }
+    group {
+        show: bar_edit and p_wallpaper
+        zone box ez_wallpaper { from: xs_wallpaper, fl.top; size: ws_wallpaper, fl.mod_h; cursor: grab; role: button; label: "Move Wallpapers" }
+        box { from: xs_wallpaper + 1, fl.top + 1; size: ws_wallpaper - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 27 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 27, 0.6, if(ed_sel == 27, 0.4, 0.2 * ez_wallpaper.hover)) }
+        box { from: xs_wallpaper + 1, fl.top + 1; size: ws_wallpaper - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 27, 2, 1.2)
+              color: if(ed_sel == 27 or ed_drag == 27, fl.flare, mix(fl.trace_lit, fl.flare, ez_wallpaper.hover)); opacity: if(ed_drag >= 0 and ed_drag != 27, 0.45, 0.85) }
+    }
+    on press ez_wallpaper while bar_edit { ed_press = 27; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_wallpaper while ed_press == 27 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 27; ed_sel = -1 }
+    on release ez_wallpaper while ed_drag == 27 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_wallpaper while ed_drag < 0 and ed_press == 27 { ed_sel = if(ed_sel == 27, -1, 27); ed_press = -1 }
+    group {
+        show: bar_edit and p_nexus
+        zone box ez_nexus { from: xs_nexus, fl.top; size: ws_nexus, fl.mod_h; cursor: grab; role: button; label: "Move Control Nexus" }
+        box { from: xs_nexus + 1, fl.top + 1; size: ws_nexus - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 28 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 28, 0.6, if(ed_sel == 28, 0.4, 0.2 * ez_nexus.hover)) }
+        box { from: xs_nexus + 1, fl.top + 1; size: ws_nexus - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 28, 2, 1.2)
+              color: if(ed_sel == 28 or ed_drag == 28, fl.flare, mix(fl.trace_lit, fl.flare, ez_nexus.hover)); opacity: if(ed_drag >= 0 and ed_drag != 28, 0.45, 0.85) }
+    }
+    on press ez_nexus while bar_edit { ed_press = 28; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_nexus while ed_press == 28 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 28; ed_sel = -1 }
+    on release ez_nexus while ed_drag == 28 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_nexus while ed_drag < 0 and ed_press == 28 { ed_sel = if(ed_sel == 28, -1, 28); ed_press = -1 }
+    group {
+        show: bar_edit and p_updates
+        zone box ez_updates { from: xs_updates, fl.top; size: ws_updates, fl.mod_h; cursor: grab; role: button; label: "Move System updates" }
+        box { from: xs_updates + 1, fl.top + 1; size: ws_updates - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 29 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 29, 0.6, if(ed_sel == 29, 0.4, 0.2 * ez_updates.hover)) }
+        box { from: xs_updates + 1, fl.top + 1; size: ws_updates - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 29, 2, 1.2)
+              color: if(ed_sel == 29 or ed_drag == 29, fl.flare, mix(fl.trace_lit, fl.flare, ez_updates.hover)); opacity: if(ed_drag >= 0 and ed_drag != 29, 0.45, 0.85) }
+    }
+    on press ez_updates while bar_edit { ed_press = 29; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_updates while ed_press == 29 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 29; ed_sel = -1 }
+    on release ez_updates while ed_drag == 29 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_updates while ed_drag < 0 and ed_press == 29 { ed_sel = if(ed_sel == 29, -1, 29); ed_press = -1 }
+    group {
+        show: bar_edit and p_claude
+        zone box ez_claude { from: xs_claude, fl.top; size: ws_claude, fl.mod_h; cursor: grab; role: button; label: "Move Claude" }
+        box { from: xs_claude + 1, fl.top + 1; size: ws_claude - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 30 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 30, 0.6, if(ed_sel == 30, 0.4, 0.2 * ez_claude.hover)) }
+        box { from: xs_claude + 1, fl.top + 1; size: ws_claude - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 30, 2, 1.2)
+              color: if(ed_sel == 30 or ed_drag == 30, fl.flare, mix(fl.trace_lit, fl.flare, ez_claude.hover)); opacity: if(ed_drag >= 0 and ed_drag != 30, 0.45, 0.85) }
+    }
+    on press ez_claude while bar_edit { ed_press = 30; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_claude while ed_press == 30 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 30; ed_sel = -1 }
+    on release ez_claude while ed_drag == 30 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_claude while ed_drag < 0 and ed_press == 30 { ed_sel = if(ed_sel == 30, -1, 30); ed_press = -1 }
+    group {
+        show: bar_edit and p_github
+        zone box ez_github { from: xs_github, fl.top; size: ws_github, fl.mod_h; cursor: grab; role: button; label: "Move GitHub" }
+        box { from: xs_github + 1, fl.top + 1; size: ws_github - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 31 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 31, 0.6, if(ed_sel == 31, 0.4, 0.2 * ez_github.hover)) }
+        box { from: xs_github + 1, fl.top + 1; size: ws_github - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 31, 2, 1.2)
+              color: if(ed_sel == 31 or ed_drag == 31, fl.flare, mix(fl.trace_lit, fl.flare, ez_github.hover)); opacity: if(ed_drag >= 0 and ed_drag != 31, 0.45, 0.85) }
+    }
+    on press ez_github while bar_edit { ed_press = 31; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_github while ed_press == 31 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 31; ed_sel = -1 }
+    on release ez_github while ed_drag == 31 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_github while ed_drag < 0 and ed_press == 31 { ed_sel = if(ed_sel == 31, -1, 31); ed_press = -1 }
+    // The ghost's word: what letting go now will do.
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
+    // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates, xs_claude, xs_github) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates, ws_claude, ws_github) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates, fi_claude, fi_github)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates, g_claude, g_github)
+    group {
+        show: bar_edit and ed_sel >= 0 and ed_drag < 0
+        move: ed_ix, st_res + 92
+        FlPlate(340, 128) {
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+            text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
+            SChoice(144, 32, 64, "Line", ed_fi == 1, set_value, (200 + ed_sel) * 1000 + 1)
+            SChoice(208, 32, 64, "Corners", ed_fi == 2, set_value, (200 + ed_sel) * 1000 + 2)
+            SChoice(272, 32, 64, "None", ed_fi == 3, set_value, (200 + ed_sel) * 1000 + 3)
+            SButton(14, 72, 40, "◀", edit_op, ed_sel * 10 + 0)
+            SButton(58, 72, 40, "▶", edit_op, ed_sel * 10 + 1)
+            SButton(106, 72, 70, "Join ◀", edit_op, ed_sel * 10 + 2)
+            SButton(180, 72, 70, "Join ▶", edit_op, ed_sel * 10 + 3)
+            SButton(254, 72, 72, "Hide", edit_op, ed_sel * 10 + 5, true)
+            group {
+                opacity: if(ed_g, 1, 0.35)
+                SButton(106, 104, 144, "Split from group", edit_op, ed_sel * 10 + 4)
             }
+            text "← → MOVE · DEL HIDE" { at: 326, 115; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
         }
-        on key Left while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 0) }
-        on key Right while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 1) }
-        on key Delete while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 5); ed_sel = -1 }
-        on edit_op(v) while v - floor(v / 10) * 10 == 5 { ed_sel = -1 }
+    }
+    on key Left while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 0) }
+    on key Right while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 1) }
+    on key Delete while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 5); ed_sel = -1 }
+    on edit_op(v) while v - floor(v / 10) * 10 == 5 { ed_sel = -1 }
         // </gen:edit>
 
         // ── Quick notes: the dropdown (D51, D52) ──────────────────
@@ -4808,6 +4781,8 @@ scene Mooi {
         // the plate was on its way out — the press that closed it opened it again in the same
         // motion (D56). Being over the plate is read from its hover below, which is what keeps a
         // drag-opened box out until the pointer leaves.
+        // pointed at, it opens as the side notch does (60 ms, D126); a press pins it; leaving closes it
+        on hover zstash_tab for 60ms while not stash_pin { stash_a: 1; stash_away: 0 }
         on press zstash_tab while not stash_pin { stash_pin = true; stash_a: 1; stash_away: 0 }
         on press zstash_tab while stash_pin { stash_pin = false; stash_a: 0; stash_away: 1; blur }
         on press zstash { stash_pin = false; stash_a: 0; stash_away: 1; blur }
