@@ -13,6 +13,7 @@ import hashlib, json, os, shutil, subprocess, sys, tempfile
 
 COLS, ROWS = 32, 18
 VIDEO = (".mp4", ".webm", ".mkv", ".mov", ".gif")
+VERSION = 2               # of the analysis: a change here reads every picture again
 
 
 def run(*args, **kw):
@@ -76,13 +77,29 @@ def main():
     h = int(sys.argv[4]) if len(sys.argv) > 4 else 1080
     model = sys.argv[5] if len(sys.argv) > 5 else "bria-rmbg"
     with open(src, "rb") as fh:
-        key = hashlib.sha1(fh.read()).hexdigest()[:16] + f"-{w}x{h}-{model}"
+        key = hashlib.file_digest(fh, "sha1").hexdigest()[:16] + f"-{w}x{h}-{model}-v{VERSION}"
     cache = os.path.join(os.path.expanduser("~/.cache/mooi/wallmap"), key)
     os.makedirs(cache, exist_ok=True)
     still, cut, mp = (os.path.join(cache, n) for n in ("still.png", "cut.png", "map.json"))
     moving = src.lower().endswith(VIDEO)
-    if not os.path.exists(mp):
-        frame = src + ("[0]" if moving else "")
+    if not moving:
+        # an animated WebP or PNG moves too: count its frames
+        try:
+            moving = int(run("magick", "identify", "-format", "%n\n", src).split()[0]) > 1
+        except (subprocess.CalledProcessError, ValueError, IndexError):
+            pass
+    cached = None
+    if os.path.exists(mp):
+        try:
+            with open(mp) as fh:
+                cached = json.load(fh)
+        except (OSError, ValueError):
+            cached = None
+        # a cut-out that failed (rembg missing, offline, killed) is tried again once it can be made
+        if cached and not cached.get("cut") and not moving and shutil.which("rembg") and not os.path.exists(cut):
+            cached = None
+    if not cached:
+        frame = src + "[0]"
         run("magick", frame, "-resize", f"{w}x{h}^", "-gravity", "center", "-extent", f"{w}x{h}", still)
         has_cut = os.path.exists(cut) and not moving
         if not has_cut and not moving and shutil.which("rembg"):
@@ -96,11 +113,15 @@ def main():
             except subprocess.CalledProcessError:
                 has_cut = False
         cells, mood = analyse(still, cut, has_cut)
-        out = {"cols": COLS, "rows": ROWS, "cells": cells, "mood": mood, "cut": has_cut,
-               "depth": has_cut and not moving, "src": src, "w": w, "h": h,
-               "cutpath": cut if has_cut else ""}
-        with open(mp, "w") as fh:
-            json.dump(out, fh)
+        cached = {"cols": COLS, "rows": ROWS, "cells": cells, "mood": mood, "cut": has_cut,
+                  "depth": has_cut and not moving, "w": w, "h": h, "cutpath": cut if has_cut else "",
+                  "rembg": shutil.which("rembg") or ""}
+    # the path it is shown from now (the same picture may be set from another place)
+    cached["src"] = src
+    t = tempfile.NamedTemporaryFile("w", dir=cache, delete=False, suffix=".json")
+    with t:
+        json.dump(cached, t)
+    os.replace(t.name, mp)
     # into mooi's data folder: the cut-out first, then the map (the widgets watch the map)
     os.makedirs(folder, exist_ok=True)
     if os.path.exists(cut):

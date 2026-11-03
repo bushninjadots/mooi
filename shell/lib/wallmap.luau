@@ -28,16 +28,18 @@ function M.under(map, x, y, w, h, screen)
     local r0 = clamp(math.floor((y + bar) / ch), 0, map.rows - 1)
     local r1 = clamp(math.floor((y + bar + h - 1) / ch), 0, map.rows - 1)
     local n, l, a, b, d, s = 0, 0, 0, 0, 0, 0
+    local lmin, lmax = 1, 0
     for r = r0, r1 do
         for c = c0, c1 do
             local cell = map.cells[r * map.cols + c + 1]
             n = n + 1
             l, a, b, d = l + (cell.l or 0), a + (cell.a or 0), b + (cell.b or 0), d + (cell.d or 0)
+            lmin, lmax = math.min(lmin, cell.l or 0), math.max(lmax, cell.l or 0)
             if (cell.s or 0) > s then s = cell.s end
         end
     end
-    if n == 0 then return { l = 0.5, a = 0, b = 0, d = 0, s = 0 } end
-    return { l = l / n, a = a / n, b = b / n, d = d / n, s = s }
+    if n == 0 then return { l = 0.5, a = 0, b = 0, d = 0, s = 0, lmin = 0.5, lmax = 0.5 } end
+    return { l = l / n, a = a / n, b = b / n, d = d / n, s = s, lmin = lmin, lmax = lmax }
 end
 
 function M.tone(l) return (l or 0) > 0.58 and "dark" or "light" end
@@ -92,6 +94,43 @@ function M.accent(cell, palette, ground)
     end
     -- the hue cannot carry it: plain light or dark
     return dark_ground and { r = 0.95, g = 0.95, b = 0.95 } or { r = 0.05, g = 0.05, b = 0.05 }
+end
+
+-- Lab lightness (0..1) as the sRGB grey it is
+local function grey(L)
+    local fy = (L * 100 + 16) / 116
+    local Y = fy ^ 3 > 0.008856 and fy ^ 3 or (fy - 16 / 116) / 7.787
+    local v = clamp(from_lin(clamp(Y, 0, 1)), 0, 1)
+    return { r = v, g = v, b = v }
+end
+local INK_LIGHT, INK_DARK = { r = 0.933, g = 0.945, b = 0.957 }, { r = 0.082, g = 0.094, b = 0.11 }
+M.INK_LIGHT, M.INK_DARK = INK_LIGHT, INK_DARK
+M.grey = grey
+
+-- Everything a widget wears over the spot under it, worked out against the ground as the scene
+-- draws it (the wallpaper there, under a haze that is white behind dark words and black behind
+-- light ones, at 0.12 + 0.55 · haze; or the plate): words, haze and accent that all read.
+-- opts = { plate, phos (palette accent), hull (the plate's colour) }
+function M.look(u, opts)
+    if opts.plate then
+        local acc = M.accent(u, opts.phos, opts.hull)
+        return { tn = 0, hz = 0.32, accent = acc, ground = opts.hull, ink = INK_LIGHT }
+    end
+    local tn = M.tone(u.l) == "dark" and 1 or 0
+    local hz = M.haze(u.d, u.l)
+    -- a spot that is both dark and light: the haze has to carry the words on its own
+    local range = (u.lmax or u.l) - (u.lmin or u.l)
+    if range > 0.5 then hz = math.max(hz, 0.6 + 0.4 * clamp((range - 0.5) * 2, 0, 1)) end
+    local ink = tn == 1 and INK_DARK or INK_LIGHT
+    local function ground_at(L, h)
+        local g, k, t = grey(L), 0.12 + 0.55 * h, tn == 1 and 1 or 0
+        return { r = g.r * (1 - k) + t * k, g = g.g * (1 - k) + t * k, b = g.b * (1 - k) + t * k }
+    end
+    -- thicken the haze until the words read over the worst of the spot
+    local worst = tn == 1 and (u.lmin or u.l) or (u.lmax or u.l)
+    while hz < 1 and M.contrast(ink, ground_at(worst, hz)) < 4.5 do hz = math.min(1, hz + 0.05) end
+    local ground = ground_at(u.l, hz)
+    return { tn = tn, hz = hz, accent = M.accent(u, opts.phos, ground), ground = ground, ink = ink }
 end
 
 -- The nearest place (by centre) of the same size, on a 16 px raster, clear of the other widgets and

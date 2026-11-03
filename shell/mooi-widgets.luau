@@ -119,12 +119,17 @@ local function publish()
             local u = WM.under(wall, w.x, w.y, w.w, w.h, room)
             r.over = u.s > 0.3
             if r.adapt then
-                r.tn = WM.tone(u.l) == "dark" and 1 or 0
-                r.hz = WM.haze(u.d, u.l) * (wl.mood and (1 - 0.3 * mood_now.soft) or 1)
                 local phos = roles and roles.phos or { r = 0.6, g = 0.8, b = 0.7 }
-                local g = u.l * (1 - r.hz * 0.6)
-                local c = WM.accent(u, phos, { r = g, g = g, b = g })
-                r.ar, r.ag, r.ab = c.r, c.g, c.b
+                local hull = roles and roles.hull or { r = 0.06, g = 0.08, b = 0.08 }
+                if w.kind == "visualiser" then
+                    -- no haze behind a visualiser: its colours read against the picture or its plate
+                    local c = WM.accent(u, phos, o.plate and hull or WM.grey(u.l))
+                    r.ar, r.ag, r.ab = c.r, c.g, c.b
+                else
+                    local L = WM.look(u, { plate = o.plate == true, phos = phos, hull = hull })
+                    r.tn, r.hz = L.tn, L.hz
+                    r.ar, r.ag, r.ab = L.accent.r, L.accent.g, L.accent.b
+                end
             end
         end
     end
@@ -214,8 +219,10 @@ pcall(sys.watch, "files:" .. W.FILE, function()
 end)
 -- ── The wallpaper (D139): read once per picture by `mooi wallmap` (cached), applied from wall-map.json ──
 local CURRENT = HOME .. "/.cache/current_wallpaper_source"
-local current_wall, asked_for = nil, nil
+local current_wall, asked_for, in_flight = nil, nil, false
 apply_wall = function()
+    -- never rebuild the widgets under a hand that is carrying, pulling or sliding (D138 fix)
+    if pending or grab or slide then after(400, apply_wall); return end
     local t = read("wall-map.json", "json")
     local m = WM.parse(t)
     -- only the picture on the desktop now (a slower read of an older one is not applied)
@@ -241,6 +248,8 @@ apply_wall = function()
     model.subj = rows_s
     publish()
 end
+-- one reading at a time (a new picture takes ~40 s of rembg the first time); when one ends for a
+-- picture that is no longer the one shown, the shown one is asked for next (instant if cached)
 local function check_wall()
     run("readlink", { "-f", CURRENT }, function(out, code)
         local p = tostring(out or ""):gsub("%s+$", "")
@@ -249,14 +258,15 @@ local function check_wall()
             current_wall = p
             apply_wall()
         end
-        local t = read("wall-map.json", "json")
-        if (not t or t.src ~= p) and asked_for ~= p then
-            asked_for = p
-            run("mooi", { "wallmap", p }, function(_, c2)
-                if c2 ~= 0 then log("widgets · wallmap failed for " .. p) end
-                apply_wall()
-            end)
-        end
+        if in_flight or asked_for == p or (wall and wall.src == p) then return end
+        asked_for, in_flight = p, true
+        run("mooi", { "wallmap", p }, function(_, c2)
+            in_flight = false
+            if c2 ~= 0 then log("widgets · wallmap failed for " .. p) end
+            apply_wall()
+            -- read for an older picture (or failed): let the shown one be asked for again, once
+            if c2 == 0 and p ~= current_wall then asked_for = nil end
+        end)
     end)
 end
 check_wall()
@@ -272,6 +282,8 @@ on("wg_room", function(v)
     drop_gestures(false)
     W.clear(hist)
     load()
+    -- the cut-out's offset and the subject's cells follow the room (the bar's height)
+    if apply_wall then apply_wall() end
 end)
 
 -- ── What is playing ──
