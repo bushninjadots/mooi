@@ -640,6 +640,43 @@ library FerrolumeParts {
         text m.mode { at: 1120, y + 18; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.engrave }
         text m.place { at: 1120, y + 37; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
     }
+    // A small choice on a widget's row (Settings → Widgets).
+    component SWPick(x: number, y: number, w: number, label: text, on: bool, press: event, n: number) {
+        size: w, 24
+        zone box hit { from: x, y; size: w, 24; corner: 4; cursor: pointer; role: button; label: label }
+        box { from: x, y; size: w, 24; corner: 4; color: if(on, fl.phos_fill, mix(fl.steel_900, fl.steel_700, 0.5 * hit.hover)) }
+        box { from: x, y; size: w, 24; corner: 4; stroke: 1; color: if(on, fl.phos, fl.steel_700) }
+        text label { at: x + w / 2, y + 12; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"
+                     width: w - 4; lines: 1; color: if(on, fl.ink, mix(fl.engrave, fl.phos, hit.hover)) }
+        on press hit { emit press(n) }
+    }
+    // One desktop widget (Settings → Widgets): what it is and where, its layout or mode, what it does
+    // at rest, and ×. The logic fills sw_list from widgets.json.
+    component SWidget(m: record, y0: number) {
+        size: 864, 56
+        let y = y0 + m.index * 64
+        let r = m.index
+        box { from: 274, y; size: 864, 56; corner: 5; color: fl.ground; opacity: 0.6 }
+        box { from: 274, y; size: 864, 56; corner: 5; stroke: 1; color: fl.steel_700 }
+        text m.name { at: 292, y + 19; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.phos }
+        text m.detail { at: 292, y + 39; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 300; lines: 1 }
+        group {
+            show: m.kind < 0.5
+            SWPick(600, y + 16, 76, "SLEEVE", m.choice < 0.5, sw_choice, r * 100)
+            SWPick(680, y + 16, 76, "LYRICS", m.choice > 0.5 and m.choice < 1.5, sw_choice, r * 100 + 1)
+            SWPick(760, y + 16, 76, "RECORD", m.choice > 1.5, sw_choice, r * 100 + 2)
+        }
+        group {
+            show: m.kind > 0.5
+            SWPick(600, y + 16, 28, "◂", false, sw_choice, r * 100 + mod(m.choice + 11, 12))
+            text m.mode { at: 718, y + 28; anchor: center; align: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 172; lines: 1 }
+            SWPick(808, y + 16, 28, "▸", false, sw_choice, r * 100 + mod(m.choice + 1, 12))
+        }
+        SWPick(856, y + 16, 66, "HIDE", m.idle < 0.5, sw_idle, r * 10)
+        SWPick(926, y + 16, 66, "REST", m.idle > 0.5 and m.idle < 1.5, sw_idle, r * 10 + 1)
+        SWPick(996, y + 16, 76, "MARKER", m.idle > 1.5, sw_idle, r * 10 + 2)
+        SWPick(1092, y + 16, 30, "×", false, sw_remove, r)
+    }
     // A line of the log.
     component SLogLine(l: record, y0: number) {
         size: 864, 18

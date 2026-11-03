@@ -527,6 +527,72 @@ end)
 
 -- ── Displays ───────────────────────────────────────────────
 -- Read-only for now: what Hyprland has, every few seconds while the window is open.
+-- ── Desktop widgets (D137): widgets.json is the widgets program's; read fresh before every change,
+-- written whole (a temporary file moved over it), and the program follows the file. The room is
+-- taken as 1080p under a 34 px bar; the program keeps each widget on its own screen when it reads.
+local W = require("lib/widgets")
+local WROOM = { w = 1920, h = 1046, top = 0 }
+local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD" }
+local wfolder = (function()
+    local ok, f = pcall(sys.ask, "files.folder")
+    return ok and type(f) == "string" and f ~= "" and f or nil
+end)()
+local function wdoc()
+    local ok, raw = pcall(sys.ask, "files.read", W.FILE)
+    return (W.parse(ok and raw or nil, json.decode, WROOM))
+end
+local function show_widgets(d)
+    d = d or wdoc()
+    local rows = {}
+    for _, w in ipairs(d.widgets) do
+        local vis = w.kind == "visualiser"
+        rows[#rows + 1] = {
+            name = vis and "Visualiser" or "Now Playing",
+            detail = string.format("%s · %d × %d AT %d, %d", vis and string.upper(w.mode) or WNAMES[w.layout], w.w, w.h, w.x, w.y),
+            mode = vis and string.upper(w.mode) or "",
+            kind = vis and 1 or 0,
+            choice = vis and W.MODE_INDEX[w.mode] or W.LAYOUT_INDEX[w.layout] or 0,
+            idle = W.IDLE_INDEX[w.idle] or 1,
+        }
+    end
+    model.sw_list = rows
+end
+local function write_widgets(d)
+    if not wfolder then return end
+    pcall(sys.call, "files.write", W.FILE .. ".tmp", W.encode(d))
+    run("mv", { "-f", wfolder .. "/" .. W.FILE .. ".tmp", wfolder .. "/" .. W.FILE })
+    show_widgets(d)
+end
+show_widgets()
+pcall(sys.watch, "files:" .. W.FILE, function() show_widgets() end)
+on("sw_choice", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local d = wdoc()
+    local w = d.widgets[math.floor(v / 100) + 1]
+    if not w then return end
+    if w.kind == "visualiser" then write_widgets(W.set_mode(d, w.id, W.MODES[v % 100 + 1]))
+    else write_widgets(W.set_layout(d, w.id, W.NP_LAYOUTS[v % 100 + 1], WROOM)) end
+end)
+on("sw_idle", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local d = wdoc()
+    local w = d.widgets[math.floor(v / 10) + 1]
+    if w then write_widgets(W.set_idle(d, w.id, W.IDLES[v % 10 + 1])) end
+end)
+on("sw_remove", function(v)
+    local d = wdoc()
+    local w = d.widgets[math.floor(tonumber(v) or -1) + 1]
+    if w then write_widgets(W.remove(d, w.id)) end
+end)
+on("sw_add", function(v)
+    local d, id = W.add(wdoc(), math.floor(tonumber(v) or 0) == 1 and "visualiser" or "nowplaying", WROOM)
+    if id then write_widgets(d) end
+end)
+on("wg_settings_edit", function()
+    run("mooi", { "widgets", "edit" })
+    run("pleamar", { "--say", "mooi-settings", "quit" })
+end)
+
 local function read_displays()
     run("hyprctl", { "-j", "monitors" }, function(out, code)
         local ok, list = pcall(json.decode, out or "")

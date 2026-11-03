@@ -338,6 +338,13 @@ SECTIONS = [
          ["Still", "Workspaces", "Pointer", "Both"], "sv_desk_on == 1"),
         ("slider", "Strength", "How far the picture travels", "desk.strength", 0, 100, "{sv_desk_strength, 0}%", "sv_desk_on == 1"),
     ]),
+    ("Widgets", "Widgets", "Now Playing and the visualiser on your desktop. Place them by dragging in edit mode", "DESKTOP", [
+        ("card", "Desktop widgets"),
+        ("toggle", "Desktop widgets", "mooi's own widgets on the desktop, under your windows (D137)", "widgets.on", "sv_widgets_on"),
+        ("button", "Arrange on the desktop", "Drag, resize and set each one where it sits (also in Control Nexus)", "Edit on desktop", "wg_settings_edit", 1),
+        ("card", "Your widgets", "sv_widgets_on == 1"),
+        ("widgets",),
+    ]),
     ("BMO", "BMO", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "DESKTOP", [
         ("card", "BMO"),
         ("toggle", "BMO on your desktop", "Starts with mooi; off, he says goodbye", "companion.bmo", "sv_companion_bmo"),
@@ -488,6 +495,11 @@ def row_lines(r, y, first, reverted):
     if k == "displays":
         lines.append(f'for m in dp_list {{ SDisplay(m, {y + 6}) }}')
         return lines, "(12 + max(1, dp_list.count) * 60)"
+    if k == "widgets":
+        lines.append(f'for m in sw_list {{ SWidget(m, {y + 6}) }}')
+        lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 64, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)')
+        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 64, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8)')
+        return lines, "(60 + sw_list.count * 64)"
     if k == "log":
         lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
         lines.append(f'for l in adv_log {{ SLogLine(l, {y + 18}) }}')
@@ -837,7 +849,7 @@ import "ui/ferrolume.plm"
 // paints the same palette (lib/ferro), so the window wears what the bar wears.
 scene Mooi {
     permissions {
-        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi"
+        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi", "mv"
         services: "files", "files.write", "env", "audio", "audio.*", "battery"
     }
 """
@@ -913,6 +925,13 @@ def main():
     event snd_pick ->         // to the logic: output n, or input 100 + n
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
+    // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
+    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number }
+    event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
+    event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
+    event sw_remove ->        // to the logic: the row
+    event sw_add ->           // to the logic: 0 now playing · 1 visualiser
+    event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""
     fact pw_ppd = false       // power-profiles-daemon answers
     fact saving = false       // the battery saver is on now
