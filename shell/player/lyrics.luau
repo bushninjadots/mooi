@@ -4,6 +4,7 @@ local P = require("lib/player")
 
 return function(ctx)
     local folder, read, mpc = ctx.folder, ctx.read, ctx.mpc
+    local fetch = require("player/lyricfetch")({ read = read })
     local lyrics_for, est_sync
     -- ── Lyrics ───────────────────────────────────────────────────
     -- A `.lrc` beside the song first, then LRCLIB (once: the answer, even "none", is kept in the data
@@ -50,7 +51,6 @@ return function(ctx)
         show_offset()
         text.lyr_note = "LOOKING FOR THE LYRICS…"
         show_lyrics()
-        local cache = "player-lyrics/" .. P.hash(key) .. ".lrc"
         local function got(raw, source)
             if lyr.key ~= key then return end
             if raw == "none" then lyr.data = nil; text.lyr_note = "NO LYRICS FOUND FOR THIS SONG"
@@ -58,38 +58,7 @@ return function(ctx)
             else lyr.data = P.parse_lrc(raw); text.lyr_note = source end
             show_lyrics()
         end
-        local function ask_lrclib()
-            if artist == "" or title == "" then got("none", ""); return end
-            run("curl", { "-fsSL", "--max-time", "10", "-H", "User-Agent: mooi (https://github.com/bushninjadots/mooi)",
-                          P.lrclib_url(artist, title, album, seconds) }, function(out, code)
-                local ans = nil
-                if code == 0 then
-                    local ok, t = pcall(json.decode, out or "")
-                    ans = ok and P.from_lrclib(t) or nil
-                    if ok and type(t) == "table" then
-                        local keep = t.instrumental == true and "instrumental" or (t.syncedLyrics ~= nil and t.syncedLyrics ~= json.null and t.syncedLyrics)
-                            or (t.plainLyrics ~= nil and t.plainLyrics ~= json.null and t.plainLyrics) or "none"
-                        if type(keep) ~= "string" then keep = "none" end
-                        pcall(sys.call, "files.write", cache, keep)
-                        got(keep, "LYRICS · LRCLIB")
-                        return
-                    end
-                end
-                -- 404 is LRCLIB's "not known": remembered, so the song is not asked about again
-                if code == 22 then pcall(sys.call, "files.write", cache, "none") end
-                got(ans and "" or "none", "")
-            end)
-        end
-        local cached = read(cache)
-        if type(cached) == "string" and cached ~= "" then got(cached, "LYRICS · SAVED"); return end
-        local beside = P.lrc_beside(path)
-        if beside then
-            run("cat", { beside }, function(out, code)
-                if code == 0 and out and out ~= "" then got(out, "LYRICS · BESIDE THE SONG") else ask_lrclib() end
-            end)
-        else
-            ask_lrclib()
-        end
+        fetch(key, artist, title, album, seconds, path, got)
     end
 
     -- the quarter-second clock, only while there are lyrics to follow

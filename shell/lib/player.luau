@@ -175,6 +175,14 @@ function M.lyric_at(lyrics, t, offset)
     end
     return at
 end
+-- The lines either side of the one being sung, as text ("" where there is none): what a widget
+-- shows. Unsynced or missing lyrics give three empty lines.
+function M.lyric_lines(lyrics, t, offset)
+    local at = M.lyric_at(lyrics, t, offset)
+    if at == 0 then return "", "", "" end
+    local function line(i) local l = lyrics.lines[i]; return l and l.text or "" end
+    return line(at - 1), line(at), line(at + 1)
+end
 -- A nudge kept in half seconds, at most ten either way.
 function M.clamp_offset(x)
     local v = math.floor((tonumber(x) or 0) * 2 + 0.5) / 2
