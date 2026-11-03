@@ -103,6 +103,132 @@ library Viz {
         }
     }
 
+    // ── The desktop's six (the widgets, D137): bigger and freer than the strip styles, no box. A
+    // library component holds no state, so what remembers (the scope's afterimage, the dust's
+    // scatter, the ripples' rings) comes in from the scene that draws them.
+
+    // An oscilloscope trace in phosphor with two fading afterimages behind it (`trail1`, `trail2`:
+    // how far behind each runs, in degrees of the trace's phase).
+    component Scope(x: number, y: number, w: number, h: number, t1: color, t2: color, still: bool = false,
+                    turn: number = 0, trail1: number = 0, trail2: number = 0) {
+        size: w, h
+        let sm = y + h / 2
+        repeat c in 0..3 {
+            let ph = turn * 9 - pick(c, 0, trail1, trail2)
+            let al = pick(c, 1, 0.45, 0.2)
+            repeat k in 0..48 {
+                let f0 = k / 48
+                let f1 = (k + 1) / 48
+                let b0 = if(still, 0.08, mix(pick(floor(f0 * 15), vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), pick(min(15, floor(f0 * 15) + 1), vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), f0 * 15 - floor(f0 * 15)))
+                let b1 = if(still, 0.08, mix(pick(floor(f1 * 15), vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), pick(min(15, floor(f1 * 15) + 1), vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), f1 * 15 - floor(f1 * 15)))
+                line { from: x + f0 * w, sm + sin(f0 * 1260 + ph) * b0 * h * 0.32 + sin(f0 * 3500 + ph * 0.3) * b0 * h * 0.08
+                       to: x + f1 * w, sm + sin(f1 * 1260 + ph) * b1 * h * 0.32 + sin(f1 * 3500 + ph * 0.3) * b1 * h * 0.08
+                       width: if(c == 0, 2, 1.4); color: mix(t1, t2, b0 * 0.6); opacity: al }
+            }
+        }
+    }
+
+    // Four layers of soft hills rolling along a line: the bass lifts the far ones, the treble
+    // ripples the near ones. Straight columns under a blur (no curves: they cost while moving).
+    component Horizon(x: number, y: number, w: number, h: number, t1: color, t2: color, still: bool = false, turn: number = 0) {
+        size: w, h
+        group {
+            blur: 7
+            repeat layer in 0..4 {
+                let base = y + h * (0.52 + layer * 0.12)
+                repeat k in 0..56 {
+                    let f = k / 56
+                    let b = if(still, 0.15, mix(pick(floor(f * (0.5 + layer / 6) * 15), vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), pick(min(15, floor(f * (0.5 + layer / 6) * 15) + 1), vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), f * (0.5 + layer / 6) * 15 - floor(f * (0.5 + layer / 6) * 15)))
+                    let lift = (sin(f * (3 + layer * 2) * 57.3 + turn * (0.4 + layer * 0.3)) * 0.5 + 0.5) * b * h * (0.32 - layer * 0.05)
+                    box { from: x + f * w, base - lift; size: w / 56 + 1, y + h - base + lift
+                          color: if(mod(layer, 2) == 1, t1, t2); opacity: 0.16 + layer * 0.07 }
+                }
+            }
+        }
+    }
+
+    // A drifting field of specks that scatter outward on the beat (`scatter`, 0 … 1, the scene's
+    // spring) and settle back; calm at rest.
+    component Dust(x: number, y: number, w: number, h: number, t1: color, t2: color, still: bool = false,
+                   scatter: number = 0, turn: number = 0) {
+        size: w, h
+        repeat k in 0..96 {
+            let bx = mod(k * 61, 97) / 97
+            let by = mod(k * k * 7 + k * 29, 89) / 89
+            let dx = bx + if(still, 0, sin(turn * (0.3 + mod(k, 5) * 0.1) + k * 37) * 0.02) + (bx - 0.5) * scatter * 0.35
+            let dy = by + if(still, 0, cos(turn * (0.25 + mod(k, 7) * 0.08) + k * 53) * 0.03) + (by - 0.5) * scatter * 0.35
+            ellipse { at: x + clamp(dx, 0, 1) * w, y + clamp(dy, 0, 1) * h; radius: 0.6 + mod(k, 4) * 0.45
+                      color: if(mod(k, 2) == 0, t1, t2); opacity: 0.4 + scatter * 0.5 }
+        }
+    }
+
+    // Rings spreading from the centre on each beat, like drops on water. The scene keeps the pool:
+    // each ring's radius (a share of the half-size) and its alpha.
+    component Ripple(x: number, y: number, w: number, h: number, t1: color, t2: color, still: bool = false,
+                     r0: number = 0, a0: number = 0, r1: number = 0, a1: number = 0,
+                     r2: number = 0, a2: number = 0, r3: number = 0, a3: number = 0) {
+        size: w, h
+        let rcx = x + w / 2
+        let rcy = y + h / 2
+        let half = min(w, h) / 2
+        repeat k in 0..4 {
+            let rr = pick(k, r0, r1, r2, r3)
+            let ra = if(still, 0, pick(k, a0, a1, a2, a3))
+            arc { at: rcx, rcy; radius: max(1, rr * half); width: 1 + ra * 2; span: 360deg; color: mix(t1, t2, rr); opacity: ra }
+        }
+        ellipse { at: rcx, rcy; radius: 3 + if(still, 0, vb0 * 5); color: t1 }
+    }
+
+    // Spectrum bars as a city on a waterline, mirrored below as a faint reflection.
+    component Skyline(x: number, y: number, w: number, h: number, t1: color, t2: color, still: bool = false) {
+        size: w, h
+        let wl = y + h * 0.62
+        let bw = w / 16
+        repeat k in 0..16 {
+            let lv = if(still, 0.1 + mod(k * 7, 5) * 0.03, clamp(pick(k, vb0, vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10, vb11, vb12, vb13, vb14, vb15), 0.03, 1))
+            box { from: x + k * bw + bw * 0.15, wl - lv * h * 0.55; size: bw * 0.7, lv * h * 0.55; color: mix(t1, t2, lv); opacity: 0.9 }
+            box { from: x + k * bw + bw * 0.15, wl + 2; size: bw * 0.7, lv * h * 0.55 * 0.55; color: t1; opacity: 0.22 }
+        }
+        box { from: x, wl; size: w, 1; color: t2; opacity: 0.5 }
+    }
+
+    // A soft round shape whose edge breathes with the bands: bass at the bottom, treble at the top.
+    component Liquid(x: number, y: number, w: number, h: number, t1: color, t2: color, still: bool = false, turn: number = 0) {
+        size: w, h
+        let lcx = x + w / 2
+        let lcy = y + h / 2
+        let lr = min(w, h) * 0.24
+        group {
+            blur: 5
+            path { color: mix(t2, t1, 0.35); opacity: 0.85
+                   move lcx + sin(0) * lr * (1 + if(still, 0.1, (vb0 + vb0 * 2 + vb1) / 4) * 0.4 + sin(0 * 3 + turn * 1.5) * 0.04), lcy + cos(0) * lr * (1 + if(still, 0.1, (vb0 + vb0 * 2 + vb1) / 4) * 0.4 + sin(0 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(15) * lr * (1 + if(still, 0.1, (vb0 + vb1 * 2 + vb2) / 4) * 0.4 + sin(15 * 3 + turn * 1.5) * 0.04), lcy + cos(15) * lr * (1 + if(still, 0.1, (vb0 + vb1 * 2 + vb2) / 4) * 0.4 + sin(15 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(30) * lr * (1 + if(still, 0.1, (vb1 + vb2 * 2 + vb3) / 4) * 0.4 + sin(30 * 3 + turn * 1.5) * 0.04), lcy + cos(30) * lr * (1 + if(still, 0.1, (vb1 + vb2 * 2 + vb3) / 4) * 0.4 + sin(30 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(45) * lr * (1 + if(still, 0.1, (vb3 + vb4 * 2 + vb5) / 4) * 0.4 + sin(45 * 3 + turn * 1.5) * 0.04), lcy + cos(45) * lr * (1 + if(still, 0.1, (vb3 + vb4 * 2 + vb5) / 4) * 0.4 + sin(45 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(60) * lr * (1 + if(still, 0.1, (vb4 + vb5 * 2 + vb6) / 4) * 0.4 + sin(60 * 3 + turn * 1.5) * 0.04), lcy + cos(60) * lr * (1 + if(still, 0.1, (vb4 + vb5 * 2 + vb6) / 4) * 0.4 + sin(60 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(75) * lr * (1 + if(still, 0.1, (vb5 + vb6 * 2 + vb7) / 4) * 0.4 + sin(75 * 3 + turn * 1.5) * 0.04), lcy + cos(75) * lr * (1 + if(still, 0.1, (vb5 + vb6 * 2 + vb7) / 4) * 0.4 + sin(75 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(90) * lr * (1 + if(still, 0.1, (vb7 + vb8 * 2 + vb9) / 4) * 0.4 + sin(90 * 3 + turn * 1.5) * 0.04), lcy + cos(90) * lr * (1 + if(still, 0.1, (vb7 + vb8 * 2 + vb9) / 4) * 0.4 + sin(90 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(105) * lr * (1 + if(still, 0.1, (vb8 + vb9 * 2 + vb10) / 4) * 0.4 + sin(105 * 3 + turn * 1.5) * 0.04), lcy + cos(105) * lr * (1 + if(still, 0.1, (vb8 + vb9 * 2 + vb10) / 4) * 0.4 + sin(105 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(120) * lr * (1 + if(still, 0.1, (vb9 + vb10 * 2 + vb11) / 4) * 0.4 + sin(120 * 3 + turn * 1.5) * 0.04), lcy + cos(120) * lr * (1 + if(still, 0.1, (vb9 + vb10 * 2 + vb11) / 4) * 0.4 + sin(120 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(135) * lr * (1 + if(still, 0.1, (vb10 + vb11 * 2 + vb12) / 4) * 0.4 + sin(135 * 3 + turn * 1.5) * 0.04), lcy + cos(135) * lr * (1 + if(still, 0.1, (vb10 + vb11 * 2 + vb12) / 4) * 0.4 + sin(135 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(150) * lr * (1 + if(still, 0.1, (vb11 + vb12 * 2 + vb13) / 4) * 0.4 + sin(150 * 3 + turn * 1.5) * 0.04), lcy + cos(150) * lr * (1 + if(still, 0.1, (vb11 + vb12 * 2 + vb13) / 4) * 0.4 + sin(150 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(165) * lr * (1 + if(still, 0.1, (vb13 + vb14 * 2 + vb15) / 4) * 0.4 + sin(165 * 3 + turn * 1.5) * 0.04), lcy + cos(165) * lr * (1 + if(still, 0.1, (vb13 + vb14 * 2 + vb15) / 4) * 0.4 + sin(165 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(180) * lr * (1 + if(still, 0.1, (vb14 + vb15 * 2 + vb15) / 4) * 0.4 + sin(180 * 3 + turn * 1.5) * 0.04), lcy + cos(180) * lr * (1 + if(still, 0.1, (vb14 + vb15 * 2 + vb15) / 4) * 0.4 + sin(180 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(195) * lr * (1 + if(still, 0.1, (vb13 + vb14 * 2 + vb15) / 4) * 0.4 + sin(195 * 3 + turn * 1.5) * 0.04), lcy + cos(195) * lr * (1 + if(still, 0.1, (vb13 + vb14 * 2 + vb15) / 4) * 0.4 + sin(195 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(210) * lr * (1 + if(still, 0.1, (vb11 + vb12 * 2 + vb13) / 4) * 0.4 + sin(210 * 3 + turn * 1.5) * 0.04), lcy + cos(210) * lr * (1 + if(still, 0.1, (vb11 + vb12 * 2 + vb13) / 4) * 0.4 + sin(210 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(225) * lr * (1 + if(still, 0.1, (vb10 + vb11 * 2 + vb12) / 4) * 0.4 + sin(225 * 3 + turn * 1.5) * 0.04), lcy + cos(225) * lr * (1 + if(still, 0.1, (vb10 + vb11 * 2 + vb12) / 4) * 0.4 + sin(225 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(240) * lr * (1 + if(still, 0.1, (vb9 + vb10 * 2 + vb11) / 4) * 0.4 + sin(240 * 3 + turn * 1.5) * 0.04), lcy + cos(240) * lr * (1 + if(still, 0.1, (vb9 + vb10 * 2 + vb11) / 4) * 0.4 + sin(240 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(255) * lr * (1 + if(still, 0.1, (vb8 + vb9 * 2 + vb10) / 4) * 0.4 + sin(255 * 3 + turn * 1.5) * 0.04), lcy + cos(255) * lr * (1 + if(still, 0.1, (vb8 + vb9 * 2 + vb10) / 4) * 0.4 + sin(255 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(270) * lr * (1 + if(still, 0.1, (vb7 + vb8 * 2 + vb9) / 4) * 0.4 + sin(270 * 3 + turn * 1.5) * 0.04), lcy + cos(270) * lr * (1 + if(still, 0.1, (vb7 + vb8 * 2 + vb9) / 4) * 0.4 + sin(270 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(285) * lr * (1 + if(still, 0.1, (vb5 + vb6 * 2 + vb7) / 4) * 0.4 + sin(285 * 3 + turn * 1.5) * 0.04), lcy + cos(285) * lr * (1 + if(still, 0.1, (vb5 + vb6 * 2 + vb7) / 4) * 0.4 + sin(285 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(300) * lr * (1 + if(still, 0.1, (vb4 + vb5 * 2 + vb6) / 4) * 0.4 + sin(300 * 3 + turn * 1.5) * 0.04), lcy + cos(300) * lr * (1 + if(still, 0.1, (vb4 + vb5 * 2 + vb6) / 4) * 0.4 + sin(300 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(315) * lr * (1 + if(still, 0.1, (vb3 + vb4 * 2 + vb5) / 4) * 0.4 + sin(315 * 3 + turn * 1.5) * 0.04), lcy + cos(315) * lr * (1 + if(still, 0.1, (vb3 + vb4 * 2 + vb5) / 4) * 0.4 + sin(315 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(330) * lr * (1 + if(still, 0.1, (vb1 + vb2 * 2 + vb3) / 4) * 0.4 + sin(330 * 3 + turn * 1.5) * 0.04), lcy + cos(330) * lr * (1 + if(still, 0.1, (vb1 + vb2 * 2 + vb3) / 4) * 0.4 + sin(330 * 3 + turn * 1.5) * 0.04)
+                   line lcx + sin(345) * lr * (1 + if(still, 0.1, (vb0 + vb1 * 2 + vb2) / 4) * 0.4 + sin(345 * 3 + turn * 1.5) * 0.04), lcy + cos(345) * lr * (1 + if(still, 0.1, (vb0 + vb1 * 2 + vb2) / 4) * 0.4 + sin(345 * 3 + turn * 1.5) * 0.04)
+                   close }
+        }
+    }
+
     // Whichever style a place has chosen (its place in lib/vizbands STYLES: 0 Spectrum, 1 Mirror,
     // 2 Ring, 3 Aurora, 4 LED, 5 Orbit, 6 off). The strip styles draw in the box; Ring and Orbit
     // round the centre (`cr` its radius, `reach` how far the music takes them out).
