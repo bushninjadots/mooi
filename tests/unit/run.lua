@@ -3451,5 +3451,63 @@ test("same_doc ignores own write", function()
     local d = W.defaults(1920, 1080); eq(W.same_doc(W.encode(d), W.encode(d)), true, "equal")
 end)
 
+print("wallmap")
+do
+    local WM = require("lib/wallmap")
+    local W2 = require("lib/widgets")
+    local SC = { w = 1920, h = 1046, top = 0 }
+    -- a 32x18 map: dark left half, bright right half; a subject block in cells 10..15 x 4..13
+    local function fake()
+        local cells = {}
+        for r = 0, 17 do for c = 0, 31 do
+            local subj = c >= 10 and c <= 15 and r >= 4 and r <= 13
+            cells[#cells + 1] = { l = (c < 16) and 0.1 or 0.9, a = 0.3, b = -0.2, d = subj and 0.6 or 0.05, s = subj and 1 or 0 }
+        end end
+        return { cols = 32, rows = 18, cells = cells, mood = { luma = 0.5, sat = 0.2, contrast = 0.5, detail = 0.1 }, cut = true, depth = true, w = 1920, h = 1080 }
+    end
+    test("wallmap parse refuses junk, keeps a map", function()
+        eq(WM.parse(nil), nil, "nil"); eq(WM.parse({ cols = 32 }), nil, "no cells")
+        eq(WM.parse(fake()).cols, 32, "kept")
+    end)
+    test("under averages light and colour, takes the most subject", function()
+        local m = WM.parse(fake())
+        local u = WM.under(m, 0, 0, 200, 200, SC); eq(u.l < 0.2, true, "dark corner"); eq(u.s, 0, "no subject")
+        u = WM.under(m, 1700, 900, 200, 120, SC); eq(u.l > 0.8, true, "bright corner")
+        u = WM.under(m, 600, 300, 200, 200, SC); eq(u.s, 1, "over the subject")
+    end)
+    test("tone: dark text on light, light on dark", function()
+        eq(WM.tone(0.9), "dark", "light ground"); eq(WM.tone(0.1), "light", "dark ground")
+    end)
+    test("haze grows with detail and mid greys, inside 0..1", function()
+        eq(WM.haze(0, 0.1) < WM.haze(0.8, 0.1), true, "busier is hazier")
+        eq(WM.haze(0.2, 0.5) > WM.haze(0.2, 0.1), true, "mid grey is hazier")
+        eq(WM.haze(1, 0.5) <= 1, true, "at most 1")
+    end)
+    test("accent keeps 4.5:1 against the ground", function()
+        for _, ground in ipairs({ { r = 0.02, g = 0.03, b = 0.03 }, { r = 0.95, g = 0.95, b = 0.95 } }) do
+            local c = WM.accent({ l = 0.5, a = 0.3, b = -0.2 }, { r = 0.6, g = 0.8, b = 0.7 }, ground)
+            eq(WM.contrast(c, ground) >= 4.5, true, "contrast")
+            eq(c.r >= 0 and c.r <= 1 and c.g >= 0 and c.b <= 1, true, "in range")
+        end
+    end)
+    test("calm_spot avoids the subject and the other widgets", function()
+        local m = WM.parse(fake())
+        local d = W2.parse("", decode_table({ version = 2, widgets = {
+            { id = "np-1", kind = "nowplaying", layout = "sleeve", x = 600, y = 300, w = 432, h = 152 },
+            { id = "np-2", kind = "nowplaying", layout = "sleeve", x = 1100, y = 300, w = 432, h = 152 } } }), SC)
+        local x, y = WM.calm_spot(m, d, 1, SC)
+        eq(x ~= nil, true, "found one")
+        local u = WM.under(m, x, y, 432, 152, SC); eq(u.s < 0.15, true, "off the subject")
+        local o = d.widgets[2]
+        eq(x < o.x + o.w and o.x < x + 432 and y < o.y + o.h and o.y < y + 152, false, "not on the other")
+    end)
+    test("mood stays in its ranges", function()
+        for _, md in ipairs({ { luma = 0, sat = 0, contrast = 0, detail = 0 }, { luma = 1, sat = 1, contrast = 1, detail = 1 } }) do
+            local r = WM.mood(md)
+            eq(r.glow >= 0.6 and r.glow <= 1.2, true, "glow"); eq(r.pace >= 0.7 and r.pace <= 1.2, true, "pace"); eq(r.soft >= 0 and r.soft <= 1, true, "soft")
+        end
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
