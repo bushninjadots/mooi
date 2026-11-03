@@ -3,6 +3,7 @@ import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/widgets.plm" as wg
 import "ui/vizwide.plm" as vw
+import "ui/wgithub.plm" as wgh
 
 // mooi's desktop widgets (D137, docs/superpowers/specs/2026-11-03-widgets-design.md): Now Playing
 // (Sleeve, Lyric stage, Record) and the Visualiser (twelve modes), on one surface over the
@@ -13,8 +14,8 @@ import "ui/vizwide.plm" as vw
 
 scene Widgets {
     permissions {
-        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink"
-        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env"
+        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date"
+        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery"
     }
 
     // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
@@ -248,7 +249,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool }
+    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -579,6 +580,122 @@ scene Widgets {
     fact wg_o5 = false
     fact wg_o6 = true
     fact wg_og = 0.6
+    // ── Clocks, notes, GitHub (D140) ──
+    fact any_clock = false
+    fact ck_h = 0
+    fact ck_m = 0
+    fact ck_s = 0
+    text ck_words = ""
+    text ck_date = ""
+    text ck_week = ""
+    text ck_ampm = ""
+    text ck_hm24 = ""
+    text ck_hm12 = ""
+    text ck_wx = ""
+    text ck_wxhl = ""
+    text ck_due = ""
+    fact ck_wcode = 0
+    fact ck_wx_on = false
+    fact ck_bat = 0
+    fact ck_chg = false
+    fact ck_bat_on = false
+    // the hands glide (degrees, continuous through the day)
+    prop ck_ha = 0 ~wg.arm
+    follow ck_ha = (ck_h + ck_m / 60) * 30
+    prop ck_ma = 0 ~wg.arm
+    follow ck_ma = (ck_m + ck_s / 60) * 6
+    prop ck_sa = 0 ~wg.arm
+    follow ck_sa = ck_s * 6
+    // notes: mooi's quick notes, the one being changed (-1 a new one, -2 none) and its field
+    model nt max 20 { id: number; text: text; pinned: bool; done: bool; ago: text }
+    fact nt_count = 0
+    fact nt_ed = -2
+    text nt_draft = ""
+    event nt_edit ->             // a note to change (its id), or -1 for a new one
+    event nt_cancel ->           // stop changing it
+    event nt_pin ->              // a note pinned or let go (id)
+    event nt_done ->             // ticked or not (id)
+    event nt_del ->              // forgotten (id)
+    event nt_focus               // from the logic: the field takes the caret
+    event gh_open ->             // lane · 100 + 0 the repository, 1-8 a commit, 11-16 a run
+    fact nl_on = false
+    fact nl_k = 0
+    fact nl_x = 0
+    fact nl_y = 0
+    fact nl_w = 10
+    fact nl_h = 10
+    fact nl_u = 1
+    fact nl_lay = 0
+    fact nl_st = 0
+    fact nl_gh = false
+    fact nl_opa = 1
+    fact nl_beh = false
+    fact nl_plate = false
+    fact nl_sel = false
+    fact nl_tn = 0
+    fact nl_hz = 0.32
+    fact nl_ad = false
+    fact nl_ar = 0.6
+    fact nl_ag = 0.8
+    fact nl_ab = 0.7
+    fact g1_on = false
+    fact g1_k = 0
+    fact g1_x = 0
+    fact g1_y = 0
+    fact g1_w = 10
+    fact g1_h = 10
+    fact g1_u = 1
+    fact g1_lay = 0
+    fact g1_st = 0
+    fact g1_gh = false
+    fact g1_opa = 1
+    fact g1_beh = false
+    fact g1_plate = false
+    fact g1_sel = false
+    fact g1_tn = 0
+    fact g1_hz = 0.32
+    fact g1_ad = false
+    fact g1_ar = 0.6
+    fact g1_ag = 0.8
+    fact g1_ab = 0.7
+    fact g2_on = false
+    fact g2_k = 0
+    fact g2_x = 0
+    fact g2_y = 0
+    fact g2_w = 10
+    fact g2_h = 10
+    fact g2_u = 1
+    fact g2_lay = 0
+    fact g2_st = 0
+    fact g2_gh = false
+    fact g2_opa = 1
+    fact g2_beh = false
+    fact g2_plate = false
+    fact g2_sel = false
+    fact g2_tn = 0
+    fact g2_hz = 0.32
+    fact g2_ad = false
+    fact g2_ar = 0.6
+    fact g2_ag = 0.8
+    fact g2_ab = 0.7
+    text g1_name = ""
+    text g1_desc = ""
+    text g1_stats = ""
+    text g1_meta = ""
+    text g1_state = ""
+    text g1_total = ""
+    model g1c max 8 { msg: text; who: text; when: text; sha: text; st: number }
+    model g1r max 6 { name: text; branch: text; when: text; st: number }
+    model g1a max 12 { v: number }
+    text g2_name = ""
+    text g2_desc = ""
+    text g2_stats = ""
+    text g2_meta = ""
+    text g2_state = ""
+    text g2_total = ""
+    model g2c max 8 { msg: text; who: text; when: text; sha: text; st: number }
+    model g2r max 6 { name: text; branch: text; when: text; st: number }
+    model g2a max 12 { v: number }
     fact wg_nsel = 0             // how many are chosen
     fact wg_token = 0            // this copy's own number: only the one answering to mooi-widgets with it is the widgets
     // the wallpaper (D139): its mood, whether depth is on, the subject cut out, its cells
@@ -594,6 +711,9 @@ scene Widgets {
     image cutimg = from wall_cut, 1920, 1080
     model subj max 576 { x: number; y: number; w: number; h: number }
     fact wg_oad = true
+    fact wg_oh24 = true
+    fact wg_osec = true
+    text wg_repo = ""
     fact wg_obh = false
     fact wg_ovr = false
     // who owns the gesture under way: a drag reaches every zone under the press, not only the top
@@ -603,6 +723,9 @@ scene Widgets {
     fact wg_hold = 0
     fact wg_ru = 1               // the scale of the widget being pulled, at its new size
     fact wg_nviz = 0             // how many visualisers (three at most)
+    fact wg_nnt = 0              // notes widgets (one at most)
+    fact wg_ngh = 0              // GitHub widgets (two at most)
+    fact wg_count = 0            // widgets (eight at most)
     fact wg_dksel = false        // the one carried is chosen, so the others chosen come along
     fact wg_snap = true          // snapping on (the top bar's SNAP)
     fact wg_o7 = true
@@ -654,8 +777,8 @@ scene Widgets {
         size: full, full
         anchor: top
         level: bottom
-        keyboard: on_demand while editing
-        rate: 30, 4 while not np_playing and wg_calm and not editing
+        keyboard: on_demand while editing or nt_ed > -1.5
+        rate: 30, 4 while not np_playing and wg_calm and not editing and nt_ed < -1.5
 
         // edit mode: a press on the empty desktop leaves it; a faint grid to place by (snapping is 8 px)
         // edit mode: a press on the empty desktop chooses none; pulled, it draws a marquee
@@ -687,6 +810,38 @@ scene Widgets {
             // only where widgets sit behind it: the rest of the picture is the wallpaper's own
             clip box { from: cut_x, cut_y; size: cut_w, cut_h }
             image cutimg { at: 0, 0 - wall_bar; size: 1920, 1080 }
+        }
+
+        // notes and GitHub, a lane each (their lists cannot sit inside the widgets' loop)
+        group {
+            z: if(nl_beh, 1, 3)
+            show: nl_on and (editing or nl_st < 1.5)
+            opacity: if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7))) * nl_opa
+            move: if(wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel), wg_dx, 0), if(wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel), wg_dy, 0)
+            let ink = if(nl_ad, if(nl_tn > 0.5, #15181c, #eef1f4), fl.engrave)
+            let acc = if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos)
+            let rz = wg_rk == nl_k
+            wg.NotesList(if(rz, wg_sx, nl_x), if(rz, wg_sy, nl_y), if(rz, wg_sw, nl_w), if(rz, wg_sh, nl_h), if(rz, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn)
+        }
+        group {
+            z: if(g1_beh, 1, 3)
+            show: g1_on and (editing or g1_st < 1.5)
+            opacity: if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7))) * g1_opa
+            move: if(wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel), wg_dx, 0), if(wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel), wg_dy, 0)
+            let ink = if(g1_ad, if(g1_tn > 0.5, #15181c, #eef1f4), fl.engrave)
+            let acc = if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos)
+            let rz = wg_rk == g1_k
+            wgh.Gh1(if(rz, wg_sx, g1_x), if(rz, wg_sy, g1_y), if(rz, wg_sw, g1_w), if(rz, wg_sh, g1_h), if(rz, wg_ru, g1_u), g1_lay, g1_plate, ink, acc, g1_hz, g1_tn)
+        }
+        group {
+            z: if(g2_beh, 1, 3)
+            show: g2_on and (editing or g2_st < 1.5)
+            opacity: if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7))) * g2_opa
+            move: if(wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel), wg_dx, 0), if(wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel), wg_dy, 0)
+            let ink = if(g2_ad, if(g2_tn > 0.5, #15181c, #eef1f4), fl.engrave)
+            let acc = if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos)
+            let rz = wg_rk == g2_k
+            wgh.Gh2(if(rz, wg_sx, g2_x), if(rz, wg_sy, g2_y), if(rz, wg_sw, g2_w), if(rz, wg_sh, g2_h), if(rz, wg_ru, g2_u), g2_lay, g2_plate, ink, acc, g2_hz, g2_tn)
         }
 
         // the visualisers, a lane each, under the other widgets
@@ -745,6 +900,14 @@ scene Widgets {
                         wg.Sleeve(wx, wy, ww, wh, wu, w.lyr, w.prog, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn) }
                 group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
                         wg.LyricStage(wx, wy, ww, wh, wu, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay < 0.5
+                        wg.ClockDigital(wx, wy, ww, wh, wu, w.h24, w.secs, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 0.5 and w.lay < 1.5
+                        wg.ClockAnalogue(wx, wy, ww, wh, wu, w.secs, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 1.5 and w.lay < 2.5
+                        wg.ClockWords(wx, wy, ww, wh, wu, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 2.5
+                        wg.ClockInfo(wx, wy, ww, wh, wu, w.h24, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind < 0.5 and w.lay > 1.5
                         wg.Record(wx, wy, ww, wh, wu, w.plate, w.prog, k, hv, w.txt, ink, acc, w.hz, w.tn) }
             }
@@ -755,7 +918,8 @@ scene Widgets {
             group {
                 z: 5
                 show: editing
-                let rec = w.kind < 0.5 and w.lay > 1.5
+                // a record and an analogue clock keep their shape: corners only
+                let rec = (w.kind < 0.5 and w.lay > 1.5) or (w.kind > 1.5 and w.kind < 2.5 and w.lay > 0.5 and w.lay < 1.5)
                 let xx = wx + ox
                 let yy = wy + oy
                 box { from: xx, yy; size: ww, wh; corner: 4; stroke: if(w.sel, 2, 1); color: if(w.sel, fl.phos, fl.trace_lit); opacity: if(w.sel, 1, 0.6) }
@@ -829,23 +993,23 @@ scene Widgets {
             z: 7
             show: editing
             let cx = desk.width / 2
-            box { from: cx - 270, 12; size: 540, 40; corner: 6; color: fl.hull; opacity: 0.94 }
-            box { from: cx - 270, 12; size: 540, 40; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
-            text "WIDGETS" { at: cx - 256, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
-            zone box adn { from: cx - 176, 20; size: 120, 24; cursor: pointer; role: button; label: "Add Now Playing" }
-            zone box adv { from: cx - 50, 20; size: 110, 24; cursor: pointer; role: button; label: "Add a visualiser" }
-            zone box snp { from: cx + 66, 20; size: 86, 24; cursor: pointer; role: toggle; checked: wg_snap; label: "Snapping" }
-            zone box don { from: cx + 160, 20; size: 100, 24; cursor: pointer; role: button; label: "Done" }
-            box { from: cx - 176, 20; size: 120, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adn.hover }
-            box { from: cx - 50, 20; size: 110, 24; corner: 4; color: fl.well; opacity: if(wg_nviz >= 3, 0.3, 0.7 + 0.3 * adv.hover) }
-            box { from: cx + 66, 20; size: 86, 24; corner: 4; color: if(wg_snap, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * snp.hover }
-            box { from: cx + 160, 20; size: 100, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
-            text "+ NOW PLAYING" { at: cx - 116, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-            text "+ VISUALISER" { at: cx + 5, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-            text pick(wg_snap, "SNAP OFF", "SNAP ON") { at: cx + 109, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(wg_snap, fl.ink, fl.engrave) }
-            text "DONE" { at: cx + 210, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
-            on press adn { wg_hold = 0; emit wg_add(0) }
-            on press adv { wg_hold = 0; emit wg_add(1) }
+            box { from: cx - 430, 12; size: 860, 40; corner: 6; color: fl.hull; opacity: 0.94 }
+            box { from: cx - 430, 12; size: 860, 40; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+            text "WIDGETS" { at: cx - 416, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+            repeat ai in 0..5 {
+                let ax = cx - 340 + ai * 104
+                zone box adz { from: ax, 20; size: 98, 24; cursor: pointer; role: button; label: pick(ai, "Add Now Playing", "Add a visualiser", "Add a clock", "Add the notes", "Add a GitHub repo") }
+                let full = wg_count >= 8 or pick(ai, false, wg_nviz >= 3, false, wg_nnt >= 1, wg_ngh >= 2)
+                box { from: ax, 20; size: 98, 24; corner: 4; color: fl.well; opacity: if(full, 0.3, 0.7 + 0.3 * adz.hover) }
+                text pick(ai, "+ NOW PLAYING", "+ VISUALISER", "+ CLOCK", "+ NOTES", "+ GITHUB") { at: ax + 49, 32; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                on press adz { wg_hold = 0; emit wg_add(ai) }
+            }
+            zone box snp { from: cx + 186, 20; size: 86, 24; cursor: pointer; role: toggle; checked: wg_snap; label: "Snapping" }
+            zone box don { from: cx + 280, 20; size: 140, 24; cursor: pointer; role: button; label: "Done" }
+            box { from: cx + 186, 20; size: 86, 24; corner: 4; color: if(wg_snap, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * snp.hover }
+            box { from: cx + 280, 20; size: 140, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
+            text pick(wg_snap, "SNAP OFF", "SNAP ON") { at: cx + 229, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(wg_snap, fl.ink, fl.engrave) }
+            text "DONE" { at: cx + 350, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
             on press snp { wg_hold = 0; emit wg_tool(14) }
             on press don { wg_hold = 0; emit wg_edit(0) }
             // what happened (three visualisers at most, locked ones left alone)

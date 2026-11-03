@@ -860,6 +860,9 @@ scene Mooi {
     fact bar_edit = false     // the bar's edit mode (the logic asks the bar)
     fact set_tab = 0          // the section shown
     fact set_scroll = 0       // how far its rows are scrolled
+    fact set_navs = 0         // how far the rail's pages are scrolled
+    prop set_navs_s = 0 ~m.reflow
+    follow set_navs_s = set_navs
     prop set_scroll_s = 0 ~m.reflow
     follow set_scroll_s = set_scroll
     event set_value ->        // to the logic: one setting to one value (lib/setters)
@@ -898,12 +901,14 @@ scene Mooi {
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
-    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number }
+    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
     event sw_add ->           // to the logic: 0 now playing · 1 visualiser
     fact sw_nviz = 0          // visualisers listed (three at most)
+    fact sw_nnotes = 0        // notes listed (one at most)
+    fact sw_ngh = 0           // GitHub widgets listed (two at most)
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""
@@ -1634,34 +1639,42 @@ scene Mooi {
         text "SEARCH · CTRL F" { at: 46, 99; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: not searching }
         input set_query { at: 46, 90; width: 164; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
         on press set_find { focus set_query }
-        SNavGroup(136, "LOOK")
-        SNav(156, "Quick", set_tab == 0, 0, set_pick)
-        SNav(178, "Colour", set_tab == 1, 1, set_pick)
-        SNav(200, "Motion", set_tab == 2, 2, set_pick)
-        SNavGroup(225, "BAR")
-        SNav(243, "Bar", set_tab == 3, 3, set_pick)
-        SNav(265, "Layout", set_tab == 4, 4, set_pick)
-        SNav(287, "Workspaces", set_tab == 5, 5, set_pick)
-        SNav(309, "Media", set_tab == 6, 6, set_pick)
-        SNavGroup(334, "DESKTOP")
-        SNav(352, "Frame", set_tab == 7, 7, set_pick)
-        SNav(374, "Windows", set_tab == 8, 8, set_pick)
-        SNav(396, "Input", set_tab == 9, 9, set_pick)
-        SNav(418, "Shutter", set_tab == 10, 10, set_pick)
-        SNav(440, "Overview", set_tab == 11, 11, set_pick)
-        SNav(462, "Displays", set_tab == 12, 12, set_pick)
-        SNav(484, "Wallpaper", set_tab == 13, 13, set_pick)
-        SNav(506, "Widgets", set_tab == 14, 14, set_pick)
-        SNav(528, "BMO", set_tab == 15, 15, set_pick)
-        SNavGroup(553, "SYSTEM")
-        SNav(571, "Sound", set_tab == 16, 16, set_pick)
-        SNav(593, "Power", set_tab == 17, 17, set_pick)
-        SNav(615, "Keys", set_tab == 18, 18, set_pick)
-        SNav(637, "System", set_tab == 19, 19, set_pick)
-        SNav(659, "Signals", set_tab == 20, 20, set_pick)
-        SNav(681, "Advanced", set_tab == 21, 21, set_pick)
-        SNavGroup(706, "SHELL")
-        SNav(724, "Nexus", set_tab == 22, 22, set_pick)
+        // the pages, scrolled by the wheel when they do not fit above the edit button
+        zone box set_rail { from: 0, 124; size: 232, screen.height - 200 }
+        on scroll set_rail { set_navs = clamp(set_navs - wheel * 44, 0, max(0, 752 - (screen.height - 76))) }
+        group {
+            clip box { from: 0, 124 + set_navs_s; size: 232, screen.height - 200 }
+            move: 0, 0 - set_navs_s
+            SNavGroup(136, "LOOK")
+            SNav(156, "Quick", set_tab == 0, 0, set_pick)
+            SNav(178, "Colour", set_tab == 1, 1, set_pick)
+            SNav(200, "Motion", set_tab == 2, 2, set_pick)
+            SNavGroup(225, "BAR")
+            SNav(243, "Bar", set_tab == 3, 3, set_pick)
+            SNav(265, "Layout", set_tab == 4, 4, set_pick)
+            SNav(287, "Workspaces", set_tab == 5, 5, set_pick)
+            SNav(309, "Media", set_tab == 6, 6, set_pick)
+            SNavGroup(334, "DESKTOP")
+            SNav(352, "Frame", set_tab == 7, 7, set_pick)
+            SNav(374, "Windows", set_tab == 8, 8, set_pick)
+            SNav(396, "Input", set_tab == 9, 9, set_pick)
+            SNav(418, "Shutter", set_tab == 10, 10, set_pick)
+            SNav(440, "Overview", set_tab == 11, 11, set_pick)
+            SNav(462, "Displays", set_tab == 12, 12, set_pick)
+            SNav(484, "Wallpaper", set_tab == 13, 13, set_pick)
+            SNav(506, "Widgets", set_tab == 14, 14, set_pick)
+            SNav(528, "BMO", set_tab == 15, 15, set_pick)
+            SNavGroup(553, "SYSTEM")
+            SNav(571, "Sound", set_tab == 16, 16, set_pick)
+            SNav(593, "Power", set_tab == 17, 17, set_pick)
+            SNav(615, "Keys", set_tab == 18, 18, set_pick)
+            SNav(637, "System", set_tab == 19, 19, set_pick)
+            SNav(659, "Signals", set_tab == 20, 20, set_pick)
+            SNav(681, "Advanced", set_tab == 21, 21, set_pick)
+            SNavGroup(706, "SHELL")
+            SNav(724, "Nexus", set_tab == 22, 22, set_pick)
+        }
+        box { from: 14, screen.height - 77; size: 204, 1; color: fl.trace_dim; show: 752 > screen.height - 76 }
         SButton(16, screen.height - 64, 200, "Edit on the bar", set_action, 1, bar_edit)
         text "CHANGES APPLY AT ONCE" { at: 18, screen.height - 18; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
 
@@ -3168,6 +3181,9 @@ scene Mooi {
                     for m in sw_list { SWidget(m, 468) }
                     SButton(274, 476 + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)
                     SButton(454, 476 + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8 and sw_nviz < 3)
+                    SButton(614, 476 + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 8)
+                    SButton(734, 476 + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 8 and sw_nnotes < 1)
+                    SButton(854, 476 + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 8 and sw_ngh < 2)
                 }
             }
             group {

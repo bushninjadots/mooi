@@ -216,12 +216,13 @@ library Widgets {
     component Panel(x: number, y: number, k: number) {
         size: 320, 520
         let base = k * 1000
-        let vis = wg_sk > 0.5
-        let sy = if(vis, 186, 122)               // the sliders
-        let ns = if(vis, 6, 3)
+        let np = wg_sk < 0.5
+        let vis = wg_sk > 0.5 and wg_sk < 1.5
+        let sy = if(vis, 186, if(np, 122, if(wg_sk > 2.5 and wg_sk < 3.5, 40, 76)))   // the sliders
+        let ns = if(vis, 6, if(np, 3, 2))
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
-        let ay = wy + if(vis, 40, 70)             // where, and the actions
+        let ay = wy + if(vis, 40, if(np, 70, if(wg_sk > 3.5, 70, 40)))   // where, and the actions
         let ph = if(wg_pcol, 30, ay + 102)
         box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
@@ -229,7 +230,7 @@ library Widgets {
         zone box phd { from: x, y; size: 284, 30; cursor: grab; role: button; label: "Move the options" }
         on press phd { wg_hold = 2; wg_pbx = x; wg_pby = y }
         on drag phd while wg_hold == 2 { emit wg_pmove(round(clamp(wg_pbx + drag.dx, 0, 4095)) * 4096 + round(clamp(wg_pby + drag.dy, 0, 4095))) }
-        text pick(vis, "NOW PLAYING", "VISUALISER") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        text pick(wg_sk, "NOW PLAYING", "VISUALISER", "CLOCK", "NOTES", "GITHUB") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
         text "{wg_nsel} CHOSEN · THESE ARE THE LAST ONE'S" { at: x + 120, y + 16; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: wg_nsel > 1 }
         zone box pfo { from: x + 288, y + 4; size: 26, 22; cursor: pointer; role: button; label: "Fold the options" }
         text pick(wg_pcol, "⌄", "›") { at: x + 301, y + 15; anchor: center; align: center; size: 14; family: "Exo 2"; color: fl.engrave }
@@ -238,7 +239,7 @@ library Widgets {
             show: not wg_pcol
             // 1 · the layout, or the mode, as live thumbnails
             group {
-                show: not vis
+                show: np
             group {
                 zone box tc0 { from: x + 12, y + 36; size: 96, 76; cursor: pointer; role: button; label: "Sleeve" }
                 box { from: x + 12, y + 36; size: 96, 76; corner: 4; color: fl.ground; opacity: 0.8 }
@@ -363,11 +364,26 @@ library Widgets {
                 on press th11 { wg_hold = 0; emit wg_opt(base + 100 + 11) }
             }
             }
+            group {
+                show: wg_sk > 1.5 and wg_sk < 2.5
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 70, "DIGITAL", wg_sl < 0.5, base + 100)
+                Chip(x + 86, y + 52, 72, "ANALOGUE", wg_sl > 0.5 and wg_sl < 1.5, base + 101)
+                Chip(x + 162, y + 52, 70, "WORDS", wg_sl > 1.5 and wg_sl < 2.5, base + 102)
+                Chip(x + 236, y + 52, 72, "INFO", wg_sl > 2.5, base + 103)
+            }
+            group {
+                show: wg_sk > 3.5
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 96, "CARD", wg_sl < 0.5, base + 100)
+                Chip(x + 112, y + 52, 96, "COMMITS", wg_sl > 0.5 and wg_sl < 1.5, base + 101)
+                Chip(x + 212, y + 52, 96, "PULSE", wg_sl > 1.5, base + 102)
+            }
             // 2 · sliders
             WSlider(x + 12, y + sy, 296, "OPACITY", "{round(wg_oop * 100)}%", (wg_oop - 0.3) / 0.7, k, 1)
             WSlider(x + 12, y + sy + 30, 296, "SCALE", "{round(wg_osc * 100)}%", wg_osc, k, 7)
             group {
-                show: not vis
+                show: np
                 WSlider(x + 12, y + sy + 60, 296, "TEXT", "{round(wg_otx * 100)}%", (wg_otx - 0.8) / 0.6, k, 6)
             }
             group {
@@ -384,7 +400,27 @@ library Widgets {
             Chip(x + 212, y + ry + 10, 96, "MARKER", wg_si > 1.5, base + 202)
             // 4 · switches
             group {
-                show: not vis
+                show: wg_sk > 1.5 and wg_sk < 2.5
+                Chip(x + 12, y + wy, 96, "24 HOUR", wg_oh24, base + if(wg_oh24, 910, 909))
+                Chip(x + 112, y + wy, 96, "SECONDS", wg_osec, base + if(wg_osec, 912, 911))
+                Chip(x + 212, y + wy, 96, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+            }
+            group {
+                show: wg_sk > 2.5 and wg_sk < 3.5
+                Chip(x + 12, y + wy, 96, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+            }
+            group {
+                show: wg_sk > 3.5
+                Chip(x + 12, y + wy, 96, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+                // the repository: owner/name, Enter to read it
+                text "REPO" { at: x + 118, y + wy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                box { from: x + 150, y + wy; size: 158, 24; corner: 4; color: fl.well }
+                box { from: x + 150, y + wy; size: 158, 24; corner: 4; stroke: 1; color: fl.trace_dim }
+                input wg_repo { at: x + 156, y + wy + 5; width: 146; size: 11; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; placeholder: "owner/name" }
+                text "ENTER TO READ IT · ANY PUBLIC REPO, OR YOURS" { at: x + 12, y + wy + 40; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            }
+            group {
+                show: np
                 Chip(x + 12, y + wy, 144, "LYRIC LINE", wg_o3, base + 300 + if(wg_o3, 0, 1))
                 Chip(x + 164, y + wy, 144, "PROGRESS", wg_o4, base + 400 + if(wg_o4, 0, 1))
                 Chip(x + 12, y + wy + 30, 144, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
@@ -406,6 +442,141 @@ library Widgets {
             Chip(x + 112, y + ay + 54, 96, "BEHIND", wg_obh, base + if(wg_obh, 908, 907))
             Chip(x + 212, y + ay + 54, 96, "CALM SPOT", false, base + 904)
         }
+    }
+
+    // ── Clocks (D140) ──────────────────────────────────────────
+    // The time from the logic (ck_*), once a second; the hands glide on the scene's springs
+    // (ck_ha, ck_ma, ck_sa: degrees). Words and accent as the wallpaper under it gives them.
+
+    // A: big digital — the time large, a thin arc of the seconds, the date under it.
+    component ClockDigital(x: number, y: number, w: number, h: number, u: number, h24: bool, secs: bool, plate: bool,
+                           ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        text pick(h24, ck_hm12, ck_hm24) { at: x + 22 * u, y + h * 0.44; anchor: left center; size: 72 * u; weight: 600; family: "Exo 2"; color: ink }
+        text ck_ampm { at: x + w - 22 * u, y + h * 0.3; anchor: right center; size: 13 * u; family: "Share Tech Mono"; color: acc; show: not h24 }
+        text ck_date { at: x + 24 * u, y + h * 0.8; anchor: left center; size: 12 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w - 48 * u; lines: 1 }
+        group {
+            show: secs
+            box { from: x + 24 * u, y + h - 12 * u; size: w - 48 * u, 2 * u; corner: u; color: ink; opacity: 0.15 }
+            box { from: x + 24 * u, y + h - 12 * u; size: (w - 48 * u) * ck_s / 59, 2 * u; corner: u; color: acc }
+        }
+    }
+
+    // B: analogue — a machined dial, ticks, numerals at the quarters, steel hands, a phosphor sweep.
+    component ClockAnalogue(x: number, y: number, w: number, h: number, u: number, secs: bool, plate: bool,
+                            ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        let r = min(w, h) / 2 - 6 * u
+        let cx = x + w / 2
+        let cy = y + h / 2
+        group { show: not plate
+                blur: 18 * u
+                ellipse { at: cx, cy; radius: r; color: if(tnv > 0.5, #ffffff, #000000); opacity: 0.12 + 0.5 * hzv } }
+        ellipse { at: cx, cy; radius: r; color: fl.hull; opacity: 0.85; show: plate }
+        ellipse { at: cx, cy; radius: r; stroke: 1.5 * u; color: mix(ink, fl.steel_500, 0.4); opacity: 0.8 }
+        repeat t in 0..60 {
+            let big = mod(t, 5) == 0
+            line { from: cx + sin(t * 6) * r * if(big, 0.84, 0.9), cy - cos(t * 6) * r * if(big, 0.84, 0.9); to: cx + sin(t * 6) * r * 0.95, cy - cos(t * 6) * r * 0.95
+                   width: if(big, 2, 1) * u; color: ink; opacity: if(big, 0.9, 0.4) }
+        }
+        text "12" { at: cx, cy - r * 0.68; anchor: center; align: center; size: 14 * u; weight: 600; family: "Exo 2"; color: ink }
+        text "3" { at: cx + r * 0.68, cy; anchor: center; align: center; size: 14 * u; weight: 600; family: "Exo 2"; color: ink }
+        text "6" { at: cx, cy + r * 0.68; anchor: center; align: center; size: 14 * u; weight: 600; family: "Exo 2"; color: ink }
+        text "9" { at: cx - r * 0.68, cy; anchor: center; align: center; size: 14 * u; weight: 600; family: "Exo 2"; color: ink }
+        group { pivot: cx, cy; rotate: ck_ha * 1deg
+                line { from: cx, cy + r * 0.08; to: cx, cy - r * 0.5; width: 5 * u; color: mix(ink, fl.steel_300, 0.3) } }
+        group { pivot: cx, cy; rotate: ck_ma * 1deg
+                line { from: cx, cy + r * 0.1; to: cx, cy - r * 0.76; width: 3 * u; color: ink } }
+        group { pivot: cx, cy; rotate: ck_sa * 1deg; show: secs
+                glow: 6 * u, 0.6, acc
+                line { from: cx, cy + r * 0.16; to: cx, cy - r * 0.86; width: 1.4 * u; color: acc } }
+        ellipse { at: cx, cy; radius: 4 * u; color: acc }
+    }
+
+    // C: words — the time written out, the date in a thin mono line.
+    component ClockWords(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                         ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        text ck_words { at: x + 22 * u, y + h * 0.42; anchor: left center; size: 30 * u; weight: 300; family: "Exo 2"; color: ink; width: w - 44 * u; lines: 2 }
+        text "{ck_date}  ·  {ck_hm24}" { at: x + 24 * u, y + h * 0.82; anchor: left center; size: 11 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.5); width: w - 48 * u; lines: 1 }
+    }
+
+    // D: info — the time and date, and a strip: the weather, the battery, the board's next due, the week.
+    component ClockInfo(x: number, y: number, w: number, h: number, u: number, h24: bool, plate: bool,
+                        ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        text pick(h24, ck_hm12, ck_hm24) { at: x + 20 * u, y + 46 * u; anchor: left center; size: 48 * u; weight: 600; family: "Exo 2"; color: ink }
+        text ck_date { at: x + w - 20 * u, y + 34 * u; anchor: right center; size: 11 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w * 0.5; lines: 1; align: right }
+        text ck_week { at: x + w - 20 * u, y + 54 * u; anchor: right center; size: 10 * u; family: "Share Tech Mono"; color: acc }
+        box { from: x + 20 * u, y + 84 * u; size: w - 40 * u, 1; color: ink; opacity: 0.2 }
+        // the weather and the battery
+        group {
+            show: ck_wx_on
+            text "{ck_wx}" { at: x + 20 * u, y + 108 * u; anchor: left center; size: 20 * u; weight: 600; family: "Exo 2"; color: ink }
+            text ck_wxhl { at: x + 74 * u, y + 108 * u; anchor: left center; size: 11 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45) }
+        }
+        group {
+            show: ck_bat_on
+            box { from: x + w - 74 * u, y + 101 * u; size: 34 * u, 14 * u; corner: 2 * u; stroke: 1.2 * u; color: ink; opacity: 0.8 }
+            box { from: x + w - 72 * u, y + 103 * u; size: 30 * u * clamp(ck_bat / 100, 0, 1), 10 * u; corner: u; color: if(ck_bat < 20, fl.ember, acc) }
+            text "{ck_bat}%" { at: x + w - 20 * u, y + 108 * u; anchor: right center; size: 10 * u; family: "Share Tech Mono"; color: ink }
+        }
+        // the board's next card due
+        text ck_due { at: x + 20 * u, y + h - 24 * u; anchor: left center; size: 11 * u; family: "Share Tech Mono"; color: acc; width: w - 40 * u; lines: 1 }
+    }
+
+    // ── Notes (D140): mooi's quick notes; a row pressed is changed where it is ──
+    component NotesList(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                        ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        let rh = 30 * u
+        let n = floor((h - 64 * u) / rh)
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        text "NOTES" { at: x + 16 * u, y + 20 * u; anchor: left center; size: 11 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+        zone box nadd { from: x + w - 76 * u, y + 8 * u; size: 62 * u, 24 * u; cursor: pointer; role: button; label: "Add a note"; show: not editing }
+        box { from: x + w - 76 * u, y + 8 * u; size: 62 * u, 24 * u; corner: 4 * u; color: ink; opacity: 0.08 + 0.12 * nadd.hover }
+        text "+ NOTE" { at: x + w - 45 * u, y + 20 * u; anchor: center; align: center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: ink }
+        on press nadd { emit nt_edit(-1) }
+        // the field, over the row being changed (or the top, for a new one)
+        group {
+            show: nt_ed > -1.5
+            box { from: x + 10 * u, y + 40 * u; size: w - 20 * u, rh - 2 * u; corner: 4 * u; color: fl.hull; opacity: 0.9 }
+            box { from: x + 10 * u, y + 40 * u; size: w - 20 * u, rh - 2 * u; corner: 4 * u; stroke: 1; color: acc }
+            input nt_draft { at: x + 18 * u, y + 47 * u; width: w - 36 * u; size: 13; family: "Exo 2"; color: fl.engrave; selection: fl.well; placeholder: "A note…" }
+            on nt_focus { focus nt_draft }
+            on key Escape while nt_ed > -1.5 { emit nt_cancel }
+        }
+        for t in nt {
+            let ry = y + 40 * u + (t.index + if(nt_ed > -1.5, 1, 0)) * rh
+            group {
+                show: t.index < n and nt_ed != t.id
+                zone box nrow { from: x + 10 * u, ry; size: w - 96 * u, rh - 2 * u; cursor: text; role: button; label: "Change: {t.text}"; show: not editing }
+                box { from: x + 10 * u, ry; size: w - 20 * u, rh - 2 * u; corner: 4 * u; color: ink; opacity: 0.06 * nrow.hover }
+                box { from: x + 12 * u, ry + 9 * u; size: 3 * u, rh - 20 * u; corner: u; color: acc; show: t.pinned }
+                text t.text { at: x + 22 * u, ry + rh / 2; anchor: left center; size: 13 * u; family: "Exo 2"; color: ink; opacity: if(t.done, 0.45, 1)
+                              width: w - 130 * u; lines: 1 }
+                text t.ago { at: x + w - 92 * u, ry + rh / 2; anchor: right center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); opacity: 1 - nrow.hover }
+                on press nrow { emit nt_edit(t.id) }
+                // pin, done, forget: at the row's end, lit while the row is pointed at
+                zone box npin { from: x + w - 86 * u, ry + 3 * u; size: 22 * u, rh - 8 * u; cursor: pointer; role: button; label: "Pin"; show: not editing }
+                zone box ndone { from: x + w - 62 * u, ry + 3 * u; size: 22 * u, rh - 8 * u; cursor: pointer; role: button; label: "Done"; show: not editing }
+                zone box ndel { from: x + w - 38 * u, ry + 3 * u; size: 22 * u, rh - 8 * u; cursor: pointer; role: button; label: "Forget"; show: not editing }
+                group {
+                    opacity: max(nrow.hover, max(npin.hover, max(ndone.hover, ndel.hover)))
+                    text "⌖" { at: x + w - 75 * u, ry + rh / 2; anchor: center; align: center; size: 12 * u; color: if(t.pinned, acc, ink) }
+                    text "✓" { at: x + w - 51 * u, ry + rh / 2; anchor: center; align: center; size: 12 * u; color: if(t.done, acc, ink) }
+                    text "×" { at: x + w - 27 * u, ry + rh / 2; anchor: center; align: center; size: 13 * u; color: ink }
+                    on press npin { emit nt_pin(t.id) }
+                    on press ndone { emit nt_done(t.id) }
+                    on press ndel { emit nt_del(t.id) }
+                }
+            }
+        }
+        text "+{nt_count - n} MORE" { at: x + 16 * u, y + h - 14 * u; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); show: nt_count > n }
+        text "NO NOTES YET · + NOTE TO WRITE ONE" { at: x + 16 * u, y + 60 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); show: nt_count == 0 and nt_ed < -1.5 }
     }
 
     // The visualiser: one of the twelve (lib/widgets MODES), in the palette's two signal colours,

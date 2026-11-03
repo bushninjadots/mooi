@@ -54,5 +54,6 @@ what was done, and why, is docs/DECISIONS.md.
 - [ ] After a few days on the new widgets: delete `~/.config/desktop-widgets` and `setup/home/.config/desktop-widgets`, drop it from `setup/capture.sh` (D137)
 - [x] Widgets 2a: editor (selection, handles, keys, undo, align, lock, panel v2) + visualisers 16–128 bars, upgraded modes (D138)
 - [x] Widgets 2b: wallpaper awareness + depth behind the subject (rembg), resizing fixed (D139)
-- [ ] Widgets 2c: Clocks (big digital, analogue, word, info) and Notes (mooi's quick notes)
+- [x] Widgets 2c: Clocks (digital, analogue, words, info), Notes, GitHub (card, commits, pulse) (D140)
+- [ ] Widgets 2c: look at every new layout on the desktop (not yet seen on screen)
 - [ ] Deferred: the claude.ai BMO design doc still describes the Quickshell BMO

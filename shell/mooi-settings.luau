@@ -532,7 +532,9 @@ end)
 -- taken as 1080p under a 34 px bar; the program keeps each widget on its own screen when it reads.
 local W = require("lib/widgets")
 local WROOM = { w = 1920, h = 1046, top = 0 }
-local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD" }
+local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD", digital = "DIGITAL", analogue = "ANALOGUE",
+                 words = "WORDS", info = "INFO", list = "LIST", card = "CARD", commits = "COMMITS", pulse = "PULSE" }
+local KTITLE = { nowplaying = "Now Playing", visualiser = "Visualiser", clock = "Clock", notes = "Notes", github = "GitHub" }
 local function wdoc()
     local ok, raw = pcall(sys.ask, "files.read", W.FILE)
     return (W.parse(ok and raw or nil, json.decode, WROOM))
@@ -542,18 +544,22 @@ local function show_widgets(d)
     local rows = {}
     for _, w in ipairs(d.widgets) do
         local vis = w.kind == "visualiser"
+        local what = vis and string.upper(w.mode) or WNAMES[w.layout] or ""
+        if w.kind == "github" then what = what .. " · " .. string.upper((w.options or {}).repo or "") end
         rows[#rows + 1] = {
-            name = vis and "Visualiser" or "Now Playing",
-            detail = string.format("%s · %d × %d AT %d, %d", vis and string.upper(w.mode) or WNAMES[w.layout], w.w, w.h, w.x, w.y),
-            mode = vis and string.upper(w.mode) or "",
-            kind = vis and 1 or 0,
+            name = KTITLE[w.kind] or w.kind,
+            detail = string.format("%s · %d × %d AT %d, %d", what, w.w, w.h, w.x, w.y),
+            mode = vis and string.upper(w.mode) or (WNAMES[w.layout] or ""),
+            kind = ({ nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4 })[w.kind] or 0,
             choice = vis and W.MODE_INDEX[w.mode] or W.LAYOUT_INDEX[w.layout] or 0,
+            nlay = vis and 12 or #(W.KIND_LAYOUTS[w.kind] or { 1 }),
             idle = W.IDLE_INDEX[w.idle] or 1,
             opa = w.opacity or 1, bars = tonumber((w.options or {}).bars) or 64,
         }
     end
     model.sw_list = rows
     fact.sw_nviz = W.count_kind(d, "visualiser")
+    fact.sw_nnotes, fact.sw_ngh = W.count_kind(d, "notes"), W.count_kind(d, "github")
 end
 local function write_widgets(d)
     pcall(sys.call, "files.write", W.FILE, W.encode(d))
@@ -567,7 +573,7 @@ on("sw_choice", function(v)
     local w = d.widgets[math.floor(v / 100) + 1]
     if not w then return end
     if w.kind == "visualiser" then write_widgets(W.set_mode(d, w.id, W.MODES[v % 100 + 1]))
-    else write_widgets(W.set_layout(d, w.id, W.NP_LAYOUTS[v % 100 + 1], WROOM)) end
+    else write_widgets(W.set_layout(d, w.id, (W.KIND_LAYOUTS[w.kind] or {})[v % 100 + 1], WROOM)) end
 end)
 on("sw_idle", function(v)
     v = math.floor(tonumber(v) or 0)
@@ -590,7 +596,7 @@ on("sw_slide", function(v)
     elseif code % 10 == 2 then write_widgets(W.set_option(d, w.id, "bars", 16 + val)) end
 end)
 on("sw_add", function(v)
-    local d, id = W.add(wdoc(), math.floor(tonumber(v) or 0) == 1 and "visualiser" or "nowplaying", WROOM)
+    local d, id = W.add(wdoc(), ({ [0] = "nowplaying", "visualiser", "clock", "notes", "github" })[math.floor(tonumber(v) or 0)] or "nowplaying", WROOM)
     if id then write_widgets(d) end
 end)
 on("wg_settings_edit", function()

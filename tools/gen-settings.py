@@ -501,6 +501,9 @@ def row_lines(r, y, first, reverted):
         lines.append(f'for m in sw_list {{ SWidget(m, {y + 6}) }}')
         lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)')
         lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8 and sw_nviz < 3)')
+        lines.append(f'SButton({TX + 340}, {y + 14} + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 8)')
+        lines.append(f'SButton({TX + 460}, {y + 14} + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 8 and sw_nnotes < 1)')
+        lines.append(f'SButton({TX + 580}, {y + 14} + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 8 and sw_ngh < 2)')
         return lines, "(60 + sw_list.count * 96)"
     if k == "log":
         lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
@@ -715,10 +718,10 @@ def generate():
     nav, ny, last = [], 136, None
     for i, (label, _, _, grp, _) in enumerate(SECTIONS):
         if grp != last:
-            nav.append(f'{ind}SNavGroup({ny + (3 if last else 0)}, "{grp}")'); ny += 21 if last else 20; last = grp
-        # 22 an item (SNav is 24 tall; its neighbours overlap it by its padding) — twenty-two pages and
-        # five groups clear the edit button in the 800 px window (D108)
-        nav.append(f'{ind}SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 22
+            nav.append(f'{ind}    SNavGroup({ny + (3 if last else 0)}, "{grp}")'); ny += 21 if last else 20; last = grp
+        # 22 an item (SNav is 24 tall; its neighbours overlap it by its padding). The rail scrolls
+        # when the pages outgrow the window: 23 pages ran under the edit button at 800 px
+        nav.append(f'{ind}    SNav({ny}, "{label}", set_tab == {i}, {i}, set_pick)'); ny += 22
     titles = ", ".join(f'"{t}"' for _, t, _, _, _ in SECTIONS)
     subs = ", ".join(f'"{s}"' for _, _, s, _, _ in SECTIONS)
     maxs = ", ".join(f"max(0, {h} + 24 - screen.height)" for h in heights)
@@ -736,7 +739,15 @@ def generate():
 {ind}text "SEARCH · CTRL F" {{ at: 46, 99; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: not searching }}
 {ind}input set_query {{ at: 46, 90; width: 164; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }}
 {ind}on press set_find {{ focus set_query }}
+{ind}// the pages, scrolled by the wheel when they do not fit above the edit button
+{ind}zone box set_rail {{ from: 0, 124; size: 232, screen.height - 200 }}
+{ind}on scroll set_rail {{ set_navs = clamp(set_navs - wheel * 44, 0, max(0, {ny + 6} - (screen.height - 76))) }}
+{ind}group {{
+{ind}    clip box {{ from: 0, 124 + set_navs_s; size: 232, screen.height - 200 }}
+{ind}    move: 0, 0 - set_navs_s
 {chr(10).join(nav)}
+{ind}}}
+{ind}box {{ from: 14, screen.height - 77; size: 204, 1; color: fl.trace_dim; show: {ny + 6} > screen.height - 76 }}
 {ind}SButton(16, screen.height - 64, 200, "Edit on the bar", set_action, 1, bar_edit)
 {ind}text "CHANGES APPLY AT ONCE" {{ at: 18, screen.height - 18; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }}
 
@@ -890,6 +901,9 @@ def main():
     fact bar_edit = false     // the bar's edit mode (the logic asks the bar)
     fact set_tab = 0          // the section shown
     fact set_scroll = 0       // how far its rows are scrolled
+    fact set_navs = 0         // how far the rail's pages are scrolled
+    prop set_navs_s = 0 ~m.reflow
+    follow set_navs_s = set_navs
     prop set_scroll_s = 0 ~m.reflow
     follow set_scroll_s = set_scroll
     event set_value ->        // to the logic: one setting to one value (lib/setters)
@@ -928,12 +942,14 @@ def main():
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
-    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number }
+    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
     event sw_add ->           // to the logic: 0 now playing · 1 visualiser
     fact sw_nviz = 0          // visualisers listed (three at most)
+    fact sw_nnotes = 0        // notes listed (one at most)
+    fact sw_ngh = 0           // GitHub widgets listed (two at most)
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""

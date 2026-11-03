@@ -11,6 +11,12 @@ local P = require("lib/player")
 local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
 local WM = require("lib/wallmap")
+local CF = require("lib/clockface")
+local GP = require("lib/ghparse")
+local NOTES = require("lib/notes")
+local forecast = require("lib/forecast")
+local calendar = require("lib/calendar")
+local DAYNAMES = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" }
 
 local function read(name, kind)
     local ok, v
@@ -33,6 +39,7 @@ local settings = config.parse(read("settings.json"), json.decode)
 local roles = nil        -- the palette's roles as painted (the accents lean towards phos)
 local wall = nil         -- the wallpaper as tools/wallmap.py read it (lib/wallmap), nil until known
 local apply_wall         -- defined with the wallpaper's watch below
+local gh_lanes, show_github = {}, nil   -- the GitHub widgets' repositories (D140), and their drawing
 local palette = read("palette.json", "json")
 local function paint()
     fact.cn_kind, fact.cn_scale = style.corners(settings)
@@ -97,7 +104,7 @@ local function publish()
         local st = W.idle_state(w, playing)
         local o = w.options or {}
         rows[#rows + 1] = {
-            kind = w.kind == "visualiser" and 1 or 0,
+            kind = ({ nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4 })[w.kind] or 0,
             lay = W.LAYOUT_INDEX[w.layout] or 0,
             mode = W.MODE_INDEX[w.mode] or 0,
             x = w.x, y = w.y, w = w.w, h = w.h, u = W.scale(w),
@@ -111,6 +118,7 @@ local function publish()
             peaks = o.peaks ~= false, refl = o.reflection == true,
             vslot = -1, opa = w.opacity or 1, txt = tonumber(o.text) or 1, locked = w.locked == true,
             sel = is_sel(w.id),
+            h24 = o.h24 ~= false, secs = o.seconds ~= false,
             adapt = o.adapt ~= false, behind = false, tn = 0, hz = 0.32, ar = 0, ag = 0, ab = 0, over = false,
         }
         local r = rows[#rows]
@@ -152,6 +160,7 @@ local function publish()
     if l < math.huge then fact.cut_x, fact.cut_y, fact.cut_w, fact.cut_h = l, t, r2 - l, b2 - t
     else fact.cut_w, fact.cut_h = 0, 0 end
     fact.wg_nviz = W.count_kind(doc, "visualiser")
+    fact.wg_nnt, fact.wg_ngh, fact.wg_count = W.count_kind(doc, "notes"), W.count_kind(doc, "github"), #doc.widgets
     -- the lanes: each visualiser's place and look, read by the scene's three Lane groups
     local lane = 0
     for i, w in ipairs(doc.widgets) do
@@ -171,6 +180,30 @@ local function publish()
         end
     end
     for j = lane, 2 do fact["l" .. ({ "A", "B", "C" })[j + 1] .. "_on"] = false end
+    -- notes (one) and GitHub (two) are drawn as lanes too: their lists cannot sit inside the loop
+    local function lane_facts(f, i, r)
+        fact[f .. "on"], fact[f .. "k"] = true, i - 1
+        fact[f .. "x"], fact[f .. "y"], fact[f .. "w"], fact[f .. "h"], fact[f .. "u"] = r.x, r.y, r.w, r.h, r.u
+        fact[f .. "lay"], fact[f .. "st"], fact[f .. "gh"], fact[f .. "opa"] = r.lay, r.st, r.gh, r.opa
+        fact[f .. "beh"], fact[f .. "plate"], fact[f .. "sel"] = r.behind, r.plate, r.sel and not r.locked
+        fact[f .. "tn"], fact[f .. "hz"] = r.tn, r.hz
+        fact[f .. "ad"] = r.adapt and r.ar + r.ag + r.ab > 0
+        fact[f .. "ar"], fact[f .. "ag"], fact[f .. "ab"] = r.ar, r.ag, r.ab
+    end
+    local nn, ng = 0, 0
+    gh_lanes = {}
+    for i, w in ipairs(doc.widgets) do
+        if w.kind == "notes" and nn < 1 then nn = nn + 1; lane_facts("nl_", i, rows[i])
+        elseif w.kind == "github" and ng < 2 then
+            ng = ng + 1
+            lane_facts("g" .. ng .. "_", i, rows[i])
+            gh_lanes[ng] = (w.options or {}).repo or "bushninjadots/mooi"
+        end
+    end
+    if nn == 0 then fact.nl_on = false end
+    for j = ng + 1, 2 do fact["g" .. j .. "_on"] = false end
+    fact.any_clock = W.count_kind(doc, "clock") > 0
+    if show_github then show_github() end
     -- a slot that went (removed, or the file changed) cannot keep the surface awake
     hovered = W.prune_hover(hovered, #rows)
     for i = 0, W.MAX - 1 do
@@ -440,9 +473,8 @@ local function panel()
     local w = doc.widgets[k + 1]
     if not w then fact.wg_sel = -1; return end
     if panel_at then fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
-    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, w.kind == "visualiser" and 560 or 436, room) end
+    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, ({ visualiser = 560, nowplaying = 436 })[w.kind] or 380, room) end
     local o = w.options or {}
-    fact.wg_sk = w.kind == "visualiser" and 1 or 0
     fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
     fact.wg_sm = W.MODE_INDEX[w.mode] or 0
     fact.wg_si = W.IDLE_INDEX[w.idle] or 1
@@ -452,6 +484,9 @@ local function panel()
     fact.wg_ob, fact.wg_ogap, fact.wg_osm = tonumber(o.bars) or 64, tonumber(o.gap) or 0.3, tonumber(o.smooth) or 0.5
     fact.wg_otx, fact.wg_oop, fact.wg_olk = tonumber(o.text) or 1, w.opacity or 1, w.locked == true
     fact.wg_oad, fact.wg_obh = o.adapt ~= false, o.behind == true
+    fact.wg_sk = ({ nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4 })[w.kind] or 0
+    fact.wg_oh24, fact.wg_osec = o.h24 ~= false, o.seconds ~= false
+    text.wg_repo = o.repo or ""
     text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
     local L = W.LAYOUTS[W.layout_of(w)]
     local maxw = L.max and L.max[1] or room.w
@@ -583,12 +618,15 @@ on("wg_hdrop", function()
     -- drawn from the model again only once the model has it
     fact.wg_rk = -1
 end)
+-- 0 now playing · 1 visualiser · 2 clock · 3 notes · 4 GitHub
+local ADD_KINDS = { [0] = "nowplaying", "visualiser", "clock", "notes", "github" }
+local KIND_WORDS = { visualiser = "THREE VISUALISERS", notes = "ONE NOTES", github = "TWO GITHUB WIDGETS" }
 on("wg_add", function(v)
-    local vis = math.floor(tonumber(v) or 0) == 1
-    local d, id = W.add(doc, vis and "visualiser" or "nowplaying", room)
+    local kind = ADD_KINDS[math.floor(tonumber(v) or 0)] or "nowplaying"
+    local d, id = W.add(doc, kind, room)
     if not id then
         local full = #doc.widgets >= W.MAX
-        change(doc, full and "EIGHT WIDGETS IS THE MOST" or "THREE VISUALISERS IS THE MOST")
+        change(doc, full and "EIGHT WIDGETS IS THE MOST" or ((KIND_WORDS[kind] or "THAT") .. " IS THE MOST"))
         return
     end
     selected = { id }
@@ -684,7 +722,7 @@ on("wg_opt", function(v)
     local d = doc
     if what == 1 then
         if w.kind == "visualiser" then d = W.set_mode(doc, w.id, W.MODES[val + 1])
-        else d = W.set_layout(doc, w.id, W.NP_LAYOUTS[val + 1], room) end
+        else d = W.set_layout(doc, w.id, (W.KIND_LAYOUTS[w.kind] or {})[val + 1], room) end
     elseif what == 2 then d = W.set_idle(doc, w.id, W.IDLES[val + 1])
     elseif what >= 3 and what <= 8 then
         d = W.set_option(doc, w.id, ({ [3] = "lyrics", [4] = "progress", [5] = "plate", [6] = "scroll_volume", [7] = "peaks", [8] = "reflection" })[what], val == 1)
@@ -697,6 +735,8 @@ on("wg_opt", function(v)
         local x, y = WM.calm_spot(wall, doc, k + 1, room)
         if not x then change(doc, "NO CALM SPOT IS FREE FOR ITS SIZE"); return end
         d = W.set_rect(doc, w.id, x, y, w.w, w.h, room)
+    elseif what == 9 and (val == 9 or val == 10) then d = W.set_option(doc, w.id, "h24", val == 9)
+    elseif what == 9 and (val == 11 or val == 12) then d = W.set_option(doc, w.id, "seconds", val == 11)
     elseif what == 9 and (val == 5 or val == 6) then d = W.set_option(doc, w.id, "adapt", val == 5)
     elseif what == 9 and (val == 7 or val == 8) then
         d = W.set_option(doc, w.id, "behind", val == 7)
@@ -744,11 +784,217 @@ on("wg_slid", function()
     slide = nil
     change(now)
 end)
+-- the GitHub widget's repository, typed in its panel (owner/name)
+local repo_draft = ""
+on("text:wg_repo", function(v) repo_draft = type(v) == "string" and v or "" end)
+on("submit:wg_repo", function()
+    local w = doc.widgets[(fact.wg_sel or -1) + 1]
+    if not w or w.kind ~= "github" then return end
+    local r = repo_draft:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^https?://github.com/", ""):gsub("%.git$", "")
+    if not GP.repo_ok(r) then change(doc, "A REPOSITORY IS OWNER/NAME"); return end
+    change(W.set_option(doc, w.id, "repo", r))
+end)
 -- the panel's place, when its header is dragged (x · 4096 + y)
 on("wg_pmove", function(v)
     v = math.floor(tonumber(v) or 0)
     panel_at = { math.max(0, math.min(room.w - 320, math.floor(v / 4096))), math.max(0, math.min(room.h - 60, v % 4096)) }
     fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
+end)
+
+-- ── The clocks (D140): the time once a second while there is a clock; the Info clock's strip ──
+local zone_off = 0   -- seconds east of UTC, as `date +%z` says (the board's due days are local)
+local strip_at = -60   -- when the Info strip was last read; a new clock reads it on its first second
+local function info_strip()
+    if not fact.any_clock then return end
+    strip_at = os.time()
+    local cached = read("nexus-weather.json", "json")
+    local wx = forecast.parse(type(cached) == "table" and cached.answer or nil)
+    if wx then
+        text.ck_wx = string.format("%d°", math.floor(wx.now.temp + 0.5))
+        text.ck_wxhl = wx.today.hi and string.format("%d° / %d°", math.floor(wx.today.hi + 0.5), math.floor(wx.today.lo + 0.5)) or ""
+        fact.ck_wcode = wx.now.code
+        fact.ck_wx_on = true
+    else fact.ck_wx_on = false end
+    local board = read("board.json", "json")
+    local today = math.floor((os.time() + zone_off) / 86400)   -- the board's day numbers (lib/board.today)
+    local nd = CF.next_due(board, today)
+    text.ck_due = nd and (nd.label .. " · " .. NOTES.one_line(nd.title, 48)) or "NOTHING DUE ON THE BOARD"
+end
+run("date", { "+%z" }, function(out, code)
+    local sign, h, m = string.match(tostring(out or ""), "([+-])(%d%d)(%d%d)")
+    if code == 0 and sign then
+        zone_off = (tonumber(h) * 3600 + tonumber(m) * 60) * (sign == "-" and -1 or 1)
+        info_strip()
+    end
+end)
+local function tick()
+    if not fact.any_clock then return end
+    if os.time() - strip_at >= 60 then info_strip() end
+    local t = os.date("*t")
+    fact.ck_h, fact.ck_m, fact.ck_s = t.hour, t.min, t.sec
+    text.ck_words = CF.words(t.hour, t.min)
+    -- (Pleamar's os.date knows the plain specifiers only: no %-d, no %V)
+    local wd = calendar.weekday(t.year, t.month, t.day)
+    text.ck_date = string.upper(DAYNAMES[wd + 1] .. " " .. t.day .. " " .. calendar.MONTHS[t.month])
+    text.ck_week = "WEEK " .. calendar.iso_week(t.year, t.month, t.day)
+    text.ck_ampm = CF.ampm(t.hour)
+    text.ck_hm24, text.ck_hm12 = CF.hhmm(t.hour, t.min, true), CF.hhmm(t.hour, t.min, false)
+end
+every(1000, tick)
+pcall(sys.watch, "battery", function(b)
+    if type(b) ~= "table" then return end
+    fact.ck_bat = math.floor((tonumber(b.percent) or 0) + 0.5)
+    fact.ck_chg = b.charging == true
+    fact.ck_bat_on = b.present == true
+end)
+
+-- ── Notes (D140): mooi's quick notes (notes.json, lib/notes), edited where they are ──
+local notes = {}
+local editing_note = nil   -- the id being changed, or -1 for a new one
+local function show_notes()
+    notes = NOTES.decode(read("notes.json", "json"))
+    local rows = {}
+    for i, n in ipairs(notes) do
+        if i > 20 then break end
+        rows[i] = { id = n.id, text = NOTES.one_line(n.text, 120), pinned = n.pinned == true, done = n.done == true, ago = NOTES.ago(os.time(), n.time) }
+    end
+    model.nt = rows
+    fact.nt_count = #notes
+end
+local function save_notes() pcall(sys.call, "files.write", "notes.json", NOTES.encode(notes)) end
+show_notes()
+pcall(sys.watch, "files:notes.json", function() if editing_note == nil then show_notes() end end)
+local draft = ""
+on("text:nt_draft", function(v) draft = type(v) == "string" and v or "" end)
+on("nt_edit", function(v)
+    local id = math.floor(tonumber(v) or -1)
+    editing_note = id
+    local n = id >= 0 and NOTES.find(notes, id) or nil
+    draft = n and n.text or ""
+    text.nt_draft = draft
+    fact.nt_ed = id
+    emit("nt_focus")
+end)
+local function end_edit() editing_note = nil; fact.nt_ed = -2; text.nt_draft = ""; draft = ""; show_notes() end
+on("submit:nt_draft", function()
+    local t = NOTES.clean(draft)
+    notes = NOTES.decode(read("notes.json", "json"))   -- what the side panel may have changed meanwhile
+    if t ~= "" then
+        if editing_note and editing_note >= 0 and NOTES.find(notes, editing_note) then notes = NOTES.update(notes, editing_note, t, os.time())
+        else notes = NOTES.add(notes, t, os.time()) end
+        save_notes()
+    end
+    end_edit()
+end)
+on("nt_cancel", end_edit)
+local function note_op(fn) return function(v)
+    notes = NOTES.decode(read("notes.json", "json"))
+    notes = fn(notes, math.floor(tonumber(v) or -1))
+    save_notes(); show_notes()
+end end
+on("nt_pin", note_op(function(l, id) return (NOTES.pin(l, id)) end))
+on("nt_done", note_op(function(l, id) return (NOTES.done(l, id)) end))
+on("nt_del", note_op(function(l, id) return (NOTES.remove(l, id)) end))
+
+-- ── GitHub (D140): through `gh`, signed in as you; each repository read every 5 minutes (every
+-- minute while a run is going), kept in gh-<owner>-<repo>.json ──
+local gh = {}   -- repo -> { card, runs, act, at, err, asking }
+local Q = [[query($o:String!,$n:String!){ repository(owner:$o,name:$n){ nameWithOwner description stargazerCount forkCount pushedAt url
+  primaryLanguage{name} issues(states:OPEN){totalCount} pullRequests(states:OPEN){totalCount}
+  defaultBranchRef{ name target{ ... on Commit { history(first:8){ nodes{ messageHeadline committedDate abbreviatedOid url author{ name user{login} } statusCheckRollup{state} } } } } } } }]]
+local function cache_name(repo) return "gh-" .. repo:gsub("/", "-") .. ".json" end
+local STATE = { ok = 1, fail = 2, run = 3, other = 0, SUCCESS = 1, FAILURE = 2, ERROR = 2, PENDING = 3, EXPECTED = 3 }
+show_github = function()
+    local now = os.time()
+    for j = 1, 2 do
+        local repo = gh_lanes[j]
+        local f = "g" .. j .. "_"
+        local e = repo and gh[repo]
+        if not e then
+            local c = repo and read(cache_name(repo), "json")
+            if type(c) == "table" then gh[repo] = { card = c.card, runs = c.runs or {}, act = c.act, at = tonumber(c.at) or 0 }; e = gh[repo] end
+        end
+        if repo then
+            local card = e and e.card
+            text[f .. "name"] = card and card.name or repo
+            text[f .. "desc"] = card and (card.desc ~= "" and card.desc or "NO DESCRIPTION") or ""
+            text[f .. "stats"] = card and string.format("★ %d   ⑂ %d   %d ISSUES   %d PRS", card.stars, card.forks, card.issues, card.prs) or ""
+            text[f .. "meta"] = card and string.format("%s · %s · PUSHED %s AGO", string.upper(card.lang ~= "" and card.lang or "—"), string.upper(card.branch), GP.ago(card.pushed, now)) or ""
+            text[f .. "state"] = (e and e.err) or (card and "" or "ASKING GITHUB…")
+            local cs = {}
+            for i, c in ipairs(card and card.commits or {}) do
+                cs[i] = { msg = c.msg, who = string.upper(c.who), when = GP.ago(c.when, now), sha = c.sha, st = STATE[c.state] or 0 }
+            end
+            model["g" .. j .. "c"] = cs
+            local rs = {}
+            for i, r in ipairs(e and e.runs or {}) do
+                if i > 6 then break end
+                rs[i] = { name = string.upper(r.name), branch = r.branch, when = GP.ago(r.when, now), st = STATE[r.state] or 0 }
+            end
+            model["g" .. j .. "r"] = rs
+            local as, top, total = {}, 1, 0
+            for _, v in ipairs(e and e.act or {}) do top = math.max(top, v); total = total + v end
+            for i, v in ipairs(e and e.act or {}) do as[i] = { v = v / top } end
+            model["g" .. j .. "a"] = as
+            text[f .. "total"] = e and e.act and string.format("%d COMMITS IN 12 WEEKS", total) or "COUNTING…"
+        end
+    end
+end
+local function gh_read(repo)
+    local e = gh[repo] or { runs = {} }
+    gh[repo] = e
+    if e.asking then return end
+    e.asking = true
+    local owner, name = repo:match("^(.-)/(.+)$")
+    local pending = 3
+    local function done()
+        pending = pending - 1
+        if pending > 0 then return end
+        e.asking, e.at = false, os.time()
+        pcall(sys.call, "files.write", cache_name(repo), { card = e.card, runs = e.runs, act = e.act, at = e.at })
+        show_github()
+    end
+    run("gh", { "api", "graphql", "-f", "query=" .. Q, "-F", "o=" .. owner, "-F", "n=" .. name }, function(out, code)
+        local ok, d = pcall(json.decode, out or "")
+        local card = ok and GP.card(d, json.null) or nil
+        if card then e.card, e.err = card, nil
+        else e.err = code == 127 and "INSTALL THE GITHUB CLI (gh) AND RUN `gh auth login`" or "GITHUB DID NOT ANSWER FOR " .. string.upper(repo) end
+        done()
+    end)
+    run("gh", { "api", "repos/" .. repo .. "/actions/runs?per_page=6" }, function(out)
+        local ok, d = pcall(json.decode, out or "")
+        if ok then e.runs = GP.runs(d, json.null) end
+        done()
+    end)
+    run("gh", { "api", "repos/" .. repo .. "/stats/commit_activity" }, function(out)
+        local ok, d = pcall(json.decode, out or "")
+        local a = ok and GP.activity(d) or nil
+        if a then e.act = a end          -- while GitHub is still counting (202, {}), the last answer stays
+        done()
+    end)
+end
+every(15000, function()
+    local now = os.time()
+    for j = 1, 2 do
+        local repo = gh_lanes[j]
+        if repo then
+            local e = gh[repo]
+            local running = false
+            for _, r in ipairs(e and e.runs or {}) do if r.state == "run" then running = true end end
+            if not e or not e.at or now - e.at > (running and 60 or 300) then gh_read(repo) end
+        end
+    end
+end)
+after(2000, function() for j = 1, 2 do if gh_lanes[j] then gh_read(gh_lanes[j]) end end end)
+-- lane · 100 + 0 the repository, 1-8 a commit, 11-16 a run
+on("gh_open", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local j, i = math.floor(v / 100), v % 100
+    local repo = gh_lanes[j]
+    local e = repo and gh[repo]
+    if not e or not e.card then return end
+    local url = i == 0 and e.card.url or (i <= 8 and e.card.commits[i] and e.card.commits[i].url) or (i >= 11 and e.runs[i - 10] and e.runs[i - 10].url)
+    if url and url ~= "" then run("xdg-open", { url }) end
 end)
 
 -- ── The visualiser's feed (the bar's one cava) ──
