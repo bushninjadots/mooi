@@ -498,7 +498,7 @@ def row_lines(r, y, first, reverted):
     if k == "widgets":
         lines.append(f'for m in sw_list {{ SWidget(m, {y + 6}) }}')
         lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)')
-        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8)')
+        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8 and sw_nviz < 3)')
         return lines, "(60 + sw_list.count * 96)"
     if k == "log":
         lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
@@ -931,6 +931,7 @@ def main():
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
     event sw_add ->           // to the logic: 0 now playing · 1 visualiser
+    fact sw_nviz = 0          // visualisers listed (three at most)
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""

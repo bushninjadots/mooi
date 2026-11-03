@@ -67,6 +67,10 @@ end)
 
 -- The editor's selection (widget ids) and its undo history (D138).
 local selected, hist = {}, W.history()
+-- what a gesture holds while it lasts (a carried widget, a handle, a slider, a marquee), the panel's
+-- place once dragged, and the doc as last saved (what the file watch compares against)
+local pending, grab, slide, marq0, panel_at, last_saved = nil, nil, nil, nil, nil, nil
+local show_selection     -- defined with the editor below; load() needs it
 local function is_sel(id) for _, s in ipairs(selected) do if s == id then return true end end; return false end
 
 local function publish()
@@ -91,12 +95,13 @@ local function publish()
             sel = is_sel(w.id),
         }
     end
-    -- which visualiser draws from which slot's bars (the 4th and later share the 3rd's)
+    -- which visualiser draws from which lane's bars (three at most, lib/widgets MAX_VIZ)
     local nv = 0
     for i, w in ipairs(doc.widgets) do
         if w.kind == "visualiser" then nv = nv + 1; rows[i].vslot = math.min(nv, 3) - 1 end
     end
     model.wg = rows
+    fact.wg_nviz = W.count_kind(doc, "visualiser")
     -- the lanes: each visualiser's place and look, read by the scene's three Lane groups
     local lane = 0
     for i, w in ipairs(doc.widgets) do
@@ -134,11 +139,21 @@ local function load()
     end
     doc = d
     publish()
+    if show_selection then show_selection() end
 end
 
 -- Saved whole: files.write writes beside the file and then moves it into place.
 local function save()
-    pcall(sys.call, "files.write", W.FILE, W.encode(doc))
+    last_saved = W.encode(doc)
+    pcall(sys.call, "files.write", W.FILE, last_saved)
+end
+-- a gesture ends without being saved: back to the doc it started from
+local function drop_gestures(restore)
+    if restore then
+        if grab then doc = grab.before elseif slide then doc = slide.before end
+    end
+    pending, grab, slide, marq0 = nil, nil, nil, nil
+    fact.wg_rk, fact.wg_dk = -1, -1
 end
 
 load()
@@ -146,8 +161,11 @@ pcall(sys.watch, "files:" .. W.FILE, function()
     local raw = read(W.FILE)
     if raw == nil then return end
     local ok, t = pcall(json.decode, raw)
-    if ok and not W.should_reload(t, doc) then return end
-    -- changed elsewhere (Settings): undo would bring back what is not there any more
+    if ok and last_saved and W.same_doc(t, last_saved) then return end
+    if ok and not grab and not slide and not W.should_reload(t, doc) then return end
+    -- changed elsewhere (Settings): undo would bring back what is not there any more, and a held
+    -- slider or handle would put back what was there when it was taken
+    drop_gestures(false)
     W.clear(hist)
     load()
 end)
@@ -157,6 +175,8 @@ on("wg_room", function(v)
     local w, h = math.floor(v / 4096), v % 4096
     if w < 200 or h < 200 or (w == room.w and h == room.h) then return end
     room.w, room.h = w, h
+    drop_gestures(false)
+    W.clear(hist)
     load()
 end)
 
@@ -282,9 +302,6 @@ end)
 on("wg_open", function() run("mooi", { "player" }) end)
 
 -- ── Edit mode: carry, pull, choose, add (lib/widgets works it out; saved once per gesture) ──
-local pending = nil      -- where the carried widget would settle: { k, x, y, w, h }
-local grab = nil         -- a handle held: { id, handle, before }
-local panel_at = nil     -- where the panel was dragged to (kept for the session)
 fact.wg_snap = true
 local function panel()
     local k = fact.wg_sel
@@ -308,7 +325,7 @@ local function panel()
     fact.wg_osc = maxw > L.min[1] and math.max(0, math.min(1, (w.w - L.min[1]) / (maxw - L.min[1]))) or 0
 end
 -- the selection's count and the panel's widget (the last one chosen)
-local function show_selection()
+show_selection = function()
     local keep = {}
     for _, id in ipairs(selected) do if W.find(doc, id) then keep[#keep + 1] = id end end
     selected = keep
@@ -336,7 +353,7 @@ local function choose(ids) selected = ids; show_selection() end
 on("wg_edit", function(v)
     local on_it = math.floor(tonumber(v) or 0) == 1
     fact.editing = on_it
-    if not on_it then selected = {}; fact.wg_dk, fact.wg_rk = -1, -1; pending, grab = nil, nil end
+    if not on_it then selected = {}; drop_gestures(true); publish() end
     show_selection()
 end)
 -- slot · 10 + 0 choose only this · 1 add or take away (a right press) · 2 none
@@ -356,7 +373,6 @@ on("wg_sel", function(v)
 end)
 on("wg_pick", function(v) local w = doc.widgets[math.floor(tonumber(v) or -1) + 1]; if w then choose({ w.id }) end end)
 -- the marquee: where it started, then where it ended (px, x · 4096 + y)
-local marq0 = nil
 on("wg_marq0", function(v) v = math.floor(tonumber(v) or 0); marq0 = { math.floor(v / 4096), v % 4096 } end)
 on("wg_marq1", function(v)
     if not marq0 then return end
@@ -414,6 +430,7 @@ on("wg_hmove", function(v)
     local x, y, w, h = W.resize_from(grab.before, grab.id, grab.handle, dx, dy, room)
     -- drawn at its new size as it is pulled (saved when let go)
     doc = W.set_rect(grab.before, grab.id, x, y, w, h, room)
+    fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh = x, y, w, h
     publish()
     text.wg_readout = string.format("%d × %d · %d, %d", w, h, x, y)
 end)
@@ -427,8 +444,13 @@ on("wg_hdrop", function()
     change(now)
 end)
 on("wg_add", function(v)
-    local d, id = W.add(doc, math.floor(tonumber(v) or 0) == 1 and "visualiser" or "nowplaying", room)
-    if not id then text.wg_note = "THREE VISUALISERS IS THE MOST"; after(2500, function() text.wg_note = "" end); return end
+    local vis = math.floor(tonumber(v) or 0) == 1
+    local d, id = W.add(doc, vis and "visualiser" or "nowplaying", room)
+    if not id then
+        local full = #doc.widgets >= W.MAX
+        change(doc, full and "EIGHT WIDGETS IS THE MOST" or "THREE VISUALISERS IS THE MOST")
+        return
+    end
     selected = { id }
     change(d)
 end)
@@ -521,7 +543,6 @@ on("wg_opt", function(v)
 end)
 -- a slider (slot · 10000 + which · 1000 + value 0 … 999), live while held; `done` saves it
 -- which: 1 opacity · 2 bars · 3 glow · 4 gap · 5 smoothing · 6 text size · 7 scale
-local slide = nil
 local function slider_doc(base, w, which, f)
     if which == 1 then return W.set_field(base, w.id, "opacity", 0.3 + 0.7 * f)
     elseif which == 2 then return W.set_option(base, w.id, "bars", 16 + f * 112)
@@ -583,7 +604,7 @@ local function hush()
     for k = 1, 4 do rings[k] = { 0, 0 }; fact["rp_a" .. (k - 1)] = 0 end
     for k = 1, 3 do lanes[k] = {}; model[SLOTS[k]] = {} end
 end
--- the visualisers that get bars of their own: slot 1…3 by list order (a 4th shares the 3rd's)
+-- the visualisers that get bars of their own: lanes 1…3 by list order (three at most)
 local function viz_slots()
     local out, n = {}, 0
     for _, w in ipairs(doc.widgets) do

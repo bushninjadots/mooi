@@ -899,6 +899,7 @@ scene Mooi {
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
     event sw_add ->           // to the logic: 0 now playing · 1 visualiser
+    fact sw_nviz = 0          // visualisers listed (three at most)
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""
@@ -3144,7 +3145,7 @@ scene Mooi {
                     move: 0, gy_14_4 - 342
                     for m in sw_list { SWidget(m, 348) }
                     SButton(274, 356 + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)
-                    SButton(454, 356 + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8)
+                    SButton(454, 356 + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8 and sw_nviz < 3)
                 }
             }
             group {

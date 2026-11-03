@@ -326,6 +326,8 @@ return function(ctx)
         t.missing = missing
         prev, last_ms, silent_written = nil, 0, missing
         sys.call("files.write", vizfeed.FILE, vizfeed.encode(t))
+        -- and at rest in v2 too, so a widget never reads an old playing frame as new (D138 review)
+        sys.call("files.write", vizfeed.FILE_V2, vizfeed.encode_v2(t))
     end
     local function rest_levels()
         for i = 0, 15 do fact["lv" .. i] = 0.06; sent[i] = 0.06 end

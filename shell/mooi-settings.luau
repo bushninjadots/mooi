@@ -553,6 +553,7 @@ local function show_widgets(d)
         }
     end
     model.sw_list = rows
+    fact.sw_nviz = W.count_kind(d, "visualiser")
 end
 local function write_widgets(d)
     pcall(sys.call, "files.write", W.FILE, W.encode(d))

@@ -565,6 +565,7 @@ scene Widgets {
     fact wg_o6 = true
     fact wg_og = 0.6
     fact wg_nsel = 0             // how many are chosen
+    fact wg_nviz = 0             // how many visualisers (three at most)
     fact wg_dksel = false        // the one carried is chosen, so the others chosen come along
     fact wg_snap = true          // snapping on (the top bar's SNAP)
     fact wg_o7 = true
@@ -765,7 +766,7 @@ scene Widgets {
             zone box snp { from: cx + 66, 20; size: 86, 24; cursor: pointer; role: toggle; checked: wg_snap; label: "Snapping" }
             zone box don { from: cx + 160, 20; size: 100, 24; cursor: pointer; role: button; label: "Done" }
             box { from: cx - 176, 20; size: 120, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adn.hover }
-            box { from: cx - 50, 20; size: 110, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adv.hover }
+            box { from: cx - 50, 20; size: 110, 24; corner: 4; color: fl.well; opacity: if(wg_nviz >= 3, 0.3, 0.7 + 0.3 * adv.hover) }
             box { from: cx + 66, 20; size: 86, 24; corner: 4; color: if(wg_snap, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * snp.hover }
             box { from: cx + 160, 20; size: 100, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
             text "+ NOW PLAYING" { at: cx - 116, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }

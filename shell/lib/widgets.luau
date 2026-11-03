@@ -492,6 +492,8 @@ function M.resize_from(doc, id, handle, dx, dy, screen)
         hh = math.floor(math.min(hh, maxh) / M.GRID) * M.GRID
     end
     ww, hh = M.clamp_size(w, ww, hh)
+    -- a record's width comes from its height and may round past the room; step down until it fits
+    while L.aspect and ww > maxw and hh > L.min[2] do ww, hh = M.clamp_size(w, ww, hh - M.GRID) end
     local x = MOVES_L[handle] and (r - ww) or l
     local y = MOVES_T[handle] and (b - hh) or t
     local c = M.clamp_rect({ x = x, y = y, w = ww, h = hh }, screen)
