@@ -32,10 +32,11 @@ and from the next login ArchEclipse starts instead. To switch now: `bin/mooi sto
 
 ## Pleamar version
 
-`~/.local/bin/pleamar` is **0.4.6**, built from `~/.local/share/pleamar/src/pleamar` (git, tag v0.4.6). The previous binary is `~/.local/bin/pleamar-0.3.7`. Rollback:
+`~/.local/bin/pleamar` is **0.7.11** (language 0.9), built from `~/.local/share/pleamar/src/pleamar` at
+tag v0.7.11 (D136). The previous binary is kept as `~/.local/bin/pleamar-0.4.6` for a few days. Rollback:
 
 ```sh
-cp ~/.local/bin/pleamar-0.3.7 ~/.local/bin/pleamar
+cp ~/.local/bin/pleamar-0.4.6 ~/.local/bin/pleamar
 ```
 
-Every existing scene (Desk, Polkit, the six Tide variants, Marea) compiled on 0.4.6 before the swap. Desk and Polkit kept running their loaded 0.3.7 and move to 0.4.6 at their next restart (normally the next login).
+and check out v0.4.6 in the source, so `setup/capture.sh` records the version actually in use.

@@ -179,7 +179,7 @@ The master brief is saved verbatim in docs/BRIEF.md, with §15 there auditing ev
 - **Phase 1, first slice**: the Spine, the window island, real Hyprland actions verified by read-back, settings with recovery.
 - **Renamed to mooi** (docs/DECISIONS.md D1).
 - **Running mooi** (docs/SWITCHING.md): mooi is the login shell (`bin/mooi session`); a keeper restarts it after a crash. The beside and takeover modes were removed in D133, ArchEclipse being uninstalled since D48.
-- **Pleamar upgraded to 0.4.6** for everything; 0.3.7 kept for rollback (D4).
+- **Pleamar upgraded to 0.4.6** (D4), then to **0.7.11, language 0.9** (D136); 0.4.6 kept briefly for rollback, 0.3.7 removed.
 - **Phase 2, motion and interaction framework**:
   - One island slot (`open`) with hand-over, an Escape order, and per-island reveal springs: interruptible by construction and tested.
   - Shared `IslandFrame` and `Level` components (`shell/ui/island.plm`), and a recipe for adding islands (ARCHITECTURE.md).
@@ -203,7 +203,7 @@ The master brief is saved verbatim in docs/BRIEF.md, with §15 there auditing ev
 ## Needs you
 
 1. ~~**One guard for takeover.**~~ Gone with takeover itself (D133).
-2. **Desk and Polkit still run 0.3.7** in memory; they move to 0.4.6 at your next login. If anything looks off there: `cp ~/.local/bin/pleamar-0.3.7 ~/.local/bin/pleamar`.
+2. ~~**Desk and Polkit still run 0.3.7**~~ Long past: everything runs 0.7.11 now (D136), and 0.3.7 is deleted.
 3. ~~**Optional, your call: make the wallpaper recolour mooi too.**~~ **Done in D18 and it needs nothing from you:** `theme.source` is `wallpaper` by default and `bin/mooi start` runs `theme-watch`, which runs Matugen with mooi's own config (your `--source-color-index 0`, your picker's `~/.cache/current_wallpaper`) and asks mooi to repaint whenever the wallpaper changes. Your own Matugen config and its other targets are untouched. `mooi stop` ends the watch; `mooi theme-watch` runs it in the foreground if you would rather control it yourself; `theme.source = "fixed"` turns the whole thing back to the brief's palette.
 
 ## Remembered for later
