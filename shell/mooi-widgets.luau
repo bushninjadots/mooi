@@ -81,7 +81,15 @@ local function publish()
             glow = tonumber(o.glow) or 0, plate = o.plate == true,
             lyr = o.lyrics ~= false, prog = o.progress ~= false,
             gh = st == "hidden" or st == "marker",
+            bars = math.floor(tonumber(o.bars) or 64), gap = tonumber(o.gap) or 0.3,
+            peaks = o.peaks ~= false, refl = o.reflection == true,
+            vslot = -1, opa = w.opacity or 1, txt = tonumber(o.text) or 1, locked = w.locked == true,
         }
+    end
+    -- which visualiser draws from which slot's bars (the 4th and later share the 3rd's)
+    local nv = 0
+    for i, w in ipairs(doc.widgets) do
+        if w.kind == "visualiser" then nv = nv + 1; rows[i].vslot = math.min(nv, 3) - 1 end
     end
     model.wg = rows
     -- a slot that went (removed, or the file changed) cannot keep the surface awake
@@ -347,20 +355,86 @@ local function any_viz()
 end
 local viz_seq, viz_at, last_beat = nil, 0, 0
 local rings = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } }
+-- Each visualiser slot's own bars (D138): smoothed levels and peak dots, as many as its `bars`.
+local SLOTS = { "vzA", "vzB", "vzC" }
+local lanes = { {}, {}, {} }            -- { lev = {}, pk = {}, hold = {} }
+local frame_n = 0
+local scope_hist = { {}, {}, {} }
 local function hush()
     for i = 0, 15 do fact["vb" .. i] = 0.03 end
+    for i = 0, 31 do fact["vs" .. i] = 0.03 end
     fact.np_beat = 0
     for k = 1, 4 do rings[k] = { 0, 0 }; fact["rp_a" .. (k - 1)] = 0 end
+    for k = 1, 3 do lanes[k] = {}; model[SLOTS[k]] = {} end
+end
+-- the visualisers that get bars of their own: slot 1…3 by list order (a 4th shares the 3rd's)
+local function viz_slots()
+    local out, n = {}, 0
+    for _, w in ipairs(doc.widgets) do
+        if w.kind == "visualiser" then
+            n = n + 1
+            if n <= 3 then out[n] = w end
+        end
+    end
+    return out
+end
+local function feed_lane(k, w, bands)
+    local o = w.options or {}
+    local n = math.floor(tonumber(o.bars) or 64)
+    local target = vizfeed.resample(bands, n)
+    local L = lanes[k]
+    if L.n ~= n then L.n, L.lev, L.pk, L.hold = n, {}, {}, {} end
+    -- rise at once, fall by `smooth` (0 quick … 1 slow); peaks hold 12 frames (400 ms), then fall 1.2 a second
+    local fall = 0.02 + (1 - (tonumber(o.smooth) or 0.5)) * 0.16
+    local now = frame_n
+    local rows = {}
+    for i = 1, n do
+        local v = math.max(target[i], (L.lev[i] or 0) - fall)
+        L.lev[i] = v
+        local p = L.pk[i] or 0
+        if v >= p then p = v; L.hold[i] = now + 12
+        elseif now > (L.hold[i] or 0) then p = math.max(v, p - 0.04) end
+        L.pk[i] = p
+        rows[i] = { v = v, pk = p }
+    end
+    model[SLOTS[k]] = rows
 end
 local function take_viz()
-    local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
-    if not ok or type(raw) ~= "string" then return end
-    local t = vizfeed.decode(raw)
-    if not t or not vizfeed.newer(viz_seq, t.seq) then return end
+    local t, wide
+    local ok2, raw2 = pcall(sys.ask, "files.read", vizfeed.FILE_V2)
+    if ok2 and type(raw2) == "string" then
+        t = vizfeed.decode_v2(raw2)
+        if t and not vizfeed.newer(viz_seq, t.seq) then t = nil end
+        wide = t ~= nil
+    end
+    if not t then
+        local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
+        if not ok or type(raw) ~= "string" then return end
+        t = vizfeed.decode(raw)
+        if not t or not vizfeed.newer(viz_seq, t.seq) then return end
+    end
     viz_seq, viz_at = t.seq, os.time()
     if not t.playing then hush(); return end
-    local b = vizfeed.map(t.bands, 16)
+    local b = vizfeed.resample(t.bands, 16)
     for i = 0, 15 do fact["vb" .. i] = b[i + 1] end
+    local s32 = vizfeed.resample(t.bands, 32)
+    for i = 0, 31 do fact["vs" .. i] = s32[i + 1] end
+    frame_n = frame_n + 1
+    local slots = viz_slots()
+    local scope = false
+    for k, w in ipairs(slots) do
+        feed_lane(k, w, t.bands)
+        if w.mode == "scope" then scope = true end
+    end
+    -- the scope's afterimages: the last three frames of 24 bands, one every other frame
+    if scope and frame_n % 2 == 0 then
+        scope_hist[3], scope_hist[2] = scope_hist[2], scope_hist[1]
+        scope_hist[1] = vizfeed.resample(t.bands, 24)
+        for h = 1, 3 do
+            local f = scope_hist[h]
+            for i = 0, 23 do fact["so" .. (h - 1) .. "_" .. i] = f[i + 1] or 0.03 end
+        end
+    end
     local beat = (tonumber(t.beat) or 0) > 0.9 and last_beat <= 0.9
     last_beat = tonumber(t.beat) or 0
     if beat then
@@ -369,6 +443,7 @@ local function take_viz()
         table.remove(rings, 1)
         rings[4] = { 0.02, math.min(1, 0.5 + (b[2] or 0)) }
     end
+    fact.viz_wide = wide == true
 end
 every(33, function()
     if not (playing and any_viz() and not fact.viz_still) then return end
