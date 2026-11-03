@@ -43,6 +43,9 @@ if $packages; then
     [ -z "$have" ] || printf '%s\n' "$have" | sudo pacman -S --needed --noconfirm -
     # Iosevka Nerd Font was not copied (690 MB): it is a package
     sudo pacman -S --needed --noconfirm ttf-iosevka-nerd 2>/dev/null || warn "ttf-iosevka-nerd not found; the bar's icons fall back"
+    # the widgets read the wallpaper with ImageMagick and cut its subject out with rembg via uv (D139);
+    # both come in as dependencies here, so the captured list does not name them
+    sudo pacman -S --needed --noconfirm imagemagick uv python || warn "imagemagick / uv not installed; the widgets will not read the wallpaper"
     helper=""
     for h in paru yay; do command -v "$h" >/dev/null && { helper=$h; break; }; done
     if [ -z "$helper" ]; then
@@ -60,6 +63,15 @@ if $packages; then
         pacman -Qq "$p" >/dev/null 2>&1 && continue
         "$helper" -S --needed --noconfirm "$p" >/dev/null 2>&1 || missing="$missing $p(aur)"
     done < "$here/packages.aur"
+    # rembg, for the widgets' depth (D139): its own Python 3.13 (onnxruntime trails the system's)
+    if ! command -v rembg >/dev/null; then
+        if command -v uv >/dev/null; then
+            say "packages: rembg (the wallpaper's subject cut out, for widgets behind it)"
+            uv tool install --python 3.13 "rembg[cpu,cli]" >/dev/null 2>&1 || missing="$missing rembg(uv)"
+        else
+            missing="$missing rembg(uv)"
+        fi
+    fi
 fi
 
 # ── 2. pleamar, at the commit this desktop ran on ────────────────────────────────────────────────

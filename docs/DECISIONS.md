@@ -4113,3 +4113,62 @@ Clocks and Notes (2c) are next.
   6.5/6.9 %. Measurements wander by about ±1.5.
 **Not checked:** the handles, the marquee and the panel's header pressed with the real pointer
 (you were at the machine); the keys pressed on a real keyboard.
+
+## D139 · 2026-11-03 · Widgets 2b: they read the wallpaper and can sit behind its subject; resizing fixed
+**Asked for:**
+- widgets legible on any spot, with local colour, that know where the subject is (suggest, never
+  move), and follow the picture's mood
+- depth: widgets behind objects in the wallpaper, with a switch on each widget and a master switch
+- fixed resizing ("funky and glitchy")
+
+Spec `docs/superpowers/specs/2026-11-03-widgets-wallpaper-aware-design.md`, plan `…/plans/2026-11-03-widgets-wallpaper-aware.md`.
+
+**Resizing.** Pleamar gives a drag to every zone under the press, not only the top one. Pulling a
+handle therefore also moved the widget, and drew a marquee on the desktop. Now:
+- each press names its owner (`wg_hold`), and every drag and release checks it
+- a pulled widget is drawn from facts, so nothing is rebuilt under the pointer
+- the carried offset is cleared by the logic once the new place is published, so it no longer
+  flashes back
+
+**Reading the wallpaper.** `mooi wallmap` runs `tools/wallmap.py`, started by the widgets whenever
+`~/.cache/current_wallpaper_source` changes; the result is applied only if it is still the current
+picture.
+- **Framing:** the picture is framed as the picker frames it (fill and crop to 1920×1080, centred).
+- **The cut-out:** rembg cuts the subject out, feathered 1.5 px. It uses bria-rmbg (1 GB, about
+  40 s on five cores the first time a picture is seen; `nice 19`). `mooi wallmap <file> fast` uses
+  isnet instead, which is faint on dark art.
+- **The map:** a 32×18 grid of luma, Lab colour, detail and subject, plus the picture's mood.
+- **Cache:** results are kept by the picture's content in `~/.cache/mooi/wallmap/`.
+
+rembg is installed with `uv tool install --python 3.13 "rembg[cpu,cli]"`, because system Python is
+3.14; `setup/install.sh` does the same.
+
+**`lib/wallmap`** (pure, 7 tests): what is under a rectangle, the text tone, haze, a local accent kept
+at ≥ 4.5:1, the nearest calm free spot, and mood.
+
+**In the widgets:**
+- **Adapted widgets** (ADAPT, on by default) take light or dark words, a haze as strong as the detail
+  underneath, and an accent from the colours there; visualisers use it as their two colours.
+- **Mood** scales glow (0.6–1.2) and pace (0.7–1.2).
+- **Depth:** BEHIND puts a widget behind the subject, using `z:` order (behind 1, cut-out 2, rest 3).
+  The cut-out is drawn only in the box round the widgets behind it: 8.65 % across the full screen,
+  5.3 % clipped.
+- **Edit mode** shades the subject's cells and marks a widget "OVER THE PICTURE'S SUBJECT"; CALM
+  SPOT moves it to the nearest calm free place (undoable). Nothing moves by itself.
+- **Settings → Widgets** has Depth and Wallpaper mood switches.
+
+**Also fixed:**
+- the 2a Text-size parameter was named `tx`, the same as the Sleeve's text column, so Sleeve titles
+  vanished
+- `lib/wallmap.parse` dropped the cut-out's path, so depth could never turn on
+
+**Checked:**
+- `bin/mooi check`: 335 tests, 0 failed.
+- wallmap on the current wallpaper (cut-out and map written; a calm picture reads calm).
+- Depth live in a scratch copy with synthetic music (screenshot: the bars pass behind the figure,
+  the Sleeve stays in front with adapted words).
+- GPU 5.3 % with depth on.
+- The resizing paths through their events.
+
+**Not checked:** resizing with the real pointer (you were at the machine), a wallpaper change end to
+end (the background run and the swap), and a video wallpaper.
