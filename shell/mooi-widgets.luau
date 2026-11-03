@@ -626,7 +626,7 @@ on("wg_add", function(v)
     local d, id = W.add(doc, kind, room)
     if not id then
         local full = #doc.widgets >= W.MAX
-        change(doc, full and "EIGHT WIDGETS IS THE MOST" or ((KIND_WORDS[kind] or "THAT") .. " IS THE MOST"))
+        change(doc, full and "TWELVE WIDGETS IS THE MOST" or ((KIND_WORDS[kind] or "THAT") .. " IS THE MOST"))
         return
     end
     selected = { id }

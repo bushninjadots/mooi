@@ -499,11 +499,11 @@ def row_lines(r, y, first, reverted):
         return lines, "(12 + max(1, dp_list.count) * 60)"
     if k == "widgets":
         lines.append(f'for m in sw_list {{ SWidget(m, {y + 6}) }}')
-        lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)')
-        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8 and sw_nviz < 3)')
-        lines.append(f'SButton({TX + 340}, {y + 14} + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 8)')
-        lines.append(f'SButton({TX + 460}, {y + 14} + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 8 and sw_nnotes < 1)')
-        lines.append(f'SButton({TX + 580}, {y + 14} + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 8 and sw_ngh < 2)')
+        lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 12)')
+        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 12 and sw_nviz < 3)')
+        lines.append(f'SButton({TX + 340}, {y + 14} + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 12)')
+        lines.append(f'SButton({TX + 460}, {y + 14} + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 12 and sw_nnotes < 1)')
+        lines.append(f'SButton({TX + 580}, {y + 14} + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 12 and sw_ngh < 2)')
         return lines, "(60 + sw_list.count * 96)"
     if k == "log":
         lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
@@ -942,7 +942,7 @@ def main():
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
-    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
+    model sw_list max 12 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row

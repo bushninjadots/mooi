@@ -901,7 +901,7 @@ scene Mooi {
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
-    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
+    model sw_list max 12 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
@@ -3179,11 +3179,11 @@ scene Mooi {
                     show: sv_widgets_on == 1
                     move: 0, gy_14_6 - 462
                     for m in sw_list { SWidget(m, 468) }
-                    SButton(274, 476 + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)
-                    SButton(454, 476 + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8 and sw_nviz < 3)
-                    SButton(614, 476 + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 8)
-                    SButton(734, 476 + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 8 and sw_nnotes < 1)
-                    SButton(854, 476 + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 8 and sw_ngh < 2)
+                    SButton(274, 476 + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 12)
+                    SButton(454, 476 + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 12 and sw_nviz < 3)
+                    SButton(614, 476 + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 12)
+                    SButton(734, 476 + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 12 and sw_nnotes < 1)
+                    SButton(854, 476 + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 12 and sw_ngh < 2)
                 }
             }
             group {

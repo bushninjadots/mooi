@@ -3312,11 +3312,11 @@ test("set_layout keeps place, takes the new default size", function()
     local d = W.set_layout(W.defaults(1920, 1080), "np-1", "record", S)
     eq(d.widgets[1].x, 64, "x kept"); eq(d.widgets[1].w, 280, "record w"); eq(d.widgets[1].y + d.widgets[1].h <= 1080, true, "on screen")
 end)
-test("duplicate ids are renumbered; more than 8 are dropped", function()
+test("duplicate ids are renumbered; more than 12 are dropped", function()
     local list = {}
-    for i = 1, 10 do list[i] = { id = "np-1", kind = "nowplaying", layout = "sleeve", x = 0, y = 40, w = 288, h = 104 } end
+    for i = 1, 14 do list[i] = { id = "np-1", kind = "nowplaying", layout = "sleeve", x = 0, y = 40, w = 288, h = 104 } end
     local d = W.parse("", decode_table({ version = 1, widgets = list }), S)
-    eq(#d.widgets, 8, "cap"); eq(d.widgets[2].id ~= d.widgets[1].id, true, "unique")
+    eq(#d.widgets, 12, "cap"); eq(d.widgets[2].id ~= d.widgets[1].id, true, "unique")
 end)
 test("idle_state follows the rule", function()
     eq(W.idle_state({ idle = "rest" }, true), "shown", "playing")
@@ -3555,6 +3555,18 @@ test("every fact the widgets logic writes is declared in its scene", function()
     for name in lua:gmatch("fact%.([%w_]+)%s*,") do if not declared[name] then missing[#missing + 1] = name end end
     eq(table.concat(missing, ", "), "", "facts written but not declared")
 end)
+test("every slot the logic can fill has its facts and its model row (W.MAX)", function()
+    local function slurp(f) local h = assert(io.open(f)); local x = h:read("a"); h:close(); return x end
+    local plm = slurp("shell/mooi-widgets.plm")
+    local missing = {}
+    for i = 0, W.MAX - 1 do
+        for _, f in ipairs({ "op", "hl" }) do
+            if not plm:find("\n%s*fact%s+" .. f .. i .. "%s") then missing[#missing + 1] = f .. i end
+        end
+    end
+    eq(table.concat(missing, ", "), "", "slot facts")
+    eq(tonumber(plm:match("model wg max (%d+)")), W.MAX, "the model holds W.MAX")
+end)
 
 print("clock face")
 do
@@ -3631,6 +3643,45 @@ test("clock, notes and github: layouts, defaults and limits", function()
     eq(d.widgets[#d.widgets].options.repo, "bushninjadots/mooi", "default repo")
     d = W.set_option(d, g1, "repo", "torvalds/linux"); eq(select(2, W.find(d, g1)).options.repo, "torvalds/linux", "repo set")
     d = W.set_option(d, g1, "repo", "bad repo"); eq(select(2, W.find(d, g1)).options.repo, "torvalds/linux", "a bad repo is ignored")
+end)
+
+print("widgets · D141")
+test("seven more kinds, one each; only music follows the idle rule", function()
+    local d, id = W.defaults(1920, 1080), nil
+    for _, k in ipairs({ "weather", "system", "calendar", "timer", "claude", "photo", "launch" }) do
+        local id2
+        d, id2 = W.add(d, k, S); eq(id2 ~= nil, true, k)
+        d, id = W.add(d, k, S); eq(id, nil, "one " .. k)
+    end
+    eq(#d.widgets, 8, "eight"); eq(d.widgets[2].layout, "horizon", "weather first layout")
+    eq(W.idle_state({ kind = "weather", idle = "hide" }, false), "shown", "not music: shown")
+    eq(W.idle_state({ kind = "visualiser", idle = "hide" }, false), "hidden", "music: the rule")
+    eq(W.KIND_NUM.launch, 11, "kind numbers")
+end)
+test("groups, look and the desk arrangement survive the file", function()
+    local d = W.defaults(1920, 1080)
+    local a, b
+    d, a = W.add(d, "clock", S); d, b = W.add(d, "timer", S)
+    d = W.group(d, { a, b })
+    eq(select(2, W.find(d, a)).group ~= nil, true, "grouped"); eq(select(2, W.find(d, a)).group, select(2, W.find(d, b)).group, "same group")
+    local ids = W.with_groups(d, { a }); eq(#ids, 2, "choosing one chooses its group")
+    d.style, d.ambient, d.shadows = "paper", false, true
+    local back = W.parse("", decode_table(W.encode(d)), S)
+    eq(back.style, "paper", "style"); eq(back.ambient, false, "ambient"); eq(back.shadows, true, "shadows")
+    eq(select(2, W.find(back, a)).group, select(2, W.find(d, a)).group, "group kept")
+    eq(W.parse("", decode_table({ widgets = {}, style = "neon" }), S).style, "adaptive", "an unknown style is adaptive")
+    d = W.ungroup(d, { b }); eq(select(2, W.find(d, a)).group, nil, "a group of one is no group")
+    -- desk mode: every widget gets a place, all on screen, none overlapping
+    local lay = W.desk_layout(d, S)
+    eq(#lay, #d.widgets, "one place each")
+    for i, p in ipairs(lay) do
+        local w = d.widgets[i]
+        eq(p.x >= 0 and p.y >= (S.top or 0) and p.x + w.w <= S.w and p.y + w.h <= S.h, true, "on screen " .. i)
+        for j = i + 1, #lay do
+            local q, v = lay[j], d.widgets[j]
+            eq(p.x < q.x + v.w and q.x < p.x + w.w and p.y < q.y + v.h and q.y < p.y + w.h, false, "no overlap " .. i .. "," .. j)
+        end
+    end
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

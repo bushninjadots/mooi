@@ -8,7 +8,7 @@ local M = {}
 
 M.VERSION = 2
 M.GRID = 8
-M.MAX = 8
+M.MAX = 12               -- twelve widgets (D141: seven more kinds)
 M.MAX_VIZ = 3             -- the scene draws three visualiser lanes (D138)
 M.FILE = "widgets.json"
 M.MARGIN = 64
@@ -27,18 +27,47 @@ M.LAYOUTS = {
     card     = { min = { 300, 140 }, def = { 400, 190 }, max = { 900, 430 } },
     commits  = { min = { 320, 200 }, def = { 440, 320 }, max = { 1000, 800 } },
     pulse    = { min = { 320, 160 }, def = { 440, 220 }, max = { 1100, 560 } },
+    heat     = { min = { 420, 120 }, def = { 640, 170 }, max = { 1400, 380 } },
+    -- D141: weather, system, calendar, focus timer, Claude, photo, launcher
+    horizon  = { min = { 360, 120 }, def = { 560, 170 }, max = { 1600, 480 } },
+    days     = { min = { 320, 130 }, def = { 460, 170 }, max = { 1200, 440 } },
+    scope    = { min = { 300, 130 }, def = { 420, 180 }, max = { 1200, 520 } },
+    gauges   = { min = { 300, 110 }, def = { 420, 150 }, max = { 1100, 400 } },
+    month    = { min = { 260, 240 }, def = { 340, 320 }, max = { 800, 760 } },
+    ring     = { min = { 160, 160 }, def = { 240, 240 }, max = { 600, 600 }, aspect = true },
+    slab     = { min = { 280, 90 }, def = { 420, 130 }, max = { 1100, 340 } },
+    ticker   = { min = { 360, 64 }, def = { 640, 84 }, max = { 1920, 200 } },
+    quote    = { min = { 300, 140 }, def = { 420, 200 }, max = { 1000, 560 } },
+    frame    = { min = { 200, 160 }, def = { 360, 270 }, max = { 1200, 900 } },
+    polaroid = { min = { 180, 210 }, def = { 260, 300 }, max = { 700, 810 }, aspect = true },
+    shelf    = { min = { 200, 64 }, def = { 480, 84 }, max = { 1600, 160 } },
+    column   = { min = { 64, 200 }, def = { 84, 440 }, max = { 160, 1000 } },
 }
 -- each kind's layouts, in order (the first is a new one's)
 M.KIND_LAYOUTS = {
     nowplaying = { "sleeve", "lyricstage", "record" },
     clock = { "digital", "analogue", "words", "info" },
     notes = { "list" },
-    github = { "card", "commits", "pulse" },
+    github = { "card", "commits", "pulse", "heat" },
+    weather = { "horizon", "days" },
+    system = { "scope", "gauges" },
+    calendar = { "month" },
+    timer = { "ring", "slab" },
+    claude = { "ticker", "quote" },
+    photo = { "frame", "polaroid" },
+    launch = { "shelf", "column" },
 }
 -- how many of a kind the scene can draw (the rest by M.MAX)
-M.KIND_MAX = { visualiser = 3, notes = 1, github = 2 }
+M.KIND_MAX = { visualiser = 3, notes = 1, github = 2, weather = 1, system = 1, calendar = 1, timer = 1, claude = 1, photo = 1, launch = 1 }
+-- the kinds that follow the music (the idle rule is theirs; the rest are always shown, and rest with ambient)
+M.MUSIC = { nowplaying = true, visualiser = true }
+-- each kind's number in the scene (model wg.kind)
+M.KIND_NUM = { nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4, weather = 5, system = 6, calendar = 7,
+               timer = 8, claude = 9, photo = 10, launch = 11 }
+M.ADD_ORDER = { "nowplaying", "visualiser", "clock", "notes", "github", "weather", "system", "calendar", "timer", "claude", "photo", "launch" }
 M.NP_LAYOUTS = { "sleeve", "lyricstage", "record" }
-M.KINDS = { nowplaying = true, visualiser = true, clock = true, notes = true, github = true }
+M.KINDS = {}
+for k in pairs(M.KIND_NUM) do M.KINDS[k] = true end
 M.MODES = { "spectrum", "mirror", "ring", "aurora", "led", "orbit",
             "scope", "horizon", "dust", "ripple", "skyline", "liquid" }
 M.MODE_INDEX, M.LAYOUT_INDEX = {}, {}
@@ -48,7 +77,7 @@ M.LAYOUT_KIND = {}
 for kind, list in pairs(M.KIND_LAYOUTS) do for _, l in ipairs(list) do M.LAYOUT_KIND[l] = kind end end
 M.IDLE_INDEX = { hide = 0, rest = 1, marker = 2 }
 M.IDLES = { "hide", "rest", "marker" }
-M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide", clock = "rest", notes = "rest", github = "rest" }
+M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide" }   -- every other kind: "rest" (the rule is only the music's)
 M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
@@ -57,14 +86,28 @@ M.OPTIONS = {
     clock = { h24 = true, seconds = true, plate = false, adapt = true, behind = false },
     notes = { rows = 6, plate = false, adapt = true, behind = false },
     github = { repo = "bushninjadots/mooi", plate = false, adapt = true, behind = false },
+    weather = { plate = false, adapt = true, behind = false },
+    system = { plate = false, adapt = true, behind = false },
+    calendar = { plate = false, adapt = true, behind = false },
+    timer = { minutes = 25, plate = false, adapt = true, behind = false },
+    claude = { plate = false, adapt = true, behind = false },
+    photo = { folder = "~/Pictures", every = 10, pop = true, plate = false, adapt = true, behind = false },
+    launch = { apps = "kitty,zen,code,nautilus,spotify", plate = false, adapt = true, behind = false },
 }
+-- the look of them all (widgets.json, beside the list): a style, the ambient rest, shadows
+M.STYLES = { "adaptive", "phosphor", "ink", "chrome", "paper" }
+M.STYLE_INDEX = {}
+for i, s in ipairs(M.STYLES) do M.STYLE_INDEX[s] = i - 1 end
 -- the numbers' ranges (the rest are 0 … 1); `int` ones are whole
 M.OPTION_RANGES = {
-    bars = { 16, 128, true }, gap = { 0, 0.6 }, smooth = { 0, 1 }, text = { 0.8, 1.4 }, glow = { 0, 1 }, rows = { 3, 20, true },
+    minutes = { 1, 180, true }, every = { 1, 120, true }, bars = { 16, 128, true }, gap = { 0, 0.6 }, smooth = { 0, 1 }, text = { 0.8, 1.4 }, glow = { 0, 1 }, rows = { 3, 20, true },
 }
 -- the text options: a GitHub repository is owner/name
 function M.option_string(key, v)
     if key == "repo" and type(v) == "string" and v:match("^[%w%-%._]+/[%w%-%._]+$") then return v end
+    if key == "folder" and type(v) == "string" and #v > 0 and #v < 400 and not v:find("[%c]") then return v end
+    -- the launcher's apps: desktop file ids or commands, comma-separated, twelve at most
+    if key == "apps" and type(v) == "string" and #v < 600 and not v:find("[%c;|&$`]") then return v end
     return nil
 end
 local function option_number(key, v, d)
@@ -75,7 +118,8 @@ local function option_number(key, v, d)
     if r[3] then n = math.floor(n + 0.5) end
     return n
 end
-local PREFIX = { nowplaying = "np", visualiser = "viz", clock = "clk", notes = "nts", github = "gh" }
+local PREFIX = { nowplaying = "np", visualiser = "viz", clock = "clk", notes = "nts", github = "gh", weather = "wx",
+                 system = "sys", calendar = "cal", timer = "tmr", claude = "cl", photo = "ph", launch = "ln" }
 
 local function grid(v) return math.floor(v / M.GRID + 0.5) * M.GRID end
 local function clamp(v, lo, hi) if v < lo then return lo end; if hi and v > hi then return hi end; return v end
@@ -205,7 +249,7 @@ local function options_for(kind, given)
 end
 
 local function new_widget(doc, kind, screen)
-    local w = { kind = kind, idle = M.DEFAULT_IDLE[kind], options = options_for(kind, nil), opacity = 1, locked = false }
+    local w = { kind = kind, idle = M.DEFAULT_IDLE[kind] or "rest", options = options_for(kind, nil), opacity = 1, locked = false }
     if kind == "visualiser" then w.mode = M.DEFAULT_MODE else w.layout = M.KIND_LAYOUTS[kind][1] end
     local L = M.LAYOUTS[M.layout_of(w)]
     w.w, w.h = math.min(L.def[1], screen.w), L.def[2]
@@ -234,7 +278,8 @@ local function clean(e, screen)
         if M.MODE_INDEX[e.mode] == nil then return nil, "unknown mode " .. tostring(e.mode) end
         w.mode = e.mode
     end
-    w.idle = M.IDLE_INDEX[e.idle] and e.idle or M.DEFAULT_IDLE[kind]
+    w.idle = M.IDLE_INDEX[e.idle] and e.idle or M.DEFAULT_IDLE[kind] or "rest"
+    w.group = type(e.group) == "string" and #e.group > 0 and #e.group < 40 and e.group or nil
     w.options = options_for(kind, e.options)
     w.opacity = clamp(tonumber(e.opacity) or 1, 0.3, 1)
     w.locked = e.locked == true
@@ -257,6 +302,9 @@ function M.parse(raw, decode, screen)
         return d, problems
     end
     local doc = { version = M.VERSION, widgets = {} }
+    doc.style = M.STYLE_INDEX[t.style] and t.style or "adaptive"
+    doc.ambient = t.ambient ~= false
+    doc.shadows = t.shadows == true
     local seen = {}
     for _, e in ipairs(type(t.widgets) == "table" and t.widgets or {}) do
         local w, why = clean(e, screen)
@@ -274,11 +322,12 @@ function M.parse(raw, decode, screen)
 end
 
 function M.encode(doc)
-    local out = { version = M.VERSION, widgets = {} }
+    local out = { version = M.VERSION, widgets = {}, style = doc.style or "adaptive", ambient = doc.ambient ~= false,
+                  shadows = doc.shadows == true }
     for i, w in ipairs(doc.widgets) do
         out.widgets[#out.widgets + 1] = { id = w.id, kind = w.kind, layout = w.layout, mode = w.mode,
             x = w.x, y = w.y, w = w.w, h = w.h, idle = w.idle, options = copy(w.options or {}),
-            z = i, opacity = w.opacity or 1, locked = w.locked == true }
+            z = i, opacity = w.opacity or 1, locked = w.locked == true, group = w.group }
     end
     return out
 end
@@ -606,7 +655,7 @@ end
 function M.clear(h) h.undo, h.redo = {}, {} end
 
 function M.idle_state(w, playing)
-    if playing then return "shown" end
+    if playing or (w.kind and not M.MUSIC[w.kind]) then return "shown" end
     if w.idle == "hide" then return "hidden" end
     if w.idle == "marker" then return "marker" end
     return "rest"
@@ -620,6 +669,110 @@ function M.unpack(n)
     local rest = n - slot * 65536
     local gx = math.floor(rest / 256)
     return slot, gx, rest - gx * 256
+end
+
+-- ── Groups (D141): widgets chosen, carried and faded as one ──
+-- The chosen ones made a group (a new id); any group they were in is left. A group of one is none.
+function M.group(doc, ids)
+    if #ids < 2 then return doc end
+    local d = copy(doc)
+    local n = 1
+    local used = {}
+    for _, w in ipairs(d.widgets) do if w.group then used[w.group] = true end end
+    while used["g" .. n] do n = n + 1 end
+    local want = {}
+    for _, id in ipairs(ids) do want[id] = true end
+    for _, w in ipairs(d.widgets) do if want[w.id] then w.group = "g" .. n end end
+    return M.tidy_groups(d)
+end
+function M.ungroup(doc, ids)
+    local d = copy(doc)
+    local gone = {}
+    for _, id in ipairs(ids) do
+        local _, w = find(d, id)
+        if w and w.group then gone[w.group] = true end
+    end
+    for _, w in ipairs(d.widgets) do if w.group and gone[w.group] then w.group = nil end end
+    return d
+end
+-- groups left with one member are dissolved
+function M.tidy_groups(d)
+    local n = {}
+    for _, w in ipairs(d.widgets) do if w.group then n[w.group] = (n[w.group] or 0) + 1 end end
+    for _, w in ipairs(d.widgets) do if w.group and n[w.group] < 2 then w.group = nil end end
+    return d
+end
+-- the ids, with every member of their groups
+function M.with_groups(doc, ids)
+    local groups, out, seen = {}, {}, {}
+    for _, id in ipairs(ids) do
+        local _, w = find(doc, id)
+        if w and w.group then groups[w.group] = true end
+    end
+    for _, id in ipairs(ids) do if not seen[id] then seen[id] = true; out[#out + 1] = id end end
+    for _, w in ipairs(doc.widgets) do
+        if w.group and groups[w.group] and not seen[w.id] then seen[w.id] = true; out[#out + 1] = w.id end
+    end
+    return out
+end
+-- each widget's group as a number (0 none, 1 … for the scene's "GROUPED" tags)
+function M.group_numbers(doc)
+    local num, out, n = {}, {}, 0
+    for i, w in ipairs(doc.widgets) do
+        if w.group then
+            if not num[w.group] then n = n + 1; num[w.group] = n end
+            out[i] = num[w.group]
+        else out[i] = 0 end
+    end
+    return out
+end
+
+-- ── Desk mode (D141): every widget gathered into one arrangement, centred, for a look ──
+-- Rows filled left to right (a group's members kept together, the taller first), each row centred,
+-- the block centred under the bar. Returns { { x, y } } in the doc's order; one that does not fit
+-- keeps its own place.
+function M.desk_layout(doc, screen, gap)
+    gap = gap or 24
+    local top = screen.top or 0
+    local room_w, room_h = screen.w - 2 * M.MARGIN, screen.h - top - 2 * 32
+    local order = {}
+    for i in ipairs(doc.widgets) do order[#order + 1] = i end
+    local gnum = M.group_numbers(doc)
+    table.sort(order, function(a, b)
+        local ga, gb = gnum[a] > 0 and gnum[a] or 1000 + a, gnum[b] > 0 and gnum[b] or 1000 + b
+        if ga ~= gb then
+            -- groups first, then by height
+            local ha, hb = doc.widgets[a].h, doc.widgets[b].h
+            if (gnum[a] > 0) ~= (gnum[b] > 0) then return gnum[a] > 0 end
+            if gnum[a] > 0 then return ga < gb end
+            if ha ~= hb then return ha > hb end
+        end
+        return a < b
+    end)
+    local rows, row, rw, rh = {}, {}, 0, 0
+    for _, i in ipairs(order) do
+        local w = doc.widgets[i]
+        local need = (#row > 0 and gap or 0) + w.w
+        if #row > 0 and rw + need > room_w then rows[#rows + 1] = { items = row, w = rw, h = rh }; row, rw, rh = {}, 0, 0; need = w.w end
+        row[#row + 1] = i; rw = rw + need; rh = math.max(rh, w.h)
+    end
+    if #row > 0 then rows[#rows + 1] = { items = row, w = rw, h = rh } end
+    local total = 0
+    for k, r in ipairs(rows) do total = total + r.h + (k > 1 and gap or 0) end
+    local out = {}
+    local y = top + 32 + math.max(0, (room_h - total) / 2)
+    for _, r in ipairs(rows) do
+        local x = M.MARGIN + math.max(0, (room_w - r.w) / 2)
+        for _, i in ipairs(r.items) do
+            local w = doc.widgets[i]
+            if y + r.h <= screen.h and x + w.w <= screen.w then
+                out[i] = { x = math.floor(x), y = math.floor(y + (r.h - w.h) / 2) }
+            else out[i] = { x = w.x, y = w.y } end
+            x = x + w.w + gap
+        end
+        y = y + r.h + gap
+    end
+    return out
 end
 
 return M

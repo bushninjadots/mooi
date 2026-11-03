@@ -249,7 +249,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool }
+    model wg max 12 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -551,6 +551,30 @@ scene Widgets {
     fact op7 = 1
     prop po7 = 1 ~wg.fade
     follow po7 = op7
+    fact hl8 = 0
+    prop ph8 = 0 ~wg.hand
+    follow ph8 = hl8
+    fact op8 = 1
+    prop po8 = 1 ~wg.fade
+    follow po8 = op8
+    fact hl9 = 0
+    prop ph9 = 0 ~wg.hand
+    follow ph9 = hl9
+    fact op9 = 1
+    prop po9 = 1 ~wg.fade
+    follow po9 = op9
+    fact hl10 = 0
+    prop ph10 = 0 ~wg.hand
+    follow ph10 = hl10
+    fact op10 = 1
+    prop po10 = 1 ~wg.fade
+    follow po10 = op10
+    fact hl11 = 0
+    prop ph11 = 0 ~wg.hand
+    follow ph11 = hl11
+    fact op11 = 1
+    prop po11 = 1 ~wg.fade
+    follow po11 = op11
     // ── Edit mode ──
     fact editing = false
     // a widget carried (its slot, how far) or pulled by an edge (its slot, how far each way)
@@ -776,7 +800,9 @@ scene Widgets {
     surface desk {
         size: full, full
         anchor: top
-        level: bottom
+        // while editing they rise over the bottom layer: BMO's and the desk's surfaces there took the
+        // presses meant for the handles whenever they came up after the widgets (D141)
+        level: bottom, top while editing
         keyboard: on_demand while editing or nt_ed > -1.5
         rate: 30, 4 while not np_playing and wg_calm and not editing and nt_ed < -1.5
 
@@ -816,7 +842,7 @@ scene Widgets {
         group {
             z: if(nl_beh, 1, 3)
             show: nl_on and (editing or nl_st < 1.5)
-            opacity: if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7))) * nl_opa
+            opacity: if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * nl_opa
             move: if(wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel), wg_dx, 0), if(wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel), wg_dy, 0)
             let ink = if(nl_ad, if(nl_tn > 0.5, #15181c, #eef1f4), fl.engrave)
             let acc = if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos)
@@ -826,7 +852,7 @@ scene Widgets {
         group {
             z: if(g1_beh, 1, 3)
             show: g1_on and (editing or g1_st < 1.5)
-            opacity: if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7))) * g1_opa
+            opacity: if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g1_opa
             move: if(wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel), wg_dx, 0), if(wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel), wg_dy, 0)
             let ink = if(g1_ad, if(g1_tn > 0.5, #15181c, #eef1f4), fl.engrave)
             let acc = if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos)
@@ -836,7 +862,7 @@ scene Widgets {
         group {
             z: if(g2_beh, 1, 3)
             show: g2_on and (editing or g2_st < 1.5)
-            opacity: if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7))) * g2_opa
+            opacity: if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g2_opa
             move: if(wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel), wg_dx, 0), if(wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel), wg_dy, 0)
             let ink = if(g2_ad, if(g2_tn > 0.5, #15181c, #eef1f4), fl.engrave)
             let acc = if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos)
@@ -848,7 +874,7 @@ scene Widgets {
         group {
             z: if(lA_beh, 1, 3)
             show: lA_on and (editing or lA_st < 1.5)
-            opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lA_opa
+            opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lA_opa
             move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0), if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0)
             box { from: if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y); size: if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h); corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
             vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
@@ -856,7 +882,7 @@ scene Widgets {
         group {
             z: if(lB_beh, 1, 3)
             show: lB_on and (editing or lB_st < 1.5)
-            opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lB_opa
+            opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lB_opa
             move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0), if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0)
             box { from: if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y); size: if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h); corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
             vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
@@ -864,7 +890,7 @@ scene Widgets {
         group {
             z: if(lC_beh, 1, 3)
             show: lC_on and (editing or lC_st < 1.5)
-            opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lC_opa
+            opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lC_opa
             move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0), if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0)
             box { from: if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y); size: if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h); corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
             vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
@@ -880,8 +906,8 @@ scene Widgets {
             let ww = if(rz, wg_sw, w.w)
             let wh = if(rz, wg_sh, w.h)
             let wu = if(rz, wg_ru, w.u)
-            let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7), 0)
-            let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7)), 0.9 * hv * if(w.st < 1.5, 1, 0))
+            let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7, ph8, ph9, ph10, ph11), 0)
+            let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11)), 0.9 * hv * if(w.st < 1.5, 1, 0))
             // only a widget that shows music can be pointed at (a hidden one, or the visualiser, never)
             let over = w.kind < 0.5 and (w.st < 1.5 or editing) and desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
             on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }
@@ -915,8 +941,9 @@ scene Widgets {
                     wg.Marker(w.x, w.y, w.u, k) }
 
             // edit mode: its outline (lit when chosen), the hand that carries it, eight handles
+            // (no `z:` here: a z inside the loop hid the whole group under pleamar 0.7.11 — the
+            // outlines and handles were gone; declared after the widget, it is drawn over it)
             group {
-                z: 5
                 show: editing
                 // a record and an analogue clock keep their shape: corners only
                 let rec = (w.kind < 0.5 and w.lay > 1.5) or (w.kind > 1.5 and w.kind < 2.5 and w.lay > 0.5 and w.lay < 1.5)
@@ -999,7 +1026,7 @@ scene Widgets {
             repeat ai in 0..5 {
                 let ax = cx - 340 + ai * 104
                 zone box adz { from: ax, 20; size: 98, 24; cursor: pointer; role: button; label: pick(ai, "Add Now Playing", "Add a visualiser", "Add a clock", "Add the notes", "Add a GitHub repo") }
-                let full = wg_count >= 8 or pick(ai, false, wg_nviz >= 3, false, wg_nnt >= 1, wg_ngh >= 2)
+                let full = wg_count >= 12 or pick(ai, false, wg_nviz >= 3, false, wg_nnt >= 1, wg_ngh >= 2)
                 box { from: ax, 20; size: 98, 24; corner: 4; color: fl.well; opacity: if(full, 0.3, 0.7 + 0.3 * adz.hover) }
                 text pick(ai, "+ NOW PLAYING", "+ VISUALISER", "+ CLOCK", "+ NOTES", "+ GITHUB") { at: ax + 49, 32; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
                 on press adz { wg_hold = 0; emit wg_add(ai) }
