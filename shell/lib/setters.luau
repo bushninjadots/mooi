@@ -77,6 +77,8 @@ M.SETTERS = {
     "atlas.hot_corner", "atlas.hot_corner_delay",
     -- spring edges: a carried window held at an edge steps the desktops (D115)
     "atlas.spring_edges",
+    -- the desktop widgets (D137)
+    "widgets.on",
 }
 
 local function row_of(path)

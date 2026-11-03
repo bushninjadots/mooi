@@ -348,6 +348,7 @@ sys.watch("files:" .. FILE, function()
     load_settings()
     if extraction(settings.theme) ~= before then extract() end
     apply_theme("settings changed")
+    if widgets_sync then widgets_sync() end
     if desk_sync then desk_sync() end
     if bmo_sync then bmo_sync() end
     if notch_sync then notch_sync() end
@@ -1862,6 +1863,43 @@ function desk_sync()
     end, { errors = true })
     desk_win = mine
 end
+
+-- The desktop widgets (shell/mooi-widgets.plm, D137): Now Playing and the visualiser on the bottom
+-- layer, kept running while widgets.on (on unless turned off). Started before the desk, whose cutout
+-- surface must stack over them; when they start again while the desk runs, the desk is asked to go
+-- and desk_sync brings it back above them. Three ends within a minute and they are left down.
+local widgets_win, widgets_ends = nil, {}
+function widgets_sync()
+    local want = type(settings.widgets) ~= "table" or settings.widgets.on ~= false
+    if not want then
+        widgets_ends = {}
+        if widgets_win then kill(widgets_win, "term"); widgets_win = nil end
+        return
+    end
+    if widgets_win then return end
+    local mine
+    local said = {}
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-widgets.plm", "--no-hud", "--stall", "0" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if widgets_win ~= mine then return end
+        widgets_win = nil
+        local now = os.time()
+        local recent = {}
+        for _, t in ipairs(widgets_ends) do if now - t < 60 then recent[#recent + 1] = t end end
+        recent[#recent + 1] = now
+        widgets_ends = recent
+        if #recent >= 3 then
+            log("widgets · stopped after 3 crashes in 60 s: " .. table.concat(said, " / "))
+            return
+        end
+        if code ~= 0 then log("widgets · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        after(1000 * #recent, widgets_sync)
+    end, { errors = true })
+    widgets_win = mine
+    if desk_win then run("pleamar", { "--say", "mooi-desk", "quit" }) end
+end
+after(1200, widgets_sync)
 after(1500, desk_sync)
 
 -- The side notch (shell/mooi-notch, D106): started with the bar while notch.on, kept running so that

@@ -350,6 +350,8 @@ M.SCHEMA = {
     { path = "desk.strength", kind = "integer", default = 45, min = 0, max = 100 },
     { path = "desk.cutout", kind = "boolean", default = true },
     { path = "desk.depth", kind = "boolean", default = true },
+    -- D137: the desktop widgets (shell/mooi-widgets, widgets.json is theirs)
+    { path = "widgets.on", kind = "boolean", default = true },
     -- The music player (D88): its colours from the shell's palette, or from the album cover.
     { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
     -- each place's visualiser (the music player overhaul; lib/vizbands STYLES, shell/ui/viz.plm)

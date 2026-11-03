@@ -23,6 +23,7 @@
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
+#   mooi widgets [edit]   place the desktop widgets: drag, resize, their options (Esc leaves)
 #   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
 #   mooi notch [panel]    the side notch on a panel: claude (default), music, spaces, walls, weather, github
@@ -508,7 +509,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -559,6 +560,7 @@ mooi-frame.plm:the screen frame
 mooi-desk.plm:the desk
 mooi-player.plm:the music player
 mooi-notch.plm:the side notch
+mooi-widgets.plm:the desktop widgets
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -759,6 +761,11 @@ case "$cmd" in
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }
             exec "$pleamar" --say "$name" "emit open_player 1" ;;
+    widgets) # the desktop widgets (D137): `mooi widgets edit` places them on the desktop
+        case "${1:-edit}" in
+            edit) exec "$pleamar" --say mooi-widgets "emit wg_edit 1" ;;
+            *) echo "usage: mooi widgets [edit]" >&2; exit 2 ;;
+        esac ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
     notch) # the side notch on a panel: claude music spaces walls weather github (Claude by default)
@@ -904,6 +911,7 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-player.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-notch.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-widgets.plm" || exit 1
         "$pleamar" --check "$root/shell/bmo/bmo.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every

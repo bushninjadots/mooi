@@ -70,6 +70,8 @@ SETTERS = [
     "atlas.hot_corner", "atlas.hot_corner_delay",
     # spring edges: a carried window held at an edge steps the desktops (D115)
     "atlas.spring_edges",
+    # the desktop widgets (D137)
+    "widgets.on",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)

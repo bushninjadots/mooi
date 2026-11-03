@@ -1,0 +1,147 @@
+language 0.9
+
+// The desktop widgets' looks (D137): Now Playing in three layouts and the Visualiser. Every size
+// is the layout's own times `u` (lib/widgets.scale), so a bigger widget is the same widget larger.
+// No card unless `plate`: a soft dark haze behind the words keeps them readable on any picture.
+// They read the scene's now-playing facts (np_*), its cover image and its record's springs.
+
+import "viz.plm" as viz
+
+library Widgets {
+    // A soft dark haze, or the plate when asked for one: what any widget stands on.
+    component Ground(x: number, y: number, w: number, h: number, u: number, plate: bool) {
+        size: w, h
+        group { show: not plate
+                blur: 22 * u
+                box { from: x + 10 * u, y + 10 * u; size: w - 20 * u, h - 20 * u; corner: 12 * u; color: #000000; opacity: 0.32 } }
+        box { from: x, y; size: w, h; corner: 6 * u; color: fl.hull; opacity: 0.78; show: plate }
+        box { from: x, y; size: w, h; corner: 6 * u; stroke: 1; color: fl.trace_dim; opacity: 0.9; show: plate }
+    }
+
+    // The cover, square, with a lit rim; the placeholder glyph when there is none.
+    component Cover(x: number, y: number, s: number, u: number) {
+        size: s, s
+        box { from: x, y; size: s, s; corner: 4 * u; color: fl.well }
+        text "♪" { at: x + s / 2, y + s / 2; anchor: center; align: center; size: s * 0.38; family: "Exo 2"; color: fl.trace; show: not np_cover_on }
+        image cover { at: x, y; size: s, s; show: np_cover_on }
+        box { from: x, y; size: s, s; corner: 4 * u; stroke: 1.2; color: fl.trace_lit; opacity: 0.55 }
+    }
+
+    // A: the sleeve — the cover, then the title, the artist, the line being sung and the progress.
+    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool) {
+        size: w, h
+        let pad = 14 * u
+        let cs = h - 2 * pad
+        let tx = x + pad + cs + 16 * u
+        let tw = max(10, x + w - pad - tx)
+        Ground(x, y, w, h, u, plate)
+        Cover(x + pad, y + pad, cs, u)
+        text pick(np_has, "NOTHING PLAYING", np_title) { at: tx, y + pad + 12 * u; anchor: left center; size: 20 * u; weight: 700; family: "Exo 2"
+              width: tw; lines: 1; color: fl.engrave }
+        text np_artist { at: tx, y + pad + 36 * u; anchor: left center; size: 12 * u; family: "Share Tech Mono"; width: tw; lines: 1; color: fl.trace_lit }
+        group {
+            show: lyr and np_sung
+            opacity: np_lf
+            text np_line { at: tx, y + pad + 64 * u; anchor: left center; size: 14 * u; family: "Exo 2"; width: tw; lines: 1; color: fl.phos }
+        }
+        group {
+            show: prog and np_has
+            box { from: tx, y + h - pad - 2 * u; size: tw, 2 * u; color: fl.trace_dim; opacity: 0.8 }
+            box { from: tx, y + h - pad - 2 * u; size: tw * clamp(np_prg, 0, 1), 2 * u; color: fl.phos }
+        }
+    }
+
+    // B: the lyric stage — the line being sung large and centred, the ones either side faded, the
+    // cover and the title as a caption. Without synced lyrics, the title takes the stage.
+    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool) {
+        size: w, h
+        let cx = x + w / 2
+        let lw = w - 64 * u
+        let sung = np_sung
+        Ground(x, y, w, h, u, plate)
+        text np_prev { at: cx, y + h * 0.2; anchor: center; align: center; size: 17 * u; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
+        group {
+            opacity: if(sung, np_lf, 1)
+            text np_line { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u; weight: 600; family: "Exo 2"
+                  width: lw; lines: 2; color: fl.engrave; show: sung }
+            text pick(np_has, "NOTHING PLAYING", np_title) { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u; weight: 600; family: "Exo 2"
+                  width: lw; lines: 2; color: fl.engrave; show: not sung }
+        }
+        text np_next { at: cx, y + h * 0.76; anchor: center; align: center; size: 17 * u; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
+        Cover(x + 16 * u, y + h - 44 * u, 28 * u, u)
+        text "{np_title}  ·  {np_artist}" { at: x + 52 * u, y + h - 30 * u; anchor: left center; size: 11 * u; family: "Share Tech Mono"
+              width: w - 72 * u; lines: 1; color: fl.muted; show: np_has and sung }
+    }
+
+    // C: the record — the cover as its label, turning at 33⅓ while it plays, the tonearm on the
+    // song; the title and the artist under it.
+    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool) {
+        size: w, h
+        let r = w * 0.44
+        let rcx = x + w / 2
+        let rcy = y + w * 0.5
+        let rl = r * 0.36
+        let px = x + w * 0.9
+        let py = y + w * 0.1
+        Ground(x, y, w, h, u, plate)
+        ellipse { at: rcx, rcy; radius: r; color: #0d0f11 }
+        repeat g in 0..7 {
+            ellipse { at: rcx, rcy; radius: rl + 6 * u + g * (r - rl - 10 * u) / 6; stroke: 0.8; color: #23272b; opacity: 0.9 }
+        }
+        ellipse { at: rcx, rcy; radius: r; stroke: 1.5; color: fl.steel_700 }
+        group {
+            pivot: rcx, rcy
+            rotate: np_vang * 1deg
+            mask: radial rcx, rcy radius rl - 1 to rl
+            box { from: rcx - rl, rcy - rl; size: rl * 2, rl * 2; color: mix(fl.ember_fill, fl.hull, 0.3) }
+            image cover { at: rcx - rl, rcy - rl; size: rl * 2, rl * 2; show: np_cover_on }
+        }
+        ellipse { at: rcx, rcy; radius: 3 * u; color: fl.steel_300 }
+        ellipse { at: px, py; radius: 9 * u; color: fl.steel_700 }
+        group {
+            pivot: px, py
+            rotate: np_arm * 1deg
+            line { from: px, py; to: px, py + r * 1.05; width: 3 * u; color: fl.steel_300 }
+            line { from: px, py + r * 1.05; to: px - 7 * u, py + r * 1.2; width: 3 * u; color: fl.steel_300 }
+        }
+        text pick(np_has, "NOTHING PLAYING", np_title) { at: rcx, y + w + 16 * u; anchor: center; align: center; size: 17 * u; weight: 700; family: "Exo 2"
+              width: w - 16 * u; lines: 1; color: fl.engrave }
+        text np_artist { at: rcx, y + w + 40 * u; anchor: center; align: center; size: 11 * u; family: "Share Tech Mono"; width: w - 16 * u; lines: 1; color: fl.trace_lit }
+    }
+
+    // The visualiser: one of the twelve (lib/widgets MODES), in the palette's two signal colours,
+    // with a glow of its own (0 … 1). Stillness is the scene's (`viz_still`).
+    component Visualiser(x: number, y: number, w: number, h: number, u: number, mode: number, glow: number, plate: bool) {
+        size: w, h
+        let t1 = fl.phos
+        let t2 = fl.ember
+        let cr = min(w, h) * 0.3
+        box { from: x, y; size: w, h; corner: 6 * u; color: fl.hull; opacity: 0.7; show: plate }
+        group {
+            group { glow: 10 * u, glow, t1; show: mode < 0.5
+                    viz.Spectrum(x, y, w, h, t1, t2, viz_still) }
+            group { glow: 10 * u, glow, t1; show: mode > 0.5 and mode < 1.5
+                    viz.Mirror(x, y, w, h, t1, t2, viz_still) }
+            group { glow: 10 * u, glow, t1; show: mode > 1.5 and mode < 2.5
+                    viz.Ring(x + w / 2, y + h / 2, cr, min(w, h) * 0.18, t1, t2, viz_still) }
+            group { show: mode > 2.5 and mode < 3.5
+                    viz.Aurora(x, y, w, h, t1, t2, np_turn, viz_still) }
+            group { glow: 10 * u, glow, t1; show: mode > 3.5 and mode < 4.5
+                    viz.LED(x, y, w, h, t1, t2, fl.trace_dim, viz_still) }
+            group { glow: 10 * u, glow, t1; show: mode > 4.5 and mode < 5.5
+                    viz.Orbit(x, y, w, h, t1, t2, fl.trace_dim, np_turn, viz_still) }
+            group { glow: 10 * u, glow, t1; show: mode > 5.5 and mode < 6.5
+                    viz.Scope(x, y, w, h, t1, t2, viz_still, np_turn, 40, 90) }
+            group { show: mode > 6.5 and mode < 7.5
+                    viz.Horizon(x, y, w, h, t1, t2, viz_still, np_turn) }
+            group { glow: 10 * u, glow, t1; show: mode > 7.5 and mode < 8.5
+                    viz.Dust(x, y, w, h, t1, t2, viz_still, np_scatter, np_turn) }
+            group { glow: 10 * u, glow, t1; show: mode > 8.5 and mode < 9.5
+                    viz.Ripple(x, y, w, h, t1, t2, viz_still, rp_r0, rp_a0, rp_r1, rp_a1, rp_r2, rp_a2, rp_r3, rp_a3) }
+            group { glow: 10 * u, glow, t1; show: mode > 9.5 and mode < 10.5
+                    viz.Skyline(x, y, w, h, t1, t2, viz_still) }
+            group { show: mode > 10.5
+                    viz.Liquid(x, y, w, h, t1, t2, viz_still, np_turn) }
+        }
+    }
+}

@@ -750,6 +750,8 @@ scene Mooi {
     fact df_atlas_hot_corner_delay = 0
     fact sv_atlas_spring_edges = 0
     fact df_atlas_spring_edges = 0
+    fact sv_widgets_on = 0
+    fact df_widgets_on = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)

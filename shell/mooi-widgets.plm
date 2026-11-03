@@ -1,0 +1,346 @@
+language 0.9
+import "theme/tokens.plm"
+import "theme/ferrolume.plm"
+import "ui/widgets.plm" as wg
+
+// mooi's desktop widgets (D137, docs/superpowers/specs/2026-11-03-widgets-design.md): Now Playing
+// (Sleeve, Lyric stage, Record) and the Visualiser (twelve modes), on one surface over the
+// wallpaper and under the desk's cutout and every window. A program of its own, kept by the bar
+// while widgets.on; mooi-widgets.luau reads widgets.json (lib/widgets), the music and the bar's
+// visualiser feed. The surface leaves the bar's strip to the bar, so y = 0 is just under it.
+// Empty parts take no clicks: they go to the desktop.
+
+scene Widgets {
+    permissions {
+        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi"
+        services: "files", "files.write", "media", "audio", "env"
+    }
+
+    // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
+    fact cn_kind = 0
+    fact cn_scale = 1
+    fact fr_ground_r = 0.000000
+    fact fr_ground_g = 0.000000
+    fact fr_ground_b = 0.000000
+    fact fr_hull_r = 0.015686
+    fact fr_hull_g = 0.035294
+    fact fr_hull_b = 0.031373
+    fact fr_hull_raised_r = 0.027451
+    fact fr_hull_raised_g = 0.074510
+    fact fr_hull_raised_b = 0.066667
+    fact fr_well_r = 0.019608
+    fact fr_well_g = 0.164706
+    fact fr_well_b = 0.145098
+    fact fr_trace_dim_r = 0.121569
+    fact fr_trace_dim_g = 0.219608
+    fact fr_trace_dim_b = 0.200000
+    fact fr_trace_r = 0.239216
+    fact fr_trace_g = 0.415686
+    fact fr_trace_b = 0.376471
+    fact fr_trace_lit_r = 0.423529
+    fact fr_trace_lit_g = 0.788235
+    fact fr_trace_lit_b = 0.682353
+    fact fr_phos_r = 0.498039
+    fact fr_phos_g = 0.811765
+    fact fr_phos_b = 0.713725
+    fact fr_phos_fill_r = 0.090196
+    fact fr_phos_fill_g = 0.603922
+    fact fr_phos_fill_b = 0.533333
+    fact fr_ember_r = 0.878431
+    fact fr_ember_g = 0.482353
+    fact fr_ember_b = 0.180392
+    fact fr_ember_fill_r = 0.823529
+    fact fr_ember_fill_g = 0.411765
+    fact fr_ember_fill_b = 0.117647
+    fact fr_flare_r = 0.956863
+    fact fr_flare_g = 0.713725
+    fact fr_flare_b = 0.235294
+    fact fr_muted_r = 0.352941
+    fact fr_muted_g = 0.541176
+    fact fr_muted_b = 0.494118
+    fact fr_ink_r = 0.015686
+    fact fr_ink_g = 0.129412
+    fact fr_ink_b = 0.113725
+    fact fr_steel_900_r = 0.082353
+    fact fr_steel_900_g = 0.098039
+    fact fr_steel_900_b = 0.105882
+    fact fr_steel_700_r = 0.164706
+    fact fr_steel_700_g = 0.192157
+    fact fr_steel_700_b = 0.203922
+    fact fr_steel_500_r = 0.290196
+    fact fr_steel_500_g = 0.329412
+    fact fr_steel_500_b = 0.349020
+    fact fr_steel_300_r = 0.545098
+    fact fr_steel_300_g = 0.592157
+    fact fr_steel_300_b = 0.611765
+    fact fr_engrave_r = 0.603922
+    fact fr_engrave_g = 0.650980
+    fact fr_engrave_b = 0.670588
+    prop pr_ground_r = 0.000000 ~fl.relight
+    follow pr_ground_r = fr_ground_r
+    prop pr_ground_g = 0.000000 ~fl.relight
+    follow pr_ground_g = fr_ground_g
+    prop pr_ground_b = 0.000000 ~fl.relight
+    follow pr_ground_b = fr_ground_b
+    prop pr_hull_r = 0.015686 ~fl.relight
+    follow pr_hull_r = fr_hull_r
+    prop pr_hull_g = 0.035294 ~fl.relight
+    follow pr_hull_g = fr_hull_g
+    prop pr_hull_b = 0.031373 ~fl.relight
+    follow pr_hull_b = fr_hull_b
+    prop pr_hull_raised_r = 0.027451 ~fl.relight
+    follow pr_hull_raised_r = fr_hull_raised_r
+    prop pr_hull_raised_g = 0.074510 ~fl.relight
+    follow pr_hull_raised_g = fr_hull_raised_g
+    prop pr_hull_raised_b = 0.066667 ~fl.relight
+    follow pr_hull_raised_b = fr_hull_raised_b
+    prop pr_well_r = 0.019608 ~fl.relight
+    follow pr_well_r = fr_well_r
+    prop pr_well_g = 0.164706 ~fl.relight
+    follow pr_well_g = fr_well_g
+    prop pr_well_b = 0.145098 ~fl.relight
+    follow pr_well_b = fr_well_b
+    prop pr_trace_dim_r = 0.121569 ~fl.relight
+    follow pr_trace_dim_r = fr_trace_dim_r
+    prop pr_trace_dim_g = 0.219608 ~fl.relight
+    follow pr_trace_dim_g = fr_trace_dim_g
+    prop pr_trace_dim_b = 0.200000 ~fl.relight
+    follow pr_trace_dim_b = fr_trace_dim_b
+    prop pr_trace_r = 0.239216 ~fl.relight
+    follow pr_trace_r = fr_trace_r
+    prop pr_trace_g = 0.415686 ~fl.relight
+    follow pr_trace_g = fr_trace_g
+    prop pr_trace_b = 0.376471 ~fl.relight
+    follow pr_trace_b = fr_trace_b
+    prop pr_trace_lit_r = 0.423529 ~fl.relight
+    follow pr_trace_lit_r = fr_trace_lit_r
+    prop pr_trace_lit_g = 0.788235 ~fl.relight
+    follow pr_trace_lit_g = fr_trace_lit_g
+    prop pr_trace_lit_b = 0.682353 ~fl.relight
+    follow pr_trace_lit_b = fr_trace_lit_b
+    prop pr_phos_r = 0.498039 ~fl.relight
+    follow pr_phos_r = fr_phos_r
+    prop pr_phos_g = 0.811765 ~fl.relight
+    follow pr_phos_g = fr_phos_g
+    prop pr_phos_b = 0.713725 ~fl.relight
+    follow pr_phos_b = fr_phos_b
+    prop pr_phos_fill_r = 0.090196 ~fl.relight
+    follow pr_phos_fill_r = fr_phos_fill_r
+    prop pr_phos_fill_g = 0.603922 ~fl.relight
+    follow pr_phos_fill_g = fr_phos_fill_g
+    prop pr_phos_fill_b = 0.533333 ~fl.relight
+    follow pr_phos_fill_b = fr_phos_fill_b
+    prop pr_ember_r = 0.878431 ~fl.relight
+    follow pr_ember_r = fr_ember_r
+    prop pr_ember_g = 0.482353 ~fl.relight
+    follow pr_ember_g = fr_ember_g
+    prop pr_ember_b = 0.180392 ~fl.relight
+    follow pr_ember_b = fr_ember_b
+    prop pr_ember_fill_r = 0.823529 ~fl.relight
+    follow pr_ember_fill_r = fr_ember_fill_r
+    prop pr_ember_fill_g = 0.411765 ~fl.relight
+    follow pr_ember_fill_g = fr_ember_fill_g
+    prop pr_ember_fill_b = 0.117647 ~fl.relight
+    follow pr_ember_fill_b = fr_ember_fill_b
+    prop pr_flare_r = 0.956863 ~fl.relight
+    follow pr_flare_r = fr_flare_r
+    prop pr_flare_g = 0.713725 ~fl.relight
+    follow pr_flare_g = fr_flare_g
+    prop pr_flare_b = 0.235294 ~fl.relight
+    follow pr_flare_b = fr_flare_b
+    prop pr_muted_r = 0.352941 ~fl.relight
+    follow pr_muted_r = fr_muted_r
+    prop pr_muted_g = 0.541176 ~fl.relight
+    follow pr_muted_g = fr_muted_g
+    prop pr_muted_b = 0.494118 ~fl.relight
+    follow pr_muted_b = fr_muted_b
+    prop pr_ink_r = 0.015686 ~fl.relight
+    follow pr_ink_r = fr_ink_r
+    prop pr_ink_g = 0.129412 ~fl.relight
+    follow pr_ink_g = fr_ink_g
+    prop pr_ink_b = 0.113725 ~fl.relight
+    follow pr_ink_b = fr_ink_b
+    prop pr_steel_900_r = 0.082353 ~fl.relight
+    follow pr_steel_900_r = fr_steel_900_r
+    prop pr_steel_900_g = 0.098039 ~fl.relight
+    follow pr_steel_900_g = fr_steel_900_g
+    prop pr_steel_900_b = 0.105882 ~fl.relight
+    follow pr_steel_900_b = fr_steel_900_b
+    prop pr_steel_700_r = 0.164706 ~fl.relight
+    follow pr_steel_700_r = fr_steel_700_r
+    prop pr_steel_700_g = 0.192157 ~fl.relight
+    follow pr_steel_700_g = fr_steel_700_g
+    prop pr_steel_700_b = 0.203922 ~fl.relight
+    follow pr_steel_700_b = fr_steel_700_b
+    prop pr_steel_500_r = 0.290196 ~fl.relight
+    follow pr_steel_500_r = fr_steel_500_r
+    prop pr_steel_500_g = 0.329412 ~fl.relight
+    follow pr_steel_500_g = fr_steel_500_g
+    prop pr_steel_500_b = 0.349020 ~fl.relight
+    follow pr_steel_500_b = fr_steel_500_b
+    prop pr_steel_300_r = 0.545098 ~fl.relight
+    follow pr_steel_300_r = fr_steel_300_r
+    prop pr_steel_300_g = 0.592157 ~fl.relight
+    follow pr_steel_300_g = fr_steel_300_g
+    prop pr_steel_300_b = 0.611765 ~fl.relight
+    follow pr_steel_300_b = fr_steel_300_b
+    prop pr_engrave_r = 0.603922 ~fl.relight
+    follow pr_engrave_r = fr_engrave_r
+    prop pr_engrave_g = 0.650980 ~fl.relight
+    follow pr_engrave_g = fr_engrave_g
+    prop pr_engrave_b = 0.670588 ~fl.relight
+    follow pr_engrave_b = fr_engrave_b
+
+
+    // The islands' semantic tokens, which theme/tokens defines over these facts.
+    fact c_bg_primary_r = 0.062745
+    fact c_bg_primary_g = 0.078431
+    fact c_bg_primary_b = 0.086275
+    fact c_bg_secondary_r = 0.086275
+    fact c_bg_secondary_g = 0.105882
+    fact c_bg_secondary_b = 0.117647
+    fact c_surface_primary_r = 0.098039
+    fact c_surface_primary_g = 0.121569
+    fact c_surface_primary_b = 0.133333
+    fact c_surface_elevated_r = 0.133333
+    fact c_surface_elevated_g = 0.160784
+    fact c_surface_elevated_b = 0.176471
+    fact c_border_subtle_r = 0.172549
+    fact c_border_subtle_g = 0.207843
+    fact c_border_subtle_b = 0.223529
+    fact c_fg_primary_r = 0.890196
+    fact c_fg_primary_g = 0.913725
+    fact c_fg_primary_b = 0.921569
+    fact c_fg_secondary_r = 0.639216
+    fact c_fg_secondary_g = 0.690196
+    fact c_fg_secondary_b = 0.709804
+    fact c_fg_muted_r = 0.541176
+    fact c_fg_muted_g = 0.592157
+    fact c_fg_muted_b = 0.611765
+    fact c_accent_primary_r = 0.650980
+    fact c_accent_primary_g = 0.952941
+    fact c_accent_primary_b = 0.819608
+    fact c_accent_secondary_r = 1.000000
+    fact c_accent_secondary_g = 0.572549
+    fact c_accent_secondary_b = 0.372549
+    fact c_status_ok_r = 0.650980
+    fact c_status_ok_g = 0.952941
+    fact c_status_ok_b = 0.819608
+    fact c_status_error_r = 1.000000
+    fact c_status_error_g = 0.572549
+    fact c_status_error_b = 0.372549
+    fact c_focus_ring_r = 0.650980
+    fact c_focus_ring_g = 0.952941
+    fact c_focus_ring_b = 0.819608
+    fact c_selection_bg_r = 0.164706
+    fact c_selection_bg_g = 0.227451
+    fact c_selection_bg_b = 0.211765
+
+    // What theme/ferrolume reads for its geometry (the bar's strip; unused here) and the finish.
+    fact st_offset = 0
+    fact st_notch = false
+    fact bar_rail = true
+    fact st_height = 30
+    fact st_radius = 8
+    fact st_res = 46
+    fact st_glow = 1
+
+    // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
+    // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
+    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool }
+
+    // what is playing (any player, through the media service)
+    text np_title = ""
+    text np_artist = ""
+    text np_prev = ""
+    text np_line = ""
+    text np_next = ""
+    text np_cover_path = ""
+    image cover = from np_cover_path, 480, 480
+    fact np_has = false
+    fact np_cover_on = false
+    fact np_playing = false
+    fact np_progress = 0
+    fact np_arm_at = 0
+    fact np_line_in = 1
+    fact np_sung = false
+    fact viz_still = false
+
+    // the visualiser's feed (lib/vizfeed): sixteen bands, and what the beats leave behind
+    fact vb0 = 0.03
+    fact vb1 = 0.03
+    fact vb2 = 0.03
+    fact vb3 = 0.03
+    fact vb4 = 0.03
+    fact vb5 = 0.03
+    fact vb6 = 0.03
+    fact vb7 = 0.03
+    fact vb8 = 0.03
+    fact vb9 = 0.03
+    fact vb10 = 0.03
+    fact vb11 = 0.03
+    fact vb12 = 0.03
+    fact vb13 = 0.03
+    fact vb14 = 0.03
+    fact vb15 = 0.03
+    fact np_beat = 0
+    fact rp_r0 = 0
+    fact rp_a0 = 0
+    fact rp_r1 = 0
+    fact rp_a1 = 0
+    fact rp_r2 = 0
+    fact rp_a2 = 0
+    fact rp_r3 = 0
+    fact rp_a3 = 0
+
+    // the record turns at 33⅓ (200° a second) and coasts to a stop; the arm follows the song
+    spring wg.coast = 60, 14
+    spring wg.arm = 120, 18
+    spring wg.line = 260, 30
+    prop np_spd = 0 ~wg.coast
+    follow np_spd = if(np_playing and not viz_still, 200, 0)
+    prop np_vang = 0
+    spin np_vang by np_spd
+    prop np_arm = 0 ~wg.arm
+    follow np_arm = np_arm_at
+    prop np_prg = 0 ~500ms
+    follow np_prg = np_progress
+    // what moves the drifting modes while something plays
+    prop np_tspd = 0 ~wg.coast
+    follow np_tspd = if(np_playing and not viz_still, 40, 0)
+    prop np_turn = 0
+    spin np_turn by np_tspd
+    // a beat's push, gone again in a moment (the dust scatters on it)
+    prop np_scatter = 0 ~180ms
+    follow np_scatter = np_beat
+    // a new lyric line fades in
+    prop np_lf = 1 ~wg.line
+    follow np_lf = np_line_in
+
+    event wg_room ->             // to the logic: the room under the bar, width · 4096 + height
+
+    surface desk {
+        size: full, full
+        anchor: top
+        level: bottom
+        keyboard: none
+        rate: 60, 4 while not np_playing
+
+        for w in wg {
+            group {
+                opacity: w.op
+                show: w.st < 1.5 and w.op > 0.01
+                group { show: w.kind < 0.5 and w.lay < 0.5
+                        wg.Sleeve(w.x, w.y, w.w, w.h, w.u, w.lyr, w.prog, w.plate) }
+                group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
+                        wg.LyricStage(w.x, w.y, w.w, w.h, w.u, w.plate) }
+                group { show: w.kind < 0.5 and w.lay > 1.5
+                        wg.Record(w.x, w.y, w.w, w.h, w.u, w.plate) }
+                group { show: w.kind > 0.5
+                        wg.Visualiser(w.x, w.y, w.w, w.h, w.u, w.mode, w.glow, w.plate) }
+            }
+        }
+    }
+
+    on change desk.width * 4096 + desk.height { emit wg_room(desk.width * 4096 + desk.height) }
+}
