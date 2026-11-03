@@ -12,6 +12,7 @@ local barlayout = require("lib/barlayout")
 local sysinfo = require("lib/sysinfo")
 local updates = require("lib/updates")
 local vizfeed = require("lib/vizfeed")
+local coverart = require("lib/cover")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -385,9 +386,9 @@ return function(ctx)
         if url == art_url then return end
         art_url = url
         if type(url) ~= "string" or url == "" then text.med_art = ""; fact.med_has_art = false; return end
-        local path = string.match(url, "^file://(.*)$")
+        local path = coverart.path(url)
         if path then text.med_art = path; fact.med_has_art = true; return end
-        if string.match(url, "^https?://") then
+        if coverart.remote(url) then
             -- two names in turn, so the image is a new file each time and not a cached one
             covers = covers + 1
             local dest = folder .. "/cover-" .. tostring(covers % 2) .. ".img"

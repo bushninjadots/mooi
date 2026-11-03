@@ -7,6 +7,7 @@
 local config = require("lib/config")
 local ferro = require("lib/ferro")
 local theme = require("lib/theme")
+local coverart = require("lib/cover")
 local style = require("lib/style")
 local sysinfo = require("lib/sysinfo")
 local forecast = require("lib/forecast")
@@ -316,9 +317,9 @@ pcall(sys.watch, "media", function(m)
     local url = media.art
     if url ~= art_url then
         art_url = url
-        local path = type(url) == "string" and url:match("^file://(.*)$")
-        if path then text.mu_art = (path:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)); fact.mu_art_on = true
-        elseif type(url) == "string" and url:match("^https?://") then
+        local path = coverart.path(url)
+        if path then text.mu_art = path; fact.mu_art_on = true
+        elseif coverart.remote(url) then
             local dest = data_folder .. "/notch-cover.img"
             launch("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(ok) if ok and art_url == url then text.mu_art = dest .. "?" .. os.time() % 100000; fact.mu_art_on = true end end)
         else fact.mu_art_on = false end

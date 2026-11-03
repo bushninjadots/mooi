@@ -415,6 +415,7 @@ local function music_on() return cfg.music and music.playing end
 
 local function decode_art(a)
     a = tostring(a or "")
+    if a:sub(1, 1) == "/" then return a end   -- pleamar 0.7 hands over the path itself
     if a:sub(1, 7) == "file://" then
         return (a:sub(8):gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))
     end

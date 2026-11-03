@@ -12,6 +12,7 @@ local theme = require("lib/theme")
 local style = require("lib/style")
 local sysinfo = require("lib/sysinfo")
 local stats = require("lib/stats")
+local coverart = require("lib/cover")
 local forecast = require("lib/forecast")
 local weathercache = require("lib/weathercache")
 local nexusfeed = require("lib/nexusfeed")
@@ -523,10 +524,10 @@ local function cover(url)
     if url == art_url then return end
     art_url = url
     if type(url) ~= "string" or url == "" then fact.nx_art_on = false; return end
-    local path = url:match("^file://(.*)$")
+    local path = coverart.path(url)
     if path then
-        text.nx_art = (path:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)); fact.nx_art_on = true
-    elseif url:match("^https?://") then
+        text.nx_art = path; fact.nx_art_on = true
+    elseif coverart.remote(url) then
         covers = covers + 1
         local dest = data_folder .. "/nexus-cover-" .. (covers % 2) .. ".img"
         launch("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(ok)

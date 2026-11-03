@@ -3959,3 +3959,25 @@ notifications while the keeper runs it, and not in a bare `mooi run`, which now 
 now defaults to true. The key stays because `custom/mooi.lua` still reads it. Restoring ArchEclipse
 means setting it false in settings.json by hand (docs/SWITCHING.md).
 **Checked:** `bin/mooi check` (286 tests, 0 failed); both Settings pages seen on the live desktop.
+
+## D135 · 2026-11-03 · Ready for Pleamar 0.7.11: what an upgrade from 0.4.6 changes
+**Asked for:** find out whether Pleamar can be safely upgraded (0.4.6 → 0.7.11, language 0.4 → 0.9).
+**Tried:** 0.7.11 built in a scratch worktree, never installed. All nine scenes compile unchanged and
+`bin/mooi check` passes on it. Mooi ran on it for a session, every program included (the keeper's
+PATH pointed at the new binary). The bar, system island, Overview, notch, Nexus, player and
+search were all seen working.
+**Found, and fixed for both versions:**
+- **Covers:** 0.7's `media` service hands over a path (`/tmp/cover.jpg`) where 0.4 gave the URL
+  (`file:///tmp/cover.jpg`), so the bar, notch, player and Nexus showed no cover. One rule now
+  reads both, `lib/cover.luau` (unit-tested); BMO, which has its own require path, takes a path too.
+- **`mooi refresh` turned the bar off:** 0.5+ quits cleanly (exit 0) on SIGTERM, as it does for
+  `--say quit`, and the keeper reads exit 0 as "stopped". `refresh` now leaves a mark
+  (`$XDG_RUNTIME_DIR/mooi/again`) that makes the next exit a restart; `stop` and `session` clear it
+  first. Tested on both versions: two refreshes in a row keep the keeper, stop leaves none.
+- **`ferrolume.plm:832`:** `max` was given three numbers. Only the first two were read, so an armed
+  plate row never showed its 0.8 highlight. The calls are nested now.
+**The frame pool (D132):** the same five real clicks and an Escape, three rounds each, without
+`PLEAMAR_SWAPCHAIN=1`. On 0.4.6 every island stayed on screen while the bar said none was open (the
+D132 bug). On 0.7.11 nothing was left behind. Upstream has fixed it.
+**Not done yet:** installing 0.7.11. The scenes still declare `language 0.4`, and switching them to
+0.9 is its own step.

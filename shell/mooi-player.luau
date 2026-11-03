@@ -9,6 +9,7 @@ local ferro = require("lib/ferro")
 local P = require("lib/player")
 local VZ = require("lib/vizbands")
 local vizfeed = require("lib/vizfeed")
+local coverart = require("lib/cover")
 
 local HOME = tostring(sys.ask("env", "HOME") or "")
 local function read(name, kind)
@@ -307,10 +308,10 @@ local function show_remote()
     if est_sync then est_sync(pos, m.playing == true) end
     if lyrics_for then lyrics_for("remote:" .. tostring(m.artist) .. "\t" .. tostring(m.title), tostring(m.artist or ""), tostring(m.title or ""), tostring(m.album or ""), len, nil) end
     local art = type(m.art) == "string" and m.art or ""
-    local path = art:match("^file://(.*)$")
+    local path = coverart.path(art)
     if path then
-        set_cover((path:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end))); fact.cover_on = true
-    elseif art:match("^https?://") then
+        set_cover(path); fact.cover_on = true
+    elseif coverart.remote(art) then
         local dest = COVERS .. "/remote-" .. P.hash(art) .. ".img"
         run("curl", { "-fsSL", "--max-time", "8", "-o", dest, art }, function(_, code)
             if code == 0 and remote and remote.art == art then set_cover(dest); fact.cover_on = true end

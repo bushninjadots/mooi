@@ -58,6 +58,7 @@ name=mooi
 pleamar=${MOOI_PLEAMAR:-pleamar}
 rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mooi"
 keep_pid="$rt/keep.pid"
+again="$rt/again"                               # `refresh`: the next clean exit is a restart
 state="${XDG_STATE_HOME:-$HOME/.local/state}/mooi"
 log="$state/mooi.log"
 settings="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$name/settings.json"
@@ -638,7 +639,8 @@ scene_pids() { # pleamar processes running this scene (never a shell that merely
 }
 
 # The keeper: runs the scene, restarts it after a crash, gives up after three quick
-# deaths. A scene that quits cleanly (`mooi stop`) ends it too.
+# deaths. A scene that quits cleanly (`mooi stop`) ends it too, unless `refresh` asked for it
+# back: pleamar 0.5+ quits cleanly on SIGTERM as well, so an exit code cannot tell them apart.
 keep() {
     exec 8>"$rt/keep.lock"
     flock -n 8 || { echo "mooi: already running" >&2; exit 1; }
@@ -658,6 +660,7 @@ keep() {
         PLEAMAR_SWAPCHAIN=1 MOOI_MODE=session MOOI_SHELL=$live MOOI_BIN=$self "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1 8>&- &
         child=$!
         wait "$child"; code=$?
+        if [ -f "$again" ]; then rm -f "$again"; tries=0; echo "mooi-keep: refreshed" >> "$log"; continue; fi
         [ "$code" -eq 0 ] && break
         if [ $(($(date +%s) - start)) -lt 10 ]; then tries=$((tries + 1)); else tries=0; fi
         if [ "$tries" -ge 3 ]; then
@@ -688,6 +691,7 @@ case "$cmd" in
     session | start)
         snapshot || exit 1
         # a running mooi is restarted on the fresh snapshot (Super+Shift+B is "start it again")
+        rm -f "$again"
         if keeping || running; then
             stop_mooi
             keeping && kill -TERM "$(cat "$keep_pid")" 2>/dev/null && wait_for 3 not keeping
@@ -717,8 +721,9 @@ case "$cmd" in
         running || { echo "mooi is not running; \`mooi session\`" >&2; exit 1; }
         [ -n "$(scene_pids)" ] || { echo "the running mooi is not a snapshot (started before \`refresh\` existed): \`mooi session\`" >&2; exit 1; }
         snapshot || exit 1
-        # The keeper restarts a scene that ends with an error: ending only the scene keeps the
-        # keeper through the refresh.
+        # Ending only the scene keeps the keeper through the refresh; the mark tells it this
+        # ending is not a stop (pleamar 0.5+ exits 0 on SIGTERM, as for `quit`).
+        : > "$again"
         for p in $(scene_pids); do kill -TERM "$p" 2>/dev/null; done
         wait_for 3 not running
         wait_for 8 running && echo "mooi refreshed from the repo" || { echo "mooi did not come back; see $log" >&2; exit 1; }
@@ -726,6 +731,7 @@ case "$cmd" in
         theme_watch_stop; theme_watch_start
         ;;
     stop | restore)
+        rm -f "$again"   # first: a refresh's mark must not turn this stop into a restart
         running && stop_mooi
         theme_watch_stop
         keeping && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
