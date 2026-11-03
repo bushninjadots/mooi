@@ -50,5 +50,7 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Control Nexus — the drawer (D98)
 - [ ] The bar ("needs big work") — islands done (D97); next the Control Nexus
 - [x] BMO — starts with mooi, throwing, sizes, the bar, variants, awareness, idle life, talk, Settings page (D94)
-- [ ] Desktop widgets and their settings
+- [x] Desktop widgets, music first: Now Playing (Sleeve, Lyric stage, Record) + Visualiser (12 modes), edit mode, Settings → Widgets (D137)
+- [ ] After a few days on the new widgets: delete `~/.config/desktop-widgets` and `setup/home/.config/desktop-widgets`, drop it from `setup/capture.sh` (D137)
+- [ ] More widget kinds on the same system (clock, notes, …) — D137 left room for them
 - [ ] Deferred: the claude.ai BMO design doc still describes the Quickshell BMO

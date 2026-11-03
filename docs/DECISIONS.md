@@ -3995,3 +3995,56 @@ end what a scene started when it quits; 0.7.11 does. After removing them, a rest
 leave one of each program.
 **Kept for now:** `PLEAMAR_SWAPCHAIN=1` (D132). 0.7.11 no longer shows the frame-pool bug (D135), so it
 can go once a day on the new version has shown nothing else.
+
+## D137 · 2026-11-03 · Desktop widgets in Pleamar: Now Playing and the Visualiser
+**Asked for:** one widget system, all in Pleamar, "more mooi", fresh widgets, replacing the Quickshell
+`~/.config/desktop-widgets`; music first. Spec `docs/superpowers/specs/2026-11-03-widgets-design.md`,
+plan `docs/superpowers/plans/2026-11-03-widgets.md`.
+**Built:**
+- **The program.** `shell/mooi-widgets.plm` + `.luau`, kept by the bar while `widgets.on` (on by
+  default). One full-screen surface on the bottom layer, below the bar's strip (it reports its size,
+  `wg_room`, so `widgets.json` coordinates are under the bar). Empty parts take no clicks.
+  `rate: 30, 4 while calm`.
+- **The model.** `lib/widgets` (pure, 16 tests): widgets.json validation (at most 8 widgets; bad
+  entries dropped; an unreadable file becomes `widgets.json.bad` and the defaults show), layout
+  sizes, 8 px snapping to edges and other widgets, free spots, add / duplicate / remove, idle rules,
+  the options panel's place, events packed under 2^24.
+- **Now Playing.** Sleeve, Lyric stage and Record (`ui/widgets.plm`), scaled by `u = h / default`.
+  Any player, through the media service. Lyrics come through `player/lyricfetch`, now shared with the
+  player (same cache).
+- **The Visualiser.** Twelve modes: the six from `ui/viz.plm`, plus Scope, Horizon, Dust, Ripple,
+  Skyline and Liquid, added there as library components (no state; the scene keeps the ring pool and
+  the beat). The widgets ask the bar for its feed (`feed_want`, every 3 s while one shows music).
+- **Calm until touched.** Hover comes from `desk.cursor` (Hyprland's socket), not from a zone, so the
+  widgets keep no clicks. Controls, seek and the cover's zones exist only while shown. The wheel on a
+  cover is the volume, and the cover opens the player. At rest: rest (35 %), hide, or a ♪ marker.
+- **Edit mode.** Entered with `mooi widgets edit`, the ✎ Widgets button on the Nexus Quick card, or
+  Settings → Widgets. Drag (snapped, with guides), resize from the right / bottom edge and the corner
+  (a record keeps its shape), and an options panel beside the widget (layout or mode, at rest,
+  switches, glow, duplicate, remove). + Now Playing / + Visualiser; Esc, Done or a press on the
+  desktop leaves. Saved once per gesture (temporary file, then mv).
+- **Settings → Widgets.** The switch, Edit on desktop, and a row per widget (layout, or mode with
+  ◂ ▸; at rest; ×), plus add.
+- **Retired:** Quickshell `desktop-widgets` is no longer started (`hypr/config/exec.lua`), and its
+  layer and window rules are gone. Its files stay for a few days (TODO).
+**Found on the way:**
+- BMO's full-screen bottom surface took the clicks of anything under it on the same level. The
+  widgets now restart above him whenever he comes up (`widgets_restack`).
+- A zone's `show:` did not follow a spring, so the controls read the logic's facts (`hl0…7`).
+- `screen` is not known while a logic file loads.
+- Aurora's curves cost 12 % across the full width; it is now drawn in straight steps sampled along
+  the same curves (under its blur it looks the same in the player and the bar too). The glow radius
+  is capped at 12 px.
+**Checked:**
+- `bin/mooi check`: 306 unit tests, 0 failed; every scene compiles.
+- Live: each layout, playing and resting; the lyric line following the song; progress (0.63 at
+  191/302 s); real clicks on play/pause, seek and the cover; the wheel volume; marker and hide;
+  live reload of widgets.json; edit mode through its events (drag, snap to a neighbour's edge, size
+  clamp, mode, idle, glow, plate, layout, duplicate, remove, add) and on screen; the Settings page
+  and its events; Edit on desktop.
+- **GPU** (drm-engine-gfx, Sleeve + a 1920×200 visualiser, glow 0.6, synthetic music): spectrum 3.6 ·
+  mirror 2.7 · ring 1.1 · aurora 5.9 · led 1.8 · orbit 1.5 · scope 5.8 · horizon 5.2 · dust 3.3 ·
+  ripple 1.4 · skyline 3.4 · liquid 2.1 %. Idle: 0.00 %.
+**Not checked:** a full drag and resize with the real pointer (one drag worked; you were using the
+machine, so pointer automation stopped); the Settings rows pressed by hand; a fresh login (does the
+widget start before BMO and then restack, and is Quickshell's widget instance gone for good).

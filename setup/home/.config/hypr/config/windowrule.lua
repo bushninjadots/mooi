@@ -66,10 +66,3 @@ hl.window_rule({
     workspace = "9 silent",
 })
 
--- Desktop widget editor (desktop-widgets): float it centred instead of tiling.
-hl.window_rule({
-    match = { class = "org.quickshell", title = "Desktop Widgets" },
-    float = true,
-    center = true,
-    size = "1180 780",
-})
