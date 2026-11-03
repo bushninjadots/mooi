@@ -18,26 +18,55 @@ M.LAYOUTS = {
     lyricstage = { min = { 480, 160 }, def = { 960, 240 }, max = { 1920, 480 } },
     record     = { min = { 200, 248 }, def = { 280, 352 }, max = { 480, 600 }, aspect = true },
     visualiser = { min = { 160, 64 }, def = { 640, 160 } },   -- no max: the screen
+    -- D140: clocks, notes, GitHub
+    digital  = { min = { 240, 96 }, def = { 400, 150 }, max = { 1200, 450 } },
+    analogue = { min = { 140, 140 }, def = { 240, 240 }, max = { 640, 640 }, aspect = true },
+    words    = { min = { 280, 90 }, def = { 480, 140 }, max = { 1400, 420 } },
+    info     = { min = { 320, 140 }, def = { 440, 190 }, max = { 1100, 475 } },
+    list     = { min = { 260, 160 }, def = { 360, 300 }, max = { 900, 900 } },
+    card     = { min = { 300, 140 }, def = { 400, 190 }, max = { 900, 430 } },
+    commits  = { min = { 320, 200 }, def = { 440, 320 }, max = { 1000, 800 } },
+    pulse    = { min = { 320, 160 }, def = { 440, 220 }, max = { 1100, 560 } },
 }
+-- each kind's layouts, in order (the first is a new one's)
+M.KIND_LAYOUTS = {
+    nowplaying = { "sleeve", "lyricstage", "record" },
+    clock = { "digital", "analogue", "words", "info" },
+    notes = { "list" },
+    github = { "card", "commits", "pulse" },
+}
+-- how many of a kind the scene can draw (the rest by M.MAX)
+M.KIND_MAX = { visualiser = 3, notes = 1, github = 2 }
 M.NP_LAYOUTS = { "sleeve", "lyricstage", "record" }
+M.KINDS = { nowplaying = true, visualiser = true, clock = true, notes = true, github = true }
 M.MODES = { "spectrum", "mirror", "ring", "aurora", "led", "orbit",
             "scope", "horizon", "dust", "ripple", "skyline", "liquid" }
 M.MODE_INDEX, M.LAYOUT_INDEX = {}, {}
 for i, m in ipairs(M.MODES) do M.MODE_INDEX[m] = i - 1 end
-for i, l in ipairs(M.NP_LAYOUTS) do M.LAYOUT_INDEX[l] = i - 1 end
+for _, list in pairs(M.KIND_LAYOUTS) do for i, l in ipairs(list) do M.LAYOUT_INDEX[l] = i - 1 end end
+M.LAYOUT_KIND = {}
+for kind, list in pairs(M.KIND_LAYOUTS) do for _, l in ipairs(list) do M.LAYOUT_KIND[l] = kind end end
 M.IDLE_INDEX = { hide = 0, rest = 1, marker = 2 }
 M.IDLES = { "hide", "rest", "marker" }
-M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide" }
+M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide", clock = "rest", notes = "rest", github = "rest" }
 M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
     nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false },
     visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, peaks = true, reflection = false, adapt = true, behind = false },
+    clock = { h24 = true, seconds = true, plate = false, adapt = true, behind = false },
+    notes = { rows = 6, plate = false, adapt = true, behind = false },
+    github = { repo = "bushninjadots/mooi", plate = false, adapt = true, behind = false },
 }
 -- the numbers' ranges (the rest are 0 … 1); `int` ones are whole
 M.OPTION_RANGES = {
-    bars = { 16, 128, true }, gap = { 0, 0.6 }, smooth = { 0, 1 }, text = { 0.8, 1.4 }, glow = { 0, 1 },
+    bars = { 16, 128, true }, gap = { 0, 0.6 }, smooth = { 0, 1 }, text = { 0.8, 1.4 }, glow = { 0, 1 }, rows = { 3, 20, true },
 }
+-- the text options: a GitHub repository is owner/name
+function M.option_string(key, v)
+    if key == "repo" and type(v) == "string" and v:match("^[%w%-%._]+/[%w%-%._]+$") then return v end
+    return nil
+end
 local function option_number(key, v, d)
     local r = M.OPTION_RANGES[key] or { 0, 1 }
     local n = tonumber(v)
@@ -46,7 +75,7 @@ local function option_number(key, v, d)
     if r[3] then n = math.floor(n + 0.5) end
     return n
 end
-local PREFIX = { nowplaying = "np", visualiser = "viz" }
+local PREFIX = { nowplaying = "np", visualiser = "viz", clock = "clk", notes = "nts", github = "gh" }
 
 local function grid(v) return math.floor(v / M.GRID + 0.5) * M.GRID end
 local function clamp(v, lo, hi) if v < lo then return lo end; if hi and v > hi then return hi end; return v end
@@ -169,6 +198,7 @@ local function options_for(kind, given)
     for k, d in pairs(M.OPTIONS[kind]) do
         local v = given[k]
         if type(d) == "boolean" then out[k] = (type(v) == "boolean") and v or d
+        elseif type(d) == "string" then out[k] = M.option_string(k, v) or d
         else out[k] = option_number(k, v, d) end
     end
     return out
@@ -176,7 +206,7 @@ end
 
 local function new_widget(doc, kind, screen)
     local w = { kind = kind, idle = M.DEFAULT_IDLE[kind], options = options_for(kind, nil), opacity = 1, locked = false }
-    if kind == "nowplaying" then w.layout = "sleeve" else w.mode = M.DEFAULT_MODE end
+    if kind == "visualiser" then w.mode = M.DEFAULT_MODE else w.layout = M.KIND_LAYOUTS[kind][1] end
     local L = M.LAYOUTS[M.layout_of(w)]
     w.w, w.h = math.min(L.def[1], screen.w), L.def[2]
     w.x, w.y = M.free_spot(doc, M.layout_of(w), screen)
@@ -195,10 +225,10 @@ end
 local function clean(e, screen)
     if type(e) ~= "table" then return nil, "an entry that is not an object" end
     local kind = e.kind
-    if kind ~= "nowplaying" and kind ~= "visualiser" then return nil, "unknown kind " .. tostring(kind) end
+    if not M.KINDS[kind] then return nil, "unknown kind " .. tostring(kind) end
     local w = { kind = kind, id = type(e.id) == "string" and e.id or nil }
-    if kind == "nowplaying" then
-        if M.LAYOUT_INDEX[e.layout] == nil then return nil, "unknown layout " .. tostring(e.layout) end
+    if kind ~= "visualiser" then
+        if M.LAYOUT_KIND[e.layout] ~= kind then return nil, "unknown layout " .. tostring(e.layout) end
         w.layout = e.layout
     else
         if M.MODE_INDEX[e.mode] == nil then return nil, "unknown mode " .. tostring(e.mode) end
@@ -232,8 +262,8 @@ function M.parse(raw, decode, screen)
         local w, why = clean(e, screen)
         if not w then problems[#problems + 1] = why
         elseif #doc.widgets >= M.MAX then problems[#problems + 1] = "more than " .. M.MAX .. " widgets: " .. tostring(w.id) .. " dropped"
-        elseif w.kind == "visualiser" and count_kind(doc, "visualiser") >= M.MAX_VIZ then
-            problems[#problems + 1] = "more than " .. M.MAX_VIZ .. " visualisers: " .. tostring(w.id) .. " dropped"
+        elseif M.KIND_MAX[w.kind] and count_kind(doc, w.kind) >= M.KIND_MAX[w.kind] then
+            problems[#problems + 1] = "more than " .. M.KIND_MAX[w.kind] .. " " .. w.kind .. ": " .. tostring(w.id) .. " dropped"
         else
             if not w.id or seen[w.id] then w.id = next_id(doc, w.kind) end
             seen[w.id] = true
@@ -282,7 +312,7 @@ M.find = find
 
 function M.add(doc, kind, screen)
     if #doc.widgets >= M.MAX or not PREFIX[kind] then return doc, nil end
-    if kind == "visualiser" and count_kind(doc, "visualiser") >= M.MAX_VIZ then return doc, nil end
+    if M.KIND_MAX[kind] and count_kind(doc, kind) >= M.KIND_MAX[kind] then return doc, nil end
     local d = copy(doc)
     local w = new_widget(d, kind, screen)
     d.widgets[#d.widgets + 1] = w
@@ -299,7 +329,7 @@ end
 function M.duplicate(doc, id, screen)
     local i, w = find(doc, id)
     if not i or #doc.widgets >= M.MAX then return doc, nil end
-    if w.kind == "visualiser" and count_kind(doc, "visualiser") >= M.MAX_VIZ then return doc, nil end
+    if M.KIND_MAX[w.kind] and count_kind(doc, w.kind) >= M.KIND_MAX[w.kind] then return doc, nil end
     local d = copy(doc)
     local n = copy(w)
     n.id = next_id(d, w.kind)
@@ -313,7 +343,7 @@ end
 function M.set_layout(doc, id, layout, screen)
     local d = copy(doc)
     local i, w = find(d, id)
-    if not i or w.kind ~= "nowplaying" or M.LAYOUT_INDEX[layout] == nil then return d end
+    if not i or M.LAYOUT_KIND[layout] ~= w.kind then return d end
     w.layout = layout
     local L = M.LAYOUTS[layout]
     w.w, w.h = L.def[1], L.def[2]
@@ -340,6 +370,7 @@ function M.set_option(doc, id, key, value)
         if d == nil then return end
         w.options = w.options or {}
         if type(d) == "boolean" then w.options[key] = value == true
+        elseif type(d) == "string" then w.options[key] = M.option_string(key, value) or w.options[key] or d
         else w.options[key] = option_number(key, value, w.options[key] or d) end
     end)
 end
