@@ -149,9 +149,7 @@ local function save()
 end
 -- a gesture ends without being saved: back to the doc it started from
 local function drop_gestures(restore)
-    if restore then
-        if grab then doc = grab.before elseif slide then doc = slide.before end
-    end
+    if restore and slide then doc = slide.before end
     pending, grab, slide, marq0 = nil, nil, nil, nil
     fact.wg_rk, fact.wg_dk = -1, -1
 end
@@ -398,13 +396,17 @@ on("wg_drag", function(v)
     fact.wg_gvx, fact.wg_ghy = g.vx or -1, g.hy or -1
     text.wg_readout = string.format("%d × %d · %d, %d", ww, hh, x, y)
 end)
+-- the scene keeps the carried offset until here: cleared once the widget is drawn where it settles
+local function let_go()
+    fact.wg_dk, fact.wg_dx, fact.wg_dy = -1, 0, 0
+end
 on("wg_drop", function(v)
     local k = math.floor(tonumber(v) or -1)
     local p = pending
     pending = nil
     fact.wg_gvx, fact.wg_ghy = -1, -1
     local w = doc.widgets[k + 1]
-    if not p or p.k ~= k or not w then return end
+    if not p or p.k ~= k or not w then let_go(); return end
     local dx, dy = p.x - w.x, p.y - w.y
     local d = W.set_rect(doc, w.id, p.x, p.y, p.w, p.h, room)
     local others = {}
@@ -413,14 +415,17 @@ on("wg_drop", function(v)
     if #others > 0 then d, sk = W.nudge(d, others, dx, dy, room) end
     if not is_sel(w.id) then selected = { w.id } end
     change(d, skipped_note(sk))
+    let_go()
 end)
 -- a handle held (slot · 8 + handle 0 … 7), pulled (dx + 2048) · 4096 + (dy + 2048), let go
 on("wg_hgrab", function(v)
     v = math.floor(tonumber(v) or 0)
     local w = doc.widgets[math.floor(v / 8) + 1]
     if not w or w.locked then grab = nil; return end
-    grab = { id = w.id, handle = v % 8, before = doc }
+    grab = { id = w.id, handle = v % 8, before = doc, x = w.x, y = w.y, w = w.w, h = w.h }
     if not is_sel(w.id) then selected = { w.id } end
+    -- the scene draws it from these while it is pulled (nothing rebuilt under the pointer)
+    fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh, fact.wg_ru = w.x, w.y, w.w, w.h, W.scale(w)
     fact.wg_rk = math.floor(v / 8)
 end)
 on("wg_hmove", function(v)
@@ -428,20 +433,20 @@ on("wg_hmove", function(v)
     v = math.floor(tonumber(v) or 0)
     local dx, dy = math.floor(v / 4096) - 2048, v % 4096 - 2048
     local x, y, w, h = W.resize_from(grab.before, grab.id, grab.handle, dx, dy, room)
-    -- drawn at its new size as it is pulled (saved when let go)
-    doc = W.set_rect(grab.before, grab.id, x, y, w, h, room)
+    if x == grab.x and y == grab.y and w == grab.w and h == grab.h then return end
+    grab.x, grab.y, grab.w, grab.h = x, y, w, h
+    local _, cur = W.find(grab.before, grab.id)
     fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh = x, y, w, h
-    publish()
+    fact.wg_ru = W.scale({ kind = cur.kind, layout = cur.layout, w = w, h = h })
     text.wg_readout = string.format("%d × %d · %d, %d", w, h, x, y)
 end)
 on("wg_hdrop", function()
     if not grab then return end
-    local before = grab.before
+    local g = grab
     grab = nil
+    change(W.set_rect(g.before, g.id, g.x, g.y, g.w, g.h, room))
+    -- drawn from the model again only once the model has it
     fact.wg_rk = -1
-    local now = doc
-    doc = before
-    change(now)
 end)
 on("wg_add", function(v)
     local vis = math.floor(tonumber(v) or 0) == 1

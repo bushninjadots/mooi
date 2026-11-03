@@ -186,7 +186,7 @@ library Widgets {
         box { from: x, y; size: w, 24; corner: 4; stroke: 1; color: if(on, fl.phos, mix(fl.trace_dim, fl.trace_lit, ch.hover)) }
         text word { at: x + w / 2, y + 12; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"
                     width: w - 6; lines: 1; color: if(on, fl.ink, fl.engrave) }
-        on press ch { emit wg_opt(code) }
+        on press ch { wg_hold = 0; emit wg_opt(code) }
     }
 
     // The options beside the chosen widget: its layout or mode, what it does at rest, its
@@ -203,9 +203,9 @@ library Widgets {
         box { from: tx, y + 11; size: tw * clamp(f, 0, 1), 2; corner: 1; color: fl.phos }
         ellipse { at: tx + tw * clamp(f, 0, 1), y + 12; radius: 5 + sz.hover; color: fl.phos }
         text shown { at: x + w, y + 12; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.engrave; width: 48; lines: 1; align: right }
-        on press sz { emit wg_slide(k * 10000 + which * 1000 + round(clamp((local.x - tx) / tw, 0, 1) * 999)) }
-        on drag sz { emit wg_slide(k * 10000 + which * 1000 + round(clamp((local.x - tx) / tw, 0, 1) * 999)) }
-        on release sz { emit wg_slid }
+        on press sz { wg_hold = 3; emit wg_slide(k * 10000 + which * 1000 + round(clamp((local.x - tx) / tw, 0, 1) * 999)) }
+        on drag sz while wg_hold == 3 { emit wg_slide(k * 10000 + which * 1000 + round(clamp((local.x - tx) / tw, 0, 1) * 999)) }
+        on release sz while wg_hold == 3 { emit wg_slid }
         on scroll sz { emit wg_slide(k * 10000 + which * 1000 + round(clamp(f + if(wheel > 0, 0.04, -0.04), 0, 1) * 999))
                        emit wg_slid }
     }
@@ -226,13 +226,13 @@ library Widgets {
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
         // the header: its title, the fold, and the handle that carries the panel
         zone box phd { from: x, y; size: 284, 30; cursor: grab; role: button; label: "Move the options" }
-        on press phd { wg_pbx = x; wg_pby = y }
-        on drag phd { emit wg_pmove(round(clamp(wg_pbx + drag.dx, 0, 4095)) * 4096 + round(clamp(wg_pby + drag.dy, 0, 4095))) }
+        on press phd { wg_hold = 2; wg_pbx = x; wg_pby = y }
+        on drag phd while wg_hold == 2 { emit wg_pmove(round(clamp(wg_pbx + drag.dx, 0, 4095)) * 4096 + round(clamp(wg_pby + drag.dy, 0, 4095))) }
         text pick(vis, "NOW PLAYING", "VISUALISER") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
         text "{wg_nsel} CHOSEN · THESE ARE THE LAST ONE'S" { at: x + 120, y + 16; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: wg_nsel > 1 }
         zone box pfo { from: x + 288, y + 4; size: 26, 22; cursor: pointer; role: button; label: "Fold the options" }
         text pick(wg_pcol, "⌄", "›") { at: x + 301, y + 15; anchor: center; align: center; size: 14; family: "Exo 2"; color: fl.engrave }
-        on press pfo { wg_pcol = not wg_pcol }
+        on press pfo { wg_hold = 0; wg_pcol = not wg_pcol }
         group {
             show: not wg_pcol
             // 1 · the layout, or the mode, as live thumbnails
@@ -244,7 +244,7 @@ library Widgets {
                 box { from: x + 12, y + 36; size: 96, 76; corner: 4; stroke: if(wg_sl == 0, 1.6, 1); color: if(wg_sl == 0, fl.phos, mix(fl.trace_dim, fl.trace_lit, tc0.hover)) }
                 Sleeve(x + 12 + 4, y + 42, 88, 31, 0.2, true, true, false, k, 0)
                 text "SLEEVE" { at: x + 12 + 48, y + 104; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sl == 0, fl.phos, fl.muted) }
-                on press tc0 { emit wg_opt(base + 100 + 0) }
+                on press tc0 { wg_hold = 0; emit wg_opt(base + 100 + 0) }
             }
             group {
                 zone box tc1 { from: x + 112, y + 36; size: 96, 76; cursor: pointer; role: button; label: "Lyrics" }
@@ -252,7 +252,7 @@ library Widgets {
                 box { from: x + 112, y + 36; size: 96, 76; corner: 4; stroke: if(wg_sl == 1, 1.6, 1); color: if(wg_sl == 1, fl.phos, mix(fl.trace_dim, fl.trace_lit, tc1.hover)) }
                 LyricStage(x + 112 + 4, y + 42, 88, 22, 0.092, false, k, 0)
                 text "LYRICS" { at: x + 112 + 48, y + 104; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sl == 1, fl.phos, fl.muted) }
-                on press tc1 { emit wg_opt(base + 100 + 1) }
+                on press tc1 { wg_hold = 0; emit wg_opt(base + 100 + 1) }
             }
             group {
                 zone box tc2 { from: x + 212, y + 36; size: 96, 76; cursor: pointer; role: button; label: "Record" }
@@ -260,7 +260,7 @@ library Widgets {
                 box { from: x + 212, y + 36; size: 96, 76; corner: 4; stroke: if(wg_sl == 2, 1.6, 1); color: if(wg_sl == 2, fl.phos, mix(fl.trace_dim, fl.trace_lit, tc2.hover)) }
                 Record(x + 212 + 26, y + 40, 44, 56, 0.157, false, false, k, 0)
                 text "RECORD" { at: x + 212 + 48, y + 104; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sl == 2, fl.phos, fl.muted) }
-                on press tc2 { emit wg_opt(base + 100 + 2) }
+                on press tc2 { wg_hold = 0; emit wg_opt(base + 100 + 2) }
             }
             }
             group {
@@ -271,7 +271,7 @@ library Widgets {
                 box { from: x + 12, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 0, 1.6, 1); color: if(wg_sm == 0, fl.phos, mix(fl.trace_dim, fl.trace_lit, th0.hover)) }
                 Visualiser(x + 12 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 0, 0, false)
                 text "SPECTRUM" { at: x + 12 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 0, fl.phos, fl.muted) }
-                on press th0 { emit wg_opt(base + 100 + 0) }
+                on press th0 { wg_hold = 0; emit wg_opt(base + 100 + 0) }
             }
             group {
                 zone box th1 { from: x + 88, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Mirror" }
@@ -279,7 +279,7 @@ library Widgets {
                 box { from: x + 88, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 1, 1.6, 1); color: if(wg_sm == 1, fl.phos, mix(fl.trace_dim, fl.trace_lit, th1.hover)) }
                 Visualiser(x + 88 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 1, 0, false)
                 text "MIRROR" { at: x + 88 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 1, fl.phos, fl.muted) }
-                on press th1 { emit wg_opt(base + 100 + 1) }
+                on press th1 { wg_hold = 0; emit wg_opt(base + 100 + 1) }
             }
             group {
                 zone box th2 { from: x + 164, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Ring" }
@@ -287,7 +287,7 @@ library Widgets {
                 box { from: x + 164, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 2, 1.6, 1); color: if(wg_sm == 2, fl.phos, mix(fl.trace_dim, fl.trace_lit, th2.hover)) }
                 Visualiser(x + 164 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 2, 0, false)
                 text "RING" { at: x + 164 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 2, fl.phos, fl.muted) }
-                on press th2 { emit wg_opt(base + 100 + 2) }
+                on press th2 { wg_hold = 0; emit wg_opt(base + 100 + 2) }
             }
             group {
                 zone box th3 { from: x + 240, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Aurora" }
@@ -295,7 +295,7 @@ library Widgets {
                 box { from: x + 240, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 3, 1.6, 1); color: if(wg_sm == 3, fl.phos, mix(fl.trace_dim, fl.trace_lit, th3.hover)) }
                 Visualiser(x + 240 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 3, 0, false)
                 text "AURORA" { at: x + 240 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 3, fl.phos, fl.muted) }
-                on press th3 { emit wg_opt(base + 100 + 3) }
+                on press th3 { wg_hold = 0; emit wg_opt(base + 100 + 3) }
             }
             group {
                 zone box th4 { from: x + 12, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Led" }
@@ -303,7 +303,7 @@ library Widgets {
                 box { from: x + 12, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 4, 1.6, 1); color: if(wg_sm == 4, fl.phos, mix(fl.trace_dim, fl.trace_lit, th4.hover)) }
                 Visualiser(x + 12 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 4, 0, false)
                 text "LED" { at: x + 12 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 4, fl.phos, fl.muted) }
-                on press th4 { emit wg_opt(base + 100 + 4) }
+                on press th4 { wg_hold = 0; emit wg_opt(base + 100 + 4) }
             }
             group {
                 zone box th5 { from: x + 88, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Orbit" }
@@ -311,7 +311,7 @@ library Widgets {
                 box { from: x + 88, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 5, 1.6, 1); color: if(wg_sm == 5, fl.phos, mix(fl.trace_dim, fl.trace_lit, th5.hover)) }
                 Visualiser(x + 88 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 5, 0, false)
                 text "ORBIT" { at: x + 88 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 5, fl.phos, fl.muted) }
-                on press th5 { emit wg_opt(base + 100 + 5) }
+                on press th5 { wg_hold = 0; emit wg_opt(base + 100 + 5) }
             }
             group {
                 zone box th6 { from: x + 164, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Scope" }
@@ -319,7 +319,7 @@ library Widgets {
                 box { from: x + 164, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 6, 1.6, 1); color: if(wg_sm == 6, fl.phos, mix(fl.trace_dim, fl.trace_lit, th6.hover)) }
                 Visualiser(x + 164 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 6, 0, false)
                 text "SCOPE" { at: x + 164 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 6, fl.phos, fl.muted) }
-                on press th6 { emit wg_opt(base + 100 + 6) }
+                on press th6 { wg_hold = 0; emit wg_opt(base + 100 + 6) }
             }
             group {
                 zone box th7 { from: x + 240, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Horizon" }
@@ -327,7 +327,7 @@ library Widgets {
                 box { from: x + 240, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 7, 1.6, 1); color: if(wg_sm == 7, fl.phos, mix(fl.trace_dim, fl.trace_lit, th7.hover)) }
                 Visualiser(x + 240 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 7, 0, false)
                 text "HORIZON" { at: x + 240 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 7, fl.phos, fl.muted) }
-                on press th7 { emit wg_opt(base + 100 + 7) }
+                on press th7 { wg_hold = 0; emit wg_opt(base + 100 + 7) }
             }
             group {
                 zone box th8 { from: x + 12, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Dust" }
@@ -335,7 +335,7 @@ library Widgets {
                 box { from: x + 12, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 8, 1.6, 1); color: if(wg_sm == 8, fl.phos, mix(fl.trace_dim, fl.trace_lit, th8.hover)) }
                 Visualiser(x + 12 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 8, 0, false)
                 text "DUST" { at: x + 12 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 8, fl.phos, fl.muted) }
-                on press th8 { emit wg_opt(base + 100 + 8) }
+                on press th8 { wg_hold = 0; emit wg_opt(base + 100 + 8) }
             }
             group {
                 zone box th9 { from: x + 88, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Ripple" }
@@ -343,7 +343,7 @@ library Widgets {
                 box { from: x + 88, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 9, 1.6, 1); color: if(wg_sm == 9, fl.phos, mix(fl.trace_dim, fl.trace_lit, th9.hover)) }
                 Visualiser(x + 88 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 9, 0, false)
                 text "RIPPLE" { at: x + 88 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 9, fl.phos, fl.muted) }
-                on press th9 { emit wg_opt(base + 100 + 9) }
+                on press th9 { wg_hold = 0; emit wg_opt(base + 100 + 9) }
             }
             group {
                 zone box th10 { from: x + 164, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Skyline" }
@@ -351,7 +351,7 @@ library Widgets {
                 box { from: x + 164, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 10, 1.6, 1); color: if(wg_sm == 10, fl.phos, mix(fl.trace_dim, fl.trace_lit, th10.hover)) }
                 Visualiser(x + 164 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 10, 0, false)
                 text "SKYLINE" { at: x + 164 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 10, fl.phos, fl.muted) }
-                on press th10 { emit wg_opt(base + 100 + 10) }
+                on press th10 { wg_hold = 0; emit wg_opt(base + 100 + 10) }
             }
             group {
                 zone box th11 { from: x + 240, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Liquid" }
@@ -359,7 +359,7 @@ library Widgets {
                 box { from: x + 240, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 11, 1.6, 1); color: if(wg_sm == 11, fl.phos, mix(fl.trace_dim, fl.trace_lit, th11.hover)) }
                 Visualiser(x + 240 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 11, 0, false)
                 text "LIQUID" { at: x + 240 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 11, fl.phos, fl.muted) }
-                on press th11 { emit wg_opt(base + 100 + 11) }
+                on press th11 { wg_hold = 0; emit wg_opt(base + 100 + 11) }
             }
             }
             // 2 · sliders
