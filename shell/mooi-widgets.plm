@@ -439,7 +439,8 @@ scene Widgets {
             let k = w.index
             let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7), 0)
             let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7)), 0.9 * hv * if(w.st < 1.5, 1, 0))
-            let over = desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
+            // only a widget that shows music can be pointed at (a hidden one, or the visualiser, never)
+            let over = w.kind < 0.5 and (w.st < 1.5 or editing) and desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
             on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }
             let ox = if(wg_dk == k, wg_dx, 0)
             let oy = if(wg_dk == k, wg_dy, 0)

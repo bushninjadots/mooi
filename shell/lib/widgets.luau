@@ -236,6 +236,18 @@ local function deep_eq(a, b)
 end
 M.same_doc = deep_eq
 
+-- Whether a widgets.json just read should replace what is shown: not when it is what is shown
+-- already (the program's own write coming back), otherwise always — even if it equals an older write.
+function M.should_reload(file_doc, shown)
+    return not deep_eq(file_doc, M.encode(shown))
+end
+-- The pointed-at slots that still exist once there are only n widgets.
+function M.prune_hover(hovered, n)
+    local out = {}
+    for k, v in pairs(hovered) do if k < n then out[k] = v end end
+    return out
+end
+
 local function find(doc, id)
     for i, w in ipairs(doc.widgets) do if w.id == id then return i, w end end
     return nil

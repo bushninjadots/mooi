@@ -24,6 +24,8 @@ local folder = (function()
 end)()
 local COVERS = folder .. "/player-covers"
 local fetch = require("player/lyricfetch")({ read = read })
+-- the player's caches, which this may be the first to use
+run("mkdir", { "-p", COVERS, folder .. "/player-lyrics" })
 
 -- ── The shell's colours, corners and finish, as the board wears them ──
 local settings = config.parse(read("settings.json"), json.decode)
@@ -49,7 +51,7 @@ pcall(sys.watch, "files:settings.json", function() settings = config.parse(read(
 -- The room under the bar: the surface says how big it is once it is placed (`screen` is not known
 -- while this file loads), so until then a 1080p screen under a 34 px bar.
 local room = { w = 1920, h = 1046, top = 0 }
-local doc, written = nil, nil
+local doc = nil
 local playing = false
 
 -- Calm: nothing pointed at and no fade under way, so the surface can drop to a few frames a second.
@@ -82,9 +84,12 @@ local function publish()
         }
     end
     model.wg = rows
+    -- a slot that went (removed, or the file changed) cannot keep the surface awake
+    hovered = W.prune_hover(hovered, #rows)
     for i = 0, W.MAX - 1 do
         local r = rows[i + 1]
         fact["op" .. i] = r and r.op or 0
+        if not r then fact["hl" .. i] = 0 end
     end
     unsettle()
 end
@@ -101,12 +106,9 @@ local function load()
     publish()
 end
 
--- Saved whole, at once: a temporary file moved over the real one.
+-- Saved whole: files.write writes beside the file and then moves it into place.
 local function save()
-    local enc = W.encode(doc)
-    written = enc
-    pcall(sys.call, "files.write", W.FILE .. ".tmp", enc)
-    run("mv", { "-f", folder .. "/" .. W.FILE .. ".tmp", folder .. "/" .. W.FILE })
+    pcall(sys.call, "files.write", W.FILE, W.encode(doc))
 end
 
 load()
@@ -114,7 +116,7 @@ pcall(sys.watch, "files:" .. W.FILE, function()
     local raw = read(W.FILE)
     if raw == nil then return end
     local ok, t = pcall(json.decode, raw)
-    if ok and written and W.same_doc(t, written) then return end
+    if ok and not W.should_reload(t, doc) then return end
     load()
 end)
 -- packed as width · 4096 + height (under 2^24)
@@ -127,17 +129,17 @@ on("wg_room", function(v)
 end)
 
 -- ── What is playing ──
-local np = { key = nil, data = nil, t = 0, at = os.time(), rate = 1, len = 0, sung = nil }
+local np = { key = nil, data = nil, t = 0, at = os.time(), rate = 1, len = 0, sung = nil, art = nil, art_path = nil }
 local function set_cover(path)
     text.np_cover_path = path or ""
     fact.np_cover_on = path ~= nil and path ~= ""
 end
 local function show_lyric()
-    local a, b, c = P.lyric_lines(np.data, np.t, 0)
-    if b == np.sung then return end
-    np.sung = b
+    local a, b, c, at = P.lyric_lines(np.data, np.t, 0)
+    if at == np.sung then return end
+    np.sung = at
     text.np_prev, text.np_line, text.np_next = a, b, c
-    fact.np_sung = b ~= ""
+    fact.np_sung = at > 0 and b ~= ""
     -- the new line fades in
     fact.np_line_in = 0
     after(40, function() fact.np_line_in = 1 end)
@@ -180,10 +182,16 @@ pcall(sys.watch, "media", function(m)
         local path = coverart.path(art)
         if path then set_cover(path)
         elseif coverart.remote(art) then
-            local dest = COVERS .. "/remote-" .. P.hash(art) .. ".img"
-            run("curl", { "-fsSL", "--max-time", "8", "-o", dest, art }, function(_, code)
-                if code == 0 then set_cover(dest) end
-            end)
+            -- fetched once per picture; a slow answer for the last song is not shown on this one
+            if np.art == art then
+                if np.art_path then set_cover(np.art_path) end
+            else
+                np.art, np.art_path = art, nil
+                local dest = COVERS .. "/remote-" .. P.hash(art) .. ".img"
+                run("curl", { "-fsSL", "--max-time", "8", "-o", dest, art }, function(_, code)
+                    if code == 0 and np.art == art then np.art_path = dest; set_cover(dest) end
+                end)
+            end
         else set_cover(nil) end
     end
     show_progress()
@@ -339,7 +347,11 @@ local function any_viz()
 end
 local viz_seq, viz_at, last_beat = nil, 0, 0
 local rings = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } }
-local function hush() for i = 0, 15 do fact["vb" .. i] = 0.03 end; fact.np_beat = 0 end
+local function hush()
+    for i = 0, 15 do fact["vb" .. i] = 0.03 end
+    fact.np_beat = 0
+    for k = 1, 4 do rings[k] = { 0, 0 }; fact["rp_a" .. (k - 1)] = 0 end
+end
 local function take_viz()
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
     if not ok or type(raw) ~= "string" then return end

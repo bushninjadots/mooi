@@ -528,15 +528,11 @@ end)
 -- ── Displays ───────────────────────────────────────────────
 -- Read-only for now: what Hyprland has, every few seconds while the window is open.
 -- ── Desktop widgets (D137): widgets.json is the widgets program's; read fresh before every change,
--- written whole (a temporary file moved over it), and the program follows the file. The room is
+-- written whole (files.write moves it into place), and the program follows the file. The room is
 -- taken as 1080p under a 34 px bar; the program keeps each widget on its own screen when it reads.
 local W = require("lib/widgets")
 local WROOM = { w = 1920, h = 1046, top = 0 }
 local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD" }
-local wfolder = (function()
-    local ok, f = pcall(sys.ask, "files.folder")
-    return ok and type(f) == "string" and f ~= "" and f or nil
-end)()
 local function wdoc()
     local ok, raw = pcall(sys.ask, "files.read", W.FILE)
     return (W.parse(ok and raw or nil, json.decode, WROOM))
@@ -558,9 +554,7 @@ local function show_widgets(d)
     model.sw_list = rows
 end
 local function write_widgets(d)
-    if not wfolder then return end
-    pcall(sys.call, "files.write", W.FILE .. ".tmp", W.encode(d))
-    run("mv", { "-f", wfolder .. "/" .. W.FILE .. ".tmp", wfolder .. "/" .. W.FILE })
+    pcall(sys.call, "files.write", W.FILE, W.encode(d))
     show_widgets(d)
 end
 show_widgets()
