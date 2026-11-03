@@ -26,7 +26,7 @@ bin/mooi settings | edit    # the settings window · the bar's edit mode
 bin/mooi check              # compile, parse the logic, unit tests
 ```
 
-Needs `pleamar` 0.4.6 (language 0.4), `hyprctl`, `jq`, `lua5.4` (tests), and `wpctl`/`brightnessctl` (tests).
+Needs `pleamar` 0.7.11 (language 0.9), `hyprctl`, `jq`, `lua5.4` (tests), and `wpctl`/`brightnessctl` (tests).
 
 Optional, with a fallback when absent: `cava` for the bar's and player's visualizers (`pacman -S cava`; without it the bar says CAVA MISSING), `rembg` for the wallpaper studio's AI cutout (`pipx install "rembg[cli]"`; the studio offers the install line), and the store/player tools the bar's modules call (`playerctl`/`mpc`, `mpv`, `ffmpeg`, `yt-dlp`, `magick`, `wf-recorder`/`grim`/`slurp`, `checkupdates`, `paru`/`yay`, `flatpak`). `bin/mooi check` names what this machine lacks.
 

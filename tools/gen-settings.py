@@ -819,7 +819,7 @@ def edit():
 {ind}on edit_op(v) while v - floor(v / 10) * 10 == 5 {{ ed_sel = -1 }}""")
     return "\n".join(out)
 
-HEADER = """language 0.4
+HEADER = """language 0.9
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"

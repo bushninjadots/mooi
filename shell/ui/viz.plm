@@ -1,4 +1,4 @@
-language 0.4
+language 0.9
 
 // The visualisers (the music player overhaul): six ways of drawing the music, shared by the
 // player and the bar. Not strict: every component reads the scene's sixteen bands `vb0…vb15`

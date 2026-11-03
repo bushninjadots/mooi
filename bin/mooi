@@ -922,12 +922,12 @@ case "$cmd" in
             command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
         done
         [ -n "$missing" ] && echo "optional, not installed:$missing"
-        # The scenes are written for language 0.4; another one may compile and still behave
+        # The scenes are written for language 0.9; another one may compile and still behave
         # differently, so say which pleamar this is.
         ver=$("$pleamar" --version 2>/dev/null | head -1)
         case "$ver" in
-            *"language 0.4"*) echo "pleamar: $ver" ;;
-            *) echo "warning: $ver · the scenes are written for language 0.4" >&2 ;;
+            *"language 0.9"*) echo "pleamar: $ver" ;;
+            *) echo "warning: $ver · the scenes are written for language 0.9" >&2 ;;
         esac ;;
     theme-sync)
         theme_sync "$@" || { echo "theme-sync: failed" >&2; exit 1; }

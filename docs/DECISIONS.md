@@ -3981,3 +3981,17 @@ search were all seen working.
 D132 bug). On 0.7.11 nothing was left behind. Upstream has fixed it.
 **Not done yet:** installing 0.7.11. The scenes still declare `language 0.4`, and switching them to
 0.9 is its own step.
+
+## D136 · 2026-11-03 · Pleamar 0.7.11 installed; the scenes are language 0.9
+**Asked for:** install the update tested in D135.
+**Now:** the pleamar source (`~/.local/share/pleamar/src/pleamar`) is at tag v0.7.11 (2738889). The
+binary built from it is `~/.local/bin/pleamar`, and the old one is kept as
+`~/.local/bin/pleamar-0.4.6`. To go back: `cp ~/.local/bin/pleamar-0.4.6 ~/.local/bin/pleamar`,
+check out v0.4.6 in the source, and revert this commit. All 21 scene files now declare `language 0.9`;
+switched, they compile to exactly the same thing (property, instruction, rule and zone counts
+unchanged). `tools/gen-settings.py` writes the new header, and `bin/mooi check` expects 0.9.
+**Seen:** the first restart on 0.7.11 found a frame and a Nexus left over from 0.4.6, which does not
+end what a scene started when it quits; 0.7.11 does. After removing them, a restart and a refresh
+leave one of each program.
+**Kept for now:** `PLEAMAR_SWAPCHAIN=1` (D132). 0.7.11 no longer shows the frame-pool bug (D135), so it
+can go once a day on the new version has shown nothing else.
