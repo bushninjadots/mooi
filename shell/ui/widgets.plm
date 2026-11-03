@@ -27,8 +27,70 @@ library Widgets {
         box { from: x, y; size: s, s; corner: 4 * u; stroke: 1.2; color: fl.trace_lit; opacity: 0.55 }
     }
 
+    // The hands, shown while the widget is pointed at (`hv` 0 … 1): previous, play or pause, next.
+    // Their zones exist only while shown, so a calm widget takes no clicks.
+    component Controls(cx: number, cy: number, u: number, k: number, hv: number) {
+        size: 96 * u, 28 * u
+        let bs = 26 * u
+        group {
+            opacity: hv
+            repeat b in 0..3 {
+                let bx = cx + (b - 1) * (bs + 6 * u)
+                box { from: bx - bs / 2, cy - bs / 2; size: bs, bs; corner: bs / 2; color: fl.hull; opacity: 0.85 }
+                box { from: bx - bs / 2, cy - bs / 2; size: bs, bs; corner: bs / 2; stroke: 1; color: fl.trace_lit; opacity: 0.7 }
+            }
+            let g = 5 * u
+            // previous: a bar and a triangle pointing left
+            box { from: cx - bs - 6 * u - g, cy - g; size: 1.6 * u, 2 * g; color: fl.engrave }
+            path { color: fl.engrave
+                   move cx - bs - 6 * u - g + 2 * u, cy; line cx - bs - 6 * u + g, cy - g; line cx - bs - 6 * u + g, cy + g; close }
+            // play, or pause while playing
+            path { color: fl.phos; show: not np_playing
+                   move cx - g * 0.7, cy - g; line cx + g, cy; line cx - g * 0.7, cy + g; close }
+            box { from: cx - g * 0.8, cy - g; size: g * 0.55, 2 * g; color: fl.phos; show: np_playing }
+            box { from: cx + g * 0.25, cy - g; size: g * 0.55, 2 * g; color: fl.phos; show: np_playing }
+            // next: a triangle pointing right and a bar
+            path { color: fl.engrave
+                   move cx + bs + 6 * u - g, cy - g; line cx + bs + 6 * u + g - 2 * u, cy; line cx + bs + 6 * u - g, cy + g; close }
+            box { from: cx + bs + 6 * u + g - 1.6 * u, cy - g; size: 1.6 * u, 2 * g; color: fl.engrave }
+        }
+        zone box cprev { from: cx - 1.5 * bs - 6 * u, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Previous"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
+        zone box cplay { from: cx - bs / 2, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Play or pause"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
+        zone box cnext { from: cx + bs / 2 + 6 * u, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Next"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
+        on press cprev { emit wg_ctl(k * 10) }
+        on press cplay { emit wg_ctl(k * 10 + 1) }
+        on press cnext { emit wg_ctl(k * 10 + 2) }
+    }
+
+    // A seekable progress trace: thin, a little thicker while pointed at.
+    component Progress(x: number, y: number, w: number, u: number, k: number, hv: number) {
+        size: w, 10 * u
+        box { from: x, y - (1 + hv) * u; size: w, (2 + 2 * hv) * u; color: fl.trace_dim; opacity: 0.8 }
+        box { from: x, y - (1 + hv) * u; size: w * clamp(np_prg, 0, 1), (2 + 2 * hv) * u; color: fl.phos }
+        zone box pseek { from: x, y - 6 * u; size: w, 12 * u; cursor: pointer; role: slider; label: "Seek"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
+        on press pseek { emit wg_seek(k * 1000 + round(clamp((local.x - x) / w, 0, 1) * 999)) }
+    }
+
+    // What the cover does: opens mooi's player; the wheel over it is the volume.
+    component CoverZone(x: number, y: number, w: number, h: number, k: number) {
+        size: w, h
+        zone box cz { from: x, y; size: w, h; cursor: pointer; role: button; label: "Open the player" }
+        on press cz { emit wg_open(k) }
+        on scroll cz { emit wg_vol(k * 10 + if(wheel > 0, 1, 0)) }
+    }
+
+    // A widget resting as a small engraved mark where it sat: a press opens the player.
+    component Marker(x: number, y: number, u: number, k: number) {
+        size: 28 * u, 28 * u
+        ellipse { at: x + 14 * u, y + 14 * u; radius: 13 * u; color: fl.hull; opacity: 0.7 }
+        ellipse { at: x + 14 * u, y + 14 * u; radius: 13 * u; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+        text "♪" { at: x + 14 * u, y + 14 * u; anchor: center; align: center; size: 14 * u; family: "Exo 2"; color: fl.phos }
+        zone box mz { from: x, y; size: 28 * u, 28 * u; cursor: pointer; role: button; label: "Open the player" }
+        on press mz { emit wg_open(k) }
+    }
+
     // A: the sleeve — the cover, then the title, the artist, the line being sung and the progress.
-    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool) {
+    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool, k: number, hv: number) {
         size: w, h
         let pad = 14 * u
         let cs = h - 2 * pad
@@ -44,16 +106,15 @@ library Widgets {
             opacity: np_lf
             text np_line { at: tx, y + pad + 64 * u; anchor: left center; size: 14 * u; family: "Exo 2"; width: tw; lines: 1; color: fl.phos }
         }
-        group {
-            show: prog and np_has
-            box { from: tx, y + h - pad - 2 * u; size: tw, 2 * u; color: fl.trace_dim; opacity: 0.8 }
-            box { from: tx, y + h - pad - 2 * u; size: tw * clamp(np_prg, 0, 1), 2 * u; color: fl.phos }
-        }
+        group { show: prog and np_has
+                Progress(tx, y + h - pad - 1 * u, tw, u, k, hv) }
+        CoverZone(x + pad, y + pad, cs, cs, k)
+        Controls(x + pad + cs / 2, y + pad + cs / 2, u * 0.9, k, hv)
     }
 
     // B: the lyric stage — the line being sung large and centred, the ones either side faded, the
     // cover and the title as a caption. Without synced lyrics, the title takes the stage.
-    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool) {
+    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool, k: number, hv: number) {
         size: w, h
         let cx = x + w / 2
         let lw = w - 64 * u
@@ -69,13 +130,15 @@ library Widgets {
         }
         text np_next { at: cx, y + h * 0.76; anchor: center; align: center; size: 17 * u; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
         Cover(x + 16 * u, y + h - 44 * u, 28 * u, u)
+        CoverZone(x + 16 * u, y + h - 44 * u, 28 * u, 28 * u, k)
+        Controls(x + w - 64 * u, y + h - 30 * u, u * 0.8, k, hv)
         text "{np_title}  ·  {np_artist}" { at: x + 52 * u, y + h - 30 * u; anchor: left center; size: 11 * u; family: "Share Tech Mono"
               width: w - 72 * u; lines: 1; color: fl.muted; show: np_has and sung }
     }
 
     // C: the record — the cover as its label, turning at 33⅓ while it plays, the tonearm on the
     // song; the title and the artist under it.
-    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool) {
+    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool, prog: bool, k: number, hv: number) {
         size: w, h
         let r = w * 0.44
         let rcx = x + w / 2
@@ -107,6 +170,10 @@ library Widgets {
         text pick(np_has, "NOTHING PLAYING", np_title) { at: rcx, y + w + 16 * u; anchor: center; align: center; size: 17 * u; weight: 700; family: "Exo 2"
               width: w - 16 * u; lines: 1; color: fl.engrave }
         text np_artist { at: rcx, y + w + 40 * u; anchor: center; align: center; size: 11 * u; family: "Share Tech Mono"; width: w - 16 * u; lines: 1; color: fl.trace_lit }
+        group { show: prog and np_has
+                Progress(x + 24 * u, y + w + 60 * u, w - 48 * u, u, k, hv) }
+        CoverZone(rcx - rl, rcy - rl, rl * 2, rl * 2, k)
+        Controls(rcx, rcy + r * 0.62, u, k, hv)
     }
 
     // The visualiser: one of the twelve (lib/widgets MODES), in the palette's two signal colours,
@@ -118,27 +185,27 @@ library Widgets {
         let cr = min(w, h) * 0.3
         box { from: x, y; size: w, h; corner: 6 * u; color: fl.hull; opacity: 0.7; show: plate }
         group {
-            group { glow: 10 * u, glow, t1; show: mode < 0.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode < 0.5
                     viz.Spectrum(x, y, w, h, t1, t2, viz_still) }
-            group { glow: 10 * u, glow, t1; show: mode > 0.5 and mode < 1.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 0.5 and mode < 1.5
                     viz.Mirror(x, y, w, h, t1, t2, viz_still) }
-            group { glow: 10 * u, glow, t1; show: mode > 1.5 and mode < 2.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 1.5 and mode < 2.5
                     viz.Ring(x + w / 2, y + h / 2, cr, min(w, h) * 0.18, t1, t2, viz_still) }
             group { show: mode > 2.5 and mode < 3.5
                     viz.Aurora(x, y, w, h, t1, t2, np_turn, viz_still) }
-            group { glow: 10 * u, glow, t1; show: mode > 3.5 and mode < 4.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 3.5 and mode < 4.5
                     viz.LED(x, y, w, h, t1, t2, fl.trace_dim, viz_still) }
-            group { glow: 10 * u, glow, t1; show: mode > 4.5 and mode < 5.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 4.5 and mode < 5.5
                     viz.Orbit(x, y, w, h, t1, t2, fl.trace_dim, np_turn, viz_still) }
-            group { glow: 10 * u, glow, t1; show: mode > 5.5 and mode < 6.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 5.5 and mode < 6.5
                     viz.Scope(x, y, w, h, t1, t2, viz_still, np_turn, 40, 90) }
             group { show: mode > 6.5 and mode < 7.5
                     viz.Horizon(x, y, w, h, t1, t2, viz_still, np_turn) }
-            group { glow: 10 * u, glow, t1; show: mode > 7.5 and mode < 8.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 7.5 and mode < 8.5
                     viz.Dust(x, y, w, h, t1, t2, viz_still, np_scatter, np_turn) }
-            group { glow: 10 * u, glow, t1; show: mode > 8.5 and mode < 9.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 8.5 and mode < 9.5
                     viz.Ripple(x, y, w, h, t1, t2, viz_still, rp_r0, rp_a0, rp_r1, rp_a1, rp_r2, rp_a2, rp_r3, rp_a3) }
-            group { glow: 10 * u, glow, t1; show: mode > 9.5 and mode < 10.5
+            group { glow: min(10 * u, 12), glow, t1; show: mode > 9.5 and mode < 10.5
                     viz.Skyline(x, y, w, h, t1, t2, viz_still) }
             group { show: mode > 10.5
                     viz.Liquid(x, y, w, h, t1, t2, viz_still, np_turn) }

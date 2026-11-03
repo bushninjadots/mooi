@@ -1868,7 +1868,14 @@ end
 -- layer, kept running while widgets.on (on unless turned off). Started before the desk, whose cutout
 -- surface must stack over them; when they start again while the desk runs, the desk is asked to go
 -- and desk_sync brings it back above them. Three ends within a minute and they are left down.
-local widgets_win, widgets_ends = nil, {}
+local widgets_win, widgets_ends, widgets_restacking = nil, {}, false
+-- BMO's surface takes the clicks of anything under it on the same level (found 2026-11-03), so the
+-- widgets go above him: whenever he comes up, they are started again (not counted as an end).
+function widgets_restack()
+    if not widgets_win then return end
+    widgets_restacking = true
+    kill(widgets_win, "term")
+end
 function widgets_sync()
     local want = type(settings.widgets) ~= "table" or settings.widgets.on ~= false
     if not want then
@@ -1884,6 +1891,7 @@ function widgets_sync()
     end, function(_, code)
         if widgets_win ~= mine then return end
         widgets_win = nil
+        if widgets_restacking then widgets_restacking = false; widgets_sync(); return end
         local now = os.time()
         local recent = {}
         for _, t in ipairs(widgets_ends) do if now - t < 60 then recent[#recent + 1] = t end end
@@ -2036,6 +2044,7 @@ function bmo_launch(gen)
     end
     bmo_win = mine
     bmo_state = "running"
+    if widgets_restack then after(400, widgets_restack) end
 end
 
 -- Ask whether one is already there before starting another: a BMO that is up but slow to answer

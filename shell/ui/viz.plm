@@ -50,21 +50,46 @@ library Viz {
         group {
             blur: 10
             opacity: 0.85
+            // straight steps sampled along the three curves (D128: curves cost every frame they move)
             path { color: t1; opacity: 0.75
-                   move x, fl0; line x, fl0 - h * (0.25 + lo * 0.5)
-                   curve x + w * 0.5, fl0 - h * (0.3 + lo * 0.55 + sin(turn) * 0.08) via x + w * 0.25, fl0 - h * (0.65 + lo * 0.3)
-                   curve x + w, fl0 - h * (0.22 + lo * 0.45) via x + w * 0.75, fl0 - h * (0.1 + lo * 0.4 + cos(turn * 1.3) * 0.08)
-                   line x + w, fl0; close }
+                   move x, fl0
+                   line x, fl0 - h * (0.25 + lo * 0.5)
+                   line x + w * 0.125, fl0 - h * (0.5625 * (0.25 + lo * 0.5) + 0.375 * (0.65 + lo * 0.3) + 0.0625 * (0.3 + lo * 0.55 + sin(turn) * 0.08))
+                   line x + w * 0.25, fl0 - h * (0.25 * (0.25 + lo * 0.5) + 0.5 * (0.65 + lo * 0.3) + 0.25 * (0.3 + lo * 0.55 + sin(turn) * 0.08))
+                   line x + w * 0.375, fl0 - h * (0.0625 * (0.25 + lo * 0.5) + 0.375 * (0.65 + lo * 0.3) + 0.5625 * (0.3 + lo * 0.55 + sin(turn) * 0.08))
+                   line x + w * 0.5, fl0 - h * (0 * (0.25 + lo * 0.5) + 0 * (0.65 + lo * 0.3) + 1 * (0.3 + lo * 0.55 + sin(turn) * 0.08))
+                   line x + w * 0.625, fl0 - h * (0.5625 * (0.3 + lo * 0.55 + sin(turn) * 0.08) + 0.375 * (0.1 + lo * 0.4 + cos(turn * 1.3) * 0.08) + 0.0625 * (0.22 + lo * 0.45))
+                   line x + w * 0.75, fl0 - h * (0.25 * (0.3 + lo * 0.55 + sin(turn) * 0.08) + 0.5 * (0.1 + lo * 0.4 + cos(turn * 1.3) * 0.08) + 0.25 * (0.22 + lo * 0.45))
+                   line x + w * 0.875, fl0 - h * (0.0625 * (0.3 + lo * 0.55 + sin(turn) * 0.08) + 0.375 * (0.1 + lo * 0.4 + cos(turn * 1.3) * 0.08) + 0.5625 * (0.22 + lo * 0.45))
+                   line x + w * 1, fl0 - h * (0 * (0.3 + lo * 0.55 + sin(turn) * 0.08) + 0 * (0.1 + lo * 0.4 + cos(turn * 1.3) * 0.08) + 1 * (0.22 + lo * 0.45))
+                   line x + w, fl0
+                   close }
             path { color: mix(t1, t2, 0.5); opacity: 0.7
-                   move x, fl0; line x, fl0 - h * (0.15 + md * 0.4)
-                   curve x + w * 0.5, fl0 - h * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07) via x + w * 0.3, fl0 - h * (0.05 + md * 0.35)
-                   curve x + w, fl0 - h * (0.2 + md * 0.4) via x + w * 0.72, fl0 - h * (0.45 + md * 0.3 + sin(turn * 0.8) * 0.07)
-                   line x + w, fl0; close }
+                   move x, fl0
+                   line x, fl0 - h * (0.15 + md * 0.4)
+                   line x + w * 0.1437, fl0 - h * (0.5625 * (0.15 + md * 0.4) + 0.375 * (0.05 + md * 0.35) + 0.0625 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07))
+                   line x + w * 0.275, fl0 - h * (0.25 * (0.15 + md * 0.4) + 0.5 * (0.05 + md * 0.35) + 0.25 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07))
+                   line x + w * 0.3937, fl0 - h * (0.0625 * (0.15 + md * 0.4) + 0.375 * (0.05 + md * 0.35) + 0.5625 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07))
+                   line x + w * 0.5, fl0 - h * (0 * (0.15 + md * 0.4) + 0 * (0.05 + md * 0.35) + 1 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07))
+                   line x + w * 0.6138, fl0 - h * (0.5625 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07) + 0.375 * (0.45 + md * 0.3 + sin(turn * 0.8) * 0.07) + 0.0625 * (0.2 + md * 0.4))
+                   line x + w * 0.735, fl0 - h * (0.25 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07) + 0.5 * (0.45 + md * 0.3 + sin(turn * 0.8) * 0.07) + 0.25 * (0.2 + md * 0.4))
+                   line x + w * 0.8638, fl0 - h * (0.0625 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07) + 0.375 * (0.45 + md * 0.3 + sin(turn * 0.8) * 0.07) + 0.5625 * (0.2 + md * 0.4))
+                   line x + w * 1, fl0 - h * (0 * (0.18 + md * 0.45 + cos(turn * 1.7) * 0.07) + 0 * (0.45 + md * 0.3 + sin(turn * 0.8) * 0.07) + 1 * (0.2 + md * 0.4))
+                   line x + w, fl0
+                   close }
             path { color: t2; opacity: 0.65
-                   move x, fl0; line x, fl0 - h * (0.08 + hi * 0.3)
-                   curve x + w * 0.5, fl0 - h * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06) via x + w * 0.22, fl0 - h * (0.25 + hi * 0.3)
-                   curve x + w, fl0 - h * (0.06 + hi * 0.28) via x + w * 0.8, fl0 - h * (0.04 + hi * 0.25)
-                   line x + w, fl0; close }
+                   move x, fl0
+                   line x, fl0 - h * (0.08 + hi * 0.3)
+                   line x + w * 0.1138, fl0 - h * (0.5625 * (0.08 + hi * 0.3) + 0.375 * (0.25 + hi * 0.3) + 0.0625 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06))
+                   line x + w * 0.235, fl0 - h * (0.25 * (0.08 + hi * 0.3) + 0.5 * (0.25 + hi * 0.3) + 0.25 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06))
+                   line x + w * 0.3638, fl0 - h * (0.0625 * (0.08 + hi * 0.3) + 0.375 * (0.25 + hi * 0.3) + 0.5625 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06))
+                   line x + w * 0.5, fl0 - h * (0 * (0.08 + hi * 0.3) + 0 * (0.25 + hi * 0.3) + 1 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06))
+                   line x + w * 0.6438, fl0 - h * (0.5625 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06) + 0.375 * (0.04 + hi * 0.25) + 0.0625 * (0.06 + hi * 0.28))
+                   line x + w * 0.775, fl0 - h * (0.25 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06) + 0.5 * (0.04 + hi * 0.25) + 0.25 * (0.06 + hi * 0.28))
+                   line x + w * 0.8938, fl0 - h * (0.0625 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06) + 0.375 * (0.04 + hi * 0.25) + 0.5625 * (0.06 + hi * 0.28))
+                   line x + w * 1, fl0 - h * (0 * (0.1 + hi * 0.35 + sin(turn * 2.1) * 0.06) + 0 * (0.04 + hi * 0.25) + 1 * (0.06 + hi * 0.28))
+                   line x + w, fl0
+                   close }
         }
     }
 

@@ -52,6 +52,17 @@ local room = { w = 1920, h = 1046, top = 0 }
 local doc, written = nil, nil
 local playing = false
 
+-- Calm: nothing pointed at and no fade under way, so the surface can drop to a few frames a second.
+local hovered, calm_at = {}, 0
+local function unsettle()
+    fact.wg_calm = false
+    calm_at = os.time() + 2
+end
+every(1000, function()
+    if fact.wg_calm or next(hovered) ~= nil or os.time() < calm_at then return end
+    fact.wg_calm = true
+end)
+
 local function publish()
     local rows = {}
     for _, w in ipairs(doc.widgets) do
@@ -70,6 +81,11 @@ local function publish()
         }
     end
     model.wg = rows
+    for i = 0, W.MAX - 1 do
+        local r = rows[i + 1]
+        fact["op" .. i] = r and r.op or 0
+    end
+    unsettle()
 end
 
 local function load()
@@ -180,6 +196,49 @@ every(250, function()
     show_progress()
     if np.data and np.data.synced then show_lyric() end
 end)
+
+-- ── The hands (calm until touched) ──
+-- Pointed at: the hands come at once and stay 1.2 s after the pointer leaves.
+local away_seq = {}
+on("wg_hov", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, on_it = math.floor(v / 10), v % 10 == 1
+    if k < 0 or k >= W.MAX then return end
+    away_seq[k] = (away_seq[k] or 0) + 1
+    if on_it then
+        hovered[k] = true
+        fact["hl" .. k] = 1
+        unsettle()
+    else
+        hovered[k] = nil
+        local mine = away_seq[k]
+        after(1200, function() if away_seq[k] == mine then fact["hl" .. k] = 0; unsettle() end end)
+    end
+end)
+on("wg_ctl", function(v)
+    local c = math.floor(tonumber(v) or 0) % 10
+    pcall(sys.call, ({ [0] = "media.previous", [1] = "media.toggle", [2] = "media.next" })[c] or "media.toggle")
+end)
+on("wg_seek", function(v)
+    local f = (math.floor(tonumber(v) or 0) % 1000) / 999
+    if np.len <= 0 then return end
+    np.t = f * np.len
+    run("playerctl", { "position", string.format("%.1f", np.t) })
+    show_progress(); show_lyric()
+end)
+local volume = nil
+pcall(sys.watch, "audio", function(a) if type(a) == "table" then volume = tonumber(a.volume) end end)
+on("wg_vol", function(v)
+    if not volume then return end
+    for _, w in ipairs(doc.widgets) do
+        if w.kind == "nowplaying" and W.find(doc, w.id) == math.floor((tonumber(v) or 0) / 10) + 1 then
+            if (w.options or {}).scroll_volume == false then return end
+        end
+    end
+    volume = math.max(0, math.min(1, volume + (math.floor(tonumber(v) or 0) % 10 == 1 and 0.05 or -0.05)))
+    pcall(sys.call, "audio.volume", volume)
+end)
+on("wg_open", function() run("mooi", { "player" }) end)
 
 -- ── The visualiser's feed (the bar's one cava) ──
 local function any_viz()

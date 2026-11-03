@@ -13,7 +13,7 @@ import "ui/widgets.plm" as wg
 scene Widgets {
     permissions {
         run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi"
-        services: "files", "files.write", "media", "audio", "env"
+        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env"
     }
 
     // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
@@ -265,6 +265,7 @@ scene Widgets {
     fact np_line_in = 1
     fact np_sung = false
     fact viz_still = false
+    fact wg_calm = true          // nothing pointed at, no fade running (the logic says)
 
     // the visualiser's feed (lib/vizfeed): sixteen bands, and what the beats leave behind
     fact vb0 = 0.03
@@ -317,6 +318,62 @@ scene Widgets {
     prop np_lf = 1 ~wg.line
     follow np_lf = np_line_in
 
+    // each slot's hands (lingering, set by the logic) and its opacity (the idle rule), gliding
+    spring wg.hand = 320, 30
+    spring wg.fade = 140, 22
+    fact hl0 = 0
+    prop ph0 = 0 ~wg.hand
+    follow ph0 = hl0
+    fact op0 = 1
+    prop po0 = 1 ~wg.fade
+    follow po0 = op0
+    fact hl1 = 0
+    prop ph1 = 0 ~wg.hand
+    follow ph1 = hl1
+    fact op1 = 1
+    prop po1 = 1 ~wg.fade
+    follow po1 = op1
+    fact hl2 = 0
+    prop ph2 = 0 ~wg.hand
+    follow ph2 = hl2
+    fact op2 = 1
+    prop po2 = 1 ~wg.fade
+    follow po2 = op2
+    fact hl3 = 0
+    prop ph3 = 0 ~wg.hand
+    follow ph3 = hl3
+    fact op3 = 1
+    prop po3 = 1 ~wg.fade
+    follow po3 = op3
+    fact hl4 = 0
+    prop ph4 = 0 ~wg.hand
+    follow ph4 = hl4
+    fact op4 = 1
+    prop po4 = 1 ~wg.fade
+    follow po4 = op4
+    fact hl5 = 0
+    prop ph5 = 0 ~wg.hand
+    follow ph5 = hl5
+    fact op5 = 1
+    prop po5 = 1 ~wg.fade
+    follow po5 = op5
+    fact hl6 = 0
+    prop ph6 = 0 ~wg.hand
+    follow ph6 = hl6
+    fact op6 = 1
+    prop po6 = 1 ~wg.fade
+    follow po6 = op6
+    fact hl7 = 0
+    prop ph7 = 0 ~wg.hand
+    follow ph7 = hl7
+    fact op7 = 1
+    prop po7 = 1 ~wg.fade
+    follow po7 = op7
+    event wg_hov ->              // to the logic: slot · 10 + 1 pointed at, + 0 left
+    event wg_ctl ->              // slot · 10 + 0 previous · 1 play/pause · 2 next
+    event wg_seek ->             // slot · 1000 + where (0 … 999)
+    event wg_vol ->              // slot · 10 + 0 down · 1 up
+    event wg_open ->             // the player, from slot n
     event wg_room ->             // to the logic: the room under the bar, width · 4096 + height
 
     surface desk {
@@ -324,21 +381,28 @@ scene Widgets {
         anchor: top
         level: bottom
         keyboard: none
-        rate: 60, 4 while not np_playing
+        rate: 30, 4 while not np_playing and wg_calm
 
         for w in wg {
+            let k = w.index
+            let hv = if(w.kind < 0.5, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7), 0)
+            let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7)), 0.9 * hv * if(w.st < 1.5, 1, 0))
+            let over = desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
+            on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }
             group {
-                opacity: w.op
-                show: w.st < 1.5 and w.op > 0.01
+                opacity: fo
+                show: w.st < 1.5 and fo > 0.01
                 group { show: w.kind < 0.5 and w.lay < 0.5
-                        wg.Sleeve(w.x, w.y, w.w, w.h, w.u, w.lyr, w.prog, w.plate) }
+                        wg.Sleeve(w.x, w.y, w.w, w.h, w.u, w.lyr, w.prog, w.plate, k, hv) }
                 group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
-                        wg.LyricStage(w.x, w.y, w.w, w.h, w.u, w.plate) }
+                        wg.LyricStage(w.x, w.y, w.w, w.h, w.u, w.plate, k, hv) }
                 group { show: w.kind < 0.5 and w.lay > 1.5
-                        wg.Record(w.x, w.y, w.w, w.h, w.u, w.plate) }
+                        wg.Record(w.x, w.y, w.w, w.h, w.u, w.plate, w.prog, k, hv) }
                 group { show: w.kind > 0.5
                         wg.Visualiser(w.x, w.y, w.w, w.h, w.u, w.mode, w.glow, w.plate) }
             }
+            group { show: w.st > 2.5
+                    wg.Marker(w.x, w.y, w.u, k) }
         }
     }
 
