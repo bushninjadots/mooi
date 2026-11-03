@@ -196,9 +196,9 @@ M.SCHEMA = {
     { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },
     { path = "keys.wallpaper", kind = "key", default = "SUPER + ALT + P" },
     { path = "keys.player", kind = "key", default = "SUPER + ALT + M" },
-    -- Who receives the session's notifications: mooi only while it holds the desktop
-    -- (`takeover`, so beside ArchEclipse they stay ArchEclipse's — D5), `always`, or `never`.
-    { path = "notifications.server", kind = "enum", values = { "takeover", "always", "never" }, default = "takeover" },
+    -- Who receives the session's notifications: mooi while it runs as the desktop (`desktop`: under
+    -- the keeper, not a bare `mooi run`), `always`, or `never`. `takeover` before D134.
+    { path = "notifications.server", kind = "enum", values = { "desktop", "always", "never" }, default = "desktop" },
     -- Do not disturb: no toasts (urgent ones still come), the notices still kept — always, while
     -- the focus timer runs, or in quiet hours (from … to, the hour of the day).
     -- The Mechanical Shutter (D35): on or off, Super+Alt+right-click on a window as well as its key,
@@ -217,10 +217,10 @@ M.SCHEMA = {
     { path = "atlas.dim", kind = "integer", default = 55, min = 0, max = 80 },
     { path = "atlas.zoom", kind = "boolean", default = true },
     { path = "atlas.refresh", kind = "enum", values = { "open", "steady" }, default = "open" },
-    -- mooi as the whole desktop (D48): started at login in place of ArchEclipse's bar, the keys that
-    -- only reached ArchEclipse taken over, and nothing bringing ArchEclipse back. ArchEclipse stays
-    -- installed: switched off, it is the login shell again.
-    { path = "session.standalone", kind = "boolean", default = false },
+    -- mooi as the whole desktop (D48). With ArchEclipse uninstalled it is always on and no longer in
+    -- Settings (D134); custom/mooi.lua still reads it, so restoring ArchEclipse means setting it false
+    -- in settings.json by hand (docs/SWITCHING.md).
+    { path = "session.standalone", kind = "boolean", default = true },
     -- A touchpad swipe down to open it (D45): off, or with three or four fingers.
     { path = "atlas.gesture", kind = "enum", values = { "off", "three", "four" }, default = "off" },
     -- Retired with Hyprdrive (D118): mooi's Overview is the only one. Kept in the schema so its
@@ -508,6 +508,8 @@ local function migrate(t)
     end
     -- D119: the spine and the Nexus's Cascade (its shelves all out at once) are gone: the deck
     if type(t.nexus) == "table" and t.nexus.mode == "cascade" then t.nexus.mode = "deck" end
+    -- D134: there is no takeover any more; mooi as the desktop is what it meant
+    if type(t.notifications) == "table" and t.notifications.server == "takeover" then t.notifications.server = "desktop" end
     -- the desktop's named choices of 2026-10-20, now numbers on sliders
     if type(t.desktop) == "table" then
         for key, map in pairs(NUMBERED) do

@@ -561,7 +561,7 @@ scene Mooi {
     fact frame_style = 0      // frame.style · 0 swell · 1 crests · 2 pulse
     fact frame_reach = 18
     fact frame_edges = 0      // frame.edges · 0 all · 1 sides · 2 ends
-    fact note_server = 0      // notifications.server · 0 takeover · 1 always · 2 never
+    fact note_server = 0      // notifications.server · 0 desktop · 1 always · 2 never
     fact fbass = 0            // cava, for the frame's swell (shell/bar.luau)
     fact fhigh = 0
     fact pw = 0

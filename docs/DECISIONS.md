@@ -3948,3 +3948,14 @@ runs mooi", and a bare `mooi run` still does not claim notifications). Settings 
 the whole desktop" (mooi.lua still reads it, for the day ArchEclipse is restored).
 **Checked:** `bin/mooi check` (286 tests, 0 failed). On the live desktop: `session` over the old
 keeper, `refresh` (keeper kept), `stop` (no keeper left), `start`.
+
+## D134 · 2026-11-03 · Two leftovers of the old modes
+**Asked for:** tidy the two settings D133 left behind.
+**Notifications:** `notifications.server`'s `takeover` is now `desktop`. That means mooi claims
+notifications while the keeper runs it, and not in a bare `mooi run`, which now reports its mode as
+`run` instead of `beside`. In Settings → System the choices are "Desktop · Always · Never". A saved
+`takeover` is moved to `desktop` quietly on load (tested).
+**Standalone:** "mooi is the whole desktop" is gone from Settings → Advanced, and `session.standalone`
+now defaults to true. The key stays because `custom/mooi.lua` still reads it. Restoring ArchEclipse
+means setting it false in settings.json by hand (docs/SWITCHING.md).
+**Checked:** `bin/mooi check` (286 tests, 0 failed); both Settings pages seen on the live desktop.

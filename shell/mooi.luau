@@ -2230,7 +2230,7 @@ loom = require("signals")({
     bmo = bmo_tell,
     settings = function() return settings end,
     save = save_settings,
-    mode = sys.ask("env", "MOOI_MODE") or "beside",
+    mode = sys.ask("env", "MOOI_MODE") or "run",
     safe_mode = safe_mode,
 })
 
@@ -2241,7 +2241,7 @@ bar = require("bar")({
     requiet = loom.requiet,
     settings = function() return settings end,
     save = save_settings,
-    mode = sys.ask("env", "MOOI_MODE") or "beside",
+    mode = sys.ask("env", "MOOI_MODE") or "run",
     space_count = function() return #ws_rows > 0 and #ws_rows or fact.ws_max end,
     outline = function(id) return outlines[id] or 0 end,
     saving = function() return saving() end,

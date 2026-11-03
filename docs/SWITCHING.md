@@ -27,8 +27,8 @@ the screen / an area · **Super+Shift+B** (re)start mooi. The lock and suspend k
 
 The archive is `~/.local/state/mooi/archive-2026-10-21-archeclipse.tar.gz` (`tar xzf … -C ~`), with the
 `exec.lua` / `bind.lua` backups in `~/.local/state/mooi/dotfiles-backup-20261021-uninstall/`. Then
-switch Settings → Advanced → "mooi is the whole desktop" off, and from the next login ArchEclipse
-starts instead. To switch now: `bin/mooi stop`, then `~/.config/hypr/scripts/bar.sh --force`.
+set `"session": { "standalone": false }` in mooi's `settings.json` (the switch left Settings in D134),
+and from the next login ArchEclipse starts instead. To switch now: `bin/mooi stop`, then `~/.config/hypr/scripts/bar.sh --force`.
 
 ## Pleamar version
 

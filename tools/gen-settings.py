@@ -378,7 +378,7 @@ SECTIONS = [
     ("Keys", "Keys", "mooi's keyboard shortcuts. Press Change, then the new keys", "SYSTEM", [("card", "Shortcuts"), ("keys",)]),
     ("System", "System", "Notifications, the islands and comfort", "SYSTEM", [
         ("card", "Notifications and tray"),
-        ("choice", "mooi shows notifications", "When it runs alone, always, or never", "notifications.server", "note_server", ["On its own", "Always", "Never"]),
+        ("choice", "mooi shows notifications", "As the desktop (not a development run), always, or never", "notifications.server", "note_server", ["Desktop", "Always", "Never"]),
         ("choice", "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel", "notifications.dnd", "sv_notifications_dnd",
          ["Off", "On", "While focusing", "Quiet hours"]),
         ("slider", "Quiet from", "The hour quiet begins", "notifications.quiet_from", 0, 23, "{sv_notifications_quiet_from, 0}:00", "sv_notifications_dnd == 3"),
@@ -407,8 +407,6 @@ SECTIONS = [
         ("toggle", "Hide what they say", "Pop-ups show only who it is from; the Signal Field shows the rest", "signals.private", "sv_signals_private"),
     ]),
     ("Advanced", "Advanced", "What mooi is doing, where it keeps things, and its log", "SYSTEM", [
-        ("card", "Session"),
-        ("toggle", "mooi is the whole desktop", "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", "session.standalone", "sv_session_standalone"),
         ("card", "mooi"),
         ("info", "Version", "The shell and Pleamar it runs on", "adv_version"),
         ("info", "The bar", "Its process's share of a core, and its memory", "adv_usage"),

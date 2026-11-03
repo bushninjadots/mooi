@@ -142,7 +142,7 @@ local rows = {
     { title = "Time of day", desc = "Good morning once a day, a yawn late at night", tab = 14, page = "BMO", y = 1248 },
     { title = "Battery saver", desc = "Glow, aberration, the frame's music and the visualizer off", tab = 16, page = "Power", y = 216 },
     { title = "Profile", desc = "power-profiles-daemon's: quieter and cooler, or faster", tab = 16, page = "Power", y = 370 },
-    { title = "mooi shows notifications", desc = "When it runs alone, always, or never", tab = 18, page = "System", y = 156 },
+    { title = "mooi shows notifications", desc = "As the desktop (not a development run), always, or never", tab = 18, page = "System", y = 156 },
     { title = "Do not disturb", desc = "No pop-ups (urgent ones still come); the notices wait in the panel", tab = 18, page = "System", y = 216 },
     { title = "Quiet from", desc = "The hour quiet begins", tab = 18, page = "System", y = 276 },
     { title = "Quiet until", desc = "The hour it ends", tab = 18, page = "System", y = 336 },
@@ -159,7 +159,6 @@ local rows = {
     { title = "Travel", desc = "How far a signal slides out as it unfolds; none opens it in place", tab = 19, page = "Signal Loom", y = 582 },
     { title = "Glow", desc = "The light along an arriving signal and an urgent one's edge (notices still come without it)", tab = 19, page = "Signal Loom", y = 642 },
     { title = "Hide what they say", desc = "Pop-ups show only who it is from; the Signal Field shows the rest", tab = 19, page = "Signal Loom", y = 768 },
-    { title = "mooi is the whole desktop", desc = "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", tab = 20, page = "Advanced", y = 156 },
     { title = "Edge", desc = "Where the deck comes from: a strip along the bottom or the top, or a column down a side", tab = 21, page = "Control Nexus", y = 156 },
     { title = "Layout", desc = "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", tab = 21, page = "Control Nexus", y = 216 },
     { title = "Profile", desc = "Your banner and picture, small or large", tab = 21, page = "Control Nexus", y = 276 },
@@ -188,7 +187,7 @@ rows.resets = {
     [17] = { "@keys" },
     [18] = { "notifications.server", "notifications.dnd", "notifications.quiet_from", "notifications.quiet_to", "tray.style", "island.confirm_close", "island.follow_on_send", "command.max_results" },
     [19] = { "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density", "signals.chamfer", "signals.travel", "signals.effects", "signals.private" },
-    [20] = { "session.standalone" },
+    [20] = {  },
     [21] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model" },
 }
 rows.layout_tab = 4

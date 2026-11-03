@@ -164,7 +164,7 @@ scene Mooi {
     fact frame_style = 0      // frame.style · 0 swell · 1 crests · 2 pulse
     fact frame_reach = 18
     fact frame_edges = 0      // frame.edges · 0 all · 1 sides · 2 ends
-    fact note_server = 0      // notifications.server · 0 takeover · 1 always · 2 never
+    fact note_server = 0      // notifications.server · 0 desktop · 1 always · 2 never
     fact th_scheme = 0        // theme.scheme, its place in the list (0 tonal-spot)
     fact th_index = 0         // theme.color_index · which of the wallpaper's five colours
     fact th_contrast = 1      // theme.contrast + 1 · 0 soft · 1 standard · 2 high
@@ -1526,28 +1526,22 @@ scene Mooi {
     follow gy_20_c0 = 112
     prop gy_20_1 = 156 ~m.reflow
     follow gy_20_1 = 112 + 44
-    prop gc_20_0 = 112 ~m.reflow
-    follow gc_20_0 = 52 + 60
-    prop gy_20_c1 = 238 ~m.reflow
-    follow gy_20_c1 = 112 + 44 + 60 + 22
-    prop gy_20_3 = 282 ~m.reflow
-    follow gy_20_3 = 112 + 44 + 60 + 22 + 44
-    prop gy_20_4 = 342 ~m.reflow
-    follow gy_20_4 = 112 + 44 + 60 + 22 + 44 + 60
-    prop gy_20_5 = 402 ~m.reflow
-    follow gy_20_5 = 112 + 44 + 60 + 22 + 44 + 60 + 60
-    prop gy_20_6 = 462 ~m.reflow
-    follow gy_20_6 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60
-    prop gy_20_7 = 520 ~m.reflow
-    follow gy_20_7 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58
-    prop gc_20_1 = 318 ~m.reflow
-    follow gc_20_1 = 52 + 60 + 60 + 60 + 58 + 28
-    prop gy_20_c2 = 570 ~m.reflow
-    follow gy_20_c2 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22
-    prop gy_20_9 = 614 ~m.reflow
-    follow gy_20_9 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44
-    prop gc_20_2 = 296 ~m.reflow
-    follow gc_20_2 = 52 + 244
+    prop gy_20_2 = 216 ~m.reflow
+    follow gy_20_2 = 112 + 44 + 60
+    prop gy_20_3 = 276 ~m.reflow
+    follow gy_20_3 = 112 + 44 + 60 + 60
+    prop gy_20_4 = 336 ~m.reflow
+    follow gy_20_4 = 112 + 44 + 60 + 60 + 60
+    prop gy_20_5 = 394 ~m.reflow
+    follow gy_20_5 = 112 + 44 + 60 + 60 + 60 + 58
+    prop gc_20_0 = 318 ~m.reflow
+    follow gc_20_0 = 52 + 60 + 60 + 60 + 58 + 28
+    prop gy_20_c1 = 444 ~m.reflow
+    follow gy_20_c1 = 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22
+    prop gy_20_7 = 488 ~m.reflow
+    follow gy_20_7 = 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44
+    prop gc_20_1 = 296 ~m.reflow
+    follow gc_20_1 = 52 + 244
     prop gy_21_c0 = 112 ~m.reflow
     follow gy_21_c0 = 112
     prop gy_21_1 = 156 ~m.reflow
@@ -1639,7 +1633,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -3388,7 +3382,7 @@ scene Mooi {
                     SKeys(700, 712, pick(capturing == 9, key_edit, cap_text), capturing == 9)
                     SButton(1042, 711, 96, pick(capturing == 9, "Change", "Cancel"), key_change, 9, capturing == 9)
                     text key_clash_edit { at: 700, 748; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(756, "Stop mooi", "Super+Shift+B starts it again", true, "", 330, true)
+                    SRow(756, "Stop mooi", "Back to ArchEclipse", true, "", 330, true)
                     SKeys(700, 772, pick(capturing == 10, key_stop, cap_text), capturing == 10)
                     SButton(1042, 771, 96, pick(capturing == 10, "Change", "Cancel"), key_change, 10, capturing == 10)
                     text key_clash_stop { at: 700, 808; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
@@ -3404,9 +3398,9 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_18_1 - 156
-                    SRow(156, "mooi shows notifications", "When it runs alone, always, or never", true, "", 418, false)
+                    SRow(156, "mooi shows notifications", "As the desktop (not a development run), always, or never", true, "", 418, false)
                     STrack(742, 172, 396)
-                    SChoice(742, 172, 132, "On its own", note_server == 0, set_value, 27000)
+                    SChoice(742, 172, 132, "Desktop", note_server == 0, set_value, 27000)
                     SChoice(874, 172, 132, "Always", note_server == 1, set_value, 27001)
                     SChoice(1006, 172, 132, "Never", note_server == 2, set_value, 27002)
                     SRevert(712, 186, sv_notifications_server != df_notifications_server, set_value, 27000 + df_notifications_server)
@@ -3572,61 +3566,49 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_20_c0 - 112
-                    SCard(112, gc_20_0, "Session")
+                    SCard(112, gc_20_0, "mooi")
                 }
                 group {
                     show: true
                     move: 0, gy_20_1 - 156
-                    SRow(156, "mooi is the whole desktop", "Started at login instead of ArchEclipse, its keys mooi's; off, ArchEclipse at the next login", true, "", 768, false)
-                    SToggle(1092, 174, sv_session_standalone, set_value, 306, "session.standalone")
-                    SRevert(1062, 186, sv_session_standalone != df_session_standalone, set_value, 306000 + df_session_standalone)
+                    SRow(156, "Version", "The shell and Pleamar it runs on", true, "", 360, false)
+                    text adv_version { at: 1138, 186; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_20_c1 - 238
-                    SCard(238, gc_20_1, "mooi")
+                    move: 0, gy_20_2 - 216
+                    SRow(216, "The bar", "Its process's share of a core, and its memory", true, "", 360, true)
+                    text adv_usage { at: 1138, 246; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_20_3 - 282
-                    SRow(282, "Version", "The shell and Pleamar it runs on", true, "", 360, false)
-                    text adv_version { at: 1138, 312; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                    move: 0, gy_20_3 - 276
+                    SRow(276, "Settings file", "Every setting, as JSON; mooi applies an edit at once", true, "", 360, true)
+                    text bar_path { at: 1138, 306; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_20_4 - 342
-                    SRow(342, "The bar", "Its process's share of a core, and its memory", true, "", 360, true)
-                    text adv_usage { at: 1138, 372; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                    move: 0, gy_20_4 - 336
+                    SButton(274, 350, 174, "Open settings.json", adv_act, 1)
+                    SButton(458, 350, 126, "Open the log", adv_act, 2)
+                    SButton(594, 350, 214, "Open the shell's folder", adv_act, 3)
+                    SButton(818, 350, 158, "Restart Hyprland", adv_act, 4)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_5 - 402
-                    SRow(402, "Settings file", "Every setting, as JSON; mooi applies an edit at once", true, "", 360, true)
-                    text bar_path { at: 1138, 432; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                    move: 0, gy_20_5 - 394
+                    text "HYPRLAND READS ITS CONFIG AGAIN AND MOOI'S BAR RESTARTS ON IT · WINDOWS STAY OPEN" { at: 274, 408; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: true
-                    move: 0, gy_20_6 - 462
-                    SButton(274, 476, 174, "Open settings.json", adv_act, 1)
-                    SButton(458, 476, 126, "Open the log", adv_act, 2)
-                    SButton(594, 476, 214, "Open the shell's folder", adv_act, 3)
-                    SButton(818, 476, 158, "Restart Hyprland", adv_act, 4)
+                    move: 0, gy_20_c1 - 444
+                    SCard(444, gc_20_1, "Log")
                 }
                 group {
                     show: true
-                    move: 0, gy_20_7 - 520
-                    text "HYPRLAND READS ITS CONFIG AGAIN AND MOOI'S BAR RESTARTS ON IT · WINDOWS STAY OPEN" { at: 274, 534; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                }
-                group {
-                    show: true
-                    move: 0, gy_20_c2 - 570
-                    SCard(570, gc_20_2, "Log")
-                }
-                group {
-                    show: true
-                    move: 0, gy_20_9 - 614
-                    box { from: 274, 618; size: 864, 232; corner: 5; color: fl.ground; opacity: 0.7 }
-                    for l in adv_log { SLogLine(l, 632) }
+                    move: 0, gy_20_7 - 488
+                    box { from: 274, 492; size: 864, 232; corner: 5; color: fl.ground; opacity: 0.7 }
+                    for l in adv_log { SLogLine(l, 506) }
                 }
             }
             group {
