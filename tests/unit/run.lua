@@ -3031,6 +3031,35 @@ test("geom: his monitor, and where he goes when the screens change", function()
 end)
 
 local settingsfile = require("lib/settingsfile")
+print("vizfeed v2")
+do
+    local vf = require("lib/vizfeed")
+    test("v2 round-trips 64 bands; v1 still decodes", function()
+        local b = {}
+        for i = 1, 64 do b[i] = i / 64 end
+        local t = vf.decode_v2(vf.encode_v2({ bands = b, bass = 0.5, high = 0.25, beat = 1, phase = 0.5, playing = true, seq = 9 }))
+        eq(#t.bands, 64, "64"); eq(math.abs(t.bands[64] - 1) < 0.002, true, "last"); eq(t.seq, 9, "seq"); eq(t.playing, true, "playing")
+        eq(vf.decode_v2(vf.encode(vf.silent(3))), nil, "a v1 line is not v2")
+        eq(vf.decode(vf.encode(vf.silent(3))).seq, 3, "v1 unchanged")
+    end)
+    test("resample 64→16 averages and keeps endpoints", function()
+        local b = {}
+        for i = 1, 64 do b[i] = (i <= 4) and 1 or 0 end
+        local r = vf.resample(b, 16)
+        eq(#r, 16, "16"); eq(r[1], 1, "first group"); eq(r[16], 0, "last")
+    end)
+    test("resample 32→128 has no gaps", function()
+        local b = {}
+        for i = 1, 32 do b[i] = 0.2 + 0.6 * ((i % 2 == 0) and 1 or 0) end
+        local r = vf.resample(b, 128)
+        eq(#r, 128, "128"); eq(math.abs(r[1] - b[1]) < 1e-9, true, "start"); eq(math.abs(r[128] - b[32]) < 1e-9, true, "end")
+        for i = 1, 128 do if r[i] < 0.19 then error("gap at " .. i) end end
+    end)
+    test("resample n=1 is the mean", function()
+        eq(vf.resample({ 0, 1 }, 1)[1], 0.5, "mean")
+    end)
+end
+
 print("settingsfile")
 test("changes: only the leaves that moved, with their key path", function()
     local before = { bar = { labels = true, wheel = "step" }, theme = { source = "wallpaper" } }

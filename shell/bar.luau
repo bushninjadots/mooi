@@ -288,7 +288,7 @@ return function(ctx)
     local cava_lines, viz_missing = 0, false
     local CAVA = "cava.conf"
     sys.call("files.write", CAVA, table.concat({
-        "[general]", "bars = 32", "framerate = 30",
+        "[general]", "bars = 64", "framerate = 30",
         "[input]", "method = pipewire",
         "[output]", "method = raw", "raw_target = /dev/stdout", "data_format = ascii",
         "ascii_max_range = 1000", "bar_delimiter = 59", "frame_delimiter = 10",
@@ -312,6 +312,11 @@ return function(ctx)
         cand.seq = seq
         prev, last_ms, silent_written = cand, now_ms, nil
         sys.call("files.write", vizfeed.FILE, vizfeed.encode(cand))
+        -- the 64 bands beside it, only while the desktop widgets ask (feed_want)
+        if cand.wide and feed_wanted > os.time() then
+            sys.call("files.write", vizfeed.FILE_V2, vizfeed.encode_v2({ bands = cand.wide, bass = cand.bass, high = cand.high,
+                beat = cand.beat, phase = cand.phase, playing = true, missing = cand.missing, seq = seq }))
+        end
     end
     local function rest_feed(missing)
         missing = missing == true
@@ -336,15 +341,17 @@ return function(ctx)
             frame = frame + 1
             local i, b = 0, {}
             for v in string.gmatch(line, "(%d+);") do
-                if i > 31 then break end
+                if i > 63 then break end
                 b[i] = math.min(1, (tonumber(v) or 0) / 1000)
                 i = i + 1
             end
-            if i < 32 then return end
-            local bands = {}
-            for j = 1, 32 do bands[j] = b[j - 1] or 0 end
+            if i < 64 then return end
+            local wide = {}
+            for j = 1, 64 do wide[j] = b[j - 1] or 0 end
             -- read against what this music reaches, not against cava's full range (lib/vizfeed gain)
-            bands, gain_peak = vizfeed.gain(gain_peak, bands)
+            wide, gain_peak = vizfeed.gain(gain_peak, wide)
+            -- cava runs 64 bands for the desktop widgets (v2, D138); everyone else keeps 32 (v1)
+            local bands = vizfeed.resample(wide, 32)
             -- the media module's own visualizer: the first 16 bands, only when they moved
             if want_viz then
                 for j = 0, 15 do
@@ -358,7 +365,7 @@ return function(ctx)
             swell = state
             if want_feed or want_swell then
                 publish({ bands = bands, bass = state.bass, high = state.high, beat = state.beat,
-                          phase = state.phase, playing = true, missing = viz_missing }, frame * 1000 / 30)
+                          phase = state.phase, playing = true, missing = viz_missing, wide = wide }, frame * 1000 / 30)
             end
         end, function()
             if cava ~= mine then return end

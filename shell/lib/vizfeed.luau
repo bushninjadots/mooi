@@ -35,10 +35,10 @@ function M.silent(seq)
     }
 end
 
-function M.encode(t)
-    local out = { M.VERSION }
+local function encode_n(t, version, n)
+    local out = { version }
     local bands = type(t.bands) == "table" and t.bands or {}
-    for i = 1, M.BANDS do out[#out + 1] = tostring(int(bands[i])) end
+    for i = 1, n do out[#out + 1] = tostring(int(bands[i])) end
     out[#out + 1] = tostring(int(t.bass))
     out[#out + 1] = tostring(int(t.high))
     out[#out + 1] = tostring(int(t.beat))
@@ -48,15 +48,16 @@ function M.encode(t)
     out[#out + 1] = tostring(math.floor(tonumber(t.seq) or 0))
     return table.concat(out, " ")
 end
+function M.encode(t) return encode_n(t, M.VERSION, M.BANDS) end
 
-function M.decode(text)
+local function decode_n(text, version, n)
     if type(text) ~= "string" then return nil end
     local tok = {}
     for word in text:gmatch("%S+") do tok[#tok + 1] = word end
-    if tok[1] ~= M.VERSION then return nil end
+    if tok[1] ~= version then return nil end
 
-    -- 32 bands + bass, high, beat, phase + playing, missing, seq
-    local need = 1 + M.BANDS + 7
+    -- n bands + bass, high, beat, phase + playing, missing, seq
+    local need = 1 + n + 7
     if #tok < need then return nil end
     local nums = {}
     for i = 2, need do
@@ -69,8 +70,8 @@ function M.decode(text)
     if tok[need + 1] and tonumber(tok[need + 1]) ~= nil then return nil end
 
     local bands = {}
-    for i = 1, M.BANDS do bands[i] = clamp(nums[i] / 1000, 0, 1) end
-    local f = M.BANDS
+    for i = 1, n do bands[i] = clamp(nums[i] / 1000, 0, 1) end
+    local f = n
     return {
         bands = bands,
         bass = clamp(nums[f + 1] / 1000, 0, 1),
@@ -81,6 +82,47 @@ function M.decode(text)
         missing = nums[f + 6] == 1,
         seq = math.floor(nums[f + 7]),
     }
+end
+function M.decode(text) return decode_n(text, M.VERSION, M.BANDS) end
+
+-- v2 (D138): 64 bands, for the desktop widgets' finer visualisers, in a file of its own beside v1.
+M.VERSION_V2 = "v2"
+M.BANDS_V2 = 64
+M.FILE_V2 = "viz-levels-v2.txt"
+function M.encode_v2(t) return encode_n(t, M.VERSION_V2, M.BANDS_V2) end
+function M.decode_v2(text) return decode_n(text, M.VERSION_V2, M.BANDS_V2) end
+
+-- Any number of bands onto n: fewer by averaging each group (nothing lost, the ends kept), more by
+-- easing between neighbours (smoothstep), so a wide visualiser has no flat steps or gaps.
+function M.resample(bands, n)
+    n = math.max(1, math.floor(n or 1))
+    local len = #bands
+    if len == 0 then local z = {}; for i = 1, n do z[i] = 0 end; return z end
+    local out = {}
+    if n == 1 then
+        local sum = 0
+        for i = 1, len do sum = sum + (tonumber(bands[i]) or 0) end
+        return { sum / len }
+    end
+    if n <= len then
+        for i = 1, n do
+            local a = math.floor((i - 1) * len / n) + 1
+            local z = math.max(a, math.floor(i * len / n))
+            local sum = 0
+            for j = a, z do sum = sum + (tonumber(bands[j]) or 0) end
+            out[i] = sum / (z - a + 1)
+        end
+        return out
+    end
+    for i = 1, n do
+        local pos = (i - 1) * (len - 1) / (n - 1) + 1
+        local a = math.floor(pos)
+        local b = math.min(len, a + 1)
+        local f = pos - a
+        f = f * f * (3 - 2 * f)
+        out[i] = (tonumber(bands[a]) or 0) * (1 - f) + (tonumber(bands[b]) or 0) * f
+    end
+    return out
 end
 
 function M.newer(prev_seq, seq)
