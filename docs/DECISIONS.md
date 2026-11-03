@@ -3926,8 +3926,8 @@ times, left nothing, the islands open and close normally, and BMO thrown about s
 seconds left no copies. So under quick changes the pool showed a frame still holding an older frame's
 pixels. **Now:** `bin/mooi` starts the shell with `PLEAMAR_SWAPCHAIN=1` (the keeper and `mooi run`);
 every program the bar starts inherits it. The bar itself costs 0.4 % of the GPU this way.
-**Not done:** the pool's bug itself is pleamar's (k4ditano/pleamar); worth reporting upstream with this
-reproduction rather than patching the installed copy.
+**Not done:** the pool's bug itself is pleamar's (k4ditano/pleamar); not reported upstream (the user's choice, 2026-11-03),
+and the installed copy is not patched: `PLEAMAR_SWAPCHAIN=1` stays the fix.
 
 ## D133 · 2026-11-03 · The launcher has one mode: mooi is the desktop
 **Asked for:** remove the beside and takeover modes from `bin/mooi`.
