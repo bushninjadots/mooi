@@ -10,6 +10,7 @@ local W = require("lib/widgets")
 local P = require("lib/player")
 local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
+local WM = require("lib/wallmap")
 
 local function read(name, kind)
     local ok, v
@@ -29,6 +30,9 @@ run("mkdir", { "-p", COVERS, folder .. "/player-lyrics" })
 
 -- ── The shell's colours, corners and finish, as the board wears them ──
 local settings = config.parse(read("settings.json"), json.decode)
+local roles = nil        -- the palette's roles as painted (the accents lean towards phos)
+local wall = nil         -- the wallpaper as tools/wallmap.py read it (lib/wallmap), nil until known
+local apply_wall         -- defined with the wallpaper's watch below
 local palette = read("palette.json", "json")
 local function paint()
     fact.cn_kind, fact.cn_scale = style.corners(settings)
@@ -38,6 +42,7 @@ local function paint()
     fact.viz_still = motion.reduced == true or motion.saver == "always"
     local out = ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
     if not out then return end
+    roles = out
     for _, role in ipairs(ferro.ROLES) do
         local c = out[role]
         fact["fr_" .. role .. "_r"], fact["fr_" .. role .. "_g"], fact["fr_" .. role .. "_b"] = c.r, c.g, c.b
@@ -45,7 +50,11 @@ local function paint()
 end
 paint()
 pcall(sys.watch, "files:palette.json", function() palette = read("palette.json", "json"); paint() end)
-pcall(sys.watch, "files:settings.json", function() settings = config.parse(read("settings.json"), json.decode); paint() end)
+pcall(sys.watch, "files:settings.json", function()
+    settings = config.parse(read("settings.json"), json.decode)
+    paint()
+    if apply_wall then apply_wall() end
+end)
 
 -- ── The widgets ──
 -- The room under the bar: the surface says how big it is once it is placed (`screen` is not known
@@ -64,6 +73,13 @@ every(1000, function()
     if fact.wg_calm or fact.editing or next(hovered) ~= nil or os.time() < calm_at then return end
     fact.wg_calm = true
 end)
+
+-- The widgets' own switches in settings.json (D139): depth and mood.
+local function widgets_cfg()
+    local t = type(settings.widgets) == "table" and settings.widgets or {}
+    return { depth = t.depth ~= false, mood = t.mood ~= false }
+end
+local mood_now = { glow = 1, pace = 1, soft = 0 }
 
 -- The editor's selection (widget ids) and its undo history (D138).
 local selected, hist = {}, W.history()
@@ -93,7 +109,24 @@ local function publish()
             peaks = o.peaks ~= false, refl = o.reflection == true,
             vslot = -1, opa = w.opacity or 1, txt = tonumber(o.text) or 1, locked = w.locked == true,
             sel = is_sel(w.id),
+            adapt = o.adapt ~= false, behind = false, tn = 0, hz = 0.32, ar = 0, ag = 0, ab = 0, over = false,
         }
+        local r = rows[#rows]
+        -- the wallpaper under it (D139): readable tone and haze, a local accent, depth
+        local wl = widgets_cfg()
+        r.behind = o.behind == true and wl.depth and wall ~= nil and wall.depth and wall.cutpath ~= ""
+        if wall then
+            local u = WM.under(wall, w.x, w.y, w.w, w.h, room)
+            r.over = u.s > 0.3
+            if r.adapt then
+                r.tn = WM.tone(u.l) == "dark" and 1 or 0
+                r.hz = WM.haze(u.d, u.l) * (wl.mood and (1 - 0.3 * mood_now.soft) or 1)
+                local phos = roles and roles.phos or { r = 0.6, g = 0.8, b = 0.7 }
+                local g = u.l * (1 - r.hz * 0.6)
+                local c = WM.accent(u, phos, { r = g, g = g, b = g })
+                r.ar, r.ag, r.ab = c.r, c.g, c.b
+            end
+        end
     end
     -- which visualiser draws from which lane's bars (three at most, lib/widgets MAX_VIZ)
     local nv = 0
@@ -101,6 +134,16 @@ local function publish()
         if w.kind == "visualiser" then nv = nv + 1; rows[i].vslot = math.min(nv, 3) - 1 end
     end
     model.wg = rows
+    -- the cut-out is drawn only round the widgets behind it (a full screen of it costs every frame)
+    local l, t, r2, b2 = math.huge, math.huge, -math.huge, -math.huge
+    for _, r in ipairs(rows) do
+        if r.behind then
+            l, t = math.min(l, r.x - 8), math.min(t, r.y - 8)
+            r2, b2 = math.max(r2, r.x + r.w + 8), math.max(b2, r.y + r.h + 8)
+        end
+    end
+    if l < math.huge then fact.cut_x, fact.cut_y, fact.cut_w, fact.cut_h = l, t, r2 - l, b2 - t
+    else fact.cut_w, fact.cut_h = 0, 0 end
     fact.wg_nviz = W.count_kind(doc, "visualiser")
     -- the lanes: each visualiser's place and look, read by the scene's three Lane groups
     local lane = 0
@@ -115,6 +158,8 @@ local function publish()
             fact[f .. "peaks"], fact[f .. "refl"], fact[f .. "plate"] = r.peaks, r.refl, r.plate
             fact[f .. "st"], fact[f .. "gh"], fact[f .. "opa"] = r.st, r.gh, r.opa
             fact[f .. "sel"] = r.sel and not r.locked
+            fact[f .. "ad"], fact[f .. "beh"] = r.adapt and wall ~= nil, r.behind
+            fact[f .. "ar"], fact[f .. "ag"], fact[f .. "ab"] = r.ar, r.ag, r.ab
             lane = lane + 1
         end
     end
@@ -167,6 +212,57 @@ pcall(sys.watch, "files:" .. W.FILE, function()
     W.clear(hist)
     load()
 end)
+-- ── The wallpaper (D139): read once per picture by `mooi wallmap` (cached), applied from wall-map.json ──
+local CURRENT = HOME .. "/.cache/current_wallpaper_source"
+local current_wall, asked_for = nil, nil
+apply_wall = function()
+    local t = read("wall-map.json", "json")
+    local m = WM.parse(t)
+    -- only the picture on the desktop now (a slower read of an older one is not applied)
+    if m and current_wall and m.src ~= current_wall then m = nil end
+    wall = m
+    local wl = widgets_cfg()
+    mood_now = (wall and wl.mood) and WM.mood(wall.mood) or { glow = 1, pace = 1, soft = 0 }
+    fact.mood_glow, fact.mood_pace = mood_now.glow, mood_now.pace
+    fact.wall_depth = wall ~= nil and wall.depth and wl.depth and (wall.cutpath or "") ~= ""
+    text.wall_cut = fact.wall_depth and wall.cutpath or ""
+    fact.wall_bar = wall and math.max(0, wall.h - room.h) or 34
+    -- the subject cells, for edit mode's shading
+    local rows_s = {}
+    if wall then
+        local cw, ch = wall.w / wall.cols, wall.h / wall.rows
+        for i, c in ipairs(wall.cells) do
+            if (c.s or 0) > 0.3 then
+                local col, row = (i - 1) % wall.cols, math.floor((i - 1) / wall.cols)
+                rows_s[#rows_s + 1] = { x = col * cw, y = row * ch - fact.wall_bar, w = cw, h = ch }
+            end
+        end
+    end
+    model.subj = rows_s
+    publish()
+end
+local function check_wall()
+    run("readlink", { "-f", CURRENT }, function(out, code)
+        local p = tostring(out or ""):gsub("%s+$", "")
+        if code ~= 0 or p == "" then return end
+        if p ~= current_wall then
+            current_wall = p
+            apply_wall()
+        end
+        local t = read("wall-map.json", "json")
+        if (not t or t.src ~= p) and asked_for ~= p then
+            asked_for = p
+            run("mooi", { "wallmap", p }, function(_, c2)
+                if c2 ~= 0 then log("widgets · wallmap failed for " .. p) end
+                apply_wall()
+            end)
+        end
+    end)
+end
+check_wall()
+every(2000, check_wall)
+pcall(sys.watch, "files:wall-map.json", apply_wall)
+
 -- packed as width · 4096 + height (under 2^24)
 on("wg_room", function(v)
     v = math.floor(tonumber(v) or 0)
@@ -306,7 +402,7 @@ local function panel()
     local w = doc.widgets[k + 1]
     if not w then fact.wg_sel = -1; return end
     if panel_at then fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
-    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, w.kind == "visualiser" and 530 or 406, room) end
+    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, w.kind == "visualiser" and 560 or 436, room) end
     local o = w.options or {}
     fact.wg_sk = w.kind == "visualiser" and 1 or 0
     fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
@@ -317,6 +413,7 @@ local function panel()
     fact.wg_og = tonumber(o.glow) or 0
     fact.wg_ob, fact.wg_ogap, fact.wg_osm = tonumber(o.bars) or 64, tonumber(o.gap) or 0.3, tonumber(o.smooth) or 0.5
     fact.wg_otx, fact.wg_oop, fact.wg_olk = tonumber(o.text) or 1, w.opacity or 1, w.locked == true
+    fact.wg_oad, fact.wg_obh = o.adapt ~= false, o.behind == true
     text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
     local L = W.LAYOUTS[W.layout_of(w)]
     local maxw = L.max and L.max[1] or room.w
@@ -527,7 +624,8 @@ on("wg_tool", function(v)
     change(d, skipped_note(sk))
 end)
 -- the panel: slot · 1000 + what · 100 + value (what: 1 layout or mode · 2 at rest · 3-6 lyric line,
--- progress, plate, wheel volume · 7 peaks · 8 reflection · 9 duplicate (1) / remove (2) / lock (3))
+-- progress, plate, wheel volume · 7 peaks · 8 reflection · 9 duplicate (1) / remove (2) / lock (3) /
+-- calm spot (4) / adapt on, off (5, 6) / behind on, off (7, 8))
 on("wg_opt", function(v)
     v = math.floor(tonumber(v) or 0)
     local k, what, val = math.floor(v / 1000), math.floor((v % 1000) / 100), v % 100
@@ -543,6 +641,19 @@ on("wg_opt", function(v)
     elseif what == 9 and val == 1 then selected = { w.id }; duplicate_selected(); return
     elseif what == 9 and val == 2 then selected = { w.id }; remove_selected(); return
     elseif what == 9 and val == 3 then selected = { w.id }; toggle_lock(); return
+    elseif what == 9 and val == 4 then
+        -- the nearest calm, free place of its size (it moves only because it was asked to)
+        if not wall then change(doc, "THE WALLPAPER IS NOT READ YET"); return end
+        local x, y = WM.calm_spot(wall, doc, k + 1, room)
+        if not x then change(doc, "NO CALM SPOT IS FREE FOR ITS SIZE"); return end
+        d = W.set_rect(doc, w.id, x, y, w.w, w.h, room)
+    elseif what == 9 and (val == 5 or val == 6) then d = W.set_option(doc, w.id, "adapt", val == 5)
+    elseif what == 9 and (val == 7 or val == 8) then
+        d = W.set_option(doc, w.id, "behind", val == 7)
+        if val == 7 and not (wall and wall.depth and widgets_cfg().depth) then
+            change(d, wall and wall.depth and "DEPTH IS OFF IN SETTINGS" or "THIS WALLPAPER HAS NO CUT-OUT (NEEDS REMBG, A STILL PICTURE)")
+            return
+        end
     end
     change(d)
 end)

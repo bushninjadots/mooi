@@ -71,7 +71,7 @@ SETTERS = [
     # spring edges: a carried window held at an edge steps the desktops (D115)
     "atlas.spring_edges",
     # the desktop widgets (D137)
-    "widgets.on",
+    "widgets.on", "widgets.depth", "widgets.mood",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -342,6 +342,8 @@ SECTIONS = [
         ("card", "Desktop widgets"),
         ("toggle", "Desktop widgets", "mooi's own widgets on the desktop, under your windows (D137)", "widgets.on", "sv_widgets_on"),
         ("button", "Arrange on the desktop", "Drag, resize and set each one where it sits (also in Control Nexus)", "Edit on desktop", "wg_settings_edit", 1),
+        ("toggle", "Depth", "Widgets set to BEHIND sit behind the wallpaper's subject (cut out by rembg)", "widgets.depth", "sv_widgets_depth"),
+        ("toggle", "Wallpaper mood", "A calm picture makes them softer and slower, a lively one brighter", "widgets.mood", "sv_widgets_mood"),
         ("card", "Your widgets", "sv_widgets_on == 1"),
         ("widgets",),
     ]),

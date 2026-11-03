@@ -31,8 +31,8 @@ M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide" }
 M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
-    nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1 },
-    visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, peaks = true, reflection = false },
+    nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false },
+    visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, peaks = true, reflection = false, adapt = true, behind = false },
 }
 -- the numbers' ranges (the rest are 0 … 1); `int` ones are whole
 M.OPTION_RANGES = {

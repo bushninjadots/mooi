@@ -97,7 +97,8 @@ def main():
                 has_cut = False
         cells, mood = analyse(still, cut, has_cut)
         out = {"cols": COLS, "rows": ROWS, "cells": cells, "mood": mood, "cut": has_cut,
-               "depth": has_cut and not moving, "src": src, "w": w, "h": h}
+               "depth": has_cut and not moving, "src": src, "w": w, "h": h,
+               "cutpath": cut if has_cut else ""}
         with open(mp, "w") as fh:
             json.dump(out, fh)
     # into mooi's data folder: the cut-out first, then the map (the widgets watch the map)

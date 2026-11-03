@@ -15,7 +15,7 @@ function M.parse(t)
     if not cols or not rows or #t.cells ~= cols * rows then return nil end
     return { cols = cols, rows = rows, cells = t.cells, mood = type(t.mood) == "table" and t.mood or {},
              cut = t.cut == true, depth = t.depth == true, w = tonumber(t.w) or 1920, h = tonumber(t.h) or 1080,
-             src = t.src }
+             src = t.src, cutpath = type(t.cutpath) == "string" and t.cutpath or "" }
 end
 
 -- The cells a widget covers, in the map's (whole screen) coordinates: light, colour and detail

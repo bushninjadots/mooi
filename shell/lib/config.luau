@@ -352,6 +352,9 @@ M.SCHEMA = {
     { path = "desk.depth", kind = "boolean", default = true },
     -- D137: the desktop widgets (shell/mooi-widgets, widgets.json is theirs)
     { path = "widgets.on", kind = "boolean", default = true },
+    -- D139: widgets behind the wallpaper's subject, and the wallpaper's mood in how they move
+    { path = "widgets.depth", kind = "boolean", default = true },
+    { path = "widgets.mood", kind = "boolean", default = true },
     -- The music player (D88): its colours from the shell's palette, or from the album cover.
     { path = "player.colours", kind = "enum", values = { "shell", "cover" }, default = "shell" },
     -- each place's visualiser (the music player overhaul; lib/vizbands STYLES, shell/ui/viz.plm)

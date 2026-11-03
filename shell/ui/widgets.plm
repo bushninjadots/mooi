@@ -9,11 +9,12 @@ import "viz.plm" as viz
 
 library Widgets {
     // A soft dark haze, or the plate when asked for one: what any widget stands on.
-    component Ground(x: number, y: number, w: number, h: number, u: number, plate: bool) {
+    component Ground(x: number, y: number, w: number, h: number, u: number, plate: bool, hzv: number = 0.32, tnv: number = 0) {
         size: w, h
+        // the haze follows the wallpaper under it (D139): stronger over detail; light behind dark words
         group { show: not plate
                 blur: 22 * u
-                box { from: x + 10 * u, y + 10 * u; size: w - 20 * u, h - 20 * u; corner: 12 * u; color: #000000; opacity: 0.32 } }
+                box { from: x + 10 * u, y + 10 * u; size: w - 20 * u, h - 20 * u; corner: 12 * u; color: if(tnv > 0.5, #ffffff, #000000); opacity: 0.12 + 0.55 * hzv } }
         box { from: x, y; size: w, h; corner: 6 * u; color: fl.hull; opacity: 0.78; show: plate }
         box { from: x, y; size: w, h; corner: 6 * u; stroke: 1; color: fl.trace_dim; opacity: 0.9; show: plate }
     }
@@ -90,21 +91,21 @@ library Widgets {
     }
 
     // A: the sleeve — the cover, then the title, the artist, the line being sung and the progress.
-    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool, k: number, hv: number, tx: number = 1) {
+    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool, k: number, hv: number, ts: number = 1, ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
         size: w, h
         let pad = 14 * u
         let cs = h - 2 * pad
         let tx = x + pad + cs + 16 * u
         let tw = max(10, x + w - pad - tx)
-        Ground(x, y, w, h, u, plate)
+        Ground(x, y, w, h, u, plate, hzv, tnv)
         Cover(x + pad, y + pad, cs, u)
-        text pick(np_has, "NOTHING PLAYING", np_title) { at: tx, y + pad + 12 * u; anchor: left center; size: 20 * u * tx; weight: 700; family: "Exo 2"
-              width: tw; lines: 1; color: fl.engrave }
-        text np_artist { at: tx, y + pad + 36 * u; anchor: left center; size: 12 * u * tx; family: "Share Tech Mono"; width: tw; lines: 1; color: fl.trace_lit }
+        text pick(np_has, "NOTHING PLAYING", np_title) { at: tx, y + pad + 12 * u; anchor: left center; size: 20 * u * ts; weight: 700; family: "Exo 2"
+              width: tw; lines: 1; color: ink }
+        text np_artist { at: tx, y + pad + 36 * u; anchor: left center; size: 12 * u * ts; family: "Share Tech Mono"; width: tw; lines: 1; color: mix(ink, acc, 0.45) }
         group {
             show: lyr and np_sung
             opacity: np_lf
-            text np_line { at: tx, y + pad + 64 * u; anchor: left center; size: 14 * u * tx; family: "Exo 2"; width: tw; lines: 1; color: fl.phos }
+            text np_line { at: tx, y + pad + 64 * u; anchor: left center; size: 14 * u * ts; family: "Exo 2"; width: tw; lines: 1; color: acc }
         }
         group { show: prog and np_has
                 Progress(tx, y + h - pad - 1 * u, tw, u, k, hv) }
@@ -114,31 +115,31 @@ library Widgets {
 
     // B: the lyric stage — the line being sung large and centred, the ones either side faded, the
     // cover and the title as a caption. Without synced lyrics, the title takes the stage.
-    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool, k: number, hv: number, tx: number = 1) {
+    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool, k: number, hv: number, ts: number = 1, ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
         size: w, h
         let cx = x + w / 2
         let lw = w - 64 * u
         let sung = np_sung
-        Ground(x, y, w, h, u, plate)
-        text np_prev { at: cx, y + h * 0.2; anchor: center; align: center; size: 17 * u * tx; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        text np_prev { at: cx, y + h * 0.2; anchor: center; align: center; size: 17 * u * ts; family: "Exo 2"; width: lw; lines: 1; color: mix(ink, acc, 0.45); opacity: 0.45; show: sung }
         group {
             opacity: if(sung, np_lf, 1)
-            text np_line { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u * tx; weight: 600; family: "Exo 2"
-                  width: lw; lines: 2; color: fl.engrave; show: sung }
-            text pick(np_has, "NOTHING PLAYING", np_title) { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u * tx; weight: 600; family: "Exo 2"
-                  width: lw; lines: 2; color: fl.engrave; show: not sung }
+            text np_line { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u * ts; weight: 600; family: "Exo 2"
+                  width: lw; lines: 2; color: ink; show: sung }
+            text pick(np_has, "NOTHING PLAYING", np_title) { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u * ts; weight: 600; family: "Exo 2"
+                  width: lw; lines: 2; color: ink; show: not sung }
         }
-        text np_next { at: cx, y + h * 0.76; anchor: center; align: center; size: 17 * u * tx; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
+        text np_next { at: cx, y + h * 0.76; anchor: center; align: center; size: 17 * u * ts; family: "Exo 2"; width: lw; lines: 1; color: mix(ink, acc, 0.45); opacity: 0.45; show: sung }
         Cover(x + 16 * u, y + h - 44 * u, 28 * u, u)
         CoverZone(x + 16 * u, y + h - 44 * u, 28 * u, 28 * u, k)
         Controls(x + w - 64 * u, y + h - 30 * u, u * 0.8, k, hv)
-        text "{np_title}  ·  {np_artist}" { at: x + 52 * u, y + h - 30 * u; anchor: left center; size: 11 * u * tx; family: "Share Tech Mono"
-              width: w - 72 * u; lines: 1; color: fl.muted; show: np_has and sung }
+        text "{np_title}  ·  {np_artist}" { at: x + 52 * u, y + h - 30 * u; anchor: left center; size: 11 * u * ts; family: "Share Tech Mono"
+              width: w - 72 * u; lines: 1; color: mix(ink, acc, 0.3); opacity: 0.8; show: np_has and sung }
     }
 
     // C: the record — the cover as its label, turning at 33⅓ while it plays, the tonearm on the
     // song; the title and the artist under it.
-    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool, prog: bool, k: number, hv: number, tx: number = 1) {
+    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool, prog: bool, k: number, hv: number, ts: number = 1, ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
         size: w, h
         let r = w * 0.44
         let rcx = x + w / 2
@@ -146,7 +147,7 @@ library Widgets {
         let rl = r * 0.36
         let px = x + w * 0.9
         let py = y + w * 0.1
-        Ground(x, y, w, h, u, plate)
+        Ground(x, y, w, h, u, plate, hzv, tnv)
         ellipse { at: rcx, rcy; radius: r; color: #0d0f11 }
         repeat g in 0..7 {
             ellipse { at: rcx, rcy; radius: rl + 6 * u + g * (r - rl - 10 * u) / 6; stroke: 0.8; color: #23272b; opacity: 0.9 }
@@ -167,9 +168,9 @@ library Widgets {
             line { from: px, py; to: px, py + r * 1.05; width: 3 * u; color: fl.steel_300 }
             line { from: px, py + r * 1.05; to: px - 7 * u, py + r * 1.2; width: 3 * u; color: fl.steel_300 }
         }
-        text pick(np_has, "NOTHING PLAYING", np_title) { at: rcx, y + w + 16 * u; anchor: center; align: center; size: 17 * u * tx; weight: 700; family: "Exo 2"
-              width: w - 16 * u; lines: 1; color: fl.engrave }
-        text np_artist { at: rcx, y + w + 40 * u; anchor: center; align: center; size: 11 * u * tx; family: "Share Tech Mono"; width: w - 16 * u; lines: 1; color: fl.trace_lit }
+        text pick(np_has, "NOTHING PLAYING", np_title) { at: rcx, y + w + 16 * u; anchor: center; align: center; size: 17 * u * ts; weight: 700; family: "Exo 2"
+              width: w - 16 * u; lines: 1; color: ink }
+        text np_artist { at: rcx, y + w + 40 * u; anchor: center; align: center; size: 11 * u * ts; family: "Share Tech Mono"; width: w - 16 * u; lines: 1; color: mix(ink, acc, 0.45) }
         group { show: prog and np_has
                 Progress(x + 24 * u, y + w + 60 * u, w - 48 * u, u, k, hv) }
         CoverZone(rcx - rl, rcy - rl, rl * 2, rl * 2, k)
@@ -221,7 +222,7 @@ library Widgets {
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
         let ay = wy + if(vis, 40, 70)             // where, and the actions
-        let ph = if(wg_pcol, 30, ay + 72)
+        let ph = if(wg_pcol, 30, ay + 102)
         box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
         // the header: its title, the fold, and the handle that carries the panel
@@ -400,6 +401,10 @@ library Widgets {
             Chip(x + 12, y + ay + 24, 96, pick(wg_olk, "LOCK", "UNLOCK"), wg_olk, base + 903)
             Chip(x + 112, y + ay + 24, 96, "DUPLICATE", false, base + 901)
             Chip(x + 212, y + ay + 24, 96, "REMOVE", false, base + 902)
+            // the wallpaper (D139): read against it, sit behind its subject, or move off it
+            Chip(x + 12, y + ay + 54, 96, "ADAPT", wg_oad, base + if(wg_oad, 906, 905))
+            Chip(x + 112, y + ay + 54, 96, "BEHIND", wg_obh, base + if(wg_obh, 908, 907))
+            Chip(x + 212, y + ay + 54, 96, "CALM SPOT", false, base + 904)
         }
     }
 

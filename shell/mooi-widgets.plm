@@ -13,7 +13,7 @@ import "ui/vizwide.plm" as vw
 
 scene Widgets {
     permissions {
-        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi"
+        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink"
         services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env"
     }
 
@@ -248,7 +248,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool }
+    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -305,6 +305,11 @@ scene Widgets {
     fact lA_gh = false
     fact lA_opa = 1
     fact lA_sel = false
+    fact lA_ad = false
+    fact lA_beh = false
+    fact lA_ar = 0.6
+    fact lA_ag = 0.8
+    fact lA_ab = 0.7
     fact lB_on = false
     fact lB_k = 0
     fact lB_x = 0
@@ -323,6 +328,11 @@ scene Widgets {
     fact lB_gh = false
     fact lB_opa = 1
     fact lB_sel = false
+    fact lB_ad = false
+    fact lB_beh = false
+    fact lB_ar = 0.6
+    fact lB_ag = 0.8
+    fact lB_ab = 0.7
     fact lC_on = false
     fact lC_k = 0
     fact lC_x = 0
@@ -341,6 +351,11 @@ scene Widgets {
     fact lC_gh = false
     fact lC_opa = 1
     fact lC_sel = false
+    fact lC_ad = false
+    fact lC_beh = false
+    fact lC_ar = 0.6
+    fact lC_ag = 0.8
+    fact lC_ab = 0.7
     // the visualisers' own bars (D138): one record per bar, for up to three visualisers
     model vzA max 128 { v: number; pk: number }
     model vzB max 128 { v: number; pk: number }
@@ -474,7 +489,7 @@ scene Widgets {
     follow np_prg = np_progress
     // what moves the drifting modes while something plays
     prop np_tspd = 0 ~wg.coast
-    follow np_tspd = if(np_playing and not viz_still, 40, 0)
+    follow np_tspd = if(np_playing and not viz_still, 40 * mood_pace, 0)
     prop np_turn = 0
     spin np_turn by np_tspd
     // a beat's push, gone again in a moment (the dust scatters on it)
@@ -565,6 +580,21 @@ scene Widgets {
     fact wg_o6 = true
     fact wg_og = 0.6
     fact wg_nsel = 0             // how many are chosen
+    // the wallpaper (D139): its mood, whether depth is on, the subject cut out, its cells
+    fact mood_glow = 1
+    fact mood_pace = 1
+    fact wall_depth = false
+    fact wall_bar = 34
+    fact cut_x = 0               // the box round the widgets set behind the subject
+    fact cut_y = 0
+    fact cut_w = 0
+    fact cut_h = 0
+    text wall_cut = ""
+    image cutimg = from wall_cut, 1920, 1080
+    model subj max 576 { x: number; y: number; w: number; h: number }
+    fact wg_oad = true
+    fact wg_obh = false
+    fact wg_ovr = false
     // who owns the gesture under way: a drag reaches every zone under the press, not only the top
     // one (Pleamar), so each press says whose it is and every drag and release asks (D138 fix):
     // 0 none · 1 the desktop (marquee) · 2 the panel's header · 3 a slider · 100 + slot a widget ·
@@ -645,29 +675,43 @@ scene Widgets {
             repeat gy in 0..34 {
                 box { from: 0, gy * 32; size: desk.width, 1; color: fl.trace_dim; opacity: if(mod(gy, 4) == 0, 0.35, 0.14) }
             }
+            // where the picture's subject is (D139): widgets are best kept off it, or put behind it
+            for c in subj { box { from: c.x, c.y; size: c.w + 0.5, c.h + 0.5; color: fl.ember; opacity: 0.1 } }
+        }
+
+        // the picture's subject, cut out (D139): over the widgets that sit behind it, under the rest
+        group {
+            z: 2
+            show: wall_depth and cut_w > 0
+            // only where widgets sit behind it: the rest of the picture is the wallpaper's own
+            clip box { from: cut_x, cut_y; size: cut_w, cut_h }
+            image cutimg { at: 0, 0 - wall_bar; size: 1920, 1080 }
         }
 
         // the visualisers, a lane each, under the other widgets
         group {
+            z: if(lA_beh, 1, 3)
             show: lA_on and (editing or lA_st < 1.5)
             opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lA_opa
             move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0), if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0)
             box { from: if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y); size: if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h); corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
-            vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow, lA_peaks, lA_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
+            vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
         }
         group {
+            z: if(lB_beh, 1, 3)
             show: lB_on and (editing or lB_st < 1.5)
             opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lB_opa
             move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0), if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0)
             box { from: if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y); size: if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h); corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
-            vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow, lB_peaks, lB_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
+            vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
         }
         group {
+            z: if(lC_beh, 1, 3)
             show: lC_on and (editing or lC_st < 1.5)
             opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lC_opa
             move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0), if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0)
             box { from: if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y); size: if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h); corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
-            vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow, lC_peaks, lC_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
+            vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
         }
 
         for w in wg {
@@ -688,28 +732,35 @@ scene Widgets {
             let along = wg_dk == k or (wg_dk >= 0 and wg_dksel and w.sel and not w.locked)
             let ox = if(along, wg_dx, 0)
             let oy = if(along, wg_dy, 0)
+            // read against the wallpaper under it (D139), or the palette
+            let ink = if(w.adapt and w.ar + w.ag + w.ab > 0, if(w.tn > 0.5, #15181c, #eef1f4), fl.engrave)
+            let acc = if(w.adapt and w.ar + w.ag + w.ab > 0, rgb(w.ar, w.ag, w.ab), fl.phos)
             group {
+                z: if(w.behind, 1, 3)
                 opacity: if(editing, if(w.gh, 0.4, 1), fo) * w.opa
                 show: editing or (w.st < 1.5 and fo > 0.01)
                 move: ox, oy
                 group { show: w.kind < 0.5 and w.lay < 0.5
-                        wg.Sleeve(wx, wy, ww, wh, wu, w.lyr, w.prog, w.plate, k, hv, w.txt) }
+                        wg.Sleeve(wx, wy, ww, wh, wu, w.lyr, w.prog, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn) }
                 group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
-                        wg.LyricStage(wx, wy, ww, wh, wu, w.plate, k, hv, w.txt) }
+                        wg.LyricStage(wx, wy, ww, wh, wu, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn) }
                 group { show: w.kind < 0.5 and w.lay > 1.5
-                        wg.Record(wx, wy, ww, wh, wu, w.plate, w.prog, k, hv, w.txt) }
+                        wg.Record(wx, wy, ww, wh, wu, w.plate, w.prog, k, hv, w.txt, ink, acc, w.hz, w.tn) }
             }
-            group { show: w.st > 2.5 and not editing
+            group { z: 3; show: w.st > 2.5 and not editing
                     wg.Marker(w.x, w.y, w.u, k) }
 
             // edit mode: its outline (lit when chosen), the hand that carries it, eight handles
             group {
+                z: 5
                 show: editing
                 let rec = w.kind < 0.5 and w.lay > 1.5
                 let xx = wx + ox
                 let yy = wy + oy
                 box { from: xx, yy; size: ww, wh; corner: 4; stroke: if(w.sel, 2, 1); color: if(w.sel, fl.phos, fl.trace_lit); opacity: if(w.sel, 1, 0.6) }
                 text "HIDDEN AT REST" { at: xx + 8, yy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: w.gh }
+                text "OVER THE PICTURE'S SUBJECT" { at: xx + 8, yy + wh - 10; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: w.over and not w.behind }
+                text "BEHIND THE SUBJECT" { at: xx + 8, yy + wh - 10; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos; show: w.behind }
                 // a padlock when it is locked
                 group {
                     show: w.locked
@@ -749,6 +800,7 @@ scene Widgets {
 
         // where a carried or pulled widget will settle, and the lines it snapped to
         group {
+            z: 6
             show: editing and wg_dk >= 0
             box { from: wg_sx, wg_sy; size: wg_sw, wg_sh; corner: 4; color: fl.phos; opacity: 0.12 }
             box { from: wg_sx, wg_sy; size: wg_sw, wg_sh; corner: 4; stroke: 1.5; color: fl.phos; opacity: 0.8 }
@@ -758,12 +810,14 @@ scene Widgets {
 
         // the marquee being drawn
         group {
+            z: 6
             show: editing and wg_mon
             box { from: min(wg_mx, wg_mx + wg_mdx), min(wg_my, wg_my + wg_mdy); size: abs(wg_mdx), abs(wg_mdy); color: fl.phos; opacity: 0.08 }
             box { from: min(wg_mx, wg_mx + wg_mdx), min(wg_my, wg_my + wg_mdy); size: abs(wg_mdx), abs(wg_mdy); stroke: 1; color: fl.phos; opacity: 0.8 }
         }
         // the size and place while carried or pulled, by the pointer
         group {
+            z: 6
             show: editing and (wg_dk >= 0 or wg_rk >= 0)
             box { from: desk.cursor.x + 16, desk.cursor.y + 16; size: 150, 22; corner: 4; color: fl.hull; opacity: 0.92 }
             text wg_readout { at: desk.cursor.x + 24, desk.cursor.y + 27; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.phos; width: 140; lines: 1 }
@@ -771,6 +825,7 @@ scene Widgets {
 
         // the top bar: + Now Playing, + Visualiser, SNAP, Done; under it the tools for what is chosen
         group {
+            z: 7
             show: editing
             let cx = desk.width / 2
             box { from: cx - 270, 12; size: 540, 40; corner: 6; color: fl.hull; opacity: 0.94 }
@@ -858,7 +913,7 @@ scene Widgets {
                 on press tb13 { wg_hold = 0; emit wg_tool(13) }
             }
         }
-        group { show: editing and wg_sel >= 0 and wg_dk < 0 and wg_rk < 0
+        group { z: 8; show: editing and wg_sel >= 0 and wg_dk < 0 and wg_rk < 0
                 wg.Panel(wg_px, wg_py, wg_sel) }
 
         // the editor's keys
