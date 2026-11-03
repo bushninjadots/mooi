@@ -42,7 +42,7 @@ what was done, and why, is docs/DECISIONS.md.
 ## Roadmap (asked 2026-10-27, in order)
 
 - [x] Workspaces: one viewer (D90) · Colours and theming, light mode (D91) · Corner style (D93)
-- [ ] **Music player** — built (D92) but the user is not happy with it yet; finish later (deferred review
+- [x] Music island from the bar: ArchEclipse's player ported (D142). [ ] The full player (D92) still waits for its review; finish later (deferred review
       items in docs/superpowers/plans/2026-10-27-music-player.md's ledger, and: EasyEffects dies with the
       player, so the EQ only applies while it is open).
 - [ ] Settings

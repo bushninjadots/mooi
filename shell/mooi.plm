@@ -21,7 +21,7 @@ import "ui/edgetab.plm" as edge
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "skwd-wall-v2", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
+        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "skwd-wall-v2", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -39,7 +39,7 @@ scene Mooi {
     text pw_state = ""
     text pw_time = ""
     text pw_rate = ""
-    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power = none
+    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     // The spine (D100) is gone (D119): islands open under the bar only. `isl_shelf` stays false — the
     // island geometry still reads it, as the shelf it no longer has.
@@ -550,6 +550,22 @@ scene Mooi {
     fact media_mode = 0       // media.mode · 0 full · 1 compact · 2 art · 3 viz
     fact media_idle = 0       // media.idle · 0 collapse · 1 keep · 2 hide
     fact med_has_art = false
+    // the music island (D142): what the media module knows beyond the title (shell/bar.luau)
+    text med_album = ""
+    text mu_title = ""
+    text mu_artist = ""
+    fact mu_has = false
+    fact mu_playing = false
+    text med_player = ""
+    fact med_pos = 0
+    fact med_len = 0
+    text med_tpos = ""
+    text med_tlen = ""
+    fact med_shuf = false
+    fact med_loop = 0
+    event med_seek ->          // to the logic: where to go in the song, 0 … 999
+    event med_mode ->          // to the logic: the island's transport — 0 shuffle · 1 previous · 2 play or pause · 3 next · 4 repeat
+    event music_isl ->         // to the logic: the music island opened (1) or closed (0): it keeps the bands coming
     text med_art = ""
     fact frame_on = true      // frame.on — the screen frame
     fact music_rim = true     // music.rim: the bar's border joins the frame's music (drawn by shell/mooi-frame.plm)
@@ -1138,6 +1154,14 @@ scene Mooi {
     prop rv.sound = 0 ~m.enter
     prop rv.display = 0 ~m.enter
     prop rv.power = 0 ~m.enter
+    prop rv.music = 0 ~m.enter
+    // the music island's record (D142): it turns while the song plays and the island is open
+    prop mu_spd = 0 ~600ms
+    follow mu_spd = if(mu_playing and open == music, 120, 0)
+    prop mu_ang = 0
+    spin mu_ang by mu_spd
+    prop med_prg = 0 ~500ms
+    follow med_prg = if(med_len > 0, clamp(med_pos / med_len, 0, 1), 0)
     prop depth = 0 ~m.expand
     prop fb = 0 ~m.select
     prop pz = 0 ~m.confirm
@@ -1178,6 +1202,10 @@ scene Mooi {
     layer life.calendar {
         shown while open == calendar { rv.calendar: 1 ~m.enter }
         gone                         { rv.calendar: 0 ~m.exit }
+    }
+    layer life.music {
+        shown while open == music { rv.music: 1 ~m.enter }
+        gone                      { rv.music: 0 ~m.exit }
     }
     layer life.weather {
         shown while open == weather { rv.weather: 1 ~m.enter }
@@ -2351,7 +2379,7 @@ scene Mooi {
         zone box mscroll { from: 0, fl.top; size: ws_media, fl.mod_h }
         on scroll mscroll { emit media_cmd(if(wheel > 0, -1, 1)) }
         zone box wave { from: vx0 - 5, fl.top; size: 86, fl.mod_h; cursor: pointer; role: button; show: has_viz
-                        active: media_on; label: pick(med.playing, "Play", "Pause") }
+                        active: media_on; label: "The music island (middle press: play or pause)" }
         zone box track { from: tx - 4, fl.top; size: ws_media - tx + 4 - if(slabs, 42, 4), fl.mod_h; cursor: pointer; role: button
                          show: mfull or mart; label: "Music player — {med.title}" }
         zone box pill { from: 0, fl.top; size: ws_media, fl.mod_h; cursor: pointer; role: button; show: collapsed
@@ -2402,11 +2430,15 @@ scene Mooi {
             text "{upper(med.artist)}" { at: tx + 4, fl.cy + 8; anchor: left center; size: 10; family: "Share Tech Mono"
                   width: ws_media - tx - if(slabs, 48, 10); lines: 1; color: fl.muted }
         }
-        on press wave { emit media_cmd(0) }
+        on press wave while open == music { open = none }
+        on press wave while open != music { isl_shelf = false; isl_cx = xs_media + ws_media / 2; open = music; side = none; mark_open = false }
         // A press opens the player (D88); the right press keeps play/pause, the wheel and the
         // slabs stay the transport, and the visualiser still plays and pauses.
-        on press track { emit open_player(0); side = none; mark_open = false; open = none }
-        on press pill { emit open_player(0); side = none; mark_open = false; open = none }
+        // a press opens the music island (D142: ArchEclipse's player, ported); `mooi player` is the full one
+        on press track while open == music { open = none }
+        on press track while open != music { isl_shelf = false; isl_cx = xs_media + ws_media / 2; open = music; side = none; mark_open = false }
+        on press pill while open == music { open = none }
+        on press pill while open != music { isl_shelf = false; isl_cx = xs_media + ws_media / 2; open = music; side = none; mark_open = false }
         // a right press shows the next of its views (media.mode: full → compact → art → visualizer);
         // play/pause is a left press on the visualizer, or a middle press anywhere on it
         on press right track { emit media_view }
@@ -3034,7 +3066,7 @@ scene Mooi {
         // panel is up (they switch panels), and a press inside a panel never reaches it. The
         // overview, the shutter and the Atlas are surfaces of their own (overlay), above this one.
         group {
-            show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power
+            show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music
             zone box dismiss { from: 0, st_res; size: screen.width, popup_surface.height - st_res; role: region; label: "Close the open panel" }
             on press dismiss while qn_open { qn_open = false }
             on press dismiss while mark_open { mark_open = false }
@@ -3042,7 +3074,7 @@ scene Mooi {
             on press dismiss while open == window { open = none }
             on press dismiss while open == system { open = none }
             on press dismiss while open == command { open = none }
-            on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
+            on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music { open = none }
             on press dismiss while stash_pin { stash_pin = false }
         }
 
@@ -4135,6 +4167,96 @@ scene Mooi {
                     IsleBtn(16, 326, 100, "Refresh", if(wxi_busy, 1, 0), wxref.hover)
                     on press wxref { emit wx_refresh }
                     text "open-meteo.com" { at: 324, 338; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
+                }
+            }
+        }
+
+        // ── music_island (D142): ArchEclipse's player — a record turning with the cover as its label
+        // inside a ring of the music's bands, the song, its progress and the transport ──
+        group {
+            move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - 290 - 20), st_res + 6)
+            let mu_x = if(isl_shelf, screen.width - 56 - 440, clamp(isl_cx - 220, 8, screen.width - 448))
+            let mu_on = rv.music > 0.03
+            let isl_music = open == music
+            on change isl_music { emit music_isl(if(isl_music, 1, 0)) }
+            image med_big = from med_art, 160, 160
+            group {
+                show: mu_on
+                move: mu_x, 0
+                IslandFrame(rv.music, 440, 290, tx: if(isl_shelf, -1, isl_cx - mu_x)) {
+                    let acc = if(isl_style > 0.5, accent.primary, fl.phos)
+                    let acc2 = if(isl_style > 0.5, accent.secondary, fl.ember)
+                    let ink = if(isl_style > 0.5, fg.primary, fl.engrave)
+                    let dim = if(isl_style > 0.5, fg.secondary, fl.muted)
+                    zone box keep_music { from: 0, 0; size: 440, 290; role: region; agent: hidden }
+                    IsleHead(440, "Now playing", med_player)
+                    // the ring: 48 spokes, the 16 bands mirrored round the disc
+                    let dcx = 116
+                    let dcy = 162
+                    let dr = 72
+                    repeat sp in 0..48 {
+                        let b = floor(if(sp < 24, sp, 47 - sp) * 16 / 24)
+                        let v = clamp(pick(b, lv0, lv1, lv2, lv3, lv4, lv5, lv6, lv7, lv8, lv9, lv10, lv11, lv12, lv13, lv14, lv15), 0, 1)
+                        let ln = 4 + 24 * v * if(mu_playing, 1, 0.2)
+                        line { from: dcx + sin(sp * 7.5) * (dr + 7), dcy - cos(sp * 7.5) * (dr + 7); to: dcx + sin(sp * 7.5) * (dr + 7 + ln), dcy - cos(sp * 7.5) * (dr + 7 + ln)
+                               width: 3; color: mix(acc, acc2, v); opacity: 0.45 + 0.55 * v }
+                    }
+                    // the record, its grooves, the cover as its label
+                    ellipse { at: dcx, dcy; radius: dr; color: #0d0f11 }
+                    repeat gr in 0..6 { ellipse { at: dcx, dcy; radius: dr * 0.44 + gr * dr * 0.09; stroke: 0.8; color: #262a2f } }
+                    group {
+                        pivot: dcx, dcy
+                        rotate: mu_ang * 1deg
+                        mask: radial dcx, dcy radius dr * 0.42 - 1 to dr * 0.42
+                        box { from: dcx - dr * 0.42, dcy - dr * 0.42; size: dr * 0.84, dr * 0.84; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                        image med_big { at: dcx - dr * 0.42, dcy - dr * 0.42; size: dr * 0.84, dr * 0.84; show: med_has_art }
+                    }
+                    // a sheen that stays put while the record turns under it
+                    arc { at: dcx, dcy; radius: dr * 0.7; width: dr * 0.16; span: 40deg; rotate: -40deg; color: #ffffff; opacity: 0.06 }
+                    ellipse { at: dcx, dcy; radius: dr; stroke: 1.5; color: fl.steel_700 }
+                    ellipse { at: dcx, dcy; radius: 3; color: fl.steel_300 }
+                    // the song
+                    text pick(mu_has, "Nothing playing", mu_title) { at: 214, 62; anchor: left top; size: 18; weight: 700; family: "Exo 2"; color: ink; width: 212; lines: 2 }
+                    text mu_artist { at: 214, 114; anchor: left center; size: 12; family: "Exo 2"; color: acc; width: 212; lines: 1 }
+                    text med_album { at: 214, 134; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim; width: 212; lines: 1 }
+                    // the progress: pressed, it seeks
+                    zone box museek { from: 214, 166; size: 212, 16; cursor: pointer; role: slider; label: "Seek"; show: med_len > 0 }
+                    box { from: 214, 172; size: 212, 3 + museek.hover; corner: 2; color: if(isl_style > 0.5, bg.primary, fl.well) }
+                    group {
+                        glow: 5, (0.6) * st_glow, acc
+                        box { from: 214, 172; size: 212 * med_prg, 3 + museek.hover; corner: 2; color: acc }
+                    }
+                    ellipse { at: 214 + 212 * med_prg, 173.5; radius: 4 + museek.hover; color: acc; show: med_len > 0 }
+                    on press museek { emit med_seek(round(clamp((local.x - 214) / 212, 0, 1) * 999)) }
+                    text med_tpos { at: 214, 192; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim }
+                    text med_tlen { at: 426, 192; anchor: right center; size: 10; family: "Share Tech Mono"; color: dim }
+                    // the transport: shuffle · previous · play or pause · next · repeat
+                    repeat mt in 0..5 {
+                        let bx = 230 + mt * 45
+                        let big = mt == 2
+                        zone box mut { from: bx - 18, 214; size: 36, 36; cursor: pointer; role: button; label: pick(mt, "Shuffle", "Previous", "Play or pause", "Next", "Repeat") }
+                        ellipse { at: bx, 232; radius: if(big, 19, 15); color: if(big, acc, ink); opacity: if(big, 0.95, 0.06 + 0.1 * mut.hover) }
+                        on press mut { emit med_mode(mt) }
+                    }
+                    line { from: 222, 227; to: 238, 237; width: 1.8; color: if(med_shuf, acc, ink) }
+                    line { from: 222, 237; to: 238, 227; width: 1.8; color: if(med_shuf, acc, ink) }
+                    box { from: 268, 226; size: 2, 12; color: ink }
+                    path { color: ink
+                           move 271, 232; line 282, 225; line 282, 239; close }
+                    path { color: fl.hull; show: not mu_playing
+                           move 315, 224; line 327, 232; line 315, 240; close }
+                    box { from: 313, 224; size: 4, 16; color: fl.hull; show: mu_playing }
+                    box { from: 321, 224; size: 4, 16; color: fl.hull; show: mu_playing }
+                    path { color: ink
+                           move 358, 225; line 369, 232; line 358, 239; close }
+                    box { from: 369, 226; size: 2, 12; color: ink }
+                    ellipse { at: 410, 232; radius: 7; stroke: 1.8; color: if(med_loop > 0.5, acc, ink) }
+                    text "1" { at: 410, 232; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: acc; show: med_loop > 1.5 }
+                    IsleRule(440, 258)
+                    zone box mufull { from: 300, 264; size: 126, 22; cursor: pointer; role: button; label: "Open the full player" }
+                    IsleBtn(300, 264, 126, "Full player", 0, mufull.hover, 22)
+                    on press mufull { emit open_player(1); open = none }
+                    text "WHEEL ON THE MODULE: VOLUME" { at: 16, 275; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim; opacity: 0.7 }
                 }
             }
         }
@@ -5615,7 +5737,7 @@ scene Mooi {
     on key Left while open == calendar  { emit cal_shift(0) }
     on key Right while open == calendar { emit cal_shift(2) }
     on key Home while open == calendar  { emit cal_shift(1) }
-    on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power { open = none }
+    on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music { open = none }
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,
     // Ctrl+M, Ctrl+Z, F2, Menu, Shift+F10, Escape — Enter is its submit.

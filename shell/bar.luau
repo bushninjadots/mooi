@@ -406,9 +406,59 @@ return function(ctx)
             end)
         end
     end
+    -- ── the music island (D142): the song as the media service has it, its clock while the island is
+    -- open, shuffle and repeat from playerctl ──
+    local mu = { pos = 0, len = 0, rate = 1, at = 0, open = false }
+    local function mmss(t)
+        t = math.max(0, math.floor((tonumber(t) or 0) + 0.5))
+        if t >= 3600 then return string.format("%d:%02d:%02d", t // 3600, (t // 60) % 60, t % 60) end
+        return string.format("%d:%02d", t // 60, t % 60)
+    end
+    local function mu_show()
+        fact.med_pos, fact.med_len = mu.pos, mu.len
+        text.med_tpos, text.med_tlen = mu.len > 0 and mmss(mu.pos) or "", mu.len > 0 and mmss(mu.len) or ""
+    end
+    local function mu_modes()
+        run("playerctl", { "shuffle" }, function(out, code) if code == 0 then fact.med_shuf = tostring(out):match("On") ~= nil end end)
+        run("playerctl", { "loop" }, function(out, code)
+            if code == 0 then fact.med_loop = tostring(out):match("Track") and 2 or (tostring(out):match("Playlist") and 1 or 0) end
+        end)
+    end
+    every(500, function()
+        if not mu.open or not playing or mu.len <= 0 then return end
+        mu.pos = math.min(mu.len, mu.pos + 0.5 * mu.rate)
+        mu_show()
+    end)
+    on("music_isl", function(v)
+        mu.open = math.floor(tonumber(v) or 0) == 1
+        if mu.open then mu_modes() end
+        if readers then readers() end
+    end)
+    on("med_seek", function(v)
+        if mu.len <= 0 then return end
+        mu.pos = (math.floor(tonumber(v) or 0) / 999) * mu.len
+        run("playerctl", { "position", string.format("%.1f", mu.pos) })
+        mu_show()
+    end)
+    on("med_mode", function(v)
+        v = math.floor(tonumber(v) or 0)
+        if v == 0 then run("playerctl", { "shuffle", "toggle" }, function() mu_modes() end)
+        elseif v == 4 then run("playerctl", { "loop", ({ [0] = "Playlist", "Track", "None" })[math.floor(fact.med_loop or 0)] or "None" }, function() mu_modes() end)
+        else pcall(sys.call, ({ [1] = "media.previous", [2] = "media.toggle", [3] = "media.next" })[v]) end
+    end)
     sys.watch("media", function(m)
         local now = type(m) == "table" and m.playing == true
-        if type(m) == "table" then cover(m.art) end
+        if type(m) == "table" then
+            cover(m.art)
+            local title = type(m.title) == "string" and m.title or ""
+            text.mu_title, text.mu_artist = title, tostring(m.artist or "")
+            text.med_album = string.upper(tostring(m.album or ""))
+            text.med_player = string.upper((tostring(m.player or ""):gsub("^org%.mpris%.MediaPlayer2%.", ""):gsub("%..*$", "")))
+            fact.mu_has, fact.mu_playing = title ~= "", now
+            mu.pos, mu.len, mu.rate = tonumber(m.position) or 0, tonumber(m.length) or 0, tonumber(m.rate) or 1
+            mu_show()
+            if mu.open then mu_modes() end
+        end
         local changed = now ~= playing
         playing = now
         if changed then env.playing = now; relayout() elseif readers then readers() end
@@ -427,7 +477,7 @@ return function(ctx)
         -- about: with frame.music on, cava runs whether or not that module says anything is
         -- playing, so a browser, a game or a video moves the frame too. For the player it runs
         -- only while something plays. Neither runs while the saver is on.
-        want_viz = placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art"
+        want_viz = (placed.media and s.bar.visualizer ~= "off" and s.media.mode ~= "art") or mu.open   -- the music island's ring
         if not want_viz then for i = 0, 15 do fact["lv" .. i] = 0.06; sent[i] = 0.06 end end
         -- the feed file is for the other programs' music panels; it is written only while one is
         -- up to read it (the player; the notch and the Nexus say so with `mooi say … feed`)

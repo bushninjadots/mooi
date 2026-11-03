@@ -4292,3 +4292,27 @@ centred arrangement (`W.desk_layout`). Esc or a press on the desk leaves.
 - the photo's polaroid
 - the calendar's press opening the board
 - BMO's CI line, which needs a failing run
+
+## D142 · 2026-11-03 · The music island: ArchEclipse's player, from the bar
+**Asked for** (in the notes): "change music player for the one i made in archeclipse that comes out
+from the bar". The source is ArchEclipse's `MprisIsland.qml`
+(`~/.local/state/mooi/archive-2026-10-21-archeclipse.tar.gz`).
+
+**Ported as an island of the bar** (`open == music`, the island kit D97, both styles):
+- a record turning (`spin`) with the cover as its label, inside a ring of 48 spokes made from the
+  bar's 16 bands, mirrored
+- the title, artist and album
+- a seekable progress bar with its times
+- shuffle · previous · play · next · repeat (`playerctl`)
+- **Full player**, which opens `mooi player`
+
+**Opening it:** a press on the media module (its title, its pill, or its visualiser in the compact
+mode) opens it. A middle press still plays or pauses, and the wheel is still the volume.
+
+**Feeds:**
+- `bar.luau` keeps the bands coming while the island is open (`music_isl`).
+- The island reads the song from facts (`mu_*`, `med_*`); the `med` service is not visible from
+  the popup surface.
+- The position ticks every 500 ms while the island is open.
+
+**Left out:** ArchEclipse's 10-band EQ. The full player keeps its EasyEffects EQ.
