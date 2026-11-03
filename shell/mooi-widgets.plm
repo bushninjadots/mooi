@@ -576,6 +576,9 @@ scene Widgets {
     fact wg_oop = 1
     fact wg_olk = false
     fact wg_pcol = false         // the panel folded to its header
+    fact wg_pbx = 0              // where the panel was when its header was pressed
+    fact wg_pby = 0
+    fact wg_osc = 0.5            // the chosen widget's size between its layout's least and most
     text wg_readout = ""
     text wg_note = ""
     // the marquee: pressed here, pulled this far
@@ -675,11 +678,11 @@ scene Widgets {
                 show: editing or (w.st < 1.5 and fo > 0.01)
                 move: ox, oy
                 group { show: w.kind < 0.5 and w.lay < 0.5
-                        wg.Sleeve(w.x, w.y, w.w, w.h, w.u, w.lyr, w.prog, w.plate, k, hv) }
+                        wg.Sleeve(w.x, w.y, w.w, w.h, w.u, w.lyr, w.prog, w.plate, k, hv, w.txt) }
                 group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
-                        wg.LyricStage(w.x, w.y, w.w, w.h, w.u, w.plate, k, hv) }
+                        wg.LyricStage(w.x, w.y, w.w, w.h, w.u, w.plate, k, hv, w.txt) }
                 group { show: w.kind < 0.5 and w.lay > 1.5
-                        wg.Record(w.x, w.y, w.w, w.h, w.u, w.plate, w.prog, k, hv) }
+                        wg.Record(w.x, w.y, w.w, w.h, w.u, w.plate, w.prog, k, hv, w.txt) }
             }
             group { show: w.st > 2.5 and not editing
                     wg.Marker(w.x, w.y, w.u, k) }

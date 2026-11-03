@@ -90,7 +90,7 @@ library Widgets {
     }
 
     // A: the sleeve — the cover, then the title, the artist, the line being sung and the progress.
-    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool, k: number, hv: number) {
+    component Sleeve(x: number, y: number, w: number, h: number, u: number, lyr: bool, prog: bool, plate: bool, k: number, hv: number, tx: number = 1) {
         size: w, h
         let pad = 14 * u
         let cs = h - 2 * pad
@@ -98,13 +98,13 @@ library Widgets {
         let tw = max(10, x + w - pad - tx)
         Ground(x, y, w, h, u, plate)
         Cover(x + pad, y + pad, cs, u)
-        text pick(np_has, "NOTHING PLAYING", np_title) { at: tx, y + pad + 12 * u; anchor: left center; size: 20 * u; weight: 700; family: "Exo 2"
+        text pick(np_has, "NOTHING PLAYING", np_title) { at: tx, y + pad + 12 * u; anchor: left center; size: 20 * u * tx; weight: 700; family: "Exo 2"
               width: tw; lines: 1; color: fl.engrave }
-        text np_artist { at: tx, y + pad + 36 * u; anchor: left center; size: 12 * u; family: "Share Tech Mono"; width: tw; lines: 1; color: fl.trace_lit }
+        text np_artist { at: tx, y + pad + 36 * u; anchor: left center; size: 12 * u * tx; family: "Share Tech Mono"; width: tw; lines: 1; color: fl.trace_lit }
         group {
             show: lyr and np_sung
             opacity: np_lf
-            text np_line { at: tx, y + pad + 64 * u; anchor: left center; size: 14 * u; family: "Exo 2"; width: tw; lines: 1; color: fl.phos }
+            text np_line { at: tx, y + pad + 64 * u; anchor: left center; size: 14 * u * tx; family: "Exo 2"; width: tw; lines: 1; color: fl.phos }
         }
         group { show: prog and np_has
                 Progress(tx, y + h - pad - 1 * u, tw, u, k, hv) }
@@ -114,31 +114,31 @@ library Widgets {
 
     // B: the lyric stage — the line being sung large and centred, the ones either side faded, the
     // cover and the title as a caption. Without synced lyrics, the title takes the stage.
-    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool, k: number, hv: number) {
+    component LyricStage(x: number, y: number, w: number, h: number, u: number, plate: bool, k: number, hv: number, tx: number = 1) {
         size: w, h
         let cx = x + w / 2
         let lw = w - 64 * u
         let sung = np_sung
         Ground(x, y, w, h, u, plate)
-        text np_prev { at: cx, y + h * 0.2; anchor: center; align: center; size: 17 * u; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
+        text np_prev { at: cx, y + h * 0.2; anchor: center; align: center; size: 17 * u * tx; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
         group {
             opacity: if(sung, np_lf, 1)
-            text np_line { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u; weight: 600; family: "Exo 2"
+            text np_line { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u * tx; weight: 600; family: "Exo 2"
                   width: lw; lines: 2; color: fl.engrave; show: sung }
-            text pick(np_has, "NOTHING PLAYING", np_title) { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u; weight: 600; family: "Exo 2"
+            text pick(np_has, "NOTHING PLAYING", np_title) { at: cx, y + h * 0.48; anchor: center; align: center; size: 34 * u * tx; weight: 600; family: "Exo 2"
                   width: lw; lines: 2; color: fl.engrave; show: not sung }
         }
-        text np_next { at: cx, y + h * 0.76; anchor: center; align: center; size: 17 * u; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
+        text np_next { at: cx, y + h * 0.76; anchor: center; align: center; size: 17 * u * tx; family: "Exo 2"; width: lw; lines: 1; color: fl.trace_lit; opacity: 0.45; show: sung }
         Cover(x + 16 * u, y + h - 44 * u, 28 * u, u)
         CoverZone(x + 16 * u, y + h - 44 * u, 28 * u, 28 * u, k)
         Controls(x + w - 64 * u, y + h - 30 * u, u * 0.8, k, hv)
-        text "{np_title}  ·  {np_artist}" { at: x + 52 * u, y + h - 30 * u; anchor: left center; size: 11 * u; family: "Share Tech Mono"
+        text "{np_title}  ·  {np_artist}" { at: x + 52 * u, y + h - 30 * u; anchor: left center; size: 11 * u * tx; family: "Share Tech Mono"
               width: w - 72 * u; lines: 1; color: fl.muted; show: np_has and sung }
     }
 
     // C: the record — the cover as its label, turning at 33⅓ while it plays, the tonearm on the
     // song; the title and the artist under it.
-    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool, prog: bool, k: number, hv: number) {
+    component Record(x: number, y: number, w: number, h: number, u: number, plate: bool, prog: bool, k: number, hv: number, tx: number = 1) {
         size: w, h
         let r = w * 0.44
         let rcx = x + w / 2
@@ -167,9 +167,9 @@ library Widgets {
             line { from: px, py; to: px, py + r * 1.05; width: 3 * u; color: fl.steel_300 }
             line { from: px, py + r * 1.05; to: px - 7 * u, py + r * 1.2; width: 3 * u; color: fl.steel_300 }
         }
-        text pick(np_has, "NOTHING PLAYING", np_title) { at: rcx, y + w + 16 * u; anchor: center; align: center; size: 17 * u; weight: 700; family: "Exo 2"
+        text pick(np_has, "NOTHING PLAYING", np_title) { at: rcx, y + w + 16 * u; anchor: center; align: center; size: 17 * u * tx; weight: 700; family: "Exo 2"
               width: w - 16 * u; lines: 1; color: fl.engrave }
-        text np_artist { at: rcx, y + w + 40 * u; anchor: center; align: center; size: 11 * u; family: "Share Tech Mono"; width: w - 16 * u; lines: 1; color: fl.trace_lit }
+        text np_artist { at: rcx, y + w + 40 * u; anchor: center; align: center; size: 11 * u * tx; family: "Share Tech Mono"; width: w - 16 * u; lines: 1; color: fl.trace_lit }
         group { show: prog and np_has
                 Progress(x + 24 * u, y + w + 60 * u, w - 48 * u, u, k, hv) }
         CoverZone(rcx - rl, rcy - rl, rl * 2, rl * 2, k)
@@ -191,54 +191,216 @@ library Widgets {
 
     // The options beside the chosen widget: its layout or mode, what it does at rest, its
     // switches, and duplicate / remove. `k` is its slot; the logic says what is chosen.
+    // A slider: a track, a thumb and its value; pressed or pulled it sends where (0 … 999), live,
+    // and its letting go saves it. `which` is the logic's (mooi-widgets.luau wg_slide).
+    component WSlider(x: number, y: number, w: number, word: text, shown: text, f: number, k: number, which: number) {
+        size: w, 24
+        let tx = x + 78
+        let tw = w - 78 - 52
+        text word { at: x, y + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 74; lines: 1 }
+        zone box sz { from: tx - 6, y; size: tw + 12, 24; cursor: pointer; role: slider; label: word }
+        box { from: tx, y + 11; size: tw, 2; corner: 1; color: fl.trace_dim }
+        box { from: tx, y + 11; size: tw * clamp(f, 0, 1), 2; corner: 1; color: fl.phos }
+        ellipse { at: tx + tw * clamp(f, 0, 1), y + 12; radius: 5 + sz.hover; color: fl.phos }
+        text shown { at: x + w, y + 12; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.engrave; width: 48; lines: 1; align: right }
+        on press sz { emit wg_slide(k * 10000 + which * 1000 + round(clamp((local.x - tx) / tw, 0, 1) * 999)) }
+        on drag sz { emit wg_slide(k * 10000 + which * 1000 + round(clamp((local.x - tx) / tw, 0, 1) * 999)) }
+        on release sz { emit wg_slid }
+        on scroll sz { emit wg_slide(k * 10000 + which * 1000 + round(clamp(f + if(wheel > 0, 0.04, -0.04), 0, 1) * 999))
+                       emit wg_slid }
+    }
+
+    // The options of the chosen widget (D138): dragged by its header, folded with ⌄; its layout
+    // or mode as live thumbnails, sliders, what it does at rest, its switches, where it is.
     component Panel(x: number, y: number, k: number) {
-        size: 248, 286
+        size: 320, 520
         let base = k * 1000
-        // the rows: at rest, then the switches, lower for the visualiser (its twelve modes take three rows)
-        let ry = if(wg_sk > 0.5, 146, 90)
-        let sy = if(wg_sk > 0.5, 194, 138)
-        box { from: x, y; size: 248, 286; corner: 6; color: fl.hull; opacity: 0.94 }
-        box { from: x, y; size: 248, 286; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
-        text pick(wg_sk < 0.5, "VISUALISER", "NOW PLAYING") { at: x + 12, y + 18; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        let vis = wg_sk > 0.5
+        let sy = if(vis, 186, 122)               // the sliders
+        let ns = if(vis, 6, 3)
+        let ry = sy + ns * 30 + 8                 // at rest
+        let wy = ry + 44                          // the switches
+        let ay = wy + if(vis, 40, 70)             // where, and the actions
+        let ph = if(wg_pcol, 30, ay + 72)
+        box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
+        box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+        // the header: its title, the fold, and the handle that carries the panel
+        zone box phd { from: x, y; size: 284, 30; cursor: grab; role: button; label: "Move the options" }
+        on press phd { wg_pbx = x; wg_pby = y }
+        on drag phd { emit wg_pmove(round(clamp(wg_pbx + drag.dx, 0, 4095)) * 4096 + round(clamp(wg_pby + drag.dy, 0, 4095))) }
+        text pick(vis, "NOW PLAYING", "VISUALISER") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        text "{wg_nsel} CHOSEN · THESE ARE THE LAST ONE'S" { at: x + 120, y + 16; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: wg_nsel > 1 }
+        zone box pfo { from: x + 288, y + 4; size: 26, 22; cursor: pointer; role: button; label: "Fold the options" }
+        text pick(wg_pcol, "⌄", "›") { at: x + 301, y + 15; anchor: center; align: center; size: 14; family: "Exo 2"; color: fl.engrave }
+        on press pfo { wg_pcol = not wg_pcol }
         group {
-            show: wg_sk < 0.5
-            text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-            Chip(x + 12, y + 52, 70, "SLEEVE", wg_sl < 0.5, base + 100)
-            Chip(x + 89, y + 52, 70, "LYRICS", wg_sl > 0.5 and wg_sl < 1.5, base + 101)
-            Chip(x + 166, y + 52, 70, "RECORD", wg_sl > 1.5, base + 102)
-            text "SWITCHES" { at: x + 12, y + sy; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-            Chip(x + 12, y + sy + 10, 108, "LYRIC LINE", wg_o3, base + 300 + if(wg_o3, 0, 1))
-            Chip(x + 128, y + sy + 10, 108, "PROGRESS", wg_o4, base + 400 + if(wg_o4, 0, 1))
-            Chip(x + 12, y + sy + 40, 108, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
-            Chip(x + 128, y + sy + 40, 108, "WHEEL VOLUME", wg_o6, base + 600 + if(wg_o6, 0, 1))
+            show: not wg_pcol
+            // 1 · the layout, or the mode, as live thumbnails
+            group {
+                show: not vis
+            group {
+                zone box tc0 { from: x + 12, y + 36; size: 96, 76; cursor: pointer; role: button; label: "Sleeve" }
+                box { from: x + 12, y + 36; size: 96, 76; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 12, y + 36; size: 96, 76; corner: 4; stroke: if(wg_sl == 0, 1.6, 1); color: if(wg_sl == 0, fl.phos, mix(fl.trace_dim, fl.trace_lit, tc0.hover)) }
+                Sleeve(x + 12 + 4, y + 42, 88, 31, 0.2, true, true, false, k, 0)
+                text "SLEEVE" { at: x + 12 + 48, y + 104; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sl == 0, fl.phos, fl.muted) }
+                on press tc0 { emit wg_opt(base + 100 + 0) }
+            }
+            group {
+                zone box tc1 { from: x + 112, y + 36; size: 96, 76; cursor: pointer; role: button; label: "Lyrics" }
+                box { from: x + 112, y + 36; size: 96, 76; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 112, y + 36; size: 96, 76; corner: 4; stroke: if(wg_sl == 1, 1.6, 1); color: if(wg_sl == 1, fl.phos, mix(fl.trace_dim, fl.trace_lit, tc1.hover)) }
+                LyricStage(x + 112 + 4, y + 42, 88, 22, 0.092, false, k, 0)
+                text "LYRICS" { at: x + 112 + 48, y + 104; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sl == 1, fl.phos, fl.muted) }
+                on press tc1 { emit wg_opt(base + 100 + 1) }
+            }
+            group {
+                zone box tc2 { from: x + 212, y + 36; size: 96, 76; cursor: pointer; role: button; label: "Record" }
+                box { from: x + 212, y + 36; size: 96, 76; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 212, y + 36; size: 96, 76; corner: 4; stroke: if(wg_sl == 2, 1.6, 1); color: if(wg_sl == 2, fl.phos, mix(fl.trace_dim, fl.trace_lit, tc2.hover)) }
+                Record(x + 212 + 26, y + 40, 44, 56, 0.157, false, false, k, 0)
+                text "RECORD" { at: x + 212 + 48, y + 104; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sl == 2, fl.phos, fl.muted) }
+                on press tc2 { emit wg_opt(base + 100 + 2) }
+            }
+            }
+            group {
+                show: vis
+            group {
+                zone box th0 { from: x + 12, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Spectrum" }
+                box { from: x + 12, y + 36 + 0 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 12, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 0, 1.6, 1); color: if(wg_sm == 0, fl.phos, mix(fl.trace_dim, fl.trace_lit, th0.hover)) }
+                Visualiser(x + 12 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 0, 0, false)
+                text "SPECTRUM" { at: x + 12 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 0, fl.phos, fl.muted) }
+                on press th0 { emit wg_opt(base + 100 + 0) }
+            }
+            group {
+                zone box th1 { from: x + 88, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Mirror" }
+                box { from: x + 88, y + 36 + 0 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 88, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 1, 1.6, 1); color: if(wg_sm == 1, fl.phos, mix(fl.trace_dim, fl.trace_lit, th1.hover)) }
+                Visualiser(x + 88 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 1, 0, false)
+                text "MIRROR" { at: x + 88 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 1, fl.phos, fl.muted) }
+                on press th1 { emit wg_opt(base + 100 + 1) }
+            }
+            group {
+                zone box th2 { from: x + 164, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Ring" }
+                box { from: x + 164, y + 36 + 0 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 164, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 2, 1.6, 1); color: if(wg_sm == 2, fl.phos, mix(fl.trace_dim, fl.trace_lit, th2.hover)) }
+                Visualiser(x + 164 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 2, 0, false)
+                text "RING" { at: x + 164 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 2, fl.phos, fl.muted) }
+                on press th2 { emit wg_opt(base + 100 + 2) }
+            }
+            group {
+                zone box th3 { from: x + 240, y + 36 + 0 * 48; size: 72, 44; cursor: pointer; role: button; label: "Aurora" }
+                box { from: x + 240, y + 36 + 0 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 240, y + 36 + 0 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 3, 1.6, 1); color: if(wg_sm == 3, fl.phos, mix(fl.trace_dim, fl.trace_lit, th3.hover)) }
+                Visualiser(x + 240 + 4, y + 36 + 0 * 48 + 3, 64, 28, 0.15, 3, 0, false)
+                text "AURORA" { at: x + 240 + 36, y + 36 + 0 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 3, fl.phos, fl.muted) }
+                on press th3 { emit wg_opt(base + 100 + 3) }
+            }
+            group {
+                zone box th4 { from: x + 12, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Led" }
+                box { from: x + 12, y + 36 + 1 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 12, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 4, 1.6, 1); color: if(wg_sm == 4, fl.phos, mix(fl.trace_dim, fl.trace_lit, th4.hover)) }
+                Visualiser(x + 12 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 4, 0, false)
+                text "LED" { at: x + 12 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 4, fl.phos, fl.muted) }
+                on press th4 { emit wg_opt(base + 100 + 4) }
+            }
+            group {
+                zone box th5 { from: x + 88, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Orbit" }
+                box { from: x + 88, y + 36 + 1 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 88, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 5, 1.6, 1); color: if(wg_sm == 5, fl.phos, mix(fl.trace_dim, fl.trace_lit, th5.hover)) }
+                Visualiser(x + 88 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 5, 0, false)
+                text "ORBIT" { at: x + 88 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 5, fl.phos, fl.muted) }
+                on press th5 { emit wg_opt(base + 100 + 5) }
+            }
+            group {
+                zone box th6 { from: x + 164, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Scope" }
+                box { from: x + 164, y + 36 + 1 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 164, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 6, 1.6, 1); color: if(wg_sm == 6, fl.phos, mix(fl.trace_dim, fl.trace_lit, th6.hover)) }
+                Visualiser(x + 164 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 6, 0, false)
+                text "SCOPE" { at: x + 164 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 6, fl.phos, fl.muted) }
+                on press th6 { emit wg_opt(base + 100 + 6) }
+            }
+            group {
+                zone box th7 { from: x + 240, y + 36 + 1 * 48; size: 72, 44; cursor: pointer; role: button; label: "Horizon" }
+                box { from: x + 240, y + 36 + 1 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 240, y + 36 + 1 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 7, 1.6, 1); color: if(wg_sm == 7, fl.phos, mix(fl.trace_dim, fl.trace_lit, th7.hover)) }
+                Visualiser(x + 240 + 4, y + 36 + 1 * 48 + 3, 64, 28, 0.15, 7, 0, false)
+                text "HORIZON" { at: x + 240 + 36, y + 36 + 1 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 7, fl.phos, fl.muted) }
+                on press th7 { emit wg_opt(base + 100 + 7) }
+            }
+            group {
+                zone box th8 { from: x + 12, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Dust" }
+                box { from: x + 12, y + 36 + 2 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 12, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 8, 1.6, 1); color: if(wg_sm == 8, fl.phos, mix(fl.trace_dim, fl.trace_lit, th8.hover)) }
+                Visualiser(x + 12 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 8, 0, false)
+                text "DUST" { at: x + 12 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 8, fl.phos, fl.muted) }
+                on press th8 { emit wg_opt(base + 100 + 8) }
+            }
+            group {
+                zone box th9 { from: x + 88, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Ripple" }
+                box { from: x + 88, y + 36 + 2 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 88, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 9, 1.6, 1); color: if(wg_sm == 9, fl.phos, mix(fl.trace_dim, fl.trace_lit, th9.hover)) }
+                Visualiser(x + 88 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 9, 0, false)
+                text "RIPPLE" { at: x + 88 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 9, fl.phos, fl.muted) }
+                on press th9 { emit wg_opt(base + 100 + 9) }
+            }
+            group {
+                zone box th10 { from: x + 164, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Skyline" }
+                box { from: x + 164, y + 36 + 2 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 164, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 10, 1.6, 1); color: if(wg_sm == 10, fl.phos, mix(fl.trace_dim, fl.trace_lit, th10.hover)) }
+                Visualiser(x + 164 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 10, 0, false)
+                text "SKYLINE" { at: x + 164 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 10, fl.phos, fl.muted) }
+                on press th10 { emit wg_opt(base + 100 + 10) }
+            }
+            group {
+                zone box th11 { from: x + 240, y + 36 + 2 * 48; size: 72, 44; cursor: pointer; role: button; label: "Liquid" }
+                box { from: x + 240, y + 36 + 2 * 48; size: 72, 44; corner: 4; color: fl.ground; opacity: 0.8 }
+                box { from: x + 240, y + 36 + 2 * 48; size: 72, 44; corner: 4; stroke: if(wg_sm == 11, 1.6, 1); color: if(wg_sm == 11, fl.phos, mix(fl.trace_dim, fl.trace_lit, th11.hover)) }
+                Visualiser(x + 240 + 4, y + 36 + 2 * 48 + 3, 64, 28, 0.15, 11, 0, false)
+                text "LIQUID" { at: x + 240 + 36, y + 36 + 2 * 48 + 38; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: if(wg_sm == 11, fl.phos, fl.muted) }
+                on press th11 { emit wg_opt(base + 100 + 11) }
+            }
+            }
+            // 2 · sliders
+            WSlider(x + 12, y + sy, 296, "OPACITY", "{round(wg_oop * 100)}%", (wg_oop - 0.3) / 0.7, k, 1)
+            WSlider(x + 12, y + sy + 30, 296, "SCALE", "{round(wg_osc * 100)}%", wg_osc, k, 7)
+            group {
+                show: not vis
+                WSlider(x + 12, y + sy + 60, 296, "TEXT", "{round(wg_otx * 100)}%", (wg_otx - 0.8) / 0.6, k, 6)
+            }
+            group {
+                show: vis
+                WSlider(x + 12, y + sy + 60, 296, "BARS", "{round(wg_ob)}", (wg_ob - 16) / 112, k, 2)
+                WSlider(x + 12, y + sy + 90, 296, "GLOW", "{round(wg_og * 100)}%", wg_og, k, 3)
+                WSlider(x + 12, y + sy + 120, 296, "GAP", "{round(wg_ogap * 100)}%", wg_ogap / 0.6, k, 4)
+                WSlider(x + 12, y + sy + 150, 296, "SMOOTHING", "{round(wg_osm * 100)}%", wg_osm, k, 5)
+            }
+            // 3 · at rest
+            text "AT REST" { at: x + 12, y + ry; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            Chip(x + 12, y + ry + 10, 96, "HIDE", wg_si < 0.5, base + 200)
+            Chip(x + 112, y + ry + 10, 96, "REST", wg_si > 0.5 and wg_si < 1.5, base + 201)
+            Chip(x + 212, y + ry + 10, 96, "MARKER", wg_si > 1.5, base + 202)
+            // 4 · switches
+            group {
+                show: not vis
+                Chip(x + 12, y + wy, 144, "LYRIC LINE", wg_o3, base + 300 + if(wg_o3, 0, 1))
+                Chip(x + 164, y + wy, 144, "PROGRESS", wg_o4, base + 400 + if(wg_o4, 0, 1))
+                Chip(x + 12, y + wy + 30, 144, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+                Chip(x + 164, y + wy + 30, 144, "WHEEL VOLUME", wg_o6, base + 600 + if(wg_o6, 0, 1))
+            }
+            group {
+                show: vis
+                Chip(x + 12, y + wy, 96, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+                Chip(x + 112, y + wy, 96, "PEAKS", wg_o7, base + 700 + if(wg_o7, 0, 1))
+                Chip(x + 212, y + wy, 96, "REFLECTION", wg_o8, base + 800 + if(wg_o8, 0, 1))
+            }
+            // 5 · where it is, and what can be done to it
+            text wg_readout { at: x + 12, y + ay + 8; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.engrave; width: 296; lines: 1 }
+            Chip(x + 12, y + ay + 24, 96, pick(wg_olk, "LOCK", "UNLOCK"), wg_olk, base + 903)
+            Chip(x + 112, y + ay + 24, 96, "DUPLICATE", false, base + 901)
+            Chip(x + 212, y + ay + 24, 96, "REMOVE", false, base + 902)
         }
-        group {
-            show: wg_sk > 0.5
-            text "MODE" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-            Chip(x + 12, y + 52, 52, "SPECTRUM", wg_sm < 0.5, base + 100)
-            Chip(x + 69, y + 52, 52, "MIRROR", wg_sm > 0.5 and wg_sm < 1.5, base + 101)
-            Chip(x + 126, y + 52, 52, "RING", wg_sm > 1.5 and wg_sm < 2.5, base + 102)
-            Chip(x + 183, y + 52, 52, "AURORA", wg_sm > 2.5 and wg_sm < 3.5, base + 103)
-            Chip(x + 12, y + 80, 52, "LED", wg_sm > 3.5 and wg_sm < 4.5, base + 104)
-            Chip(x + 69, y + 80, 52, "ORBIT", wg_sm > 4.5 and wg_sm < 5.5, base + 105)
-            Chip(x + 126, y + 80, 52, "SCOPE", wg_sm > 5.5 and wg_sm < 6.5, base + 106)
-            Chip(x + 183, y + 80, 52, "HORIZON", wg_sm > 6.5 and wg_sm < 7.5, base + 107)
-            Chip(x + 12, y + 108, 52, "DUST", wg_sm > 7.5 and wg_sm < 8.5, base + 108)
-            Chip(x + 69, y + 108, 52, "RIPPLE", wg_sm > 8.5 and wg_sm < 9.5, base + 109)
-            Chip(x + 126, y + 108, 52, "SKYLINE", wg_sm > 9.5 and wg_sm < 10.5, base + 110)
-            Chip(x + 183, y + 108, 52, "LIQUID", wg_sm > 10.5, base + 111)
-            text "LOOK" { at: x + 12, y + sy; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-            Chip(x + 12, y + sy + 10, 108, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
-            Chip(x + 128, y + sy + 10, 26, "−", false, base + 800 + max(0, round(wg_og * 10) - 2))
-            text "GLOW {round(wg_og * 100)}%" { at: x + 182, y + sy + 22; anchor: center; align: center; size: 9; family: "Share Tech Mono"; width: 56; lines: 1; color: fl.engrave }
-            Chip(x + 210, y + sy + 10, 26, "+", false, base + 800 + min(10, round(wg_og * 10) + 2))
-        }
-        text "AT REST" { at: x + 12, y + ry; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-        Chip(x + 12, y + ry + 10, 70, "HIDE", wg_si < 0.5, base + 200)
-        Chip(x + 89, y + ry + 10, 70, "REST", wg_si > 0.5 and wg_si < 1.5, base + 201)
-        Chip(x + 166, y + ry + 10, 70, "MARKER", wg_si > 1.5, base + 202)
-        Chip(x + 12, y + 248, 108, "DUPLICATE", false, base + 901)
-        Chip(x + 128, y + 248, 108, "REMOVE", false, base + 902)
     }
 
     // The visualiser: one of the twelve (lib/widgets MODES), in the palette's two signal colours,

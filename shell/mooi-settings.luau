@@ -549,6 +549,7 @@ local function show_widgets(d)
             kind = vis and 1 or 0,
             choice = vis and W.MODE_INDEX[w.mode] or W.LAYOUT_INDEX[w.layout] or 0,
             idle = W.IDLE_INDEX[w.idle] or 1,
+            opa = w.opacity or 1, bars = tonumber((w.options or {}).bars) or 64,
         }
     end
     model.sw_list = rows
@@ -577,6 +578,15 @@ on("sw_remove", function(v)
     local d = wdoc()
     local w = d.widgets[math.floor(tonumber(v) or -1) + 1]
     if w then write_widgets(W.remove(d, w.id)) end
+end)
+on("sw_slide", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local code, val = math.floor(v / 1000), v % 1000
+    local d = wdoc()
+    local w = d.widgets[math.floor(code / 10) + 1]
+    if not w then return end
+    if code % 10 == 1 then write_widgets(W.set_field(d, w.id, "opacity", 0.3 + val / 100))
+    elseif code % 10 == 2 then write_widgets(W.set_option(d, w.id, "bars", 16 + val)) end
 end)
 on("sw_add", function(v)
     local d, id = W.add(wdoc(), math.floor(tonumber(v) or 0) == 1 and "visualiser" or "nowplaying", WROOM)

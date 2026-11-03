@@ -653,11 +653,11 @@ library FerrolumeParts {
     // One desktop widget (Settings → Widgets): what it is and where, its layout or mode, what it does
     // at rest, and ×. The logic fills sw_list from widgets.json.
     component SWidget(m: record, y0: number) {
-        size: 864, 56
-        let y = y0 + m.index * 64
+        size: 864, 88
+        let y = y0 + m.index * 96
         let r = m.index
-        box { from: 274, y; size: 864, 56; corner: 5; color: fl.ground; opacity: 0.6 }
-        box { from: 274, y; size: 864, 56; corner: 5; stroke: 1; color: fl.steel_700 }
+        box { from: 274, y; size: 864, 88; corner: 5; color: fl.ground; opacity: 0.6 }
+        box { from: 274, y; size: 864, 88; corner: 5; stroke: 1; color: fl.steel_700 }
         text m.name { at: 292, y + 19; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.phos }
         text m.detail { at: 292, y + 39; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 300; lines: 1 }
         group {
@@ -676,6 +676,14 @@ library FerrolumeParts {
         SWPick(926, y + 16, 66, "REST", m.idle > 0.5 and m.idle < 1.5, sw_idle, r * 10 + 1)
         SWPick(996, y + 16, 76, "MARKER", m.idle > 1.5, sw_idle, r * 10 + 2)
         SWPick(1092, y + 16, 30, "×", false, sw_remove, r)
+        // the two most used: opacity, and a visualiser's bars (row · 10 + 1 opacity · 2 bars)
+        text "OPACITY" { at: 292, y + 66; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+        SSlider(360, y + 52, 180, round((m.opa - 0.3) * 100), 70, sw_slide, r * 10 + 1, "Opacity", "{round(m.opa * 100)}%")
+        group {
+            show: m.kind > 0.5
+            text "BARS" { at: 640, y + 66; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            SSlider(690, y + 52, 260, m.bars - 16, 112, sw_slide, r * 10 + 2, "Bars", "{round(m.bars)}")
+        }
     }
     // A line of the log.
     component SLogLine(l: record, y0: number) {

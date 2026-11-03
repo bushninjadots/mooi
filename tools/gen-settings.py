@@ -497,9 +497,9 @@ def row_lines(r, y, first, reverted):
         return lines, "(12 + max(1, dp_list.count) * 60)"
     if k == "widgets":
         lines.append(f'for m in sw_list {{ SWidget(m, {y + 6}) }}')
-        lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 64, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)')
-        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 64, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8)')
-        return lines, "(60 + sw_list.count * 64)"
+        lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 8)')
+        lines.append(f'SButton({TX + 180}, {y + 14} + sw_list.count * 96, 150, "+ Visualiser", sw_add, 1, false, sw_list.count < 8)')
+        return lines, "(60 + sw_list.count * 96)"
     if k == "log":
         lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
         lines.append(f'for l in adv_log {{ SLogLine(l, {y + 18}) }}')
@@ -926,11 +926,12 @@ def main():
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
-    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number }
+    model sw_list max 8 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number }
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
     event sw_add ->           // to the logic: 0 now playing · 1 visualiser
+    event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""
     fact pw_ppd = false       // power-profiles-daemon answers

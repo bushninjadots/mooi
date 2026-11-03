@@ -291,7 +291,7 @@ local function panel()
     local w = doc.widgets[k + 1]
     if not w then fact.wg_sel = -1; return end
     if panel_at then fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
-    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, 420, room) end
+    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, w.kind == "visualiser" and 530 or 406, room) end
     local o = w.options or {}
     fact.wg_sk = w.kind == "visualiser" and 1 or 0
     fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
@@ -303,6 +303,9 @@ local function panel()
     fact.wg_ob, fact.wg_ogap, fact.wg_osm = tonumber(o.bars) or 64, tonumber(o.gap) or 0.3, tonumber(o.smooth) or 0.5
     fact.wg_otx, fact.wg_oop, fact.wg_olk = tonumber(o.text) or 1, w.opacity or 1, w.locked == true
     text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
+    local L = W.LAYOUTS[W.layout_of(w)]
+    local maxw = L.max and L.max[1] or room.w
+    fact.wg_osc = maxw > L.min[1] and math.max(0, math.min(1, (w.w - L.min[1]) / (maxw - L.min[1]))) or 0
 end
 -- the selection's count and the panel's widget (the last one chosen)
 local function show_selection()
