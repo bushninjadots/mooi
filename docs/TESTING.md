@@ -103,7 +103,7 @@ Not exercised: the Mission shape on a second monitor, a hand resting in a hot co
 
 ## Not tested yet
 
-Launching an app from the membrane (manual check 1: tests never start real apps); takeover end to end (blocked, see SWITCHING.md); multi-monitor with real hardware (the LG is not connected — see the live checks below for what a virtual output covered); fullscreen apps over the bar; a screen narrower than the machine's 1152 px (the bar runs past the right edge rather than giving something up); the Signal Loom live (a notice arriving, a time-out, snooze/shelve, the Field's keys — `lib/signals` is unit-tested, the scene only compiled); settings changed mid-animation; input-to-visible latency; and a long-session memory trend. In the Atlas, a window moving between workspaces while the move strip is open is not covered, and neither is a move onto the workspace the window already occupies.
+Launching an app from the membrane (manual check 1: tests never start real apps); multi-monitor with real hardware (the LG is not connected — see the live checks below for what a virtual output covered); fullscreen apps over the bar; a screen narrower than the machine's 1152 px (the bar runs past the right edge rather than giving something up); the Signal Loom live (a notice arriving, a time-out, snooze/shelve, the Field's keys — `lib/signals` is unit-tested, the scene only compiled); settings changed mid-animation; input-to-visible latency; and a long-session memory trend. In the Atlas, a window moving between workspaces while the move strip is open is not covered, and neither is a move onto the workspace the window already occupies.
 
 ## Screens, checked live (2026-10-21)
 

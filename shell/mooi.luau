@@ -24,7 +24,7 @@ local KNOWN_GOOD = "settings.known-good.json"
 -- Safe mode (the tests run it) never writes the real settings file: a run that
 -- toggles something must not become the user's settings.
 local safe_mode = sys.ask("env", "MOOI_SAFE") == "1"
--- Run by the keeper (bin/mooi start / takeover), which also runs the theme watch.
+-- Run by the keeper (bin/mooi session), which also runs the theme watch.
 local kept = (sys.ask("env", "MOOI_MODE") or "") ~= ""
 -- settings.json as this program last read or wrote it: what a save diffs against, so only what
 -- the bar changed is written over whatever another program wrote in the meantime (lib/settingsfile).
@@ -1687,8 +1687,8 @@ on("toggle_theme", function()
     apply_theme("asked from the bar")
 end)
 
--- Re-extract the palette now, the way the settings say. Under the keeper (`mooi start` /
--- `takeover`) the theme watch does it: it follows these settings as well as the wallpaper and
+-- Re-extract the palette now, the way the settings say. Under the keeper (`mooi session`)
+-- the theme watch does it: it follows these settings as well as the wallpaper and
 -- holds the lock every Matugen run takes, so two runs never write the palette at once (a half
 -- palette is refused whole and the bar would look stuck). A bare `mooi run` has no watch, so
 -- it runs Matugen itself. Either way the palette watch repaints.

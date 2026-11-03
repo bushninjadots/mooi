@@ -3388,7 +3388,7 @@ scene Mooi {
                     SKeys(700, 712, pick(capturing == 9, key_edit, cap_text), capturing == 9)
                     SButton(1042, 711, 96, pick(capturing == 9, "Change", "Cancel"), key_change, 9, capturing == 9)
                     text key_clash_edit { at: 700, 748; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(756, "Stop mooi", "Back to ArchEclipse", true, "", 330, true)
+                    SRow(756, "Stop mooi", "Super+Shift+B starts it again", true, "", 330, true)
                     SKeys(700, 772, pick(capturing == 10, key_stop, cap_text), capturing == 10)
                     SButton(1042, 771, 96, pick(capturing == 10, "Change", "Cancel"), key_change, 10, capturing == 10)
                     text key_clash_stop { at: 700, 808; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }

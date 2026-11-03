@@ -1,7 +1,7 @@
 # mooi
 
 A fluid, keyboard-first desktop shell for Hyprland, rendered with [Pleamar](https://github.com/k4ditano/pleamar).
-It runs **beside** ArchEclipse while it is being built. ArchEclipse stays your login shell; see [docs/SWITCHING.md](docs/SWITCHING.md).
+It is the whole desktop: the login starts it, and nothing runs beside it; see [docs/SWITCHING.md](docs/SWITCHING.md).
 
 Status: the shell is built and in use, and the last full audit (docs/AUDIT-2026-11-01.md) is the current picture: 285 unit tests and nine scenes compile under one gate, `bin/mooi check`. The bar is the **Ferrolume** bar — a compact strip along the top edge with a DNA-helix workspace instrument (docs/FERROLUME.md, D20–D24) — and around it: the island kit, Control Nexus, the side notch, the music player, the wallpaper studio (Lumen), the stash, the Kanban board, BMO, and mooi's own Overview with Hyprdrive's overview ported into it (docs/OVERVIEW-PORT.md: the Mission shape, spring edges, canvas edges). Multi-monitor is the part of Phase 4 still open; the command membrane of Phase 5 is gone, replaced by the Overview's search (D33). The earlier Mechanism bar is design history only (docs/MECHANISM.md; its code was removed in D33 and is archived in ~/.local/state/mooi). See [STATUS.md](STATUS.md); the master brief is saved in [docs/BRIEF.md](docs/BRIEF.md) with a coverage audit at the end of it.
 
@@ -9,18 +9,17 @@ Status: the shell is built and in use, and the last full audit (docs/AUDIT-2026-
 
 | | |
 | --- | --- |
-| Super+Alt+Space | start mooi, or toggle the window island if it runs |
-| Super+Alt+Shift+Space | stop mooi (and bring ArchEclipse back after a takeover) |
-| SUPER+SHIFT+B | restarts ArchEclipse's bar as always, and ends any mooi takeover |
+| Super+Alt+Space | the command membrane (starts mooi first if it is not running) |
+| Super+Alt+Shift+Space | stop mooi |
+| Super+Shift+B | start mooi, or restart it |
 
 ## Commands
 
 ```sh
-bin/mooi toggle | start | stop | status
+bin/mooi session | toggle | stop | status   # (start = session)
 bin/mooi open | system | overview # window island · system island · the Overview
 bin/mooi theme-sync        # recolour from the wallpaper with Matugen (mooi's own config)
-bin/mooi theme-watch       # follow the wallpaper: recolour whenever it changes (start runs it)
-bin/mooi takeover           # mooi as the shell (needs the guard in docs/SWITCHING.md)
+bin/mooi theme-watch       # follow the wallpaper: recolour whenever it changes (session runs it)
 bin/mooi run [--safe]       # foreground, for development
 bin/mooi refresh            # copy the repo into the running snapshot and restart the scene
 bin/mooi settings | edit    # the settings window · the bar's edit mode

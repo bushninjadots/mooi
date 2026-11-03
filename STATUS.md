@@ -178,7 +178,7 @@ The master brief is saved verbatim in docs/BRIEF.md, with §15 there auditing ev
 - **Phase 0, audit**: docs/AUDIT.md.
 - **Phase 1, first slice**: the Spine, the window island, real Hyprland actions verified by read-back, settings with recovery.
 - **Renamed to mooi** (docs/DECISIONS.md D1).
-- **Shell switching** (docs/SWITCHING.md): Super+Alt+Space starts mooi beside ArchEclipse or toggles its island, and Super+Alt+Shift+Space stops it. A keeper restarts mooi after a crash. `bin/mooi takeover` is built, and safe by design, but disabled until one guard is added (below). ArchEclipse is always the login shell.
+- **Running mooi** (docs/SWITCHING.md): mooi is the login shell (`bin/mooi session`); a keeper restarts it after a crash. The beside and takeover modes were removed in D133, ArchEclipse being uninstalled since D48.
 - **Pleamar upgraded to 0.4.6** for everything; 0.3.7 kept for rollback (D4).
 - **Phase 2, motion and interaction framework**:
   - One island slot (`open`) with hand-over, an Escape order, and per-island reveal springs: interruptible by construction and tested.
@@ -202,7 +202,7 @@ The master brief is saved verbatim in docs/BRIEF.md, with §15 there auditing ev
 
 ## Needs you
 
-1. **One guard for takeover.** The permission system refused my edit to `~/.config/hypr/scripts/quickshell-fullscreen-sync.sh`. The six lines are in docs/SWITCHING.md. Until they are in, `bin/mooi takeover` refuses to run (safely). After adding them, I can test takeover end to end, if you allow it.
+1. ~~**One guard for takeover.**~~ Gone with takeover itself (D133).
 2. **Desk and Polkit still run 0.3.7** in memory; they move to 0.4.6 at your next login. If anything looks off there: `cp ~/.local/bin/pleamar-0.3.7 ~/.local/bin/pleamar`.
 3. ~~**Optional, your call: make the wallpaper recolour mooi too.**~~ **Done in D18 and it needs nothing from you:** `theme.source` is `wallpaper` by default and `bin/mooi start` runs `theme-watch`, which runs Matugen with mooi's own config (your `--source-color-index 0`, your picker's `~/.cache/current_wallpaper`) and asks mooi to repaint whenever the wallpaper changes. Your own Matugen config and its other targets are untouched. `mooi stop` ends the watch; `mooi theme-watch` runs it in the foreground if you would rather control it yourself; `theme.source = "fixed"` turns the whole thing back to the brief's palette.
 

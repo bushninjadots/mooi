@@ -1,20 +1,16 @@
 #!/bin/sh
-# mooi — launcher and shell switch. Beside ArchEclipse, or — with Settings → Advanced → "mooi is the
-# whole desktop" (session.standalone) — the shell you log into, ArchEclipse left installed but never
-# started (D48; ~/.config/hypr/config/custom/mooi.lua starts `mooi session` at login).
+# mooi — launcher. mooi is the whole desktop: the login starts `mooi session`
+# (~/.config/hypr/config/custom/mooi.lua) and there is no other shell beside it (D133).
 #
-#   mooi session           mooi is the whole desktop: like a takeover, but nothing brings ArchEclipse
-#                          back when it ends (what the login starts when standalone is on)
-#   mooi toggle            the command membrane; starts mooi beside ArchEclipse first if needed
-#                          (Super+Alt+Space)
-#   mooi start             start mooi beside ArchEclipse (detached, restarted if it crashes)
-#   mooi takeover          mooi becomes the shell: ArchEclipse's bar is stopped until mooi ends
-#   mooi stop              stop mooi; after a takeover, ArchEclipse comes back (Super+Alt+Shift+Space)
+#   mooi session           start mooi, or restart it (detached, restarted if it crashes; Super+Shift+B)
+#   mooi start             the same as `session` (kept for old keys and scripts)
+#   mooi toggle            the command membrane; starts mooi first if needed (Super+Alt+Space)
+#   mooi stop              stop mooi (Super+Alt+Shift+Space)
 #   mooi status            what is running
 #   mooi run [--safe] …    foreground, for development (pleamar options after it): runs the repo
 #                          itself, so saving a file reloads it
 #   mooi refresh           copy the repo's shell into the running snapshot and restart the scene
-#                          (the keeper, the mode and ArchEclipse's state are kept)
+#                          (the keeper is kept)
 #   mooi restart-hypr      Hyprland reads its config again, then the bar restarts on it (Settings →
 #                          Advanced and the Nexus's rail); windows stay open, mooi's own close
 #   mooi window | system   toggle the window island (Super+Alt+W) or the system island
@@ -39,17 +35,12 @@
 #                          theme/palette.json.hbs), using mooi's own config so nothing of
 #                          the user's theming is written; then asks a running mooi to read it
 #   mooi theme-watch       follow the wallpaper: recolour with Matugen whenever it changes.
-#                          `start` and `takeover` run this beside the bar, `stop` ends it
+#                          `session` runs this beside the bar, `stop` ends it
 #   mooi apps-sync         put mooi's palette on Kitty, GTK and Qt as the settings say (the watch
 #                          does it by itself; switched off, an app gets its own colours back)
 #   mooi check             compile the scene and run the unit tests
 #
 # --safe / MOOI_SAFE=1 ignores settings.json. MOOI_PLEAMAR picks another pleamar binary.
-#
-# The takeover marker is $XDG_RUNTIME_DIR/mooi/takeover (tmpfs, gone at logout) and
-# holds the keeper's pid. ArchEclipse's bar.sh ends a takeover whenever it starts the
-# bar (SUPER+SHIFT+B is always a way back), and its fullscreen sync leaves the bar
-# down while a live takeover holds the desktop. A dead keeper's marker is ignored.
 set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 self="$root/bin/mooi"
@@ -66,13 +57,10 @@ scene="$live/mooi.plm"                          # what the keeper runs: a snapsh
 name=mooi
 pleamar=${MOOI_PLEAMAR:-pleamar}
 rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mooi"
-marker="$rt/takeover"
 keep_pid="$rt/keep.pid"
 state="${XDG_STATE_HOME:-$HOME/.local/state}/mooi"
 log="$state/mooi.log"
 settings="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$name/settings.json"
-bar_sh="$HOME/.config/hypr/scripts/bar.sh"
-engine_sh="$HOME/.config/hypr/scripts/shell-engine.sh"
 mkdir -p "$rt" "$state"
 
 reduced_flag() {
@@ -83,12 +71,7 @@ reduced_flag() {
 }
 running() { "$pleamar" --say "$name" "get phase" >/dev/null 2>&1; }
 alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
-takeover_active() { [ -f "$marker" ] && alive "$(cat "$marker" 2>/dev/null)"; }
-archeclipse_running() {
-    pgrep -af -- "$HOME/.config/quickshell/archeclipse" 2>/dev/null | grep -v -F 'ipc call' | grep -q .
-}
-# ArchEclipse may be uninstalled (D48): then there is nothing to hand the desktop back to.
-archeclipse_installed() { [ -x "$bar_sh" ] && [ -d "$HOME/.config/quickshell/archeclipse" ]; }
+keeping() { alive "$(cat "$keep_pid" 2>/dev/null)"; }
 wait_for() { # seconds, command…
     n=$(($1 * 10)); shift
     while [ "$n" -gt 0 ]; do "$@" && return 0; sleep 0.1; n=$((n - 1)); done; return 1
@@ -410,7 +393,7 @@ PY
     return 0
 }
 
-# Follow the wallpaper. `mooi start` and `mooi takeover` run this beside the bar and `mooi
+# Follow the wallpaper. `mooi session` runs this beside the bar and `mooi
 # stop` ends it; on its own it is a foreground loop, so a session can also run it from a
 # service of its own. Two waits: inotify where it exists (the symlink is replaced, so the
 # event is moved_to or create), and the link's own target where it does not.
@@ -515,8 +498,8 @@ theme_watch_stop() { # TERM, wait for the lock, then insist: the watch must real
 not() { ! "$@"; }
 # The running shell is a snapshot of the repo's `shell/`, not the repo itself: pleamar reloads a
 # scene whenever its file is saved, so a desktop running the repo reloaded on every edit — half
-# a change at a time, logic errors and all (found 2026-10-19, the Atlas "glitch"). `start`,
-# `takeover` and `refresh` take a fresh snapshot; nothing else touches it.
+# a change at a time, logic errors and all (found 2026-10-19, the Atlas "glitch"). `session`
+# and `refresh` take a fresh snapshot; nothing else touches it.
 # The settings window, the board and the other tools are programs of their own (their .plm
 # files) and pleamar gives each the data folder of its file's name: those folders are links to
 # mooi's, so they read and write mooi's settings.json, palette.json and
@@ -655,23 +638,12 @@ scene_pids() { # pleamar processes running this scene (never a shell that merely
 }
 
 # The keeper: runs the scene, restarts it after a crash, gives up after three quick
-# deaths. A takeover it owns is undone when it ends, however it ends.
+# deaths. A scene that quits cleanly (`mooi stop`) ends it too.
 keep() {
-    mode=$1
     exec 8>"$rt/keep.lock"
     flock -n 8 || { echo "mooi: already running" >&2; exit 1; }
     echo $$ > "$keep_pid"
-    echo "$mode" > "$rt/mode"
-    # A takeover and a session both hold the desktop (the marker the scripts look for); only a
-    # takeover gives it back to ArchEclipse when it ends.
-    [ "$mode" != beside ] && echo $$ > "$marker"
-    end() {
-        if [ "$mode" != beside ] && [ "$(cat "$marker" 2>/dev/null)" = "$$" ]; then
-            rm -f "$marker"
-            [ "$mode" = takeover ] && archeclipse_installed && { archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1 8>&-; }
-        fi
-        rm -f "$keep_pid" "$rt/mode"
-    }
+    end() { [ "$(cat "$keep_pid" 2>/dev/null)" = "$$" ] && rm -f "$keep_pid"; }
     child=""
     trap '[ -n "$child" ] && kill -TERM "$child" 2>/dev/null; end; exit 0' TERM INT HUP
     : > "$log"
@@ -683,11 +655,10 @@ keep() {
         # holding an older one's pixels: the bar's islands stayed on screen after they closed (frozen
         # mid-fade, half-cut), and BMO left copies when thrown about. Every program the bar starts
         # (frame, notch, Nexus, BMO, settings) inherits it.
-        PLEAMAR_SWAPCHAIN=1 MOOI_MODE=$mode MOOI_SHELL=$live MOOI_BIN=$self "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1 8>&- &
+        PLEAMAR_SWAPCHAIN=1 MOOI_MODE=session MOOI_SHELL=$live MOOI_BIN=$self "$pleamar" --scene "$scene" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1 8>&- &
         child=$!
         wait "$child"; code=$?
         [ "$code" -eq 0 ] && break
-        [ "$mode" != beside ] && [ ! -f "$marker" ] && break   # bar.sh ended the takeover
         if [ $(($(date +%s) - start)) -lt 10 ]; then tries=$((tries + 1)); else tries=0; fi
         if [ "$tries" -ge 3 ]; then
             echo "mooi-keep: died $tries times quickly, giving up" >> "$log"
@@ -705,8 +676,7 @@ keep() {
 stop_mooi() {
     "$pleamar" --say "$name" quit >/dev/null 2>&1
     wait_for 3 not running && return 0
-    # Hung: take the marker first so the keeper does not restart it, then end it.
-    rm -f "$marker"
+    # Hung: end the keeper first so it does not restart the scene, then the scene.
     alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
     for p in $(scene_pids); do kill -TERM "$p" 2>/dev/null; done
     wait_for 3 not running || for p in $(scene_pids); do kill -KILL "$p" 2>/dev/null; done
@@ -714,66 +684,29 @@ stop_mooi() {
 
 cmd=${1:-help}; [ $# -gt 0 ] && shift
 case "$cmd" in
-    __keep) keep "${1:-beside}" ;;
-    start)
-        running && { echo "mooi is already running"; theme_watch_start; exit 0; }
-        # with ArchEclipse uninstalled there is nothing to run beside: mooi is the desktop (D48)
-        archeclipse_installed || exec "$self" session
+    __keep) keep ;;
+    session | start)
         snapshot || exit 1
-        setsid -f "$self" __keep beside >/dev/null 2>&1 < /dev/null
-        wait_for 5 running && echo "mooi started beside ArchEclipse" || { echo "mooi did not start; see $log" >&2; exit 1; }
-        # The colours follow the wallpaper from here on (docs/MECHANISM.md §8).
-        theme_watch_start
-        ;;
-    toggle)
-        if ! running; then
-            "$self" start >/dev/null || exit 1
-            wait_for 3 running
+        # a running mooi is restarted on the fresh snapshot (Super+Shift+B is "start it again")
+        if keeping || running; then
+            stop_mooi
+            keeping && kill -TERM "$(cat "$keep_pid")" 2>/dev/null && wait_for 3 not keeping
         fi
-        exec "$pleamar" --say "$name" "emit open_command" ;;
-    takeover)
-        takeover_active && { echo "mooi already holds the desktop"; exit 0; }
-        archeclipse_installed || exec "$self" session
-        [ "$("$engine_sh" get 2>/dev/null)" = marea ] && { echo "Marea is the shell engine; switch to ArchEclipse first (SUPER+CTRL+SHIFT+B)" >&2; exit 1; }
-        # The fullscreen sync restarts ArchEclipse's bar on every focus change unless it knows
-        # about the marker, so without its guard the takeover would not hold (docs/SWITCHING.md).
-        # bar.sh needs none: SUPER+SHIFT+B bringing ArchEclipse back is the way out.
-        f="$HOME/.config/hypr/scripts/quickshell-fullscreen-sync.sh"
-        grep -q MOOI_TAKEOVER "$f" 2>/dev/null || { echo "takeover not set up: $f has no mooi guard (docs/SWITCHING.md)" >&2; exit 1; }
-        snapshot || exit 1
-        running && stop_mooi
         theme_watch_start
-        rm -f "$marker"
-        setsid -f "$self" __keep takeover >/dev/null 2>&1 < /dev/null
-        # Only once mooi is up (and the marker is there) does ArchEclipse step aside.
-        if wait_for 6 takeover_active && wait_for 6 running; then
-            "$bar_sh" --kill >/dev/null 2>&1
-            echo "mooi holds the desktop · back to ArchEclipse: Super+Alt+Shift+Space or SUPER+SHIFT+B"
-        else
-            echo "mooi did not start; ArchEclipse left as it was. See $log" >&2
-            alive "$(cat "$marker" 2>/dev/null)" && kill -TERM "$(cat "$marker")" 2>/dev/null
-            rm -f "$marker"; exit 1
-        fi
-        ;;
-    session)
-        # mooi as the whole desktop (D48): a takeover that never hands back to ArchEclipse
-        [ "$(cat "$rt/mode" 2>/dev/null)" = session ] && takeover_active && running && { echo "mooi is already the desktop"; theme_watch_start; exit 0; }
-        snapshot || exit 1
-        # the marker first: a takeover's keeper hands the desktop back to ArchEclipse only while it
-        # still holds it
-        rm -f "$marker"
-        running && stop_mooi
-        alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null && wait_for 3 not running
-        theme_watch_start
-        setsid -f "$self" __keep session >/dev/null 2>&1 < /dev/null
-        if wait_for 6 takeover_active && wait_for 8 running; then
-            archeclipse_running && "$bar_sh" --kill >/dev/null 2>&1
+        setsid -f "$self" __keep >/dev/null 2>&1 < /dev/null
+        if wait_for 6 keeping && wait_for 8 running; then
             echo "mooi is the desktop"
         else
             echo "mooi did not start; see $log" >&2
             exit 1
         fi
         ;;
+    toggle)
+        if ! running; then
+            "$self" session >/dev/null || exit 1
+            wait_for 3 running
+        fi
+        exec "$pleamar" --say "$name" "emit open_command" ;;
     restart-hypr)
         # Hyprland reads its config again, then the bar comes back on it. A reload leaves every
         # window open; mooi's own windows restart with the bar.
@@ -781,11 +714,11 @@ case "$cmd" in
         exec "$self" refresh
         ;;
     refresh)
-        running || { echo "mooi is not running; \`mooi start\` or \`mooi takeover\`" >&2; exit 1; }
-        [ -n "$(scene_pids)" ] || { echo "the running mooi is not a snapshot (started before \`refresh\` existed): \`mooi stop\`, then \`mooi start\` or \`mooi takeover\`" >&2; exit 1; }
+        running || { echo "mooi is not running; \`mooi session\`" >&2; exit 1; }
+        [ -n "$(scene_pids)" ] || { echo "the running mooi is not a snapshot (started before \`refresh\` existed): \`mooi session\`" >&2; exit 1; }
         snapshot || exit 1
-        # The keeper restarts a scene that ends with an error, in the same mode: ending only the
-        # scene keeps the takeover (and ArchEclipse down) through the refresh.
+        # The keeper restarts a scene that ends with an error: ending only the scene keeps the
+        # keeper through the refresh.
         for p in $(scene_pids); do kill -TERM "$p" 2>/dev/null; done
         wait_for 3 not running
         wait_for 8 running && echo "mooi refreshed from the repo" || { echo "mooi did not come back; see $log" >&2; exit 1; }
@@ -793,31 +726,17 @@ case "$cmd" in
         theme_watch_stop; theme_watch_start
         ;;
     stop | restore)
-        # only a takeover hands the desktop back to ArchEclipse; a session simply stops
-        was_takeover=false; takeover_active && [ "$(cat "$rt/mode" 2>/dev/null)" != session ] && was_takeover=true
-        [ "$(cat "$rt/mode" 2>/dev/null)" = session ] && rm -f "$marker"
         running && stop_mooi
         theme_watch_stop
-        alive "$(cat "$keep_pid" 2>/dev/null)" && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
-        if { $was_takeover || [ -f "$marker" ]; } && archeclipse_installed; then
-            rm -f "$marker"
-            wait_for 5 archeclipse_running || setsid -f "$bar_sh" >/dev/null 2>&1
-            wait_for 8 archeclipse_running && echo "ArchEclipse is back" || echo "ArchEclipse did not come back: run $bar_sh" >&2
-        else
-            rm -f "$marker"
-            echo "mooi stopped"
-        fi
+        keeping && kill -TERM "$(cat "$keep_pid")" 2>/dev/null
+        rm -f "$rt/takeover" "$rt/mode"   # left by launchers before D133
+        echo "mooi stopped"
         ;;
     status)
-        if takeover_active && [ "$(cat "$rt/mode" 2>/dev/null)" = session ]; then echo "mooi: the whole desktop (keeper $(cat "$marker"))"
-        elif takeover_active; then echo "mooi: takeover (keeper $(cat "$marker"))"
-        elif running; then echo "mooi: beside ArchEclipse"
+        if keeping && running; then echo "mooi: the desktop (keeper $(cat "$keep_pid"))"
+        elif running; then echo "mooi: running without its keeper (\`mooi run\`?)"
         else echo "mooi: not running"; fi
         theme_watching && echo "theme watch: following $(basename "$wallpaper")" || echo "theme watch: not running"
-        if ! archeclipse_installed; then echo "ArchEclipse: not installed"
-        elif archeclipse_running; then echo "ArchEclipse: running"
-        else echo "ArchEclipse: not running"; fi
-        [ -f "$marker" ] && ! takeover_active && echo "(stale takeover marker; ignored)"
         echo "pleamar: $("$pleamar" --version 2>&1)"
         ;;
     run)
@@ -964,7 +883,7 @@ case "$cmd" in
     check)
         sh -n "$self" || exit 1
         for t in "$root"/tests/*.sh; do sh -n "$t" || exit 1; done
-        # A gate, not a style report: errors only. The launcher holds the takeover, keeper and
+        # A gate, not a style report: errors only. The launcher holds the keeper and
         # lock logic, and `sh -n` cannot see word splitting or a bad expansion (audit F5).
         if command -v shellcheck >/dev/null 2>&1; then
             shellcheck -S error -q "$self" "$root"/tests/*.sh || exit 1
@@ -1010,5 +929,5 @@ case "$cmd" in
         ;;
     theme-watch) theme_watch ;;
     apps-sync) apps_sync ;;
-    *) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+    *) sed -n '2,/^# --safe/p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

@@ -4,16 +4,15 @@ mooi's top bar, built to the **Ferrolume** design system (claude.ai → design s
 Ferrolume), in a compact 46 px strip. Why: DECISIONS D20 (the bar) and D21 (compact, the
 instruments, the colour engine, the switches).
 
-**Bring it up:** Super+Alt+Space starts mooi beside ArchEclipse (and opens search);
+**Bring it up:** the login starts it (`bin/mooi session`); Super+Shift+B restarts it and
 Super+Alt+Shift+Space stops it. The binds live in `~/.config/hypr/config/custom/mooi.lua`.
-`bin/mooi start` / `bin/mooi stop` do the same from a terminal.
+`bin/mooi session` / `bin/mooi stop` do the same from a terminal.
 
 ## Working on it
 
 Your shell runs from a snapshot (`~/.local/state/mooi/live`), so editing the repo never reloads
-it half-way. `bin/mooi refresh` copies the repo in and restarts the scene, keeping the mode.
-`bin/mooi takeover` runs mooi alone (ArchEclipse's bar down; Super+Alt+Shift+Space or
-SUPER+SHIFT+B brings it back); `bin/mooi run --safe` runs the repo directly for development.
+it half-way. `bin/mooi refresh` copies the repo in and restarts the scene, keeping the keeper.
+`bin/mooi run --safe` runs the repo directly for development.
 
 ## Files
 

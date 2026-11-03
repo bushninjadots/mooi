@@ -3928,3 +3928,23 @@ pixels. **Now:** `bin/mooi` starts the shell with `PLEAMAR_SWAPCHAIN=1` (the kee
 every program the bar starts inherits it. The bar itself costs 0.4 % of the GPU this way.
 **Not done:** the pool's bug itself is pleamar's (k4ditano/pleamar); worth reporting upstream with this
 reproduction rather than patching the installed copy.
+
+## D133 · 2026-11-03 · The launcher has one mode: mooi is the desktop
+**Asked for:** remove the beside and takeover modes from `bin/mooi`.
+**Why:** ArchEclipse has been uninstalled since D48, so there is nothing to run beside and nothing to
+hand the desktop back to. Every start already fell through to `session`. The two modes were kept
+alive only by `archeclipse_installed` checks, a marker file that ArchEclipse's scripts no longer read,
+and a guard in a dotfile that no longer exists.
+**Now:** `bin/mooi session` is the one way to start mooi. `start` is the same command, kept so old
+keys and scripts keep working. On a running mooi it restarts on a fresh snapshot, which is what
+Super+Shift+B is bound to. The keeper takes no mode: it runs the scene with `MOOI_MODE=session`, and
+its `keep.pid` is the only state (the `takeover` marker and `mode` file are gone; `stop` clears
+any left by an older launcher). `stop` only stops. `status` no longer reports ArchEclipse. The
+`takeover` command, `bar.sh` / `shell-engine.sh` calls and the ArchEclipse helpers are removed.
+docs/SWITCHING.md is now about running mooi. It still says how to restore ArchEclipse from its
+archive by hand.
+**Kept:** the `notifications.server` value `takeover` (a saved setting; it now means "while the keeper
+runs mooi", and a bare `mooi run` still does not claim notifications). Settings → Advanced → "mooi is
+the whole desktop" (mooi.lua still reads it, for the day ArchEclipse is restored).
+**Checked:** `bin/mooi check` (286 tests, 0 failed). On the live desktop: `session` over the old
+keeper, `refresh` (keeper kept), `stop` (no keeper left), `start`.

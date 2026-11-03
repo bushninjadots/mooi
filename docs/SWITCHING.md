@@ -1,92 +1,34 @@
-# Switching between ArchEclipse and mooi
+# Running mooi
 
-## mooi as the whole desktop (D48)
+mooi is the whole desktop. There is no other shell beside it: ArchEclipse was uninstalled on
+2026-10-21 (D48), and the launcher's beside and takeover modes were removed in D133.
 
-> **ArchEclipse is uninstalled on this machine (2026-10-21, D48).** mooi is the desktop whatever the
-> setting says, and the way back below needs it restored first: `tar xzf
-> ~/.local/state/mooi/archive-2026-10-21-archeclipse.tar.gz -C ~`, then the `exec.lua` / `bind.lua`
-> backups from `~/.local/state/mooi/dotfiles-backup-20261021-uninstall/` (or `git checkout` them in the
-> home repo).
+- At login `~/.config/hypr/config/custom/mooi.lua` runs `bin/mooi session`.
+- `bin/mooi session` (also `start`, and **Super+Shift+B**) takes a fresh snapshot of `shell/`, starts
+  the keeper and the theme watch, and restarts mooi if it is already running.
+- The keeper restarts the scene after a crash. After three quick crashes it gives up **and says so in
+  a critical notification**; Super+Shift+B starts it again.
+- `bin/mooi stop` (**Super+Alt+Shift+Space**) stops mooi, its keeper and the theme watch.
+- `bin/mooi refresh` copies the repo into the running snapshot and restarts the scene; the keeper stays.
+- `bin/mooi status` says whether the keeper and the scene run.
 
-**Settings → Advanced → "mooi is the whole desktop"** (`session.standalone`) makes mooi the shell you log
-into. ArchEclipse stays installed and is never started:
+The keeper's pid is in `$XDG_RUNTIME_DIR/mooi/keep.pid` (tmpfs, gone at logout). The scene runs with
+`MOOI_MODE=session`; a bare `bin/mooi run` has no `MOOI_MODE` and so does not claim notifications.
 
-- at login `~/.config/hypr/config/custom/mooi.lua` runs `bin/mooi session`; ArchEclipse's own start
-  hook still calls `bar.sh`, which stands down while the setting is on (`bar.sh --force` starts
-  ArchEclipse anyway), and its fullscreen watcher never brings the bar back;
-- `bin/mooi session` holds the desktop like a takeover, serves notifications, and never hands back to
-  ArchEclipse; if mooi crashes three times in a row the keeper gives up **and says so in a critical
-  notification** (Super+Shift+B starts it again);
-- the keys that only reached ArchEclipse are mooi's: **Super** and **Super+A** search · **Super+R** the
-  system panel · **Super+L** notices · **Super+Shift+V** clipboard · **Super+Escape** the power menu
-  (wlogout) · **Super+Shift+R** / **Super+Ctrl+Shift+R** record the screen / an area · **Super+Shift+B**
-  (re)start mooi. Toggle bar (Super+Alt), media panel (Super+M), emoji (Super+.) and notes
-  (Super+Shift+N) have nothing in mooi yet: they are let go rather than calling a shell that is not there;
-- the lock and suspend keys and hypridle use `scripts/lock-session.sh` (ArchEclipse's lock if it runs,
-  hyprlock otherwise), and the clipboard history mooi shows is fed by `cliphist` from login.
+## The keys mooi takes
 
-**Back to ArchEclipse:** switch the setting off — the next login is ArchEclipse's — or now:
-`bin/mooi stop` then `~/.config/hypr/scripts/bar.sh --force`.
+mooi.lua binds mooi's own keys (Settings → Keys) and gives it the keys that reached ArchEclipse's
+panels: **Super+A** search · **Super+R** the system panel · **Super+L** notices · **Super+Shift+V**
+clipboard · **Super+Escape** the power menu (wlogout) · **Super+Shift+R** / **Super+Ctrl+Shift+R** record
+the screen / an area · **Super+Shift+B** (re)start mooi. The lock and suspend keys and hypridle use
+`scripts/lock-session.sh`, and the clipboard history mooi shows is fed by `cliphist` from login.
 
-## Beside ArchEclipse (the setting off)
+## Bringing ArchEclipse back
 
-**ArchEclipse is the shell you log into.** Every mooi state lives in `$XDG_RUNTIME_DIR` (tmpfs, wiped at logout).
-
-## The keys
-
-| Key | What it does |
-| --- | --- |
-| **Super+Alt+Space** | toggle the command membrane; if mooi is not running, start it **beside** ArchEclipse first |
-| **Super+Alt+W** | toggle the window island (mooi must be running) |
-| **`bin/mooi atlas`** / the bar's Atlas prism | open or close the Workspace Atlas |
-| **Super+Alt+Shift+Space** | stop mooi. After a takeover, also make sure ArchEclipse is back |
-| **SUPER+SHIFT+B** (unchanged) | restart ArchEclipse's bar, and now also **end any mooi takeover**: the universal way back |
-
-## The two ways mooi runs
-
-| | Beside (default) | Takeover |
-| --- | --- | --- |
-| How | Super+Alt+Space, `bin/mooi start` | `bin/mooi takeover` |
-| ArchEclipse | runs as always | bar stopped (wallpaper, desktop widgets, Desk, Polkit keep running) |
-| Notifications, tray | ArchEclipse | not handled yet: mooi has no notification server before Phase 6 |
-| Lock key | ArchEclipse | `swaylock` (shell-ipc.sh fallback) until mooi has a lock screen |
-| Other shell keys (search, record, left panel) | ArchEclipse | a notice that it is not in mooi yet |
-| If mooi crashes | restarted (3 quick crashes → gives up) | restarted; when it gives up, **ArchEclipse comes back by itself** |
-
-## How takeover stays safe
-
-- `bin/mooi takeover` starts mooi first and stops ArchEclipse's bar (`bar.sh --kill`) **only once mooi is confirmed up**. If mooi fails to start, ArchEclipse is never touched.
-- The keeper process writes its pid to `$XDG_RUNTIME_DIR/mooi/takeover`. The guards below act only while that pid is alive, so a stale marker (keeper killed) is ignored and everything behaves as before.
-- When the keeper ends, however it ends (stop, crash give-up, SIGTERM), it removes its marker and starts ArchEclipse if it is not running.
-- `bar.sh` (autostart, SUPER+SHIFT+B, maintenance restarts) removes the marker and tells mooi to quit before starting the bar.
-
-## The guards in your dotfiles
-
-Backups of the originals: `~/.local/state/mooi/dotfiles-backup-20261014/`.
-
-| File | Change | Status |
-| --- | --- | --- |
-| `hypr/config/bind.lua` | the two keys above | **added** |
-| `hypr/scripts/bar.sh` | starting the bar ends a takeover | **added** |
-| `hypr/scripts/shell-ipc.sh` | during a live takeover: lock → swaylock, others → a notice | **added** |
-| `hypr/scripts/quickshell-fullscreen-sync.sh` | during a live takeover, do not restart the bar | **not added**: the edit was refused by the permission system. Add it yourself (below) |
-
-Until the last guard is there, `bin/mooi takeover` refuses to run and says why. Without it, the fullscreen sync restarts ArchEclipse on the next focus change and `bar.sh` then ends the takeover. That is safe, but the takeover would not last.
-
-Add this to `~/.config/hypr/scripts/quickshell-fullscreen-sync.sh`, just above `exec 8>"$LOCK_FILE"`:
-
-```bash
-# mooi holds the desktop (`mooi takeover`, see bar.sh): leave the bar down. Only
-# while the keeper whose pid the marker holds is alive; a stale marker is ignored.
-MOOI_TAKEOVER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mooi/takeover"
-if [ -f "$MOOI_TAKEOVER" ] && kill -0 "$(cat "$MOOI_TAKEOVER" 2>/dev/null || echo 0)" 2>/dev/null; then
-    exit 0
-fi
-```
-
-## Removing mooi entirely
-
-Delete the two `bind.lua` lines under `--- mooi`, the `MOOI_TAKEOVER` blocks in the three scripts (or restore the backups), and `~/Projects/mooi` plus `~/.local/share/pleamar/mooi`. ArchEclipse never depended on any of it.
+The archive is `~/.local/state/mooi/archive-2026-10-21-archeclipse.tar.gz` (`tar xzf … -C ~`), with the
+`exec.lua` / `bind.lua` backups in `~/.local/state/mooi/dotfiles-backup-20261021-uninstall/`. Then
+switch Settings → Advanced → "mooi is the whole desktop" off, and from the next login ArchEclipse
+starts instead. To switch now: `bin/mooi stop`, then `~/.config/hypr/scripts/bar.sh --force`.
 
 ## Pleamar version
 
