@@ -22,6 +22,12 @@ local settings = config.parse(read("settings.json"), json.decode)
 local cfg = desk.normalize(settings.desk)
 local current = nil
 local shown = { wall = nil, cut = nil }
+local from_notch = false   -- the notch picked the next picture: it grows from where the notch is
+on("from_notch", function(v)
+    v = math.floor(tonumber(v) or 0)
+    from_notch = true
+    fact.tr_x, fact.tr_y = 0, v
+end)
 
 -- The settings the scene draws with. Motion saving (`motion.saver`) and reduced motion keep the
 -- picture still: the cutout stays over the widgets, nothing travels.
@@ -44,6 +50,11 @@ local function refresh()
     if l.wall ~= shown.wall then
         shown.wall = l.wall
         if fact.slot == 0 then text.wall_b = l.wall; fact.has_b = true else text.wall_a = l.wall; fact.has_a = true end
+        -- how it comes in (D144): the kind chosen (random: one of four); grown from the notch when it
+        -- was picked there (it says so just before), else from the middle
+        fact.tr = desk.transition(cfg.transition, (os.time() % 97) / 97)
+        if not from_notch then fact.tr_x, fact.tr_y = 960, 540 end
+        from_notch = false
         after(120, function() fact.slot = fact.slot == 0 and 1 or 0 end)
     end
     -- only floating subjects need the plate; a flat one is laid over the picture as it is

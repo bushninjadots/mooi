@@ -34,6 +34,12 @@ scene Desk {
     fact ws_frac = 0
     // false while the wallpaper is a video or an animation: the picker plays it, the desk steps aside
     fact drawable = true
+    // how the next picture comes in (D144): 0 fade · 1 grow · 2 wipe · 3 slide, and where a growing
+    // circle starts (the notch's edge when it was picked there; the middle otherwise)
+    fact tr = 0
+    fact tr_x = 960
+    fact tr_y = 540
+    event from_notch ->      // the notch picked it: the circle grows from its edge (its y)
 
     // A slow, heavy glide between workspaces; a lighter drift after the pointer.
     spring dk.glide = 90, 19
@@ -45,7 +51,8 @@ scene Desk {
     follow cxp = if(mode >= 2 and moving, clamp(cursor.x / max(1, screen.width), 0, 1) - 0.5, 0)
     prop cyp = 0 ~dk.drift
     follow cyp = if(mode >= 2 and moving, clamp(cursor.y / max(1, screen.height), 0, 1) - 0.5, 0)
-    prop fa = 1 ~dk.fade
+    // the crossing: `fa` is 1 with slot A shown, 0 with B; a transition takes about a second
+    prop fa = 1 ~950ms
     follow fa = if(slot == 0, 1, 0)
 
     surface back {
@@ -63,11 +70,34 @@ scene Desk {
         let py = clamp(0.5 + if(mode >= 2, cyp * 0.8, 0), 0, 1)
         let ww = sw * (1 + over)
         let wh = sh * (1 + over)
+        // the picture coming in (`np` of the way) over the one going: faded, grown as a circle from
+        // (tr_x, tr_y), wiped from the left, or slid in pushing the old one out (D144)
+        let np = if(slot == 0, fa, 1 - fa)
+        let reach = sqrt(sw * sw + sh * sh)
+        let rr = if(tr == 1, reach * np, reach * 2)
         group {
             show: mode > 0 and drawable and (has_a or has_b)
             box { from: 0, 0; size: sw, sh; color: #000000 }
-            image wa { at: -over * sw * px, -over * sh * py; size: ww, wh; opacity: fa; show: has_a }
-            image wb { at: -over * sw * px, -over * sh * py; size: ww, wh; opacity: 1 - fa; show: has_b }
+            // going
+            group { show: slot == 1 and has_a
+                    move: if(tr == 3, 0 - sw * np, 0), 0
+                    image wa { at: -over * sw * px, -over * sh * py; size: ww, wh } }
+            group { show: slot == 0 and has_b
+                    move: if(tr == 3, 0 - sw * np, 0), 0
+                    image wb { at: -over * sw * px, -over * sh * py; size: ww, wh } }
+            // coming
+            group { show: slot == 0 and has_a
+                    opacity: if(tr == 0, np, 1)
+                    move: if(tr == 3, sw * (1 - np), 0), 0
+                    mask: radial tr_x, tr_y radius max(0, rr - 3) to rr + 0.01
+                    clip box { from: 0, 0; size: if(tr == 2, sw * np, sw), sh }
+                    image wa { at: -over * sw * px, -over * sh * py; size: ww, wh } }
+            group { show: slot == 1 and has_b
+                    opacity: if(tr == 0, np, 1)
+                    move: if(tr == 3, sw * (1 - np), 0), 0
+                    mask: radial tr_x, tr_y radius max(0, rr - 3) to rr + 0.01
+                    clip box { from: 0, 0; size: if(tr == 2, sw * np, sw), sh }
+                    image wb { at: -over * sw * px, -over * sh * py; size: ww, wh } }
         }
     }
 

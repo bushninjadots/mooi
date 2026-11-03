@@ -42,7 +42,7 @@ SETTERS = [
     "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
-    "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
+    "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout", "desk.transition",
     "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
     "look.corners", "look.corner_size",
     "companion.bmo", "companion.size", "companion.place", "companion.above", "companion.variant",
@@ -337,6 +337,8 @@ SECTIONS = [
         ("choice", "Moves with", "The workspaces as you switch, the pointer, both, or nothing", "desk.parallax", "sv_desk_parallax",
          ["Still", "Workspaces", "Pointer", "Both"], "sv_desk_on == 1"),
         ("slider", "Strength", "How far the picture travels", "desk.strength", 0, 100, "{sv_desk_strength, 0}%", "sv_desk_on == 1"),
+        ("choice", "Transition", "How a new picture comes in, in Skwd Wall's styles; picked in the notch, it grows from the notch", "desk.transition", "sv_desk_transition",
+         ["Random", "Grow", "Wipe", "Slide", "Fade"], "sv_desk_on == 1"),
     ]),
     ("Widgets", "Widgets", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "DESKTOP", [
         ("card", "Desktop widgets"),

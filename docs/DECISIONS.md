@@ -4343,3 +4343,25 @@ His Claude persona now loves jokes and puns too.
 - `codex` refuses every model on a ChatGPT sign-in (`model_not_found`).
 - `freebuff` is interactive only, with no one-shot mode.
 - opencode's default model is not available in this country, so a free model is named every time.
+
+## D144 · 2026-11-04 · Wallpaper transitions: Skwd's from the notch, and mooi's desk
+**Asked for:** Skwd's wallpaper transitions when the wallpaper is changed from the notch sidebar.
+
+**The notch wears through Skwd.**
+- It runs `skwd-helm apply <path>`. Skwd's daemon (`skwd-walld`) plays its transition on its own
+  `skwd-paper` layer, and its post-processing hook (`wallpaper-styles/bin/skwd-sync`) hands the
+  picture to the Quickshell picker and the palette, exactly as a pick in Skwd Wall does.
+- The daemon runs on demand. When the notch had to start it, it stops it 6 s later; the picker
+  draws the same picture underneath, so nothing changes on screen.
+- If Skwd fails, the picker's IPC and its script run as before.
+- Checked: the current picture applied through Skwd (`applied`, the source link kept), and the
+  daemon was stopped again.
+
+**mooi's own desk** (when `desk.on`) gets transitions too. `desk.transition` (Settings → Desk) is
+random, grow, wipe, slide or fade:
+- the incoming picture is drawn over the outgoing one: a radial mask, a clip, a push, or opacity
+- about a second (`~950ms`)
+- picked in the notch, the circle grows from the notch's edge (`from_notch`, its `nt_cy`)
+
+**Not checked:** a notch pick end to end on screen (you were away; it would change your wallpaper),
+and the desk's transitions on screen (`desk.on` is off here).

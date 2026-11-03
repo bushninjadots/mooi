@@ -17,6 +17,16 @@ M.DEFAULTS = { on = false, parallax = "workspaces", strength = 45, cutout = true
 
 local function clamp(v, lo, hi) if v < lo then return lo end; if v > hi then return hi end; return v end
 
+-- How a new picture comes in (D144): the scene's numbers (0 fade · 1 grow · 2 wipe · 3 slide)
+M.TRANSITIONS = { "random", "grow", "wipe", "slide", "fade" }
+M.TRANSITION_INDEX = { random = -1, grow = 1, wipe = 2, slide = 3, fade = 0 }
+-- the one to use now: "random" picks among the four by `r` in [0, 1)
+function M.transition(kind, r)
+    local n = M.TRANSITION_INDEX[kind]
+    if n == nil or n < 0 then return math.min(3, math.floor((tonumber(r) or 0) * 4)) end
+    return n
+end
+
 function M.normalize(v)
     v = type(v) == "table" and v or {}
     local out = {}
@@ -26,6 +36,7 @@ function M.normalize(v)
     out.strength = (s and s == s) and clamp(math.floor(s + 0.5), 0, 100) or M.DEFAULTS.strength
     out.cutout = v.cutout ~= false
     out.depth = v.depth ~= false
+    out.transition = M.TRANSITION_INDEX[v.transition] and v.transition or "random"
     return out
 end
 

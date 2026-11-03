@@ -644,6 +644,8 @@ scene Mooi {
     fact df_desk_depth = 0
     fact sv_desk_cutout = 0
     fact df_desk_cutout = 0
+    fact sv_desk_transition = 0
+    fact df_desk_transition = 0
     fact sv_theme_mode = 0
     fact df_theme_mode = 0
     fact sv_theme_light_at = 0
@@ -1395,8 +1397,10 @@ scene Mooi {
     follow gy_13_2 = 112 + 44 + 60
     prop gy_13_3 = 276 ~m.reflow
     follow gy_13_3 = 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0)
-    prop gc_13_0 = 232 ~m.reflow
-    follow gc_13_0 = 52 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0)
+    prop gy_13_4 = 336 ~m.reflow
+    follow gy_13_4 = 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0)
+    prop gc_13_0 = 292 ~m.reflow
+    follow gc_13_0 = 52 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0)
     prop gy_14_c0 = 112 ~m.reflow
     follow gy_14_c0 = 112
     prop gy_14_1 = 156 ~m.reflow
@@ -1681,7 +1685,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 660 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -1816,24 +1820,24 @@ scene Mooi {
                     move: 0, gy_1_1 - 156
                     SRow(156, "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", true, "", 418, false)
                     STrack(742, 172, 396)
-                    SChoice(742, 172, 132, "Dark", sv_theme_mode == 0, set_value, 325000)
-                    SChoice(874, 172, 132, "Light", sv_theme_mode == 1, set_value, 325001)
-                    SChoice(1006, 172, 132, "Auto", sv_theme_mode == 2, set_value, 325002)
-                    SRevert(712, 186, sv_theme_mode != df_theme_mode, set_value, 325000 + df_theme_mode)
+                    SChoice(742, 172, 132, "Dark", sv_theme_mode == 0, set_value, 326000)
+                    SChoice(874, 172, 132, "Light", sv_theme_mode == 1, set_value, 326001)
+                    SChoice(1006, 172, 132, "Auto", sv_theme_mode == 2, set_value, 326002)
+                    SRevert(712, 186, sv_theme_mode != df_theme_mode, set_value, 326000 + df_theme_mode)
                 }
                 group {
                     show: sv_theme_mode == 2
                     move: 0, gy_1_2 - 216
                     SRow(216, "Light from", "The hour it turns light", true, "", 404, true)
-                    SSlider(728, 232, 330, sv_theme_light_at, 23, set_value, 326, "Light from", "{sv_theme_light_at, 0}:00", true)
-                    SRevert(698, 246, sv_theme_light_at != df_theme_light_at, set_value, 326000 + df_theme_light_at)
+                    SSlider(728, 232, 330, sv_theme_light_at, 23, set_value, 327, "Light from", "{sv_theme_light_at, 0}:00", true)
+                    SRevert(698, 246, sv_theme_light_at != df_theme_light_at, set_value, 327000 + df_theme_light_at)
                 }
                 group {
                     show: sv_theme_mode == 2
                     move: 0, gy_1_3 - 276
                     SRow(276, "Dark from", "The hour it turns dark", true, "", 404, true)
-                    SSlider(728, 292, 330, sv_theme_dark_at, 23, set_value, 327, "Dark from", "{sv_theme_dark_at, 0}:00", true)
-                    SRevert(698, 306, sv_theme_dark_at != df_theme_dark_at, set_value, 327000 + df_theme_dark_at)
+                    SSlider(728, 292, 330, sv_theme_dark_at, 23, set_value, 328, "Dark from", "{sv_theme_dark_at, 0}:00", true)
+                    SRevert(698, 306, sv_theme_dark_at != df_theme_dark_at, set_value, 328000 + df_theme_dark_at)
                 }
                 group {
                     show: true
@@ -1845,27 +1849,27 @@ scene Mooi {
                     move: 0, gy_1_5 - 402
                     SRow(402, "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", true, "", 374, false)
                     STrack(698, 418, 440)
-                    SChoice(698, 418, 110, "Chamfer", sv_look_corners == 0, set_value, 329000)
-                    SChoice(808, 418, 110, "Bevel", sv_look_corners == 1, set_value, 329001)
-                    SChoice(918, 418, 110, "Rounded", sv_look_corners == 2, set_value, 329002)
-                    SChoice(1028, 418, 110, "Square", sv_look_corners == 3, set_value, 329003)
-                    SRevert(668, 432, sv_look_corners != df_look_corners, set_value, 329000 + df_look_corners)
+                    SChoice(698, 418, 110, "Chamfer", sv_look_corners == 0, set_value, 330000)
+                    SChoice(808, 418, 110, "Bevel", sv_look_corners == 1, set_value, 330001)
+                    SChoice(918, 418, 110, "Rounded", sv_look_corners == 2, set_value, 330002)
+                    SChoice(1028, 418, 110, "Square", sv_look_corners == 3, set_value, 330003)
+                    SRevert(668, 432, sv_look_corners != df_look_corners, set_value, 330000 + df_look_corners)
                 }
                 group {
                     show: sv_look_corners != 3
                     move: 0, gy_1_6 - 462
                     SRow(462, "Corner size", "How big the cut or the rounding is (12 is as designed)", true, "", 404, true)
-                    SSlider(728, 478, 330, sv_look_corner_size, 24, set_value, 330, "Corner size", "{sv_look_corner_size, 0}", true)
-                    SRevert(698, 492, sv_look_corner_size != df_look_corner_size, set_value, 330000 + df_look_corner_size)
+                    SSlider(728, 478, 330, sv_look_corner_size, 24, set_value, 331, "Corner size", "{sv_look_corner_size, 0}", true)
+                    SRevert(698, 492, sv_look_corner_size != df_look_corner_size, set_value, 331000 + df_look_corner_size)
                 }
                 group {
                     show: true
                     move: 0, gy_1_7 - 522
                     SRow(522, "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", true, "", 550, true)
                     STrack(874, 538, 264)
-                    SChoice(874, 538, 132, "Plate", sv_island_style == 0, set_value, 348000)
-                    SChoice(1006, 538, 132, "Tether", sv_island_style == 1, set_value, 348001)
-                    SRevert(844, 552, sv_island_style != df_island_style, set_value, 348000 + df_island_style)
+                    SChoice(874, 538, 132, "Plate", sv_island_style == 0, set_value, 349000)
+                    SChoice(1006, 538, 132, "Tether", sv_island_style == 1, set_value, 349001)
+                    SRevert(844, 552, sv_island_style != df_island_style, set_value, 349000 + df_island_style)
                 }
                 group {
                     show: true
@@ -2058,8 +2062,8 @@ scene Mooi {
                     show: true
                     move: 0, gy_1_29 - 2084
                     SRow(2084, "Everything else", "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", true, "", 768, true)
-                    SToggle(1092, 2102, sv_apps_others, set_value, 328, "apps.others")
-                    SRevert(1062, 2114, sv_apps_others != df_apps_others, set_value, 328000 + df_apps_others)
+                    SToggle(1092, 2102, sv_apps_others, set_value, 329, "apps.others")
+                    SRevert(1062, 2114, sv_apps_others != df_apps_others, set_value, 329000 + df_apps_others)
                 }
             }
             group {
@@ -2145,10 +2149,10 @@ scene Mooi {
                     move: 0, gy_3_2 - 216
                     SRow(216, "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", true, "", 418, true)
                     STrack(742, 232, 396)
-                    SChoice(742, 232, 132, "Time and date", sv_clock_view == 0, set_value, 349000)
-                    SChoice(874, 232, 132, "Time", sv_clock_view == 1, set_value, 349001)
-                    SChoice(1006, 232, 132, "Seconds", sv_clock_view == 2, set_value, 349002)
-                    SRevert(712, 246, sv_clock_view != df_clock_view, set_value, 349000 + df_clock_view)
+                    SChoice(742, 232, 132, "Time and date", sv_clock_view == 0, set_value, 350000)
+                    SChoice(874, 232, 132, "Time", sv_clock_view == 1, set_value, 350001)
+                    SChoice(1006, 232, 132, "Seconds", sv_clock_view == 2, set_value, 350002)
+                    SRevert(712, 246, sv_clock_view != df_clock_view, set_value, 350000 + df_clock_view)
                 }
                 group {
                     show: true
@@ -2672,58 +2676,58 @@ scene Mooi {
                     show: (dk_manage) and (sv_desktop_blur != 1)
                     move: 0, gy_8_16 - 1042
                     SRow(1042, "Blur vibrancy", "How much the colours behind are saturated", true, "", 404, true)
-                    SSlider(728, 1058, 330, sv_desktop_blur_vibrancy, 100, set_value, 351, "Blur vibrancy", pick(sv_desktop_blur_vibrancy == 0, "{sv_desktop_blur_vibrancy, 0}%", "KEEP"), true)
-                    SRevert(698, 1072, sv_desktop_blur_vibrancy != df_desktop_blur_vibrancy, set_value, 351000 + df_desktop_blur_vibrancy)
+                    SSlider(728, 1058, 330, sv_desktop_blur_vibrancy, 100, set_value, 352, "Blur vibrancy", pick(sv_desktop_blur_vibrancy == 0, "{sv_desktop_blur_vibrancy, 0}%", "KEEP"), true)
+                    SRevert(698, 1072, sv_desktop_blur_vibrancy != df_desktop_blur_vibrancy, set_value, 352000 + df_desktop_blur_vibrancy)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_blur != 1)
                     move: 0, gy_8_17 - 1102
                     SRow(1102, "Floating see-through", "On: a floating window blurs the wallpaper, not the windows under it", true, "", 418, true)
                     STrack(742, 1118, 396)
-                    SChoice(742, 1118, 132, "Keep mine", sv_desktop_blur_xray == 0, set_value, 352000)
-                    SChoice(874, 1118, 132, "On", sv_desktop_blur_xray == 1, set_value, 352001)
-                    SChoice(1006, 1118, 132, "Off", sv_desktop_blur_xray == 2, set_value, 352002)
-                    SRevert(712, 1132, sv_desktop_blur_xray != df_desktop_blur_xray, set_value, 352000 + df_desktop_blur_xray)
+                    SChoice(742, 1118, 132, "Keep mine", sv_desktop_blur_xray == 0, set_value, 353000)
+                    SChoice(874, 1118, 132, "On", sv_desktop_blur_xray == 1, set_value, 353001)
+                    SChoice(1006, 1118, 132, "Off", sv_desktop_blur_xray == 2, set_value, 353002)
+                    SRevert(712, 1132, sv_desktop_blur_xray != df_desktop_blur_xray, set_value, 353000 + df_desktop_blur_xray)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_blur != 1)
                     move: 0, gy_8_18 - 1162
                     SRow(1162, "Blur menus", "Right-click menus and popups blurred behind", true, "", 418, true)
                     STrack(742, 1178, 396)
-                    SChoice(742, 1178, 132, "Keep mine", sv_desktop_blur_popups == 0, set_value, 353000)
-                    SChoice(874, 1178, 132, "On", sv_desktop_blur_popups == 1, set_value, 353001)
-                    SChoice(1006, 1178, 132, "Off", sv_desktop_blur_popups == 2, set_value, 353002)
-                    SRevert(712, 1192, sv_desktop_blur_popups != df_desktop_blur_popups, set_value, 353000 + df_desktop_blur_popups)
+                    SChoice(742, 1178, 132, "Keep mine", sv_desktop_blur_popups == 0, set_value, 354000)
+                    SChoice(874, 1178, 132, "On", sv_desktop_blur_popups == 1, set_value, 354001)
+                    SChoice(1006, 1178, 132, "Off", sv_desktop_blur_popups == 2, set_value, 354002)
+                    SRevert(712, 1192, sv_desktop_blur_popups != df_desktop_blur_popups, set_value, 354000 + df_desktop_blur_popups)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_blur != 1)
                     move: 0, gy_8_19 - 1222
                     SRow(1222, "Blur finish", "Hyprland 0.57: a material over the blur", true, "", 344, true)
                     STrack(668, 1238, 470)
-                    SChoice(668, 1238, 94, "Keep mine", sv_desktop_blur_variant == 0, set_value, 359000)
-                    SChoice(762, 1238, 94, "Plain", sv_desktop_blur_variant == 1, set_value, 359001)
-                    SChoice(856, 1238, 94, "Glass", sv_desktop_blur_variant == 2, set_value, 359002)
-                    SChoice(950, 1238, 94, "Acrylic", sv_desktop_blur_variant == 3, set_value, 359003)
-                    SChoice(1044, 1238, 94, "Water", sv_desktop_blur_variant == 4, set_value, 359004)
-                    SRevert(638, 1252, sv_desktop_blur_variant != df_desktop_blur_variant, set_value, 359000 + df_desktop_blur_variant)
+                    SChoice(668, 1238, 94, "Keep mine", sv_desktop_blur_variant == 0, set_value, 360000)
+                    SChoice(762, 1238, 94, "Plain", sv_desktop_blur_variant == 1, set_value, 360001)
+                    SChoice(856, 1238, 94, "Glass", sv_desktop_blur_variant == 2, set_value, 360002)
+                    SChoice(950, 1238, 94, "Acrylic", sv_desktop_blur_variant == 3, set_value, 360003)
+                    SChoice(1044, 1238, 94, "Water", sv_desktop_blur_variant == 4, set_value, 360004)
+                    SRevert(638, 1252, sv_desktop_blur_variant != df_desktop_blur_variant, set_value, 360000 + df_desktop_blur_variant)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_blur != 1)
                     move: 0, gy_8_20 - 1282
                     SRow(1282, "", "…or another still one", true, "", 418, true)
                     STrack(742, 1298, 396)
-                    SChoice(742, 1298, 132, "Ripple", sv_desktop_blur_variant == 5, set_value, 359005)
-                    SChoice(874, 1298, 132, "Haze", sv_desktop_blur_variant == 7, set_value, 359007)
-                    SChoice(1006, 1298, 132, "Fluid jar", sv_desktop_blur_variant == 10, set_value, 359010)
+                    SChoice(742, 1298, 132, "Ripple", sv_desktop_blur_variant == 5, set_value, 360005)
+                    SChoice(874, 1298, 132, "Haze", sv_desktop_blur_variant == 7, set_value, 360007)
+                    SChoice(1006, 1298, 132, "Fluid jar", sv_desktop_blur_variant == 10, set_value, 360010)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_blur != 1)
                     move: 0, gy_8_21 - 1342
                     SRow(1342, "", "…or a moving one: Hyprland redraws all the time (~25–70 % of the GPU, idle)", true, "", 418, true)
                     STrack(742, 1358, 396)
-                    SChoice(742, 1358, 132, "Aurora", sv_desktop_blur_variant == 6, set_value, 359006)
-                    SChoice(874, 1358, 132, "Heat", sv_desktop_blur_variant == 8, set_value, 359008)
-                    SChoice(1006, 1358, 132, "Drops", sv_desktop_blur_variant == 9, set_value, 359009)
+                    SChoice(742, 1358, 132, "Aurora", sv_desktop_blur_variant == 6, set_value, 360006)
+                    SChoice(874, 1358, 132, "Heat", sv_desktop_blur_variant == 8, set_value, 360008)
+                    SChoice(1006, 1358, 132, "Drops", sv_desktop_blur_variant == 9, set_value, 360009)
                 }
                 group {
                     show: dk_manage
@@ -2742,23 +2746,23 @@ scene Mooi {
                     move: 0, gy_8_24 - 1528
                     SRow(1528, "Wobble", "Windows bend as you drag them (Hyprland 0.57) and bounce as they open and move", true, "", 344, false)
                     STrack(668, 1544, 470)
-                    SChoice(668, 1544, 94, "Keep mine", sv_desktop_wobble == 0, set_value, 354000)
-                    SChoice(762, 1544, 94, "Off", sv_desktop_wobble == 1, set_value, 354001)
-                    SChoice(856, 1544, 94, "Subtle", sv_desktop_wobble == 2, set_value, 354002)
-                    SChoice(950, 1544, 94, "Wobbly", sv_desktop_wobble == 3, set_value, 354003)
-                    SChoice(1044, 1544, 94, "Jelly", sv_desktop_wobble == 4, set_value, 354004)
-                    SRevert(638, 1558, sv_desktop_wobble != df_desktop_wobble, set_value, 354000 + df_desktop_wobble)
+                    SChoice(668, 1544, 94, "Keep mine", sv_desktop_wobble == 0, set_value, 355000)
+                    SChoice(762, 1544, 94, "Off", sv_desktop_wobble == 1, set_value, 355001)
+                    SChoice(856, 1544, 94, "Subtle", sv_desktop_wobble == 2, set_value, 355002)
+                    SChoice(950, 1544, 94, "Wobbly", sv_desktop_wobble == 3, set_value, 355003)
+                    SChoice(1044, 1544, 94, "Jelly", sv_desktop_wobble == 4, set_value, 355004)
+                    SRevert(638, 1558, sv_desktop_wobble != df_desktop_wobble, set_value, 355000 + df_desktop_wobble)
                 }
                 group {
                     show: dk_manage
                     move: 0, gy_8_25 - 1588
                     SRow(1588, "Motion blur", "Smears a window while it is moved or resized", true, "", 374, true)
                     STrack(698, 1604, 440)
-                    SChoice(698, 1604, 110, "Keep mine", sv_desktop_motion_blur == 0, set_value, 355000)
-                    SChoice(808, 1604, 110, "Off", sv_desktop_motion_blur == 1, set_value, 355001)
-                    SChoice(918, 1604, 110, "Soft", sv_desktop_motion_blur == 2, set_value, 355002)
-                    SChoice(1028, 1604, 110, "Strong", sv_desktop_motion_blur == 3, set_value, 355003)
-                    SRevert(668, 1618, sv_desktop_motion_blur != df_desktop_motion_blur, set_value, 355000 + df_desktop_motion_blur)
+                    SChoice(698, 1604, 110, "Keep mine", sv_desktop_motion_blur == 0, set_value, 356000)
+                    SChoice(808, 1604, 110, "Off", sv_desktop_motion_blur == 1, set_value, 356001)
+                    SChoice(918, 1604, 110, "Soft", sv_desktop_motion_blur == 2, set_value, 356002)
+                    SChoice(1028, 1604, 110, "Strong", sv_desktop_motion_blur == 3, set_value, 356003)
+                    SRevert(668, 1618, sv_desktop_motion_blur != df_desktop_motion_blur, set_value, 356000 + df_desktop_motion_blur)
                 }
                 group {
                     show: dk_manage
@@ -2939,29 +2943,29 @@ scene Mooi {
                     show: true
                     move: 0, gy_11_1 - 156
                     SRow(156, "Wheel steps desktops", "The wheel over the grid, and ← →, walk the desktops; the Overview stays open on each one", true, "", 768, false)
-                    SToggle(1092, 174, sv_atlas_wheel_desktops, set_value, 372, "atlas.wheel_desktops")
-                    SRevert(1062, 186, sv_atlas_wheel_desktops != df_atlas_wheel_desktops, set_value, 372000 + df_atlas_wheel_desktops)
+                    SToggle(1092, 174, sv_atlas_wheel_desktops, set_value, 373, "atlas.wheel_desktops")
+                    SRevert(1062, 186, sv_atlas_wheel_desktops != df_atlas_wheel_desktops, set_value, 373000 + df_atlas_wheel_desktops)
                 }
                 group {
                     show: true
                     move: 0, gy_11_2 - 216
                     SRow(216, "Type to run apps", "Installed apps matching the search appear under the row; Ctrl+↑↓ chooses one, Enter starts it", true, "", 768, true)
-                    SToggle(1092, 234, sv_atlas_search_apps, set_value, 373, "atlas.search_apps")
-                    SRevert(1062, 246, sv_atlas_search_apps != df_atlas_search_apps, set_value, 373000 + df_atlas_search_apps)
+                    SToggle(1092, 234, sv_atlas_search_apps, set_value, 374, "atlas.search_apps")
+                    SRevert(1062, 246, sv_atlas_search_apps != df_atlas_search_apps, set_value, 374000 + df_atlas_search_apps)
                 }
                 group {
                     show: true
                     move: 0, gy_11_3 - 276
                     SRow(276, "Search files too", "Documents, Downloads, Desktop and your media folders; bounded, literal, and only while nothing on the board matches", true, "", 768, true)
-                    SToggle(1092, 294, sv_atlas_search_files, set_value, 374, "atlas.search_files")
-                    SRevert(1062, 306, sv_atlas_search_files != df_atlas_search_files, set_value, 374000 + df_atlas_search_files)
+                    SToggle(1092, 294, sv_atlas_search_files, set_value, 375, "atlas.search_files")
+                    SRevert(1062, 306, sv_atlas_search_files != df_atlas_search_files, set_value, 375000 + df_atlas_search_files)
                 }
                 group {
                     show: true
                     move: 0, gy_11_4 - 336
                     SRow(336, "Spring edges", "Carry a window (or a workspace's nameplate) into an edge and hold: the desktops step, or on the canvas the view pans that way; the window lands where you stop", true, "", 768, true)
-                    SToggle(1092, 354, sv_atlas_spring_edges, set_value, 377, "atlas.spring_edges")
-                    SRevert(1062, 366, sv_atlas_spring_edges != df_atlas_spring_edges, set_value, 377000 + df_atlas_spring_edges)
+                    SToggle(1092, 354, sv_atlas_spring_edges, set_value, 378, "atlas.spring_edges")
+                    SRevert(1062, 366, sv_atlas_spring_edges != df_atlas_spring_edges, set_value, 378000 + df_atlas_spring_edges)
                 }
                 group {
                     show: true
@@ -3002,19 +3006,19 @@ scene Mooi {
                     move: 0, gy_11_10 - 708
                     SRow(708, "Hot corner", "Rest the pointer in a corner to open it; while on, a 6×6 surface takes that corner's clicks", true, "", 344, false)
                     STrack(668, 724, 470)
-                    SChoice(668, 724, 94, "Off", sv_atlas_hot_corner == 0, set_value, 375000)
-                    SChoice(762, 724, 94, "Top left", sv_atlas_hot_corner == 1, set_value, 375001)
-                    SChoice(856, 724, 94, "Top right", sv_atlas_hot_corner == 2, set_value, 375002)
-                    SChoice(950, 724, 94, "Bottom left", sv_atlas_hot_corner == 3, set_value, 375003)
-                    SChoice(1044, 724, 94, "Bottom right", sv_atlas_hot_corner == 4, set_value, 375004)
-                    SRevert(638, 738, sv_atlas_hot_corner != df_atlas_hot_corner, set_value, 375000 + df_atlas_hot_corner)
+                    SChoice(668, 724, 94, "Off", sv_atlas_hot_corner == 0, set_value, 376000)
+                    SChoice(762, 724, 94, "Top left", sv_atlas_hot_corner == 1, set_value, 376001)
+                    SChoice(856, 724, 94, "Top right", sv_atlas_hot_corner == 2, set_value, 376002)
+                    SChoice(950, 724, 94, "Bottom left", sv_atlas_hot_corner == 3, set_value, 376003)
+                    SChoice(1044, 724, 94, "Bottom right", sv_atlas_hot_corner == 4, set_value, 376004)
+                    SRevert(638, 738, sv_atlas_hot_corner != df_atlas_hot_corner, set_value, 376000 + df_atlas_hot_corner)
                 }
                 group {
                     show: sv_atlas_hot_corner != 0
                     move: 0, gy_11_11 - 768
                     SRow(768, "Rest for", "How long the pointer must rest there", true, "", 404, true)
-                    SSlider(728, 784, 330, sv_atlas_hot_corner_delay, 1300, set_value, 376, "Rest for", "{sv_atlas_hot_corner_delay + 200, 0}ms", true)
-                    SRevert(698, 798, sv_atlas_hot_corner_delay != df_atlas_hot_corner_delay, set_value, 376000 + df_atlas_hot_corner_delay)
+                    SSlider(728, 784, 330, sv_atlas_hot_corner_delay, 1300, set_value, 377, "Rest for", "{sv_atlas_hot_corner_delay + 200, 0}ms", true)
+                    SRevert(698, 798, sv_atlas_hot_corner_delay != df_atlas_hot_corner_delay, set_value, 377000 + df_atlas_hot_corner_delay)
                 }
                 group {
                     show: true
@@ -3136,6 +3140,18 @@ scene Mooi {
                     SSlider(728, 292, 330, sv_desk_strength, 100, set_value, 322, "Strength", "{sv_desk_strength, 0}%", true)
                     SRevert(698, 306, sv_desk_strength != df_desk_strength, set_value, 322000 + df_desk_strength)
                 }
+                group {
+                    show: sv_desk_on == 1
+                    move: 0, gy_13_4 - 336
+                    SRow(336, "Transition", "How a new picture comes in, in Skwd Wall's styles; picked in the notch, it grows from the notch", true, "", 344, true)
+                    STrack(668, 352, 470)
+                    SChoice(668, 352, 94, "Random", sv_desk_transition == 0, set_value, 325000)
+                    SChoice(762, 352, 94, "Grow", sv_desk_transition == 1, set_value, 325001)
+                    SChoice(856, 352, 94, "Wipe", sv_desk_transition == 2, set_value, 325002)
+                    SChoice(950, 352, 94, "Slide", sv_desk_transition == 3, set_value, 325003)
+                    SChoice(1044, 352, 94, "Fade", sv_desk_transition == 4, set_value, 325004)
+                    SRevert(638, 366, sv_desk_transition != df_desk_transition, set_value, 325000 + df_desk_transition)
+                }
             }
             group {
                 show: set_tab == 14
@@ -3148,8 +3164,8 @@ scene Mooi {
                     show: true
                     move: 0, gy_14_1 - 156
                     SRow(156, "Desktop widgets", "mooi's own widgets on the desktop, under your windows (D137)", true, "", 768, false)
-                    SToggle(1092, 174, sv_widgets_on, set_value, 378, "widgets.on")
-                    SRevert(1062, 186, sv_widgets_on != df_widgets_on, set_value, 378000 + df_widgets_on)
+                    SToggle(1092, 174, sv_widgets_on, set_value, 379, "widgets.on")
+                    SRevert(1062, 186, sv_widgets_on != df_widgets_on, set_value, 379000 + df_widgets_on)
                 }
                 group {
                     show: true
@@ -3161,15 +3177,15 @@ scene Mooi {
                     show: true
                     move: 0, gy_14_3 - 276
                     SRow(276, "Depth", "Widgets set to BEHIND sit behind the wallpaper's subject (cut out by rembg)", true, "", 768, true)
-                    SToggle(1092, 294, sv_widgets_depth, set_value, 379, "widgets.depth")
-                    SRevert(1062, 306, sv_widgets_depth != df_widgets_depth, set_value, 379000 + df_widgets_depth)
+                    SToggle(1092, 294, sv_widgets_depth, set_value, 380, "widgets.depth")
+                    SRevert(1062, 306, sv_widgets_depth != df_widgets_depth, set_value, 380000 + df_widgets_depth)
                 }
                 group {
                     show: true
                     move: 0, gy_14_4 - 336
                     SRow(336, "Wallpaper mood", "A calm picture makes them softer and slower, a lively one brighter", true, "", 768, true)
-                    SToggle(1092, 354, sv_widgets_mood, set_value, 380, "widgets.mood")
-                    SRevert(1062, 366, sv_widgets_mood != df_widgets_mood, set_value, 380000 + df_widgets_mood)
+                    SToggle(1092, 354, sv_widgets_mood, set_value, 381, "widgets.mood")
+                    SRevert(1062, 366, sv_widgets_mood != df_widgets_mood, set_value, 381000 + df_widgets_mood)
                 }
                 group {
                     show: sv_widgets_on == 1
@@ -3205,47 +3221,47 @@ scene Mooi {
                     show: true
                     move: 0, gy_15_1 - 156
                     SRow(156, "BMO on your desktop", "Starts with mooi; off, he says goodbye", true, "", 768, false)
-                    SToggle(1092, 174, sv_companion_bmo, set_value, 331, "companion.bmo")
-                    SRevert(1062, 186, sv_companion_bmo != df_companion_bmo, set_value, 331000 + df_companion_bmo)
+                    SToggle(1092, 174, sv_companion_bmo, set_value, 332, "companion.bmo")
+                    SRevert(1062, 186, sv_companion_bmo != df_companion_bmo, set_value, 332000 + df_companion_bmo)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_2 - 216
                     SRow(216, "Size", "From a little one to a big one", true, "", 374, true)
                     STrack(698, 232, 440)
-                    SChoice(698, 232, 110, "XS", sv_companion_size == 0, set_value, 332000)
-                    SChoice(808, 232, 110, "S", sv_companion_size == 1, set_value, 332001)
-                    SChoice(918, 232, 110, "M", sv_companion_size == 2, set_value, 332002)
-                    SChoice(1028, 232, 110, "L", sv_companion_size == 3, set_value, 332003)
-                    SRevert(668, 246, sv_companion_size != df_companion_size, set_value, 332000 + df_companion_size)
+                    SChoice(698, 232, 110, "XS", sv_companion_size == 0, set_value, 333000)
+                    SChoice(808, 232, 110, "S", sv_companion_size == 1, set_value, 333001)
+                    SChoice(918, 232, 110, "M", sv_companion_size == 2, set_value, 333002)
+                    SChoice(1028, 232, 110, "L", sv_companion_size == 3, set_value, 333003)
+                    SRevert(668, 246, sv_companion_size != df_companion_size, set_value, 333000 + df_companion_size)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_3 - 276
                     SRow(276, "Lives", "Anywhere on the desktop, or small, just under the bar", true, "", 550, true)
                     STrack(874, 292, 264)
-                    SChoice(874, 292, 132, "Desktop", sv_companion_place == 0, set_value, 333000)
-                    SChoice(1006, 292, 132, "Under the bar", sv_companion_place == 1, set_value, 333001)
-                    SRevert(844, 306, sv_companion_place != df_companion_place, set_value, 333000 + df_companion_place)
+                    SChoice(874, 292, 132, "Desktop", sv_companion_place == 0, set_value, 334000)
+                    SChoice(1006, 292, 132, "Under the bar", sv_companion_place == 1, set_value, 334001)
+                    SRevert(844, 306, sv_companion_place != df_companion_place, set_value, 334000 + df_companion_place)
                 }
                 group {
                     show: sv_companion_bmo == 1 and sv_companion_place == 0
                     move: 0, gy_15_4 - 336
                     SRow(336, "Over the windows", "Off, he stays behind them, on the wallpaper", true, "", 768, true)
-                    SToggle(1092, 354, sv_companion_above, set_value, 334, "companion.above")
-                    SRevert(1062, 366, sv_companion_above != df_companion_above, set_value, 334000 + df_companion_above)
+                    SToggle(1092, 354, sv_companion_above, set_value, 335, "companion.above")
+                    SRevert(1062, 366, sv_companion_above != df_companion_above, set_value, 335000 + df_companion_above)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_5 - 396
                     SRow(396, "Colours", "His variants; mooi takes your wallpaper's colours", true, "", 344, true)
                     STrack(668, 412, 470)
-                    SChoice(668, 412, 94, "Classic", sv_companion_variant == 0, set_value, 335000)
-                    SChoice(762, 412, 94, "Night", sv_companion_variant == 1, set_value, 335001)
-                    SChoice(856, 412, 94, "Pastel", sv_companion_variant == 2, set_value, 335002)
-                    SChoice(950, 412, 94, "Game Boy", sv_companion_variant == 3, set_value, 335003)
-                    SChoice(1044, 412, 94, "mooi", sv_companion_variant == 4, set_value, 335004)
-                    SRevert(638, 426, sv_companion_variant != df_companion_variant, set_value, 335000 + df_companion_variant)
+                    SChoice(668, 412, 94, "Classic", sv_companion_variant == 0, set_value, 336000)
+                    SChoice(762, 412, 94, "Night", sv_companion_variant == 1, set_value, 336001)
+                    SChoice(856, 412, 94, "Pastel", sv_companion_variant == 2, set_value, 336002)
+                    SChoice(950, 412, 94, "Game Boy", sv_companion_variant == 3, set_value, 336003)
+                    SChoice(1044, 412, 94, "mooi", sv_companion_variant == 4, set_value, 336004)
+                    SRevert(638, 426, sv_companion_variant != df_companion_variant, set_value, 336000 + df_companion_variant)
                 }
                 group {
                     show: true
@@ -3257,59 +3273,59 @@ scene Mooi {
                     move: 0, gy_15_7 - 522
                     SRow(522, "Wander", "How often he walks about on his own", true, "", 374, false)
                     STrack(698, 538, 440)
-                    SChoice(698, 538, 110, "Off", sv_companion_wander == 0, set_value, 336000)
-                    SChoice(808, 538, 110, "Rare", sv_companion_wander == 1, set_value, 336001)
-                    SChoice(918, 538, 110, "Some", sv_companion_wander == 2, set_value, 336002)
-                    SChoice(1028, 538, 110, "Often", sv_companion_wander == 3, set_value, 336003)
-                    SRevert(668, 552, sv_companion_wander != df_companion_wander, set_value, 336000 + df_companion_wander)
+                    SChoice(698, 538, 110, "Off", sv_companion_wander == 0, set_value, 337000)
+                    SChoice(808, 538, 110, "Rare", sv_companion_wander == 1, set_value, 337001)
+                    SChoice(918, 538, 110, "Some", sv_companion_wander == 2, set_value, 337002)
+                    SChoice(1028, 538, 110, "Often", sv_companion_wander == 3, set_value, 337003)
+                    SRevert(668, 552, sv_companion_wander != df_companion_wander, set_value, 337000 + df_companion_wander)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_8 - 582
                     SRow(582, "Motion", "Still keeps him in place, lively makes him bouncier", true, "", 418, true)
                     STrack(742, 598, 396)
-                    SChoice(742, 598, 132, "Still", sv_companion_motion == 0, set_value, 337000)
-                    SChoice(874, 598, 132, "Calm", sv_companion_motion == 1, set_value, 337001)
-                    SChoice(1006, 598, 132, "Lively", sv_companion_motion == 2, set_value, 337002)
-                    SRevert(712, 612, sv_companion_motion != df_companion_motion, set_value, 337000 + df_companion_motion)
+                    SChoice(742, 598, 132, "Still", sv_companion_motion == 0, set_value, 338000)
+                    SChoice(874, 598, 132, "Calm", sv_companion_motion == 1, set_value, 338001)
+                    SChoice(1006, 598, 132, "Lively", sv_companion_motion == 2, set_value, 338002)
+                    SRevert(712, 612, sv_companion_motion != df_companion_motion, set_value, 338000 + df_companion_motion)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_9 - 642
                     SRow(642, "Talk", "Off, only what matters, or chatty", true, "", 418, true)
                     STrack(742, 658, 396)
-                    SChoice(742, 658, 132, "Off", sv_companion_talk == 0, set_value, 340000)
-                    SChoice(874, 658, 132, "Rare", sv_companion_talk == 1, set_value, 340001)
-                    SChoice(1006, 658, 132, "Chatty", sv_companion_talk == 2, set_value, 340002)
-                    SRevert(712, 672, sv_companion_talk != df_companion_talk, set_value, 340000 + df_companion_talk)
+                    SChoice(742, 658, 132, "Off", sv_companion_talk == 0, set_value, 341000)
+                    SChoice(874, 658, 132, "Rare", sv_companion_talk == 1, set_value, 341001)
+                    SChoice(1006, 658, 132, "Chatty", sv_companion_talk == 2, set_value, 341002)
+                    SRevert(712, 672, sv_companion_talk != df_companion_talk, set_value, 341000 + df_companion_talk)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_10 - 702
                     SRow(702, "Throw him", "Pick him up and flick: he flies and bounces off the edges", true, "", 768, true)
-                    SToggle(1092, 720, sv_companion_throw, set_value, 338, "companion.throw")
-                    SRevert(1062, 732, sv_companion_throw != df_companion_throw, set_value, 338000 + df_companion_throw)
+                    SToggle(1092, 720, sv_companion_throw, set_value, 339, "companion.throw")
+                    SRevert(1062, 732, sv_companion_throw != df_companion_throw, set_value, 339000 + df_companion_throw)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_11 - 762
                     SRow(762, "Lock his place", "He stays where he is; no walking or dragging", true, "", 768, true)
-                    SToggle(1092, 780, sv_companion_locked, set_value, 339, "companion.locked")
-                    SRevert(1062, 792, sv_companion_locked != df_companion_locked, set_value, 339000 + df_companion_locked)
+                    SToggle(1092, 780, sv_companion_locked, set_value, 340, "companion.locked")
+                    SRevert(1062, 792, sv_companion_locked != df_companion_locked, set_value, 340000 + df_companion_locked)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_12 - 822
                     SRow(822, "Dance to music", "He dances and sings along while something plays", true, "", 768, true)
-                    SToggle(1092, 840, sv_companion_music, set_value, 341, "companion.music")
-                    SRevert(1062, 852, sv_companion_music != df_companion_music, set_value, 341000 + df_companion_music)
+                    SToggle(1092, 840, sv_companion_music, set_value, 342, "companion.music")
+                    SRevert(1062, 852, sv_companion_music != df_companion_music, set_value, 342000 + df_companion_music)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_13 - 882
                     SRow(882, "Clock in his panel", "The time and date on his panel's home tab", true, "", 768, true)
-                    SToggle(1092, 900, sv_companion_clock, set_value, 342, "companion.clock")
-                    SRevert(1062, 912, sv_companion_clock != df_companion_clock, set_value, 342000 + df_companion_clock)
+                    SToggle(1092, 900, sv_companion_clock, set_value, 343, "companion.clock")
+                    SRevert(1062, 912, sv_companion_clock != df_companion_clock, set_value, 343000 + df_companion_clock)
                 }
                 group {
                     show: true
@@ -3320,36 +3336,36 @@ scene Mooi {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_15 - 1008
                     SRow(1008, "Notifications", "A ding! when one arrives; he never reads what it says", true, "", 768, false)
-                    SToggle(1092, 1026, sv_companion_react_notes, set_value, 343, "companion.react.notes")
-                    SRevert(1062, 1038, sv_companion_react_notes != df_companion_react_notes, set_value, 343000 + df_companion_react_notes)
+                    SToggle(1092, 1026, sv_companion_react_notes, set_value, 344, "companion.react.notes")
+                    SRevert(1062, 1038, sv_companion_react_notes != df_companion_react_notes, set_value, 344000 + df_companion_react_notes)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_16 - 1068
                     SRow(1068, "Workspaces and windows", "A hop when you switch, a peek at a new window", true, "", 768, true)
-                    SToggle(1092, 1086, sv_companion_react_spaces, set_value, 344, "companion.react.spaces")
-                    SRevert(1062, 1098, sv_companion_react_spaces != df_companion_react_spaces, set_value, 344000 + df_companion_react_spaces)
+                    SToggle(1092, 1086, sv_companion_react_spaces, set_value, 345, "companion.react.spaces")
+                    SRevert(1062, 1098, sv_companion_react_spaces != df_companion_react_spaces, set_value, 345000 + df_companion_react_spaces)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_17 - 1128
                     SRow(1128, "Battery", "Hungry when it runs low, glad on the charger", true, "", 768, true)
-                    SToggle(1092, 1146, sv_companion_react_battery, set_value, 345, "companion.react.battery")
-                    SRevert(1062, 1158, sv_companion_react_battery != df_companion_react_battery, set_value, 345000 + df_companion_react_battery)
+                    SToggle(1092, 1146, sv_companion_react_battery, set_value, 346, "companion.react.battery")
+                    SRevert(1062, 1158, sv_companion_react_battery != df_companion_react_battery, set_value, 346000 + df_companion_react_battery)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_18 - 1188
                     SRow(1188, "Focus timer", "Focused while a block runs, a cheer when it ends", true, "", 768, true)
-                    SToggle(1092, 1206, sv_companion_react_focus, set_value, 346, "companion.react.focus")
-                    SRevert(1062, 1218, sv_companion_react_focus != df_companion_react_focus, set_value, 346000 + df_companion_react_focus)
+                    SToggle(1092, 1206, sv_companion_react_focus, set_value, 347, "companion.react.focus")
+                    SRevert(1062, 1218, sv_companion_react_focus != df_companion_react_focus, set_value, 347000 + df_companion_react_focus)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_15_19 - 1248
                     SRow(1248, "Time of day", "Good morning once a day, a yawn late at night", true, "", 768, true)
-                    SToggle(1092, 1266, sv_companion_react_time, set_value, 347, "companion.react.time")
-                    SRevert(1062, 1278, sv_companion_react_time != df_companion_react_time, set_value, 347000 + df_companion_react_time)
+                    SToggle(1092, 1266, sv_companion_react_time, set_value, 348, "companion.react.time")
+                    SRevert(1062, 1278, sv_companion_react_time != df_companion_react_time, set_value, 348000 + df_companion_react_time)
                 }
             }
             group {
@@ -3728,36 +3744,36 @@ scene Mooi {
                     move: 0, gy_22_1 - 156
                     SRow(156, "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", true, "", 374, false)
                     STrack(698, 172, 440)
-                    SChoice(698, 172, 110, "Bottom", sv_nexus_edge == 0, set_value, 357000)
-                    SChoice(808, 172, 110, "Top", sv_nexus_edge == 1, set_value, 357001)
-                    SChoice(918, 172, 110, "Left", sv_nexus_edge == 2, set_value, 357002)
-                    SChoice(1028, 172, 110, "Right", sv_nexus_edge == 3, set_value, 357003)
-                    SRevert(668, 186, sv_nexus_edge != df_nexus_edge, set_value, 357000 + df_nexus_edge)
+                    SChoice(698, 172, 110, "Bottom", sv_nexus_edge == 0, set_value, 358000)
+                    SChoice(808, 172, 110, "Top", sv_nexus_edge == 1, set_value, 358001)
+                    SChoice(918, 172, 110, "Left", sv_nexus_edge == 2, set_value, 358002)
+                    SChoice(1028, 172, 110, "Right", sv_nexus_edge == 3, set_value, 358003)
+                    SRevert(668, 186, sv_nexus_edge != df_nexus_edge, set_value, 358000 + df_nexus_edge)
                 }
                 group {
                     show: sv_nexus_mode == 0
                     move: 0, gy_22_2 - 216
                     SRow(216, "Layout", "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", true, "", 550, true)
                     STrack(874, 232, 264)
-                    SChoice(874, 232, 132, "One row", sv_nexus_rows == 0, set_value, 360000)
-                    SChoice(1006, 232, 132, "Free canvas", sv_nexus_rows == 1, set_value, 360001)
-                    SRevert(844, 246, sv_nexus_rows != df_nexus_rows, set_value, 360000 + df_nexus_rows)
+                    SChoice(874, 232, 132, "One row", sv_nexus_rows == 0, set_value, 361000)
+                    SChoice(1006, 232, 132, "Free canvas", sv_nexus_rows == 1, set_value, 361001)
+                    SRevert(844, 246, sv_nexus_rows != df_nexus_rows, set_value, 361000 + df_nexus_rows)
                 }
                 group {
                     show: sv_nexus_mode == 0
                     move: 0, gy_22_3 - 276
                     SRow(276, "Profile", "Your banner and picture, small or large", true, "", 550, true)
                     STrack(874, 292, 264)
-                    SChoice(874, 292, 132, "Small", sv_nexus_profile == 0, set_value, 361000)
-                    SChoice(1006, 292, 132, "Large", sv_nexus_profile == 1, set_value, 361001)
-                    SRevert(844, 306, sv_nexus_profile != df_nexus_profile, set_value, 361000 + df_nexus_profile)
+                    SChoice(874, 292, 132, "Small", sv_nexus_profile == 0, set_value, 362000)
+                    SChoice(1006, 292, 132, "Large", sv_nexus_profile == 1, set_value, 362001)
+                    SRevert(844, 306, sv_nexus_profile != df_nexus_profile, set_value, 362000 + df_nexus_profile)
                 }
                 group {
                     show: sv_nexus_mode == 0
                     move: 0, gy_22_4 - 336
                     SRow(336, "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", true, "", 768, true)
-                    SToggle(1092, 354, sv_nexus_notches, set_value, 364, "nexus.notches")
-                    SRevert(1062, 366, sv_nexus_notches != df_nexus_notches, set_value, 364000 + df_nexus_notches)
+                    SToggle(1092, 354, sv_nexus_notches, set_value, 365, "nexus.notches")
+                    SRevert(1062, 366, sv_nexus_notches != df_nexus_notches, set_value, 365000 + df_nexus_notches)
                 }
                 group {
                     show: sv_nexus_mode == 0
@@ -3773,8 +3789,8 @@ scene Mooi {
                     show: true
                     move: 0, gy_22_7 - 490
                     SRow(490, "The side notch", "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", true, "", 768, false)
-                    SToggle(1092, 508, sv_notch_on, set_value, 363, "notch.on")
-                    SRevert(1062, 520, sv_notch_on != df_notch_on, set_value, 363000 + df_notch_on)
+                    SToggle(1092, 508, sv_notch_on, set_value, 364, "notch.on")
+                    SRevert(1062, 520, sv_notch_on != df_notch_on, set_value, 364000 + df_notch_on)
                 }
                 group {
                     show: sv_notch_on == 1
@@ -3791,11 +3807,11 @@ scene Mooi {
                     move: 0, gy_22_10 - 644
                     SRow(644, "Model", "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", true, "", 374, false)
                     STrack(698, 660, 440)
-                    SChoice(698, 660, 110, "Default", sv_claude_model == 0, set_value, 365000)
-                    SChoice(808, 660, 110, "Haiku", sv_claude_model == 1, set_value, 365001)
-                    SChoice(918, 660, 110, "Sonnet", sv_claude_model == 2, set_value, 365002)
-                    SChoice(1028, 660, 110, "Opus", sv_claude_model == 3, set_value, 365003)
-                    SRevert(668, 674, sv_claude_model != df_claude_model, set_value, 365000 + df_claude_model)
+                    SChoice(698, 660, 110, "Default", sv_claude_model == 0, set_value, 366000)
+                    SChoice(808, 660, 110, "Haiku", sv_claude_model == 1, set_value, 366001)
+                    SChoice(918, 660, 110, "Sonnet", sv_claude_model == 2, set_value, 366002)
+                    SChoice(1028, 660, 110, "Opus", sv_claude_model == 3, set_value, 366003)
+                    SRevert(668, 674, sv_claude_model != df_claude_model, set_value, 366000 + df_claude_model)
                 }
                 group {
                     show: true

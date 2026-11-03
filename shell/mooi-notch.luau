@@ -736,8 +736,33 @@ on("nt_wall", function(v)
     local p = list[base + (tonumber(v) or -1) + 1]
     if p then wear(p) end
 end)
+local wear_qs
 wear = function(p)
     text.wp_t = "WEARING " .. string.upper(p:match("([^/]+)$") or p) .. "…"
+    -- the desk (when mooi draws the wallpaper) grows the new picture out of the notch's edge (D144)
+    launch("pleamar", { "--say", "mooi-desk", "emit from_notch " .. math.floor(tonumber(fact.nt_cy) or 540) })
+    -- Skwd Wall's own transitions (D144): applied through its daemon, whose post-processing hook
+    -- (wallpaper-styles/bin/skwd-sync) hands the picture on to the picker and the palette. A daemon
+    -- this started (it runs on demand) is stopped again once its transition has played: the
+    -- picker draws the same picture under it. Without Skwd, the picker as before.
+    launch("systemctl", { "--user", "is-active", "skwd-walld.service" }, function(out)
+        local was_up = tostring(out or ""):match("^active") ~= nil
+        local function apply()
+            launch("skwd-helm", { "apply", p }, function(_, code)
+                if code ~= 0 then wear_qs(p); return end
+                confirm_wear(p, function() text.wp_t = "WEARING IT · SKWD'S TRANSITION, THE PALETTE FOLLOWS" end,
+                    function() text.wp_t = "SENT TO SKWD · THE PICKER DID NOT CONFIRM IT" end)
+                if not was_up then after(6000, function() launch("systemctl", { "--user", "stop", "skwd-walld.service" }) end) end
+            end)
+        end
+        if was_up then apply(); return end
+        launch("systemctl", { "--user", "start", "skwd-walld.service" }, function(_, code)
+            if code ~= 0 then wear_qs(p); return end
+            after(1200, apply)
+        end)
+    end)
+end
+wear_qs = function(p)
     -- as the studio does (shell/mooi-wallpaper.luau): the picker, which also makes the palette
     launch("qs", { "-p", HOME .. "/.config/qs-wallpaperpicker", "ipc", "call", "wallpaper", "set", p }, function(_, code)
         if code == 0 then
