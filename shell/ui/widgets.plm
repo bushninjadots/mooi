@@ -54,9 +54,9 @@ library Widgets {
                    move cx + bs + 6 * u - g, cy - g; line cx + bs + 6 * u + g - 2 * u, cy; line cx + bs + 6 * u - g, cy + g; close }
             box { from: cx + bs + 6 * u + g - 1.6 * u, cy - g; size: 1.6 * u, 2 * g; color: fl.engrave }
         }
-        zone box cprev { from: cx - 1.5 * bs - 6 * u, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Previous"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
-        zone box cplay { from: cx - bs / 2, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Play or pause"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
-        zone box cnext { from: cx + bs / 2 + 6 * u, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Next"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
+        zone box cprev { from: cx - 1.5 * bs - 6 * u, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Previous"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 and not editing }
+        zone box cplay { from: cx - bs / 2, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Play or pause"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 and not editing }
+        zone box cnext { from: cx + bs / 2 + 6 * u, cy - bs / 2; size: bs, bs; cursor: pointer; role: button; label: "Next"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 and not editing }
         on press cprev { emit wg_ctl(k * 10) }
         on press cplay { emit wg_ctl(k * 10 + 1) }
         on press cnext { emit wg_ctl(k * 10 + 2) }
@@ -67,14 +67,14 @@ library Widgets {
         size: w, 10 * u
         box { from: x, y - (1 + hv) * u; size: w, (2 + 2 * hv) * u; color: fl.trace_dim; opacity: 0.8 }
         box { from: x, y - (1 + hv) * u; size: w * clamp(np_prg, 0, 1), (2 + 2 * hv) * u; color: fl.phos }
-        zone box pseek { from: x, y - 6 * u; size: w, 12 * u; cursor: pointer; role: slider; label: "Seek"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 }
+        zone box pseek { from: x, y - 6 * u; size: w, 12 * u; cursor: pointer; role: slider; label: "Seek"; show: pick(k, hl0, hl1, hl2, hl3, hl4, hl5, hl6, hl7) > 0.5 and not editing }
         on press pseek { emit wg_seek(k * 1000 + round(clamp((local.x - x) / w, 0, 1) * 999)) }
     }
 
     // What the cover does: opens mooi's player; the wheel over it is the volume.
     component CoverZone(x: number, y: number, w: number, h: number, k: number) {
         size: w, h
-        zone box cz { from: x, y; size: w, h; cursor: pointer; role: button; label: "Open the player" }
+        zone box cz { from: x, y; size: w, h; cursor: pointer; role: button; label: "Open the player"; show: not editing }
         on press cz { emit wg_open(k) }
         on scroll cz { emit wg_vol(k * 10 + if(wheel > 0, 1, 0)) }
     }
@@ -174,6 +174,71 @@ library Widgets {
                 Progress(x + 24 * u, y + w + 60 * u, w - 48 * u, u, k, hv) }
         CoverZone(rcx - rl, rcy - rl, rl * 2, rl * 2, k)
         Controls(rcx, rcy + r * 0.62, u, k, hv)
+    }
+
+    // ── Edit mode (mooi widgets edit) ──────────────────────────────
+
+    // A small engraved chip: a choice, a switch or an action, sending its code to the logic.
+    component Chip(x: number, y: number, w: number, word: text, on: bool, code: number) {
+        size: w, 24
+        zone box ch { from: x, y; size: w, 24; cursor: pointer; role: button; label: word }
+        box { from: x, y; size: w, 24; corner: 4; color: if(on, fl.phos_fill, fl.well); opacity: if(on, 0.9, 0.7 + 0.3 * ch.hover) }
+        box { from: x, y; size: w, 24; corner: 4; stroke: 1; color: if(on, fl.phos, mix(fl.trace_dim, fl.trace_lit, ch.hover)) }
+        text word { at: x + w / 2, y + 12; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"
+                    width: w - 6; lines: 1; color: if(on, fl.ink, fl.engrave) }
+        on press ch { emit wg_opt(code) }
+    }
+
+    // The options beside the chosen widget: its layout or mode, what it does at rest, its
+    // switches, and duplicate / remove. `k` is its slot; the logic says what is chosen.
+    component Panel(x: number, y: number, k: number) {
+        size: 248, 286
+        let base = k * 1000
+        // the rows: at rest, then the switches, lower for the visualiser (its twelve modes take three rows)
+        let ry = if(wg_sk > 0.5, 146, 90)
+        let sy = if(wg_sk > 0.5, 194, 138)
+        box { from: x, y; size: 248, 286; corner: 6; color: fl.hull; opacity: 0.94 }
+        box { from: x, y; size: 248, 286; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+        text pick(wg_sk < 0.5, "VISUALISER", "NOW PLAYING") { at: x + 12, y + 18; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        group {
+            show: wg_sk < 0.5
+            text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            Chip(x + 12, y + 52, 70, "SLEEVE", wg_sl < 0.5, base + 100)
+            Chip(x + 89, y + 52, 70, "LYRICS", wg_sl > 0.5 and wg_sl < 1.5, base + 101)
+            Chip(x + 166, y + 52, 70, "RECORD", wg_sl > 1.5, base + 102)
+            text "SWITCHES" { at: x + 12, y + sy; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            Chip(x + 12, y + sy + 10, 108, "LYRIC LINE", wg_o3, base + 300 + if(wg_o3, 0, 1))
+            Chip(x + 128, y + sy + 10, 108, "PROGRESS", wg_o4, base + 400 + if(wg_o4, 0, 1))
+            Chip(x + 12, y + sy + 40, 108, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+            Chip(x + 128, y + sy + 40, 108, "WHEEL VOLUME", wg_o6, base + 600 + if(wg_o6, 0, 1))
+        }
+        group {
+            show: wg_sk > 0.5
+            text "MODE" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            Chip(x + 12, y + 52, 52, "SPECTRUM", wg_sm < 0.5, base + 100)
+            Chip(x + 69, y + 52, 52, "MIRROR", wg_sm > 0.5 and wg_sm < 1.5, base + 101)
+            Chip(x + 126, y + 52, 52, "RING", wg_sm > 1.5 and wg_sm < 2.5, base + 102)
+            Chip(x + 183, y + 52, 52, "AURORA", wg_sm > 2.5 and wg_sm < 3.5, base + 103)
+            Chip(x + 12, y + 80, 52, "LED", wg_sm > 3.5 and wg_sm < 4.5, base + 104)
+            Chip(x + 69, y + 80, 52, "ORBIT", wg_sm > 4.5 and wg_sm < 5.5, base + 105)
+            Chip(x + 126, y + 80, 52, "SCOPE", wg_sm > 5.5 and wg_sm < 6.5, base + 106)
+            Chip(x + 183, y + 80, 52, "HORIZON", wg_sm > 6.5 and wg_sm < 7.5, base + 107)
+            Chip(x + 12, y + 108, 52, "DUST", wg_sm > 7.5 and wg_sm < 8.5, base + 108)
+            Chip(x + 69, y + 108, 52, "RIPPLE", wg_sm > 8.5 and wg_sm < 9.5, base + 109)
+            Chip(x + 126, y + 108, 52, "SKYLINE", wg_sm > 9.5 and wg_sm < 10.5, base + 110)
+            Chip(x + 183, y + 108, 52, "LIQUID", wg_sm > 10.5, base + 111)
+            text "LOOK" { at: x + 12, y + sy; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            Chip(x + 12, y + sy + 10, 108, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+            Chip(x + 128, y + sy + 10, 26, "−", false, base + 800 + max(0, round(wg_og * 10) - 2))
+            text "GLOW {round(wg_og * 100)}%" { at: x + 182, y + sy + 22; anchor: center; align: center; size: 9; family: "Share Tech Mono"; width: 56; lines: 1; color: fl.engrave }
+            Chip(x + 210, y + sy + 10, 26, "+", false, base + 800 + min(10, round(wg_og * 10) + 2))
+        }
+        text "AT REST" { at: x + 12, y + ry; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+        Chip(x + 12, y + ry + 10, 70, "HIDE", wg_si < 0.5, base + 200)
+        Chip(x + 89, y + ry + 10, 70, "REST", wg_si > 0.5 and wg_si < 1.5, base + 201)
+        Chip(x + 166, y + ry + 10, 70, "MARKER", wg_si > 1.5, base + 202)
+        Chip(x + 12, y + 248, 108, "DUPLICATE", false, base + 901)
+        Chip(x + 128, y + 248, 108, "REMOVE", false, base + 902)
     }
 
     // The visualiser: one of the twelve (lib/widgets MODES), in the palette's two signal colours,

@@ -247,7 +247,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool }
+    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -369,6 +369,44 @@ scene Widgets {
     fact op7 = 1
     prop po7 = 1 ~wg.fade
     follow po7 = op7
+    // ── Edit mode ──
+    fact editing = false
+    // a widget carried (its slot, how far) or pulled by an edge (its slot, how far each way)
+    fact wg_dk = -1
+    fact wg_dx = 0
+    fact wg_dy = 0
+    fact wg_rk = -1
+    fact wg_rw = 0
+    fact wg_rh = 0
+    // where it would settle (the logic's snap) and the lines it snapped to (-1: none)
+    fact wg_sx = 0
+    fact wg_sy = 0
+    fact wg_sw = 0
+    fact wg_sh = 0
+    fact wg_gvx = -1
+    fact wg_ghy = -1
+    // the chosen widget, its panel's place and what the panel shows
+    fact wg_sel = -1
+    fact wg_px = 0
+    fact wg_py = 0
+    fact wg_sk = 0
+    fact wg_sl = 0
+    fact wg_sm = 0
+    fact wg_si = 1
+    fact wg_o3 = true
+    fact wg_o4 = true
+    fact wg_o5 = false
+    fact wg_o6 = true
+    fact wg_og = 0.6
+    event wg_edit ->             // edit mode on (1) or off (0): `mooi widgets edit`, Done, Esc, a press on the desktop
+    event wg_pick ->             // a widget chosen: its slot
+    event wg_drag ->             // carried: slot · 65536 + x / 8 · 256 + y / 8
+    event wg_drop ->             // let go: its slot
+    event wg_size ->             // pulled: slot · 65536 + width / 8 · 256 + height / 8
+    event wg_sized ->            // let go of the edge: its slot
+    event wg_add ->              // + now playing (0) or + visualiser (1)
+    event wg_opt ->              // the panel: slot · 1000 + what · 100 + value
+
     event wg_hov ->              // to the logic: slot · 10 + 1 pointed at, + 0 left
     event wg_ctl ->              // slot · 10 + 0 previous · 1 play/pause · 2 next
     event wg_seek ->             // slot · 1000 + where (0 … 999)
@@ -380,18 +418,35 @@ scene Widgets {
         size: full, full
         anchor: top
         level: bottom
-        keyboard: none
-        rate: 30, 4 while not np_playing and wg_calm
+        keyboard: on_demand while editing
+        rate: 30, 4 while not np_playing and wg_calm and not editing
+
+        // edit mode: a press on the empty desktop leaves it; a faint grid to place by (snapping is 8 px)
+        zone box wbg { from: 0, 0; size: desk.width, desk.height; agent: hidden; show: editing }
+        on press wbg { emit wg_edit(0) }
+        group {
+            show: editing
+            box { from: 0, 0; size: desk.width, desk.height; color: #000000; opacity: 0.18 }
+            repeat gx in 0..60 {
+                box { from: gx * 32, 0; size: 1, desk.height; color: fl.trace_dim; opacity: if(mod(gx, 4) == 0, 0.35, 0.14) }
+            }
+            repeat gy in 0..34 {
+                box { from: 0, gy * 32; size: desk.width, 1; color: fl.trace_dim; opacity: if(mod(gy, 4) == 0, 0.35, 0.14) }
+            }
+        }
 
         for w in wg {
             let k = w.index
-            let hv = if(w.kind < 0.5, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7), 0)
+            let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7), 0)
             let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7)), 0.9 * hv * if(w.st < 1.5, 1, 0))
             let over = desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
             on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }
+            let ox = if(wg_dk == k, wg_dx, 0)
+            let oy = if(wg_dk == k, wg_dy, 0)
             group {
-                opacity: fo
-                show: w.st < 1.5 and fo > 0.01
+                opacity: if(editing, if(w.gh, 0.4, 1), fo)
+                show: editing or (w.st < 1.5 and fo > 0.01)
+                move: ox, oy
                 group { show: w.kind < 0.5 and w.lay < 0.5
                         wg.Sleeve(w.x, w.y, w.w, w.h, w.u, w.lyr, w.prog, w.plate, k, hv) }
                 group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
@@ -401,9 +456,72 @@ scene Widgets {
                 group { show: w.kind > 0.5
                         wg.Visualiser(w.x, w.y, w.w, w.h, w.u, w.mode, w.glow, w.plate) }
             }
-            group { show: w.st > 2.5
+            group { show: w.st > 2.5 and not editing
                     wg.Marker(w.x, w.y, w.u, k) }
+
+            // edit mode: its outline, the hand that carries it and the edges that size it
+            group {
+                show: editing
+                let rec = w.kind < 0.5 and w.lay > 1.5
+                box { from: w.x + ox, w.y + oy; size: w.w, w.h; corner: 4; stroke: if(wg_sel == k, 2, 1); color: if(wg_sel == k, fl.phos, fl.trace_lit); opacity: 0.9 }
+                text "HIDDEN AT REST" { at: w.x + ox + 8, w.y + oy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: w.gh }
+                zone box mv { from: w.x, w.y; size: w.w, w.h; cursor: grab; role: button; label: "Move this widget" }
+                on press mv { emit wg_pick(k) }
+                on drag mv {
+                    wg_dk = k; wg_dx = drag.dx; wg_dy = drag.dy
+                    emit wg_drag(k * 65536 + clamp(round((w.x + drag.dx) / 8), 0, 255) * 256 + clamp(round((w.y + drag.dy) / 8), 0, 255))
+                }
+                on release mv while wg_dk == k { emit wg_drop(k); wg_dk = -1; wg_dx = 0; wg_dy = 0 }
+                // the right edge, the bottom edge (not a record's: it keeps its shape) and the corner
+                zone box re { from: w.x + w.w - 6, w.y; size: 12, w.h - 14; cursor: ew_resize; role: button; label: "Make it wider or narrower"; show: not rec }
+                zone box rb { from: w.x, w.y + w.h - 6; size: w.w - 14, 12; cursor: ns_resize; role: button; label: "Make it taller or shorter"; show: not rec }
+                zone box rc { from: w.x + w.w - 14, w.y + w.h - 14; size: 20, 20; cursor: nwse_resize; role: button; label: "Resize it" }
+                box { from: w.x + w.w - 10, w.y + w.h - 10; size: 8, 8; corner: 1; color: fl.phos }
+                on drag re { wg_rk = k; wg_rw = drag.dx; wg_rh = 0
+                             emit wg_size(k * 65536 + clamp(round((w.w + drag.dx) / 8), 0, 255) * 256 + clamp(round(w.h / 8), 0, 255)) }
+                on drag rb { wg_rk = k; wg_rw = 0; wg_rh = drag.dy
+                             emit wg_size(k * 65536 + clamp(round(w.w / 8), 0, 255) * 256 + clamp(round((w.h + drag.dy) / 8), 0, 255)) }
+                on drag rc { wg_rk = k; wg_rw = drag.dx; wg_rh = drag.dy
+                             emit wg_size(k * 65536 + clamp(round((w.w + drag.dx) / 8), 0, 255) * 256 + clamp(round((w.h + drag.dy) / 8), 0, 255)) }
+                on release re while wg_rk == k { emit wg_sized(k); wg_rk = -1; wg_rw = 0; wg_rh = 0 }
+                on release rb while wg_rk == k { emit wg_sized(k); wg_rk = -1; wg_rw = 0; wg_rh = 0 }
+                on release rc while wg_rk == k { emit wg_sized(k); wg_rk = -1; wg_rw = 0; wg_rh = 0 }
+            }
         }
+
+        // where a carried or pulled widget will settle, and the lines it snapped to
+        group {
+            show: editing and (wg_dk >= 0 or wg_rk >= 0)
+            box { from: wg_sx, wg_sy; size: wg_sw, wg_sh; corner: 4; color: fl.phos; opacity: 0.12 }
+            box { from: wg_sx, wg_sy; size: wg_sw, wg_sh; corner: 4; stroke: 1.5; color: fl.phos; opacity: 0.8 }
+            box { from: wg_gvx, 0; size: 1, desk.height; color: fl.ember; opacity: 0.8; show: wg_gvx >= 0 }
+            box { from: 0, wg_ghy; size: desk.width, 1; color: fl.ember; opacity: 0.8; show: wg_ghy >= 0 }
+        }
+
+        // + Add and Done, top centre; the chosen widget's options beside it
+        group {
+            show: editing
+            let cx = desk.width / 2
+            box { from: cx - 214, 12; size: 428, 40; corner: 6; color: fl.hull; opacity: 0.94 }
+            box { from: cx - 214, 12; size: 428, 40; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+            text "WIDGETS" { at: cx - 200, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+            zone box adn { from: cx - 120, 20; size: 120, 24; cursor: pointer; role: button; label: "Add Now Playing" }
+            zone box adv { from: cx + 6, 20; size: 110, 24; cursor: pointer; role: button; label: "Add a visualiser" }
+            zone box don { from: cx + 124, 20; size: 82, 24; cursor: pointer; role: button; label: "Done" }
+            box { from: cx - 120, 20; size: 120, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adn.hover }
+            box { from: cx + 6, 20; size: 110, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adv.hover }
+            box { from: cx + 124, 20; size: 82, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
+            text "+ NOW PLAYING" { at: cx - 60, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text "+ VISUALISER" { at: cx + 61, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text "DONE" { at: cx + 165, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+            on press adn { emit wg_add(0) }
+            on press adv { emit wg_add(1) }
+            on press don { emit wg_edit(0) }
+        }
+        group { show: editing and wg_sel >= 0 and wg_dk < 0 and wg_rk < 0
+                wg.Panel(wg_px, wg_py, wg_sel) }
+
+        on key Escape while editing { emit wg_edit(0) }
     }
 
     on change desk.width * 4096 + desk.height { emit wg_room(desk.width * 4096 + desk.height) }

@@ -59,7 +59,7 @@ local function unsettle()
     calm_at = os.time() + 2
 end
 every(1000, function()
-    if fact.wg_calm or next(hovered) ~= nil or os.time() < calm_at then return end
+    if fact.wg_calm or fact.editing or next(hovered) ~= nil or os.time() < calm_at then return end
     fact.wg_calm = true
 end)
 
@@ -78,6 +78,7 @@ local function publish()
             op = ({ shown = 1, rest = 0.35, hidden = 0, marker = 0 })[st],
             glow = tonumber(o.glow) or 0, plate = o.plate == true,
             lyr = o.lyrics ~= false, prog = o.progress ~= false,
+            gh = st == "hidden" or st == "marker",
         }
     end
     model.wg = rows
@@ -239,6 +240,97 @@ on("wg_vol", function(v)
     pcall(sys.call, "audio.volume", volume)
 end)
 on("wg_open", function() run("mooi", { "player" }) end)
+
+-- ── Edit mode: carry, pull, choose, add (lib/widgets works it out; saved once per gesture) ──
+local pending = nil      -- where the carried or pulled widget would settle: { k, x, y, w, h }
+local function panel()
+    local k = fact.wg_sel
+    local w = doc.widgets[k + 1]
+    if not w then fact.wg_sel = -1; return end
+    fact.wg_px, fact.wg_py = W.panel_spot(w, 248, 286, room)
+    local o = w.options or {}
+    fact.wg_sk = w.kind == "visualiser" and 1 or 0
+    fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
+    fact.wg_sm = W.MODE_INDEX[w.mode] or 0
+    fact.wg_si = W.IDLE_INDEX[w.idle] or 1
+    fact.wg_o3, fact.wg_o4, fact.wg_o5, fact.wg_o6 = o.lyrics ~= false, o.progress ~= false, o.plate == true, o.scroll_volume ~= false
+    fact.wg_og = tonumber(o.glow) or 0
+end
+local function commit(d)
+    doc = d
+    save()
+    publish()
+    if fact.wg_sel >= 0 then panel() end
+end
+on("wg_edit", function(v)
+    local on_it = math.floor(tonumber(v) or 0) == 1
+    fact.editing = on_it
+    if not on_it then fact.wg_sel, fact.wg_dk, fact.wg_rk = -1, -1, -1; pending = nil end
+    publish()
+end)
+on("wg_pick", function(v)
+    fact.wg_sel = math.floor(tonumber(v) or -1)
+    panel()
+end)
+on("wg_drag", function(v)
+    local k, gx, gy = W.unpack(v)
+    local w = doc.widgets[k + 1]
+    if not w then return end
+    local x, y, ww, hh, g = W.snap(doc, k + 1, gx * W.GRID, gy * W.GRID, w.w, w.h, room)
+    pending = { k = k, x = x, y = y, w = ww, h = hh }
+    fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh = x, y, ww, hh
+    fact.wg_gvx, fact.wg_ghy = g.vx or -1, g.hy or -1
+end)
+on("wg_size", function(v)
+    local k, gw, gh = W.unpack(v)
+    local w = doc.widgets[k + 1]
+    if not w then return end
+    local ww, hh = W.clamp_size(w, gw * W.GRID, gh * W.GRID)
+    local r = W.clamp_rect({ x = w.x, y = w.y, w = ww, h = hh }, room)
+    pending = { k = k, x = r.x, y = r.y, w = r.w, h = r.h }
+    fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh = r.x, r.y, r.w, r.h
+    fact.wg_gvx, fact.wg_ghy = -1, -1
+end)
+local function settle(v)
+    local k = math.floor(tonumber(v) or -1)
+    local p = pending
+    pending = nil
+    fact.wg_gvx, fact.wg_ghy = -1, -1
+    if not p or p.k ~= k or not doc.widgets[k + 1] then return end
+    fact.wg_sel = k
+    commit(W.set_rect(doc, doc.widgets[k + 1].id, p.x, p.y, p.w, p.h, room))
+end
+on("wg_drop", settle)
+on("wg_sized", settle)
+on("wg_add", function(v)
+    local d, id = W.add(doc, math.floor(tonumber(v) or 0) == 1 and "visualiser" or "nowplaying", room)
+    if not id then return end
+    fact.wg_sel = W.find(d, id) - 1
+    commit(d)
+end)
+on("wg_opt", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, what, val = math.floor(v / 1000), math.floor((v % 1000) / 100), v % 100
+    local w = doc.widgets[k + 1]
+    if not w then return end
+    local d = doc
+    if what == 1 then
+        if w.kind == "visualiser" then d = W.set_mode(doc, w.id, W.MODES[val + 1])
+        else d = W.set_layout(doc, w.id, W.NP_LAYOUTS[val + 1], room) end
+    elseif what == 2 then d = W.set_idle(doc, w.id, W.IDLES[val + 1])
+    elseif what >= 3 and what <= 6 then
+        d = W.set_option(doc, w.id, ({ [3] = "lyrics", [4] = "progress", [5] = "plate", [6] = "scroll_volume" })[what], val == 1)
+    elseif what == 8 then d = W.set_option(doc, w.id, "glow", val / 10)
+    elseif what == 9 and val == 1 then
+        local id
+        d, id = W.duplicate(doc, w.id, room)
+        if id then fact.wg_sel = W.find(d, id) - 1 end
+    elseif what == 9 and val == 2 then
+        d = W.remove(doc, w.id)
+        fact.wg_sel = -1
+    end
+    commit(d)
+end)
 
 -- ── The visualiser's feed (the bar's one cava) ──
 local function any_viz()

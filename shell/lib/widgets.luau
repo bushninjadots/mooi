@@ -30,7 +30,7 @@ M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
     nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true },
-    visualiser = { glow = 0.6, mirror = false, plate = false },
+    visualiser = { glow = 0.6, plate = false },
 }
 local PREFIX = { nowplaying = "np", visualiser = "viz" }
 
@@ -279,6 +279,49 @@ function M.set_layout(doc, id, layout, screen)
     w.w, w.h = L.def[1], L.def[2]
     d.widgets[i] = M.clamp_rect(w, screen)
     return d
+end
+
+-- One widget changed, the rest as they were; nonsense is ignored (a doc comes back unchanged).
+local function change(doc, id, fn)
+    local d = copy(doc)
+    local i, w = find(d, id)
+    if i then fn(w) end
+    return d
+end
+function M.set_mode(doc, id, mode)
+    return change(doc, id, function(w) if w.kind == "visualiser" and M.MODE_INDEX[mode] then w.mode = mode end end)
+end
+function M.set_idle(doc, id, idle)
+    return change(doc, id, function(w) if M.IDLE_INDEX[idle] then w.idle = idle end end)
+end
+function M.set_option(doc, id, key, value)
+    return change(doc, id, function(w)
+        local d = M.OPTIONS[w.kind][key]
+        if d == nil then return end
+        w.options = w.options or {}
+        if type(d) == "boolean" then w.options[key] = value == true
+        else w.options[key] = clamp(tonumber(value) or d, 0, 1) end
+    end)
+end
+-- Where a dragged or resized widget settles: its own limits, on the screen.
+function M.set_rect(doc, id, x, y, width, height, screen)
+    local d = copy(doc)
+    local i, w = find(d, id)
+    if not i then return d end
+    w.w, w.h = M.clamp_size(w, width, height)
+    w.x, w.y = x, y
+    d.widgets[i] = M.clamp_rect(w, screen)
+    return d
+end
+-- The options panel's place: beside the widget, right if there is room, else left; on the screen.
+-- With no room either side (a full-width visualiser), above it, or below it when the top is short.
+function M.panel_spot(w, pw, ph, screen)
+    local gap, top = 12, screen.top or 0
+    if w.x + w.w + gap + pw <= screen.w then return w.x + w.w + gap, clamp(w.y, top, screen.h - ph) end
+    if w.x - gap - pw >= 0 then return w.x - gap - pw, clamp(w.y, top, screen.h - ph) end
+    local x = clamp(w.x, 0, screen.w - pw)
+    if w.y - gap - ph >= top then return x, w.y - gap - ph end
+    return x, clamp(w.y + w.h + gap, top, screen.h - ph)
 end
 
 function M.idle_state(w, playing)

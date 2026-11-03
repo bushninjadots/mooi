@@ -204,6 +204,8 @@ local GO = {
     -- Hyprland reads its config again, then the bar comes back on it (bin/mooi restart-hypr). Asked
     -- first and ended after: the deck is the bar's child, so the refresh takes it away mid-slide.
     [60] = function() launch("mooi", { "restart-hypr" }); close("restarting Hyprland") end,
+    -- the desktop widgets' edit mode (D137): the deck makes way first
+    [61] = function() close(); after(320, function() launch("mooi", { "widgets", "edit" }) end) end,
 }
 on("nx_go", function(v)
     local f = GO[math.floor(tonumber(v) or -1)]
