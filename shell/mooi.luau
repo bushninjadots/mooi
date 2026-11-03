@@ -1868,7 +1868,7 @@ end
 -- layer, kept running while widgets.on (on unless turned off). Started before the desk, whose cutout
 -- surface must stack over them; when they start again while the desk runs, the desk is asked to go
 -- and desk_sync brings it back above them. Three ends within a minute and they are left down.
-local widgets_win, widgets_ends, widgets_restacking = nil, {}, false
+local widgets_win, widgets_ends, widgets_restacking, widgets_clearing = nil, {}, false, false
 -- BMO's surface takes the clicks of anything under it on the same level (found 2026-11-03), so the
 -- widgets go above him: whenever he comes up, they are started again (not counted as an end).
 function widgets_restack()
@@ -1884,6 +1884,50 @@ function widgets_sync()
         return
     end
     if widgets_win then return end
+    if widgets_clearing then return end
+    -- one widgets program only: Pleamar starts a second beside the first (under another name), and
+    -- two would draw every widget twice and undo each other's saves (D139 audit). Any left over
+    -- (a slow exit, a reload) is asked to quit before ours starts.
+    widgets_clearing = true
+    -- every pleamar running mooi-widgets.plm, by any path
+    local function strays(cb)
+        run("ps", { "-eo", "pid=,args=" }, function(out)
+            local list = {}
+            for line in tostring(out or ""):gmatch("[^\n]+") do
+                local pid, args = line:match("^%s*(%d+)%s+(.*)$")
+                if pid and args:match("^pleamar%s") and args:match("%-%-scene%s+%S*mooi%-widgets%.plm") then list[#list + 1] = pid end
+            end
+            cb(list)
+        end)
+    end
+    local function start_when_gone(tries)
+        strays(function(list)
+            if #list == 0 then widgets_clearing = false; widgets_start(); return end
+            if tries == 0 then
+                log("widgets · " .. #list .. " left running; asked to quit and waiting")
+                run("pleamar", { "--say", "mooi-widgets", "quit" })
+                local args = { "-TERM" }
+                for _, pid in ipairs(list) do args[#args + 1] = pid end
+                run("kill", args)
+            elseif tries == 12 then
+                local args = { "-KILL" }
+                for _, pid in ipairs(list) do args[#args + 1] = pid end
+                run("kill", args)
+                log("widgets · " .. #list .. " would not quit; stopped")
+            elseif tries > 16 then
+                log("widgets · could not clear the old ones; not starting a second")
+                widgets_clearing = false
+                return
+            end
+            after(250, function() start_when_gone(tries + 1) end)
+        end)
+    end
+    start_when_gone(0)
+end
+function widgets_start()
+    if widgets_win then return end
+    local want = type(settings.widgets) ~= "table" or settings.widgets.on ~= false
+    if not want then return end
     local mine
     local said = {}
     mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-widgets.plm", "--no-hud", "--stall", "0" }, function(line)
@@ -1891,7 +1935,7 @@ function widgets_sync()
     end, function(_, code)
         if widgets_win ~= mine then return end
         widgets_win = nil
-        if widgets_restacking then widgets_restacking = false; widgets_sync(); return end
+        if widgets_restacking then widgets_restacking = false; widgets_start(); return end
         local now = os.time()
         local recent = {}
         for _, t in ipairs(widgets_ends) do if now - t < 60 then recent[#recent + 1] = t end end

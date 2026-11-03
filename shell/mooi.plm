@@ -21,7 +21,7 @@ import "ui/edgetab.plm" as edge
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "skwd-wall-v2", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
+        run: "hyprctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "skwd-wall-v2", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 

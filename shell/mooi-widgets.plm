@@ -580,6 +580,7 @@ scene Widgets {
     fact wg_o6 = true
     fact wg_og = 0.6
     fact wg_nsel = 0             // how many are chosen
+    fact wg_token = 0            // this copy's own number: only the one answering to mooi-widgets with it is the widgets
     // the wallpaper (D139): its mood, whether depth is on, the subject cut out, its cells
     fact mood_glow = 1
     fact mood_pace = 1

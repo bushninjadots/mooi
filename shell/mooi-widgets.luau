@@ -83,6 +83,7 @@ local mood_now = { glow = 1, pace = 1, soft = 0 }
 
 -- The editor's selection (widget ids) and its undo history (D138).
 local selected, hist = {}, W.history()
+local standing_down = false     -- another program is the widgets (save below)
 -- what a gesture holds while it lasts (a carried widget, a handle, a slider, a marquee), the panel's
 -- place once dragged, and the doc as last saved (what the file watch compares against)
 local pending, grab, slide, marq0, panel_at, last_saved = nil, nil, nil, nil, nil, nil
@@ -90,6 +91,7 @@ local show_selection     -- defined with the editor below; load() needs it
 local function is_sel(id) for _, s in ipairs(selected) do if s == id then return true end end; return false end
 
 local function publish()
+    if standing_down then return end
     local rows = {}
     for _, w in ipairs(doc.widgets) do
         local st = W.idle_state(w, playing)
@@ -193,7 +195,17 @@ local function load()
 end
 
 -- Saved whole: files.write writes beside the file and then moves it into place.
+-- Only the program that answers to `mooi-widgets` is the widgets: a second one (Pleamar starts it
+-- under another name) would draw everything twice and undo the first one's saves (D139 audit). It
+-- checks its own token through that name, and an extra copy stands down: nothing drawn, nothing saved.
+-- (math.random is the same in every copy here, so the token is the pid of a `cat` this copy runs:
+-- unique by definition)
+fact.wg_token = 0
+run("cat", { "/proc/self/stat" }, function(out)
+    fact.wg_token = tonumber(tostring(out or ""):match("^(%d+)")) or os.time()
+end)
 local function save()
+    if standing_down then return end
     last_saved = W.encode(doc)
     pcall(sys.call, "files.write", W.FILE, last_saved)
 end
@@ -205,6 +217,20 @@ local function drop_gestures(restore)
 end
 
 load()
+local function check_instance()
+    run("pleamar", { "--say", "mooi-widgets", "get wg_token" }, function(out, code)
+        local t = tonumber(tostring(out or ""):match("[%d%.]+"))
+        if fact.wg_token == 0 then return end
+        if code == 0 and t and math.floor(t) ~= math.floor(fact.wg_token) and not standing_down then
+            standing_down = true
+            model.wg = {}
+            for _, L in ipairs({ "A", "B", "C" }) do fact["l" .. L .. "_on"] = false end
+            log("widgets · another mooi-widgets is the widgets; this copy stands down")
+        end
+    end)
+end
+after(1500, check_instance)
+every(10000, check_instance)
 pcall(sys.watch, "files:" .. W.FILE, function()
     local raw = read(W.FILE)
     if raw == nil then return end
@@ -569,12 +595,13 @@ on("wg_add", function(v)
     change(d)
 end)
 local function remove_selected()
-    local d = doc
+    local d, locked = doc, 0
     for _, id in ipairs(selected) do
         local _, w = W.find(d, id)
-        if w and not w.locked then d = W.remove(d, id) end
+        if w and w.locked then locked = locked + 1
+        elseif w then d = W.remove(d, id) end
     end
-    change(d)
+    change(d, locked > 0 and (locked == 1 and "LOCKED — UNLOCK IT TO REMOVE" or locked .. " LOCKED — UNLOCK THEM TO REMOVE") or nil)
 end
 local function duplicate_selected()
     local d, made = doc, {}
@@ -599,8 +626,19 @@ local function undo_redo(back)
 end
 -- the keys while editing: 1-4 ← → ↑ ↓ by 8 px · 5-8 by 1 px · 9 delete · 10 duplicate · 11 undo ·
 -- 12 redo · 13 select all · 14 lock · 15 forward · 16 backward
+-- A held key repeats (every 20 ms after 300): Delete, Ctrl+D, undo and redo act once per press; only
+-- the arrows repeat (D139 audit: a long Ctrl+D made several copies, a long Delete took several).
+local held, held_n = {}, {}
 on("wg_key", function(v)
     local c = math.floor(tonumber(v) or 0)
+    if c >= 9 then
+        -- still held while its repeats keep coming (every 20 ms); let go once they stop for 150 ms
+        held_n[c] = (held_n[c] or 0) + 1
+        local mine = held_n[c]
+        after(150, function() if held_n[c] == mine then held[c] = nil end end)
+        if held[c] then return end
+        held[c] = true
+    end
     if c >= 1 and c <= 8 then
         local step = c <= 4 and W.GRID or 1
         local dir = (c - 1) % 4

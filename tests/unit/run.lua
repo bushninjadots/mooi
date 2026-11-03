@@ -3543,5 +3543,18 @@ do
     end)
 end
 
+print("widgets scene ↔ logic")
+test("every fact the widgets logic writes is declared in its scene", function()
+    local function slurp(f) local h = assert(io.open(f)); local x = h:read("a"); h:close(); return x end
+    local plm, lua = slurp("shell/mooi-widgets.plm"), slurp("shell/mooi-widgets.luau")
+    local declared = {}
+    for name in plm:gmatch("\n%s*fact%s+([%w_]+)") do declared[name] = true end
+    for name in plm:gmatch("\n%s*prop%s+([%w_]+)") do declared[name] = true end
+    local missing = {}
+    for name in lua:gmatch("fact%.([%w_]+)%s*=[^=]") do if not declared[name] then missing[#missing + 1] = name end end
+    for name in lua:gmatch("fact%.([%w_]+)%s*,") do if not declared[name] then missing[#missing + 1] = name end end
+    eq(table.concat(missing, ", "), "", "facts written but not declared")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
