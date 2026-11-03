@@ -9,6 +9,7 @@ local M = {}
 M.VERSION = 2
 M.GRID = 8
 M.MAX = 8
+M.MAX_VIZ = 3             -- the scene draws three visualiser lanes (D138)
 M.FILE = "widgets.json"
 M.MARGIN = 64
 
@@ -120,6 +121,13 @@ function M.snap(doc, index, x, y, width, height, screen)
     return r.x, r.y, r.w, r.h, { vx = gx, hy = gy }
 end
 
+local function count_kind(doc, kind)
+    local n = 0
+    for _, w in ipairs(doc.widgets) do if w.kind == kind then n = n + 1 end end
+    return n
+end
+M.count_kind = count_kind
+
 local function overlaps(a, x, y, w, h, gap)
     return x < a.x + a.w + gap and a.x < x + w + gap and y < a.y + a.h + gap and a.y < y + h + gap
 end
@@ -224,6 +232,8 @@ function M.parse(raw, decode, screen)
         local w, why = clean(e, screen)
         if not w then problems[#problems + 1] = why
         elseif #doc.widgets >= M.MAX then problems[#problems + 1] = "more than " .. M.MAX .. " widgets: " .. tostring(w.id) .. " dropped"
+        elseif w.kind == "visualiser" and count_kind(doc, "visualiser") >= M.MAX_VIZ then
+            problems[#problems + 1] = "more than " .. M.MAX_VIZ .. " visualisers: " .. tostring(w.id) .. " dropped"
         else
             if not w.id or seen[w.id] then w.id = next_id(doc, w.kind) end
             seen[w.id] = true
@@ -272,6 +282,7 @@ M.find = find
 
 function M.add(doc, kind, screen)
     if #doc.widgets >= M.MAX or not PREFIX[kind] then return doc, nil end
+    if kind == "visualiser" and count_kind(doc, "visualiser") >= M.MAX_VIZ then return doc, nil end
     local d = copy(doc)
     local w = new_widget(d, kind, screen)
     d.widgets[#d.widgets + 1] = w
@@ -288,6 +299,7 @@ end
 function M.duplicate(doc, id, screen)
     local i, w = find(doc, id)
     if not i or #doc.widgets >= M.MAX then return doc, nil end
+    if w.kind == "visualiser" and count_kind(doc, "visualiser") >= M.MAX_VIZ then return doc, nil end
     local d = copy(doc)
     local n = copy(w)
     n.id = next_id(d, w.kind)

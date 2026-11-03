@@ -2,6 +2,7 @@ language 0.9
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/widgets.plm" as wg
+import "ui/vizwide.plm" as vw
 
 // mooi's desktop widgets (D137, docs/superpowers/specs/2026-11-03-widgets-design.md): Now Playing
 // (Sleeve, Lyric stage, Record) and the Visualiser (twelve modes), on one surface over the
@@ -285,6 +286,58 @@ scene Widgets {
     fact vb14 = 0.03
     fact vb15 = 0.03
     fact np_beat = 0
+    // the three visualiser lanes (D138): where each draws, what, and from which widget slot
+    fact lA_on = false
+    fact lA_k = 0
+    fact lA_x = 0
+    fact lA_y = 0
+    fact lA_w = 10
+    fact lA_h = 10
+    fact lA_u = 1
+    fact lA_mode = 0
+    fact lA_n = 64
+    fact lA_gap = 0.3
+    fact lA_glow = 0.6
+    fact lA_peaks = true
+    fact lA_refl = false
+    fact lA_plate = false
+    fact lA_st = 0
+    fact lA_gh = false
+    fact lA_opa = 1
+    fact lB_on = false
+    fact lB_k = 0
+    fact lB_x = 0
+    fact lB_y = 0
+    fact lB_w = 10
+    fact lB_h = 10
+    fact lB_u = 1
+    fact lB_mode = 0
+    fact lB_n = 64
+    fact lB_gap = 0.3
+    fact lB_glow = 0.6
+    fact lB_peaks = true
+    fact lB_refl = false
+    fact lB_plate = false
+    fact lB_st = 0
+    fact lB_gh = false
+    fact lB_opa = 1
+    fact lC_on = false
+    fact lC_k = 0
+    fact lC_x = 0
+    fact lC_y = 0
+    fact lC_w = 10
+    fact lC_h = 10
+    fact lC_u = 1
+    fact lC_mode = 0
+    fact lC_n = 64
+    fact lC_gap = 0.3
+    fact lC_glow = 0.6
+    fact lC_peaks = true
+    fact lC_refl = false
+    fact lC_plate = false
+    fact lC_st = 0
+    fact lC_gh = false
+    fact lC_opa = 1
     // the visualisers' own bars (D138): one record per bar, for up to three visualisers
     model vzA max 128 { v: number; pk: number }
     model vzB max 128 { v: number; pk: number }
@@ -545,6 +598,29 @@ scene Widgets {
             }
         }
 
+        // the visualisers, a lane each, under the other widgets
+        group {
+            show: lA_on and (editing or lA_st < 1.5)
+            opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lA_opa
+            move: if(wg_dk == lA_k, wg_dx, 0), if(wg_dk == lA_k, wg_dy, 0)
+            box { from: lA_x, lA_y; size: lA_w, lA_h; corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
+            vw.LaneA(lA_x, lA_y, lA_w, lA_h, lA_u, lA_mode, lA_n, lA_gap, lA_glow, lA_peaks, lA_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
+        }
+        group {
+            show: lB_on and (editing or lB_st < 1.5)
+            opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lB_opa
+            move: if(wg_dk == lB_k, wg_dx, 0), if(wg_dk == lB_k, wg_dy, 0)
+            box { from: lB_x, lB_y; size: lB_w, lB_h; corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
+            vw.LaneB(lB_x, lB_y, lB_w, lB_h, lB_u, lB_mode, lB_n, lB_gap, lB_glow, lB_peaks, lB_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
+        }
+        group {
+            show: lC_on and (editing or lC_st < 1.5)
+            opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lC_opa
+            move: if(wg_dk == lC_k, wg_dx, 0), if(wg_dk == lC_k, wg_dy, 0)
+            box { from: lC_x, lC_y; size: lC_w, lC_h; corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
+            vw.LaneC(lC_x, lC_y, lC_w, lC_h, lC_u, lC_mode, lC_n, lC_gap, lC_glow, lC_peaks, lC_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
+        }
+
         for w in wg {
             let k = w.index
             let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7), 0)
@@ -555,7 +631,7 @@ scene Widgets {
             let ox = if(wg_dk == k, wg_dx, 0)
             let oy = if(wg_dk == k, wg_dy, 0)
             group {
-                opacity: if(editing, if(w.gh, 0.4, 1), fo)
+                opacity: if(editing, if(w.gh, 0.4, 1), fo) * w.opa
                 show: editing or (w.st < 1.5 and fo > 0.01)
                 move: ox, oy
                 group { show: w.kind < 0.5 and w.lay < 0.5
@@ -564,8 +640,6 @@ scene Widgets {
                         wg.LyricStage(w.x, w.y, w.w, w.h, w.u, w.plate, k, hv) }
                 group { show: w.kind < 0.5 and w.lay > 1.5
                         wg.Record(w.x, w.y, w.w, w.h, w.u, w.plate, w.prog, k, hv) }
-                group { show: w.kind > 0.5
-                        wg.Visualiser(w.x, w.y, w.w, w.h, w.u, w.mode, w.glow, w.plate) }
             }
             group { show: w.st > 2.5 and not editing
                     wg.Marker(w.x, w.y, w.u, k) }

@@ -3431,6 +3431,16 @@ test("history undo/redo round-trip; cleared; caps at 30", function()
     for i = 1, 40 do W.push(h, a) end
     eq(#h.undo, 30, "capped")
 end)
+test("at most three visualisers: add and duplicate refuse a fourth, parse drops it", function()
+    local d = W.defaults(1920, 1080)
+    local id
+    for i = 1, 3 do d, id = W.add(d, "visualiser", S); eq(id ~= nil, true, "visualiser " .. i) end
+    local _, four = W.add(d, "visualiser", S); eq(four, nil, "no fourth")
+    local _, dup = W.duplicate(d, "viz-1", S); eq(dup, nil, "no duplicate either")
+    local list = {}
+    for i = 1, 4 do list[i] = { kind = "visualiser", mode = "dust", x = 0, y = 40, w = 300, h = 100 } end
+    eq(#W.parse("", decode_table({ version = 2, widgets = list }), S).widgets, 3, "parse keeps three")
+end)
 test("same_doc ignores own write", function()
     local d = W.defaults(1920, 1080); eq(W.same_doc(W.encode(d), W.encode(d)), true, "equal")
 end)

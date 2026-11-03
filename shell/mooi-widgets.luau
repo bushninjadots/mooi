@@ -92,6 +92,22 @@ local function publish()
         if w.kind == "visualiser" then nv = nv + 1; rows[i].vslot = math.min(nv, 3) - 1 end
     end
     model.wg = rows
+    -- the lanes: each visualiser's place and look, read by the scene's three Lane groups
+    local lane = 0
+    for i, w in ipairs(doc.widgets) do
+        if w.kind == "visualiser" and lane < 3 then
+            local r = rows[i]
+            local L = ({ "A", "B", "C" })[lane + 1]
+            local f = "l" .. L .. "_"
+            fact[f .. "on"], fact[f .. "k"] = true, i - 1
+            fact[f .. "x"], fact[f .. "y"], fact[f .. "w"], fact[f .. "h"], fact[f .. "u"] = r.x, r.y, r.w, r.h, r.u
+            fact[f .. "mode"], fact[f .. "n"], fact[f .. "gap"], fact[f .. "glow"] = r.mode, r.bars, r.gap, r.glow
+            fact[f .. "peaks"], fact[f .. "refl"], fact[f .. "plate"] = r.peaks, r.refl, r.plate
+            fact[f .. "st"], fact[f .. "gh"], fact[f .. "opa"] = r.st, r.gh, r.opa
+            lane = lane + 1
+        end
+    end
+    for j = lane, 2 do fact["l" .. ({ "A", "B", "C" })[j + 1] .. "_on"] = false end
     -- a slot that went (removed, or the file changed) cannot keep the surface awake
     hovered = W.prune_hover(hovered, #rows)
     for i = 0, W.MAX - 1 do
