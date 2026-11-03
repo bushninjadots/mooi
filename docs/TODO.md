@@ -52,5 +52,7 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] BMO — starts with mooi, throwing, sizes, the bar, variants, awareness, idle life, talk, Settings page (D94)
 - [x] Desktop widgets, music first: Now Playing (Sleeve, Lyric stage, Record) + Visualiser (12 modes), edit mode, Settings → Widgets (D137)
 - [ ] After a few days on the new widgets: delete `~/.config/desktop-widgets` and `setup/home/.config/desktop-widgets`, drop it from `setup/capture.sh` (D137)
-- [ ] More widget kinds on the same system (clock, notes, …) — D137 left room for them
+- [x] Widgets 2a: editor (selection, handles, keys, undo, align, lock, panel v2) + visualisers 16–128 bars, upgraded modes (D138)
+- [ ] Widgets 2b: wallpaper awareness (legibility, local colour, avoid the subject, mood)
+- [ ] Widgets 2c: Clocks (big digital, analogue, word, info) and Notes (mooi's quick notes)
 - [ ] Deferred: the claude.ai BMO design doc still describes the Quickshell BMO

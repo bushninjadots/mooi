@@ -4048,3 +4048,68 @@ plan `docs/superpowers/plans/2026-11-03-widgets.md`.
 **Not checked:** a full drag and resize with the real pointer (one drag worked; you were using the
 machine, so pointer automation stopped); the Settings rows pressed by hand; a fresh login (does the
 widget start before BMO and then restack, and is Quickshell's widget instance gone for good).
+
+## D138 · 2026-11-03 · Widgets 2a: a real editor, and visualisers with up to 128 bars
+**Asked for:** better editor controls (resize from all sides, keyboard and nudge, a better options
+panel, align and layer tools); visualiser bars that suit big, wide widgets (a setting for more
+bars); better visuals for every family. Spec `docs/superpowers/specs/2026-11-03-widgets-editor-viz-design.md`,
+plan `docs/superpowers/plans/2026-11-03-widgets-editor-viz.md`. Wallpaper awareness (2b) and
+Clocks and Notes (2c) are next.
+**Built:**
+- **The feed.** The bar's one cava runs 64 bands. It writes the v1 line (32 bands, resampled) for
+  everyone as before, and a `v2` line (`viz-levels-v2.txt`, 64 bands) while the widgets ask.
+  `lib/vizfeed` has `encode_v2` / `decode_v2` / `resample` (groups averaged going down, eased going
+  up).
+- **Bars per visualiser.** The widgets logic resamples into each visualiser's own count (16–128)
+  with smoothing (rise at once, fall by `smooth`) and peak dots (held 12 frames, falling 1.2 a
+  second). These go into models `vzA/vzB/vzC`, one record per bar, plus 32 bands `vs*` for the
+  shapes drawn as paths, and the Scope's last three frames.
+- **Three lanes.** Visualisers are drawn by three scene-level lanes, from `ui/vizwide.plm`, which
+  `tools/gen-vizwide.py` generates. That means **at most three visualisers** (the model refuses a
+  fourth). Drawing them inside the 8-slot widget loop would have meant ~50k instructions.
+- **Modes.**
+  - Spectrum / Mirror / Skyline: thin round bars, lit tops, peak dots, reflection.
+  - LED: a matrix with a column per bar.
+  - Ring: a spoke per bar with peaks, an inner waveform and glow, a slow turn.
+  - Aurora: three parallax layers and a crest.
+  - Horizon: far ranges behind a stepped skyline over every bar.
+  - Liquid: a skin round an inner glow.
+  - Scope: three true afterimages.
+  - Dust: two depths with trails.
+  - Ripple: rings with a refracting band.
+  - Orbit: trailing arcs.
+- **The editor.**
+  - Choosing: a press chooses; a right press adds or takes away; a marquee on the desktop chooses
+    what it touches; Esc clears, Esc again leaves.
+  - Handles: eight engraved handles (a record keeps its shape: corners only), with live resizing
+    and a size readout by the pointer.
+  - Carrying a chosen widget carries the whole selection.
+  - Keys: arrows / Shift+arrows nudge 8 / 1 px, Delete, Ctrl+D, Ctrl+Z / Ctrl+Shift+Z (30 steps,
+    cleared when the file changes elsewhere), Ctrl+A, L lock, ] [ order.
+  - Toolbar: align ×6, spread ×2, same width / height, front / back, lock.
+  - A SNAP switch.
+  - Locked widgets show a padlock, and a note counts the ones skipped.
+- **The panel.** 320 px, dragged by its header (it stays there), folds with ⌄. Live thumbnails of
+  the three layouts or the twelve modes. Sliders for opacity, scale, text size, bars, glow, gap
+  and smoothing. At rest, switches (now with peaks and reflection), a readout, lock / duplicate /
+  remove.
+- **Settings → Widgets.** Each row has opacity and bars sliders.
+- **widgets.json version 2.** Adds z, locked and opacity, the visualiser's bars / gap / smooth /
+  peaks / reflection, and Now Playing's text. Version 1 files load with defaults.
+**Not as asked:**
+- Pleamar reports no modifiers on a press, so Shift-click became a right press and holding Alt
+  became the SNAP switch.
+- With several widgets chosen, the panel edits the last one; the toolbar does the rest.
+**Checked:**
+- `bin/mooi check`: 325 unit tests, 0 failed (14 new for the editor, 4 for v2 and resampling,
+  1 for the visualiser cap).
+- Live, through the scene's own events and screenshots: selection, marquee, nudge, align, undo and
+  redo, lock and its note, handle resize from the left, the sliders, the panel moved, and the
+  Settings sliders.
+- Both feeds are written while playing.
+- **GPU** (drm-engine-gfx, Sleeve + a 1920×200 visualiser, synthetic 64-band music; 64 / 128 bars):
+  spectrum 5.9/6.0 · mirror 6.1/6.2 · ring 3.5/3.4 · aurora 7.1/7.4 · led 2.9/3.9 · orbit 4.2/4.1 ·
+  scope 6.7/6.7 · horizon 6.8/6.5 · dust 7.0/7.0 · ripple 2.8/3.0 · skyline 5.7/5.8 · liquid
+  6.5/6.9 %. Measurements wander by about ±1.5.
+**Not checked:** the handles, the marquee and the panel's header pressed with the real pointer
+(you were at the machine); the keys pressed on a real keyboard.
