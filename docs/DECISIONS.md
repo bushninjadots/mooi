@@ -4316,3 +4316,30 @@ mode) opens it. A middle press still plays or pauses, and the wheel is still the
 - The position ticks every 500 ms while the island is open.
 
 **Left out:** ArchEclipse's 10-band EQ. The full player keeps its EasyEffects EQ.
+
+## D143 · 2026-11-04 · BMO tells jokes; a free model when Claude cannot answer
+**Asked:** what differs between BMO's chat and Claude's; make him tell jokes; without credits there
+is no talking to him, so fall back to other AIs (ChatGPT, freebuff, opencode free) where possible.
+
+**The difference:** none in the engine. Both ask the `claude` command (Claude Code, the user's
+account, no tools). BMO's persona answers in character in one or two sentences, he keeps a session
+of his own, and he answers in his bubble.
+
+**Jokes.** `bmo/brain` LINES.joke holds 16 of his own. One idle line in five is a joke, and
+`mooi bmo joke` (event `joke`) always tells one. No AI is involved, so they work without credits.
+His Claude persona now loves jokes and puns too.
+
+**The fallback** (`lib/claude.fallback_args` / `fallback_text`, tested):
+- **When:** Claude errors or ends without an answer (no credits, offline, signed out).
+- **What:** the notch's chat and BMO's own chat ask `opencode run` with its free models in turn
+  (deepseek-v4.1-flash-free, big-pickle, beam-free). The same persona and the last turns are written
+  into the question.
+- **Locked down:** it runs in the runtime folder, without `--auto`, so nothing that needs permission
+  is approved.
+- **Marked:** the notch adds "ANSWERED BY … (FREE)". If no free model answers either, BMO says his
+  brain is fuzzy and tells one of his own jokes.
+
+**Not usable here (checked):**
+- `codex` refuses every model on a ChatGPT sign-in (`model_not_found`).
+- `freebuff` is interactive only, with no one-shot mode.
+- opencode's default model is not available in this country, so a free model is named every time.

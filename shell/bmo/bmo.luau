@@ -582,7 +582,10 @@ function decide()
         elseif a == "hum" then idle_act("humming", 5000 + math.random() * 4000)
         elseif a ~= "rest" then move(a) end
         -- now and then a line of his own (the level is the chance, so it counts as meant)
-        if activity == "idle" and math.random() < B.idle_chance(cfg.talk) then chat("idle", true, 2200) end
+        if activity == "idle" and math.random() < B.idle_chance(cfg.talk) then
+            local pool = B.idle_pool(math.random())
+            chat(pool, true, pool == "joke" and 5200 or 2200)
+        end
     end
     schedule()
 end
@@ -964,6 +967,11 @@ on("speak", function()
     end
 end)
 
+-- a joke asked for (`mooi bmo joke`, his panel's JOKE): always told, whatever his talk level
+on("joke", function()
+    local line = B.chatter("joke", "chatty", true, said_lately, math.random())
+    if line and say(line, 5600, true) then B.remember(said_lately, line) end
+end)
 on("tell", function(v)
     local n = math.floor(tonumber(v) or 0)
     if n == 1 then feel("note") elseif FOCUS[n] then feel("focus", FOCUS[n]) end

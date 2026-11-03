@@ -3763,5 +3763,23 @@ do
     end)
 end
 
+print("claude fallback, BMO's jokes")
+do
+    local CL = require("lib/claude")
+    local BR = require("bmo/brain")
+    test("a free model when Claude cannot answer: its arguments and its answer read back", function()
+        local a = CL.fallback_args("hi", "bmo", nil, { { who = "you", text = "earlier" } })
+        eq(a[1], "run"); eq(a[3], CL.FALLBACK_MODELS[1], "the first free model")
+        eq(a[4]:find("You are BMO", 1, true) ~= nil, true, "his persona"); eq(a[4]:find("you: earlier", 1, true) ~= nil, true, "the turns so far")
+        eq(CL.fallback_text("\27[0m> build · big-pickle\n\nHello there!\n"), "Hello there!", "header and colours gone")
+        eq(CL.fallback_text("\27[91mError: This model is not available"), nil, "an error is no answer")
+        eq(CL.fallback_text(""), nil, "nothing is no answer")
+    end)
+    test("BMO has jokes of his own, one idle line in five", function()
+        eq(#BR.LINES.joke >= 12, true, "a dozen at least"); eq(BR.idle_pool(0.1), "joke"); eq(BR.idle_pool(0.5), "idle")
+        for _, j in ipairs(BR.LINES.joke) do eq(#j <= 228, true, "fits six bubble lines: " .. j) end
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

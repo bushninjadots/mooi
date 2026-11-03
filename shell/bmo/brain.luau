@@ -259,7 +259,26 @@ M.LINES = {
     landed = { "again!", "wheee!", "do it again!", "that was fun!" },
     dizzy = { "whoa…", "the room is spinning…", "ow…", "everything is wobbly…" },
     wake = { "good nap!", "huh? I'm up!", "*yawn*", "I was dreaming of games…" },
+    -- his own jokes (D143): no Claude needed, so he tells them even with no credits left
+    joke = { "Why did the computer go to the doctor? It had a virus! Hee hee!",
+             "What do you call a sleeping console? A Game Snore! Beep!",
+             "Why was the keyboard so calm? It had lots of space!",
+             "BMO tried to catch fog once. BMO mist. Hahaha!",
+             "Why did the music file break up? It needed its own space… on the disk!",
+             "What did the mouse say to the cursor? Stop following me!",
+             "Why don't robots get scared? Nerves of steel! BMO has buttons of steel!",
+             "How does a console say hello? Hi-score!",
+             "Why was the pixel sad? It was feeling a bit down-sampled.",
+             "BMO told a joke about RAM. BMO forgot the rest of it!",
+             "Why did BMO sit on the clock? BMO wanted to be on time!",
+             "What is a computer's favourite snack? Micro-chips! Crunch crunch!",
+             "Why did the window open? It needed some fresh error!",
+             "Knock knock! Who's there? BMO! BMO who? BMO-re jokes coming soon!",
+             "Why are spiders good at the internet? They make great websites!",
+             "What do you call a dinosaur that crashes the PC? A Bluescreen-osaurus!" },
 }
+-- An idle line or, now and then, one of his jokes (a joke is one idle line in five).
+function M.idle_pool(r) return (tonumber(r) or 1) < 0.2 and "joke" or "idle" end
 local RECENT = 4
 
 function M.remember(recent, line)

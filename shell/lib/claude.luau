@@ -13,8 +13,39 @@ M.PERSONAS = {
         .. "You cannot run commands or open files here; say what to do instead when it helps.",
     bmo = "You are BMO, the little living video game console from Adventure Time, living on the user's desktop. "
         .. "Answer as BMO: cheerful, curious, a little odd, speaking of yourself in the third person now and then. "
+        .. "BMO loves jokes and puns: asked for one, tell a short, silly, kind joke; now and then slip a little pun in. "
         .. "One or two short sentences only — it has to fit in BMO's speech bubble.",
 }
+
+-- ── When Claude cannot answer (no credits, offline, signed out): a free model through opencode ──
+-- (D143) `opencode run` with its free models, tried in turn; asked in the same persona, with the last
+-- few turns written into the question (it keeps no session of ours). Run in an empty folder and
+-- without --auto, so it can only talk: nothing it would need permission for is approved.
+M.FALLBACK_MODELS = { "opencode/deepseek-v4.1-flash-free", "opencode/big-pickle", "opencode/beam-free" }
+
+function M.fallback_args(prompt, persona, model, recent)
+    local lines = { M.PERSONAS[persona or "chat"] or M.PERSONAS.chat,
+                    "Answer in plain words only; do not use tools, files or commands." }
+    if type(recent) == "table" and #recent > 0 then
+        lines[#lines + 1] = "The conversation so far:"
+        for _, t in ipairs(recent) do lines[#lines + 1] = tostring(t.who) .. ": " .. tostring(t.text) end
+    end
+    lines[#lines + 1] = "Now answer this: " .. tostring(prompt or "")
+    return { "run", "-m", model or M.FALLBACK_MODELS[1], table.concat(lines, "\n") }
+end
+
+-- What `opencode run` printed, as the answer: its colours and its "> agent · model" line gone; nil
+-- when it said nothing or only an error.
+function M.fallback_text(out)
+    local s = tostring(out or ""):gsub("\27%[[%d;]*m", "")
+    local keep = {}
+    for line in (s .. "\n"):gmatch("(.-)\n") do
+        if not line:match("^%s*> ") then keep[#keep + 1] = line end
+    end
+    local t = table.concat(keep, "\n"):gsub("^%s+", ""):gsub("%s+$", "")
+    if t == "" or t:match("^Error:") then return nil end
+    return t
+end
 
 -- The arguments for one question. `session`: a previous answer's session, to go on from it.
 function M.args(prompt, opts)

@@ -172,6 +172,25 @@ local function show_chat()
 end
 show_chat()
 local asking = nil
+-- Claude could not answer (D143: no credits, offline, signed out): a free model through opencode, its
+-- models tried in turn, in the same voice, with the last few turns. cb(answer, model) or cb(nil).
+local function ask_free(prompt, persona, cb, i)
+    i = i or 1
+    local model = claude.FALLBACK_MODELS[i]
+    if not model then cb(nil); return end
+    local recent = {}
+    for k = math.max(1, #chat.turns - 6), #chat.turns do
+        local t = chat.turns[k]
+        if t and t.who ~= "note" and t.text ~= prompt then recent[#recent + 1] = t end
+    end
+    local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "timeout", "90", "opencode" }
+    for _, a in ipairs(claude.fallback_args(prompt, persona, model, recent)) do cmd[#cmd + 1] = a end
+    launch("env", cmd, function(out)
+        local said = claude.fallback_text(out)
+        if said then cb(said, model) else ask_free(prompt, persona, cb, i + 1) end
+    end)
+end
+local function free_name(model) return string.upper((tostring(model or ""):gsub("^opencode/", ""))) end
 local function ask(prompt)
     prompt = trim(prompt)
     if prompt == "" or asking then return end
@@ -185,7 +204,7 @@ local function ask(prompt)
                                        model = type(settings.claude) == "table" and settings.claude.model ~= "default" and settings.claude.model or nil })
     local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "claude" }
     for _, a in ipairs(args) do cmd[#cmd + 1] = a end
-    local done = false
+    local done, failed = false, nil
     local mine
     mine = spawn("env", cmd, function(line)
         if asking ~= mine then return end
@@ -202,21 +221,33 @@ local function ask(prompt)
             live = nil
             text.ch_status = r.cost and string.format("$%.3f", r.cost) or ""
         elseif r.error then
-            done = true
-            live = nil
-            chat.turns[#chat.turns + 1] = { who = "note", text = "COULD NOT ASK: " .. string.upper(r.error) }
-            text.ch_status = "NOT ANSWERED"
+            failed = r.error
         end
     end, function(_, code)
         if asking ~= mine then return end
-        asking = nil
-        if not done then
-            live = nil
-            chat.turns[#chat.turns + 1] = { who = "note", text = code == 127 and "CLAUDE CODE IS NOT INSTALLED (THE `claude` COMMAND)" or "CLAUDE ENDED WITHOUT AN ANSWER" }
-            text.ch_status = "NOT ANSWERED"
+        local function finish()
+            if asking == mine then asking = nil end
+            fact.ch_busy = false
+            save_chat(); show_chat()
         end
-        fact.ch_busy = false
-        save_chat(); show_chat()
+        if done then finish(); return end
+        -- Claude did not answer: a free model instead (D143)
+        live = nil
+        local why = failed or (code == 127 and "CLAUDE CODE IS NOT INSTALLED" or "CLAUDE ENDED WITHOUT AN ANSWER")
+        text.ch_status = "CLAUDE DIDN'T ANSWER · ASKING A FREE MODEL…"
+        show_chat()
+        ask_free(prompt, bmo and "bmo" or "chat", function(said, model)
+            if said then
+                chat.turns[#chat.turns + 1] = { who = bmo and "bmo" or "claude", text = said }
+                chat.turns[#chat.turns + 1] = { who = "note", text = "ANSWERED BY " .. free_name(model) .. " (FREE) · CLAUDE: " .. string.upper(why) }
+                if bmo then launch("pleamar", { "--say", "bmo", wire.say(said), "emit speak" }) end
+                text.ch_status = "FREE MODEL"
+            else
+                chat.turns[#chat.turns + 1] = { who = "note", text = "COULD NOT ASK: " .. string.upper(why) .. " · NO FREE MODEL ANSWERED EITHER" }
+                text.ch_status = "NOT ANSWERED"
+            end
+            finish()
+        end)
     end)
     asking = mine
 end
@@ -237,14 +268,22 @@ on("nt_bmo_q", function()
     mine = spawn("env", cmd, function(line)
         if bmo_asking ~= mine then return end
         local r = claude.read(line, json.decode)
-        if r and r.done then said = r.text; chat.bmo_session = r.session or chat.bmo_session
-        elseif r and r.error then said = "BMO's brain is fuzzy right now… (" .. r.error .. ")" end
+        if r and r.done then said = r.text; chat.bmo_session = r.session or chat.bmo_session end
     end, function()
         if bmo_asking ~= mine then return end
-        bmo_asking = nil
-        said = said or "BMO couldn't hear Claude… try again?"
-        save_chat()
-        launch("pleamar", { "--say", "bmo", wire.say(said), "emit speak" })
+        if said then
+            bmo_asking = nil
+            save_chat()
+            launch("pleamar", { "--say", "bmo", wire.say(said), "emit speak" })
+            return
+        end
+        -- Claude did not answer: a free model in his voice (D143); his own joke if none answers
+        ask_free(q, "bmo", function(free)
+            bmo_asking = nil
+            local line = free or "BMO's brain is fuzzy right now… but BMO knows a joke!"
+            launch("pleamar", { "--say", "bmo", wire.say(line), "emit speak" })
+            if not free then after(5200, function() launch("pleamar", { "--say", "bmo", "emit joke" }) end) end
+        end)
     end)
     bmo_asking = mine
 end)

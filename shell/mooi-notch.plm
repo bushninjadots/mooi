@@ -14,7 +14,7 @@ import "ui/edgetab.plm" as edge
 
 scene Notch {
     permissions {
-        run: "pleamar", "env", "claude", "gh", "hyprctl", "magick", "find", "curl", "qs", "awww", "xdg-open", "mooi"
+        run: "pleamar", "env", "claude", "opencode", "timeout", "gh", "hyprctl", "magick", "find", "curl", "qs", "awww", "xdg-open", "mooi"
         services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want", "thumbnails.live"
     }
 

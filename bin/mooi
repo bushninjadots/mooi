@@ -25,6 +25,7 @@
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
 #   mooi widgets [edit|desk]  place the desktop widgets (Esc leaves); desk: gather them all over the desktop
 #   mooi focus [reset]    the focus timer widget: start or pause it, or reset it
+#   mooi bmo joke         BMO tells one of his jokes
 #   mooi wallmap [file] [fast]  read the wallpaper for the widgets: its subject cut out (rembg) and a map
 #   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
@@ -773,6 +774,11 @@ case "$cmd" in
             edit) exec "$pleamar" --say mooi-widgets "emit wg_edit 1" ;;
             desk) exec "$pleamar" --say mooi-widgets "emit wg_deskm 2" ;;   # desk mode (D141): gathered, or back
             *) echo "usage: mooi widgets [edit|desk]" >&2; exit 2 ;;
+        esac ;;
+    bmo) # BMO (D143): `mooi bmo joke` — one of his own jokes, no Claude needed
+        case "${1:-}" in
+            joke) exec "$pleamar" --say bmo "emit joke" ;;
+            *) echo "usage: mooi bmo joke" >&2; exit 2 ;;
         esac ;;
     focus) # the focus timer widget (D141): start or pause it; `mooi focus reset`
         case "${1:-}" in
