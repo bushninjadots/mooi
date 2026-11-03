@@ -196,6 +196,7 @@ M.SCHEMA = {
     { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },
     { path = "keys.wallpaper", kind = "key", default = "SUPER + ALT + P" },
     { path = "keys.player", kind = "key", default = "SUPER + ALT + M" },
+    { path = "keys.desk", kind = "key", default = "SUPER + ALT + G" },
     -- Who receives the session's notifications: mooi while it runs as the desktop (`desktop`: under
     -- the keeper, not a bare `mooi run`), `always`, or `never`. `takeover` before D134.
     { path = "notifications.server", kind = "enum", values = { "desktop", "always", "never" }, default = "desktop" },

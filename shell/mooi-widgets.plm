@@ -4,6 +4,7 @@ import "theme/ferrolume.plm"
 import "ui/widgets.plm" as wg
 import "ui/vizwide.plm" as vw
 import "ui/wgithub.plm" as wgh
+import "ui/wextra.plm" as wx
 
 // mooi's desktop widgets (D137, docs/superpowers/specs/2026-11-03-widgets-design.md): Now Playing
 // (Sleeve, Lyric stage, Record) and the Visualiser (twelve modes), on one surface over the
@@ -14,8 +15,8 @@ import "ui/wgithub.plm" as wgh
 
 scene Widgets {
     permissions {
-        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date"
-        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery"
+        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date", "sensors", "ps", "find"
+        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery", "apps", "apps.launch", "window", "notification_history"
     }
 
     // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
@@ -249,7 +250,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 12 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool }
+    model wg max 12 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool; viz: bool; dx: number; dy: number; grp: number; pop: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -287,8 +288,27 @@ scene Widgets {
     fact vb14 = 0.03
     fact vb15 = 0.03
     fact np_beat = 0
+    // D141: the transport's modes (shuffle; repeat 0 none · 1 the list · 2 the track) and the times
+    fact np_shuf = false
+    fact np_loop = 0
+    text np_tpos = ""
+    text np_tlen = ""
+    // D141: the look of them all — the style (0 adaptive · 1 phosphor · 2 ink · 3 chrome · 4 paper),
+    // shadows cast away from the wallpaper's light (a unit vector), the ambient rest and desk mode
+    fact wg_style = 0
+    fact wg_shad = false
+    fact wg_lx = 0
+    fact wg_ly = 1
+    fact wg_ambon = true
+    fact wg_amb = false
+    fact wg_desk = false
+    // the Info clock's weather symbol and its word (lib/deskdata.icon_kind)
+    fact ck_wkind = 2
+    text ck_wword = ""
     // the three visualiser lanes (D138): where each draws, what, and from which widget slot
     fact lA_on = false
+    fact lA_dx = 0
+    fact lA_dy = 0
     fact lA_k = 0
     fact lA_x = 0
     fact lA_y = 0
@@ -312,6 +332,8 @@ scene Widgets {
     fact lA_ag = 0.8
     fact lA_ab = 0.7
     fact lB_on = false
+    fact lB_dx = 0
+    fact lB_dy = 0
     fact lB_k = 0
     fact lB_x = 0
     fact lB_y = 0
@@ -335,6 +357,8 @@ scene Widgets {
     fact lB_ag = 0.8
     fact lB_ab = 0.7
     fact lC_on = false
+    fact lC_dx = 0
+    fact lC_dy = 0
     fact lC_k = 0
     fact lC_x = 0
     fact lC_y = 0
@@ -575,6 +599,10 @@ scene Widgets {
     fact op11 = 1
     prop po11 = 1 ~wg.fade
     follow po11 = op11
+    prop wg_ambs = 0 ~wg.fade
+    follow wg_ambs = if(wg_amb and not editing and not wg_desk, 1, 0)
+    prop wg_dkp = 0 ~wg.fade
+    follow wg_dkp = if(wg_desk, 1, 0)
     // ── Edit mode ──
     fact editing = false
     // a widget carried (its slot, how far) or pulled by an edge (its slot, how far each way)
@@ -642,6 +670,59 @@ scene Widgets {
     event nt_del ->              // forgotten (id)
     event nt_focus               // from the logic: the field takes the caret
     event gh_open ->             // lane · 100 + 0 the repository, 1-8 a commit, 11-16 a run
+    // ── D141: weather, system, calendar, focus timer, Claude, photo, launcher (lib/deskdata) ──
+    model wxh max 24 { r: number; g: number; b: number; t: number; wet: number; lab: text; kind: number }
+    model wxd max 5 { lab: text; kind: number; hi: text; lo: text; a: number; b: number }
+    fact wx_on = false
+    fact wx_kind = 2
+    text wx_now = ""
+    text wx_word = ""
+    text wx_hl = ""
+    text wx_more = ""
+    model spc max 48 { v: number }
+    model spm max 48 { v: number }
+    model spt max 48 { v: number }
+    fact sp_c = 0
+    fact sp_m = 0
+    fact sp_t = 0
+    text sp_ctx = ""
+    text sp_mtx = ""
+    text sp_ttx = ""
+    model cal max 42 { d: text; inm: bool; today: bool; due: number; key: number }
+    text cal_title = ""
+    event cal_nav ->             // 0 the month before · 2 the month after
+    event cal_day ->             // a day pressed (days since 1970): the board, filtered to it
+    fact tm_left = 1500
+    fact tm_total = 1500
+    fact tm_run = false
+    fact tm_brk = false
+    fact tm_flash = false
+    text tm_txt = "25:00"
+    text tm_word = "READY"
+    event tm_go ->               // 0 start or pause · 1 reset · 2 five more · 5 a minute more · 6 a minute less
+    fact cl_busy = false
+    text cl_who = "CLAUDE"
+    text cl_line = ""
+    text cl_state = ""
+    event cl_open ->
+    text pf_path = ""
+    text pf_cutp = ""
+    text pf_sqp = ""
+    text pf_cutsqp = ""
+    image pf_img = from pf_path, 1200, 900
+    image pf_cut = from pf_cutp, 1200, 900
+    image pf_sq = from pf_sqp, 900, 900
+    image pf_cutsq = from pf_cutsqp, 900, 900
+    fact pf_on = false
+    fact pf_cut_on = false
+    text pf_name = ""
+    text pf_state = "LOOKING FOR PICTURES…"
+    event pf_next ->
+    model ln max 12 { name: text; icon: image 64, 64; iconed: bool; letter: text; run: bool; pulse: number }
+    event ln_go ->               // the app pressed (its row)
+    event wg_deskm ->            // desk mode: 0 leave · 1 gather · 2 the other one
+    // <gen:lanefacts>
+    // GENERATED by tools/gen-wlanes.py — each lane's place, size, rest and look (lib/widgets)
     fact nl_on = false
     fact nl_k = 0
     fact nl_x = 0
@@ -662,6 +743,8 @@ scene Widgets {
     fact nl_ar = 0.6
     fact nl_ag = 0.8
     fact nl_ab = 0.7
+    fact nl_dx = 0
+    fact nl_dy = 0
     fact g1_on = false
     fact g1_k = 0
     fact g1_x = 0
@@ -682,6 +765,8 @@ scene Widgets {
     fact g1_ar = 0.6
     fact g1_ag = 0.8
     fact g1_ab = 0.7
+    fact g1_dx = 0
+    fact g1_dy = 0
     fact g2_on = false
     fact g2_k = 0
     fact g2_x = 0
@@ -702,6 +787,97 @@ scene Widgets {
     fact g2_ar = 0.6
     fact g2_ag = 0.8
     fact g2_ab = 0.7
+    fact g2_dx = 0
+    fact g2_dy = 0
+    fact wh_on = false
+    fact wh_k = 0
+    fact wh_x = 0
+    fact wh_y = 0
+    fact wh_w = 10
+    fact wh_h = 10
+    fact wh_u = 1
+    fact wh_lay = 0
+    fact wh_st = 0
+    fact wh_gh = false
+    fact wh_opa = 1
+    fact wh_beh = false
+    fact wh_plate = false
+    fact wh_sel = false
+    fact wh_tn = 0
+    fact wh_hz = 0.32
+    fact wh_ad = false
+    fact wh_ar = 0.6
+    fact wh_ag = 0.8
+    fact wh_ab = 0.7
+    fact wh_dx = 0
+    fact wh_dy = 0
+    fact sp_on = false
+    fact sp_k = 0
+    fact sp_x = 0
+    fact sp_y = 0
+    fact sp_w = 10
+    fact sp_h = 10
+    fact sp_u = 1
+    fact sp_lay = 0
+    fact sp_st = 0
+    fact sp_gh = false
+    fact sp_opa = 1
+    fact sp_beh = false
+    fact sp_plate = false
+    fact sp_sel = false
+    fact sp_tn = 0
+    fact sp_hz = 0.32
+    fact sp_ad = false
+    fact sp_ar = 0.6
+    fact sp_ag = 0.8
+    fact sp_ab = 0.7
+    fact sp_dx = 0
+    fact sp_dy = 0
+    fact cd_on = false
+    fact cd_k = 0
+    fact cd_x = 0
+    fact cd_y = 0
+    fact cd_w = 10
+    fact cd_h = 10
+    fact cd_u = 1
+    fact cd_lay = 0
+    fact cd_st = 0
+    fact cd_gh = false
+    fact cd_opa = 1
+    fact cd_beh = false
+    fact cd_plate = false
+    fact cd_sel = false
+    fact cd_tn = 0
+    fact cd_hz = 0.32
+    fact cd_ad = false
+    fact cd_ar = 0.6
+    fact cd_ag = 0.8
+    fact cd_ab = 0.7
+    fact cd_dx = 0
+    fact cd_dy = 0
+    fact ln_on = false
+    fact ln_k = 0
+    fact ln_x = 0
+    fact ln_y = 0
+    fact ln_w = 10
+    fact ln_h = 10
+    fact ln_u = 1
+    fact ln_lay = 0
+    fact ln_st = 0
+    fact ln_gh = false
+    fact ln_opa = 1
+    fact ln_beh = false
+    fact ln_plate = false
+    fact ln_sel = false
+    fact ln_tn = 0
+    fact ln_hz = 0.32
+    fact ln_ad = false
+    fact ln_ar = 0.6
+    fact ln_ag = 0.8
+    fact ln_ab = 0.7
+    fact ln_dx = 0
+    fact ln_dy = 0
+    // </gen:lanefacts>
     text g1_name = ""
     text g1_desc = ""
     text g1_stats = ""
@@ -711,6 +887,8 @@ scene Widgets {
     model g1c max 8 { msg: text; who: text; when: text; sha: text; st: number }
     model g1r max 6 { name: text; branch: text; when: text; st: number }
     model g1a max 12 { v: number }
+    model g1h max 364 { lv: number }
+    text g1_heat = ""
     text g2_name = ""
     text g2_desc = ""
     text g2_stats = ""
@@ -720,6 +898,8 @@ scene Widgets {
     model g2c max 8 { msg: text; who: text; when: text; sha: text; st: number }
     model g2r max 6 { name: text; branch: text; when: text; st: number }
     model g2a max 12 { v: number }
+    model g2h max 364 { lv: number }
+    text g2_heat = ""
     fact wg_nsel = 0             // how many are chosen
     fact wg_token = 0            // this copy's own number: only the one answering to mooi-widgets with it is the widgets
     // the wallpaper (D139): its mood, whether depth is on, the subject cut out, its cells
@@ -736,6 +916,12 @@ scene Widgets {
     model subj max 576 { x: number; y: number; w: number; h: number }
     fact wg_oad = true
     fact wg_oh24 = true
+    fact wg_oviz = false
+    fact wg_omin = 25
+    fact wg_opop = true
+    fact wg_oevery = 10
+    text wg_folder = ""
+    text wg_apps = ""
     fact wg_osec = true
     text wg_repo = ""
     fact wg_obh = false
@@ -747,6 +933,13 @@ scene Widgets {
     fact wg_hold = 0
     fact wg_ru = 1               // the scale of the widget being pulled, at its new size
     fact wg_nviz = 0             // how many visualisers (three at most)
+    fact wg_has5 = false
+    fact wg_has6 = false
+    fact wg_has7 = false
+    fact wg_has8 = false
+    fact wg_has9 = false
+    fact wg_has10 = false
+    fact wg_has11 = false
     fact wg_nnt = 0              // notes widgets (one at most)
     fact wg_ngh = 0              // GitHub widgets (two at most)
     fact wg_count = 0            // widgets (eight at most)
@@ -802,9 +995,22 @@ scene Widgets {
         anchor: top
         // while editing they rise over the bottom layer: BMO's and the desk's surfaces there took the
         // presses meant for the handles whenever they came up after the widgets (D141)
-        level: bottom, top while editing
-        keyboard: on_demand while editing or nt_ed > -1.5
-        rate: 30, 4 while not np_playing and wg_calm and not editing and nt_ed < -1.5
+        level: bottom, overlay while editing or wg_desk or wg_dkp > 0.02
+        keyboard: on_demand while editing or nt_ed > -1.5 or wg_desk
+        rate: 30, 4 while not np_playing and wg_calm and not editing and nt_ed < -1.5 and not wg_desk and wg_dkp < 0.01
+
+        // the ambient rest (D141): two minutes with nothing touched, they fade to faint outlines
+        on idle for 120s while wg_ambon and not editing and not wg_desk { wg_amb = true }
+        // desk mode (D141): the desktop blurred behind (the compositor's own blur), every widget gathered
+        group {
+            show: wg_dkp > 0.01
+            box { from: 0, 0; size: desk.width, desk.height; color: #05080b; glass: 100%; lens: false; tint: 40%; opacity: wg_dkp }
+            box { from: 0, 0; size: desk.width, desk.height; color: #000000; opacity: 0.35 * wg_dkp }
+            text "ESC OR A PRESS ON THE DESK LEAVES" { at: desk.width / 2, desk.height - 28; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; opacity: wg_dkp }
+        }
+        zone box dkz { from: 0, 0; size: desk.width, desk.height; agent: hidden; show: wg_desk and not editing }
+        on press dkz { emit wg_deskm(0) }
+        on key escape while wg_desk and not editing { emit wg_deskm(0) }
 
         // edit mode: a press on the empty desktop leaves it; a faint grid to place by (snapping is 8 px)
         // edit mode: a press on the empty desktop chooses none; pulled, it draws a marquee
@@ -838,60 +1044,137 @@ scene Widgets {
             image cutimg { at: 0, 0 - wall_bar; size: 1920, 1080 }
         }
 
-        // notes and GitHub, a lane each (their lists cannot sit inside the widgets' loop)
+        // <gen:lanes>
+        // GENERATED by tools/gen-wlanes.py — the notes, GitHub, weather, system, calendar and launcher lanes
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let nl_near = clamp(1 - max(max(0, max(nl_x - desk.cursor.x, desk.cursor.x - nl_x - nl_w)), max(0, max(nl_y - desk.cursor.y, desk.cursor.y - nl_y - nl_h))) / 220, 0, 1)
+        let nl_wake = nl_near > 0.7
+        on change nl_wake while nl_wake and wg_amb and nl_on { wg_amb = false }
+        let nl_base = if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * nl_opa * (1 - 0.85 * wg_ambs * (1 - nl_near))
         group {
+            let ink = pick(wg_style, if(nl_ad, if(nl_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(nl_beh, 1, 3)
-            show: nl_on and (editing or nl_st < 1.5)
-            opacity: if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * nl_opa
-            move: if(wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel), wg_dx, 0), if(wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel), wg_dy, 0)
-            let ink = if(nl_ad, if(nl_tn > 0.5, #15181c, #eef1f4), fl.engrave)
-            let acc = if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos)
-            let rz = wg_rk == nl_k
-            wg.NotesList(if(rz, wg_sx, nl_x), if(rz, wg_sy, nl_y), if(rz, wg_sw, nl_w), if(rz, wg_sh, nl_h), if(rz, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn)
+            show: nl_on and (editing or wg_dkp > 0.01 or nl_st < 1.5)
+            opacity: nl_base + (1 - nl_base) * wg_dkp
+            move: if((wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel)), wg_dx, 0) + nl_dx * wg_dkp, if((wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel)), wg_dy, 0) + nl_dy * wg_dkp
+            wg.NotesList(if(wg_rk == nl_k, wg_sx, nl_x), if(wg_rk == nl_k, wg_sy, nl_y), if(wg_rk == nl_k, wg_sw, nl_w), if(wg_rk == nl_k, wg_sh, nl_h), if(wg_rk == nl_k, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn)
+            box { from: nl_x, nl_y; size: nl_w, nl_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - nl_near) }
         }
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let g1_near = clamp(1 - max(max(0, max(g1_x - desk.cursor.x, desk.cursor.x - g1_x - g1_w)), max(0, max(g1_y - desk.cursor.y, desk.cursor.y - g1_y - g1_h))) / 220, 0, 1)
+        let g1_wake = g1_near > 0.7
+        on change g1_wake while g1_wake and wg_amb and g1_on { wg_amb = false }
+        let g1_base = if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g1_opa * (1 - 0.85 * wg_ambs * (1 - g1_near))
         group {
+            let ink = pick(wg_style, if(g1_ad, if(g1_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(g1_beh, 1, 3)
-            show: g1_on and (editing or g1_st < 1.5)
-            opacity: if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g1_opa
-            move: if(wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel), wg_dx, 0), if(wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel), wg_dy, 0)
-            let ink = if(g1_ad, if(g1_tn > 0.5, #15181c, #eef1f4), fl.engrave)
-            let acc = if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos)
-            let rz = wg_rk == g1_k
-            wgh.Gh1(if(rz, wg_sx, g1_x), if(rz, wg_sy, g1_y), if(rz, wg_sw, g1_w), if(rz, wg_sh, g1_h), if(rz, wg_ru, g1_u), g1_lay, g1_plate, ink, acc, g1_hz, g1_tn)
+            show: g1_on and (editing or wg_dkp > 0.01 or g1_st < 1.5)
+            opacity: g1_base + (1 - g1_base) * wg_dkp
+            move: if((wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel)), wg_dx, 0) + g1_dx * wg_dkp, if((wg_dk == g1_k or (wg_dk >= 0 and wg_dksel and g1_sel)), wg_dy, 0) + g1_dy * wg_dkp
+            wgh.Gh1(if(wg_rk == g1_k, wg_sx, g1_x), if(wg_rk == g1_k, wg_sy, g1_y), if(wg_rk == g1_k, wg_sw, g1_w), if(wg_rk == g1_k, wg_sh, g1_h), if(wg_rk == g1_k, wg_ru, g1_u), g1_lay, g1_plate, ink, acc, g1_hz, g1_tn)
+            box { from: g1_x, g1_y; size: g1_w, g1_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - g1_near) }
         }
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let g2_near = clamp(1 - max(max(0, max(g2_x - desk.cursor.x, desk.cursor.x - g2_x - g2_w)), max(0, max(g2_y - desk.cursor.y, desk.cursor.y - g2_y - g2_h))) / 220, 0, 1)
+        let g2_wake = g2_near > 0.7
+        on change g2_wake while g2_wake and wg_amb and g2_on { wg_amb = false }
+        let g2_base = if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g2_opa * (1 - 0.85 * wg_ambs * (1 - g2_near))
         group {
+            let ink = pick(wg_style, if(g2_ad, if(g2_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(g2_beh, 1, 3)
-            show: g2_on and (editing or g2_st < 1.5)
-            opacity: if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g2_opa
-            move: if(wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel), wg_dx, 0), if(wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel), wg_dy, 0)
-            let ink = if(g2_ad, if(g2_tn > 0.5, #15181c, #eef1f4), fl.engrave)
-            let acc = if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos)
-            let rz = wg_rk == g2_k
-            wgh.Gh2(if(rz, wg_sx, g2_x), if(rz, wg_sy, g2_y), if(rz, wg_sw, g2_w), if(rz, wg_sh, g2_h), if(rz, wg_ru, g2_u), g2_lay, g2_plate, ink, acc, g2_hz, g2_tn)
+            show: g2_on and (editing or wg_dkp > 0.01 or g2_st < 1.5)
+            opacity: g2_base + (1 - g2_base) * wg_dkp
+            move: if((wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel)), wg_dx, 0) + g2_dx * wg_dkp, if((wg_dk == g2_k or (wg_dk >= 0 and wg_dksel and g2_sel)), wg_dy, 0) + g2_dy * wg_dkp
+            wgh.Gh2(if(wg_rk == g2_k, wg_sx, g2_x), if(wg_rk == g2_k, wg_sy, g2_y), if(wg_rk == g2_k, wg_sw, g2_w), if(wg_rk == g2_k, wg_sh, g2_h), if(wg_rk == g2_k, wg_ru, g2_u), g2_lay, g2_plate, ink, acc, g2_hz, g2_tn)
+            box { from: g2_x, g2_y; size: g2_w, g2_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - g2_near) }
         }
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let wh_near = clamp(1 - max(max(0, max(wh_x - desk.cursor.x, desk.cursor.x - wh_x - wh_w)), max(0, max(wh_y - desk.cursor.y, desk.cursor.y - wh_y - wh_h))) / 220, 0, 1)
+        let wh_wake = wh_near > 0.7
+        on change wh_wake while wh_wake and wg_amb and wh_on { wg_amb = false }
+        let wh_base = if(editing, if(wh_gh, 0.4, 1), if(viz_still, if(wh_st < 0.5, 1, 0.35), pick(wh_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * wh_opa * (1 - 0.85 * wg_ambs * (1 - wh_near))
+        group {
+            let ink = pick(wg_style, if(wh_ad, if(wh_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(wh_ad, rgb(wh_ar, wh_ag, wh_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
+            z: if(wh_beh, 1, 3)
+            show: wh_on and (editing or wg_dkp > 0.01 or wh_st < 1.5)
+            opacity: wh_base + (1 - wh_base) * wg_dkp
+            move: if((wg_dk == wh_k or (wg_dk >= 0 and wg_dksel and wh_sel)), wg_dx, 0) + wh_dx * wg_dkp, if((wg_dk == wh_k or (wg_dk >= 0 and wg_dksel and wh_sel)), wg_dy, 0) + wh_dy * wg_dkp
+            wx.Weather(if(wg_rk == wh_k, wg_sx, wh_x), if(wg_rk == wh_k, wg_sy, wh_y), if(wg_rk == wh_k, wg_sw, wh_w), if(wg_rk == wh_k, wg_sh, wh_h), if(wg_rk == wh_k, wg_ru, wh_u), wh_lay, wh_plate, ink, acc, wh_hz, wh_tn)
+            box { from: wh_x, wh_y; size: wh_w, wh_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - wh_near) }
+        }
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let sp_near = clamp(1 - max(max(0, max(sp_x - desk.cursor.x, desk.cursor.x - sp_x - sp_w)), max(0, max(sp_y - desk.cursor.y, desk.cursor.y - sp_y - sp_h))) / 220, 0, 1)
+        let sp_wake = sp_near > 0.7
+        on change sp_wake while sp_wake and wg_amb and sp_on { wg_amb = false }
+        let sp_base = if(editing, if(sp_gh, 0.4, 1), if(viz_still, if(sp_st < 0.5, 1, 0.35), pick(sp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * sp_opa * (1 - 0.85 * wg_ambs * (1 - sp_near))
+        group {
+            let ink = pick(wg_style, if(sp_ad, if(sp_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(sp_ad, rgb(sp_ar, sp_ag, sp_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
+            z: if(sp_beh, 1, 3)
+            show: sp_on and (editing or wg_dkp > 0.01 or sp_st < 1.5)
+            opacity: sp_base + (1 - sp_base) * wg_dkp
+            move: if((wg_dk == sp_k or (wg_dk >= 0 and wg_dksel and sp_sel)), wg_dx, 0) + sp_dx * wg_dkp, if((wg_dk == sp_k or (wg_dk >= 0 and wg_dksel and sp_sel)), wg_dy, 0) + sp_dy * wg_dkp
+            wx.System(if(wg_rk == sp_k, wg_sx, sp_x), if(wg_rk == sp_k, wg_sy, sp_y), if(wg_rk == sp_k, wg_sw, sp_w), if(wg_rk == sp_k, wg_sh, sp_h), if(wg_rk == sp_k, wg_ru, sp_u), sp_lay, sp_plate, ink, acc, sp_hz, sp_tn)
+            box { from: sp_x, sp_y; size: sp_w, sp_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - sp_near) }
+        }
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let cd_near = clamp(1 - max(max(0, max(cd_x - desk.cursor.x, desk.cursor.x - cd_x - cd_w)), max(0, max(cd_y - desk.cursor.y, desk.cursor.y - cd_y - cd_h))) / 220, 0, 1)
+        let cd_wake = cd_near > 0.7
+        on change cd_wake while cd_wake and wg_amb and cd_on { wg_amb = false }
+        let cd_base = if(editing, if(cd_gh, 0.4, 1), if(viz_still, if(cd_st < 0.5, 1, 0.35), pick(cd_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * cd_opa * (1 - 0.85 * wg_ambs * (1 - cd_near))
+        group {
+            let ink = pick(wg_style, if(cd_ad, if(cd_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(cd_ad, rgb(cd_ar, cd_ag, cd_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
+            z: if(cd_beh, 1, 3)
+            show: cd_on and (editing or wg_dkp > 0.01 or cd_st < 1.5)
+            opacity: cd_base + (1 - cd_base) * wg_dkp
+            move: if((wg_dk == cd_k or (wg_dk >= 0 and wg_dksel and cd_sel)), wg_dx, 0) + cd_dx * wg_dkp, if((wg_dk == cd_k or (wg_dk >= 0 and wg_dksel and cd_sel)), wg_dy, 0) + cd_dy * wg_dkp
+            wx.CalMonth(if(wg_rk == cd_k, wg_sx, cd_x), if(wg_rk == cd_k, wg_sy, cd_y), if(wg_rk == cd_k, wg_sw, cd_w), if(wg_rk == cd_k, wg_sh, cd_h), if(wg_rk == cd_k, wg_ru, cd_u), cd_plate, ink, acc, cd_hz, cd_tn)
+            box { from: cd_x, cd_y; size: cd_w, cd_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - cd_near) }
+        }
+        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
+        let ln_near = clamp(1 - max(max(0, max(ln_x - desk.cursor.x, desk.cursor.x - ln_x - ln_w)), max(0, max(ln_y - desk.cursor.y, desk.cursor.y - ln_y - ln_h))) / 220, 0, 1)
+        let ln_wake = ln_near > 0.7
+        on change ln_wake while ln_wake and wg_amb and ln_on { wg_amb = false }
+        let ln_base = if(editing, if(ln_gh, 0.4, 1), if(viz_still, if(ln_st < 0.5, 1, 0.35), pick(ln_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * ln_opa * (1 - 0.85 * wg_ambs * (1 - ln_near))
+        group {
+            let ink = pick(wg_style, if(ln_ad, if(ln_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(ln_ad, rgb(ln_ar, ln_ag, ln_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
+            z: if(ln_beh, 1, 3)
+            show: ln_on and (editing or wg_dkp > 0.01 or ln_st < 1.5)
+            opacity: ln_base + (1 - ln_base) * wg_dkp
+            move: if((wg_dk == ln_k or (wg_dk >= 0 and wg_dksel and ln_sel)), wg_dx, 0) + ln_dx * wg_dkp, if((wg_dk == ln_k or (wg_dk >= 0 and wg_dksel and ln_sel)), wg_dy, 0) + ln_dy * wg_dkp
+            wx.Launch(if(wg_rk == ln_k, wg_sx, ln_x), if(wg_rk == ln_k, wg_sy, ln_y), if(wg_rk == ln_k, wg_sw, ln_w), if(wg_rk == ln_k, wg_sh, ln_h), if(wg_rk == ln_k, wg_ru, ln_u), ln_lay, ln_plate, ink, acc, ln_hz, ln_tn)
+            box { from: ln_x, ln_y; size: ln_w, ln_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - ln_near) }
+        }
+        // </gen:lanes>
 
         // the visualisers, a lane each, under the other widgets
         group {
             z: if(lA_beh, 1, 3)
-            show: lA_on and (editing or lA_st < 1.5)
+            show: lA_on and (editing or wg_dkp > 0.01 or lA_st < 1.5)
             opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lA_opa
-            move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0), if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0)
+            move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0) + lA_dx * wg_dkp, if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0) + lA_dy * wg_dkp
             box { from: if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y); size: if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h); corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
             vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
         }
         group {
             z: if(lB_beh, 1, 3)
-            show: lB_on and (editing or lB_st < 1.5)
+            show: lB_on and (editing or wg_dkp > 0.01 or lB_st < 1.5)
             opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lB_opa
-            move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0), if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0)
+            move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0) + lB_dx * wg_dkp, if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0) + lB_dy * wg_dkp
             box { from: if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y); size: if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h); corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
             vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
         }
         group {
             z: if(lC_beh, 1, 3)
-            show: lC_on and (editing or lC_st < 1.5)
+            show: lC_on and (editing or wg_dkp > 0.01 or lC_st < 1.5)
             opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lC_opa
-            move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0), if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0)
+            move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0) + lC_dx * wg_dkp, if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0) + lC_dy * wg_dkp
             box { from: if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y); size: if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h); corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
             vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
         }
@@ -915,17 +1198,24 @@ scene Widgets {
             let ox = if(along, wg_dx, 0)
             let oy = if(along, wg_dy, 0)
             // read against the wallpaper under it (D139), or the palette
-            let ink = if(w.adapt and w.ar + w.ag + w.ab > 0, if(w.tn > 0.5, #15181c, #eef1f4), fl.engrave)
-            let acc = if(w.adapt and w.ar + w.ag + w.ab > 0, rgb(w.ar, w.ag, w.ab), fl.phos)
+            // … or in the style chosen for them all (D141, wg_style; tools/gen-wlanes.py writes the same)
+            let ink = pick(wg_style, if(w.adapt and w.ar + w.ag + w.ab > 0, if(w.tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
+            let acc = pick(wg_style, if(w.adapt and w.ar + w.ag + w.ab > 0, rgb(w.ar, w.ag, w.ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
+            // the ambient rest (D141): resting faint, it comes back as the pointer nears; near enough, all wake
+            let near = clamp(1 - max(max(0, max(w.x - desk.cursor.x, desk.cursor.x - w.x - w.w)), max(0, max(w.y - desk.cursor.y, desk.cursor.y - w.y - w.h))) / 220, 0, 1)
+            let wake = near > 0.7
+            on change wake while wake and wg_amb { wg_amb = false }
+            let seen = if(editing, if(w.gh, 0.4, 1), fo) * w.opa * (1 - 0.85 * wg_ambs * (1 - near))
             group {
                 z: if(w.behind, 1, 3)
-                opacity: if(editing, if(w.gh, 0.4, 1), fo) * w.opa
-                show: editing or (w.st < 1.5 and fo > 0.01)
-                move: ox, oy
+                opacity: seen + (1 - seen) * wg_dkp
+                show: editing or wg_dkp > 0.01 or (w.st < 1.5 and fo > 0.01)
+                // desk mode carries it to its place in the gathering
+                move: ox + w.dx * wg_dkp, oy + w.dy * wg_dkp
                 group { show: w.kind < 0.5 and w.lay < 0.5
-                        wg.Sleeve(wx, wy, ww, wh, wu, w.lyr, w.prog, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn) }
+                        wg.Sleeve(wx, wy, ww, wh, wu, w.lyr, w.prog, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn, w.viz) }
                 group { show: w.kind < 0.5 and w.lay > 0.5 and w.lay < 1.5
-                        wg.LyricStage(wx, wy, ww, wh, wu, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn) }
+                        wg.LyricStage(wx, wy, ww, wh, wu, w.plate, k, hv, w.txt, ink, acc, w.hz, w.tn, w.viz) }
                 group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay < 0.5
                         wg.ClockDigital(wx, wy, ww, wh, wu, w.h24, w.secs, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 0.5 and w.lay < 1.5
@@ -934,8 +1224,15 @@ scene Widgets {
                         wg.ClockWords(wx, wy, ww, wh, wu, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 2.5
                         wg.ClockInfo(wx, wy, ww, wh, wu, w.h24, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 7.5 and w.kind < 8.5
+                        wx.Timer(wx, wy, ww, wh, wu, w.lay, k, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 8.5 and w.kind < 9.5
+                        wx.Claude(wx, wy, ww, wh, wu, w.lay, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 9.5 and w.kind < 10.5
+                        wx.Photo(wx, wy, ww, wh, wu, w.lay, w.pop, w.plate, ink, acc, w.hz, w.tn) }
+                box { from: wx, wy; size: ww, wh; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - near); show: not editing }
                 group { show: w.kind < 0.5 and w.lay > 1.5
-                        wg.Record(wx, wy, ww, wh, wu, w.plate, w.prog, k, hv, w.txt, ink, acc, w.hz, w.tn) }
+                        wg.Record(wx, wy, ww, wh, wu, w.plate, w.prog, k, hv, w.txt, ink, acc, w.hz, w.tn, w.viz) }
             }
             group { z: 3; show: w.st > 2.5 and not editing
                     wg.Marker(w.x, w.y, w.u, k) }
@@ -946,11 +1243,12 @@ scene Widgets {
             group {
                 show: editing
                 // a record and an analogue clock keep their shape: corners only
-                let rec = (w.kind < 0.5 and w.lay > 1.5) or (w.kind > 1.5 and w.kind < 2.5 and w.lay > 0.5 and w.lay < 1.5)
+                let rec = (w.kind < 0.5 and w.lay > 1.5) or (w.kind > 1.5 and w.kind < 2.5 and w.lay > 0.5 and w.lay < 1.5) or (w.kind > 7.5 and w.kind < 8.5 and w.lay < 0.5) or (w.kind > 9.5 and w.kind < 10.5 and w.lay > 0.5)
                 let xx = wx + ox
                 let yy = wy + oy
                 box { from: xx, yy; size: ww, wh; corner: 4; stroke: if(w.sel, 2, 1); color: if(w.sel, fl.phos, fl.trace_lit); opacity: if(w.sel, 1, 0.6) }
                 text "HIDDEN AT REST" { at: xx + 8, yy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: w.gh }
+                text "GROUP {w.grp}" { at: xx + ww - 8, yy - 8; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.flare; show: w.grp > 0 }
                 text "OVER THE PICTURE'S SUBJECT" { at: xx + 8, yy + wh - 10; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: w.over and not w.behind }
                 text "BEHIND THE SUBJECT" { at: xx + 8, yy + wh - 10; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.phos; show: w.behind }
                 // a padlock when it is locked
@@ -1020,34 +1318,55 @@ scene Widgets {
             z: 7
             show: editing
             let cx = desk.width / 2
-            box { from: cx - 430, 12; size: 860, 40; corner: 6; color: fl.hull; opacity: 0.94 }
-            box { from: cx - 430, 12; size: 860, 40; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
-            text "WIDGETS" { at: cx - 416, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
-            repeat ai in 0..5 {
-                let ax = cx - 340 + ai * 104
-                zone box adz { from: ax, 20; size: 98, 24; cursor: pointer; role: button; label: pick(ai, "Add Now Playing", "Add a visualiser", "Add a clock", "Add the notes", "Add a GitHub repo") }
-                let full = wg_count >= 12 or pick(ai, false, wg_nviz >= 3, false, wg_nnt >= 1, wg_ngh >= 2)
-                box { from: ax, 20; size: 98, 24; corner: 4; color: fl.well; opacity: if(full, 0.3, 0.7 + 0.3 * adz.hover) }
-                text pick(ai, "+ NOW PLAYING", "+ VISUALISER", "+ CLOCK", "+ NOTES", "+ GITHUB") { at: ax + 49, 32; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            box { from: cx - 600, 12; size: 1200, 72; corner: 6; color: fl.hull; opacity: 0.94 }
+            box { from: cx - 600, 12; size: 1200, 72; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+            text "WIDGETS" { at: cx - 586, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+            // what can be added (each kind's limit dims its chip)
+            repeat ai in 0..12 {
+                let ax = cx - 500 + ai * 91
+                zone box adz { from: ax, 20; size: 87, 24; cursor: pointer; role: button
+                               label: pick(ai, "Add Now Playing", "Add a visualiser", "Add a clock", "Add the notes", "Add a GitHub repo", "Add the weather", "Add the system scope", "Add the calendar", "Add a focus timer", "Add Claude", "Add a photo", "Add a launcher") }
+                let full = wg_count >= 12 or pick(ai, false, wg_nviz >= 3, false, wg_nnt >= 1, wg_ngh >= 2, wg_has5, wg_has6, wg_has7, wg_has8, wg_has9, wg_has10, wg_has11)
+                box { from: ax, 20; size: 87, 24; corner: 4; color: fl.well; opacity: if(full, 0.3, 0.7 + 0.3 * adz.hover) }
+                text pick(ai, "+ PLAYING", "+ VISUALISER", "+ CLOCK", "+ NOTES", "+ GITHUB", "+ WEATHER", "+ SYSTEM", "+ CALENDAR", "+ FOCUS", "+ CLAUDE", "+ PHOTO", "+ LAUNCHER") { at: ax + 43, 32; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.engrave; opacity: if(full, 0.5, 1) }
                 on press adz { wg_hold = 0; emit wg_add(ai) }
             }
-            zone box snp { from: cx + 186, 20; size: 86, 24; cursor: pointer; role: toggle; checked: wg_snap; label: "Snapping" }
-            zone box don { from: cx + 280, 20; size: 140, 24; cursor: pointer; role: button; label: "Done" }
-            box { from: cx + 186, 20; size: 86, 24; corner: 4; color: if(wg_snap, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * snp.hover }
-            box { from: cx + 280, 20; size: 140, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
-            text pick(wg_snap, "SNAP OFF", "SNAP ON") { at: cx + 229, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(wg_snap, fl.ink, fl.engrave) }
-            text "DONE" { at: cx + 350, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+            // the look of them all, shadows, the ambient rest, desk mode; snapping; done
+            text "LOOK" { at: cx - 586, 64; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            repeat si in 0..5 {
+                let sx = cx - 540 + si * 84
+                zone box stz { from: sx, 52; size: 80, 24; cursor: pointer; role: tab; selected: wg_style == si; label: pick(si, "Adaptive look", "Phosphor look", "Ink look", "Chrome look", "Paper look") }
+                box { from: sx, 52; size: 80, 24; corner: 4; color: if(wg_style == si, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * stz.hover }
+                text pick(si, "ADAPTIVE", "PHOSPHOR", "INK", "CHROME", "PAPER") { at: sx + 40, 64; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(wg_style == si, fl.ink, fl.engrave) }
+                on press stz { wg_hold = 0; emit wg_tool(20 + si) }
+            }
+            repeat ti in 0..3 {
+                let sx = cx - 112 + ti * 92
+                let lit = pick(ti, wg_shad, wg_ambon, wg_desk)
+                zone box tgz { from: sx, 52; size: 88, 24; cursor: pointer; role: toggle; checked: lit; label: pick(ti, "Shadows", "Ambient rest", "Desk mode") }
+                box { from: sx, 52; size: 88, 24; corner: 4; color: if(lit, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * tgz.hover }
+                text pick(ti, "SHADOWS", "AMBIENT", "DESK MODE") { at: sx + 44, 64; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(lit, fl.ink, fl.engrave) }
+                on press tgz { wg_hold = 0; emit wg_tool(25 + ti) }
+            }
+            zone box snp { from: cx + 290, 52; size: 86, 24; cursor: pointer; role: toggle; checked: wg_snap; label: "Snapping" }
+            zone box don { from: cx + 384, 52; size: 200, 24; cursor: pointer; role: button; label: "Done" }
+            box { from: cx + 290, 52; size: 86, 24; corner: 4; color: if(wg_snap, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * snp.hover }
+            box { from: cx + 384, 52; size: 200, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
+            text pick(wg_snap, "SNAP OFF", "SNAP ON") { at: cx + 333, 64; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(wg_snap, fl.ink, fl.engrave) }
+            text "DONE" { at: cx + 484, 64; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
             on press snp { wg_hold = 0; emit wg_tool(14) }
             on press don { wg_hold = 0; emit wg_edit(0) }
             // what happened (three visualisers at most, locked ones left alone)
-            text wg_note { at: cx, 104; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.ember; width: 520; lines: 1 }
+            text wg_note { at: cx, 136; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.ember; width: 520; lines: 1 }
             // the tools: align, spread and match need two or more; order and lock one or more
             group {
                 show: wg_nsel >= 1
+                move: 0, 32
                 let n2 = wg_nsel >= 2
-                let tx0 = cx - 270 + 8
-                let tx1 = cx + 270 - 8 - 3 * 62 + 4
-                box { from: cx - 270, 58; size: 540, 38; corner: 6; color: fl.hull; opacity: 0.9 }
+                let tx0 = cx - 350 + 8
+                let tx1 = cx + 350 - 8 - 3 * 62 + 4
+                let txg = cx + 4
+                box { from: cx - 350, 58; size: 700, 38; corner: 6; color: fl.hull; opacity: 0.9 }
                 group {
                     opacity: if(n2, 1, 0.3)
                 zone box tb1 { from: tx0 + 0, 64; size: 30, 26; cursor: pointer; role: button; label: "Align left" }
@@ -1103,6 +1422,18 @@ scene Widgets {
                 box { from: tx1 + 124, 64; size: 58, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb13.hover) }
                 text "LOCK" { at: tx1 + 124 + 29, 77; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
                 on press tb13 { wg_hold = 0; emit wg_tool(13) }
+                // groups (D141): carried, chosen and faded as one
+                group {
+                    opacity: if(n2, 1, 0.3)
+                    zone box tbg { from: txg, 64; size: 70, 26; cursor: pointer; role: button; label: "Group them" }
+                    box { from: txg, 64; size: 70, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tbg.hover) }
+                    text "GROUP" { at: txg + 35, 77; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                    on press tbg { wg_hold = 0; emit wg_tool(15) }
+                }
+                zone box tbu { from: txg + 74, 64; size: 76, 26; cursor: pointer; role: button; label: "Ungroup" }
+                box { from: txg + 74, 64; size: 76, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tbu.hover) }
+                text "UNGROUP" { at: txg + 112, 77; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                on press tbu { wg_hold = 0; emit wg_tool(16) }
             }
         }
         group { z: 8; show: editing and wg_sel >= 0 and wg_dk < 0 and wg_rk < 0

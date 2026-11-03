@@ -338,7 +338,7 @@ SECTIONS = [
          ["Still", "Workspaces", "Pointer", "Both"], "sv_desk_on == 1"),
         ("slider", "Strength", "How far the picture travels", "desk.strength", 0, 100, "{sv_desk_strength, 0}%", "sv_desk_on == 1"),
     ]),
-    ("Widgets", "Widgets", "Now Playing and the visualiser on your desktop. Place them by dragging in edit mode", "DESKTOP", [
+    ("Widgets", "Widgets", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "DESKTOP", [
         ("card", "Desktop widgets"),
         ("toggle", "Desktop widgets", "mooi's own widgets on the desktop, under your windows (D137)", "widgets.on", "sv_widgets_on"),
         ("button", "Arrange on the desktop", "Drag, resize and set each one where it sits (also in Control Nexus)", "Edit on desktop", "wg_settings_edit", 1),
@@ -504,7 +504,11 @@ def row_lines(r, y, first, reverted):
         lines.append(f'SButton({TX + 340}, {y + 14} + sw_list.count * 96, 110, "+ Clock", sw_add, 2, false, sw_list.count < 12)')
         lines.append(f'SButton({TX + 460}, {y + 14} + sw_list.count * 96, 110, "+ Notes", sw_add, 3, false, sw_list.count < 12 and sw_nnotes < 1)')
         lines.append(f'SButton({TX + 580}, {y + 14} + sw_list.count * 96, 120, "+ GitHub", sw_add, 4, false, sw_list.count < 12 and sw_ngh < 2)')
-        return lines, "(60 + sw_list.count * 96)"
+        # D141: the one-of kinds, a second row (sw_one: a bit each, weather first)
+        for i, (word, wdt) in enumerate([("+ Weather", 110), ("+ System", 104), ("+ Calendar", 116), ("+ Focus", 96), ("+ Claude", 100), ("+ Photo", 96), ("+ Launcher", 116)]):
+            x = TX + sum(w for _, w in [("+ Weather", 110), ("+ System", 104), ("+ Calendar", 116), ("+ Focus", 96), ("+ Claude", 100), ("+ Photo", 96), ("+ Launcher", 116)][:i]) + 8 * i
+            lines.append(f'SButton({x}, {y + 50} + sw_list.count * 96, {wdt}, "{word}", sw_add, {5 + i}, false, sw_list.count < 12 and mod(floor(sw_one / {2 ** i}), 2) < 0.5)')
+        return lines, "(96 + sw_list.count * 96)"
     if k == "log":
         lines.append(f'box {{ from: {TX}, {y + 4}; size: {XR - TX}, 232; corner: 5; color: fl.ground; opacity: 0.7 }}')
         lines.append(f'for l in adv_log {{ SLogLine(l, {y + 18}) }}')
@@ -946,10 +950,11 @@ def main():
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)
     event sw_idle ->          // to the logic: row · 10 + 0 hide · 1 rest · 2 marker
     event sw_remove ->        // to the logic: the row
-    event sw_add ->           // to the logic: 0 now playing · 1 visualiser
+    event sw_add ->           // to the logic: the kind (lib/widgets ADD_ORDER, from 0)
     fact sw_nviz = 0          // visualisers listed (three at most)
     fact sw_nnotes = 0        // notes listed (one at most)
     fact sw_ngh = 0           // GitHub widgets listed (two at most)
+    fact sw_one = 0           // the one-of kinds there already, a bit each: weather 1 · system 2 · calendar 4 · timer 8 · claude 16 · photo 32 · launcher 64
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     text pw_text = ""

@@ -55,5 +55,6 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Widgets 2a: editor (selection, handles, keys, undo, align, lock, panel v2) + visualisers 16–128 bars, upgraded modes (D138)
 - [x] Widgets 2b: wallpaper awareness + depth behind the subject (rembg), resizing fixed (D139)
 - [x] Widgets 2c: Clocks (digital, analogue, words, info), Notes, GitHub (card, commits, pulse) (D140)
-- [ ] Widgets 2c: look at every new layout on the desktop (not yet seen on screen)
+- [x] Widgets 2c: every new layout seen on screen (D141 desk mode screenshots)
+- [x] Widgets 3: weather, system, calendar, focus, Claude, photo, launcher; styles, shadows, ambient, groups, desk mode; music transport + viz; GitHub activity map (D141)
 - [ ] Deferred: the claude.ai BMO design doc still describes the Quickshell BMO

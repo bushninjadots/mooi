@@ -326,6 +326,7 @@ scene Board {
     event kb_scroll ->         // to the logic: 1000 · column + 10 · wheel + 500
     event kb_filter ->         // to the logic: the tag filter (the same again: none)
     event kb_clearfilter ->    // to the logic: no filter
+    event kb_day ->            // from outside (the desktop calendar, D141): the cards due that day (days since 1970)
     event kb_focus_col         // from the logic: the column's name takes the caret
     event kb_plus              // a column's + pressed: it is chosen and the new card's field takes the caret
 

@@ -533,8 +533,11 @@ end)
 local W = require("lib/widgets")
 local WROOM = { w = 1920, h = 1046, top = 0 }
 local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD", digital = "DIGITAL", analogue = "ANALOGUE",
-                 words = "WORDS", info = "INFO", list = "LIST", card = "CARD", commits = "COMMITS", pulse = "PULSE" }
-local KTITLE = { nowplaying = "Now Playing", visualiser = "Visualiser", clock = "Clock", notes = "Notes", github = "GitHub" }
+                 words = "WORDS", info = "INFO", list = "LIST", card = "CARD", commits = "COMMITS", pulse = "PULSE", heat = "ACTIVITY",
+                 horizon = "HORIZON", days = "DAYS", scope = "SCOPE", gauges = "GAUGES", month = "MONTH", ring = "RING", slab = "SLAB",
+                 ticker = "TICKER", quote = "QUOTE", frame = "FRAME", polaroid = "POLAROID", shelf = "SHELF", column = "COLUMN" }
+local KTITLE = { nowplaying = "Now Playing", visualiser = "Visualiser", clock = "Clock", notes = "Notes", github = "GitHub", weather = "Weather",
+                 system = "System", calendar = "Calendar", timer = "Focus timer", claude = "Claude", photo = "Photo", launch = "Launcher" }
 local function wdoc()
     local ok, raw = pcall(sys.ask, "files.read", W.FILE)
     return (W.parse(ok and raw or nil, json.decode, WROOM))
@@ -550,7 +553,7 @@ local function show_widgets(d)
             name = KTITLE[w.kind] or w.kind,
             detail = string.format("%s · %d × %d AT %d, %d", what, w.w, w.h, w.x, w.y),
             mode = vis and string.upper(w.mode) or (WNAMES[w.layout] or ""),
-            kind = ({ nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4 })[w.kind] or 0,
+            kind = W.KIND_NUM[w.kind] or 0,
             choice = vis and W.MODE_INDEX[w.mode] or W.LAYOUT_INDEX[w.layout] or 0,
             nlay = vis and 12 or #(W.KIND_LAYOUTS[w.kind] or { 1 }),
             idle = W.IDLE_INDEX[w.idle] or 1,
@@ -560,6 +563,10 @@ local function show_widgets(d)
     model.sw_list = rows
     fact.sw_nviz = W.count_kind(d, "visualiser")
     fact.sw_nnotes, fact.sw_ngh = W.count_kind(d, "notes"), W.count_kind(d, "github")
+    -- the one-of kinds already there (D141): weather … launcher, a bit each (their add buttons dim)
+    local bits = 0
+    for i = 5, 11 do if W.count_kind(d, W.ADD_ORDER[i + 1]) > 0 then bits = bits + 2 ^ (i - 5) end end
+    fact.sw_one = bits
 end
 local function write_widgets(d)
     pcall(sys.call, "files.write", W.FILE, W.encode(d))
@@ -596,7 +603,7 @@ on("sw_slide", function(v)
     elseif code % 10 == 2 then write_widgets(W.set_option(d, w.id, "bars", 16 + val)) end
 end)
 on("sw_add", function(v)
-    local d, id = W.add(wdoc(), ({ [0] = "nowplaying", "visualiser", "clock", "notes", "github" })[math.floor(tonumber(v) or 0)] or "nowplaying", WROOM)
+    local d, id = W.add(wdoc(), W.ADD_ORDER[math.floor(tonumber(v) or 0) + 1] or "nowplaying", WROOM)
     if id then write_widgets(d) end
 end)
 on("wg_settings_edit", function()

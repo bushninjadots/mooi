@@ -1,0 +1,330 @@
+language 0.9
+
+// The desktop widgets' D141 kinds: weather, system, calendar, the focus timer, Claude, a photo and a
+// launcher. Each reads the scene's own facts and models (mooi-widgets.plm, fed by mooi-widgets.luau
+// through lib/deskdata) and stands on wg.Ground, so the look, the shadows and the wallpaper's tone
+// reach them as they reach the others.
+
+import "widgets.plm" as wg
+
+library WExtra {
+
+    // ── Weather ─────────────────────────────────────────────
+    // horizon (lay 0): the next 24 hours as a band of sky — night blue, warm where day turns, greyed by
+    // cloud, streaked where it rains — with the temperature as a trace of dots; days (lay 1): five days.
+    component Weather(x: number, y: number, w: number, h: number, u: number, lay: number, plate: bool,
+                      ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 16 * u
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        text "NO WEATHER YET · IT COMES WITH THE NEXUS'S" { at: x + pad, y + h / 2; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); show: not wx_on }
+        group {
+            show: wx_on
+            wg.WxIcon(x + pad + 22 * u, y + pad + 20 * u, 46 * u, wx_kind, ink, acc)
+            text wx_now { at: x + pad + 54 * u, y + pad + 12 * u; anchor: left center; size: 30 * u; weight: 600; family: "Exo 2"; color: ink }
+            text wx_word { at: x + pad + 54 * u, y + pad + 36 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w * 0.42; lines: 1 }
+            text wx_hl { at: x + w - pad, y + pad + 10 * u; anchor: right center; size: 13 * u; weight: 600; family: "Share Tech Mono"; color: ink }
+            text wx_more { at: x + w - pad, y + pad + 30 * u; anchor: right center; align: right; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w * 0.42; lines: 1 }
+
+            group {
+                show: lay < 0.5
+                let bx = x + pad
+                let by = y + 74 * u
+                let bw = w - 2 * pad
+                let bh = max(20 * u, h - 74 * u - 30 * u)
+                let cw = bw / 24
+                for c in wxh {
+                    let cx = bx + c.index * cw
+                    box { from: cx, by; size: cw + 0.6, bh; color: rgb(c.r, c.g, c.b); opacity: 0.88 }
+                    group {
+                        show: c.wet > 0.05
+                        line { from: cx + cw * 0.3, by + bh * 0.2; to: cx + cw * 0.18, by + bh * 0.42; width: max(1, u); color: #cfe9ff; opacity: c.wet * 0.8 }
+                        line { from: cx + cw * 0.72, by + bh * 0.45; to: cx + cw * 0.6, by + bh * 0.67; width: max(1, u); color: #cfe9ff; opacity: c.wet * 0.8 }
+                    }
+                    ellipse { at: cx + cw / 2, by + bh * (0.82 - 0.64 * c.t); radius: 2.4 * u; color: #ffffff; opacity: 0.92 }
+                    text c.lab { at: cx + cw / 2, by + bh + 12 * u; anchor: center; align: center; size: 8 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); show: mod(c.index, 3) == 0 }
+                }
+                box { from: bx, by; size: bw, bh; corner: 3 * u; stroke: 1; color: ink; opacity: 0.25 }
+                box { from: bx - u, by - 3 * u; size: cw + 2 * u, bh + 6 * u; corner: 2 * u; stroke: 1.5 * u; color: acc }
+            }
+
+            group {
+                show: lay > 0.5
+                let cw = (w - 2 * pad) / 5
+                for d in wxd {
+                    let cx = x + pad + d.index * cw + cw / 2
+                    text d.lab { at: cx, y + 78 * u; anchor: center; align: center; size: 9 * u; weight: 700; family: "Share Tech Mono"; color: if(d.index == 0, acc, mix(ink, acc, 0.4)) }
+                    wg.WxIcon(cx, y + 104 * u, 30 * u, d.kind, ink, acc)
+                    text d.hi { at: cx, y + 132 * u; anchor: center; align: center; size: 13 * u; weight: 600; family: "Exo 2"; color: ink }
+                    text d.lo { at: cx, y + 148 * u; anchor: center; align: center; size: 10 * u; family: "Share Tech Mono"; color: ink; opacity: 0.55 }
+                    box { from: cx - cw * 0.34, y + h - 14 * u; size: cw * 0.68, 3 * u; corner: 1.5 * u; color: ink; opacity: 0.15 }
+                    box { from: cx - cw * 0.34 + cw * 0.68 * d.a, y + h - 14 * u; size: max(3 * u, cw * 0.68 * (d.b - d.a)), 3 * u; corner: 1.5 * u; color: acc }
+                }
+            }
+        }
+    }
+
+    // ── System ──────────────────────────────────────────────
+    // scope (lay 0): the processor, memory and temperature as three phosphor traces on a small
+    // oscilloscope; gauges (lay 1): three dials.
+    component System(x: number, y: number, w: number, h: number, u: number, lay: number, plate: bool,
+                     ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 14 * u
+        let mem_c = #ffb454
+        let tmp_c = fl.ember
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        group {
+            show: lay < 0.5
+            text "CPU {sp_ctx}" { at: x + pad, y + 18 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+            text "MEM {sp_mtx}" { at: x + w / 2, y + 18 * u; anchor: center; align: center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: mem_c }
+            text "TEMP {sp_ttx}" { at: x + w - pad, y + 18 * u; anchor: right center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: tmp_c }
+            let sx = x + pad
+            let sy = y + 34 * u
+            let sw = w - 2 * pad
+            let sh = h - 34 * u - pad
+            let dx = sw / 48
+            box { from: sx, sy; size: sw, sh; corner: 4 * u; color: #020c08; opacity: 0.6 }
+            repeat gv in 1..8 { box { from: sx + gv * sw / 8, sy; size: 1, sh; color: acc; opacity: 0.1 } }
+            repeat gh in 1..4 { box { from: sx, sy + gh * sh / 4; size: sw, 1; color: acc; opacity: 0.1 } }
+            group {
+                glow: 4 * u, 0.5, acc
+                for v in spc { box { from: sx + v.index * dx, sy + 3 * u + (sh - 6 * u) * (1 - v.v) - u; size: dx + 0.5, 2 * u; color: acc } }
+            }
+            for v in spm { box { from: sx + v.index * dx, sy + 3 * u + (sh - 6 * u) * (1 - v.v) - u; size: dx + 0.5, 1.6 * u; color: mem_c; opacity: 0.85 } }
+            for v in spt { box { from: sx + v.index * dx, sy + 3 * u + (sh - 6 * u) * (1 - v.v) - u; size: dx + 0.5, 1.6 * u; color: tmp_c; opacity: 0.85 } }
+            box { from: sx, sy; size: sw, sh; corner: 4 * u; stroke: 1; color: acc; opacity: 0.35 }
+        }
+        group {
+            show: lay > 0.5
+            let r = max(12 * u, min(w / 6 - 10 * u, h * 0.36))
+            repeat gi in 0..3 {
+                let cx = x + w * (gi * 2 + 1) / 6
+                let cy = y + h * 0.48
+                let v = clamp(pick(gi, sp_c, sp_m, sp_t), 0, 1)
+                let col = pick(gi, acc, mem_c, tmp_c)
+                arc { at: cx, cy; radius: r; width: 5 * u; span: 270deg; color: ink; opacity: 0.14 }
+                group {
+                    glow: 5 * u, 0.5, col
+                    arc { at: cx, cy; radius: r; width: 5 * u; span: max(0.01, v) * 270deg; rotate: (v * 135 - 135) * 1deg; color: col }
+                }
+                text pick(gi, sp_ctx, sp_mtx, sp_ttx) { at: cx, cy; anchor: center; align: center; size: 15 * u; weight: 600; family: "Exo 2"; color: ink }
+                text pick(gi, "CPU", "MEMORY", "TEMP") { at: cx, cy + r + 4 * u; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, col, 0.5) }
+            }
+        }
+    }
+
+    // ── Calendar ────────────────────────────────────────────
+    // The month, Monday first; today ringed; days with board cards due lit, a press opens the board
+    // filtered to that day.
+    component CalMonth(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                       ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 14 * u
+        let cw = (w - 2 * pad) / 7
+        let gy = y + 62 * u
+        let ch = (h - 62 * u - pad) / 6
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        text cal_title { at: x + pad, y + 20 * u; anchor: left center; size: 13 * u; weight: 700; family: "Exo 2"; color: ink }
+        zone box cprv { from: x + w - pad - 52 * u, y + 8 * u; size: 24 * u, 24 * u; cursor: pointer; role: button; label: "The month before"; show: not editing }
+        zone box cnxt { from: x + w - pad - 24 * u, y + 8 * u; size: 24 * u, 24 * u; cursor: pointer; role: button; label: "The month after"; show: not editing }
+        text "‹" { at: x + w - pad - 40 * u, y + 20 * u; anchor: center; align: center; size: 18 * u; family: "Exo 2"; color: mix(ink, acc, cprv.hover) }
+        text "›" { at: x + w - pad - 12 * u, y + 20 * u; anchor: center; align: center; size: 18 * u; family: "Exo 2"; color: mix(ink, acc, cnxt.hover) }
+        on press cprv { emit cal_nav(0) }
+        on press cnxt { emit cal_nav(2) }
+        repeat wd in 0..7 {
+            text pick(wd, "M", "T", "W", "T", "F", "S", "S") { at: x + pad + wd * cw + cw / 2, y + 44 * u; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4) }
+        }
+        for c in cal {
+            let cx = x + pad + mod(c.index, 7) * cw + cw / 2
+            let cy = gy + floor(c.index / 7) * ch + ch / 2
+            zone box cdz { from: cx - cw / 2, cy - ch / 2; size: cw, ch; cursor: pointer; role: button; label: "{c.d}: {c.due} due"; show: not editing and c.inm }
+            box { from: cx - cw * 0.42, cy - ch * 0.42; size: cw * 0.84, ch * 0.84; corner: 4 * u; color: acc; opacity: if(c.due > 0, 0.22, 0) + 0.12 * cdz.hover }
+            ellipse { at: cx, cy; radius: min(cw, ch) * 0.4; stroke: 1.6 * u; color: acc; show: c.today }
+            text c.d { at: cx, cy; anchor: center; align: center; size: 11 * u; weight: if(c.today, 700, 400); family: "Exo 2"; color: if(c.today, acc, ink); opacity: if(c.inm, 1, 0.28) }
+            ellipse { at: cx, cy + ch * 0.3; radius: 1.8 * u; color: acc; show: c.due > 0 }
+            on press cdz { emit cal_day(c.key) }
+        }
+    }
+
+    // ── Focus timer ─────────────────────────────────────────
+    // ring (lay 0) or slab (lay 1): what is left, start or pause, reset, five more; the wheel over it
+    // changes its length a minute at a time. It flashes when it ends (and BMO says so).
+    component Timer(x: number, y: number, w: number, h: number, u: number, lay: number, k: number, plate: bool,
+                    ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let f = if(tm_total > 0, clamp(tm_left / tm_total, 0, 1), 0)
+        let col = if(tm_brk, #7be495, acc)
+        let flash = if(tm_flash, if(mod(ck_s, 2) == 0, 1, 0.3), 0)
+        zone box tmz { from: x, y; size: w, h; role: region; label: "Focus timer"; show: not editing }
+        on scroll tmz { emit tm_go(if(wheel > 0, 5, 6)) }
+        group {
+            show: lay < 0.5
+            let r = min(w, h) / 2 - 12 * u
+            let cx = x + w / 2
+            let cy = y + h / 2
+            group { show: not plate
+                    blur: 18 * u
+                    ellipse { at: cx, cy; radius: r + 8 * u; color: if(tnv > 0.5, #ffffff, #000000); opacity: 0.14 + 0.5 * hzv } }
+            ellipse { at: cx, cy; radius: r + 8 * u; color: fl.hull; opacity: 0.85; show: plate }
+            arc { at: cx, cy; radius: r; width: 7 * u; span: 360deg; color: ink; opacity: 0.12 }
+            group {
+                glow: (8 + 10 * flash) * u, 0.5 + 0.5 * flash, col
+                arc { at: cx, cy; radius: r; width: 7 * u; span: max(0.002, f) * 360deg; rotate: f * 180deg; color: col }
+            }
+            repeat ti in 0..12 {
+                line { from: cx + sin(ti * 30) * (r - 12 * u), cy - cos(ti * 30) * (r - 12 * u); to: cx + sin(ti * 30) * (r - 16 * u), cy - cos(ti * 30) * (r - 16 * u)
+                       width: 1.5 * u; color: ink; opacity: 0.35 }
+            }
+            text tm_txt { at: cx, cy - 6 * u; anchor: center; align: center; size: r * 0.36; weight: 600; family: "Exo 2"; color: ink }
+            text tm_word { at: cx, cy + r * 0.22; anchor: center; align: center; size: max(8, 9 * u); family: "Share Tech Mono"; color: col }
+            TimerKeys(cx - 46 * u, cy + r * 0.48, u, ink, col)
+        }
+        group {
+            show: lay > 0.5
+            let pad = 16 * u
+            wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+            text tm_txt { at: x + pad, y + h * 0.42; anchor: left center; size: h * 0.38; weight: 600; family: "Exo 2"; color: ink }
+            text tm_word { at: x + pad + 2 * u, y + h * 0.74; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: col }
+            box { from: x + pad, y + h - 12 * u; size: w - 2 * pad, 4 * u; corner: 2 * u; color: ink; opacity: 0.12 }
+            group {
+                glow: (6 + 10 * flash) * u, 0.5 + 0.5 * flash, col
+                box { from: x + pad, y + h - 12 * u; size: (w - 2 * pad) * f, 4 * u; corner: 2 * u; color: col }
+            }
+            TimerKeys(x + w - pad - 92 * u, y + h * 0.42 - 13 * u, u, ink, col)
+        }
+    }
+    // start or pause · reset · five more minutes
+    component TimerKeys(x: number, y: number, u: number, ink: color, col: color) {
+        size: 92 * u, 26 * u
+        repeat tk in 0..3 {
+            let bx = x + tk * 33 * u
+            zone box tkz { from: bx, y; size: 26 * u, 26 * u; cursor: pointer; role: button; label: pick(tk, "Start or pause", "Reset", "Five more minutes"); show: not editing }
+            ellipse { at: bx + 13 * u, y + 13 * u; radius: 13 * u; color: if(tk == 0, col, ink); opacity: if(tk == 0, 0.9, 0.1 + 0.12 * tkz.hover) }
+            on press tkz { emit tm_go(tk) }
+        }
+        path { color: fl.hull; show: not tm_run
+               move x + 10 * u, y + 7 * u; line x + 19 * u, y + 13 * u; line x + 10 * u, y + 19 * u; close }
+        box { from: x + 8.5 * u, y + 7.5 * u; size: 3 * u, 11 * u; color: fl.hull; show: tm_run }
+        box { from: x + 14.5 * u, y + 7.5 * u; size: 3 * u, 11 * u; color: fl.hull; show: tm_run }
+        arc { at: x + 46 * u, y + 13 * u; radius: 6 * u; width: 1.6 * u; span: 290deg; rotate: 30deg; color: ink }
+        text "+5" { at: x + 79 * u, y + 13 * u; anchor: center; align: center; size: 9 * u; weight: 700; family: "Share Tech Mono"; color: ink }
+    }
+
+    // ── Claude ──────────────────────────────────────────────
+    // ticker (lay 0): a light that breathes while Claude Code is at work, and the last thing Claude
+    // said in the notch; quote (lay 1): the same, large. A press opens the notch's Claude.
+    component Claude(x: number, y: number, w: number, h: number, u: number, lay: number, plate: bool,
+                     ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 16 * u
+        let lit = if(cl_busy, if(mod(ck_s, 2) == 0, 1, 0.45), 0.25)
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        zone box clz { from: x, y; size: w, h; cursor: pointer; role: button; label: "Open Claude in the notch"; show: not editing }
+        on press clz { emit cl_open }
+        group {
+            show: lay < 0.5
+            group { glow: 6 * u, lit, #7be495
+                    ellipse { at: x + pad + 5 * u, y + h / 2; radius: 5 * u; color: if(cl_busy, #7be495, mix(ink, acc, 0.3)); opacity: 0.4 + 0.6 * lit } }
+            text cl_who { at: x + pad + 18 * u, y + h / 2 - 9 * u; anchor: left center; size: 9 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+            text cl_state { at: x + w - pad, y + h / 2 - 9 * u; anchor: right center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45) }
+            text cl_line { at: x + pad + 18 * u, y + h / 2 + 9 * u; anchor: left center; size: 13 * u; family: "Exo 2"; color: ink; width: w - 2 * pad - 18 * u; lines: 1 }
+        }
+        group {
+            show: lay > 0.5
+            text "“" { at: x + pad, y + pad + 14 * u; anchor: left center; size: 46 * u; weight: 700; family: "Exo 2"; color: acc; opacity: 0.8 }
+            text cl_line { at: x + pad + 4 * u, y + pad + 40 * u; anchor: left top; size: 14 * u; family: "Exo 2"; color: ink; width: w - 2 * pad - 4 * u; lines: max(1, floor((h - pad * 2 - 64 * u) / (20 * u))) }
+            group { glow: 6 * u, lit, #7be495
+                    ellipse { at: x + pad + 5 * u, y + h - pad - 6 * u; radius: 4.5 * u; color: if(cl_busy, #7be495, mix(ink, acc, 0.3)); opacity: 0.4 + 0.6 * lit } }
+            text "{cl_who} · {cl_state}" { at: x + pad + 16 * u, y + h - pad - 6 * u; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w - 2 * pad - 16 * u; lines: 1 }
+        }
+    }
+
+    // ── Photo ───────────────────────────────────────────────
+    // A picture from a folder, changed every few minutes (a press: the next). Its subject, cut out
+    // (rembg), is drawn again over the frame, so it steps out of it. frame (lay 0) or polaroid (lay 1).
+    component Photo(x: number, y: number, w: number, h: number, u: number, lay: number, pop: bool, plate: bool,
+                    ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        zone box phz { from: x, y; size: w, h; cursor: pointer; role: button; label: "The next picture"; show: not editing }
+        on press phz { emit pf_next }
+        group {
+            show: wg_shad and not editing
+            blur: 16 * u
+            box { from: x + wg_lx * 12 * u, y + wg_ly * 12 * u + 4 * u; size: w, h; corner: 6 * u; color: #000000; opacity: 0.4 }
+        }
+        group {
+            show: lay < 0.5
+            let fx = x + w * 0.09
+            let fy = y + h * 0.12
+            let fw = w * 0.82
+            let fh = h * 0.74
+            box { from: x, y; size: w, h; corner: 3 * u; color: #17191c }
+            box { from: x + 6 * u, y + 6 * u; size: w - 12 * u, h - 12 * u; corner: 2 * u; color: #ece6d9 }
+            box { from: x, y; size: w, h; corner: 3 * u; stroke: 2 * u; color: mix(#3a3f45, acc, 0.15) }
+            group {
+                clip box { from: fx, fy; size: fw, fh }
+                image pf_img { at: x, y; size: w, h; fit: cover; show: pf_on }
+            }
+            box { from: fx, fy; size: fw, fh; stroke: 1.2 * u; color: #000000; opacity: 0.35 }
+            image pf_cut { at: x, y; size: w, h; fit: cover; show: pop and pf_cut_on }
+            text pf_name { at: x + w / 2, y + h - h * 0.07; anchor: center; align: center; size: 8 * u; family: "Share Tech Mono"; color: #5b5448; width: w * 0.8; lines: 1 }
+        }
+        group {
+            show: lay > 0.5
+            pivot: x + w / 2, y + h / 2
+            rotate: -2deg
+            let fx = x + w * 0.07
+            let fy = y + w * 0.07
+            let fs = w * 0.86
+            box { from: x, y; size: w, h; corner: 2 * u; color: #f6f3ec }
+            group {
+                clip box { from: fx, fy; size: fs, fs }
+                image pf_sq { at: fx - fs * 0.09, fy - fs * 0.09; size: fs * 1.18, fs * 1.18; fit: cover; show: pf_on }
+            }
+            image pf_cutsq { at: fx - fs * 0.09, fy - fs * 0.09; size: fs * 1.18, fs * 1.18; fit: cover; show: pop and pf_cut_on }
+            text pf_name { at: x + w / 2, y + fs + (h - fs) * 0.55; anchor: center; align: center; size: 13 * u; weight: 300; family: "Exo 2"; color: #3d3a35; width: w * 0.86; lines: 1 }
+        }
+        text pf_state { at: x + w / 2, y + h / 2; anchor: center; align: center; size: 10 * u; family: "Share Tech Mono"; color: #8a8378; width: w * 0.8; lines: 2; show: not pf_on }
+    }
+
+    // ── Launcher ────────────────────────────────────────────
+    // Your apps on a steel rail: shelf (lay 0) or column (lay 1). One running has a dot; one with
+    // notifications waiting pulses, with their number. A press opens it.
+    component Launch(x: number, y: number, w: number, h: number, u: number, lay: number, plate: bool,
+                     ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let vert = lay > 0.5
+        let n = max(1, ln.count)
+        let slot = if(vert, (h - 20 * u) / n, (w - 20 * u) / n)
+        let is = min(slot * 0.7, if(vert, w, h) - 34 * u)
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        // the rail
+        box { from: if(vert, x + w - 16 * u, x + 10 * u), if(vert, y + 10 * u, y + h - 16 * u); size: if(vert, 6 * u, w - 20 * u), if(vert, h - 20 * u, 6 * u); corner: 3 * u
+              color: mix(fl.steel_700, ink, 0.15); opacity: 0.9 }
+        box { from: if(vert, x + w - 16 * u, x + 10 * u), if(vert, y + 10 * u, y + h - 16 * u); size: if(vert, 1, w - 20 * u), if(vert, h - 20 * u, 1); color: #ffffff; opacity: 0.3 }
+        text "NO APPS FOUND · CHOOSE THEM IN ITS OPTIONS" { at: x + w / 2, y + h / 2; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w - 20 * u; lines: 2; show: ln.count == 0 }
+        for a in ln {
+            let cx = if(vert, x + (w - 22 * u) / 2, x + 10 * u + slot * (a.index + 0.5))
+            let cy = if(vert, y + 10 * u + slot * (a.index + 0.5), y + (h - 22 * u) / 2 + 2 * u)
+            zone box lz { from: if(vert, x, cx - slot / 2), if(vert, cy - slot / 2, y); size: if(vert, w, slot), if(vert, slot, h); cursor: pointer; role: button; label: "Open {a.name}"; show: not editing }
+            let lift = lz.hover
+            group {
+                move: if(vert, 0 - 5 * u * lift, 0), if(vert, 0, 0 - 6 * u * lift)
+                // waiting: a ring that breathes, and how many
+                ellipse { at: cx, cy; radius: is * 0.62; stroke: 2 * u; color: fl.ember; opacity: if(a.pulse > 0, if(mod(ck_s, 2) == 0, 0.9, 0.35), 0) }
+                image a.icon { at: cx - is / 2, cy - is / 2; size: is, is; show: a.iconed }
+                group {
+                    show: not a.iconed
+                    box { from: cx - is / 2, cy - is / 2; size: is, is; corner: is * 0.22; color: mix(fl.hull, acc, 0.25) }
+                    text a.letter { at: cx, cy; anchor: center; align: center; size: is * 0.5; weight: 700; family: "Exo 2"; color: ink }
+                }
+                ellipse { at: cx + is * 0.42, cy - is * 0.42; radius: 7 * u; color: fl.ember; show: a.pulse > 0 }
+                text "{a.pulse}" { at: cx + is * 0.42, cy - is * 0.42; anchor: center; align: center; size: 8 * u; weight: 700; family: "Share Tech Mono"; color: #ffffff; show: a.pulse > 0 }
+            }
+            ellipse { at: if(vert, x + w - 22 * u, cx), if(vert, cy, y + h - 22 * u); radius: 2.5 * u; color: acc; show: a.run }
+            text a.name { at: if(vert, cx, cx), if(vert, cy + is * 0.62, y + 4 * u); anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: ink; opacity: lift; width: max(slot, 80 * u); lines: 1 }
+            on press lz { emit ln_go(a.index) }
+        }
+    }
+}

@@ -14,8 +14,12 @@ local WM = require("lib/wallmap")
 local CF = require("lib/clockface")
 local GP = require("lib/ghparse")
 local NOTES = require("lib/notes")
+local sysinfo = require("lib/sysinfo")
+local wire = require("bmo/wire")
 local forecast = require("lib/forecast")
 local calendar = require("lib/calendar")
+local DD = require("lib/deskdata")
+local apps_lib = require("lib/apps")
 local DAYNAMES = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" }
 
 local function read(name, kind)
@@ -39,7 +43,10 @@ local settings = config.parse(read("settings.json"), json.decode)
 local roles = nil        -- the palette's roles as painted (the accents lean towards phos)
 local wall = nil         -- the wallpaper as tools/wallmap.py read it (lib/wallmap), nil until known
 local apply_wall         -- defined with the wallpaper's watch below
+local wall_light         -- the shadows' direction from the wallpaper's light (D141), defined with the feeders
 local gh_lanes, show_github = {}, nil   -- the GitHub widgets' repositories (D140), and their drawing
+local desk_at = nil      -- desk mode (D141): each widget's place in the gathering, by slot; nil when off
+local on_kinds = nil     -- the D141 feeders, told when the widgets change (defined with them below)
 local palette = read("palette.json", "json")
 local function paint()
     fact.cn_kind, fact.cn_scale = style.corners(settings)
@@ -104,7 +111,7 @@ local function publish()
         local st = W.idle_state(w, playing)
         local o = w.options or {}
         rows[#rows + 1] = {
-            kind = ({ nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4 })[w.kind] or 0,
+            kind = W.KIND_NUM[w.kind] or 0,
             lay = W.LAYOUT_INDEX[w.layout] or 0,
             mode = W.MODE_INDEX[w.mode] or 0,
             x = w.x, y = w.y, w = w.w, h = w.h, u = W.scale(w),
@@ -118,7 +125,8 @@ local function publish()
             peaks = o.peaks ~= false, refl = o.reflection == true,
             vslot = -1, opa = w.opacity or 1, txt = tonumber(o.text) or 1, locked = w.locked == true,
             sel = is_sel(w.id),
-            h24 = o.h24 ~= false, secs = o.seconds ~= false,
+            h24 = o.h24 ~= false, secs = o.seconds ~= false, viz = o.viz == true, pop = o.pop ~= false,
+            dx = 0, dy = 0, grp = 0,
             adapt = o.adapt ~= false, behind = false, tn = 0, hz = 0.32, ar = 0, ag = 0, ab = 0, over = false,
         }
         local r = rows[#rows]
@@ -148,6 +156,19 @@ local function publish()
     for i, w in ipairs(doc.widgets) do
         if w.kind == "visualiser" then nv = nv + 1; rows[i].vslot = math.min(nv, 3) - 1 end
     end
+    -- groups (their tags in edit mode) and desk mode's offsets to the gathering
+    local gnum = W.group_numbers(doc)
+    for i, r in ipairs(rows) do
+        r.grp = gnum[i] or 0
+        local at = desk_at and desk_at[i]
+        if at then r.dx, r.dy = at.x - r.x, at.y - r.y end
+    end
+    -- a group rests as one: shown while any of it is
+    local gshown = {}
+    for i, w in ipairs(doc.widgets) do if w.group and rows[i].st == 0 then gshown[w.group] = true end end
+    for i, w in ipairs(doc.widgets) do
+        if w.group and gshown[w.group] and rows[i].st > 0 then rows[i].st, rows[i].op, rows[i].gh = 0, 1, false end
+    end
     model.wg = rows
     -- the cut-out is drawn only round the widgets behind it (a full screen of it costs every frame)
     local l, t, r2, b2 = math.huge, math.huge, -math.huge, -math.huge
@@ -176,6 +197,7 @@ local function publish()
             fact[f .. "sel"] = r.sel and not r.locked
             fact[f .. "ad"], fact[f .. "beh"] = r.adapt and wall ~= nil, r.behind
             fact[f .. "ar"], fact[f .. "ag"], fact[f .. "ab"] = r.ar, r.ag, r.ab
+            fact[f .. "dx"], fact[f .. "dy"] = r.dx, r.dy
             lane = lane + 1
         end
     end
@@ -189,7 +211,19 @@ local function publish()
         fact[f .. "tn"], fact[f .. "hz"] = r.tn, r.hz
         fact[f .. "ad"] = r.adapt and r.ar + r.ag + r.ab > 0
         fact[f .. "ar"], fact[f .. "ag"], fact[f .. "ab"] = r.ar, r.ag, r.ab
+        fact[f .. "dx"], fact[f .. "dy"] = r.dx, r.dy
     end
+    -- the D141 lanes (one each)
+    local LANE = { weather = "wh_", system = "sp_", calendar = "cd_", launch = "ln_" }
+    local lit = {}
+    for i, w in ipairs(doc.widgets) do
+        local f = LANE[w.kind]
+        if f and not lit[f] then lit[f] = true; lane_facts(f, i, rows[i]) end
+    end
+    for _, f in pairs(LANE) do if not lit[f] then fact[f .. "on"] = false end end
+    for i = 5, 11 do fact["wg_has" .. i] = W.count_kind(doc, W.ADD_ORDER[i + 1]) > 0 end
+    fact.wg_style = W.STYLE_INDEX[doc.style or "adaptive"] or 0
+    fact.wg_shad, fact.wg_ambon = doc.shadows == true, doc.ambient ~= false
     local nn, ng = 0, 0
     gh_lanes = {}
     for i, w in ipairs(doc.widgets) do
@@ -202,8 +236,10 @@ local function publish()
     end
     if nn == 0 then fact.nl_on = false end
     for j = ng + 1, 2 do fact["g" .. j .. "_on"] = false end
-    fact.any_clock = W.count_kind(doc, "clock") > 0
+    -- the second's tick: the clocks, the timer and Claude's light
+    fact.any_clock = W.count_kind(doc, "clock") + W.count_kind(doc, "timer") + W.count_kind(doc, "claude") > 0
     if show_github then show_github() end
+    if on_kinds then on_kinds() end
     -- a slot that went (removed, or the file changed) cannot keep the surface awake
     hovered = W.prune_hover(hovered, #rows)
     for i = 0, W.MAX - 1 do
@@ -280,6 +316,7 @@ end)
 local CURRENT = HOME .. "/.cache/current_wallpaper_source"
 local current_wall, asked_for, in_flight = nil, nil, false
 apply_wall = function()
+    if wall_light then wall_light() end
     -- never rebuild the widgets under a hand that is carrying, pulling or sliding (D138 fix)
     if pending or grab or slide then after(400, apply_wall); return end
     local t = read("wall-map.json", "json")
@@ -376,8 +413,17 @@ local function lyrics_for(m)
         show_lyric()
     end)
 end
+-- shuffle and repeat as the player has them (playerctl answers On/Off and None/Playlist/Track)
+local function read_modes()
+    run("playerctl", { "shuffle" }, function(out, code) if code == 0 then fact.np_shuf = tostring(out):match("On") ~= nil end end)
+    run("playerctl", { "loop" }, function(out, code)
+        if code == 0 then fact.np_loop = tostring(out):match("Track") and 2 or (tostring(out):match("Playlist") and 1 or 0) end
+    end)
+end
 local function show_progress()
     fact.np_progress = np.len > 0 and math.min(1, np.t / np.len) or 0
+    text.np_tpos = np.len > 0 and DD.mmss(math.min(np.t, np.len)) or ""
+    text.np_tlen = np.len > 0 and DD.mmss(np.len) or ""
     fact.np_arm_at = P.arm(fact.np_progress, playing and "playing" or (fact.np_has and "paused" or "stopped"))
 end
 
@@ -413,6 +459,7 @@ pcall(sys.watch, "media", function(m)
     end
     show_progress()
     show_lyric()
+    if has then read_modes() end
     if was ~= playing then publish() end
 end)
 -- the song's clock between the service's readings, in quarter seconds
@@ -443,6 +490,11 @@ on("wg_hov", function(v)
 end)
 on("wg_ctl", function(v)
     local c = math.floor(tonumber(v) or 0) % 10
+    if c == 3 then run("playerctl", { "shuffle", "toggle" }, function() read_modes() end); return end
+    if c == 4 then
+        run("playerctl", { "loop", ({ [0] = "Playlist", "Track", "None" })[math.floor(fact.np_loop or 0)] or "None" }, function() read_modes() end)
+        return
+    end
     pcall(sys.call, ({ [0] = "media.previous", [1] = "media.toggle", [2] = "media.next" })[c] or "media.toggle")
 end)
 on("wg_seek", function(v)
@@ -473,7 +525,7 @@ local function panel()
     local w = doc.widgets[k + 1]
     if not w then fact.wg_sel = -1; return end
     if panel_at then fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
-    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, ({ visualiser = 560, nowplaying = 436 })[w.kind] or 380, room) end
+    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, ({ visualiser = 560, nowplaying = 466 })[w.kind] or 420, room) end
     local o = w.options or {}
     fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
     fact.wg_sm = W.MODE_INDEX[w.mode] or 0
@@ -484,9 +536,11 @@ local function panel()
     fact.wg_ob, fact.wg_ogap, fact.wg_osm = tonumber(o.bars) or 64, tonumber(o.gap) or 0.3, tonumber(o.smooth) or 0.5
     fact.wg_otx, fact.wg_oop, fact.wg_olk = tonumber(o.text) or 1, w.opacity or 1, w.locked == true
     fact.wg_oad, fact.wg_obh = o.adapt ~= false, o.behind == true
-    fact.wg_sk = ({ nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4 })[w.kind] or 0
+    fact.wg_sk = W.KIND_NUM[w.kind] or 0
     fact.wg_oh24, fact.wg_osec = o.h24 ~= false, o.seconds ~= false
     text.wg_repo = o.repo or ""
+    fact.wg_oviz, fact.wg_omin, fact.wg_opop, fact.wg_oevery = o.viz == true, tonumber(o.minutes) or 25, o.pop ~= false, tonumber(o.every) or 10
+    text.wg_folder, text.wg_apps = o.folder or "", o.apps or ""
     text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
     local L = W.LAYOUTS[W.layout_of(w)]
     local maxw = L.max and L.max[1] or room.w
@@ -516,7 +570,8 @@ local function change(d, note)
     commit(d)
 end
 local function skipped_note(n) return n > 0 and string.format("%d LOCKED, LEFT WHERE %s", n, n == 1 and "IT WAS" or "THEY WERE") or "" end
-local function choose(ids) selected = ids; show_selection() end
+-- a group is chosen whole (D141)
+local function choose(ids) selected = W.with_groups(doc, ids); show_selection() end
 
 on("wg_edit", function(v)
     local on_it = math.floor(tonumber(v) or 0) == 1
@@ -619,10 +674,11 @@ on("wg_hdrop", function()
     fact.wg_rk = -1
 end)
 -- 0 now playing · 1 visualiser · 2 clock · 3 notes · 4 GitHub
-local ADD_KINDS = { [0] = "nowplaying", "visualiser", "clock", "notes", "github" }
-local KIND_WORDS = { visualiser = "THREE VISUALISERS", notes = "ONE NOTES", github = "TWO GITHUB WIDGETS" }
+local KIND_WORDS = { visualiser = "THREE VISUALISERS", notes = "ONE NOTES", github = "TWO GITHUB WIDGETS", weather = "ONE WEATHER",
+                     system = "ONE SYSTEM SCOPE", calendar = "ONE CALENDAR", timer = "ONE FOCUS TIMER", claude = "ONE CLAUDE",
+                     photo = "ONE PHOTO", launch = "ONE LAUNCHER" }
 on("wg_add", function(v)
-    local kind = ADD_KINDS[math.floor(tonumber(v) or 0)] or "nowplaying"
+    local kind = W.ADD_ORDER[math.floor(tonumber(v) or 0) + 1] or "nowplaying"
     local d, id = W.add(doc, kind, room)
     if not id then
         local full = #doc.widgets >= W.MAX
@@ -708,7 +764,16 @@ on("wg_tool", function(v)
     elseif c == 11 then d = W.raise(doc, selected, "front")
     elseif c == 12 then d = W.raise(doc, selected, "back")
     elseif c == 13 then toggle_lock(); return
-    elseif c == 14 then fact.wg_snap = not fact.wg_snap; return end
+    elseif c == 14 then fact.wg_snap = not fact.wg_snap; return
+    -- D141: groups, the look of them all, shadows, the ambient rest, desk mode
+    elseif c == 15 then
+        if #selected < 2 then change(doc, "CHOOSE TWO OR MORE TO GROUP"); return end
+        d = W.group(doc, selected)
+    elseif c == 16 then d = W.ungroup(doc, selected)
+    elseif c >= 20 and c <= 24 then d = W.set_look(doc, "style", W.STYLES[c - 19])
+    elseif c == 25 then d = W.set_look(doc, "shadows", not doc.shadows)
+    elseif c == 26 then d = W.set_look(doc, "ambient", doc.ambient == false)
+    elseif c == 27 then emit("wg_deskm", 2); return end
     change(d, skipped_note(sk))
 end)
 -- the panel: slot · 1000 + what · 100 + value (what: 1 layout or mode · 2 at rest · 3-6 lyric line,
@@ -735,6 +800,12 @@ on("wg_opt", function(v)
         local x, y = WM.calm_spot(wall, doc, k + 1, room)
         if not x then change(doc, "NO CALM SPOT IS FREE FOR ITS SIZE"); return end
         d = W.set_rect(doc, w.id, x, y, w.w, w.h, room)
+    elseif what == 9 and val >= 13 and val <= 15 then d = W.set_option(doc, w.id, "minutes", ({ 15, 25, 50 })[val - 12])
+    elseif what == 9 and (val == 16 or val == 17) then d = W.set_option(doc, w.id, "pop", val == 16)
+    elseif what == 9 and val == 18 then
+        local nxt = ({ [5] = 10, [10] = 30, [30] = 5 })[tonumber((w.options or {}).every) or 10] or 10
+        d = W.set_option(doc, w.id, "every", nxt)
+    elseif what == 9 and (val == 21 or val == 22) then d = W.set_option(doc, w.id, "viz", val == 21)
     elseif what == 9 and (val == 9 or val == 10) then d = W.set_option(doc, w.id, "h24", val == 9)
     elseif what == 9 and (val == 11 or val == 12) then d = W.set_option(doc, w.id, "seconds", val == 11)
     elseif what == 9 and (val == 5 or val == 6) then d = W.set_option(doc, w.id, "adapt", val == 5)
@@ -794,6 +865,19 @@ on("submit:wg_repo", function()
     if not GP.repo_ok(r) then change(doc, "A REPOSITORY IS OWNER/NAME"); return end
     change(W.set_option(doc, w.id, "repo", r))
 end)
+-- the photo's folder and the launcher's apps, typed in the panel
+local folder_draft, apps_draft = "", ""
+on("text:wg_folder", function(v) folder_draft = type(v) == "string" and v or "" end)
+on("text:wg_apps", function(v) apps_draft = type(v) == "string" and v or "" end)
+local function typed_option(kind, key, draft, why)
+    local w = doc.widgets[(fact.wg_sel or -1) + 1]
+    if not w or w.kind ~= kind then return end
+    local v = draft:gsub("^%s+", ""):gsub("%s+$", "")
+    if not W.option_string(key, v) then change(doc, why); return end
+    change(W.set_option(doc, w.id, key, v))
+end
+on("submit:wg_folder", function() typed_option("photo", "folder", folder_draft, "A FOLDER, LIKE ~/Pictures") end)
+on("submit:wg_apps", function() typed_option("launch", "apps", apps_draft, "APPS, COMMA-SEPARATED") end)
 -- the panel's place, when its header is dragged (x · 4096 + y)
 on("wg_pmove", function(v)
     v = math.floor(tonumber(v) or 0)
@@ -813,6 +897,8 @@ local function info_strip()
         text.ck_wx = string.format("%d°", math.floor(wx.now.temp + 0.5))
         text.ck_wxhl = wx.today.hi and string.format("%d° / %d°", math.floor(wx.today.hi + 0.5), math.floor(wx.today.lo + 0.5)) or ""
         fact.ck_wcode = wx.now.code
+        fact.ck_wkind = DD.icon_kind(wx.now.code, wx.now.day)
+        text.ck_wword = DD.ICON_WORD[fact.ck_wkind] or ""
         fact.ck_wx_on = true
     else fact.ck_wx_on = false end
     local board = read("board.json", "json")
@@ -827,8 +913,10 @@ run("date", { "+%z" }, function(out, code)
         info_strip()
     end
 end)
+local show_timer_tick   -- the focus timer's second (defined with the D141 feeders)
 local function tick()
     if not fact.any_clock then return end
+    if show_timer_tick then show_timer_tick() end
     if os.time() - strip_at >= 60 then info_strip() end
     local t = os.date("*t")
     fact.ck_h, fact.ck_m, fact.ck_s = t.hour, t.min, t.sec
@@ -902,6 +990,8 @@ local gh = {}   -- repo -> { card, runs, act, at, err, asking }
 local Q = [[query($o:String!,$n:String!){ repository(owner:$o,name:$n){ nameWithOwner description stargazerCount forkCount pushedAt url
   primaryLanguage{name} issues(states:OPEN){totalCount} pullRequests(states:OPEN){totalCount}
   defaultBranchRef{ name target{ ... on Commit { history(first:8){ nodes{ messageHeadline committedDate abbreviatedOid url author{ name user{login} } statusCheckRollup{state} } } } } } } }]]
+local HEATQ = [[query($o:String!){ user(login:$o){ contributionsCollection{ contributionCalendar{ totalContributions weeks{ contributionDays{ weekday contributionLevel } } } } } }]]
+local function bmo_say_ci(words) run("pleamar", { "--say", "bmo", wire.say(words), "emit speak" }) end
 local function cache_name(repo) return "gh-" .. repo:gsub("/", "-") .. ".json" end
 local STATE = { ok = 1, fail = 2, run = 3, other = 0, SUCCESS = 1, FAILURE = 2, ERROR = 2, PENDING = 3, EXPECTED = 3 }
 show_github = function()
@@ -912,7 +1002,7 @@ show_github = function()
         local e = repo and gh[repo]
         if not e then
             local c = repo and read(cache_name(repo), "json")
-            if type(c) == "table" then gh[repo] = { card = c.card, runs = c.runs or {}, act = c.act, at = tonumber(c.at) or 0 }; e = gh[repo] end
+            if type(c) == "table" then gh[repo] = { card = c.card, runs = c.runs or {}, act = c.act, heat = c.heat, at = tonumber(c.at) or 0 }; e = gh[repo] end
         end
         if repo then
             local card = e and e.card
@@ -937,6 +1027,10 @@ show_github = function()
             for i, v in ipairs(e and e.act or {}) do as[i] = { v = v / top } end
             model["g" .. j .. "a"] = as
             text[f .. "total"] = e and e.act and string.format("%d COMMITS IN 12 WEEKS", total) or "COUNTING…"
+            -- the activity map (D141): the owner's year
+            model["g" .. j .. "h"] = e and e.heat and e.heat.cells or {}
+            text[f .. "heat"] = e and e.heat and string.format("%d CONTRIBUTIONS BY %s IN THE LAST YEAR", e.heat.total, string.upper(repo:match("^[^/]+") or ""))
+                or "READING THE ACTIVITY…"
         end
     end
 end
@@ -946,12 +1040,12 @@ local function gh_read(repo)
     if e.asking then return end
     e.asking = true
     local owner, name = repo:match("^(.-)/(.+)$")
-    local pending = 3
+    local pending = 4
     local function done()
         pending = pending - 1
         if pending > 0 then return end
         e.asking, e.at = false, os.time()
-        pcall(sys.call, "files.write", cache_name(repo), { card = e.card, runs = e.runs, act = e.act, at = e.at })
+        pcall(sys.call, "files.write", cache_name(repo), { card = e.card, runs = e.runs, act = e.act, heat = e.heat, at = e.at })
         show_github()
     end
     run("gh", { "api", "graphql", "-f", "query=" .. Q, "-F", "o=" .. owner, "-F", "n=" .. name }, function(out, code)
@@ -963,7 +1057,24 @@ local function gh_read(repo)
     end)
     run("gh", { "api", "repos/" .. repo .. "/actions/runs?per_page=6" }, function(out)
         local ok, d = pcall(json.decode, out or "")
-        if ok then e.runs = GP.runs(d, json.null) end
+        if ok then
+            local runs = GP.runs(d, json.null)
+            -- a run that has just failed (not one that was failing already): BMO says so (D141)
+            local newest = runs[1]
+            if newest and newest.state == "fail" and e.runs and #e.runs > 0 and e.told ~= newest.url
+               and not (e.runs[1] and e.runs[1].url == newest.url and e.runs[1].state == "fail") then
+                e.told = newest.url
+                bmo_say_ci(string.format("Uh oh! %s failed on %s.", newest.name, repo))
+            end
+            e.runs = runs
+        end
+        done()
+    end)
+    -- the owner's contributions (a person: theirs; an organisation answers nothing, and it stays empty)
+    run("gh", { "api", "graphql", "-f", "query=" .. HEATQ, "-F", "o=" .. owner }, function(out)
+        local ok, d = pcall(json.decode, out or "")
+        local h = ok and GP.heat(d, 52, json.null) or nil
+        if h then e.heat = h end
         done()
     end)
     run("gh", { "api", "repos/" .. repo .. "/stats/commit_activity" }, function(out)
@@ -997,9 +1108,266 @@ on("gh_open", function(v)
     if url and url ~= "" then run("xdg-open", { url }) end
 end)
 
+-- ── D141: the feeders of the weather, system, calendar, focus timer, Claude, photo and launcher ──
+local function has(kind) return doc ~= nil and W.count_kind(doc, kind) > 0 end
+local function first(kind)
+    for _, w in ipairs(doc and doc.widgets or {}) do if w.kind == kind then return w, w.options or {} end end
+    return nil, {}
+end
+local function rnd(v) return math.floor((tonumber(v) or 0) + 0.5) end
+local function bmo_say(words) run("pleamar", { "--say", "bmo", wire.say(words), "emit speak" }) end
+
+-- the shadows fall away from the wallpaper's light
+wall_light = function()
+    local dx, dy = DD.light(wall, room.w / 2, room.h / 2, room)
+    fact.wg_lx, fact.wg_ly = dx, dy
+end
+
+-- weather: the Nexus and the notch keep nexus-weather.json fresh; this only reads it
+local function show_weather()
+    if not has("weather") then return end
+    local c = read("nexus-weather.json", "json")
+    local ans = type(c) == "table" and c.answer or nil
+    local f = forecast.parse(ans)
+    if not f then fact.wx_on = false; return end
+    fact.wx_on = true
+    fact.wx_kind = DD.icon_kind(f.now.code, f.now.day)
+    text.wx_now = string.format("%d°", rnd(f.now.temp))
+    text.wx_word = string.format("%s · FEELS %d°", DD.ICON_WORD[fact.wx_kind] or "", rnd(f.now.feels))
+    text.wx_hl = f.today.hi and string.format("%d° / %d°", rnd(f.today.hi), rnd(f.today.lo)) or ""
+    text.wx_more = string.format("%sWIND %d KM/H · %d%%", c.city and (string.upper(c.city) .. " · ") or "", rnd(f.now.wind), rnd(f.now.humidity))
+    local rows = {}
+    for i, o in ipairs(DD.horizon(ans, 24) or {}) do rows[i] = { r = o.r, g = o.g, b = o.b, t = o.t, wet = o.wet, lab = o.label, kind = o.kind } end
+    model.wxh = rows
+    model.wxd = DD.week(f.days)
+end
+pcall(sys.watch, "files:nexus-weather.json", function() show_weather(); strip_at = -60 end)
+every(600000, show_weather)
+
+-- system: a sample every two seconds while it is on the desktop, the last 48 kept
+local samples = { c = {}, m = {}, t = {} }
+local sys_prev = nil
+local function rows_of(list) local r = {}; for i, v in ipairs(list) do r[i] = { v = v } end; return r end
+every(2000, function()
+    if not has("system") or fact.wg_amb then return end
+    run("cat", { "/proc/stat" }, function(out)
+        local v; v, sys_prev = sysinfo.cpu(out, sys_prev)
+        if not v then return end
+        fact.sp_c = v; text.sp_ctx = string.format("%d%%", rnd(v * 100))
+        model.spc = rows_of(DD.push(samples.c, v, 48))
+    end)
+    run("cat", { "/proc/meminfo" }, function(out)
+        local f, used = sysinfo.mem(out)
+        if not f then return end
+        fact.sp_m = f; text.sp_mtx = string.format("%.1fG", used)
+        model.spm = rows_of(DD.push(samples.m, f, 48))
+    end)
+    run("sensors", { "-j" }, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        local c = ok and sysinfo.temp(t) or nil
+        if not c then text.sp_ttx = "—"; return end
+        fact.sp_t = math.min(1, c / 100); text.sp_ttx = string.format("%d°", rnd(c))
+        model.spt = rows_of(DD.push(samples.t, math.min(1, c / 100), 48))
+    end)
+end)
+
+-- calendar: this month (‹ › move it), the board's cards due lit
+local cal_shift = 0
+local function show_cal()
+    if not has("calendar") then return end
+    local t = os.date("*t")
+    local y, m = calendar.shift(t.year, t.month, cal_shift)
+    local today = math.floor((os.time() + zone_off) / 86400)
+    model.cal = DD.month_grid(y, m, today, read("board.json", "json"))
+    text.cal_title = string.upper(calendar.MONTHS[m] .. " " .. y)
+end
+pcall(sys.watch, "files:board.json", function() show_cal(); strip_at = -60 end)
+on("cal_nav", function(v) cal_shift = cal_shift + math.floor(tonumber(v) or 1) - 1; show_cal() end)
+-- a day pressed: the board, filtered to what is due then (started first if it is not running)
+on("cal_day", function(v)
+    local day = math.floor(tonumber(v) or 0)
+    run("pleamar", { "--say", "mooi-board", "emit kb_day " .. day }, function(_, code)
+        if code == 0 then return end
+        run("mooi", { "board" })
+        after(1800, function() run("pleamar", { "--say", "mooi-board", "emit kb_day " .. day }) end)
+    end)
+end)
+
+-- the focus timer: focus, then a five-minute break; BMO says when each ends
+local timer = nil
+local function timer_len() local _, o = first("timer"); return tonumber(o.minutes) or 25 end
+local function show_timer()
+    if not timer then timer = DD.timer(timer_len()) end
+    local now = os.time()
+    local left = DD.timer_left(timer, now)
+    if timer.ends and left <= 0 then
+        local was_break = timer.brk
+        fact.tm_flash = true
+        after(15000, function() fact.tm_flash = false end)
+        bmo_say(was_break and "Break's over! Back to it, you've got this." or "Focus done! Time for a little break.")
+        timer = DD.timer(was_break and timer_len() or 5, not was_break)
+        text.tm_word = was_break and "BREAK OVER" or "DONE · TAKE A BREAK"
+        left = DD.timer_left(timer, now)
+    elseif not fact.tm_flash then
+        text.tm_word = timer.ends and (timer.brk and "BREAK" or "FOCUS")
+            or (left < timer.total and "PAUSED" or (timer.brk and "BREAK · READY" or "READY"))
+    end
+    fact.tm_left, fact.tm_total = left, timer.total
+    fact.tm_run, fact.tm_brk = timer.ends ~= nil, timer.brk
+    text.tm_txt = DD.mmss(left)
+end
+show_timer_tick = function() if has("timer") then show_timer() end end
+on("tm_go", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local now = os.time()
+    if not timer then timer = DD.timer(timer_len()) end
+    fact.tm_flash = false
+    if v == 0 then DD.timer_toggle(timer, now)
+    elseif v == 1 then timer = DD.timer(timer_len())
+    elseif v == 2 then DD.timer_add(timer, 300, now)
+    elseif v == 5 then DD.timer_add(timer, 60, now)
+    elseif v == 6 then DD.timer_add(timer, -60, now) end
+    show_timer()
+end)
+
+-- Claude: the last thing said in the notch, and whether Claude Code is at work (its processes' CPU)
+local function show_claude()
+    if not has("claude") then return end
+    local c = DD.claude_last(read("notch-claude.json", "json"))
+    text.cl_line = c and c.text or "Nothing said yet: ask in the notch."
+    text.cl_who = c and c.who or "CLAUDE"
+end
+pcall(sys.watch, "files:notch-claude.json", show_claude)
+every(4000, function()
+    if not has("claude") then return end
+    run("ps", { "-C", "claude", "-o", "%cpu=" }, function(out)
+        local n, cpu = 0, 0
+        for l in tostring(out or ""):gmatch("[^\n]+") do
+            local v = tonumber(l:match("[%d%.]+"))
+            if v then n = n + 1; cpu = cpu + v end
+        end
+        fact.cl_busy = cpu > 6
+        text.cl_state = n == 0 and "NOT RUNNING" or string.format("%d SESSION%s · %s", n, n == 1 and "" or "S", cpu > 6 and "WORKING" or "IDLE")
+    end)
+end)
+on("cl_open", function() run("mooi", { "notch", "claude" }) end)
+
+-- the photo: a picture from its folder every few minutes, framed, its subject cut out to step out
+local PHOTO_DIR = HOME .. "/.cache/mooi/photo"
+local photo = { list = {}, i = 0, folder = nil, at = 0, key = nil }
+local function photo_folder(o)
+    local f = tostring(o.folder or "~/Pictures")
+    return (f:gsub("^~", HOME))
+end
+local function photo_show()
+    local w, o = first("photo")
+    if not w or #photo.list == 0 then
+        fact.pf_on = false
+        text.pf_state = w and ("NO PICTURES IN " .. string.upper(tostring(o.folder or "~/Pictures"))) or ""
+        return
+    end
+    photo.i = photo.i % #photo.list + 1
+    photo.at = os.time()
+    local src = photo.list[photo.i]
+    local key = P.hash(src)
+    photo.key = key
+    text.pf_name = string.upper((src:match("([^/]+)$") or ""):gsub("%.[^.]+$", ""):gsub("[_%-]+", " "))
+    run("mooi", { "photo-prep", src, PHOTO_DIR, key }, function(out)
+        if photo.key ~= key then return end
+        out = tostring(out or "")
+        if out:match("pictures") then
+            text.pf_path, text.pf_sqp = PHOTO_DIR .. "/" .. key .. "-43.jpg", PHOTO_DIR .. "/" .. key .. "-11.jpg"
+            fact.pf_on = true
+        else fact.pf_on = false; text.pf_state = "THAT PICTURE WOULD NOT OPEN" end
+        if out:match("cut") then
+            text.pf_cutp, text.pf_cutsqp = PHOTO_DIR .. "/" .. key .. "-43.png", PHOTO_DIR .. "/" .. key .. "-11.png"
+            fact.pf_cut_on = true
+        else fact.pf_cut_on = false end
+    end)
+end
+local function photo_list()
+    local _, o = first("photo")
+    local dir = photo_folder(o)
+    photo.folder = dir
+    run("find", { dir, "-maxdepth", "2", "-type", "f", "(", "-iname", "*.jpg", "-o", "-iname", "*.jpeg", "-o", "-iname", "*.png", "-o", "-iname", "*.webp", ")" }, function(out)
+        local list = {}
+        for l in tostring(out or ""):gmatch("[^\n]+") do list[#list + 1] = l end
+        table.sort(list, function(a, b) return P.hash(a) < P.hash(b) end)   -- a shuffled order, the same each time
+        photo.list, photo.i = list, (os.time() // 60) % math.max(1, #list)
+        photo_show()
+    end)
+end
+on("pf_next", photo_show)
+every(30000, function()
+    local w, o = first("photo")
+    if not w then return end
+    if photo_folder(o) ~= photo.folder then photo_list(); return end
+    if os.time() - photo.at >= (tonumber(o.every) or 10) * 60 then photo_show() end
+end)
+
+-- the launcher: the apps asked for, which are open, which have notifications waiting (since last opened)
+local apps_now, wins_now, unseen_now, launch_rows, opened_at = {}, {}, {}, {}, {}
+local function show_launch()
+    local w, o = first("launch")
+    if not w then return end
+    local waiting = {}
+    for _, n in ipairs(unseen_now) do
+        local a = string.lower(tostring(n.app or ""))
+        if (tonumber(n.time) or 0) > (opened_at[a] or 0) then waiting[#waiting + 1] = n end
+    end
+    launch_rows = DD.launch_rows(o.apps or W.OPTIONS.launch.apps, apps_now, wins_now, waiting, apps_lib.app_for)
+    model.ln = launch_rows
+end
+-- (a service hands over its list itself, or a record with it as `list`)
+local function list_of(a) return type(a) == "table" and (type(a.list) == "table" and a.list or (a[1] ~= nil and a) or {}) or {} end
+pcall(sys.watch, "apps", function(a) apps_now = list_of(a); show_launch() end)
+pcall(sys.watch, "window", function(a) wins_now = list_of(a); show_launch() end)
+pcall(sys.watch, "notification_history", function(a) unseen_now = list_of(a); show_launch() end)
+on("ln_go", function(v)
+    local r = launch_rows[math.floor(tonumber(v) or -1) + 1]
+    if not r then return end
+    opened_at[string.lower(r.name)] = os.time()
+    pcall(sys.call, "apps.launch", r.exec)
+    show_launch()
+end)
+
+-- desk mode: every widget gathered in the middle over the blurred desktop, then back
+on("wg_deskm", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local want = v == 1 or (v == 2 and not fact.wg_desk)
+    if want then
+        if fact.editing or standing_down then return end
+        desk_at = W.desk_layout(doc, room)
+        fact.wg_desk = true
+        publish()
+    else
+        fact.wg_desk = false
+        -- the offsets stay while they glide home
+        after(700, function() if not fact.wg_desk then desk_at = nil; publish() end end)
+    end
+end)
+
+-- told when the widgets change: start what a new one needs
+local had = {}
+on_kinds = function()
+    local now = {}
+    for _, k in ipairs(W.ADD_ORDER) do now[k] = has(k) end
+    if now.weather and not had.weather then show_weather() end
+    if now.calendar and not had.calendar then show_cal() end
+    if now.claude and not had.claude then show_claude() end
+    if now.launch then show_launch() end
+    if now.photo and not had.photo then photo_list() end
+    if now.timer and timer and not timer.ends and not timer.brk and timer.total ~= timer_len() * 60 then timer = DD.timer(timer_len()); show_timer() end
+    had = now
+end
+
 -- ── The visualiser's feed (the bar's one cava) ──
+-- the feed is wanted for a visualiser, a music widget showing one, and an analogue clock (its
+-- second hand breathes with the bass, D141)
 local function any_viz()
-    for _, w in ipairs(doc.widgets) do if w.kind == "visualiser" then return true end end
+    for _, w in ipairs(doc.widgets) do
+        if w.kind == "visualiser" or (w.kind == "nowplaying" and (w.options or {}).viz == true) or w.layout == "analogue" then return true end
+    end
     return false
 end
 local viz_seq, viz_at, last_beat = nil, 0, 0

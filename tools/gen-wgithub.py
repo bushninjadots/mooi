@@ -61,7 +61,7 @@ TEMPLATE = '''
 
         // pulse: twelve weeks of commits as bars, and the runs with their branches
         group {{
-            show: lay > 1.5
+            show: lay > 1.5 and lay < 2.5
             let gx = x + pad
             let gw = w * 0.52 - pad
             let gy = y + 44 * u
@@ -88,6 +88,19 @@ TEMPLATE = '''
                     on press gr{J} {{ emit gh_open({J} * 100 + 11 + r.index) }}
                 }}
             }}
+        }}
+
+        // activity: the owner's year of contributions, a cell a day (52 weeks, Sunday at the top)
+        group {{
+            show: lay > 2.5
+            let cw = min((w - 2 * pad) / 52, (h - 74 * u) / 7)
+            let gx = x + w / 2 - cw * 26
+            let gy = y + 46 * u
+            for c in g{J}h {{
+                box {{ from: gx + floor(c.index / 7) * cw, gy + mod(c.index, 7) * cw; size: cw * 0.82, cw * 0.82; corner: cw * 0.2
+                      color: if(c.lv > 0.5, acc, ink); opacity: if(c.lv < -0.5, 0, if(c.lv < 0.5, 0.08, 0.25 + 0.1875 * c.lv)) }}
+            }}
+            text g{J}_heat {{ at: x + pad, y + h - 16 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.5); width: w - 2 * pad; lines: 1 }}
         }}
     }}
 '''

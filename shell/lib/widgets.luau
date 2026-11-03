@@ -81,7 +81,7 @@ M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide" }   -- every other k
 M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
-    nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false },
+    nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false, viz = false },
     visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, peaks = true, reflection = false, adapt = true, behind = false },
     clock = { h24 = true, seconds = true, plate = false, adapt = true, behind = false },
     notes = { rows = 6, plate = false, adapt = true, behind = false },
@@ -669,6 +669,15 @@ function M.unpack(n)
     local rest = n - slot * 65536
     local gx = math.floor(rest / 256)
     return slot, gx, rest - gx * 256
+end
+
+-- The look of them all (D141): style (one of M.STYLES), shadows, ambient.
+function M.set_look(doc, key, value)
+    local d = copy(doc)
+    if key == "style" and M.STYLE_INDEX[value] then d.style = value
+    elseif key == "shadows" then d.shadows = value == true
+    elseif key == "ambient" then d.ambient = value == true end
+    return d
 end
 
 -- ── Groups (D141): widgets chosen, carried and faded as one ──

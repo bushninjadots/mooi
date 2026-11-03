@@ -336,6 +336,9 @@ end
 function M.shows(c, query, tag)
     if tag and tag > 0 and c.tag ~= tag then return false end
     if query and query ~= "" then
+        -- "due:N": the cards due on day N (the desktop calendar's press, D141)
+        local day = string.match(query, "^due:(%d+)$")
+        if day then return c.due == tonumber(day) end
         local q = string.lower(query)
         return string.find(string.lower(c.title), q, 1, true) ~= nil or string.find(string.lower(c.note), q, 1, true) ~= nil
     end

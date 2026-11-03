@@ -23,7 +23,8 @@
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
 #   mooi board            the Kanban board (open or close; the quick notes pad's rail opens it too)
-#   mooi widgets [edit]   place the desktop widgets: drag, resize, their options (Esc leaves)
+#   mooi widgets [edit|desk]  place the desktop widgets (Esc leaves); desk: gather them all over the desktop
+#   mooi focus [reset]    the focus timer widget: start or pause it, or reset it
 #   mooi wallmap [file] [fast]  read the wallpaper for the widgets: its subject cut out (rembg) and a map
 #   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
@@ -770,8 +771,29 @@ case "$cmd" in
     widgets) # the desktop widgets (D137): `mooi widgets edit` places them on the desktop
         case "${1:-edit}" in
             edit) exec "$pleamar" --say mooi-widgets "emit wg_edit 1" ;;
-            *) echo "usage: mooi widgets [edit]" >&2; exit 2 ;;
+            desk) exec "$pleamar" --say mooi-widgets "emit wg_deskm 2" ;;   # desk mode (D141): gathered, or back
+            *) echo "usage: mooi widgets [edit|desk]" >&2; exit 2 ;;
         esac ;;
+    focus) # the focus timer widget (D141): start or pause it; `mooi focus reset`
+        case "${1:-}" in
+            reset) exec "$pleamar" --say mooi-widgets "emit tm_go 1" ;;
+            *) exec "$pleamar" --say mooi-widgets "emit tm_go 0" ;;
+        esac ;;
+    photo-prep) # the photo widget's picture (D141): <src> <out-dir> <key> → key-43.jpg, key-11.jpg and,
+        # with rembg, their subjects cut out (key-43.png, key-11.png). Quiet and slow on purpose (nice 19).
+        src=$1; dir=$2; key=$3
+        [ -f "$src" ] && [ -n "$dir" ] && [ -n "$key" ] || { echo "usage: mooi photo-prep <src> <dir> <key>" >&2; exit 2; }
+        mkdir -p "$dir"
+        [ -f "$dir/$key-43.jpg" ] || nice -n 19 magick "$src" -auto-orient -resize '1200x900^' -gravity center -extent 1200x900 -quality 88 "$dir/$key-43.jpg" || exit 1
+        [ -f "$dir/$key-11.jpg" ] || nice -n 19 magick "$src" -auto-orient -resize '900x900^' -gravity center -extent 900x900 -quality 88 "$dir/$key-11.jpg" || exit 1
+        echo pictures
+        rembg=$(command -v rembg || echo "$HOME/.local/bin/rembg")
+        [ -x "$rembg" ] || exit 0
+        for a in 43 11; do
+            [ -f "$dir/$key-$a.png" ] || nice -n 19 "$rembg" i -m isnet-general-use "$dir/$key-$a.jpg" "$dir/$key-$a.png" >/dev/null 2>&1 || true
+        done
+        [ -f "$dir/$key-43.png" ] && echo cut
+        exit 0 ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
     notch) # the side notch on a panel: claude music spaces walls weather github (Claude by default)

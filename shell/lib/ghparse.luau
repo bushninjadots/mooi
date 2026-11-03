@@ -87,4 +87,26 @@ function M.activity(weeks)
     return out
 end
 
+-- The contribution calendar (GraphQL `user.contributionsCollection.contributionCalendar`): the last
+-- `weeks` weeks as cells, column by column (week), Sunday first — each { lv } 0 none … 4 most, and
+-- -1 for the days not yet come in the last week — and the year's total. Nil for anything else.
+local LEVEL = { NONE = 0, FIRST_QUARTILE = 1, SECOND_QUARTILE = 2, THIRD_QUARTILE = 3, FOURTH_QUARTILE = 4 }
+function M.heat(doc, weeks, null)
+    weeks = weeks or 52
+    local d = type(doc) == "table" and val(doc.data, null)
+    local u = type(d) == "table" and (val(d.user, null) or val(d.viewer, null))
+    local cc = type(u) == "table" and val(u.contributionsCollection, null)
+    local cal = type(cc) == "table" and val(cc.contributionCalendar, null)
+    if type(cal) ~= "table" or type(cal.weeks) ~= "table" then return nil end
+    local list = cal.weeks
+    local cells = {}
+    for wi = math.max(1, #list - weeks + 1), #list do
+        local days = type(list[wi].contributionDays) == "table" and list[wi].contributionDays or {}
+        local by = {}
+        for _, day in ipairs(days) do by[(tonumber(day.weekday) or 0) + 1] = LEVEL[day.contributionLevel] or 0 end
+        for wd = 1, 7 do cells[#cells + 1] = { lv = by[wd] or -1 } end
+    end
+    return { total = tonumber(cal.totalContributions) or 0, cells = cells }
+end
+
 return M

@@ -3670,6 +3670,7 @@ test("groups, look and the desk arrangement survive the file", function()
     eq(back.style, "paper", "style"); eq(back.ambient, false, "ambient"); eq(back.shadows, true, "shadows")
     eq(select(2, W.find(back, a)).group, select(2, W.find(d, a)).group, "group kept")
     eq(W.parse("", decode_table({ widgets = {}, style = "neon" }), S).style, "adaptive", "an unknown style is adaptive")
+    eq(W.set_look(d, "style", "chrome").style, "chrome", "set_look"); eq(W.set_look(d, "style", "neon").style, d.style, "a bad style is ignored")
     d = W.ungroup(d, { b }); eq(select(2, W.find(d, a)).group, nil, "a group of one is no group")
     -- desk mode: every widget gets a place, all on screen, none overlapping
     local lay = W.desk_layout(d, S)
@@ -3683,6 +3684,84 @@ test("groups, look and the desk arrangement survive the file", function()
         end
     end
 end)
+
+local json_null_stub = nil
+print("github activity map")
+do
+    test("activity map: weeks of days, levels, the total", function()
+        local GP2 = require("lib/ghparse")
+        local weeks = {}
+        for w = 1, 60 do
+            local days = {}
+            for wd = 0, (w == 60 and 2 or 6) do days[#days + 1] = { weekday = wd, contributionLevel = wd == 3 and "FOURTH_QUARTILE" or "NONE" } end
+            weeks[w] = { contributionDays = days }
+        end
+        local h = GP2.heat({ data = { user = { contributionsCollection = { contributionCalendar = { totalContributions = 368, weeks = weeks } } } } }, 52)
+        eq(#h.cells, 364, "52 weeks of 7"); eq(h.total, 368, "total"); eq(h.cells[4].lv, 4, "a Wednesday lit"); eq(h.cells[364].lv, -1, "days to come")
+        eq(GP2.heat({ data = { user = json_null_stub } }), nil, "junk refused")
+    end)
+end
+print("widgets data")
+do
+    local DD = require("lib/deskdata")
+    local apps = require("lib/apps")
+    test("weather: icons, the sky's hours, the week", function()
+        eq(DD.icon_kind(0, 1), 0, "sun"); eq(DD.icon_kind(0, 0), 1, "moon"); eq(DD.icon_kind(2, 1), 3, "partly")
+        eq(DD.icon_kind(61, 1), 5, "rain"); eq(DD.icon_kind(73, 1), 6, "snow"); eq(DD.icon_kind(95, 1), 7, "storm"); eq(DD.icon_kind(45, 1), 4, "fog")
+        local times, temps, codes, days = {}, {}, {}, {}
+        for i = 0, 47 do
+            times[#times + 1] = string.format("2026-11-%02dT%02d:00", 3 + i // 24, i % 24)
+            temps[#temps + 1] = 5 + (i % 24) / 2; codes[#codes + 1] = (i % 24 == 15) and 61 or 1
+            days[#days + 1] = (i % 24 >= 7 and i % 24 < 17) and 1 or 0
+        end
+        local h, lo, hi = DD.horizon({ current = { time = "2026-11-03T14:15" }, hourly = { time = times, temperature_2m = temps, weather_code = codes, is_day = days } }, 24)
+        eq(#h, 24, "a day of hours"); eq(h[1].label, "14", "from the current hour"); eq(h[1].now, true, "now first")
+        eq(h[2].wet, 1, "15:00 rains"); eq(h[3].r > h[3].b, true, "16:00, the last light, is warm")
+        eq(h[6].b > h[6].r, true, "19:00 is night blue"); eq(lo <= hi, true, "range")
+        eq(DD.horizon({ current = {}, hourly = {} }), nil, "no hours, nothing")
+        local w = DD.week({ { label = "Today", code = 0, hi = 14, lo = 4 }, { label = "Wednesday", code = 61, hi = 10, lo = 8 } })
+        eq(w[2].lab, "WED", "short day"); eq(w[1].a, 0, "coldest low at 0"); eq(w[1].b, 1, "warmest high at 1"); eq(w[2].kind, 5, "rain")
+    end)
+    test("calendar: a month of 42 days, Monday first, with what is due", function()
+        local today = DD.day_number(2026, 11, 3)
+        eq(today, 20760, "days since 1970")
+        local board = { columns = { { id = 1 }, { id = 9 } }, cards = { { due = today + 2, col = 1 }, { due = today + 2, col = 1 }, { due = today, col = 9 } } }
+        local g = DD.month_grid(2026, 11, today, board)
+        eq(#g, 42, "six weeks"); eq(g[1].d, "26", "November 2026 starts on a Sunday: Monday 26 October first"); eq(g[1].inm, false, "outside")
+        eq(g[7].d, "1", "the 1st on Sunday"); eq(g[9].today, true, "the 3rd is today"); eq(g[11].due, 2, "two due on the 5th")
+        eq(g[9].due, 0, "done cards are not due"); eq(g[36].d, "30", "the 30th"); eq(g[37].inm, false, "December after")
+    end)
+    test("focus timer: runs, pauses, takes more time", function()
+        local t = DD.timer(25)
+        eq(DD.timer_left(t, 100), 1500, "stopped, all of it")
+        DD.timer_toggle(t, 100); eq(DD.timer_left(t, 160), 1440, "a minute in")
+        DD.timer_toggle(t, 160); eq(DD.timer_left(t, 999), 1440, "paused")
+        DD.timer_add(t, 300, 999); eq(DD.timer_left(t, 999), 1740, "five more"); eq(t.total >= 1740, true, "the ring's whole grows")
+        DD.timer_add(t, -99999, 999); eq(DD.timer_left(t, 999), 60, "a minute at least")
+        eq(DD.mmss(1500), "25:00"); eq(DD.mmss(3725), "1:02:05"); eq(DD.mmss(-3), "00:00")
+    end)
+    test("claude: the last thing said, plain; sessions counted", function()
+        local c = DD.claude_last({ turns = { { who = "me", text = "hi" }, { who = "claude", text = "Here **is** `code`:\n```lua\nx()\n```\ndone" }, { who = "note", text = "x" } } })
+        eq(c.who, "CLAUDE"); eq(c.text, "Here is code: [code] done", "markdown gone")
+        eq(DD.claude_last({}), nil, "nothing said")
+        eq(DD.count_lines("123\n456\n"), 2); eq(DD.count_lines(""), 0)
+    end)
+    test("launcher: the apps asked for, running and waiting", function()
+        local list = { { name = "Kitty", id = "kitty", exec = "kitty", icon = "kitty", wmclass = "kitty" },
+                       { name = "Zen Browser", id = "zen", exec = "zen-browser", icon = "zen", wmclass = "zen" } }
+        local rows = DD.launch_rows("kitty, zen ,nope", list, { { class = "zen" } }, { { app = "Kitty" }, { app = "kitty" } }, apps.app_for)
+        eq(#rows, 2, "not installed is left out"); eq(rows[1].pulse, 2, "two unseen"); eq(rows[2].run, true, "zen open"); eq(rows[1].run, false)
+        eq(rows[2].letter, "Z")
+    end)
+    test("light: from the bright part of the wallpaper", function()
+        local cells = {}
+        for r = 0, 1 do for c = 0, 1 do cells[#cells + 1] = { l = (r == 0 and c == 0) and 0.95 or 0.2 } end end
+        local dx, dy = DD.light({ cols = 2, rows = 2, cells = cells }, 1440, 810, { w = 1920, h = 1080 })
+        eq(dx > 0 and dy > 0, true, "top-left light falls down-right")
+        local fx, fy = DD.light(nil, 0, 0, { w = 1920, h = 1080 }); eq(fx, 0); eq(fy, 1, "down when unknown")
+        eq(#DD.push({ 1, 2, 3 }, 4, 3), 3, "window kept")
+    end)
+end
 
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

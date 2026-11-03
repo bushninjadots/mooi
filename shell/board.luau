@@ -339,6 +339,7 @@ return function(ctx)
         show()
     end)
     on("kb_clearfilter", function() query = ""; tagf = 0; text.kb_search = ""; show() end)
+    on("kb_day", function(v) query = "due:" .. math.floor(tonumber(v) or 0); tagf = 0; text.kb_search = ""; show() end)
 
     pcall(sys.watch, "files:" .. FILE, function() load() end)
     run("date", { "+%z" }, function(out, code)
