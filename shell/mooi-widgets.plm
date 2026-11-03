@@ -248,7 +248,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool }
+    model wg max 8 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -304,6 +304,7 @@ scene Widgets {
     fact lA_st = 0
     fact lA_gh = false
     fact lA_opa = 1
+    fact lA_sel = false
     fact lB_on = false
     fact lB_k = 0
     fact lB_x = 0
@@ -321,6 +322,7 @@ scene Widgets {
     fact lB_st = 0
     fact lB_gh = false
     fact lB_opa = 1
+    fact lB_sel = false
     fact lC_on = false
     fact lC_k = 0
     fact lC_x = 0
@@ -338,6 +340,7 @@ scene Widgets {
     fact lC_st = 0
     fact lC_gh = false
     fact lC_opa = 1
+    fact lC_sel = false
     // the visualisers' own bars (D138): one record per bar, for up to three visualisers
     model vzA max 128 { v: number; pk: number }
     model vzB max 128 { v: number; pk: number }
@@ -561,12 +564,41 @@ scene Widgets {
     fact wg_o5 = false
     fact wg_o6 = true
     fact wg_og = 0.6
+    fact wg_nsel = 0             // how many are chosen
+    fact wg_dksel = false        // the one carried is chosen, so the others chosen come along
+    fact wg_snap = true          // snapping on (the top bar's SNAP)
+    fact wg_o7 = true
+    fact wg_o8 = false
+    fact wg_ob = 64
+    fact wg_ogap = 0.3
+    fact wg_osm = 0.5
+    fact wg_otx = 1
+    fact wg_oop = 1
+    fact wg_olk = false
+    fact wg_pcol = false         // the panel folded to its header
+    text wg_readout = ""
+    text wg_note = ""
+    // the marquee: pressed here, pulled this far
+    fact wg_mx = 0
+    fact wg_my = 0
+    fact wg_mdx = 0
+    fact wg_mdy = 0
+    fact wg_mon = false
+    event wg_sel ->              // slot · 10 + 0 choose it only · 1 add it or take it away (right press) · 2 none
+    event wg_marq0 ->            // the marquee's start, x · 4096 + y
+    event wg_marq1 ->            // its end, x · 4096 + y: what it touches is chosen
+    event wg_hgrab ->            // a handle held: slot · 8 + handle (0 tl … 7 l)
+    event wg_hmove ->            // pulled: (dx + 2048) · 4096 + (dy + 2048)
+    event wg_hdrop ->            // let go
+    event wg_key ->              // the editor's keys (mooi-widgets.luau)
+    event wg_tool ->             // the toolbar: align, distribute, match, order, lock, snap
+    event wg_slide ->            // a slider held: slot · 10000 + which · 1000 + value (0 … 999)
+    event wg_slid ->             // let go of the slider
+    event wg_pmove ->            // the panel dragged by its header: x · 4096 + y
     event wg_edit ->             // edit mode on (1) or off (0): `mooi widgets edit`, Done, Esc, a press on the desktop
     event wg_pick ->             // a widget chosen: its slot
     event wg_drag ->             // carried: slot · 65536 + x / 8 · 256 + y / 8
     event wg_drop ->             // let go: its slot
-    event wg_size ->             // pulled: slot · 65536 + width / 8 · 256 + height / 8
-    event wg_sized ->            // let go of the edge: its slot
     event wg_add ->              // + now playing (0) or + visualiser (1)
     event wg_opt ->              // the panel: slot · 1000 + what · 100 + value
 
@@ -585,8 +617,15 @@ scene Widgets {
         rate: 30, 4 while not np_playing and wg_calm and not editing
 
         // edit mode: a press on the empty desktop leaves it; a faint grid to place by (snapping is 8 px)
+        // edit mode: a press on the empty desktop chooses none; pulled, it draws a marquee
         zone box wbg { from: 0, 0; size: desk.width, desk.height; agent: hidden; show: editing }
-        on press wbg { emit wg_edit(0) }
+        on press wbg { wg_mx = pointer.x; wg_my = pointer.y; wg_mdx = 0; wg_mdy = 0; emit wg_sel(2) }
+        on drag wbg { wg_mon = true; wg_mdx = drag.dx; wg_mdy = drag.dy }
+        on release wbg while wg_mon {
+            emit wg_marq0(round(clamp(wg_mx, 0, 4095)) * 4096 + round(clamp(wg_my, 0, 4095)))
+            emit wg_marq1(round(clamp(wg_mx + wg_mdx, 0, 4095)) * 4096 + round(clamp(wg_my + wg_mdy, 0, 4095)))
+            wg_mon = false
+        }
         group {
             show: editing
             box { from: 0, 0; size: desk.width, desk.height; color: #000000; opacity: 0.18 }
@@ -602,21 +641,21 @@ scene Widgets {
         group {
             show: lA_on and (editing or lA_st < 1.5)
             opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lA_opa
-            move: if(wg_dk == lA_k, wg_dx, 0), if(wg_dk == lA_k, wg_dy, 0)
+            move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0), if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0)
             box { from: lA_x, lA_y; size: lA_w, lA_h; corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
             vw.LaneA(lA_x, lA_y, lA_w, lA_h, lA_u, lA_mode, lA_n, lA_gap, lA_glow, lA_peaks, lA_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
         }
         group {
             show: lB_on and (editing or lB_st < 1.5)
             opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lB_opa
-            move: if(wg_dk == lB_k, wg_dx, 0), if(wg_dk == lB_k, wg_dy, 0)
+            move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0), if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0)
             box { from: lB_x, lB_y; size: lB_w, lB_h; corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
             vw.LaneB(lB_x, lB_y, lB_w, lB_h, lB_u, lB_mode, lB_n, lB_gap, lB_glow, lB_peaks, lB_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
         }
         group {
             show: lC_on and (editing or lC_st < 1.5)
             opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7))) * lC_opa
-            move: if(wg_dk == lC_k, wg_dx, 0), if(wg_dk == lC_k, wg_dy, 0)
+            move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0), if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0)
             box { from: lC_x, lC_y; size: lC_w, lC_h; corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
             vw.LaneC(lC_x, lC_y, lC_w, lC_h, lC_u, lC_mode, lC_n, lC_gap, lC_glow, lC_peaks, lC_refl, fl.phos, fl.ember, fl.trace_dim, viz_still)
         }
@@ -628,8 +667,9 @@ scene Widgets {
             // only a widget that shows music can be pointed at (a hidden one, or the visualiser, never)
             let over = w.kind < 0.5 and (w.st < 1.5 or editing) and desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
             on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }
-            let ox = if(wg_dk == k, wg_dx, 0)
-            let oy = if(wg_dk == k, wg_dy, 0)
+            let along = wg_dk == k or (wg_dk >= 0 and wg_dksel and w.sel and not w.locked)
+            let ox = if(along, wg_dx, 0)
+            let oy = if(along, wg_dy, 0)
             group {
                 opacity: if(editing, if(w.gh, 0.4, 1), fo) * w.opa
                 show: editing or (w.st < 1.5 and fo > 0.01)
@@ -644,33 +684,47 @@ scene Widgets {
             group { show: w.st > 2.5 and not editing
                     wg.Marker(w.x, w.y, w.u, k) }
 
-            // edit mode: its outline, the hand that carries it and the edges that size it
+            // edit mode: its outline (lit when chosen), the hand that carries it, eight handles
             group {
                 show: editing
                 let rec = w.kind < 0.5 and w.lay > 1.5
-                box { from: w.x + ox, w.y + oy; size: w.w, w.h; corner: 4; stroke: if(wg_sel == k, 2, 1); color: if(wg_sel == k, fl.phos, fl.trace_lit); opacity: 0.9 }
-                text "HIDDEN AT REST" { at: w.x + ox + 8, w.y + oy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: w.gh }
-                zone box mv { from: w.x, w.y; size: w.w, w.h; cursor: grab; role: button; label: "Move this widget" }
-                on press mv { emit wg_pick(k) }
-                on drag mv {
+                let xx = w.x + ox
+                let yy = w.y + oy
+                box { from: xx, yy; size: w.w, w.h; corner: 4; stroke: if(w.sel, 2, 1); color: if(w.sel, fl.phos, fl.trace_lit); opacity: if(w.sel, 1, 0.6) }
+                text "HIDDEN AT REST" { at: xx + 8, yy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: w.gh }
+                // a padlock when it is locked
+                group {
+                    show: w.locked
+                    box { from: xx + w.w - 22, yy + 10; size: 12, 9; corner: 2; color: fl.ember }
+                    arc { at: xx + w.w - 16, yy + 10; radius: 4; width: 1.6; span: 180deg; rotate: -90deg; color: fl.ember }
+                }
+                zone box mv { from: w.x, w.y; size: w.w, w.h; cursor: if(w.locked, pointer, grab); role: button; label: "Choose or move this widget" }
+                on press mv { emit wg_sel(k * 10) }
+                on press right mv { emit wg_sel(k * 10 + 1) }
+                on drag mv while not w.locked {
                     wg_dk = k; wg_dx = drag.dx; wg_dy = drag.dy
                     emit wg_drag(k * 65536 + clamp(round((w.x + drag.dx) / 8), 0, 255) * 256 + clamp(round((w.y + drag.dy) / 8), 0, 255))
                 }
                 on release mv while wg_dk == k { emit wg_drop(k); wg_dk = -1; wg_dx = 0; wg_dy = 0 }
-                // the right edge, the bottom edge (not a record's: it keeps its shape) and the corner
-                zone box re { from: w.x + w.w - 6, w.y; size: 12, w.h - 14; cursor: ew_resize; role: button; label: "Make it wider or narrower"; show: not rec }
-                zone box rb { from: w.x, w.y + w.h - 6; size: w.w - 14, 12; cursor: ns_resize; role: button; label: "Make it taller or shorter"; show: not rec }
-                zone box rc { from: w.x + w.w - 14, w.y + w.h - 14; size: 20, 20; cursor: nwse_resize; role: button; label: "Resize it" }
-                box { from: w.x + w.w - 10, w.y + w.h - 10; size: 8, 8; corner: 1; color: fl.phos }
-                on drag re { wg_rk = k; wg_rw = drag.dx; wg_rh = 0
-                             emit wg_size(k * 65536 + clamp(round((w.w + drag.dx) / 8), 0, 255) * 256 + clamp(round(w.h / 8), 0, 255)) }
-                on drag rb { wg_rk = k; wg_rw = 0; wg_rh = drag.dy
-                             emit wg_size(k * 65536 + clamp(round(w.w / 8), 0, 255) * 256 + clamp(round((w.h + drag.dy) / 8), 0, 255)) }
-                on drag rc { wg_rk = k; wg_rw = drag.dx; wg_rh = drag.dy
-                             emit wg_size(k * 65536 + clamp(round((w.w + drag.dx) / 8), 0, 255) * 256 + clamp(round((w.h + drag.dy) / 8), 0, 255)) }
-                on release re while wg_rk == k { emit wg_sized(k); wg_rk = -1; wg_rw = 0; wg_rh = 0 }
-                on release rb while wg_rk == k { emit wg_sized(k); wg_rk = -1; wg_rw = 0; wg_rh = 0 }
-                on release rc while wg_rk == k { emit wg_sized(k); wg_rk = -1; wg_rw = 0; wg_rh = 0 }
+                // eight handles on the chosen one: corners and edge middles (a record keeps its shape: corners only)
+                group {
+                    show: w.sel and not w.locked and wg_dk < 0
+                    repeat hd in 0..8 {
+                        let hx = w.x + pick(hd, 0, 0.5, 1, 1, 1, 0.5, 0, 0) * w.w
+                        let hy = w.y + pick(hd, 0, 0, 0, 0.5, 1, 1, 1, 0.5) * w.h
+                        let corner = mod(hd, 2) == 0
+                        group {
+                            show: corner or not rec
+                            box { from: hx - 5, hy - 5; size: 10, 10; corner: 2; color: fl.hull }
+                            box { from: hx - 5, hy - 5; size: 10, 10; corner: 2; stroke: 1.4; color: fl.phos }
+                            zone box hz { from: hx - 9, hy - 9; size: 18, 18; role: button; label: "Resize"
+                                          cursor: pick(hd, nwse_resize, ns_resize, nesw_resize, ew_resize, nwse_resize, ns_resize, nesw_resize, ew_resize) }
+                            on press hz { emit wg_hgrab(k * 8 + hd) }
+                            on drag hz { emit wg_hmove((round(clamp(drag.dx, -2047, 2047)) + 2048) * 4096 + round(clamp(drag.dy, -2047, 2047)) + 2048) }
+                            on release hz { emit wg_hdrop }
+                        }
+                    }
+                }
             }
         }
 
@@ -683,30 +737,130 @@ scene Widgets {
             box { from: 0, wg_ghy; size: desk.width, 1; color: fl.ember; opacity: 0.8; show: wg_ghy >= 0 }
         }
 
-        // + Add and Done, top centre; the chosen widget's options beside it
+        // the marquee being drawn
+        group {
+            show: editing and wg_mon
+            box { from: min(wg_mx, wg_mx + wg_mdx), min(wg_my, wg_my + wg_mdy); size: abs(wg_mdx), abs(wg_mdy); color: fl.phos; opacity: 0.08 }
+            box { from: min(wg_mx, wg_mx + wg_mdx), min(wg_my, wg_my + wg_mdy); size: abs(wg_mdx), abs(wg_mdy); stroke: 1; color: fl.phos; opacity: 0.8 }
+        }
+        // the size and place while carried or pulled, by the pointer
+        group {
+            show: editing and (wg_dk >= 0 or wg_rk >= 0)
+            box { from: desk.cursor.x + 16, desk.cursor.y + 16; size: 150, 22; corner: 4; color: fl.hull; opacity: 0.92 }
+            text wg_readout { at: desk.cursor.x + 24, desk.cursor.y + 27; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.phos; width: 140; lines: 1 }
+        }
+
+        // the top bar: + Now Playing, + Visualiser, SNAP, Done; under it the tools for what is chosen
         group {
             show: editing
             let cx = desk.width / 2
-            box { from: cx - 214, 12; size: 428, 40; corner: 6; color: fl.hull; opacity: 0.94 }
-            box { from: cx - 214, 12; size: 428, 40; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
-            text "WIDGETS" { at: cx - 200, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
-            zone box adn { from: cx - 120, 20; size: 120, 24; cursor: pointer; role: button; label: "Add Now Playing" }
-            zone box adv { from: cx + 6, 20; size: 110, 24; cursor: pointer; role: button; label: "Add a visualiser" }
-            zone box don { from: cx + 124, 20; size: 82, 24; cursor: pointer; role: button; label: "Done" }
-            box { from: cx - 120, 20; size: 120, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adn.hover }
-            box { from: cx + 6, 20; size: 110, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adv.hover }
-            box { from: cx + 124, 20; size: 82, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
-            text "+ NOW PLAYING" { at: cx - 60, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-            text "+ VISUALISER" { at: cx + 61, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-            text "DONE" { at: cx + 165, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+            box { from: cx - 270, 12; size: 540, 40; corner: 6; color: fl.hull; opacity: 0.94 }
+            box { from: cx - 270, 12; size: 540, 40; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
+            text "WIDGETS" { at: cx - 256, 32; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+            zone box adn { from: cx - 176, 20; size: 120, 24; cursor: pointer; role: button; label: "Add Now Playing" }
+            zone box adv { from: cx - 50, 20; size: 110, 24; cursor: pointer; role: button; label: "Add a visualiser" }
+            zone box snp { from: cx + 66, 20; size: 86, 24; cursor: pointer; role: toggle; checked: wg_snap; label: "Snapping" }
+            zone box don { from: cx + 160, 20; size: 100, 24; cursor: pointer; role: button; label: "Done" }
+            box { from: cx - 176, 20; size: 120, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adn.hover }
+            box { from: cx - 50, 20; size: 110, 24; corner: 4; color: fl.well; opacity: 0.7 + 0.3 * adv.hover }
+            box { from: cx + 66, 20; size: 86, 24; corner: 4; color: if(wg_snap, fl.phos_fill, fl.well); opacity: 0.7 + 0.3 * snp.hover }
+            box { from: cx + 160, 20; size: 100, 24; corner: 4; color: fl.phos_fill; opacity: 0.8 + 0.2 * don.hover }
+            text "+ NOW PLAYING" { at: cx - 116, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text "+ VISUALISER" { at: cx + 5, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text pick(wg_snap, "SNAP OFF", "SNAP ON") { at: cx + 109, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(wg_snap, fl.ink, fl.engrave) }
+            text "DONE" { at: cx + 210, 32; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
             on press adn { emit wg_add(0) }
             on press adv { emit wg_add(1) }
+            on press snp { emit wg_tool(14) }
             on press don { emit wg_edit(0) }
+            // what happened (three visualisers at most, locked ones left alone)
+            text wg_note { at: cx, 104; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.ember; width: 520; lines: 1 }
+            // the tools: align, spread and match need two or more; order and lock one or more
+            group {
+                show: wg_nsel >= 1
+                let n2 = wg_nsel >= 2
+                let tx0 = cx - 270 + 8
+                let tx1 = cx + 270 - 8 - 3 * 62 + 4
+                box { from: cx - 270, 58; size: 540, 38; corner: 6; color: fl.hull; opacity: 0.9 }
+                group {
+                    opacity: if(n2, 1, 0.3)
+                zone box tb1 { from: tx0 + 0, 64; size: 30, 26; cursor: pointer; role: button; label: "Align left" }
+                box { from: tx0 + 0, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb1.hover) }
+                text "◧" { at: tx0 + 0 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb1 { emit wg_tool(1) }
+                zone box tb2 { from: tx0 + 34, 64; size: 30, 26; cursor: pointer; role: button; label: "Align centres" }
+                box { from: tx0 + 34, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb2.hover) }
+                text "◫" { at: tx0 + 34 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb2 { emit wg_tool(2) }
+                zone box tb3 { from: tx0 + 68, 64; size: 30, 26; cursor: pointer; role: button; label: "Align right" }
+                box { from: tx0 + 68, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb3.hover) }
+                text "◨" { at: tx0 + 68 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb3 { emit wg_tool(3) }
+                zone box tb4 { from: tx0 + 102, 64; size: 30, 26; cursor: pointer; role: button; label: "Align tops" }
+                box { from: tx0 + 102, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb4.hover) }
+                text "⬒" { at: tx0 + 102 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb4 { emit wg_tool(4) }
+                zone box tb5 { from: tx0 + 136, 64; size: 30, 26; cursor: pointer; role: button; label: "Align middles" }
+                box { from: tx0 + 136, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb5.hover) }
+                text "⊟" { at: tx0 + 136 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb5 { emit wg_tool(5) }
+                zone box tb6 { from: tx0 + 170, 64; size: 30, 26; cursor: pointer; role: button; label: "Align bottoms" }
+                box { from: tx0 + 170, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb6.hover) }
+                text "⬓" { at: tx0 + 170 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb6 { emit wg_tool(6) }
+                zone box tb7 { from: tx0 + 204, 64; size: 30, 26; cursor: pointer; role: button; label: "Spread across" }
+                box { from: tx0 + 204, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb7.hover) }
+                text "⇹" { at: tx0 + 204 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb7 { emit wg_tool(7) }
+                zone box tb8 { from: tx0 + 238, 64; size: 30, 26; cursor: pointer; role: button; label: "Spread down" }
+                box { from: tx0 + 238, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb8.hover) }
+                text "⇳" { at: tx0 + 238 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb8 { emit wg_tool(8) }
+                zone box tb9 { from: tx0 + 272, 64; size: 30, 26; cursor: pointer; role: button; label: "Same width" }
+                box { from: tx0 + 272, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb9.hover) }
+                text "↔" { at: tx0 + 272 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb9 { emit wg_tool(9) }
+                zone box tb10 { from: tx0 + 306, 64; size: 30, 26; cursor: pointer; role: button; label: "Same height" }
+                box { from: tx0 + 306, 64; size: 30, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb10.hover) }
+                text "↕" { at: tx0 + 306 + 15, 77; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave }
+                on press tb10 { emit wg_tool(10) }
+                }
+                zone box tb11 { from: tx1 + 0, 64; size: 58, 26; cursor: pointer; role: button; label: "Bring to the front" }
+                box { from: tx1 + 0, 64; size: 58, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb11.hover) }
+                text "FRONT" { at: tx1 + 0 + 29, 77; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                on press tb11 { emit wg_tool(11) }
+                zone box tb12 { from: tx1 + 62, 64; size: 58, 26; cursor: pointer; role: button; label: "Send to the back" }
+                box { from: tx1 + 62, 64; size: 58, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb12.hover) }
+                text "BACK" { at: tx1 + 62 + 29, 77; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                on press tb12 { emit wg_tool(12) }
+                zone box tb13 { from: tx1 + 124, 64; size: 58, 26; cursor: pointer; role: button; label: "Lock or unlock" }
+                box { from: tx1 + 124, 64; size: 58, 26; corner: 4; color: mix(fl.well, fl.phos_fill, 0.6 * tb13.hover) }
+                text "LOCK" { at: tx1 + 124 + 29, 77; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                on press tb13 { emit wg_tool(13) }
+            }
         }
         group { show: editing and wg_sel >= 0 and wg_dk < 0 and wg_rk < 0
                 wg.Panel(wg_px, wg_py, wg_sel) }
 
-        on key Escape while editing { emit wg_edit(0) }
+        // the editor's keys
+        on key Escape while editing and wg_nsel > 0 { emit wg_sel(2) }
+        on key Escape while editing and wg_nsel == 0 { emit wg_edit(0) }
+        on key Left while editing { emit wg_key(1) }
+        on key Right while editing { emit wg_key(2) }
+        on key Up while editing { emit wg_key(3) }
+        on key Down while editing { emit wg_key(4) }
+        on key Shift+Left while editing { emit wg_key(5) }
+        on key Shift+Right while editing { emit wg_key(6) }
+        on key Shift+Up while editing { emit wg_key(7) }
+        on key Shift+Down while editing { emit wg_key(8) }
+        on key Delete while editing { emit wg_key(9) }
+        on key Ctrl+d while editing { emit wg_key(10) }
+        on key Ctrl+z while editing { emit wg_key(11) }
+        on key Ctrl+Shift+z while editing { emit wg_key(12) }
+        on key Ctrl+a while editing { emit wg_key(13) }
+        on key l while editing { emit wg_key(14) }
+        on key bracketright while editing { emit wg_key(15) }
+        on key bracketleft while editing { emit wg_key(16) }
     }
 
     on change desk.width * 4096 + desk.height { emit wg_room(desk.width * 4096 + desk.height) }

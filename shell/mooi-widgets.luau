@@ -65,6 +65,10 @@ every(1000, function()
     fact.wg_calm = true
 end)
 
+-- The editor's selection (widget ids) and its undo history (D138).
+local selected, hist = {}, W.history()
+local function is_sel(id) for _, s in ipairs(selected) do if s == id then return true end end; return false end
+
 local function publish()
     local rows = {}
     for _, w in ipairs(doc.widgets) do
@@ -84,6 +88,7 @@ local function publish()
             bars = math.floor(tonumber(o.bars) or 64), gap = tonumber(o.gap) or 0.3,
             peaks = o.peaks ~= false, refl = o.reflection == true,
             vslot = -1, opa = w.opacity or 1, txt = tonumber(o.text) or 1, locked = w.locked == true,
+            sel = is_sel(w.id),
         }
     end
     -- which visualiser draws from which slot's bars (the 4th and later share the 3rd's)
@@ -104,6 +109,7 @@ local function publish()
             fact[f .. "mode"], fact[f .. "n"], fact[f .. "gap"], fact[f .. "glow"] = r.mode, r.bars, r.gap, r.glow
             fact[f .. "peaks"], fact[f .. "refl"], fact[f .. "plate"] = r.peaks, r.refl, r.plate
             fact[f .. "st"], fact[f .. "gh"], fact[f .. "opa"] = r.st, r.gh, r.opa
+            fact[f .. "sel"] = r.sel and not r.locked
             lane = lane + 1
         end
     end
@@ -141,6 +147,8 @@ pcall(sys.watch, "files:" .. W.FILE, function()
     if raw == nil then return end
     local ok, t = pcall(json.decode, raw)
     if ok and not W.should_reload(t, doc) then return end
+    -- changed elsewhere (Settings): undo would bring back what is not there any more
+    W.clear(hist)
     load()
 end)
 -- packed as width · 4096 + height (under 2^24)
@@ -274,72 +282,222 @@ end)
 on("wg_open", function() run("mooi", { "player" }) end)
 
 -- ── Edit mode: carry, pull, choose, add (lib/widgets works it out; saved once per gesture) ──
-local pending = nil      -- where the carried or pulled widget would settle: { k, x, y, w, h }
+local pending = nil      -- where the carried widget would settle: { k, x, y, w, h }
+local grab = nil         -- a handle held: { id, handle, before }
+local panel_at = nil     -- where the panel was dragged to (kept for the session)
+fact.wg_snap = true
 local function panel()
     local k = fact.wg_sel
     local w = doc.widgets[k + 1]
     if not w then fact.wg_sel = -1; return end
-    fact.wg_px, fact.wg_py = W.panel_spot(w, 248, 286, room)
+    if panel_at then fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
+    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, 420, room) end
     local o = w.options or {}
     fact.wg_sk = w.kind == "visualiser" and 1 or 0
     fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
     fact.wg_sm = W.MODE_INDEX[w.mode] or 0
     fact.wg_si = W.IDLE_INDEX[w.idle] or 1
     fact.wg_o3, fact.wg_o4, fact.wg_o5, fact.wg_o6 = o.lyrics ~= false, o.progress ~= false, o.plate == true, o.scroll_volume ~= false
+    fact.wg_o7, fact.wg_o8 = o.peaks ~= false, o.reflection == true
     fact.wg_og = tonumber(o.glow) or 0
+    fact.wg_ob, fact.wg_ogap, fact.wg_osm = tonumber(o.bars) or 64, tonumber(o.gap) or 0.3, tonumber(o.smooth) or 0.5
+    fact.wg_otx, fact.wg_oop, fact.wg_olk = tonumber(o.text) or 1, w.opacity or 1, w.locked == true
+    text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
+end
+-- the selection's count and the panel's widget (the last one chosen)
+local function show_selection()
+    local keep = {}
+    for _, id in ipairs(selected) do if W.find(doc, id) then keep[#keep + 1] = id end end
+    selected = keep
+    fact.wg_nsel = #selected
+    if #selected == 0 then fact.wg_sel = -1
+    else fact.wg_sel = W.find(doc, selected[#selected]) - 1 end
+    publish()
+    if fact.wg_sel >= 0 then panel() end
 end
 local function commit(d)
     doc = d
     save()
-    publish()
-    if fact.wg_sel >= 0 then panel() end
+    show_selection()
 end
+-- every change the editor makes goes through here, so it can be undone
+local function change(d, note)
+    if note and note ~= "" then text.wg_note = note; after(2500, function() if text.wg_note == note then text.wg_note = "" end end) end
+    if W.same_doc(W.encode(d), W.encode(doc)) then return end
+    W.push(hist, doc)
+    commit(d)
+end
+local function skipped_note(n) return n > 0 and string.format("%d LOCKED, LEFT WHERE %s", n, n == 1 and "IT WAS" or "THEY WERE") or "" end
+local function choose(ids) selected = ids; show_selection() end
+
 on("wg_edit", function(v)
     local on_it = math.floor(tonumber(v) or 0) == 1
     fact.editing = on_it
-    if not on_it then fact.wg_sel, fact.wg_dk, fact.wg_rk = -1, -1, -1; pending = nil end
-    publish()
+    if not on_it then selected = {}; fact.wg_dk, fact.wg_rk = -1, -1; pending, grab = nil, nil end
+    show_selection()
 end)
-on("wg_pick", function(v)
-    fact.wg_sel = math.floor(tonumber(v) or -1)
-    panel()
+-- slot · 10 + 0 choose only this · 1 add or take away (a right press) · 2 none
+on("wg_sel", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, op = math.floor(v / 10), v % 10
+    local w = doc.widgets[k + 1]
+    if op == 2 or not w then choose({}); return end
+    if op == 0 then
+        if not is_sel(w.id) then choose({ w.id }) else choose(selected) end
+    else
+        local out, had = {}, false
+        for _, id in ipairs(selected) do if id == w.id then had = true else out[#out + 1] = id end end
+        if not had then out[#out + 1] = w.id end
+        choose(out)
+    end
 end)
+on("wg_pick", function(v) local w = doc.widgets[math.floor(tonumber(v) or -1) + 1]; if w then choose({ w.id }) end end)
+-- the marquee: where it started, then where it ended (px, x · 4096 + y)
+local marq0 = nil
+on("wg_marq0", function(v) v = math.floor(tonumber(v) or 0); marq0 = { math.floor(v / 4096), v % 4096 } end)
+on("wg_marq1", function(v)
+    if not marq0 then return end
+    v = math.floor(tonumber(v) or 0)
+    local x1, y1 = math.floor(v / 4096), v % 4096
+    choose(W.ids_of(doc, W.marquee(doc, marq0[1], marq0[2], x1, y1)))
+    marq0 = nil
+end)
+-- carrying: the one held snaps; the rest of the selection comes along by as much
 on("wg_drag", function(v)
     local k, gx, gy = W.unpack(v)
     local w = doc.widgets[k + 1]
-    if not w then return end
-    local x, y, ww, hh, g = W.snap(doc, k + 1, gx * W.GRID, gy * W.GRID, w.w, w.h, room)
+    if not w or w.locked then return end
+    local x, y, ww, hh, g
+    if fact.wg_snap then x, y, ww, hh, g = W.snap(doc, k + 1, gx * W.GRID, gy * W.GRID, w.w, w.h, room)
+    else
+        local r = W.clamp_rect({ x = gx * W.GRID, y = gy * W.GRID, w = w.w, h = w.h }, room)
+        x, y, ww, hh, g = r.x, r.y, r.w, r.h, {}
+    end
     pending = { k = k, x = x, y = y, w = ww, h = hh }
+    fact.wg_dksel = is_sel(w.id)
     fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh = x, y, ww, hh
     fact.wg_gvx, fact.wg_ghy = g.vx or -1, g.hy or -1
+    text.wg_readout = string.format("%d × %d · %d, %d", ww, hh, x, y)
 end)
-on("wg_size", function(v)
-    local k, gw, gh = W.unpack(v)
-    local w = doc.widgets[k + 1]
-    if not w then return end
-    local ww, hh = W.clamp_size(w, gw * W.GRID, gh * W.GRID)
-    local r = W.clamp_rect({ x = w.x, y = w.y, w = ww, h = hh }, room)
-    pending = { k = k, x = r.x, y = r.y, w = r.w, h = r.h }
-    fact.wg_sx, fact.wg_sy, fact.wg_sw, fact.wg_sh = r.x, r.y, r.w, r.h
-    fact.wg_gvx, fact.wg_ghy = -1, -1
-end)
-local function settle(v)
+on("wg_drop", function(v)
     local k = math.floor(tonumber(v) or -1)
     local p = pending
     pending = nil
     fact.wg_gvx, fact.wg_ghy = -1, -1
-    if not p or p.k ~= k or not doc.widgets[k + 1] then return end
-    fact.wg_sel = k
-    commit(W.set_rect(doc, doc.widgets[k + 1].id, p.x, p.y, p.w, p.h, room))
-end
-on("wg_drop", settle)
-on("wg_sized", settle)
+    local w = doc.widgets[k + 1]
+    if not p or p.k ~= k or not w then return end
+    local dx, dy = p.x - w.x, p.y - w.y
+    local d = W.set_rect(doc, w.id, p.x, p.y, p.w, p.h, room)
+    local others = {}
+    if is_sel(w.id) then for _, id in ipairs(selected) do if id ~= w.id then others[#others + 1] = id end end end
+    local sk = 0
+    if #others > 0 then d, sk = W.nudge(d, others, dx, dy, room) end
+    if not is_sel(w.id) then selected = { w.id } end
+    change(d, skipped_note(sk))
+end)
+-- a handle held (slot · 8 + handle 0 … 7), pulled (dx + 2048) · 4096 + (dy + 2048), let go
+on("wg_hgrab", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local w = doc.widgets[math.floor(v / 8) + 1]
+    if not w or w.locked then grab = nil; return end
+    grab = { id = w.id, handle = v % 8, before = doc }
+    if not is_sel(w.id) then selected = { w.id } end
+    fact.wg_rk = math.floor(v / 8)
+end)
+on("wg_hmove", function(v)
+    if not grab then return end
+    v = math.floor(tonumber(v) or 0)
+    local dx, dy = math.floor(v / 4096) - 2048, v % 4096 - 2048
+    local x, y, w, h = W.resize_from(grab.before, grab.id, grab.handle, dx, dy, room)
+    -- drawn at its new size as it is pulled (saved when let go)
+    doc = W.set_rect(grab.before, grab.id, x, y, w, h, room)
+    publish()
+    text.wg_readout = string.format("%d × %d · %d, %d", w, h, x, y)
+end)
+on("wg_hdrop", function()
+    if not grab then return end
+    local before = grab.before
+    grab = nil
+    fact.wg_rk = -1
+    local now = doc
+    doc = before
+    change(now)
+end)
 on("wg_add", function(v)
     local d, id = W.add(doc, math.floor(tonumber(v) or 0) == 1 and "visualiser" or "nowplaying", room)
-    if not id then return end
-    fact.wg_sel = W.find(d, id) - 1
-    commit(d)
+    if not id then text.wg_note = "THREE VISUALISERS IS THE MOST"; after(2500, function() text.wg_note = "" end); return end
+    selected = { id }
+    change(d)
 end)
+local function remove_selected()
+    local d = doc
+    for _, id in ipairs(selected) do
+        local _, w = W.find(d, id)
+        if w and not w.locked then d = W.remove(d, id) end
+    end
+    change(d)
+end
+local function duplicate_selected()
+    local d, made = doc, {}
+    for _, id in ipairs(selected) do
+        local id2
+        d, id2 = W.duplicate(d, id, room)
+        if id2 then made[#made + 1] = id2 end
+    end
+    if #made > 0 then selected = made end
+    change(d)
+end
+local function toggle_lock()
+    local any_unlocked = false
+    for _, id in ipairs(selected) do local _, w = W.find(doc, id); if w and not w.locked then any_unlocked = true end end
+    local d = doc
+    for _, id in ipairs(selected) do d = W.set_field(d, id, "locked", any_unlocked) end
+    change(d)
+end
+local function undo_redo(back)
+    local d = back and W.undo(hist, doc) or W.redo(hist, doc)
+    if d then commit(d) end
+end
+-- the keys while editing: 1-4 ← → ↑ ↓ by 8 px · 5-8 by 1 px · 9 delete · 10 duplicate · 11 undo ·
+-- 12 redo · 13 select all · 14 lock · 15 forward · 16 backward
+on("wg_key", function(v)
+    local c = math.floor(tonumber(v) or 0)
+    if c >= 1 and c <= 8 then
+        local step = c <= 4 and W.GRID or 1
+        local dir = (c - 1) % 4
+        local dx = ({ [0] = -step, step, 0, 0 })[dir]
+        local dy = ({ [0] = 0, 0, -step, step })[dir]
+        local d, sk = W.nudge(doc, selected, dx, dy, room)
+        change(d, skipped_note(sk))
+    elseif c == 9 then remove_selected()
+    elseif c == 10 then duplicate_selected()
+    elseif c == 11 then undo_redo(true)
+    elseif c == 12 then undo_redo(false)
+    elseif c == 13 then
+        local all = {}
+        for _, w in ipairs(doc.widgets) do all[#all + 1] = w.id end
+        choose(all)
+    elseif c == 14 then toggle_lock()
+    elseif c == 15 then change(W.raise(doc, selected, "forward"))
+    elseif c == 16 then change(W.raise(doc, selected, "backward")) end
+end)
+-- the toolbar: 1-6 align left / centre / right / top / middle / bottom · 7-8 distribute · 9-10 match
+-- width / height · 11 to the front · 12 to the back · 13 lock · 14 snapping on or off
+local ALIGN = { "left", "centre", "right", "top", "middle", "bottom" }
+on("wg_tool", function(v)
+    local c = math.floor(tonumber(v) or 0)
+    local d, sk = doc, 0
+    if c >= 1 and c <= 6 then d, sk = W.align(doc, selected, ALIGN[c], room)
+    elseif c == 7 or c == 8 then d, sk = W.distribute(doc, selected, c == 7 and "h" or "v", room)
+    elseif c == 9 or c == 10 then d, sk = W.match(doc, selected, c == 9 and "w" or "h", room)
+    elseif c == 11 then d = W.raise(doc, selected, "front")
+    elseif c == 12 then d = W.raise(doc, selected, "back")
+    elseif c == 13 then toggle_lock(); return
+    elseif c == 14 then fact.wg_snap = not fact.wg_snap; return end
+    change(d, skipped_note(sk))
+end)
+-- the panel: slot · 1000 + what · 100 + value (what: 1 layout or mode · 2 at rest · 3-6 lyric line,
+-- progress, plate, wheel volume · 7 peaks · 8 reflection · 9 duplicate (1) / remove (2) / lock (3))
 on("wg_opt", function(v)
     v = math.floor(tonumber(v) or 0)
     local k, what, val = math.floor(v / 1000), math.floor((v % 1000) / 100), v % 100
@@ -350,18 +508,57 @@ on("wg_opt", function(v)
         if w.kind == "visualiser" then d = W.set_mode(doc, w.id, W.MODES[val + 1])
         else d = W.set_layout(doc, w.id, W.NP_LAYOUTS[val + 1], room) end
     elseif what == 2 then d = W.set_idle(doc, w.id, W.IDLES[val + 1])
-    elseif what >= 3 and what <= 6 then
-        d = W.set_option(doc, w.id, ({ [3] = "lyrics", [4] = "progress", [5] = "plate", [6] = "scroll_volume" })[what], val == 1)
-    elseif what == 8 then d = W.set_option(doc, w.id, "glow", val / 10)
-    elseif what == 9 and val == 1 then
-        local id
-        d, id = W.duplicate(doc, w.id, room)
-        if id then fact.wg_sel = W.find(d, id) - 1 end
-    elseif what == 9 and val == 2 then
-        d = W.remove(doc, w.id)
-        fact.wg_sel = -1
+    elseif what >= 3 and what <= 8 then
+        d = W.set_option(doc, w.id, ({ [3] = "lyrics", [4] = "progress", [5] = "plate", [6] = "scroll_volume", [7] = "peaks", [8] = "reflection" })[what], val == 1)
+    elseif what == 9 and val == 1 then selected = { w.id }; duplicate_selected(); return
+    elseif what == 9 and val == 2 then selected = { w.id }; remove_selected(); return
+    elseif what == 9 and val == 3 then selected = { w.id }; toggle_lock(); return
     end
-    commit(d)
+    change(d)
+end)
+-- a slider (slot · 10000 + which · 1000 + value 0 … 999), live while held; `done` saves it
+-- which: 1 opacity · 2 bars · 3 glow · 4 gap · 5 smoothing · 6 text size · 7 scale
+local slide = nil
+local function slider_doc(base, w, which, f)
+    if which == 1 then return W.set_field(base, w.id, "opacity", 0.3 + 0.7 * f)
+    elseif which == 2 then return W.set_option(base, w.id, "bars", 16 + f * 112)
+    elseif which == 3 then return W.set_option(base, w.id, "glow", f)
+    elseif which == 4 then return W.set_option(base, w.id, "gap", f * 0.6)
+    elseif which == 5 then return W.set_option(base, w.id, "smooth", f)
+    elseif which == 6 then return W.set_option(base, w.id, "text", 0.8 + f * 0.6)
+    elseif which == 7 then
+        -- scale round the centre, from the layout's least to its most
+        local L = W.LAYOUTS[W.layout_of(w)]
+        local maxw = L.max and L.max[1] or room.w
+        local nw = L.min[1] + (maxw - L.min[1]) * f
+        local nh = w.h * nw / w.w
+        local cw, ch = W.clamp_size(w, nw, nh)
+        return W.set_rect(base, w.id, w.x + (w.w - cw) / 2, w.y + (w.h - ch) / 2, cw, ch, room)
+    end
+    return base
+end
+on("wg_slide", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, which, val = math.floor(v / 10000), math.floor((v % 10000) / 1000), v % 1000
+    local w = (slide and slide.before or doc).widgets[k + 1]
+    if not w then return end
+    if not slide then slide = { before = doc } end
+    doc = slider_doc(slide.before, w, which, val / 999)
+    publish()
+    panel()
+end)
+on("wg_slid", function()
+    if not slide then return end
+    local now = doc
+    doc = slide.before
+    slide = nil
+    change(now)
+end)
+-- the panel's place, when its header is dragged (x · 4096 + y)
+on("wg_pmove", function(v)
+    v = math.floor(tonumber(v) or 0)
+    panel_at = { math.max(0, math.min(room.w - 320, math.floor(v / 4096))), math.max(0, math.min(room.h - 60, v % 4096)) }
+    fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
 end)
 
 -- ── The visualiser's feed (the bar's one cava) ──
