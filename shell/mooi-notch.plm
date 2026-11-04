@@ -249,7 +249,7 @@ scene Notch {
     fact st_res = 46
 
     fact st_glow = 1
-    fact bio_on = false          // island.biomass (D148): islands grown on living circuitry
+    fact morph_on = false        // island.morph (D149): islands, panels and the Nexus morph out of the bar and the border
     fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
 
     // ── What the services report ──
@@ -503,63 +503,25 @@ scene Notch {
             }
         }
 
-        // ═══ Biomass (island.biomass, D148): the open panel grown out of its tab on living circuitry ═══
-        // A braided cable from the lit tab's tip across to the panel (a card's edge, or an arc's hub),
-        // ribbed like vertebrae, veins spreading up and down the panel's edge to nodules, and a signal
-        // running it once as the panel opens. It follows the panel's own spring (`pv`) and rests with it.
-        let bk0 = nt_cy - (tabs.count - 1) * 20
-        let bty = bk0 + nt_tab * 40
-        let barc = nt_tab == 2 or nt_tab == 3
-        let bex = if(barc, nt_ox + nt_dir * 120, nt_px)
-        let bey = if(barc, nt_acy, clamp(bty, pn_y + 26, pn_y + 280))
-        let bmx = 42 + (bex - 42) * 0.55
-        let bg1 = smooth(0, 0.6, pv)
-        let bg2 = smooth(0.4, 1, pv)
+        // ═══ Morph (island.morph, D149): the open panel melted into its lit tab ═══
+        // One body under the panel: the tab, a bridge and the panel's near edge, blended, with one
+        // outline, so the panel pours out of the tab rather than appearing beside it. It follows the
+        // panel's own spring (`pv`).
+        let mk0 = nt_cy - (tabs.count - 1) * 20
+        let mty = mk0 + nt_tab * 40
+        let marc = nt_tab == 2 or nt_tab == 3
+        let mex = if(marc, nt_ox + nt_dir * 90, nt_px)
+        let mey = if(marc, nt_acy, clamp(mty, pn_y + 40, pn_y + 300))
+        let mg = smooth(0, 0.7, pv)
         group {
-            show: bio_on and pv > 0.02 and nt_tab >= 0 and not nt_deck and nt_dir > 0
-            z: 6                                   // over the panel: its veins run on the card's edge
-            // the cable, grown from the tab outwards (a clip that widens with the spring)
-            group {
-                clip box { from: 36, min(bty, bey) - 12; size: max(1, (bex - 36) * bg1 + 4), abs(bey - bty) + 24 }
-                path { move 42, bty; line bmx, bty; line bmx, bey; line bex, bey; stroke: 3.4; color: dk.raised }
-                path { move 42, bty; line bmx, bty; line bmx, bey; line bex, bey; stroke: 1.2; color: dk.acc; opacity: 0.85 }
-                path { move 42, bty - 4; line bmx - 4, bty - 4; line bmx - 4, bey - 4; line bex, bey - 4; stroke: 1; color: dk.acc; opacity: 0.45 }
-                path { move 42, bty + 4; line bmx + 4, bty + 4; line bmx + 4, bey + 4; line bex, bey + 4; stroke: 1; color: dk.ink2; opacity: 0.6 }
-                repeat q in 0..4 {
-                    line { from: 44 + q * max(4, bmx - 46) / 3, bty - 6; to: 44 + q * max(4, bmx - 46) / 3, bty + 6; width: 2; color: dk.line }
-                    line { from: bmx + 4 + q * max(4, bex - bmx - 8) / 3, bey - 6; to: bmx + 4 + q * max(4, bex - bmx - 8) / 3, bey + 6; width: 2; color: dk.line; show: abs(bex - bmx) > 12 }
-                }
-                ellipse { at: bmx, bty; radius: 4; color: dk.raised }
-                ellipse { at: bmx, bty; radius: 4; stroke: 1; color: dk.acc }
-                ellipse { at: bmx, bey; radius: 4; color: dk.raised }
-                ellipse { at: bmx, bey; radius: 4; stroke: 1; color: dk.acc }
-            }
-            // where it has taken root on the panel: veins up and down its edge, nodules, pads
-            group {
-                opacity: bg2
-                path { move bex, bey; line bex + 3, bey - 6; line bex + 3, bey - 110 * bg2; line bex + 12, bey - 120 * bg2; stroke: 1.2; color: dk.acc; opacity: 0.75 }
-                path { move bex, bey; line bex + 3, bey + 6; line bex + 3, bey + 110 * bg2; line bex + 12, bey + 120 * bg2; stroke: 1.2; color: dk.acc; opacity: 0.75 }
-                path { move bex + 3, bey - 54 * bg2; line bex - 8, bey - 64 * bg2; line bex - 12, bey - 76 * bg2; stroke: 1; color: dk.ink2; opacity: 0.6 }
-                path { move bex + 3, bey + 54 * bg2; line bex - 8, bey + 64 * bg2; line bex - 12, bey + 76 * bg2; stroke: 1; color: dk.ink2; opacity: 0.6 }
-                ellipse { at: bex + 12, bey - 120 * bg2; radius: 2.2; color: dk.acc }
-                ellipse { at: bex + 12, bey + 120 * bg2; radius: 2.2; color: dk.acc }
-                ellipse { at: bex - 12, bey - 76 * bg2; radius: 1.6; color: dk.ink2 }
-                ellipse { at: bex - 12, bey + 76 * bg2; radius: 1.6; color: dk.ink2 }
-                ellipse { at: bex, bey; radius: 6; color: dk.raised }
-                ellipse { at: bex, bey; radius: 6; stroke: 1.2; color: dk.acc }
-                ellipse { at: bex - 5, bey - 8; radius: 2.6; color: dk.hot }
-                ellipse { at: bex - 4, bey + 9; radius: 2; color: dk.line }
-            }
-            // the signal, once, as the panel opens
-            group {
-                show: pv < 0.985
-                glow: 9, 0.9 * st_glow, dk.acc
-                let bsp = smooth(0.05, 0.98, pv)
-                let bl1 = abs(bmx - 42)
-                let bl2 = bl1 + abs(bey - bty)
-                let bl3 = bl2 + abs(bex - bmx)
-                let bd = bsp * bl3
-                ellipse { at: if(bd < bl1, 42 + bd, if(bd < bl2, bmx, bmx + (bd - bl2))), if(bd < bl1, bty, if(bd < bl2, bty + (bey - bty) * (bd - bl1) / max(1, bl2 - bl1), bey)); radius: 3; color: dk.hot }
+            show: morph_on and pv > 0.02 and nt_tab >= 0 and not nt_deck and nt_dir > 0
+            glow: 6, 0.5 * pv * st_glow, dk.acc
+            body {
+                color: dk.raised
+                border: 1.2, dk.acc
+                box { from: 8, mty - 16; size: 32, 32; corner: 10 }
+                box { from: 28, min(mty, mey) - 14; size: max(4, (mex - 28) * mg + 14), abs(mey - mty) + 28; corner: 14; blend: 14 }
+                box { from: 28 + (mex - 28) * mg, mey - 60 * mg; size: 24, 120 * mg + 2; corner: 10; blend: 16 }
             }
         }
 

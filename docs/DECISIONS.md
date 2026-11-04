@@ -4492,3 +4492,29 @@ my choices.
   animation there costs every frame). Straight steps only. The bar's instruction count grew ~800.
 **Checked on screen:** the system island opening and open; the notch's music panel.
 **Not checked:** the other islands one by one, the Nexus's, the tether style with it, light mode.
+
+## D149 · 2026-11-04 · Stuck wallpapers fixed; the orbit and the board in a panel; islands that morph
+**Asked for:** a larger core with the pictures morphing round it; wallpapers "sometimes get stuck
+showing parts of another image"; the orbit and the board not the whole screen; the orbit's pick was
+"not the one I want"; islands that actually morph (not D148's cables), the Nexus "as part of the border".
+- **Stuck wallpapers** (a): the desk declared both slots 16:9, and Pleamar fits a picture *inside* its
+  cell before stretching it — 179 of 394 pictures sampled are another shape, so they were letterboxed
+  and the outgoing slot (never hidden) showed in the bands. Now declared at their own size and drawn
+  `fit: cover`; the outgoing picture is hidden once it has gone; a pick during a transition waits for
+  it to end (the latest wins). Checked: three picks 0.2 s apart end on the last.
+- **The orbit** (b): a colour dial on the left of a panel (point at it, or press to hold the point —
+  a reticle), and on the right the picture in view large with its palette and a grid of the twelve
+  nearest; hovering a thumbnail shows that one, pressing it wears that one. The swelling pile is gone.
+- **The board** (b): a panel; a large CORE (620 px die) with twenty chips round it — six above, six
+  below, four each side — each on its own square trace (lib/walls `panel`, `ring`, tested: in the
+  panel, clear of the core and of each other, square). The chosen picture morphs from its chip into
+  the die while the last one fades under it; a new page (the wheel, ↑ ↓) spreads out of the core. The
+  colour banks are gone: the colour row narrows the board.
+- **Morph** (c), `island.morph` in the same setter slot as D148's `island.biomass` (renamed; the cables,
+  roots and veins removed): a bar island is one body with a lip on the bar's foot and a neck, blended
+  (`blend`), one lit outline — it starts as a swelling of the bar and drops away on a thinning neck. The
+  Control Nexus no longer slides in: the border along its edge bulges, a narrow swelling widening into
+  the deck, fused with a run of the border (fillet 30), its content fading in after. The side notch's
+  panel melts into its lit tab. All of it follows the opening springs and rests when open.
+**Checked on screen:** the board and the orbit panels; the system island morphing; the Nexus out of the
+right border. **Not checked:** every other island; the Nexus on the other edges; light mode.

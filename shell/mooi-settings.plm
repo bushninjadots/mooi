@@ -794,8 +794,8 @@ scene Mooi {
     fact df_walls_auto_from = 0
     fact sv_walls_auto_fullscreen = 0
     fact df_walls_auto_fullscreen = 0
-    fact sv_island_biomass = 0
-    fact df_island_biomass = 0
+    fact sv_island_morph = 0
+    fact df_island_morph = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
@@ -1985,9 +1985,9 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_8 - 582
-                    SRow(582, "Biomass", "Every island that opens — from the bar, the side notch or the Control Nexus — grows out of where it opened on living circuitry: a braided cable, veins and nodules, a signal running it", true, "", 768, true)
-                    SToggle(1092, 600, sv_island_biomass, set_value, 400, "island.biomass")
-                    SRevert(1062, 612, sv_island_biomass != df_island_biomass, set_value, 400000 + df_island_biomass)
+                    SRow(582, "Morph", "Islands melt out of the bar as one body with it, the notch's panels out of their tab, and the Control Nexus out of the screen's border", true, "", 768, true)
+                    SToggle(1092, 600, sv_island_morph, set_value, 400, "island.morph")
+                    SRevert(1062, 612, sv_island_morph != df_island_morph, set_value, 400000 + df_island_morph)
                 }
                 group {
                     show: true

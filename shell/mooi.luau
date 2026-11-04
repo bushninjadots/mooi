@@ -129,7 +129,7 @@ local function apply(s)
     for name, v in pairs(style.facts(s)) do fact[name] = v end
     fact.cn_kind, fact.cn_scale = style.corners(s)   -- corners on every plate (look.corners, look.corner_size)
     fact.isl_style = position("island.style", s.island.style)   -- 0 plate · 1 tether (ui/island.plm)
-    fact.bio_on = s.island.biomass == true                       -- D148: islands on living circuitry
+    fact.morph_on = s.island.morph == true                       -- D149: islands morph out of the bar
     fact.clock_view = position("clock.view", s.clock.view)      -- 0 full · 1 time · 2 seconds
     fact.th_mode = position("theme.mode", s.theme.mode)         -- 0 dark · 1 light · 2 auto (the display island)
     fact.pw_saver = position("motion.saver", s.motion.saver)    -- 0 off · 1 on battery · 2 always (the power island)

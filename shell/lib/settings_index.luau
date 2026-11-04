@@ -16,7 +16,7 @@ local rows = {
     { title = "Corners", desc = "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", tab = 1, page = "Colour", y = 402 },
     { title = "Corner size", desc = "How big the cut or the rounding is (12 is as designed)", tab = 1, page = "Colour", y = 462 },
     { title = "Islands", desc = "What opens under the bar: Ferrolume plates, or slabs tethered to their module", tab = 1, page = "Colour", y = 522 },
-    { title = "Biomass", desc = "Every island that opens — from the bar, the side notch or the Control Nexus — grows out of where it opened on living circuitry: a braided cable, veins and nodules, a signal running it", tab = 1, page = "Colour", y = 582 },
+    { title = "Morph", desc = "Islands melt out of the bar as one body with it, the notch's panels out of their tab, and the Control Nexus out of the screen's border", tab = 1, page = "Colour", y = 582 },
     { title = "Look", desc = "A finished palette: base, finish and light together", tab = 1, page = "Colour", y = 708 },
     { title = "Colours from", desc = "Your wallpaper, or mooi's own teal and orange", tab = 1, page = "Colour", y = 768 },
     { title = "Start from", desc = "Which of the wallpaper's main colours leads", tab = 1, page = "Colour", y = 828 },
@@ -193,7 +193,7 @@ local rows = {
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
-    [1] = { "theme.mode", "theme.light_at", "theme.dark_at", "look.corners", "look.corner_size", "island.style", "island.biomass", "theme.preset", "theme.source", "theme.color_index", "theme.scheme", "theme.signal", "theme.finish", "theme.saturation", "bar.bg", "bar.bg_colour", "bar.bg_light", "bar.bg_sat", "bar.bg_hue", "apps.kitty", "apps.gtk", "apps.qt", "apps.others" },
+    [1] = { "theme.mode", "theme.light_at", "theme.dark_at", "look.corners", "look.corner_size", "island.style", "island.morph", "theme.preset", "theme.source", "theme.color_index", "theme.scheme", "theme.signal", "theme.finish", "theme.saturation", "bar.bg", "bar.bg_colour", "bar.bg_light", "bar.bg_sat", "bar.bg_hue", "apps.kitty", "apps.gtk", "apps.qt", "apps.others" },
     [2] = { "motion.speed", "motion.reduced", "fx.glow", "fx.aberration", "motion.saver" },
     [3] = { "bar.mode", "clock.view", "bar.height", "bar.offset", "bar.width", "bar.radius", "bar.style", "bar.surface", "bar.opacity", "bar.frost", "bar.smoke", "bar.shadow", "bar.edge", "bar.outline_colour", "bar.pill", "bar.rail", "bar.accents" },
     [4] = { "@layout" },

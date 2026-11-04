@@ -80,8 +80,8 @@ SETTERS = [
     "walls.dots", "walls.swell", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting",
     "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "walls.auto", "walls.auto_every",
     "walls.auto_from", "walls.auto_fullscreen",
-    # D148: the islands on living circuitry
-    "island.biomass",
+    # D148/D149: the islands morph out of the bar and the border (biomass before)
+    "island.morph",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -156,7 +156,7 @@ SECTIONS = [
         ("choice", "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", "look.corners", "sv_look_corners", [("Chamfer", 0), ("Bevel", 1), ("Rounded", 2), ("Square", 3)]),
         ("slider", "Corner size", "How big the cut or the rounding is (12 is as designed)", "look.corner_size", 0, 24, "{sv_look_corner_size, 0}", "sv_look_corners != 3"),
         ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
-        ("toggle", "Biomass", "Every island that opens — from the bar, the side notch or the Control Nexus — grows out of where it opened on living circuitry: a braided cable, veins and nodules, a signal running it", "island.biomass", "sv_island_biomass"),
+        ("toggle", "Morph", "Islands melt out of the bar as one body with it, the notch's panels out of their tab, and the Control Nexus out of the screen's border", "island.morph", "sv_island_morph"),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
