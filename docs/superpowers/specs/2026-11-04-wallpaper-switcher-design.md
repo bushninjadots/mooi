@@ -1,6 +1,6 @@
 # D145 · mooi's own wallpaper switcher — design
 
-Date: 2026-11-04 · Status: approved in conversation, awaiting spec review
+Date: 2026-11-04 · Status: approved and built (D145 in docs/DECISIONS.md records where the build differs: Space toggles the preview, `/` searches)
 
 ## Why
 

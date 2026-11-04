@@ -14,7 +14,7 @@ import "ui/edgetab.plm" as edge
 
 scene Notch {
     permissions {
-        run: "pleamar", "env", "claude", "opencode", "timeout", "systemctl", "skwd-helm", "gh", "hyprctl", "magick", "find", "curl", "qs", "awww", "xdg-open", "mooi"
+        run: "pleamar", "env", "claude", "opencode", "timeout", "gh", "hyprctl", "magick", "ffmpeg", "find", "curl", "xdg-open", "mooi"
         services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want", "thumbnails.live"
     }
 
@@ -376,7 +376,7 @@ scene Notch {
     event nt_ws ->               // to the logic: go to workspace (its place on the arc)
     event nt_wall ->             // to the logic: wear picture n
     event nt_hue ->              // to the logic: the colour band along the arc pressed (again: all of them)
-    event nt_studio ->           // to the logic: open the wallpaper studio
+    event nt_studio ->           // to the logic: open the wallpaper picker (mooi-walls, D145)
     event nt_src ->              // to the logic: the pictures from 0 the folder · 1 Wallhaven
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
     event nt_moved ->            // to the logic: the nub let go at this height
@@ -704,8 +704,8 @@ scene Notch {
                 on press wpsh { emit nt_src(1) }
                 // the full picker, a step apart from the two sources: it opens a program of its own
                 line { from: wl0 + 226, nt_acy - 284; to: wl0 + 226, nt_acy - 272; width: 1; color: dk.line; opacity: 0.7 }
-                zone box wpst { from: wl0 + 240, nt_acy - 290; size: 140, 24; cursor: pointer; role: button; label: "Open Skwd Wall, the wallpaper picker" }
-                Act(wl0 + 240, nt_acy - 290, 140, "Skwd Wall  ↗", false, false, wpst.hover)
+                zone box wpst { from: wl0 + 240, nt_acy - 290; size: 140, 24; cursor: pointer; role: button; label: "Open the wallpaper picker: the strip and the colour orbit" }
+                Act(wl0 + 240, nt_acy - 290, 140, "All of them  ↗", false, false, wpst.hover)
                 on press wpst { emit nt_studio }
                 // the colours along the arc's inside: narrow it to the reds, the blues…
                 group {

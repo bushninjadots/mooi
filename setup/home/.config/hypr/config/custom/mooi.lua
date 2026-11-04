@@ -23,9 +23,13 @@ for _, k in ipairs(keys) do
     pcall(hl.bind, k[1], hl.dsp.exec_cmd(mooi .. " " .. k[2]))
     bound[#bound + 1] = k[1] .. "=" .. k[2]
 end
--- Lumen, the wallpaper studio: pick a picture, grade it, apply it (mooi wallpaper). Bound here
--- because it is not one of the keys the settings window manages.
-pcall(hl.bind, "SUPER + ALT + L", hl.dsp.exec_cmd(mooi .. " wallpaper"))
+-- mooi's wallpaper picker (D145: the strip and the colour orbit, `mooi walls`). Super+W was the
+-- wallpaper-styles picker's (config/bind.lua): let go first, so a press opens only mooi's. Super+Alt+L
+-- (the studio's key, kept for the hand that knows it) opens it too. Bound here because they are not
+-- keys the settings window manages.
+pcall(hl.unbind, "SUPER + W")
+pcall(hl.bind, "SUPER + W", hl.dsp.exec_cmd(mooi .. " walls"))
+pcall(hl.bind, "SUPER + ALT + L", hl.dsp.exec_cmd(mooi .. " walls"))
 
 -- mooi's touchpad gestures (Settings → Overview → Touchpad swipe; none unless chosen): each runs one
 -- of mooi's commands, the way its keys do.

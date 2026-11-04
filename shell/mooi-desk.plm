@@ -1,16 +1,17 @@
 language 0.9
 
-// mooi's desk (D85): the wallpaper drawn by mooi so it can move, and the picture's subject laid
-// over the desktop widgets. Two surfaces and no zones, so every click goes through to the desk:
-//   · `back` on the background layer, over the picker's own wallpaper: the picture drawn a little
-//     larger than the screen, travelling as the workspaces change and/or as the pointer moves;
+// mooi's desk (D85, D145): the wallpaper, drawn by mooi — every still and animated picture, and a
+// video's still until mpvpaper plays it underneath — and the picture's subject laid over the
+// desktop widgets. Two surfaces and no zones, so every click goes through to the desk:
+//   · `back` on the background layer: the picture, drawn a little larger than the screen when it
+//     travels (as the workspaces change and/or as the pointer moves), at the screen's size when not;
 //   · `fore` on the bottom layer, over the widgets and under every window: the cutout Lumen made
 //     when the picture was applied, travelling with the picture — further, when it has depth.
 // shell/mooi-desk.luau decides what is drawn (lib/desk), the scene only moves it.
 
 scene Desk {
     permissions {
-        run: "readlink", "pleamar"
+        run: "readlink", "pleamar", "mooi"
         services: "workspaces", "files", "env"
     }
 
@@ -32,8 +33,9 @@ scene Desk {
     fact depth = 0.55
     fact moving = true
     fact ws_frac = 0
-    // false while the wallpaper is a video or an animation: the picker plays it, the desk steps aside
-    fact drawable = true
+    // a video's mpvpaper is up (`mooi wall live` says so): the desk's picture fades out over it
+    fact live = false
+    event live_on ->         // `mooi wall live`: 1 mpvpaper plays the video, 0 it does not
     // how the next picture comes in (D144): 0 fade · 1 grow · 2 wipe · 3 slide, and where a growing
     // circle starts (the notch's edge when it was picked there; the middle otherwise)
     fact tr = 0
@@ -54,6 +56,8 @@ scene Desk {
     // the crossing: `fa` is 1 with slot A shown, 0 with B; a transition takes about a second
     prop fa = 1 ~950ms
     follow fa = if(slot == 0, 1, 0)
+    prop seen = 1 ~400ms
+    follow seen = if(live, 0, 1)
 
     surface back {
         size: full, full
@@ -76,7 +80,8 @@ scene Desk {
         let reach = sqrt(sw * sw + sh * sh)
         let rr = if(tr == 1, reach * np, reach * 2)
         group {
-            show: mode > 0 and drawable and (has_a or has_b)
+            show: (has_a or has_b) and seen > 0.001
+            opacity: seen
             box { from: 0, 0; size: sw, sh; color: #000000 }
             // going
             group { show: slot == 1 and has_a
@@ -116,14 +121,8 @@ scene Desk {
         let tx = 0.5 + (qx - 0.5) * (1 + depth)
         let ty = 0.5 + (qy - 0.5) * (1 + depth)
         group {
-            show: has_cut and mode > 0 and drawable
+            show: has_cut and not live
             image cut { at: -over * fw * tx, -over * fh * ty; size: fw * (1 + over), fh * (1 + over) }
-        }
-        // with no parallax the picker draws the picture, at the screen's own size, and the
-        // subject is laid exactly over it
-        group {
-            show: has_cut and (mode == 0 or not drawable)
-            image cut { at: 0, 0; size: fw, fh }
         }
     }
 }

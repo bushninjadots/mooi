@@ -17,7 +17,7 @@ EXCLUDE="--exclude=.git --exclude=.gitignore --exclude=hypr/wallpapers --exclude
  --exclude=pleamar/shells --exclude=__pycache__ --exclude=node_modules --exclude=*.log --exclude=.cache"
 
 # mooi's own state (~/.local/share/pleamar/mooi): the choices you made, not what it worked out
-STATE="settings.json board.json notes.json wallpapers.json environments.json stash.json signals.json workspaces.json
+STATE="settings.json board.json notes.json wallpapers.json wall.json environments.json stash.json signals.json workspaces.json
  player-eq.json player-eq-ee.json nexus-anchor.json player-anchor.json notch-state.json bmo-state.json identity mooi-themes"
 
 rm -rf "$out.new"

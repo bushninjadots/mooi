@@ -46,6 +46,9 @@ if $packages; then
     # the widgets read the wallpaper with ImageMagick and cut its subject out with rembg via uv (D139);
     # both come in as dependencies here, so the captured list does not name them
     sudo pacman -S --needed --noconfirm imagemagick uv python || warn "imagemagick / uv not installed; the widgets will not read the wallpaper"
+    # the wallpapers (D145): the picker's index reads them with Pillow, a video's frame with ffmpeg,
+    # and mpvpaper (from the AUR list) plays a video wallpaper under mooi's desk
+    sudo pacman -S --needed --noconfirm python-pillow ffmpeg jq || warn "python-pillow / ffmpeg not installed; the wallpaper picker cannot read the folders"
     helper=""
     for h in paru yay; do command -v "$h" >/dev/null && { helper=$h; break; }; done
     if [ -z "$helper" ]; then

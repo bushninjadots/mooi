@@ -4365,3 +4365,53 @@ random, grow, wipe, slide or fade:
 
 **Not checked:** a notch pick end to end on screen (you were away; it would change your wallpaper),
 and the desk's transitions on screen (`desk.on` is off here).
+
+## D145 · 2026-11-04 · mooi draws every wallpaper, and picks them itself
+**Asked for:** wallpaper changes were "a bit funky, sometimes slow or glitchy" (D144's Skwd daemon, cold
+started per pick, then a handoff to the Quickshell picker underneath). Our own switcher in Pleamar: it
+must handle pictures and live wallpapers, with a Skwd-like view and another, unique one. Spec:
+docs/superpowers/specs/2026-11-04-wallpaper-switcher-design.md.
+
+**One drawer.** mooi-desk is the wallpaper and always runs (the bar keeps it up); `desk.on` is now only
+whether it travels (off: the picture still, at the screen's size). It draws stills and animated
+pictures (Pleamar plays GIF / animated PNG / WebP itself). A video is mpvpaper's: the desk draws the
+video's still through the transition, mpvpaper starts under it (`mooi wall live`, ~1.2 s later), and
+the desk fades out once it is up (`live_on`). Leaving a video, mpvpaper stops 150 ms after the desk
+has the new state, so the transition starts from the still.
+- mpvpaper runs with `load-scripts=no`: mpv's MPRIS script made the wallpaper the bar's and BMO's
+  "song playing" (found on screen).
+
+**One apply.** `mooi wall apply FILE [--from-y N] [--transition KIND]` writes `wall.json` (the desk
+watches it), sets `~/.cache/current_wallpaper_source` / `current_wallpaper` (the still), and starts or
+stops mpvpaper. The theme watch already recolours from the still link, so there is no palette step
+of its own. The notch (D130's panel: now with the live folder, video thumbnails by ffmpeg, LIVE
+labels), the picker and the CLI all wear through it. Skwd's daemon, `skwd-helm`, the qs picker's IPC
+and awww are out of the path (not uninstalled: TODO).
+
+**The picker, `mooi-walls`** (Super+W, Super+Alt+L, `mooi walls`, the bar's wallpaper button, the
+notch's ALL OF THEM ↗, Settings → Desk): a program of its own, running only while open.
+- top row: STRIP · ORBIT, ALL · PICTURES · LIVE, `/` searches the names, the transition to wear with
+  (↻, or `t`), ×. Chosen view / source / transition kept in walls-state.json.
+- **strip**: slanted cards (a path clip), the middle one large, ← → Shift+← → Home End and the wheel,
+  `r` a random one, a press on the middle card or Enter wears it.
+- **colour orbit**: every picture a dot of its mean colour on one image (walls-orbit.png): angle = hue,
+  distance = lightness, greys in a ring at the middle. A 20 × 20 grid of hover zones tells the logic
+  where the pointer is; the 16 nearest swell into thumbnails, spread out like a loupe, and the middle
+  shows the palette the nearest would give the shell (`matugen --dry-run -j hex`, 250 ms debounce,
+  cached). The wheel turns it; a press wears the nearest.
+- Space shows the picture over the whole screen (a toggle: Pleamar has no key release).
+- The swollen thumbnails have no zones of their own, so moving over them still moves the swell.
+
+**The index**, tools/wallindex.py (`mooi wall index`, run each time the picker opens; nice 19, one
+pass at a time): walls-index.json + walls-orbit.png in mooi's data folder (a scene reads only its
+own), thumbnails and video stills in ~/.cache/mooi/walls. Incremental by mtime; unreadable files are
+remembered and not retried until they change. First pass here: 3,211 (36 videos, 5 animated) in
+8.5 min; a pass with nothing new 0.4 s. JPEGs decode in draft mode; Pillow's pixel guard raised to
+400 MP (a 191 MP picture was refused).
+
+**Checked on screen** (with the user's go-ahead): the strip and the orbit (hover via `wl_cell`), a
+picture worn with grow and with wipe, an mp4 worn (mpvpaper up, desk `live`, frames moving, ~10 % CPU),
+and back to a picture (mpvpaper gone); the notch's panel reading wall.json. The user's motion speed
+(198 %) makes the desk's ~950 ms transitions 480 ms.
+**Not checked:** Super+W itself (Hyprland reads custom/mooi.lua on its next reload); a real pointer on
+the orbit; a press in the notch end to end.

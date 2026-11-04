@@ -121,8 +121,19 @@ function M.thumb_name(path)
     return string.format("nt-%08x.jpg", h)
 end
 
--- The pictures worth a thumbnail in a listing (`find` output): images, sorted, at most `max`.
-M.IMAGE = { jpg = true, jpeg = true, png = true, webp = true, avif = true }
+-- The pictures worth a thumbnail in a listing (`find` output): images, animated pictures and videos
+-- (live wallpapers, D145), sorted, at most `max`.
+M.IMAGE = { jpg = true, jpeg = true, png = true, webp = true, avif = true, gif = true,
+            mp4 = true, webm = true, mkv = true, mov = true, m4v = true }
+M.VIDEO = { mp4 = true, webm = true, mkv = true, mov = true, m4v = true }
+function M.is_video(path)
+    local ext = tostring(path or ""):match("%.([%w]+)$")
+    return ext ~= nil and M.VIDEO[string.lower(ext)] == true
+end
+function M.is_live(path)
+    local ext = tostring(path or ""):match("%.([%w]+)$")
+    return ext ~= nil and (M.VIDEO[string.lower(ext)] == true or string.lower(ext) == "gif")
+end
 function M.pictures(listing, max)
     local out = {}
     for line in tostring(listing or ""):gmatch("[^\n]+") do

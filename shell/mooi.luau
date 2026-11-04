@@ -1788,14 +1788,23 @@ on("open_settings", function()
     fact.settings_open = true
 end)
 
--- The wallpaper button opens the one wallpaper picker, Skwd Wall (D118: Lumen, the studio, and
--- mooi's other pickers are gone). It is a program of its own; a second press while it is up is
--- its own business (it keeps one instance).
+-- The wallpaper picker (shell/mooi-walls.plm, D145): the strip and the colour orbit, a program of
+-- its own that runs only while it is open. The bar's wallpaper button, Super+W and `mooi walls`
+-- open it, and close it again while it is up. Opening it also asks for a fresh index of the folders
+-- (new pictures since last time); the pass is quiet, incremental and runs once at a time.
+local walls_win = nil
 on("open_wallpaper", function()
-    local ok = pcall(spawn, "skwd-wall-v2", {}, function() end, function(_, code)
-        if code ~= 0 then log("wallpaper · skwd-wall-v2 ended (" .. tostring(code) .. ")") end
-    end)
-    if not ok then log("wallpaper · skwd-wall-v2 could not be started (is it on the PATH?)") end
+    if walls_win then run("pleamar", { "--say", "mooi-walls", "quit" }); return end
+    local mine
+    local said = {}
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-walls.plm", "--no-hud" }, function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if walls_win == mine then walls_win = nil end
+        if code ~= 0 then log("walls · the picker ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+    end, { errors = true })
+    walls_win = mine
+    run("mooi", { "wall", "index" }, function() end)
 end)
 
 -- The music player (shell/mooi-player.plm, D88): mpd's library and a remote for any other
@@ -1838,15 +1847,12 @@ on("open_player", function(v)
     end)
 end)
 
--- The desk (shell/mooi-desk.plm, D85): mooi's own drawing of the wallpaper, travelling with the
--- workspaces or the pointer, and the picture's cutout over the desktop widgets. A program of its
--- own with two click-through surfaces; it runs while `desk.on` is set, is started again if it
--- ends while it is still wanted (a little later each time it fails at once), and ends itself
--- when the setting is turned off.
+-- The desk (shell/mooi-desk.plm, D85, D145): the wallpaper, drawn by mooi — travelling with the
+-- workspaces or the pointer while `desk.on` is set, still otherwise — and the picture's cutout over
+-- the desktop widgets. A program of its own with two click-through surfaces; it always runs, and is
+-- started again if it ends (a little later each time it fails at once).
 local desk_win, desk_tries = nil, 0
 function desk_sync()
-    local want = type(settings.desk) == "table" and settings.desk.on == true
-    if not want then desk_tries = 0; return end
     if desk_win then return end
     local mine
     local started = os.time()

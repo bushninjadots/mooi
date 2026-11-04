@@ -14,6 +14,7 @@ local forecast = require("lib/forecast")
 local weathercache = require("lib/weathercache")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
+local walls = require("lib/walls")
 local deck = require("lib/nexusdeck")
 local atlas = require("lib/atlas")
 local claude = require("lib/claude")
@@ -503,8 +504,8 @@ do
     end
 end
 local function wearing()
-    local w = read("wallpapers.json")
-    return type(w) == "table" and type(w.applied) == "table" and w.applied.source or nil
+    local w = read("wall.json")
+    return type(w) == "table" and type(w.source) == "string" and w.source or nil
 end
 local function save_hues()
     if SAFE then return end
@@ -555,7 +556,9 @@ local function show_pictures(recenter)
     for i = 1, math.min(WIN, #list - base) do
         local p = list[base + i]
         local name = N.thumb_name(p)
-        rows[i] = { pic = made[name] and (data_folder .. "/" .. name) or "", name = (p:match("([^/]+)$") or p), on = p == on }
+        local label = p:match("([^/]+)$") or p
+        if N.is_live(p) then label = "LIVE · " .. label end
+        rows[i] = { pic = made[name] and (data_folder .. "/" .. name) or "", name = label, on = p == on }
     end
     model.pics = rows
     local b = band()
@@ -621,7 +624,13 @@ pump_thumbs = function()
     local job = table.remove(thumb_queue, 1)
     if not job then return end
     thumb_busy = true
-    launch("magick", { "-define", "jpeg:size=320x180", job.p .. "[0]", "-thumbnail", "320x180^", "-gravity", "center", "-extent", "320x180", "-quality", "80", data_folder .. "/" .. job.name }, function(ok)
+    local out = data_folder .. "/" .. job.name
+    -- a video's thumbnail is a frame a second in (D145), cut to fill as the pictures' are
+    local cmd, args = "magick", { "-define", "jpeg:size=320x180", job.p .. "[0]", "-thumbnail", "320x180^", "-gravity", "center", "-extent", "320x180", "-quality", "80", out }
+    if N.is_video(job.p) then
+        cmd, args = "ffmpeg", { "-v", "error", "-y", "-ss", "1", "-i", job.p, "-frames:v", "1", "-vf", "scale=320:180:force_original_aspect_ratio=increase,crop=320:180", "-q:v", "4", out }
+    end
+    launch(cmd, args, function(ok)
         thumb_busy = false
         if ok then made[job.name] = true; show_pictures() end
         pump_thumbs()
@@ -680,7 +689,8 @@ pump_hues = function()
     if #hue_queue == 0 then
         -- what is on the arc first, so a colour pressed now has pictures under it; then the folder
         -- (the arc's list is the whole folder now, in the order it is walked: one pass covers it)
-        for _, p in ipairs(pictures) do if hues[p] == nil then hue_queue[#hue_queue + 1] = p end end
+        -- (a video's colour is the index's to read, from its frame: magick cannot open one quickly)
+        for _, p in ipairs(pictures) do if hues[p] == nil and not N.is_video(p) then hue_queue[#hue_queue + 1] = p end end
         if #hue_queue == 0 then return end
     end
     local batch = {}
@@ -691,7 +701,7 @@ pump_hues = function()
         hue_busy = false
         if got > 0 then save_hues() end
         left = 0
-        for _, p in ipairs(pool) do if hues[p] == nil then left = left + 1 end end
+        for _, p in ipairs(pool) do if hues[p] == nil and not N.is_video(p) then left = left + 1 end end
         if fact.nt_open and math.floor(tonumber(fact.nt_tab) or -1) == 3 then show_pictures() end
         if #hue_queue > 0 then after(120, pump_hues) end
     end)
@@ -701,7 +711,13 @@ local function read_pictures()
     local w = read("wallpapers.json")
     local folder = type(w) == "table" and type(w.folder) == "string" and w.folder or (HOME .. "/Pictures/wallpapers")
     where = folder:match("([^/]+)/*$") or folder
-    launch("find", { folder, "-maxdepth", "1", "-type", "f" }, function(out)
+    -- and the live wallpapers' folders (D145: settings.walls.folders; a video is worn like a picture)
+    local args, seen = { folder }, { [folder] = true }
+    for _, f in ipairs(walls.normalize(settings.walls, HOME).folders) do
+        if not seen[f] then seen[f] = true; args[#args + 1] = f end
+    end
+    for _, a in ipairs({ "-maxdepth", "1", "-type", "f" }) do args[#args + 1] = a end
+    launch("find", args, function(out)
         -- the studio's folder can hold thousands: forty of them, drawn afresh each time the panel
         -- opens, so the arc is not the same first names over and over. The one on the desk stays in it.
         draws = draws + 1
@@ -717,18 +733,6 @@ local function read_pictures()
         pump_hues()
     end)
 end
--- The picker's IPC returns as soon as the work is queued (it starts wallpaper-apply and does
--- not wait), so a successful call is not "it is on". The source link is what wallpaper-apply
--- writes; wait for it before saying so (audit 2026-10-31).
-local function confirm_wear(target, ok, failed)
-    local function ask(n)
-        launch("readlink", { "-f", HOME .. "/.cache/current_wallpaper_source" }, function(out)
-            if tostring(out or ""):gsub("%s+$", "") == target then ok(); return end
-            if n > 0 then after(100, function() ask(n - 1) end) else failed() end
-        end)
-    end
-    ask(20)
-end
 local wear
 on("nt_wall", function(v)
     if wh and wh.on() then wh.wear(math.floor(tonumber(v) or -1)); return end
@@ -736,51 +740,17 @@ on("nt_wall", function(v)
     local p = list[base + (tonumber(v) or -1) + 1]
     if p then wear(p) end
 end)
-local wear_qs
 wear = function(p)
     text.wp_t = "WEARING " .. string.upper(p:match("([^/]+)$") or p) .. "…"
-    -- the desk (when mooi draws the wallpaper) grows the new picture out of the notch's edge (D144)
-    launch("pleamar", { "--say", "mooi-desk", "emit from_notch " .. math.floor(tonumber(fact.nt_cy) or 540) })
-    -- Skwd Wall's own transitions (D144): applied through its daemon, whose post-processing hook
-    -- (wallpaper-styles/bin/skwd-sync) hands the picture on to the picker and the palette. A daemon
-    -- this started (it runs on demand) is stopped again once its transition has played: the
-    -- picker draws the same picture under it. Without Skwd, the picker as before.
-    launch("systemctl", { "--user", "is-active", "skwd-walld.service" }, function(out)
-        local was_up = tostring(out or ""):match("^active") ~= nil
-        local function apply()
-            launch("skwd-helm", { "apply", p }, function(_, code)
-                if code ~= 0 then wear_qs(p); return end
-                confirm_wear(p, function() text.wp_t = "WEARING IT · SKWD'S TRANSITION, THE PALETTE FOLLOWS" end,
-                    function() text.wp_t = "SENT TO SKWD · THE PICKER DID NOT CONFIRM IT" end)
-                if not was_up then after(6000, function() launch("systemctl", { "--user", "stop", "skwd-walld.service" }) end) end
-            end)
-        end
-        if was_up then apply(); return end
-        launch("systemctl", { "--user", "start", "skwd-walld.service" }, function(_, code)
-            if code ~= 0 then wear_qs(p); return end
-            after(1200, apply)
-        end)
-    end)
-end
-wear_qs = function(p)
-    -- as the studio does (shell/mooi-wallpaper.luau): the picker, which also makes the palette
-    launch("qs", { "-p", HOME .. "/.config/qs-wallpaperpicker", "ipc", "call", "wallpaper", "set", p }, function(_, code)
+    -- the one way a wallpaper is worn (D145): mooi's desk draws it (a video: mpvpaper under it), with
+    -- its transition grown out of the notch's edge; the theme watch recolours from its still
+    launch("mooi", { "wall", "apply", p, "--from-y", tostring(math.floor(tonumber(fact.nt_cy) or 540)) }, function(out, code)
         if code == 0 then
-            confirm_wear(p, function() text.wp_t = "WEARING IT · THE PALETTE FOLLOWS" end,
-                function() text.wp_t = "SENT · THE PICKER DID NOT CONFIRM IT (SEE ITS LOG)" end)
-            return
+            text.wp_t = N.is_video(p) and "WEARING IT · LIVE, THE PALETTE FOLLOWS" or "WEARING IT · THE PALETTE FOLLOWS"
+            if fact.nt_open and math.floor(tonumber(fact.nt_tab) or -1) == 3 then show_pictures() end
+        else
+            text.wp_t = "COULD NOT WEAR IT · SEE `mooi wall apply`"
         end
-        -- Not running: its script writes the links and the palette; awww only draws.
-        launch(HOME .. "/.config/qs-wallpaperpicker/scripts/wallpaper-apply", { p }, function(_, wcode)
-            if wcode == 0 then
-                confirm_wear(p, function() text.wp_t = "WEARING IT · THE PICKER WAS NOT RUNNING; ITS SCRIPT DID IT" end,
-                    function() text.wp_t = "SENT · THE WALLPAPER SCRIPT DID NOT CONFIRM IT" end)
-                return
-            end
-            launch("awww", { "img", p, "--transition-type", "grow", "--transition-duration", "0.8" }, function(_, acode)
-                text.wp_t = acode == 0 and "DRAWN WITH AWWW · NOTHING RECORDED (INSTALL qs-wallpaperpicker TO KEEP IT)" or "COULD NOT WEAR IT: START THE WALLPAPER PICKER"
-            end)
-        end)
     end)
 end
 -- a colour on the arc: that band of pictures, or, pressed again, all of them
@@ -1072,7 +1042,7 @@ end)
 -- The Wallpapers panel's button (audit 2026-11-01, A6): `nt_studio` was emitted by the scene and
 -- handled nowhere, so the button did nothing. The studio is a program of its own; the launcher
 -- opens it (it is on this scene's allowlist).
-on("nt_studio", function() launch("mooi", { "wallpaper" }) end)
+on("nt_studio", function() launch("mooi", { "walls" }) end)
 on("nt_close", function() fact.nt_open, fact.nt_tab, fact.nt_pin, fact.nt_deck = false, -1, false, false; viz() end)
 read_weather()
 after(4000, read_github)        -- the badge of what waits on GitHub, read once at the start

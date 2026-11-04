@@ -21,7 +21,7 @@ import "ui/edgetab.plm" as edge
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "skwd-wall-v2", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
+        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "hyprlock", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
     }
 
@@ -1101,7 +1101,7 @@ scene Mooi {
     event mic_mute ->          // to the logic: the microphone, muted or not
     event mic_vol ->           // to the logic: the microphone's level (0..1)
     event open_settings ->     // to the logic: start the settings program, or close it
-    event open_wallpaper ->    // to the logic: open the wallpaper picker, Skwd Wall (`mooi wallpaper`, D118)
+    event open_wallpaper ->    // to the logic: open or close the wallpaper picker, mooi-walls (`mooi walls`, D145)
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event feed_want ->         // from the notch or the Nexus: a music panel is open and wants the feed (D118)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)

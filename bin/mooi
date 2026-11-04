@@ -18,7 +18,9 @@
 #   mooi overview          every workspace zoomed out (Super+Tab)
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
 #                          one under the pointer (Super+Alt+right-click)
-#   mooi wallpaper         the wallpaper picker: Skwd Wall (skwd-wall-v2), the one picker (D118)
+#   mooi wallpaper | walls the wallpaper picker: the strip and the colour orbit (D145; Super+W)
+#   mooi wall apply FILE   wear a picture, an animated picture or a video (D145); `wall live` keeps
+#                          mpvpaper as the wallpaper says, `wall index` reads the folders for the picker
 #   mooi settings | edit   open or close the settings window; the bar's edit mode on or off
 #   mooi notes | clipboard the side panel's notices or clipboard history (open or close)
 #   mooi note "text"       save a line in the quick notes (no window; notes.json)
@@ -476,6 +478,99 @@ theme_watch() {
     done
 }
 
+# ── Wallpapers (D145): mooi draws them all ──
+# mooi-desk draws the picture (a still, or an animated GIF/WebP/PNG, which Pleamar plays itself) and
+# its transition; a video is mpvpaper's, on the background layer, the desk drawing a frame of it until
+# mpvpaper is up and then stepping aside. `wall_apply` is the one way a wallpaper is worn — the notch,
+# the picker (mooi-walls) and `mooi wall apply` all come here:
+#   wall.json beside the settings   what the desk draws (it watches the file): the file, its still,
+#                                   its kind, the transition and where a growing circle starts
+#   ~/.cache/current_wallpaper_source → the file, ~/.cache/current_wallpaper → its still
+#                                   (lock screens read these; the theme watch recolours from the still)
+walls_cache="$HOME/.cache/mooi/walls"
+mpv_pid="$rt/mpvpaper.pid"
+wall_kind() {
+    ext=$(printf '%s' "${1##*.}" | tr '[:upper:]' '[:lower:]')
+    case "$ext" in
+        mp4|webm|mkv|mov|m4v|avi) echo video ;;
+        gif|apng) echo animated ;;
+        jpg|jpeg|png|webp|avif|jxl|bmp) echo still ;;
+        *) return 1 ;;
+    esac
+}
+# A frame a second into a video (or its first), full size, kept by the file's name and age.
+wall_still() {
+    key=$(printf '%s %s' "$1" "$(stat -c %Y "$1" 2>/dev/null)" | cksum | cut -d' ' -f1)
+    out="$walls_cache/stills/v-$key.jpg"
+    [ -s "$out" ] && { echo "$out"; return 0; }
+    mkdir -p "$walls_cache/stills"
+    for at in 1 0; do
+        ffmpeg -v error -y -ss "$at" -i "$1" -frames:v 1 -q:v 2 "$out" </dev/null >/dev/null 2>&1 && [ -s "$out" ] && { echo "$out"; return 0; }
+    done
+    return 1
+}
+mpv_running() { p=$(cat "$mpv_pid" 2>/dev/null) && alive "$p" && tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "mpvpaper"; }
+mpv_playing() { mpv_running && tr '\0' '\n' < "/proc/$(cat "$mpv_pid")/cmdline" | tail -n 1 | grep -qxF "$1"; }
+wall_live_stop() {
+    if mpv_running; then kill "$(cat "$mpv_pid")" 2>/dev/null; fi
+    rm -f "$mpv_pid"
+    # one mpvpaper ever: a stray (started by hand, or by an older mooi) goes too
+    pkill -u "$(id -u)" -x mpvpaper 2>/dev/null || :
+    "$pleamar" --say mooi-desk "emit live_on 0" >/dev/null 2>&1 || :
+}
+# mpvpaper as wall.json says: playing that video, or not at all. The desk is told once it is up.
+wall_live() {
+    src=$(jq -r 'if .kind == "video" then .source else "" end' "$folder/wall.json" 2>/dev/null)
+    if [ -z "$src" ] || [ ! -f "$src" ]; then wall_live_stop; return 0; fi
+    if mpv_playing "$src"; then "$pleamar" --say mooi-desk "emit live_on 1" >/dev/null 2>&1 || :; return 0; fi
+    command -v mpvpaper >/dev/null 2>&1 || { echo "mpvpaper is not installed: the video's still stays" >&2; return 1; }
+    wall_live_stop
+    setsid mpvpaper -p -o "no-audio loop hwdec=auto panscan=1.0 really-quiet load-scripts=no" '*' "$src" </dev/null >/dev/null 2>&1 &
+    echo $! > "$mpv_pid"
+    # no scripts: mpv's MPRIS script would make the wallpaper the "song playing" in the bar and BMO
+    # it has a surface a moment after it starts; the desk fades its still out once it has
+    sleep 0.6
+    if mpv_running; then "$pleamar" --say mooi-desk "emit live_on 1" >/dev/null 2>&1 || :
+    else rm -f "$mpv_pid"; echo "mpvpaper ended at once: the video's still stays" >&2; return 1; fi
+}
+wall_apply() { # FILE [--from-y N] [--transition KIND]
+    file=$(readlink -f "${1:-}" 2>/dev/null); shift || :
+    [ -n "$file" ] && [ -f "$file" ] || { echo "wall: no file at ${file:-(none given)}" >&2; return 1; }
+    kind=$(wall_kind "$file") || { echo "wall: not a picture or a video: $file" >&2; return 1; }
+    from_y=null; tr=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --from-y) from_y=$(printf '%d' "${2:-0}" 2>/dev/null || echo null); shift 2 ;;
+            --transition) tr=${2:-}; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+    still=$file
+    if [ "$kind" = video ]; then still=$(wall_still "$file") || { echo "wall: ffmpeg could not read a frame of $file" >&2; return 1; }; fi
+    command -v jq >/dev/null 2>&1 || { echo "wall: jq is needed" >&2; return 1; }
+    mkdir -p "$folder"
+    jq -n --arg s "$file" --arg t "$still" --arg k "$kind" --arg tr "$tr" --argjson fy "$from_y" --argjson at "$(date +%s)" \
+        '{source: $s, still: $t, kind: $k, transition: $tr, from_y: $fy, at: $at}' > "$folder/wall.json.tmp" \
+        && mv "$folder/wall.json.tmp" "$folder/wall.json" || return 1
+    # the desk has the new state; a video playing goes once the desk shows its still again (its
+    # transition starts from that), and the links change, which the theme watch recolours from
+    if [ "$kind" != video ] || ! mpv_playing "$file"; then (sleep 0.15; wall_live_stop) </dev/null >/dev/null 2>&1 & fi
+    ln -sfn "$file" "$HOME/.cache/current_wallpaper_source"
+    ln -sfn "$still" "$HOME/.cache/current_wallpaper"
+    if [ "$kind" = video ]; then (sleep 1.2; wall_live) </dev/null >/dev/null 2>&1 & fi
+    echo "wearing $(basename "$file") ($kind)"
+}
+wall_index() {
+    dirs=$(jq -r '(.walls.folders // ["~/Pictures/wallpapers", "~/Pictures/livewalls"])[] | sub("^~"; env.HOME)' "$settings" 2>/dev/null) \
+        || dirs="$HOME/Pictures/wallpapers
+$HOME/Pictures/livewalls"
+    mkdir -p "$walls_cache"
+    # shellcheck disable=SC2086
+    IFS='
+' ; set -- $dirs; unset IFS
+    nice -n 19 python3 "$root/tools/wallindex.py" "$walls_cache" "$folder" "$folder/wallpaper-hues.json" "$@"
+}
+
 # The **lock** is the truth about a watcher and the pid file is how it is signalled: a watcher
 # killed outright cannot clean up after itself, so a pid file can outlive its watcher (and a
 # watcher can outlive its pid file, which is what a `status` reading the file alone gets wrong).
@@ -512,7 +607,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -564,6 +659,7 @@ mooi-desk.plm:the desk
 mooi-player.plm:the music player
 mooi-notch.plm:the side notch
 mooi-widgets.plm:the desktop widgets
+mooi-walls.plm:the wallpaper picker
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -758,9 +854,17 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
-    wallpaper) # the one wallpaper picker (D118): Lumen, the studio, is gone; Skwd Wall picks
-               command -v skwd-wall-v2 >/dev/null 2>&1 || { echo "skwd-wall-v2 is not installed" >&2; exit 1; }
-               exec skwd-wall-v2 ;;
+    wallpaper|walls) # the wallpaper picker (D145): mooi-walls, the strip and the colour orbit
+        running || { echo "mooi is not running; start it first" >&2; exit 1; }
+        exec "$pleamar" --say "$name" "emit open_wallpaper" ;;
+    wall) # wear a wallpaper (D145): apply FILE [--from-y N] [--transition KIND] · live · index
+        sub=${1:-}; shift || :
+        case "$sub" in
+            apply) wall_apply "$@" ;;
+            live) wall_live ;;
+            index) wall_index ;;
+            *) echo "usage: mooi wall apply FILE [--from-y N] [--transition KIND] | live | index" >&2; exit 2 ;;
+        esac ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }
             exec "$pleamar" --say "$name" "emit open_player 1" ;;
@@ -946,6 +1050,7 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-player.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-notch.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-widgets.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-walls.plm" || exit 1
         "$pleamar" --check "$root/shell/bmo/bmo.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
@@ -960,7 +1065,7 @@ case "$cmd" in
         # What this machine lacks: the scenes fall back quietly, so name it here rather than let a
         # visualizer or a store module look broken (audit 2026-10-29).
         missing=
-        for tool in cava rembg playerctl mpc mpv yt-dlp magick wf-recorder grim slurp checkupdates flatpak; do
+        for tool in cava rembg playerctl mpc mpv mpvpaper ffmpeg yt-dlp magick wf-recorder grim slurp checkupdates flatpak; do
             command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
         done
         [ -n "$missing" ] && echo "optional, not installed:$missing"

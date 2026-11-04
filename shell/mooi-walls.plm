@@ -1,0 +1,503 @@
+language 0.9
+import "theme/tokens.plm"
+import "theme/ferrolume.plm"
+
+// mooi's wallpaper picker (D145) — a program of its own, started by the bar while it is open
+// (`mooi walls`, Super+W, the bar's wallpaper button, the notch's ↗). Two views of the same list:
+//   · the strip: slanted cards across the lower third, the middle one large (← → and the wheel);
+//   · the colour orbit: every picture on a wheel by its hue, darker inwards, the greys in the
+//     middle; the pictures under the pointer swell into thumbnails, and the middle shows the
+//     palette the one nearest would give the shell (Matugen's dry run).
+// Wearing goes through `mooi wall apply` (the desk draws it, its transition, mpvpaper for a video).
+// shell/mooi-walls.luau holds the list (the index tools/wallindex.py writes, lib/walls) and fills
+// the windows the scene draws; the scene only lays them out and moves them.
+
+scene Walls {
+    permissions {
+        run: "pleamar", "mooi", "matugen"
+        services: "files", "files.write", "env"
+    }
+
+    // The same facts and springs the bar wears: the logic paints them from palette.json, and
+    // the studio re-lights with the desktop when the palette changes after an apply.
+    // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
+    fact cn_kind = 0
+    fact cn_scale = 1
+    fact fr_ground_r = 0.000000
+    fact fr_ground_g = 0.000000
+    fact fr_ground_b = 0.000000
+    fact fr_hull_r = 0.015686
+    fact fr_hull_g = 0.035294
+    fact fr_hull_b = 0.031373
+    fact fr_hull_raised_r = 0.027451
+    fact fr_hull_raised_g = 0.074510
+    fact fr_hull_raised_b = 0.066667
+    fact fr_well_r = 0.019608
+    fact fr_well_g = 0.164706
+    fact fr_well_b = 0.145098
+    fact fr_trace_dim_r = 0.121569
+    fact fr_trace_dim_g = 0.219608
+    fact fr_trace_dim_b = 0.200000
+    fact fr_trace_r = 0.239216
+    fact fr_trace_g = 0.415686
+    fact fr_trace_b = 0.376471
+    fact fr_trace_lit_r = 0.423529
+    fact fr_trace_lit_g = 0.788235
+    fact fr_trace_lit_b = 0.682353
+    fact fr_phos_r = 0.498039
+    fact fr_phos_g = 0.811765
+    fact fr_phos_b = 0.713725
+    fact fr_phos_fill_r = 0.090196
+    fact fr_phos_fill_g = 0.603922
+    fact fr_phos_fill_b = 0.533333
+    fact fr_ember_r = 0.878431
+    fact fr_ember_g = 0.482353
+    fact fr_ember_b = 0.180392
+    fact fr_ember_fill_r = 0.823529
+    fact fr_ember_fill_g = 0.411765
+    fact fr_ember_fill_b = 0.117647
+    fact fr_flare_r = 0.956863
+    fact fr_flare_g = 0.713725
+    fact fr_flare_b = 0.235294
+    fact fr_muted_r = 0.352941
+    fact fr_muted_g = 0.541176
+    fact fr_muted_b = 0.494118
+    fact fr_ink_r = 0.015686
+    fact fr_ink_g = 0.129412
+    fact fr_ink_b = 0.113725
+    fact fr_steel_900_r = 0.082353
+    fact fr_steel_900_g = 0.098039
+    fact fr_steel_900_b = 0.105882
+    fact fr_steel_700_r = 0.164706
+    fact fr_steel_700_g = 0.192157
+    fact fr_steel_700_b = 0.203922
+    fact fr_steel_500_r = 0.290196
+    fact fr_steel_500_g = 0.329412
+    fact fr_steel_500_b = 0.349020
+    fact fr_steel_300_r = 0.545098
+    fact fr_steel_300_g = 0.592157
+    fact fr_steel_300_b = 0.611765
+    fact fr_engrave_r = 0.603922
+    fact fr_engrave_g = 0.650980
+    fact fr_engrave_b = 0.670588
+    prop pr_ground_r = 0.000000 ~fl.relight
+    follow pr_ground_r = fr_ground_r
+    prop pr_ground_g = 0.000000 ~fl.relight
+    follow pr_ground_g = fr_ground_g
+    prop pr_ground_b = 0.000000 ~fl.relight
+    follow pr_ground_b = fr_ground_b
+    prop pr_hull_r = 0.015686 ~fl.relight
+    follow pr_hull_r = fr_hull_r
+    prop pr_hull_g = 0.035294 ~fl.relight
+    follow pr_hull_g = fr_hull_g
+    prop pr_hull_b = 0.031373 ~fl.relight
+    follow pr_hull_b = fr_hull_b
+    prop pr_hull_raised_r = 0.027451 ~fl.relight
+    follow pr_hull_raised_r = fr_hull_raised_r
+    prop pr_hull_raised_g = 0.074510 ~fl.relight
+    follow pr_hull_raised_g = fr_hull_raised_g
+    prop pr_hull_raised_b = 0.066667 ~fl.relight
+    follow pr_hull_raised_b = fr_hull_raised_b
+    prop pr_well_r = 0.019608 ~fl.relight
+    follow pr_well_r = fr_well_r
+    prop pr_well_g = 0.164706 ~fl.relight
+    follow pr_well_g = fr_well_g
+    prop pr_well_b = 0.145098 ~fl.relight
+    follow pr_well_b = fr_well_b
+    prop pr_trace_dim_r = 0.121569 ~fl.relight
+    follow pr_trace_dim_r = fr_trace_dim_r
+    prop pr_trace_dim_g = 0.219608 ~fl.relight
+    follow pr_trace_dim_g = fr_trace_dim_g
+    prop pr_trace_dim_b = 0.200000 ~fl.relight
+    follow pr_trace_dim_b = fr_trace_dim_b
+    prop pr_trace_r = 0.239216 ~fl.relight
+    follow pr_trace_r = fr_trace_r
+    prop pr_trace_g = 0.415686 ~fl.relight
+    follow pr_trace_g = fr_trace_g
+    prop pr_trace_b = 0.376471 ~fl.relight
+    follow pr_trace_b = fr_trace_b
+    prop pr_trace_lit_r = 0.423529 ~fl.relight
+    follow pr_trace_lit_r = fr_trace_lit_r
+    prop pr_trace_lit_g = 0.788235 ~fl.relight
+    follow pr_trace_lit_g = fr_trace_lit_g
+    prop pr_trace_lit_b = 0.682353 ~fl.relight
+    follow pr_trace_lit_b = fr_trace_lit_b
+    prop pr_phos_r = 0.498039 ~fl.relight
+    follow pr_phos_r = fr_phos_r
+    prop pr_phos_g = 0.811765 ~fl.relight
+    follow pr_phos_g = fr_phos_g
+    prop pr_phos_b = 0.713725 ~fl.relight
+    follow pr_phos_b = fr_phos_b
+    prop pr_phos_fill_r = 0.090196 ~fl.relight
+    follow pr_phos_fill_r = fr_phos_fill_r
+    prop pr_phos_fill_g = 0.603922 ~fl.relight
+    follow pr_phos_fill_g = fr_phos_fill_g
+    prop pr_phos_fill_b = 0.533333 ~fl.relight
+    follow pr_phos_fill_b = fr_phos_fill_b
+    prop pr_ember_r = 0.878431 ~fl.relight
+    follow pr_ember_r = fr_ember_r
+    prop pr_ember_g = 0.482353 ~fl.relight
+    follow pr_ember_g = fr_ember_g
+    prop pr_ember_b = 0.180392 ~fl.relight
+    follow pr_ember_b = fr_ember_b
+    prop pr_ember_fill_r = 0.823529 ~fl.relight
+    follow pr_ember_fill_r = fr_ember_fill_r
+    prop pr_ember_fill_g = 0.411765 ~fl.relight
+    follow pr_ember_fill_g = fr_ember_fill_g
+    prop pr_ember_fill_b = 0.117647 ~fl.relight
+    follow pr_ember_fill_b = fr_ember_fill_b
+    prop pr_flare_r = 0.956863 ~fl.relight
+    follow pr_flare_r = fr_flare_r
+    prop pr_flare_g = 0.713725 ~fl.relight
+    follow pr_flare_g = fr_flare_g
+    prop pr_flare_b = 0.235294 ~fl.relight
+    follow pr_flare_b = fr_flare_b
+    prop pr_muted_r = 0.352941 ~fl.relight
+    follow pr_muted_r = fr_muted_r
+    prop pr_muted_g = 0.541176 ~fl.relight
+    follow pr_muted_g = fr_muted_g
+    prop pr_muted_b = 0.494118 ~fl.relight
+    follow pr_muted_b = fr_muted_b
+    prop pr_ink_r = 0.015686 ~fl.relight
+    follow pr_ink_r = fr_ink_r
+    prop pr_ink_g = 0.129412 ~fl.relight
+    follow pr_ink_g = fr_ink_g
+    prop pr_ink_b = 0.113725 ~fl.relight
+    follow pr_ink_b = fr_ink_b
+    prop pr_steel_900_r = 0.082353 ~fl.relight
+    follow pr_steel_900_r = fr_steel_900_r
+    prop pr_steel_900_g = 0.098039 ~fl.relight
+    follow pr_steel_900_g = fr_steel_900_g
+    prop pr_steel_900_b = 0.105882 ~fl.relight
+    follow pr_steel_900_b = fr_steel_900_b
+    prop pr_steel_700_r = 0.164706 ~fl.relight
+    follow pr_steel_700_r = fr_steel_700_r
+    prop pr_steel_700_g = 0.192157 ~fl.relight
+    follow pr_steel_700_g = fr_steel_700_g
+    prop pr_steel_700_b = 0.203922 ~fl.relight
+    follow pr_steel_700_b = fr_steel_700_b
+    prop pr_steel_500_r = 0.290196 ~fl.relight
+    follow pr_steel_500_r = fr_steel_500_r
+    prop pr_steel_500_g = 0.329412 ~fl.relight
+    follow pr_steel_500_g = fr_steel_500_g
+    prop pr_steel_500_b = 0.349020 ~fl.relight
+    follow pr_steel_500_b = fr_steel_500_b
+    prop pr_steel_300_r = 0.545098 ~fl.relight
+    follow pr_steel_300_r = fr_steel_300_r
+    prop pr_steel_300_g = 0.592157 ~fl.relight
+    follow pr_steel_300_g = fr_steel_300_g
+    prop pr_steel_300_b = 0.611765 ~fl.relight
+    follow pr_steel_300_b = fr_steel_300_b
+    prop pr_engrave_r = 0.603922 ~fl.relight
+    follow pr_engrave_r = fr_engrave_r
+    prop pr_engrave_g = 0.650980 ~fl.relight
+    follow pr_engrave_g = fr_engrave_g
+    prop pr_engrave_b = 0.670588 ~fl.relight
+    follow pr_engrave_b = fr_engrave_b
+
+    // The islands' semantic tokens, which theme/tokens defines over these facts.
+    fact c_bg_primary_r = 0.062745
+    fact c_bg_primary_g = 0.078431
+    fact c_bg_primary_b = 0.086275
+    fact c_bg_secondary_r = 0.086275
+    fact c_bg_secondary_g = 0.105882
+    fact c_bg_secondary_b = 0.117647
+    fact c_surface_primary_r = 0.098039
+    fact c_surface_primary_g = 0.121569
+    fact c_surface_primary_b = 0.133333
+    fact c_surface_elevated_r = 0.133333
+    fact c_surface_elevated_g = 0.160784
+    fact c_surface_elevated_b = 0.176471
+    fact c_border_subtle_r = 0.172549
+    fact c_border_subtle_g = 0.207843
+    fact c_border_subtle_b = 0.223529
+    fact c_fg_primary_r = 0.890196
+    fact c_fg_primary_g = 0.913725
+    fact c_fg_primary_b = 0.921569
+    fact c_fg_secondary_r = 0.639216
+    fact c_fg_secondary_g = 0.690196
+    fact c_fg_secondary_b = 0.709804
+    fact c_fg_muted_r = 0.541176
+    fact c_fg_muted_g = 0.592157
+    fact c_fg_muted_b = 0.611765
+    fact c_accent_primary_r = 0.650980
+    fact c_accent_primary_g = 0.952941
+    fact c_accent_primary_b = 0.819608
+    fact c_accent_secondary_r = 1.000000
+    fact c_accent_secondary_g = 0.572549
+    fact c_accent_secondary_b = 0.372549
+    fact c_status_ok_r = 0.650980
+    fact c_status_ok_g = 0.952941
+    fact c_status_ok_b = 0.819608
+    fact c_status_error_r = 1.000000
+    fact c_status_error_g = 0.572549
+    fact c_status_error_b = 0.372549
+    fact c_focus_ring_r = 0.650980
+    fact c_focus_ring_g = 0.952941
+    fact c_focus_ring_b = 0.819608
+    fact c_selection_bg_r = 0.164706
+    fact c_selection_bg_g = 0.227451
+    fact c_selection_bg_b = 0.211765
+    // What theme/ferrolume reads for its geometry; the studio uses the colour, not the bar's
+    // strip, so these are only the values the tokens are defined against.
+    fact st_offset = 0
+    fact st_notch = false
+    fact bar_rail = true
+    fact st_height = 30
+    fact st_radius = 8
+    fact st_res = 46
+
+    fact st_glow = 1
+
+    // ── The picker ──
+    fact wl_in = 0               // the entrance (0 → 1), and the way out
+    fact view = 0                // 0 the strip · 1 the orbit
+    fact src = 0                 // 0 all · 1 pictures · 2 live
+    fact trk = 0                 // the transition worn with: 0 random · 1 grow · 2 wipe · 3 slide · 4 fade
+    fact count = 0               // pictures in the list (after the source and the search)
+    fact at = 0                  // the strip's middle card, in the whole list (0-based)
+    fact typing = false
+    fact prev = false            // the picture in the middle (or under the pointer) over the whole screen
+    fact has_prev = false
+    fact has_orbit = false
+    fact or_spin = 0             // the orbit's turn, in degrees
+    fact or_zoom = 1
+    fact or_near = false         // the pointer is over the wheel
+    fact pal_n = 0
+    fact has_query = false
+    text wl_query = ""
+    text wl_line = ""            // what the list is: N OF M · its colour · a pass still reading
+    text wl_name = ""            // the picture in the middle / nearest the pointer
+    text wl_kind = ""
+    text orbit_path = ""
+    text prev_path = ""
+    image orbit = from orbit_path, 1024, 1024
+    image pv = from prev_path, 1920, 1080
+    // the strip's window: 32 cards round the middle (`k` is the card's place in the whole list)
+    model strip max 32 { pic: image 320, 180; k: number; live: bool; on: bool }
+    // the orbit's swollen ones: the nearest to the pointer, where they sit on the wheel (unit radius,
+    // before the turn), and how near (`r`, 1 the nearest)
+    model orb max 24 { pic: image 320, 180; ux: number; uy: number; r: number; live: bool; on: bool }
+    // the palette the picture would give (Matugen's roles: primary, secondary, tertiary, surface…)
+    model pal max 6 { cr: number; cg: number; cb: number }
+
+    event wl_close ->
+    event wl_view ->             // the strip or the orbit
+    event wl_src ->              // all · pictures · live
+    event wl_tr ->               // the next transition
+    event wl_step ->             // the strip moved by this many cards
+    event wl_go ->               // the strip's card `k` to the middle
+    event wl_wear ->             // wear: -1 the strip's middle, 0 the orbit's nearest
+    event wl_cell ->             // the pointer over the orbit's cell (row × 20 + column)
+    event wl_spin ->             // the wheel turned the orbit
+    event wl_prev ->             // the preview on or off
+
+    spring wl.ent = 260, 30
+    spring wl.slide = 210, 26
+    spring wl.swell = 300, 28
+    prop ent = 0 ~wl.ent
+    follow ent = wl_in
+    prop scp = 0 ~wl.slide
+    follow scp = at
+    prop spin = 0 ~wl.slide
+    follow spin = or_spin
+    prop zoom = 1 ~wl.slide
+    follow zoom = or_zoom
+    prop vw = 0 ~wl.ent
+    follow vw = view
+    prop pvo = 0 ~200ms
+    follow pvo = if(prev and has_prev, 1, 0)
+
+    // A tab on the top row: lit when chosen, brighter under the pointer.
+    component Tab(x: number, y: number, w: number, word: text, lit: bool, hover: number) {
+        box { from: x, y; size: w, 26; corner: 3; color: fl.well; opacity: if(lit, 0.9, 0.35 * hover) }
+        box { from: x, y; size: w, 26; corner: 3; stroke: 1; color: if(lit, fl.phos, mix(fl.trace_dim, fl.trace_lit, hover)) }
+        text word { at: x + w / 2, y + 13; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(lit, fl.phos, mix(fl.muted, fl.trace_lit, hover)) }
+    }
+
+    surface walls {
+        size: full, full
+        anchor: top
+        level: overlay
+        keyboard: exclusive
+
+        let sw = screen.width
+        let sh = screen.height
+        let cx = sw / 2
+
+        // the veil: the desktop dimmed under the picker, lifted while the preview is up
+        box { from: 0, 0; size: sw, sh; color: fl.ground; opacity: 0.78 * ent * (1 - pvo) }
+        zone box away { from: 0, 0; size: sw, sh; role: region; label: "Close the picker" }
+        on press away { emit wl_close }
+        image pv { at: 0, 0; size: sw, sh; opacity: pvo * ent; show: pvo > 0.01 }
+
+        group {
+            opacity: ent * (1 - 0.85 * pvo)
+            move: 0, (1 - ent) * 40
+
+            // ── The top row: the view, the source, the search, the transition ──
+            let ty = 46
+            let tx = cx - 560
+            text "WALLPAPERS" { at: tx, ty + 13; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: fl.phos }
+            zone box tv0 { from: tx + 150, ty; size: 78, 26; cursor: pointer; role: tab; selected: view == 0; label: "The strip" }
+            zone box tv1 { from: tx + 232, ty; size: 78, 26; cursor: pointer; role: tab; selected: view == 1; label: "The colour orbit" }
+            Tab(tx + 150, ty, 78, "STRIP", view == 0, tv0.hover)
+            Tab(tx + 232, ty, 78, "ORBIT", view == 1, tv1.hover)
+            on press tv0 { emit wl_view(0) }
+            on press tv1 { emit wl_view(1) }
+            line { from: tx + 326, ty + 5; to: tx + 326, ty + 21; width: 1; color: fl.trace_dim }
+            zone box ts0 { from: tx + 342, ty; size: 56, 26; cursor: pointer; role: tab; selected: src == 0; label: "Every wallpaper" }
+            zone box ts1 { from: tx + 402, ty; size: 90, 26; cursor: pointer; role: tab; selected: src == 1; label: "Pictures only" }
+            zone box ts2 { from: tx + 496, ty; size: 60, 26; cursor: pointer; role: tab; selected: src == 2; label: "Live wallpapers only" }
+            Tab(tx + 342, ty, 56, "ALL", src == 0, ts0.hover)
+            Tab(tx + 402, ty, 90, "PICTURES", src == 1, ts1.hover)
+            Tab(tx + 496, ty, 60, "LIVE", src == 2, ts2.hover)
+            on press ts0 { emit wl_src(0) }
+            on press ts1 { emit wl_src(1) }
+            on press ts2 { emit wl_src(2) }
+            line { from: tx + 572, ty + 5; to: tx + 572, ty + 21; width: 1; color: fl.trace_dim }
+            // the search: `/` or a press, Esc or Enter leaves it
+            zone box tq { from: tx + 588, ty; size: 250, 26; cursor: text; role: button; label: "Search the file names" }
+            box { from: tx + 588, ty; size: 250, 26; corner: 3; color: fl.well; opacity: if(typing, 0.9, 0.4) }
+            box { from: tx + 588, ty; size: 250, 26; corner: 3; stroke: 1; color: if(typing, fl.phos, mix(fl.trace_dim, fl.trace_lit, tq.hover)) }
+            text "/  SEARCH" { at: tx + 600, ty + 13; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not typing and not has_query }
+            input wl_query { at: tx + 600, ty + 6; width: 226; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+            on press tq { typing = true; focus wl_query }
+            line { from: tx + 854, ty + 5; to: tx + 854, ty + 21; width: 1; color: fl.trace_dim }
+            zone box ttr { from: tx + 870, ty; size: 130, 26; cursor: pointer; role: button; label: "The transition: press for the next" }
+            Tab(tx + 870, ty, 130, pick(trk, "↻ RANDOM", "↻ GROW", "↻ WIPE", "↻ SLIDE", "↻ FADE"), false, ttr.hover)
+            on press ttr { emit wl_tr }
+            zone box tx0 { from: tx + 1084, ty; size: 36, 26; cursor: pointer; role: button; label: "Close the picker" }
+            Tab(tx + 1084, ty, 36, "×", false, tx0.hover)
+            on press tx0 { emit wl_close }
+            text wl_line { at: tx, ty + 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 900; lines: 1 }
+
+            // ── The strip ──
+            group {
+                show: vw < 0.98
+                opacity: 1 - vw
+                move: 0, vw * 60
+                let y0 = sh * 0.6
+                zone box sband { from: 0, y0 - 220; size: sw, 440; role: region; label: "The strip of wallpapers" }
+                on scroll sband { emit wl_step(0 - wheel) }
+                for c in strip {
+                    let d = c.k - scp
+                    let ad = abs(d)
+                    let w = 230 + 270 * max(0, 1 - ad)
+                    let h = w * 9 / 16
+                    let s = h * 0.22
+                    // side cards a step apart (their width, the slant and a gap); the middle one pushes
+                    // its neighbours out by the room it takes over theirs
+                    let x = cx + d * 262 + clamp(d, -1, 1) * 160
+                    let top = y0 - h / 2
+                    group {
+                        show: ad < 6.5
+                        opacity: clamp(6.5 - ad, 0, 1) * (1 - 0.35 * min(ad, 1))
+                        z: 0 - ad
+                        group {
+                            clip path { move x - w / 2 + s, top; line x + w / 2 + s, top; line x + w / 2 - s, top + h; line x - w / 2 - s, top + h; close }
+                            box { from: x - w / 2 - s, top; size: w + 2 * s, h; color: fl.well }
+                            image c.pic { at: x - w / 2 - s, top + h / 2 - (w + 2 * s) * 9 / 32; size: w + 2 * s, (w + 2 * s) * 9 / 16 }
+                            box { from: x - w / 2 - s, top; size: w + 2 * s, h; color: #000000; opacity: 0.45 * min(ad, 1) }
+                        }
+                        path { move x - w / 2 + s, top; line x + w / 2 + s, top; line x + w / 2 - s, top + h; line x - w / 2 - s, top + h; close
+                               stroke: if(ad < 0.5, 1.6, 1); color: if(c.on, fl.ember, if(ad < 0.5, fl.phos, fl.trace_dim)) }
+                        group {
+                            show: c.live
+                            box { from: x + w / 2 - s - 52, top + h - 24; size: 40, 16; corner: 2; color: fl.ember_fill; opacity: 0.9 }
+                            text "LIVE" { at: x + w / 2 - s - 32, top + h - 16; anchor: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+                        }
+                        zone box sc { from: x - w / 2, top; size: w, h; cursor: pointer; role: item; label: "A wallpaper" }
+                        on press sc { emit wl_go(c.k) }
+                    }
+                }
+                // the one in the middle: its name, what it is, and how to wear it
+                text wl_name { at: cx, y0 + 186; anchor: center; align: center; size: 13; weight: 700; family: "Exo 2"; color: fl.phos; width: 900; lines: 1 }
+                text wl_kind { at: cx, y0 + 210; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 900; lines: 1 }
+                text "← →  OR THE WHEEL  ·  ENTER WEARS IT  ·  SPACE PREVIEWS  ·  TAB THE ORBIT" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
+                text "NOTHING HERE YET · THE FOLDERS ARE BEING READ" { at: cx, y0; anchor: center; size: 12; family: "Share Tech Mono"; color: fl.muted; show: count == 0 }
+            }
+
+            // ── The colour orbit ──
+            group {
+                show: vw > 0.02
+                opacity: vw
+                scale: 0.94 + 0.06 * vw
+                pivot: cx, sh / 2 + 20
+                let ocx = cx
+                let ocy = sh / 2 + 20
+                let rr = sh * 0.35 * zoom
+                // the wheel: every picture a dot of its colour (one image, tools/wallindex.py), turned
+                group {
+                    rotate: spin
+                    pivot: ocx, ocy
+                    image orbit { at: ocx - rr, ocy - rr; size: rr * 2, rr * 2; opacity: if(or_near, 0.55, 0.9); show: has_orbit }
+                }
+                ellipse { at: ocx, ocy; radius: rr + 10; stroke: 1; color: fl.trace_dim; opacity: 0.6 }
+                ellipse { at: ocx, ocy; radius: rr * 0.27; stroke: 1; color: fl.trace_dim; opacity: 0.5 }
+                // where the pointer is, a cell at a time (the logic finds the pictures nearest it); the swollen
+                // ones have no zones of their own, so moving over them still moves the swell, and a
+                // press wears the nearest (the first of `orb`)
+                zone box ogrid { from: ocx - rr, ocy - rr; size: rr * 2, rr * 2; role: region; label: "The colour orbit" }
+                on scroll ogrid { emit wl_spin(wheel) }
+                repeat gr in 0..20 {
+                    repeat gc in 0..20 {
+                        zone box oc.$gr.$gc { from: ocx - rr + gc * rr / 10, ocy - rr + gr * rr / 10; size: rr / 10, rr / 10 }
+                        on hover oc.$gr.$gc for 30ms { emit wl_cell(gr * 20 + gc) }
+                        on press oc.$gr.$gc { emit wl_wear(0) }
+                        on scroll oc.$gr.$gc { emit wl_spin(wheel) }
+                    }
+                }
+                // the nearest ones, swollen: the farther first, so the nearest is on top
+                for o in orb {
+                    let ox = ocx + rr * (o.ux * cos(spin) - o.uy * sin(spin))
+                    let oy = ocy + rr * (o.ux * sin(spin) + o.uy * cos(spin))
+                    let ow = 70 + 150 * o.r * o.r
+                    let oh = ow * 9 / 16
+                    group {
+                        z: o.r * 10
+                        opacity: 0.35 + 0.65 * o.r
+                        group {
+                            clip box { from: ox - ow / 2, oy - oh / 2; size: ow, oh; corner: 3 }
+                            box { from: ox - ow / 2, oy - oh / 2; size: ow, oh; color: fl.well }
+                            image o.pic { at: ox - ow / 2, oy - oh / 2; size: ow, oh }
+                        }
+                        box { from: ox - ow / 2, oy - oh / 2; size: ow, oh; corner: 3; stroke: if(o.r > 0.99, 1.6, 1); color: if(o.on, fl.ember, if(o.r > 0.99, fl.phos, fl.trace_dim)) }
+                        text "LIVE" { at: ox + ow / 2 - 6, oy + oh / 2 - 8; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: o.live and o.r > 0.6 }
+                    }
+                }
+                // the middle: the palette the nearest one would give the shell, and its name
+                group {
+                    show: pal_n > 0 and or_near
+                    for p in pal {
+                        let pa = p.index * 60 - 90
+                        ellipse { at: ocx + cos(pa) * 34, ocy + sin(pa) * 34; radius: 15; color: rgb(p.cr, p.cg, p.cb) }
+                        ellipse { at: ocx + cos(pa) * 34, ocy + sin(pa) * 34; radius: 15; stroke: 1; color: fl.trace_dim }
+                    }
+                }
+                text wl_name { at: ocx, ocy + rr + 30; anchor: center; align: center; size: 13; weight: 700; family: "Exo 2"; color: fl.phos; width: 900; lines: 1; show: or_near }
+                text wl_kind { at: ocx, ocy + rr + 52; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 900; lines: 1; show: or_near }
+                text "THE POINTER SWELLS THEM  ·  A PRESS WEARS ONE  ·  THE WHEEL TURNS IT  ·  SPACE PREVIEWS  ·  TAB THE STRIP" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
+            }
+        }
+    }
+
+    on change wl_in while wl_in { ent: 1 ~wl.ent }
+
+    on key Escape while typing { typing = false; blur }
+    on key Escape while not typing and prev { emit wl_prev }
+    on key Escape while not typing and not prev { emit wl_close }
+    on submit wl_query { typing = false; blur }
+    on key slash while not typing { typing = true; focus wl_query }
+    on key Tab while not typing { emit wl_view(1 - view) }
+    on key Left while not typing { emit wl_step(-1) }
+    on key Right while not typing { emit wl_step(1) }
+    on key Shift+Left while not typing { emit wl_step(-10) }
+    on key Shift+Right while not typing { emit wl_step(10) }
+    on key Home while not typing { emit wl_step(-100000) }
+    on key End while not typing { emit wl_step(100000) }
+    on key Return while not typing { emit wl_wear(-1) }
+    on key space while not typing { emit wl_prev }
+    on key t while not typing { emit wl_tr }
+    on key r while not typing { emit wl_step(0.5) }
+}
