@@ -977,10 +977,11 @@ case "$cmd" in
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }
             exec "$pleamar" --say "$name" "emit open_player 1" ;;
-    wallmap) # the wallpaper read for the widgets (D139): cut-out + 32×18 map, cached; [file] [fast]
+    wallmap) # the wallpaper read for the widgets (D139): cut-out + 32×18 map, cached; [file] [fast|nocut]
         src="${1:-$(readlink -f "$HOME/.cache/current_wallpaper_source")}"
         [ -f "$src" ] || { echo "wallmap: no picture at $src" >&2; exit 1; }
         model=bria-rmbg; [ "${2:-}" = fast ] && model=isnet-general-use
+        [ "${2:-}" = nocut ] && model=none     # the map only: no rembg (widgets.depth off, D150)
         exec python3 "$root/tools/wallmap.py" "$src" "$folder" 1920 1080 "$model" ;;
     widgets) # the desktop widgets (D137): `mooi widgets edit` places them on the desktop
         case "${1:-edit}" in

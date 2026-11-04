@@ -356,7 +356,9 @@ local function check_wall()
         end
         if in_flight or asked_for == p or (wall and wall.src == p) then return end
         asked_for, in_flight = p, true
-        run("mooi", { "wallmap", p }, function(_, c2)
+        -- the subject cut out (rembg, heavy) only while depth is on; the map alone otherwise (D150)
+        local args = widgets_cfg().depth and { "wallmap", p } or { "wallmap", p, "nocut" }
+        run("mooi", args, function(_, c2)
             in_flight = false
             if c2 ~= 0 then log("widgets · wallmap failed for " .. p) end
             apply_wall()

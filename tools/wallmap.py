@@ -82,6 +82,9 @@ def main():
     os.makedirs(cache, exist_ok=True)
     still, cut, mp = (os.path.join(cache, n) for n in ("still.png", "cut.png", "map.json"))
     moving = src.lower().endswith(VIDEO)
+    # model "none": the map only, no cut-out — widgets.depth off (D150). rembg is a 1 GB model that
+    # took every core for ~40 s on each new picture, whether or not anything used the cut-out.
+    want_cut = model != "none"
     if not moving:
         # an animated WebP or PNG moves too: count its frames
         try:
@@ -96,16 +99,20 @@ def main():
         except (OSError, ValueError):
             cached = None
         # a cut-out that failed (rembg missing, offline, killed) is tried again once it can be made
-        if cached and not cached.get("cut") and not moving and shutil.which("rembg") and not os.path.exists(cut):
+        if cached and not cached.get("cut") and not moving and want_cut and shutil.which("rembg") and not os.path.exists(cut):
             cached = None
     if not cached:
         frame = src + "[0]"
         run("magick", frame, "-resize", f"{w}x{h}^", "-gravity", "center", "-extent", f"{w}x{h}", still)
         has_cut = os.path.exists(cut) and not moving
-        if not has_cut and not moving and shutil.which("rembg"):
+        if not has_cut and not moving and want_cut and shutil.which("rembg"):
             raw = os.path.join(cache, "cut-raw.png")
             try:
-                subprocess.run(["nice", "-n", "19", "rembg", "i", "-m", model, still, raw], check=True, capture_output=True)
+                # two threads at most, idle priority: the subject is read in the background, never
+                # at the cost of the desktop (it held every core at 100 % before, D150)
+                env = dict(os.environ, OMP_NUM_THREADS="2", OPENBLAS_NUM_THREADS="2", MKL_NUM_THREADS="2")
+                subprocess.run(["nice", "-n", "19", "ionice", "-c", "3", "rembg", "i", "-m", model, still, raw],
+                               check=True, capture_output=True, env=env)
                 # a soft edge, so the subject does not look pasted on
                 run("magick", raw, "(", "+clone", "-alpha", "extract", "-blur", "0x1.5", ")", "-alpha", "off", "-compose", "copy_opacity", "-composite", cut)
                 os.remove(raw)
