@@ -52,12 +52,27 @@ end
 
 -- What to draw: the picture on the desktop now, and Lumen's layers while they belong to it. A new
 -- picture goes into the hidden slot and the slots cross once it has had a moment to load.
+-- A picture asked for while a transition is still running waits for it to end (the latest one wins):
+-- put into the hidden slot at once, it replaced the picture still going out, half-way (D149).
+local crossing, waiting = false, false
+local function pace_ms()
+    local w = type(settings.walls) == "table" and settings.walls or {}
+    local base = ({ quick = 500, normal = 950, slow = 1600 })[w.speed] or 950
+    local m = type(settings.motion) == "table" and tonumber(settings.motion.speed) or 100
+    return math.floor(base * 100 / math.max(25, m or 100)) + 150
+end
 local function refresh()
     if not current then return end
     local state = read(STATE, "json")
     local l = desk.layers(state, current, cfg)
+    if l.wall ~= shown.wall and crossing then waiting = true; return end
     if l.wall ~= shown.wall then
         shown.wall = l.wall
+        crossing = true
+        after(120 + pace_ms(), function()
+            crossing = false
+            if waiting then waiting = false; refresh() end
+        end)
         if fact.slot == 0 then text.wall_b = l.wall; fact.has_b = true else text.wall_a = l.wall; fact.has_a = true end
         -- how it comes in (D144): the kind chosen (random: one of four); grown from the notch when it
         -- was picked there (it says so just before), else from the middle

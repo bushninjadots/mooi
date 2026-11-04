@@ -19,9 +19,11 @@ scene Desk {
     text wall_a = ""
     text wall_b = ""
     text cut_path = ""
-    image wa = from wall_a, 2112, 1188
-    image wb = from wall_b, 2112, 1188
-    image cut = from cut_path, 2112, 1188
+    // their own size and shape (`0, 0`), drawn `fit: cover` (D149): declared 16:9 they were fitted
+    // inside that cell first, so a picture of another shape left bands, where the last one showed
+    image wa = from wall_a, 0, 0
+    image wb = from wall_b, 0, 0
+    image cut = from cut_path, 0, 0
     fact slot = 0
     fact has_a = false
     fact has_b = false
@@ -91,25 +93,25 @@ scene Desk {
             opacity: seen
             box { from: 0, 0; size: sw, sh; color: #000000 }
             // going
-            group { show: slot == 1 and has_a
+            group { show: slot == 1 and has_a and np < 0.999
                     move: if(tr == 3, 0 - sw * np, 0), 0
-                    image wa { at: -over * sw * px, -over * sh * py; size: ww, wh } }
-            group { show: slot == 0 and has_b
+                    image wa { at: -over * sw * px, -over * sh * py; size: ww, wh; fit: cover } }
+            group { show: slot == 0 and has_b and np < 0.999
                     move: if(tr == 3, 0 - sw * np, 0), 0
-                    image wb { at: -over * sw * px, -over * sh * py; size: ww, wh } }
+                    image wb { at: -over * sw * px, -over * sh * py; size: ww, wh; fit: cover } }
             // coming
             group { show: slot == 0 and has_a
                     opacity: if(tr == 0, np, 1)
                     move: if(tr == 3, sw * (1 - np), 0), 0
                     mask: radial tr_x, tr_y radius max(0, rr - 3) to rr + 0.01
                     clip box { from: 0, 0; size: if(tr == 2, sw * np, sw), sh }
-                    image wa { at: -over * sw * px, -over * sh * py; size: ww, wh } }
+                    image wa { at: -over * sw * px, -over * sh * py; size: ww, wh; fit: cover } }
             group { show: slot == 1 and has_b
                     opacity: if(tr == 0, np, 1)
                     move: if(tr == 3, sw * (1 - np), 0), 0
                     mask: radial tr_x, tr_y radius max(0, rr - 3) to rr + 0.01
                     clip box { from: 0, 0; size: if(tr == 2, sw * np, sw), sh }
-                    image wb { at: -over * sw * px, -over * sh * py; size: ww, wh } }
+                    image wb { at: -over * sw * px, -over * sh * py; size: ww, wh; fit: cover } }
         }
     }
 
@@ -129,7 +131,7 @@ scene Desk {
         let ty = 0.5 + (qy - 0.5) * (1 + depth)
         group {
             show: has_cut and not live
-            image cut { at: -over * fw * tx, -over * fh * ty; size: fw * (1 + over), fh * (1 + over) }
+            image cut { at: -over * fw * tx, -over * fh * ty; size: fw * (1 + over), fh * (1 + over); fit: cover }
         }
     }
 }
