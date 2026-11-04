@@ -83,7 +83,7 @@ local place_of = {}            -- each picture's place on the orbit, as walls-or
 
 local show_dots, wh_thumbs     -- (below, with Wallhaven)
 local refilter                 -- (below, with the list)
-local show_circuit             -- (below, with the board)
+local show_circuit, show_orbit -- (below)
 local wear, wh_fetch           -- (below)
 local want_pal                 -- (below, with the orbit) the palette of the picture in view
 -- Wallhaven, the fourth source (D147): its pages so far, the list's seed (random), the thumbnails
@@ -193,96 +193,154 @@ want_pal = function(it)
     after(250, function() if pal_want == mine then read_pal() end end)
 end
 
-local REACH, MAG = 0.26, 2.3
-local NEAR_N = math.max(6, math.min(24, math.floor(tonumber(W.swell) or 16)))
-local function show_orbit()
-    if cell == nil then model.orb = {}; near = {}; fact.or_near = false; return end
-    -- the cell's middle on the wheel (unit radius), turned back by the wheel's turn
-    local gx = ((cell % 20) + 0.5) / 10 - 1
-    local gy = (math.floor(cell / 20) + 0.5) / 10 - 1
+-- The panel the orbit and the board sit in (lib/walls `panel`, D149), for the screen as it is.
+local SW, SH = 1920, 1047
+local PANEL = walls.panel(SW, SH)
+local function set_panel()
+    PANEL = walls.panel(SW, SH)
+    fact.pnx, fact.pny, fact.pnw, fact.pnh = PANEL.x, PANEL.y, PANEL.w, PANEL.h
+end
+set_panel()
+
+-- A picture shown large (the orbit's preview, the board's core): its thumbnail at once, then — once
+-- it has stayed a third of a second — the picture itself (a video's still; Wallhaven's large thumb).
+local big_gen = 0
+local function show_big(it)
+    big_gen = big_gen + 1
+    if not it then fact.core_on = false; return end
+    text.core_pic = it.thumb ~= "" and it.thumb or (it.kind == "video" and it.still or it.path)
+    fact.core_on = true
+    local mine = big_gen
+    if not it.remote then
+        after(350, function()
+            if mine ~= big_gen then return end
+            text.core_pic = it.kind == "video" and it.still or it.path
+        end)
+    end
+    describe(it, walls.find(list, it.path) or 0)
+    preview(it)
+    want_pal(it)
+end
+
+-- ── The orbit: a dial and a grid ──
+-- The dial is every picture's colour (walls-orbit.png); the point on it — under the pointer, or held
+-- by a press — gives the grid its twelve nearest pictures, and the grid is what is picked from: a
+-- hover shows that one large, a press wears that one (D149: the swollen pile wore the nearest, which
+-- was often not the one under the pointer).
+local GRID_N = 12
+local hold = nil                -- the cell a press holds (nil: the point follows the pointer)
+local osel = 1                  -- the grid's picture in view (1-based)
+local function dial()
+    local rr = PANEL.h / 2 - 46
+    return PANEL.x + 40 + rr, PANEL.y + PANEL.h / 2, rr
+end
+local function grid_boxes(n)
+    local ocx, _, rr = dial()
+    local ox0 = PANEL.x + 80 + rr * 2
+    local ow = PANEL.x + PANEL.w - 36 - ox0
+    local oh = ow * 9 / 16
+    local top = PANEL.y + 124 + oh
+    local cw = (ow - 3 * 10) / 4
+    local ch = cw * 9 / 16
+    local rows = math.max(1, math.min(3, math.floor((PANEL.y + PANEL.h - 20 - top + 10) / (ch + 10))))
+    local out = {}
+    for i = 0, math.min(n, rows * 4) - 1 do
+        out[#out + 1] = { x = ox0 + (i % 4) * (cw + 10), y = top + math.floor(i / 4) * (ch + 10), w = cw, h = ch }
+    end
+    return out
+end
+show_orbit = function()
+    local c = hold or cell
+    if view ~= 1 then return end
+    if c == nil then model.orb = {}; near = {}; fact.or_near = false; return end
+    local ocx, ocy, rr = dial()
+    local gx = ((c % 20) + 0.5) / 10 - 1
+    local gy = (math.floor(c / 20) + 0.5) / 10 - 1
+    fact.o_rx, fact.o_ry = ocx + gx * rr, ocy + gy * rr
     local a = math.rad(-(tonumber(fact.or_spin) or 0))
     local px, py = gx * math.cos(a) - gy * math.sin(a), gx * math.sin(a) + gy * math.cos(a)
     if px * px + py * py > 1.1 * 1.1 then model.orb = {}; near = {}; fact.or_near = false; return end
-    near = walls.nearest(places, px, py, NEAR_N, REACH)
+    local boxes = grid_boxes(GRID_N)
+    near = walls.nearest(places, px, py, #boxes, 0.6)
+    osel = math.max(1, math.min(osel, #near))
     local rows = {}
     for j, i in ipairs(near) do
-        local p, it = places[i], list[i]
-        local dx, dy = p.x - px, p.y - py
-        local d = math.sqrt(dx * dx + dy * dy)
-        -- a loupe: the ones round the pointer spread out from it, the nearest the largest
-        rows[#rows + 1] = { pic = it.thumb, ux = px + dx * MAG, uy = py + dy * MAG,
-                            r = j == 1 and 1 or math.max(0.05, 0.92 * (1 - d / REACH)),
-                            live = walls.is_live(it.kind), on = it.path == on_path }
+        local it, bx = list[i], boxes[j]
+        rows[j] = { pic = it.thumb, x = bx.x, y = bx.y, w = bx.w, h = bx.h, live = walls.is_live(it.kind),
+                    on = it.path == on_path, sel = j == osel }
     end
     model.orb = rows
-    fact.or_near = #rows > 0
+    fact.or_near = true
+    fact.o_lock = hold ~= nil
+    show_big(list[near[osel]])
     if src == 3 and wh_thumbs then wh_thumbs() end
-    local first = list[near[1]]
-    describe(first, near[1] or 0)
-    preview(first)
-    want_pal(first)
 end
+on("wl_opick", function(v)
+    local j = math.floor(tonumber(v) or -1) + 1
+    if not near[j] or j == osel then return end
+    osel = j
+    show_orbit()
+end)
+on("wl_owear", function(v)
+    local i = near[math.floor(tonumber(v) or -1) + 1]
+    if i then wear(list[i]) end
+end)
+on("wl_olock", function(v)
+    v = math.floor(tonumber(v) or -1)
+    if hold ~= nil then hold = nil else hold = (v >= 0 and v < 400) and v or nil end
+    osel = 1
+    show_orbit()
+end)
 
 -- ── The circuit board ──
--- The board is laid out by lib/walls for the screen; each bank shows a page of six of its pictures.
-local SW, SH = 1920, 1047
-local board = walls.board(SW, SH)
-local bpage = {}                -- each bank's page (from 0)
+-- Twenty chips round the core, a page of the list at a time; the chosen one morphs from its chip
+-- into the core along its lit trace, and a new page spreads out of the core.
+local RING = walls.ring(PANEL)
+local cpage = 0
 local chip_at = {}              -- the board's chips → indices into `list`
 local csel = -1                 -- the chosen chip (the model's index, from 0)
-local function set_route(bank, x, y, w, h)
-    local pts = walls.route_to_chip(board, bank, x, y, w, h)
-    local L = walls.trace_lengths(pts)
-    for i = 0, 5 do fact["a" .. i .. "x"], fact["a" .. i .. "y"] = pts[i + 1][1], pts[i + 1][2] end
-    for i = 1, 5 do fact["al" .. i] = math.max(1, L[i]) end
-end
 show_circuit = function()
     if view ~= 2 then return end
-    local bk = walls.banks(list)
-    local brows, trows, crows = {}, {}, {}
+    local pages = math.max(1, math.ceil(#list / walls.RING_N))
+    cpage = math.max(0, math.min(pages - 1, cpage))
+    fact.cpage, fact.cpages = cpage, pages
+    local crows, trows = {}, {}
     chip_at = {}
-    local active = nil
-    for b, k in ipairs(board.banks) do
-        local n = #bk[b]
-        local pages = math.max(1, math.ceil(n / walls.CHIPS_PER_BANK))
-        bpage[b] = math.max(0, math.min(pages - 1, bpage[b] or 0))
-        for slot = 0, walls.CHIPS_PER_BANK - 1 do
-            local li = bk[b][bpage[b] * walls.CHIPS_PER_BANK + slot + 1]
-            if li then
-                local it = list[li]
-                local x, y, w, h = walls.chip_box(k, slot)
-                local idx = #crows
-                crows[#crows + 1] = { pic = it.thumb, x = x, y = y, w = w, h = h, live = walls.is_live(it.kind),
-                                      on = it.path == on_path, sel = idx == csel, bank = b - 1 }
-                chip_at[idx] = li
-                if idx == csel then active = { bank = b, x = x, y = y, w = w, h = h } end
-            end
+    for k, box in ipairs(RING.chips) do
+        local li = cpage * walls.RING_N + k
+        local it = list[li]
+        if it then
+            local idx = #crows
+            crows[#crows + 1] = { pic = it.thumb, x = box.x, y = box.y, w = box.w, h = box.h, live = walls.is_live(it.kind),
+                                  on = it.path == on_path, sel = idx == csel }
+            chip_at[idx] = li
+            local P = box.pts
+            trows[#trows + 1] = { x0 = P[1][1], y0 = P[1][2], x1 = P[2][1], y1 = P[2][2], x2 = P[3][1], y2 = P[3][2],
+                                  x3 = P[4][1], y3 = P[4][2], lit = idx == csel }
         end
-        brows[b] = { x = k.x, y = k.y, w = k.w, h = k.h, name = walls.BANK_NAMES[b],
-                     n = n == 0 and "EMPTY" or (pages > 1 and string.format("%d · %d/%d", n, bpage[b] + 1, pages) or tostring(n)),
-                     lit = active ~= nil and active.bank == b }
-        local P = k.pts
-        trows[b] = { x0 = P[1][1], y0 = P[1][2], x1 = P[2][1], y1 = P[2][2], x2 = P[3][1], y2 = P[3][2],
-                     x3 = P[4][1], y3 = P[4][2], x4 = P[5][1], y4 = P[5][2], lit = active ~= nil and active.bank == b }
     end
-    model.banks, model.traces, model.cchips = brows, trows, crows
-    fact.cox, fact.coy, fact.cow, fact.coh = board.core.x, board.core.y, board.core.w, board.core.h
-    fact.core_on = active ~= nil
-    if active then
-        local it = list[chip_at[csel]]
-        set_route(active.bank, active.x, active.y, active.w, active.h)
-        text.core_pic = it.thumb
-        describe(it, chip_at[csel])
-        preview(it)
-        want_pal(it)
-    end
+    model.cchips, model.ctr = crows, trows
+    local c = RING.core
+    fact.cox, fact.coy, fact.cow, fact.coh = c.x, c.y, c.w, c.h
     if src == 3 and wh_thumbs then wh_thumbs() end
 end
 local function choose_chip(i)
-    if chip_at[i] == nil then return end
-    if i ~= csel then fact.pulse_n = (tonumber(fact.pulse_n) or 0) + 1 end
+    local li = chip_at[i]
+    if li == nil or i == csel then return end
+    local box = RING.chips[li - cpage * walls.RING_N]
+    -- the route from the core out to the chip, for the signal; the chip's box, for the morph
+    local P = box.pts
+    local pts = { P[4], P[3], P[2], P[1] }
+    local Ls = walls.trace_lengths(pts)
+    for k = 0, 3 do fact["a" .. k .. "x"], fact["a" .. k .. "y"] = pts[k + 1][1], pts[k + 1][2] end
+    for k = 1, 3 do fact["al" .. k] = math.max(1, Ls[k]) end
+    fact.gx, fact.gy, fact.gw, fact.gh = box.x, box.y, box.w, box.h
+    text.core_old = tostring(text.core_pic or "")
     csel = i
     show_circuit()
+    show_big(list[li])
+    fact.pulse_n = (tonumber(fact.pulse_n) or 0) + 1
+    fact.morph_n = (tonumber(fact.morph_n) or 0) + 1
 end
 on("wl_csel", function(v) choose_chip(math.floor(tonumber(v) or -1)) end)
 on("wl_cwear", function(v)
@@ -290,20 +348,28 @@ on("wl_cwear", function(v)
     if li then wear(list[li]) end
 end)
 on("wl_bpage", function(v)
-    v = math.floor(tonumber(v) or 0)
-    local b = (v % 100) + 1
-    bpage[b] = (bpage[b] or 0) + (v >= 100 and -1 or 1)
-    csel = -1
+    if view ~= 2 then return end
+    local d = (tonumber(v) or 0) < 0 and -1 or 1
+    local before = cpage
+    cpage = cpage + d
     show_circuit()
-    if src == 3 then wh_fetch() end                    -- more of Wallhaven as the banks are paged
+    if cpage ~= before then
+        csel = -1
+        show_circuit()
+        fact.page_n = (tonumber(fact.page_n) or 0) + 1
+    end
+    -- more of Wallhaven as its pages are reached
+    if src == 3 and (cpage + 2) * walls.RING_N > #list then wh_fetch() end
 end)
 run("hyprctl", { "monitors", "-j" }, function(out)
     local ok, mons = pcall(json.decode, out or "")
     local m = ok and type(mons) == "table" and mons[1] or nil
     if type(m) == "table" and tonumber(m.width) and tonumber(m.height) then
-        SW, SH = tonumber(m.width) / (tonumber(m.scale) or 1), tonumber(m.height) / (tonumber(m.scale) or 1) - 33
-        board = walls.board(SW, SH)
-        show_circuit()
+        local sc = tonumber(m.scale) or 1
+        SW, SH = tonumber(m.width) / sc, tonumber(m.height) / sc - 33
+        set_panel()
+        RING = walls.ring(PANEL)
+        show_circuit(); show_orbit()
     end
 end)
 
@@ -425,7 +491,7 @@ wear = function(it)
 end
 on("wl_wear", function(v)
     v = math.floor(tonumber(v) or -1)
-    if view == 1 then wear(list[near[1] or 0])
+    if view == 1 then wear(list[near[osel] or 0])
     elseif view == 2 then local li = chip_at[csel]; if li then wear(list[li]) end
     else wear(list[at]) end
 end)
@@ -458,7 +524,7 @@ end)
 on("wl_step", function(v)
     v = tonumber(v) or 0
     if #list == 0 then return end
-    -- the board: ← → the next chip, ↑ ↓ three along (a row of a bank), Shift ten (the next bank)
+    -- the board: ← → the next chip (↑ ↓ turn the page)
     if view == 2 then
         local n = 0
         for _ in pairs(chip_at) do n = n + 1 end
@@ -484,7 +550,7 @@ end)
 on("wl_cell", function(v)
     cell = math.floor(tonumber(v) or -1)
     if cell < 0 or cell > 399 then cell = nil end
-    show_orbit()
+    if hold == nil then osel = 1; show_orbit() end
 end)
 on("wl_spin", function(v)
     fact.or_spin = (tonumber(fact.or_spin) or 0) + (tonumber(v) or 0) * 12

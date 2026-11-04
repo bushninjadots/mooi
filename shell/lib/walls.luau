@@ -204,94 +204,54 @@ function M.band_name(h)
     return M.BANDS[(math.floor(((h + 15) % 360) / 30)) + 1]
 end
 
--- ── The circuit board (D147) ──
--- A 5 × 3 board: the CORE in the middle cell, round it fourteen banks — the twelve colours of the
--- notch's arc in hue order clockwise from the top left, the greys and the live wallpapers on either
--- side of the core. Each bank holds six chips (pictures), paged with the wheel; copper traces run
--- from the core to every bank along the gaps between them (never across one).
-M.BANK_NAMES = { "REDS", "ORANGES", "YELLOWS", "LIMES", "GREENS", "SPRINGS", "CYANS", "AZURES",
-                 "BLUES", "VIOLETS", "PURPLES", "PINKS", "GREYS", "LIVE" }
-M.BANK_CELL = { { 0, 0 }, { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 0 }, { 4, 1 }, { 4, 2 }, { 3, 2 },
-                { 2, 2 }, { 1, 2 }, { 0, 2 }, { 0, 1 }, { 1, 1 }, { 3, 1 } }   -- col, row (from 0)
-M.CHIPS_PER_BANK = 6
-function M.bank_of(it)
-    if M.is_live(it.kind) then return 14 end
-    if it.hue == nil then return 13 end
-    return math.floor(((it.hue + 15) % 360) / 30) + 1
+-- ── The circuit board (D147, reworked D149) ──
+-- A panel, not the whole screen: a large CORE in the middle showing the chosen picture, and twenty
+-- chips round it — six above, six below, four each side — each on its own square trace into the
+-- core's edge. The list is paged twenty at a time; the colour row narrows it.
+M.RING_N = 20
+-- The panel's box on a screen of `sw` × `sh` (under the picker's top rows).
+function M.panel(sw, sh)
+    local w, h = math.min(1440, sw - 120), math.min(820, sh - 210)
+    return { x = (sw - w) / 2, y = 160, w = w, h = h }
 end
--- every bank's pictures (indices into `list`), in the list's order
-function M.banks(list)
-    local out = {}
-    for b = 1, #M.BANK_NAMES do out[b] = {} end
-    for i, it in ipairs(list or {}) do local b = out[M.bank_of(it)]; b[#b + 1] = i end
-    return out
-end
--- The board laid out on a screen of `sw` × `sh`: the cells, each bank's box, the core's, and each
--- bank's trace as five points (core port → … → the bank's edge).
-function M.board(sw, sh)
-    local bw = math.min(1600, sw - 160)
-    local x0 = (sw - bw) / 2
-    local y0, bh = 150, math.min(840, sh - 200)
-    local cw, ch = bw / 5, bh / 3
-    local function box(c, r) return { x = x0 + c * cw + 12, y = y0 + r * ch + 10, w = cw - 24, h = ch - 24 } end
-    local core = box(2, 1)
-    local B = { banks = {}, core = core, cw = cw, ch = ch, x0 = x0, y0 = y0 }
-    local top_ch = y0 + ch          -- the channel between the first and the middle row
-    local bot_ch = y0 + 2 * ch      -- and between the middle and the last
-    for b, cell in ipairs(M.BANK_CELL) do
-        local c, r = cell[1], cell[2]
-        local k = box(c, r)
-        local bx = k.x + k.w / 2
-        local lane = (c - 2) * 4                              -- traces sharing a channel lie apart
-        local pts
-        if r == 0 then
-            local px = core.x + core.w / 2 + lane * 6
-            pts = { { px, core.y }, { px, top_ch + lane }, { bx, top_ch + lane }, { bx, top_ch + lane }, { bx, k.y + k.h } }
-        elseif r == 2 then
-            local px = core.x + core.w / 2 + lane * 6
-            pts = { { px, core.y + core.h }, { px, bot_ch - lane }, { bx, bot_ch - lane }, { bx, bot_ch - lane }, { bx, k.y } }
-        else
-            local side = c < 2 and -1 or 1
-            local py = core.y + core.h / 2 + (math.abs(c - 2) == 1 and -40 or 40)
-            local sx = side < 0 and core.x or core.x + core.w
-            if math.abs(c - 2) == 1 then
-                local ex = side < 0 and k.x + k.w or k.x
-                pts = { { sx, py }, { ex, py }, { ex, py }, { ex, py }, { ex, py } }
-            else
-                -- the far bank of the row: out to the gap beside the core, up the channel, down into it
-                local gx = side < 0 and x0 + 2 * cw or x0 + 3 * cw
-                local yy = top_ch - 8
-                pts = { { sx, py }, { gx, py }, { gx, yy }, { bx, yy }, { bx, k.y } }
-            end
-        end
-        B.banks[b] = { x = k.x, y = k.y, w = k.w, h = k.h, pts = pts }
+function M.ring(P)
+    local cw = math.min(620, P.w * 0.44)
+    local chh = cw * 9 / 16 + 74                        -- the die and, under it, its palette and name
+    local core = { x = P.x + (P.w - cw) / 2, y = P.y + (P.h - chh) / 2, w = cw, h = chh }
+    local kw = math.min(150, (P.w - 80 - 5 * 16) / 6)    -- a chip
+    local kh = kw * 9 / 16
+    local chips = {}
+    local function route(pts) return pts end
+    -- above and below: six in a row, a trace down (or up) into the core's edge, spread along it
+    local rx0 = P.x + (P.w - (6 * kw + 5 * 16)) / 2
+    for i = 0, 5 do
+        local x = rx0 + i * (kw + 16)
+        local tx = core.x + 30 + i * (core.w - 60) / 5        -- where it lands on the core
+        local top = { x = x, y = P.y + 24, w = kw, h = kh }
+        local my = top.y + kh + (core.y - (top.y + kh)) * (0.35 + 0.05 * math.abs(i - 2.5))
+        top.pts = route({ { x + kw / 2, top.y + kh }, { x + kw / 2, my }, { tx, my }, { tx, core.y } })
+        chips[#chips + 1] = top
+        local bot = { x = x, y = P.y + P.h - 24 - kh, w = kw, h = kh }
+        local by = core.y + core.h + (bot.y - (core.y + core.h)) * (0.65 - 0.05 * math.abs(i - 2.5))
+        bot.pts = route({ { x + kw / 2, bot.y }, { x + kw / 2, by }, { tx, by }, { tx, core.y + core.h } })
+        chips[#chips + 1] = bot
     end
-    return B
-end
--- Where chip `slot` (0..5) of a bank sits: three across, two down, under the bank's label.
-function M.chip_box(bank, slot)
-    local cwid = (bank.w - 28) / 3
-    local chei = cwid * 0.62
-    local col, row = slot % 3, math.floor(slot / 3)
-    return bank.x + 10 + col * (cwid + 4), bank.y + 40 + row * (chei + 22), cwid, chei
-end
--- The lit route from the core to one chip (six points), square all the way: the bank's trace, then
--- along the channel to above (or below) the chip and straight into it — or, for a bank beside the core,
--- along its edge to the chip's row and across.
-function M.route_to_chip(B, b, cx, cy, cw, chh)
-    local k = B.banks[b]
-    local P = k.pts
-    local mx = cx + cw / 2
-    local last = P[5]
-    if math.abs(last[2] - (k.y + k.h)) < 0.5 then          -- arrives at the bank's foot
-        return { P[1], P[2], { mx, P[3][2] }, { mx, P[4][2] }, { mx, last[2] }, { mx, cy + chh + 5 } }
-    elseif math.abs(last[2] - k.y) < 0.5 then              -- at its head
-        return { P[1], P[2], P[3], { mx, P[4][2] }, { mx, last[2] }, { mx, cy - 5 } }
+    -- the sides: four down each, a trace across into the core
+    local band_top = P.y + 24 + kh + 34
+    local band_h = (P.y + P.h - 24 - kh - 34) - band_top
+    for i = 0, 3 do
+        local y = band_top + (band_h - 4 * kh) / 5 * (i + 1) + i * kh
+        local ty = core.y + 24 + i * (core.h - 48) / 3
+        local L = { x = P.x + 28, y = y, w = kw, h = kh }
+        local lx = L.x + kw + (core.x - (L.x + kw)) * (0.4 + 0.08 * i)
+        L.pts = route({ { L.x + kw, y + kh / 2 }, { lx, y + kh / 2 }, { lx, ty }, { core.x, ty } })
+        chips[#chips + 1] = L
+        local R = { x = P.x + P.w - 28 - kw, y = y, w = kw, h = kh }
+        local rx = R.x - (R.x - (core.x + core.w)) * (0.4 + 0.08 * i)
+        R.pts = route({ { R.x, y + kh / 2 }, { rx, y + kh / 2 }, { rx, ty }, { core.x + core.w, ty } })
+        chips[#chips + 1] = R
     end
-    -- at its side: down (or up) its edge to the chip's middle, then across into it
-    local my = cy + chh / 2
-    local into = last[1] <= k.x + 0.5 and cx or cx + cw
-    return { P[1], P[2], { last[1], P[2][2] }, { last[1], my }, { into, my }, { into, my } }
+    return { core = core, chips = chips, panel = P }
 end
 
 -- The lengths along a trace (cumulative, for the pulse that runs it).

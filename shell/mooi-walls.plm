@@ -274,15 +274,22 @@ scene Walls {
     fact wh_range = 3            // the top list's range: 1d 3d 1w 1M 3M 6M 1y
     model chips max 25 { cr: number; cg: number; cb: number }
     // ── The circuit board (D147): banks of chips round a core, copper traces between them ──
-    model banks max 14 { x: number; y: number; w: number; h: number; name: text; n: text; lit: bool }
-    model traces max 14 { x0: number; y0: number; x1: number; y1: number; x2: number; y2: number; x3: number; y3: number; x4: number; y4: number; lit: bool }
-    model cchips max 84 { pic: image 320, 180; x: number; y: number; w: number; h: number; live: bool; on: bool; sel: bool; bank: number }
-    // the core's box, and the route lit to the chosen chip (six points, their lengths along it)
-    fact cox = 816
-    fact coy = 442
-    fact cow = 296
-    fact coh = 256
+    // the panel the orbit and the board sit in (D149: not the whole screen)
+    fact pnx = 240
+    fact pny = 160
+    fact pnw = 1440
+    fact pnh = 820
+    // the board's twenty chips round the core, each on its square trace (four points)
+    model ctr max 20 { x0: number; y0: number; x1: number; y1: number; x2: number; y2: number; x3: number; y3: number; lit: bool }
+    model cchips max 20 { pic: image 320, 180; x: number; y: number; w: number; h: number; live: bool; on: bool; sel: bool }
+    fact cox = 650
+    fact coy = 300
+    fact cow = 620
+    fact coh = 420
     fact core_on = false
+    fact cpage = 0
+    fact cpages = 1
+    // the lit route to the chosen chip (four points, their lengths along it), and its signal
     fact a0x = 0
     fact a0y = 0
     fact a1x = 0
@@ -291,18 +298,22 @@ scene Walls {
     fact a2y = 0
     fact a3x = 0
     fact a3y = 0
-    fact a4x = 0
-    fact a4y = 0
-    fact a5x = 0
-    fact a5y = 0
     fact al1 = 1
     fact al2 = 1
     fact al3 = 1
-    fact al4 = 1
-    fact al5 = 1
     fact pulse_n = 0
+    // the chosen picture morphing from its chip into the core (`morph_n` counts the choices), the
+    // one it replaces fading under it; a new page spreads out of the core (`page_n`)
+    fact morph_n = 0
+    fact page_n = 0
+    fact gx = 0
+    fact gy = 0
+    fact gw = 100
+    fact gh = 56
     text core_pic = ""
-    image core = from core_pic, 320, 180
+    text core_old = ""
+    image core = from core_pic, 0, 0
+    image core_prev = from core_old, 0, 0
     // Wallhaven's pictures on the orbit (no dots image for them): unit places before the turn, colour
     model whdot max 240 { x: number; y: number; cr: number; cg: number; cb: number }
     text wl_query = ""
@@ -317,7 +328,11 @@ scene Walls {
     model strip max 32 { pic: image 320, 180; k: number; live: bool; on: bool }
     // the orbit's swollen ones: the nearest to the pointer, where they sit on the wheel (unit radius,
     // before the turn), and how near (`r`, 1 the nearest)
-    model orb max 24 { pic: image 320, 180; ux: number; uy: number; r: number; live: bool; on: bool }
+    // the orbit's results: the pictures nearest the dial's point, a grid to pick from
+    model orb max 12 { pic: image 320, 180; x: number; y: number; w: number; h: number; live: bool; on: bool; sel: bool }
+    fact o_rx = 0                // the dial's point (screen), and whether it is locked by a press
+    fact o_ry = 0
+    fact o_lock = false
     // the palette the picture would give (Matugen's roles: primary, secondary, tertiary, surface…)
     model pal max 6 { cr: number; cg: number; cb: number }
 
@@ -337,7 +352,10 @@ scene Walls {
     event wl_whrange ->          // the top list's next range
     event wl_csel ->             // the circuit board: chip n under the pointer
     event wl_cwear ->            // the circuit board: wear chip n
-    event wl_bpage ->            // a bank paged: bank + 100 when the wheel went up
+    event wl_bpage ->            // the board paged: 1 on, -1 back
+    event wl_opick ->            // the orbit's grid: picture n under the pointer
+    event wl_owear ->            // the orbit's grid: wear picture n
+    event wl_olock ->            // the orbit's dial: hold the point (or let it go)
 
     spring wl.ent = 260, 30
     spring wl.slide = 210, 26
@@ -359,6 +377,10 @@ scene Walls {
     // the pulse: it runs the lit route once each time a chip is chosen (`pulse_n` counts them)
     prop pt = 0 ~650ms
     follow pt = pulse_n
+    prop mt = 0 ~460ms
+    follow mt = morph_n
+    prop rpt = 0 ~520ms
+    follow rpt = page_n
     prop pvo = 0 ~200ms
     follow pvo = if(prev and has_prev, 1, 0)
 
@@ -380,7 +402,7 @@ scene Walls {
         let cx = sw / 2
 
         // the veil: the desktop dimmed under the picker, lifted while the preview is up
-        box { from: 0, 0; size: sw, sh; color: fl.ground; opacity: veil * ent * (1 - pvo) }
+        box { from: 0, 0; size: sw, sh; color: fl.ground; opacity: veil * ent * (1 - pvo) * (1 - 0.4 * max(s1, s2)) }
         zone box away { from: 0, 0; size: sw, sh; role: region; label: "Close the picker" }
         on press away { emit wl_close }
         image pv { at: 0, 0; size: sw, sh; opacity: pvo * ent; show: pvo > 0.01 }
@@ -526,156 +548,189 @@ scene Walls {
                 text "NOTHING HERE YET · THE FOLDERS ARE BEING READ" { at: cx, y0; anchor: center; size: 12; family: "Share Tech Mono"; color: fl.muted; show: count == 0 }
             }
 
-            // ── The colour orbit ──
+            // ── The panel the orbit and the board sit in (D149): the desktop shows round it ──
+            group {
+                show: s1 > 0.02 or s2 > 0.02
+                opacity: max(s1, s2)
+                body {
+                    gradient: 0, pny to 0, pny + pnh, fl.hull_raised, fl.hull
+                    shadow: 0, 14, 40, 50%
+                    box { from: pnx, pny; size: pnw, pnh; corner: 8 }
+                }
+                box { from: pnx, pny; size: pnw, pnh; corner: 8; stroke: 1; color: fl.trace }
+                group {
+                    glow: 5, 0.5 * st_glow, fl.phos
+                    line { from: pnx + 24, pny + 0.5; to: pnx + pnw - 24, pny + 0.5; width: 1.4; color: fl.phos; opacity: 0.8 }
+                }
+                zone box pnz { from: pnx, pny; size: pnw, pnh; role: region; label: "The picker" }
+                on scroll pnz { emit wl_bpage(if(wheel > 0, -1, 1)) }
+            }
+
+            // ── The colour orbit: a dial of every picture's colour, and a grid to pick from ──
             group {
                 show: s1 > 0.02
                 opacity: s1
-                scale: 0.94 + 0.06 * s1
-                pivot: cx, sh / 2 + 20
-                let ocx = cx
-                let ocy = sh / 2 + 20
-                let rr = sh * 0.35 * zoom
-                // the wheel: every picture a dot of its colour (one image, tools/wallindex.py), turned
+                move: 0, (1 - s1) * 30
+                let rr = pnh / 2 - 46
+                let ocx = pnx + 40 + rr
+                let ocy = pny + pnh / 2
                 group {
                     rotate: spin
                     pivot: ocx, ocy
-                    image orbit { at: ocx - rr, ocy - rr; size: rr * 2, rr * 2; opacity: if(or_near, 0.55, 0.9); show: has_orbit and src != 3 }
+                    image orbit { at: ocx - rr, ocy - rr; size: rr * 2, rr * 2; opacity: 0.95; show: has_orbit and src != 3 }
                 }
                 for q in whdot {
                     ellipse { at: ocx + rr * (q.x * cos(spin) - q.y * sin(spin)), ocy + rr * (q.x * sin(spin) + q.y * cos(spin)); radius: 6
-                              color: rgb(q.cr, q.cg, q.cb); opacity: if(or_near, 0.55, 0.95) }
+                              color: rgb(q.cr, q.cg, q.cb); opacity: 0.95 }
                 }
-                ellipse { at: ocx, ocy; radius: rr + 10; stroke: 1; color: fl.trace_dim; opacity: 0.6 }
+                ellipse { at: ocx, ocy; radius: rr + 10; stroke: 1; color: fl.trace_dim; opacity: 0.7 }
                 ellipse { at: ocx, ocy; radius: rr * 0.27; stroke: 1; color: fl.trace_dim; opacity: 0.5 }
-                // where the pointer is, a cell at a time (the logic finds the pictures nearest it); the swollen
-                // ones have no zones of their own, so moving over them still moves the swell, and a
-                // press wears the nearest (the first of `orb`)
-                zone box ogrid { from: ocx - rr, ocy - rr; size: rr * 2, rr * 2; role: region; label: "The colour orbit" }
-                on scroll ogrid { emit wl_spin(wheel) }
+                text "THE DIAL: POINT AT A COLOUR · A PRESS HOLDS IT · THE WHEEL TURNS IT" { at: ocx, pny + 22; anchor: center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                // the dial's point: a reticle where the grid's pictures come from
+                group {
+                    show: or_near
+                    glow: 6, 0.7 * st_glow, if(o_lock, fl.ember, fl.phos)
+                    ellipse { at: o_rx, o_ry; radius: 15; stroke: 1.6; color: if(o_lock, fl.ember, fl.phos) }
+                    line { from: o_rx - 22, o_ry; to: o_rx - 9, o_ry; width: 1.2; color: if(o_lock, fl.ember, fl.phos) }
+                    line { from: o_rx + 9, o_ry; to: o_rx + 22, o_ry; width: 1.2; color: if(o_lock, fl.ember, fl.phos) }
+                    line { from: o_rx, o_ry - 22; to: o_rx, o_ry - 9; width: 1.2; color: if(o_lock, fl.ember, fl.phos) }
+                    line { from: o_rx, o_ry + 9; to: o_rx, o_ry + 22; width: 1.2; color: if(o_lock, fl.ember, fl.phos) }
+                }
                 repeat gr in 0..20 {
                     repeat gc in 0..20 {
                         zone box oc.$gr.$gc { from: ocx - rr + gc * rr / 10, ocy - rr + gr * rr / 10; size: rr / 10, rr / 10 }
                         on hover oc.$gr.$gc for 30ms { emit wl_cell(gr * 20 + gc) }
-                        on press oc.$gr.$gc { emit wl_wear(0) }
+                        on press oc.$gr.$gc { emit wl_olock(gr * 20 + gc) }
                         on scroll oc.$gr.$gc { emit wl_spin(wheel) }
                     }
                 }
-                // the nearest ones, swollen: the farther first, so the nearest is on top
-                for o in orb {
-                    let ox = ocx + rr * (o.ux * cos(spin) - o.uy * sin(spin))
-                    let oy = ocy + rr * (o.ux * sin(spin) + o.uy * cos(spin))
-                    let ow = 70 + 150 * o.r * o.r
-                    let oh = ow * 9 / 16
-                    group {
-                        z: o.r * 10
-                        opacity: 0.35 + 0.65 * o.r
-                        group {
-                            clip box { from: ox - ow / 2, oy - oh / 2; size: ow, oh; corner: 3 }
-                            box { from: ox - ow / 2, oy - oh / 2; size: ow, oh; color: fl.well }
-                            image o.pic { at: ox - ow / 2, oy - oh / 2; size: ow, oh }
-                        }
-                        box { from: ox - ow / 2, oy - oh / 2; size: ow, oh; corner: 3; stroke: if(o.r > 0.99, 1.6, 1); color: if(o.on, fl.ember, if(o.r > 0.99, fl.phos, fl.trace_dim)) }
-                        text "LIVE" { at: ox + ow / 2 - 6, oy + oh / 2 - 8; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: o.live and o.r > 0.6 }
-                    }
-                }
-                // the middle: the palette the nearest one would give the shell, and its name
+                // the right: the picture in view, large, its palette and name; under it the grid
+                let ox0 = pnx + 80 + rr * 2
+                let ow = pnx + pnw - 36 - ox0
+                let oh = ow * 9 / 16
                 group {
-                    show: pal_n > 0 and or_near
-                    for p in pal {
-                        let pa = p.index * 60 - 90
-                        ellipse { at: ocx + cos(pa) * 34, ocy + sin(pa) * 34; radius: 15; color: rgb(p.cr, p.cg, p.cb) }
-                        ellipse { at: ocx + cos(pa) * 34, ocy + sin(pa) * 34; radius: 15; stroke: 1; color: fl.trace_dim }
-                    }
+                    clip box { from: ox0, pny + 36; size: ow, oh; corner: 4 }
+                    box { from: ox0, pny + 36; size: ow, oh; color: fl.well }
+                    image core { at: ox0, pny + 36; size: ow, oh; fit: cover; show: core_on }
                 }
-                text wl_name { at: ocx, ocy + rr + 30; anchor: center; align: center; size: 13; weight: 700; family: "Exo 2"; color: fl.phos; width: 900; lines: 1; show: or_near }
-                text wl_kind { at: ocx, ocy + rr + 52; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 900; lines: 1; show: or_near }
-                text "THE POINTER SWELLS THEM  ·  A PRESS WEARS ONE  ·  THE WHEEL TURNS IT  ·  SPACE PREVIEWS  ·  TAB THE CIRCUIT BOARD" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
+                box { from: ox0, pny + 36; size: ow, oh; corner: 4; stroke: 1.2; color: if(core_on, fl.phos, fl.trace_dim) }
+                text "POINT AT A COLOUR ON THE DIAL" { at: ox0 + ow / 2, pny + 36 + oh / 2; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not core_on }
+                for p in pal {
+                    box { from: ox0 + p.index * (ow / 6), pny + 46 + oh; size: ow / 6 - 6, 12; corner: 2; color: rgb(p.cr, p.cg, p.cb); show: core_on and pal_n > 0 }
+                }
+                text wl_name { at: ox0, pny + 80 + oh; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: fl.phos; width: ow; lines: 1; show: core_on }
+                text wl_kind { at: ox0, pny + 100 + oh; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: ow; lines: 1; show: core_on }
+                for o in orb {
+                    group {
+                        clip box { from: o.x, o.y; size: o.w, o.h; corner: 3 }
+                        box { from: o.x, o.y; size: o.w, o.h; color: fl.well }
+                        image o.pic { at: o.x, o.y; size: o.w, o.h; fit: cover; opacity: if(o.sel, 1, 0.82) }
+                    }
+                    box { from: o.x, o.y; size: o.w, o.h; corner: 3; stroke: if(o.sel, 1.8, 1); color: if(o.on, fl.ember, if(o.sel, fl.phos, fl.trace_dim)) }
+                    text "LIVE" { at: o.x + o.w - 6, o.y + o.h - 8; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: o.live }
+                    zone box oz { from: o.x, o.y; size: o.w, o.h; cursor: pointer; role: item; label: "Wear this wallpaper" }
+                    on hover oz for 40ms { emit wl_opick(o.index) }
+                    on press oz { emit wl_owear(o.index) }
+                }
+                text "HOVER ONE TO SEE IT  ·  A PRESS WEARS THAT ONE  ·  TAB THE CIRCUIT BOARD" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
             }
 
-            // ── The circuit board ──
+            // ── The circuit board: the core, and the pictures round it on its traces ──
             group {
                 show: s2 > 0.02
                 opacity: s2
-                move: 0, (1 - s2) * 40
-                // copper: a trace from the core to every bank, a via where it lands
-                for t in traces {
-                    path { move t.x0, t.y0; line t.x1, t.y1; line t.x2, t.y2; line t.x3, t.y3; line t.x4, t.y4
-                           stroke: if(t.lit, 2.2, 1.3); color: if(t.lit, fl.phos, fl.trace_dim); opacity: if(t.lit, 0.95, 0.6) }
-                    ellipse { at: t.x4, t.y4; radius: 3.5; color: if(t.lit, fl.phos, fl.trace) }
-                    ellipse { at: t.x4, t.y4; radius: 1.5; color: fl.ground }
-                    ellipse { at: t.x0, t.y0; radius: 2.5; color: fl.trace }
+                move: 0, (1 - s2) * 30
+                let ccx = cox + cow / 2
+                let ccy = coy + coh / 2
+                let rp = smooth(0, 1, clamp(rpt - (page_n - 1), 0, 1))    // a new page spreading out of the core
+                // copper: every chip's trace into the core, a via where it lands
+                group {
+                    opacity: rp
+                    for t in ctr {
+                        path { move t.x0, t.y0; line t.x1, t.y1; line t.x2, t.y2; line t.x3, t.y3
+                               stroke: if(t.lit, 2.2, 1.3); color: if(t.lit, fl.phos, fl.trace_dim); opacity: if(t.lit, 0.95, 0.65) }
+                        ellipse { at: t.x3, t.y3; radius: 3.5; color: if(t.lit, fl.phos, fl.trace) }
+                        ellipse { at: t.x3, t.y3; radius: 1.5; color: fl.ground }
+                        ellipse { at: t.x1, t.y1; radius: 1.8; color: fl.trace }
+                        ellipse { at: t.x2, t.y2; radius: 1.8; color: fl.trace }
+                    }
                 }
-                // the banks: silkscreened boards, screw holes in their corners
-                for b in banks {
-                    box { from: b.x, b.y; size: b.w, b.h; corner: 4; color: fl.hull; opacity: 0.82 }
-                    box { from: b.x, b.y; size: b.w, b.h; corner: 4; stroke: if(b.lit, 1.6, 1); color: if(b.lit, fl.phos, fl.trace_dim) }
-                    ellipse { at: b.x + 7, b.y + 7; radius: 2.5; stroke: 1; color: fl.steel_500 }
-                    ellipse { at: b.x + b.w - 7, b.y + 7; radius: 2.5; stroke: 1; color: fl.steel_500 }
-                    ellipse { at: b.x + 7, b.y + b.h - 7; radius: 2.5; stroke: 1; color: fl.steel_500 }
-                    ellipse { at: b.x + b.w - 7, b.y + b.h - 7; radius: 2.5; stroke: 1; color: fl.steel_500 }
-                    text b.name { at: b.x + 16, b.y + 20; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(b.lit, fl.phos, fl.trace_lit) }
-                    text b.n { at: b.x + b.w - 16, b.y + 20; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                    line { from: b.x + 16, b.y + 30; to: b.x + b.w - 16, b.y + 30; width: 1; color: fl.trace_dim; opacity: 0.6 }
-                }
-                // the chips: a picture in an IC package, pins along its long sides, a notch at one end
+                // the chips, spread out of the core as a page comes in
                 for c in cchips {
+                    let kx = ccx + (c.x - ccx) * rp
+                    let ky = ccy + (c.y - ccy) * rp
+                    let kw = c.w * (0.35 + 0.65 * rp)
+                    let kh = c.h * (0.35 + 0.65 * rp)
                     group {
-                        clip box { from: c.x + 3, c.y + 3; size: c.w - 6, c.h - 6; corner: 1 }
-                        box { from: c.x, c.y; size: c.w, c.h; color: fl.well }
-                        image c.pic { at: c.x + 3, c.y + 3; size: c.w - 6, c.h - 6; opacity: if(c.sel, 1, 0.78) }
+                        opacity: rp
+                        group {
+                            clip box { from: kx + 3, ky + 3; size: kw - 6, kh - 6; corner: 1 }
+                            box { from: kx, ky; size: kw, kh; color: fl.well }
+                            image c.pic { at: kx + 3, ky + 3; size: kw - 6, kh - 6; fit: cover; opacity: if(c.sel, 1, 0.8) }
+                        }
+                        box { from: kx, ky; size: kw, kh; corner: 2; stroke: if(c.sel, 1.8, 1); color: if(c.on, fl.ember, if(c.sel, fl.phos, fl.steel_500)) }
+                        ellipse { at: kx + kw / 2, ky; radius: 3; color: fl.hull }
+                        repeat q in 0..6 {
+                            box { from: kx + 8 + q * (kw - 16) / 5 - 1.5, ky - 5; size: 3, 5; color: if(c.sel, fl.phos, fl.steel_300); opacity: 0.8 }
+                            box { from: kx + 8 + q * (kw - 16) / 5 - 1.5, ky + kh; size: 3, 5; color: if(c.sel, fl.phos, fl.steel_300); opacity: 0.8 }
+                        }
+                        text "LIVE" { at: kx + kw - 5, ky + kh - 8; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: c.live }
                     }
-                    box { from: c.x, c.y; size: c.w, c.h; corner: 2; stroke: if(c.sel, 1.8, 1); color: if(c.on, fl.ember, if(c.sel, fl.phos, fl.steel_500)) }
-                    ellipse { at: c.x + c.w / 2, c.y; radius: 3; color: fl.hull }
-                    repeat q in 0..5 {
-                        box { from: c.x + 8 + q * (c.w - 16) / 4 - 1.5, c.y - 5; size: 3, 5; color: if(c.sel, fl.phos, fl.steel_300); opacity: 0.8 }
-                        box { from: c.x + 8 + q * (c.w - 16) / 4 - 1.5, c.y + c.h; size: 3, 5; color: if(c.sel, fl.phos, fl.steel_300); opacity: 0.8 }
-                    }
-                    text "LIVE" { at: c.x + c.w - 5, c.y + c.h - 8; anchor: right center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: c.live }
                     zone box cz { from: c.x, c.y - 5; size: c.w, c.h + 10; cursor: pointer; role: item; label: "A wallpaper" }
                     on hover cz for 40ms { emit wl_csel(c.index) }
                     on press cz { emit wl_cwear(c.index) }
-                    on scroll cz { emit wl_bpage(c.bank + if(wheel > 0, 100, 0)) }
                 }
-                // the lit route to the chosen chip, and the signal running it
+                // the lit route and its signal
                 group {
                     show: core_on
                     glow: 8, 0.6 * st_glow, fl.phos
-                    path { move a0x, a0y; line a1x, a1y; line a2x, a2y; line a3x, a3y; line a4x, a4y; line a5x, a5y; stroke: 2; color: fl.phos }
+                    path { move a0x, a0y; line a1x, a1y; line a2x, a2y; line a3x, a3y; stroke: 2.2; color: fl.phos }
                 }
                 let ph = clamp(pt - (pulse_n - 1), 0, 1)
-                let pd = ph * al5
-                let qx = if(pd < al1, a0x + (a1x - a0x) * pd / max(al1, 1), if(pd < al2, a1x + (a2x - a1x) * (pd - al1) / max(al2 - al1, 1), if(pd < al3, a2x + (a3x - a2x) * (pd - al2) / max(al3 - al2, 1), if(pd < al4, a3x + (a4x - a3x) * (pd - al3) / max(al4 - al3, 1), a4x + (a5x - a4x) * (pd - al4) / max(al5 - al4, 1)))))
-                let qy = if(pd < al1, a0y + (a1y - a0y) * pd / max(al1, 1), if(pd < al2, a1y + (a2y - a1y) * (pd - al1) / max(al2 - al1, 1), if(pd < al3, a2y + (a3y - a2y) * (pd - al2) / max(al3 - al2, 1), if(pd < al4, a3y + (a4y - a3y) * (pd - al3) / max(al4 - al3, 1), a4y + (a5y - a4y) * (pd - al4) / max(al5 - al4, 1)))))
+                let pd = ph * al3
+                let qx = if(pd < al1, a0x + (a1x - a0x) * pd / max(al1, 1), if(pd < al2, a1x + (a2x - a1x) * (pd - al1) / max(al2 - al1, 1), a2x + (a3x - a2x) * (pd - al2) / max(al3 - al2, 1)))
+                let qy = if(pd < al1, a0y + (a1y - a0y) * pd / max(al1, 1), if(pd < al2, a1y + (a2y - a1y) * (pd - al1) / max(al2 - al1, 1), a2y + (a3y - a2y) * (pd - al2) / max(al3 - al2, 1)))
                 group {
                     show: core_on and ph < 0.999
                     glow: 12, 0.9 * st_glow, fl.flare
                     ellipse { at: qx, qy; radius: 4.5; color: fl.flare }
                 }
-                // the core: a processor package, pins on every side, the chosen picture on its die
-                box { from: cox, coy; size: cow, coh; corner: 5; color: fl.ground; opacity: 0.92 }
-                box { from: cox, coy; size: cow, coh; corner: 5; stroke: 1.6; color: if(core_on, fl.phos, fl.trace) }
+                // the core: a processor package, pins on every side, the chosen picture large on its die
+                let dw = cow - 28
+                let dh = dw * 9 / 16
+                box { from: cox, coy; size: cow, coh; corner: 6; color: fl.ground; opacity: 0.94 }
+                box { from: cox, coy; size: cow, coh; corner: 6; stroke: 1.6; color: if(core_on, fl.phos, fl.trace) }
+                repeat q in 0..20 {
+                    box { from: cox + 16 + q * (cow - 32) / 19 - 2, coy - 7; size: 4, 7; color: fl.steel_300; opacity: 0.7 }
+                    box { from: cox + 16 + q * (cow - 32) / 19 - 2, coy + coh; size: 4, 7; color: fl.steel_300; opacity: 0.7 }
+                }
                 repeat q in 0..14 {
-                    box { from: cox + 14 + q * (cow - 28) / 13 - 2, coy - 7; size: 4, 7; color: fl.steel_300; opacity: 0.7 }
-                    box { from: cox + 14 + q * (cow - 28) / 13 - 2, coy + coh; size: 4, 7; color: fl.steel_300; opacity: 0.7 }
+                    box { from: cox - 7, coy + 16 + q * (coh - 32) / 13 - 2; size: 7, 4; color: fl.steel_300; opacity: 0.7 }
+                    box { from: cox + cow, coy + 16 + q * (coh - 32) / 13 - 2; size: 7, 4; color: fl.steel_300; opacity: 0.7 }
                 }
-                repeat q in 0..10 {
-                    box { from: cox - 7, coy + 14 + q * (coh - 28) / 9 - 2; size: 7, 4; color: fl.steel_300; opacity: 0.7 }
-                    box { from: cox + cow, coy + 14 + q * (coh - 28) / 9 - 2; size: 7, 4; color: fl.steel_300; opacity: 0.7 }
-                }
-                text "CORE · MOOI" { at: cox + 14, coy + 16; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.phos }
                 group {
-                    clip box { from: cox + 14, coy + 28; size: cow - 28, (cow - 28) * 9 / 16; corner: 2 }
-                    box { from: cox + 14, coy + 28; size: cow - 28, (cow - 28) * 9 / 16; color: fl.well }
-                    image core { at: cox + 14, coy + 28; size: cow - 28, (cow - 28) * 9 / 16; show: core_on }
+                    clip box { from: cox + 14, coy + 14; size: dw, dh; corner: 3 }
+                    box { from: cox + 14, coy + 14; size: dw, dh; color: fl.well }
+                    let me = smooth(0, 1, clamp(mt - (morph_n - 1), 0, 1))
+                    image core_prev { at: cox + 14, coy + 14; size: dw, dh; fit: cover; opacity: 1 - me; show: me < 0.999 }
+                    image core { at: cox + 14, coy + 14; size: dw, dh; fit: cover; opacity: me; show: core_on }
                 }
-                text "HOVER A CHIP" { at: cox + cow / 2, coy + 28 + (cow - 28) * 9 / 32; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: not core_on }
-                // the palette it would give, as lit pads along the die's foot
+                text "CORE · HOVER A CHIP" { at: cox + cow / 2, coy + 14 + dh / 2; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not core_on }
                 for p in pal {
-                    box { from: cox + 14 + p.index * ((cow - 28) / 6), coy + 40 + (cow - 28) * 9 / 16; size: (cow - 28) / 6 - 4, 12; corner: 1; color: rgb(p.cr, p.cg, p.cb); show: core_on and pal_n > 0 }
+                    box { from: cox + 14 + p.index * (dw / 6), coy + 24 + dh; size: dw / 6 - 5, 12; corner: 1; color: rgb(p.cr, p.cg, p.cb); show: core_on and pal_n > 0 }
                 }
-                text wl_name { at: cox + cow / 2, coy + coh - 30; anchor: center; align: center; size: 11; weight: 700; family: "Exo 2"; color: fl.phos; width: cow - 20; lines: 1; show: core_on }
-                text wl_kind { at: cox + cow / 2, coy + coh - 13; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: cow - 20; lines: 1; show: core_on }
-                text "HOVER A CHIP  ·  A PRESS WEARS IT  ·  THE WHEEL PAGES A BANK  ·  ← → ↑↓ ROUTE  ·  TAB THE STRIP" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
+                text wl_name { at: cox + cow / 2, coy + coh - 30; anchor: center; align: center; size: 13; weight: 700; family: "Exo 2"; color: fl.phos; width: cow - 28; lines: 1; show: core_on }
+                text wl_kind { at: cox + cow / 2, coy + coh - 12; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: cow - 28; lines: 1; show: core_on }
+                // the chosen picture on its way from its chip to the die
+                let mm = smooth(0, 1, clamp(mt - (morph_n - 1), 0, 1))
+                group {
+                    show: core_on and mm < 0.999
+                    opacity: 1 - mm * 0.6
+                    glow: 10, 0.6 * st_glow, fl.phos
+                    image core { at: gx + (cox + 14 - gx) * mm, gy + (coy + 14 - gy) * mm; size: gw + (dw - gw) * mm, gh + (dh - gh) * mm; fit: cover }
+                }
+                text "PAGE {cpage + 1, 0} OF {cpages, 0}" { at: pnx + pnw - 24, pny + pnh - 12; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text "HOVER A CHIP  ·  A PRESS WEARS IT  ·  THE WHEEL TURNS THE PAGE  ·  ← → ROUTE  ·  TAB THE STRIP" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
             }
         }
     }
@@ -690,8 +745,8 @@ scene Walls {
     on key Tab while not typing { emit wl_view(if(view == 2, 0, view + 1)) }
     on key Left while not typing { emit wl_step(-1) }
     on key Right while not typing { emit wl_step(1) }
-    on key Up while not typing and view == 2 { emit wl_step(-3) }
-    on key Down while not typing and view == 2 { emit wl_step(3) }
+    on key Up while not typing and view == 2 { emit wl_bpage(-1) }
+    on key Down while not typing and view == 2 { emit wl_bpage(1) }
     on key Shift+Left while not typing { emit wl_step(-10) }
     on key Shift+Right while not typing { emit wl_step(10) }
     on key Home while not typing { emit wl_step(-100000) }
