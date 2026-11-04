@@ -3863,6 +3863,36 @@ do
         eq(#W.filter(items, "all", "", 8, 2), 1, "green and dark"); eq(#W.filter(items, "live", "", W.GREY_CHIP), 1)
         eq(#W.filter(items, "all"), 3, "no filter")
     end)
+    test("the circuit board: banks by colour, traces in the gaps", function()
+        eq(W.bank_of({ kind = "still", hue = 0 }), 1, "reds"); eq(W.bank_of({ kind = "still", hue = 350 }), 1)
+        eq(W.bank_of({ kind = "still", hue = 215 }), 8, "azures"); eq(W.bank_of({ kind = "still" }), 13, "greys")
+        eq(W.bank_of({ kind = "video", hue = 10 }), 14, "live")
+        local bk = W.banks({ { kind = "still", hue = 0 }, { kind = "video" }, { kind = "still", hue = 2 } })
+        eq(#bk[1], 2); eq(#bk[14], 1); eq(#bk, 14)
+        local B = W.board(1920, 1047)
+        eq(#B.banks, 14)
+        local core = B.core
+        for b, k in ipairs(B.banks) do
+            eq(#k.pts, 5, "five points " .. b)
+            -- no bank overlaps the core, and each trace starts on the core's edge
+            eq(k.x + k.w <= core.x or k.x >= core.x + core.w or k.y + k.h <= core.y or k.y >= core.y + core.h, true, "apart " .. b)
+            local p = k.pts[1]
+            eq(p[1] >= core.x - 0.01 and p[1] <= core.x + core.w + 0.01 and p[2] >= core.y - 0.01 and p[2] <= core.y + core.h + 0.01, true, "from the core " .. b)
+        end
+        local x, y, w, h = W.chip_box(B.banks[1], 5)
+        eq(x + w <= B.banks[1].x + B.banks[1].w and y + h <= B.banks[1].y + B.banks[1].h, true, "the last chip inside its bank")
+        local L = W.trace_lengths({ { 0, 0 }, { 3, 4 }, { 3, 4 }, { 3, 10 } }); eq(L[1], 5); eq(L[3], 11)
+        -- every lit route is square: each step along x or along y, never both
+        for b = 1, 14 do
+            local cx, cy, cw, chh = W.chip_box(B.banks[b], 4)
+            local R = W.route_to_chip(B, b, cx, cy, cw, chh)
+            eq(#R, 6)
+            for i = 2, 6 do
+                local dx, dy = math.abs(R[i][1] - R[i - 1][1]), math.abs(R[i][2] - R[i - 1][2])
+                eq(dx < 0.01 or dy < 0.01, true, string.format("bank %d step %d square", b, i))
+            end
+        end
+    end)
     test("Wallhaven: answers made safe, chips as its colours", function()
         local h, l = W.hex_hue("#cc0000"); eq(math.floor(h + 0.5), 0); eq(l > 0.3 and l < 0.5, true)
         eq((W.hex_hue("#999999")), nil, "grey"); eq((W.hex_hue("junk")), nil)

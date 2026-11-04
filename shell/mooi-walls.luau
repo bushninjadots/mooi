@@ -83,6 +83,8 @@ local place_of = {}            -- each picture's place on the orbit, as walls-or
 
 local show_dots, wh_thumbs     -- (below, with Wallhaven)
 local refilter                 -- (below, with the list)
+local show_circuit             -- (below, with the board)
+local wear, wh_fetch           -- (below)
 local want_pal                 -- (below, with the orbit) the palette of the picture in view
 -- Wallhaven, the fourth source (D147): its pages so far, the list's seed (random), the thumbnails
 local wh = { items = {}, page = 0, last = 1, seed = nil, busy = false, failed = false, keyed = false, gen = 0 }
@@ -221,6 +223,90 @@ local function show_orbit()
     want_pal(first)
 end
 
+-- ── The circuit board ──
+-- The board is laid out by lib/walls for the screen; each bank shows a page of six of its pictures.
+local SW, SH = 1920, 1047
+local board = walls.board(SW, SH)
+local bpage = {}                -- each bank's page (from 0)
+local chip_at = {}              -- the board's chips → indices into `list`
+local csel = -1                 -- the chosen chip (the model's index, from 0)
+local function set_route(bank, x, y, w, h)
+    local pts = walls.route_to_chip(board, bank, x, y, w, h)
+    local L = walls.trace_lengths(pts)
+    for i = 0, 5 do fact["a" .. i .. "x"], fact["a" .. i .. "y"] = pts[i + 1][1], pts[i + 1][2] end
+    for i = 1, 5 do fact["al" .. i] = math.max(1, L[i]) end
+end
+show_circuit = function()
+    if view ~= 2 then return end
+    local bk = walls.banks(list)
+    local brows, trows, crows = {}, {}, {}
+    chip_at = {}
+    local active = nil
+    for b, k in ipairs(board.banks) do
+        local n = #bk[b]
+        local pages = math.max(1, math.ceil(n / walls.CHIPS_PER_BANK))
+        bpage[b] = math.max(0, math.min(pages - 1, bpage[b] or 0))
+        for slot = 0, walls.CHIPS_PER_BANK - 1 do
+            local li = bk[b][bpage[b] * walls.CHIPS_PER_BANK + slot + 1]
+            if li then
+                local it = list[li]
+                local x, y, w, h = walls.chip_box(k, slot)
+                local idx = #crows
+                crows[#crows + 1] = { pic = it.thumb, x = x, y = y, w = w, h = h, live = walls.is_live(it.kind),
+                                      on = it.path == on_path, sel = idx == csel, bank = b - 1 }
+                chip_at[idx] = li
+                if idx == csel then active = { bank = b, x = x, y = y, w = w, h = h } end
+            end
+        end
+        brows[b] = { x = k.x, y = k.y, w = k.w, h = k.h, name = walls.BANK_NAMES[b],
+                     n = n == 0 and "EMPTY" or (pages > 1 and string.format("%d · %d/%d", n, bpage[b] + 1, pages) or tostring(n)),
+                     lit = active ~= nil and active.bank == b }
+        local P = k.pts
+        trows[b] = { x0 = P[1][1], y0 = P[1][2], x1 = P[2][1], y1 = P[2][2], x2 = P[3][1], y2 = P[3][2],
+                     x3 = P[4][1], y3 = P[4][2], x4 = P[5][1], y4 = P[5][2], lit = active ~= nil and active.bank == b }
+    end
+    model.banks, model.traces, model.cchips = brows, trows, crows
+    fact.cox, fact.coy, fact.cow, fact.coh = board.core.x, board.core.y, board.core.w, board.core.h
+    fact.core_on = active ~= nil
+    if active then
+        local it = list[chip_at[csel]]
+        set_route(active.bank, active.x, active.y, active.w, active.h)
+        text.core_pic = it.thumb
+        describe(it, chip_at[csel])
+        preview(it)
+        want_pal(it)
+    end
+    if src == 3 and wh_thumbs then wh_thumbs() end
+end
+local function choose_chip(i)
+    if chip_at[i] == nil then return end
+    if i ~= csel then fact.pulse_n = (tonumber(fact.pulse_n) or 0) + 1 end
+    csel = i
+    show_circuit()
+end
+on("wl_csel", function(v) choose_chip(math.floor(tonumber(v) or -1)) end)
+on("wl_cwear", function(v)
+    local li = chip_at[math.floor(tonumber(v) or -1)]
+    if li then wear(list[li]) end
+end)
+on("wl_bpage", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local b = (v % 100) + 1
+    bpage[b] = (bpage[b] or 0) + (v >= 100 and -1 or 1)
+    csel = -1
+    show_circuit()
+    if src == 3 then wh_fetch() end                    -- more of Wallhaven as the banks are paged
+end)
+run("hyprctl", { "monitors", "-j" }, function(out)
+    local ok, mons = pcall(json.decode, out or "")
+    local m = ok and type(mons) == "table" and mons[1] or nil
+    if type(m) == "table" and tonumber(m.width) and tonumber(m.height) then
+        SW, SH = tonumber(m.width) / (tonumber(m.scale) or 1), tonumber(m.height) / (tonumber(m.scale) or 1) - 33
+        board = walls.board(SW, SH)
+        show_circuit()
+    end
+end)
+
 -- ── Wallhaven ──
 -- The orbit has no dots image for it: up to 240 dots drawn as they come (their colour Wallhaven's own).
 show_dots = function()
@@ -232,7 +318,7 @@ show_dots = function()
     end
     model.whdot = rows
 end
-local function wh_fetch()
+wh_fetch = function()
     if wh.busy or wh.page >= wh.last then return end
     wh.busy, wh.failed = true, false
     say_line()
@@ -267,6 +353,7 @@ wh_thumbs = function()
     local first, last = walls.window(#list, at, 16)
     for k = first, last do want[#want + 1] = list[k] end
     for _, i in ipairs(near) do want[#want + 1] = list[i] end
+    if view == 2 then for _, li in pairs(chip_at) do want[#want + 1] = list[li] end end
     for _, it in ipairs(want) do
         if th_busy >= 2 then return end
         if it and it.thumb == "" and not th_tried[it.id] then
@@ -290,7 +377,7 @@ refilter = function()
         list = walls.filter(wh.items, "all", "", -1, light)
         places = walls.orbit(list, 0)
         at = walls.find(list, keep_path) or math.min(at, math.max(1, #list))
-        say_line(); show_strip(); show_orbit(); show_dots(); wh_thumbs()
+        say_line(); show_strip(); show_orbit(); show_dots(); show_circuit(); wh_thumbs()
         return
     end
     list = walls.filter(all, walls.SOURCES[src + 1], query, chip, light)
@@ -301,6 +388,7 @@ refilter = function()
     say_line()
     show_strip()
     show_orbit()
+    show_circuit()
 end
 
 local function load_index()
@@ -326,7 +414,7 @@ local function close()
 end
 on("wl_close", close)
 
-local function wear(it)
+wear = function(it)
     if not it then return end
     text.wl_line = (it.remote and "SAVING AND WEARING " or "WEARING ") .. string.upper(it.name) .. "…"
     local args = it.remote and { "wall", "wallhaven", "wear", it.id, it.url, "--transition", TR[trk + 1] }
@@ -337,14 +425,16 @@ local function wear(it)
 end
 on("wl_wear", function(v)
     v = math.floor(tonumber(v) or -1)
-    if view == 1 then wear(list[near[1] or 0]) else wear(list[at]) end
+    if view == 1 then wear(list[near[1] or 0])
+    elseif view == 2 then local li = chip_at[csel]; if li then wear(list[li]) end
+    else wear(list[at]) end
 end)
 
 on("wl_view", function(v)
-    view = math.floor(tonumber(v) or 0) == 1 and 1 or 0
+    view = math.max(0, math.min(2, math.floor(tonumber(v) or 0)))
     fact.view = view
     keep()
-    if view == 0 then show_strip() else show_orbit() end
+    if view == 0 then show_strip() elseif view == 1 then show_orbit() else show_circuit() end
 end)
 on("wl_src", function(v)
     src = math.max(0, math.min(3, math.floor(tonumber(v) or 0)))
@@ -368,6 +458,15 @@ end)
 on("wl_step", function(v)
     v = tonumber(v) or 0
     if #list == 0 then return end
+    -- the board: ← → the next chip, ↑ ↓ three along (a row of a bank), Shift ten (the next bank)
+    if view == 2 then
+        local n = 0
+        for _ in pairs(chip_at) do n = n + 1 end
+        if n == 0 then return end
+        local i = csel < 0 and 0 or math.max(0, math.min(n - 1, csel + math.floor(v)))
+        choose_chip(i)
+        return
+    end
     -- `r`: a picture at random (Luau's math.random is the same in every copy: the clock instead)
     if v == 0.5 then rolls = rolls + 1; at = ((os.time() * 7919 + rolls * 104729) % #list) + 1
     else at = math.max(1, math.min(#list, at + math.floor(v))) end
