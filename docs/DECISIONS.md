@@ -4431,3 +4431,43 @@ the orbit; a press in the notch end to end.
   templates without an error).
 - The repo: setup/ no longer captures `qs-wallpaperpicker` or `wallpaper-styles`; the bar, Settings and
   Super+W's name say "the picker". Left for you: `sudo pacman -Rns awww` (nothing requires it).
+
+## D147 · 2026-11-04 · The picker grows: colours, the circuit board, Wallhaven, Settings → Wallpapers
+**Asked for:** Matugen swatches and a colour palette to choose pictures by in the strip; another picker
+view "like a circuit board or signals"; Wallhaven in every picker; settings to customise it.
+- **Colour row** (every view): 24 hue chips of 15° and the greys, LIGHT · ANY · DARK (lib/walls
+  `chip_of`, `colour_ok`). The strip shows its middle picture's palette (the orbit's Matugen dry run).
+- **Circuit board** (STRIP · ORBIT · CIRCUIT, Tab cycles): a 5 × 3 board; the CORE in the middle cell
+  shows the chosen chip's picture on its die with the palette as pads; fourteen banks round it (the
+  arc's twelve colours clockwise from the top left, GREYS and LIVE beside the core), six chips each,
+  the wheel pages a bank. Copper traces run from the core along the gaps (lib/walls `board`); the
+  route to the chosen chip is lit (`route_to_chip`, square at every step, tested) and a signal runs it
+  once per choice (a prop following a counter: `pt - (pulse_n - 1)` goes 0 → 1). Arrows route chip to
+  chip, ↑↓ three along.
+- **Wallhaven**, the fourth source: TOPLIST (1D…1Y) · HOT · LATEST · RANDOM; the search (after 700 ms of
+  quiet) and the colour chip go to its API (a chip → the nearest of its 29 colours, by hue then the most
+  vivid); pages load as the strip nears the end or a bank is paged; thumbnails two at a time into
+  ~/.cache/mooi/walls/wh; on the orbit each is placed by the most colourful colour it lists (the first is
+  usually a dark neutral). Choosing one saves it as `wallhaven-<id>.<ext>` into the first folder and
+  wears it. `bin/mooi` does every request (`mooi wall wallhaven search|thumb|wear|random`): URLs checked
+  to be Wallhaven's own hosts, ids letters and digits, the API key read from
+  `~/.config/mooi/wallhaven.key` (0600) and handed to curl as a header on stdin. Without a key the search
+  is SFW whatever the setting says.
+- **Settings → Wallpapers** (the Desk page, grown): the picker's default view and source, the veil, the
+  strip's slant and card size, the orbit's dots and swell; the folders (a list with ×, a path field and
+  + Add folder; `walls.folders`, a new `paths` kind: absolute or ~/, eight at most); the transition and
+  its speed (quick 0.5 s / normal 0.95 s / slow 1.6 s — three props in the desk, `pace` picks); the
+  auto-change; Wallhaven's categories, purity, sorting, range, minimum size and ratio, and whether a key
+  was found.
+- **Auto-change**: the desk looks once a minute; past `walls.auto_every` minutes since the last change
+  (a pick by hand counts) and no window fullscreen (unless allowed), `mooi wall next <from>` wears one at
+  random from all / pictures / live / the colour chosen last in the picker / Wallhaven.
+- **Found and fixed:** D144 had put `desk.transition` in the middle of tools/gen-settings.py's setter
+  list but not of lib/setters.luau's, so every Settings control from Day/Night onwards (56 of them) was
+  read by the bar as its neighbour since last night. Appended at the end of both; gen-settings now
+  refuses to run when the lists differ, and a unit test compares them. Also: the Settings logic stopped
+  at load on an undeclared `key_desk` text (D141's desk-mode key); declared.
+**Checked on screen:** the colour row and the strip's swatches; Wallhaven in the strip (24 of 48 pages)
+and on the orbit; the circuit board with routes to a top, a side and a bottom bank; the Settings page.
+**Not checked:** wearing from Wallhaven end to end (a save into your folder); a sketchy/NSFW search (no
+key here); the auto-change firing (it waits its minutes); the Settings folder rows on screen.
