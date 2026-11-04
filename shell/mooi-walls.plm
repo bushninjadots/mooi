@@ -265,6 +265,8 @@ scene Walls {
     fact or_near = false         // the pointer is over the wheel
     fact pal_n = 0
     fact has_query = false
+    fact slant = 0.22            // how far the strip's cards lean (walls.slant / 100)
+    fact csz = 1                 // the strip's card size: 0.8 · 1 · 1.2 (walls.cards)
     fact veil = 0.93              // how dark the desktop goes under the picker (walls.veil)
     fact chip = -1               // the colour row's chip (-1 any colour, 24 the greys)
     fact light = 0               // 0 any · 1 light · 2 dark
@@ -439,12 +441,12 @@ scene Walls {
                 for c in strip {
                     let d = c.k - scp
                     let ad = abs(d)
-                    let w = 230 + 270 * max(0, 1 - ad)
+                    let w = (230 + 270 * max(0, 1 - ad)) * csz
                     let h = w * 9 / 16
-                    let s = h * 0.22
+                    let s = h * slant
                     // side cards a step apart (their width, the slant and a gap); the middle one pushes
                     // its neighbours out by the room it takes over theirs
-                    let x = cx + d * 262 + clamp(d, -1, 1) * 160
+                    let x = cx + (d * 262 + clamp(d, -1, 1) * 160) * csz
                     let top = y0 - h / 2
                     group {
                         show: ad < 6.5

@@ -568,7 +568,8 @@ $HOME/Pictures/livewalls"
     # shellcheck disable=SC2086
     IFS='
 ' ; set -- $dirs; unset IFS
-    nice -n 19 python3 "$root/tools/wallindex.py" "$walls_cache" "$folder" "$folder/wallpaper-hues.json" "$@"
+    MOOI_ORBIT_DOT=$(jq -r '.walls.dots // 5' "$settings" 2>/dev/null || echo 5) \
+        nice -n 19 python3 "$root/tools/wallindex.py" "$walls_cache" "$folder" "$folder/wallpaper-hues.json" "$@"
 }
 
 # The **lock** is the truth about a watcher and the pid file is how it is signalled: a watcher
@@ -863,7 +864,16 @@ case "$cmd" in
             apply) wall_apply "$@" ;;
             live) wall_live ;;
             index) wall_index ;;
-            *) echo "usage: mooi wall apply FILE [--from-y N] [--transition KIND] | live | index" >&2; exit 2 ;;
+            count) # how many wallpapers a folder holds (Settings → Wallpapers)
+                d=$(printf '%s' "${1:-}" | sed "s|^~|$HOME|")
+                [ -d "$d" ] || exit 1
+                find "$d" -maxdepth 1 -type f | grep -ciE '\.(jpe?g|png|webp|avif|jxl|bmp|gif|apng|mp4|webm|mkv|mov|m4v|avi)$' ;;
+            whkey) # whether a Wallhaven API key is there, readable by you alone (it is never printed)
+                k="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
+                if [ -s "$k" ] && [ "$(stat -c %a "$k")" = 600 ]; then echo found
+                elif [ -s "$k" ]; then echo "unsafe: chmod 600 $k"; exit 1
+                else echo none; exit 1; fi ;;
+            *) echo "usage: mooi wall apply FILE [--from-y N] [--transition KIND] | live | index | count DIR | whkey" >&2; exit 2 ;;
         esac ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }

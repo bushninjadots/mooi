@@ -54,8 +54,15 @@ scene Desk {
     prop cyp = 0 ~dk.drift
     follow cyp = if(mode >= 2 and moving, clamp(cursor.y / max(1, screen.height), 0, 1) - 0.5, 0)
     // the crossing: `fa` is 1 with slot A shown, 0 with B; a transition takes about a second
-    prop fa = 1 ~950ms
-    follow fa = if(slot == 0, 1, 0)
+    // three paces (walls.speed, D147): a duration is part of a prop, so one prop each, and `pace` picks
+    fact pace = 1
+    prop fa0 = 1 ~500ms
+    follow fa0 = if(slot == 0, 1, 0)
+    prop fa1 = 1 ~950ms
+    follow fa1 = if(slot == 0, 1, 0)
+    prop fa2 = 1 ~1600ms
+    follow fa2 = if(slot == 0, 1, 0)
+    let fa = if(pace == 0, fa0, if(pace == 2, fa2, fa1))
     prop seen = 1 ~400ms
     follow seen = if(live, 0, 1)
 

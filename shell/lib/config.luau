@@ -354,6 +354,31 @@ M.SCHEMA = {
     -- how a new picture comes in (D144): random, a circle growing (from the notch when
     -- picked there), a wipe, a slide, or a fade
     { path = "desk.transition", kind = "enum", values = { "random", "grow", "wipe", "slide", "fade" }, default = "random" },
+    -- D145/D147: the wallpapers — where they are, the picker's defaults and look (shell/mooi-walls)
+    { path = "walls.folders", kind = "paths", max = 8, default = { "~/Pictures/wallpapers", "~/Pictures/livewalls" } },
+    { path = "walls.view", kind = "enum", values = { "strip", "orbit", "circuit" }, default = "strip" },
+    { path = "walls.source", kind = "enum", values = { "all", "pictures", "live", "wallhaven" }, default = "all" },
+    -- how long the desk's transition takes: 0.5 s, 0.95 s, 1.6 s (before the motion speed)
+    { path = "walls.speed", kind = "enum", values = { "quick", "normal", "slow" }, default = "normal" },
+    { path = "walls.veil", kind = "integer", default = 93, min = 50, max = 100 },
+    { path = "walls.slant", kind = "integer", default = 22, min = 0, max = 40 },
+    { path = "walls.cards", kind = "enum", values = { "small", "medium", "large" }, default = "medium" },
+    { path = "walls.dots", kind = "integer", default = 5, min = 2, max = 10 },
+    { path = "walls.swell", kind = "integer", default = 16, min = 6, max = 24 },
+    -- the auto-change: a new wallpaper every so many minutes, from a source (or the colour chosen
+    -- last in the picker), held while a window is fullscreen
+    { path = "walls.auto", kind = "boolean", default = false },
+    { path = "walls.auto_every", kind = "integer", default = 30, min = 5, max = 240 },
+    { path = "walls.auto_from", kind = "enum", values = { "all", "pictures", "live", "colour", "wallhaven" }, default = "pictures" },
+    { path = "walls.auto_fullscreen", kind = "boolean", default = true },
+    -- Wallhaven (wallhaven.cc) in the picker: what its searches ask for. Sketchy and NSFW need an API
+    -- key, kept in ~/.config/mooi/wallhaven.key (never in the settings)
+    { path = "wallhaven.categories", kind = "enum", values = { "general", "anime", "people", "general+anime", "general+people", "anime+people", "all" }, default = "general+anime" },
+    { path = "wallhaven.purity", kind = "enum", values = { "sfw", "sfw+sketchy", "sketchy", "nsfw", "all" }, default = "sfw" },
+    { path = "wallhaven.sorting", kind = "enum", values = { "toplist", "hot", "latest", "random" }, default = "toplist" },
+    { path = "wallhaven.range", kind = "enum", values = { "1d", "3d", "1w", "1M", "3M", "6M", "1y" }, default = "1M" },
+    { path = "wallhaven.atleast", kind = "enum", values = { "screen", "4k", "any" }, default = "screen" },
+    { path = "wallhaven.ratio", kind = "enum", values = { "screen", "any" }, default = "screen" },
     -- D137: the desktop widgets (shell/mooi-widgets, widgets.json is theirs)
     { path = "widgets.on", kind = "boolean", default = true },
     -- D139: widgets behind the wallpaper's subject, and the wallpaper's mood in how they move
@@ -455,6 +480,14 @@ local function check(row, value)
         for _, id in ipairs(value) do
             if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_]+$") then
                 return false, "expected ids like \"cpu\""
+            end
+        end
+    elseif row.kind == "paths" then
+        if type(value) ~= "table" then return false, "expected a list of folders" end
+        if #value > (row.max or 8) then return false, "expected at most " .. tostring(row.max or 8) .. " folders" end
+        for _, f in ipairs(value) do
+            if type(f) ~= "string" or #f > 240 or string.find(f, "[%c]") or not (f:sub(1, 1) == "/" or f:sub(1, 2) == "~/") then
+                return false, "expected folders like \"~/Pictures/wallpapers\""
             end
         end
     elseif row.kind == "colours" then

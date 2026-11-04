@@ -606,6 +606,50 @@ on("sw_add", function(v)
     local d, id = W.add(wdoc(), W.ADD_ORDER[math.floor(tonumber(v) or 0) + 1] or "nowplaying", WROOM)
     if id then write_widgets(d) end
 end)
+-- ── Settings → Wallpapers: the folders, and Wallhaven's key (D147) ──
+local function folders() return type(settings.walls) == "table" and type(settings.walls.folders) == "table" and settings.walls.folders or {} end
+local function show_folders()
+    local rows = {}
+    for i, f in ipairs(folders()) do rows[i] = { path = f, n = "", missing = false } end
+    model.wf_list = rows
+    for i, f in ipairs(folders()) do
+        run("mooi", { "wall", "count", f }, function(out, code)
+            if not rows[i] or rows[i].path ~= f then return end
+            local n = tonumber(tostring(out or ""):match("%d+"))
+            rows[i].missing = code ~= 0 or n == nil
+            rows[i].n = rows[i].missing and "NOT THERE" or string.format("%d WALLPAPERS", n)
+            model.wf_list = rows
+        end)
+    end
+end
+on("wf_add", function()
+    local f = tostring(text.wf_new or ""):gsub("^%s+", ""):gsub("%s+$", ""):gsub("/+$", "")
+    if f == "" or #f > 240 or f:find("[%c]") or not (f:sub(1, 1) == "/" or f:sub(1, 2) == "~/") then return end
+    local list = folders()
+    for _, g in ipairs(list) do if g == f then text.wf_new = ""; return end end
+    if #list >= 8 then return end
+    settings.walls = type(settings.walls) == "table" and settings.walls or {}
+    local new = {}
+    for i, g in ipairs(list) do new[i] = g end
+    new[#new + 1] = f
+    settings.walls.folders = new
+    text.wf_new = ""
+    if save() then show_folders(); run("mooi", { "wall", "index" }, function() end) end
+end)
+on("wf_del", function(v)
+    local k = math.floor(tonumber(v) or -1) + 1
+    local list = folders()
+    if not list[k] or #list <= 1 then return end          -- one folder at least
+    local new = {}
+    for i, g in ipairs(list) do if i ~= k then new[#new + 1] = g end end
+    settings.walls.folders = new
+    if save() then show_folders() end
+end)
+run("mooi", { "wall", "whkey" }, function(out)
+    text.wh_key = tostring(out or ""):match("found") and "FOUND · SKETCHY AND NSFW CAN BE CHOSEN" or "NONE · SAFE FOR WORK ONLY"
+end)
+after(300, show_folders)
+
 on("wl_settings_open", function()
     run("mooi", { "walls" })
     run("pleamar", { "--say", "mooi-settings", "quit" })

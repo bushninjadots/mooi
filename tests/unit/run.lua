@@ -1281,9 +1281,11 @@ test("overview spring edges: a band at each side, and the window landing where t
     local config = require("lib/config")
     eq(config.defaults().atlas.spring_edges, true, "on by default, as Hyprdrive's")
     local SET = require("lib/setters").SETTERS
-    eq(SET[#SET - 3], "atlas.spring_edges", "its control came last, so no other moved (the widgets' follow it)")
-    eq(SET[#SET - 2], "widgets.on", "the widgets' switch is appended after it")
-    eq(SET[#SET], "widgets.mood", "then depth and mood (D139)")
+    local at = {}
+    for i, p in ipairs(SET) do at[p] = i end
+    eq(at["widgets.on"], at["atlas.spring_edges"] + 1, "the widgets' switch is appended after it")
+    eq(at["widgets.mood"], at["widgets.on"] + 2, "then depth and mood (D139)")
+    eq(at["desk.transition"], at["widgets.mood"] + 1, "D144's transition appended after them (D147)")
     local _, p = config.validate({ atlas = { spring_edges = "yes" } })
     eq(#p, 1, "a wrong type is reported")
 end)
@@ -3780,6 +3782,23 @@ do
         for _, j in ipairs(BR.LINES.joke) do eq(#j <= 228, true, "fits six bubble lines: " .. j) end
     end)
 end
+
+print("the settings window's codes (D147)")
+test("tools/gen-settings.py and lib/setters list the same settings in the same order", function()
+    local f = assert(io.open("tools/gen-settings.py"))
+    local py = f:read("a"); f:close()
+    local a = py:find("SETTERS = [", 1, true)
+    local b = py:find("\n]", a, true)
+    local theirs = {}
+    for p in py:sub(a, b):gmatch('"([%a_]+%.[%a_.]+)"') do theirs[#theirs + 1] = p end
+    local SET = require("lib/setters").SETTERS
+    eq(#theirs, #SET, "as long")
+    for i = 1, #SET do eq(theirs[i], SET[i], "code " .. i) end
+    local config = require("lib/config")
+    local d = config.defaults()
+    eq(d.walls.view, "strip"); eq(d.wallhaven.purity, "sfw", "safe for work unless chosen"); eq(#d.walls.folders, 2)
+    local _, p = config.validate({ walls = { folders = { "relative/path" } } }); eq(#p, 1, "a folder must be absolute or ~/")
+end)
 
 print("wallpapers (D145)")
 do

@@ -42,7 +42,7 @@ SETTERS = [
     "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density",
     "signals.chamfer", "signals.travel", "signals.effects", "signals.private",
     "wallpaper.matte", "wallpaper.backdrop", "wallpaper.key", "wallpaper.fuzz",
-    "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout", "desk.transition",
+    "desk.on", "desk.parallax", "desk.strength", "desk.depth", "desk.cutout",
     "theme.mode", "theme.light_at", "theme.dark_at", "apps.others",
     "look.corners", "look.corner_size",
     "companion.bmo", "companion.size", "companion.place", "companion.above", "companion.variant",
@@ -72,6 +72,14 @@ SETTERS = [
     "atlas.spring_edges",
     # the desktop widgets (D137)
     "widgets.on", "widgets.depth", "widgets.mood",
+    # D144's transition (it sat in the middle of this list for a day, shifting every code after it:
+    # appended here, and the list is now checked against lib/setters.luau on every run, D147)
+    "desk.transition",
+    # the wallpapers (D147): the picker, its look, Wallhaven, the auto-change
+    "walls.view", "walls.source", "walls.speed", "walls.veil", "walls.slant", "walls.cards",
+    "walls.dots", "walls.swell", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting",
+    "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "walls.auto", "walls.auto_every",
+    "walls.auto_from", "walls.auto_fullscreen",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -99,6 +107,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("settings", "Settings", "This window"),
         ("wallpaper", "Wallpapers", "Opens the wallpaper picker: the strip and the colour orbit"),
         ("player", "Music player", "Your library, the queue and lyrics on a turntable"),
+        ("desk", "Desk mode", "The desktop widgets gathered over the desktop, or back where they were"),
         ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
@@ -331,16 +340,43 @@ SECTIONS = [
         ("card", "Monitors"),
         ("displays",),
     ]),
-    ("Wallpaper", "Desk", "mooi draws the wallpaper: pictures, animated ones and videos. Pick them in the picker (Super+W) or the notch", "DESKTOP", [
-        ("card", "Wallpapers"),
-        ("button", "The wallpaper picker", "The strip and the colour orbit, every picture and live wallpaper in your folders (Super+W)", "Open the picker", "wl_settings_open", 1),
+    ("Wallpaper", "Wallpapers", "mooi draws the wallpaper: pictures, animated ones and videos. Pick them in the picker (Super+W) or the notch", "DESKTOP", [
+        ("card", "The picker"),
+        ("button", "The wallpaper picker", "The strip, the colour orbit and the circuit board: every picture and live wallpaper in your folders, and Wallhaven (Super+W)", "Open the picker", "wl_settings_open", 1),
+        ("choice", "Opens on", "The view it shows first (it remembers the last one you used)", "walls.view", "sv_walls_view", ["Strip", "Orbit", "Circuit"]),
+        ("choice", "Source", "What it lists first", "walls.source", "sv_walls_source", ["All", "Pictures", "Live", "Wallhaven"]),
+        ("slider", "Veil", "How dark the desktop goes behind the picker", "walls.veil", 50, 100, "{sv_walls_veil + 50, 0}%"),
+        ("slider", "Strip slant", "How far the strip's cards lean", "walls.slant", 0, 40, "{sv_walls_slant, 0}"),
+        ("choice", "Strip cards", "How large the strip's cards are", "walls.cards", "sv_walls_cards", ["Small", "Medium", "Large"]),
+        ("slider", "Orbit dots", "How large each picture's dot is on the colour orbit", "walls.dots", 2, 10, "{sv_walls_dots + 2, 0} px"),
+        ("slider", "Swell", "How many pictures swell into thumbnails under the pointer on the orbit", "walls.swell", 6, 24, "{sv_walls_swell + 6, 0}"),
+        ("card", "Folders"),
+        ("folders",),
+        ("card", "Changing pictures"),
+        ("choice", "Transition", "How a new picture comes in; picked in the notch, it grows from the notch (the picker can choose its own)", "desk.transition", "sv_desk_transition",
+         ["Random", "Grow", "Wipe", "Slide", "Fade"]),
+        ("choice", "Speed", "How long the transition takes (your motion speed scales it too)", "walls.speed", "sv_walls_speed", ["Quick", "Normal", "Slow"]),
+        ("card", "Auto-change"),
+        ("toggle", "Change by itself", "A new wallpaper every so often", "walls.auto", "sv_walls_auto"),
+        ("slider", "Every", "Minutes between changes", "walls.auto_every", 5, 240, "{sv_walls_auto_every + 5, 0} min", "sv_walls_auto == 1"),
+        ("choice", "From", "Where the next one comes from: a source, the colour chosen last in the picker, or Wallhaven", "walls.auto_from", "sv_walls_auto_from",
+         ["All", "Pictures", "Live", "Colour", "Wallhaven"], "sv_walls_auto == 1"),
+        ("toggle", "Hold while fullscreen", "No change while a window is fullscreen", "walls.auto_fullscreen", "sv_walls_auto_fullscreen", "sv_walls_auto == 1"),
+        ("card", "Wallhaven"),
+        ("choice", "Categories", "What its searches include", "wallhaven.categories", "sv_wallhaven_categories",
+         ["General", "Anime", "People", "Gen+Anime", "Gen+People", "Anime+People", "All"]),
+        ("choice", "Purity", "Sketchy and NSFW need your API key in ~/.config/mooi/wallhaven.key", "wallhaven.purity", "sv_wallhaven_purity",
+         ["SFW", "SFW+Sketchy", "Sketchy", "NSFW", "All"]),
+        ("choice", "Sorting", "The list it opens on", "wallhaven.sorting", "sv_wallhaven_sorting", ["Top list", "Hot", "Latest", "Random"]),
+        ("choice", "Top list range", "How far back the top list looks", "wallhaven.range", "sv_wallhaven_range", ["1D", "3D", "1W", "1M", "3M", "6M", "1Y"]),
+        ("choice", "At least", "The smallest size it lists", "wallhaven.atleast", "sv_wallhaven_atleast", ["Your screen", "4K", "Any"]),
+        ("choice", "Ratio", "Only your screen's shape, or any", "wallhaven.ratio", "sv_wallhaven_ratio", ["Your screen", "Any"]),
+        ("info", "API key", "Read from ~/.config/mooi/wallhaven.key (only you can read it); saved pictures go to your first folder", "wh_key"),
         ("card", "The desk · parallax"),
         ("toggle", "Parallax desk", "The wallpaper travels with your workspaces or the pointer; off, it stays still (also a tile in Control Nexus)", "desk.on", "sv_desk_on"),
         ("choice", "Moves with", "The workspaces as you switch, the pointer, both, or nothing", "desk.parallax", "sv_desk_parallax",
          ["Still", "Workspaces", "Pointer", "Both"], "sv_desk_on == 1"),
         ("slider", "Strength", "How far the picture travels", "desk.strength", 0, 100, "{sv_desk_strength, 0}%", "sv_desk_on == 1"),
-        ("choice", "Transition", "How a new picture comes in; picked in the notch, it grows from the notch (the picker can choose its own)", "desk.transition", "sv_desk_transition",
-         ["Random", "Grow", "Wipe", "Slide", "Fade"]),
     ]),
     ("Widgets", "Widgets", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "DESKTOP", [
         ("card", "Desktop widgets"),
@@ -501,6 +537,14 @@ def row_lines(r, y, first, reverted):
     if k == "displays":
         lines.append(f'for m in dp_list {{ SDisplay(m, {y + 6}) }}')
         return lines, "(12 + max(1, dp_list.count) * 60)"
+    if k == "folders":
+        lines.append(f'for m in wf_list {{ SFolder(m, {y + 6}) }}')
+        fy = f"{y + 10} + wf_list.count * 46"
+        lines.append(f'box {{ from: {TX}, {fy}; size: 560, 32; corner: 5; color: fl.ground; opacity: 0.6 }}')
+        lines.append(f'box {{ from: {TX}, {fy}; size: 560, 32; corner: 5; stroke: 1; color: fl.steel_700 }}')
+        lines.append(f'input wf_new {{ at: {TX + 12}, {fy} + 8; width: 536; size: 12; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; placeholder: "~/Pictures/more-walls" }}')
+        lines.append(f'SButton({TX + 572}, {fy} + 2, 130, "+ Add folder", wf_add, 0, false, wf_list.count < 8)')
+        return lines, "(56 + wf_list.count * 46)"
     if k == "widgets":
         lines.append(f'for m in sw_list {{ SWidget(m, {y + 6}) }}')
         lines.append(f'SButton({TX}, {y + 14} + sw_list.count * 96, 170, "+ Now Playing", sw_add, 0, false, sw_list.count < 12)')
@@ -885,7 +929,20 @@ def shared_facts():
                       r"m_\w+|fi_\w+|g_\w+|st_\w+)\b.*$", re.M)
     return "\n".join(m.group(0) for m in want.finditer(text))
 
+def check_setters():
+    """The window's codes are places in this list; lib/setters.luau decodes them with its own copy.
+    They must be the same list, in the same order (D147: one entry out of place shifted 56 settings)."""
+    lua = (ROOT / "shell" / "lib" / "setters.luau").read_text()
+    block = lua[lua.index("M.SETTERS = {"):lua.index("\n}", lua.index("M.SETTERS = {"))]
+    theirs = re.findall(r'"([a-z_]+\.[a-z_.]+)"', block)
+    if theirs != SETTERS:
+        for i, (a, b) in enumerate(zip(SETTERS, theirs)):
+            if a != b:
+                raise SystemExit(f"setters differ at {i + 1}: here {a!r}, lib/setters.luau {b!r}")
+        raise SystemExit(f"setters differ in length: here {len(SETTERS)}, lib/setters.luau {len(theirs)}")
+
 def main():
+    check_setters()
     body = generate()
     out = HEADER + shared_facts() + """
     text bar_version = "mooi"
@@ -949,6 +1006,12 @@ def main():
     event snd_pick ->         // to the logic: output n, or input 100 + n
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
     model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
+    // The wallpaper folders (walls.folders, D147): one row each, a field to add one
+    model wf_list max 8 { path: text; n: text; missing: bool }
+    text wf_new = ""
+    text wh_key = ""          // whether a Wallhaven key was found (~/.config/mooi/wallhaven.key)
+    event wf_del ->           // to the logic: remove folder n
+    event wf_add ->           // to the logic: add what wf_new says
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
     model sw_list max 12 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
     event sw_choice ->        // to the logic: row · 100 + layout (0 … 2) or mode (0 … 11)

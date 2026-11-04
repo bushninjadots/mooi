@@ -46,6 +46,8 @@ local function apply_settings()
     fact.over = fact.mode > 0 and desk.overscan(cfg.strength) or 0
     fact.depth = cfg.depth and desk.DEPTH or 0
     fact.moving = not still
+    local w = type(settings.walls) == "table" and settings.walls or {}
+    fact.pace = ({ quick = 0, normal = 1, slow = 2 })[w.speed] or 1
 end
 
 -- What to draw: the picture on the desktop now, and Lumen's layers while they belong to it. A new

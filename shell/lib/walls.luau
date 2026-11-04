@@ -8,8 +8,8 @@
 
 local M = {}
 
-M.VIEWS = { "strip", "orbit" }
-M.VIEW_INDEX = { strip = 0, orbit = 1 }
+M.VIEWS = { "strip", "orbit", "circuit" }
+M.VIEW_INDEX = { strip = 0, orbit = 1, circuit = 2 }
 M.SOURCES = { "all", "pictures", "live" }   -- the picker's source row, in its order
 M.DEFAULT_FOLDERS = { "~/Pictures/wallpapers", "~/Pictures/livewalls" }
 

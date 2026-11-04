@@ -640,6 +640,19 @@ library FerrolumeParts {
         text m.mode { at: 1120, y + 18; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.engrave }
         text m.place { at: 1120, y + 37; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
     }
+    // A wallpaper folder (Settings → Wallpapers, D147): its path, how many it holds, and × to let it go.
+    component SFolder(m: record, y0: number) {
+        size: 864, 42
+        let y = y0 + m.index * 46
+        box { from: 274, y; size: 864, 40; corner: 5; color: fl.ground; opacity: 0.6 }
+        box { from: 274, y; size: 864, 40; corner: 5; stroke: 1; color: if(m.missing, fl.ember, fl.steel_700) }
+        text m.path { at: 292, y + 20; anchor: left center; size: 12; family: "Share Tech Mono"; color: if(m.missing, fl.ember, fl.phos); width: 600; lines: 1 }
+        text m.n { at: 1070, y + 20; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        zone box x { from: 1088, y + 7; size: 40, 26; corner: 4; cursor: pointer; role: button; label: "Let this folder go" }
+        box { from: 1088, y + 7; size: 40, 26; corner: 4; stroke: 1; color: mix(fl.steel_700, fl.ember, x.hover) }
+        text "×" { at: 1108, y + 20; anchor: center; size: 13; color: mix(fl.engrave, fl.ember, x.hover) }
+        on press x { emit wf_del(m.index) }
+    }
     // A small choice on a widget's row (Settings → Widgets).
     component SWPick(x: number, y: number, w: number, label: text, on: bool, press: event, n: number) {
         size: w, 24

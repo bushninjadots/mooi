@@ -48,8 +48,14 @@ local TR_INDEX = { random = 0, grow = 1, wipe = 2, slide = 3, fade = 4 }
 local kept = read("walls-state.json", "json")
 kept = type(kept) == "table" and kept or {}
 local cfg = walls.normalize(settings.walls, HOME)
-local view = walls.VIEW_INDEX[kept.view] or walls.VIEW_INDEX[cfg.view] or 0
-local src = math.max(0, math.min(2, math.floor(tonumber(kept.src) or 0)))
+-- the settings' defaults (Settings → Wallpapers, D147), then what was chosen last time
+local W = type(settings.walls) == "table" and settings.walls or {}
+local SRC_INDEX = { all = 0, pictures = 1, live = 2, wallhaven = 3 }
+local view = walls.VIEW_INDEX[kept.view] or walls.VIEW_INDEX[W.view] or 0
+local src = math.max(0, math.min(3, math.floor(tonumber(kept.src) or SRC_INDEX[W.source] or 0)))
+fact.veil = math.max(50, math.min(100, tonumber(W.veil) or 93)) / 100
+fact.slant = math.max(0, math.min(40, tonumber(W.slant) or 22)) / 100
+fact.csz = ({ small = 0.8, medium = 1, large = 1.2 })[W.cards] or 1
 local trk = TR_INDEX[kept.transition] or TR_INDEX[desk.normalize(settings.desk).transition] or 0
 fact.view, fact.src, fact.trk = view, src, trk
 local function keep()
@@ -169,7 +175,8 @@ want_pal = function(it)
     after(250, function() if pal_want == mine then read_pal() end end)
 end
 
-local REACH, MAG, NEAR_N = 0.26, 2.3, 16
+local REACH, MAG = 0.26, 2.3
+local NEAR_N = math.max(6, math.min(24, math.floor(tonumber(W.swell) or 16)))
 local function show_orbit()
     if cell == nil then model.orb = {}; near = {}; fact.or_near = false; return end
     -- the cell's middle on the wheel (unit radius), turned back by the wheel's turn

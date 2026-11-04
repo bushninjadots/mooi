@@ -79,6 +79,13 @@ M.SETTERS = {
     "atlas.spring_edges",
     -- the desktop widgets (D137)
     "widgets.on", "widgets.depth", "widgets.mood",
+    -- D144's transition (tools/gen-settings.py had it in the middle of its copy for a day: D147)
+    "desk.transition",
+    -- the wallpapers (D147): the picker, its look, Wallhaven, the auto-change
+    "walls.view", "walls.source", "walls.speed", "walls.veil", "walls.slant", "walls.cards",
+    "walls.dots", "walls.swell", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting",
+    "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "walls.auto", "walls.auto_every",
+    "walls.auto_from", "walls.auto_fullscreen",
 }
 
 local function row_of(path)
