@@ -251,7 +251,17 @@ scene Nexus {
     fact st_res = 46
 
     fact st_glow = 1
-    fact ch_on = false           // D152: the bar's islands drawn by the frame (never here: the Nexus's are centred)
+    fact ch_on = false           // D152: the deck drawn by the frame as part of its body (frame.islands)
+    // the deck as the frame grows it (D152): the same count and springs as the frame's `dk` place, the
+    // band's width and where this surface starts on the screen (it begins under the bar's reserve)
+    fact nm_n = 0
+    fact nm_band = 6
+    fact nm_off = 34
+    prop nm_q = 0 ~m.isl
+    follow nm_q = nm_n
+    prop nm_c = 0 ~m.isl_out
+    follow nm_c = if(dk_open, 1, 0)
+    let nm_rv = min(clamp(nm_q - (nm_n - 1), 0, 1), nm_c)
     event pl_xy ->
     event pl_wh ->
     event pl_t ->
@@ -773,14 +783,15 @@ scene Nexus {
         // the plate's own colour where the bars leave it: the gradient's end their edge lies on
         let fillc = mix(topc, botc, if(dk_edge == 1, 1, 0))
 
-        // the plate, as one body
+        // the plate, as one body (under the chassis the frame draws it, D152)
         body {
+            show: not ch_on
             gradient: 0, 0 to 0, h, topc, botc
             shadow: 0, 7, 24, 44%
             box { from: 0, 0; size: w, h; corner: r }
         }
         // its edge, the plain line the bars stand on and cover where they rise
-        path { stroke: 1; color: edgec
+        path { show: not ch_on; stroke: 1; color: edgec
                move r, 0; line w - r, 0; curve w, r via w, 0; line w, h - r; curve w - r, h via w, h
                line r, h; curve 0, h - r via 0, h; line 0, r; curve r, 0 via 0, 0 }
 
@@ -805,20 +816,43 @@ scene Nexus {
         // the whole screen: where nothing is drawn a press goes through to what is under it
         size: full, full
         anchor: top_left
-        level: top
+        level: top, overlay while ch_on and nm_rv > 0.002
         keyboard: on_demand
         // the program stays running while the Nexus is away (D118): the surface is there only while
         // it is open or still sliding out, so nothing of it takes a press or a key when it is gone
-        open: dk_open or nx_in > 0.004
+        open: dk_open or nx_in > 0.004 or nm_rv > 0.002
 
         on key Escape while dk_naming { dk_naming = false; blur }
         on key Escape while not dk_naming and dk_edit { emit dk_edit_on(0) }
         on key Escape while not dk_naming and not dk_edit { emit nx_close }
 
         // ═══ The deck ═══
+        // Under the chassis (D152) the frame draws the deck's body, grown out of the band along its edge
+        // (shell/mooi-frame.plm, the `dk` place); here only its content, clipped to the same shape from the
+        // same numbers, riding its leading edge, fading in over the first third.
+        let nm_hz = dk_edge >= 2
+        let nm_W = screen.width
+        let nm_H = screen.height + nm_off
+        let nm_X = dk_x
+        let nm_Y = dk_y + nm_off
+        let nm_sx = if(dk_edge == 3, nm_W - nm_band - 12, if(dk_edge == 2, nm_band, nm_X + dk_w * 0.35))
+        let nm_sw = if(nm_hz, 12, dk_w * 0.3)
+        let nm_sy = if(dk_edge == 0, nm_H - nm_band - 12, if(dk_edge == 1, nm_band, nm_Y + dk_h * 0.35))
+        let nm_sh = if(nm_hz, dk_h * 0.3, 12)
+        let nm_px = if(nm_hz, nm_rv * nm_rv, nm_rv)
+        let nm_py = if(nm_hz, nm_rv, nm_rv * nm_rv)
+        let nm_bx = nm_sx + (nm_X - nm_sx) * nm_px
+        let nm_bw = nm_sw + (dk_w - nm_sw) * nm_px
+        let nm_by = nm_sy + (nm_Y - nm_sy) * nm_py
+        let nm_bh = nm_sh + (dk_h - nm_sh) * nm_py
+        let nm_br = min(min(nm_bw, nm_bh) / 2, 6 + (14 - 6) * nm_rv)
+        // the content's shift: its leading edge on the body's
+        let nm_ox = if(dk_edge == 3, nm_bx - nm_X, if(dk_edge == 2, nm_bx + nm_bw - nm_X - dk_w, 0))
+        let nm_oy = if(dk_edge == 0, nm_by - nm_Y, if(dk_edge == 1, nm_by + nm_bh - nm_Y - dk_h, 0))
         group {
-            move: dk_x + dk_ox * (1 - nx_in) * (dk_w + 40), dk_y + dk_oy * (1 - nx_in) * (dk_h + 40)
-            opacity: smooth(0, 0.5, nx_in)
+            move: dk_x + if(ch_on, nm_ox, dk_ox * (1 - nx_in) * (dk_w + 40)), dk_y + if(ch_on, nm_oy, dk_oy * (1 - nx_in) * (dk_h + 40))
+            opacity: if(ch_on, smooth(0.08, 0.38, nm_rv * nm_rv), smooth(0, 0.5, nx_in))
+            clip box { from: if(ch_on, nm_bx - nm_X - nm_ox, -4000), if(ch_on, nm_by - nm_Y - nm_oy, -4000); size: if(ch_on, max(1, nm_bw), 8000), if(ch_on, max(1, nm_bh), 8000); corner: if(ch_on, nm_br, 0) }
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
 
             DeckFrame(dk_w, dk_h) {

@@ -173,7 +173,28 @@ def chunks(edge, lo_px, hi_px, ref):
 # The place (D152): an island grown out of the bar's piece. While it is out, the top strip's tiles it
 # crosses are drawn by `frame_p` (on the top layer, over the windows, under the bar's content) with the
 # island's box in each body, so it melts into the piece and the band; `frame_t` leaves those tiles out.
-PLACE = "box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }"
+# Three places (D152): an island under the bar (`pl`, the top strip's), the Control Nexus's deck (`dk`) and
+# the side notch's panel (`nt`), each grown out of an edge. A tile a place crosses is drawn by `frame_p`
+# with every place's box in its body; the screen is cut into tiles that do not overlap, so each pixel of a
+# place is drawn once (only the top strip's tiles reach down past their strip, for an island).
+PLACES = ["pl", "dk", "nt"]
+def place_box(p):
+    return f"box {{ from: {p}_bx, {p}_by; size: max(1, {p}_bw), max(1, {p}_bh); corner: {p}_br; blend: 30; show: {p}_act }}"
+def crossed(which, a, b):
+    """Is the tile crossed by a place? `a`, `b`: its stretch along its strip (x for the top and the foot,
+    y for the sides)."""
+    conds = []
+    for p in PLACES:
+        if which == "top":
+            c = f"{p}_l < {b} and {p}_e > {a} and {p}_t < {TOP} + 40"
+        elif which == "foot":
+            c = f"{p}_l < {b} and {p}_e > {a} and {p}_b > H - {BOT}"
+        elif which == "left":
+            c = f"{p}_l < W / 2 and {p}_t < {b} and {p}_b > {a}"
+        else:
+            c = f"{p}_e > W / 2 and {p}_t < {b} and {p}_b > {a}"
+        conds.append(f"({p}_act and {c})")
+    return " or ".join(conds)
 
 def end_tiles(ind, which, place=False):
     """The top's or the foot's tiles, along the full width (`place`: the copies frame_p draws)."""
@@ -195,19 +216,17 @@ def end_tiles(ind, which, place=False):
             shapes.append([CORNERS["tr" if top else "br"]])
         if top:
             shapes += [[f"{box} and {a} < {x1} + 48 and {b} > {x0} - 48 {end}"] for a, b, box, end in PIECES]
-        if top:
-            crossed = f"pl_act and pl_l < {x1} and pl_e > {x0}"
-            if place:
-                shapes.append([PLACE])
-                out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), max({y1}, pl_y + pl_h + 80)", shapes, crossed)
-            else:
-                out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes, f"not ({crossed})")
+        cr = crossed(which, x0, x1)
+        if place:
+            shapes += [[place_box(p)] for p in (PLACES if top else PLACES[1:])]
+            h = f"max({y1}, if(pl_act, pl_y + pl_h + 80, 0))" if top else y1
+            out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {h}", shapes, cr)
         else:
-            out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes)
+            out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes, f"not ({cr})")
     return out
 
-def side_tiles(ind, which):
-    """A side's tiles, between the top strip and the foot strip."""
+def side_tiles(ind, which, place=False):
+    """A side's tiles, between the top strip and the foot strip (`place`: the copies frame_p draws)."""
     edge, m = EDGES[which], MARGIN / REF_H
     left = which == "left"
     out = []
@@ -220,7 +239,12 @@ def side_tiles(ind, which):
             shapes.append([CORNERS["tl" if left else "tr"]])
         if hi * REF_H > REF_H - CORNER:
             shapes.append([CORNERS["bl" if left else "br"]])
-        out += tile(ind, f"from: {x0}, {y0}; size: {w}, max(0, {y1} - {y0})", shapes)
+        cr = crossed(which, y0, y1)
+        if place:
+            shapes += [[place_box(p)] for p in PLACES[1:]]
+            out += tile(ind, f"from: {x0}, {y0}; size: {w}, max(0, {y1} - {y0})", shapes, cr)
+        else:
+            out += tile(ind, f"from: {x0}, {y0}; size: {w}, max(0, {y1} - {y0})", shapes, f"not ({cr})")
     return out
 
 LIGHTS = {   # the edges again, 1.5 px back into the band
@@ -277,10 +301,12 @@ def place_surface(ind):
     """frame_p (D152): the full screen, on the top layer only while a place is out; the top strip's
     tiles that it crosses, the place melted into them."""
     i2, i3, i4 = ind + "    ", ind + "        ", ind + "            "
-    return ([f"{ind}surface frame_p {{", f"{i2}size: full, full", f"{i2}anchor: top", f"{i2}level: bottom, top while pl_act",
-             f"{i2}reserve: -1", f"{i2}group {{", f"{i3}show: pl_act", f"{i3}group {{",
+    act = " or ".join(f"{p}_act" for p in PLACES)
+    return ([f"{ind}surface frame_p {{", f"{i2}size: full, full", f"{i2}anchor: top", f"{i2}level: bottom, top while {act}",
+             f"{i2}reserve: -1", f"{i2}group {{", f"{i3}show: {act}", f"{i3}group {{",
              f"{i4}glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos"]
-            + end_tiles(i4, "top", place=True) + [f"{i3}}}", f"{i2}}}", f"{ind}}}"])
+            + end_tiles(i4, "top", place=True) + end_tiles(i4, "foot", place=True)
+            + side_tiles(i4, "left", place=True) + side_tiles(i4, "right", place=True) + [f"{i3}}}", f"{i2}}}", f"{ind}}}"])
 
 def frame():
     ind = "    "

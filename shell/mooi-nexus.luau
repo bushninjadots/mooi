@@ -72,6 +72,9 @@ local function paint()
     end
     fact.cn_kind, fact.cn_scale = style.corners(settings)
     fact.isl_style = settings.island.style == "tether" and 1 or 0
+    -- D152: the deck drawn by the frame, grown out of the band (with the frame on and frame.islands)
+    fact.ch_on = type(settings.frame) == "table" and settings.frame.on == true and settings.frame.islands ~= false
+    fact.nm_band = type(settings.frame) == "table" and tonumber(settings.frame.band) or 6
     local look = style.facts(settings)
     if look and look.st_glow then fact.st_glow = look.st_glow end
 end
@@ -124,9 +127,30 @@ end)
 local closing = true
 local open_hooks = {}          -- what refreshes as it opens (registered with the readers, below)
 local function tell_bar(on) pcall(run, "pleamar", { "--say", "mooi", "fact nexus_open " .. tostring(on) }, function() end) end
+-- D152: the frame grows the deck's body (its `dk` place): where it is on the screen (this surface starts
+-- under the bar's reserve), which edge, and a count of openings, so both springs start from 0 together
+local nm_count = 0
+local function tell_frame(on)
+    if not fact.ch_on then return end
+    local cmds = { "--say", "mooi-frame" }
+    if on then
+        nm_count = nm_count + 1
+        fact.nm_n = nm_count
+        local ox, oy = screen.ox or 0, screen.oy or 0
+        for _, c in ipairs({ "fact dk_x " .. math.floor((tonumber(fact.dk_x) or 0) + ox), "fact dk_y " .. math.floor((tonumber(fact.dk_y) or 0) + oy),
+                             "fact dk_w " .. math.floor(tonumber(fact.dk_w) or 0), "fact dk_h " .. math.floor(tonumber(fact.dk_h) or 0),
+                             "fact dk_edge " .. math.floor(tonumber(fact.dk_edge) or 3), "fact dk_n " .. nm_count, "fact dk_on true" }) do
+            cmds[#cmds + 1] = c
+        end
+    else
+        cmds[#cmds + 1] = "fact dk_on false"
+    end
+    pcall(run, "pleamar", cmds, function() end)
+end
 local function close(why)
     if closing then return end
     closing = true
+    tell_frame(false)
     log("nexus · away: " .. tostring(why or "asked"))
     pcall(run, "pleamar", { "--say", "mooi-notch", "emit nt_close" }, function() end)   -- a panel it opened goes with it
     fact.dk_open = false
@@ -137,6 +161,7 @@ local function open()
     if not closing then return end
     closing = false
     for _, f in ipairs(open_hooks) do f() end
+    tell_frame(true)
     fact.dk_open = true
     tell_bar(true)
 end
@@ -975,6 +1000,8 @@ local function read_desktop()
                 screen.full_w, screen.full_h = math.floor(m.width / s + 0.5), math.floor(m.height / s + 0.5)
                 screen.w = screen.full_w - (tonumber(r[1]) or 0) - (tonumber(r[3]) or 0)
                 screen.h = screen.full_h - (tonumber(r[2]) or 0) - (tonumber(r[4]) or 0)
+                screen.ox, screen.oy = tonumber(r[1]) or 0, tonumber(r[2]) or 0
+                fact.nm_off = screen.oy
                 active_ws = type(m.activeWorkspace) == "table" and tonumber(m.activeWorkspace.id) or active_ws
             end
         end

@@ -248,6 +248,32 @@ scene Frame {
     follow pl_q = pl_n
     prop pl_c = 0 ~m.isl_out
     follow pl_c = if(pl_on, 1, 0)
+    // the Control Nexus's deck (shell/mooi-nexus.luau hands it over): its box on the screen, the edge it grows out of (0 foot · 1 top · 2 left · 3 right), a count
+    fact dk_on = false
+    fact dk_n = 0
+    fact dk_x = 0
+    fact dk_y = 0
+    fact dk_w = 0
+    fact dk_h = 0
+    fact dk_edge = 3
+    fact dk_r = 14
+    prop dk_q = 0 ~m.isl
+    follow dk_q = dk_n
+    prop dk_c = 0 ~m.isl_out
+    follow dk_c = if(dk_on, 1, 0)
+    // the side notch's open panel (shell/mooi-notch.luau): its box on the screen, the edge it grows out of (0 foot · 1 top · 2 left · 3 right), a count
+    fact nt_on = false
+    fact nt_n = 0
+    fact nt_x = 0
+    fact nt_y = 0
+    fact nt_w = 0
+    fact nt_h = 0
+    fact nt_edge = 3
+    fact nt_r = 14
+    prop nt_q = 0 ~m.isl
+    follow nt_q = nt_n
+    prop nt_c = 0 ~m.isl_out
+    follow nt_c = if(nt_on, 1, 0)
     fact st_offset = 0
     fact st_notch = false
     fact st_height = 30
@@ -401,6 +427,48 @@ scene Frame {
     // the stretch of the top strip it crosses (its tiles are drawn by `frame_p` while it is out)
     let pl_l = min(pl_x, pl_tx - 40) - 64
     let pl_e = max(pl_x + pl_w, pl_tx + 40) + 64
+    let pl_t = pl_y0 - 64
+    let pl_b = pl_y + pl_h + 64
+    // an edge's place: a sliver on the band's inner edge, a third of the place's length, spreads along
+    // the edge on the spring and pours out of it on the spring squared (iNiR: it spreads, then pours)
+    let dk_rv = min(clamp(dk_q - (dk_n - 1), 0, 1), dk_c)
+    let dk_act = dk_rv > 0.002
+    let dk_hz = dk_edge >= 2
+    let dk_sx = if(dk_edge == 3, W - bs - 12, if(dk_edge == 2, bs, dk_x + dk_w * 0.35))
+    let dk_sw = if(dk_hz, 12, dk_w * 0.3)
+    let dk_sy = if(dk_edge == 0, H - bb - 12, if(dk_edge == 1, bt, dk_y + dk_h * 0.35))
+    let dk_sh = if(dk_hz, dk_h * 0.3, 12)
+    let dk_px = if(dk_hz, dk_rv * dk_rv, dk_rv)
+    let dk_py = if(dk_hz, dk_rv, dk_rv * dk_rv)
+    let dk_bx = dk_sx + (dk_x - dk_sx) * dk_px
+    let dk_bw = dk_sw + (dk_w - dk_sw) * dk_px
+    let dk_by = dk_sy + (dk_y - dk_sy) * dk_py
+    let dk_bh = dk_sh + (dk_h - dk_sh) * dk_py
+    let dk_br = min(min(dk_bw, dk_bh) / 2, 6 + (dk_r - 6) * dk_rv)
+    let dk_l = min(dk_x, dk_sx) - 64
+    let dk_e = max(dk_x + dk_w, dk_sx + dk_sw) + 64
+    let dk_t = min(dk_y, dk_sy) - 64
+    let dk_b = max(dk_y + dk_h, dk_sy + dk_sh) + 64
+    // an edge's place: a sliver on the band's inner edge, a third of the place's length, spreads along
+    // the edge on the spring and pours out of it on the spring squared (iNiR: it spreads, then pours)
+    let nt_rv = min(clamp(nt_q - (nt_n - 1), 0, 1), nt_c)
+    let nt_act = nt_rv > 0.002
+    let nt_hz = nt_edge >= 2
+    let nt_sx = if(nt_edge == 3, W - bs - 12, if(nt_edge == 2, bs, nt_x + nt_w * 0.35))
+    let nt_sw = if(nt_hz, 12, nt_w * 0.3)
+    let nt_sy = if(nt_edge == 0, H - bb - 12, if(nt_edge == 1, bt, nt_y + nt_h * 0.35))
+    let nt_sh = if(nt_hz, nt_h * 0.3, 12)
+    let nt_px = if(nt_hz, nt_rv * nt_rv, nt_rv)
+    let nt_py = if(nt_hz, nt_rv, nt_rv * nt_rv)
+    let nt_bx = nt_sx + (nt_x - nt_sx) * nt_px
+    let nt_bw = nt_sw + (nt_w - nt_sw) * nt_px
+    let nt_by = nt_sy + (nt_y - nt_sy) * nt_py
+    let nt_bh = nt_sh + (nt_h - nt_sh) * nt_py
+    let nt_br = min(min(nt_bw, nt_bh) / 2, 6 + (nt_r - 6) * nt_rv)
+    let nt_l = min(nt_x, nt_sx) - 64
+    let nt_e = max(nt_x + nt_w, nt_sx + nt_sw) + 64
+    let nt_t = min(nt_y, nt_sy) - 64
+    let nt_b = max(nt_y + nt_h, nt_sy + nt_sh) + 64
 
     // the material: the bar's own, so the bar and the frame are one thing
     let mech = bar_surface > 3.5
@@ -550,7 +618,7 @@ scene Frame {
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {
-                    show: not (pl_act and pl_l < W * 0.09375 and pl_e > -40)
+                    show: not ((pl_act and pl_l < W * 0.09375 and pl_e > -40 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.09375 and dk_e > -40 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.09375 and nt_e > -40 and nt_t < 160 + 40))
                     clip box { from: -40, -40; size: (W * 0.09375) - (-40), 160 + 40 }
                     body {
                         color: fcol
@@ -612,7 +680,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375)
+                    show: not ((pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.1875 and dk_e > W * 0.09375 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.1875 and nt_e > W * 0.09375 and nt_t < 160 + 40))
                     clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), 160 + 40 }
                     body {
                         color: fcol
@@ -677,7 +745,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875)
+                    show: not ((pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.28125 and dk_e > W * 0.1875 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.28125 and nt_e > W * 0.1875 and nt_t < 160 + 40))
                     clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), 160 + 40 }
                     body {
                         color: fcol
@@ -727,7 +795,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125)
+                    show: not ((pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.375 and dk_e > W * 0.28125 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.375 and nt_e > W * 0.28125 and nt_t < 160 + 40))
                     clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), 160 + 40 }
                     body {
                         color: fcol
@@ -777,7 +845,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375)
+                    show: not ((pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.46875 and dk_e > W * 0.375 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.46875 and nt_e > W * 0.375 and nt_t < 160 + 40))
                     clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), 160 + 40 }
                     body {
                         color: fcol
@@ -827,7 +895,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875)
+                    show: not ((pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.5625 and dk_e > W * 0.46875 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.5625 and nt_e > W * 0.46875 and nt_t < 160 + 40))
                     clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), 160 + 40 }
                     body {
                         color: fcol
@@ -877,7 +945,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625)
+                    show: not ((pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.65625 and dk_e > W * 0.5625 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.65625 and nt_e > W * 0.5625 and nt_t < 160 + 40))
                     clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), 160 + 40 }
                     body {
                         color: fcol
@@ -927,7 +995,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625)
+                    show: not ((pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.75 and dk_e > W * 0.65625 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.75 and nt_e > W * 0.65625 and nt_t < 160 + 40))
                     clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), 160 + 40 }
                     body {
                         color: fcol
@@ -977,7 +1045,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75)
+                    show: not ((pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.84375 and dk_e > W * 0.75 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.84375 and nt_e > W * 0.75 and nt_t < 160 + 40))
                     clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), 160 + 40 }
                     body {
                         color: fcol
@@ -1027,7 +1095,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375)
+                    show: not ((pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.9375 and dk_e > W * 0.84375 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.9375 and nt_e > W * 0.84375 and nt_t < 160 + 40))
                     clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), 160 + 40 }
                     body {
                         color: fcol
@@ -1092,7 +1160,7 @@ scene Frame {
                     }
                 }
                 group {
-                    show: not (pl_act and pl_l < W + 40 and pl_e > W * 0.9375)
+                    show: not ((pl_act and pl_l < W + 40 and pl_e > W * 0.9375 and pl_t < 160 + 40) or (dk_act and dk_l < W + 40 and dk_e > W * 0.9375 and dk_t < 160 + 40) or (nt_act and nt_l < W + 40 and nt_e > W * 0.9375 and nt_t < 160 + 40))
                     clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), 160 + 40 }
                     body {
                         color: fcol
@@ -1278,6 +1346,7 @@ scene Frame {
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {
+                    show: not ((pl_act and pl_l < W * 0.09375 and pl_e > -40 and pl_b > H - 128) or (dk_act and dk_l < W * 0.09375 and dk_e > -40 and dk_b > H - 128) or (nt_act and nt_l < W * 0.09375 and nt_e > -40 and nt_b > H - 128))
                     clip box { from: -40, H - 128; size: (W * 0.09375) - (-40), 128 + 40 }
                     body {
                         color: fcol
@@ -1318,6 +1387,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375 and pl_b > H - 128) or (dk_act and dk_l < W * 0.1875 and dk_e > W * 0.09375 and dk_b > H - 128) or (nt_act and nt_l < W * 0.1875 and nt_e > W * 0.09375 and nt_b > H - 128))
                     clip box { from: W * 0.09375, H - 128; size: (W * 0.1875) - (W * 0.09375), 128 + 40 }
                     body {
                         color: fcol
@@ -1361,6 +1431,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875 and pl_b > H - 128) or (dk_act and dk_l < W * 0.28125 and dk_e > W * 0.1875 and dk_b > H - 128) or (nt_act and nt_l < W * 0.28125 and nt_e > W * 0.1875 and nt_b > H - 128))
                     clip box { from: W * 0.1875, H - 128; size: (W * 0.28125) - (W * 0.1875), 128 + 40 }
                     body {
                         color: fcol
@@ -1390,6 +1461,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125 and pl_b > H - 128) or (dk_act and dk_l < W * 0.375 and dk_e > W * 0.28125 and dk_b > H - 128) or (nt_act and nt_l < W * 0.375 and nt_e > W * 0.28125 and nt_b > H - 128))
                     clip box { from: W * 0.28125, H - 128; size: (W * 0.375) - (W * 0.28125), 128 + 40 }
                     body {
                         color: fcol
@@ -1419,6 +1491,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375 and pl_b > H - 128) or (dk_act and dk_l < W * 0.46875 and dk_e > W * 0.375 and dk_b > H - 128) or (nt_act and nt_l < W * 0.46875 and nt_e > W * 0.375 and nt_b > H - 128))
                     clip box { from: W * 0.375, H - 128; size: (W * 0.46875) - (W * 0.375), 128 + 40 }
                     body {
                         color: fcol
@@ -1448,6 +1521,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875 and pl_b > H - 128) or (dk_act and dk_l < W * 0.5625 and dk_e > W * 0.46875 and dk_b > H - 128) or (nt_act and nt_l < W * 0.5625 and nt_e > W * 0.46875 and nt_b > H - 128))
                     clip box { from: W * 0.46875, H - 128; size: (W * 0.5625) - (W * 0.46875), 128 + 40 }
                     body {
                         color: fcol
@@ -1477,6 +1551,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625 and pl_b > H - 128) or (dk_act and dk_l < W * 0.65625 and dk_e > W * 0.5625 and dk_b > H - 128) or (nt_act and nt_l < W * 0.65625 and nt_e > W * 0.5625 and nt_b > H - 128))
                     clip box { from: W * 0.5625, H - 128; size: (W * 0.65625) - (W * 0.5625), 128 + 40 }
                     body {
                         color: fcol
@@ -1506,6 +1581,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625 and pl_b > H - 128) or (dk_act and dk_l < W * 0.75 and dk_e > W * 0.65625 and dk_b > H - 128) or (nt_act and nt_l < W * 0.75 and nt_e > W * 0.65625 and nt_b > H - 128))
                     clip box { from: W * 0.65625, H - 128; size: (W * 0.75) - (W * 0.65625), 128 + 40 }
                     body {
                         color: fcol
@@ -1535,6 +1611,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75 and pl_b > H - 128) or (dk_act and dk_l < W * 0.84375 and dk_e > W * 0.75 and dk_b > H - 128) or (nt_act and nt_l < W * 0.84375 and nt_e > W * 0.75 and nt_b > H - 128))
                     clip box { from: W * 0.75, H - 128; size: (W * 0.84375) - (W * 0.75), 128 + 40 }
                     body {
                         color: fcol
@@ -1564,6 +1641,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375 and pl_b > H - 128) or (dk_act and dk_l < W * 0.9375 and dk_e > W * 0.84375 and dk_b > H - 128) or (nt_act and nt_l < W * 0.9375 and nt_e > W * 0.84375 and nt_b > H - 128))
                     clip box { from: W * 0.84375, H - 128; size: (W * 0.9375) - (W * 0.84375), 128 + 40 }
                     body {
                         color: fcol
@@ -1607,6 +1685,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W + 40 and pl_e > W * 0.9375 and pl_b > H - 128) or (dk_act and dk_l < W + 40 and dk_e > W * 0.9375 and dk_b > H - 128) or (nt_act and nt_l < W + 40 and nt_e > W * 0.9375 and nt_b > H - 128))
                     clip box { from: W * 0.9375, H - 128; size: (W + 40) - (W * 0.9375), 128 + 40 }
                     body {
                         color: fcol
@@ -1844,6 +1923,7 @@ scene Frame {
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.25) and pl_b > max(160, H * 0.125)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.25) and dk_b > max(160, H * 0.125)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.25) and nt_b > max(160, H * 0.125)))
                     clip box { from: -40, max(160, H * 0.125); size: W / 2 + 40, max(0, min(H - 128, H * 0.25) - max(160, H * 0.125)) }
                     body {
                         color: fcol
@@ -1874,6 +1954,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.375) and pl_b > max(160, H * 0.25)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.375) and dk_b > max(160, H * 0.25)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.375) and nt_b > max(160, H * 0.25)))
                     clip box { from: -40, max(160, H * 0.25); size: W / 2 + 40, max(0, min(H - 128, H * 0.375) - max(160, H * 0.25)) }
                     body {
                         color: fcol
@@ -1904,6 +1985,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.5) and pl_b > max(160, H * 0.375)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.5) and dk_b > max(160, H * 0.375)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.5) and nt_b > max(160, H * 0.375)))
                     clip box { from: -40, max(160, H * 0.375); size: W / 2 + 40, max(0, min(H - 128, H * 0.5) - max(160, H * 0.375)) }
                     body {
                         color: fcol
@@ -1933,6 +2015,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.625) and pl_b > max(160, H * 0.5)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.625) and dk_b > max(160, H * 0.5)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.625) and nt_b > max(160, H * 0.5)))
                     clip box { from: -40, max(160, H * 0.5); size: W / 2 + 40, max(0, min(H - 128, H * 0.625) - max(160, H * 0.5)) }
                     body {
                         color: fcol
@@ -1962,6 +2045,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.75) and pl_b > max(160, H * 0.625)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.75) and dk_b > max(160, H * 0.625)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.75) and nt_b > max(160, H * 0.625)))
                     clip box { from: -40, max(160, H * 0.625); size: W / 2 + 40, max(0, min(H - 128, H * 0.75) - max(160, H * 0.625)) }
                     body {
                         color: fcol
@@ -1992,6 +2076,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.875) and pl_b > max(160, H * 0.75)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.875) and dk_b > max(160, H * 0.75)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.875) and nt_b > max(160, H * 0.75)))
                     clip box { from: -40, max(160, H * 0.75); size: W / 2 + 40, max(0, min(H - 128, H * 0.875) - max(160, H * 0.75)) }
                     body {
                         color: fcol
@@ -2022,6 +2107,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 1) and pl_b > max(160, H * 0.875)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 1) and dk_b > max(160, H * 0.875)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 1) and nt_b > max(160, H * 0.875)))
                     clip box { from: -40, max(160, H * 0.875); size: W / 2 + 40, max(0, min(H - 128, H * 1) - max(160, H * 0.875)) }
                     body {
                         color: fcol
@@ -2120,6 +2206,7 @@ scene Frame {
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.25) and pl_b > max(160, H * 0.125)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.25) and dk_b > max(160, H * 0.125)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.25) and nt_b > max(160, H * 0.125)))
                     clip box { from: W / 2, max(160, H * 0.125); size: W / 2 + 40, max(0, min(H - 128, H * 0.25) - max(160, H * 0.125)) }
                     body {
                         color: fcol
@@ -2150,6 +2237,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.375) and pl_b > max(160, H * 0.25)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.375) and dk_b > max(160, H * 0.25)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.375) and nt_b > max(160, H * 0.25)))
                     clip box { from: W / 2, max(160, H * 0.25); size: W / 2 + 40, max(0, min(H - 128, H * 0.375) - max(160, H * 0.25)) }
                     body {
                         color: fcol
@@ -2180,6 +2268,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.5) and pl_b > max(160, H * 0.375)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.5) and dk_b > max(160, H * 0.375)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.5) and nt_b > max(160, H * 0.375)))
                     clip box { from: W / 2, max(160, H * 0.375); size: W / 2 + 40, max(0, min(H - 128, H * 0.5) - max(160, H * 0.375)) }
                     body {
                         color: fcol
@@ -2209,6 +2298,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.625) and pl_b > max(160, H * 0.5)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.625) and dk_b > max(160, H * 0.5)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.625) and nt_b > max(160, H * 0.5)))
                     clip box { from: W / 2, max(160, H * 0.5); size: W / 2 + 40, max(0, min(H - 128, H * 0.625) - max(160, H * 0.5)) }
                     body {
                         color: fcol
@@ -2238,6 +2328,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.75) and pl_b > max(160, H * 0.625)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.75) and dk_b > max(160, H * 0.625)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.75) and nt_b > max(160, H * 0.625)))
                     clip box { from: W / 2, max(160, H * 0.625); size: W / 2 + 40, max(0, min(H - 128, H * 0.75) - max(160, H * 0.625)) }
                     body {
                         color: fcol
@@ -2268,6 +2359,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.875) and pl_b > max(160, H * 0.75)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.875) and dk_b > max(160, H * 0.75)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.875) and nt_b > max(160, H * 0.75)))
                     clip box { from: W / 2, max(160, H * 0.75); size: W / 2 + 40, max(0, min(H - 128, H * 0.875) - max(160, H * 0.75)) }
                     body {
                         color: fcol
@@ -2298,6 +2390,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not ((pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 1) and pl_b > max(160, H * 0.875)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 1) and dk_b > max(160, H * 0.875)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 1) and nt_b > max(160, H * 0.875)))
                     clip box { from: W / 2, max(160, H * 0.875); size: W / 2 + 40, max(0, min(H - 128, H * 1) - max(160, H * 0.875)) }
                     body {
                         color: fcol
@@ -2387,15 +2480,15 @@ scene Frame {
     surface frame_p {
         size: full, full
         anchor: top
-        level: bottom, top while pl_act
+        level: bottom, top while pl_act or dk_act or nt_act
         reserve: -1
         group {
-            show: pl_act
+            show: pl_act or dk_act or nt_act
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {
-                    show: pl_act and pl_l < W * 0.09375 and pl_e > -40
-                    clip box { from: -40, -40; size: (W * 0.09375) - (-40), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.09375 and pl_e > -40 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.09375 and dk_e > -40 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.09375 and nt_e > -40 and nt_t < 160 + 40)
+                    clip box { from: -40, -40; size: (W * 0.09375) - (-40), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2453,12 +2546,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.09375 + 48 and pcx + pcw + n_pad > -40 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.09375 + 48 and prx + prw + n_pad > -40 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.09375 + 48 and gp_x + gp_w > -40 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375
-                    clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.1875 and dk_e > W * 0.09375 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.1875 and nt_e > W * 0.09375 and nt_t < 160 + 40)
+                    clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2519,12 +2614,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.1875 + 48 and pcx + pcw + n_pad > W * 0.09375 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.1875 + 48 and prx + prw + n_pad > W * 0.09375 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.1875 + 48 and gp_x + gp_w > W * 0.09375 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875
-                    clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.28125 and dk_e > W * 0.1875 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.28125 and nt_e > W * 0.1875 and nt_t < 160 + 40)
+                    clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2570,12 +2667,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.28125 + 48 and pcx + pcw + n_pad > W * 0.1875 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.28125 + 48 and prx + prw + n_pad > W * 0.1875 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.28125 + 48 and gp_x + gp_w > W * 0.1875 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125
-                    clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.375 and dk_e > W * 0.28125 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.375 and nt_e > W * 0.28125 and nt_t < 160 + 40)
+                    clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2621,12 +2720,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.375 + 48 and pcx + pcw + n_pad > W * 0.28125 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.375 + 48 and prx + prw + n_pad > W * 0.28125 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.375 + 48 and gp_x + gp_w > W * 0.28125 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375
-                    clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.46875 and dk_e > W * 0.375 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.46875 and nt_e > W * 0.375 and nt_t < 160 + 40)
+                    clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2672,12 +2773,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.46875 + 48 and pcx + pcw + n_pad > W * 0.375 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.46875 + 48 and prx + prw + n_pad > W * 0.375 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.46875 + 48 and gp_x + gp_w > W * 0.375 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875
-                    clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.5625 and dk_e > W * 0.46875 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.5625 and nt_e > W * 0.46875 and nt_t < 160 + 40)
+                    clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2723,12 +2826,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.5625 + 48 and pcx + pcw + n_pad > W * 0.46875 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.5625 + 48 and prx + prw + n_pad > W * 0.46875 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.5625 + 48 and gp_x + gp_w > W * 0.46875 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625
-                    clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.65625 and dk_e > W * 0.5625 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.65625 and nt_e > W * 0.5625 and nt_t < 160 + 40)
+                    clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2774,12 +2879,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.65625 + 48 and pcx + pcw + n_pad > W * 0.5625 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.65625 + 48 and prx + prw + n_pad > W * 0.5625 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.65625 + 48 and gp_x + gp_w > W * 0.5625 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625
-                    clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.75 and dk_e > W * 0.65625 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.75 and nt_e > W * 0.65625 and nt_t < 160 + 40)
+                    clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2825,12 +2932,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.75 + 48 and pcx + pcw + n_pad > W * 0.65625 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.75 + 48 and prx + prw + n_pad > W * 0.65625 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.75 + 48 and gp_x + gp_w > W * 0.65625 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75
-                    clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.84375 and dk_e > W * 0.75 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.84375 and nt_e > W * 0.75 and nt_t < 160 + 40)
+                    clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2876,12 +2985,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.84375 + 48 and pcx + pcw + n_pad > W * 0.75 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.84375 + 48 and prx + prw + n_pad > W * 0.75 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.84375 + 48 and gp_x + gp_w > W * 0.75 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375
-                    clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.9375 and dk_e > W * 0.84375 and dk_t < 160 + 40) or (nt_act and nt_l < W * 0.9375 and nt_e > W * 0.84375 and nt_t < 160 + 40)
+                    clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -2942,12 +3053,14 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.9375 + 48 and pcx + pcw + n_pad > W * 0.84375 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.9375 + 48 and prx + prw + n_pad > W * 0.84375 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.9375 + 48 and gp_x + gp_w > W * 0.84375 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
                 group {
-                    show: pl_act and pl_l < W + 40 and pl_e > W * 0.9375
-                    clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), max(160 + 40, pl_y + pl_h + 80) }
+                    show: (pl_act and pl_l < W + 40 and pl_e > W * 0.9375 and pl_t < 160 + 40) or (dk_act and dk_l < W + 40 and dk_e > W * 0.9375 and dk_t < 160 + 40) or (nt_act and nt_l < W + 40 and nt_e > W * 0.9375 and nt_t < 160 + 40)
+                    clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3003,7 +3116,861 @@ scene Frame {
                         box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W + 40 + 48 and pcx + pcw + n_pad > W * 0.9375 - 48 }
                         box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W + 40 + 48 and prx + prw + n_pad > W * 0.9375 - 48 }
                         box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W + 40 + 48 and gp_x + gp_w > W * 0.9375 - 48 }
-                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.09375 and pl_e > -40 and pl_b > H - 128) or (dk_act and dk_l < W * 0.09375 and dk_e > -40 and dk_b > H - 128) or (nt_act and nt_l < W * 0.09375 and nt_e > -40 and nt_b > H - 128)
+                    clip box { from: -40, H - 128; size: (W * 0.09375) - (-40), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0, H + 40
+                               line W * 0, H - bb - fw0
+                               line W * 0.015625, H - bb - fw1
+                               line W * 0.03125, H - bb - fw2
+                               line W * 0.046875, H - bb - fw3
+                               line W * 0.0625, H - bb - fw4
+                               line W * 0.078125, H - bb - fw5
+                               line W * 0.09375, H - bb - fw6
+                               line W * 0.109375, H - bb - fw7
+                               line W * 0.125, H - bb - fw8
+                               line W * 0.140625, H - bb - fw9
+                               line W * 0.140625, H + 40
+                               close }
+                        path { move -40, H * 0.8125
+                               line bs + sw39, H * 0.8125
+                               line bs + sw40, H * 0.833333
+                               line bs + sw41, H * 0.854167
+                               line bs + sw42, H * 0.875
+                               line bs + sw43, H * 0.895833
+                               line bs + sw44, H * 0.916667
+                               line bs + sw45, H * 0.9375
+                               line bs + sw46, H * 0.958333
+                               line bs + sw47, H * 0.979167
+                               line bs + sw48, H * 1
+                               line -40, H * 1
+                               close }
+                        path { move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375 and pl_b > H - 128) or (dk_act and dk_l < W * 0.1875 and dk_e > W * 0.09375 and dk_b > H - 128) or (nt_act and nt_l < W * 0.1875 and nt_e > W * 0.09375 and nt_b > H - 128)
+                    clip box { from: W * 0.09375, H - 128; size: (W * 0.1875) - (W * 0.09375), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.046875, H + 40
+                               line W * 0.046875, H - bb - fw3
+                               line W * 0.0625, H - bb - fw4
+                               line W * 0.078125, H - bb - fw5
+                               line W * 0.09375, H - bb - fw6
+                               line W * 0.109375, H - bb - fw7
+                               line W * 0.125, H - bb - fw8
+                               line W * 0.140625, H - bb - fw9
+                               line W * 0.15625, H - bb - fw10
+                               line W * 0.171875, H - bb - fw11
+                               line W * 0.1875, H - bb - fw12
+                               line W * 0.203125, H - bb - fw13
+                               line W * 0.21875, H - bb - fw14
+                               line W * 0.234375, H - bb - fw15
+                               line W * 0.234375, H + 40
+                               close }
+                        path { move -40, H * 0.8125
+                               line bs + sw39, H * 0.8125
+                               line bs + sw40, H * 0.833333
+                               line bs + sw41, H * 0.854167
+                               line bs + sw42, H * 0.875
+                               line bs + sw43, H * 0.895833
+                               line bs + sw44, H * 0.916667
+                               line bs + sw45, H * 0.9375
+                               line bs + sw46, H * 0.958333
+                               line bs + sw47, H * 0.979167
+                               line bs + sw48, H * 1
+                               line -40, H * 1
+                               close }
+                        path { move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875 and pl_b > H - 128) or (dk_act and dk_l < W * 0.28125 and dk_e > W * 0.1875 and dk_b > H - 128) or (nt_act and nt_l < W * 0.28125 and nt_e > W * 0.1875 and nt_b > H - 128)
+                    clip box { from: W * 0.1875, H - 128; size: (W * 0.28125) - (W * 0.1875), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.140625, H + 40
+                               line W * 0.140625, H - bb - fw9
+                               line W * 0.15625, H - bb - fw10
+                               line W * 0.171875, H - bb - fw11
+                               line W * 0.1875, H - bb - fw12
+                               line W * 0.203125, H - bb - fw13
+                               line W * 0.21875, H - bb - fw14
+                               line W * 0.234375, H - bb - fw15
+                               line W * 0.25, H - bb - fw16
+                               line W * 0.265625, H - bb - fw17
+                               line W * 0.28125, H - bb - fw18
+                               line W * 0.296875, H - bb - fw19
+                               line W * 0.3125, H - bb - fw20
+                               line W * 0.328125, H - bb - fw21
+                               line W * 0.328125, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125 and pl_b > H - 128) or (dk_act and dk_l < W * 0.375 and dk_e > W * 0.28125 and dk_b > H - 128) or (nt_act and nt_l < W * 0.375 and nt_e > W * 0.28125 and nt_b > H - 128)
+                    clip box { from: W * 0.28125, H - 128; size: (W * 0.375) - (W * 0.28125), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.234375, H + 40
+                               line W * 0.234375, H - bb - fw15
+                               line W * 0.25, H - bb - fw16
+                               line W * 0.265625, H - bb - fw17
+                               line W * 0.28125, H - bb - fw18
+                               line W * 0.296875, H - bb - fw19
+                               line W * 0.3125, H - bb - fw20
+                               line W * 0.328125, H - bb - fw21
+                               line W * 0.34375, H - bb - fw22
+                               line W * 0.359375, H - bb - fw23
+                               line W * 0.375, H - bb - fw24
+                               line W * 0.390625, H - bb - fw25
+                               line W * 0.40625, H - bb - fw26
+                               line W * 0.421875, H - bb - fw27
+                               line W * 0.421875, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375 and pl_b > H - 128) or (dk_act and dk_l < W * 0.46875 and dk_e > W * 0.375 and dk_b > H - 128) or (nt_act and nt_l < W * 0.46875 and nt_e > W * 0.375 and nt_b > H - 128)
+                    clip box { from: W * 0.375, H - 128; size: (W * 0.46875) - (W * 0.375), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.328125, H + 40
+                               line W * 0.328125, H - bb - fw21
+                               line W * 0.34375, H - bb - fw22
+                               line W * 0.359375, H - bb - fw23
+                               line W * 0.375, H - bb - fw24
+                               line W * 0.390625, H - bb - fw25
+                               line W * 0.40625, H - bb - fw26
+                               line W * 0.421875, H - bb - fw27
+                               line W * 0.4375, H - bb - fw28
+                               line W * 0.453125, H - bb - fw29
+                               line W * 0.46875, H - bb - fw30
+                               line W * 0.484375, H - bb - fw31
+                               line W * 0.5, H - bb - fw32
+                               line W * 0.515625, H - bb - fw33
+                               line W * 0.515625, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875 and pl_b > H - 128) or (dk_act and dk_l < W * 0.5625 and dk_e > W * 0.46875 and dk_b > H - 128) or (nt_act and nt_l < W * 0.5625 and nt_e > W * 0.46875 and nt_b > H - 128)
+                    clip box { from: W * 0.46875, H - 128; size: (W * 0.5625) - (W * 0.46875), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.421875, H + 40
+                               line W * 0.421875, H - bb - fw27
+                               line W * 0.4375, H - bb - fw28
+                               line W * 0.453125, H - bb - fw29
+                               line W * 0.46875, H - bb - fw30
+                               line W * 0.484375, H - bb - fw31
+                               line W * 0.5, H - bb - fw32
+                               line W * 0.515625, H - bb - fw33
+                               line W * 0.53125, H - bb - fw34
+                               line W * 0.546875, H - bb - fw35
+                               line W * 0.5625, H - bb - fw36
+                               line W * 0.578125, H - bb - fw37
+                               line W * 0.59375, H - bb - fw38
+                               line W * 0.609375, H - bb - fw39
+                               line W * 0.609375, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625 and pl_b > H - 128) or (dk_act and dk_l < W * 0.65625 and dk_e > W * 0.5625 and dk_b > H - 128) or (nt_act and nt_l < W * 0.65625 and nt_e > W * 0.5625 and nt_b > H - 128)
+                    clip box { from: W * 0.5625, H - 128; size: (W * 0.65625) - (W * 0.5625), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.515625, H + 40
+                               line W * 0.515625, H - bb - fw33
+                               line W * 0.53125, H - bb - fw34
+                               line W * 0.546875, H - bb - fw35
+                               line W * 0.5625, H - bb - fw36
+                               line W * 0.578125, H - bb - fw37
+                               line W * 0.59375, H - bb - fw38
+                               line W * 0.609375, H - bb - fw39
+                               line W * 0.625, H - bb - fw40
+                               line W * 0.640625, H - bb - fw41
+                               line W * 0.65625, H - bb - fw42
+                               line W * 0.671875, H - bb - fw43
+                               line W * 0.6875, H - bb - fw44
+                               line W * 0.703125, H - bb - fw45
+                               line W * 0.703125, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625 and pl_b > H - 128) or (dk_act and dk_l < W * 0.75 and dk_e > W * 0.65625 and dk_b > H - 128) or (nt_act and nt_l < W * 0.75 and nt_e > W * 0.65625 and nt_b > H - 128)
+                    clip box { from: W * 0.65625, H - 128; size: (W * 0.75) - (W * 0.65625), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.609375, H + 40
+                               line W * 0.609375, H - bb - fw39
+                               line W * 0.625, H - bb - fw40
+                               line W * 0.640625, H - bb - fw41
+                               line W * 0.65625, H - bb - fw42
+                               line W * 0.671875, H - bb - fw43
+                               line W * 0.6875, H - bb - fw44
+                               line W * 0.703125, H - bb - fw45
+                               line W * 0.71875, H - bb - fw46
+                               line W * 0.734375, H - bb - fw47
+                               line W * 0.75, H - bb - fw48
+                               line W * 0.765625, H - bb - fw49
+                               line W * 0.78125, H - bb - fw50
+                               line W * 0.796875, H - bb - fw51
+                               line W * 0.796875, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75 and pl_b > H - 128) or (dk_act and dk_l < W * 0.84375 and dk_e > W * 0.75 and dk_b > H - 128) or (nt_act and nt_l < W * 0.84375 and nt_e > W * 0.75 and nt_b > H - 128)
+                    clip box { from: W * 0.75, H - 128; size: (W * 0.84375) - (W * 0.75), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.703125, H + 40
+                               line W * 0.703125, H - bb - fw45
+                               line W * 0.71875, H - bb - fw46
+                               line W * 0.734375, H - bb - fw47
+                               line W * 0.75, H - bb - fw48
+                               line W * 0.765625, H - bb - fw49
+                               line W * 0.78125, H - bb - fw50
+                               line W * 0.796875, H - bb - fw51
+                               line W * 0.8125, H - bb - fw52
+                               line W * 0.828125, H - bb - fw53
+                               line W * 0.84375, H - bb - fw54
+                               line W * 0.859375, H - bb - fw55
+                               line W * 0.875, H - bb - fw56
+                               line W * 0.890625, H - bb - fw57
+                               line W * 0.890625, H + 40
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375 and pl_b > H - 128) or (dk_act and dk_l < W * 0.9375 and dk_e > W * 0.84375 and dk_b > H - 128) or (nt_act and nt_l < W * 0.9375 and nt_e > W * 0.84375 and nt_b > H - 128)
+                    clip box { from: W * 0.84375, H - 128; size: (W * 0.9375) - (W * 0.84375), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.796875, H + 40
+                               line W * 0.796875, H - bb - fw51
+                               line W * 0.8125, H - bb - fw52
+                               line W * 0.828125, H - bb - fw53
+                               line W * 0.84375, H - bb - fw54
+                               line W * 0.859375, H - bb - fw55
+                               line W * 0.875, H - bb - fw56
+                               line W * 0.890625, H - bb - fw57
+                               line W * 0.90625, H - bb - fw58
+                               line W * 0.921875, H - bb - fw59
+                               line W * 0.9375, H - bb - fw60
+                               line W * 0.953125, H - bb - fw61
+                               line W * 0.96875, H - bb - fw62
+                               line W * 0.984375, H - bb - fw63
+                               line W * 0.984375, H + 40
+                               close }
+                        path { move W + 40, H * 0.8125
+                               line W - bs - sw39, H * 0.8125
+                               line W - bs - sw40, H * 0.833333
+                               line W - bs - sw41, H * 0.854167
+                               line W - bs - sw42, H * 0.875
+                               line W - bs - sw43, H * 0.895833
+                               line W - bs - sw44, H * 0.916667
+                               line W - bs - sw45, H * 0.9375
+                               line W - bs - sw46, H * 0.958333
+                               line W - bs - sw47, H * 0.979167
+                               line W - bs - sw48, H * 1
+                               line W + 40, H * 1
+                               close }
+                        path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W + 40 and pl_e > W * 0.9375 and pl_b > H - 128) or (dk_act and dk_l < W + 40 and dk_e > W * 0.9375 and dk_b > H - 128) or (nt_act and nt_l < W + 40 and nt_e > W * 0.9375 and nt_b > H - 128)
+                    clip box { from: W * 0.9375, H - 128; size: (W + 40) - (W * 0.9375), 128 + 40 }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.890625, H + 40
+                               line W * 0.890625, H - bb - fw57
+                               line W * 0.90625, H - bb - fw58
+                               line W * 0.921875, H - bb - fw59
+                               line W * 0.9375, H - bb - fw60
+                               line W * 0.953125, H - bb - fw61
+                               line W * 0.96875, H - bb - fw62
+                               line W * 0.984375, H - bb - fw63
+                               line W * 1, H - bb - fw64
+                               line W * 1, H + 40
+                               close }
+                        path { move W + 40, H * 0.8125
+                               line W - bs - sw39, H * 0.8125
+                               line W - bs - sw40, H * 0.833333
+                               line W - bs - sw41, H * 0.854167
+                               line W - bs - sw42, H * 0.875
+                               line W - bs - sw43, H * 0.895833
+                               line W - bs - sw44, H * 0.916667
+                               line W - bs - sw45, H * 0.9375
+                               line W - bs - sw46, H * 0.958333
+                               line W - bs - sw47, H * 0.979167
+                               line W - bs - sw48, H * 1
+                               line W + 40, H * 1
+                               close }
+                        path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.25) and pl_b > max(160, H * 0.125)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.25) and dk_b > max(160, H * 0.125)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.25) and nt_b > max(160, H * 0.125))
+                    clip box { from: -40, max(160, H * 0.125); size: W / 2 + 40, max(0, min(H - 128, H * 0.25) - max(160, H * 0.125)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.0625
+                               line bs + sw3, H * 0.0625
+                               line bs + sw4, H * 0.083333
+                               line bs + sw5, H * 0.104167
+                               line bs + sw6, H * 0.125
+                               line bs + sw7, H * 0.145833
+                               line bs + sw8, H * 0.166667
+                               line bs + sw9, H * 0.1875
+                               line bs + sw10, H * 0.208333
+                               line bs + sw11, H * 0.229167
+                               line bs + sw12, H * 0.25
+                               line bs + sw13, H * 0.270833
+                               line bs + sw14, H * 0.291667
+                               line bs + sw15, H * 0.3125
+                               line -40, H * 0.3125
+                               close }
+                        path { move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.375) and pl_b > max(160, H * 0.25)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.375) and dk_b > max(160, H * 0.25)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.375) and nt_b > max(160, H * 0.25))
+                    clip box { from: -40, max(160, H * 0.25); size: W / 2 + 40, max(0, min(H - 128, H * 0.375) - max(160, H * 0.25)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.1875
+                               line bs + sw9, H * 0.1875
+                               line bs + sw10, H * 0.208333
+                               line bs + sw11, H * 0.229167
+                               line bs + sw12, H * 0.25
+                               line bs + sw13, H * 0.270833
+                               line bs + sw14, H * 0.291667
+                               line bs + sw15, H * 0.3125
+                               line bs + sw16, H * 0.333333
+                               line bs + sw17, H * 0.354167
+                               line bs + sw18, H * 0.375
+                               line bs + sw19, H * 0.395833
+                               line bs + sw20, H * 0.416667
+                               line bs + sw21, H * 0.4375
+                               line -40, H * 0.4375
+                               close }
+                        path { move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.5) and pl_b > max(160, H * 0.375)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.5) and dk_b > max(160, H * 0.375)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.5) and nt_b > max(160, H * 0.375))
+                    clip box { from: -40, max(160, H * 0.375); size: W / 2 + 40, max(0, min(H - 128, H * 0.5) - max(160, H * 0.375)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.3125
+                               line bs + sw15, H * 0.3125
+                               line bs + sw16, H * 0.333333
+                               line bs + sw17, H * 0.354167
+                               line bs + sw18, H * 0.375
+                               line bs + sw19, H * 0.395833
+                               line bs + sw20, H * 0.416667
+                               line bs + sw21, H * 0.4375
+                               line bs + sw22, H * 0.458333
+                               line bs + sw23, H * 0.479167
+                               line bs + sw24, H * 0.5
+                               line bs + sw25, H * 0.520833
+                               line bs + sw26, H * 0.541667
+                               line bs + sw27, H * 0.5625
+                               line -40, H * 0.5625
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.625) and pl_b > max(160, H * 0.5)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.625) and dk_b > max(160, H * 0.5)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.625) and nt_b > max(160, H * 0.5))
+                    clip box { from: -40, max(160, H * 0.5); size: W / 2 + 40, max(0, min(H - 128, H * 0.625) - max(160, H * 0.5)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.4375
+                               line bs + sw21, H * 0.4375
+                               line bs + sw22, H * 0.458333
+                               line bs + sw23, H * 0.479167
+                               line bs + sw24, H * 0.5
+                               line bs + sw25, H * 0.520833
+                               line bs + sw26, H * 0.541667
+                               line bs + sw27, H * 0.5625
+                               line bs + sw28, H * 0.583333
+                               line bs + sw29, H * 0.604167
+                               line bs + sw30, H * 0.625
+                               line bs + sw31, H * 0.645833
+                               line bs + sw32, H * 0.666667
+                               line bs + sw33, H * 0.6875
+                               line -40, H * 0.6875
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.75) and pl_b > max(160, H * 0.625)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.75) and dk_b > max(160, H * 0.625)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.75) and nt_b > max(160, H * 0.625))
+                    clip box { from: -40, max(160, H * 0.625); size: W / 2 + 40, max(0, min(H - 128, H * 0.75) - max(160, H * 0.625)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.5625
+                               line bs + sw27, H * 0.5625
+                               line bs + sw28, H * 0.583333
+                               line bs + sw29, H * 0.604167
+                               line bs + sw30, H * 0.625
+                               line bs + sw31, H * 0.645833
+                               line bs + sw32, H * 0.666667
+                               line bs + sw33, H * 0.6875
+                               line bs + sw34, H * 0.708333
+                               line bs + sw35, H * 0.729167
+                               line bs + sw36, H * 0.75
+                               line bs + sw37, H * 0.770833
+                               line bs + sw38, H * 0.791667
+                               line bs + sw39, H * 0.8125
+                               line -40, H * 0.8125
+                               close }
+                        path { move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 0.875) and pl_b > max(160, H * 0.75)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 0.875) and dk_b > max(160, H * 0.75)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 0.875) and nt_b > max(160, H * 0.75))
+                    clip box { from: -40, max(160, H * 0.75); size: W / 2 + 40, max(0, min(H - 128, H * 0.875) - max(160, H * 0.75)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.6875
+                               line bs + sw33, H * 0.6875
+                               line bs + sw34, H * 0.708333
+                               line bs + sw35, H * 0.729167
+                               line bs + sw36, H * 0.75
+                               line bs + sw37, H * 0.770833
+                               line bs + sw38, H * 0.791667
+                               line bs + sw39, H * 0.8125
+                               line bs + sw40, H * 0.833333
+                               line bs + sw41, H * 0.854167
+                               line bs + sw42, H * 0.875
+                               line bs + sw43, H * 0.895833
+                               line bs + sw44, H * 0.916667
+                               line bs + sw45, H * 0.9375
+                               line -40, H * 0.9375
+                               close }
+                        path { move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_l < W / 2 and pl_t < min(H - 128, H * 1) and pl_b > max(160, H * 0.875)) or (dk_act and dk_l < W / 2 and dk_t < min(H - 128, H * 1) and dk_b > max(160, H * 0.875)) or (nt_act and nt_l < W / 2 and nt_t < min(H - 128, H * 1) and nt_b > max(160, H * 0.875))
+                    clip box { from: -40, max(160, H * 0.875); size: W / 2 + 40, max(0, min(H - 128, H * 1) - max(160, H * 0.875)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move -40, H * 0.8125
+                               line bs + sw39, H * 0.8125
+                               line bs + sw40, H * 0.833333
+                               line bs + sw41, H * 0.854167
+                               line bs + sw42, H * 0.875
+                               line bs + sw43, H * 0.895833
+                               line bs + sw44, H * 0.916667
+                               line bs + sw45, H * 0.9375
+                               line bs + sw46, H * 0.958333
+                               line bs + sw47, H * 0.979167
+                               line bs + sw48, H * 1
+                               line -40, H * 1
+                               close }
+                        path { move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.25) and pl_b > max(160, H * 0.125)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.25) and dk_b > max(160, H * 0.125)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.25) and nt_b > max(160, H * 0.125))
+                    clip box { from: W / 2, max(160, H * 0.125); size: W / 2 + 40, max(0, min(H - 128, H * 0.25) - max(160, H * 0.125)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.0625
+                               line W - bs - sw3, H * 0.0625
+                               line W - bs - sw4, H * 0.083333
+                               line W - bs - sw5, H * 0.104167
+                               line W - bs - sw6, H * 0.125
+                               line W - bs - sw7, H * 0.145833
+                               line W - bs - sw8, H * 0.166667
+                               line W - bs - sw9, H * 0.1875
+                               line W - bs - sw10, H * 0.208333
+                               line W - bs - sw11, H * 0.229167
+                               line W - bs - sw12, H * 0.25
+                               line W - bs - sw13, H * 0.270833
+                               line W - bs - sw14, H * 0.291667
+                               line W - bs - sw15, H * 0.3125
+                               line W + 40, H * 0.3125
+                               close }
+                        path { move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.375) and pl_b > max(160, H * 0.25)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.375) and dk_b > max(160, H * 0.25)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.375) and nt_b > max(160, H * 0.25))
+                    clip box { from: W / 2, max(160, H * 0.25); size: W / 2 + 40, max(0, min(H - 128, H * 0.375) - max(160, H * 0.25)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.1875
+                               line W - bs - sw9, H * 0.1875
+                               line W - bs - sw10, H * 0.208333
+                               line W - bs - sw11, H * 0.229167
+                               line W - bs - sw12, H * 0.25
+                               line W - bs - sw13, H * 0.270833
+                               line W - bs - sw14, H * 0.291667
+                               line W - bs - sw15, H * 0.3125
+                               line W - bs - sw16, H * 0.333333
+                               line W - bs - sw17, H * 0.354167
+                               line W - bs - sw18, H * 0.375
+                               line W - bs - sw19, H * 0.395833
+                               line W - bs - sw20, H * 0.416667
+                               line W - bs - sw21, H * 0.4375
+                               line W + 40, H * 0.4375
+                               close }
+                        path { move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.5) and pl_b > max(160, H * 0.375)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.5) and dk_b > max(160, H * 0.375)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.5) and nt_b > max(160, H * 0.375))
+                    clip box { from: W / 2, max(160, H * 0.375); size: W / 2 + 40, max(0, min(H - 128, H * 0.5) - max(160, H * 0.375)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.3125
+                               line W - bs - sw15, H * 0.3125
+                               line W - bs - sw16, H * 0.333333
+                               line W - bs - sw17, H * 0.354167
+                               line W - bs - sw18, H * 0.375
+                               line W - bs - sw19, H * 0.395833
+                               line W - bs - sw20, H * 0.416667
+                               line W - bs - sw21, H * 0.4375
+                               line W - bs - sw22, H * 0.458333
+                               line W - bs - sw23, H * 0.479167
+                               line W - bs - sw24, H * 0.5
+                               line W - bs - sw25, H * 0.520833
+                               line W - bs - sw26, H * 0.541667
+                               line W - bs - sw27, H * 0.5625
+                               line W + 40, H * 0.5625
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.625) and pl_b > max(160, H * 0.5)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.625) and dk_b > max(160, H * 0.5)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.625) and nt_b > max(160, H * 0.5))
+                    clip box { from: W / 2, max(160, H * 0.5); size: W / 2 + 40, max(0, min(H - 128, H * 0.625) - max(160, H * 0.5)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.4375
+                               line W - bs - sw21, H * 0.4375
+                               line W - bs - sw22, H * 0.458333
+                               line W - bs - sw23, H * 0.479167
+                               line W - bs - sw24, H * 0.5
+                               line W - bs - sw25, H * 0.520833
+                               line W - bs - sw26, H * 0.541667
+                               line W - bs - sw27, H * 0.5625
+                               line W - bs - sw28, H * 0.583333
+                               line W - bs - sw29, H * 0.604167
+                               line W - bs - sw30, H * 0.625
+                               line W - bs - sw31, H * 0.645833
+                               line W - bs - sw32, H * 0.666667
+                               line W - bs - sw33, H * 0.6875
+                               line W + 40, H * 0.6875
+                               close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.75) and pl_b > max(160, H * 0.625)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.75) and dk_b > max(160, H * 0.625)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.75) and nt_b > max(160, H * 0.625))
+                    clip box { from: W / 2, max(160, H * 0.625); size: W / 2 + 40, max(0, min(H - 128, H * 0.75) - max(160, H * 0.625)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.5625
+                               line W - bs - sw27, H * 0.5625
+                               line W - bs - sw28, H * 0.583333
+                               line W - bs - sw29, H * 0.604167
+                               line W - bs - sw30, H * 0.625
+                               line W - bs - sw31, H * 0.645833
+                               line W - bs - sw32, H * 0.666667
+                               line W - bs - sw33, H * 0.6875
+                               line W - bs - sw34, H * 0.708333
+                               line W - bs - sw35, H * 0.729167
+                               line W - bs - sw36, H * 0.75
+                               line W - bs - sw37, H * 0.770833
+                               line W - bs - sw38, H * 0.791667
+                               line W - bs - sw39, H * 0.8125
+                               line W + 40, H * 0.8125
+                               close }
+                        path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 0.875) and pl_b > max(160, H * 0.75)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 0.875) and dk_b > max(160, H * 0.75)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 0.875) and nt_b > max(160, H * 0.75))
+                    clip box { from: W / 2, max(160, H * 0.75); size: W / 2 + 40, max(0, min(H - 128, H * 0.875) - max(160, H * 0.75)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.6875
+                               line W - bs - sw33, H * 0.6875
+                               line W - bs - sw34, H * 0.708333
+                               line W - bs - sw35, H * 0.729167
+                               line W - bs - sw36, H * 0.75
+                               line W - bs - sw37, H * 0.770833
+                               line W - bs - sw38, H * 0.791667
+                               line W - bs - sw39, H * 0.8125
+                               line W - bs - sw40, H * 0.833333
+                               line W - bs - sw41, H * 0.854167
+                               line W - bs - sw42, H * 0.875
+                               line W - bs - sw43, H * 0.895833
+                               line W - bs - sw44, H * 0.916667
+                               line W - bs - sw45, H * 0.9375
+                               line W + 40, H * 0.9375
+                               close }
+                        path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
+                    }
+                }
+                group {
+                    show: (pl_act and pl_e > W / 2 and pl_t < min(H - 128, H * 1) and pl_b > max(160, H * 0.875)) or (dk_act and dk_e > W / 2 and dk_t < min(H - 128, H * 1) and dk_b > max(160, H * 0.875)) or (nt_act and nt_e > W / 2 and nt_t < min(H - 128, H * 1) and nt_b > max(160, H * 0.875))
+                    clip box { from: W / 2, max(160, H * 0.875); size: W / 2 + 40, max(0, min(H - 128, H * 1) - max(160, H * 0.875)) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W + 40, H * 0.8125
+                               line W - bs - sw39, H * 0.8125
+                               line W - bs - sw40, H * 0.833333
+                               line W - bs - sw41, H * 0.854167
+                               line W - bs - sw42, H * 0.875
+                               line W - bs - sw43, H * 0.895833
+                               line W - bs - sw44, H * 0.916667
+                               line W - bs - sw45, H * 0.9375
+                               line W - bs - sw46, H * 0.958333
+                               line W - bs - sw47, H * 0.979167
+                               line W - bs - sw48, H * 1
+                               line W + 40, H * 1
+                               close }
+                        path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
+                        box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
+                        box { from: nt_bx, nt_by; size: max(1, nt_bw), max(1, nt_bh); corner: nt_br; blend: 30; show: nt_act }
                     }
                 }
             }
