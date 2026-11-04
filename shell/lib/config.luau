@@ -115,6 +115,9 @@ M.SCHEMA = {
     { path = "island.follow_on_send", kind = "boolean", default = false },
     -- every island's look (ui/island.plm): Ferrolume plates, or tethered to their module
     { path = "island.style", kind = "enum", values = { "plate", "tether" }, default = "plate" },
+    -- D148: every island that morphs open (from the bar, the side notch, the Control Nexus) grown out of
+    -- where it opened on living circuitry — a braided cable, veins, nodules, a signal running it
+    { path = "island.biomass", kind = "boolean", default = false },
     -- what the clock module shows; a right press on it cycles them
     { path = "clock.view", kind = "enum", values = { "full", "time", "seconds" }, default = "full" },
     -- the spine on the right edge, whose shelves slide out on hover (D100)

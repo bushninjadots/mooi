@@ -4471,3 +4471,24 @@ view "like a circuit board or signals"; Wallhaven in every picker; settings to c
 and on the orbit; the circuit board with routes to a top, a side and a bottom bank; the Settings page.
 **Not checked:** wearing from Wallhaven end to end (a save into your folder); a sketchy/NSFW search (no
 key here); the auto-change firing (it waits its minutes); the Settings folder rows on screen.
+
+## D148 · 2026-11-04 · Biomass: the islands grown on living circuitry
+**Asked for:** an option in Settings so that every island that morphs open — from the bar, the notches,
+wherever — is connected by "organic flowy circuitry, Mechanicus biomass". The user was away; these are
+my choices.
+- `island.biomass` (Settings → Bar, beside the island style; off by default — **turned on in your
+  settings** so you see it). It layers over either style (plate or tether), not a third style: many
+  islands read `isl_style > 0.5` as the tether.
+- **Bar and Control Nexus islands** (ui/island.plm `IslandFrame`, so all ten of the bar's and the Nexus's
+  get it): the island hangs 44 px under the bar on an umbilical — a steel core cable with a lit fibre,
+  two strands braided round it, six ribs like vertebrae with nodes — webbed to the island's top; roots
+  curl along the bar's foot from where it opened; veins run from the cable along the top edge to the
+  corners and down the island's border, gripping it from outside with hooked tendrils; nodules of steel
+  and ember where it took root; a signal runs down the cable and out along the veins as it opens.
+- **The side notch**: the open panel grown out of its lit tab — a ribbed cable across (an arc's hub for
+  Workspaces and Wallpapers), veins climbing and descending the card's edge, nodules, the signal.
+- **Cost**: it all follows each island's own opening spring and rests when the island is open — no
+  `time`, no wave, so the bar never repaints for it (the bar scene is 32k instructions; a continuous
+  animation there costs every frame). Straight steps only. The bar's instruction count grew ~800.
+**Checked on screen:** the system island opening and open; the notch's music panel.
+**Not checked:** the other islands one by one, the Nexus's, the tether style with it, light mode.

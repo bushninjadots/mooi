@@ -86,6 +86,8 @@ M.SETTERS = {
     "walls.dots", "walls.swell", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting",
     "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "walls.auto", "walls.auto_every",
     "walls.auto_from", "walls.auto_fullscreen",
+    -- D148: the islands on living circuitry
+    "island.biomass",
 }
 
 local function row_of(path)

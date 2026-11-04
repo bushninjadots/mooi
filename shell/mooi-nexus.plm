@@ -251,6 +251,7 @@ scene Nexus {
     fact st_res = 46
 
     fact st_glow = 1
+    fact bio_on = false          // island.biomass (D148): islands grown on living circuitry
     fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
 
     // ── What the services report ──

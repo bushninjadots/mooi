@@ -63,6 +63,7 @@ local function paint()
     end
     fact.cn_kind, fact.cn_scale = style.corners(settings)
     fact.isl_style = settings.island.style == "tether" and 1 or 0
+    fact.bio_on = settings.island.biomass == true   -- D148
     local look = style.facts(settings)
     if look and look.st_glow then fact.st_glow = look.st_glow end
 end

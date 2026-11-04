@@ -19,7 +19,9 @@ library Island {
     component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1) {
         size: w, h
         let tether = isl_style > 0.5
-        let drop = if(tether and not up and not centre, 12, 0)
+        // biomass (island.biomass, D148): the island hangs further down, on living circuitry
+        let bio = bio_on and not up
+        let drop = if(bio and not centre, 44, if(tether and not up and not centre, 12, 0))
         let iw = aw + (w - aw) * rv
         let ih = ah + (h - ah) * rv
         let top = if(up, h - ih, 0) + drop
@@ -67,6 +69,118 @@ library Island {
             line { from: left + irad, top + 0.75; to: left + iw - irad, top + 0.75; width: 1; color: accent.primary; opacity: 0.45 * rv }
         }
 
+
+        // ── biomass (D148): the island grown out of the bar on living circuitry ──
+        // An umbilical of braided cable, ribbed like vertebrae and webbed to the island, roots curling
+        // along the bar, veins that run its border and grip it from outside, nodules where it took root,
+        // and a signal that runs it all once as it opens. Driven by the island's own spring (`rv`): it
+        // grows as the island morphs open and rests when it is open, so it costs nothing while nothing
+        // moves. Straight steps only (a curve costs far more per frame).
+        let bax = if(tx >= 0, clamp(tx, 14, w - 14), left + iw / 2)
+        let by0 = if(centre, -28, -6)
+        let bgl = smooth(0, 0.55, rv)                      // the cable, grown down from the bar
+        let bgv = smooth(0.35, 1, rv)                      // the veins, spread over the island
+        let bly = by0 + (top - by0) * bgl                  // how far down the cable has reached
+        let bcl = top - by0
+        let bvl = left + 2                                 // the veins run the island's border
+        let bvr = left + iw - 2
+        let bvh = ih * 0.5 * bgv                           // how far down its sides they have grown
+        group {
+            show: bio and rv > 0.02
+            // roots along the bar's foot, curling away to both sides
+            group {
+                opacity: smooth(0, 0.3, rv) * 0.85
+                path { move bax, by0; line bax - 8 * bgl, by0 + 2; line bax - 18 * bgl, by0 + 2; line bax - 26 * bgl, by0 + 5; line bax - 34 * bgl, by0 + 4; line bax - 38 * bgl, by0 + 1; stroke: 1.3; color: fl.trace_lit }
+                path { move bax, by0; line bax + 8 * bgl, by0 + 2; line bax + 18 * bgl, by0 + 2; line bax + 26 * bgl, by0 + 5; line bax + 34 * bgl, by0 + 4; line bax + 38 * bgl, by0 + 1; stroke: 1.3; color: fl.trace_lit }
+                path { move bax, by0 + 1; line bax - 6 * bgl, by0 + 6; line bax - 12 * bgl, by0 + 8; line bax - 16 * bgl, by0 + 14; stroke: 1; color: fl.trace }
+                path { move bax, by0 + 1; line bax + 6 * bgl, by0 + 6; line bax + 12 * bgl, by0 + 8; line bax + 16 * bgl, by0 + 14; stroke: 1; color: fl.trace }
+                path { move bax - 18 * bgl, by0 + 2; line bax - 22 * bgl, by0 - 2; stroke: 1; color: fl.trace }
+                path { move bax + 18 * bgl, by0 + 2; line bax + 22 * bgl, by0 - 2; stroke: 1; color: fl.trace }
+                ellipse { at: bax - 38 * bgl, by0 + 1; radius: 1.8; color: fl.phos }
+                ellipse { at: bax + 38 * bgl, by0 + 1; radius: 1.8; color: fl.phos }
+                ellipse { at: bax - 16 * bgl, by0 + 14; radius: 1.4; color: fl.trace_lit }
+                ellipse { at: bax + 16 * bgl, by0 + 14; radius: 1.4; color: fl.trace_lit }
+                ellipse { at: bax, by0 + 1; radius: 5; color: fl.steel_700 }
+                ellipse { at: bax, by0 + 1; radius: 5; stroke: 1.2; color: fl.trace_lit }
+            }
+            // the webbing between cable and island: tissue held taut
+            group {
+                opacity: smooth(0.3, 0.8, rv) * 0.55
+                line { from: bax, by0 + bcl * 0.55; to: bax - 40, top; width: 1; color: fl.trace }
+                line { from: bax, by0 + bcl * 0.55; to: bax + 40, top; width: 1; color: fl.trace }
+                line { from: bax, by0 + bcl * 0.75; to: bax - 22, top; width: 1; color: fl.trace_dim }
+                line { from: bax, by0 + bcl * 0.75; to: bax + 22, top; width: 1; color: fl.trace_dim }
+            }
+            // the umbilical: a core cable, two strands braided round it, ribs like vertebrae
+            group {
+                clip box { from: bax - 16, by0 - 2; size: 32, max(0.5, bly - by0 + 2) }
+                line { from: bax, by0; to: bax, top; width: 5; color: fl.steel_700 }
+                group {
+                    glow: 5, 0.5 * st_glow, fl.phos
+                    line { from: bax, by0; to: bax, top; width: 1.6; color: fl.phos_fill }
+                }
+                path { move bax, by0; line bax + 6, by0 + bcl * 0.1; line bax, by0 + bcl * 0.2; line bax - 6, by0 + bcl * 0.3; line bax, by0 + bcl * 0.4
+                       line bax + 6, by0 + bcl * 0.5; line bax, by0 + bcl * 0.6; line bax - 6, by0 + bcl * 0.7; line bax, by0 + bcl * 0.8
+                       line bax + 6, by0 + bcl * 0.9; line bax, top; stroke: 1.4; color: fl.trace_lit }
+                path { move bax, by0; line bax - 6, by0 + bcl * 0.1; line bax, by0 + bcl * 0.2; line bax + 6, by0 + bcl * 0.3; line bax, by0 + bcl * 0.4
+                       line bax - 6, by0 + bcl * 0.5; line bax, by0 + bcl * 0.6; line bax + 6, by0 + bcl * 0.7; line bax, by0 + bcl * 0.8
+                       line bax - 6, by0 + bcl * 0.9; line bax, top; stroke: 1.4; color: fl.trace }
+                repeat q in 1..6 {
+                    line { from: bax - 7, by0 + bcl * q / 6; to: bax + 7, by0 + bcl * q / 6; width: 2.4; color: fl.steel_500 }
+                    ellipse { at: bax - 8, by0 + bcl * q / 6; radius: 1.3; color: fl.trace_lit }
+                    ellipse { at: bax + 8, by0 + bcl * q / 6; radius: 1.3; color: fl.trace_lit }
+                }
+            }
+            ellipse { at: bax, top; radius: 5; color: fl.hull; show: rv > 0.5 }
+            ellipse { at: bax, top; radius: 5; stroke: 1.4; color: fl.phos; show: rv > 0.5 }
+        }
+        group {
+            show: bio and rv > 0.3
+            opacity: bgv
+            // veins out from the cable along the top edge to the corners, then down the island's border
+            path { move bax, top + 2; line bax + (bvr - 10 - bax) * bgv, top + 2; line bax + (bvr - bax) * bgv, top + 8 * bgv; line bvr, top + 8 + bvh; stroke: 1.4; color: fl.phos; opacity: 0.8 }
+            path { move bax, top + 2; line bax - (bax - bvl - 10) * bgv, top + 2; line bax - (bax - bvl) * bgv, top + 8 * bgv; line bvl, top + 8 + bvh; stroke: 1.4; color: fl.phos; opacity: 0.8 }
+            // where they grip from outside: short tendrils hooked over the edge
+            path { move bvl, top + 8 + bvh * 0.35; line bvl - 7, top + 14 + bvh * 0.35; line bvl - 9, top + 24 + bvh * 0.35; stroke: 1.1; color: fl.trace_lit; opacity: 0.75 }
+            path { move bvr, top + 8 + bvh * 0.35; line bvr + 7, top + 14 + bvh * 0.35; line bvr + 9, top + 24 + bvh * 0.35; stroke: 1.1; color: fl.trace_lit; opacity: 0.75 }
+            path { move bvl, top + 8 + bvh * 0.8; line bvl - 6, top + 12 + bvh * 0.8; line bvl - 6, top + 20 + bvh * 0.8; stroke: 1; color: fl.trace; opacity: 0.7 }
+            path { move bvr, top + 8 + bvh * 0.8; line bvr + 6, top + 12 + bvh * 0.8; line bvr + 6, top + 20 + bvh * 0.8; stroke: 1; color: fl.trace; opacity: 0.7 }
+            ellipse { at: bvl, top + 8 + bvh; radius: 2.4; color: fl.phos }
+            ellipse { at: bvr, top + 8 + bvh; radius: 2.4; color: fl.phos }
+            ellipse { at: bvl - 9, top + 24 + bvh * 0.35; radius: 1.6; color: fl.trace_lit }
+            ellipse { at: bvr + 9, top + 24 + bvh * 0.35; radius: 1.6; color: fl.trace_lit }
+            // a capillary off the top vein each side, ending in a pad
+            path { move bax + (bvr - bax) * 0.5 * bgv, top + 2; line bax + (bvr - bax) * 0.5 * bgv + 6, top - 4; line bax + (bvr - bax) * 0.5 * bgv + 20 * bgv, top - 4; stroke: 1; color: fl.trace_lit; opacity: 0.6 }
+            path { move bax - (bax - bvl) * 0.5 * bgv, top + 2; line bax - (bax - bvl) * 0.5 * bgv - 6, top - 4; line bax - (bax - bvl) * 0.5 * bgv - 20 * bgv, top - 4; stroke: 1; color: fl.trace_lit; opacity: 0.6 }
+            ellipse { at: bax + (bvr - bax) * 0.5 * bgv + 20 * bgv, top - 4; radius: 1.5; color: fl.trace_lit }
+            ellipse { at: bax - (bax - bvl) * 0.5 * bgv - 20 * bgv, top - 4; radius: 1.5; color: fl.trace_lit }
+            // nodules where it has taken root at the corners: growths of steel and ember
+            group {
+                opacity: smooth(0.7, 1, rv)
+                ellipse { at: left + 3, top + 3; radius: 5.5; color: fl.steel_700 }
+                ellipse { at: left + 3, top + 3; radius: 5.5; stroke: 1.2; color: fl.trace_lit }
+                ellipse { at: left + 11, top - 1; radius: 2.6; color: fl.ember }
+                ellipse { at: left - 2, top + 12; radius: 2.2; color: fl.steel_500 }
+                ellipse { at: left + iw - 3, top + 3; radius: 5.5; color: fl.steel_700 }
+                ellipse { at: left + iw - 3, top + 3; radius: 5.5; stroke: 1.2; color: fl.trace_lit }
+                ellipse { at: left + iw - 11, top - 1; radius: 2.6; color: fl.ember }
+                ellipse { at: left + iw + 2, top + 12; radius: 2.2; color: fl.steel_500 }
+                ellipse { at: left + 2, top + ih - 3; radius: 3.5; color: fl.steel_700 }
+                ellipse { at: left + 2, top + ih - 3; radius: 3.5; stroke: 1; color: fl.trace }
+                ellipse { at: left + iw - 2, top + ih - 3; radius: 3.5; color: fl.steel_700 }
+                ellipse { at: left + iw - 2, top + ih - 3; radius: 3.5; stroke: 1; color: fl.trace }
+            }
+        }
+        // the signal: down the cable as it opens, then out along both veins and down the sides
+        group {
+            show: bio and rv > 0.05 and rv < 0.985
+            glow: 10, 0.95 * st_glow, fl.flare
+            let bsp = smooth(0.05, 0.98, rv)
+            let bs2 = max(0, bsp * 2 - 1)
+            ellipse { at: bax, by0 + bcl * min(1, bsp * 2); radius: 3.2; color: fl.flare; show: bsp < 0.5 }
+            ellipse { at: bax + (bvr - bax) * min(1, bs2 * 1.6), top + 2 + max(0, bs2 * 1.6 - 1) * ih * 0.8; radius: 2.6; color: fl.flare; show: bsp >= 0.5 }
+            ellipse { at: bax - (bax - bvl) * min(1, bs2 * 1.6), top + 2 + max(0, bs2 * 1.6 - 1) * ih * 0.8; radius: 2.6; color: fl.flare; show: bsp >= 0.5 }
+        }
         group {
             opacity: smooth(0.45, 1, rv)
             move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0) + drop
