@@ -4636,3 +4636,24 @@ Recorded at 60 fps (wf-recorder) and read a frame at a time — screenshots had 
   they move now: 22.7 % → 19.5 %); mooi in all 36 % → 31 %. The widgets' remaining cost is their scene
   (39k instructions, every frame, for one 127-bar visualiser): the next step is the visualiser as a small
   program of its own. Borders: looked at closely, left as they are (the swell style's edge is by design).
+
+## D155 · 2026-11-04 · The visualisers as a program of their own
+**Asked for:** "do next for visualiser" (D154's note: the widgets' scene redrew all 39k instructions 30
+times a second for one 127-bar visualiser).
+- **mooi-viz** (shell/mooi-viz.plm + .luau, 17k instructions, no zones, the widgets' bottom layer): the
+  three visualiser lanes (ui/vizwide.plm), its own palette, and the music — it takes the bar's feed itself
+  (the bars, the bands, the scope's afterimages, the beat's rings; facts written only when they move).
+  The bar keeps it running beside the widgets (`viz_sync`: one copy, strays cleared, restarted if it ends;
+  in a `do` block — mooi.luau's main chunk is at Lua's 200 locals).
+- **The widgets** still decide where each visualiser is and how it looks: their logic sends the lane
+  facts (and each slot's opacity, `smooth`, the mood) whenever any of it changes, looked at every 400 ms;
+  `hold` while they are edited or gathered (desk mode), when the widgets draw them themselves so a drag
+  stays live. They ask every 3 s whether it is up (`viz_ext`); without it they draw as before.
+- **Spins gated:** the record's turntable turns only with a Now Playing in the Record layout (`np_rec`),
+  the drifting modes only while the widgets draw visualisers.
+- Found: mooi-viz's logic stopped on its first line (`st_glow` undeclared) — a test copy run in the
+  foreground showed it; declared.
+**Measured with music** (8 s, CPU of a core): the widgets 22.7 % (D154 start) → 3.9 %; mooi-viz 11 %
+(1.4 ms of rules a frame against the widgets' 2.9); the two together 14.9 % against 22.7. At rest both
+~1 %. The rest of mooi-viz's cost is the visualiser chosen (127 bars, scope, reflection).
+**Checked:** edit mode hands the visualiser back to the widgets and takes it again after.

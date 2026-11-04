@@ -76,6 +76,7 @@ end)
 local room = { w = 1920, h = 1046, top = 0 }
 local doc = nil
 local playing = false
+local viz_extra = {}         -- D155: each visualiser lane's slot opacity and smoothing, for mooi-viz
 
 -- Calm: nothing pointed at and no fade under way, so the surface can drop to a few frames a second.
 local hovered, calm_at = {}, 0
@@ -202,6 +203,18 @@ local function publish()
         end
     end
     for j = lane, 2 do fact["l" .. ({ "A", "B", "C" })[j + 1] .. "_on"] = false end
+    -- D155: what mooi-viz needs besides the lane facts: each lane's slot opacity and how slowly it falls
+    viz_extra = {}
+    lane = 0
+    for i, w in ipairs(doc.widgets) do
+        if w.kind == "visualiser" and lane < 3 then
+            lane = lane + 1
+            viz_extra[lane] = { po = rows[i].op or 1, sm = tonumber((w.options or {}).smooth) or 0.5 }
+        end
+    end
+    local rec = false
+    for _, w in ipairs(doc.widgets) do if w.kind == "nowplaying" and w.layout == "record" then rec = true end end
+    fact.np_rec = rec
     -- notes (one) and GitHub (two) are drawn as lanes too: their lists cannot sit inside the loop
     local function lane_facts(f, i, r)
         fact[f .. "on"], fact[f .. "k"] = true, i - 1
@@ -249,6 +262,49 @@ local function publish()
     end
     unsettle()
 end
+
+-- ── D155: the visualisers drawn by mooi-viz ──
+-- Where each one is and how it looks, sent whenever any of it changes (looked at every 400 ms: a
+-- string of what it would be told); `hold` while the widgets draw them themselves (editing, desk mode).
+local VIZ_KEYS = { "on", "x", "y", "w", "h", "u", "mode", "n", "gap", "glow", "peaks", "refl", "plate", "st", "gh",
+                   "opa", "ad", "ar", "ag", "ab" }
+local viz_sent = nil
+local function viz_cmds()
+    local hold = fact.editing or fact.wg_desk or (tonumber(fact.wg_dkp) or 0) > 0.01
+    local c = { "fact hold " .. tostring(hold), "fact viz_still " .. tostring(fact.viz_still == true),
+                "fact mood_glow " .. tostring(tonumber(fact.mood_glow) or 1), "fact mood_pace " .. tostring(tonumber(fact.mood_pace) or 1) }
+    for k, L in ipairs({ "A", "B", "C" }) do
+        local f = "l" .. L .. "_"
+        for _, key in ipairs(VIZ_KEYS) do
+            local v = fact[f .. key]
+            if v ~= nil then c[#c + 1] = "fact " .. f .. key .. " " .. tostring(v) end
+        end
+        local e = viz_extra[k] or { po = 1, sm = 0.5 }
+        c[#c + 1] = "fact " .. f .. "po " .. tostring(e.po)
+        c[#c + 1] = "fact " .. f .. "sm " .. tostring(e.sm)
+    end
+    return c
+end
+local function viz_send(force)
+    if not fact.viz_ext or standing_down then return end
+    local c = viz_cmds()
+    local key = table.concat(c, ";")
+    if key == viz_sent and not force then return end
+    viz_sent = key
+    local args = { "--say", "mooi-viz" }
+    for _, x in ipairs(c) do args[#args + 1] = x end
+    run("pleamar", args, function() end)
+end
+every(400, function() viz_send(false) end)
+on("wg_viz_hello", function() fact.viz_ext = true; viz_send(true) end)
+-- whether it is up (the bar starts it beside the widgets): asked every three seconds
+every(3000, function()
+    run("pleamar", { "--say", "mooi-viz", "get hold" }, function(_, code)
+        local up = code == 0
+        if up and not fact.viz_ext then fact.viz_ext = true; viz_send(true)
+        elseif not up and fact.viz_ext then fact.viz_ext = false; viz_sent = nil end
+    end)
+end)
 
 local function load()
     local raw = read(W.FILE)
@@ -1366,9 +1422,12 @@ end
 -- ── The visualiser's feed (the bar's one cava) ──
 -- the feed is wanted for a visualiser, a music widget showing one, and an analogue clock (its
 -- second hand breathes with the bass, D141)
+local function drawn_here()
+    return not fact.viz_ext or fact.editing or fact.wg_desk or (tonumber(fact.wg_dkp) or 0) > 0.01
+end
 local function any_viz()
     for _, w in ipairs(doc.widgets) do
-        if w.kind == "visualiser" or (w.kind == "nowplaying" and (w.options or {}).viz == true) or w.layout == "analogue" then return true end
+        if (w.kind == "visualiser" and drawn_here()) or (w.kind == "nowplaying" and (w.options or {}).viz == true) or w.layout == "analogue" then return true end
     end
     return false
 end
@@ -1443,14 +1502,18 @@ local function take_viz()
     if not t.playing then hush(); return end
     local b = vizfeed.resample(t.bands, 16)
     for i = 0, 15 do setf("vb" .. i, b[i + 1]) end
-    local s32 = vizfeed.resample(t.bands, 32)
-    for i = 0, 31 do setf("vs" .. i, s32[i + 1]) end
+    if drawn_here() then
+        local s32 = vizfeed.resample(t.bands, 32)
+        for i = 0, 31 do setf("vs" .. i, s32[i + 1]) end
+    end
     frame_n = frame_n + 1
     local slots = viz_slots()
     local scope = false
-    for k, w in ipairs(slots) do
-        feed_lane(k, w, t.bands)
-        if w.mode == "scope" then scope = true end
+    if drawn_here() then
+        for k, w in ipairs(slots) do
+            feed_lane(k, w, t.bands)
+            if w.mode == "scope" then scope = true end
+        end
     end
     -- the scope's afterimages: the last three frames of 24 bands, one every other frame
     if scope and frame_n % 2 == 0 then

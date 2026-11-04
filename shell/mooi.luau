@@ -350,6 +350,7 @@ sys.watch("files:" .. FILE, function()
     if extraction(settings.theme) ~= before then extract() end
     apply_theme("settings changed")
     if widgets_sync then widgets_sync() end
+    if viz_sync then viz_sync() end
     if desk_sync then desk_sync() end
     if bmo_sync then bmo_sync() end
     if notch_sync then notch_sync() end
@@ -1937,6 +1938,50 @@ function widgets_restack()
     widgets_restacking = true
     kill(widgets_win, "term")
 end
+-- The visualisers (shell/mooi-viz.plm, D155): the widgets' visualiser lanes as a program of their
+-- own, kept running beside the widgets (they tell it where each one is). One copy only: any left over
+-- is cleared first; started again if it ends (a little later each time it fails at once).
+do   -- (its own scope: the main chunk is at Lua's 200 locals)
+local viz_win, viz_tries = nil, 0
+function viz_sync()
+    local want = type(settings.widgets) ~= "table" or settings.widgets.on ~= false
+    if not want then
+        viz_tries = 0
+        if viz_win then kill(viz_win, "term"); viz_win = nil end
+        return
+    end
+    if viz_win then return end
+    run("ps", { "-eo", "pid=,args=" }, function(out)
+        local stray = {}
+        for line in tostring(out or ""):gmatch("[^\n]+") do
+            local pid, args = line:match("^%s*(%d+)%s+(.*)$")
+            if pid and args:match("^pleamar%s") and args:match("%-%-scene%s+%S*mooi%-viz%.plm") then stray[#stray + 1] = pid end
+        end
+        if #stray > 0 then
+            local a = { "-TERM" }
+            for _, pid in ipairs(stray) do a[#a + 1] = pid end
+            run("kill", a)
+        end
+        after(#stray > 0 and 600 or 0, function()
+            if viz_win then return end
+            local mine
+            local started = os.time()
+            local said = {}
+            mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-viz.plm", "--no-hud", "--stall", "0" }, function(line)
+                if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+            end, function(_, code)
+                if viz_win ~= mine then return end
+                viz_win = nil
+                if os.time() - started < 5 then viz_tries = viz_tries + 1 else viz_tries = 0 end
+                if code ~= 0 then log("viz · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+                if viz_tries < 5 then after(1000 * (viz_tries + 1), viz_sync) end
+            end, { errors = true })
+            viz_win = mine
+        end)
+    end)
+end
+end
+
 function widgets_sync()
     local want = type(settings.widgets) ~= "table" or settings.widgets.on ~= false
     if not want then

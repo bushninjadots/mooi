@@ -6,44 +6,44 @@
    Values match the GTK 4 template's @define-color block exactly. Roles are
    Material 3 names, the same ones the shell paints with. */
 
-@define-color accent_bg_color #c5c7db;
-@define-color accent_fg_color #060923;
-@define-color accent_color #c5c7db;
-@define-color destructive_bg_color #c5a153;
-@define-color destructive_fg_color #060923;
-@define-color destructive_color #c5a153;
-@define-color success_bg_color #adb0c1;
-@define-color success_fg_color #060923;
-@define-color success_color #adb0c1;
-@define-color warning_bg_color #c5a153;
-@define-color warning_fg_color #060923;
-@define-color warning_color #c5a153;
-@define-color error_bg_color #c5a153;
-@define-color error_fg_color #060923;
-@define-color error_color #c5a153;
+@define-color accent_bg_color #9bc9b5;
+@define-color accent_fg_color #062316;
+@define-color accent_color #9bc9b5;
+@define-color destructive_bg_color #cf7872;
+@define-color destructive_fg_color #062316;
+@define-color destructive_color #cf7872;
+@define-color success_bg_color #88b19f;
+@define-color success_fg_color #062316;
+@define-color success_color #88b19f;
+@define-color warning_bg_color #cf7872;
+@define-color warning_fg_color #062316;
+@define-color warning_color #cf7872;
+@define-color error_bg_color #cf7872;
+@define-color error_fg_color #062316;
+@define-color error_color #cf7872;
 @define-color window_bg_color #101114;
-@define-color window_fg_color #9c9dab;
+@define-color window_fg_color #9caba4;
 @define-color view_bg_color #101114;
-@define-color view_fg_color #9c9dab;
+@define-color view_fg_color #9caba4;
 @define-color headerbar_bg_color #101114;
-@define-color headerbar_fg_color #9c9dab;
-@define-color headerbar_border_color #2b2f50;
+@define-color headerbar_fg_color #9caba4;
+@define-color headerbar_border_color #1e382d;
 @define-color headerbar_backdrop_color #101114;
 @define-color sidebar_bg_color #0d0f11;
-@define-color sidebar_fg_color #9c9dab;
+@define-color sidebar_fg_color #9caba4;
 @define-color sidebar_backdrop_color #101114;
 @define-color secondary_sidebar_bg_color #0a0b0d;
-@define-color secondary_sidebar_fg_color #9c9dab;
+@define-color secondary_sidebar_fg_color #9caba4;
 @define-color secondary_sidebar_backdrop_color #101114;
 @define-color card_bg_color #0d0f11;
-@define-color card_fg_color #9c9dab;
+@define-color card_fg_color #9caba4;
 @define-color dialog_bg_color #141519;
-@define-color dialog_fg_color #9c9dab;
+@define-color dialog_fg_color #9caba4;
 @define-color popover_bg_color #101114;
-@define-color popover_fg_color #9c9dab;
+@define-color popover_fg_color #9caba4;
 @define-color thumbnail_bg_color #141519;
-@define-color thumbnail_fg_color #9c9dab;
-@define-color scrollbar_outline_color #2b2f50;
+@define-color thumbnail_fg_color #9caba4;
+@define-color scrollbar_outline_color #1e382d;
 
 /* Shades are the palette scrim at a fixed alpha, not a flat role, because the
    toolkit paints them as translucent overlays for edges and elevation and they
@@ -58,19 +58,19 @@
 
 /* Classic GTK 3 named palette that stock Adwaita and older apps still read. */
 @define-color theme_bg_color #101114;
-@define-color theme_fg_color #9c9dab;
+@define-color theme_fg_color #9caba4;
 @define-color theme_base_color #101114;
-@define-color theme_text_color #9c9dab;
-@define-color theme_selected_bg_color #c5c7db;
-@define-color theme_selected_fg_color #060923;
+@define-color theme_text_color #9caba4;
+@define-color theme_selected_bg_color #9bc9b5;
+@define-color theme_selected_fg_color #062316;
 @define-color theme_unfocused_bg_color #101114;
-@define-color theme_unfocused_fg_color #9c9dab;
+@define-color theme_unfocused_fg_color #9caba4;
 @define-color theme_unfocused_base_color #101114;
-@define-color theme_unfocused_text_color #9c9dab;
-@define-color theme_unfocused_selected_bg_color #c5c7db;
-@define-color theme_unfocused_selected_fg_color #060923;
+@define-color theme_unfocused_text_color #9caba4;
+@define-color theme_unfocused_selected_bg_color #9bc9b5;
+@define-color theme_unfocused_selected_fg_color #062316;
 @define-color insensitive_bg_color #101114;
-@define-color insensitive_fg_color #797ea9;
+@define-color insensitive_fg_color #5a8c76;
 @define-color insensitive_base_color #101114;
-@define-color borders #2b2f50;
-@define-color unfocused_borders #2b2f50;
+@define-color borders #1e382d;
+@define-color unfocused_borders #1e382d;

@@ -708,7 +708,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         [ -e "$link" ] && mv "$link" "$link.old.$$"
@@ -761,6 +761,7 @@ mooi-player.plm:the music player
 mooi-notch.plm:the side notch
 mooi-widgets.plm:the desktop widgets
 mooi-walls.plm:the wallpaper picker
+mooi-viz.plm:the visualisers
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -1170,6 +1171,7 @@ case "$cmd" in
         "$pleamar" --check "$root/shell/mooi-notch.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-widgets.plm" || exit 1
         "$pleamar" --check "$root/shell/mooi-walls.plm" || exit 1
+        "$pleamar" --check "$root/shell/mooi-viz.plm" || exit 1
         "$pleamar" --check "$root/shell/bmo/bmo.plm" || exit 1
         # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
         # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
