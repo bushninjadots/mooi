@@ -4577,3 +4577,15 @@ kept the probe painting every frame (4.6 % GPU) after it had arrived; springs se
 **Checked on screen:** the system island (from the network module) growing out of its piece — frames
 caught mid-growth — and the calendar out of the centre piece; switching calendar → system; the frame's
 GPU: ~3.4 % while it grows, 0 open and still, 0 after. **Next:** the Control Nexus and the side notch.
+- **D152b, the Control Nexus:** the frame's `dk` place — a sliver on the band's inner edge, a third of the
+  deck's length, spreads along the edge on the spring and pours out of it on the spring squared; frame_p
+  now carries every strip's tiles (top, foot, sides; the screen is cut so each pixel is drawn once), each
+  with every place's box. mooi-nexus draws only its content (`DeckFrame` plate hidden), riding the body's
+  leading edge, with its own copy of the count and springs (`nm_*`); its surface starts under the bar's
+  reserve, so the deck goes to the frame offset by it. The bar stays over it (`nxo`). Checked: the deck
+  out of the right border, frames caught mid-growth.
+- **D152c, the side notch:** a card panel (Claude, music, weather, GitHub) opened from the nub is the
+  frame's `nt` place, its body running from the band itself to the card's far side — the border swelling
+  out, the tabs on it — and the notch draws only the content (`Card(…, bare)`), riding the body's far edge.
+  The arcs (workspaces, wallpapers) and panels opened beside the Nexus are as before. Checked: Claude and
+  music out of the left border, switching between them, closing.

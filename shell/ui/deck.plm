@@ -39,15 +39,21 @@ library Deck {
 
     // A card: a plate cut at its corners (look.corners), a hairline round it, a lit run along the top
     // from its cut, a tick at the far corner; `lift` while it is being carried.
-    component Card(w: number, h: number, lift: number = 0) {
+    // `bare` (D152): no plate — the frame draws this card as part of its body (the side notch's panel)
+    component Card(w: number, h: number, lift: number = 0, bare: bool = false) {
         size: w, h
         body {
+            show: not bare
             color: mix(dk.raised, #000000, 0.42)
             shadow: 0, 4 + 8 * lift, 14 + 16 * lift, 35% + 25% * lift
             box { from: 2, 2; size: w - 4, h - 4; corner: dk.r }
         }
-        Chamfer(0, 0, w, h, fl.chamfer * 3, mix(dk.raised, #000000, 0.42), mix(dk.line, dk.acc, 0.2 + 0.7 * lift), 0.94, 1)
         group {
+            show: not bare
+            Chamfer(0, 0, w, h, fl.chamfer * 3, mix(dk.raised, #000000, 0.42), mix(dk.line, dk.acc, 0.2 + 0.7 * lift), 0.94, 1)
+        }
+        group {
+            show: not bare
             glow: 4, (0.45 + 0.4 * lift) * st_glow, dk.acc
             line { from: fl.chamfer * 3 * cn_scale + 2, 0.75; to: min(w * 0.4, 140), 0.75; width: 1.4; color: dk.acc; opacity: 0.75 }
         }

@@ -249,6 +249,19 @@ scene Notch {
     fact st_res = 46
 
     fact st_glow = 1
+    fact ch_on = false           // D152: a card panel drawn by the frame as part of its body
+    fact nq_on = false
+    fact nq_n = 0
+    fact nq_band = 6
+    fact nq_off = 34
+    prop nq_q = 0 ~m.isl
+    follow nq_q = nq_n
+    prop nq_c = 0 ~m.isl_out
+    follow nq_c = if(nq_on, 1, 0)
+    let nq_rv = min(clamp(nq_q - (nq_n - 1), 0, 1), nq_c)
+    event pl_xy ->
+    event pl_wh ->
+    event pl_t ->
     fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
 
     // ── What the services report ──
@@ -452,7 +465,7 @@ scene Notch {
         // the whole screen (panels open beside the Control Nexus too): where nothing is drawn a press goes through
         size: full, full
         anchor: top_left
-        level: top
+        level: top, overlay while ch_on and nq_rv > 0.002
         keyboard: on_demand
 
         on key Escape { nt_pin = false; nt_open = false; nt_tab = -1; blur }
@@ -503,17 +516,36 @@ scene Notch {
         }
 
         // ═══ The panels, beside the fan ═══
+        // A card panel under the chassis (D152): the frame draws its body, grown out of the band at the left
+        // edge (the `nt` place); here its content, clipped to the same shape from the same numbers, riding
+        // the body's right edge and fading in over the first third.
+        let nq_card = ch_on and nq_on or (ch_on and nq_rv > 0.002)
+        let nq_X = nq_band
+        let nq_Y = pn_y + nq_off
+        let nq_Wd = pick(clamp(nt_tab, 0, 5), 440, 440, 440, 440, 440, 460) + nt_px - nq_band
+        let nq_Hd = pick(clamp(nt_tab, 0, 5), 600, 220, 400, 400, 340, 600)
+        let nq_sx = nq_band
+        let nq_sy = nq_Y + nq_Hd * 0.35
+        let nq_sh = nq_Hd * 0.3
+        let nq_px = nq_rv * nq_rv
+        let nq_bx = nq_sx + (nq_X - nq_sx) * nq_px
+        let nq_bw = 12 + (nq_Wd - 12) * nq_px
+        let nq_by = nq_sy + (nq_Y - nq_sy) * nq_rv
+        let nq_bh = nq_sh + (nq_Hd - nq_sh) * nq_rv
+        let nq_br = min(min(nq_bw, nq_bh) / 2, 6 + (14 - 6) * nq_rv)
+        let nq_ox = nq_bx + nq_bw - nq_X - nq_Wd                 // the card rides the body's far edge
         group {
-            show: pv > 0.01
-            move: -nt_dir * (1 - pv) * 24, 0
-            opacity: smooth(0, 0.7, pv)
+            show: pv > 0.01 or (nq_card and nq_rv > 0.002)
+            move: if(nq_card, nq_ox, -nt_dir * (1 - pv) * 24), 0
+            opacity: if(nq_card, smooth(0.08, 0.38, nq_rv * nq_rv), smooth(0, 0.7, pv))
+            clip box { from: if(nq_card, nq_bx - nq_ox, -4000), if(nq_card, nq_by - nq_off, -4000); size: if(nq_card, max(1, nq_bw), 8000), if(nq_card, max(1, nq_bh), 8000); corner: if(nq_card, nq_br, 0) }
 
             // ── Claude ──
             group {
                 show: nt_tab == 0
                 move: nt_px, pn_y
                 zone box keep0 { from: 0, 0; size: 440, 600; role: region; label: "Claude" }
-                Card(440, 600, 0)
+                Card(440, 600, 0, bare: nq_card)
                 PartHead(440, "", "Claude", ch_status, lamp: if(ch_busy, 2, 1))
                 // who answers: Claude, or BMO (who also says it on the desktop)
                 zone box chm0 { from: 14, 34; size: 70, 22; cursor: pointer; role: tab; selected: not ch_bmo; label: "Ask Claude" }
@@ -582,7 +614,7 @@ scene Notch {
                 show: nt_tab == 1
                 move: nt_px, pn_y
                 zone box keep1 { from: 0, 0; size: 440, 220; role: region; label: "Music" }
-                Card(440, 220, 0)
+                Card(440, 220, 0, bare: nq_card)
                 group {
                     show: mu_art_on
                     clip box { from: 1, 1; size: 438, 218; corner: dk.r }
@@ -764,7 +796,7 @@ scene Notch {
                 show: nt_tab == 4
                 move: nt_px, pn_y
                 zone box keep4 { from: 0, 0; size: 440, 340; role: region; label: "Weather" }
-                Card(440, 340, 0)
+                Card(440, 340, 0, bare: nq_card)
                 PartHead(440, "", "Weather", wx_place, lamp: if(wx_ok, 1, 0))
                 group {
                     show: wx_ok
@@ -800,7 +832,7 @@ scene Notch {
                 show: nt_tab == 5
                 move: nt_px, pn_y
                 zone box keep5 { from: 0, 0; size: 460, 600; role: region; label: "GitHub" }
-                Card(460, 600, 0)
+                Card(460, 600, 0, bare: nq_card)
                 PartHead(460, "", "GitHub", gh_notes, lamp: if(gh_ok, 1, 0))
                 group {
                     show: gh_ok
