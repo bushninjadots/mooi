@@ -31,7 +31,8 @@
 #   mooi wallmap [file] [fast]  read the wallpaper for the widgets: its subject cut out (rembg) and a map
 #   mooi player           the music player: mpd's library, lyrics, a turntable (open or close; a press on the media module)
 #   mooi nexus            Control Nexus (open or close; the bar's Arch mark opens it too)
-#   mooi notch [panel]    the side notch on a panel: claude (default), music, spaces, walls, weather, github
+#   mooi notch [panel]    the side notch on a panel: claude (default), music, spaces, walls, weather, github, games
+#   mooi game <folder>    start a game found on the disk where it lies: its own launcher, or wine / PortProton
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi open              same as `window` (kept for old scripts)
@@ -1026,10 +1027,34 @@ case "$cmd" in
         exit 0 ;;
     board) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_board" ;;
-    notch) # the side notch on a panel: claude music spaces walls weather github (Claude by default)
-        case "${1:-claude}" in claude) n=0 ;; music) n=1 ;; spaces|workspaces) n=2 ;; walls|wallpapers) n=3 ;; weather) n=4 ;; github) n=5 ;;
-            *) echo "usage: mooi notch [claude|music|spaces|walls|weather|github]" >&2; exit 2 ;; esac
+    notch) # the side notch on a panel: claude music spaces walls weather github games (Claude by default)
+        case "${1:-claude}" in claude) n=0 ;; music) n=1 ;; spaces|workspaces) n=2 ;; walls|wallpapers) n=3 ;; weather) n=4 ;; github) n=5 ;; games) n=6 ;;
+            *) echo "usage: mooi notch [claude|music|spaces|walls|weather|github|games]" >&2; exit 2 ;; esac
         exec "$pleamar" --say mooi-notch "emit nt_show $n" ;;
+    game) # a game found on the disk (the notch's Games panel): its folder, then a program in it
+        # (unless its own launcher is there to find), then --proton when PortProton has to run it
+        dir=${1:-}; exe=${2:-}; forge=${3:-}
+        [ -n "$dir" ] || { echo "usage: mooi game <folder> [program] [--proton]" >&2; exit 2; }
+        case "$dir" in /*) ;; *) echo "mooi game: give the game's own folder" >&2; exit 2 ;; esac
+        [ -d "$dir" ] || { echo "mooi game: no such folder: $dir" >&2; exit 1; }
+        cd "$dir" || exit 1
+        if [ -z "$exe" ]; then
+            for f in ./start.sh ./run.sh ./launch.sh ./*.sh ./*.AppImage ./*.x86_64 ./*.run; do
+                [ -f "$f" ] && [ -x "$f" ] && { setsid -f "$f" >/dev/null 2>&1 < /dev/null; exit 0; }
+            done
+            exe=$(ls ./*.exe 2>/dev/null | sed 's:^\./::' | grep -viE 'unitycrash|crashhandler|createdump|elevate|^setup|^unins|vcredist|dxsetup|^install' | head -n 1)
+            [ -n "$exe" ] || { echo "mooi game: nothing to start in $dir" >&2; exit 1; }
+        fi
+        # a folder PortProton made is its own to start; anything else is wine's where wine is here
+        case "$dir" in */PortProton/*) forge=--proton ;; esac
+        if [ "$forge" != "--proton" ] && command -v wine >/dev/null 2>&1; then
+            setsid -f wine "$exe" >/dev/null 2>&1 < /dev/null
+            exit 0
+        fi
+        if command -v portproton >/dev/null 2>&1; then exec portproton "$dir/$exe"; fi
+        if command -v wine >/dev/null 2>&1; then setsid -f wine "$exe" >/dev/null 2>&1 < /dev/null; exit 0; fi
+        echo "mooi game: install wine or PortProton to run $exe" >&2
+        exit 1 ;;
     nexus) running || { echo "mooi is not running; start it first" >&2; exit 1; }
            exec "$pleamar" --say "$name" "emit open_nexus" ;;
     hardware)

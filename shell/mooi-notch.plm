@@ -6,15 +6,16 @@ import "ui/island.plm"
 import "ui/deck.plm"
 import "ui/edgetab.plm" as edge
 
-// mooi's side notch (D106): a lit sliver on the left edge that, pointed at, fans out into six tabs on
+// mooi's side notch (D106): a lit sliver on the left edge that, pointed at, fans out into seven tabs on
 // an arc — Claude (a chat with your own Claude, through Claude Code), Music (the player slid out),
-// Workspaces and Wallpapers (each a carousel on an arc, the wheel turning it), Weather and GitHub. The
-// bar keeps it running (notch.on), so pointing at it is instant; it folds away when the pointer leaves,
-// unless a tab was pressed or Claude is being asked something. mooi-notch.luau reads what it shows.
+// Workspaces and Wallpapers (each a carousel on an arc, the wheel turning it), Weather, GitHub and
+// Games (every game installed, Steam's and the desktop's). The bar keeps it running (notch.on), so
+// pointing at it is instant; it folds away when the pointer leaves, unless a tab was pressed or Claude
+// is being asked something. mooi-notch.luau reads what it shows.
 
 scene Notch {
     permissions {
-        run: "pleamar", "env", "claude", "opencode", "timeout", "gh", "hyprctl", "magick", "ffmpeg", "find", "curl", "xdg-open", "mooi"
+        run: "pleamar", "env", "claude", "opencode", "timeout", "gh", "hyprctl", "magick", "ffmpeg", "find", "grep", "curl", "xdg-open", "gtk-launch", "mooi"
         services: "workspaces", "workspaces.focus", "clock", "media", "media.*", "files", "files.write", "env", "thumbnails", "thumbnails.want", "thumbnails.live"
     }
 
@@ -262,7 +263,7 @@ scene Notch {
     fact nt_badged = false       // a tab has something waiting: the hairline is warm
     fact nt_tab = -1             // the panel out (lib/notch TABS, from 0), -1 none
     fact nt_pin = false          // kept out: a tab pressed, typing, Claude answering
-    model tabs max 6 { word: text; x: number; y: number; glyph: number; badge: text; badged: bool }
+    model tabs max 7 { word: text; x: number; y: number; glyph: number; badge: text; badged: bool }
     // the deck's pieces (ui/deck.plm) read these: the notch is never a column and never being arranged
     fact dk_vert = false
     fact ed_in = 0
@@ -360,6 +361,15 @@ scene Notch {
     text gh_notes = ""
     fact gh_noted = false
 
+    // ── Games: what is installed, Steam's and the desktop's menus ──
+    fact gm_ok = false
+    fact gm_src = 0              // 0 all of them · 1 Steam's · 2 the desktop's · 3 the folders on disk
+    fact gm_base = 0             // where the arc's window starts in the whole list (the logic slides it)
+    fact gm_c = 0                // the game in the middle: its row in the window
+    text gm_t = ""
+    text gm_pos = ""
+    model gm max 12 { name: text; sub: text; pic: image 320, 180; pictured: bool; steam: bool; wide: bool; icon: bool }
+
     event nt_close ->            // to the logic: fold away
     event nt_tab_open ->         // to the logic: panel n pointed at (read what it needs)
     event nt_show ->             // from outside (the bar, `mooi notch`): open on panel n, kept out
@@ -379,6 +389,9 @@ scene Notch {
     event nt_studio ->           // to the logic: open the wallpaper picker (mooi-walls, D145)
     event nt_src ->              // to the logic: the pictures from 0 the folder · 1 Wallhaven
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
+    event nt_gsrc ->             // to the logic: which games the list shows (0 all · 1 Steam's · 2 the desktop's)
+    event nt_gscroll ->          // to the logic: the list scrolled by `wheel`
+    event nt_game ->             // to the logic: start the game on row n
     event nt_moved ->            // to the logic: the nub let go at this height
     event nt_show_deck ->        // from the Control Nexus: open panel n where it has just said (nt_px, pn_y, nt_ox, nt_acy, nt_dir)
 
@@ -388,6 +401,7 @@ scene Notch {
     figure i_wall = file "icons/wallpaper.svg"
     figure i_cloud = file "icons/cloud.svg"
     figure i_git = file "icons/git.svg"
+    figure i_game = file "icons/games.svg"
     figure i_clear = file "icons/clear.svg"
     figure i_night = file "icons/night.svg"
     figure i_fog = file "icons/fog.svg"
@@ -404,6 +418,8 @@ scene Notch {
     follow spc = sp_c
     prop wpc = 0 ~m.reflow
     follow wpc = wp_c + wp_base     // the middle in the whole list: the window sliding does not move the arc
+    prop gmc = 0 ~m.reflow
+    follow gmc = gm_base + gm_c     // the games' arc, the same way
     prop mup = 0 ~m.reflow
     follow mup = mu_prog
     prop nub_lit = 0 ~m.select
@@ -417,7 +433,8 @@ scene Notch {
         figure i_ws { at: x, y; size: 16, 16; color: c; show: g > 1.5 and g < 2.5 }
         figure i_wall { at: x, y; size: 16, 16; color: c; show: g > 2.5 and g < 3.5 }
         figure i_cloud { at: x, y; size: 16, 16; color: c; show: g > 3.5 and g < 4.5 }
-        figure i_git { at: x, y; size: 16, 16; color: c; show: g > 4.5 }
+        figure i_git { at: x, y; size: 16, 16; color: c; show: g > 4.5 and g < 5.5 }
+        figure i_game { at: x, y; size: 16, 16; color: c; show: g > 5.5 }
     }
     // A colour on the arc's inside: the band's hue, lit when it is the one chosen. `k` is the band.
     component Swatch(k: number, word: text, c: color) {
@@ -462,7 +479,7 @@ scene Notch {
         // warm when a tab has something waiting. Touched, the track of tabs slides out; a tab pointed at
         // for 140 ms opens its panel beside it, a press pins it, and it goes home half a second after
         // the pointer leaves. Drag the nub along the edge to move it; it stays there (notch-state.json).
-        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub. Drag it along the edge" }
+        zone box nubz { from: 0, nt_cy + nt_gdy - 70; size: 14, 140; cursor: grab; role: button; label: "The notch: Claude, music, workspaces, wallpapers, weather, GitHub, games. Drag it along the edge" }
         on hover nubz for 60ms while nt_gdy == 0 { nt_open = true; nt_deck = false }
         on press nubz { nt_open = true; nt_deck = false; nt_pin = not nt_pin }
         on drag nubz { nt_gdy = drag.dy; nt_open = false; nt_tab = -1; nt_pin = false }
@@ -854,10 +871,74 @@ scene Notch {
                 }
                 text gh_state { at: 230, 300; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not gh_ok }
             }
+
+            // ── Games on an arc, as the wallpapers and the workspaces are: the wheel turns it, the one in
+            // the middle is large, a press starts it. The previews are Steam's own art, a folder's icon and
+            // the menus' icons; the chips narrow it to one source (D156).
+            group {
+                show: nt_tab == 6
+                zone box keep6 { from: nt_ox + if(nt_dir > 0, 0, -800), 40; size: 800, nt_h - 80; role: region; label: "Games: the wheel turns the arc, a press starts one" }
+                on scroll keep6 { emit nt_gscroll(wheel) }
+                let ggr = clamp(nt_h * 0.55, 470, 600)
+                let greach = 390 - ggr
+                let gl = nt_ox + nt_dir * 200 - if(nt_dir > 0, 0, 380)
+                text gm_t { at: gl, nt_acy - 306; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; width: 560; lines: 1 }
+                // where they come from: all of them, Steam's, the folders on disk, the desktop's
+                zone box gsa { from: gl, nt_acy - 290; size: 70, 24; cursor: pointer; role: tab; selected: gm_src == 0; label: "Every game installed" }
+                zone box gss { from: gl + 74, nt_acy - 290; size: 78, 24; cursor: pointer; role: tab; selected: gm_src == 1; label: "Steam's games" }
+                zone box gsp { from: gl + 156, nt_acy - 290; size: 78, 24; cursor: pointer; role: tab; selected: gm_src == 2; label: "The desktop's own games" }
+                zone box gsq { from: gl + 238, nt_acy - 290; size: 84, 24; cursor: pointer; role: tab; selected: gm_src == 3; label: "Games on the disk: extracted, wine, PortProton" }
+                Act(gl, nt_acy - 290, 70, "All", gm_src == 0, false, gsa.hover)
+                Act(gl + 74, nt_acy - 290, 78, "Steam", gm_src == 1, false, gss.hover)
+                Act(gl + 156, nt_acy - 290, 78, "Apps", gm_src == 2, false, gsp.hover)
+                Act(gl + 238, nt_acy - 290, 84, "Local", gm_src == 3, false, gsq.hover)
+                on press gsa { emit nt_gsrc(0) }
+                on press gss { emit nt_gsrc(1) }
+                on press gsp { emit nt_gsrc(2) }
+                on press gsq { emit nt_gsrc(3) }
+                text gm_pos { at: gl, nt_acy + 300; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; width: 520; lines: 1 }
+                for g in gm {
+                    let ga = (g.index + gm_base - gmc) * 12
+                    let gs = 1 - min(abs(ga), 60) / 100
+                    let gx = nt_ox + nt_dir * (cos(ga) * ggr + greach) - 140 * gs
+                    let gy = nt_acy + sin(ga) * ggr - 79 * gs
+                    let on = abs(ga) < 6
+                    group {
+                        show: abs(ga) < 50
+                        opacity: 1 - abs(ga) / 62
+                        zone box gz { from: gx, gy; size: 280 * gs, 158 * gs; cursor: pointer; role: item; selected: on; label: "Play {g.name}" }
+                        body {
+                            color: dk.well
+                            shadow: 0, 6 * gs, 18 * gs, 50%
+                            box { from: gx, gy; size: 280 * gs, 158 * gs; corner: dk.r }
+                        }
+                        group {
+                            clip box { from: gx, gy; size: 280 * gs, 158 * gs; corner: dk.r }
+                            box { from: gx, gy; size: 280 * gs, 158 * gs; color: dk.well }
+                            // Steam's header as it is, its poster cropped to fill, or an icon on the well
+                            image g.pic { at: gx, gy; size: 280 * gs, 158 * gs; show: g.pictured and g.wide }
+                            image g.pic { at: gx, gy - 131 * gs; size: 280 * gs, 420 * gs; show: g.pictured and not g.wide and not g.icon }
+                            image g.pic { at: gx + 92 * gs, gy + 22 * gs; size: 96 * gs, 96 * gs; show: g.pictured and g.icon }
+                            box { from: gx, gy; size: 280 * gs, 158 * gs; color: #000000; opacity: 0.22 }
+                        }
+                        group {
+                            glow: 8, if(on, 0.75, 0.5 * gz.hover) * st_glow, dk.acc
+                            box { from: gx, gy; size: 280 * gs, 158 * gs; corner: dk.r; stroke: if(on, 1.8, 1); color: if(on, dk.acc, mix(dk.line, dk.acc, gz.hover)) }
+                        }
+                        box { from: gx, gy + 140 * gs; size: 280 * gs, 18 * gs; color: dk.well; opacity: 0.85 }
+                        text g.sub { at: gx + 8, gy + 149 * gs; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.acc; width: 264 * gs; lines: 1 }
+                        text g.name { at: gx + 4, gy + 158 * gs + 11; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(on, dk.acc, dk.ink2); width: 250 * gs; lines: 1 }
+                        text "PLAY" { at: gx + 280 * gs - 4, gy + 158 * gs + 11; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; opacity: if(on, 1, gz.hover) }
+                        on press gz { emit nt_game(g.index) }
+                    }
+                }
+                text "LOOKING FOR GAMES…" { at: gl + 260, nt_acy; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: not gm_ok }
+                text "NOTHING INSTALLED HERE" { at: gl + 260, nt_acy; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: gm_ok and gm.count == 0 }
+            }
         }
 
         // folding away: the pointer off the nub, the fan and the panel for a moment (unless kept out)
-        let nt_over = max(max(nubz.hover, fanz.hover), max(max(keep0.hover, keep1.hover), max(max(keep2.hover, keep3.hover), max(keep4.hover, keep5.hover))))
+        let nt_over = max(max(max(nubz.hover, fanz.hover), max(max(keep0.hover, keep1.hover), max(max(keep2.hover, keep3.hover), max(keep4.hover, keep5.hover)))), keep6.hover)
         on change nt_over while nt_over > 0.5 and nt_tab >= 0 { nt_entered = true }
         on still nt_over for 500ms while nt_open and not nt_pin and nt_over < 0.5 and (nt_entered or not nt_deck) { nt_open = false; nt_tab = -1 }
         // opened from the Nexus and never pointed at: it goes after a while

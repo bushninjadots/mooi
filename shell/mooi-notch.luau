@@ -11,6 +11,7 @@ local coverart = require("lib/cover")
 local style = require("lib/style")
 local sysinfo = require("lib/sysinfo")
 local forecast = require("lib/forecast")
+local games = require("lib/games")
 local weathercache = require("lib/weathercache")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
@@ -42,6 +43,13 @@ local function trim(s) return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", "
 local function launch(cmd, args, done)
     local ok = pcall(run, cmd, args, function(out, code) if done then done(code == 0 and out or nil, code) end end)
     if not ok and done then done(nil, -1) end
+end
+-- What a command printed, whatever it exited with (D156): a `grep` over folders that are not there
+-- exits 2 and a `find` over a missing library 1, and the answers — the games — are in their output
+-- all the same. `launch` throws that away on a non-zero exit, which is right for magick and wrong here.
+local function probe(cmd, args, done)
+    local ok = pcall(run, cmd, args, function(out) done(out or "") end)
+    if not ok then done("") end
 end
 local SAFE = env("MOOI_SAFE", "") == "1"
 local HOME = env("HOME", "")
@@ -1013,8 +1021,249 @@ on("nt_gh", function(v)
     if url then launch("xdg-open", { url }); fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; viz() end
 end)
 
+-- ── Games: what is installed — Steam's libraries' manifests and the desktop's Game entries (D156) ──
+-- Read when the panel opens and kept a minute. Steam's header pictures are already on disk with its
+-- cache, so a row has a picture with nothing fetched; a press starts one and the notch folds away.
+local gm_all, gm_list, gm_center, gm_base = {}, {}, 0, 0
+local gm_read, gm_done = 0, false
+local gm_steam, gm_desktops, gm_local, gm_headers, gm_icons, gm_hdr = nil, nil, nil, {}, {}, false
+local GM_WIN = 12             -- the arc draws a window of the list; the logic slides it as the wheel turns
+local function gm_show(recenter)
+    gm_list = games.filter(gm_all, tonumber(fact.gm_src) or 0)
+    gm_center = math.max(0, math.min(recenter and 0 or gm_center, math.max(0, #gm_list - 1)))
+    local c = gm_center - gm_base
+    if recenter or c < 0 or c > GM_WIN - 1 then
+        gm_base = math.max(0, math.min(gm_center - GM_WIN // 2, math.max(0, #gm_list - GM_WIN)))
+    end
+    c = gm_center - gm_base
+    fact.gm_base, fact.gm_c = gm_base, c
+    local rows = {}
+    for i = 1, math.min(GM_WIN, #gm_list - gm_base) do
+        local g = gm_list[gm_base + i]
+        rows[i] = { name = g.name, sub = g.sub, pic = g.pic, pictured = g.pic ~= "", steam = g.steam,
+                    wide = g.wide == true, icon = g.icon == true }
+    end
+    model.gm = rows
+    local s, l, a = 0, 0, 0
+    for _, g in ipairs(gm_all) do
+        if g.steam then s = s + 1 elseif g.disk then l = l + 1 else a = a + 1 end
+    end
+    text.gm_t = #gm_all > 0 and string.format("%d GAMES · %d STEAM · %d LOCAL · %d APPS", #gm_all, s, l, a) or ""
+    text.gm_pos = #gm_list > 0 and string.format("%d OF %d · THE WHEEL TURNS THE ARC · A PRESS STARTS ONE", gm_center + 1, #gm_list)
+                 or (fact.gm_ok and "NOTHING INSTALLED HERE" or "")
+end
+local gm_paint, gm_art   -- the pictures the cache holds, and the online pass, defined under each_find
+local function gm_collect()
+    if not (gm_steam and gm_desktops and gm_local and gm_hdr) then return end
+    gm_all = games.collect(gm_steam, gm_desktops, gm_headers, gm_local, gm_icons, 500)
+    gm_center, gm_base, gm_read, gm_done = 0, 0, os.time(), true
+    fact.gm_ok = true
+    gm_show(true)
+    if gm_paint then gm_paint() end      -- the cache first: every collect, nothing fetched
+    if gm_art then gm_art() end          -- then, at most every quarter hour, what is still bare
+end
+-- `find` over several starting points in turn (GNU find's -maxdepth is per run).
+local function each_find(paths, args, done)
+    local out, i = {}, 1
+    local function step()
+        local p = paths[i]
+        if not p then done(table.concat(out)); return end
+        i = i + 1
+        local a = { p }
+        for _, x in ipairs(args) do a[#a + 1] = x end
+        probe("find", a, function(o) if o ~= "" then out[#out + 1] = o end; step() end)
+    end
+    step()
+end
+-- ── A picture for the games the machine has none of (asked for: "download proper icons online") ──
+-- Steam's store search finds a game by its name; its CDN sends the capsule, which is the card's own
+-- shape. Both answers are kept in ~/.cache/mooi/games — `<key>.json` for what the search said,
+-- `<key>.jpg` for the picture — so a game is asked once and never again: a bare row is dressed from
+-- that cache with nothing fetched, and only what is still bare goes online. Keyless, two curl calls a
+-- game, once.
+local GM_ART = HOME .. "/.cache/mooi/games"
+local gm_tried, gm_art_at = {}, 0
+gm_paint = function(done)
+    probe("find", { GM_ART, "-maxdepth", "1", "-type", "f", "-name", "*.jpg", "-size", "+2k" }, function(o)
+        games.dress(gm_all, games.online(o))
+        gm_show()
+        if done then done() end
+    end)
+end
+local function gm_asked(done)     -- the games already asked, so a miss is not asked again every open
+    probe("find", { GM_ART, "-maxdepth", "1", "-type", "f", "-name", "*.json", "-size", "+1c" }, function(o)
+        done(games.asked(o))
+    end)
+end
+gm_art = function()
+    if os.time() - gm_art_at < 900 then return end
+    gm_art_at = os.time()
+    gm_paint(function()
+        gm_asked(function(asked)
+            local want = {}
+            for _, g in ipairs(gm_all) do
+                local k = games.slug(g.name)
+                if games.bare(g) and not gm_tried[k] and #want < 24 then
+                    gm_tried[k] = true
+                    -- already asked once (its answer is in the cache): only the picture is missing
+                    want[#want + 1] = { key = k, name = g.name, appid = g.steam and g.appid or nil,
+                                        asked = asked[k] == true }
+                end
+            end
+            if #want == 0 then return end
+            local jobs = {}
+            local function download(n)
+                local j = jobs[n]
+                if not j then gm_paint(); return end
+                local urls = games.art_urls(j.appid)
+                local function try(i)
+                    if not urls[i] then download(n + 1); return end
+                    launch("curl", { "-fsSL", "--max-time", "15", "--create-dirs", "-o", GM_ART .. "/" .. j.key .. ".jpg", urls[i] },
+                        function(ok) if ok then download(n + 1) else try(i + 1) end end)
+                end
+                try(1)
+            end
+            local function found()   -- what the searches said: one `"name":"…","id":…` a game
+                probe("grep", { "-rHoE", '"name":"[^"]*","id":[0-9]+', GM_ART }, function(o)
+                    local by = {}
+                    for line in o:gmatch("[^\n]+") do
+                        local file, rest = line:match("^(.-%.json):(.*)$")
+                        local key = file and file:match("([^/]+)%.json$")
+                        local nm, id                            -- not `rest and match(...)`: an `and` keeps one value
+                        if rest then nm, id = rest:match('^"name":"(.-)","id":(%d+)$') end
+                        if key and nm and id then
+                            by[key] = by[key] or {}
+                            table.insert(by[key], { name = nm, id = id })
+                        end
+                    end
+                    for _, w in ipairs(want) do
+                        local id = w.appid or games.appid(by[w.key], w.name)
+                        if id then jobs[#jobs + 1] = { key = w.key, appid = id } end
+                    end
+                    download(1)
+                end)
+            end
+            -- a Steam game knows its own appid; the rest are asked by name, one at a time
+            local i = 0
+            local function ask()
+                i = i + 1
+                local w = want[i]
+                if not w then found(); return end
+                if w.appid or w.asked then ask(); return end
+                probe("curl", { "-fsSL", "--max-time", "8", "--create-dirs", "-o", GM_ART .. "/" .. w.key .. ".json", games.search_url(w.name) },
+                    function() ask() end)
+            end
+            ask()
+        end)
+    end)
+end
+local CACHE_ART = { "-maxdepth", "2", "(", "-name", "header.jpg", "-o", "-name", "library_header.jpg",
+                    "-o", "-name", "library_600x900.jpg", ")", "-type", "f" }
+local function read_games()
+    if gm_done and os.time() - gm_read < 60 then return end
+    gm_read = os.time()
+    gm_steam, gm_desktops, gm_local, gm_headers, gm_icons, gm_hdr = nil, nil, nil, {}, {}, false
+    -- where Steam lives: a package, the AUR's, the flatpak, the snap; each keeps its libraries'
+    -- manifests in <library>/steamapps and its header pictures in <install>/appcache/librarycache
+    local roots = {}
+    for _, p in ipairs({ "/.local/share/Steam", "/.steam/steam", "/.steam/root",
+                         "/.var/app/com.valvesoftware.Steam/.local/share/Steam", "/snap/steam/common/.local/share/Steam" }) do
+        roots[#roots + 1] = HOME .. p
+    end
+    local ga = { "-h", "-E", '^[[:space:]]*"path"' }
+    for _, r in ipairs(roots) do ga[#ga + 1] = r .. "/steamapps/libraryfolders.vdf" end
+    probe("grep", ga, function(out)
+        local libs, seen = {}, {}
+        for _, p in ipairs(games.libraries(out)) do
+            if not seen[p] then seen[p] = true; libs[#libs + 1] = p end
+        end
+        for _, r in ipairs(roots) do
+            if not seen[r] then seen[r] = true; libs[#libs + 1] = r end
+        end
+        local dirs = {}
+        for _, l in ipairs(libs) do dirs[#dirs + 1] = l .. "/steamapps" end
+        each_find(dirs, { "-maxdepth", "1", "-name", "appmanifest_*.acf", "-type", "f" }, function(files_out)
+            local cache = {}
+            for _, r in ipairs(roots) do cache[#cache + 1] = r .. "/appcache/librarycache" end
+            local function headers_done(h)
+                gm_headers, gm_hdr = games.headers(h), true
+                gm_collect()
+            end
+            local files = {}
+            for line in files_out:gmatch("[^\n]+") do files[#files + 1] = line end
+            if #files == 0 then
+                gm_steam = ""
+                each_find(cache, CACHE_ART, headers_done)
+                return
+            end
+            local ma = { "-h", "-E", '^[[:space:]]*"(appid|name|installdir)"' }
+            for _, f in ipairs(files) do ma[#ma + 1] = f end
+            probe("grep", ma, function(manifests_out)
+                gm_steam = manifests_out or ""
+                each_find(cache, CACHE_ART, headers_done)
+            end)
+        end)
+    end)
+    -- the desktop's own: one grep over the menus, each entry's name, exec and categories
+    local da = { "-rH", "--include=*.desktop", "-E", "^(Name|Exec|Categories|Icon|NoDisplay|Hidden|Terminal)=",
+                 "/usr/share/applications", "/usr/local/share/applications", HOME .. "/.local/share/applications",
+                 "/var/lib/flatpak/exports/share/applications", HOME .. "/.local/share/flatpak/exports/share/applications" }
+    probe("grep", da, function(out)
+        gm_desktops = out or ""
+        -- the menus' icons, by name: one find for all of them, as big as the theme has them (PNG only)
+        local names = games.icon_names(gm_desktops)
+        if #names == 0 then gm_collect(); return end
+        local args = { "-maxdepth", "5", "-type", "f", "(" }
+        for i, n in ipairs(names) do
+            if i > 1 then args[#args + 1] = "-o" end
+            args[#args + 1] = "-iname"; args[#args + 1] = n .. ".png"
+        end
+        args[#args + 1] = ")"
+        each_find({ "/usr/share/icons", HOME .. "/.local/share/icons",
+                    "/var/lib/flatpak/exports/share/icons", HOME .. "/.local/share/flatpak/exports/share/icons" },
+            args, function(o) gm_icons = games.icons(o); gm_collect() end)
+    end)
+    -- the folders somebody put on the disk: a launcher two levels under a root, deeper inside a
+    -- PortProton prefix (drive_c\Games\<game>\<game>.exe), where the client keeps its own
+    local function local_done(out) gm_local = out or ""; gm_collect() end
+    each_find({ HOME .. "/games", HOME .. "/Games", HOME .. "/GOG Games", HOME .. "/GOG Games" },
+        { "-mindepth", "2", "-maxdepth", "2", "-type", "f", "(", "-iname", "*.exe", "-o", "-iname", "*.sh",
+          "-o", "-iname", "*.AppImage", "-o", "-iname", "*.x86_64", "-o", "-iname", "*.run",
+          "-o", "-iname", "icon.png", "-o", "-iname", "logo.png", "-o", "-iname", "game.png",
+          "-o", "-iname", "steam_icon.png", ")" },
+        function(a)
+            each_find({ HOME .. "/.local/share/PortProton/prefixes" },
+                { "-maxdepth", "6", "-type", "f", "-iname", "*.exe" },
+                function(b) local_done(a .. b) end)
+        end)
+end
+on("nt_gsrc", function(v)
+    fact.gm_src = math.max(0, math.min(3, math.floor(tonumber(v) or 0)))
+    gm_show(true)
+end)
+on("nt_gscroll", function(v)
+    gm_center = math.max(0, math.min(gm_center + math.floor(tonumber(v) or 0), math.max(0, #gm_list - 1)))
+    gm_show()
+end)
+on("nt_game", function(v)
+    local g = gm_list[gm_base + (tonumber(v) or -1) + 1]
+    if not g then return end
+    -- Steam's own URL: the client starts it as the game it is, Proton and all
+    if g.steam then launch("xdg-open", { "steam://rungameid/" .. tostring(g.appid) })
+    elseif g.disk then
+        -- a folder on the disk: mooi's own launcher starts it (its script, AppImage, wine or PortProton)
+        local args = { "game", tostring(g.dir) }
+        if g.exe and g.exe ~= "" then args[#args + 1] = tostring(g.exe) end
+        if g.proton then args[#args + 1] = "--proton" end
+        launch("mooi", args)
+    else launch("gtk-launch", { tostring(g.id) }) end
+    fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false
+    viz()
+end)
+
 -- ── Opening a panel: read what it shows ──
-local READ = { [2] = function() read_screen(read_spaces) end, [3] = read_pictures, [4] = read_weather, [5] = read_github }
+local READ = { [2] = function() read_screen(read_spaces) end, [3] = read_pictures, [4] = read_weather, [5] = read_github,
+               [6] = read_games }
 on("nt_tab_open", function(v)
     local n = math.floor(tonumber(v) or -1)
     panel_top(n)

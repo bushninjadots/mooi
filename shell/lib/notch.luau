@@ -1,5 +1,5 @@
 -- The side notch (D106): a nub on the left edge that fans out into tabs on an arc when pointed at —
--- Claude, Music, Workspaces, Wallpapers, Weather, GitHub — each opening its panel beside the fan.
+-- Claude, Music, Workspaces, Wallpapers, Weather, GitHub, Games — each opening its panel beside the fan.
 -- Pure, so tests/unit runs it; shell/mooi-notch.luau reads the system and hands this what it found.
 
 local M = {}
@@ -11,13 +11,15 @@ M.TABS = {
     { id = "walls", word = "Wallpapers" },
     { id = "weather", word = "Weather" },
     { id = "github", word = "GitHub" },
+    { id = "games", word = "Games" },
 }
 M.FAN_R = 100         -- the fan's radius round the nub (its hexagons a finger apart)
 M.FAN_SPAN = 120      -- degrees, top tab to bottom tab
 M.PANEL_X = 60        -- a panel's left edge: past the track of tabs (D119: a column, as the spine's)
 M.NUB_Y = 0.3         -- where the nub starts, as a share of the screen's height (above the stash)
 -- each panel's size (the carousels have none: they are arcs across the screen)
-M.PANELS = { [0] = { w = 440, h = 600 }, [1] = { w = 440, h = 220 }, [4] = { w = 440, h = 340 }, [5] = { w = 460, h = 600 } }
+M.PANELS = { [0] = { w = 440, h = 600 }, [1] = { w = 440, h = 220 }, [4] = { w = 440, h = 340 }, [5] = { w = 460, h = 600 },
+             [6] = { w = 460, h = 560 } }
 M.ARC_R = 560         -- the carousel's radius (its centre off the screen to the left)
 M.ARC_STEP = 12       -- degrees between neighbours on it
 M.ARC_SEEN = 46       -- and how far from the middle one is still drawn

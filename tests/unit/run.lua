@@ -2905,6 +2905,171 @@ test("notch: the fan's tabs on their arc, panels on the screen, the carousel, th
     eq(c0, 31 + 314 - notch.NUB_REACH); eq(c1, 31 + 314 + notch.NUB_REACH)
 end)
 
+print("games")
+local games = require("lib/games")
+test("games: Steam's libraries and manifests, the desktop's menus, one list of both", function()
+    local vdf = '"libraryfolders"\n{\n\t"0"\n\t{\n\t\t"path"\t\t"/home/u/.local/share/Steam"\n\t}\n\t"1"\n\t{\n\t\t"path"\t\t"/mnt/games/SteamLibrary"\n\t}\n}\n'
+    local libs = games.libraries(vdf)
+    eq(#libs, 2, "two libraries"); eq(libs[2], "/mnt/games/SteamLibrary")
+    eq(games.libraries('"path"\t\t"D:\\\\Games"')[1], "D:\\Games", "an escaped path")
+    eq(#games.libraries(vdf .. '"path"\t\t"/mnt/games/SteamLibrary"'), 2, "each library once")
+    local listing = '"appid"\t\t"211820"\n"name"\t\t"Starbound"\n"installdir"\t\t"Starbound"\n'
+        .. '"appid"\t\t"1493710"\n"name"\t\t"Proton Experimental"\n"installdir"\t\t"Proton - Experimental"\n'
+        .. '"appid"\t\t"1070560"\n"name"\t\t"Steam Linux Runtime 1.0 (scout)"\n'
+        .. '"appid"\t\t"275850"\n"name"\t\t"No Man\'s Sky"\n'
+    local m = games.manifests(listing)
+    eq(#m, 4, "four manifests"); eq(m[2].name, "Proton Experimental"); eq(m[2].installdir, "Proton - Experimental")
+    eq(games.is_game(m[1]), true, "a game")
+    eq(games.is_game(m[2]), false, "Proton is not a game")
+    eq(games.is_game(m[3]), false, "nor a runtime")
+    eq(games.is_game(m[4]), true, "a game without an installdir still is one")
+    eq(games.is_game({ appid = "nope", name = "A game" }), false, "an id that is not a number is no manifest")
+    local men = table.concat({
+        "/usr/share/applications/cdda.desktop:Name=Cataclysm: Dark Days Ahead",
+        "/usr/share/applications/cdda.desktop:Exec=cataclysm-tiles",
+        "/usr/share/applications/cdda.desktop:Categories=Game;RolePlaying;",
+        "/usr/share/applications/cdda.desktop:Terminal=false",
+        "/usr/share/applications/steam.desktop:Name=Steam",
+        "/usr/share/applications/steam.desktop:Categories=Game;",
+        "/usr/share/applications/net.lutris.Lutris.desktop:Name=Lutris",
+        "/usr/share/applications/net.lutris.Lutris.desktop:Categories=Game;",
+        "/usr/share/applications/hidden.desktop:Name=A hidden game",
+        "/usr/share/applications/hidden.desktop:Categories=Game;",
+        "/usr/share/applications/hidden.desktop:NoDisplay=true",
+        "/usr/share/applications/term.desktop:Name=A terminal game",
+        "/usr/share/applications/term.desktop:Categories=Game;",
+        "/usr/share/applications/term.desktop:Terminal=true",
+    }, "\n")
+    local d = games.desktops(men)
+    eq(#d, 5, "one entry per file"); eq(d[1].id, "cdda"); eq(d[1].name, "Cataclysm: Dark Days Ahead")
+    eq(games.is_desktop_game(d[1]), true, "a game on the menu")
+    eq(games.is_desktop_game(d[3]), false, "a launcher is not")
+    eq(games.is_desktop_game(d[4]), false, "nor a hidden entry")
+    eq(games.is_desktop_game(d[5]), false, "nor a terminal one")
+    local h = games.headers("/s/appcache/librarycache/211820/library_header.jpg\n"
+        .. "/s/appcache/librarycache/275850/library_600x900.jpg\n"
+        .. "/s/appcache/librarycache/211820/header.jpg\n")
+    eq(h["211820"].path, "/s/appcache/librarycache/211820/library_header.jpg", "a header wins over a poster")
+    eq(h["211820"].wide, true); eq(h["275850"].wide, false, "a poster is drawn cropped"); eq(h["999"], nil)
+    local rows = games.collect(listing, men, h, nil, nil, 400)
+    eq(#rows, 3, "two Steam games and one of the desktop's")
+    eq(rows[1].name, "No Man's Sky", "Steam's first, by name")
+    eq(rows[1].sub, "STEAM · 275850"); eq(rows[1].pic ~= "", true, "a poster when there is no header")
+    eq(rows[1].wide, false)
+    eq(rows[2].name, "Starbound"); eq(rows[2].wide, true, "with its header picture")
+    eq(rows[3].name, "Cataclysm: Dark Days Ahead"); eq(rows[3].steam, false); eq(rows[3].id, "cdda")
+    eq(#games.filter(rows, 1), 2, "Steam's"); eq(#games.filter(rows, 2), 1, "the desktop's")
+    eq(#games.filter(rows, 0), 3, "all of them")
+    -- one to a name: a menu entry for a game already listed is not added twice
+    local twice = games.collect(listing, men .. "\n/usr/share/applications/star.desktop:Name=Starbound\n/usr/share/applications/star.desktop:Categories=Game;", {}, nil, nil, 400)
+    eq(#twice, 3, "no duplicate")
+    eq(#games.collect(listing, men, {}, nil, nil, 2), 2, "no more than asked")
+    eq(games.collect(nil, nil, nil, nil, nil, 10)[1], nil, "nothing installed: nothing to show")
+end)
+
+test("games: the folders on disk — extracted, native and PortProton's", function()
+    local loose = table.concat({
+        "/home/u/games/Balatro/Balatro.exe",
+        "/home/u/games/Balatro/lua51.dll",
+        "/home/u/games/Townscaper/Townscaper.exe",
+        "/home/u/games/Townscaper/UnityCrashHandler32.exe",
+        "/home/u/games/starsector/starsector.sh",
+        "/home/u/games/starsector/data/x.jar",
+        "/home/u/games/Homeworld Remastered Collection [GOG]/setup_homeworld_2.1.exe",
+        "/home/u/Games/drive_c/windows/notepad.exe",
+        "/home/u/.local/share/PortProton/prefixes/Fallout 3/drive_c/Games/Fallout3/Fallout3.exe",
+        "/home/u/.local/share/PortProton/prefixes/Fallout 3/drive_c/windows/system32/regedit.exe",
+    }, "\n")
+    local g = games.on_disk(loose)
+    eq(#g, 4, "the installer, the crash handler and the prefix are not games")
+    eq(g[1].name, "Balatro"); eq(g[1].kind, "WINE"); eq(g[1].exe, "Balatro.exe")
+    eq(g[2].name, "Fallout 3"); eq(g[2].kind, "PORTPROTON")
+    eq(g[2].dir, "/home/u/.local/share/PortProton/prefixes/Fallout 3/drive_c/Games/Fallout3")
+    eq(g[3].name, "starsector"); eq(g[3].kind, "NATIVE"); eq(g[3].exe, nil, "its own launcher is in the folder")
+    eq(g[4].name, "Townscaper")
+    eq(games.title("Homeworld Remastered Collection [GOG]"), "Homeworld Remastered Collection")
+    eq(games.title("Sandustry-AnkerGames"), "Sandustry")
+    -- and in the one list: Steam's, then these, then the desktop's
+    local man = '"appid"\t\t"211820"\n"name"\t\t"Starbound"\n"appid"\t\t"275850"\n"name"\t\t"No Man\'s Sky"\n'
+    local menu = "/usr/share/applications/cdda.desktop:Name=Cataclysm: Dark Days Ahead\n/usr/share/applications/cdda.desktop:Categories=Game;\n"
+    local all = games.collect(man, menu, nil, loose, nil, 400)
+    eq(#all, 7, "two Steam games, four on disk, one app")
+    eq(all[3].name, "Balatro"); eq(all[3].sub, "LOCAL · WINE"); eq(all[3].disk, true)
+    eq(#games.filter(all, 3), 4, "the folders on disk"); eq(#games.filter(all, 2), 1, "the desktop's")
+end)
+test("games: a preview for each — Steam's art, a folder's icon, the menus' icons", function()
+    local menu = table.concat({
+        "/usr/share/applications/cdda.desktop:Name=Cataclysm: Dark Days Ahead",
+        "/usr/share/applications/cdda.desktop:Categories=Game;",
+        "/usr/share/applications/cdda.desktop:Icon=org.cataclysmdda.CataclysmDDA",
+        "/usr/share/applications/steam.desktop:Name=Steam",
+        "/usr/share/applications/steam.desktop:Categories=Game;",
+        "/usr/share/applications/steam.desktop:Icon=steam",
+    }, "\n")
+    eq(#games.icon_names(menu), 1, "the game's icon, not the launcher's")
+    eq(games.icon_names(menu)[1], "org.cataclysmdda.CataclysmDDA")
+    local found = table.concat({
+        "/usr/share/icons/Papirus/48x48/apps/org.cataclysmdda.CataclysmDDA.png",
+        "/usr/share/icons/hicolor/256x256/apps/org.cataclysmdda.CataclysmDDA.png",
+        "/usr/share/icons/hicolor/256x256/apps/other.png",
+    }, "\n")
+    local map = games.icons(found)
+    eq(map["org.cataclysmdda.CataclysmDDA"], "/usr/share/icons/hicolor/256x256/apps/org.cataclysmdda.CataclysmDDA.png",
+       "the biggest one the theme has")
+    eq(map["other"] ~= nil, true)
+    local rows = games.collect(nil, menu, nil, nil, map, 50)
+    eq(rows[1].name, "Cataclysm: Dark Days Ahead"); eq(rows[1].icon, true, "drawn as an icon, not full-bleed")
+    eq(rows[1].pic, map["org.cataclysmdda.CataclysmDDA"])
+    -- an Icon= that is already a path is the picture
+    local abs = "/usr/share/applications/x.desktop:Name=X\n/usr/share/applications/x.desktop:Categories=Game;\n/usr/share/applications/x.desktop:Icon=/home/u/pics/x.png\n"
+    eq(games.collect(nil, abs, nil, nil, nil, 5)[1].pic, "/home/u/pics/x.png")
+    -- a folder's own icon, beside its program
+    local loose = "/home/u/games/Balatro/Balatro.exe\n/home/u/games/Balatro/icon.png\n/home/u/games/Townscaper/Townscaper.exe\n"
+    local disk = games.on_disk(loose)
+    eq(#disk, 2, "an icon on its own is not a game")
+    eq(disk[1].icon, "/home/u/games/Balatro/icon.png"); eq(disk[2].icon, nil)
+    local all = games.collect(nil, nil, nil, loose, nil, 10)
+    eq(all[1].icon, true, "a folder's icon is a preview too"); eq(all[2].pictured == true, false)
+end)
+test("games: a picture from Steam's store, for the games the machine has none of", function()
+    eq(games.slug("Project Zomboid"):match("^project%-zomboid%-%x%x%x%x%x%x$") ~= nil, true, "a cache file's name")
+    eq(games.slug("Balatro"), games.slug("Balatro"), "the same game, the same file")
+    eq(games.slug("Hydra (4.0.3)") ~= games.slug("Hydra"), true, "two games, two files")
+    eq(games.slug(""):match("^game%-%x%x%x%x%x%x$") ~= nil, true, "nothing to go on still makes a name")
+    eq(games.search_url("Hotline Miami 2"),
+       "https://store.steampowered.com/api/storesearch/?cc=us&l=en&term=Hotline%20Miami%202")
+    eq(games.search_url("Cataclysm: Dark Days Ahead"):find("Cataclysm%%3A%%20Dark") ~= nil, true, "punctuation travels")
+    eq(games.art_urls("2379780")[1],
+       "https://cdn.cloudflare.steamstatic.com/steam/apps/2379780/capsule_616x353.jpg", "the card's shape first")
+    eq(#games.art_urls("nope"), 0, "no appid, nothing to ask")
+    local items = { { name = "Balatro", id = 2379780 }, { name = "Hotline Miami 2: Wrong Number", id = 274170 },
+                    { name = "Hydra Heli 2", id = 4241690 } }
+    eq(games.appid(items, "balatro"), "2379780", "the same title, whatever its case")
+    eq(games.appid(items, "Hotline Miami 2"), "274170", "the store's longer title")
+    eq(games.appid(items, "Hydra"), nil, "a name that merely starts the same is not the game")
+    eq(games.appid({}, "Balatro"), nil, "nothing found")
+    local listing = "/home/u/.cache/mooi/games/one.jpg\n/home/u/.cache/mooi/games/two.jpg\n"
+    eq(games.online(listing)["two"], "/home/u/.cache/mooi/games/two.jpg")
+    eq(games.asked(listing)["one"], nil, "a picture is not an answer")
+    eq(games.asked("/c/two.json\n")["two"], true, "asked, whatever was said")
+    eq(games.bare({ pic = "", wide = false }), true, "no picture at all")
+    eq(games.bare({ pic = "/x/header.jpg", wide = true }), false, "a header is the card's shape already")
+    eq(games.bare({ pic = "/x/library_600x900.jpg", wide = false }), true, "a poster cropped into the card gives way")
+    eq(games.bare({ pic = "/x/icon.png", icon = true, wide = false }), true, "a menu's small icon gives way too")
+    local rows = { { name = "Balatro", pic = "", icon = false }, { name = "Townscaper", pic = "", icon = false },
+                   { name = "Hydra (4.0.3)", pic = "/usr/share/icons/hydra.png", icon = true },
+                   { name = "POLYGON", pic = "/home/u/.local/share/Steam/h.jpg", wide = true },
+                   { name = "Starbound", pic = "/home/u/.local/share/Steam/s/library_600x900.jpg", wide = false } }
+    games.dress(rows, { [games.slug("Balatro")] = "/c/balatro.jpg", [games.slug("Hydra (4.0.3)")] = "/c/hydra.jpg",
+                        [games.slug("Starbound")] = "/c/starbound.jpg" })
+    eq(rows[1].pic, "/c/balatro.jpg"); eq(rows[1].wide, true); eq(rows[1].icon, false, "drawn whole")
+    eq(rows[2].pic, "", "nothing online for it: the well stays")
+    eq(rows[3].pic, "/c/hydra.jpg", "a menu's small icon gives way to the store's picture")
+    eq(rows[4].pic, "/home/u/.local/share/Steam/h.jpg", "Steam's own header keeps its place")
+    eq(rows[5].pic, "/c/starbound.jpg", "a portrait poster gives way to the wide capsule")
+    eq(rows[5].wide, true, "and is drawn whole")
+end)
+
 print("vizfeed")
 local vizfeed = require("lib/vizfeed")
 test("vizfeed: a full frame round-trips", function()

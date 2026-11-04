@@ -4658,6 +4658,75 @@ times a second for one 127-bar visualiser).
 ~1 %. The rest of mooi-viz's cost is the visualiser chosen (127 bars, scope, reflection).
 **Checked:** edit mode hands the visualiser back to the widgets and takes it again after.
 
+## D156 · 2026-11-04 · The notch's Games panel: everything installed, Steam's and the desktop's
+**Asked for:** "create a notch bottom corner that can find and list all games installed on my system
+including steam so it shows them keep it in theme and looks like the other notches".
+- **A seventh tab**, at the bottom of the notch's track: GAMES, its card beside the fan as the others
+  (460 × 560), its glyph a gamepad (`icons/games.svg`), its panel drawn in the same head / chips / rows
+  language as the GitHub one.
+- **Where the games come from** (`shell/lib/games.luau`, pure, unit-tested): Steam's `libraryfolders.vdf`
+  names its libraries; every `appmanifest_*.acf` in their `steamapps` is a game — Proton, the Linux
+  runtimes, SteamVR and the redistributables are manifests too and are left out; and one `grep` over the
+  menus (`/usr`, `/usr/local`, `~/.local/share`, the flatpak exports) takes the `.desktop` entries filed
+  under `Game`, leaving out what is hidden, a terminal program, or a launcher that only starts games
+  (Steam, Lutris, Heroic, Bottles, ProtonUp, PortProton, protontricks, Faugus). Two `grep`s and two
+  `find`s, once a minute when the panel opens — **no network for the list itself** (a picture is the one
+  thing fetched, below, and only for a game the machine has none of).
+- **The row**: Steam's own picture, already on disk — `appcache/librarycache/<appid>/header.jpg` or
+  `library_header.jpg`, and where a game has neither, its portrait `library_600x900.jpg` cropped to fill
+  the row — then the name, `STEAM · 440` or `APP · org.example.Game`, PLAY while pointed at. The wheel turns the list
+  (twelve rows, the window slides); ALL · STEAM · APPS narrows it; the head carries the counts, the foot
+  where the window is.
+- **A press starts one** — Steam through `steam://rungameid/<appid>` (`xdg-open`), the rest through
+  `gtk-launch <id>` — and folds the notch away, as the music panel's player does.
+- `mooi notch games` opens it from the command line; `lib/notch.PANELS[6]` gives the Nexus-side layout
+  its size. The Nexus's own notches (six hexagons out of the deck) are unchanged, as the deck's ends
+  have no room for a seventh.
+- **The folders on the disk** (asked for after the first cut listed nothing): Steam is not the only
+  place a game lives. `~/games`, `~/Games` and `~/GOG Games` are walked two levels down for a launcher —
+  a `.sh`, an AppImage, an `.x86_64`, a `.run`, or the game's own `.exe` — and PortProton's
+  `prefixes/<game>/drive_c/…` deeper still; a folder holding only an installer (`setup*.exe`), crash
+  handlers, redistributables or a prefix's `drive_c` is left out. Rows read `LOCAL · NATIVE`,
+  `LOCAL · WINE` or `LOCAL · PORTPROTON`, and ALL · STEAM · APPS · LOCAL narrows the list.
+- **`mooi game <folder> [program] [--proton]`** starts one: its own launcher or AppImage where the
+  folder has one, else `wine`, else PortProton (always PortProton inside its own prefixes), from the
+  game's own folder. The notch only runs `mooi`, which its allowlist already had.
+- **Why the first cut listed nothing**: the notch's `launch()` helper kept a command's output only
+  when it exited 0, and discovery exits 2 (`grep` over a menu folder this machine has not) or 1 (`find`
+  over a Steam path it has not). Every answer was read as empty, so the panel said nothing was
+  installed. Discovery now reads through `probe()`, which keeps what a command printed whatever it
+  exited with; `launch()` is unchanged for the tools where a failure is a failure.
+- **The same arc as the wallpapers and the workspaces** (asked for after the first list): not a card
+  of rows but 280 × 158 cards on the notch's own arc — the wheel turns it, the one in the middle is
+  large and ringed, its name and source under it, PLAY on the card. The logic walks the filtered list
+  with a middle index and slides a twelve-card window (`gm_base`, `gm_c`, the `gmc` spring) the way
+  the wallpapers' `wp_base`/`wp_c` do, so the arc never jumps as the window moves.
+- **A preview on every card where one exists, no network**: Steam's header or its cropped poster; a
+  folder's own `icon.png`, `logo.png`, `game.png` or `steam_icon.png`, found beside its program (the
+  one `find` over the roots carries them); and the menus' icons — one `grep` takes each entry's
+  `Icon=`, one `find` over the icon themes' PNGs (flatpak's exports included) resolves them by name,
+  the biggest size winning, an absolute `Icon=` used as it is. PNG only: the scene reads pictures,
+  not drawings. A card with no art keeps its well, its name and PLAY.
+- **A picture from online where the machine has none** (asked for: "download proper icons online
+  so they all look good"): Steam's store answers a name with its appid — `storesearch`, **keyless** —
+  and its CDN gives the 616 × 353 capsule, which is the card's own shape. Both answers are kept in
+  `~/.cache/mooi/games`: `<key>.json` for what the search said and `<key>.jpg` for the picture, the key
+  being the title in dashes plus a short hash of the title exactly, so two games that read alike keep
+  apart. A game is therefore asked once: a bare row is dressed from that cache with **nothing
+  fetched**, and only what is still bare goes online — at most 24 in a pass, once a quarter hour, and
+  only while the panel is open. The store's longer title is taken where ours stops at a colon or a
+  dash ("Hotline Miami 2" → "Hotline Miami 2: Wrong Number"); a title that merely starts the same
+  ("Hydra" is not "Hydra Heli 2") is refused, so nobody gets another game's art. Steam's own wide
+  header, already on disk, keeps its place over a fetched one; a portrait poster (the two Steam games
+  here had only `library_600x900.jpg`, cropped into a card it is not the shape of) and a menu's 16 px
+  icon give way to the capsule, which is what made Cataclysm — and Starbound — read at a glance. Where the store has never heard of it — Starsector, Jackify,
+  OpenStarbound — the card keeps its well and its name, and the answer is cached so it is not asked
+  again.
+**Checked:** `tests/unit/run.lua` (the library/manifest/menu/folder parsing, the merge, the filters,
+the icon lookups, and the store's names, keys and cache), `bin/mooi check` (the scene compiles), and
+the running notch's own list and cards read back (`pleamar --say mooi-notch "get gm_t"`, `get
+gm.N.pic`). Not checked: starting a game from the panel.
+
 ## D157 · 2026-11-04 · The workspaces' transition, niri's columns, and the Nexus's notches back
 **Asked for:** "improve workspace scrolling also add niri type scrolling if possible and another new kind
 if we can" — then: "not the workspace switcher … the actual transition of workspace window to next";
