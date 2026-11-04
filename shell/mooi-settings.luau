@@ -645,9 +645,33 @@ on("wf_del", function(v)
     settings.walls.folders = new
     if save() then show_folders() end
 end)
-run("mooi", { "wall", "whkey" }, function(out)
-    text.wh_key = tostring(out or ""):match("found") and "FOUND · SKETCHY AND NSFW CAN BE CHOSEN" or "NONE · SAFE FOR WORK ONLY"
+local SAFE = sys.ask("env", "MOOI_SAFE") == "1"
+-- Wallhaven's key (D150): typed hidden, written into mooi's data folder (files.write gives it 0600),
+-- emptied from the field at once, then checked with Wallhaven by `mooi wall whkey check`.
+local function key_state()
+    text.wh_key = "CHECKING…"
+    run("mooi", { "wall", "whkey", "check" }, function(out)
+        local o = tostring(out or "")
+        if o:match("valid") and not o:match("invalid") then text.wh_key = "SAVED · WALLHAVEN TOOK IT · SKETCHY AND NSFW CAN BE CHOSEN"
+        elseif o:match("invalid") then text.wh_key = "SAVED · WALLHAVEN REFUSED IT (CHECK THE KEY)"
+        elseif o:match("offline") then text.wh_key = "SAVED · WALLHAVEN DID NOT ANSWER"
+        else text.wh_key = "NO KEY · SAFE FOR WORK ONLY" end
+    end)
+end
+on("wh_key_save", function()
+    local k = tostring(text.wh_key_in or ""):gsub("%s", "")
+    text.wh_key_in = ""
+    if not k:match("^[%w]+$") or #k < 16 or #k > 64 then text.wh_key = "THAT DOES NOT LOOK LIKE A KEY (32 LETTERS AND DIGITS)"; return end
+    if SAFE then return end
+    pcall(sys.call, "files.write", "wallhaven.key", k)
+    key_state()
 end)
+on("wh_key_forget", function()
+    text.wh_key_in = ""
+    pcall(sys.call, "files.remove", "wallhaven.key")
+    key_state()
+end)
+key_state()
 after(300, show_folders)
 
 on("wl_settings_open", function()

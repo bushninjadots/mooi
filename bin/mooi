@@ -564,7 +564,9 @@ wall_apply() { # FILE [--from-y N] [--transition KIND]
 # The API key (for sketchy/NSFW and your account's own filters) is ~/.config/mooi/wallhaven.key, mode
 # 0600, never in the settings or the repo; it goes to curl as a header on stdin, so it is never in a
 # process list. Every URL is checked to be on Wallhaven's own hosts, every id to be letters and digits.
-wh_keyfile="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
+# the key Settings → Wallpapers saves (mooi's data folder, 0600), or one put there by hand
+wh_keyfile="$folder/wallhaven.key"
+[ -s "$wh_keyfile" ] || wh_keyfile="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
 wh_cache="$walls_cache/wh"
 wh_key_ok() { [ -s "$wh_keyfile" ] && [ "$(stat -c %a "$wh_keyfile" 2>/dev/null)" = 600 ]; }
 wh_curl() { # URL [curl options…] — with the key's header when there is one
@@ -967,9 +969,15 @@ case "$cmd" in
                 d=$(printf '%s' "${1:-}" | sed "s|^~|$HOME|")
                 [ -d "$d" ] || exit 1
                 find "$d" -maxdepth 1 -type f | grep -ciE '\.(jpe?g|png|webp|avif|jxl|bmp|gif|apng|mp4|webm|mkv|mov|m4v|avi)$' ;;
-            whkey) # whether a Wallhaven API key is there, readable by you alone (it is never printed)
-                k="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
-                if [ -s "$k" ] && [ "$(stat -c %a "$k")" = 600 ]; then echo found
+            whkey) # whether a Wallhaven API key is there, readable by you alone (it is never printed);
+                # `check`: and whether Wallhaven takes it
+                k=$wh_keyfile
+                if [ -s "$k" ] && [ "$(stat -c %a "$k")" = 600 ]; then
+                    if [ "${1:-}" = check ]; then
+                        # a sketchy/NSFW search: 200 with a key Wallhaven takes, 401 with one it does not
+                        c=$(printf 'X-API-Key: %s\n' "$(head -c 200 "$k" | tr -d '[:space:]')" | curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H @- "https://wallhaven.cc/api/v1/search?purity=001")
+                        case "$c" in 200) echo valid ;; 401) echo invalid; exit 1 ;; *) echo offline; exit 1 ;; esac
+                    else echo found; fi
                 elif [ -s "$k" ]; then echo "unsafe: chmod 600 $k"; exit 1
                 else echo none; exit 1; fi ;;
             *) echo "usage: mooi wall apply FILE [--from-y N] [--transition KIND] | live | index | next [FROM] | wallhaven … | count DIR | whkey" >&2; exit 2 ;;

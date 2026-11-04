@@ -138,6 +138,8 @@ SECTIONS = [
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
         ("toggle", "Parallax desk", "The wallpaper travels with your workspaces (mooi always draws it)", "desk.on", "sv_desk_on"),
         ("card", "Bar"),
+        ("toggle", "Morph", "Islands, the notch and the Nexus melt out of the bar as one body with it, as one body with it", "island.morph", "sv_island_morph"),
+
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
         ("choice", "Style", "Instrument, glass, floating, minimal or machined steel", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHANGED ON THE BAR PAGE"),
@@ -155,8 +157,6 @@ SECTIONS = [
         ("card", "Shape"),
         ("choice", "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", "look.corners", "sv_look_corners", [("Chamfer", 0), ("Bevel", 1), ("Rounded", 2), ("Square", 3)]),
         ("slider", "Corner size", "How big the cut or the rounding is (12 is as designed)", "look.corner_size", 0, 24, "{sv_look_corner_size, 0}", "sv_look_corners != 3"),
-        ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
-        ("toggle", "Morph", "Islands melt out of the bar as one body with it, the notch's panels out of their tab, and the Control Nexus out of the screen's border", "island.morph", "sv_island_morph"),
         ("card", "Palette"),
         ("choice", "Look", "A finished palette: base, finish and light together", "theme.preset", "sv_theme_preset", LOOKS),
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
@@ -195,6 +195,9 @@ SECTIONS = [
         ("note", "saving", "SAVING NOW"),
     ]),
     ("Bar", "The bar", "A style sets the surface and the edges at once; change any of them and it reads Custom", "BAR", [
+        ("card", "Islands"),
+        ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
+        ("toggle", "Morph", "Islands melt out of the bar as one body with it, the notch's panels out of their tab, and the Control Nexus out of the screen's border", "island.morph", "sv_island_morph"),
         ("card", "Shape"),
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
         ("choice", "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", "clock.view", "sv_clock_view", ["Time and date", "Time", "Seconds"]),
@@ -374,7 +377,7 @@ SECTIONS = [
         ("choice", "Top list range", "How far back the top list looks", "wallhaven.range", "sv_wallhaven_range", ["1D", "3D", "1W", "1M", "3M", "6M", "1Y"]),
         ("choice", "At least", "The smallest size it lists", "wallhaven.atleast", "sv_wallhaven_atleast", ["Your screen", "4K", "Any"]),
         ("choice", "Ratio", "Only your screen's shape, or any", "wallhaven.ratio", "sv_wallhaven_ratio", ["Your screen", "Any"]),
-        ("info", "API key", "Read from ~/.config/mooi/wallhaven.key (only you can read it); saved pictures go to your first folder", "wh_key"),
+        ("whkey",),
         ("card", "The desk · parallax"),
         ("toggle", "Parallax desk", "The wallpaper travels with your workspaces or the pointer; off, it stays still (also a tile in Control Nexus)", "desk.on", "sv_desk_on"),
         ("choice", "Moves with", "The workspaces as you switch, the pointer, both, or nothing", "desk.parallax", "sv_desk_parallax",
@@ -540,6 +543,17 @@ def row_lines(r, y, first, reverted):
     if k == "displays":
         lines.append(f'for m in dp_list {{ SDisplay(m, {y + 6}) }}')
         return lines, "(12 + max(1, dp_list.count) * 60)"
+    if k == "whkey":
+        # Wallhaven's API key (D150): typed hidden, saved into mooi's data folder readable by you alone,
+        # checked with Wallhaven; never shown again, never in settings.json or the repo
+        lines.append(f'SRow({y}, "API key", "For sketchy and NSFW (with Purity above) and your account\'s filters. Get it at wallhaven.cc/settings/account", true, "", 420, {rule})')
+        lines.append(f'box {{ from: {XR - 520}, {y + 18}; size: 300, 26; corner: 4; color: fl.ground; opacity: 0.6 }}')
+        lines.append(f'box {{ from: {XR - 520}, {y + 18}; size: 300, 26; corner: 4; stroke: 1; color: fl.steel_700 }}')
+        lines.append(f'input wh_key_in {{ at: {XR - 510}, {y + 24}; width: 280; size: 12; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; secret: true; placeholder: "paste your key" }}')
+        lines.append(f'SButton({XR - 210}, {y + 19}, 100, "Save key", wh_key_save, 0)')
+        lines.append(f'SButton({XR - 100}, {y + 19}, 100, "Forget", wh_key_forget, 0)')
+        lines.append(f'text wh_key {{ at: {XR}, {y + 56}; anchor: right center; size: 10; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 520; lines: 1; align: right }}')
+        return lines, 72
     if k == "folders":
         lines.append(f'for m in wf_list {{ SFolder(m, {y + 6}) }}')
         fy = f"{y + 10} + wf_list.count * 46"
@@ -918,7 +932,7 @@ import "ui/ferrolume.plm"
 scene Mooi {
     permissions {
         run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi"
-        services: "files", "files.write", "env", "audio", "audio.*", "battery"
+        services: "files", "files.write", "files.remove", "env", "audio", "audio.*", "battery"
     }
 """
 
@@ -1012,7 +1026,10 @@ def main():
     // The wallpaper folders (walls.folders, D147): one row each, a field to add one
     model wf_list max 8 { path: text; n: text; missing: bool }
     text wf_new = ""
-    text wh_key = ""          // whether a Wallhaven key was found (~/.config/mooi/wallhaven.key)
+    text wh_key = ""          // whether a Wallhaven key is saved, and whether Wallhaven took it
+    text wh_key_in = ""       // the key as it is typed (hidden), emptied once saved
+    event wh_key_save ->      // to the logic: save what wh_key_in says
+    event wh_key_forget ->    // to the logic: remove the saved key
     event wf_del ->           // to the logic: remove folder n
     event wf_add ->           // to the logic: add what wf_new says
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
