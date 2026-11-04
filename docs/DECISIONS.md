@@ -4542,3 +4542,11 @@ Wallhaven API key; "morphing looks absolutely horrible — look at iNiR"; "I don
   out of it on the spring squared, corners growing, content riding its leading edge.
   Checked: a scratch scene rendering the island at rv 0.15 / 0.36 / 0.57 / 0.78 (the real one opens too
   fast to catch at 198 % motion speed).
+
+## D151 · 2026-11-04 · Every morph removed
+**Asked for:** "remove any morphing from the notches … as well as all the morphing anywhere, it's very
+very bad, we need to redo this much better". ui/island.plm, mooi-nexus, mooi-notch (and the facts set in
+mooi, mooi-notch and mooi-nexus logic) are back to D147d (1929590): islands, the Nexus deck and the
+notch's panels open as they did before D148. `island.morph` is gone from the schema, from both setter
+lists (it was the last entry: no code moved), from Settings → Bar and Quick, and from settings.json.
+A better morph is to be designed from scratch (see the conversation of 2026-11-04 for what was learnt).

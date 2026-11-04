@@ -249,7 +249,6 @@ scene Notch {
     fact st_res = 46
 
     fact st_glow = 1
-    fact morph_on = false        // island.morph (D149): islands, panels and the Nexus morph out of the bar and the border
     fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
 
     // ── What the services report ──
@@ -500,28 +499,6 @@ scene Notch {
                 }
                 on hover tz for 140ms { nt_tab = t.index; emit nt_tab_open(t.index) }
                 on press tz { nt_tab = t.index; nt_pin = true; emit nt_tab_open(t.index) }
-            }
-        }
-
-        // ═══ Morph (island.morph, D149): the open panel melted into its lit tab ═══
-        // One body under the panel: the tab, a bridge and the panel's near edge, blended, with one
-        // outline, so the panel pours out of the tab rather than appearing beside it. It follows the
-        // panel's own spring (`pv`).
-        let mk0 = nt_cy - (tabs.count - 1) * 20
-        let mty = mk0 + nt_tab * 40
-        let marc = nt_tab == 2 or nt_tab == 3
-        let mex = if(marc, nt_ox + nt_dir * 90, nt_px)
-        let mey = if(marc, nt_acy, clamp(mty, pn_y + 40, pn_y + 300))
-        let mg = smooth(0, 0.7, pv)
-        group {
-            show: morph_on and pv > 0.02 and nt_tab >= 0 and not nt_deck and nt_dir > 0
-            glow: 6, 0.5 * pv * st_glow, dk.acc
-            body {
-                color: dk.raised
-                border: 1.2, dk.acc
-                box { from: 8, mty - 16; size: 32, 32; corner: 10 }
-                box { from: 28, min(mty, mey) - 14; size: max(4, (mex - 28) * mg + 14), abs(mey - mty) + 28; corner: 14; blend: 14 }
-                box { from: 28 + (mex - 28) * mg, mey - 60 * mg; size: 24, 120 * mg + 2; corner: 10; blend: 16 }
             }
         }
 

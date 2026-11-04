@@ -794,8 +794,6 @@ scene Mooi {
     fact df_walls_auto_from = 0
     fact sv_walls_auto_fullscreen = 0
     fact df_walls_auto_fullscreen = 0
-    fact sv_island_morph = 0
-    fact df_island_morph = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
@@ -1045,20 +1043,18 @@ scene Mooi {
     follow gy_0_7 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60
     prop gy_0_8 = 550 ~m.reflow
     follow gy_0_8 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60
-    prop gy_0_9 = 610 ~m.reflow
-    follow gy_0_9 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60
+    prop gy_0_9 = 578 ~m.reflow
+    follow gy_0_9 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0)
     prop gy_0_10 = 638 ~m.reflow
-    follow gy_0_10 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0)
-    prop gy_0_11 = 698 ~m.reflow
-    follow gy_0_11 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60
-    prop gc_0_1 = 380 ~m.reflow
-    follow gc_0_1 = 52 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60
-    prop gy_0_c2 = 780 ~m.reflow
-    follow gy_0_c2 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22
+    follow gy_0_10 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60
+    prop gc_0_1 = 320 ~m.reflow
+    follow gc_0_1 = 52 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60
+    prop gy_0_c2 = 720 ~m.reflow
+    follow gy_0_c2 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22
+    prop gy_0_12 = 764 ~m.reflow
+    follow gy_0_12 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44
     prop gy_0_13 = 824 ~m.reflow
-    follow gy_0_13 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44
-    prop gy_0_14 = 884 ~m.reflow
-    follow gy_0_14 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60
+    follow gy_0_13 = 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60
     prop gc_0_2 = 172 ~m.reflow
     follow gc_0_2 = 52 + 60 + 60
     prop gy_1_c0 = 112 ~m.reflow
@@ -1159,56 +1155,54 @@ scene Mooi {
     follow gy_3_c0 = 112
     prop gy_3_1 = 156 ~m.reflow
     follow gy_3_1 = 112 + 44
-    prop gy_3_2 = 216 ~m.reflow
-    follow gy_3_2 = 112 + 44 + 60
-    prop gc_3_0 = 172 ~m.reflow
-    follow gc_3_0 = 52 + 60 + 60
-    prop gy_3_c1 = 298 ~m.reflow
-    follow gy_3_c1 = 112 + 44 + 60 + 60 + 22
+    prop gc_3_0 = 112 ~m.reflow
+    follow gc_3_0 = 52 + 60
+    prop gy_3_c1 = 238 ~m.reflow
+    follow gy_3_c1 = 112 + 44 + 60 + 22
+    prop gy_3_3 = 282 ~m.reflow
+    follow gy_3_3 = 112 + 44 + 60 + 22 + 44
     prop gy_3_4 = 342 ~m.reflow
-    follow gy_3_4 = 112 + 44 + 60 + 60 + 22 + 44
+    follow gy_3_4 = 112 + 44 + 60 + 22 + 44 + 60
     prop gy_3_5 = 402 ~m.reflow
-    follow gy_3_5 = 112 + 44 + 60 + 60 + 22 + 44 + 60
+    follow gy_3_5 = 112 + 44 + 60 + 22 + 44 + 60 + 60
     prop gy_3_6 = 462 ~m.reflow
-    follow gy_3_6 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60
+    follow gy_3_6 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60
     prop gy_3_7 = 522 ~m.reflow
-    follow gy_3_7 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60
+    follow gy_3_7 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60
     prop gy_3_8 = 582 ~m.reflow
-    follow gy_3_8 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60
-    prop gy_3_9 = 642 ~m.reflow
-    follow gy_3_9 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60
+    follow gy_3_8 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60
     prop gc_3_1 = 412 ~m.reflow
     follow gc_3_1 = 52 + 60 + 60 + 60 + 60 + 60 + 60
-    prop gy_3_c2 = 724 ~m.reflow
-    follow gy_3_c2 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22
+    prop gy_3_c2 = 664 ~m.reflow
+    follow gy_3_c2 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22
+    prop gy_3_10 = 708 ~m.reflow
+    follow gy_3_10 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44
     prop gy_3_11 = 768 ~m.reflow
-    follow gy_3_11 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44
-    prop gy_3_12 = 828 ~m.reflow
-    follow gy_3_12 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    follow gy_3_11 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_3_12 = 796 ~m.reflow
+    follow gy_3_12 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0)
     prop gy_3_13 = 856 ~m.reflow
-    follow gy_3_13 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0)
+    follow gy_3_13 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60
     prop gy_3_14 = 916 ~m.reflow
-    follow gy_3_14 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60
+    follow gy_3_14 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0)
     prop gy_3_15 = 976 ~m.reflow
-    follow gy_3_15 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0)
+    follow gy_3_15 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0)
     prop gy_3_16 = 1036 ~m.reflow
-    follow gy_3_16 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0)
-    prop gy_3_17 = 1096 ~m.reflow
-    follow gy_3_17 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0)
+    follow gy_3_16 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0)
     prop gc_3_2 = 440 ~m.reflow
     follow gc_3_2 = 52 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0)
-    prop gy_3_c3 = 1178 ~m.reflow
-    follow gy_3_c3 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22
+    prop gy_3_c3 = 1118 ~m.reflow
+    follow gy_3_c3 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22
+    prop gy_3_18 = 1162 ~m.reflow
+    follow gy_3_18 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44
     prop gy_3_19 = 1222 ~m.reflow
-    follow gy_3_19 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44
+    follow gy_3_19 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60
     prop gy_3_20 = 1282 ~m.reflow
-    follow gy_3_20 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60
+    follow gy_3_20 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0)
     prop gy_3_21 = 1342 ~m.reflow
-    follow gy_3_21 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0)
+    follow gy_3_21 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60
     prop gy_3_22 = 1402 ~m.reflow
-    follow gy_3_22 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60
-    prop gy_3_23 = 1462 ~m.reflow
-    follow gy_3_23 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0)
+    follow gy_3_22 = 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0)
     prop gc_3_3 = 352 ~m.reflow
     follow gc_3_3 = 52 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60
     prop gy_5_c0 = 112 ~m.reflow
@@ -1805,7 +1799,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 720 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 720 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -1863,76 +1857,69 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_0_6 - 430
-                    SRow(430, "Morph", "Islands, the notch and the Nexus melt out of the bar as one body with it, as one body with it", true, "", 768, false)
-                    SToggle(1092, 448, sv_island_morph, set_value, 400, "island.morph")
-                    SRevert(1062, 460, sv_island_morph != df_island_morph, set_value, 400000 + df_island_morph)
+                    SRow(430, "Layout", "Islands, one bar, or pieces hanging from the top", true, "", 418, false)
+                    STrack(742, 446, 396)
+                    SChoice(742, 446, 132, "Islands", sv_bar_mode == 0, set_value, 1000)
+                    SChoice(874, 446, 132, "Full bar", sv_bar_mode == 1, set_value, 1001)
+                    SChoice(1006, 446, 132, "Notch", sv_bar_mode == 2, set_value, 1002)
+                    SRevert(712, 460, sv_bar_mode != df_bar_mode, set_value, 1000 + df_bar_mode)
                 }
                 group {
                     show: true
                     move: 0, gy_0_7 - 490
-                    SRow(490, "Layout", "Islands, one bar, or pieces hanging from the top", true, "", 418, true)
-                    STrack(742, 506, 396)
-                    SChoice(742, 506, 132, "Islands", sv_bar_mode == 0, set_value, 1000)
-                    SChoice(874, 506, 132, "Full bar", sv_bar_mode == 1, set_value, 1001)
-                    SChoice(1006, 506, 132, "Notch", sv_bar_mode == 2, set_value, 1002)
-                    SRevert(712, 520, sv_bar_mode != df_bar_mode, set_value, 1000 + df_bar_mode)
-                }
-                group {
-                    show: true
-                    move: 0, gy_0_8 - 550
-                    SRow(550, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, true)
-                    STrack(668, 566, 470)
-                    SChoice(668, 566, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
-                    SChoice(762, 566, 94, "Glass", sv_bar_style == 1, set_value, 65001)
-                    SChoice(856, 566, 94, "Floating", sv_bar_style == 2, set_value, 65002)
-                    SChoice(950, 566, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
-                    SChoice(1044, 566, 94, "Steel", sv_bar_style == 4, set_value, 65004)
-                    SRevert(638, 580, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
+                    SRow(490, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, true)
+                    STrack(668, 506, 470)
+                    SChoice(668, 506, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
+                    SChoice(762, 506, 94, "Glass", sv_bar_style == 1, set_value, 65001)
+                    SChoice(856, 506, 94, "Floating", sv_bar_style == 2, set_value, 65002)
+                    SChoice(950, 506, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
+                    SChoice(1044, 506, 94, "Steel", sv_bar_style == 4, set_value, 65004)
+                    SRevert(638, 520, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
                 }
                 group {
                     show: sv_bar_style > 4.5
-                    move: 0, gy_0_9 - 610
-                    text "CUSTOM — CHANGED ON THE BAR PAGE" { at: 274, 624; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    move: 0, gy_0_8 - 550
+                    text "CUSTOM — CHANGED ON THE BAR PAGE" { at: 274, 564; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                }
+                group {
+                    show: true
+                    move: 0, gy_0_9 - 578
+                    SRow(578, "Thickness", "How tall the bar is", true, "", 404, true)
+                    SSlider(728, 594, 330, sv_bar_height, 20, set_value, 76, "Thickness", "{sv_bar_height + 24, 0} px", true)
+                    SRevert(698, 608, sv_bar_height != df_bar_height, set_value, 76000 + df_bar_height)
                 }
                 group {
                     show: true
                     move: 0, gy_0_10 - 638
-                    SRow(638, "Thickness", "How tall the bar is", true, "", 404, true)
-                    SSlider(728, 654, 330, sv_bar_height, 20, set_value, 76, "Thickness", "{sv_bar_height + 24, 0} px", true)
-                    SRevert(698, 668, sv_bar_height != df_bar_height, set_value, 76000 + df_bar_height)
+                    SRow(638, "Arrange the bar", "Put any module anywhere, in any order", true, "", 400, true)
+                    SButton(958, 653, 180, "Open Layout", set_pick, 4)
                 }
                 group {
                     show: true
-                    move: 0, gy_0_11 - 698
-                    SRow(698, "Arrange the bar", "Put any module anywhere, in any order", true, "", 400, true)
-                    SButton(958, 713, 180, "Open Layout", set_pick, 4)
+                    move: 0, gy_0_c2 - 720
+                    SCard(720, gc_0_2, "Workspaces")
                 }
                 group {
                     show: true
-                    move: 0, gy_0_c2 - 780
-                    SCard(780, gc_0_2, "Workspaces")
+                    move: 0, gy_0_12 - 764
+                    SRow(764, "Switcher", "Everyday", true, "", 374, false)
+                    STrack(698, 780, 440)
+                    SChoice(698, 780, 110, "Pills", ws_style == 3, set_value, 7003)
+                    SChoice(808, 780, 110, "Segments", ws_style == 4, set_value, 7004)
+                    SChoice(918, 780, 110, "Dots", ws_style == 5, set_value, 7005)
+                    SChoice(1028, 780, 110, "Numbers", ws_style == 6, set_value, 7006)
+                    SRevert(668, 794, sv_bar_workspaces != df_bar_workspaces, set_value, 7000 + df_bar_workspaces)
                 }
                 group {
                     show: true
                     move: 0, gy_0_13 - 824
-                    SRow(824, "Switcher", "Everyday", true, "", 374, false)
-                    STrack(698, 840, 440)
-                    SChoice(698, 840, 110, "Pills", ws_style == 3, set_value, 7003)
-                    SChoice(808, 840, 110, "Segments", ws_style == 4, set_value, 7004)
-                    SChoice(918, 840, 110, "Dots", ws_style == 5, set_value, 7005)
-                    SChoice(1028, 840, 110, "Numbers", ws_style == 6, set_value, 7006)
-                    SRevert(668, 854, sv_bar_workspaces != df_bar_workspaces, set_value, 7000 + df_bar_workspaces)
-                }
-                group {
-                    show: true
-                    move: 0, gy_0_14 - 884
-                    SRow(884, "", "…or an instrument", true, "", 344, true)
-                    STrack(668, 900, 470)
-                    SChoice(668, 900, 94, "DNA", ws_style == 0, set_value, 7000)
-                    SChoice(762, 900, 94, "Prisms", ws_style == 1, set_value, 7001)
-                    SChoice(856, 900, 94, "Grid", ws_style == 2, set_value, 7002)
-                    SChoice(950, 900, 94, "Compass", ws_style == 7, set_value, 7007)
-                    SChoice(1044, 900, 94, "Radar", ws_style == 8, set_value, 7008)
+                    SRow(824, "", "…or an instrument", true, "", 344, true)
+                    STrack(668, 840, 470)
+                    SChoice(668, 840, 94, "DNA", ws_style == 0, set_value, 7000)
+                    SChoice(762, 840, 94, "Prisms", ws_style == 1, set_value, 7001)
+                    SChoice(856, 840, 94, "Grid", ws_style == 2, set_value, 7002)
+                    SChoice(950, 840, 94, "Compass", ws_style == 7, set_value, 7007)
+                    SChoice(1044, 840, 94, "Radar", ws_style == 8, set_value, 7008)
                 }
             }
             group {
@@ -2263,181 +2250,174 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_3_2 - 216
-                    SRow(216, "Morph", "Islands melt out of the bar as one body with it, the notch's panels out of their tab, and the Control Nexus out of the screen's border", true, "", 768, true)
-                    SToggle(1092, 234, sv_island_morph, set_value, 400, "island.morph")
-                    SRevert(1062, 246, sv_island_morph != df_island_morph, set_value, 400000 + df_island_morph)
+                    move: 0, gy_3_c1 - 238
+                    SCard(238, gc_3_1, "Shape")
                 }
                 group {
                     show: true
-                    move: 0, gy_3_c1 - 298
-                    SCard(298, gc_3_1, "Shape")
+                    move: 0, gy_3_3 - 282
+                    SRow(282, "Layout", "Islands, one bar, or pieces hanging from the top", true, "", 418, false)
+                    STrack(742, 298, 396)
+                    SChoice(742, 298, 132, "Islands", sv_bar_mode == 0, set_value, 1000)
+                    SChoice(874, 298, 132, "Full bar", sv_bar_mode == 1, set_value, 1001)
+                    SChoice(1006, 298, 132, "Notch", sv_bar_mode == 2, set_value, 1002)
+                    SRevert(712, 312, sv_bar_mode != df_bar_mode, set_value, 1000 + df_bar_mode)
                 }
                 group {
                     show: true
                     move: 0, gy_3_4 - 342
-                    SRow(342, "Layout", "Islands, one bar, or pieces hanging from the top", true, "", 418, false)
+                    SRow(342, "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", true, "", 418, true)
                     STrack(742, 358, 396)
-                    SChoice(742, 358, 132, "Islands", sv_bar_mode == 0, set_value, 1000)
-                    SChoice(874, 358, 132, "Full bar", sv_bar_mode == 1, set_value, 1001)
-                    SChoice(1006, 358, 132, "Notch", sv_bar_mode == 2, set_value, 1002)
-                    SRevert(712, 372, sv_bar_mode != df_bar_mode, set_value, 1000 + df_bar_mode)
+                    SChoice(742, 358, 132, "Time and date", sv_clock_view == 0, set_value, 349000)
+                    SChoice(874, 358, 132, "Time", sv_clock_view == 1, set_value, 349001)
+                    SChoice(1006, 358, 132, "Seconds", sv_clock_view == 2, set_value, 349002)
+                    SRevert(712, 372, sv_clock_view != df_clock_view, set_value, 349000 + df_clock_view)
                 }
                 group {
                     show: true
                     move: 0, gy_3_5 - 402
-                    SRow(402, "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", true, "", 418, true)
-                    STrack(742, 418, 396)
-                    SChoice(742, 418, 132, "Time and date", sv_clock_view == 0, set_value, 349000)
-                    SChoice(874, 418, 132, "Time", sv_clock_view == 1, set_value, 349001)
-                    SChoice(1006, 418, 132, "Seconds", sv_clock_view == 2, set_value, 349002)
-                    SRevert(712, 432, sv_clock_view != df_clock_view, set_value, 349000 + df_clock_view)
+                    SRow(402, "Thickness", "How tall the bar is", true, "", 404, true)
+                    SSlider(728, 418, 330, sv_bar_height, 20, set_value, 76, "Thickness", "{sv_bar_height + 24, 0} px", true)
+                    SRevert(698, 432, sv_bar_height != df_bar_height, set_value, 76000 + df_bar_height)
                 }
                 group {
                     show: true
                     move: 0, gy_3_6 - 462
-                    SRow(462, "Thickness", "How tall the bar is", true, "", 404, true)
-                    SSlider(728, 478, 330, sv_bar_height, 20, set_value, 76, "Thickness", "{sv_bar_height + 24, 0} px", true)
-                    SRevert(698, 492, sv_bar_height != df_bar_height, set_value, 76000 + df_bar_height)
+                    SRow(462, "From the edge", "How far down from the top of the screen it sits", true, "", 404, true)
+                    SSlider(728, 478, 330, sv_bar_offset, 40, set_value, 77, "From the edge", "{sv_bar_offset, 0} px", true)
+                    SRevert(698, 492, sv_bar_offset != df_bar_offset, set_value, 77000 + df_bar_offset)
                 }
                 group {
                     show: true
                     move: 0, gy_3_7 - 522
-                    SRow(522, "From the edge", "How far down from the top of the screen it sits", true, "", 404, true)
-                    SSlider(728, 538, 330, sv_bar_offset, 40, set_value, 77, "From the edge", "{sv_bar_offset, 0} px", true)
-                    SRevert(698, 552, sv_bar_offset != df_bar_offset, set_value, 77000 + df_bar_offset)
+                    SRow(522, "Length", "How much of the screen's width it spans, centred", true, "", 404, true)
+                    SSlider(728, 538, 330, sv_bar_width, 70, set_value, 70, "Length", "{sv_bar_width + 30, 0}%", true)
+                    SRevert(698, 552, sv_bar_width != df_bar_width, set_value, 70000 + df_bar_width)
                 }
                 group {
                     show: true
                     move: 0, gy_3_8 - 582
-                    SRow(582, "Length", "How much of the screen's width it spans, centred", true, "", 404, true)
-                    SSlider(728, 598, 330, sv_bar_width, 70, set_value, 70, "Length", "{sv_bar_width + 30, 0}%", true)
-                    SRevert(698, 612, sv_bar_width != df_bar_width, set_value, 70000 + df_bar_width)
+                    SRow(582, "Corner rounding", "The bar, the notch and the islands", true, "", 404, true)
+                    SSlider(728, 598, 330, sv_bar_radius, 16, set_value, 37, "Corner rounding", "{sv_bar_radius, 0} px", true)
+                    SRevert(698, 612, sv_bar_radius != df_bar_radius, set_value, 37000 + df_bar_radius)
                 }
                 group {
                     show: true
-                    move: 0, gy_3_9 - 642
-                    SRow(642, "Corner rounding", "The bar, the notch and the islands", true, "", 404, true)
-                    SSlider(728, 658, 330, sv_bar_radius, 16, set_value, 37, "Corner rounding", "{sv_bar_radius, 0} px", true)
-                    SRevert(698, 672, sv_bar_radius != df_bar_radius, set_value, 37000 + df_bar_radius)
+                    move: 0, gy_3_c2 - 664
+                    SCard(664, gc_3_2, "Style")
                 }
                 group {
                     show: true
-                    move: 0, gy_3_c2 - 724
-                    SCard(724, gc_3_2, "Style")
-                }
-                group {
-                    show: true
-                    move: 0, gy_3_11 - 768
-                    SRow(768, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, false)
-                    STrack(668, 784, 470)
-                    SChoice(668, 784, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
-                    SChoice(762, 784, 94, "Glass", sv_bar_style == 1, set_value, 65001)
-                    SChoice(856, 784, 94, "Floating", sv_bar_style == 2, set_value, 65002)
-                    SChoice(950, 784, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
-                    SChoice(1044, 784, 94, "Steel", sv_bar_style == 4, set_value, 65004)
-                    SRevert(638, 798, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
+                    move: 0, gy_3_10 - 708
+                    SRow(708, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, false)
+                    STrack(668, 724, 470)
+                    SChoice(668, 724, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
+                    SChoice(762, 724, 94, "Glass", sv_bar_style == 1, set_value, 65001)
+                    SChoice(856, 724, 94, "Floating", sv_bar_style == 2, set_value, 65002)
+                    SChoice(950, 724, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
+                    SChoice(1044, 724, 94, "Steel", sv_bar_style == 4, set_value, 65004)
+                    SRevert(638, 738, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
                 }
                 group {
                     show: sv_bar_style > 4.5
-                    move: 0, gy_3_12 - 828
-                    text "CUSTOM — CHOOSE A STYLE TO START AGAIN" { at: 274, 842; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    move: 0, gy_3_11 - 768
+                    text "CUSTOM — CHOOSE A STYLE TO START AGAIN" { at: 274, 782; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: true
-                    move: 0, gy_3_13 - 856
-                    SRow(856, "Material", "What the bar is made of", true, "", 344, true)
-                    STrack(668, 872, 470)
-                    SChoice(668, 872, 94, "Solid", bar_surface == 0, set_value, 2000)
-                    SChoice(762, 872, 94, "Glass", bar_surface == 1, set_value, 2001)
-                    SChoice(856, 872, 94, "Frosted", bar_surface == 2, set_value, 2002)
-                    SChoice(950, 872, 94, "None", bar_surface == 3, set_value, 2003)
-                    SChoice(1044, 872, 94, "Steel", bar_surface == 4, set_value, 2004)
-                    SRevert(638, 886, sv_bar_surface != df_bar_surface, set_value, 2000 + df_bar_surface)
+                    move: 0, gy_3_12 - 796
+                    SRow(796, "Material", "What the bar is made of", true, "", 344, true)
+                    STrack(668, 812, 470)
+                    SChoice(668, 812, 94, "Solid", bar_surface == 0, set_value, 2000)
+                    SChoice(762, 812, 94, "Glass", bar_surface == 1, set_value, 2001)
+                    SChoice(856, 812, 94, "Frosted", bar_surface == 2, set_value, 2002)
+                    SChoice(950, 812, 94, "None", bar_surface == 3, set_value, 2003)
+                    SChoice(1044, 812, 94, "Steel", bar_surface == 4, set_value, 2004)
+                    SRevert(638, 826, sv_bar_surface != df_bar_surface, set_value, 2000 + df_bar_surface)
                 }
                 group {
                     show: bar_surface < 2.5
-                    move: 0, gy_3_14 - 916
-                    SRow(916, "Transparency", "How much of the desktop shows through", true, "", 404, true)
-                    SSlider(728, 932, 330, sv_bar_opacity, 80, set_value, 42, "Transparency", "{100 - (sv_bar_opacity + 20), 0}%", true)
-                    SRevert(698, 946, sv_bar_opacity != df_bar_opacity, set_value, 42000 + df_bar_opacity)
+                    move: 0, gy_3_13 - 856
+                    SRow(856, "Transparency", "How much of the desktop shows through", true, "", 404, true)
+                    SSlider(728, 872, 330, sv_bar_opacity, 80, set_value, 42, "Transparency", "{100 - (sv_bar_opacity + 20), 0}%", true)
+                    SRevert(698, 886, sv_bar_opacity != df_bar_opacity, set_value, 42000 + df_bar_opacity)
                 }
                 group {
                     show: bar_surface > 0.5 and bar_surface < 1.5
-                    move: 0, gy_3_15 - 976
-                    SRow(976, "Frosting", "How frosted the glass is", true, "", 404, true)
-                    SSlider(728, 992, 330, sv_bar_frost, 100, set_value, 43, "Frosting", "{sv_bar_frost, 0}%", true)
-                    SRevert(698, 1006, sv_bar_frost != df_bar_frost, set_value, 43000 + df_bar_frost)
+                    move: 0, gy_3_14 - 916
+                    SRow(916, "Frosting", "How frosted the glass is", true, "", 404, true)
+                    SSlider(728, 932, 330, sv_bar_frost, 100, set_value, 43, "Frosting", "{sv_bar_frost, 0}%", true)
+                    SRevert(698, 946, sv_bar_frost != df_bar_frost, set_value, 43000 + df_bar_frost)
                 }
                 group {
                     show: bar_surface > 0.5 and bar_surface < 2.5
-                    move: 0, gy_3_16 - 1036
-                    SRow(1036, "Tint", "How much the glass darkens what is behind", true, "", 404, true)
-                    SSlider(728, 1052, 330, sv_bar_smoke, 80, set_value, 44, "Tint", "{sv_bar_smoke, 0}%", true)
-                    SRevert(698, 1066, sv_bar_smoke != df_bar_smoke, set_value, 44000 + df_bar_smoke)
+                    move: 0, gy_3_15 - 976
+                    SRow(976, "Tint", "How much the glass darkens what is behind", true, "", 404, true)
+                    SSlider(728, 992, 330, sv_bar_smoke, 80, set_value, 44, "Tint", "{sv_bar_smoke, 0}%", true)
+                    SRevert(698, 1006, sv_bar_smoke != df_bar_smoke, set_value, 44000 + df_bar_smoke)
                 }
                 group {
                     show: bar_surface < 2.5 or bar_surface > 3.5
-                    move: 0, gy_3_17 - 1096
-                    SRow(1096, "Shadow", "Lifts the bar off the desktop", true, "", 374, true)
-                    STrack(698, 1112, 440)
-                    SChoice(698, 1112, 110, "Off", sv_bar_shadow == 0, set_value, 41000)
-                    SChoice(808, 1112, 110, "Soft", sv_bar_shadow == 1, set_value, 41001)
-                    SChoice(918, 1112, 110, "Medium", sv_bar_shadow == 2, set_value, 41002)
-                    SChoice(1028, 1112, 110, "Strong", sv_bar_shadow == 3, set_value, 41003)
-                    SRevert(668, 1126, sv_bar_shadow != df_bar_shadow, set_value, 41000 + df_bar_shadow)
+                    move: 0, gy_3_16 - 1036
+                    SRow(1036, "Shadow", "Lifts the bar off the desktop", true, "", 374, true)
+                    STrack(698, 1052, 440)
+                    SChoice(698, 1052, 110, "Off", sv_bar_shadow == 0, set_value, 41000)
+                    SChoice(808, 1052, 110, "Soft", sv_bar_shadow == 1, set_value, 41001)
+                    SChoice(918, 1052, 110, "Medium", sv_bar_shadow == 2, set_value, 41002)
+                    SChoice(1028, 1052, 110, "Strong", sv_bar_shadow == 3, set_value, 41003)
+                    SRevert(668, 1066, sv_bar_shadow != df_bar_shadow, set_value, 41000 + df_bar_shadow)
                 }
                 group {
                     show: true
-                    move: 0, gy_3_c3 - 1178
-                    SCard(1178, gc_3_3, "Edges")
+                    move: 0, gy_3_c3 - 1118
+                    SCard(1118, gc_3_3, "Edges")
                 }
                 group {
                     show: true
-                    move: 0, gy_3_19 - 1222
-                    SRow(1222, "Outline", "None, corner marks, or a line", true, "", 344, false)
-                    STrack(668, 1238, 470)
-                    SChoice(668, 1238, 94, "None", sv_bar_edge == 0, set_value, 71000)
-                    SChoice(762, 1238, 94, "Corners", sv_bar_edge == 1, set_value, 71001)
-                    SChoice(856, 1238, 94, "Thin", sv_bar_edge == 2, set_value, 71002)
-                    SChoice(950, 1238, 94, "Regular", sv_bar_edge == 3, set_value, 71003)
-                    SChoice(1044, 1238, 94, "Bold", sv_bar_edge == 4, set_value, 71004)
-                    SRevert(638, 1252, sv_bar_edge != df_bar_edge, set_value, 71000 + df_bar_edge)
+                    move: 0, gy_3_18 - 1162
+                    SRow(1162, "Outline", "None, corner marks, or a line", true, "", 344, false)
+                    STrack(668, 1178, 470)
+                    SChoice(668, 1178, 94, "None", sv_bar_edge == 0, set_value, 71000)
+                    SChoice(762, 1178, 94, "Corners", sv_bar_edge == 1, set_value, 71001)
+                    SChoice(856, 1178, 94, "Thin", sv_bar_edge == 2, set_value, 71002)
+                    SChoice(950, 1178, 94, "Regular", sv_bar_edge == 3, set_value, 71003)
+                    SChoice(1044, 1178, 94, "Bold", sv_bar_edge == 4, set_value, 71004)
+                    SRevert(638, 1192, sv_bar_edge != df_bar_edge, set_value, 71000 + df_bar_edge)
                 }
                 group {
                     show: sv_bar_edge > 0.5
-                    move: 0, gy_3_20 - 1282
-                    SRow(1282, "Outline colour", "A quiet line, a bright one, or the main colour", true, "", 418, true)
-                    STrack(742, 1298, 396)
-                    SChoice(742, 1298, 132, "Subtle", sv_bar_outline_colour == 0, set_value, 39000)
-                    SChoice(874, 1298, 132, "Bright", sv_bar_outline_colour == 1, set_value, 39001)
-                    SChoice(1006, 1298, 132, "Accent", sv_bar_outline_colour == 2, set_value, 39002)
-                    SRevert(712, 1312, sv_bar_outline_colour != df_bar_outline_colour, set_value, 39000 + df_bar_outline_colour)
+                    move: 0, gy_3_19 - 1222
+                    SRow(1222, "Outline colour", "A quiet line, a bright one, or the main colour", true, "", 418, true)
+                    STrack(742, 1238, 396)
+                    SChoice(742, 1238, 132, "Subtle", sv_bar_outline_colour == 0, set_value, 39000)
+                    SChoice(874, 1238, 132, "Bright", sv_bar_outline_colour == 1, set_value, 39001)
+                    SChoice(1006, 1238, 132, "Accent", sv_bar_outline_colour == 2, set_value, 39002)
+                    SRevert(712, 1252, sv_bar_outline_colour != df_bar_outline_colour, set_value, 39000 + df_bar_outline_colour)
                 }
                 group {
                     show: true
-                    move: 0, gy_3_21 - 1342
-                    SRow(1342, "Hover", "What lights under the pointer", true, "", 374, true)
-                    STrack(698, 1358, 440)
-                    SChoice(698, 1358, 110, "Soft", sv_bar_pill == 0, set_value, 40000)
-                    SChoice(808, 1358, 110, "Outline", sv_bar_pill == 1, set_value, 40001)
-                    SChoice(918, 1358, 110, "Underline", sv_bar_pill == 2, set_value, 40002)
-                    SChoice(1028, 1358, 110, "Glow", sv_bar_pill == 3, set_value, 40003)
-                    SRevert(668, 1372, sv_bar_pill != df_bar_pill, set_value, 40000 + df_bar_pill)
+                    move: 0, gy_3_20 - 1282
+                    SRow(1282, "Hover", "What lights under the pointer", true, "", 374, true)
+                    STrack(698, 1298, 440)
+                    SChoice(698, 1298, 110, "Soft", sv_bar_pill == 0, set_value, 40000)
+                    SChoice(808, 1298, 110, "Outline", sv_bar_pill == 1, set_value, 40001)
+                    SChoice(918, 1298, 110, "Underline", sv_bar_pill == 2, set_value, 40002)
+                    SChoice(1028, 1298, 110, "Glow", sv_bar_pill == 3, set_value, 40003)
+                    SRevert(668, 1312, sv_bar_pill != df_bar_pill, set_value, 40000 + df_bar_pill)
                 }
                 group {
                     show: not st_notch
-                    move: 0, gy_3_22 - 1402
-                    SRow(1402, "Info rail", "The thin scale line above the bar", true, "", 768, true)
-                    SToggle(1092, 1420, bar_rail, set_value, 5, "bar.rail")
-                    SRevert(1062, 1432, sv_bar_rail != df_bar_rail, set_value, 5000 + df_bar_rail)
+                    move: 0, gy_3_21 - 1342
+                    SRow(1342, "Info rail", "The thin scale line above the bar", true, "", 768, true)
+                    SToggle(1092, 1360, bar_rail, set_value, 5, "bar.rail")
+                    SRevert(1062, 1372, sv_bar_rail != df_bar_rail, set_value, 5000 + df_bar_rail)
                 }
                 group {
                     show: true
-                    move: 0, gy_3_23 - 1462
-                    SRow(1462, "Details", "Cuts in the outline, ticks, the comet and the seconds", true, "", 768, true)
-                    SToggle(1092, 1480, bar_accents, set_value, 6, "bar.accents")
-                    SRevert(1062, 1492, sv_bar_accents != df_bar_accents, set_value, 6000 + df_bar_accents)
+                    move: 0, gy_3_22 - 1402
+                    SRow(1402, "Details", "Cuts in the outline, ticks, the comet and the seconds", true, "", 768, true)
+                    SToggle(1092, 1420, bar_accents, set_value, 6, "bar.accents")
+                    SRevert(1062, 1432, sv_bar_accents != df_bar_accents, set_value, 6000 + df_bar_accents)
                 }
             }
             group {

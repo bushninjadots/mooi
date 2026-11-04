@@ -115,9 +115,6 @@ M.SCHEMA = {
     { path = "island.follow_on_send", kind = "boolean", default = false },
     -- every island's look (ui/island.plm): Ferrolume plates, or tethered to their module
     { path = "island.style", kind = "enum", values = { "plate", "tether" }, default = "plate" },
-    -- D149 (D148's biomass, reworked): every island morphs out of the bar as one body with it, the side
-    -- notch's panels out of their tab, and the Control Nexus out of the screen's border
-    { path = "island.morph", kind = "boolean", default = false },
     -- what the clock module shows; a right press on it cycles them
     { path = "clock.view", kind = "enum", values = { "full", "time", "seconds" }, default = "full" },
     -- the spine on the right edge, whose shelves slide out on hover (D100)

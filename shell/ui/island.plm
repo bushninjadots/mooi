@@ -19,10 +19,7 @@ library Island {
     component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1) {
         size: w, h
         let tether = isl_style > 0.5
-        // morph (island.morph, D150, after iNiR's iRiS): the island sits 10 px under the bar and is grown
-        // out of its module, fused with the bar's edge
-        let morph = morph_on and not up and not centre
-        let drop = if(morph, 0, if(tether and not up and not centre, 12, 0))
+        let drop = if(tether and not up and not centre, 12, 0)
         let iw = aw + (w - aw) * rv
         let ih = ah + (h - ah) * rv
         let top = if(up, h - ih, 0) + drop
@@ -33,7 +30,7 @@ library Island {
 
         // ── plate ──
         group {
-            show: not tether and not morph
+            show: not tether
             // the shadow comes from a body inside the cut (a group cannot cast one)
             body {
                 gradient: 0, top to 0, top + ih, fl.hull, fl.hull
@@ -51,7 +48,7 @@ library Island {
 
         // ── tether ──
         group {
-            show: tether and not morph
+            show: tether
             group {
                 show: tx >= 0 and not up and not centre
                 opacity: smooth(0.2, 1, rv)
@@ -70,43 +67,10 @@ library Island {
             line { from: left + irad, top + 0.75; to: left + iw - irad, top + 0.75; width: 1; color: accent.primary; opacity: 0.45 * rv }
         }
 
-
-        // ── morph (island.morph, D150, after iNiR's iRiS morph surface) ──
-        // The body starts as the module it was opened from — a pill at 55 % of it, on the bar's edge —
-        // and grows into the island: across on the spring, down on the spring squared (the pull lags,
-        // so it pours rather than scales), its corners from the pill's to the island's. It is one body
-        // with a 2 px run on the bar's edge, fused 30 px deep (`blend`), so the bar's edge flows into it;
-        // nothing of another colour is laid over the bar. The content rides the body's foot and fades in
-        // over the first third.
-        let mp = clamp(rv, 0, 1)
-        let mlag = mp * mp
-        let msx0 = if(tx >= 0, clamp(tx, aw / 2, w - aw / 2), w / 2) - aw * 0.55 / 2
-        let msy0 = -6
-        let msw0 = aw * 0.55
-        let msh0 = 18 * 0.55
-        let mbx = msx0 + (0 - msx0) * mp
-        let mbw = msw0 + (w - msw0) * mp
-        // the body hangs flush from the module's foot (-6): its top never leaves the bar's edge
-        let mby = -6
-        let mbh = msh0 + (h + 6 - msh0) * mlag
-        let mrad = min(min(mbw, mbh) / 2, msh0 / 2 + (max(irad, 10) - msh0 / 2) * mp)
-        let mcx = if(tx >= 0, clamp(tx, aw / 2, w - aw / 2), w / 2)
         group {
-            show: morph and rv > 0.005
-            body {
-                gradient: 0, mby to 0, mby + mbh, fl.hull_raised, fl.hull
-                shadow: 0, 8 * mp, 24 * mp, 40% * mp
-                border: 1, mix(fl.trace, fl.phos, 0.35)
-                // the bar's edge, as wide as the body and a fillet each side: where they meet it flares
-                box { from: mbx - 16 * mp, -7; size: max(1, mbw + 32 * mp), 2; corner: 1 }
-                box { from: mbx, mby; size: max(1, mbw), max(1, mbh); corner: mrad; blend: 22 }
-            }
-        }
-        group {
-            opacity: if(morph, smooth(0.08, 0.38, mlag), smooth(0.45, 1, rv))
-            move: if(morph, mbx + (mbw - w) / 2, if(centre, 0, -10 * (1 - rv))), if(morph, mby + mbh - h, if(centre, -6 * (1 - rv), 0) + drop)
-            clip box { from: if(morph, (w - mbw) / 2, left), if(morph, h - mbh, top - drop); size: if(morph, max(1, mbw), iw), if(morph, max(1, mbh), ih)
-                       corner: if(morph, mrad, if(tether, max(irad, 8), 0)) }
+            opacity: smooth(0.45, 1, rv)
+            move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0) + drop
+            clip box { from: left, top - drop; size: iw, ih; corner: if(tether, irad, 0) }
             children
         }
     }
