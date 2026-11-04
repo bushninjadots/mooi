@@ -82,6 +82,9 @@ SETTERS = [
     "walls.auto_from", "walls.auto_fullscreen",
     # D152/D153: the islands grown out of the bar (frame.islands for an hour, the same slot)
     "island.morph",
+    # D157: the workspaces' transition and the scrolling layout as niri's columns
+    "desktop.ws_style", "desktop.ws_feel", "desktop.ws_speed", "desktop.ws_swipe",
+    "desktop.column_widths", "desktop.column_follow", "desktop.column_wrap", "desktop.column_keys",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -286,11 +289,28 @@ SECTIONS = [
         ("card", "Motion", "dk_manage"),
         ("choice", "Wobble", "Windows bend as you drag them (Hyprland 0.57) and bounce as they open and move", "desktop.wobble", "sv_desktop_wobble", ["Keep mine", "Off", "Subtle", "Wobbly", "Jelly"]),
         ("choice", "Motion blur", "Smears a window while it is moved or resized", "desktop.motion_blur", "sv_desktop_motion_blur", ["Keep mine", "Off", "Soft", "Strong"]),
+        # D157: going from one workspace to the next, and a swipe's carry
+        ("card", "Workspaces", "dk_manage"),
+        ("choice", "Transition", "How the windows travel to the next workspace", "desktop.ws_style", "sv_desktop_ws_style",
+         [("Keep mine", 0), ("Slide", 1), ("Column", 2), ("Glide", 3)]),
+        ("choice", "", "…Column is niri's, the workspaces stacked; Tide is mooi's own, the next one rising as this one dissolves", "desktop.ws_style", "sv_desktop_ws_style", [("Fade", 4), ("Tide", 5)]),
+        ("choice", "Feel", "Spring is niri's: quick, no overshoot. Bounce overshoots a little", "desktop.ws_feel", "sv_desktop_ws_feel", ["Keep mine", "Ease", "Spring", "Bounce"], "sv_desktop_ws_style != 0"),
+        ("slider", "Duration", "How long the move takes (a spring sets its own)", "desktop.ws_speed", 0, 12,
+         'pick(sv_desktop_ws_speed == 0, "{sv_desktop_ws_speed / 10, 1} s", "KEEP")', "sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2"),
+        ("choice", "Swipe", "Flick: a quick swipe goes over, and a long one carries on past the next", "desktop.ws_swipe", "sv_desktop_ws_swipe", ["Keep mine", "Flick", "Steady"]),
         ("card", "Tiling", "dk_manage"),
         ("choice", "Layout", "How tiled windows are arranged", "desktop.layout", "sv_desktop_layout", ["Keep mine", "Dwindle", "Master", "Scrolling", "Monocle"]),
         ("slider", "Column width", "Scrolling layout: a new column's width", "desktop.column", 9, 100,
          'pick(sv_desktop_column == 0, "{sv_desktop_column + 9, 0}%", "KEEP")', "sv_desktop_layout == 0 or sv_desktop_layout == 3"),
         ("choice", "Focused column", "Scrolling layout: bring it into view, or centre it", "desktop.column_fit", "sv_desktop_column_fit", ["Keep mine", "Fit", "Centre"],
+         "sv_desktop_layout == 0 or sv_desktop_layout == 3"),
+        ("choice", "Column widths", "Scrolling layout: the widths Super+] and Super+[ step through", "desktop.column_widths", "sv_desktop_column_widths",
+         ["Keep mine", "niri (⅓ ½ ⅔ 1)", "Halves", "Quarters"], "sv_desktop_layout == 0 or sv_desktop_layout == 3"),
+        ("choice", "Follow focus", "Scrolling layout: the columns scroll to the window you focus", "desktop.column_follow", "sv_desktop_column_follow", ["Keep mine", "On", "Off"],
+         "sv_desktop_layout == 0 or sv_desktop_layout == 3"),
+        ("choice", "Wrap focus", "Scrolling layout: past the last column, focus goes round to the first", "desktop.column_wrap", "sv_desktop_column_wrap", ["Keep mine", "On", "Off"],
+         "sv_desktop_layout == 0 or sv_desktop_layout == 3"),
+        ("toggle", "Column keys", "niri's: Super+] [ widths, Super+= − size, Super+Alt+← → move the column, Super+C fit it", "desktop.column_keys", "sv_desktop_column_keys", None,
          "sv_desktop_layout == 0 or sv_desktop_layout == 3"),
     ]),
     ("Input", "Input", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "DESKTOP", [

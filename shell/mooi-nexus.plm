@@ -852,10 +852,13 @@ scene Nexus {
         // the content's shift: its leading edge on the body's
         let nm_ox = if(dk_edge == 3, nm_bx - nm_X, if(dk_edge == 2, nm_bx + nm_bw - nm_X - dk_w, 0))
         let nm_oy = if(dk_edge == 0, nm_by - nm_Y, if(dk_edge == 1, nm_by + nm_bh - nm_Y - dk_h, 0))
+        // the notch tabs stand outside the deck (D157: the clip had cut them off since D152b): as the
+        // body settles the clip opens past it by their reach, so they rise out of the deck's edge
+        let nm_m = 56 * smooth(0.86, 1, nm_rv)
         group {
             move: dk_x + if(ch_on, nm_ox, dk_ox * (1 - nx_in) * (dk_w + 40)), dk_y + if(ch_on, nm_oy, dk_oy * (1 - nx_in) * (dk_h + 40))
             opacity: if(ch_on, smooth(0.08, 0.38, nm_rv * nm_rv), smooth(0, 0.5, nx_in))
-            clip box { from: if(ch_on, nm_bx - nm_X - nm_ox, -4000), if(ch_on, nm_by - nm_Y - nm_oy, -4000); size: if(ch_on, max(1, nm_bw), 8000), if(ch_on, max(1, nm_bh), 8000); corner: if(ch_on, nm_br, 0) }
+            clip box { from: if(ch_on, nm_bx - nm_X - nm_ox - nm_m, -4000), if(ch_on, nm_by - nm_Y - nm_oy - nm_m, -4000); size: if(ch_on, max(1, nm_bw + 2 * nm_m), 8000), if(ch_on, max(1, nm_bh + 2 * nm_m), 8000); corner: if(ch_on, nm_br, 0) }
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
 
             DeckFrame(dk_w, dk_h) {

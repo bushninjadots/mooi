@@ -822,6 +822,37 @@ test("windows and scrolling: nothing written while kept, Hyprland's names when c
     eq(desktop.covers(was, desktop.claims(d)), true, "claiming more is not")
 end)
 
+test("D157: the workspaces' transition, the swipe and niri's columns; nothing while kept", function()
+    local d = config.defaults().desktop
+    d.manage = true
+    local look = desktop.look(d, nil)
+    assert(not string.find(look, "hl.animation", 1, true) and not string.find(look, "gestures") and not string.find(look, "hl.bind", 1, true), "keep writes nothing: " .. look)
+    eq(desktop.workspaces(d), nil, "no transition while kept")
+    -- tide: the incoming leaf rises faded, the outgoing dissolves; niri's spring under both
+    d.ws_style, d.ws_feel = "tide", "spring"
+    local ws = desktop.workspaces(d)
+    assert(string.find(ws, 'hl.curve("mooi_ws", { type = "spring", mass = 1, stiffness = 1000, dampening = 63.2 })', 1, true), ws)
+    assert(string.find(ws, 'leaf = "workspacesIn", enabled = true, speed = 2, spring = "mooi_ws", style = "slidefadevert 30%"', 1, true), ws)
+    assert(string.find(ws, 'leaf = "workspacesOut", enabled = true, speed = 2, spring = "mooi_ws", style = "fade"', 1, true), ws)
+    -- a kept feel moves by mooi's ease, not Hyprland's near-instant `default`; the duration in tenths
+    d.ws_style, d.ws_feel, d.ws_speed = "column", "keep", 5
+    ws = desktop.workspaces(d)
+    assert(string.find(ws, 'type = "bezier"', 1, true) and string.find(ws, 'speed = 5, bezier = "mooi_ws", style = "slidevert"', 1, true), ws)
+    d.ws_swipe, d.column_widths, d.column_follow, d.column_wrap, d.column_keys = "flick", "halves", "off", "on", true
+    look = desktop.look(d, nil)
+    assert(string.find(look, "gestures = { workspace_swipe_forever = true", 1, true), look)
+    assert(string.find(look, 'scrolling = { explicit_column_widths = "0.5, 1.0", follow_focus = 0, wrap_focus = true }', 1, true), look)
+    -- each key let go before it is bound, so applying the look twice binds it once
+    local n = select(2, string.gsub(look, "hl%.bind%(", ""))
+    eq(n, #desktop.COLUMN_KEYS, "one bind per column key")
+    assert(string.find(look, 'pcall(hl.unbind, "SUPER + bracketright"); hl.bind("SUPER + bracketright", hl.dsp.layout("colresize +conf"))', 1, true), look)
+    local was = desktop.claims(d)
+    d.column_keys, d.ws_style = false, "keep"
+    eq(desktop.covers(desktop.claims(d), was), false, "letting the keys and the transition go is noticed (Hyprland reloads)")
+    -- the setter lists carry the new settings at their end, in step
+    for _, p in ipairs({ "desktop.ws_style", "desktop.column_keys" }) do assert(setters_code(p), p .. " has a setter") end
+end)
+
 test("Hyprland 0.56: finer blur, the windows' spring and motion blur, nothing while kept", function()
     local d = config.defaults().desktop
     d.manage = true

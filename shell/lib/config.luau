@@ -189,6 +189,21 @@ M.SCHEMA = {
     { path = "desktop.motion_blur", kind = "enum", values = { "keep", "off", "soft", "strong" }, default = "keep" },
     -- Hyprland 0.57's blur variants: glass, acrylic, water, aurora and more on top of the blur
     { path = "desktop.blur_variant", kind = "enum", values = { "keep", "none", "glass", "acrylic", "water", "ripple", "aurora", "haze", "heat_shimmer", "drops", "fluid_jar" }, default = "keep" },
+    -- D157: going from one workspace to the next. How the windows travel (`column` is niri's: the
+    -- workspaces stacked top to bottom; `tide` is mooi's own: the new one rises in as the old
+    -- dissolves where it stands), how the move feels (`spring` is niri's critically damped spring,
+    -- `bounce` overshoots a little), how long (tenths of a second, 0 keeps Hyprland's own), and
+    -- how a touchpad swipe carries (`flick`: a quick flick goes over and may carry on past one).
+    { path = "desktop.ws_style", kind = "enum", values = { "keep", "slide", "column", "glide", "fade", "tide" }, default = "keep" },
+    { path = "desktop.ws_feel", kind = "enum", values = { "keep", "ease", "spring", "bounce" }, default = "keep" },
+    { path = "desktop.ws_speed", kind = "integer", default = 0, min = 0, max = 12 },
+    { path = "desktop.ws_swipe", kind = "enum", values = { "keep", "flick", "steady" }, default = "keep" },
+    -- D157: the scrolling layout as niri's columns: the widths a column steps through, the tape
+    -- following focus, focus wrapping round the ends, and niri's keys for the columns.
+    { path = "desktop.column_widths", kind = "enum", values = { "keep", "niri", "halves", "quarters" }, default = "keep" },
+    { path = "desktop.column_follow", kind = "enum", values = { "keep", "on", "off" }, default = "keep" },
+    { path = "desktop.column_wrap", kind = "enum", values = { "keep", "on", "off" }, default = "keep" },
+    { path = "desktop.column_keys", kind = "boolean", default = false },
     -- mooi's keys: "SUPER + ALT + Space" and the like (Hyprland's own spelling). Bound live
     -- and by custom/mooi.lua at Hyprland's start.
     { path = "keys.search", kind = "key", default = "SUPER + ALT + Space" },

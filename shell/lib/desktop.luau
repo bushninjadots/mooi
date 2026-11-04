@@ -66,6 +66,54 @@ local MESH = { off = false, subtle = { 0.6, 320, 22 }, wobbly = { 1.0, 260, 14 }
 -- acrylic, the liquid-glass look it stood for.
 M.VARIANTS = { "acrylic", "aurora", "drops", "fluid_jar", "haze", "heat_shimmer", "ripple", "water" }
 local LEGACY_VARIANTS = { none = "kawase", glass = "acrylic" }
+
+-- D157: going from one workspace to the next. Each kind's Hyprland style for the workspace coming
+-- in and the one going out (Hyprland 0.57 takes slide, slidevert, slidefade, slidefadevert and fade
+-- here; popin and the gnome styles are windows' alone). `column` stacks the workspaces top to bottom,
+-- as niri does; `tide` is mooi's own, the two leaves apart: the next one rises in faded while this
+-- one dissolves where it stands.
+local WS_STYLE = { slide = { "slide", "slide" }, column = { "slidevert", "slidevert" }, glide = { "slidefade 20%", "slidefade 20%" },
+                   fade = { "fade", "fade" }, tide = { "slidefadevert 30%", "fade" } }
+-- How the move feels: a curve of mooi's own each. `spring` is niri's (critically damped: stiffness
+-- 1000 against 2·√1000 ≈ 63, mass 1), `bounce` swings past a little before it settles; `ease` an
+-- out-expo bezier, which is also what a chosen style moves by while the feel is kept (`keep`):
+-- Hyprland's own `default` is near instant in this desktop's config.
+local WS_FEEL = { ease = { bezier = { 0.16, 1, 0.3, 1 } }, spring = { spring = { 1000, 63.2 } }, bounce = { spring = { 700, 32 } } }
+-- A touchpad swipe's carry (gestures:workspace_swipe_*): `flick` goes over on a quick, short flick
+-- and carries on past the next workspace on a long one; `steady` asks for half the way and a firm push.
+local WS_SWIPE = { flick = "workspace_swipe_forever = true, workspace_swipe_cancel_ratio = 0.15, workspace_swipe_min_speed_to_force = 10, workspace_swipe_distance = 250",
+                   steady = "workspace_swipe_forever = false, workspace_swipe_cancel_ratio = 0.5, workspace_swipe_min_speed_to_force = 50, workspace_swipe_distance = 450" }
+-- The scrolling layout as niri's columns: the widths `colresize +conf/-conf` steps through.
+local COLUMN_WIDTHS = { niri = "0.333, 0.5, 0.667, 1.0", halves = "0.5, 1.0", quarters = "0.25, 0.5, 0.75, 1.0" }
+local FOLLOW = { on = 1, off = 0 }                         -- scrolling:follow_focus
+-- niri's keys for the columns (desktop.column_keys), as Hyprland layout messages. Each is let go
+-- first, so applying the look again does not bind a key twice (a press would then resize twice).
+M.COLUMN_KEYS = {
+    { "SUPER + bracketright", "colresize +conf" }, { "SUPER + bracketleft", "colresize -conf" },
+    { "SUPER + equal", "colresize +0.1" }, { "SUPER + minus", "colresize -0.1" },
+    { "SUPER + ALT + right", "swapcol r" }, { "SUPER + ALT + left", "swapcol l" },
+    { "SUPER + C", "fit active" },
+}
+local function ws_speed(d) local v = tonumber(d.ws_speed); if not v or v < 1 then return 2 end; return math.floor(v) end
+-- The workspaces' animations, as Hyprland calls; nil while kept.
+function M.workspaces(d)
+    local st = WS_STYLE[d.ws_style]
+    if not st then return nil end
+    local f = WS_FEEL[d.ws_feel] or WS_FEEL.ease
+    local out, curve = {}, nil
+    if f and f.bezier then
+        out[#out + 1] = string.format('hl.curve("mooi_ws", { type = "bezier", points = { { %.2f, %.2f }, { %.2f, %.2f } } })', f.bezier[1], f.bezier[2], f.bezier[3], f.bezier[4])
+        curve = 'bezier = "mooi_ws"'
+    elseif f and f.spring then
+        out[#out + 1] = string.format('hl.curve("mooi_ws", { type = "spring", mass = 1, stiffness = %d, dampening = %.1f })', f.spring[1], f.spring[2])
+        curve = 'spring = "mooi_ws"'
+    end
+    for i, leaf in ipairs({ "workspaces", "workspacesIn", "workspacesOut" }) do
+        local style = (i == 3) and st[2] or st[1]
+        out[#out + 1] = string.format('hl.animation({ leaf = "%s", enabled = true, speed = %d, %s, style = "%s" })', leaf, ws_speed(d), curve, style)
+    end
+    return table.concat(out, "; ")
+end
 local function variant(d)
     for _, v in ipairs(M.VARIANTS) do if d.blur_variant == v then return v end end
     return LEGACY_VARIANTS[d.blur_variant]
@@ -101,6 +149,11 @@ function M.claims(d)
     claim("blur_vibrancy", vibrancy(d)); claim("blur_xray", ONOFF[d.blur_xray] ~= nil); claim("blur_popups", ONOFF[d.blur_popups] ~= nil)
     claim("wobble", WOBBLE[d.wobble]); claim("motion_blur", MOTION_BLUR[d.motion_blur])
     claim("blur_variant", variant(d))
+    claim("ws_style", WS_STYLE[d.ws_style]); claim("ws_feel", WS_STYLE[d.ws_style] and WS_FEEL[d.ws_feel])
+    claim("ws_speed", WS_STYLE[d.ws_style] and tonumber(d.ws_speed) and d.ws_speed >= 1)
+    claim("ws_swipe", WS_SWIPE[d.ws_swipe]); claim("column_widths", COLUMN_WIDTHS[d.column_widths])
+    claim("column_follow", FOLLOW[d.column_follow]); claim("column_wrap", ONOFF[d.column_wrap] ~= nil)
+    claim("column_keys", d.column_keys == true)
     return out
 end
 
@@ -141,6 +194,9 @@ function M.look(d, pal, frame)
     local scrolling = {}
     if column(d) then scrolling[#scrolling + 1] = string.format("column_width = %.2f", column(d)) end
     if FIT[d.column_fit] then scrolling[#scrolling + 1] = string.format("focus_fit_method = %d", FIT[d.column_fit]) end
+    if COLUMN_WIDTHS[d.column_widths] then scrolling[#scrolling + 1] = string.format("explicit_column_widths = %q", COLUMN_WIDTHS[d.column_widths]) end
+    if FOLLOW[d.column_follow] then scrolling[#scrolling + 1] = string.format("follow_focus = %d", FOLLOW[d.column_follow]) end
+    if ONOFF[d.column_wrap] ~= nil then scrolling[#scrolling + 1] = "wrap_focus = " .. tostring(ONOFF[d.column_wrap]) end
     if #scrolling > 0 then parts[#parts + 1] = "scrolling = { " .. table.concat(scrolling, ", ") .. " }" end
     local input, touchpad = {}, {}
     if NATURAL[d.mouse_natural] ~= nil then input[#input + 1] = "natural_scroll = " .. tostring(NATURAL[d.mouse_natural]) end
@@ -149,6 +205,7 @@ function M.look(d, pal, frame)
     if touch_speed(d) then touchpad[#touchpad + 1] = string.format("scroll_factor = %.2f", touch_speed(d)) end
     if #touchpad > 0 then input[#input + 1] = "touchpad = { " .. table.concat(touchpad, ", ") .. " }" end
     if #input > 0 then parts[#parts + 1] = "input = { " .. table.concat(input, ", ") .. " }" end
+    if WS_SWIPE[d.ws_swipe] then parts[#parts + 1] = "gestures = { " .. WS_SWIPE[d.ws_swipe] .. " }" end
     local out = "hl.config({ " .. table.concat(parts, ", ") .. " })"
     -- the spring: a curve of mooi's own, under windows opening (keeping their pop-in) and moving.
     -- An `hl.animation` without a style clears the one set before, so the opening one is given.
@@ -165,6 +222,13 @@ function M.look(d, pal, frame)
     end
     local v = variant(d)
     if v then out = out .. string.format('; pcall(hl.config, { decoration = { blur = { variant = "%s" } } })', v) end
+    local ws = M.workspaces(d)
+    if ws then out = out .. "; " .. ws end
+    if d.column_keys == true then
+        for _, k in ipairs(M.COLUMN_KEYS) do
+            out = out .. string.format('; pcall(hl.unbind, %q); hl.bind(%q, hl.dsp.layout(%q))', k[1], k[1], k[2])
+        end
+    end
     return out
 end
 

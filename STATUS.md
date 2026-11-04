@@ -1,5 +1,7 @@
 # Status
 
+_Last updated 2026-11-04, newest: **the workspaces' transition and niri's columns (D157)**. Settings → Windows → Workspaces: Slide, Column (niri's stacked workspaces), Glide, Fade and Tide (mooi's own: the next workspace rises in as this one dissolves), with an Ease, niri's Spring or a Bounce, a duration, and a Flick or Steady swipe; Tiling gains niri's column widths, follow and wrap focus, and niri's column keys. Every call was probed on the live Hyprland 0.57 first. The Control Nexus's notch tabs are back (the D152b clip had cut them off). Unit 378/0, `mooi check`; a workspace switch was not recorded (not done while you work)._
+
 _Last updated 2026-11-03, newest: **stuck islands and BMO copies fixed (D132)**: the shell now presents through the standard swapchain (`PLEAMAR_SWAPCHAIN=1` in `bin/mooi`); pleamar's own frame pool showed stale frames under quick changes. Checked: the island sequence three times, BMO thrown about, islands open/close. The dotfiles repo's README rewritten; ArchEclipse's docs and screenshots removed there. Unit 286/0, BMO 27/0, components, apps-sync, `mooi check`._
 
 _Last updated 2026-11-03, newest: **idle GPU found (D131)**. The animated blur finish (`heat_shimmer`, ~24 %) and BMO's endless breathing (Hyprland redrew 60 fps for it, ~20 % with blur) kept the GPU at its top clock with nothing happening. BMO now breathes in short pulses (~22 % → ~4.6 %); Settings labels the three moving blur finishes with their cost. Unit 286/0, BMO 27/0, components, `mooi check`._

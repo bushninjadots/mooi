@@ -4657,3 +4657,29 @@ times a second for one 127-bar visualiser).
 (1.4 ms of rules a frame against the widgets' 2.9); the two together 14.9 % against 22.7. At rest both
 ~1 %. The rest of mooi-viz's cost is the visualiser chosen (127 bars, scope, reflection).
 **Checked:** edit mode hands the visualiser back to the widgets and takes it again after.
+
+## D157 · 2026-11-04 · The workspaces' transition, niri's columns, and the Nexus's notches back
+**Asked for:** "improve workspace scrolling also add niri type scrolling if possible and another new kind
+if we can" — then: "not the workspace switcher … the actual transition of workspace window to next";
+and "on the nexus after adding the morphing the notches are not there anymore".
+- **Settings → Windows → Workspaces** (desktop.ws_*, applied live by `look()` like the rest of the
+  windows' look, kept across restarts by custom/mooi.lua): *Transition* — Slide, **Column** (niri's: the
+  workspaces stacked top to bottom, `slidevert`), Glide (`slidefade 20%`), Fade, and **Tide**, mooi's own:
+  the two leaves apart, the next workspace rising in faded (`slidefadevert 30%`) while this one dissolves
+  where it stands (`fade`). *Feel* — Ease (out-expo), **Spring** (niri's: critically damped, stiffness
+  1000 against 2·√1000 ≈ 63), Bounce (a little past, then back). *Duration* in tenths (a spring sets its
+  own). *Swipe* — Flick (a short quick swipe goes over, a long one carries past the next) or Steady.
+  A kept feel under a chosen style moves by the ease: Hyprland's `default` is near instant in this config.
+- **Probed on the live Hyprland 0.57 first** (values put back after): the workspaces' leaves take slide,
+  slidevert, slidefade N%, slidefadevert N%, fade and forced sides (`slide top`) — `popin` and the gnome
+  styles are refused there (windows' alone), so the new kind is built from the in/out leaves and a spring.
+- **Settings → Windows → Tiling** (the scrolling layout): Column widths (niri's ⅓ ½ ⅔ 1, halves,
+  quarters: `explicit_column_widths`), Follow focus, Wrap focus, and **Column keys** — niri's, as layout
+  messages: Super+] / Super+[ step the widths, Super+= / Super+− ±10 %, Super+Alt+→ / ← move the column,
+  Super+C fits it. Each key is let go before it is bound, so applying the look again never binds it twice;
+  every new setting is claimed, so going back to Keep reloads Hyprland and its own value returns.
+- **The Nexus's notches**: since D152b the deck's content is clipped to the chassis body, and the notch
+  tabs stand outside the deck — clipped away. The clip now opens past the body by their reach (56 px) as
+  the body settles (`smooth(0.86, 1)` of the reveal), so they rise out of the deck's edge once it is out.
+- Not done: the swipe's direction stays the desktop's own (config/gesture.lua: three fingers sideways;
+  up is the special workspace), so Column's stacked workspaces are still swiped sideways.

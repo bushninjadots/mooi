@@ -88,6 +88,9 @@ M.SETTERS = {
     "walls.auto_from", "walls.auto_fullscreen",
     -- D152/D153: the islands grown out of the bar (frame.islands for an hour, the same slot)
     "island.morph",
+    -- D157: the workspaces' transition and the scrolling layout as niri's columns
+    "desktop.ws_style", "desktop.ws_feel", "desktop.ws_speed", "desktop.ws_swipe",
+    "desktop.column_widths", "desktop.column_follow", "desktop.column_wrap", "desktop.column_keys",
 }
 
 local function row_of(path)
