@@ -42,6 +42,7 @@
 #                          theme/palette.json.hbs), using mooi's own config so nothing of
 #                          the user's theming is written; then asks a running mooi to read it
 #   mooi theme-watch       follow the wallpaper: recolour with Matugen whenever it changes.
+#   mooi ws-fx             the workspaces' shader transitions: Hyprland's screen shader, one transition long.
 #                          `session` runs this beside the bar, `stop` ends it
 #   mooi apps-sync         put mooi's palette on Kitty, GTK and Qt as the settings say (the watch
 #                          does it by itself; switched off, an app gets its own colours back)
@@ -683,7 +684,44 @@ theme_watching() {
     return 0
 }
 theme_watch_stray() { pgrep -f "[b]in/mooi theme-watch" 2>/dev/null; }
+# The workspaces' shader transitions (D158): `mooi ws-fx` listens on Hyprland's event socket and, at each
+# workspace change, turns the screen shader mooi wrote (shell/lib/wsfx.luau → ws-fx.glsl, its length in
+# ws-fx.ms; empty: none chosen) on for one transition — damage tracking and vfr off with it, since a
+# shader's `time` runs only so — then puts all three back as it found them. A screen shader of your own
+# (hyprshade's and the like) is never replaced. It starts and stops with the theme watch.
+ws_fx() {
+    exec 9>"$rt/ws-fx.lock"
+    flock -n 9 2>/dev/null || { echo "mooi-ws-fx: already running" >&2; exit 1; }
+    local sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
+    [ -S "$sock" ] || { echo "mooi-ws-fx: no Hyprland event socket" >&2; exit 1; }
+    local glsl="$folder/ws-fx.glsl" msf="$folder/ws-fx.ms" off_pid="" flip=a line ms cur
+    local dt vfr
+    dt=$(hyprctl getoption debug:damage_tracking 2>/dev/null | sed -n 's/^int: //p'); [[ "$dt" =~ ^[0-9]+$ ]] || dt=2
+    [ "$dt" = 0 ] && dt=2                       # left off by a watcher that was killed mid-transition
+    vfr=$(hyprctl getoption debug:vfr 2>/dev/null | sed -n 's/^bool: //p'); [ "$vfr" = false ] || vfr=true
+    local restore="hl.config({ decoration = { screen_shader = \"\" }, debug = { damage_tracking = $dt, vfr = $vfr } })"
+    trap '[ -n "$off_pid" ] && kill "$off_pid" 2>/dev/null; hyprctl eval "$restore" >/dev/null 2>&1; exit 0' TERM INT HUP
+    case "$(hyprctl getoption decoration:screen_shader 2>/dev/null)" in *"$rt/ws-fx-"*) hyprctl eval "$restore" >/dev/null 2>&1 ;; esac
+    while IFS= read -r line; do
+        case "$line" in "workspacev2>>"*) ;; *) continue ;; esac
+        ms=$(cat "$msf" 2>/dev/null); [[ "$ms" =~ ^[0-9]+$ ]] && [ -s "$glsl" ] || continue
+        cur=$(hyprctl getoption decoration:screen_shader 2>/dev/null | sed -n 's/^str: //p')
+        case "$cur" in ""|"[[EMPTY]]"|"$rt/ws-fx-"*) ;; *) continue ;; esac
+        # a fresh path each time: the same one again would not be compiled again, and `time` restarts at 0
+        cp "$glsl" "$rt/ws-fx-$flip.glsl" 2>/dev/null || continue
+        [ -n "$off_pid" ] && kill "$off_pid" 2>/dev/null
+        hyprctl eval "hl.config({ debug = { damage_tracking = 0, vfr = false }, decoration = { screen_shader = \"$rt/ws-fx-$flip.glsl\" } })" >/dev/null 2>&1
+        ( sleep "$(awk -v m="$ms" 'BEGIN { printf "%.3f", m / 1000 + 0.06 }')"; hyprctl eval "$restore" >/dev/null 2>&1 ) &
+        off_pid=$!
+        [ "$flip" = a ] && flip=b || flip=a
+    done < <(socat -U - "UNIX-CONNECT:$sock" 2>/dev/null)
+    hyprctl eval "$restore" >/dev/null 2>&1
+}
+ws_fx_stray() { pgrep -f "[b]in/mooi ws-fx" 2>/dev/null; }
+ws_fx_start() { [ -n "$(ws_fx_stray)" ] || setsid -f "$self" ws-fx >> "$state/ws-fx.log" 2>&1 < /dev/null; }
+ws_fx_stop() { for p in $(ws_fx_stray); do kill -TERM "$p" 2>/dev/null; done; }
 theme_watch_start() { # one watcher, ever: start it, or take over from one that has gone quiet
+    ws_fx_start
     if theme_watching; then
         alive "$(theme_watch_pid)" && return 0
         echo "mooi: a theme watch was left behind; replacing it" >&2
@@ -692,6 +730,7 @@ theme_watch_start() { # one watcher, ever: start it, or take over from one that 
     setsid -f "$self" theme-watch >> "$state/theme-watch.log" 2>&1 < /dev/null
 }
 theme_watch_stop() { # TERM, wait for the lock, then insist: the watch must really be gone
+    ws_fx_stop
     for p in $(theme_watch_stray); do kill -TERM "$p" 2>/dev/null; done
     wait_for 7 not theme_watching
     for p in $(theme_watch_stray); do kill -KILL "$p" 2>/dev/null; done
@@ -1227,6 +1266,7 @@ case "$cmd" in
         running && echo "mooi asked to read it" || echo "mooi is not running; it will read the palette when it starts"
         ;;
     theme-watch) theme_watch ;;
+    ws-fx) ws_fx ;;
     apps-sync) apps_sync ;;
     *) sed -n '2,/^# --safe/p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac
