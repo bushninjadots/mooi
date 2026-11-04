@@ -560,6 +560,103 @@ wall_apply() { # FILE [--from-y N] [--transition KIND]
     if [ "$kind" = video ]; then (sleep 1.2; wall_live) </dev/null >/dev/null 2>&1 & fi
     echo "wearing $(basename "$file") ($kind)"
 }
+# ── Wallhaven (D147): searched with your settings, saved into your first folder, worn ──
+# The API key (for sketchy/NSFW and your account's own filters) is ~/.config/mooi/wallhaven.key, mode
+# 0600, never in the settings or the repo; it goes to curl as a header on stdin, so it is never in a
+# process list. Every URL is checked to be on Wallhaven's own hosts, every id to be letters and digits.
+wh_keyfile="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
+wh_cache="$walls_cache/wh"
+wh_key_ok() { [ -s "$wh_keyfile" ] && [ "$(stat -c %a "$wh_keyfile" 2>/dev/null)" = 600 ]; }
+wh_curl() { # URL [curl options…] — with the key's header when there is one
+    url=$1; shift
+    case "$url" in https://wallhaven.cc/api/*|https://w.wallhaven.cc/*|https://th.wallhaven.cc/*) ;; *) echo "wallhaven: not a Wallhaven URL" >&2; return 1 ;; esac
+    case "$url" in *[[:space:]\"\'\`\$]*) echo "wallhaven: a URL with odd characters" >&2; return 1 ;; esac
+    if wh_key_ok; then
+        printf 'X-API-Key: %s\n' "$(head -c 200 "$wh_keyfile" | tr -d '[:space:]')" | curl -fsSL --max-time 20 -H @- "$@" "$url"
+    else
+        curl -fsSL --max-time 20 "$@" "$url"
+    fi
+}
+wh_search_url() { # SORTING RANGE PAGE [QUERY] [COLOUR] [SEED]
+    sorting=$1; range=$2; page=$3; q=${4:-}; colour=${5:-}; seed=${6:-}
+    cats=$(jq -r '.wallhaven.categories // "general+anime"' "$settings" 2>/dev/null)
+    case "$cats" in general) c=100 ;; anime) c=010 ;; people) c=001 ;; general+people) c=101 ;; anime+people) c=011 ;; all) c=111 ;; *) c=110 ;; esac
+    pur=$(jq -r '.wallhaven.purity // "sfw"' "$settings" 2>/dev/null)
+    case "$pur" in sfw+sketchy) p=110 ;; sketchy) p=010 ;; nsfw) p=001 ;; all) p=111 ;; *) p=100 ;; esac
+    wh_key_ok || p=100                  # without your key, safe for work whatever the setting says
+    case "$sorting" in toplist|hot|date_added|random) ;; *) sorting=toplist ;; esac
+    case "$range" in 1d|3d|1w|1M|3M|6M|1y) ;; *) range=1M ;; esac
+    u="https://wallhaven.cc/api/v1/search?sorting=$sorting&categories=$c&purity=$p&page=$(printf '%d' "$page" 2>/dev/null || echo 1)"
+    [ "$sorting" = toplist ] && u="$u&topRange=$range"
+    size=$(hyprctl monitors -j 2>/dev/null | jq -r '.[0] | "\(.width)x\(.height)"' 2>/dev/null); [ -n "$size" ] && [ "$size" != nullxnull ] || size=1920x1080
+    case "$(jq -r '.wallhaven.atleast // "screen"' "$settings" 2>/dev/null)" in screen) u="$u&atleast=$size" ;; 4k) u="$u&atleast=3840x2160" ;; esac
+    if [ "$(jq -r '.wallhaven.ratio // "screen"' "$settings" 2>/dev/null)" = screen ]; then
+        w=${size%x*}; h=${size#*x}
+        r=$(awk -v w="$w" -v h="$h" 'BEGIN { split("16x9 16x10 21x9 32x9 4x3 5x4 3x2", R, " "); want = w / h; best = "16x9"; gap = 99
+            for (i in R) { split(R[i], a, "x"); d = a[1] / a[2] - want; if (d < 0) d = -d; if (d < gap) { gap = d; best = R[i] } } print best }')
+        u="$u&ratios=$r"
+    fi
+    case "$colour" in ''|*[!0-9a-f]*) ;; *) u="$u&colors=$colour" ;; esac
+    case "$seed" in ''|*[!0-9A-Za-z]*) ;; *) u="$u&seed=$seed" ;; esac
+    if [ -n "$q" ]; then u="$u&q=$(printf '%s' "$q" | head -c 80 | jq -sRr @uri)"; fi
+    echo "$u"
+}
+wall_wallhaven() { # search SORTING RANGE PAGE [Q] [COLOUR] [SEED] | thumb ID URL | wear ID URL | random
+    sub=${1:-}; shift || :
+    case "$sub" in
+        search) wh_curl "$(wh_search_url "$@")" ;;
+        thumb)  # a thumbnail, kept: prints where it is
+            id=$1; url=$2
+            case "$id" in ''|*[!0-9A-Za-z]*) return 1 ;; esac
+            out="$wh_cache/$id.jpg"; mkdir -p "$wh_cache"
+            [ -s "$out" ] || { wh_curl "$url" -o "$out.part" && mv "$out.part" "$out"; } || { rm -f "$out.part"; return 1; }
+            echo "$out" ;;
+        wear)   # the full picture, saved into your first folder as wallhaven-ID.ext (kept), then worn
+            id=$1; url=$2
+            case "$id" in ''|*[!0-9A-Za-z]*) return 1 ;; esac
+            ext=${url##*.}; case "$ext" in jpg|jpeg|png|webp) ;; *) ext=jpg ;; esac
+            dir=$(jq -r '(.walls.folders // ["~/Pictures/wallpapers"])[0] | sub("^~"; env.HOME)' "$settings" 2>/dev/null)
+            [ -n "$dir" ] || dir="$HOME/Pictures/wallpapers"
+            mkdir -p "$dir"; out="$dir/wallhaven-$id.$ext"
+            [ -s "$out" ] || { wh_curl "$url" -o "$out.part" && mv "$out.part" "$out"; } || { rm -f "$out.part"; echo "wallhaven: could not fetch $id" >&2; return 1; }
+            shift 2; wall_apply "$out" "$@"
+            (wall_index) </dev/null >/dev/null 2>&1 & ;;
+        random) # one at random with your settings (the auto-change)
+            doc=$(wh_curl "$(wh_search_url random 1M 1)") || return 1
+            line=$(printf '%s' "$doc" | jq -r '.data[] | select(.id | test("^[0-9A-Za-z]+$")) | select(.path | startswith("https://w.wallhaven.cc/")) | "\(.id) \(.path)"' | head -n 1)
+            [ -n "$line" ] || { echo "wallhaven: nothing found" >&2; return 1; }
+            wall_wallhaven wear ${line} ;;
+        *) echo "usage: mooi wall wallhaven search SORTING RANGE PAGE [Q] [COLOUR] [SEED] | thumb ID URL | wear ID URL | random" >&2; return 2 ;;
+    esac
+}
+
+# A wallpaper at random (the auto-change, D147, and `mooi wall next`): from all, pictures, live, the
+# colour chosen last in the picker (walls-state.json: its chip and lightness), or Wallhaven; never the
+# one worn now.
+wall_next() { # [all|pictures|live|colour|wallhaven] [--dry: say which, wear nothing]
+    dry=false; [ "${2:-}" = --dry ] && dry=true
+    from=${1:-$(jq -r '.walls.auto_from // "pictures"' "$settings" 2>/dev/null)}
+    [ "$from" = wallhaven ] && { wall_wallhaven random; return $?; }
+    idx="$folder/walls-index.json"
+    [ -f "$idx" ] || { echo "wall: no index yet (mooi wall index)" >&2; return 1; }
+    now=$(jq -r '.source // ""' "$folder/wall.json" 2>/dev/null)
+    chip=-1; light=0
+    if [ "$from" = colour ]; then
+        chip=$(jq -r '.chip // -1' "$folder/walls-state.json" 2>/dev/null || echo -1)
+        light=$(jq -r '.light // 0' "$folder/walls-state.json" 2>/dev/null || echo 0)
+    fi
+    pick=$(jq -r --arg from "$from" --arg now "$now" --argjson chip "$chip" --argjson light "$light" '
+        def live: .kind == "video" or .kind == "animated";
+        def chipof: if .grey then 24 else (((.hue + 7.5) % 360) / 15 | floor) end;
+        .items[] | select(.path != $now)
+        | select(if $from == "pictures" then (live | not) elif $from == "live" then live else true end)
+        | select($chip < 0 or chipof == $chip)
+        | select($light == 0 or ($light == 1 and .luma > 0.55) or ($light == 2 and .luma < 0.4))
+        | .path' "$idx" | shuf -n 1)
+    [ -n "$pick" ] || { echo "wall: nothing to change to from $from" >&2; return 1; }
+    if $dry; then echo "$pick"; return 0; fi
+    wall_apply "$pick"
+}
 wall_index() {
     dirs=$(jq -r '(.walls.folders // ["~/Pictures/wallpapers", "~/Pictures/livewalls"])[] | sub("^~"; env.HOME)' "$settings" 2>/dev/null) \
         || dirs="$HOME/Pictures/wallpapers
@@ -864,6 +961,8 @@ case "$cmd" in
             apply) wall_apply "$@" ;;
             live) wall_live ;;
             index) wall_index ;;
+            next) wall_next "$@" ;;
+            wallhaven) wall_wallhaven "$@" ;;
             count) # how many wallpapers a folder holds (Settings → Wallpapers)
                 d=$(printf '%s' "${1:-}" | sed "s|^~|$HOME|")
                 [ -d "$d" ] || exit 1
@@ -873,7 +972,7 @@ case "$cmd" in
                 if [ -s "$k" ] && [ "$(stat -c %a "$k")" = 600 ]; then echo found
                 elif [ -s "$k" ]; then echo "unsafe: chmod 600 $k"; exit 1
                 else echo none; exit 1; fi ;;
-            *) echo "usage: mooi wall apply FILE [--from-y N] [--transition KIND] | live | index | count DIR | whkey" >&2; exit 2 ;;
+            *) echo "usage: mooi wall apply FILE [--from-y N] [--transition KIND] | live | index | next [FROM] | wallhaven … | count DIR | whkey" >&2; exit 2 ;;
         esac ;;
     notes) exec "$pleamar" --say "$name" "emit open_notes" ;;
     player) running || { echo "mooi is not running; start it first" >&2; exit 1; }

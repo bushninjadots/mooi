@@ -273,6 +273,8 @@ scene Walls {
     fact wh_sort = 0             // Wallhaven: 0 top list · 1 hot · 2 latest · 3 random
     fact wh_range = 3            // the top list's range: 1d 3d 1w 1M 3M 6M 1y
     model chips max 25 { cr: number; cg: number; cb: number }
+    // Wallhaven's pictures on the orbit (no dots image for them): unit places before the turn, colour
+    model whdot max 240 { x: number; y: number; cr: number; cg: number; cb: number }
     text wl_query = ""
     text wl_line = ""            // what the list is: N OF M · its colour · a pass still reading
     text wl_name = ""            // the picture in the middle / nearest the pointer
@@ -497,7 +499,11 @@ scene Walls {
                 group {
                     rotate: spin
                     pivot: ocx, ocy
-                    image orbit { at: ocx - rr, ocy - rr; size: rr * 2, rr * 2; opacity: if(or_near, 0.55, 0.9); show: has_orbit }
+                    image orbit { at: ocx - rr, ocy - rr; size: rr * 2, rr * 2; opacity: if(or_near, 0.55, 0.9); show: has_orbit and src != 3 }
+                }
+                for q in whdot {
+                    ellipse { at: ocx + rr * (q.x * cos(spin) - q.y * sin(spin)), ocy + rr * (q.x * sin(spin) + q.y * cos(spin)); radius: 6
+                              color: rgb(q.cr, q.cg, q.cb); opacity: if(or_near, 0.55, 0.95) }
                 }
                 ellipse { at: ocx, ocy; radius: rr + 10; stroke: 1; color: fl.trace_dim; opacity: 0.6 }
                 ellipse { at: ocx, ocy; radius: rr * 0.27; stroke: 1; color: fl.trace_dim; opacity: 0.5 }

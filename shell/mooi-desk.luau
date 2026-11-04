@@ -139,6 +139,26 @@ pcall(sys.watch, "workspaces", function(w)
 end)
 
 
+-- ── The auto-change (walls.auto, D147): a new wallpaper every so many minutes ──
+-- A look once a minute: long enough since the last change (wall.json's `at`, so a pick by hand counts),
+-- and, when asked, no window fullscreen. `mooi wall next` chooses and wears it.
+local function auto_tick()
+    after(60000, auto_tick)
+    local w = type(settings.walls) == "table" and settings.walls or {}
+    if w.auto ~= true then return end
+    local st = walls.state(read(WALL, "json"))
+    local every = math.max(5, math.min(240, math.floor(tonumber(w.auto_every) or 30))) * 60
+    if st and os.time() - (st.at or 0) < every then return end
+    local function go() run("mooi", { "wall", "next", tostring(w.auto_from or "pictures") }, function() end) end
+    if w.auto_fullscreen == false then go(); return end
+    run("hyprctl", { "activewindow", "-j" }, function(out)
+        local ok, win = pcall(json.decode, out or "")
+        if ok and type(win) == "table" and (tonumber(win.fullscreen) or 0) > 0 then return end
+        go()
+    end)
+end
+
 apply_settings()
 read_wall()
 poll()
+after(60000, auto_tick)

@@ -3863,6 +3863,18 @@ do
         eq(#W.filter(items, "all", "", 8, 2), 1, "green and dark"); eq(#W.filter(items, "live", "", W.GREY_CHIP), 1)
         eq(#W.filter(items, "all"), 3, "no filter")
     end)
+    test("Wallhaven: answers made safe, chips as its colours", function()
+        local h, l = W.hex_hue("#cc0000"); eq(math.floor(h + 0.5), 0); eq(l > 0.3 and l < 0.5, true)
+        eq((W.hex_hue("#999999")), nil, "grey"); eq((W.hex_hue("junk")), nil)
+        eq(W.wh_colour(0), "cc0000", "red"); eq(W.wh_colour(14), "0066cc", "azure"); eq(W.wh_colour(16), "333399", "blue"); eq(W.wh_colour(W.GREY_CHIP), "999999"); eq(W.wh_colour(-1), nil)
+        local items, last, seed = W.wh_items({ data = {
+            { id = "abc123", path = "https://w.wallhaven.cc/full/ab/wallhaven-abc123.jpg", thumbs = { large = "https://th.wallhaven.cc/lg/ab/abc123.jpg" }, colors = { "#222222", "#0066cc", "#999999" } },
+            { id = "x;rm", path = "https://w.wallhaven.cc/full/x.jpg", thumbs = { large = "https://th.wallhaven.cc/lg/x.jpg" } },
+            { id = "evil1", path = "https://evil.example/x.jpg", thumbs = { large = "https://th.wallhaven.cc/lg/e.jpg" } },
+        }, meta = { last_page = 7, seed = "Ab12" } })
+        eq(#items, 1, "only the safe one"); eq(items[1].remote, true); eq(math.floor(items[1].hue + 0.5), 210); eq(last, 7); eq(seed, "Ab12")
+        eq(W.wh_items({}), nil)
+    end)
     test("the desk's state: a video is drawn as its still, junk is nil", function()
         local s = W.state({ source = "/l/a.mp4", still = "/s/a.jpg", transition = "grow", from_y = 300 })
         eq(s.kind, "video"); eq(s.still, "/s/a.jpg"); eq(s.from_y, 300); eq(s.from_x, nil)

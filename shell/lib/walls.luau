@@ -204,6 +204,78 @@ function M.band_name(h)
     return M.BANDS[(math.floor(((h + 15) % 360) / 30)) + 1]
 end
 
+-- ── Wallhaven (D147): its answers made safe, and the colour row as its colours ──
+-- A colour as hue (nil for grey) and lightness, from "#rrggbb".
+function M.hex_hue(hex)
+    local r, g, b = tostring(hex or ""):match("^#?(%x%x)(%x%x)(%x%x)$")
+    if not r then return nil, 0.5 end
+    r, g, b = tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255
+    local hi, lo = math.max(r, g, b), math.min(r, g, b)
+    local l = (hi + lo) / 2
+    local d = hi - lo
+    if hi == 0 or d / hi < 0.12 then return nil, l end
+    local h
+    if hi == r then h = ((g - b) / d) % 6 elseif hi == g then h = (b - r) / d + 2 else h = (r - g) / d + 4 end
+    return (h * 60) % 360, l
+end
+-- Wallhaven's search takes only these colours: a chip asks for the nearest of them by hue.
+M.WH_COLOURS = { "660000", "990000", "cc0000", "cc3333", "ea4c88", "993399", "663399", "333399", "0066cc",
+                 "0099cc", "66cccc", "77cc33", "669900", "336600", "666600", "999900", "cccc33", "ffff00",
+                 "ffcc33", "ff9900", "ff6600", "cc6633", "996633", "663300", "000000", "999999", "cccccc",
+                 "ffffff", "424153" }
+function M.wh_colour(chip)
+    chip = math.floor(tonumber(chip) or -1)
+    if chip < 0 then return nil end
+    if chip == M.GREY_CHIP then return "999999" end
+    local want, best, gap = chip * 15, nil, math.huge
+    for _, c in ipairs(M.WH_COLOURS) do
+        local h, l = M.hex_hue("#" .. c)
+        if h and l > 0.25 and l < 0.75 then
+            -- by hue, and between equals the one nearest a mid lightness (the most vivid)
+            local d = math.abs(((h - want + 540) % 360) - 180) + math.abs(l - 0.45) * 10
+            if d < gap then best, gap = c, d end
+        end
+    end
+    return best
+end
+local function on_wallhaven(url)
+    return type(url) == "string" and (url:match("^https://w%.wallhaven%.cc/") or url:match("^https://th%.wallhaven%.cc/")) ~= nil
+        and not url:find("[%s\"'`$]")
+end
+-- One page of an answer as the picker's items (`remote`: worn by saving it first), its last page, and
+-- the random list's seed. Only what is safe to fetch: an id of letters and digits, links on Wallhaven's
+-- own hosts. Anything else: nil.
+function M.wh_items(doc)
+    if type(doc) ~= "table" or type(doc.data) ~= "table" then return nil end
+    local out = {}
+    for _, d in ipairs(doc.data) do
+        local id = type(d) == "table" and type(d.id) == "string" and d.id:match("^%w+$") and d.id or nil
+        local th = id and type(d.thumbs) == "table" and (d.thumbs.large or d.thumbs.small) or nil
+        if id and on_wallhaven(d.path) and on_wallhaven(th) then
+            -- its place on the orbit by the most colourful of the colours Wallhaven lists for it (the
+            -- first is often a dark neutral, which put nearly all of them in the greys)
+            local c1, best = type(d.colors) == "table" and d.colors[1] or nil, -1
+            for _, c in ipairs(type(d.colors) == "table" and d.colors or {}) do
+                local h, l = M.hex_hue(c)
+                local score = h and (1 - math.abs(l - 0.5) * 2) or -1
+                if score > best then c1, best = c, score end
+            end
+            local hue, luma = M.hex_hue(c1)
+            local r, g, b = tostring(c1 or ""):match("^#(%x%x)(%x%x)(%x%x)$")
+            out[#out + 1] = { id = id, path = d.path, url = d.path, thumb_url = th, thumb = "", remote = true,
+                              kind = "still", name = "wallhaven-" .. id, hue = hue, luma = luma,
+                              res = tostring(d.resolution or ""), purity = tostring(d.purity or "sfw"),
+                              cr = r and tonumber(r, 16) / 255 or 0.5, cg = g and tonumber(g, 16) / 255 or 0.5,
+                              cb = b and tonumber(b, 16) / 255 or 0.5 }
+        end
+    end
+    local meta = type(doc.meta) == "table" and doc.meta or {}
+    local seed = type(meta.seed) == "string" and meta.seed:match("^%w+$") or nil
+    return out, math.max(1, math.floor(tonumber(meta.last_page) or 1)), seed
+end
+M.WH_SORTS = { "toplist", "hot", "date_added", "random" }
+M.WH_RANGES = { "1d", "3d", "1w", "1M", "3M", "6M", "1y" }
+
 -- ── Wearing ──
 -- What the desk is told (wall.json beside the settings, written by `mooi wall apply`): the file, the
 -- still it is drawn as (the file itself, or a frame of a video), its kind, the transition and where a
