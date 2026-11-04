@@ -107,6 +107,7 @@ local function apply(s)
     fact.media_mode = position("media.mode", s.media.mode)
     fact.media_idle = position("media.idle", s.media.idle)
     fact.frame_on = s.frame.on
+    fact.ch_on = s.frame.on == true and s.frame.islands ~= false   -- D152: the islands as part of the frame
     fact.frame_band = s.frame.band
     fact.frame_music = s.frame.music
     fact.frame_style = position("frame.style", s.frame.style)
@@ -1774,6 +1775,36 @@ local function shell_dir()
     if type(d) == "string" and d ~= "" then return d end
     return tostring(sys.ask("env", "HOME")) .. "/.local/state/mooi/live"
 end
+-- ── The islands as part of the frame (D152) ──
+-- An island under a module is drawn by the frame (shell/mooi-frame.plm, `frame_p`): it grows out of the
+-- bar's piece as one body with the band, after iNiR's chassis. As it opens, ui/island.plm says where it is
+-- (three events); they go to the frame in one message with a count of openings, so its spring runs
+-- from 0 even when one island follows another. When `open` changes, the frame lets the last one go.
+-- Messages are sent one after another (two `--say`s at once could arrive the wrong way round).
+local pl_q, pl_busy, pl_geo, pl_count = {}, false, {}, 0
+local function pl_send(cmds)
+    pl_q[#pl_q + 1] = cmds
+    if pl_busy then return end
+    local function next_one()
+        local c = table.remove(pl_q, 1)
+        if not c then pl_busy = false; return end
+        pl_busy = true
+        local args = { "--say", "mooi-frame" }
+        for _, x in ipairs(c) do args[#args + 1] = x end
+        run("pleamar", args, function() next_one() end)
+    end
+    next_one()
+end
+on("pl_xy", function(v) v = math.floor(tonumber(v) or 0); pl_geo.x, pl_geo.y = v // 4096, v % 4096 end)
+on("pl_wh", function(v) v = math.floor(tonumber(v) or 0); pl_geo.w, pl_geo.h = v // 4096, v % 4096 end)
+on("pl_t", function(v)
+    if not (pl_geo.x and pl_geo.w) then return end
+    pl_count = pl_count + 1
+    pl_send({ "fact pl_x " .. pl_geo.x, "fact pl_y " .. pl_geo.y, "fact pl_w " .. pl_geo.w, "fact pl_h " .. pl_geo.h,
+              "fact pl_tx " .. math.floor(tonumber(v) or 0), "fact pl_n " .. pl_count, "fact pl_on true" })
+end)
+on("fact:open", function() pl_send({ "fact pl_on false" }) end)
+
 on("open_settings", function()
     if settings_win then run("pleamar", { "--say", "mooi-settings", "quit" }); return end
     local mine

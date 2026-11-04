@@ -155,9 +155,10 @@ BODY = [
     "border: if(st_frame_edge < 1.5, st_owidth, 0), fnec",
 ]
 
-def tile(ind, clip, shapes):
+def tile(ind, clip, shapes, show=None):
     i2, i3 = ind + "    ", ind + "        "
-    return ([f"{ind}group {{", f"{i2}clip box {{ {clip} }}", f"{i2}body {{"] + [i3 + b for b in BODY]
+    head = [f"{ind}group {{"] + ([f"{i2}show: {show}"] if show else [])
+    return (head + [f"{i2}clip box {{ {clip} }}", f"{i2}body {{"] + [i3 + b for b in BODY]
             + [l if l.startswith(i3) else i3 + l for s in shapes for l in s] + [f"{i2}}}", f"{ind}}}"])
 
 def chunks(edge, lo_px, hi_px, ref):
@@ -169,8 +170,13 @@ def chunks(edge, lo_px, hi_px, ref):
         if hi * ref > lo_px and lo * ref < hi_px:
             yield a == 0, a + G >= len(ps), lo, hi
 
-def end_tiles(ind, which):
-    """The top's or the foot's tiles, along the full width."""
+# The place (D152): an island grown out of the bar's piece. While it is out, the top strip's tiles it
+# crosses are drawn by `frame_p` (on the top layer, over the windows, under the bar's content) with the
+# island's box in each body, so it melts into the piece and the band; `frame_t` leaves those tiles out.
+PLACE = "box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }"
+
+def end_tiles(ind, which, place=False):
+    """The top's or the foot's tiles, along the full width (`place`: the copies frame_p draws)."""
     edge, m = EDGES[which], MARGIN / REF_W
     top = which == "top"
     y0, y1 = ("-40", f"{TOP} + 40") if top else (f"H - {BOT}", f"{BOT} + 40")
@@ -189,7 +195,15 @@ def end_tiles(ind, which):
             shapes.append([CORNERS["tr" if top else "br"]])
         if top:
             shapes += [[f"{box} and {a} < {x1} + 48 and {b} > {x0} - 48 {end}"] for a, b, box, end in PIECES]
-        out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes)
+        if top:
+            crossed = f"pl_act and pl_l < {x1} and pl_e > {x0}"
+            if place:
+                shapes.append([PLACE])
+                out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), max({y1}, pl_y + pl_h + 80)", shapes, crossed)
+            else:
+                out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes, f"not ({crossed})")
+        else:
+            out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes)
     return out
 
 def side_tiles(ind, which):
@@ -259,9 +273,18 @@ def strips(ind):
         out += [f"{i2}}}", f"{ind}}}", ""]
     return out[:-1]
 
+def place_surface(ind):
+    """frame_p (D152): the full screen, on the top layer only while a place is out; the top strip's
+    tiles that it crosses, the place melted into them."""
+    i2, i3, i4 = ind + "    ", ind + "        ", ind + "            "
+    return ([f"{ind}surface frame_p {{", f"{i2}size: full, full", f"{i2}anchor: top", f"{i2}level: bottom, top while pl_act",
+             f"{i2}reserve: -1", f"{i2}group {{", f"{i3}show: pl_act", f"{i3}group {{",
+             f"{i4}glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos"]
+            + end_tiles(i4, "top", place=True) + [f"{i3}}}", f"{i2}}}", f"{ind}}}"])
+
 def frame():
     ind = "    "
-    return "\n".join(wave_lets(ind) + [""] + strips(ind))
+    return "\n".join(wave_lets(ind) + [""] + strips(ind) + [""] + place_surface(ind))
 
 GEN = {
     HELIX: {"slices": lambda: slices("            ", "pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700)")},

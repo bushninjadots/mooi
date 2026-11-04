@@ -16,10 +16,23 @@ library Island {
     // such as the command membrane, which sits at a fixed place).
     // `tx`: where its module is, from the island's left — the tether drops there (−1: no tether).
     // A tethered island sits 12 px lower, so the tether shows; its children move with it.
-    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1) {
+    // `ox`, `oy`: where the island is on the screen. With the frame on (`ch_on`, D152) an island under a
+    // module is drawn by the frame as part of its body — it grows out of the bar's piece — and this
+    // draws only its content, clipped to the same shape; it tells the bar where it is as it opens.
+    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1, ox: number = -1, oy: number = 0) {
         size: w, h
+        let ch = ch_on and tx >= 0 and ox >= 0 and not up and not centre
+        let cp = clamp(rv, 0, 1)
+        let cl = cp * cp
+        let cx0 = tx - 22 * 0.55
+        let cbx = cx0 + (0 - cx0) * cp
+        let cbw = 44 * 0.55 + (w - 44 * 0.55) * cp
+        let cby = -14 + 14 * cp
+        let cbh = 12 + (h - 12) * cl
+        let cbr = min(min(cbw, cbh) / 2, 6 + (14 - 6) * cp)
+        on change rv > 0.001 while rv > 0.001 and ch { emit pl_xy(round(ox) * 4096 + round(oy)); emit pl_wh(round(w) * 4096 + round(h)); emit pl_t(round(ox + tx)) }
         let tether = isl_style > 0.5
-        let drop = if(tether and not up and not centre, 12, 0)
+        let drop = if(tether and not up and not centre and not ch, 12, 0)
         let iw = aw + (w - aw) * rv
         let ih = ah + (h - ah) * rv
         let top = if(up, h - ih, 0) + drop
@@ -30,7 +43,7 @@ library Island {
 
         // ── plate ──
         group {
-            show: not tether
+            show: not tether and not ch
             // the shadow comes from a body inside the cut (a group cannot cast one)
             body {
                 gradient: 0, top to 0, top + ih, fl.hull, fl.hull
@@ -48,7 +61,7 @@ library Island {
 
         // ── tether ──
         group {
-            show: tether
+            show: tether and not ch
             group {
                 show: tx >= 0 and not up and not centre
                 opacity: smooth(0.2, 1, rv)
@@ -68,9 +81,11 @@ library Island {
         }
 
         group {
-            opacity: smooth(0.45, 1, rv)
-            move: if(centre, 0, -10 * (1 - rv)), if(centre, -6 * (1 - rv), 0) + drop
-            clip box { from: left, top - drop; size: iw, ih; corner: if(tether, irad, 0) }
+            // the frame's island: its content rides the body's foot and fades in over the first third
+            opacity: if(ch, smooth(0.08, 0.38, cl), smooth(0.45, 1, rv))
+            move: if(ch, cbx + (cbw - w) / 2, if(centre, 0, -10 * (1 - rv))), if(ch, cby + cbh - h, if(centre, -6 * (1 - rv), 0) + drop)
+            clip box { from: if(ch, (w - cbw) / 2, left), if(ch, h - cbh, top - drop); size: if(ch, max(1, cbw), iw), if(ch, max(1, cbh), ih)
+                       corner: if(ch, cbr, if(tether, irad, 0)) }
             children
         }
     }

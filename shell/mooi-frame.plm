@@ -232,6 +232,22 @@ scene Frame {
     fact c_selection_bg_g = 0.227451
     fact c_selection_bg_b = 0.211765
 
+    // ── A place (D152): the island open now, grown out of the bar's piece as part of this body ──
+    // The bar hands it over as it opens (`mooi-frame` facts, from shell/mooi.luau): the island's box on
+    // the screen, the middle of the module it came from, and a count of openings (each runs the spring
+    // from 0, even when one island follows another). Its content is the bar's, clipped to the same shape.
+    fact pl_on = false
+    fact pl_n = 0
+    fact pl_x = 0
+    fact pl_y = 0
+    fact pl_w = 0
+    fact pl_h = 0
+    fact pl_tx = 0
+    fact pl_r = 14
+    prop pl_q = 0 ~m.isl
+    follow pl_q = pl_n
+    prop pl_c = 0 ~m.isl_out
+    follow pl_c = if(pl_on, 1, 0)
     fact st_offset = 0
     fact st_notch = false
     fact st_height = 30
@@ -368,6 +384,23 @@ scene Frame {
     let foot = if(bar_mode == 2, n_b, row_b)
     let covL = pick(bar_mode, il_x >= 0 and il_x - 3 <= cr, gp_w > 1 and gp_x <= cr, plw > 1 and plx - n_pad <= cr)
     let covR = pick(bar_mode, ir_e >= 0 and ir_e + 3 >= W - cr, gp_w > 1 and gp_x + gp_w >= W - cr, prw > 1 and prx + prw + n_pad >= W - cr)
+
+    // the place's body as it grows (the same formula as ui/island.plm's content clip, D152): from the
+    // module's pill at 55 % on the bar's foot to the island — across on the spring, down on the spring
+    // squared (it pours rather than scales), its corners from the pill's to its own
+    let pl_rv = min(clamp(pl_q - (pl_n - 1), 0, 1), pl_c)
+    let pl_act = pl_rv > 0.002
+    let pl_lag = pl_rv * pl_rv
+    let pl_x0 = pl_tx - 22 * 0.55
+    let pl_y0 = pl_y - 14
+    let pl_bx = pl_x0 + (pl_x - pl_x0) * pl_rv
+    let pl_bw = 44 * 0.55 + (pl_w - 44 * 0.55) * pl_rv
+    let pl_by = pl_y0 + (pl_y - pl_y0) * pl_rv
+    let pl_bh = 12 + (pl_h - 12) * pl_lag
+    let pl_br = min(min(pl_bw, pl_bh) / 2, 6 + (pl_r - 6) * pl_rv)
+    // the stretch of the top strip it crosses (its tiles are drawn by `frame_p` while it is out)
+    let pl_l = min(pl_x, pl_tx - 40) - 64
+    let pl_e = max(pl_x + pl_w, pl_tx + 40) + 64
 
     // the material: the bar's own, so the bar and the frame are one thing
     let mech = bar_surface > 3.5
@@ -517,6 +550,7 @@ scene Frame {
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {
+                    show: not (pl_act and pl_l < W * 0.09375 and pl_e > -40)
                     clip box { from: -40, -40; size: (W * 0.09375) - (-40), 160 + 40 }
                     body {
                         color: fcol
@@ -578,6 +612,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375)
                     clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), 160 + 40 }
                     body {
                         color: fcol
@@ -642,6 +677,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875)
                     clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), 160 + 40 }
                     body {
                         color: fcol
@@ -691,6 +727,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125)
                     clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), 160 + 40 }
                     body {
                         color: fcol
@@ -740,6 +777,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375)
                     clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), 160 + 40 }
                     body {
                         color: fcol
@@ -789,6 +827,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875)
                     clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), 160 + 40 }
                     body {
                         color: fcol
@@ -838,6 +877,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625)
                     clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), 160 + 40 }
                     body {
                         color: fcol
@@ -887,6 +927,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625)
                     clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), 160 + 40 }
                     body {
                         color: fcol
@@ -936,6 +977,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75)
                     clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), 160 + 40 }
                     body {
                         color: fcol
@@ -985,6 +1027,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375)
                     clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), 160 + 40 }
                     body {
                         color: fcol
@@ -1049,6 +1092,7 @@ scene Frame {
                     }
                 }
                 group {
+                    show: not (pl_act and pl_l < W + 40 and pl_e > W * 0.9375)
                     clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), 160 + 40 }
                     body {
                         color: fcol
@@ -2336,6 +2380,632 @@ scene Frame {
                        line W - bs + 1.5 - sw46, H * 0.958333
                        line W - bs + 1.5 - sw47, H * 0.979167
                        line W - bs + 1.5 - sw48, H * 1 }
+            }
+        }
+    }
+
+    surface frame_p {
+        size: full, full
+        anchor: top
+        level: bottom, top while pl_act
+        reserve: -1
+        group {
+            show: pl_act
+            group {
+                glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
+                group {
+                    show: pl_act and pl_l < W * 0.09375 and pl_e > -40
+                    clip box { from: -40, -40; size: (W * 0.09375) - (-40), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0, -40
+                               line W * 0, bt + fw0
+                               line W * 0.015625, bt + fw1
+                               line W * 0.03125, bt + fw2
+                               line W * 0.046875, bt + fw3
+                               line W * 0.0625, bt + fw4
+                               line W * 0.078125, bt + fw5
+                               line W * 0.09375, bt + fw6
+                               line W * 0.109375, bt + fw7
+                               line W * 0.125, bt + fw8
+                               line W * 0.140625, bt + fw9
+                               line W * 0.140625, -40
+                               close }
+                        path { move -40, H * 0
+                               line bs + sw0, H * 0
+                               line bs + sw1, H * 0.020833
+                               line bs + sw2, H * 0.041667
+                               line bs + sw3, H * 0.0625
+                               line bs + sw4, H * 0.083333
+                               line bs + sw5, H * 0.104167
+                               line bs + sw6, H * 0.125
+                               line bs + sw7, H * 0.145833
+                               line bs + sw8, H * 0.166667
+                               line bs + sw9, H * 0.1875
+                               line bs + sw10, H * 0.208333
+                               line -40, H * 0.208333
+                               close }
+                        path { move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.09375 + 48 and ix0 + iw0 + 3 > -40 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.09375 + 48 and ix1 + iw1 + 3 > -40 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.09375 + 48 and ix2 + iw2 + 3 > -40 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.09375 + 48 and ix3 + iw3 + 3 > -40 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.09375 + 48 and ix4 + iw4 + 3 > -40 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.09375 + 48 and ix5 + iw5 + 3 > -40 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.09375 + 48 and ix6 + iw6 + 3 > -40 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.09375 + 48 and ix7 + iw7 + 3 > -40 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.09375 + 48 and ix8 + iw8 + 3 > -40 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.09375 + 48 and ix9 + iw9 + 3 > -40 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.09375 + 48 and ix10 + iw10 + 3 > -40 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.09375 + 48 and ix11 + iw11 + 3 > -40 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.09375 + 48 and ix12 + iw12 + 3 > -40 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.09375 + 48 and ix13 + iw13 + 3 > -40 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.09375 + 48 and ix14 + iw14 + 3 > -40 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.09375 + 48 and ix15 + iw15 + 3 > -40 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.09375 + 48 and plx + plw + n_pad > -40 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.09375 + 48 and pcx + pcw + n_pad > -40 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.09375 + 48 and prx + prw + n_pad > -40 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.09375 + 48 and gp_x + gp_w > -40 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375
+                    clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.046875, -40
+                               line W * 0.046875, bt + fw3
+                               line W * 0.0625, bt + fw4
+                               line W * 0.078125, bt + fw5
+                               line W * 0.09375, bt + fw6
+                               line W * 0.109375, bt + fw7
+                               line W * 0.125, bt + fw8
+                               line W * 0.140625, bt + fw9
+                               line W * 0.15625, bt + fw10
+                               line W * 0.171875, bt + fw11
+                               line W * 0.1875, bt + fw12
+                               line W * 0.203125, bt + fw13
+                               line W * 0.21875, bt + fw14
+                               line W * 0.234375, bt + fw15
+                               line W * 0.234375, -40
+                               close }
+                        path { move -40, H * 0
+                               line bs + sw0, H * 0
+                               line bs + sw1, H * 0.020833
+                               line bs + sw2, H * 0.041667
+                               line bs + sw3, H * 0.0625
+                               line bs + sw4, H * 0.083333
+                               line bs + sw5, H * 0.104167
+                               line bs + sw6, H * 0.125
+                               line bs + sw7, H * 0.145833
+                               line bs + sw8, H * 0.166667
+                               line bs + sw9, H * 0.1875
+                               line bs + sw10, H * 0.208333
+                               line -40, H * 0.208333
+                               close }
+                        path { move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.1875 + 48 and ix0 + iw0 + 3 > W * 0.09375 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.1875 + 48 and ix1 + iw1 + 3 > W * 0.09375 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.1875 + 48 and ix2 + iw2 + 3 > W * 0.09375 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.1875 + 48 and ix3 + iw3 + 3 > W * 0.09375 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.1875 + 48 and ix4 + iw4 + 3 > W * 0.09375 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.1875 + 48 and ix5 + iw5 + 3 > W * 0.09375 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.1875 + 48 and ix6 + iw6 + 3 > W * 0.09375 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.1875 + 48 and ix7 + iw7 + 3 > W * 0.09375 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.1875 + 48 and ix8 + iw8 + 3 > W * 0.09375 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.1875 + 48 and ix9 + iw9 + 3 > W * 0.09375 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.1875 + 48 and ix10 + iw10 + 3 > W * 0.09375 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.1875 + 48 and ix11 + iw11 + 3 > W * 0.09375 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.1875 + 48 and ix12 + iw12 + 3 > W * 0.09375 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.1875 + 48 and ix13 + iw13 + 3 > W * 0.09375 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.1875 + 48 and ix14 + iw14 + 3 > W * 0.09375 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.1875 + 48 and ix15 + iw15 + 3 > W * 0.09375 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.1875 + 48 and plx + plw + n_pad > W * 0.09375 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.1875 + 48 and pcx + pcw + n_pad > W * 0.09375 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.1875 + 48 and prx + prw + n_pad > W * 0.09375 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.1875 + 48 and gp_x + gp_w > W * 0.09375 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875
+                    clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.140625, -40
+                               line W * 0.140625, bt + fw9
+                               line W * 0.15625, bt + fw10
+                               line W * 0.171875, bt + fw11
+                               line W * 0.1875, bt + fw12
+                               line W * 0.203125, bt + fw13
+                               line W * 0.21875, bt + fw14
+                               line W * 0.234375, bt + fw15
+                               line W * 0.25, bt + fw16
+                               line W * 0.265625, bt + fw17
+                               line W * 0.28125, bt + fw18
+                               line W * 0.296875, bt + fw19
+                               line W * 0.3125, bt + fw20
+                               line W * 0.328125, bt + fw21
+                               line W * 0.328125, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.28125 + 48 and ix0 + iw0 + 3 > W * 0.1875 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.28125 + 48 and ix1 + iw1 + 3 > W * 0.1875 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.28125 + 48 and ix2 + iw2 + 3 > W * 0.1875 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.28125 + 48 and ix3 + iw3 + 3 > W * 0.1875 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.28125 + 48 and ix4 + iw4 + 3 > W * 0.1875 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.28125 + 48 and ix5 + iw5 + 3 > W * 0.1875 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.28125 + 48 and ix6 + iw6 + 3 > W * 0.1875 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.28125 + 48 and ix7 + iw7 + 3 > W * 0.1875 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.28125 + 48 and ix8 + iw8 + 3 > W * 0.1875 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.28125 + 48 and ix9 + iw9 + 3 > W * 0.1875 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.28125 + 48 and ix10 + iw10 + 3 > W * 0.1875 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.28125 + 48 and ix11 + iw11 + 3 > W * 0.1875 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.28125 + 48 and ix12 + iw12 + 3 > W * 0.1875 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.28125 + 48 and ix13 + iw13 + 3 > W * 0.1875 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.28125 + 48 and ix14 + iw14 + 3 > W * 0.1875 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.28125 + 48 and ix15 + iw15 + 3 > W * 0.1875 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.28125 + 48 and plx + plw + n_pad > W * 0.1875 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.28125 + 48 and pcx + pcw + n_pad > W * 0.1875 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.28125 + 48 and prx + prw + n_pad > W * 0.1875 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.28125 + 48 and gp_x + gp_w > W * 0.1875 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125
+                    clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.234375, -40
+                               line W * 0.234375, bt + fw15
+                               line W * 0.25, bt + fw16
+                               line W * 0.265625, bt + fw17
+                               line W * 0.28125, bt + fw18
+                               line W * 0.296875, bt + fw19
+                               line W * 0.3125, bt + fw20
+                               line W * 0.328125, bt + fw21
+                               line W * 0.34375, bt + fw22
+                               line W * 0.359375, bt + fw23
+                               line W * 0.375, bt + fw24
+                               line W * 0.390625, bt + fw25
+                               line W * 0.40625, bt + fw26
+                               line W * 0.421875, bt + fw27
+                               line W * 0.421875, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.375 + 48 and ix0 + iw0 + 3 > W * 0.28125 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.375 + 48 and ix1 + iw1 + 3 > W * 0.28125 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.375 + 48 and ix2 + iw2 + 3 > W * 0.28125 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.375 + 48 and ix3 + iw3 + 3 > W * 0.28125 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.375 + 48 and ix4 + iw4 + 3 > W * 0.28125 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.375 + 48 and ix5 + iw5 + 3 > W * 0.28125 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.375 + 48 and ix6 + iw6 + 3 > W * 0.28125 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.375 + 48 and ix7 + iw7 + 3 > W * 0.28125 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.375 + 48 and ix8 + iw8 + 3 > W * 0.28125 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.375 + 48 and ix9 + iw9 + 3 > W * 0.28125 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.375 + 48 and ix10 + iw10 + 3 > W * 0.28125 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.375 + 48 and ix11 + iw11 + 3 > W * 0.28125 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.375 + 48 and ix12 + iw12 + 3 > W * 0.28125 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.375 + 48 and ix13 + iw13 + 3 > W * 0.28125 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.375 + 48 and ix14 + iw14 + 3 > W * 0.28125 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.375 + 48 and ix15 + iw15 + 3 > W * 0.28125 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.375 + 48 and plx + plw + n_pad > W * 0.28125 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.375 + 48 and pcx + pcw + n_pad > W * 0.28125 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.375 + 48 and prx + prw + n_pad > W * 0.28125 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.375 + 48 and gp_x + gp_w > W * 0.28125 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375
+                    clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.328125, -40
+                               line W * 0.328125, bt + fw21
+                               line W * 0.34375, bt + fw22
+                               line W * 0.359375, bt + fw23
+                               line W * 0.375, bt + fw24
+                               line W * 0.390625, bt + fw25
+                               line W * 0.40625, bt + fw26
+                               line W * 0.421875, bt + fw27
+                               line W * 0.4375, bt + fw28
+                               line W * 0.453125, bt + fw29
+                               line W * 0.46875, bt + fw30
+                               line W * 0.484375, bt + fw31
+                               line W * 0.5, bt + fw32
+                               line W * 0.515625, bt + fw33
+                               line W * 0.515625, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.46875 + 48 and ix0 + iw0 + 3 > W * 0.375 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.46875 + 48 and ix1 + iw1 + 3 > W * 0.375 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.46875 + 48 and ix2 + iw2 + 3 > W * 0.375 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.46875 + 48 and ix3 + iw3 + 3 > W * 0.375 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.46875 + 48 and ix4 + iw4 + 3 > W * 0.375 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.46875 + 48 and ix5 + iw5 + 3 > W * 0.375 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.46875 + 48 and ix6 + iw6 + 3 > W * 0.375 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.46875 + 48 and ix7 + iw7 + 3 > W * 0.375 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.46875 + 48 and ix8 + iw8 + 3 > W * 0.375 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.46875 + 48 and ix9 + iw9 + 3 > W * 0.375 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.46875 + 48 and ix10 + iw10 + 3 > W * 0.375 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.46875 + 48 and ix11 + iw11 + 3 > W * 0.375 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.46875 + 48 and ix12 + iw12 + 3 > W * 0.375 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.46875 + 48 and ix13 + iw13 + 3 > W * 0.375 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.46875 + 48 and ix14 + iw14 + 3 > W * 0.375 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.46875 + 48 and ix15 + iw15 + 3 > W * 0.375 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.46875 + 48 and plx + plw + n_pad > W * 0.375 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.46875 + 48 and pcx + pcw + n_pad > W * 0.375 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.46875 + 48 and prx + prw + n_pad > W * 0.375 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.46875 + 48 and gp_x + gp_w > W * 0.375 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875
+                    clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.421875, -40
+                               line W * 0.421875, bt + fw27
+                               line W * 0.4375, bt + fw28
+                               line W * 0.453125, bt + fw29
+                               line W * 0.46875, bt + fw30
+                               line W * 0.484375, bt + fw31
+                               line W * 0.5, bt + fw32
+                               line W * 0.515625, bt + fw33
+                               line W * 0.53125, bt + fw34
+                               line W * 0.546875, bt + fw35
+                               line W * 0.5625, bt + fw36
+                               line W * 0.578125, bt + fw37
+                               line W * 0.59375, bt + fw38
+                               line W * 0.609375, bt + fw39
+                               line W * 0.609375, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.5625 + 48 and ix0 + iw0 + 3 > W * 0.46875 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.5625 + 48 and ix1 + iw1 + 3 > W * 0.46875 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.5625 + 48 and ix2 + iw2 + 3 > W * 0.46875 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.5625 + 48 and ix3 + iw3 + 3 > W * 0.46875 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.5625 + 48 and ix4 + iw4 + 3 > W * 0.46875 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.5625 + 48 and ix5 + iw5 + 3 > W * 0.46875 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.5625 + 48 and ix6 + iw6 + 3 > W * 0.46875 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.5625 + 48 and ix7 + iw7 + 3 > W * 0.46875 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.5625 + 48 and ix8 + iw8 + 3 > W * 0.46875 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.5625 + 48 and ix9 + iw9 + 3 > W * 0.46875 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.5625 + 48 and ix10 + iw10 + 3 > W * 0.46875 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.5625 + 48 and ix11 + iw11 + 3 > W * 0.46875 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.5625 + 48 and ix12 + iw12 + 3 > W * 0.46875 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.5625 + 48 and ix13 + iw13 + 3 > W * 0.46875 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.5625 + 48 and ix14 + iw14 + 3 > W * 0.46875 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.5625 + 48 and ix15 + iw15 + 3 > W * 0.46875 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.5625 + 48 and plx + plw + n_pad > W * 0.46875 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.5625 + 48 and pcx + pcw + n_pad > W * 0.46875 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.5625 + 48 and prx + prw + n_pad > W * 0.46875 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.5625 + 48 and gp_x + gp_w > W * 0.46875 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625
+                    clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.515625, -40
+                               line W * 0.515625, bt + fw33
+                               line W * 0.53125, bt + fw34
+                               line W * 0.546875, bt + fw35
+                               line W * 0.5625, bt + fw36
+                               line W * 0.578125, bt + fw37
+                               line W * 0.59375, bt + fw38
+                               line W * 0.609375, bt + fw39
+                               line W * 0.625, bt + fw40
+                               line W * 0.640625, bt + fw41
+                               line W * 0.65625, bt + fw42
+                               line W * 0.671875, bt + fw43
+                               line W * 0.6875, bt + fw44
+                               line W * 0.703125, bt + fw45
+                               line W * 0.703125, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.65625 + 48 and ix0 + iw0 + 3 > W * 0.5625 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.65625 + 48 and ix1 + iw1 + 3 > W * 0.5625 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.65625 + 48 and ix2 + iw2 + 3 > W * 0.5625 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.65625 + 48 and ix3 + iw3 + 3 > W * 0.5625 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.65625 + 48 and ix4 + iw4 + 3 > W * 0.5625 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.65625 + 48 and ix5 + iw5 + 3 > W * 0.5625 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.65625 + 48 and ix6 + iw6 + 3 > W * 0.5625 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.65625 + 48 and ix7 + iw7 + 3 > W * 0.5625 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.65625 + 48 and ix8 + iw8 + 3 > W * 0.5625 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.65625 + 48 and ix9 + iw9 + 3 > W * 0.5625 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.65625 + 48 and ix10 + iw10 + 3 > W * 0.5625 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.65625 + 48 and ix11 + iw11 + 3 > W * 0.5625 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.65625 + 48 and ix12 + iw12 + 3 > W * 0.5625 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.65625 + 48 and ix13 + iw13 + 3 > W * 0.5625 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.65625 + 48 and ix14 + iw14 + 3 > W * 0.5625 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.65625 + 48 and ix15 + iw15 + 3 > W * 0.5625 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.65625 + 48 and plx + plw + n_pad > W * 0.5625 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.65625 + 48 and pcx + pcw + n_pad > W * 0.5625 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.65625 + 48 and prx + prw + n_pad > W * 0.5625 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.65625 + 48 and gp_x + gp_w > W * 0.5625 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625
+                    clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.609375, -40
+                               line W * 0.609375, bt + fw39
+                               line W * 0.625, bt + fw40
+                               line W * 0.640625, bt + fw41
+                               line W * 0.65625, bt + fw42
+                               line W * 0.671875, bt + fw43
+                               line W * 0.6875, bt + fw44
+                               line W * 0.703125, bt + fw45
+                               line W * 0.71875, bt + fw46
+                               line W * 0.734375, bt + fw47
+                               line W * 0.75, bt + fw48
+                               line W * 0.765625, bt + fw49
+                               line W * 0.78125, bt + fw50
+                               line W * 0.796875, bt + fw51
+                               line W * 0.796875, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.75 + 48 and ix0 + iw0 + 3 > W * 0.65625 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.75 + 48 and ix1 + iw1 + 3 > W * 0.65625 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.75 + 48 and ix2 + iw2 + 3 > W * 0.65625 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.75 + 48 and ix3 + iw3 + 3 > W * 0.65625 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.75 + 48 and ix4 + iw4 + 3 > W * 0.65625 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.75 + 48 and ix5 + iw5 + 3 > W * 0.65625 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.75 + 48 and ix6 + iw6 + 3 > W * 0.65625 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.75 + 48 and ix7 + iw7 + 3 > W * 0.65625 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.75 + 48 and ix8 + iw8 + 3 > W * 0.65625 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.75 + 48 and ix9 + iw9 + 3 > W * 0.65625 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.75 + 48 and ix10 + iw10 + 3 > W * 0.65625 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.75 + 48 and ix11 + iw11 + 3 > W * 0.65625 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.75 + 48 and ix12 + iw12 + 3 > W * 0.65625 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.75 + 48 and ix13 + iw13 + 3 > W * 0.65625 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.75 + 48 and ix14 + iw14 + 3 > W * 0.65625 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.75 + 48 and ix15 + iw15 + 3 > W * 0.65625 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.75 + 48 and plx + plw + n_pad > W * 0.65625 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.75 + 48 and pcx + pcw + n_pad > W * 0.65625 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.75 + 48 and prx + prw + n_pad > W * 0.65625 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.75 + 48 and gp_x + gp_w > W * 0.65625 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75
+                    clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.703125, -40
+                               line W * 0.703125, bt + fw45
+                               line W * 0.71875, bt + fw46
+                               line W * 0.734375, bt + fw47
+                               line W * 0.75, bt + fw48
+                               line W * 0.765625, bt + fw49
+                               line W * 0.78125, bt + fw50
+                               line W * 0.796875, bt + fw51
+                               line W * 0.8125, bt + fw52
+                               line W * 0.828125, bt + fw53
+                               line W * 0.84375, bt + fw54
+                               line W * 0.859375, bt + fw55
+                               line W * 0.875, bt + fw56
+                               line W * 0.890625, bt + fw57
+                               line W * 0.890625, -40
+                               close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.84375 + 48 and ix0 + iw0 + 3 > W * 0.75 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.84375 + 48 and ix1 + iw1 + 3 > W * 0.75 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.84375 + 48 and ix2 + iw2 + 3 > W * 0.75 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.84375 + 48 and ix3 + iw3 + 3 > W * 0.75 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.84375 + 48 and ix4 + iw4 + 3 > W * 0.75 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.84375 + 48 and ix5 + iw5 + 3 > W * 0.75 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.84375 + 48 and ix6 + iw6 + 3 > W * 0.75 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.84375 + 48 and ix7 + iw7 + 3 > W * 0.75 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.84375 + 48 and ix8 + iw8 + 3 > W * 0.75 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.84375 + 48 and ix9 + iw9 + 3 > W * 0.75 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.84375 + 48 and ix10 + iw10 + 3 > W * 0.75 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.84375 + 48 and ix11 + iw11 + 3 > W * 0.75 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.84375 + 48 and ix12 + iw12 + 3 > W * 0.75 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.84375 + 48 and ix13 + iw13 + 3 > W * 0.75 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.84375 + 48 and ix14 + iw14 + 3 > W * 0.75 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.84375 + 48 and ix15 + iw15 + 3 > W * 0.75 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.84375 + 48 and plx + plw + n_pad > W * 0.75 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.84375 + 48 and pcx + pcw + n_pad > W * 0.75 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.84375 + 48 and prx + prw + n_pad > W * 0.75 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.84375 + 48 and gp_x + gp_w > W * 0.75 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375
+                    clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.796875, -40
+                               line W * 0.796875, bt + fw51
+                               line W * 0.8125, bt + fw52
+                               line W * 0.828125, bt + fw53
+                               line W * 0.84375, bt + fw54
+                               line W * 0.859375, bt + fw55
+                               line W * 0.875, bt + fw56
+                               line W * 0.890625, bt + fw57
+                               line W * 0.90625, bt + fw58
+                               line W * 0.921875, bt + fw59
+                               line W * 0.9375, bt + fw60
+                               line W * 0.953125, bt + fw61
+                               line W * 0.96875, bt + fw62
+                               line W * 0.984375, bt + fw63
+                               line W * 0.984375, -40
+                               close }
+                        path { move W + 40, H * 0
+                               line W - bs - sw0, H * 0
+                               line W - bs - sw1, H * 0.020833
+                               line W - bs - sw2, H * 0.041667
+                               line W - bs - sw3, H * 0.0625
+                               line W - bs - sw4, H * 0.083333
+                               line W - bs - sw5, H * 0.104167
+                               line W - bs - sw6, H * 0.125
+                               line W - bs - sw7, H * 0.145833
+                               line W - bs - sw8, H * 0.166667
+                               line W - bs - sw9, H * 0.1875
+                               line W - bs - sw10, H * 0.208333
+                               line W + 40, H * 0.208333
+                               close }
+                        path { move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W * 0.9375 + 48 and ix0 + iw0 + 3 > W * 0.84375 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W * 0.9375 + 48 and ix1 + iw1 + 3 > W * 0.84375 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W * 0.9375 + 48 and ix2 + iw2 + 3 > W * 0.84375 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W * 0.9375 + 48 and ix3 + iw3 + 3 > W * 0.84375 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W * 0.9375 + 48 and ix4 + iw4 + 3 > W * 0.84375 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W * 0.9375 + 48 and ix5 + iw5 + 3 > W * 0.84375 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W * 0.9375 + 48 and ix6 + iw6 + 3 > W * 0.84375 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W * 0.9375 + 48 and ix7 + iw7 + 3 > W * 0.84375 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W * 0.9375 + 48 and ix8 + iw8 + 3 > W * 0.84375 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W * 0.9375 + 48 and ix9 + iw9 + 3 > W * 0.84375 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W * 0.9375 + 48 and ix10 + iw10 + 3 > W * 0.84375 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W * 0.9375 + 48 and ix11 + iw11 + 3 > W * 0.84375 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W * 0.9375 + 48 and ix12 + iw12 + 3 > W * 0.84375 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W * 0.9375 + 48 and ix13 + iw13 + 3 > W * 0.84375 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W * 0.9375 + 48 and ix14 + iw14 + 3 > W * 0.84375 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W * 0.9375 + 48 and ix15 + iw15 + 3 > W * 0.84375 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W * 0.9375 + 48 and plx + plw + n_pad > W * 0.84375 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W * 0.9375 + 48 and pcx + pcw + n_pad > W * 0.84375 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W * 0.9375 + 48 and prx + prw + n_pad > W * 0.84375 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W * 0.9375 + 48 and gp_x + gp_w > W * 0.84375 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
+                group {
+                    show: pl_act and pl_l < W + 40 and pl_e > W * 0.9375
+                    clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), max(160 + 40, pl_y + pl_h + 80) }
+                    body {
+                        color: fcol
+                        opacity: fop
+                        glass: if(glassy, 100%, 0%)
+                        lens: false
+                        frost: 1% * st_frost
+                        smoke: 1% * st_smoke
+                        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
+                        border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
+                        path { move W * 0.890625, -40
+                               line W * 0.890625, bt + fw57
+                               line W * 0.90625, bt + fw58
+                               line W * 0.921875, bt + fw59
+                               line W * 0.9375, bt + fw60
+                               line W * 0.953125, bt + fw61
+                               line W * 0.96875, bt + fw62
+                               line W * 0.984375, bt + fw63
+                               line W * 1, bt + fw64
+                               line W * 1, -40
+                               close }
+                        path { move W + 40, H * 0
+                               line W - bs - sw0, H * 0
+                               line W - bs - sw1, H * 0.020833
+                               line W - bs - sw2, H * 0.041667
+                               line W - bs - sw3, H * 0.0625
+                               line W - bs - sw4, H * 0.083333
+                               line W - bs - sw5, H * 0.104167
+                               line W - bs - sw6, H * 0.125
+                               line W - bs - sw7, H * 0.145833
+                               line W - bs - sw8, H * 0.166667
+                               line W - bs - sw9, H * 0.1875
+                               line W - bs - sw10, H * 0.208333
+                               line W + 40, H * 0.208333
+                               close }
+                        path { move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        box { from: ix0 - 3, -40; size: iw0 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw0 > 1 and ix0 - 3 < W + 40 + 48 and ix0 + iw0 + 3 > W * 0.9375 - 48 }
+                        box { from: ix1 - 3, -40; size: iw1 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw1 > 1 and ix1 - 3 < W + 40 + 48 and ix1 + iw1 + 3 > W * 0.9375 - 48 }
+                        box { from: ix2 - 3, -40; size: iw2 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw2 > 1 and ix2 - 3 < W + 40 + 48 and ix2 + iw2 + 3 > W * 0.9375 - 48 }
+                        box { from: ix3 - 3, -40; size: iw3 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw3 > 1 and ix3 - 3 < W + 40 + 48 and ix3 + iw3 + 3 > W * 0.9375 - 48 }
+                        box { from: ix4 - 3, -40; size: iw4 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw4 > 1 and ix4 - 3 < W + 40 + 48 and ix4 + iw4 + 3 > W * 0.9375 - 48 }
+                        box { from: ix5 - 3, -40; size: iw5 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw5 > 1 and ix5 - 3 < W + 40 + 48 and ix5 + iw5 + 3 > W * 0.9375 - 48 }
+                        box { from: ix6 - 3, -40; size: iw6 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw6 > 1 and ix6 - 3 < W + 40 + 48 and ix6 + iw6 + 3 > W * 0.9375 - 48 }
+                        box { from: ix7 - 3, -40; size: iw7 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw7 > 1 and ix7 - 3 < W + 40 + 48 and ix7 + iw7 + 3 > W * 0.9375 - 48 }
+                        box { from: ix8 - 3, -40; size: iw8 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw8 > 1 and ix8 - 3 < W + 40 + 48 and ix8 + iw8 + 3 > W * 0.9375 - 48 }
+                        box { from: ix9 - 3, -40; size: iw9 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw9 > 1 and ix9 - 3 < W + 40 + 48 and ix9 + iw9 + 3 > W * 0.9375 - 48 }
+                        box { from: ix10 - 3, -40; size: iw10 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw10 > 1 and ix10 - 3 < W + 40 + 48 and ix10 + iw10 + 3 > W * 0.9375 - 48 }
+                        box { from: ix11 - 3, -40; size: iw11 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw11 > 1 and ix11 - 3 < W + 40 + 48 and ix11 + iw11 + 3 > W * 0.9375 - 48 }
+                        box { from: ix12 - 3, -40; size: iw12 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw12 > 1 and ix12 - 3 < W + 40 + 48 and ix12 + iw12 + 3 > W * 0.9375 - 48 }
+                        box { from: ix13 - 3, -40; size: iw13 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw13 > 1 and ix13 - 3 < W + 40 + 48 and ix13 + iw13 + 3 > W * 0.9375 - 48 }
+                        box { from: ix14 - 3, -40; size: iw14 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw14 > 1 and ix14 - 3 < W + 40 + 48 and ix14 + iw14 + 3 > W * 0.9375 - 48 }
+                        box { from: ix15 - 3, -40; size: iw15 + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw15 > 1 and ix15 - 3 < W + 40 + 48 and ix15 + iw15 + 3 > W * 0.9375 - 48 }
+                        box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1 and plx - n_pad < W + 40 + 48 and plx + plw + n_pad > W * 0.9375 - 48 }
+                        box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1 and pcx - n_pad < W + 40 + 48 and pcx + pcw + n_pad > W * 0.9375 - 48 }
+                        box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1 and prx - n_pad < W + 40 + 48 and prx + prw + n_pad > W * 0.9375 - 48 }
+                        box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1 and gp_x < W + 40 + 48 and gp_x + gp_w > W * 0.9375 - 48 }
+                        box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30 }
+                    }
+                }
             }
         }
     }

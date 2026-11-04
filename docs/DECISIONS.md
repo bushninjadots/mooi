@@ -4550,3 +4550,30 @@ mooi, mooi-notch and mooi-nexus logic) are back to D147d (1929590): islands, the
 notch's panels open as they did before D148. `island.morph` is gone from the schema, from both setter
 lists (it was the last entry: no code moved), from Settings → Bar and Quick, and from settings.json.
 A better morph is to be designed from scratch (see the conversation of 2026-11-04 for what was learnt).
+
+## D152 · 2026-11-04 · The chassis (B): islands grow out of the frame as part of its body
+**Asked for:** "B" — the full iNiR chassis: the band, the bar and every island one shape.
+**Probe first** (throwaway, scratchpad): a chassis program and a content program, a 2 s spring.
+(a) `level: bottom, top while …` and `level: top, overlay while …` stack right, even with the chassis
+started after the content; (b) the content riding the body from another program does not visibly
+drift; (c) ~10 % GPU while it grows, 0 at rest — **with a spring**: a long duration tween (`~2000ms`)
+kept the probe painting every frame (4.6 % GPU) after it had arrived; springs settle and rest.
+**Built, the bar's islands** (window, system, stats, calendar, music, weather, sound, display, power):
+- mooi-frame draws the island: `frame_p` (tools/gen-frame.py `place_surface`) is the top strip's tiles
+  the island crosses (`pl_l`…`pl_e`) with the island's box melted into each tile's body (`blend: 30`), on
+  the top layer only while it is out; `frame_t` leaves those tiles out meanwhile — they meet exactly.
+  The body grows out of the bar's piece: from the module's pill (55 %, 14 px above the island's top,
+  inside the piece) — across on the spring, down on the spring squared, corners 6 → 14.
+- ui/island.plm `IslandFrame(…, ox, oy)`: with `ch_on` (frame on and `frame.islands`, Settings → Frame,
+  on by default) an island under a module draws no body, only its content, clipped to the same shape
+  from the same numbers, riding its foot and fading in over the first third. As it starts to open it
+  emits its box and its module's middle (`pl_xy`, `pl_wh`, `pl_t`, packed under 2^24); shell/mooi.luau
+  sends them to the frame in one `--say` with a count of openings (`pl_n`: the frame's spring follows
+  the count, so each opening runs from 0), and `pl_on false` when `open` changes; messages queued, one
+  after another. The bar's surface and its islands' go to the overlay layer while one is out, so they
+  stay over the frame's top-layer body.
+- New springs `m.isl` (230, 26: ~420 ms, a slight swell) and `m.isl_out` (900, 60), used by both.
+- Shelf islands, the command membrane and the frame off: plates as before.
+**Checked on screen:** the system island (from the network module) growing out of its piece — frames
+caught mid-growth — and the calendar out of the centre piece; switching calendar → system; the frame's
+GPU: ~3.4 % while it grows, 0 open and still, 0 after. **Next:** the Control Nexus and the side notch.

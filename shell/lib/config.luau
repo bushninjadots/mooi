@@ -45,6 +45,9 @@ M.SCHEMA = {
     { path = "frame.style", kind = "enum", values = { "swell", "crests", "pulse" }, default = "swell" },
     { path = "frame.reach", kind = "integer", default = 18, min = 6, max = 40 },
     { path = "frame.edges", kind = "enum", values = { "all", "sides", "ends" }, default = "all" },
+    -- D152: with the frame on, an island under a module grows out of the bar's piece as part of the
+    -- frame's body (iNiR's chassis); off, islands are plates or tethers as before
+    { path = "frame.islands", kind = "boolean", default = true },
     -- The band's inner corners, its inner edge (a line, a neon line, or none) and how solid it is.
     { path = "frame.radius", kind = "integer", default = 14, min = 0, max = 40 },
     { path = "frame.edge", kind = "enum", values = { "line", "neon", "none" }, default = "line" },

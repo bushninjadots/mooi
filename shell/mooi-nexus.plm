@@ -251,6 +251,10 @@ scene Nexus {
     fact st_res = 46
 
     fact st_glow = 1
+    fact ch_on = false           // D152: the bar's islands drawn by the frame (never here: the Nexus's are centred)
+    event pl_xy ->
+    event pl_wh ->
+    event pl_t ->
     fact isl_style = 0           // island.style: 0 plate · 1 tether (the island kit reads it)
 
     // ── What the services report ──

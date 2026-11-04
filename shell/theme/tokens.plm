@@ -60,6 +60,10 @@ library Theme {
     spring m.select = 3062, 111     // 120 ms · selection.change, focus.change
     spring m.enter = 1361, 74       // 180 ms · surface.enter
     spring m.exit = 2249, 95        // 140 ms · surface.exit (leaves faster than it arrives)
+    // an island growing out of the frame (D152, after iNiR's emerge): ~420 ms with a slight swell past
+    // its size, and back in ~210 ms; the bar and the frame both run it, so body and content agree
+    spring m.isl = 230, 26
+    spring m.isl_out = 900, 60
     spring m.expand = 1102, 66      // 200 ms · surface.expand
     spring m.collapse = 1722, 83    // 160 ms · surface.collapse
     spring m.confirm = 765, 55      // 240 ms · state.confirm feedback

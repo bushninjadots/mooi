@@ -30,6 +30,10 @@ scene Mooi {
     fact cn_kind = 0
     fact cn_scale = 1
     fact isl_style = 0           // island.style: 0 plate · 1 tether (ui/island.plm reads it)
+    fact ch_on = false           // D152: the frame draws the islands under modules as part of its body
+    event pl_xy ->               // to the logic (D152): an island's place on the screen, x · 4096 + y
+    event pl_wh ->               //   its size, w · 4096 + h
+    event pl_t ->                //   the middle of its module (the last of the three: it goes to the frame)
     fact clock_view = 0          // clock.view: 0 full · 1 time · 2 seconds
     fact th_mode = 0             // theme.mode: 0 dark · 1 light · 2 auto
     fact nl_on = false           // the night light (hyprsunset) is on
@@ -1183,12 +1187,12 @@ scene Mooi {
     }
 
     layer life.window {
-        shown while open == window { rv.window: 1 ~m.enter }
-        gone                       { rv.window: 0 ~m.exit }
+        shown while open == window { rv.window: 1 ~m.isl }
+        gone                       { rv.window: 0 ~m.isl_out }
     }
     layer life.system {
-        shown while open == system { rv.system: 1 ~m.enter }
-        gone                       { rv.system: 0 ~m.exit }
+        shown while open == system { rv.system: 1 ~m.isl }
+        gone                       { rv.system: 0 ~m.isl_out }
     }
     layer life.command {
         shown while open == command { rv.command: 1 ~m.enter }
@@ -1196,32 +1200,32 @@ scene Mooi {
     }
     // the modules' own islands (D97)
     layer life.stats {
-        shown while open == stats { rv.stats: 1 ~m.enter }
-        gone                      { rv.stats: 0 ~m.exit }
+        shown while open == stats { rv.stats: 1 ~m.isl }
+        gone                      { rv.stats: 0 ~m.isl_out }
     }
     layer life.calendar {
-        shown while open == calendar { rv.calendar: 1 ~m.enter }
-        gone                         { rv.calendar: 0 ~m.exit }
+        shown while open == calendar { rv.calendar: 1 ~m.isl }
+        gone                         { rv.calendar: 0 ~m.isl_out }
     }
     layer life.music {
-        shown while open == music { rv.music: 1 ~m.enter }
-        gone                      { rv.music: 0 ~m.exit }
+        shown while open == music { rv.music: 1 ~m.isl }
+        gone                      { rv.music: 0 ~m.isl_out }
     }
     layer life.weather {
-        shown while open == weather { rv.weather: 1 ~m.enter }
-        gone                        { rv.weather: 0 ~m.exit }
+        shown while open == weather { rv.weather: 1 ~m.isl }
+        gone                        { rv.weather: 0 ~m.isl_out }
     }
     layer life.sound {
-        shown while open == sound { rv.sound: 1 ~m.enter }
-        gone                      { rv.sound: 0 ~m.exit }
+        shown while open == sound { rv.sound: 1 ~m.isl }
+        gone                      { rv.sound: 0 ~m.isl_out }
     }
     layer life.display {
-        shown while open == display { rv.display: 1 ~m.enter }
-        gone                        { rv.display: 0 ~m.exit }
+        shown while open == display { rv.display: 1 ~m.isl }
+        gone                        { rv.display: 0 ~m.isl_out }
     }
     layer life.power {
-        shown while open == power { rv.power: 1 ~m.enter }
-        gone                      { rv.power: 0 ~m.exit }
+        shown while open == power { rv.power: 1 ~m.isl }
+        gone                      { rv.power: 0 ~m.isl_out }
     }
     // The shutter's motion: the anchor answers first, the plates follow down the track in a short
     // stagger, a panel slides out of its plate, the third level out of its row; going, the panel
@@ -1726,7 +1730,7 @@ scene Mooi {
         // with the bar's thickness and its distance from the edge while it runs — pleamar's
         // own reserve is one number, read once.
         reserve: -1
-        level: top
+        level: top, overlay while ch_on and rv.window + rv.system + rv.stats + rv.calendar + rv.music + rv.weather + rv.sound + rv.display + rv.power > 0.002
         keyboard: exclusive while (open != none or mark_open or side != none or bar_edit or qn_open or stash_naming) and not (open == command and cmode == actions)
     }
 
@@ -3053,7 +3057,7 @@ scene Mooi {
     surface popup_surface {
         size: full, full
         anchor: top
-        level: top
+        level: top, overlay while ch_on and rv.window + rv.system + rv.stats + rv.calendar + rv.music + rv.weather + rv.sound + rv.display + rv.power > 0.002
         reserve: -1
 
 
@@ -3917,7 +3921,7 @@ scene Mooi {
                 show: rv.window > 0.03
                 move: wi_ox, 0
 
-                IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1)) {
+                IslandFrame(rv.window, 340, 132 + 80 * depth, tx: if(p_actions, xs_actions + ws_actions / 2 - wi_ox, -1), ox: wi_ox, oy: st_res + 6) {
                     text "{upper(tgt_class)}" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary; width: 280; lines: 1 }
                     text tgt_title { at: 16, 38; anchor: left center; size: 13; color: fg.primary; width: 290; lines: 1 }
 
@@ -4010,7 +4014,7 @@ scene Mooi {
                 let sh = 144 + 52 * brightness.present
                 group {
                     move: 0, 0
-                    IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox) {
+                    IslandFrame(rv.system, 300, sh, tx: if(sys_cx > 0, sys_cx, if(p_network, xs_network + ws_network / 2, -1)) - sy_ox, ox: sy_ox, oy: st_res + 6) {
                         text "SYSTEM" { at: 16, 20; anchor: left center; size: 10; weight: 700; color: fg.secondary }
                         text "{? {network.name} · }{network.strength, 0}%" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wifi }
                         text "Wired" { at: 284, 20; anchor: right center; size: 10; color: fg.secondary; show: network.online and network.kind == wired }
@@ -4046,7 +4050,7 @@ scene Mooi {
             group {
                 show: rv.calendar > 0.03
                 move: ca_ox, 0
-                IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox)) {
+                IslandFrame(rv.calendar, 300, 292, tx: if(isl_shelf, -1, isl_cx - ca_ox), ox: ca_ox, oy: st_res + 6) {
                     zone box keep_calendar { from: 0, 0; size: 300, 292; role: region; agent: hidden }
                     IsleHead(300, cal_title, cal_sub)
                     repeat k in 0..7 {
@@ -4091,7 +4095,7 @@ scene Mooi {
             group {
                 show: rv.stats > 0.03
                 move: so_ox, 0
-                IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox)) {
+                IslandFrame(rv.stats, 320, 300 + sgh, tx: if(isl_shelf, -1, isl_cx - so_ox), ox: so_ox, oy: st_res + 6) {
                     zone box keep_stats { from: 0, 0; size: 320, 300 + if(st_gpu_ok, 30, 0); role: region; agent: hidden }
                     IsleHead(320, "System", st_load)
                     IsleGauge(16, 40, 288, "Processor", "{round(res_cpu * 100), 0} % · {round(res_temp), 0} °C", res_cpu, res_cpu > 0.85 or res_temp > 85)
@@ -4128,7 +4132,7 @@ scene Mooi {
             group {
                 show: rv.weather > 0.03
                 move: wi_x, 0
-                IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x)) {
+                IslandFrame(rv.weather, 340, 356, tx: if(isl_shelf, -1, isl_cx - wi_x), ox: wi_x, oy: st_res + 6) {
                     zone box keep_weather { from: 0, 0; size: 340, 356; role: region; agent: hidden }
                     IsleHead(340, wxi_title, wxi_sub)
                     group {
@@ -4183,7 +4187,7 @@ scene Mooi {
             group {
                 show: mu_on
                 move: mu_x, 0
-                IslandFrame(rv.music, 440, 290, tx: if(isl_shelf, -1, isl_cx - mu_x)) {
+                IslandFrame(rv.music, 440, 290, tx: if(isl_shelf, -1, isl_cx - mu_x), ox: mu_x, oy: st_res + 6) {
                     let acc = if(isl_style > 0.5, accent.primary, fl.phos)
                     let acc2 = if(isl_style > 0.5, accent.secondary, fl.ember)
                     let ink = if(isl_style > 0.5, fg.primary, fl.engrave)
@@ -4269,7 +4273,7 @@ scene Mooi {
             group {
                 show: rv.sound > 0.03
                 move: sn_x, 0
-                IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x)) {
+                IslandFrame(rv.sound, 320, snh, tx: if(isl_shelf, -1, isl_cx - sn_x), ox: sn_x, oy: st_res + 6) {
                     zone box keep_sound { from: 0, 0; size: 320, 214 + 26 * min(aouts.count, 6); role: region; agent: hidden }
                     IsleHead(320, "Sound", pick(audio.muted, "{round(audio.volume * 100), 0} %", "Muted"))
                     group { move: 16, 40
@@ -4314,7 +4318,7 @@ scene Mooi {
             group {
                 show: rv.display > 0.03
                 move: dp_x, 0
-                IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x)) {
+                IslandFrame(rv.display, 300, 150 + dbh, tx: if(isl_shelf, -1, isl_cx - dp_x), ox: dp_x, oy: st_res + 6) {
                     zone box keep_display { from: 0, 0; size: 300, 150 + if(brightness.present, 52, 0); role: region; agent: hidden }
                     IsleHead(300, "Display", pick(brightness.present, "No backlight", "{round(brightness.level * 100), 0} %"))
                     group { show: brightness.present
@@ -4351,7 +4355,7 @@ scene Mooi {
             group {
                 show: rv.power > 0.03
                 move: pw_x, 0
-                IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x)) {
+                IslandFrame(rv.power, 320, 252 + pph, tx: if(isl_shelf, -1, isl_cx - pw_x), ox: pw_x, oy: st_res + 6) {
                     zone box keep_power { from: 0, 0; size: 320, 252 + if(pw_ppd, 40, 0); role: region; agent: hidden }
                     IsleHead(320, "Power", pw_state)
                     text "{round(battery.percent), 0}%" { at: 16, 62; anchor: left center; size: 34; weight: 600; family: "Exo 2"
