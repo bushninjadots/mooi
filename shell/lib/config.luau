@@ -351,7 +351,7 @@ M.SCHEMA = {
     { path = "desk.strength", kind = "integer", default = 45, min = 0, max = 100 },
     { path = "desk.cutout", kind = "boolean", default = true },
     { path = "desk.depth", kind = "boolean", default = true },
-    -- how a new picture comes in (D144, Skwd's styles): random, a circle growing (from the notch when
+    -- how a new picture comes in (D144): random, a circle growing (from the notch when
     -- picked there), a wipe, a slide, or a fade
     { path = "desk.transition", kind = "enum", values = { "random", "grow", "wipe", "slide", "fade" }, default = "random" },
     -- D137: the desktop widgets (shell/mooi-widgets, widgets.json is theirs)

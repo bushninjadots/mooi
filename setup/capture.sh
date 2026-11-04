@@ -10,7 +10,7 @@ data="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/mooi"
 command -v rsync >/dev/null || { echo "capture: rsync is needed (pacman -S rsync)" >&2; exit 1; }
 
 # ~/.config: the compositor, its scripts and helpers, and what the shell's colours are written into
-CONFIG="hypr qs-wallpaperpicker desktop-widgets wallpaper-styles kitty matugen environment.d pleamar gtk-3.0 gtk-4.0 qt5ct qt6ct"
+CONFIG="hypr desktop-widgets kitty matugen environment.d pleamar gtk-3.0 gtk-4.0 qt5ct qt6ct"
 # never: the 80 MB of wallpapers kept in hypr, its unread legacy files and backups, pleamar's other shells,
 # and the dotfiles repo's own .gitignore files (they would hide files from this repo)
 EXCLUDE="--exclude=.git --exclude=.gitignore --exclude=hypr/wallpapers --exclude=hypr/legacy --exclude=*.bak --exclude=*.before-* \

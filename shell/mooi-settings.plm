@@ -3505,7 +3505,7 @@ scene Mooi {
                     SKeys(700, 472, pick(capturing == 5, key_settings, cap_text), capturing == 5)
                     SButton(1042, 471, 96, pick(capturing == 5, "Change", "Cancel"), key_change, 5, capturing == 5)
                     text key_clash_settings { at: 700, 508; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(516, "Wallpapers", "Opens Skwd Wall, the wallpaper picker", true, "", 330, true)
+                    SRow(516, "Wallpapers", "Opens the wallpaper picker: the strip and the colour orbit", true, "", 330, true)
                     SKeys(700, 532, pick(capturing == 6, key_wallpaper, cap_text), capturing == 6)
                     SButton(1042, 531, 96, pick(capturing == 6, "Change", "Cancel"), key_change, 6, capturing == 6)
                     text key_clash_wallpaper { at: 700, 568; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }

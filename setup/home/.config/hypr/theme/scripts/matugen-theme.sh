@@ -6,7 +6,7 @@
 set -euo pipefail
 
 readonly SCRIPTS_DIR="${HOME}/.config/hypr/theme/scripts"
-# A still of the wallpaper (a video's frame), kept by qs-wallpaperpicker.
+# A still of the wallpaper (a video's frame), kept by `mooi wall apply` (mooi D145).
 readonly STILL="${HOME}/.cache/current_wallpaper"
 
 command -v matugen >/dev/null || { echo "matugen is not installed" >&2; exit 1; }

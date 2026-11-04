@@ -97,7 +97,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("system", "System controls", "Volume, brightness, network, Bluetooth"),
         ("shutter", "Window shutter", "The focused window's controls, unfolding from its edge"),
         ("settings", "Settings", "This window"),
-        ("wallpaper", "Wallpapers", "Opens Skwd Wall, the wallpaper picker"),
+        ("wallpaper", "Wallpapers", "Opens the wallpaper picker: the strip and the colour orbit"),
         ("player", "Music player", "Your library, the queue and lyrics on a turntable"),
         ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
@@ -961,6 +961,7 @@ def main():
     fact sw_one = 0           // the one-of kinds there already, a bit each: weather 1 · system 2 · calendar 4 · timer 8 · claude 16 · photo 32 · launcher 64
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
+    event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
     fact pw_ppd = false       // power-profiles-daemon answers
     fact saving = false       // the battery saver is on now

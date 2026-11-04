@@ -49,9 +49,8 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Wallpapers: Lumen removed; Skwd Wall is the one picker beside the notch's arc (D118)
 - [x] Wallpapers are mooi's (D145): the desk draws every kind (videos through mpvpaper), `mooi wall apply`,
       the picker (strip + colour orbit, Super+W), the notch wears through it
-- [ ] After a few days on D145: stop starting qs-wallpaperpicker (`~/.config/hypr/config/exec.lua`), remove
-      `skwd-walld`/`skwd-helm`/Skwd Wall and `~/.config/qs-wallpaperpicker` from `setup/`; a folder list in
-      Settings → Desk (today `walls.folders` in settings.json)
+- [x] Skwd Wall, its daemon, wallpaper-styles and the Quickshell picker retired: archived in
+      ~/.local/state/mooi/archive/skwd-2026-11-04, out of setup/ (D146). [ ] `sudo pacman -Rns awww` (yours to run)
 - [x] Control Nexus — the drawer (D98)
 - [ ] The bar ("needs big work") — islands done (D97); next the Control Nexus
 - [x] BMO — starts with mooi, throwing, sizes, the bar, variants, awareness, idle life, talk, Settings page (D94)

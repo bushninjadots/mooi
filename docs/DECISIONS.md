@@ -4415,3 +4415,19 @@ and back to a picture (mpvpaper gone); the notch's panel reading wall.json. The 
 (198 %) makes the desk's ~950 ms transitions 480 ms.
 **Not checked:** Super+W itself (Hyprland reads custom/mooi.lua on its next reload); a real pointer on
 the orbit; a press in the notch end to end.
+
+## D146 · 2026-11-04 · Skwd Wall and the Quickshell picker retired
+**Asked for:** "retire anything and all from Skwd Wall".
+- Archived (restorable, README inside) in `~/.local/state/mooi/archive/skwd-2026-11-04`: the nine
+  `~/.local/bin/skwd-*` programs and `qs-wallpaperpicker`, `~/.config/skwd-wall-v2`, `wallpaper-styles`,
+  `qs-wallpaperpicker`, `~/.local/share/skwd-wall-v2` and `skwd-lens` (571 MB), the `skwd-walld` user
+  unit, kitty's `skwd-colors.conf` and fish's `skwd-colors.fish`, and each config file as it was before
+  (`*.before`). The caches (`~/.cache/skwd-wall-v2`, 1.1 GB) deleted. Running copies stopped (a
+  `skwd-wall-still` was still drawing under the desk).
+- Your configs: exec.lua no longer starts the Quickshell picker; bind.lua's Super+W and qs_manager.sh's
+  wallpaper target run `mooi walls`; kitty.conf and config.fish lose their skwd-colors lines; matugen's
+  `qs-wallpaperpicker` template is gone and the palette JSON template reads its copy in
+  `~/.config/matugen/templates/quickshell-colors.json.hbs` (checked: `mooi theme-sync` runs your
+  templates without an error).
+- The repo: setup/ no longer captures `qs-wallpaperpicker` or `wallpaper-styles`; the bar, Settings and
+  Super+W's name say "the picker". Left for you: `sudo pacman -Rns awww` (nothing requires it).

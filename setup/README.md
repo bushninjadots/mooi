@@ -24,7 +24,7 @@ Before committing, whenever the desktop changed (Hyprland settings, mooi's Setti
 
 | | |
 |---|---|
-| `home/.config/` | `hypr` (without its 80 MB `wallpapers/` and unread `legacy/`), `qs-wallpaperpicker` (Skwd Wall), `desktop-widgets`, `wallpaper-styles`, `kitty`, `matugen`, `environment.d`, `pleamar` (without its unused `shells/`), `gtk-3.0`, `gtk-4.0`, `qt5ct`, `qt6ct` |
+| `home/.config/` | `hypr` (without its 80 MB `wallpapers/` and unread `legacy/`), `desktop-widgets`, `kitty`, `matugen`, `environment.d`, `pleamar` (without its unused `shells/`), `gtk-3.0`, `gtk-4.0`, `qt5ct`, `qt6ct` |
 | `home/.local/share/pleamar/mooi/` | mooi's state you chose: `settings.json`, the board, notes, the stash, environments, signals, workspaces, the equaliser, where the Nexus, player and notch sit, BMO's place, your identity pictures and theme |
 | `home/.local/share/fonts/`, `home/.icons/`, `home/.themes/` | hand-installed fonts (mooi's Share Tech Mono and Exo 2 among them), the phinger cursors, the GTK theme |
 | `home/.gsettings` | icon theme, cursor, GTK theme, colour scheme, font |

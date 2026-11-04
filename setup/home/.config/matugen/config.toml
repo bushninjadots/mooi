@@ -1,17 +1,12 @@
-# matugen: recolours the desktop from the wallpaper. qs-wallpaperpicker runs
-# `matugen image <wallpaper>` every time you set a wallpaper.
+# matugen: recolours the desktop from the wallpaper. mooi's theme watch runs it with this config
+# (apps.others) whenever the wallpaper changes (D145; the Quickshell picker is retired).
 
 [config]
 
-# The wallpaper picker's own colours.
-[templates.qs-wallpaperpicker]
-input_path = "~/.config/qs-wallpaperpicker/extras/matugen/quickshell.json.hbs"
-output_path = "~/.config/qs-wallpaperpicker/colors/Colors.json"
-
-# The palette as JSON: the wallpaper picker and the desktop widgets read it (ArchEclipse is gone;
-# the template keeps its old name).
+# The palette as JSON (~/.cache/quickshell/colors.json), for anything Quickshell left reading it
+# (ArchEclipse is gone; the template keeps its old name).
 [templates.archeclipse]
-input_path = "~/.config/qs-wallpaperpicker/extras/matugen/quickshell.json.hbs"
+input_path = "~/.config/matugen/templates/quickshell-colors.json.hbs"
 output_path = "~/.cache/quickshell/colors.json"
 
 # kitty: kitty.conf includes this; SIGUSR1 makes open windows reload it.

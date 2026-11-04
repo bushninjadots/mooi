@@ -12,7 +12,7 @@ M.ACTIONS = {
     { key = "system", cmd = "system", name = "System controls" },
     { key = "shutter", cmd = "shutter", name = "Window shutter" },
     { key = "settings", cmd = "settings", name = "Settings" },
-    { key = "wallpaper", cmd = "wallpaper", name = "Wallpapers (Skwd Wall)" },
+    { key = "wallpaper", cmd = "wallpaper", name = "Wallpapers (the picker)" },
     { key = "player", cmd = "player", name = "Music player" },
     { key = "desk", cmd = "widgets desk", name = "Desk mode (the widgets gathered)" },
     { key = "mode", cmd = "mode", name = "Light or dark" },

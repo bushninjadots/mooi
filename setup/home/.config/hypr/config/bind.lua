@@ -51,7 +51,7 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("nautilus"))
 --- open the default web browser
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd([[gtk-launch "$(xdg-settings get default-web-browser)" || zen-browser]]))
 --- toggle wallpaper picker (the style chosen in Settings -> Wallpaper Picker)
-hl.bind(mainMod .. " + w", hl.dsp.exec_cmd(home .. "/.config/wallpaper-styles/bin/wallpaper-picker toggle"))
+hl.bind(mainMod .. " + w", hl.dsp.exec_cmd(home .. "/Projects/mooi/bin/mooi walls"))
 
 -- Screenshot and Screen Record Keybinds
 --- screenshot workspace

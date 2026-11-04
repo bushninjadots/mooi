@@ -132,8 +132,8 @@ if [[ "$ACTION" == "open" || "$ACTION" == "toggle" ]]; then
     fi
 
     if [[ "$TARGET" == "wallpaper" ]]; then
-        # davincix is gone (2026-10-31): the wallpaper target is the picker that actually runs.
-        $QS -p "$HOME/.config/qs-wallpaperpicker" ipc call wallpaper toggle >/dev/null 2>&1
+        # the wallpaper target is mooi's picker (mooi D145; the Quickshell picker is retired)
+        "$HOME/Projects/mooi/bin/mooi" walls >/dev/null 2>&1
     else
         $QS -p "$SHELL_QML_PATH" ipc call main handleCommand "$ACTION" "$TARGET" "$SUBTARGET" >/dev/null 2>&1
     fi

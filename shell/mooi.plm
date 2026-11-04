@@ -2882,13 +2882,13 @@ scene Mooi {
     }
 
     // ── Wallpaper ────────────────────────────────────────────
-    // A framed picture: a press opens the one wallpaper picker, Skwd Wall (D118).
+    // A framed picture: a press opens mooi's wallpaper picker (D145).
     group {
         show: p_wallpaper
         move: xs_wallpaper, 0
         opacity: pv_wallpaper
         zone box zwp { from: 0, fl.top; size: ws_wallpaper, fl.mod_h; cursor: pointer; role: button
-                       label: "Wallpapers — open Skwd Wall" }
+                       label: "Wallpapers — open the picker" }
         Pill(ws_wallpaper, zwp.hover)
         // a figure's `at` is its centre (D84), so the picture sits in the middle of its pill
         figure i_wallpaper { at: ws_wallpaper / 2, fl.cy; size: 17, 17
