@@ -66,6 +66,7 @@ local all, list = {}, {}       -- the index, and what the source and the search 
 local places = {}              -- each of `list`'s places on the orbit (unit radius, before the turn)
 local complete = false
 local query = ""
+local chip, light = -1, 0      -- the colour row (D147)
 local at = 1                   -- the strip's middle card in `list` (1-based)
 local near = {}                -- the orbit's swollen ones, nearest first (indices into `list`)
 local cell = nil               -- the orbit cell under the pointer (0..399), nil off the wheel
@@ -73,6 +74,7 @@ local on_path = worn()
 local rolls = 0
 local place_of = {}            -- each picture's place on the orbit, as walls-orbit.png has it (the whole index)
 
+local want_pal                 -- (below, with the orbit) the palette of the picture in view
 local function kind_word(it)
     if it.kind == "video" then return "LIVE · VIDEO" end
     if it.kind == "animated" then return "LIVE · ANIMATED" end
@@ -98,6 +100,8 @@ local function say_line()
     local words = { "ALL", "PICTURES", "LIVE" }
     local s = string.format("%d %s", #list, src == 0 and "WALLPAPERS" or words[src + 1])
     if query ~= "" then s = s .. " MATCHING “" .. string.upper(query) .. "”" end
+    if chip >= 0 then s = s .. " · " .. (chip == walls.GREY_CHIP and "GREYS" or string.format("HUE %d°", chip * 15)) end
+    if light > 0 then s = s .. (light == 1 and " · LIGHT" or " · DARK") end
     if not complete then s = s .. " · STILL READING THE FOLDERS…" end
     text.wl_line = s
 end
@@ -113,7 +117,7 @@ local function show_strip()
     model.strip = rows
     fact.at = math.max(0, at - 1)
     fact.count = #list
-    if view == 0 then describe(list[at], at); preview(list[at]) end
+    if view == 0 then describe(list[at], at); preview(list[at]); want_pal(list[at]) end
 end
 
 -- ── The orbit ──
@@ -155,6 +159,16 @@ local function read_pal()
     end)
 end
 
+-- The palette of the picture in view (the strip's middle card, the orbit's nearest), read once it
+-- has stayed a quarter of a second.
+want_pal = function(it)
+    if it == pal_want then return end
+    pal_want = it
+    show_pal(it and pal_cache[it.path] or nil)
+    local mine = it
+    after(250, function() if pal_want == mine then read_pal() end end)
+end
+
 local REACH, MAG, NEAR_N = 0.26, 2.3, 16
 local function show_orbit()
     if cell == nil then model.orb = {}; near = {}; fact.or_near = false; return end
@@ -180,18 +194,13 @@ local function show_orbit()
     local first = list[near[1]]
     describe(first, near[1] or 0)
     preview(first)
-    if first ~= pal_want then
-        pal_want = first
-        show_pal(first and pal_cache[first.path] or nil)
-        local mine = first
-        after(250, function() if pal_want == mine then read_pal() end end)
-    end
+    want_pal(first)
 end
 
 -- ── The list ──
 local function refilter()
     local keep_path = list[at] and list[at].path or on_path
-    list = walls.filter(all, walls.SOURCES[src + 1], query)
+    list = walls.filter(all, walls.SOURCES[src + 1], query, chip, light)
     -- the places are the whole index's (the dots drawn are), so a filtered list keeps them
     places = {}
     for i, it in ipairs(list) do places[i] = place_of[it.path] or { x = 9, y = 9 } end
@@ -278,6 +287,27 @@ on("wl_spin", function(v)
     show_orbit()
 end)
 on("wl_prev", function() fact.prev = not fact.prev end)
+on("wl_chip", function(v)
+    v = math.floor(tonumber(v) or -1)
+    chip = (v == chip or v < 0 or v > walls.GREY_CHIP) and -1 or v
+    fact.chip = chip
+    refilter()
+end)
+on("wl_light", function(v)
+    light = math.max(0, math.min(2, math.floor(tonumber(v) or 0)))
+    fact.light = light
+    refilter()
+end)
+
+-- the colour row's chips, painted once
+do
+    local rows = {}
+    for c = 0, walls.GREY_CHIP do
+        local r, g, b = walls.chip_rgb(c)
+        rows[#rows + 1] = { cr = r, cg = g, cb = b }
+    end
+    model.chips = rows
+end
 on("text:wl_query", function(v)
     query = type(v) == "string" and v or ""
     fact.has_query = query ~= ""

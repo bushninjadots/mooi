@@ -73,15 +73,47 @@ function M.items(doc)
     return out
 end
 
--- The picker's list: the source (all · pictures · live) and the search, a plain substring of the
--- file name, any case. Kept in the index's order (by hue, then name), so a filter never reshuffles.
-function M.filter(items, source, query)
+-- ── The colour filter (D147) ──
+-- 24 hue chips of 15° each (chip 0 is red, centred on 0°), and chip 24 the greys; -1 is any colour.
+-- `light` narrows by lightness: 0 any · 1 light (over 0.55) · 2 dark (under 0.4).
+M.CHIPS = 24
+M.GREY_CHIP = 24
+function M.chip_of(hue)
+    if hue == nil then return M.GREY_CHIP end
+    return math.floor(((hue + 7.5) % 360) / 15)
+end
+-- A chip's colour, for the scene to paint it: the hue at full colour, a little softened; grey's grey.
+function M.chip_rgb(c)
+    if c == M.GREY_CHIP then return 0.55, 0.57, 0.58 end
+    local h = (c * 15) % 360 / 60
+    local x = 1 - math.abs(h % 2 - 1)
+    local r, g, b
+    if h < 1 then r, g, b = 1, x, 0 elseif h < 2 then r, g, b = x, 1, 0 elseif h < 3 then r, g, b = 0, 1, x
+    elseif h < 4 then r, g, b = 0, x, 1 elseif h < 5 then r, g, b = x, 0, 1 else r, g, b = 1, 0, x end
+    local s, v = 0.72, 0.92
+    return v * (1 - s + s * r), v * (1 - s + s * g), v * (1 - s + s * b)
+end
+function M.colour_ok(it, chip, light)
+    chip = math.floor(tonumber(chip) or -1)
+    if chip >= 0 and M.chip_of(it.hue) ~= chip then return false end
+    light = math.floor(tonumber(light) or 0)
+    local l = it.luma or 0.5
+    if light == 1 and l <= 0.55 then return false end
+    if light == 2 and l >= 0.4 then return false end
+    return true
+end
+
+-- The picker's list: the source (all · pictures · live), the search (a plain substring of the file
+-- name, any case) and the colour filter. Kept in the index's order (by hue, then name), so a filter
+-- never reshuffles.
+function M.filter(items, source, query, chip, light)
     local out = {}
     local q = string.lower(tostring(query or ""))
     for _, it in ipairs(items or {}) do
         local live = M.is_live(it.kind)
         local keep = source == "live" and live or source == "pictures" and not live or (source ~= "live" and source ~= "pictures")
         if keep and q ~= "" then keep = string.find(string.lower(it.name), q, 1, true) ~= nil end
+        if keep then keep = M.colour_ok(it, chip, light) end
         if keep then out[#out + 1] = it end
     end
     return out

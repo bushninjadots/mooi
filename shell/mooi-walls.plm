@@ -265,6 +265,12 @@ scene Walls {
     fact or_near = false         // the pointer is over the wheel
     fact pal_n = 0
     fact has_query = false
+    fact veil = 0.93              // how dark the desktop goes under the picker (walls.veil)
+    fact chip = -1               // the colour row's chip (-1 any colour, 24 the greys)
+    fact light = 0               // 0 any · 1 light · 2 dark
+    fact wh_sort = 0             // Wallhaven: 0 top list · 1 hot · 2 latest · 3 random
+    fact wh_range = 3            // the top list's range: 1d 3d 1w 1M 3M 6M 1y
+    model chips max 25 { cr: number; cg: number; cb: number }
     text wl_query = ""
     text wl_line = ""            // what the list is: N OF M · its colour · a pass still reading
     text wl_name = ""            // the picture in the middle / nearest the pointer
@@ -291,6 +297,10 @@ scene Walls {
     event wl_cell ->             // the pointer over the orbit's cell (row × 20 + column)
     event wl_spin ->             // the wheel turned the orbit
     event wl_prev ->             // the preview on or off
+    event wl_chip ->             // the colour row's chip (again: any colour)
+    event wl_light ->            // any · light · dark
+    event wl_whsort ->           // Wallhaven's list
+    event wl_whrange ->          // the top list's next range
 
     spring wl.ent = 260, 30
     spring wl.slide = 210, 26
@@ -326,7 +336,7 @@ scene Walls {
         let cx = sw / 2
 
         // the veil: the desktop dimmed under the picker, lifted while the preview is up
-        box { from: 0, 0; size: sw, sh; color: fl.ground; opacity: 0.78 * ent * (1 - pvo) }
+        box { from: 0, 0; size: sw, sh; color: fl.ground; opacity: veil * ent * (1 - pvo) }
         zone box away { from: 0, 0; size: sw, sh; role: region; label: "Close the picker" }
         on press away { emit wl_close }
         image pv { at: 0, 0; size: sw, sh; opacity: pvo * ent; show: pvo > 0.01 }
@@ -337,40 +347,86 @@ scene Walls {
 
             // ── The top row: the view, the source, the search, the transition ──
             let ty = 46
-            let tx = cx - 560
+            let tx = cx - 640
             text "WALLPAPERS" { at: tx, ty + 13; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: fl.phos }
-            zone box tv0 { from: tx + 150, ty; size: 78, 26; cursor: pointer; role: tab; selected: view == 0; label: "The strip" }
-            zone box tv1 { from: tx + 232, ty; size: 78, 26; cursor: pointer; role: tab; selected: view == 1; label: "The colour orbit" }
-            Tab(tx + 150, ty, 78, "STRIP", view == 0, tv0.hover)
-            Tab(tx + 232, ty, 78, "ORBIT", view == 1, tv1.hover)
+            zone box tv0 { from: tx + 150, ty; size: 76, 26; cursor: pointer; role: tab; selected: view == 0; label: "The strip" }
+            zone box tv1 { from: tx + 230, ty; size: 76, 26; cursor: pointer; role: tab; selected: view == 1; label: "The colour orbit" }
+            zone box tv2 { from: tx + 310, ty; size: 84, 26; cursor: pointer; role: tab; selected: view == 2; label: "The circuit board" }
+            Tab(tx + 150, ty, 76, "STRIP", view == 0, tv0.hover)
+            Tab(tx + 230, ty, 76, "ORBIT", view == 1, tv1.hover)
+            Tab(tx + 310, ty, 84, "CIRCUIT", view == 2, tv2.hover)
             on press tv0 { emit wl_view(0) }
             on press tv1 { emit wl_view(1) }
-            line { from: tx + 326, ty + 5; to: tx + 326, ty + 21; width: 1; color: fl.trace_dim }
-            zone box ts0 { from: tx + 342, ty; size: 56, 26; cursor: pointer; role: tab; selected: src == 0; label: "Every wallpaper" }
-            zone box ts1 { from: tx + 402, ty; size: 90, 26; cursor: pointer; role: tab; selected: src == 1; label: "Pictures only" }
-            zone box ts2 { from: tx + 496, ty; size: 60, 26; cursor: pointer; role: tab; selected: src == 2; label: "Live wallpapers only" }
-            Tab(tx + 342, ty, 56, "ALL", src == 0, ts0.hover)
-            Tab(tx + 402, ty, 90, "PICTURES", src == 1, ts1.hover)
-            Tab(tx + 496, ty, 60, "LIVE", src == 2, ts2.hover)
+            on press tv2 { emit wl_view(2) }
+            line { from: tx + 406, ty + 5; to: tx + 406, ty + 21; width: 1; color: fl.trace_dim }
+            zone box ts0 { from: tx + 418, ty; size: 52, 26; cursor: pointer; role: tab; selected: src == 0; label: "Every wallpaper" }
+            zone box ts1 { from: tx + 474, ty; size: 86, 26; cursor: pointer; role: tab; selected: src == 1; label: "Pictures only" }
+            zone box ts2 { from: tx + 564, ty; size: 56, 26; cursor: pointer; role: tab; selected: src == 2; label: "Live wallpapers only" }
+            zone box ts3 { from: tx + 624, ty; size: 104, 26; cursor: pointer; role: tab; selected: src == 3; label: "Wallhaven" }
+            Tab(tx + 418, ty, 52, "ALL", src == 0, ts0.hover)
+            Tab(tx + 474, ty, 86, "PICTURES", src == 1, ts1.hover)
+            Tab(tx + 564, ty, 56, "LIVE", src == 2, ts2.hover)
+            Tab(tx + 624, ty, 104, "WALLHAVEN", src == 3, ts3.hover)
             on press ts0 { emit wl_src(0) }
             on press ts1 { emit wl_src(1) }
             on press ts2 { emit wl_src(2) }
-            line { from: tx + 572, ty + 5; to: tx + 572, ty + 21; width: 1; color: fl.trace_dim }
-            // the search: `/` or a press, Esc or Enter leaves it
-            zone box tq { from: tx + 588, ty; size: 250, 26; cursor: text; role: button; label: "Search the file names" }
-            box { from: tx + 588, ty; size: 250, 26; corner: 3; color: fl.well; opacity: if(typing, 0.9, 0.4) }
-            box { from: tx + 588, ty; size: 250, 26; corner: 3; stroke: 1; color: if(typing, fl.phos, mix(fl.trace_dim, fl.trace_lit, tq.hover)) }
-            text "/  SEARCH" { at: tx + 600, ty + 13; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not typing and not has_query }
-            input wl_query { at: tx + 600, ty + 6; width: 226; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+            on press ts3 { emit wl_src(3) }
+            line { from: tx + 740, ty + 5; to: tx + 740, ty + 21; width: 1; color: fl.trace_dim }
+            // the search: `/` or a press, Esc or Enter leaves it (with Wallhaven, Enter searches it)
+            zone box tq { from: tx + 752, ty; size: 240, 26; cursor: text; role: button; label: "Search the file names" }
+            box { from: tx + 752, ty; size: 240, 26; corner: 3; color: fl.well; opacity: if(typing, 0.9, 0.4) }
+            box { from: tx + 752, ty; size: 240, 26; corner: 3; stroke: 1; color: if(typing, fl.phos, mix(fl.trace_dim, fl.trace_lit, tq.hover)) }
+            text pick(if(src == 3, 1, 0), "/  SEARCH NAMES", "/  SEARCH WALLHAVEN") { at: tx + 764, ty + 13; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not typing and not has_query }
+            input wl_query { at: tx + 764, ty + 6; width: 216; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
             on press tq { typing = true; focus wl_query }
-            line { from: tx + 854, ty + 5; to: tx + 854, ty + 21; width: 1; color: fl.trace_dim }
-            zone box ttr { from: tx + 870, ty; size: 130, 26; cursor: pointer; role: button; label: "The transition: press for the next" }
-            Tab(tx + 870, ty, 130, pick(trk, "↻ RANDOM", "↻ GROW", "↻ WIPE", "↻ SLIDE", "↻ FADE"), false, ttr.hover)
+            line { from: tx + 1004, ty + 5; to: tx + 1004, ty + 21; width: 1; color: fl.trace_dim }
+            zone box ttr { from: tx + 1016, ty; size: 124, 26; cursor: pointer; role: button; label: "The transition: press for the next" }
+            Tab(tx + 1016, ty, 124, pick(trk, "↻ RANDOM", "↻ GROW", "↻ WIPE", "↻ SLIDE", "↻ FADE"), false, ttr.hover)
             on press ttr { emit wl_tr }
-            zone box tx0 { from: tx + 1084, ty; size: 36, 26; cursor: pointer; role: button; label: "Close the picker" }
-            Tab(tx + 1084, ty, 36, "×", false, tx0.hover)
+            zone box tx0 { from: tx + 1244, ty; size: 36, 26; cursor: pointer; role: button; label: "Close the picker" }
+            Tab(tx + 1244, ty, 36, "×", false, tx0.hover)
             on press tx0 { emit wl_close }
-            text wl_line { at: tx, ty + 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 900; lines: 1 }
+
+            // ── The colour row (D147): 24 hues and the greys, light · any · dark ──
+            let cy0 = ty + 40
+            for k in chips {
+                let kx = tx + k.index * 22
+                zone box kc { from: kx, cy0; size: 20, 20; cursor: pointer; role: toggle; checked: chip == k.index; label: "Only this colour" }
+                box { from: kx + 2, cy0 + 2; size: 16, 16; corner: 2; color: rgb(k.cr, k.cg, k.cb); opacity: if(chip < 0 or chip == k.index, 0.95, 0.35 + 0.4 * kc.hover) }
+                box { from: kx, cy0; size: 20, 20; corner: 3; stroke: if(chip == k.index, 1.6, 1); color: if(chip == k.index, fl.phos, mix(fl.trace_dim, fl.trace_lit, kc.hover)); opacity: if(chip == k.index, 1, 0.5 + 0.5 * kc.hover) }
+                on press kc { emit wl_chip(k.index) }
+            }
+            text "GREY" { at: tx + 24 * 22 + 11, cy0 + 30; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+            zone box tl0 { from: tx + 568, cy0 - 3; size: 60, 26; cursor: pointer; role: tab; selected: light == 1; label: "Light pictures" }
+            zone box tl1 { from: tx + 632, cy0 - 3; size: 52, 26; cursor: pointer; role: tab; selected: light == 0; label: "Any lightness" }
+            zone box tl2 { from: tx + 688, cy0 - 3; size: 56, 26; cursor: pointer; role: tab; selected: light == 2; label: "Dark pictures" }
+            Tab(tx + 568, cy0 - 3, 60, "LIGHT", light == 1, tl0.hover)
+            Tab(tx + 632, cy0 - 3, 52, "ANY", light == 0, tl1.hover)
+            Tab(tx + 688, cy0 - 3, 56, "DARK", light == 2, tl2.hover)
+            on press tl0 { emit wl_light(1) }
+            on press tl1 { emit wl_light(0) }
+            on press tl2 { emit wl_light(2) }
+            // Wallhaven's lists, beside the colours while it is the source
+            group {
+                show: src == 3
+                zone box th0 { from: tx + 768, cy0 - 3; size: 84, 26; cursor: pointer; role: tab; selected: wh_sort == 0; label: "Wallhaven's top list" }
+                zone box th1 { from: tx + 856, cy0 - 3; size: 52, 26; cursor: pointer; role: tab; selected: wh_sort == 1; label: "Hot on Wallhaven" }
+                zone box th2 { from: tx + 912, cy0 - 3; size: 72, 26; cursor: pointer; role: tab; selected: wh_sort == 2; label: "The latest on Wallhaven" }
+                zone box th3 { from: tx + 988, cy0 - 3; size: 76, 26; cursor: pointer; role: tab; selected: wh_sort == 3; label: "Random from Wallhaven" }
+                zone box thr { from: tx + 1076, cy0 - 3; size: 64, 26; cursor: pointer; role: button; show: wh_sort == 0; label: "The top list's range: press for the next" }
+                Tab(tx + 768, cy0 - 3, 84, "TOPLIST", wh_sort == 0, th0.hover)
+                Tab(tx + 856, cy0 - 3, 52, "HOT", wh_sort == 1, th1.hover)
+                Tab(tx + 912, cy0 - 3, 72, "LATEST", wh_sort == 2, th2.hover)
+                Tab(tx + 988, cy0 - 3, 76, "RANDOM", wh_sort == 3, th3.hover)
+                group { show: wh_sort == 0
+                        Tab(tx + 1076, cy0 - 3, 64, pick(wh_range, "1D", "3D", "1W", "1M", "3M", "6M", "1Y"), false, thr.hover) }
+                on press th0 { emit wl_whsort(0) }
+                on press th1 { emit wl_whsort(1) }
+                on press th2 { emit wl_whsort(2) }
+                on press th3 { emit wl_whsort(3) }
+                on press thr { emit wl_whrange }
+            }
+            text wl_line { at: tx, ty + 84; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 1100; lines: 1 }
 
             // ── The strip ──
             group {
@@ -414,6 +470,14 @@ scene Walls {
                 // the one in the middle: its name, what it is, and how to wear it
                 text wl_name { at: cx, y0 + 186; anchor: center; align: center; size: 13; weight: 700; family: "Exo 2"; color: fl.phos; width: 900; lines: 1 }
                 text wl_kind { at: cx, y0 + 210; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 900; lines: 1 }
+                // what it would give the shell (Matugen's dry run, as the orbit's middle)
+                group {
+                    show: pal_n > 0
+                    for p in pal {
+                        box { from: cx - 81 + p.index * 28, y0 + 230; size: 22, 12; corner: 2; color: rgb(p.cr, p.cg, p.cb) }
+                        box { from: cx - 81 + p.index * 28, y0 + 230; size: 22, 12; corner: 2; stroke: 1; color: fl.trace_dim }
+                    }
+                }
                 text "← →  OR THE WHEEL  ·  ENTER WEARS IT  ·  SPACE PREVIEWS  ·  TAB THE ORBIT" { at: cx, sh - 40; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.trace }
                 text "NOTHING HERE YET · THE FOLDERS ARE BEING READ" { at: cx, y0; anchor: center; size: 12; family: "Share Tech Mono"; color: fl.muted; show: count == 0 }
             }

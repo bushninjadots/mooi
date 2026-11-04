@@ -3833,6 +3833,17 @@ do
         eq(math.floor(W.hue_at(1, 0, 90) + 0.5) % 360, 0, "spin turns it back")
         eq(W.band_name(0), "REDS"); eq(W.band_name(355), "REDS"); eq(W.band_name(215), "AZURES"); eq(W.band_name(nil), "GREYS")
     end)
+    test("the colour filter: 24 hue chips, greys, light and dark", function()
+        eq(W.chip_of(0), 0); eq(W.chip_of(359), 0, "red wraps"); eq(W.chip_of(8), 1); eq(W.chip_of(215), 14); eq(W.chip_of(nil), W.GREY_CHIP)
+        local r, g, b = W.chip_rgb(0); eq(r > g and r > b, true, "chip 0 is red")
+        r, g, b = W.chip_rgb(16); eq(b > r and b > g, true, "chip 16 is blue")
+        local items = { { name = "a", kind = "still", hue = 2, luma = 0.8 }, { name = "b", kind = "still", hue = 120, luma = 0.2 },
+                        { name = "c", kind = "video", hue = nil, luma = 0.5 } }
+        eq(#W.filter(items, "all", "", 0), 1); eq(#W.filter(items, "all", "", W.GREY_CHIP), 1)
+        eq(#W.filter(items, "all", "", -1, 1), 1, "light"); eq(#W.filter(items, "all", "", -1, 2), 1, "dark")
+        eq(#W.filter(items, "all", "", 8, 2), 1, "green and dark"); eq(#W.filter(items, "live", "", W.GREY_CHIP), 1)
+        eq(#W.filter(items, "all"), 3, "no filter")
+    end)
     test("the desk's state: a video is drawn as its still, junk is nil", function()
         local s = W.state({ source = "/l/a.mp4", still = "/s/a.jpg", transition = "grow", from_y = 300 })
         eq(s.kind, "video"); eq(s.still, "/s/a.jpg"); eq(s.from_y, 300); eq(s.from_x, nil)
