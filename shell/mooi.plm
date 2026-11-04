@@ -1192,12 +1192,12 @@ scene Mooi {
     }
 
     layer life.window {
-        shown while open == window { rv.window: 1 ~m.isl after 60ms }
-        gone                       { rv.window: 0 ~m.isl_out after 90ms }
+        shown while open == window { rv.window: 1 ~m.isl after 30ms }
+        gone                       { rv.window: 0 ~m.exit }
     }
     layer life.system {
-        shown while open == system { rv.system: 1 ~m.isl after 60ms }
-        gone                       { rv.system: 0 ~m.isl_out after 90ms }
+        shown while open == system { rv.system: 1 ~m.isl after 30ms }
+        gone                       { rv.system: 0 ~m.exit }
     }
     layer life.command {
         shown while open == command { rv.command: 1 ~m.enter }
@@ -1205,32 +1205,32 @@ scene Mooi {
     }
     // the modules' own islands (D97)
     layer life.stats {
-        shown while open == stats { rv.stats: 1 ~m.isl after 60ms }
-        gone                      { rv.stats: 0 ~m.isl_out after 90ms }
+        shown while open == stats { rv.stats: 1 ~m.isl after 30ms }
+        gone                      { rv.stats: 0 ~m.exit }
     }
     layer life.calendar {
-        shown while open == calendar { rv.calendar: 1 ~m.isl after 60ms }
-        gone                         { rv.calendar: 0 ~m.isl_out after 90ms }
+        shown while open == calendar { rv.calendar: 1 ~m.isl after 30ms }
+        gone                         { rv.calendar: 0 ~m.exit }
     }
     layer life.music {
-        shown while open == music { rv.music: 1 ~m.isl after 60ms }
-        gone                      { rv.music: 0 ~m.isl_out after 90ms }
+        shown while open == music { rv.music: 1 ~m.isl after 30ms }
+        gone                      { rv.music: 0 ~m.exit }
     }
     layer life.weather {
-        shown while open == weather { rv.weather: 1 ~m.isl after 60ms }
-        gone                        { rv.weather: 0 ~m.isl_out after 90ms }
+        shown while open == weather { rv.weather: 1 ~m.isl after 30ms }
+        gone                        { rv.weather: 0 ~m.exit }
     }
     layer life.sound {
-        shown while open == sound { rv.sound: 1 ~m.isl after 60ms }
-        gone                      { rv.sound: 0 ~m.isl_out after 90ms }
+        shown while open == sound { rv.sound: 1 ~m.isl after 30ms }
+        gone                      { rv.sound: 0 ~m.exit }
     }
     layer life.display {
-        shown while open == display { rv.display: 1 ~m.isl after 60ms }
-        gone                        { rv.display: 0 ~m.isl_out after 90ms }
+        shown while open == display { rv.display: 1 ~m.isl after 30ms }
+        gone                        { rv.display: 0 ~m.exit }
     }
     layer life.power {
-        shown while open == power { rv.power: 1 ~m.isl after 60ms }
-        gone                      { rv.power: 0 ~m.isl_out after 90ms }
+        shown while open == power { rv.power: 1 ~m.isl after 30ms }
+        gone                      { rv.power: 0 ~m.exit }
     }
     // The shutter's motion: the anchor answers first, the plates follow down the track in a short
     // stagger, a panel slides out of its plate, the third level out of its row; going, the panel
@@ -1735,7 +1735,7 @@ scene Mooi {
         // with the bar's thickness and its distance from the edge while it runs — pleamar's
         // own reserve is one number, read once.
         reserve: -1
-        level: top, overlay while ch_on and (rv.window + rv.system + rv.stats + rv.calendar + rv.music + rv.weather + rv.sound + rv.display + rv.power > 0.002 or nxo > 0.002)
+        level: overlay, top while fullscreen
         keyboard: exclusive while (open != none or mark_open or side != none or bar_edit or qn_open or stash_naming) and not (open == command and cmode == actions)
     }
 
@@ -3062,7 +3062,7 @@ scene Mooi {
     surface popup_surface {
         size: full, full
         anchor: top
-        level: top, overlay while ch_on and (rv.window + rv.system + rv.stats + rv.calendar + rv.music + rv.weather + rv.sound + rv.display + rv.power > 0.002 or nxo > 0.002)
+        level: overlay, top while fullscreen
         reserve: -1
 
 

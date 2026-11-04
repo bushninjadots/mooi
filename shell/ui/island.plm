@@ -84,7 +84,9 @@ library Island {
         group {
             // the frame's island: its content rides the body's foot and fades in over the first third
             // (another island taking over: the frame draws that one now, so this one goes at once)
-            opacity: if(ch, smooth(0.08, 0.38, cl) * if(busy and not want, 0, 1), smooth(0.45, 1, rv))
+            // closing (or another island taking over): the content goes at once, the body shrinks away
+            // empty — it never stands outside its body (D154)
+            opacity: if(ch, smooth(0.08, 0.38, cl) * if(want, 1, 0), smooth(0.45, 1, rv))
             move: if(ch, cbx + (cbw - w) / 2, if(centre, 0, -10 * (1 - rv))), if(ch, cby + cbh - h, if(centre, -6 * (1 - rv), 0) + drop)
             clip box { from: if(ch, (w - cbw) / 2, left), if(ch, h - cbh, top - drop); size: if(ch, max(1, cbw), iw), if(ch, max(1, cbh), ih)
                        corner: if(ch, cbr, if(tether, irad, 0)) }

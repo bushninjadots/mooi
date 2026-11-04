@@ -447,8 +447,9 @@ theme_watch() {
             # a killed watcher would otherwise hold it for up to 5 s and turn the next one away.
             # The visualizer feed (shell/lib/vizfeed.luau) is rewritten 30 times a second while
             # music plays, in this same folder: left in, it woke this loop 30×/s and its checks
-            # cost ~60% of a core (measured 2026-11-02). Nothing here reads it.
-            inotifywait -q -t 5 --exclude 'viz-levels\.txt' -e moved_to -e create -e close_write -e attrib -e delete_self "$dir" "$folder" >/dev/null 2>&1 8>&- || :
+            # cost ~60% of a core (measured 2026-11-02). Nothing here reads it. Nor the v2 feed (D138): it
+            # was not excluded, and woke the watch 30 times a second with music (2.5 % of a core, D154).
+            inotifywait -q -t 5 --exclude 'viz-levels(-v2)?\.txt' -e moved_to -e create -e close_write -e attrib -e delete_self "$dir" "$folder" >/dev/null 2>&1 8>&- || :
         else
             sleep 2
         fi

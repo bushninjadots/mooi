@@ -2448,11 +2448,14 @@ scene Frame {
     surface frame_p {
         size: full, full
         anchor: top
-        level: bottom, top while pl_act or dk_act
+        level: top
         reserve: -1
         rate: 60
+        box { from: 0, 0; size: 1, 1; color: #000000; opacity: 0.01 }
         group {
             show: pl_act or dk_act
+            body { color: fcol; opacity: clamp(1 - 0.06 / max(0.06, 1 - fop), 0, 1); show: pl_act; box { from: pl_bx + 1, pl_by + 1; size: max(1, pl_bw - 2), max(1, pl_bh - 2); corner: pl_br } }
+            body { color: fcol; opacity: clamp(1 - 0.06 / max(0.06, 1 - fop), 0, 1); show: dk_act; box { from: dk_bx + 1, dk_by + 1; size: max(1, dk_bw - 2), max(1, dk_bh - 2); corner: dk_br } }
             group {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos
                 group {

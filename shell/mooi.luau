@@ -1795,19 +1795,38 @@ local function pl_send(cmds)
     end
     next_one()
 end
+-- What the frame should show is decided from `open` as it is now, never from the order things arrive
+-- in (D154: an "it closed" and a new island's geometry come in the same instant, and once crossed, the
+-- frame kept a body with nothing in it). Geometry comes with each opening; `pl_sync` sends the frame
+-- either that island (once per opening) or nothing.
+local CHASSIS = { window = true, system = true, stats = true, calendar = true, music = true, weather = true,
+                  sound = true, display = true, power = true }
+local pl_seq, pl_sent_seq, pl_sent_on = 0, -1, false
+local function pl_sync()
+    local o = tostring(fact.open or "none")
+    if CHASSIS[o] and fact.ch_on and pl_geo.x and pl_geo.w and pl_geo.t then
+        if pl_sent_seq ~= pl_seq or not pl_sent_on then
+            pl_sent_seq, pl_sent_on = pl_seq, true
+            pl_count = pl_count + 1
+            pl_send({ "fact pl_x " .. pl_geo.x, "fact pl_y " .. pl_geo.y, "fact pl_w " .. pl_geo.w, "fact pl_h " .. pl_geo.h,
+                      "fact pl_tx " .. pl_geo.t, "fact pl_n " .. pl_count, "fact pl_on true" })
+        end
+    elseif pl_sent_on then
+        pl_sent_on = false
+        pl_send({ "fact pl_on false" })
+    end
+end
 on("pl_xy", function(v) v = math.floor(tonumber(v) or 0); pl_geo.x, pl_geo.y = v // 4096, v % 4096 end)
 on("pl_wh", function(v) v = math.floor(tonumber(v) or 0); pl_geo.w, pl_geo.h = v // 4096, v % 4096 end)
 on("pl_t", function(v)
-    if not (pl_geo.x and pl_geo.w) then return end
-    pl_count = pl_count + 1
-    pl_send({ "fact pl_x " .. pl_geo.x, "fact pl_y " .. pl_geo.y, "fact pl_w " .. pl_geo.w, "fact pl_h " .. pl_geo.h,
-              "fact pl_tx " .. math.floor(tonumber(v) or 0), "fact pl_n " .. pl_count, "fact pl_on true" })
+    pl_geo.t = math.floor(tonumber(v) or 0)
+    pl_seq = pl_seq + 1                 -- a new opening's geometry
+    pl_sync()
 end)
--- `open` changed: unless another island has just been handed over (its geometry comes in the same
--- instant now, D153), the frame lets the last one go; 40 ms later, so the order cannot cross
-on("fact:open", function()
-    local before = pl_count
-    after(40, function() if pl_count == before then pl_send({ "fact pl_on false" }) end end)
+-- `open` changed: decided a moment later, once an island that opened has said where it is
+-- (closing needs no wait, and the sooner the frame hears, the less its body trails the content)
+on("fact:open", function(v)
+    if CHASSIS[tostring(v or fact.open or "none")] then after(20, pl_sync) else pl_sync() end
 end)
 
 on("open_settings", function()

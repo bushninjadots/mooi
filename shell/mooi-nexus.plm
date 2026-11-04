@@ -640,10 +640,12 @@ scene Nexus {
     // online one after another behind the scan.
     on change dk_open while dk_open {
         scan: 0 ~0ms; rp.0: 0 ~0ms; rp.1: 0 ~0ms; rp.2: 0 ~0ms; rp.3: 0 ~0ms; rp.4: 0 ~0ms; rp.5: 0 ~0ms; rp.6: 0 ~0ms; rp.7: 0 ~0ms; rp.8: 0 ~0ms; rp.9: 0 ~0ms; rp.10: 0 ~0ms
-        scan: 1 after 200ms
-        rp.0: 1 after 240ms; rp.1: 1 after 295ms; rp.2: 1 after 350ms; rp.3: 1 after 405ms
-        rp.4: 1 after 460ms; rp.5: 1 after 515ms; rp.6: 1 after 570ms; rp.7: 1 after 625ms
-        rp.8: 1 after 680ms; rp.9: 1 after 735ms; rp.10: 1 after 790ms
+        // (D154: from 100 ms, 25 ms apart — it was 240 to 790 ms, and the deck stood empty most of a
+        // second after its body had grown)
+        scan: 1 after 80ms
+        rp.0: 1 after 100ms; rp.1: 1 after 125ms; rp.2: 1 after 150ms; rp.3: 1 after 175ms
+        rp.4: 1 after 200ms; rp.5: 1 after 225ms; rp.6: 1 after 250ms; rp.7: 1 after 275ms
+        rp.8: 1 after 300ms; rp.9: 1 after 325ms; rp.10: 1 after 350ms
     }
     // the landing glides between the places it is offered, so it reads as one outline and not a flicker
     prop lg_x = 0 ~m.select
@@ -817,7 +819,7 @@ scene Nexus {
         // the whole screen: where nothing is drawn a press goes through to what is under it
         size: full, full
         anchor: top_left
-        level: top, overlay while ch_on and nm_rv > 0.002
+        level: overlay
         keyboard: on_demand
         // the program stays running while the Nexus is away (D118): the surface is there only while
         // it is open or still sliding out, so nothing of it takes a press or a key when it is gone
@@ -879,8 +881,9 @@ scene Nexus {
                 text "CONTROL NEXUS" { at: 14, 12; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc }
                 text clock.date { at: 118, 12; anchor: left center; size: 10; family: "Share Tech Mono"; color: dk.mute; show: dk_w >= 560 }
                 // the traces from each card's lamp up to the bus, a via where they meet; and between neighbours
+                // lit as the cards they join come online (D154): not lines standing in an empty deck
                 for nd in nodes {
-                    line { from: nd.x, nd.y - 6; to: nd.bx, nd.by + 7; width: 1.4; color: dk.acc; opacity: 0.6 }
+                    line { from: nd.x, nd.y - 6; to: nd.bx, nd.by + 7; width: 1.4; color: dk.acc; opacity: 0.6 * clamp(rp.2 * 1.5 - 0.5, 0, 1) }
                     group {
                         glow: 5, 0.6 * st_glow, dk.acc
                         ellipse { at: nd.bx, nd.by + 7; radius: 2.6; color: dk.acc }
@@ -889,8 +892,8 @@ scene Nexus {
                 }
                 // between neighbours: out of one card, down the gap, into the next, a via at each turn
                 for tr in traces {
-                    line { from: tr.x1, tr.y1; to: tr.x2, tr.y2; width: 1.4; color: dk.acc; opacity: 0.6 }
-                    ellipse { at: tr.x2, tr.y2; radius: 1.8; color: dk.acc; opacity: 0.8 }
+                    line { from: tr.x1, tr.y1; to: tr.x2, tr.y2; width: 1.4; color: dk.acc; opacity: 0.6 * clamp(rp.4 * 1.5 - 0.5, 0, 1) }
+                    ellipse { at: tr.x2, tr.y2; radius: 1.8; color: dk.acc; opacity: 0.8 * clamp(rp.4 * 1.5 - 0.5, 0, 1) }
                 }
                 group {
                     move: dk_w - 168, 0

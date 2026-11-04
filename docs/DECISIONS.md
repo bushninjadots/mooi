@@ -4608,3 +4608,31 @@ only with the frame but for every bar; the setting right.
   if another island was handed over meanwhile (the two arrive in one instant now); an island another
   takes over from goes at once (`busy`). The Nexus tells the frame first and starts its own clock 55 ms
   later (`nm_on`). The frame rests at 0 when nothing moves.
+
+## D154 · 2026-11-04 · The morph's bugs, found frame by frame; the Nexus's opening; performance
+**Asked for:** animations still buggy; the Nexus's opening; the frame's borders; performance, measured.
+Recorded at 60 fps (wf-recorder) and read a frame at a time — screenshots had hidden all of this:
+- **A body with nothing in it**: the bar's "it closed" and a new island's geometry arrive in the same
+  instant, and once crossed the frame kept a body the bar had closed. `pl_sync` now decides from `open`
+  as it is (an island and its geometry, once per opening, or nothing), not from the order of messages;
+  a closing is sent at once. Stress-checked: toggles, a switch, double and fast presses — all consistent.
+- **A stall at the start**: `frame_p` moved from the bottom layer to the top as an island opened, and
+  the compositor held it three frames, then it jumped. It is on the top layer for good (it draws nothing
+  idle); the bar, its islands and the Nexus are on the overlay layer for good (the bar back on top while
+  a window is fullscreen), so nothing changes layer during an animation.
+- **A stale body after a close**: with nothing drawn, `frame_p` kept its last frame. A 1 px, 1 % box
+  keeps it painting.
+- **Content outside its body**: the content now starts 30 ms after the island is asked for (it was 60,
+  from before the stall was gone), leaves with the quicker `m.exit` and is hidden the moment the island
+  is asked to close; the body shrinks away empty. Recorded: open and close, nothing floats.
+- **See-through bodies**: the frame's material is the band's (31 % here): windows showed through an
+  island or the deck. Each place has a solid underlay of the same colour under the band's body
+  (`1 − 0.06 / (1 − fop)`, ~94 % together); the band keeps its own.
+- **The Nexus**: its cards came online from 240 to 790 ms (not paced), so the deck stood empty most of a
+  second; now 100–350 ms, 25 ms apart; the traces between cards light with the cards, not before them.
+- **Performance** (per program, CPU of a core / GPU, measured over 6 s): at rest 5.3 % / 1.2 % for all of
+  mooi. With music: the theme watch woke 30 times a second on the v2 visualiser feed (2.5 % → 0.3 %, now
+  excluded); the widgets wrote ~120 visualiser facts a tick whether they had changed or not (only when
+  they move now: 22.7 % → 19.5 %); mooi in all 36 % → 31 %. The widgets' remaining cost is their scene
+  (39k instructions, every frame, for one 127-bar visualiser): the next step is the visualiser as a small
+  program of its own. Borders: looked at closely, left as they are (the swell style's edge is by design).

@@ -1379,9 +1379,10 @@ local SLOTS = { "vzA", "vzB", "vzC" }
 local lanes = { {}, {}, {} }            -- { lev = {}, pk = {}, hold = {} }
 local frame_n = 0
 local scope_hist = { {}, {}, {} }
+local fc = {}                           -- the visualiser's facts as last written (setf, below)
 local function hush()
-    for i = 0, 15 do fact["vb" .. i] = 0.03 end
-    for i = 0, 31 do fact["vs" .. i] = 0.03 end
+    for i = 0, 15 do fact["vb" .. i] = 0.03; fc["vb" .. i] = 0.03 end
+    for i = 0, 31 do fact["vs" .. i] = 0.03; fc["vs" .. i] = 0.03 end
     fact.np_beat = 0
     for k = 1, 4 do rings[k] = { 0, 0 }; fact["rp_a" .. (k - 1)] = 0 end
     for k = 1, 3 do lanes[k] = {}; model[SLOTS[k]] = {} end
@@ -1418,6 +1419,12 @@ local function feed_lane(k, w, bands)
     end
     model[SLOTS[k]] = rows
 end
+-- A fact written only when it has moved enough to see (D154): the bands were written 30 times a second
+-- whether or not they had changed, ~120 facts a tick, and every write wakes what reads it in the scene.
+local function setf(name, v)
+    local o = fc[name]
+    if o == nil or math.abs(o - v) > 0.006 then fc[name] = v; fact[name] = v end
+end
 local function take_viz()
     local t, wide
     local ok2, raw2 = pcall(sys.ask, "files.read", vizfeed.FILE_V2)
@@ -1435,9 +1442,9 @@ local function take_viz()
     viz_seq, viz_at = t.seq, os.time()
     if not t.playing then hush(); return end
     local b = vizfeed.resample(t.bands, 16)
-    for i = 0, 15 do fact["vb" .. i] = b[i + 1] end
+    for i = 0, 15 do setf("vb" .. i, b[i + 1]) end
     local s32 = vizfeed.resample(t.bands, 32)
-    for i = 0, 31 do fact["vs" .. i] = s32[i + 1] end
+    for i = 0, 31 do setf("vs" .. i, s32[i + 1]) end
     frame_n = frame_n + 1
     local slots = viz_slots()
     local scope = false
@@ -1451,7 +1458,7 @@ local function take_viz()
         scope_hist[1] = vizfeed.resample(t.bands, 24)
         for h = 1, 3 do
             local f = scope_hist[h]
-            for i = 0, 23 do fact["so" .. (h - 1) .. "_" .. i] = f[i + 1] or 0.03 end
+            for i = 0, 23 do setf("so" .. (h - 1) .. "_" .. i, f[i + 1] or 0.03) end
         end
     end
     local beat = (tonumber(t.beat) or 0) > 0.9 and last_beat <= 0.9

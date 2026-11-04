@@ -307,10 +307,19 @@ def place_surface(ind):
     tiles that it crosses, the place melted into them."""
     i2, i3, i4 = ind + "    ", ind + "        ", ind + "            "
     act = " or ".join(f"{p}_act" for p in PLACES)
-    return ([f"{ind}surface frame_p {{", f"{i2}size: full, full", f"{i2}anchor: top", f"{i2}level: bottom, top while {act}",
+    return ([f"{ind}surface frame_p {{", f"{i2}size: full, full", f"{i2}anchor: top", f"{i2}level: top",
              # the monitor's own rate: without one it kept frame_t's 30, and the morph ran at half the
              # bar's (D153)
-             f"{i2}reserve: -1", f"{i2}rate: 60", f"{i2}group {{", f"{i3}show: {act}", f"{i3}group {{",
+             f"{i2}reserve: -1", f"{i2}rate: 60",
+             # always something to paint: with nothing drawn the surface kept its last frame, and a closed
+             # island's body stayed on the screen (D154)
+             f"{i2}box {{ from: 0, 0; size: 1, 1; color: #000000; opacity: 0.01 }}",
+             f"{i2}group {{", f"{i3}show: {act}",
+             # under each place, a solid underlay of its own colour: the band's material is see-through
+             # (frame opacity), right for a thin band and wrong for an island or a deck — windows showed
+             # through them (D154). Only the place's box: the band keeps its own opacity.
+             ] + [f"{i3}body {{ color: fcol; opacity: clamp(1 - 0.06 / max(0.06, 1 - fop), 0, 1); show: {p}_act; box {{ from: {p}_bx + 1, {p}_by + 1; size: max(1, {p}_bw - 2), max(1, {p}_bh - 2); corner: {p}_br }} }}" for p in PLACES] + [
+             f"{i3}group {{",
              f"{i4}glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos"]
             + end_tiles(i4, "top", place=True) + end_tiles(i4, "foot", place=True)
             + side_tiles(i4, "left", place=True) + side_tiles(i4, "right", place=True) + [f"{i3}}}", f"{i2}}}", f"{ind}}}"])
