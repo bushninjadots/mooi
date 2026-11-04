@@ -105,32 +105,32 @@ def bars_component(L):
 
     // Lane {L}: whichever of the twelve its widget has chosen (lib/widgets MODES order).
     component Lane{L}(x: number, y: number, w: number, h: number, u: number, mode: number, n: number, gap: number,
-                     glow: number, peaks: bool, refl: bool, t1: color, t2: color, dim: color, still: bool) {{
+                     glow: number, peaks: bool, refl: bool, t1: color, t2: color, dim: color, still: bool, lean: number = 0) {{
         size: w, h
         let gl = min(10 * u, 12)
-        group {{ glow: gl, glow, t1; show: mode < 0.5
+        group {{ glow: gl, glow, t1; shader: slant, lean while lean != 0; show: mode < 0.5
                 Bars{L}(x, y, w, h, u, n, gap, peaks, refl, 0, t1, t2, still) }}
-        group {{ glow: gl, glow, t1; show: mode > 0.5 and mode < 1.5
+        group {{ glow: gl, glow, t1; shader: slant, lean while lean != 0; show: mode > 0.5 and mode < 1.5
                 Bars{L}(x, y, w, h, u, n, gap, peaks, refl, 1, t1, t2, still) }}
         group {{ show: mode > 1.5 and mode < 2.5
                 RingWave(x, y, w, h, u, t1, t2, still)
                 Spokes{L}(x, y, w, h, u, n, peaks, t1, t2, still) }}
         group {{ show: mode > 2.5 and mode < 3.5
                 Aurora4(x, y, w, h, u, t1, t2, still) }}
-        group {{ glow: gl, glow * 0.6, t1; show: mode > 3.5 and mode < 4.5
+        group {{ glow: gl, glow * 0.6, t1; shader: slant, lean while lean != 0; show: mode > 3.5 and mode < 4.5
                 LED{L}(x, y, w, h, u, n, gap, peaks, t1, t2, dim, still) }}
-        group {{ glow: gl, glow, t1; show: mode > 4.5 and mode < 5.5
+        group {{ glow: gl, glow, t1; shader: slant, lean while lean != 0; show: mode > 4.5 and mode < 5.5
                 Orbit2(x, y, w, h, u, t1, t2, dim, still) }}
         group {{ show: mode > 5.5 and mode < 6.5
                 Scope3(x, y, w, h, u, glow, t1, t2, still) }}
-        group {{ show: mode > 6.5 and mode < 7.5
+        group {{ shader: slant, lean while lean != 0; show: mode > 6.5 and mode < 7.5
                 HorizonBack(x, y, w, h, u, t1, t2, still)
                 HorizonFront{L}(x, y, w, h, u, n, t1, t2, still) }}
         group {{ glow: gl, glow, t1; show: mode > 7.5 and mode < 8.5
                 Dust2(x, y, w, h, u, t1, t2, still) }}
         group {{ show: mode > 8.5 and mode < 9.5
                 Ripple2(x, y, w, h, u, t1, t2, still) }}
-        group {{ glow: gl, glow, t1; show: mode > 9.5 and mode < 10.5
+        group {{ glow: gl, glow, t1; shader: slant, lean while lean != 0; show: mode > 9.5 and mode < 10.5
                 Bars{L}(x, y, w, h, u, n, gap, peaks, true, 2, t1, t2, still) }}
         group {{ show: mode > 10.5
                 Liquid2(x, y, w, h, u, t1, t2, still) }}
@@ -356,8 +356,11 @@ def main():
 // The desktop widgets' visualisers (D138): twelve modes at 16-128 bars. Bar modes read the scene's
 // models vzA / vzB / vzC (a lane each), path modes its 32 bands vs0...vs31; the Scope's afterimages
 // so0_*...so2_*, the ripples' rings rp_*, the beat's push np_scatter and the drift np_turn.
-
-library VizWide {'''
+library VizWide {
+    // The lean (lib/widgets options.lean): a shear of what a lane holds, inside its own box. It goes
+    // on the modes whose drawing has no effects of its own — a shader and a glow cannot be nested.
+    shader slant = file "../shaders/lean.wgsl"
+'''
     body = shared() + "".join(bars_component(L) for L in "ABC")
     OUT.write_text(head + body + "\n}\n")
     print(f"wrote {OUT.relative_to(ROOT)}")

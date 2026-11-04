@@ -82,7 +82,7 @@ M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
     nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false, viz = false },
-    visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, peaks = true, reflection = false, adapt = true, behind = false },
+    visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, angle = 0, lean = 0, peaks = true, reflection = false, adapt = true, behind = false },
     clock = { h24 = true, seconds = true, plate = false, adapt = true, behind = false },
     notes = { rows = 6, plate = false, adapt = true, behind = false },
     github = { repo = "bushninjadots/mooi", plate = false, adapt = true, behind = false },
@@ -101,6 +101,8 @@ for i, s in ipairs(M.STYLES) do M.STYLE_INDEX[s] = i - 1 end
 -- the numbers' ranges (the rest are 0 … 1); `int` ones are whole
 M.OPTION_RANGES = {
     minutes = { 1, 180, true }, every = { 1, 120, true }, bars = { 16, 128, true }, gap = { 0, 0.6 }, smooth = { 0, 1 }, text = { 0.8, 1.4 }, glow = { 0, 1 }, rows = { 3, 20, true },
+    angle = { -180, 180 },
+    lean = { -40, 40 },
 }
 -- the text options: a GitHub repository is owner/name
 function M.option_string(key, v)

@@ -19,6 +19,7 @@ scene Widgets {
         services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery", "apps", "apps.launch", "window", "notification_history"
     }
 
+
     // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
     fact cn_kind = 0
     fact cn_scale = 1
@@ -336,6 +337,8 @@ scene Widgets {
     fact lA_ar = 0.6
     fact lA_ag = 0.8
     fact lA_ab = 0.7
+    fact lA_ang = 0        // its turn about its centre (lib/widgets options.angle, degrees)
+    fact lA_lean = 0       // its lean inside its box (lib/widgets options.lean, degrees)
     fact lB_on = false
     fact lB_dx = 0
     fact lB_dy = 0
@@ -361,6 +364,8 @@ scene Widgets {
     fact lB_ar = 0.6
     fact lB_ag = 0.8
     fact lB_ab = 0.7
+    fact lB_ang = 0
+    fact lB_lean = 0       // its lean inside its box (lib/widgets options.lean, degrees)
     fact lC_on = false
     fact lC_dx = 0
     fact lC_dy = 0
@@ -386,6 +391,8 @@ scene Widgets {
     fact lC_ar = 0.6
     fact lC_ag = 0.8
     fact lC_ab = 0.7
+    fact lC_ang = 0
+    fact lC_lean = 0       // its lean inside its box (lib/widgets options.lean, degrees)
     // the visualisers' own bars (D138): one record per bar, for up to three visualisers
     model vzA max 128 { v: number; pk: number }
     model vzB max 128 { v: number; pk: number }
@@ -955,6 +962,8 @@ scene Widgets {
     fact wg_ob = 64
     fact wg_ogap = 0.3
     fact wg_osm = 0.5
+    fact wg_oa = 0
+    fact wg_ol = 0               // the chosen visualiser's lean, in degrees
     fact wg_otx = 1
     fact wg_oop = 1
     fact wg_olk = false
@@ -987,6 +996,8 @@ scene Widgets {
     event wg_drop ->             // let go: its slot
     event wg_add ->              // + now playing (0) or + visualiser (1)
     event wg_opt ->              // the panel: slot · 1000 + what · 100 + value
+    event wg_rot ->              // a visualiser turned by its grip: slot · 1000 + angle + 180
+    event wg_rotd ->             // the turn is kept
 
     event wg_hov ->              // to the logic: slot · 10 + 1 pointed at, + 0 left
     event wg_ctl ->              // slot · 10 + 0 previous · 1 play/pause · 2 next
@@ -1164,24 +1175,31 @@ scene Widgets {
             show: lA_on and (editing or wg_dkp > 0.01 or (lA_st < 1.5 and not viz_ext))
             opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lA_opa
             move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0) + lA_dx * wg_dkp, if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0) + lA_dy * wg_dkp
+            // the look and its plate turn about the widget's centre, which a turn never moves
+            pivot: if(wg_rk == lA_k, wg_sx + wg_sw / 2, lA_x + lA_w / 2), if(wg_rk == lA_k, wg_sy + wg_sh / 2, lA_y + lA_h / 2)
+            rotate: lA_ang * 1deg
             box { from: if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y); size: if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h); corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
-            vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
+            vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lA_lean)
         }
         group {
             z: if(lB_beh, 1, 3)
             show: lB_on and (editing or wg_dkp > 0.01 or (lB_st < 1.5 and not viz_ext))
             opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lB_opa
             move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0) + lB_dx * wg_dkp, if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0) + lB_dy * wg_dkp
+            pivot: if(wg_rk == lB_k, wg_sx + wg_sw / 2, lB_x + lB_w / 2), if(wg_rk == lB_k, wg_sy + wg_sh / 2, lB_y + lB_h / 2)
+            rotate: lB_ang * 1deg
             box { from: if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y); size: if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h); corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
-            vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
+            vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lB_lean)
         }
         group {
             z: if(lC_beh, 1, 3)
             show: lC_on and (editing or wg_dkp > 0.01 or (lC_st < 1.5 and not viz_ext))
             opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lC_opa
             move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0) + lC_dx * wg_dkp, if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0) + lC_dy * wg_dkp
+            pivot: if(wg_rk == lC_k, wg_sx + wg_sw / 2, lC_x + lC_w / 2), if(wg_rk == lC_k, wg_sy + wg_sh / 2, lC_y + lC_h / 2)
+            rotate: lC_ang * 1deg
             box { from: if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y); size: if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h); corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
-            vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
+            vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lC_lean)
         }
 
         for w in wg {
@@ -1252,6 +1270,23 @@ scene Widgets {
                 let xx = wx + ox
                 let yy = wy + oy
                 box { from: xx, yy; size: ww, wh; corner: 4; stroke: if(w.sel, 2, 1); color: if(w.sel, fl.phos, fl.trace_lit); opacity: if(w.sel, 1, 0.6) }
+                // a visualiser's look can be turned (lib/widgets options.angle): its frame and the
+                // grip above it turn with it, so the angle is seen even over a still look
+                group {
+                    show: w.kind > 0.5 and w.kind < 1.5 and w.sel and wg_sel == k and wg_dk < 0 and wg_rk < 0
+                    pivot: xx + ww / 2, yy + wh / 2
+                    rotate: wg_oa * 1deg
+                    box { from: xx, yy; size: ww, wh; corner: 4; stroke: 1.6; color: fl.ember; opacity: 0.9 }
+                    line { from: xx + ww / 2, yy; to: xx + ww / 2, yy - 22; width: 1; color: fl.ember; opacity: 0.9 }
+                    ellipse { at: xx + ww / 2, yy - 26; radius: 10; color: fl.hull; opacity: 0.95 }
+                    ellipse { at: xx + ww / 2, yy - 26; radius: 10; stroke: 1.4; color: fl.ember }
+                    text "↻" { at: xx + ww / 2, yy - 26; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.ember }
+                    text "{round(wg_oa)}°" { at: xx + ww / 2 + 18, yy - 26; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.engrave }
+                    zone box rg { from: xx + ww / 2 - 14, yy - 40; size: 28, 28; cursor: grab; role: button; label: "Turn the visualiser" }
+                    on press rg { wg_hold = 300 + k; emit wg_rot(k * 1000 + round(clamp(atan2(pointer.x - (xx + ww / 2), (yy + wh / 2) - pointer.y), -179, 180)) + 180) }
+                    on drag rg while wg_hold == 300 + k { emit wg_rot(k * 1000 + round(clamp(atan2(pointer.x - (xx + ww / 2), (yy + wh / 2) - pointer.y), -179, 180)) + 180) }
+                    on release rg while wg_hold == 300 + k { emit wg_rotd }
+                }
                 text "HIDDEN AT REST" { at: xx + 8, yy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: w.gh }
                 text "GROUP {w.grp}" { at: xx + ww - 8, yy - 8; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.flare; show: w.grp > 0 }
                 text "OVER THE PICTURE'S SUBJECT" { at: xx + 8, yy + wh - 10; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.ember; show: w.over and not w.behind }

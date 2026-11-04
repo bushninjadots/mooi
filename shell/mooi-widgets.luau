@@ -193,6 +193,8 @@ local function publish()
             fact[f .. "on"], fact[f .. "k"] = true, i - 1
             fact[f .. "x"], fact[f .. "y"], fact[f .. "w"], fact[f .. "h"], fact[f .. "u"] = r.x, r.y, r.w, r.h, r.u
             fact[f .. "mode"], fact[f .. "n"], fact[f .. "gap"], fact[f .. "glow"] = r.mode, r.bars, r.gap, r.glow
+            fact[f .. "ang"] = tonumber((w.options or {}).angle) or 0
+            fact[f .. "lean"] = tonumber((w.options or {}).lean) or 0
             fact[f .. "peaks"], fact[f .. "refl"], fact[f .. "plate"] = r.peaks, r.refl, r.plate
             fact[f .. "st"], fact[f .. "gh"], fact[f .. "opa"] = r.st, r.gh, r.opa
             fact[f .. "sel"] = r.sel and not r.locked
@@ -266,7 +268,7 @@ end
 -- ── D155: the visualisers drawn by mooi-viz ──
 -- Where each one is and how it looks, sent whenever any of it changes (looked at every 400 ms: a
 -- string of what it would be told); `hold` while the widgets draw them themselves (editing, desk mode).
-local VIZ_KEYS = { "on", "x", "y", "w", "h", "u", "mode", "n", "gap", "glow", "peaks", "refl", "plate", "st", "gh",
+local VIZ_KEYS = { "on", "x", "y", "w", "h", "u", "mode", "n", "gap", "glow", "ang", "lean", "peaks", "refl", "plate", "st", "gh",
                    "opa", "ad", "ar", "ag", "ab" }
 local viz_sent = nil
 local function viz_cmds()
@@ -583,7 +585,7 @@ local function panel()
     local w = doc.widgets[k + 1]
     if not w then fact.wg_sel = -1; return end
     if panel_at then fact.wg_px, fact.wg_py = panel_at[1], panel_at[2]
-    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, ({ visualiser = 560, nowplaying = 466 })[w.kind] or 420, room) end
+    else fact.wg_px, fact.wg_py = W.panel_spot(w, 320, ({ visualiser = 650, nowplaying = 466 })[w.kind] or 420, room) end
     local o = w.options or {}
     fact.wg_sl = W.LAYOUT_INDEX[w.layout] or 0
     fact.wg_sm = W.MODE_INDEX[w.mode] or 0
@@ -592,6 +594,7 @@ local function panel()
     fact.wg_o7, fact.wg_o8 = o.peaks ~= false, o.reflection == true
     fact.wg_og = tonumber(o.glow) or 0
     fact.wg_ob, fact.wg_ogap, fact.wg_osm = tonumber(o.bars) or 64, tonumber(o.gap) or 0.3, tonumber(o.smooth) or 0.5
+    fact.wg_oa, fact.wg_ol = tonumber(o.angle) or 0, tonumber(o.lean) or 0
     fact.wg_otx, fact.wg_oop, fact.wg_olk = tonumber(o.text) or 1, w.opacity or 1, w.locked == true
     fact.wg_oad, fact.wg_obh = o.adapt ~= false, o.behind == true
     fact.wg_sk = W.KIND_NUM[w.kind] or 0
@@ -836,7 +839,7 @@ on("wg_tool", function(v)
 end)
 -- the panel: slot · 1000 + what · 100 + value (what: 1 layout or mode · 2 at rest · 3-6 lyric line,
 -- progress, plate, wheel volume · 7 peaks · 8 reflection · 9 duplicate (1) / remove (2) / lock (3) /
--- calm spot (4) / adapt on, off (5, 6) / behind on, off (7, 8))
+-- calm spot (4) / adapt on, off (5, 6) / behind on, off (7, 8) / square (23, a visualiser's angle back to 0))
 on("wg_opt", function(v)
     v = math.floor(tonumber(v) or 0)
     local k, what, val = math.floor(v / 1000), math.floor((v % 1000) / 100), v % 100
@@ -864,6 +867,7 @@ on("wg_opt", function(v)
         local nxt = ({ [5] = 10, [10] = 30, [30] = 5 })[tonumber((w.options or {}).every) or 10] or 10
         d = W.set_option(doc, w.id, "every", nxt)
     elseif what == 9 and (val == 21 or val == 22) then d = W.set_option(doc, w.id, "viz", val == 21)
+    elseif what == 9 and val == 23 then d = W.set_option(W.set_option(doc, w.id, "lean", 0), w.id, "angle", 0)
     elseif what == 9 and (val == 9 or val == 10) then d = W.set_option(doc, w.id, "h24", val == 9)
     elseif what == 9 and (val == 11 or val == 12) then d = W.set_option(doc, w.id, "seconds", val == 11)
     elseif what == 9 and (val == 5 or val == 6) then d = W.set_option(doc, w.id, "adapt", val == 5)
@@ -877,7 +881,7 @@ on("wg_opt", function(v)
     change(d)
 end)
 -- a slider (slot · 10000 + which · 1000 + value 0 … 999), live while held; `done` saves it
--- which: 1 opacity · 2 bars · 3 glow · 4 gap · 5 smoothing · 6 text size · 7 scale
+-- which: 1 opacity · 2 bars · 3 glow · 4 gap · 5 smoothing · 6 text size · 7 scale · 8 angle · 9 lean
 local function slider_doc(base, w, which, f)
     if which == 1 then return W.set_field(base, w.id, "opacity", 0.3 + 0.7 * f)
     elseif which == 2 then return W.set_option(base, w.id, "bars", 16 + f * 112)
@@ -885,6 +889,8 @@ local function slider_doc(base, w, which, f)
     elseif which == 4 then return W.set_option(base, w.id, "gap", f * 0.6)
     elseif which == 5 then return W.set_option(base, w.id, "smooth", f)
     elseif which == 6 then return W.set_option(base, w.id, "text", 0.8 + f * 0.6)
+    elseif which == 8 then return W.set_option(base, w.id, "angle", -180 + f * 360)
+    elseif which == 9 then return W.set_option(base, w.id, "lean", -40 + f * 80)
     elseif which == 7 then
         -- scale round the centre, from the layout's least to its most
         local L = W.LAYOUTS[W.layout_of(w)]
@@ -911,6 +917,26 @@ on("wg_slid", function()
     local now = doc
     doc = slide.before
     slide = nil
+    change(now)
+end)
+-- a visualiser's grip in the editor (the dot above it): slot · 1000 + angle + 180, live while it
+-- is pulled; `wg_rotd` keeps the turn. The panel's ANGLE slider reaches the same option.
+local turn = nil
+on("wg_rot", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, a = math.floor(v / 1000), v % 1000 - 180
+    local w = (turn and turn.before or doc).widgets[k + 1]
+    if not w or w.kind ~= "visualiser" then return end
+    if not turn then turn = { before = doc } end
+    doc = W.set_option(turn.before, w.id, "angle", a)
+    publish()
+    panel()
+end)
+on("wg_rotd", function()
+    if not turn then return end
+    local now = doc
+    doc = turn.before
+    turn = nil
     change(now)
 end)
 -- the GitHub widget's repository, typed in its panel (owner/name)

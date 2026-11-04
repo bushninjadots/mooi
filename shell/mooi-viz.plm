@@ -17,6 +17,7 @@ scene Viz {
         services: "files", "media", "env"
     }
 
+
     // The same facts and springs the bar wears: the logic paints them from palette.json, and
     // the studio re-lights with the desktop when the palette changes after an apply.
     // corners on every plate (look.corners: 0 chamfer · 1 bevel · 2 rounded · 3 square; look.corner_size as a scale)
@@ -291,6 +292,8 @@ scene Viz {
     fact lA_ar = 0.6
     fact lA_ag = 0.8
     fact lA_ab = 0.7
+    fact lA_ang = 0        // its turn about its centre (lib/widgets options.angle, degrees)
+    fact lA_lean = 0       // its lean inside its box (lib/widgets options.lean, degrees)
     fact lB_on = false
     fact lB_dx = 0
     fact lB_dy = 0
@@ -316,6 +319,8 @@ scene Viz {
     fact lB_ar = 0.6
     fact lB_ag = 0.8
     fact lB_ab = 0.7
+    fact lB_ang = 0
+    fact lB_lean = 0       // its lean inside its box (lib/widgets options.lean, degrees)
     fact lC_on = false
     fact lC_dx = 0
     fact lC_dy = 0
@@ -341,6 +346,8 @@ scene Viz {
     fact lC_ar = 0.6
     fact lC_ag = 0.8
     fact lC_ab = 0.7
+    fact lC_ang = 0
+    fact lC_lean = 0       // its lean inside its box (lib/widgets options.lean, degrees)
     model vzA max 128 { v: number; pk: number }
     model vzB max 128 { v: number; pk: number }
     model vzC max 128 { v: number; pk: number }
@@ -484,20 +491,27 @@ scene Viz {
         group {
             show: lA_on and not hold and lA_st < 1.5
             opacity: if(viz_still, if(lA_st < 0.5, 1, 0.35), lA_po) * lA_opa
+            // the look and its plate turn about the widget's centre, which a turn never moves
+            pivot: lA_x + lA_w / 2, lA_y + lA_h / 2
+            rotate: lA_ang * 1deg
             box { from: lA_x, lA_y; size: lA_w, lA_h; corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
-            vw.LaneA(lA_x, lA_y, lA_w, lA_h, lA_u, lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
+            vw.LaneA(lA_x, lA_y, lA_w, lA_h, lA_u, lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lA_lean)
         }
         group {
             show: lB_on and not hold and lB_st < 1.5
             opacity: if(viz_still, if(lB_st < 0.5, 1, 0.35), lB_po) * lB_opa
+            pivot: lB_x + lB_w / 2, lB_y + lB_h / 2
+            rotate: lB_ang * 1deg
             box { from: lB_x, lB_y; size: lB_w, lB_h; corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
-            vw.LaneB(lB_x, lB_y, lB_w, lB_h, lB_u, lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
+            vw.LaneB(lB_x, lB_y, lB_w, lB_h, lB_u, lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lB_lean)
         }
         group {
             show: lC_on and not hold and lC_st < 1.5
             opacity: if(viz_still, if(lC_st < 0.5, 1, 0.35), lC_po) * lC_opa
+            pivot: lC_x + lC_w / 2, lC_y + lC_h / 2
+            rotate: lC_ang * 1deg
             box { from: lC_x, lC_y; size: lC_w, lC_h; corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
-            vw.LaneC(lC_x, lC_y, lC_w, lC_h, lC_u, lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still)
+            vw.LaneC(lC_x, lC_y, lC_w, lC_h, lC_u, lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lC_lean)
         }
     }
 }

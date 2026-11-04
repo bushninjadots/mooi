@@ -346,10 +346,10 @@ library Widgets {
         let np = wg_sk < 0.5
         let vis = wg_sk > 0.5 and wg_sk < 1.5
         let sy = if(vis, 186, if(np, 122, if(wg_sk == 3 or wg_sk == 7, 40, 76)))   // the sliders
-        let ns = if(vis, 6, if(np, 3, 2))
+        let ns = if(vis, 8, if(np, 3, 2))
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
-        let ay = wy + if(vis, 40, if(np, 100, if(wg_sk == 4 or wg_sk == 11, 70, if(wg_sk == 10, 100, 40))))   // where, and the actions
+        let ay = wy + if(vis, 70, if(np, 100, if(wg_sk == 4 or wg_sk == 11, 70, if(wg_sk == 10, 100, 40))))   // where, and the actions
         let ph = if(wg_pcol, 30, ay + 102)
         box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
@@ -528,6 +528,14 @@ library Widgets {
                 WSlider(x + 12, y + sy + 90, 296, "GLOW", "{round(wg_og * 100)}%", wg_og, k, 3)
                 WSlider(x + 12, y + sy + 120, 296, "GAP", "{round(wg_ogap * 100)}%", wg_ogap / 0.6, k, 4)
                 WSlider(x + 12, y + sy + 150, 296, "SMOOTHING", "{round(wg_osm * 100)}%", wg_osm, k, 5)
+                // the look's turn about its own centre (-180 … 180), and its lean inside the box
+                // (-40 … 40); SQUARE below levels both
+                WSlider(x + 12, y + sy + 180, 296, "ANGLE", "{round(wg_oa)}°", (wg_oa + 180) / 360, k, 8)
+                // the lean only reaches the modes drawn without effects of their own (vizwide)
+                group {
+                    show: wg_sm == 0 or wg_sm == 1 or wg_sm == 4 or wg_sm == 5 or wg_sm == 7 or wg_sm == 10
+                    WSlider(x + 12, y + sy + 210, 296, "LEAN", "{round(wg_ol)}°", (wg_ol + 40) / 80, k, 9)
+                }
             }
             // 3 · at rest
             text "AT REST" { at: x + 12, y + ry; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
@@ -597,6 +605,7 @@ library Widgets {
                 Chip(x + 12, y + wy, 96, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
                 Chip(x + 112, y + wy, 96, "PEAKS", wg_o7, base + 700 + if(wg_o7, 0, 1))
                 Chip(x + 212, y + wy, 96, "REFLECTION", wg_o8, base + 800 + if(wg_o8, 0, 1))
+                Chip(x + 12, y + wy + 30, 296, "SQUARE · LEVEL", round(wg_oa) == 0 and round(wg_ol) == 0, base + 923)
             }
             // 5 · where it is, and what can be done to it
             text wg_readout { at: x + 12, y + ay + 8; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.engrave; width: 296; lines: 1 }
