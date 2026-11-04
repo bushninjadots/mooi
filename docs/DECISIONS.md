@@ -4518,3 +4518,27 @@ showing parts of another image"; the orbit and the board not the whole screen; t
   panel melts into its lit tab. All of it follows the opening springs and rests when open.
 **Checked on screen:** the board and the orbit panels; the system island morphing; the Nexus out of the
 right border. **Not checked:** every other island; the Nexus on the other edges; light mode.
+
+## D150 · 2026-11-04 · rembg only when asked; Wallhaven's key in Settings; the morph done as iNiR does it
+**Asked for:** "when changing wallpaper CPU hits 100 %" (rembg, though off in Settings); a place for the
+Wallhaven API key; "morphing looks absolutely horrible — look at iNiR"; "I don't see these in Settings".
+- **rembg** (a): the widgets ran `mooi wallmap` on every new wallpaper, and it always ran rembg (a 1 GB
+  model, every core for ~40 s) to cut out a subject that only `widgets.depth` uses — off here. Now
+  `mooi wallmap FILE nocut` (the map only) unless depth is on, and with depth on rembg gets two threads,
+  `nice 19`, `ionice -c 3`. Measured after: a wallpaper change is one ~19 % blip in Pleamar, then quiet.
+- **Wallhaven's key** (b): Settings → Wallpapers → Wallhaven, a hidden field with Save and Forget. Saved
+  as `wallhaven.key` in mooi's data folder (`files.write` makes it 0600; not captured into setup/),
+  emptied from the field at once, then checked: a sketchy/NSFW search answers 200 for a key Wallhaven
+  takes and 401 for one it refuses (`/settings` answers 404 either way). bin/mooi reads it first, then
+  ~/.config/mooi/wallhaven.key.
+- **Where things are** (b): the island style and Morph were on the Colour page; now Settings → Bar →
+  Islands, and Morph on Quick settings too.
+- **The morph** (c), from reading iNiR's `IrisMorphSurface.qml` (absorbShare 0.55, pullLag 1.8, fuse
+  ~30, content riding the body): the body starts as the module's pill at 55 % on the bar's edge and grows
+  into the island — across on the spring, down on the spring squared — flush from the module's foot,
+  corners from the pill's to the island's, fused (22) with a run of the bar's edge as wide as the body
+  plus a fillet each side, so it flares out of the edge; the content rides the body's foot and fades in
+  over the first third. D149's neck, lip and 22 px drop are gone. The Nexus: along its edge on the spring,
+  out of it on the spring squared, corners growing, content riding its leading edge.
+  Checked: a scratch scene rendering the island at rv 0.15 / 0.36 / 0.57 / 0.78 (the real one opens too
+  fast to catch at 198 % motion speed).

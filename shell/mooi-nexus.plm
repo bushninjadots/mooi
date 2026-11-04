@@ -819,8 +819,10 @@ scene Nexus {
         // outline. The deck's own content fades in once it has grown.
         let zm_msw = screen.width
         let zm_msh = screen.height
-        let zm_mg = smooth(0, 0.85, nx_in)
-        let zm_mw = smooth(0, 0.55, nx_in)
+        // along the edge on the spring, out from it on the spring squared: it spreads first, then pours
+        // out (after iNiR's iRiS morph, D150)
+        let zm_mw = clamp(nx_in, 0, 1)
+        let zm_mg = clamp(nx_in, 0, 1) * clamp(nx_in, 0, 1)
         // the edge it grows from, in the deck's own coordinates
         let zm_meb = zm_msh - dk_y
         let zm_met = 0 - dk_y
@@ -841,14 +843,16 @@ scene Nexus {
                 // the border's own run along that edge, which the deck leaves from
                 box { from: if(dk_edge >= 2, if(dk_edge == 2, zm_mel - 40, zm_mer - 4), -120), if(dk_edge >= 2, -120, if(dk_edge == 0, zm_meb - 4, zm_met - 40))
                       size: if(dk_edge >= 2, 44, dk_w + 240), if(dk_edge >= 2, dk_h + 240, 44); corner: 2 }
-                box { from: zm_mx0, zm_my0; size: max(1, zm_mx1 - zm_mx0), max(1, zm_my1 - zm_my0); corner: if(cn_kind > 2.5, 0, (st_radius + 6) * cn_scale); blend: 30 }
+                box { from: zm_mx0, zm_my0; size: max(1, zm_mx1 - zm_mx0), max(1, zm_my1 - zm_my0)
+                      corner: min(min(zm_mx1 - zm_mx0, zm_my1 - zm_my0) / 2, 4 + (if(cn_kind > 2.5, 0, (st_radius + 6) * cn_scale) - 4) * zm_mw); blend: 30 }
             }
         }
 
         // ═══ The deck ═══
         group {
-            move: dk_x + if(morph_on, 0, dk_ox * (1 - nx_in) * (dk_w + 40)), dk_y + if(morph_on, 0, dk_oy * (1 - nx_in) * (dk_h + 40))
-            opacity: if(morph_on, smooth(0.6, 1, nx_in), smooth(0, 0.5, nx_in))
+            // under morph the content rides the body's leading edge, clipped to it, and fades in early
+            move: dk_x + if(morph_on, if(dk_edge == 3, max(0, zm_mx0), if(dk_edge == 2, min(0, zm_mx1 - dk_w), 0)), dk_ox * (1 - nx_in) * (dk_w + 40)), dk_y + if(morph_on, if(dk_edge == 0, max(0, zm_my0), if(dk_edge == 1, min(0, zm_my1 - dk_h), 0)), dk_oy * (1 - nx_in) * (dk_h + 40))
+            opacity: if(morph_on, smooth(0.3, 0.75, nx_in), smooth(0, 0.5, nx_in))
             zone box deck { from: 0, 0; size: dk_w, dk_h; role: region; label: "The Control Nexus" }
 
             DeckFrame(dk_w, dk_h) {
