@@ -15,7 +15,6 @@ local weathercache = require("lib/weathercache")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
 local walls = require("lib/walls")
-local nq_sync                      -- the panel handed to the frame (D152, below)
 local deck = require("lib/nexusdeck")
 local atlas = require("lib/atlas")
 local claude = require("lib/claude")
@@ -64,9 +63,6 @@ local function paint()
     end
     fact.cn_kind, fact.cn_scale = style.corners(settings)
     fact.isl_style = settings.island.style == "tether" and 1 or 0
-    -- D152: a card panel drawn by the frame, grown out of the band at the screen's left edge
-    fact.ch_on = type(settings.frame) == "table" and settings.frame.on == true and settings.frame.islands ~= false
-    fact.nq_band = type(settings.frame) == "table" and tonumber(settings.frame.band) or 6
     local look = style.facts(settings)
     if look and look.st_glow then fact.st_glow = look.st_glow end
 end
@@ -448,7 +444,7 @@ function ask_pictures()
     if #live > 0 then pcall(sys.call, "thumbnails.live", live) else pcall(sys.call, "thumbnails.live") end
     if #still > 0 then pcall(sys.call, "thumbnails.want", still) else pcall(sys.call, "thumbnails.want") end
 end
-on("fact:nt_tab", function() ask_pictures(); if nq_sync then nq_sync() end end)
+on("fact:nt_tab", function() ask_pictures() end)
 on("fact:sp_c", function() ask_pictures() end)
 local function read_spaces()
     launch("hyprctl", { "-j", "workspaces" }, function(wo)
@@ -1017,46 +1013,6 @@ on("nt_gh", function(v)
     if url then launch("xdg-open", { url }); fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; viz() end
 end)
 
--- ── The panel as part of the chassis (D152) ──
--- A card panel (Claude, music, weather, GitHub) opened from the nub is drawn by the frame (its `nt` place),
--- grown out of the band at the left edge; this draws only its content. The frame is told where (this
--- surface starts under the bar's reserve) with a count of openings, so both springs start from 0; and
--- told when it goes. Messages one after another.
-local nq_count, nq_sent, nq_queue, nq_busy = 0, nil, {}, false
-local function nq_say(cmds)
-    nq_queue[#nq_queue + 1] = cmds
-    if nq_busy then return end
-    local function go()
-        local c = table.remove(nq_queue, 1)
-        if not c then nq_busy = false; return end
-        nq_busy = true
-        local args = { "--say", "mooi-frame" }
-        for _, x in ipairs(c) do args[#args + 1] = x end
-        launch("pleamar", args, function() go() end)
-    end
-    go()
-end
-nq_sync = function()
-    local tab = math.floor(tonumber(fact.nt_tab) or -1)
-    local P = N.PANELS[tab]
-    local want = fact.ch_on and fact.nt_open and not fact.nt_deck and P ~= nil
-    if want and nq_sent ~= tab then
-        nq_count = nq_count + 1
-        nq_sent = tab
-        local off = tonumber((type(screen.mon) == "table" and type(screen.mon.reserved) == "table" and screen.mon.reserved[2]) or 0) or 0
-        fact.nq_off, fact.nq_n, fact.nq_on = off, nq_count, true
-        -- the body runs from the band itself to the card's far side: the border swelling out, its tabs on it
-        local band = math.floor(tonumber(fact.nq_band) or 6)
-        local px = math.floor(tonumber(fact.nt_px) or 0)
-        nq_say({ "fact nt_x " .. band, "fact nt_y " .. math.floor((tonumber(fact.pn_y) or 0) + off),
-                 "fact nt_w " .. (P.w + px - band), "fact nt_h " .. P.h, "fact nt_edge 2", "fact nt_n " .. nq_count, "fact nt_on true" })
-    elseif not want and nq_sent ~= nil then
-        nq_sent = nil
-        fact.nq_on = false
-        nq_say({ "fact nt_on false" })
-    end
-end
-
 -- ── Opening a panel: read what it shows ──
 local READ = { [2] = function() read_screen(read_spaces) end, [3] = read_pictures, [4] = read_weather, [5] = read_github }
 on("nt_tab_open", function(v)
@@ -1064,7 +1020,6 @@ on("nt_tab_open", function(v)
     panel_top(n)
     if READ[n] then READ[n]() end
     viz()
-    nq_sync()
 end)
 -- from outside: the bar's Claude or GitHub module, `mooi notch <tab>`
 on("nt_show", function(v)
@@ -1074,9 +1029,8 @@ on("nt_show", function(v)
     panel_top(n)
     if READ[n] then READ[n]() end
     viz()
-    nq_sync()
 end)
-on("fact:nt_open", function() viz(); nq_sync() end)
+on("fact:nt_open", function() viz() end)
 -- from the Control Nexus: it has said where (nt_px, pn_y, nt_ox, nt_acy, nt_dir); open that panel there
 on("nt_show_deck", function(v)
     local n = math.floor(tonumber(v) or 0)

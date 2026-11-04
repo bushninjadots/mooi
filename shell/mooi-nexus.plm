@@ -255,12 +255,13 @@ scene Nexus {
     // the deck as the frame grows it (D152): the same count and springs as the frame's `dk` place, the
     // band's width and where this surface starts on the screen (it begins under the bar's reserve)
     fact nm_n = 0
+    fact nm_on = false           // the deck out, as the frame was told (a little after dk_open: see the logic)
     fact nm_band = 6
     fact nm_off = 34
     prop nm_q = 0 ~m.isl
     follow nm_q = nm_n
     prop nm_c = 0 ~m.isl_out
-    follow nm_c = if(dk_open, 1, 0)
+    follow nm_c = if(nm_on, 1, 0)
     let nm_rv = min(clamp(nm_q - (nm_n - 1), 0, 1), nm_c)
     event pl_xy ->
     event pl_wh ->

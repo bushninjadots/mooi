@@ -107,7 +107,7 @@ local function apply(s)
     fact.media_mode = position("media.mode", s.media.mode)
     fact.media_idle = position("media.idle", s.media.idle)
     fact.frame_on = s.frame.on
-    fact.ch_on = s.frame.on == true and s.frame.islands ~= false   -- D152: the islands as part of the frame
+    fact.ch_on = s.island.morph ~= false                          -- D153: islands grown out of the bar (with or without the frame)
     fact.frame_band = s.frame.band
     fact.frame_music = s.frame.music
     fact.frame_style = position("frame.style", s.frame.style)
@@ -1803,7 +1803,12 @@ on("pl_t", function(v)
     pl_send({ "fact pl_x " .. pl_geo.x, "fact pl_y " .. pl_geo.y, "fact pl_w " .. pl_geo.w, "fact pl_h " .. pl_geo.h,
               "fact pl_tx " .. math.floor(tonumber(v) or 0), "fact pl_n " .. pl_count, "fact pl_on true" })
 end)
-on("fact:open", function() pl_send({ "fact pl_on false" }) end)
+-- `open` changed: unless another island has just been handed over (its geometry comes in the same
+-- instant now, D153), the frame lets the last one go; 40 ms later, so the order cannot cross
+on("fact:open", function()
+    local before = pl_count
+    after(40, function() if pl_count == before then pl_send({ "fact pl_on false" }) end end)
+end)
 
 on("open_settings", function()
     if settings_win then run("pleamar", { "--say", "mooi-settings", "quit" }); return end
@@ -2022,7 +2027,9 @@ after(700, notch_sync)
 -- now runs round the bar's pieces from bar-geo.json, which the bar writes (shell/bar.luau).
 local frame_win, frame_tries = nil, 0
 function frame_sync()
-    local want = type(settings.frame) == "table" and settings.frame.on == true
+    -- it also draws the bar's pieces and the islands grown out of them (island.morph) without its band
+    local want = (type(settings.frame) == "table" and settings.frame.on == true)
+              or (type(settings.island) == "table" and settings.island.morph ~= false)
     if not want then
         frame_tries = 0
         if frame_win then kill(frame_win, "term"); frame_win = nil end

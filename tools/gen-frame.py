@@ -135,13 +135,16 @@ CORNERS = {
     "br": "path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }",
 }
 
+# Without the band (D153) the pieces float where the bar's own plates would: from its offset, not the top.
+PY = "if(band_on, -40, st_offset)"
+PH = "if(band_on, 40 + {b}, {b} - st_offset)"
 PIECES = [(f"ix{i} - 3", f"ix{i} + iw{i} + 3",
-           f"box {{ from: ix{i} - 3, -40; size: iw{i} + 6, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw{i} > 1", "}")
+           f"box {{ from: ix{i} - 3, {PY}; size: iw{i} + 6, {PH.format(b='row_b')}; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw{i} > 1", "}")
           for i in range(16)] + [
-    ("plx - n_pad", "plx + plw + n_pad", "box { from: plx - n_pad, -40; size: plw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1", "}"),
-    ("pcx - n_pad", "pcx + pcw + n_pad", "box { from: pcx - n_pad, -40; size: pcw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1", "}"),
-    ("prx - n_pad", "prx + prw + n_pad", "box { from: prx - n_pad, -40; size: prw + 2 * n_pad, 40 + n_b; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1", "}"),
-    ("gp_x", "gp_x + gp_w", "box { from: gp_x, -40; size: gp_w, 40 + row_b; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1", "}"),
+    ("plx - n_pad", "plx + plw + n_pad", f"box {{ from: plx - n_pad, {PY}; size: plw + 2 * n_pad, {PH.format(b='n_b')}; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1", "}"),
+    ("pcx - n_pad", "pcx + pcw + n_pad", f"box {{ from: pcx - n_pad, {PY}; size: pcw + 2 * n_pad, {PH.format(b='n_b')}; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1", "}"),
+    ("prx - n_pad", "prx + prw + n_pad", f"box {{ from: prx - n_pad, {PY}; size: prw + 2 * n_pad, {PH.format(b='n_b')}; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1", "}"),
+    ("gp_x", "gp_x + gp_w", f"box {{ from: gp_x, {PY}; size: gp_w, {PH.format(b='row_b')}; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1", "}"),
 ]
 
 BODY = [
@@ -157,6 +160,8 @@ BODY = [
 
 def tile(ind, clip, shapes, show=None):
     i2, i3 = ind + "    ", ind + "        "
+    # the band's shapes (its edges and corners are the tiles' paths) only while it is on (D153)
+    shapes = [[l.replace("path { ", "path { show: band_on; ", 1) for l in sh] for sh in shapes]
     head = [f"{ind}group {{"] + ([f"{i2}show: {show}"] if show else [])
     return (head + [f"{i2}clip box {{ {clip} }}", f"{i2}body {{"] + [i3 + b for b in BODY]
             + [l if l.startswith(i3) else i3 + l for s in shapes for l in s] + [f"{i2}}}", f"{ind}}}"])
@@ -173,11 +178,11 @@ def chunks(edge, lo_px, hi_px, ref):
 # The place (D152): an island grown out of the bar's piece. While it is out, the top strip's tiles it
 # crosses are drawn by `frame_p` (on the top layer, over the windows, under the bar's content) with the
 # island's box in each body, so it melts into the piece and the band; `frame_t` leaves those tiles out.
-# Three places (D152): an island under the bar (`pl`, the top strip's), the Control Nexus's deck (`dk`) and
-# the side notch's panel (`nt`), each grown out of an edge. A tile a place crosses is drawn by `frame_p`
+# Two places (D152): an island under the bar (`pl`, the top strip's) and the Control Nexus's deck (`dk`),
+# each grown out of an edge (the side notch's panels stay its own: D153). A tile a place crosses is drawn by `frame_p`
 # with every place's box in its body; the screen is cut into tiles that do not overlap, so each pixel of a
 # place is drawn once (only the top strip's tiles reach down past their strip, for an island).
-PLACES = ["pl", "dk", "nt"]
+PLACES = ["pl", "dk"]
 def place_box(p):
     return f"box {{ from: {p}_bx, {p}_by; size: max(1, {p}_bw), max(1, {p}_bh); corner: {p}_br; blend: 30; show: {p}_act }}"
 def crossed(which, a, b):
@@ -264,7 +269,7 @@ def light(ind, which):
     path = [f"move {pieces[0][2]}"] + [p[3] for p in pieces]
     pad = ind + "           "
     return ([f"{ind}group {{",
-             f"{ind}    show: {'wt' if which == 'foot' else 'wl'} > 0.5",
+             f"{ind}    show: band_on and {'wt' if which == 'foot' else 'wl'} > 0.5",
              f"{ind}    opacity: 0.35 * clamp(flev * 2, 0, 1)",
              f"{ind}    glow: 5, 0.6 * st_glow, fg.primary",
              f"{ind}    clip box {{ {clip} }}",
@@ -303,7 +308,9 @@ def place_surface(ind):
     i2, i3, i4 = ind + "    ", ind + "        ", ind + "            "
     act = " or ".join(f"{p}_act" for p in PLACES)
     return ([f"{ind}surface frame_p {{", f"{i2}size: full, full", f"{i2}anchor: top", f"{i2}level: bottom, top while {act}",
-             f"{i2}reserve: -1", f"{i2}group {{", f"{i3}show: {act}", f"{i3}group {{",
+             # the monitor's own rate: without one it kept frame_t's 30, and the morph ran at half the
+             # bar's (D153)
+             f"{i2}reserve: -1", f"{i2}rate: 60", f"{i2}group {{", f"{i3}show: {act}", f"{i3}group {{",
              f"{i4}glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos"]
             + end_tiles(i4, "top", place=True) + end_tiles(i4, "foot", place=True)
             + side_tiles(i4, "left", place=True) + side_tiles(i4, "right", place=True) + [f"{i3}}}", f"{i2}}}", f"{ind}}}"])

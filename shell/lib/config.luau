@@ -45,9 +45,6 @@ M.SCHEMA = {
     { path = "frame.style", kind = "enum", values = { "swell", "crests", "pulse" }, default = "swell" },
     { path = "frame.reach", kind = "integer", default = 18, min = 6, max = 40 },
     { path = "frame.edges", kind = "enum", values = { "all", "sides", "ends" }, default = "all" },
-    -- D152: with the frame on, an island under a module grows out of the bar's piece as part of the
-    -- frame's body (iNiR's chassis); off, islands are plates or tethers as before
-    { path = "frame.islands", kind = "boolean", default = true },
     -- The band's inner corners, its inner edge (a line, a neon line, or none) and how solid it is.
     { path = "frame.radius", kind = "integer", default = 14, min = 0, max = 40 },
     { path = "frame.edge", kind = "enum", values = { "line", "neon", "none" }, default = "line" },
@@ -118,6 +115,10 @@ M.SCHEMA = {
     { path = "island.follow_on_send", kind = "boolean", default = false },
     -- every island's look (ui/island.plm): Ferrolume plates, or tethered to their module
     { path = "island.style", kind = "enum", values = { "plate", "tether" }, default = "plate" },
+    -- D152/D153: an island under a module grows out of the bar's piece as one body with it (iNiR's
+    -- chassis), drawn by mooi-frame — with the screen frame on or not, in every bar layout — and the
+    -- Control Nexus out of the screen's edge; off, islands are plates or tethers as before
+    { path = "island.morph", kind = "boolean", default = true },
     -- what the clock module shows; a right press on it cycles them
     { path = "clock.view", kind = "enum", values = { "full", "time", "seconds" }, default = "full" },
     -- the spine on the right edge, whose shelves slide out on hover (D100)

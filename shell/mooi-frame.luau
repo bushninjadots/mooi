@@ -51,7 +51,10 @@ local function apply()
         if look[k] ~= nil then fact[k] = look[k] end
     end
     local f = settings.frame
-    fact.frame_band = f.band
+    -- the band only with the frame on; without it (island.morph alone) the frame draws the bar's pieces
+    -- and what grows out of them (D153)
+    fact.band_on = f.on == true
+    fact.frame_band = f.on == true and f.band or 0
     fact.frame_reach = f.reach
     fact.frame_edges = position("frame.edges", f.edges)
     fact.bar_surface = position("bar.surface", settings.bar.surface)

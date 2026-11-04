@@ -4589,3 +4589,22 @@ GPU: ~3.4 % while it grows, 0 open and still, 0 after. **Next:** the Control Nex
   out, the tabs on it — and the notch draws only the content (`Card(…, bare)`), riding the body's far edge.
   The arcs (workspaces, wallpapers) and panels opened beside the Nexus are as before. Checked: Claude and
   music out of the left border, switching between them, closing.
+
+## D153 · 2026-11-04 · The morph without the frame, smoother, and off the notch
+**Asked for:** no morph on the notch ("they look horrible"); better, smoother animations; the morph not
+only with the frame but for every bar; the setting right.
+- **The notch** is back to its own panels (mooi-notch, ui/deck.plm as at D152b); the frame's `nt` place
+  is gone (two places: `pl`, `dk`).
+- **Without the frame**: `island.morph` (Settings → Bar → Islands, and Quick; `frame.islands` renamed in
+  its slot, the last of the setter lists) is its own switch. mooi-frame runs for it alone: `band_on`
+  (frame.on) shows the band — every band path in a tile is `show: band_on` — and without it the bar's
+  pieces float where the bar's own plates would (`st_offset`), so an island grows out of its piece in the
+  islands, full and notch layouts alike. The bar hides its plates whenever the frame paints them
+  (`pf = frame_on or ch_on`). Checked on screen in the notch layout, frame on and off.
+- **Smoother**: `frame_p` declared no rate, so it kept frame_t's 30: the body grew at half the bar's
+  rate. Now 60. The handover was measured at 52–69 ms, and the content had started at once, ahead of its
+  body: islands now say where they are the moment they are asked for (`want`), their own reveal starts
+  `after 60ms`, and their close `after 90ms`, while the frame's "let it go" waits 40 ms and is skipped
+  if another island was handed over meanwhile (the two arrive in one instant now); an island another
+  takes over from goes at once (`busy`). The Nexus tells the frame first and starts its own clock 55 ms
+  later (`nm_on`). The frame rests at 0 when nothing moves.

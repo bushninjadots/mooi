@@ -86,8 +86,8 @@ M.SETTERS = {
     "walls.dots", "walls.swell", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting",
     "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "walls.auto", "walls.auto_every",
     "walls.auto_from", "walls.auto_fullscreen",
-    -- D152: the islands as part of the frame's body
-    "frame.islands",
+    -- D152/D153: the islands grown out of the bar (frame.islands for an hour, the same slot)
+    "island.morph",
 }
 
 local function row_of(path)

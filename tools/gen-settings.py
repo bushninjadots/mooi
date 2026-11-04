@@ -80,8 +80,8 @@ SETTERS = [
     "walls.dots", "walls.swell", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting",
     "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "walls.auto", "walls.auto_every",
     "walls.auto_from", "walls.auto_fullscreen",
-    # D152: the islands as part of the frame's body
-    "frame.islands",
+    # D152/D153: the islands grown out of the bar (frame.islands for an hour, the same slot)
+    "island.morph",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -138,6 +138,7 @@ SECTIONS = [
         ("choice", "Colours from", "Your wallpaper, or mooi's own teal and orange", "theme.source", "theme_wallpaper", ["mooi default", "Wallpaper"]),
         ("toggle", "Parallax desk", "The wallpaper travels with your workspaces (mooi always draws it)", "desk.on", "sv_desk_on"),
         ("card", "Bar"),
+        ("toggle", "Morph", "Islands grow out of the bar as one body with it", "island.morph", "sv_island_morph"),
 
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
         ("choice", "Style", "Instrument, glass, floating, minimal or machined steel", "bar.style", "sv_bar_style", STYLES),
@@ -195,7 +196,8 @@ SECTIONS = [
     ]),
     ("Bar", "The bar", "A style sets the surface and the edges at once; change any of them and it reads Custom", "BAR", [
         ("card", "Islands"),
-        ("choice", "Islands", "What opens under the bar: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
+        ("toggle", "Morph", "An island grows out of its module as one body with the bar (and the Control Nexus out of the screen's edge), with the screen frame or without it", "island.morph", "sv_island_morph"),
+        ("choice", "Islands", "Without Morph: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
         ("card", "Shape"),
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
         ("choice", "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", "clock.view", "sv_clock_view", ["Time and date", "Time", "Seconds"]),
@@ -241,7 +243,6 @@ SECTIONS = [
     ("Frame", "Screen frame", "One body with the bar: a band round the screen the bar grows out of; it can move with the music", "DESKTOP", [
         ("card", "Frame"),
         ("toggle", "Screen frame", "Draw the band round the screen", "frame.on", "frame_on"),
-        ("toggle", "Islands grow out of the frame", "An island grows out of its module's piece as part of the frame's body, instead of a plate under the bar", "frame.islands", "sv_frame_islands", "frame_on"),
         ("note", "not frame_on", "TURN IT ON FOR ITS THICKNESS, CORNERS, EDGE AND MUSIC"),
         ("note", "frame_on and not dk_manage", "IT LIES IN THE WINDOWS' OUTER GAP: TURN ON LET MOOI STYLE WINDOWS SO THE GAP FITS IT"),
         ("card", "Band", "frame_on"),

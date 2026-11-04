@@ -73,8 +73,8 @@ local function paint()
     fact.cn_kind, fact.cn_scale = style.corners(settings)
     fact.isl_style = settings.island.style == "tether" and 1 or 0
     -- D152: the deck drawn by the frame, grown out of the band (with the frame on and frame.islands)
-    fact.ch_on = type(settings.frame) == "table" and settings.frame.on == true and settings.frame.islands ~= false
-    fact.nm_band = type(settings.frame) == "table" and tonumber(settings.frame.band) or 6
+    fact.ch_on = type(settings.island) == "table" and settings.island.morph ~= false
+    fact.nm_band = (type(settings.frame) == "table" and settings.frame.on == true) and (tonumber(settings.frame.band) or 6) or 0
     local look = style.facts(settings)
     if look and look.st_glow then fact.st_glow = look.st_glow end
 end
@@ -135,7 +135,10 @@ local function tell_frame(on)
     local cmds = { "--say", "mooi-frame" }
     if on then
         nm_count = nm_count + 1
-        fact.nm_n = nm_count
+        -- the frame hears of it ~55 ms later (a message, measured): the content's clock starts then too,
+        -- so it never runs ahead of its body
+        local mine = nm_count
+        after(55, function() if mine == nm_count then fact.nm_n, fact.nm_on = mine, true end end)
         local ox, oy = screen.ox or 0, screen.oy or 0
         for _, c in ipairs({ "fact dk_x " .. math.floor((tonumber(fact.dk_x) or 0) + ox), "fact dk_y " .. math.floor((tonumber(fact.dk_y) or 0) + oy),
                              "fact dk_w " .. math.floor(tonumber(fact.dk_w) or 0), "fact dk_h " .. math.floor(tonumber(fact.dk_h) or 0),
@@ -143,6 +146,7 @@ local function tell_frame(on)
             cmds[#cmds + 1] = c
         end
     else
+        fact.nm_on = false
         cmds[#cmds + 1] = "fact dk_on false"
     end
     pcall(run, "pleamar", cmds, function() end)
