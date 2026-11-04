@@ -49,7 +49,7 @@ if cfg.standalone == true or not archeclipse then
     local take = {
         { "SUPER + A", "toggle" },                   -- search and apps: the one key for them (Super alone does nothing, 2026-10-29)
         { "SUPER + r", "system" },                   -- the system panel (its right panel)
-        { "SUPER + l", "notes" },                    -- notices (its left panel)
+        { "SUPER + l", "lock" },                     -- mooi's lock screen (D160; was ArchEclipse's notices)
         { "SUPER + SHIFT + v", "clipboard" },        -- clipboard history
         { "SUPER + SHIFT + R", "record" },           -- record the screen (again: stop)
         { "SUPER + CTRL + SHIFT + R", "record area" },

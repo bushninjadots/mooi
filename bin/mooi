@@ -42,6 +42,10 @@
 #                          theme/palette.json.hbs), using mooi's own config so nothing of
 #                          the user's theming is written; then asks a running mooi to read it
 #   mooi theme-watch       follow the wallpaper: recolour with Matugen whenever it changes.
+#   mooi lock | unlock     the lock screen (D160): the session through pleamar's `kind: lock`
+#                          (ext-session-lock), started here if it is not running. Everything that locks
+#                          comes to it — the bar's power module, Super+Shift+Escape, hypridle's idle — and
+#                          `unlock` opens it without a password, the way back if it ever sticks
 #   mooi ws-fx             the workspaces' shader transitions: Hyprland's screen shader, one transition long.
 #                          `session` runs this beside the bar, `stop` ends it
 #   mooi apps-sync         put mooi's palette on Kitty, GTK and Qt as the settings say (the watch
@@ -802,6 +806,7 @@ mooi-notch.plm:the side notch
 mooi-widgets.plm:the desktop widgets
 mooi-walls.plm:the wallpaper picker
 mooi-viz.plm:the visualisers
+mooi-lock.plm:the lock screen
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -928,9 +933,65 @@ stop_mooi() {
     wait_for 3 not running || for p in $(scene_pids); do kill -KILL "$p" 2>/dev/null; done
 }
 
+# The lock screen (D160): one pleamar scene holding the session through ext-session-lock. It is
+# started on demand — a lock must exist before it is asked for, so this waits for its socket before
+# telling it to lock — and it is the same program the bar, the key bind and hypridle reach.
+lock_name=mooi-lock
+# The lock scene's `files.read` reaches only its own folder, and what it wants is the shell's palette,
+# settings and wallpaper: they are copied in before it starts and before every lock, so a new
+# wallpaper or a re-colour shows on the next lock without the scene having to read outside at all.
+lock_files() {
+    local d="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$lock_name"
+    mkdir -p "$d" || return 1
+    for f in palette.json settings.json wall.json; do
+        [ -f "$folder/$f" ] && cp -f "$folder/$f" "$d/$f" 2>/dev/null
+    done
+    # How many tries are left before PAM locks the login: the scene can only ask whether a password
+    # is right, so the system's threshold (faillock.conf; pam_faillock's own defaults are 3 and 600 s)
+    # and the misses already on the tally go with it.
+    local deny=3 unlock=600 conf=/etc/security/faillock.conf v
+    if [ -r "$conf" ]; then
+        v=$(sed -n 's/^[[:space:]]*deny[[:space:]]*=[[:space:]]*\([0-9]\{1,\}\).*/\1/p' "$conf" | tail -1)
+        [ -n "$v" ] && deny=$v
+        v=$(sed -n 's/^[[:space:]]*unlock_time[[:space:]]*=[[:space:]]*\([0-9]\{1,\}\).*/\1/p' "$conf" | tail -1)
+        [ -n "$v" ] && unlock=$v
+    fi
+    local used=0
+    command -v faillock >/dev/null 2>&1 && used=$(faillock --user "${USER:-$(id -un)}" 2>/dev/null | grep -c ' V$')
+    printf '{"deny":%s,"unlock":%s,"used":%s}\n' "$deny" "$unlock" "${used:-0}" > "$d/lockout.json" 2>/dev/null
+}
+lock_start() {
+    lock_files
+    "$pleamar" --say "$lock_name" "get locked" >/dev/null 2>&1 && return 0
+    PLEAMAR_SWAPCHAIN=1 MOOI_MODE=session MOOI_SHELL=$live MOOI_BIN=$self \
+        setsid -f "$pleamar" --scene "$live/mooi-lock.plm" --no-hud --stall 0 \
+        >> "$state/lock.log" 2>&1 < /dev/null
+    n=0
+    while [ "$n" -lt 50 ] && ! "$pleamar" --say "$lock_name" "get locked" >/dev/null 2>&1; do
+        n=$((n + 1)); sleep 0.1
+    done
+    "$pleamar" --say "$lock_name" "get locked" >/dev/null 2>&1 || {
+        echo "mooi lock: the lock screen did not come up (see $state/lock.log)" >&2
+        return 1
+    }
+}
+lock_only() {
+    snapshot || return 1
+    lock_start || return 1
+    "$pleamar" --say "$lock_name" "fact locked true"
+}
+unlock_only() {
+    "$pleamar" --say "$lock_name" "fact locked false" >/dev/null 2>&1 || {
+        echo "mooi unlock: no lock screen is running" >&2
+        return 1
+    }
+}
+
 cmd=${1:-help}; [ $# -gt 0 ] && shift
 case "$cmd" in
     __keep) keep ;;
+    lock) lock_only ;;
+    unlock) unlock_only ;;
     session | start)
         snapshot || exit 1
         # a running mooi is restarted on the fresh snapshot (Super+Shift+B is "start it again")
@@ -947,6 +1008,10 @@ case "$cmd" in
             echo "mooi did not start; see $log" >&2
             exit 1
         fi
+        # The lock screen starts with the session, unlocked and idle: locking then raises its
+        # surface instead of starting a process, so a key pressed the instant SUPER+L lands is
+        # heard (starting one took long enough that the first keystrokes fell on nothing).
+        lock_start >/dev/null 2>&1 || :
         ;;
     toggle)
         if ! running; then
@@ -972,6 +1037,12 @@ case "$cmd" in
         wait_for 8 running && echo "mooi refreshed from the repo" || { echo "mooi did not come back; see $log" >&2; exit 1; }
         # the watch is this script too: a new one runs what the repo says now
         theme_watch_stop; theme_watch_start
+        # the lock screen ran from the old snapshot: give it the new one, unless it is holding
+        # the session (a locked screen is never restarted from here)
+        if [ "$("$pleamar" --say "$lock_name" "get locked" 2>/dev/null)" != "true" ]; then
+            "$pleamar" --say "$lock_name" quit >/dev/null 2>&1
+            lock_start >/dev/null 2>&1 || :
+        fi
         ;;
     stop | restore)
         rm -f "$again"   # first: a refresh's mark must not turn this stop into a restart

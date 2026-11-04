@@ -1,0 +1,213 @@
+language 0.9
+
+// mooi's lock screen (D160): the session's own lock, through Pleamar's `kind: lock`, which is
+// ext-session-lock — the compositor keeps everything else off the screen and the keyboard until
+// this scene gives the lock up. The password is checked by PAM in the logic (`sys.ask("auth.check")`),
+// so nothing is painted over a running session by this program; the only thing that can show it is
+// the lock itself.
+//
+// Lock with `mooi lock` (it starts this scene if it is not running), open it with the password. There
+// is no way out but the password: Esc clears the field and does nothing else. A scene that dies with
+// the lock held leaves the session locked, and `mooi unlock` is the way out of that, from a tty or
+// another machine. The foot of the screen powers off or reboots the machine: one press arms it, a
+// second does it.
+
+scene MooiLock {
+    permissions {
+        services: "files", "auth", "clock", "clock.seconds", "env"
+        run: "systemctl"
+    }
+
+    service clock.seconds as tick { time: text; date: text }
+
+    // The scene needs a surface of its own; the lock surface below is the one that matters.
+    surface { size: 1, 1; anchor: top_left; level: background }
+
+    // ── The colours: the logic paints these from palette.json (lib/ferro), as every program of
+    //    the shell does. These are Ferrolume's own, so a lock with no palette on disk still comes
+    //    up in mooi's colours rather than a stranger's. ──
+    fact lk_ground_r = 0.000000
+    fact lk_ground_g = 0.000000
+    fact lk_ground_b = 0.000000
+    fact lk_hull_r = 0.015686
+    fact lk_hull_g = 0.035294
+    fact lk_hull_b = 0.031373
+    fact lk_steel_900_r = 0.082353
+    fact lk_steel_900_g = 0.098039
+    fact lk_steel_900_b = 0.105882
+    fact lk_trace_dim_r = 0.121569
+    fact lk_trace_dim_g = 0.219608
+    fact lk_trace_dim_b = 0.200000
+    fact lk_trace_r = 0.239216
+    fact lk_trace_g = 0.415686
+    fact lk_trace_b = 0.376471
+    fact lk_phos_r = 0.498039
+    fact lk_phos_g = 0.811765
+    fact lk_phos_b = 0.713725
+    fact lk_ember_r = 0.878431
+    fact lk_ember_g = 0.482353
+    fact lk_ember_b = 0.180392
+    fact lk_muted_r = 0.352941
+    fact lk_muted_g = 0.541176
+    fact lk_muted_b = 0.494118
+    fact lk_ink_r = 0.015686
+    fact lk_ink_g = 0.129412
+    fact lk_ink_b = 0.113725
+
+    let lk_ground = rgb(lk_ground_r, lk_ground_g, lk_ground_b)
+    let lk_hull = rgb(lk_hull_r, lk_hull_g, lk_hull_b)
+    let lk_steel_900 = rgb(lk_steel_900_r, lk_steel_900_g, lk_steel_900_b)
+    let lk_trace_dim = rgb(lk_trace_dim_r, lk_trace_dim_g, lk_trace_dim_b)
+    let lk_trace = rgb(lk_trace_r, lk_trace_g, lk_trace_b)
+    let lk_phos = rgb(lk_phos_r, lk_phos_g, lk_phos_b)
+    let lk_ember = rgb(lk_ember_r, lk_ember_g, lk_ember_b)
+    let lk_muted = rgb(lk_muted_r, lk_muted_g, lk_muted_b)
+    let lk_ink = rgb(lk_ink_r, lk_ink_g, lk_ink_b)
+
+    // ── What the logic says ──────────────────────────────────────────────────
+    fact locked = false          // `mooi lock`: the feature is on
+    fact wrong = false           // the last password was not it
+    fact right = false           // it was: on the way out
+    fact authing = false         // PAM is thinking (a wrong one takes seconds on purpose)
+    fact armed = 0               // a power button pressed once: 1 power off, 2 reboot
+    fact has_wall = false
+    text password = ""
+    text status = ""            // VERIFYING… · INCORRECT · UNLOCKED; empty is the quiet state
+    text tries = ""              // how many attempts PAM has left before it locks the login
+    text pwr_label = "POWER OFF"
+    text rbt_label = "REBOOT"
+    text pwr_note = ""
+    text wp = ""                 // the wallpaper, for the backdrop
+    event tryauth ->             // to the logic: check what is typed
+    event clear ->               // to the logic: forget what was typed
+    event pwr_off ->             // to the logic: the power off button
+    event rbt ->                 // to the logic: the reboot button
+
+    // ── Springs of the small things ──────────────────────────────────────────
+    spring wobble = 520, 11
+    prop shake = 0 ~wobble
+    prop appear = 0 ~200ms
+    follow appear = lock.held
+
+    on change wrong while wrong { impulse shake 520 }
+    // The field has the keys as soon as the compositor confirms the lock: `locked` alone is set
+    // before the lock surface exists, and a focus taken then is taken by nothing.
+    on change locked while locked { focus password }
+    on change lock.held while lock.held { focus password }
+    // Escape empties the field and nothing more: there is no way out of a lock but the password.
+    on key Escape { emit clear }
+    on submit password { emit tryauth }
+    // Enter with nothing focused still asks: the lock surface holds the keys, and a lock whose
+    // password can only be sent by one path is a lock that can refuse the one that matters.
+    on key Return { emit tryauth }
+
+    image wall = from wp, 1920, 1080
+
+    surface lk {
+        kind: lock
+        size: full, full
+        open: locked
+        keyboard: exclusive
+
+        // A lock surface's box is centred on each monitor, and everything in it is placed from that
+        // centre — not from a corner. The area around the box is painted too (`lk.width` and
+        // `lk.height` are the largest box across monitors), so the backdrop is the thing that has to
+        // reach the monitor's edges, and the rail and the clock sit where the centre puts them.
+        let w = lk.width
+        let h = lk.height
+        let ox = floor(-w / 2 + 0.5)
+        let oy = floor(-h / 2 + 0.5)
+
+        // The backdrop: mooi's black, the wallpaper blurred under it when there is one. It is
+        // painted from the top left of the box, so it covers a monitor of any shape, and the
+        // largest box across monitors is what `lk.width` and `lk.height` measure.
+        box { from: ox, oy; size: w, h; color: lk_ground }
+        group {
+            show: has_wall
+            opacity: 42%
+            blur: 54
+            image wall { at: ox - 80, oy - 80; size: w + 160, h + 160 }
+        }
+        box { from: ox, oy; size: w, h; color: lk_ground; opacity: 72% }
+
+        // The rail: mooi's drawn line, its name, and who is holding the screen.
+        box { from: ox, oy; size: w, 1; color: lk_trace_dim; opacity: 40% }
+        text "MOOI" { at: ox + 28, oy + 24; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted }
+        text "SECURE" {
+            at: ox + w - 28, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
+            color: lk_trace_dim
+        }
+
+        // The clock: the shell's instrument, not a poster.
+        group {
+            glow: 22, 45%, lk_phos
+            opacity: lock.held
+            text tick.time { at: 0, -136; anchor: center; size: 96; weight: 700; family: "Share Tech Mono"; color: lk_phos }
+            text tick.date { at: 0, -70; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"; color: lk_muted }
+        }
+
+        // The password: a plate cut like the shell's, and the field itself, never the password.
+        group {
+            move: shake, 0
+            opacity: lock.held
+            // a one-pixel frame, drawn as a box a size larger: a box takes one colour, and mooi's
+            // plates are a dark fill inside a faint trace, not a filled border
+            box { at: 0, 56; size: 380, 48; corner: 2; color: lk_trace_dim; opacity: 45% }
+            box { at: 0, 56; size: 378, 46; corner: 2; color: lk_steel_900; opacity: 88% }
+            input password {
+                at: -172, 47; width: 344; size: 14; weight: 700
+                family: "Share Tech Mono"; color: lk_phos; selection: lk_hull
+                placeholder: "PASSWORD"; secret: true
+            }
+        }
+
+        // What it is doing, under the plate.
+        text status {
+            at: 0, 96; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"
+            color: mix(mix(lk_muted, lk_ember, wrong), lk_phos, right)
+        }
+        text "TRY AGAIN" {
+            at: 0, 116; anchor: center; size: 10; family: "Share Tech Mono"
+            color: lk_ember; opacity: 70%; show: wrong
+        }
+        // How many attempts are left before PAM locks the login: the system's count, said plainly,
+        // because a lock that refuses a good password without a word looks broken (it did).
+        text tries {
+            at: 0, 134; anchor: center; size: 9; family: "Share Tech Mono"
+            color: lk_ember; opacity: 55%
+        }
+
+        // ── Power, at the foot: one press arms, the second does it ───────────
+        // A slipped click on the last row of pixels should not end the session, and nothing here
+        // can be undone. The buttons exist only while the compositor is holding the lock, so a
+        // press before it does nothing.
+        let by = floor(h / 2) - 46
+        group {
+            opacity: lock.held
+            box { at: -76, by; size: 122, 34; corner: 2; color: lk_trace_dim; opacity: 40% }
+            box { at: -76, by; size: 120, 32; corner: 2; color: lk_steel_900; opacity: 88% }
+            text pwr_label {
+                at: -76, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
+                color: mix(lk_muted, lk_ember, armed == 1)
+            }
+            box { at: 76, by; size: 122, 34; corner: 2; color: lk_trace_dim; opacity: 40% }
+            box { at: 76, by; size: 120, 32; corner: 2; color: lk_steel_900; opacity: 88% }
+            text rbt_label {
+                at: 76, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
+                color: mix(lk_muted, lk_ember, armed == 2)
+            }
+            text pwr_note {
+                at: 0, by - 34; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
+                color: lk_ember
+            }
+            zone box pwr { from: -136, by - 16; size: 120, 32; cursor: pointer; role: button; label: "POWER OFF: press twice"; show: lock.held }
+            on press pwr { emit pwr_off }
+            zone box rbt { from: 16, by - 16; size: 120, 32; cursor: pointer; role: button; label: "REBOOT: press twice"; show: lock.held }
+            on press rbt { emit rbt }
+        }
+        text "LOCKING" {
+            at: 0, 0; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"
+            color: lk_trace_dim; opacity: 1 - lock.held
+        }
+    }
+}

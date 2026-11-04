@@ -627,9 +627,11 @@ return function(ctx)
         end)
     end)
 
-    -- Power: the session menu (wlogout, as ArchEclipse), or lock now.
+    -- Power: the session menu (wlogout, as ArchEclipse), or lock now. mooi's own lock screen since
+    -- D160 (ext-session-lock, `mooi lock`): it starts the scene and takes the session, and hyprlock is
+    -- what `lock-session.sh` falls back to when the scene cannot come up.
     on("power", function(v)
-        if (tonumber(v) or 0) > 0.5 then run("hyprlock", {}) else run("wlogout", { "-b", "5", "-p", "layer-shell" }) end
+        if (tonumber(v) or 0) > 0.5 then run("mooi", { "lock" }) else run("wlogout", { "-b", "5", "-p", "layer-shell" }) end
     end)
 
     -- ── Focus timer ────────────────────────────────────────────
