@@ -35,12 +35,14 @@ local function backdrop()
 end
 backdrop()
 
--- Whether the lock wears the Nexus's pictures at all (Settings → Lock, `lock.picture`): the banner
--- strip along the top and the profile picture above the clock, both on unless turned off. Read from
--- the same copy of settings.json as the backdrop, so the choice lands on the next lock.
+-- Whether the lock wears the Nexus's two pictures (Settings → Lock: `lock.banner` for the strip
+-- along the top, `lock.avatar` for the plate above the clock), each on unless turned off and
+-- independent of the other — a banner without your face, or your face without a banner. Read from
+-- the same copy of settings.json as the backdrop, so a choice lands on the next lock.
 local function pictures()
     local l = type(settings.lock) == "table" and settings.lock or {}
-    fact.lk_pic_on = l.picture ~= false
+    fact.lk_ban_on = l.banner ~= false
+    fact.lk_av_on = l.avatar ~= false
 end
 pictures()
 

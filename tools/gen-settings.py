@@ -101,8 +101,9 @@ SETTERS = [
     "keys.lock",
     # and the lock's backdrop, its blur and its dimming
     "lock.blur", "lock.dim",
-    # and whether the Nexus's pictures are worn on the lock at all
-    "lock.picture",
+    # and whether the Nexus's pictures are worn on the lock: the banner strip and the profile picture,
+    # each on its own switch
+    "lock.banner", "lock.avatar",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -513,9 +514,11 @@ SECTIONS = [
          "{sv_lock_dim, 0}%"),
         # what those two do to the picture itself, before the screen is locked and the password typed
         ("preview",),
-        # whether the lock wears the Nexus's two pictures at all (the scene's own lk_pic_on): a locked
-        # screen is a door first, and someone else's photo behind the password is not for every room
-        ("toggle", "Show your pictures", "The Nexus's banner across the top and your profile picture above the clock, on the lock screen", "lock.picture", "sv_lock_picture"),
+        # whether the lock wears the Nexus's two pictures, each on its own switch (the scene's own
+        # lk_ban_on and lk_av_on): a locked screen is a door first, and someone else's photo behind
+        # the password is not for every room; a banner without your face is a thing too
+        ("toggle", "Show the banner", "The Nexus's banner across the top of the lock screen", "lock.banner", "sv_lock_banner"),
+        ("toggle", "Show your picture", "The Nexus's profile picture on its plate above the clock", "lock.avatar", "sv_lock_avatar"),
         ("button", "Lock it now", "mooi's own lock screen straight away; it also takes the session by itself after the minutes above", "Lock now", "lock_now", 0),
         ("note", "true", "THE MACHINE SUSPENDS 30 MIN AFTER THAT · SUPER+L LOCKS NOW"),
         ("card", "Picture"),
