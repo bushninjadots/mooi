@@ -102,6 +102,10 @@ M.SETTERS = {
     -- the three colours the `custom` light is drawn in: typed as hex in the settings window (that
     -- window's own event), so their codes set nothing; they are here so a page's Reset names them
     "desktop.fx_phos", "desktop.fx_ember", "desktop.fx_trace",
+    -- D160: the lock screen's key (SUPER + L); the idle timeout that locks on its own is lock.idle
+    "keys.lock",
+    -- and the lock's backdrop: how far the wallpaper behind the plate is blurred and dimmed
+    "lock.blur", "lock.dim",
 }
 
 local function row_of(path)

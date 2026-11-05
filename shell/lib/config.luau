@@ -140,6 +140,11 @@ M.SCHEMA = {
     -- D161: how long the session may sit idle before the lock screen takes it. hypridle owns the
     -- timer, so `mooi idle` writes its file from this (and the machine suspends half an hour after).
     { path = "lock.idle", kind = "integer", default = 30, min = 1, max = 60 },
+    -- D160: what the lock screen's backdrop does with the wallpaper — how far it is blurred behind
+    -- the plate, and how far it is dimmed (a share of the ground painted over it), so the clock and
+    -- the field read over any picture. The lock scene's own (shell/mooi-lock, copied in at each lock).
+    { path = "lock.blur", kind = "enum", values = { "off", "light", "medium", "heavy" }, default = "medium" },
+    { path = "lock.dim", kind = "integer", default = 72, min = 0, max = 90 },
     { path = "command.max_results", kind = "integer", default = 7, min = 3, max = 10 },
     { path = "atlas.previews", kind = "boolean", default = true },
     -- The tray's icons: drawn in the bar's own colours (and their own on hover), or as given.
@@ -241,6 +246,9 @@ M.SCHEMA = {
     { path = "keys.window", kind = "key", default = "SUPER + ALT + W" },
     { path = "keys.stop", kind = "key", default = "SUPER + ALT + SHIFT + Space" },
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
+    -- D160: the lock screen at once. The session also locks itself after `lock.idle` minutes
+    -- (hypridle, Settings → Lock); this is the key for when you are leaving now.
+    { path = "keys.lock", kind = "key", default = "SUPER + L" },
     { path = "keys.edit", kind = "key", default = "SUPER + ALT + E" },
     { path = "keys.system", kind = "key", default = "SUPER + ALT + C" },
     { path = "keys.shutter", kind = "key", default = "SUPER + ALT + D" },

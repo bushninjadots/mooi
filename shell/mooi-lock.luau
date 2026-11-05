@@ -23,6 +23,18 @@ if type(settings) ~= "table" then settings = {} end
 local palette = read("palette.json", "json")
 local ROLES = { "ground", "hull", "steel_900", "trace_dim", "trace", "phos", "ember", "muted", "ink" }
 
+-- The backdrop (Settings → Lock): how far the wallpaper behind the plate is blurred, and how far it
+-- is dimmed. Read from the settings.json `mooi lock` copies beside this scene, so a change lands on
+-- the next lock; nothing unreadable is allowed to blank the screen — the design's own stands in.
+local BLUR = { off = 0, light = 22, medium = 54, heavy = 96 }
+local function backdrop()
+    local l = type(settings.lock) == "table" and settings.lock or {}
+    fact.lk_blur = BLUR[l.blur] or BLUR.medium
+    local dim = tonumber(l.dim) or 72
+    fact.lk_dim = math.max(0, math.min(90, dim)) / 100
+end
+backdrop()
+
 local function paint()
     local theme = type(settings.theme) == "table" and settings.theme or {}
     local ok, out = pcall(ferro.resolve, theme.source, palette, theme.signal, false, ferro.options(settings))
@@ -39,6 +51,7 @@ pcall(sys.watch, "files:palette.json", function() palette = read("palette.json",
 pcall(sys.watch, "files:settings.json", function()
     settings = config.parse(read("settings.json"), json.decode)
     if type(settings) ~= "table" then settings = {} end
+    backdrop()
     paint()
 end)
 
@@ -72,6 +85,25 @@ local function picture()
 end
 picture()
 pcall(sys.watch, "files:identity.json", picture)
+
+-- ── What the glass says about the session ─────────────────────────────────
+-- The three services the bar reads: the song (`media`), the battery, and how many notices are
+-- waiting (`notification_history`, which the Signal Loom keeps). A locked screen that says nothing
+-- about the session behind it is a wall; these two lines are what make it a door. Read live from the
+-- compositor's services, so nothing has to be copied in.
+pcall(sys.watch, "media", function(m)
+    local t = type(m) == "table" and m or {}
+    local title, artist = tostring(t.title or ""), tostring(t.artist or "")
+    fact.lk_playing = t.playing == true and title ~= ""
+    text.lk_track = (artist ~= "" and (title .. " · " .. artist)) or title
+end)
+pcall(sys.watch, "battery", function(b)
+    local t = type(b) == "table" and b or {}
+    fact.lk_batt, fact.lk_batt_pct, fact.lk_charging = t.present == true, tonumber(t.percent) or 0, t.charging == true
+end)
+pcall(sys.watch, "notification_history", function(l)
+    fact.lk_notes = type(l) == "table" and #l or 0
+end)
 
 -- ── The tries PAM has left ──────────────────────────────────────────────
 -- A lock screen cannot ask PAM how many attempts remain, only whether one password was right, so

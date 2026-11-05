@@ -97,6 +97,10 @@ SETTERS = [
     # the three colours the `custom` light is drawn in (typed as hex, so their codes set nothing;
     # they are listed so a page's Reset names them)
     "desktop.fx_phos", "desktop.fx_ember", "desktop.fx_trace",
+    # D160: the lock screen's key, beside the idle timeout that locks on its own (lock.idle)
+    "keys.lock",
+    # and the lock's backdrop, its blur and its dimming
+    "lock.blur", "lock.dim",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -127,6 +131,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("desk", "Desk mode", "The desktop widgets gathered over the desktop, or back where they were"),
         ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
+        ("lock", "Lock screen", "mooi's own lock at once; the session also locks itself after the minutes in Settings → Lock"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -499,6 +504,12 @@ SECTIONS = [
         ("card", "Locking"),
         ("slider", "Lock after", "Minutes without typing or pointing before mooi's lock screen takes the session",
          "lock.idle", 1, 60, "{sv_lock_idle + 1, 0} min"),
+        # the same lock, now: the key does this too (Settings → Keys), and a lock nobody can find
+        # by hand is half a lock
+        ("choice", "Backdrop", "How far the wallpaper is blurred behind the plate", "lock.blur", "sv_lock_blur", ["Off", "Light", "Medium", "Heavy"]),
+        ("slider", "Dim", "How far the wallpaper is dimmed, so the clock and the field read over any picture", "lock.dim", 0, 90,
+         "{sv_lock_dim, 0}%"),
+        ("button", "Lock it now", "mooi's own lock screen straight away; it also takes the session by itself after the minutes above", "Lock now", "lock_now", 0),
         ("note", "true", "THE MACHINE SUSPENDS 30 MIN AFTER THAT · SUPER+L LOCKS NOW"),
         ("card", "Picture"),
         ("info", "On the lock screen", "The same banner or picture the Nexus's profile card shows", "lock_pic_now"),
@@ -1136,6 +1147,7 @@ def main():
     text pw_text = ""
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
     event lock_pic ->         // to the logic: choose it (0 the profile picture, 1 the banner)
+    event lock_now ->         // to the logic: lock the session now (`mooi lock`)
     fact pw_ppd = false       // power-profiles-daemon answers
     fact saving = false       // the battery saver is on now
     text adv_version = ""

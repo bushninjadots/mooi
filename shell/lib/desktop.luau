@@ -17,6 +17,9 @@ M.ACTIONS = {
     { key = "desk", cmd = "widgets desk", name = "Desk mode (the widgets gathered)" },
     { key = "mode", cmd = "mode", name = "Light or dark" },
     { key = "edit", cmd = "edit", name = "Edit the bar" },
+    -- D160: the lock screen at once (`mooi lock`, the same scene hypridle reaches when the session
+    -- sits idle): the shell's own key for it, so it is rebindable and shown in Settings → Keys.
+    { key = "lock", cmd = "lock", name = "Lock screen" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

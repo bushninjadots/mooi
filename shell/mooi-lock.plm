@@ -14,7 +14,7 @@ language 0.9
 
 scene MooiLock {
     permissions {
-        services: "files", "auth", "clock", "clock.seconds", "env"
+        services: "files", "auth", "clock", "clock.seconds", "env", "media", "battery", "notification_history"
         run: "systemctl"
     }
 
@@ -82,6 +82,16 @@ scene MooiLock {
     text rbt_label = "REBOOT"
     text pwr_note = ""
     text wp = ""                 // the wallpaper, for the backdrop
+    // ── What the glass says about the session (D160) ──
+    fact lk_playing = false       // a song is playing, so the track line shows
+    text lk_track = ""            // "Artist · Title", as the media service has it
+    fact lk_batt = false
+    fact lk_batt_pct = 0
+    fact lk_charging = false
+    fact lk_notes = 0             // notices waiting (notification_history)
+    // The backdrop's own two settings (Settings → Lock): blur in pleamar's units, dim as a share.
+    fact lk_blur = 54
+    fact lk_dim = 0.72
     event tryauth ->             // to the logic: check what is typed
     event clear ->               // to the logic: forget what was typed
     event pwr_off ->             // to the logic: the power off button
@@ -130,10 +140,10 @@ scene MooiLock {
         group {
             show: has_wall
             opacity: 42%
-            blur: 54
+            blur: lk_blur
             image wall { at: ox - 80, oy - 80; size: w + 160, h + 160 }
         }
-        box { from: ox, oy; size: w, h; color: lk_ground; opacity: 72% }
+        box { from: ox, oy; size: w, h; color: lk_ground; opacity: lk_dim }
 
         // ── The picture (D161): the Nexus's banner across the top, or its profile picture above
         //    the clock. `mooi lock` copies it beside this scene; without one nothing is drawn.
@@ -157,13 +167,35 @@ scene MooiLock {
             at: ox + w - 28, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
             color: lk_trace_dim; outline: 2, lk_ground
         }
+        // the battery, and what waits for you: the two things worth knowing before you type it in
+        text "{round(lk_batt_pct), 0}%" {
+            at: ox + w - 96, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
+            color: mix(lk_muted, lk_ember, if(lk_batt_pct < 15 and not lk_charging, 1, 0)); outline: 2, lk_ground
+            show: lk_batt and not lk_charging
+        }
+        text "{round(lk_batt_pct), 0}% · CHARGING" {
+            at: ox + w - 96, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
+            color: lk_muted; outline: 2, lk_ground
+            show: lk_batt and lk_charging
+        }
+        text "{lk_notes, 0} WAITING" {
+            at: ox + w - 208, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
+            color: lk_ember; outline: 2, lk_ground
+            show: lk_notes > 0
+        }
 
         // The clock: the shell's instrument, not a poster.
         group {
             glow: 22, 45%, lk_phos
-            opacity: lock.held
+            opacity: appear
             text tick.time { at: 0, -136; anchor: center; size: 96; weight: 700; family: "Share Tech Mono"; color: lk_phos }
             text tick.date { at: 0, -70; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"; color: lk_muted }
+            // what was playing when the screen went dark: one line, quietly, above the name
+            text lk_track {
+                at: 0, -44; anchor: center; size: 11; family: "Share Tech Mono"
+                color: lk_trace; width: 660; lines: 1; align: center
+                show: lk_playing
+            }
         }
 
         // Whose screen this is, above the plate: the name the session runs as, so the password
@@ -176,7 +208,7 @@ scene MooiLock {
         // The password: a plate cut like the shell's, and the field itself, never the password.
         group {
             move: shake, 0
-            opacity: lock.held
+            opacity: appear
             // a one-pixel frame, drawn as a box a size larger: a box takes one colour, and mooi's
             // plates are a dark fill inside a faint trace, not a filled border
             box { at: 0, 56; size: 380, 48; corner: 2; color: lk_trace_dim; opacity: 45% }
@@ -210,7 +242,7 @@ scene MooiLock {
         // press before it does nothing.
         let by = floor(h / 2) - 46
         group {
-            opacity: lock.held
+            opacity: appear
             box { at: -76, by; size: 122, 34; corner: 2; color: lk_trace_dim; opacity: 40% }
             box { at: -76, by; size: 120, 32; corner: 2; color: lk_steel_900; opacity: 88% }
             text pwr_label {
@@ -234,7 +266,7 @@ scene MooiLock {
         }
         text "LOCKING" {
             at: 0, 0; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"
-            color: lk_trace_dim; opacity: 1 - lock.held
+            color: lk_trace_dim; opacity: 1 - appear
         }
     }
 }

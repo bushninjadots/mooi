@@ -398,6 +398,11 @@ end
 -- The same picture the Nexus's profile card shows, chosen with zenity and imported by `mooi
 -- identity` (a new file name for every import); `mooi lock` copies it beside the lock's scene.
 -- Banner or picture, the lock takes whichever is set, the banner first.
+-- The lock, now: the same scene the key and hypridle reach, so a lock is always one program.
+-- A `mooi` that cannot lock says so in the log rather than failing quietly behind the window.
+on("lock_now", function()
+    run("mooi", { "lock" }, function(_, code) if code ~= 0 then log("lock · mooi lock refused; see `mooi lock`") end end)
+end)
 on("lock_pic", function(v)
     local kind = tonumber(v) == 0 and "avatar" or "banner"
     local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose the lock screen's " .. (kind == "avatar" and "picture" or "banner"),

@@ -1298,6 +1298,30 @@ test("shutter: its key always, Super+Alt+right-click only while asked for, nothi
     eq(has(off, "shutter"), nil, "off: no key"); eq(has(off, "shutter-here"), nil, "and no gesture")
 end)
 
+test("the lock screen's backdrop is a setting, and stays legible", function()
+    local d = config.defaults()
+    eq(d.lock.blur, "medium", "blurred as the design has it")
+    eq(d.lock.dim, 72, "and dimmed to 72 percent")
+    local s, problems = config.validate({ lock = { blur = "nonsense", dim = 200 } })
+    eq(s.lock.blur, "medium", "an unknown blur is the default")
+    eq(s.lock.dim, 72, "a dim out of range is the default too")
+    eq(#problems, 2, "and both are reported")
+    eq(require("lib/setters").path(420), "lock.blur", "the choice's code")
+    eq(require("lib/setters").path(421), "lock.dim", "the slider's code")
+end)
+test("the lock screen has a key of its own (D160)", function()
+    local desktop = require("lib/desktop")
+    local keys = config.defaults().keys
+    local function has(list, cmd) for _, b in ipairs(list) do if b[2] == cmd then return b[1] end end end
+    eq(has(desktop.binds(keys), "lock"), "SUPER + L", "Super+L locks at once")
+    eq(keys.lock, "SUPER + L", "and it is a setting, so it can be another key")
+    local f = desktop.file(keys, config.defaults().desktop, pal, "/x/bin/mooi")
+    assert(string.find(f, '{ "SUPER + L", "lock" },', 1, true), "the key runs `mooi lock`")
+    local action = nil
+    for _, a in ipairs(desktop.ACTIONS) do if a.key == "lock" then action = a end end
+    eq(action and action.cmd, "lock", "an action, and its bin/mooi command")
+end)
+
 test("the Overview's grid: miniatures in the screen's shape that fit", function()
     local atlas = require("lib/atlas")
     local g = atlas.grid(1920, 1080, 2, 5, 40)
