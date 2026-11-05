@@ -112,8 +112,14 @@ local function publish(s)
         fact["fi_" .. id] = P("bar.modules." .. id .. ".frame", mod.frame)
         fact["g_" .. id] = grouped[id] == true
     end
+    -- the lock screen's picture (Settings → Lock): the identity the Nexus shows, which `mooi lock`
+    -- copies beside the lock's scene
+    local id = type(s.nexus) == "table" and type(s.nexus.identity) == "table" and s.nexus.identity or {}
+    local function ispic(rel) return type(rel) == "string" and rel ~= "" end
+    text.lock_pic_now = ispic(id.banner) and "BANNER" or (ispic(id.avatar) and "PROFILE PICTURE" or "NONE YET")
     if layout then layout(s) end
     if show_colour then show_colour() end
+    if show_fxcolours then show_fxcolours() end
     if show_power then show_power() end
 end
 
@@ -377,13 +383,33 @@ layout(settings)
 -- this window's changes over it. Writing the in-memory copy whole reverted whatever the bar had
 -- just written (a workspace label, the wheel, day or night) while this window was open.
 function save()
+    local was_idle = type(settings.lock) == "table" and settings.lock.idle or nil
     local doc, why = settingsfile.save(sys, FILE, loaded, settings, fresh_settings)
     if not doc then log("settings · could not save: " .. tostring(why)); publish(settings); return false end
     settings = doc                  -- what is on disk now: another program's change is kept
     loaded = settingsfile.copy(doc)
     publish(settings)
+    -- the lock's timer is hypridle's, not this window's: `mooi idle` writes its file and restarts it
+    if (type(settings.lock) == "table" and settings.lock.idle or nil) ~= was_idle then run("mooi", { "idle" }) end
     return true
 end
+
+-- ── The lock screen's picture (D161) ────────────────────────
+-- The same picture the Nexus's profile card shows, chosen with zenity and imported by `mooi
+-- identity` (a new file name for every import); `mooi lock` copies it beside the lock's scene.
+-- Banner or picture, the lock takes whichever is set, the banner first.
+on("lock_pic", function(v)
+    local kind = tonumber(v) == 0 and "avatar" or "banner"
+    local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose the lock screen's " .. (kind == "avatar" and "picture" or "banner"),
+                                       "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif" }, function(out, code)
+        local path = (out or ""):match("^%s*(.-)%s*$")
+        if code ~= 0 or path == "" then return end
+        run("mooi", { "identity", kind, path }, function(_, c)
+            if c == 0 then load() else log("lock · the picture could not be imported") end
+        end)
+    end)
+    if not ok then log("lock · install zenity to choose a picture") end
+end)
 on("lay_pick", function(v)
     local c = chips[(math.floor(tonumber(v) or -1)) + 1]
     if not c then sel = nil
@@ -778,4 +804,28 @@ on("set_colour", function(v)
         settings.bar.bg_colour = ferro.to_hex(ferro.hsl(h, s, l))
     end
     save(); paint()
+end)
+
+-- ── The shaders' own three colours ─────────────────────────
+-- desktop.fx_phos, fx_ember and fx_trace: the `custom` light (desktop.fx_light), any #rrggbb typed
+-- into the field beside each. Three stops only, so a colour is a colour and nothing is derived.
+local FX = { "fx_phos", "fx_ember", "fx_trace" }
+function show_fxcolours()
+    for i, key in ipairs(FX) do
+        local c = ferro.hex(settings.desktop[key]) or ferro.hex("#7fcfb6")
+        fact["fxp" .. i .. "_r"], fact["fxp" .. i .. "_g"], fact["fxp" .. i .. "_b"] = c.r, c.g, c.b
+        local hex = string.upper(ferro.to_hex(c))
+        if i == 1 then text.fxp1_hex = hex elseif i == 2 then text.fxp2_hex = hex else text.fxp3_hex = hex end
+    end
+end
+on("set_fxcolour", function(v)
+    local n = math.floor(tonumber(v) or 0)
+    local key = FX[n]
+    local typed = ({ text.fxp1_in, text.fxp2_in, text.fxp3_in })[n]
+    if not key or typed == nil then return end
+    if n == 1 then text.fxp1_in = "" elseif n == 2 then text.fxp2_in = "" else text.fxp3_in = "" end
+    local hex = string.lower((tostring(typed):gsub("%s", "")))
+    if not string.match(hex, "^#%x%x%x%x%x%x$") then return end   -- not a colour: the field is emptied, nothing saved
+    settings.desktop[key] = hex
+    show_fxcolours(); save(); paint()
 end)

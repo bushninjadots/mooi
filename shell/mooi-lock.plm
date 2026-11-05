@@ -71,9 +71,13 @@ scene MooiLock {
     fact authing = false         // PAM is thinking (a wrong one takes seconds on purpose)
     fact armed = 0               // a power button pressed once: 1 power off, 2 reboot
     fact has_wall = false
+    fact has_pic = false
+    fact pic_banner = false
     text password = ""
     text status = ""            // VERIFYING… · INCORRECT · UNLOCKED; empty is the quiet state
     text tries = ""              // how many attempts PAM has left before it locks the login
+    text who = ""                // whose screen this is: the name the session runs as
+    text picpath = ""            // the picture copied beside this scene by `mooi lock`
     text pwr_label = "POWER OFF"
     text rbt_label = "REBOOT"
     text pwr_note = ""
@@ -102,6 +106,7 @@ scene MooiLock {
     on key Return { emit tryauth }
 
     image wall = from wp, 1920, 1080
+    image lockpic = from picpath, 1920, 1080
 
     surface lk {
         kind: lock
@@ -130,12 +135,27 @@ scene MooiLock {
         }
         box { from: ox, oy; size: w, h; color: lk_ground; opacity: 72% }
 
+        // ── The picture (D161): the Nexus's banner across the top, or its profile picture above
+        //    the clock. `mooi lock` copies it beside this scene; without one nothing is drawn.
+        group {
+            show: has_pic and pic_banner
+            image lockpic { at: ox, oy; size: w, 168; fit: cover; opacity: 92% }
+            // a scrim over it, so the rail and the clock's ceiling stay readable over any picture
+            box { from: ox, oy; size: w, 168; color: lk_ground; opacity: 52% }
+            box { from: ox, oy + 167; size: w, 1; color: lk_trace_dim; opacity: 45% }
+        }
+        group {
+            show: has_pic and not pic_banner
+            box { at: 0, -224; size: 66, 66; corner: 3; color: lk_trace_dim; opacity: 45% }
+            image lockpic { at: -31, -255; size: 62, 62; fit: cover }
+        }
+
         // The rail: mooi's drawn line, its name, and who is holding the screen.
         box { from: ox, oy; size: w, 1; color: lk_trace_dim; opacity: 40% }
-        text "MOOI" { at: ox + 28, oy + 24; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted }
+        text "MOOI" { at: ox + 28, oy + 24; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted; outline: 2, lk_ground }
         text "SECURE" {
             at: ox + w - 28, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
-            color: lk_trace_dim
+            color: lk_trace_dim; outline: 2, lk_ground
         }
 
         // The clock: the shell's instrument, not a poster.
@@ -144,6 +164,13 @@ scene MooiLock {
             opacity: lock.held
             text tick.time { at: 0, -136; anchor: center; size: 96; weight: 700; family: "Share Tech Mono"; color: lk_phos }
             text tick.date { at: 0, -70; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"; color: lk_muted }
+        }
+
+        // Whose screen this is, above the plate: the name the session runs as, so the password
+        // being asked for has an owner.
+        text who {
+            at: 0, 8; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"
+            color: lk_muted
         }
 
         // The password: a plate cut like the shell's, and the field itself, never the password.

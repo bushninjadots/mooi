@@ -14,7 +14,7 @@ import "ui/ferrolume.plm"
 // paints the same palette (lib/ferro), so the window wears what the bar wears.
 scene Mooi {
     permissions {
-        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi"
+        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi", "zenity"
         services: "files", "files.write", "files.remove", "env", "audio", "audio.*", "battery"
     }
     fact st_mem_f = 0
@@ -812,6 +812,26 @@ scene Mooi {
     fact df_desktop_column_wrap = 0
     fact sv_desktop_column_keys = 0
     fact df_desktop_column_keys = 0
+    fact sv_lock_idle = 0
+    fact df_lock_idle = 0
+    fact sv_desktop_ws_fx = 0
+    fact df_desktop_ws_fx = 0
+    fact sv_desktop_window_fx = 0
+    fact df_desktop_window_fx = 0
+    fact sv_desktop_window_fx_speed = 0
+    fact df_desktop_window_fx_speed = 0
+    fact sv_desktop_window_fx_apps = 0
+    fact df_desktop_window_fx_apps = 0
+    fact sv_desktop_ws_fx_speed = 0
+    fact df_desktop_ws_fx_speed = 0
+    fact sv_desktop_fx_light = 0
+    fact df_desktop_fx_light = 0
+    fact sv_desktop_fx_phos = 0
+    fact df_desktop_fx_phos = 0
+    fact sv_desktop_fx_ember = 0
+    fact df_desktop_fx_ember = 0
+    fact sv_desktop_fx_trace = 0
+    fact df_desktop_fx_trace = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
@@ -981,6 +1001,8 @@ scene Mooi {
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
+    text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
+    event lock_pic ->         // to the logic: choose it (0 the profile picture, 1 the banner)
     fact pw_ppd = false       // power-profiles-daemon answers
     fact saving = false       // the battery saver is on now
     text adv_version = ""
@@ -1020,6 +1042,24 @@ scene Mooi {
     fact cq7_r = 0.1
     fact cq7_g = 0.1
     fact cq7_b = 0.1
+    fact fxp1_r = 0.5
+    fact fxp1_g = 0.5
+    fact fxp1_b = 0.5
+    text fxp1_hex = "#7FCFB6"
+    text fxp1_in = ""
+    fact fxp2_r = 0.5
+    fact fxp2_g = 0.5
+    fact fxp2_b = 0.5
+    text fxp2_hex = "#7FCFB6"
+    text fxp2_in = ""
+    fact fxp3_r = 0.5
+    fact fxp3_g = 0.5
+    fact fxp3_b = 0.5
+    text fxp3_hex = "#7FCFB6"
+    text fxp3_in = ""
+    // The shaders' own three colours (desktop.fx_phos/ember/trace), the `custom` light: each typed
+    // as #rrggbb into its field, read back and saved by the logic (set_fxcolour: 1, 2 or 3).
+    event set_fxcolour ->
     fact lay_c1 = true
     fact lay_c2 = true
     fact lay_c3 = true
@@ -1366,21 +1406,53 @@ scene Mooi {
     prop gy_8_c6 = 2036 ~m.reflow
     follow gy_8_c6 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0)
     prop gy_8_33 = 2080 ~m.reflow
-    follow gy_8_33 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0)
+    follow gy_8_33 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44
     prop gy_8_34 = 2140 ~m.reflow
-    follow gy_8_34 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0)
+    follow gy_8_34 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60
     prop gy_8_35 = 2200 ~m.reflow
-    follow gy_8_35 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
-    prop gy_8_36 = 2260 ~m.reflow
-    follow gy_8_36 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
-    prop gy_8_37 = 2320 ~m.reflow
-    follow gy_8_37 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
-    prop gy_8_38 = 2380 ~m.reflow
-    follow gy_8_38 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
-    prop gy_8_39 = 2440 ~m.reflow
-    follow gy_8_39 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
-    prop gc_8_6 = 472 ~m.reflow
-    follow gc_8_6 = 52 + 60 + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0)
+    follow gy_8_35 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60
+    prop gy_8_36 = 2262 ~m.reflow
+    follow gy_8_36 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0)
+    prop gy_8_37 = 2324 ~m.reflow
+    follow gy_8_37 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0)
+    prop gc_8_6 = 358 ~m.reflow
+    follow gc_8_6 = 52 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0)
+    prop gy_8_c7 = 2408 ~m.reflow
+    follow gy_8_c7 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22
+    prop gy_8_39 = 2452 ~m.reflow
+    follow gy_8_39 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44
+    prop gy_8_40 = 2512 ~m.reflow
+    follow gy_8_40 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60
+    prop gy_8_41 = 2572 ~m.reflow
+    follow gy_8_41 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0)
+    prop gc_8_7 = 232 ~m.reflow
+    follow gc_8_7 = 52 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0)
+    prop gy_8_c8 = 2654 ~m.reflow
+    follow gy_8_c8 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22
+    prop gy_8_43 = 2698 ~m.reflow
+    follow gy_8_43 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44
+    prop gy_8_44 = 2758 ~m.reflow
+    follow gy_8_44 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60
+    prop gc_8_8 = 172 ~m.reflow
+    follow gc_8_8 = 52 + 60 + if(sv_desktop_ws_fx != 0, 60, 0)
+    prop gy_8_c9 = 2840 ~m.reflow
+    follow gy_8_c9 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22
+    prop gy_8_46 = 2884 ~m.reflow
+    follow gy_8_46 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0)
+    prop gy_8_47 = 2944 ~m.reflow
+    follow gy_8_47 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0)
+    prop gy_8_48 = 3004 ~m.reflow
+    follow gy_8_48 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
+    prop gy_8_49 = 3064 ~m.reflow
+    follow gy_8_49 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
+    prop gy_8_50 = 3124 ~m.reflow
+    follow gy_8_50 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
+    prop gy_8_51 = 3184 ~m.reflow
+    follow gy_8_51 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
+    prop gy_8_52 = 3244 ~m.reflow
+    follow gy_8_52 = 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0)
+    prop gc_8_9 = 472 ~m.reflow
+    follow gc_8_9 = 52 + 60 + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0) + if(sv_desktop_layout == 0 or sv_desktop_layout == 3, 60, 0)
     prop gy_9_0 = 112 ~m.reflow
     follow gy_9_0 = 112
     prop gy_9_c0 = 140 ~m.reflow
@@ -1663,36 +1735,28 @@ scene Mooi {
     follow gy_18_c0 = 112
     prop gy_18_1 = 156 ~m.reflow
     follow gy_18_1 = 112 + 44
-    prop gc_18_0 = 772 ~m.reflow
-    follow gc_18_0 = 52 + 720
+    prop gy_18_2 = 216 ~m.reflow
+    follow gy_18_2 = 112 + 44 + 60
+    prop gc_18_0 = 140 ~m.reflow
+    follow gc_18_0 = 52 + 60 + 28
+    prop gy_18_c1 = 266 ~m.reflow
+    follow gy_18_c1 = 112 + 44 + 60 + 28 + 22
+    prop gy_18_4 = 310 ~m.reflow
+    follow gy_18_4 = 112 + 44 + 60 + 28 + 22 + 44
+    prop gy_18_5 = 370 ~m.reflow
+    follow gy_18_5 = 112 + 44 + 60 + 28 + 22 + 44 + 60
+    prop gy_18_6 = 430 ~m.reflow
+    follow gy_18_6 = 112 + 44 + 60 + 28 + 22 + 44 + 60 + 60
+    prop gy_18_7 = 490 ~m.reflow
+    follow gy_18_7 = 112 + 44 + 60 + 28 + 22 + 44 + 60 + 60 + 60
+    prop gc_18_1 = 260 ~m.reflow
+    follow gc_18_1 = 52 + 60 + 60 + 60 + 28
     prop gy_19_c0 = 112 ~m.reflow
     follow gy_19_c0 = 112
     prop gy_19_1 = 156 ~m.reflow
     follow gy_19_1 = 112 + 44
-    prop gy_19_2 = 216 ~m.reflow
-    follow gy_19_2 = 112 + 44 + 60
-    prop gy_19_3 = 276 ~m.reflow
-    follow gy_19_3 = 112 + 44 + 60 + 60
-    prop gy_19_4 = 336 ~m.reflow
-    follow gy_19_4 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0)
-    prop gy_19_5 = 396 ~m.reflow
-    follow gy_19_5 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0)
-    prop gc_19_0 = 352 ~m.reflow
-    follow gc_19_0 = 52 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60
-    prop gy_19_c1 = 478 ~m.reflow
-    follow gy_19_c1 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22
-    prop gy_19_7 = 522 ~m.reflow
-    follow gy_19_7 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44
-    prop gy_19_8 = 582 ~m.reflow
-    follow gy_19_8 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60
-    prop gc_19_1 = 172 ~m.reflow
-    follow gc_19_1 = 52 + 60 + 60
-    prop gy_19_c2 = 664 ~m.reflow
-    follow gy_19_c2 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22
-    prop gy_19_10 = 708 ~m.reflow
-    follow gy_19_10 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44
-    prop gc_19_2 = 112 ~m.reflow
-    follow gc_19_2 = 52 + 60
+    prop gc_19_0 = 772 ~m.reflow
+    follow gc_19_0 = 52 + 720
     prop gy_20_c0 = 112 ~m.reflow
     follow gy_20_c0 = 112
     prop gy_20_1 = 156 ~m.reflow
@@ -1702,25 +1766,23 @@ scene Mooi {
     prop gy_20_3 = 276 ~m.reflow
     follow gy_20_3 = 112 + 44 + 60 + 60
     prop gy_20_4 = 336 ~m.reflow
-    follow gy_20_4 = 112 + 44 + 60 + 60 + 60
-    prop gc_20_0 = 292 ~m.reflow
-    follow gc_20_0 = 52 + 60 + 60 + 60 + 60
-    prop gy_20_c1 = 418 ~m.reflow
-    follow gy_20_c1 = 112 + 44 + 60 + 60 + 60 + 60 + 22
-    prop gy_20_6 = 462 ~m.reflow
-    follow gy_20_6 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    follow gy_20_4 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0)
+    prop gy_20_5 = 396 ~m.reflow
+    follow gy_20_5 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0)
+    prop gc_20_0 = 352 ~m.reflow
+    follow gc_20_0 = 52 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60
+    prop gy_20_c1 = 478 ~m.reflow
+    follow gy_20_c1 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22
     prop gy_20_7 = 522 ~m.reflow
-    follow gy_20_7 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    follow gy_20_7 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44
     prop gy_20_8 = 582 ~m.reflow
-    follow gy_20_8 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60
-    prop gy_20_9 = 642 ~m.reflow
-    follow gy_20_9 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60
-    prop gc_20_1 = 292 ~m.reflow
-    follow gc_20_1 = 52 + 60 + 60 + 60 + 60
-    prop gy_20_c2 = 724 ~m.reflow
-    follow gy_20_c2 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22
-    prop gy_20_11 = 768 ~m.reflow
-    follow gy_20_11 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    follow gy_20_8 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60
+    prop gc_20_1 = 172 ~m.reflow
+    follow gc_20_1 = 52 + 60 + 60
+    prop gy_20_c2 = 664 ~m.reflow
+    follow gy_20_c2 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22
+    prop gy_20_10 = 708 ~m.reflow
+    follow gy_20_10 = 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44
     prop gc_20_2 = 112 ~m.reflow
     follow gc_20_2 = 52 + 60
     prop gy_21_c0 = 112 ~m.reflow
@@ -1733,46 +1795,76 @@ scene Mooi {
     follow gy_21_3 = 112 + 44 + 60 + 60
     prop gy_21_4 = 336 ~m.reflow
     follow gy_21_4 = 112 + 44 + 60 + 60 + 60
-    prop gy_21_5 = 394 ~m.reflow
-    follow gy_21_5 = 112 + 44 + 60 + 60 + 60 + 58
-    prop gc_21_0 = 318 ~m.reflow
-    follow gc_21_0 = 52 + 60 + 60 + 60 + 58 + 28
-    prop gy_21_c1 = 444 ~m.reflow
-    follow gy_21_c1 = 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22
-    prop gy_21_7 = 488 ~m.reflow
-    follow gy_21_7 = 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44
-    prop gc_21_1 = 296 ~m.reflow
-    follow gc_21_1 = 52 + 244
+    prop gc_21_0 = 292 ~m.reflow
+    follow gc_21_0 = 52 + 60 + 60 + 60 + 60
+    prop gy_21_c1 = 418 ~m.reflow
+    follow gy_21_c1 = 112 + 44 + 60 + 60 + 60 + 60 + 22
+    prop gy_21_6 = 462 ~m.reflow
+    follow gy_21_6 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gy_21_7 = 522 ~m.reflow
+    follow gy_21_7 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_21_8 = 582 ~m.reflow
+    follow gy_21_8 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60
+    prop gy_21_9 = 642 ~m.reflow
+    follow gy_21_9 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60
+    prop gc_21_1 = 292 ~m.reflow
+    follow gc_21_1 = 52 + 60 + 60 + 60 + 60
+    prop gy_21_c2 = 724 ~m.reflow
+    follow gy_21_c2 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22
+    prop gy_21_11 = 768 ~m.reflow
+    follow gy_21_11 = 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gc_21_2 = 112 ~m.reflow
+    follow gc_21_2 = 52 + 60
     prop gy_22_c0 = 112 ~m.reflow
     follow gy_22_c0 = 112
     prop gy_22_1 = 156 ~m.reflow
     follow gy_22_1 = 112 + 44
     prop gy_22_2 = 216 ~m.reflow
-    follow gy_22_2 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0)
+    follow gy_22_2 = 112 + 44 + 60
     prop gy_22_3 = 276 ~m.reflow
-    follow gy_22_3 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0)
+    follow gy_22_3 = 112 + 44 + 60 + 60
     prop gy_22_4 = 336 ~m.reflow
-    follow gy_22_4 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0)
-    prop gy_22_5 = 396 ~m.reflow
-    follow gy_22_5 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0)
-    prop gc_22_0 = 320 ~m.reflow
-    follow gc_22_0 = 52 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0)
-    prop gy_22_c1 = 446 ~m.reflow
-    follow gy_22_c1 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22
-    prop gy_22_7 = 490 ~m.reflow
-    follow gy_22_7 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44
-    prop gy_22_8 = 550 ~m.reflow
-    follow gy_22_8 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60
-    prop gc_22_1 = 140 ~m.reflow
-    follow gc_22_1 = 52 + 60 + if(sv_notch_on == 1, 28, 0)
-    prop gy_22_c2 = 600 ~m.reflow
-    follow gy_22_c2 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22
-    prop gy_22_10 = 644 ~m.reflow
-    follow gy_22_10 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44
-    prop gy_22_11 = 704 ~m.reflow
-    follow gy_22_11 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60
-    prop gc_22_2 = 140 ~m.reflow
-    follow gc_22_2 = 52 + 60 + 28
+    follow gy_22_4 = 112 + 44 + 60 + 60 + 60
+    prop gy_22_5 = 394 ~m.reflow
+    follow gy_22_5 = 112 + 44 + 60 + 60 + 60 + 58
+    prop gc_22_0 = 318 ~m.reflow
+    follow gc_22_0 = 52 + 60 + 60 + 60 + 58 + 28
+    prop gy_22_c1 = 444 ~m.reflow
+    follow gy_22_c1 = 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22
+    prop gy_22_7 = 488 ~m.reflow
+    follow gy_22_7 = 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44
+    prop gc_22_1 = 296 ~m.reflow
+    follow gc_22_1 = 52 + 244
+    prop gy_23_c0 = 112 ~m.reflow
+    follow gy_23_c0 = 112
+    prop gy_23_1 = 156 ~m.reflow
+    follow gy_23_1 = 112 + 44
+    prop gy_23_2 = 216 ~m.reflow
+    follow gy_23_2 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0)
+    prop gy_23_3 = 276 ~m.reflow
+    follow gy_23_3 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0)
+    prop gy_23_4 = 336 ~m.reflow
+    follow gy_23_4 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0)
+    prop gy_23_5 = 396 ~m.reflow
+    follow gy_23_5 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0)
+    prop gc_23_0 = 320 ~m.reflow
+    follow gc_23_0 = 52 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0)
+    prop gy_23_c1 = 446 ~m.reflow
+    follow gy_23_c1 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22
+    prop gy_23_7 = 490 ~m.reflow
+    follow gy_23_7 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44
+    prop gy_23_8 = 550 ~m.reflow
+    follow gy_23_8 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60
+    prop gc_23_1 = 140 ~m.reflow
+    follow gc_23_1 = 52 + 60 + if(sv_notch_on == 1, 28, 0)
+    prop gy_23_c2 = 600 ~m.reflow
+    follow gy_23_c2 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22
+    prop gy_23_10 = 644 ~m.reflow
+    follow gy_23_10 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44
+    prop gy_23_11 = 704 ~m.reflow
+    follow gy_23_11 = 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60
+    prop gc_23_2 = 140 ~m.reflow
+    follow gc_23_2 = 52 + 60 + 28
     // A page chosen slides in: it starts a little low and clear, and settles.
     prop pg = 1
     layer page_in {
@@ -1804,7 +1896,7 @@ scene Mooi {
         on press set_find { focus set_query }
         // the pages, scrolled by the wheel when they do not fit above the edit button
         zone box set_rail { from: 0, 124; size: 232, screen.height - 200 }
-        on scroll set_rail { set_navs = clamp(set_navs - wheel * 44, 0, max(0, 752 - (screen.height - 76))) }
+        on scroll set_rail { set_navs = clamp(set_navs - wheel * 44, 0, max(0, 774 - (screen.height - 76))) }
         group {
             clip box { from: 0, 124 + set_navs_s; size: 232, screen.height - 200 }
             move: 0, 0 - set_navs_s
@@ -1830,20 +1922,21 @@ scene Mooi {
             SNavGroup(553, "SYSTEM")
             SNav(571, "Sound", set_tab == 16, 16, set_pick)
             SNav(593, "Power", set_tab == 17, 17, set_pick)
-            SNav(615, "Keys", set_tab == 18, 18, set_pick)
-            SNav(637, "System", set_tab == 19, 19, set_pick)
-            SNav(659, "Signals", set_tab == 20, 20, set_pick)
-            SNav(681, "Advanced", set_tab == 21, 21, set_pick)
-            SNavGroup(706, "SHELL")
-            SNav(724, "Nexus", set_tab == 22, 22, set_pick)
+            SNav(615, "Lock", set_tab == 18, 18, set_pick)
+            SNav(637, "Keys", set_tab == 19, 19, set_pick)
+            SNav(659, "System", set_tab == 20, 20, set_pick)
+            SNav(681, "Signals", set_tab == 21, 21, set_pick)
+            SNav(703, "Advanced", set_tab == 22, 22, set_pick)
+            SNavGroup(728, "SHELL")
+            SNav(746, "Nexus", set_tab == 23, 23, set_pick)
         }
-        box { from: 14, screen.height - 77; size: 204, 1; color: fl.trace_dim; show: 752 > screen.height - 76 }
+        box { from: 14, screen.height - 77; size: 204, 1; color: fl.trace_dim; show: 774 > screen.height - 76 }
         SButton(16, screen.height - 64, 200, "Edit on the bar", set_action, 1, bar_edit)
         text "CHANGES APPLY AT ONCE" { at: 18, screen.height - 18; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 720 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + if(bar_surface < 2.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 1.5, 60, 0) + if(bar_surface > 0.5 and bar_surface < 2.5, 60, 0) + if(bar_surface < 2.5 or bar_surface > 3.5, 60, 0) + 22 + 44 + 60 + if(sv_bar_edge > 0.5, 60, 0) + 60 + if(not st_notch, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 308 + lay_zh + 48 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(ws_style < 0.5 and not bar_full and not st_notch, 60, 0) + if(ws_style < 2.5, 60, 0) + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(media_mode != 2, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(not frame_on, 28, 0) + if(frame_on and not dk_manage, 28, 0) + 22 + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 60, 0) + if(frame_on, 22, 0) + if(frame_on, 44, 0) + if(frame_on, 60, 0) + if((frame_on) and (frame_music), 60, 0) + if((frame_on) and (frame_music), 60, 0) + if(frame_on, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 720 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -2994,76 +3087,194 @@ scene Mooi {
                     SRevert(712, 1984, sv_desktop_ws_swipe != df_desktop_ws_swipe, set_value, 404000 + df_desktop_ws_swipe)
                 }
                 group {
-                    show: dk_manage
+                    show: true
                     move: 0, gy_8_c6 - 2036
-                    SCard(2036, gc_8_6, "Tiling")
+                    SCard(2036, gc_8_6, "Shader colours")
+                }
+                group {
+                    show: true
+                    move: 0, gy_8_33 - 2080
+                    SRow(2080, "The light", "Where the transition and the windows' effects take their colour: the bar's own palette (a new wallpaper re-lights them), or a fixed way of their own", true, "", 346, false)
+                    STrack(670, 2096, 468)
+                    SChoice(670, 2096, 78, "Palette", sv_desktop_fx_light == 0, set_value, 415000)
+                    SChoice(748, 2096, 78, "Phosphor", sv_desktop_fx_light == 1, set_value, 415001)
+                    SChoice(826, 2096, 78, "Amber", sv_desktop_fx_light == 2, set_value, 415002)
+                    SChoice(904, 2096, 78, "Ice", sv_desktop_fx_light == 3, set_value, 415003)
+                    SChoice(982, 2096, 78, "Magenta", sv_desktop_fx_light == 4, set_value, 415004)
+                    SChoice(1060, 2096, 78, "Mono", sv_desktop_fx_light == 5, set_value, 415005)
+                    SRevert(640, 2110, sv_desktop_fx_light != df_desktop_fx_light, set_value, 415000 + df_desktop_fx_light)
+                }
+                group {
+                    show: true
+                    move: 0, gy_8_34 - 2140
+                    SRow(2140, "", "…or your own three colours below, or the wallpaper's own as Matugen read it", true, "", 550, true)
+                    STrack(874, 2156, 264)
+                    SChoice(874, 2156, 132, "Custom", sv_desktop_fx_light == 6, set_value, 415006)
+                    SChoice(1006, 2156, 132, "Matugen", sv_desktop_fx_light == 7, set_value, 415007)
+                }
+                group {
+                    show: sv_desktop_fx_light == 6
+                    move: 0, gy_8_35 - 2200
+                    SRow(2200, "First colour", "The light the effect is drawn in, typed as #rrggbb (Custom only)", true, "", 420, true)
+                    box { from: 608, 2216; size: 310, 28; corner: 4; color: fl.ground; opacity: 0.6 }
+                    box { from: 608, 2216; size: 310, 28; corner: 4; stroke: 1; color: fl.steel_700 }
+                    input fxp1_in { at: 618, 2222; width: 290; size: 12; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; placeholder: "#rrggbb" }
+                    SButton(928, 2217, 100, "Set", set_fxcolour, 1)
+                    box { from: 1038, 2213; size: 88, 34; corner: 6; color: rgb(fxp1_r, fxp1_g, fxp1_b) }
+                    box { from: 1038, 2213; size: 88, 34; corner: 6; stroke: 1; color: fl.trace_lit }
+                    text fxp1_hex { at: 1082, 2230; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }
+                }
+                group {
+                    show: sv_desktop_fx_light == 6
+                    move: 0, gy_8_36 - 2262
+                    SRow(2262, "Second colour", "The second signal: rings, sparks, debris", true, "", 420, true)
+                    box { from: 608, 2278; size: 310, 28; corner: 4; color: fl.ground; opacity: 0.6 }
+                    box { from: 608, 2278; size: 310, 28; corner: 4; stroke: 1; color: fl.steel_700 }
+                    input fxp2_in { at: 618, 2284; width: 290; size: 12; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; placeholder: "#rrggbb" }
+                    SButton(928, 2279, 100, "Set", set_fxcolour, 2)
+                    box { from: 1038, 2275; size: 88, 34; corner: 6; color: rgb(fxp2_r, fxp2_g, fxp2_b) }
+                    box { from: 1038, 2275; size: 88, 34; corner: 6; stroke: 1; color: fl.trace_lit }
+                    text fxp2_hex { at: 1082, 2292; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }
+                }
+                group {
+                    show: sv_desktop_fx_light == 6
+                    move: 0, gy_8_37 - 2324
+                    SRow(2324, "Third colour", "The ground the shader's marks stand on", true, "", 420, true)
+                    box { from: 608, 2340; size: 310, 28; corner: 4; color: fl.ground; opacity: 0.6 }
+                    box { from: 608, 2340; size: 310, 28; corner: 4; stroke: 1; color: fl.steel_700 }
+                    input fxp3_in { at: 618, 2346; width: 290; size: 12; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; placeholder: "#rrggbb" }
+                    SButton(928, 2341, 100, "Set", set_fxcolour, 3)
+                    box { from: 1038, 2337; size: 88, 34; corner: 6; color: rgb(fxp3_r, fxp3_g, fxp3_b) }
+                    box { from: 1038, 2337; size: 88, 34; corner: 6; stroke: 1; color: fl.trace_lit }
+                    text fxp3_hex { at: 1082, 2354; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }
+                }
+                group {
+                    show: true
+                    move: 0, gy_8_c7 - 2408
+                    SCard(2408, gc_8_7, "Windows waking")
+                }
+                group {
+                    show: true
+                    move: 0, gy_8_39 - 2452
+                    SRow(2452, "Open and close", "A window's arrival and exit as a shader, in the bar's colours. Off is Hyprland's own animation; a pair plays where the HyprWindowShade plugin is loaded", true, "", 374, false)
+                    STrack(698, 2468, 440)
+                    SChoice(698, 2468, 110, "Off", sv_desktop_window_fx == 0, set_value, 411000)
+                    SChoice(808, 2468, 110, "Phosphor", sv_desktop_window_fx == 1, set_value, 411001)
+                    SChoice(918, 2468, 110, "Glitch", sv_desktop_window_fx == 2, set_value, 411002)
+                    SChoice(1028, 2468, 110, "Iris", sv_desktop_window_fx == 3, set_value, 411003)
+                    SRevert(668, 2482, sv_desktop_window_fx != df_desktop_window_fx, set_value, 411000 + df_desktop_window_fx)
+                }
+                group {
+                    show: sv_desktop_window_fx != 0
+                    move: 0, gy_8_40 - 2512
+                    SRow(2512, "How long", "Both halves, against the pair's own timing (a quick flick of the eye either way)", true, "", 404, true)
+                    SSlider(728, 2528, 330, sv_desktop_window_fx_speed, 150, set_value, 412, "How long", "{sv_desktop_window_fx_speed + 50, 0}%", true)
+                    SRevert(698, 2542, sv_desktop_window_fx_speed != df_desktop_window_fx_speed, set_value, 412000 + df_desktop_window_fx_speed)
+                }
+                group {
+                    show: sv_desktop_window_fx != 0
+                    move: 0, gy_8_41 - 2572
+                    SRow(2572, "Terminals and browsers differ", "A terminal leaves with the Glitch and a browser arrives with the Iris, whatever the pair above is", true, "", 768, true)
+                    SToggle(1092, 2590, sv_desktop_window_fx_apps, set_value, 413, "desktop.window_fx_apps")
+                    SRevert(1062, 2602, sv_desktop_window_fx_apps != df_desktop_window_fx_apps, set_value, 413000 + df_desktop_window_fx_apps)
+                }
+                group {
+                    show: true
+                    move: 0, gy_8_c8 - 2654
+                    SCard(2654, gc_8_8, "Shader over the switch")
+                }
+                group {
+                    show: true
+                    move: 0, gy_8_43 - 2698
+                    SRow(2698, "Transition shader", "mooi's own, laid over the switch itself for the length of the move; Off is the switch. It runs while mooi's theme watch does", true, "", 324, false)
+                    STrack(648, 2714, 490)
+                    SChoice(648, 2714, 70, "Off", sv_desktop_ws_fx == 0, set_value, 410000)
+                    SChoice(718, 2714, 70, "Channel", sv_desktop_ws_fx == 1, set_value, 410001)
+                    SChoice(788, 2714, 70, "Circuit", sv_desktop_ws_fx == 2, set_value, 410002)
+                    SChoice(858, 2714, 70, "Stretch", sv_desktop_ws_fx == 3, set_value, 410003)
+                    SChoice(928, 2714, 70, "Halftone", sv_desktop_ws_fx == 4, set_value, 410004)
+                    SChoice(998, 2714, 70, "Board", sv_desktop_ws_fx == 5, set_value, 410005)
+                    SChoice(1068, 2714, 70, "Sigil", sv_desktop_ws_fx == 6, set_value, 410006)
+                    SRevert(618, 2728, sv_desktop_ws_fx != df_desktop_ws_fx, set_value, 410000 + df_desktop_ws_fx)
+                }
+                group {
+                    show: sv_desktop_ws_fx != 0
+                    move: 0, gy_8_44 - 2758
+                    SRow(2758, "How long", "The shader's own length, against the kind's timing; the move itself has its Duration above", true, "", 404, true)
+                    SSlider(728, 2774, 330, sv_desktop_ws_fx_speed, 150, set_value, 414, "How long", "{sv_desktop_ws_fx_speed + 50, 0}%", true)
+                    SRevert(698, 2788, sv_desktop_ws_fx_speed != df_desktop_ws_fx_speed, set_value, 414000 + df_desktop_ws_fx_speed)
                 }
                 group {
                     show: dk_manage
-                    move: 0, gy_8_33 - 2080
-                    SRow(2080, "Layout", "How tiled windows are arranged", true, "", 344, false)
-                    STrack(668, 2096, 470)
-                    SChoice(668, 2096, 94, "Keep mine", sv_desktop_layout == 0, set_value, 53000)
-                    SChoice(762, 2096, 94, "Dwindle", sv_desktop_layout == 1, set_value, 53001)
-                    SChoice(856, 2096, 94, "Master", sv_desktop_layout == 2, set_value, 53002)
-                    SChoice(950, 2096, 94, "Scrolling", sv_desktop_layout == 3, set_value, 53003)
-                    SChoice(1044, 2096, 94, "Monocle", sv_desktop_layout == 4, set_value, 53004)
-                    SRevert(638, 2110, sv_desktop_layout != df_desktop_layout, set_value, 53000 + df_desktop_layout)
+                    move: 0, gy_8_c9 - 2840
+                    SCard(2840, gc_8_9, "Tiling")
+                }
+                group {
+                    show: dk_manage
+                    move: 0, gy_8_46 - 2884
+                    SRow(2884, "Layout", "How tiled windows are arranged", true, "", 344, false)
+                    STrack(668, 2900, 470)
+                    SChoice(668, 2900, 94, "Keep mine", sv_desktop_layout == 0, set_value, 53000)
+                    SChoice(762, 2900, 94, "Dwindle", sv_desktop_layout == 1, set_value, 53001)
+                    SChoice(856, 2900, 94, "Master", sv_desktop_layout == 2, set_value, 53002)
+                    SChoice(950, 2900, 94, "Scrolling", sv_desktop_layout == 3, set_value, 53003)
+                    SChoice(1044, 2900, 94, "Monocle", sv_desktop_layout == 4, set_value, 53004)
+                    SRevert(638, 2914, sv_desktop_layout != df_desktop_layout, set_value, 53000 + df_desktop_layout)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
-                    move: 0, gy_8_34 - 2140
-                    SRow(2140, "Column width", "Scrolling layout: a new column's width", true, "", 404, true)
-                    SSlider(728, 2156, 330, sv_desktop_column, 91, set_value, 54, "Column width", pick(sv_desktop_column == 0, "{sv_desktop_column + 9, 0}%", "KEEP"), true)
-                    SRevert(698, 2170, sv_desktop_column != df_desktop_column, set_value, 54000 + df_desktop_column)
+                    move: 0, gy_8_47 - 2944
+                    SRow(2944, "Column width", "Scrolling layout: a new column's width", true, "", 404, true)
+                    SSlider(728, 2960, 330, sv_desktop_column, 91, set_value, 54, "Column width", pick(sv_desktop_column == 0, "{sv_desktop_column + 9, 0}%", "KEEP"), true)
+                    SRevert(698, 2974, sv_desktop_column != df_desktop_column, set_value, 54000 + df_desktop_column)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
-                    move: 0, gy_8_35 - 2200
-                    SRow(2200, "Focused column", "Scrolling layout: bring it into view, or centre it", true, "", 418, true)
-                    STrack(742, 2216, 396)
-                    SChoice(742, 2216, 132, "Keep mine", sv_desktop_column_fit == 0, set_value, 55000)
-                    SChoice(874, 2216, 132, "Fit", sv_desktop_column_fit == 1, set_value, 55001)
-                    SChoice(1006, 2216, 132, "Centre", sv_desktop_column_fit == 2, set_value, 55002)
-                    SRevert(712, 2230, sv_desktop_column_fit != df_desktop_column_fit, set_value, 55000 + df_desktop_column_fit)
+                    move: 0, gy_8_48 - 3004
+                    SRow(3004, "Focused column", "Scrolling layout: bring it into view, or centre it", true, "", 418, true)
+                    STrack(742, 3020, 396)
+                    SChoice(742, 3020, 132, "Keep mine", sv_desktop_column_fit == 0, set_value, 55000)
+                    SChoice(874, 3020, 132, "Fit", sv_desktop_column_fit == 1, set_value, 55001)
+                    SChoice(1006, 3020, 132, "Centre", sv_desktop_column_fit == 2, set_value, 55002)
+                    SRevert(712, 3034, sv_desktop_column_fit != df_desktop_column_fit, set_value, 55000 + df_desktop_column_fit)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
-                    move: 0, gy_8_36 - 2260
-                    SRow(2260, "Column widths", "Scrolling layout: the widths Super+] and Super+[ step through", true, "", 374, true)
-                    STrack(698, 2276, 440)
-                    SChoice(698, 2276, 110, "Keep mine", sv_desktop_column_widths == 0, set_value, 405000)
-                    SChoice(808, 2276, 110, "niri (⅓ ½ ⅔ 1)", sv_desktop_column_widths == 1, set_value, 405001)
-                    SChoice(918, 2276, 110, "Halves", sv_desktop_column_widths == 2, set_value, 405002)
-                    SChoice(1028, 2276, 110, "Quarters", sv_desktop_column_widths == 3, set_value, 405003)
-                    SRevert(668, 2290, sv_desktop_column_widths != df_desktop_column_widths, set_value, 405000 + df_desktop_column_widths)
+                    move: 0, gy_8_49 - 3064
+                    SRow(3064, "Column widths", "Scrolling layout: the widths Super+] and Super+[ step through", true, "", 374, true)
+                    STrack(698, 3080, 440)
+                    SChoice(698, 3080, 110, "Keep mine", sv_desktop_column_widths == 0, set_value, 405000)
+                    SChoice(808, 3080, 110, "niri (⅓ ½ ⅔ 1)", sv_desktop_column_widths == 1, set_value, 405001)
+                    SChoice(918, 3080, 110, "Halves", sv_desktop_column_widths == 2, set_value, 405002)
+                    SChoice(1028, 3080, 110, "Quarters", sv_desktop_column_widths == 3, set_value, 405003)
+                    SRevert(668, 3094, sv_desktop_column_widths != df_desktop_column_widths, set_value, 405000 + df_desktop_column_widths)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
-                    move: 0, gy_8_37 - 2320
-                    SRow(2320, "Follow focus", "Scrolling layout: the columns scroll to the window you focus", true, "", 418, true)
-                    STrack(742, 2336, 396)
-                    SChoice(742, 2336, 132, "Keep mine", sv_desktop_column_follow == 0, set_value, 406000)
-                    SChoice(874, 2336, 132, "On", sv_desktop_column_follow == 1, set_value, 406001)
-                    SChoice(1006, 2336, 132, "Off", sv_desktop_column_follow == 2, set_value, 406002)
-                    SRevert(712, 2350, sv_desktop_column_follow != df_desktop_column_follow, set_value, 406000 + df_desktop_column_follow)
+                    move: 0, gy_8_50 - 3124
+                    SRow(3124, "Follow focus", "Scrolling layout: the columns scroll to the window you focus", true, "", 418, true)
+                    STrack(742, 3140, 396)
+                    SChoice(742, 3140, 132, "Keep mine", sv_desktop_column_follow == 0, set_value, 406000)
+                    SChoice(874, 3140, 132, "On", sv_desktop_column_follow == 1, set_value, 406001)
+                    SChoice(1006, 3140, 132, "Off", sv_desktop_column_follow == 2, set_value, 406002)
+                    SRevert(712, 3154, sv_desktop_column_follow != df_desktop_column_follow, set_value, 406000 + df_desktop_column_follow)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
-                    move: 0, gy_8_38 - 2380
-                    SRow(2380, "Wrap focus", "Scrolling layout: past the last column, focus goes round to the first", true, "", 418, true)
-                    STrack(742, 2396, 396)
-                    SChoice(742, 2396, 132, "Keep mine", sv_desktop_column_wrap == 0, set_value, 407000)
-                    SChoice(874, 2396, 132, "On", sv_desktop_column_wrap == 1, set_value, 407001)
-                    SChoice(1006, 2396, 132, "Off", sv_desktop_column_wrap == 2, set_value, 407002)
-                    SRevert(712, 2410, sv_desktop_column_wrap != df_desktop_column_wrap, set_value, 407000 + df_desktop_column_wrap)
+                    move: 0, gy_8_51 - 3184
+                    SRow(3184, "Wrap focus", "Scrolling layout: past the last column, focus goes round to the first", true, "", 418, true)
+                    STrack(742, 3200, 396)
+                    SChoice(742, 3200, 132, "Keep mine", sv_desktop_column_wrap == 0, set_value, 407000)
+                    SChoice(874, 3200, 132, "On", sv_desktop_column_wrap == 1, set_value, 407001)
+                    SChoice(1006, 3200, 132, "Off", sv_desktop_column_wrap == 2, set_value, 407002)
+                    SRevert(712, 3214, sv_desktop_column_wrap != df_desktop_column_wrap, set_value, 407000 + df_desktop_column_wrap)
                 }
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
-                    move: 0, gy_8_39 - 2440
-                    SRow(2440, "Column keys", "niri's: Super+] [ widths, Super+= − size, Super+Alt+← → move the column, Super+C fit it", true, "", 768, true)
-                    SToggle(1092, 2458, sv_desktop_column_keys, set_value, 408, "desktop.column_keys")
-                    SRevert(1062, 2470, sv_desktop_column_keys != df_desktop_column_keys, set_value, 408000 + df_desktop_column_keys)
+                    move: 0, gy_8_52 - 3244
+                    SRow(3244, "Column keys", "niri's: Super+] [ widths, Super+= − size, Super+Alt+← → move the column, Super+C fit it", true, "", 768, true)
+                    SToggle(1092, 3262, sv_desktop_column_keys, set_value, 408, "desktop.column_keys")
+                    SRevert(1062, 3274, sv_desktop_column_keys != df_desktop_column_keys, set_value, 408000 + df_desktop_column_keys)
                 }
             }
             group {
@@ -3948,11 +4159,59 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_18_c0 - 112
-                    SCard(112, gc_18_0, "Shortcuts")
+                    SCard(112, gc_18_0, "Locking")
                 }
                 group {
                     show: true
                     move: 0, gy_18_1 - 156
+                    SRow(156, "Lock after", "Minutes without typing or pointing before mooi's lock screen takes the session", true, "", 404, false)
+                    SSlider(728, 172, 330, sv_lock_idle, 59, set_value, 409, "Lock after", "{sv_lock_idle + 1, 0} min", true)
+                    SRevert(698, 186, sv_lock_idle != df_lock_idle, set_value, 409000 + df_lock_idle)
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_2 - 216
+                    text "THE MACHINE SUSPENDS 30 MIN AFTER THAT · SUPER+L LOCKS NOW" { at: 274, 230; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_c1 - 266
+                    SCard(266, gc_18_1, "Picture")
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_4 - 310
+                    SRow(310, "On the lock screen", "The same banner or picture the Nexus's profile card shows", true, "", 360, false)
+                    text lock_pic_now { at: 1138, 340; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_5 - 370
+                    SRow(370, "Profile picture", "A small picture above the clock, chosen here; the Nexus's card shows it too", true, "", 400, true)
+                    SButton(958, 385, 180, "Choose", lock_pic, 0)
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_6 - 430
+                    SRow(430, "Banner", "A wide picture across the top of the lock screen; the Nexus's card shows it too", true, "", 400, true)
+                    SButton(958, 445, 180, "Choose", lock_pic, 1)
+                }
+                group {
+                    show: true
+                    move: 0, gy_18_7 - 490
+                    text "A BANNER WINS OVER A PICTURE · THE NEXT LOCK SHOWS IT" { at: 274, 504; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                }
+            }
+            group {
+                show: set_tab == 19
+                group {
+                    show: true
+                    move: 0, gy_19_c0 - 112
+                    SCard(112, gc_19_0, "Shortcuts")
+                }
+                group {
+                    show: true
+                    move: 0, gy_19_1 - 156
                     SRow(156, "Search", "Open search (starts mooi if it is not running)", true, "", 330, false)
                     SKeys(700, 172, pick(capturing == 0, key_search, cap_text), capturing == 0)
                     SButton(1042, 171, 96, pick(capturing == 0, "Change", "Cancel"), key_change, 0, capturing == 0)
@@ -4004,15 +4263,15 @@ scene Mooi {
                 }
             }
             group {
-                show: set_tab == 19
+                show: set_tab == 20
                 group {
                     show: true
-                    move: 0, gy_19_c0 - 112
-                    SCard(112, gc_19_0, "Notifications and tray")
+                    move: 0, gy_20_c0 - 112
+                    SCard(112, gc_20_0, "Notifications and tray")
                 }
                 group {
                     show: true
-                    move: 0, gy_19_1 - 156
+                    move: 0, gy_20_1 - 156
                     SRow(156, "mooi shows notifications", "As the desktop (not a development run), always, or never", true, "", 418, false)
                     STrack(742, 172, 396)
                     SChoice(742, 172, 132, "Desktop", note_server == 0, set_value, 27000)
@@ -4022,7 +4281,7 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_19_2 - 216
+                    move: 0, gy_20_2 - 216
                     SRow(216, "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel", true, "", 374, true)
                     STrack(698, 232, 440)
                     SChoice(698, 232, 110, "Off", sv_notifications_dnd == 0, set_value, 84000)
@@ -4033,21 +4292,21 @@ scene Mooi {
                 }
                 group {
                     show: sv_notifications_dnd == 3
-                    move: 0, gy_19_3 - 276
+                    move: 0, gy_20_3 - 276
                     SRow(276, "Quiet from", "The hour quiet begins", true, "", 404, true)
                     SSlider(728, 292, 330, sv_notifications_quiet_from, 23, set_value, 85, "Quiet from", "{sv_notifications_quiet_from, 0}:00", true)
                     SRevert(698, 306, sv_notifications_quiet_from != df_notifications_quiet_from, set_value, 85000 + df_notifications_quiet_from)
                 }
                 group {
                     show: sv_notifications_dnd == 3
-                    move: 0, gy_19_4 - 336
+                    move: 0, gy_20_4 - 336
                     SRow(336, "Quiet until", "The hour it ends", true, "", 404, true)
                     SSlider(728, 352, 330, sv_notifications_quiet_to, 23, set_value, 86, "Quiet until", "{sv_notifications_quiet_to, 0}:00", true)
                     SRevert(698, 366, sv_notifications_quiet_to != df_notifications_quiet_to, set_value, 86000 + df_notifications_quiet_to)
                 }
                 group {
                     show: true
-                    move: 0, gy_19_5 - 396
+                    move: 0, gy_20_5 - 396
                     SRow(396, "Tray icons", "In the palette's colours, or as the apps draw them", true, "", 550, true)
                     STrack(874, 412, 264)
                     SChoice(874, 412, 132, "Themed", tray_style == 0, set_value, 26000)
@@ -4056,46 +4315,46 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_19_c1 - 478
-                    SCard(478, gc_19_1, "Windows")
+                    move: 0, gy_20_c1 - 478
+                    SCard(478, gc_20_1, "Windows")
                 }
                 group {
                     show: true
-                    move: 0, gy_19_7 - 522
+                    move: 0, gy_20_7 - 522
                     SRow(522, "Confirm before closing", "Ask once more before closing a window", true, "", 768, false)
                     SToggle(1092, 540, confirm_close, set_value, 29, "island.confirm_close")
                     SRevert(1062, 552, sv_island_confirm_close != df_island_confirm_close, set_value, 29000 + df_island_confirm_close)
                 }
                 group {
                     show: true
-                    move: 0, gy_19_8 - 582
+                    move: 0, gy_20_8 - 582
                     SRow(582, "Follow a window you move", "Moving a window to a workspace takes you there too", true, "", 768, true)
                     SToggle(1092, 600, sv_island_follow_on_send, set_value, 68, "island.follow_on_send")
                     SRevert(1062, 612, sv_island_follow_on_send != df_island_follow_on_send, set_value, 68000 + df_island_follow_on_send)
                 }
                 group {
                     show: true
-                    move: 0, gy_19_c2 - 664
-                    SCard(664, gc_19_2, "Comfort")
+                    move: 0, gy_20_c2 - 664
+                    SCard(664, gc_20_2, "Comfort")
                 }
                 group {
                     show: true
-                    move: 0, gy_19_10 - 708
+                    move: 0, gy_20_10 - 708
                     SRow(708, "Search results", "How many results search shows", true, "", 404, false)
                     SSlider(728, 724, 330, sv_command_max_results, 7, set_value, 69, "Search results", "{sv_command_max_results + 3, 0}", true)
                     SRevert(698, 738, sv_command_max_results != df_command_max_results, set_value, 69000 + df_command_max_results)
                 }
             }
             group {
-                show: set_tab == 20
+                show: set_tab == 21
                 group {
                     show: true
-                    move: 0, gy_20_c0 - 112
-                    SCard(112, gc_20_0, "Where they arrive")
+                    move: 0, gy_21_c0 - 112
+                    SCard(112, gc_21_0, "Where they arrive")
                 }
                 group {
                     show: true
-                    move: 0, gy_20_1 - 156
+                    move: 0, gy_21_1 - 156
                     SRow(156, "Origin", "The corner the signals unfold from; the Signal Field opens there too", true, "", 374, false)
                     STrack(698, 172, 440)
                     SChoice(698, 172, 110, "Top right", sv_signals_edge == 0, set_value, 307000)
@@ -4106,21 +4365,21 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_20_2 - 216
+                    move: 0, gy_21_2 - 216
                     SRow(216, "At once", "How many signals show; the rest wait behind a +N", true, "", 404, true)
                     SSlider(728, 232, 330, sv_signals_max, 5, set_value, 308, "At once", "{sv_signals_max + 1, 0}", true)
                     SRevert(698, 246, sv_signals_max != df_signals_max, set_value, 308000 + df_signals_max)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_3 - 276
+                    move: 0, gy_21_3 - 276
                     SRow(276, "Stays out", "A normal one, in seconds; a low one half as long, an urgent one until you deal with it", true, "", 404, true)
                     SSlider(728, 292, 330, sv_signals_linger, 27, set_value, 309, "Stays out", "{sv_signals_linger + 3, 0} s", true)
                     SRevert(698, 306, sv_signals_linger != df_signals_linger, set_value, 309000 + df_signals_linger)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_4 - 336
+                    move: 0, gy_21_4 - 336
                     SRow(336, "Join", "Notices from one conversation (same app and title), from one app, or never", true, "", 418, true)
                     STrack(742, 352, 396)
                     SChoice(742, 352, 132, "Threads", sv_signals_grouping == 0, set_value, 310000)
@@ -4130,12 +4389,12 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_20_c1 - 418
-                    SCard(418, gc_20_1, "Look and motion")
+                    move: 0, gy_21_c1 - 418
+                    SCard(418, gc_21_1, "Look and motion")
                 }
                 group {
                     show: true
-                    move: 0, gy_20_6 - 462
+                    move: 0, gy_21_6 - 462
                     SRow(462, "Size", "Compact segments, or roomier ones that show two lines", true, "", 550, false)
                     STrack(874, 478, 264)
                     SChoice(874, 478, 132, "Compact", sv_signals_density == 0, set_value, 311000)
@@ -4144,86 +4403,36 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_20_7 - 522
+                    move: 0, gy_21_7 - 522
                     SRow(522, "Corner cut", "How much the segments' corners are chamfered", true, "", 404, true)
                     SSlider(728, 538, 330, sv_signals_chamfer, 14, set_value, 312, "Corner cut", "{sv_signals_chamfer, 0} px", true)
                     SRevert(698, 552, sv_signals_chamfer != df_signals_chamfer, set_value, 312000 + df_signals_chamfer)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_8 - 582
+                    move: 0, gy_21_8 - 582
                     SRow(582, "Travel", "How far a signal slides out as it unfolds; none opens it in place", true, "", 404, true)
                     SSlider(728, 598, 330, sv_signals_travel, 100, set_value, 313, "Travel", "{sv_signals_travel, 0}%", true)
                     SRevert(698, 612, sv_signals_travel != df_signals_travel, set_value, 313000 + df_signals_travel)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_9 - 642
+                    move: 0, gy_21_9 - 642
                     SRow(642, "Glow", "The light along an arriving signal and an urgent one's edge (notices still come without it)", true, "", 768, true)
                     SToggle(1092, 660, sv_signals_effects, set_value, 314, "signals.effects")
                     SRevert(1062, 672, sv_signals_effects != df_signals_effects, set_value, 314000 + df_signals_effects)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_c2 - 724
-                    SCard(724, gc_20_2, "Privacy")
+                    move: 0, gy_21_c2 - 724
+                    SCard(724, gc_21_2, "Privacy")
                 }
                 group {
                     show: true
-                    move: 0, gy_20_11 - 768
+                    move: 0, gy_21_11 - 768
                     SRow(768, "Hide what they say", "Pop-ups show only who it is from; the Signal Field shows the rest", true, "", 768, false)
                     SToggle(1092, 786, sv_signals_private, set_value, 315, "signals.private")
                     SRevert(1062, 798, sv_signals_private != df_signals_private, set_value, 315000 + df_signals_private)
-                }
-            }
-            group {
-                show: set_tab == 21
-                group {
-                    show: true
-                    move: 0, gy_21_c0 - 112
-                    SCard(112, gc_21_0, "mooi")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_1 - 156
-                    SRow(156, "Version", "The shell and Pleamar it runs on", true, "", 360, false)
-                    text adv_version { at: 1138, 186; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_2 - 216
-                    SRow(216, "The bar", "Its process's share of a core, and its memory", true, "", 360, true)
-                    text adv_usage { at: 1138, 246; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_3 - 276
-                    SRow(276, "Settings file", "Every setting, as JSON; mooi applies an edit at once", true, "", 360, true)
-                    text bar_path { at: 1138, 306; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_4 - 336
-                    SButton(274, 350, 174, "Open settings.json", adv_act, 1)
-                    SButton(458, 350, 126, "Open the log", adv_act, 2)
-                    SButton(594, 350, 214, "Open the shell's folder", adv_act, 3)
-                    SButton(818, 350, 158, "Restart Hyprland", adv_act, 4)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_5 - 394
-                    text "HYPRLAND READS ITS CONFIG AGAIN AND MOOI'S BAR RESTARTS ON IT · WINDOWS STAY OPEN" { at: 274, 408; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_c1 - 444
-                    SCard(444, gc_21_1, "Log")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_7 - 488
-                    box { from: 274, 492; size: 864, 232; corner: 5; color: fl.ground; opacity: 0.7 }
-                    for l in adv_log { SLogLine(l, 506) }
                 }
             }
             group {
@@ -4231,11 +4440,61 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_22_c0 - 112
-                    SCard(112, gc_22_0, "The deck")
+                    SCard(112, gc_22_0, "mooi")
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_1 - 156
+                    SRow(156, "Version", "The shell and Pleamar it runs on", true, "", 360, false)
+                    text adv_version { at: 1138, 186; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_2 - 216
+                    SRow(216, "The bar", "Its process's share of a core, and its memory", true, "", 360, true)
+                    text adv_usage { at: 1138, 246; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_3 - 276
+                    SRow(276, "Settings file", "Every setting, as JSON; mooi applies an edit at once", true, "", 360, true)
+                    text bar_path { at: 1138, 306; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_4 - 336
+                    SButton(274, 350, 174, "Open settings.json", adv_act, 1)
+                    SButton(458, 350, 126, "Open the log", adv_act, 2)
+                    SButton(594, 350, 214, "Open the shell's folder", adv_act, 3)
+                    SButton(818, 350, 158, "Restart Hyprland", adv_act, 4)
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_5 - 394
+                    text "HYPRLAND READS ITS CONFIG AGAIN AND MOOI'S BAR RESTARTS ON IT · WINDOWS STAY OPEN" { at: 274, 408; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_c1 - 444
+                    SCard(444, gc_22_1, "Log")
+                }
+                group {
+                    show: true
+                    move: 0, gy_22_7 - 488
+                    box { from: 274, 492; size: 864, 232; corner: 5; color: fl.ground; opacity: 0.7 }
+                    for l in adv_log { SLogLine(l, 506) }
+                }
+            }
+            group {
+                show: set_tab == 23
+                group {
+                    show: true
+                    move: 0, gy_23_c0 - 112
+                    SCard(112, gc_23_0, "The deck")
                 }
                 group {
                     show: sv_nexus_mode == 0
-                    move: 0, gy_22_1 - 156
+                    move: 0, gy_23_1 - 156
                     SRow(156, "Edge", "Where the deck comes from: a strip along the bottom or the top, or a column down a side", true, "", 374, false)
                     STrack(698, 172, 440)
                     SChoice(698, 172, 110, "Bottom", sv_nexus_edge == 0, set_value, 357000)
@@ -4246,7 +4505,7 @@ scene Mooi {
                 }
                 group {
                     show: sv_nexus_mode == 0
-                    move: 0, gy_22_2 - 216
+                    move: 0, gy_23_2 - 216
                     SRow(216, "Layout", "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", true, "", 550, true)
                     STrack(874, 232, 264)
                     SChoice(874, 232, 132, "One row", sv_nexus_rows == 0, set_value, 360000)
@@ -4255,7 +4514,7 @@ scene Mooi {
                 }
                 group {
                     show: sv_nexus_mode == 0
-                    move: 0, gy_22_3 - 276
+                    move: 0, gy_23_3 - 276
                     SRow(276, "Profile", "Your banner and picture, small or large", true, "", 550, true)
                     STrack(874, 292, 264)
                     SChoice(874, 292, 132, "Small", sv_nexus_profile == 0, set_value, 361000)
@@ -4264,41 +4523,41 @@ scene Mooi {
                 }
                 group {
                     show: sv_nexus_mode == 0
-                    move: 0, gy_22_4 - 336
+                    move: 0, gy_23_4 - 336
                     SRow(336, "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", true, "", 768, true)
                     SToggle(1092, 354, sv_nexus_notches, set_value, 364, "nexus.notches")
                     SRevert(1062, 366, sv_nexus_notches != df_nexus_notches, set_value, 364000 + df_nexus_notches)
                 }
                 group {
                     show: sv_nexus_mode == 0
-                    move: 0, gy_22_5 - 396
+                    move: 0, gy_23_5 - 396
                     text "ON THE DECK: ✎ CARRIES A CARD BY MOVE, × SHELVES IT, ⇔ RESIZES IT" { at: 274, 410; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: true
-                    move: 0, gy_22_c1 - 446
-                    SCard(446, gc_22_1, "The side notch")
+                    move: 0, gy_23_c1 - 446
+                    SCard(446, gc_23_1, "The side notch")
                 }
                 group {
                     show: true
-                    move: 0, gy_22_7 - 490
+                    move: 0, gy_23_7 - 490
                     SRow(490, "The side notch", "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", true, "", 768, false)
                     SToggle(1092, 508, sv_notch_on, set_value, 363, "notch.on")
                     SRevert(1062, 520, sv_notch_on != df_notch_on, set_value, 363000 + df_notch_on)
                 }
                 group {
                     show: sv_notch_on == 1
-                    move: 0, gy_22_8 - 550
+                    move: 0, gy_23_8 - 550
                     text "DRAG IT ALONG THE EDGE TO MOVE IT; IT STAYS WHERE YOU LEAVE IT" { at: 274, 564; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: true
-                    move: 0, gy_22_c2 - 600
-                    SCard(600, gc_22_2, "Claude")
+                    move: 0, gy_23_c2 - 600
+                    SCard(600, gc_23_2, "Claude")
                 }
                 group {
                     show: true
-                    move: 0, gy_22_10 - 644
+                    move: 0, gy_23_10 - 644
                     SRow(644, "Model", "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", true, "", 374, false)
                     STrack(698, 660, 440)
                     SChoice(698, 660, 110, "Default", sv_claude_model == 0, set_value, 365000)
@@ -4309,7 +4568,7 @@ scene Mooi {
                 }
                 group {
                     show: true
-                    move: 0, gy_22_11 - 704
+                    move: 0, gy_23_11 - 704
                     text "IT CAN TALK, NOT ACT: NO TOOLS, NO FILES. BMO'S CHAT IS IN HIS PANEL" { at: 274, 718; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
@@ -4324,8 +4583,8 @@ scene Mooi {
         }
         // The header, over the scrolled rows: the page's name, what it is for, and its Reset.
         box { from: 233, 0; size: screen.width - 233, 96; color: mix(fl.ground, fl.steel_900, 0.6) }
-        text pick(set_tab, "Quick settings", "Colour", "Motion & effects", "The bar", "Layout", "Workspaces", "Media", "Screen frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Wallpapers", "Widgets", "BMO", "Sound", "Power", "Keys", "System", "Signal Loom", "Advanced", "Control Nexus") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
-        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "A style sets the surface and the edges at once; change any of them and it reads Custom", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "The switcher on the bar", "The player on the bar", "One body with the bar: a band round the screen the bar grows out of; it can move with the music", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "mooi draws the wallpaper: pictures, animated ones and videos. Pick them in the picker (Super+W) or the notch", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log", "The deck from the bar's mark, its cards and notches, the side notch, and Claude") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
+        text pick(set_tab, "Quick settings", "Colour", "Motion & effects", "The bar", "Layout", "Workspaces", "Media", "Screen frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Wallpapers", "Widgets", "BMO", "Sound", "Power", "Lock screen", "Keys", "System", "Signal Loom", "Advanced", "Control Nexus") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
+        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "A style sets the surface and the edges at once; change any of them and it reads Custom", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "The switcher on the bar", "The player on the bar", "One body with the bar: a band round the screen the bar grows out of; it can move with the music", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "mooi draws the wallpaper: pictures, animated ones and videos. Pick them in the picker (Super+W) or the notch", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "When the screen locks by itself, and the picture it wears", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log", "The deck from the bar's mark, its cards and notches, the side notch, and Claude") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
         box { from: 233, 95; size: screen.width - 233, 1; color: fl.trace_dim }
         group {
             show: not searching

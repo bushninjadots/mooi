@@ -137,6 +137,9 @@ M.SCHEMA = {
     { path = "motion.saver", kind = "enum", values = { "off", "battery", "always" }, default = "off" },
     -- The system's power profile (power-profiles-daemon), or `keep` to leave it be.
     { path = "power.profile", kind = "enum", values = { "keep", "power-saver", "balanced", "performance" }, default = "keep" },
+    -- D161: how long the session may sit idle before the lock screen takes it. hypridle owns the
+    -- timer, so `mooi idle` writes its file from this (and the machine suspends half an hour after).
+    { path = "lock.idle", kind = "integer", default = 30, min = 1, max = 60 },
     { path = "command.max_results", kind = "integer", default = 7, min = 3, max = 10 },
     { path = "atlas.previews", kind = "boolean", default = true },
     -- The tray's icons: drawn in the bar's own colours (and their own on hover), or as given.
@@ -198,6 +201,34 @@ M.SCHEMA = {
     { path = "desktop.ws_feel", kind = "enum", values = { "keep", "ease", "spring", "bounce" }, default = "keep" },
     { path = "desktop.ws_speed", kind = "integer", default = 0, min = 0, max = 12 },
     { path = "desktop.ws_swipe", kind = "enum", values = { "keep", "flick", "steady" }, default = "keep" },
+    -- D158: the workspaces' shader transition. One switch and one choice in one: `off` is the
+    -- switch, and naming a kind is what turns it on. Hyprland's screen shader (lib/wsfx writes it,
+    -- bin/mooi ws-fx applies it at each workspace change) runs for the length of that move and is
+    -- put back after; a screen shader of your own — hyprshade's and the like — is never replaced.
+    { path = "desktop.ws_fx", kind = "enum", values = { "off", "channel", "circuit", "stretch", "halftone", "board", "sigil" }, default = "off" },
+    -- how long that transition runs, as a share of its own length (100 is as designed); both the
+    -- shader's clock and the length `mooi ws-fx` holds it for are stretched, so they cannot drift
+    { path = "desktop.ws_fx_speed", kind = "integer", default = 100, min = 50, max = 200 },
+    -- The windows' own half of that: each opens and closes as a screen does, one shot per window.
+    -- Off is Hyprland's own animation; naming a pair is the switch, and lib/wfx writes both shaders
+    -- (in the palette) plus the two window rules in front of them. It plays only where the
+    -- HyprWindowShade plugin is loaded — without it the rules are names nothing reads, and the
+    -- windows animate exactly as Hyprland says.
+    { path = "desktop.window_fx", kind = "enum", values = { "off", "phosphor", "glitch", "iris" }, default = "off" },
+    -- how long that pair runs, as a share of its own lengths (100 is as designed)
+    { path = "desktop.window_fx_speed", kind = "integer", default = 100, min = 50, max = 200 },
+    -- and whether a terminal and a browser keep a pair of their own (lib/wfx `APPS`)
+    { path = "desktop.window_fx_apps", kind = "boolean", default = true },
+    -- The light both shader families are drawn in (lib/fxpal): the bar's own palette, so the switch
+    -- and the windows follow the wallpaper; the wallpaper's own Matugen scheme (`matugen`: its
+    -- primary, tertiary and secondary as Matugen wrote them, before lib/ferro re-lights the bar);
+    -- three colours of your own (`custom`, below); or one of a few fixed ways. `palette` is the default.
+    { path = "desktop.fx_light", kind = "enum", values = { "palette", "phosphor", "amber", "ice", "magenta", "mono", "custom", "matugen" }, default = "palette" },
+    -- the `custom` way's three colours, as #rrggbb: the light, its second signal, and the ground the
+    -- shader's marks stand on. Any colour; one that is not a colour falls back to mooi's phosphor.
+    { path = "desktop.fx_phos", kind = "colour", default = "#7fcfb6" },
+    { path = "desktop.fx_ember", kind = "colour", default = "#e07b2e" },
+    { path = "desktop.fx_trace", kind = "colour", default = "#3d6a60" },
     -- D157: the scrolling layout as niri's columns: the widths a column steps through, the tape
     -- following focus, focus wrapping round the ends, and niri's keys for the columns.
     { path = "desktop.column_widths", kind = "enum", values = { "keep", "niri", "halves", "quarters" }, default = "keep" },

@@ -42,6 +42,8 @@
 #                          theme/palette.json.hbs), using mooi's own config so nothing of
 #                          the user's theming is written; then asks a running mooi to read it
 #   mooi theme-watch       follow the wallpaper: recolour with Matugen whenever it changes.
+#   mooi idle              write hypridle's file from the lock's idle timeout (Settings → Lock)
+#                          and restart it; `session` and the settings window call it
 #   mooi lock | unlock     the lock screen (D160): the session through pleamar's `kind: lock`
 #                          (ext-session-lock), started here if it is not running. Everything that locks
 #                          comes to it — the bar's power module, Super+Shift+Escape, hypridle's idle — and
@@ -959,7 +961,75 @@ lock_files() {
     local used=0
     command -v faillock >/dev/null 2>&1 && used=$(faillock --user "${USER:-$(id -un)}" 2>/dev/null | grep -c ' V$')
     printf '{"deny":%s,"unlock":%s,"used":%s}\n' "$deny" "$unlock" "${used:-0}" > "$d/lockout.json" 2>/dev/null
+    # The picture on the lock (D161): the Nexus's banner, or its profile picture, copied in under a
+    # name this folder can read (`identity.json` says which it is), since `files.read` stops at here.
+    rm -f "$d"/picture.* "$d"/identity.json 2>/dev/null
+    if command -v jq >/dev/null 2>&1 && [ -r "$settings" ]; then
+        local kind rel ext
+        for kind in 1 0; do
+            if [ "$kind" = 1 ]; then rel=$(jq -r '.nexus.identity.banner // empty' "$settings" 2>/dev/null)
+            else rel=$(jq -r '.nexus.identity.avatar // empty' "$settings" 2>/dev/null); fi
+            [ -n "$rel" ] && [ -f "$folder/$rel" ] || continue
+            ext=${rel##*.}
+            cp -f "$folder/$rel" "$d/picture.$ext" || continue
+            printf '{"file":"picture.%s","banner":%s}\n' "$ext" "$([ "$kind" = 1 ] && echo true || echo false)" > "$d/identity.json"
+            break
+        done
+    fi
 }
+# ── The lock's idle timeout (D161) ────────────────────────────────────────────
+# hypridle reads its listeners from a file of its own, so the setting (`lock.idle`, Settings →
+# Lock, 30 minutes by default) becomes that file here and hypridle is restarted when it changed.
+# A file that already says this is left alone, so `session` can call it without touching anything.
+idle_apply() {
+    local mins=30 lock_at suspend_at want
+    if [ -r "$settings" ] && command -v jq >/dev/null 2>&1; then
+        mins=$(jq -r '.lock.idle // 30' "$settings" 2>/dev/null)
+    fi
+    case "$mins" in ''|*[!0-9]*) mins=30 ;; esac
+    [ "$mins" -ge 1 ] || mins=1
+    [ "$mins" -le 60 ] || mins=60
+    lock_at=$((mins * 60))
+    suspend_at=$((lock_at + 1800))
+    [ "$suspend_at" -ge 3600 ] || suspend_at=3600
+    want=$(cat <<EOF
+#  ◈ HYPRIDLE CONFIGURATION — written by \`mooi idle\` from Settings → Lock. Edit the setting.
+#  The lock screen is mooi's while mooi is the desktop (harness: ~/.config/hypr/scripts/lock-session.sh).
+
+general {
+    lock_cmd = ~/.config/hypr/scripts/lock-session.sh
+    before_sleep_cmd = loginctl lock-session
+    after_sleep_cmd = hyprctl eval 'hl.dispatch(hl.dsp.dpms({ action = "on" }))'
+}
+
+listener {
+    timeout = $lock_at                      # lock after $mins min idle
+    on-timeout = loginctl lock-session
+}
+
+listener {
+    timeout = $suspend_at                      # suspend $((suspend_at / 60)) min after the last use
+    on-timeout = systemctl suspend
+}
+EOF
+)
+    local f
+    f=$(readlink -f "$idle_conf" 2>/dev/null) || f="$idle_conf"
+    if [ -f "$f" ] && [ "$(cat "$f" 2>/dev/null)" = "$want" ]; then
+        echo "idle: lock after $mins min, suspend after $((suspend_at / 60)) min (already written)"
+        return 0
+    fi
+    mkdir -p "$(dirname "$f")" || return 1
+    printf '%s\n' "$want" > "$f.tmp.$$" && mv "$f.tmp.$$" "$f" || { rm -f "$f.tmp.$$"; echo "idle: could not write $f" >&2; return 1; }
+    if systemctl --user list-unit-files hypridle.service 2>/dev/null | grep -q '^hypridle\.service'; then
+        systemctl --user restart hypridle >/dev/null 2>&1 || echo "idle: the file is written; hypridle did not restart" >&2
+    elif command -v hypridle >/dev/null 2>&1; then
+        pkill -x hypridle 2>/dev/null
+        setsid -f hypridle >/dev/null 2>&1 < /dev/null
+    fi
+    echo "idle: lock after $mins min, suspend after $((suspend_at / 60)) min"
+}
+idle_conf="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hypridle.conf"
 lock_start() {
     lock_files
     "$pleamar" --say "$lock_name" "get locked" >/dev/null 2>&1 && return 0
@@ -992,6 +1062,7 @@ case "$cmd" in
     __keep) keep ;;
     lock) lock_only ;;
     unlock) unlock_only ;;
+    idle) idle_apply ;;
     session | start)
         snapshot || exit 1
         # a running mooi is restarted on the fresh snapshot (Super+Shift+B is "start it again")
@@ -1012,6 +1083,8 @@ case "$cmd" in
         # surface instead of starting a process, so a key pressed the instant SUPER+L lands is
         # heard (starting one took long enough that the first keystrokes fell on nothing).
         lock_start >/dev/null 2>&1 || :
+        # the installed hypridle.conf agrees with the setting again (Settings → Lock)
+        idle_apply >/dev/null 2>&1 || :
         ;;
     toggle)
         if ! running; then

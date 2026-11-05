@@ -52,6 +52,27 @@ end
 wallpaper()
 pcall(sys.watch, "files:wall.json", wallpaper)
 
+-- Whose screen this is. `USER` is what the session runs as; a shell that did not export it still has
+-- `LOGNAME`, and `HOME` names the same person (the last part of the path) if neither is set.
+local function whoami()
+    local n = tostring(sys.ask("env", "USER") or sys.ask("env", "LOGNAME") or "")
+    if n == "" then n = tostring(sys.ask("env", "HOME") or ""):match("([^/]+)/?$") or "" end
+    text.who = string.upper(n)
+end
+whoami()
+
+-- The picture on the lock (D161): the Nexus's banner (a strip along the top) or its profile picture
+-- (a plate above the clock), copied beside this scene by `mooi lock`; `identity.json` says which.
+local function picture()
+    local p = read("identity.json", "json")
+    local file = type(p) == "table" and type(p.file) == "string" and p.file or ""
+    if file == "" or not (pcall(sys.ask, "files.exists", file)) then file = "" end
+    text.picpath, fact.has_pic = file, file ~= ""
+    fact.pic_banner = fact.has_pic and (p.banner == true)
+end
+picture()
+pcall(sys.watch, "files:identity.json", picture)
+
 -- ── The tries PAM has left ──────────────────────────────────────────────
 -- A lock screen cannot ask PAM how many attempts remain, only whether one password was right, so
 -- `mooi lock` copies the system's own tally in (`lockout.json`: the `deny` threshold, `unlock_time`,

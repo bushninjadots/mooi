@@ -113,6 +113,110 @@ test("a newer version is noted", function()
     local _, p, n = config.validate({ version = 3 }); eq(#p, 0, "problems"); eq(#n, 1, "notes")
 end)
 
+print("wfx")
+local wfx = require("lib/wfx")
+test("every pair writes both shaders, in the palette, for the plugin's ES 3.20", function()
+    eq(wfx.pair("off", nil), nil, "off is no shader")
+    eq(wfx.pair("nonsense"), nil, "and neither is a name that is not a pair's")
+    for _, kind in ipairs(wfx.PAIRS) do
+        local p = wfx.pair(kind, { phos = "#123456", ember = "#ff8800", trace = "#0a0b0c" })
+        eq(type(p), "table", kind); eq(type(p.open), "string", kind .. " open"); eq(type(p.close), "string", kind .. " close")
+        for _, src in ipairs({ p.open, p.close }) do
+            assert(string.find(src, "#version 320 es", 1, true), kind .. " is ES 3.20")
+            assert(string.find(src, "uniform float progress", 1, true), kind .. " runs on progress")
+            eq(string.find(src, "uniform float time", 1, true), nil, kind .. " asks for no clock (nothing redraws for it)")
+            -- `@duration` is the plugin's own marker and keeps its @; every other placeholder is filled
+            assert(string.find(src, "@[%u]+@") == nil, kind .. " has every placeholder filled")
+            assert(string.find(src, "@duration %d") ~= nil, kind .. " says how long it runs")
+        end
+        -- the palette reaches the shader as vec3s, and without one mooi's own phosphor is used
+        assert(string.find(p.open, "0.071", 1, true), kind .. " uses the palette given")
+        assert(string.find(wfx.pair(kind).open, "0.498", 1, true), kind .. " falls back to mooi's phosphor")
+    end
+end)
+test("how long: the pair's own lengths, scaled by the setting", function()
+    local function dur(src) return tonumber(string.match(src, "@duration (%d+%.?%d*)")) end
+    eq(dur(wfx.pair("phosphor").open), 0.34, "as designed")
+    eq(dur(wfx.pair("phosphor", nil, 50).open), 0.17, "half")
+    eq(dur(wfx.pair("phosphor", nil, 200).close), 0.72, "twice as long (the close is 0.36)")
+    assert(dur(wfx.pair("phosphor", nil, 0).open) > 0, "never nothing at all")
+    assert(dur(wfx.pair("phosphor", nil, 9000).open) < 2, "never a minute")
+    eq(wfx.duration("off"), nil, "off has no length")
+end)
+test("terminals and browsers carry a pair of their own, by class", function()
+    local apps = wfx.apps(nil, 100)
+    eq(#apps, #wfx.APPS, "one per app")
+    local names = {}
+    for _, a in ipairs(apps) do
+        assert(type(a.class) == "string" and string.sub(a.class, 1, 1) == "^", a.name .. " matches a class")
+        assert(type(a.open) == "string" and type(a.close) == "string", a.name .. " has both shaders")
+        names[#names + 1] = a.name
+    end
+    eq(table.concat(names, ","), "terminal,browser", "the two there are")
+end)
+test("the window rules: two _default tags, or none while off", function()
+    local desktop = require("lib/desktop")
+    eq(#desktop.window_rules(nil), 0, "off writes no rule")
+    eq(#desktop.window_rules({ open = "/x/open.glsl" }), 0, "half a pair is no pair")
+    local rules = desktop.window_rules({ open = "/x/open.glsl", close = "/x/close.glsl" })
+    eq(#rules, 2, "one each")
+    assert(string.find(rules[1], "shader_open_default:/x/open.glsl", 1, true), rules[1])
+    assert(string.find(rules[2], "shader_close_default:/x/close.glsl", 1, true), rules[2])
+    for _, r in ipairs(rules) do assert(string.find(r, 'class = ".*"', 1, true), "every window takes them") end
+    local with = desktop.window_rules({ open = "/x/o.glsl", close = "/x/c.glsl",
+        apps = { { name = "terminal", class = "^(kitty)$", open = "/x/ot.glsl", close = "/x/ct.glsl" } } })
+    eq(#with, 4, "the pair and the app's own")
+    assert(string.find(with[3], "shader_open:/x/ot.glsl", 1, true), with[3])
+    eq(string.find(with[3], "_default", 1, true), nil, "the app's tag is not a fallback, so it wins")
+    assert(string.find(with[4], 'class = "^(kitty)$"', 1, true), "matched by class")
+end)
+
+print("fx colours")
+local fxpal = require("lib/fxpal")
+test("the shaders' light: the bar's palette, or a way of its own", function()
+    local pal = { phos = "#112233", ember = "#445566", trace = "#778899" }
+    eq(fxpal.of("palette", pal).phos, "#112233", "palette is used as it comes")
+    eq(fxpal.of("palette", pal).trace, "#778899", "all three of it")
+    eq(fxpal.of("amber").phos, fxpal.FIXED.amber.phos, "a way is its own")
+    eq(fxpal.of("nonsense").phos, fxpal.FIXED.phosphor.phos, "an unknown way is mooi's phosphor")
+    eq(fxpal.of("palette", nil).phos, fxpal.FIXED.phosphor.phos, "no palette yet, no trouble")
+    for _, way in ipairs(fxpal.WAYS) do
+        local w = fxpal.of(way)
+        assert(type(w.phos) == "string" and string.sub(w.phos, 1, 1) == "#", way .. " is a colour")
+        assert(type(w.ember) == "string" and type(w.trace) == "string", way .. " has all three")
+    end
+end)
+test("the light of your own, and the wallpaper's as Matugen read it", function()
+    local mine = fxpal.of("custom", nil, { phos = "#ff0000", ember = "#00ff00", trace = "#123456" })
+    eq(mine.phos, "#ff0000", "the first colour is the light")
+    eq(mine.ember, "#00ff00", "the second is its signal")
+    eq(mine.trace, "#123456", "the third the ground")
+    local broken = fxpal.of("custom", nil, { phos = "red", ember = "#abc" })
+    eq(broken.phos, fxpal.FIXED.phosphor.phos, "what is not a colour falls back")
+    eq(broken.trace, fxpal.FIXED.phosphor.trace, "each stop of its own, not all three")
+    eq(fxpal.of("custom", nil, nil).phos, fxpal.FIXED.phosphor.phos, "nothing typed yet is mooi's phosphor")
+    local scheme = { colours = { primary = "#0a0b0c", tertiary = "#0d0e0f", secondary = "#101112" } }
+    local mat = fxpal.of("matugen", nil, nil, scheme)
+    eq(mat.phos, "#0a0b0c", "Matugen's primary")
+    eq(mat.ember, "#0d0e0f", "its tertiary as the second signal")
+    eq(mat.trace, "#101112", "its secondary as the ground")
+    local bare = fxpal.of("matugen", { phos = "#123456", ember = "#234567", trace = "#345678" }, nil, {})
+    eq(bare.phos, "#123456", "a scheme that is not there keeps the bar's palette")
+    local wsfx = require("lib/wsfx")
+    assert(string.find(wsfx.glsl("channel", mine, 100), "const vec3 PHOS = vec3(1.000, 0.000, 0.000);", 1, true),
+        "and the shader is drawn in it")
+end)
+test("the workspace shader's length scales, and its own clock with it", function()
+    local wsfx = require("lib/wsfx")
+    eq(wsfx.dur_ms("channel"), 620, "as designed")
+    eq(wsfx.dur_ms("channel", 50), 310, "half")
+    eq(wsfx.dur_ms("channel", 200), 1240, "twice as long")
+    assert(string.find(wsfx.glsl("channel", nil, 50), "const float DUR = 0.310;", 1, true), "the shader agrees with the watcher")
+    assert(string.find(wsfx.glsl("channel"), "const float DUR = 0.620;", 1, true), "and at 100 percent")
+    eq(wsfx.dur_ms("off"), nil, "off has no length")
+    eq(wsfx.duration("nothing"), nil, "an unknown kind too")
+end)
+
 print("hypr")
 local A = "0x556d06fdfab0"
 test("addresses are validated before reaching a command", function()

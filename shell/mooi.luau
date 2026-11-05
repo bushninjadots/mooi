@@ -1715,7 +1715,7 @@ end
 -- Hyprland's start. The border follows the bar's palette, so a new wallpaper re-colours the
 -- windows' edges with the bar. Keys that change need Hyprland to read that file again (a
 -- reload); the look does not.
-local applied = { keys = nil, look = nil, managed = false, claims = nil }
+local applied = { keys = nil, look = nil, managed = false, claims = nil, ws_fx = nil, wfx = nil }
 -- The same spelling as custom/mooi.lua writes into hypr.loaded: "keys=command|…", then the
 -- touchpad's "gesture 4 down=overview" (D45) — so a gesture switched on or off reloads Hyprland too.
 local function keys_sig(k)
@@ -1723,6 +1723,8 @@ local function keys_sig(k)
     for _, b in ipairs(desktop.binds(k, settings.shutter, settings.atlas)) do out[#out + 1] = tostring(b[1]) .. "=" .. b[2] end
     for _, g in ipairs(desktop.gestures(settings.atlas)) do out[#out + 1] = string.format("gesture %d %s=%s", g[1], g[2], g[3]) end
     if settings.session.standalone then out[#out + 1] = "standalone" end   -- (D48: its keys too)
+    -- the windows' shaders ride in a tag, so switching them on or off needs the file read again
+    if settings.desktop.window_fx ~= "off" then out[#out + 1] = "window" end
     return table.concat(out, "|")
 end
 function sync_desktop()
@@ -1730,7 +1732,48 @@ function sync_desktop()
     local d = settings.desktop
     local bin = sys.ask("env", "MOOI_BIN")
     if type(bin) ~= "string" or bin == "" then bin = tostring(sys.ask("env", "HOME")) .. "/Projects/mooi/bin/mooi" end
-    local file = desktop.file(settings.keys, d, bar_palette, bin, settings.frame, settings.shutter, settings.atlas, settings.session)
+    -- The windows' opening and closing (lib/wfx): both shaders beside mooi's keys under names that
+    -- never change, so the two rules never have to either — the setting only picks which pair is in
+    -- those files, and `off` writes a comment. The plugin re-reads a shader when the file changes,
+    -- so a new wallpaper lights them without a reload; on and off do not (they change the rules),
+    -- and that is what keys_sig carries.
+    local wfx = require("lib/wfx")
+    -- the light both shader families are drawn in: the bar's palette, the wallpaper's own Matugen
+    -- scheme, three colours of yours, or a fixed way (desktop.fx_light, lib/fxpal); one resolution,
+    -- so the workspaces and the windows agree
+    local light = require("lib/fxpal").of(d.fx_light, bar_palette,
+        { phos = d.fx_phos, ember = d.fx_ember, trace = d.fx_trace }, palette)
+    local pair = wfx.pair(d.window_fx, light, d.window_fx_speed)
+    local apps = (pair and d.window_fx_apps) and wfx.apps(light, d.window_fx_speed) or {}
+    local files = {}
+    if pair then files["window-open.glsl"], files["window-close.glsl"] = pair.open, pair.close end
+    for _, a in ipairs(wfx.APPS) do          -- blanked first, so a pair switched off leaves nothing behind
+        files["window-open-" .. a.name .. ".glsl"], files["window-close-" .. a.name .. ".glsl"] = "", ""
+    end
+    for _, a in ipairs(apps) do
+        files["window-open-" .. a.name .. ".glsl"], files["window-close-" .. a.name .. ".glsl"] = a.open, a.close
+    end
+    local names = {}
+    for name in pairs(files) do names[#names + 1] = name end
+    table.sort(names)
+    local sig = {}
+    for _, name in ipairs(names) do sig[#sig + 1] = name .. "=" .. files[name] end
+    sig = table.concat(sig, "|")
+    if applied.wfx ~= sig then
+        applied.wfx = sig
+        for _, name in ipairs(names) do sys.call("files.write", name, files[name]) end
+    end
+    local folder = tostring(sys.ask("files.folder"))
+    local window = nil
+    if pair then
+        window = { open = folder .. "/window-open.glsl", close = folder .. "/window-close.glsl", apps = {} }
+        for _, a in ipairs(apps) do
+            window.apps[#window.apps + 1] = { name = a.name, class = a.class,
+                open = folder .. "/window-open-" .. a.name .. ".glsl",
+                close = folder .. "/window-close-" .. a.name .. ".glsl" }
+        end
+    end
+    local file = desktop.file(settings.keys, d, bar_palette, bin, settings.frame, settings.shutter, settings.atlas, settings.session, window)
     local ksig = keys_sig(settings.keys)
     if applied.keys == nil then
         -- The first look: the keys Hyprland really bound (custom/mooi.lua writes them down)
@@ -1740,6 +1783,20 @@ function sync_desktop()
         if loaded ~= ksig then applied.keys = "" end
     end
     sys.call("files.write", "hypr.lua", file)
+    -- D158: the workspaces' shader, where `mooi ws-fx` reads it (`ws-fx.glsl`, its length in
+    -- `ws-fx.ms`). `off` writes it empty, which is that watcher's own switch: it applies nothing
+    -- then. The palette's colours go into the shader, so a new wallpaper re-lights the switch too.
+    -- Written only when the kind or those colours changed: the settings watch would otherwise hand
+    -- the same shader over on every paint.
+    local wsfx = require("lib/wsfx")
+    local kind = d.ws_fx
+    local src = (kind ~= "off") and (wsfx.glsl(kind, light, d.ws_fx_speed) or "") or ""
+    if applied.ws_fx ~= kind .. "|" .. src then
+        applied.ws_fx = kind .. "|" .. src
+        sys.call("files.write", "ws-fx.glsl", src)
+        -- the length the watcher holds it for, the same way the shader's own clock is stretched
+        sys.call("files.write", "ws-fx.ms", (kind ~= "off") and tostring(wsfx.dur_ms(kind, d.ws_fx_speed) or 0) or "")
+    end
     local look = desktop.look(d, bar_palette, settings.frame)
     local claims = desktop.claims(d)
     -- a setting handed back to Hyprland (`keep`) needs its config read again to get its value back
@@ -1753,7 +1810,6 @@ function sync_desktop()
     end
     applied.keys, applied.look, applied.managed, applied.claims = ksig, look, look ~= nil, claims
 end
-
 -- ── The settings window ─────────────────────────────────────
 -- A program of its own (shell/mooi-settings.plm and .luau): a window in the same scene as the
 -- bar intermittently took the keyboard's routing from the islands (← → in the membrane's

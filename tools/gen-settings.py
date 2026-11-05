@@ -85,6 +85,18 @@ SETTERS = [
     # D157: the workspaces' transition and the scrolling layout as niri's columns
     "desktop.ws_style", "desktop.ws_feel", "desktop.ws_speed", "desktop.ws_swipe",
     "desktop.column_widths", "desktop.column_follow", "desktop.column_wrap", "desktop.column_keys",
+    # D161: how long the session may sit idle before the lock screen takes it (`mooi idle`)
+    "lock.idle",
+    # D158: the workspaces' shader transition (appended, so no code moved)
+    "desktop.ws_fx",
+    # and the windows' own opening and closing (lib/wfx), appended for the same reason: the pair,
+    # how long it runs, and whether terminals and browsers keep one of their own
+    "desktop.window_fx", "desktop.window_fx_speed", "desktop.window_fx_apps",
+    # the shaders' own length and light, for both families (lib/wsfx, lib/wfx, lib/fxpal)
+    "desktop.ws_fx_speed", "desktop.fx_light",
+    # the three colours the `custom` light is drawn in (typed as hex, so their codes set nothing;
+    # they are listed so a page's Reset names them)
+    "desktop.fx_phos", "desktop.fx_ember", "desktop.fx_trace",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -298,6 +310,35 @@ SECTIONS = [
         ("slider", "Duration", "How long the move takes (a spring sets its own)", "desktop.ws_speed", 0, 12,
          'pick(sv_desktop_ws_speed == 0, "{sv_desktop_ws_speed / 10, 1} s", "KEEP")', "sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2"),
         ("choice", "Swipe", "Flick: a quick swipe goes over, and a long one carries on past the next", "desktop.ws_swipe", "sv_desktop_ws_swipe", ["Keep mine", "Flick", "Steady"]),
+        # the light both shader families are drawn in (lib/fxpal): one choice, so the switch and the
+        # windows cannot end up two different colours
+        ("card", "Shader colours"),
+        ("choice", "The light", "Where the transition and the windows' effects take their colour: the bar's own palette (a new wallpaper re-lights them), or a fixed way of their own", "desktop.fx_light", "sv_desktop_fx_light",
+         ["Palette", "Phosphor", "Amber", "Ice", "Magenta", "Mono"]),
+        # …and two ways of its own on the second row (as the base's materials): three colours you type,
+        # or the wallpaper's own Matugen scheme, before the bar re-lights it
+        ("choice", "", "…or your own three colours below, or the wallpaper's own as Matugen read it", "desktop.fx_light",
+         "sv_desktop_fx_light", [("Custom", 6), ("Matugen", 7)]),
+        ("fxcolour", "First colour", "The light the effect is drawn in, typed as #rrggbb (Custom only)", "desktop.fx_phos", "fxp1", None, "sv_desktop_fx_light == 6"),
+        ("fxcolour", "Second colour", "The second signal: rings, sparks, debris", "desktop.fx_ember", "fxp2", None, "sv_desktop_fx_light == 6"),
+        ("fxcolour", "Third colour", "The ground the shader's marks stand on", "desktop.fx_trace", "fxp3", None, "sv_desktop_fx_light == 6"),
+        # the windows' own opening and closing (HyprWindowShade, lib/wfx): a card of its own, in front
+        # of the switch's so it lands where the eye is; off is Hyprland's animation, and a pair plays
+        # only where the plugin is loaded
+        ("card", "Windows waking"),
+        ("choice", "Open and close", "A window's arrival and exit as a shader, in the bar's colours. Off is Hyprland's own animation; a pair plays where the HyprWindowShade plugin is loaded", "desktop.window_fx", "sv_desktop_window_fx",
+         ["Off", "Phosphor", "Glitch", "Iris"]),
+        ("slider", "How long", "Both halves, against the pair's own timing (a quick flick of the eye either way)", "desktop.window_fx_speed", 50, 200,
+         "{sv_desktop_window_fx_speed + 50, 0}%", "sv_desktop_window_fx != 0"),
+        ("toggle", "Terminals and browsers differ", "A terminal leaves with the Glitch and a browser arrives with the Iris, whatever the pair above is", "desktop.window_fx_apps", "sv_desktop_window_fx_apps", None,
+         "sv_desktop_window_fx != 0"),
+        # D158: the shader is the compositor's screen shader, not one of Hyprland's animations, so it
+        # has a card of its own and works with mooi styling the windows or not
+        ("card", "Shader over the switch"),
+        ("choice", "Transition shader", "mooi's own, laid over the switch itself for the length of the move; Off is the switch. It runs while mooi's theme watch does", "desktop.ws_fx", "sv_desktop_ws_fx",
+         ["Off", "Channel", "Circuit", "Stretch", "Halftone", "Board", "Sigil"]),
+        ("slider", "How long", "The shader's own length, against the kind's timing; the move itself has its Duration above", "desktop.ws_fx_speed", 50, 200,
+         "{sv_desktop_ws_fx_speed + 50, 0}%", "sv_desktop_ws_fx != 0"),
         ("card", "Tiling", "dk_manage"),
         ("choice", "Layout", "How tiled windows are arranged", "desktop.layout", "sv_desktop_layout", ["Keep mine", "Dwindle", "Master", "Scrolling", "Monocle"]),
         ("slider", "Column width", "Scrolling layout: a new column's width", "desktop.column", 9, 100,
@@ -451,6 +492,19 @@ SECTIONS = [
         ("note", "not pw_ppd", "POWER-PROFILES-DAEMON IS NOT RUNNING HERE, SO THERE ARE NO PROFILES TO CHOOSE"),
         ("card", "Power profile", "pw_ppd"),
         ("choice", "Profile", "power-profiles-daemon's: quieter and cooler, or faster", "power.profile", "sv_power_profile", ["Keep", "Saver", "Balanced", "Performance"]),
+    ]),
+    # D161: when the screen locks by itself, and the picture it wears. The timer is hypridle's
+    # (`mooi idle` writes its file); the picture is the Nexus's own identity, chosen here too.
+    ("Lock", "Lock screen", "When the screen locks by itself, and the picture it wears", "SYSTEM", [
+        ("card", "Locking"),
+        ("slider", "Lock after", "Minutes without typing or pointing before mooi's lock screen takes the session",
+         "lock.idle", 1, 60, "{sv_lock_idle + 1, 0} min"),
+        ("note", "true", "THE MACHINE SUSPENDS 30 MIN AFTER THAT · SUPER+L LOCKS NOW"),
+        ("card", "Picture"),
+        ("info", "On the lock screen", "The same banner or picture the Nexus's profile card shows", "lock_pic_now"),
+        ("button", "Profile picture", "A small picture above the clock, chosen here; the Nexus's card shows it too", "Choose", "lock_pic", 0),
+        ("button", "Banner", "A wide picture across the top of the lock screen; the Nexus's card shows it too", "Choose", "lock_pic", 1),
+        ("note", "true", "A BANNER WINS OVER A PICTURE · THE NEXT LOCK SHOWS IT"),
     ]),
     ("Keys", "Keys", "mooi's keyboard shortcuts. Press Change, then the new keys", "SYSTEM", [("card", "Shortcuts"), ("keys",)]),
     ("System", "System", "Notifications, the islands and comfort", "SYSTEM", [
@@ -622,6 +676,20 @@ def row_lines(r, y, first, reverted):
         for n in range(8):
             lines.append(f'SColour({TX + n * 106}, {y + 184}, "", rgb(cq{n}_r, cq{n}_g, cq{n}_b), false, set_colour, {9000 + n}, true)')
         return lines, 228
+    if k == "fxcolour":
+        # one of the shaders' three colours (desktop.fx_*): a field for any #rrggbb, a Set beside it,
+        # and the colour itself as the swatch
+        _, title, desc, path, key = r[:5]
+        n = int(key[3:])
+        lines.append(f'SRow({y}, "{title}", "{desc}", true, "", 420, {rule})')
+        lines.append(f'box {{ from: {XR - 530}, {y + 16}; size: 310, 28; corner: 4; color: fl.ground; opacity: 0.6 }}')
+        lines.append(f'box {{ from: {XR - 530}, {y + 16}; size: 310, 28; corner: 4; stroke: 1; color: fl.steel_700 }}')
+        lines.append(f'input {key}_in {{ at: {XR - 520}, {y + 22}; width: 290; size: 12; family: "Share Tech Mono"; color: fl.engrave; selection: fl.well; placeholder: "#rrggbb" }}')
+        lines.append(f'SButton({XR - 210}, {y + 17}, 100, "Set", set_fxcolour, {n})')
+        lines.append(f'box {{ from: {XR - 100}, {y + 13}; size: 88, 34; corner: 6; color: rgb({key}_r, {key}_g, {key}_b) }}')
+        lines.append(f'box {{ from: {XR - 100}, {y + 13}; size: 88, 34; corner: 6; stroke: 1; color: fl.trace_lit }}')
+        lines.append(f'text {key}_hex {{ at: {XR - 56}, {y + 30}; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }}')
+        return lines, 62
     if k == "button":
         _, title, desc, label, ev, n = r
         n = TAB[n] if n in TAB else n
@@ -951,7 +1019,7 @@ import "ui/ferrolume.plm"
 // paints the same palette (lib/ferro), so the window wears what the bar wears.
 scene Mooi {
     permissions {
-        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi"
+        run: "pleamar", "matugen", "hyprctl", "powerprofilesctl", "xdg-open", "tail", "ps", "mooi", "zenity"
         services: "files", "files.write", "files.remove", "env", "audio", "audio.*", "battery"
     }
 """
@@ -1066,6 +1134,8 @@ def main():
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
+    text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
+    event lock_pic ->         // to the logic: choose it (0 the profile picture, 1 the banner)
     fact pw_ppd = false       // power-profiles-daemon answers
     fact saving = false       // the battery saver is on now
     text adv_version = ""
@@ -1081,7 +1151,12 @@ def main():
     fact cp_r = 0.06
     fact cp_g = 0.08
     fact cp_b = 0.09
-""" + "".join(f"    fact cq{n}_r = 0.1\n    fact cq{n}_g = 0.1\n    fact cq{n}_b = 0.1\n" for n in range(8)) + "".join(f"    fact lay_c{n} = true\n" for n in range(1, 9)) + "".join(f"    fact lz{z}_y = 0\n    fact lz{z}_h = 90\n    fact lz{z}_n = 0\n" for z in range(4)) + """
+""" + "".join(f"    fact cq{n}_r = 0.1\n    fact cq{n}_g = 0.1\n    fact cq{n}_b = 0.1\n" for n in range(8)) + "".join(
+        f"    fact fxp{i}_r = 0.5\n    fact fxp{i}_g = 0.5\n    fact fxp{i}_b = 0.5\n    text fxp{i}_hex = \"#7FCFB6\"\n    text fxp{i}_in = \"\"\n"
+        for i in range(1, 4)) + (
+        "    // The shaders' own three colours (desktop.fx_phos/ember/trace), the `custom` light: each typed\n"
+        "    // as #rrggbb into its field, read back and saved by the logic (set_fxcolour: 1, 2 or 3).\n"
+        "    event set_fxcolour ->\n") + "".join(f"    fact lay_c{n} = true\n" for n in range(1, 9)) + "".join(f"    fact lz{z}_y = 0\n    fact lz{z}_h = 90\n    fact lz{z}_n = 0\n" for z in range(4)) + """
 """ + "\n".join(PROPS) + """
     // A page chosen slides in: it starts a little low and clear, and settles.
     prop pg = 1

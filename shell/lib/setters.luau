@@ -91,6 +91,17 @@ M.SETTERS = {
     -- D157: the workspaces' transition and the scrolling layout as niri's columns
     "desktop.ws_style", "desktop.ws_feel", "desktop.ws_speed", "desktop.ws_swipe",
     "desktop.column_widths", "desktop.column_follow", "desktop.column_wrap", "desktop.column_keys",
+    -- D161: how long the session may sit idle before the lock screen takes it (`mooi idle`)
+    "lock.idle",
+    -- D158: the workspaces' shader transition, as one switch and one choice (lib/wsfx)
+    "desktop.ws_fx",
+    -- the windows' opening and closing, the same way (lib/wfx; appended, so no code moved)
+    "desktop.window_fx", "desktop.window_fx_speed", "desktop.window_fx_apps",
+    -- and the shaders' own length and light, shared by both (lib/wsfx, lib/wfx, lib/fxpal)
+    "desktop.ws_fx_speed", "desktop.fx_light",
+    -- the three colours the `custom` light is drawn in: typed as hex in the settings window (that
+    -- window's own event), so their codes set nothing; they are here so a page's Reset names them
+    "desktop.fx_phos", "desktop.fx_ember", "desktop.fx_trace",
 }
 
 local function row_of(path)

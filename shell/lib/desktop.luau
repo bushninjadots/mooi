@@ -256,7 +256,31 @@ function M.gestures(atlas)
     local n = type(atlas) == "table" and ({ three = 3, four = 4 })[atlas.gesture] or nil
     return n and { { n, "down", "overview" } } or {}
 end
-function M.file(keys, d, pal, mooi, frame, shutter, atlas, session)
+-- The window rules custom/mooi.lua hands Hyprland for the windows' own shaders (lib/wfx writes the
+-- two files beside mooi's keys): a tag for opening and a tag for closing, both `_default` so a rule
+-- of your own — `+shader_close:` on one class — takes that half over without touching these.
+-- Nothing while the effects are off: a tag is what plays a shader, so no tag is Hyprland's own
+-- animation, which is exactly what off is.
+function M.window_rules(w)
+    if type(w) ~= "table" or type(w.open) ~= "string" or type(w.close) ~= "string" then return {} end
+    local out = {
+        string.format('{ name = "mooi-window-open", match = { class = ".*" }, tag = %q }', "+shader_open_default:" .. w.open),
+        string.format('{ name = "mooi-window-close", match = { class = ".*" }, tag = %q }', "+shader_close_default:" .. w.close),
+    }
+    -- The apps that keep a pair of their own: the same tags without the suffix, so they win over
+    -- the two above however the paths happen to sort (Hyprland keeps tags in a sorted set).
+    for _, a in ipairs(type(w.apps) == "table" and w.apps or {}) do
+        if type(a.class) == "string" and type(a.open) == "string" and type(a.close) == "string" then
+            local name = type(a.name) == "string" and a.name or "app"
+            out[#out + 1] = string.format('{ name = %q, match = { class = %q }, tag = %q }',
+                "mooi-window-open-" .. name, a.class, "+shader_open:" .. a.open)
+            out[#out + 1] = string.format('{ name = %q, match = { class = %q }, tag = %q }',
+                "mooi-window-close-" .. name, a.class, "+shader_close:" .. a.close)
+        end
+    end
+    return out
+end
+function M.file(keys, d, pal, mooi, frame, shutter, atlas, session, window)
     local out = { "-- written by mooi (shell/lib/desktop.luau); read by ~/.config/hypr/config/custom/mooi.lua", "return {",
                   string.format("    mooi = %q,", mooi), "    keys = {" }
     for _, b in ipairs(M.binds(keys, shutter, atlas)) do
@@ -266,6 +290,9 @@ function M.file(keys, d, pal, mooi, frame, shutter, atlas, session)
     out[#out + 1] = "    standalone = " .. tostring(type(session) == "table" and session.standalone == true) .. ","
     out[#out + 1] = "    gestures = {"
     for _, g in ipairs(M.gestures(atlas)) do out[#out + 1] = string.format("        { %d, %q, %q },", g[1], g[2], g[3]) end
+    out[#out + 1] = "    },"
+    out[#out + 1] = "    window = {"
+    for _, r in ipairs(M.window_rules(window)) do out[#out + 1] = "        " .. r .. "," end
     out[#out + 1] = "    },"
     out[#out + 1] = "    look = " .. string.format("%q", M.look(d, pal, frame) or "") .. ","
     out[#out + 1] = "}"

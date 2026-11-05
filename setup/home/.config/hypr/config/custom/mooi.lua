@@ -67,7 +67,15 @@ if cfg.standalone == true or not archeclipse then
     bound[#bound + 1] = "standalone"
 end
 
+-- The windows' opening and closing (Settings → Windows → Windows waking): a rule each, tagged
+-- `_default`, in front of the two shaders mooi wrote beside its keys. Empty while the effects are
+-- off, and then the windows animate exactly as Hyprland says. Letting go of them needs this file
+-- read again, so "window" rides in what mooi compares with hypr.loaded below, as the keys do.
+local window = type(cfg.window) == "table" and cfg.window or {}
+for _, rule in ipairs(window) do pcall(hl.window_rule, rule) end
+
 -- What was bound, for mooi to compare with what it wants (it reloads Hyprland when they differ).
+if #window > 0 then bound[#bound + 1] = "window" end
 local f = io.open(home .. "/.local/share/pleamar/mooi/hypr.loaded", "w")
 if f then f:write(table.concat(bound, "|")); f:close() end
 
