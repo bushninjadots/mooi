@@ -509,6 +509,8 @@ SECTIONS = [
         ("choice", "Backdrop", "How far the wallpaper is blurred behind the plate", "lock.blur", "sv_lock_blur", ["Off", "Light", "Medium", "Heavy"]),
         ("slider", "Dim", "How far the wallpaper is dimmed, so the clock and the field read over any picture", "lock.dim", 0, 90,
          "{sv_lock_dim, 0}%"),
+        # what those two do to the picture itself, before the screen is locked and the password typed
+        ("preview",),
         ("button", "Lock it now", "mooi's own lock screen straight away; it also takes the session by itself after the minutes above", "Lock now", "lock_now", 0),
         ("note", "true", "THE MACHINE SUSPENDS 30 MIN AFTER THAT · SUPER+L LOCKS NOW"),
         ("card", "Picture"),
@@ -722,6 +724,26 @@ def row_lines(r, y, first, reverted):
             col, row = n % 5, n // 5
             lines.append(f'SScheme({TX + col * 174}, {y + 6 + row * 66}, "{label}", rgb(sp{v}_r, sp{v}_g, sp{v}_b), rgb(se{v}_r, se{v}_g, se{v}_b), th_scheme == {v}, set_value, {code("theme.scheme") * 1000 + v}, true)')
         return lines, 142
+    if k == "preview":
+        # The lock's backdrop, as it will look: the wallpaper the shell is wearing, behind the blur
+        # and the dimming chosen on the rows above (lock.blur, lock.dim), with the clock and the
+        # plate over it at the size they are drawn. The picture is the still in ~/.cache, which the
+        # logic hands the scene, so a video's current frame shows too.
+        px, py, pw, ph = TX, y + 4, 300, 168
+        cx, cy = px + pw // 2, py + ph // 2
+        lines.append(f'box {{ from: {px}, {py}; size: {pw}, {ph}; color: fl.ground }}')
+        lines.append(f'group {{ show: lk_wp_on; opacity: 0.42; blur: pick(sv_lock_blur, 0, 22, 54, 96); '
+                     f'image lkwp {{ at: {px - 20}, {py - 20}; size: {pw + 40}, {ph + 40}; fit: cover }} }}')
+        lines.append(f'box {{ from: {px}, {py}; size: {pw}, {ph}; color: fl.ground; opacity: sv_lock_dim / 100 }}')
+        lines.append(f'text "22:41" {{ at: {cx}, {cy - 18}; anchor: center; size: 34; weight: 700; family: "Share Tech Mono"; color: fl.phos }}')
+        lines.append(f'box {{ from: {cx - 62}, {cy + 12}; size: 124, 22; corner: 2; color: fl.steel_700; opacity: 0.9 }}')
+        lines.append(f'text "PASSWORD" {{ at: {cx}, {cy + 23}; anchor: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }}')
+        lines.append(f'box {{ from: {px}, {py}; size: {pw}, {ph}; stroke: 1; color: fl.trace_dim }}')
+        lines.append(f'text "NO WALLPAPER STILL YET" {{ at: {cx}, {cy}; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: not lk_wp_on }}')
+        lines.append(f'text "AS IT LOCKS" {{ at: {px + pw + 26}, {py + 14}; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }}')
+        lines.append(f'text "THE WALLPAPER AT THAT BLUR AND THAT DIMMING, WITH THE CLOCK AND THE PLATE OVER IT; A PICTURE SHOWS WHAT THE SETTINGS ABOVE WILL DO TO IT" '
+                     f'{{ at: {px + pw + 26}, {py + 34}; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: {XR - px - pw - 30} }}')
+        return lines, 180
     if k == "slider":
         _, title, desc, path, lo, hi, shown = r[:7]
         shown_expr = shown if shown.startswith("pick(") else f'"{shown}"'
@@ -1146,6 +1168,9 @@ def main():
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
+    text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)
+    fact lk_wp_on = false     // there is one to show
+    image lkwp = from lk_wp, 640, 360
     event lock_pic ->         // to the logic: choose it (0 the profile picture, 1 the banner)
     event lock_now ->         // to the logic: lock the session now (`mooi lock`)
     fact pw_ppd = false       // power-profiles-daemon answers

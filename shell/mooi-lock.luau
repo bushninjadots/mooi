@@ -78,8 +78,12 @@ whoami()
 -- (a plate above the clock), copied beside this scene by `mooi lock`; `identity.json` says which.
 local function picture()
     local p = read("identity.json", "json")
+    -- The path `mooi lock` gave the copy it made (`…/pleamar/mooi-lock/picture.jpg`, written whole
+    -- into identity.json): an image fact draws a path as it stands, and a bare name beside the scene
+    -- is not one — that, and not the file, was why the banner and the profile picture never showed.
+    -- The wallpaper on the lock is an absolute path for the same reason. A path that does not
+    -- resolve draws nothing, which is the same screen as having none.
     local file = type(p) == "table" and type(p.file) == "string" and p.file or ""
-    if file == "" or not (pcall(sys.ask, "files.exists", file)) then file = "" end
     text.picpath, fact.has_pic = file, file ~= ""
     fact.pic_banner = fact.has_pic and (p.banner == true)
 end
@@ -94,7 +98,7 @@ pcall(sys.watch, "files:identity.json", picture)
 pcall(sys.watch, "media", function(m)
     local t = type(m) == "table" and m or {}
     local title, artist = tostring(t.title or ""), tostring(t.artist or "")
-    fact.lk_playing = t.playing == true and title ~= ""
+    fact.lk_playing, fact.lk_track_on = t.playing == true, title ~= ""
     text.lk_track = (artist ~= "" and (title .. " · " .. artist)) or title
 end)
 pcall(sys.watch, "battery", function(b)
@@ -104,6 +108,28 @@ end)
 pcall(sys.watch, "notification_history", function(l)
     fact.lk_notes = type(l) == "table" and #l or 0
 end)
+
+-- ── The music, drawn ─────────────────────────────────────────────────────
+-- cava's bands reach the glass the way the palette does: the bar writes them into the shell's folder
+-- and the carrier `mooi lock` starts copies the line into this one (a scene reads nowhere else).
+-- lib/vizfeed decodes it and thins 32 bands to the sixteen the visualiser draws; no feed, or a line
+-- that will not decode, is silence — a visualiser that keeps its last frame looks like a stuck one.
+local vizfeed = require("lib/vizfeed")
+local viz_seq = nil
+local function bands()
+    local t = vizfeed.decode(read("viz-levels.txt"))
+    if not t or not vizfeed.newer(viz_seq, t.seq) then return end
+    viz_seq = t.seq
+    local thin = vizfeed.resample(t.bands, 16)
+    for i = 0, 15 do fact["vb" .. tostring(i)] = math.max(0, math.min(1, thin[i + 1] or 0)) end
+end
+bands()
+-- The file watch coalesces — four of cava's thirty lines a second reach a handler — and a
+-- visualiser fed at fifteen frames a second is a slideshow rather than music. Like the Nexus's
+-- card, the bars are read at the feed's own pace while something plays; `vizfeed.newer` refuses a
+-- line already drawn, so a tick that finds the same seq writes no facts and costs nothing.
+pcall(sys.watch, "files:viz-levels.txt", bands)
+every(33, function() if fact.lk_playing then bands() end end)
 
 -- ── The tries PAM has left ──────────────────────────────────────────────
 -- A lock screen cannot ask PAM how many attempts remain, only whether one password was right, so
@@ -207,6 +233,14 @@ local function power(what)
     else text.rbt_label, text.pwr_note = "REBOOT?", "PRESS AGAIN TO REBOOT" end
     armed.timer = after(4000, function() if armed.what == what then disarm() end end)
 end
+
+-- ── The transport ────────────────────────────────────────────────────────
+-- Three keys that change the song from the lock: `media.*` is the compositor's own door to the
+-- player (the bar's module uses the same calls), so nothing here has to know which player it is.
+-- A press is fire-and-forget: the media service says what happened back through the watch above.
+on("lk_prev", function() pcall(sys.call, "media.previous") end)
+on("lk_toggle", function() pcall(sys.call, "media.toggle") end)
+on("lk_next", function() pcall(sys.call, "media.next") end)
 
 on("pwr_off", function() power("poweroff") end)
 on("rbt", function() power("reboot") end)

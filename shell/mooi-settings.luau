@@ -153,6 +153,17 @@ end
 -- the bar maps it (lib/ferro). Asked again when the wallpaper (the palette) changes.
 local SCHEMES = { "tonal-spot", "content", "expressive", "fidelity", "fruit-salad", "monochrome", "neutral", "rainbow", "vibrant", "smart" }
 local wallpaper = tostring(sys.ask("env", "HOME")) .. "/.cache/current_wallpaper"
+-- The lock's backdrop preview (Settings → Lock): the still the shell keeps of what it is wearing
+-- (a video's current frame too), so the blur and the dimming chosen there are seen on the picture
+-- they will be applied to. No still, no picture: the scene says so rather than lie.
+local function backdrop_pic()
+    -- The files service stops at this scene's own folder, so it cannot say whether the still is
+    -- there (asking it made this always say no); the picture is drawn from its path instead. A
+    -- still that is not there leaves the ground, which is what a lock with no wallpaper is.
+    local home = tostring(sys.ask("env", "HOME") or "")
+    text.lk_wp = home ~= "" and wallpaper or ""
+    fact.lk_wp_on = home ~= ""
+end
 local function roles_of(out)
     local ok, t = pcall(json.decode, out or "")
     if not ok or type(t) ~= "table" or type(t.colors) ~= "table" then return nil end
@@ -187,7 +198,8 @@ end
 
 load()
 previews()
-sys.watch("files:" .. FILE, function() load(); previews() end)
+backdrop_pic()
+sys.watch("files:" .. FILE, function() load(); previews(); backdrop_pic() end)
 sys.watch("files:" .. PALETTE, function() load(); previews() end)
 
 -- ── Changing a key ─────────────────────────────────────────

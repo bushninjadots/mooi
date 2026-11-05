@@ -972,10 +972,39 @@ lock_files() {
             [ -n "$rel" ] && [ -f "$folder/$rel" ] || continue
             ext=${rel##*.}
             cp -f "$folder/$rel" "$d/picture.$ext" || continue
-            printf '{"file":"picture.%s","banner":%s}\n' "$ext" "$([ "$kind" = 1 ] && echo true || echo false)" > "$d/identity.json"
+            # The name it is given is the whole path: an image fact draws a path as it stands, and a
+            # bare name beside the scene is not one (the wallpaper on the lock is a path too).
+            printf '{"file":"%s/picture.%s","banner":%s}\n' "$d" "$ext" "$([ "$kind" = 1 ] && echo true || echo false)" > "$d/identity.json"
             break
         done
     fi
+}
+
+# ── The visualiser's feed on the lock ──────────────────────────────────────────
+# cava's bands are the bar's (`viz-levels.txt` in the shell's folder) and the lock scene reads only
+# its own folder, so the line is carried across while the lock screen is up: a few hundred bytes,
+# thirty times a second, nothing cava does not already compute. The scene reads it at that pace
+# (`every(33)` in mooi-lock.luau) rather than trusting its file watch, which coalesces. It stops two
+# seconds after the lock comes down (or at once from `mooi unlock`), and with the session.
+lock_feed_start() {
+    local d="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$lock_name"
+    lock_feed_stop
+    (
+        n=0
+        while :; do
+            [ -r "$folder/viz-levels.txt" ] && cp -f "$folder/viz-levels.txt" "$d/viz-levels.txt" 2>/dev/null
+            n=$((n + 1))
+            if [ $((n % 100)) -eq 0 ] && [ "$("$pleamar" --say "$lock_name" "get locked" 2>/dev/null)" != "true" ]; then break; fi
+            sleep 0.02
+        done
+    ) >/dev/null 2>&1 < /dev/null &
+    echo "$!" > "$state/lock-feed.pid"
+}
+lock_feed_stop() {
+    local f="$state/lock-feed.pid"
+    [ -f "$f" ] || return 0
+    kill -TERM "$(cat "$f" 2>/dev/null)" 2>/dev/null || :
+    rm -f "$f"
 }
 # ── The lock's idle timeout (D161) ────────────────────────────────────────────
 # hypridle reads its listeners from a file of its own, so the setting (`lock.idle`, Settings →
@@ -1048,6 +1077,7 @@ lock_start() {
 lock_only() {
     snapshot || return 1
     lock_start || return 1
+    lock_feed_start
     "$pleamar" --say "$lock_name" "fact locked true"
 }
 unlock_only() {
@@ -1055,6 +1085,7 @@ unlock_only() {
         echo "mooi unlock: no lock screen is running" >&2
         return 1
     }
+    lock_feed_stop
 }
 
 cmd=${1:-help}; [ $# -gt 0 ] && shift
@@ -1119,6 +1150,7 @@ case "$cmd" in
         ;;
     stop | restore)
         rm -f "$again"   # first: a refresh's mark must not turn this stop into a restart
+        lock_feed_stop
         running && stop_mooi
         theme_watch_stop
         keeping && kill -TERM "$(cat "$keep_pid")" 2>/dev/null

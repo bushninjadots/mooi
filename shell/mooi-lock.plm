@@ -1,5 +1,9 @@
 language 0.9
 
+// The music's own bars are the shell's (`ui/viz.plm`, the same component the bar and the player draw),
+// fed from the scene's sixteen facts vb0…vb15.
+import "ui/viz.plm" as viz
+
 // mooi's lock screen (D160): the session's own lock, through Pleamar's `kind: lock`, which is
 // ext-session-lock — the compositor keeps everything else off the screen and the keyboard until
 // this scene gives the lock up. The password is checked by PAM in the logic (`sys.ask("auth.check")`),
@@ -14,7 +18,7 @@ language 0.9
 
 scene MooiLock {
     permissions {
-        services: "files", "auth", "clock", "clock.seconds", "env", "media", "battery", "notification_history"
+        services: "files", "auth", "clock", "clock.seconds", "env", "media", "media.*", "battery", "notification_history"
         run: "systemctl"
     }
 
@@ -83,7 +87,8 @@ scene MooiLock {
     text pwr_note = ""
     text wp = ""                 // the wallpaper, for the backdrop
     // ── What the glass says about the session (D160) ──
-    fact lk_playing = false       // a song is playing, so the track line shows
+    fact lk_playing = false       // it is playing (the transport shows ▶ or ⏸ by it)
+    fact lk_track_on = false      // a player has something on it, playing or not
     text lk_track = ""            // "Artist · Title", as the media service has it
     fact lk_batt = false
     fact lk_batt_pct = 0
@@ -92,10 +97,30 @@ scene MooiLock {
     // The backdrop's own two settings (Settings → Lock): blur in pleamar's units, dim as a share.
     fact lk_blur = 54
     fact lk_dim = 0.72
+    // The visualiser's bands (lib/vizfeed's line, thinned to sixteen by the logic): 0…1, left to right.
+    fact vb0 = 0
+    fact vb1 = 0
+    fact vb2 = 0
+    fact vb3 = 0
+    fact vb4 = 0
+    fact vb5 = 0
+    fact vb6 = 0
+    fact vb7 = 0
+    fact vb8 = 0
+    fact vb9 = 0
+    fact vb10 = 0
+    fact vb11 = 0
+    fact vb12 = 0
+    fact vb13 = 0
+    fact vb14 = 0
+    fact vb15 = 0
     event tryauth ->             // to the logic: check what is typed
     event clear ->               // to the logic: forget what was typed
     event pwr_off ->             // to the logic: the power off button
     event rbt ->                 // to the logic: the reboot button
+    event lk_prev ->             // to the logic: the transport's back, play/pause and next
+    event lk_toggle ->
+    event lk_next ->
 
     // ── Springs of the small things ──────────────────────────────────────────
     spring wobble = 520, 11
@@ -194,14 +219,20 @@ scene MooiLock {
             text lk_track {
                 at: 0, -44; anchor: center; size: 11; family: "Share Tech Mono"
                 color: lk_trace; width: 660; lines: 1; align: center
-                show: lk_playing
+                show: lk_track_on
+            }
+            // the music's bands, under the track: what is playing, moving, rather than a word for it
+            group {
+                show: lk_track_on
+                opacity: appear * 0.9
+                viz.Spectrum(-160, -32, 320, 26, lk_trace_dim, lk_phos, not lk_playing)
             }
         }
 
         // Whose screen this is, above the plate: the name the session runs as, so the password
         // being asked for has an owner.
         text who {
-            at: 0, 8; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"
+            at: 0, 16; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"
             color: lk_muted
         }
 
@@ -234,6 +265,30 @@ scene MooiLock {
         text tries {
             at: 0, 134; anchor: center; size: 9; family: "Share Tech Mono"
             color: lk_ember; opacity: 55%
+        }
+
+        // ── The transport: the song changes hands without the password ───────
+        // Three keys on the glass for whatever is playing (`media.*`): a locked door does not have to
+        // stop the music. They are drawn only while a player has something on it, and only while the
+        // compositor holds the lock, like the power buttons below.
+        group {
+            show: lk_track_on and lock.held
+            opacity: appear
+            box { at: -60, 190; size: 40, 30; corner: 2; color: lk_trace_dim; opacity: 35% }
+            box { at: -60, 190; size: 38, 28; corner: 2; color: lk_steel_900; opacity: 85% }
+            text "◀◀" { at: -60, 190; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted; outline: 2, lk_ground }
+            box { at: 0, 190; size: 40, 30; corner: 2; color: lk_trace_dim; opacity: 45% }
+            box { at: 0, 190; size: 38, 28; corner: 2; color: lk_steel_900; opacity: 85% }
+            text pick(lk_playing, "⏸", "▶") { at: 0, 190; anchor: center; size: 13; weight: 700; family: "Share Tech Mono"; color: lk_phos; outline: 2, lk_ground }
+            box { at: 60, 190; size: 40, 30; corner: 2; color: lk_trace_dim; opacity: 35% }
+            box { at: 60, 190; size: 38, 28; corner: 2; color: lk_steel_900; opacity: 85% }
+            text "▶▶" { at: 60, 190; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted; outline: 2, lk_ground }
+            zone box tp_prev { from: -80, 175; size: 40, 30; cursor: pointer; role: button; label: "PREVIOUS TRACK"; show: lock.held }
+            on press tp_prev { emit lk_prev }
+            zone box tp_play { from: -20, 175; size: 40, 30; cursor: pointer; role: button; label: "PLAY OR PAUSE"; show: lock.held }
+            on press tp_play { emit lk_toggle }
+            zone box tp_next { from: 40, 175; size: 40, 30; cursor: pointer; role: button; label: "NEXT TRACK"; show: lock.held }
+            on press tp_next { emit lk_next }
         }
 
         // ── Power, at the foot: one press arms, the second does it ───────────

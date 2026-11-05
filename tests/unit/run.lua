@@ -1309,6 +1309,44 @@ test("the lock screen's backdrop is a setting, and stays legible", function()
     eq(require("lib/setters").path(420), "lock.blur", "the choice's code")
     eq(require("lib/setters").path(421), "lock.dim", "the slider's code")
 end)
+test("the lock's backdrop can be seen before the screen locks (D160)", function()
+    local f = io.open("shell/mooi-settings.plm", "r")
+    local plm = f and f:read("a") or ""
+    if f then f:close() end
+    assert(plm:find("image lkwp = from lk_wp", 1, true), "the settings scene has no backdrop picture")
+    assert(plm:find("blur: pick(sv_lock_blur, 0, 22, 54, 96)", 1, true), "the preview does not follow the blur")
+    assert(plm:find("opacity: sv_lock_dim / 100", 1, true), "the preview does not follow the dimming")
+    local l = io.open("shell/mooi-lock.luau", "r")
+    local luau = l and l:read("a") or ""
+    if l then l:close() end
+    for _, call in ipairs({ "media.previous", "media.toggle", "media.next" }) do
+        assert(luau:find('sys.call, "' .. call .. '"', 1, true), "the lock cannot reach " .. call)
+    end
+end)
+test("the lock's picture and its visualiser are wired (D160/D161)", function()
+    local function slurp(path)
+        local f = io.open(path, "r")
+        local t = f and f:read("a") or ""
+        if f then f:close() end
+        return t
+    end
+    local luau = slurp("shell/mooi-lock.luau")
+    -- `files.exists` answers for a scene's own folder only, and its no was read as "no picture",
+    -- so the banner and the profile picture never showed. Nothing may put that question back.
+    assert(not luau:find('sys.ask, "files.exists"', 1, true), "the picture's presence is asked of a service that cannot see it")
+    -- the bands: the bar writes cava's line, `mooi lock` carries it in, the scene thins it to sixteen
+    local sh = slurp("bin/mooi")
+    assert(sh:find("lock_feed_start", 1, true), "nothing carries cava's bands to the lock")
+    -- the watch coalesces: without a reader at the feed's pace the bars move a dozen times a second
+    assert(luau:find("every(33", 1, true), "the lock's bands are read only when the watch feels like it")
+    assert(luau:find("vizfeed.newer", 1, true), "the lock redraws a line it has already drawn")
+    assert(luau:find("vizfeed.resample", 1, true), "the lock does not thin the bands")
+    -- an image fact draws a path as it stands, so the copy is named by its whole path
+    assert(sh:find('"%s/picture.%s"', 1, true), "the picture is named without its folder, and nothing draws it")
+    local scene = slurp("shell/mooi-lock.plm")
+    assert(scene:find('import "ui/viz.plm"', 1, true), "the lock imports no visualiser")
+    assert(scene:find("viz.Spectrum(", 1, true), "the lock's visualiser is not the shell's spectrum")
+end)
 test("the lock screen has a key of its own (D160)", function()
     local desktop = require("lib/desktop")
     local keys = config.defaults().keys
