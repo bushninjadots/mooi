@@ -75,13 +75,14 @@ scene MooiLock {
     fact authing = false         // PAM is thinking (a wrong one takes seconds on purpose)
     fact armed = 0               // a power button pressed once: 1 power off, 2 reboot
     fact has_wall = false
-    fact has_pic = false
-    fact pic_banner = false
+    fact has_pic = false          // there is a profile picture to draw
+    fact has_ban = false          // there is a banner strip to draw
     text password = ""
     text status = ""            // VERIFYING… · INCORRECT · UNLOCKED; empty is the quiet state
     text tries = ""              // how many attempts PAM has left before it locks the login
     text who = ""                // whose screen this is: the name the session runs as
-    text picpath = ""            // the picture copied beside this scene by `mooi lock`
+    text picpath = ""            // the profile picture `mooi lock` copied beside this scene…
+    text banpath = ""            // …and its banner, each named by its whole path
     text pwr_label = "POWER OFF"
     text rbt_label = "REBOOT"
     text pwr_note = ""
@@ -141,7 +142,8 @@ scene MooiLock {
     on key Return { emit tryauth }
 
     image wall = from wp, 1920, 1080
-    image lockpic = from picpath, 1920, 1080
+    image lockpic = from picpath, 1920, 1200
+    image lockban = from banpath, 1920, 1080
 
     surface lk {
         kind: lock
@@ -170,19 +172,32 @@ scene MooiLock {
         }
         box { from: ox, oy; size: w, h; color: lk_ground; opacity: lk_dim }
 
-        // ── The picture (D161): the Nexus's banner across the top, or its profile picture above
-        //    the clock. `mooi lock` copies it beside this scene; without one nothing is drawn.
+        // ── The pictures (D161): the Nexus's banner across the top and its profile picture above
+        //    the clock — both, when both are set, because they are two things: the strip is the
+        //    place, the plate is the person. `mooi lock` copies each beside this scene and names it
+        //    by its whole path; an image fact draws a path as it stands, never a bare name.
+        //
+        //    The strip is a band, not a slice: `fit: cover` takes its height out of the picture, so a
+        //    208 px band off a 16:9 banner is the photo's own middle at full width, never stretched.
+        //    (The avatar is 1920×1200 in the Nexus's folder and the banner 1920×1080; each is declared
+        //    at what it is, so cover crops rather than squeezes.)
+        let ban_h = 208
         group {
-            show: has_pic and pic_banner
-            image lockpic { at: ox, oy; size: w, 168; fit: cover; opacity: 92% }
+            show: has_ban
+            image lockban { at: ox, oy; size: w, ban_h; fit: cover; opacity: 94% }
             // a scrim over it, so the rail and the clock's ceiling stay readable over any picture
-            box { from: ox, oy; size: w, 168; color: lk_ground; opacity: 52% }
-            box { from: ox, oy + 167; size: w, 1; color: lk_trace_dim; opacity: 45% }
+            box { from: ox, oy; size: w, ban_h; color: lk_ground; opacity: 46% }
+            // and a fade into the backdrop at its foot, so the band ends in the dark, not on a line
+            repeat f in 0..6 {
+                box { from: ox, oy + ban_h - 56 + f * 8; size: w, 8; color: lk_ground; opacity: 0.06 + f * 0.11 }
+            }
+            box { from: ox, oy + ban_h; size: w, 1; color: lk_trace_dim; opacity: 45% }
         }
         group {
-            show: has_pic and not pic_banner
-            box { at: 0, -224; size: 66, 66; corner: 3; color: lk_trace_dim; opacity: 45% }
-            image lockpic { at: -31, -255; size: 62, 62; fit: cover }
+            show: has_pic
+            box { at: 0, -222; size: 72, 72; corner: 3; color: lk_trace_dim; opacity: 50% }
+            box { at: 0, -222; size: 70, 70; corner: 3; color: lk_steel_900; opacity: 88% }
+            image lockpic { at: -33, -255; size: 66, 66; fit: cover }
         }
 
         // The rail: mooi's drawn line, its name, and who is holding the screen.

@@ -1341,8 +1341,17 @@ test("the lock's picture and its visualiser are wired (D160/D161)", function()
     assert(luau:find("every(33", 1, true), "the lock's bands are read only when the watch feels like it")
     assert(luau:find("vizfeed.newer", 1, true), "the lock redraws a line it has already drawn")
     assert(luau:find("vizfeed.resample", 1, true), "the lock does not thin the bands")
-    -- an image fact draws a path as it stands, so the copy is named by its whole path
-    assert(sh:find('"%s/picture.%s"', 1, true), "the picture is named without its folder, and nothing draws it")
+    -- an image fact draws a path as it stands, so each copy is named by its whole path
+    assert(sh:find("$d/avatar.", 1, true), "the profile picture is named without its folder, and nothing draws it")
+    assert(sh:find("$d/banner.", 1, true), "the banner is named without its folder, and nothing draws it")
+    -- both at once: the strip is the place, the plate is the person
+    local lockplm = slurp("shell/mooi-lock.plm")
+    assert(lockplm:find("has_ban", 1, true), "a banner has nowhere to draw")
+    assert(lockplm:find("image lockban", 1, true), "the banner's image is not declared")
+    assert(luau:find("banpath", 1, true), "the logic never sets the banner's path")
+    -- a video has no decoder in a scene: the lock is handed its still, then a loop it can play
+    assert(luau:find('kind == "video"', 1, true), "a video wallpaper is drawn as the video")
+    assert(sh:find("wall-loop", 1, true), "a video wallpaper has nothing to draw on the lock")
     local scene = slurp("shell/mooi-lock.plm")
     assert(scene:find('import "ui/viz.plm"', 1, true), "the lock imports no visualiser")
     assert(scene:find("viz.Spectrum(", 1, true), "the lock's visualiser is not the shell's spectrum")

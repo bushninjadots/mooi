@@ -961,22 +961,64 @@ lock_files() {
     local used=0
     command -v faillock >/dev/null 2>&1 && used=$(faillock --user "${USER:-$(id -un)}" 2>/dev/null | grep -c ' V$')
     printf '{"deny":%s,"unlock":%s,"used":%s}\n' "$deny" "$unlock" "${used:-0}" > "$d/lockout.json" 2>/dev/null
-    # The picture on the lock (D161): the Nexus's banner, or its profile picture, copied in under a
-    # name this folder can read (`identity.json` says which it is), since `files.read` stops at here.
-    rm -f "$d"/picture.* "$d"/identity.json 2>/dev/null
+    # The two pictures on the lock (D161): the Nexus's banner across the top and its profile picture
+    # above the clock. `files.read` reaches this folder only, so both are copied in and named by their
+    # whole path — an image fact draws a path as it stands, and a bare name beside the scene draws
+    # nothing at all. No identity, or one of the two cleared: an empty pair, so a picture taken away
+    # stops showing instead of last lock's staying.
+    rm -f "$d"/avatar.* "$d"/banner.* "$d"/picture.* "$d/identity.json" 2>/dev/null
+    local a="" b="" rel
     if command -v jq >/dev/null 2>&1 && [ -r "$settings" ]; then
-        local kind rel ext
-        for kind in 1 0; do
-            if [ "$kind" = 1 ]; then rel=$(jq -r '.nexus.identity.banner // empty' "$settings" 2>/dev/null)
-            else rel=$(jq -r '.nexus.identity.avatar // empty' "$settings" 2>/dev/null); fi
-            [ -n "$rel" ] && [ -f "$folder/$rel" ] || continue
-            ext=${rel##*.}
-            cp -f "$folder/$rel" "$d/picture.$ext" || continue
-            # The name it is given is the whole path: an image fact draws a path as it stands, and a
-            # bare name beside the scene is not one (the wallpaper on the lock is a path too).
-            printf '{"file":"%s/picture.%s","banner":%s}\n' "$d" "$ext" "$([ "$kind" = 1 ] && echo true || echo false)" > "$d/identity.json"
-            break
-        done
+        rel=$(jq -r '.nexus.identity.avatar // empty' "$settings" 2>/dev/null)
+        if [ -n "$rel" ] && [ -f "$folder/$rel" ]; then
+            cp -f "$folder/$rel" "$d/avatar.${rel##*.}" && a="$d/avatar.${rel##*.}"
+        fi
+        rel=$(jq -r '.nexus.identity.banner // empty' "$settings" 2>/dev/null)
+        if [ -n "$rel" ] && [ -f "$folder/$rel" ]; then
+            cp -f "$folder/$rel" "$d/banner.${rel##*.}" && b="$d/banner.${rel##*.}"
+        fi
+    fi
+    printf '{"avatar":"%s","banner":"%s"}\n' "$a" "$b" > "$d/identity.json" 2>/dev/null
+
+    # An animated wallpaper is a picture the renderer plays by itself (a GIF, an animated PNG or
+    # WebP): the scene is simply handed the file. A video is not one, and a lock surface has nothing
+    # underneath it for mpvpaper, so the copy of wall.json hands the scene the video's still — and,
+    # made in the background once per video so a lock never waits on an encoder, a short loop as an
+    # animated WebP (or PNG), which the renderer does play. The next lock shows it moving.
+    local wj="$d/wall.json" kind src still loop enc
+    if [ -r "$wj" ] && command -v jq >/dev/null 2>&1; then
+        kind=$(jq -r '.kind // empty' "$wj" 2>/dev/null)
+        if [ "$kind" = "video" ]; then
+            src=$(jq -r '.source // empty' "$wj" 2>/dev/null)
+            still=$(jq -r '.still // empty' "$wj" 2>/dev/null)
+            # which encoder this ffmpeg carries (a `case` over its list, not a pipe into `grep -q`:
+            # that closes the pipe early, and a caller's `pipefail` would read the encoder as absent)
+            loop="" enc=""
+            if command -v ffmpeg >/dev/null 2>&1; then
+                case "$(ffmpeg -hide_banner -encoders 2>/dev/null)" in
+                    *libwebp*) loop="$d/wall-loop.webp"; enc=webp ;;
+                    *apng*) loop="$d/wall-loop.png"; enc=apng ;;
+                esac
+            fi
+            if [ -n "$loop" ] && [ -f "$src" ] && { [ ! -f "$loop" ] || [ "$src" -nt "$loop" ]; }; then
+                # detached (`setsid -f`), so the encode outlives the lock command that asked for it,
+                # and written to a partial name so a scene never reads half a loop
+                local vf codec
+                vf='fps=10,scale=960:-2:flags=lanczos'
+                # `-f` is named because the partial the loop is written to has no extension to guess from
+                if [ "$enc" = "webp" ]; then codec='-c:v libwebp -quality 70 -f webp'
+                else codec='-c:v apng -plays 0 -f apng'; fi
+                setsid -f sh -c 'ffmpeg -y -loglevel error -t 6 -i "$1" -vf "$2" $3 "$4.part" >/dev/null 2>&1 && mv -f "$4.part" "$4"' \
+                    _ "$src" "$vf" "$codec" "$loop" >/dev/null 2>&1 < /dev/null
+            fi
+            if [ -n "$loop" ] && [ -f "$loop" ]; then
+                jq --arg p "$loop" '.source = $p' "$wj" > "$wj.tmp" && mv -f "$wj.tmp" "$wj"
+            elif [ -n "$still" ] && [ -f "$still" ]; then
+                jq --arg p "$still" '.source = $p' "$wj" > "$wj.tmp" && mv -f "$wj.tmp" "$wj"
+            fi
+        else
+            rm -f "$d"/wall-loop.* 2>/dev/null
+        fi
     fi
 }
 

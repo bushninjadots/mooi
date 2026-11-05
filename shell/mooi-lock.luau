@@ -55,10 +55,18 @@ pcall(sys.watch, "files:settings.json", function()
     paint()
 end)
 
--- The wallpaper the shell is wearing: `wall.json` says which one.
+-- The wallpaper the shell is wearing: `wall.json` says which one. An animated picture (a GIF, an
+-- animated PNG or WebP) is one the renderer plays itself, so the file is drawn as it stands. A video
+-- is not: the desk wears it with mpvpaper, and a lock surface has nothing underneath it. `mooi lock`
+-- hands this scene the video's still instead, and a short loop as an animated WebP once it has made
+-- one — so `kind` is only read here for the case where that copy is older than the code.
 local function wallpaper()
     local w = read("wall.json", "json")
     local src = type(w) == "table" and w.source or nil
+    local still = type(w) == "table" and w.still or nil
+    if type(w) == "table" and w.kind == "video" and type(still) == "string" and not tostring(src):match("%.webp$") then
+        src = still
+    end
     text.wp = type(src) == "string" and src or ""
     fact.has_wall = text.wp ~= ""
 end
@@ -74,18 +82,20 @@ local function whoami()
 end
 whoami()
 
--- The picture on the lock (D161): the Nexus's banner (a strip along the top) or its profile picture
--- (a plate above the clock), copied beside this scene by `mooi lock`; `identity.json` says which.
+-- The pictures on the lock (D161): the Nexus's banner (a strip along the top) and its profile
+-- picture (a plate above the clock), both copied beside this scene by `mooi lock`; `identity.json`
+-- names the two copies.
 local function picture()
     local p = read("identity.json", "json")
-    -- The path `mooi lock` gave the copy it made (`…/pleamar/mooi-lock/picture.jpg`, written whole
-    -- into identity.json): an image fact draws a path as it stands, and a bare name beside the scene
-    -- is not one — that, and not the file, was why the banner and the profile picture never showed.
-    -- The wallpaper on the lock is an absolute path for the same reason. A path that does not
-    -- resolve draws nothing, which is the same screen as having none.
-    local file = type(p) == "table" and type(p.file) == "string" and p.file or ""
-    text.picpath, fact.has_pic = file, file ~= ""
-    fact.pic_banner = fact.has_pic and (p.banner == true)
+    -- The paths `mooi lock` wrote (`…/pleamar/mooi-lock/banner.jpg`, `…/avatar.jpg`, whole): an image
+    -- fact draws a path as it stands, and a bare name beside the scene is not one — that, and not the
+    -- file, was why neither picture showed. The wallpaper here is an absolute path for the same
+    -- reason. A path that does not resolve draws nothing, which is the same screen as having none.
+    local t = type(p) == "table" and p or {}
+    local av = type(t.avatar) == "string" and t.avatar or ""
+    local bn = type(t.banner) == "string" and t.banner or ""
+    text.picpath, fact.has_pic = av, av ~= ""
+    text.banpath, fact.has_ban = bn, bn ~= ""
 end
 picture()
 pcall(sys.watch, "files:identity.json", picture)
