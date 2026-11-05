@@ -158,6 +158,9 @@ M.SCHEMA = {
     { path = "apps.kitty", kind = "boolean", default = false },
     { path = "apps.gtk", kind = "boolean", default = false },
     { path = "apps.qt", kind = "boolean", default = false },
+    -- Nautilus's own layer on top of apps.gtk: its CSS classes (path bar, Places, selection) and
+    -- Papirus's folders recoloured to the palette. Off leaves the file manager as GTK gives it.
+    { path = "apps.files", kind = "boolean", default = true },
     -- Your own Matugen config (~/.config/matugen/config.toml: btop, fish, cava, Vesktop, Zen,
     -- Spicetify, the widgets…) run with mooi's wallpaper and mode, so they follow day and night.
     { path = "apps.others", kind = "boolean", default = false },

@@ -108,6 +108,9 @@ M.SETTERS = {
     "lock.blur", "lock.dim",
     -- and whether the lock wears the Nexus's banner and its profile picture, each on its own switch
     "lock.banner", "lock.avatar",
+    -- Nautilus's own layer on top of apps.gtk (apps.files): the CSS classes apps-sync appends to
+    -- gtk.css and Papirus's folders recoloured to the palette. Appended, so no code moved.
+    "apps.files",
 }
 
 local function row_of(path)

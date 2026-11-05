@@ -27,11 +27,11 @@ lacks() { if grep -q -- "$2" "$3" 2>/dev/null; then bad "$1 ($3 has '$2')"; else
 
 # The palette document the bar writes (apps.json), built from the same libraries it uses, so
 # every tag mooi's templates read has a colour and the numbers are not invented here.
-apps() { # kitty gtk qt (true/false)
+apps() { # kitty gtk qt [files] (true/false; files defaults to on)
     lua5.4 -e "package.path='$root/shell/?.luau;'..package.path
         local m = require('lib/appcolors').material(require('lib/ferro').resolve('mooi', nil, 'auto', false, {}))
         local keys = {} ; for k in pairs(m) do keys[#keys + 1] = k end ; table.sort(keys)
-        io.write('{\"kitty\":$1,\"gtk\":$2,\"qt\":$3,\"colors\":{')
+        io.write('{\"kitty\":$1,\"gtk\":$2,\"qt\":$3,\"files\":${4:-true},\"colors\":{')
         for i, k in ipairs(keys) do io.write((i > 1 and ',' or '') .. '\"' .. k .. '\":\"' .. m[k] .. '\"') end
         io.write('}}')" > "$D/apps.json" || exit 1
 }
@@ -88,6 +88,21 @@ apps false true false
 sync >/dev/null
 [ -f "$C/gtk-3.0/gtk.css" ] && ok "GTK 3 was written where there was none" || bad "GTK 3 was not written"
 [ -f "$C/gtk-4.0/gtk.css" ] && ok "GTK 4 was written where there was none" || bad "GTK 4 was not written"
+# mooi's own GTK 4 template (used when the user has none) carries Nautilus's
+# classes too, so those tags must resolve from apps.json like every other one.
+lacks "mooi's own GTK 4 template leaves no tag behind in Nautilus's rules" '{{' "$C/gtk-4.0/gtk.css"
+has "Nautilus's file selection is themed from mooi's own template" 'columnview > listview > row:selected' "$C/gtk-4.0/gtk.css"
+has "Nautilus's Places selection is themed from mooi's own template" 'placessidebar row:selected' "$C/gtk-4.0/gtk.css"
+lacks "the Files markers stay out of gtk.css" 'mooi:files:' "$C/gtk-4.0/gtk.css"
+
+echo "the Files switch off: Nautilus's own classes are cut back out"
+apps false true false false
+sync >/dev/null
+lacks "no Nautilus path bar rule" 'nautilus-pathbar' "$C/gtk-4.0/gtk.css"
+lacks "no Nautilus Places rule" 'placessidebar' "$C/gtk-4.0/gtk.css"
+lacks "no Nautilus selection rule" 'nautilus-grid-view' "$C/gtk-4.0/gtk.css"
+lacks "the marked block leaves no marker behind" 'mooi:files:' "$C/gtk-4.0/gtk.css"
+has "the rest of GTK is still mooi's" 'accent_bg_color' "$C/gtk-4.0/gtk.css"
 apps false false false
 sync >/dev/null
 [ ! -e "$C/gtk-3.0/gtk.css" ] && ok "GTK 3's mooi-made file is gone" || bad "GTK 3's mooi-made file stayed"
@@ -157,6 +172,16 @@ has "the line was redirected" '~/.cache/mooi/matugen-gtk-3.0.css' "$C/matugen/co
 apps false false false
 sync >/dev/null
 is "the user's line is back, exactly" "$(grep '^output_path' "$C/matugen/config.toml")" 'output_path   =   "/home/someone/.config/gtk-3.0/gtk.css"   # mine'
+
+echo "a generated Papirus-Mooi is preferred for icons when it exists"
+mkdir -p "$XDG_DATA_HOME/icons/Papirus-Mooi"
+printf '[Icon Theme]\nName=Papirus-Mooi\n' > "$XDG_DATA_HOME/icons/Papirus-Mooi/index.theme"
+apps false false true
+sync >/dev/null
+has "Qt points at the generated icon theme" "icon_theme=Papirus-Mooi" "$C/qt5ct/qt5ct.conf"
+rm -rf "$XDG_DATA_HOME/icons/Papirus-Mooi"
+apps false false false
+sync >/dev/null
 
 echo
 echo "$n checks, $fail failed"

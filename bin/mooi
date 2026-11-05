@@ -208,6 +208,9 @@ apps_sync() {
     get() { sed -n "s|^$1=||p" "$state" | head -1; }
     put() { grep -v "^$1=" "$state" > "$state.t"; [ -n "$2" ] && echo "$1=$2" >> "$state.t"; mv "$state.t" "$state"; }
     on() { [ "$(jq -r ".$1 // false" "$j")" = true ]; }
+    # The Files switch is read here, above the GTK render it also gates. (Not `//`: jq's
+    # alternative operator treats `false` itself as missing, which would pin this on.)
+    files_on=$(jq -r '.files != false' "$j")
     sedf="$folder/apps.sed"
     jq -r '.colors | to_entries[] | "s|{{colors.\(.key).default.hex}}|\(.value)|g\ns|{{colors.\(.key).default.hex_stripped}}|\(.value | ltrimstr("#"))|g"' "$j" > "$sedf" || return 0
     render() { sed -f "$sedf" "$1" > "$2.mooi-tmp" && mv "$2.mooi-tmp" "$2"; }
@@ -265,6 +268,16 @@ apps_sync() {
                 cp "$out" "$folder/apps-gtk-$v.0.backup.css"; put "gtk${v}_backup" yes
             fi
             render "$tpl" "$out"; did="$did gtk$v"
+            # Nautilus's layer is cut out of gtk.css when the Files switch is off; the marker lines
+            # themselves never belong in the file either way (a template without them simply has no
+            # Nautilus block, and both seds are then no-ops).
+            if [ "$v" = 4 ]; then
+                if [ "$files_on" != true ]; then
+                    sed -i '/mooi:files:begin/,/mooi:files:end/d' "$out"
+                else
+                    sed -i '/mooi:files:begin/d; /mooi:files:end/d' "$out"
+                fi
+            fi
         elif [ -n "$(get "gtk${v}_matugen")$(get "gtk${v}_backup")$(get "gtk${v}_made")" ]; then
             if [ "$(get "gtk${v}_matugen")" = yes ]; then
                 orig=$(get "gtk${v}_mt_line")
@@ -328,6 +341,9 @@ apps_sync() {
     mode=$(jq -r '.mode // "dark"' "$j")
     if [ "$mode" = light ]; then gt=adw-gtk3; ic=Papirus-Light; cs=prefer-light; pd=0
     else gt=adw-gtk3-dark; ic=Papirus-Dark; cs=prefer-dark; pd=1; fi
+    # Folder icons are Papirus recoloured to the palette (matugen/apply-icons.sh), but only while
+    # the Files switch is on; off leaves the icon theme with the plain Papirus variant.
+    if [ "$files_on" = true ] && [ -f "${XDG_DATA_HOME:-$HOME/.local/share}/icons/Papirus-Mooi/index.theme" ]; then ic=Papirus-Mooi; fi
     gs() { command -v gsettings >/dev/null 2>&1 && gsettings "$@" 2>/dev/null; }
     ini() { # file key value — set it in [Settings], adding the key if it is missing
         [ -f "$1" ] || return 0

@@ -288,8 +288,8 @@ local function paint_ferro(reason)
     bar_palette = { phos = ferro.to_hex(out.phos), ember = ferro.to_hex(out.ember), trace = ferro.to_hex(out.trace) }
     if sync_desktop then sync_desktop() end
     if not alert then
-        local doc = { kitty = settings.apps.kitty, gtk = settings.apps.gtk, qt = settings.apps.qt, mode = mode,
-                      colors = appcolors.material(out, mode) }
+        local doc = { kitty = settings.apps.kitty, gtk = settings.apps.gtk, qt = settings.apps.qt,
+                      files = settings.apps.files, mode = mode, colors = appcolors.material(out, mode) }
         local said = json.encode(doc)
         if said ~= apps_said then apps_said = said; sys.call("files.write", "apps.json", doc) end
     end

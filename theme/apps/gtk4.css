@@ -38,3 +38,44 @@
   --dialog-bg-color: {{colors.surface_container.default.hex}}; --dialog-fg-color: {{colors.on_surface.default.hex}};
   --sidebar-bg-color: {{colors.surface_container_low.default.hex}}; --sidebar-fg-color: {{colors.on_surface.default.hex}};
 }
+
+/* mooi:files:begin — removed from gtk.css by apps-sync while Settings → Colour → Your apps
+   → Files (Nautilus) is off, so the file manager keeps its own classes. */
+/* Nautilus 51 (GTK 4 + libadwaita): its own classes, so the file manager's
+   selection and path bar follow the palette rather than libadwaita defaults. */
+.nautilus-window .nautilus-pathbar {
+  background-color: {{colors.surface_container_high.default.hex}};
+}
+.nautilus-grid-view gridview > child:selected,
+.nautilus-grid-view gridview > child:selected:hover,
+.nautilus-list-view columnview > listview > row:selected,
+.nautilus-list-view columnview > listview > row:selected:hover {
+  background-color: {{colors.primary_container.default.hex}};
+  color: {{colors.on_primary_container.default.hex}};
+}
+.nautilus-window placessidebar {
+  background-color: {{colors.surface_container_low.default.hex}};
+}
+.nautilus-window placessidebar row:hover:not(:selected) {
+  background-color: color-mix(in srgb, {{colors.on_surface.default.hex}} 7%, transparent);
+}
+.nautilus-window placessidebar row:selected,
+.nautilus-window placessidebar row:selected:hover {
+  background-color: {{colors.secondary_container.default.hex}};
+  color: {{colors.on_secondary_container.default.hex}};
+}
+.nautilus-window .nautilus-query-editor {
+  background-color: {{colors.surface_container_high.default.hex}};
+  border-radius: 9px;
+}
+.nautilus-window button.star.starred image {
+  color: {{colors.primary.default.hex}};
+}
+.nautilus-window .nautilus-image.file-thumbnail {
+  background-image: none;
+  background-color: {{colors.surface_container_high.default.hex}};
+}
+.nautilus-window .image-frame {
+  background-color: {{colors.surface_container_high.default.hex}};
+}
+/* mooi:files:end */

@@ -63,3 +63,6 @@ if command -v spicetify >/dev/null && [ -f "$SP" ]; then
     fi
 fi
 exit 0
+
+# Folders in the palette: regenerate the Papirus override from the palette just written.
+"$C/matugen/apply-icons.sh" 2>/dev/null || true

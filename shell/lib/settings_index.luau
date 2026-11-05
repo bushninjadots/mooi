@@ -28,8 +28,9 @@ local rows = {
     { title = "Hue", desc = "Turn the base round the colour wheel", tab = 1, page = "Colour", y = 1690 },
     { title = "Kitty terminal", desc = "Text, selection, cursor and the 16 terminal colours", tab = 1, page = "Colour", y = 1844 },
     { title = "GTK apps", desc = "GTK 3 and 4 (libadwaita), light or dark with mooi; open windows change when reopened", tab = 1, page = "Colour", y = 1904 },
-    { title = "Qt and KDE apps", desc = "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", tab = 1, page = "Colour", y = 1964 },
-    { title = "Everything else", desc = "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", tab = 1, page = "Colour", y = 2024 },
+    { title = "Files (Nautilus)", desc = "Its path bar, Places list and file selection in the palette, and Papirus's folder icons recoloured to match; off leaves Nautilus as GTK gives it", tab = 1, page = "Colour", y = 1964 },
+    { title = "Qt and KDE apps", desc = "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", tab = 1, page = "Colour", y = 2024 },
+    { title = "Everything else", desc = "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", tab = 1, page = "Colour", y = 2084 },
     { title = "Speed", desc = "Every animation, slower or faster; the bar restarts (a second) to take it", tab = 2, page = "Motion & effects", y = 156 },
     { title = "Reduce motion", desc = "No springs or travel: things are simply there; the bar restarts to take it", tab = 2, page = "Motion & effects", y = 216 },
     { title = "Glow", desc = "How strongly lit things glow", tab = 2, page = "Motion & effects", y = 342 },
@@ -216,7 +217,7 @@ local rows = {
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
-    [1] = { "theme.mode", "theme.light_at", "theme.dark_at", "look.corners", "look.corner_size", "theme.preset", "theme.source", "theme.color_index", "theme.scheme", "theme.signal", "theme.finish", "theme.saturation", "bar.bg", "bar.bg_colour", "bar.bg_light", "bar.bg_sat", "bar.bg_hue", "apps.kitty", "apps.gtk", "apps.qt", "apps.others" },
+    [1] = { "theme.mode", "theme.light_at", "theme.dark_at", "look.corners", "look.corner_size", "theme.preset", "theme.source", "theme.color_index", "theme.scheme", "theme.signal", "theme.finish", "theme.saturation", "bar.bg", "bar.bg_colour", "bar.bg_light", "bar.bg_sat", "bar.bg_hue", "apps.kitty", "apps.gtk", "apps.files", "apps.qt", "apps.others" },
     [2] = { "motion.speed", "motion.reduced", "fx.glow", "fx.aberration", "motion.saver" },
     [3] = { "island.morph", "island.style", "bar.mode", "clock.view", "bar.height", "bar.offset", "bar.width", "bar.radius", "bar.style", "bar.surface", "bar.opacity", "bar.frost", "bar.smoke", "bar.shadow", "bar.edge", "bar.outline_colour", "bar.pill", "bar.rail", "bar.accents" },
     [4] = { "@layout" },

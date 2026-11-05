@@ -118,3 +118,77 @@
 @define-color insensitive_base_color {{colors.surface.default.hex}};
 @define-color borders {{colors.outline_variant.default.hex}};
 @define-color unfocused_borders {{colors.outline_variant.default.hex}};
+
+/* mooi:files:begin — removed from gtk.css by apps-sync while Settings → Colour → Your apps
+   → Files (Nautilus) is off, so the file manager keeps its own classes. */
+/* ── Nautilus (GNOME Files) ──────────────────────────────────────────────────
+   Nautilus 51 is GTK 4 + libadwaita, and GTK 4 loads one user stylesheet for
+   every app, so the file manager's own classes go here rather than in a file of
+   their own (the old per-app CSS files are GTK 3 only). These are the places
+   where Nautilus still paints a colour of its own instead of one of the roles
+   above, so a wallpaper reaches the file manager's selection and path bar with
+   the rest of the desk. */
+
+/* The path bar's pill is tinted from currentColor, which on a near-white or
+   near-black scheme is barely a tint at all; the raised surface reads as a pill
+   in every scheme. */
+.nautilus-window .nautilus-pathbar {
+  background-color: {{colors.surface_container_high.default.hex}};
+}
+
+/* The sidebar: NautilusSidebar's CSS node is `placessidebar` (with class
+   `.sidebar`). The split view does not paint it, so without this the places
+   list sits on the window's surface and the two blend. */
+.nautilus-window placessidebar {
+  background-color: {{colors.surface_container_low.default.hex}};
+}
+
+/* Selected files, in both views. Libadwaita paints these with a translucent
+   accent, which can disappear on a low-contrast palette; the container role is
+   solid, follows the scheme, and carries its own foreground. */
+.nautilus-grid-view gridview > child:selected,
+.nautilus-grid-view gridview > child:selected:hover,
+.nautilus-list-view columnview > listview > row:selected,
+.nautilus-list-view columnview > listview > row:selected:hover {
+  background-color: {{colors.primary_container.default.hex}};
+  color: {{colors.on_primary_container.default.hex}};
+}
+
+/* Places rows, with their hover and selection. Hover is only for unselected
+   rows; selection keeps the secondary container, so navigation and file
+   selection stay tellable apart. */
+.nautilus-window placessidebar row:hover:not(:selected) {
+  background-color: color-mix(in srgb, {{colors.on_surface.default.hex}} 7%, transparent);
+}
+
+.nautilus-window placessidebar row:selected,
+.nautilus-window placessidebar row:selected:hover {
+  background-color: {{colors.secondary_container.default.hex}};
+  color: {{colors.on_secondary_container.default.hex}};
+}
+
+/* Search: the query editor is Nautilus's own widget on top of libadwaita's, so
+   the bar takes the raised surface and reads as one control. */
+.nautilus-window .nautilus-query-editor {
+  background-color: {{colors.surface_container_high.default.hex}};
+  border-radius: 9px;
+}
+
+/* A starred file's star is the palette's accent, so "starred" is visible in
+   the same colour the shell uses for the things you picked. */
+.nautilus-window button.star.starred image {
+  color: {{colors.primary.default.hex}};
+}
+
+/* Thumbnails: Nautilus draws transparent images over a stock checkerboard,
+   which glows white on a dark scheme; the raised surface keeps transparent PNGs
+   in the palette. The preview frame takes it too. */
+.nautilus-window .nautilus-image.file-thumbnail {
+  background-image: none;
+  background-color: {{colors.surface_container_high.default.hex}};
+}
+
+.nautilus-window .image-frame {
+  background-color: {{colors.surface_container_high.default.hex}};
+}
+/* mooi:files:end */
