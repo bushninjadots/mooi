@@ -1,34 +1,43 @@
-# scratch / exported asset work — not part of the dotfiles
-pleamar helix bar/
+# A public repo should not ship live user state.
+# These rules apply to the repo snapshot itself; cargo-culting local runtime state
+# into the repository is explicitly avoided.
+!important
+!
+**
 
-# build / tool output
-*.zip
-*.jpg
+# keep setup files tracked if they are shareable config
+!setup/home/**
 
-# runtime state lives outside the repo (~/.local/share/pleamar/mooi); keep stray copies out
+# runtime and machine state live outside the repo and should not be committed
 settings.json
-settings.known-good.json
-*.tsv
+notes.json
+board.json
+stash.json
+wall.json
+wallpapers.json
+workspaces.json
+signals.json
+environments.json
+player-eq.json
+player-eq-ee.json
+nexus-anchor.json
+player-anchor.json
+notch-state.json
+bmo-state.json
+identity/
+*.jpg
+*.png
 *.log
-.claude/settings.local.json
+*.tsv
+*.cache
 
-# agent tooling state (claude-flow / ruflo / design helpers), not part of mooi
-.claude-flow/
+# caches and tool state
+__pycache__/
 .claude/
+.claude-flow/
 .open-design/
 .swarm/
+.superpowers/
 ruvector.db
 agentdb.rvf
 agentdb.rvf.idmap.json
-
-# binaries and images that ship through Arch / Hypr ecosystem; not mooi
-*.xcf
-*.ora
-
-# python tool caches
-__pycache__/
-
-.superpowers/
-
-# setup/: the desktop as captured (setup/capture.sh) is kept whole, settings and pictures included
-!setup/home/**
