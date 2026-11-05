@@ -145,6 +145,10 @@ M.SCHEMA = {
     -- the field read over any picture. The lock scene's own (shell/mooi-lock, copied in at each lock).
     { path = "lock.blur", kind = "enum", values = { "off", "light", "medium", "heavy" }, default = "medium" },
     { path = "lock.dim", kind = "integer", default = 72, min = 0, max = 90 },
+    -- whether the lock screen wears the Nexus's two pictures at all — its banner across the top and
+    -- the profile picture above the clock. On by default; off is a screen that says nothing about
+    -- whose it is, which is what some rooms want.
+    { path = "lock.picture", kind = "boolean", default = true },
     { path = "command.max_results", kind = "integer", default = 7, min = 3, max = 10 },
     { path = "atlas.previews", kind = "boolean", default = true },
     -- The tray's icons: drawn in the bar's own colours (and their own on hover), or as given.

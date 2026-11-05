@@ -106,6 +106,8 @@ M.SETTERS = {
     "keys.lock",
     -- and the lock's backdrop: how far the wallpaper behind the plate is blurred and dimmed
     "lock.blur", "lock.dim",
+    -- and whether the lock wears the Nexus's banner and profile picture at all (lock.picture)
+    "lock.picture",
 }
 
 local function row_of(path)

@@ -77,6 +77,7 @@ scene MooiLock {
     fact has_wall = false
     fact has_pic = false          // there is a profile picture to draw
     fact has_ban = false          // there is a banner strip to draw
+    fact lk_pic_on = true         // Settings → Lock: wear them at all (the logic's own lock.picture)
     text password = ""
     text status = ""            // VERIFYING… · INCORRECT · UNLOCKED; empty is the quiet state
     text tries = ""              // how many attempts PAM has left before it locks the login
@@ -183,7 +184,7 @@ scene MooiLock {
         //    at what it is, so cover crops rather than squeezes.)
         let ban_h = 208
         group {
-            show: has_ban
+            show: has_ban and lk_pic_on
             image lockban { at: ox, oy; size: w, ban_h; fit: cover; opacity: 94% }
             // a scrim over it, so the rail and the clock's ceiling stay readable over any picture
             box { from: ox, oy; size: w, ban_h; color: lk_ground; opacity: 46% }
@@ -194,7 +195,7 @@ scene MooiLock {
             box { from: ox, oy + ban_h; size: w, 1; color: lk_trace_dim; opacity: 45% }
         }
         group {
-            show: has_pic
+            show: has_pic and lk_pic_on
             box { at: 0, -222; size: 72, 72; corner: 3; color: lk_trace_dim; opacity: 50% }
             box { at: 0, -222; size: 70, 70; corner: 3; color: lk_steel_900; opacity: 88% }
             image lockpic { at: -33, -255; size: 66, 66; fit: cover }

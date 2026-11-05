@@ -35,6 +35,15 @@ local function backdrop()
 end
 backdrop()
 
+-- Whether the lock wears the Nexus's pictures at all (Settings → Lock, `lock.picture`): the banner
+-- strip along the top and the profile picture above the clock, both on unless turned off. Read from
+-- the same copy of settings.json as the backdrop, so the choice lands on the next lock.
+local function pictures()
+    local l = type(settings.lock) == "table" and settings.lock or {}
+    fact.lk_pic_on = l.picture ~= false
+end
+pictures()
+
 local function paint()
     local theme = type(settings.theme) == "table" and settings.theme or {}
     local ok, out = pcall(ferro.resolve, theme.source, palette, theme.signal, false, ferro.options(settings))
@@ -52,6 +61,7 @@ pcall(sys.watch, "files:settings.json", function()
     settings = config.parse(read("settings.json"), json.decode)
     if type(settings) ~= "table" then settings = {} end
     backdrop()
+    pictures()
     paint()
 end)
 
