@@ -4845,3 +4845,10 @@ G4); the summaries follow the commit messages._
 - Deferred: a module's colour tints its plate, not its icons and text (stage 4); `display`/`width`
   are stored and editable, applied with density in stage 4; no custom #hex picker in the Look card.
 
+
+## D168 · 2026-11-06 · The Pill
+- Shape → Pill: the centre group becomes a capsule that shows the most important thing happening
+  (battery low, recording, a notification, music, a volume or brightness change, else the time);
+  the next things are moons beside it (satellites) or share it (split).
+- Pill alone or with the side groups as islands (`pill.sides`); with the frame on it hangs from the band.
+- Spec: docs/superpowers/specs/2026-11-06-the-pill-design.md.
