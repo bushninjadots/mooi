@@ -118,6 +118,8 @@ M.SETTERS = {
     "desktop.kitty_shader_tint", "desktop.kitty_shader_colour",
     -- whether a free model may answer when Claude cannot (claude.free_fallback). Appended, so no code moved.
     "claude.free_fallback",
+    -- D166: how much each module shows, and whether islands attach to the frame. Appended, so no code moved.
+    "bar.density", "frame.islands",
 }
 
 local function row_of(path)

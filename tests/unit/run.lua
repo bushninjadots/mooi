@@ -3641,7 +3641,7 @@ end)
 test("the pages the window offers are the pages the rows carry", function()
     local pages = {}
     for _, r in ipairs(index) do pages[r.page] = true end
-    for _, name in ipairs({ "Quick settings", "Colour", "The bar", "Windows", "Wallpapers", "Control Nexus" }) do
+    for _, name in ipairs({ "Quick settings", "Theme & colour", "Bar & Frame", "Windows", "Wallpapers", "Control Nexus" }) do
         assert(pages[name], "missing page: " .. name)
     end
 end)
@@ -4627,6 +4627,36 @@ do
         local d = ML.of(s, "tray", roles)
         eq(d.fill, 3, "clear surface: no fill"); eq(d.outline, 0, "no outline style: none"); eq(d.glow, 0)
         eq(ML.of(config.validate({ bar = { surface = "mech" } }), "tray", roles).fill, 0, "machined reads as solid")
+    end)
+end
+
+section("Bar & Frame settings (D166)")
+do
+    test("settings: one Bar & Frame page holds the bar, its layout, the frame, workspaces and media", function()
+        local idx = require("lib/settings_index")
+        local pages = {}
+        for _, r in ipairs(idx) do pages[r.page] = true end
+        for _, gone in ipairs({ "The bar", "Layout", "Screen frame", "Workspaces", "Media" }) do
+            eq(pages[gone], nil, "no page " .. gone)
+        end
+        eq(pages["Bar & Frame"], true)
+        local want = { "Shape", "Style", "Screen frame", "Outline", "Material", "Thickness", "Islands with the frame", "Everyday", "Shows", "Layout", "Band thickness", "Frame corners" }
+        for _, title in ipairs(want) do
+            local found = false
+            for _, r in ipairs(idx) do if r.title == title and r.page == "Bar & Frame" then found = true end end
+            eq(found, true, title .. " is on Bar & Frame")
+        end
+    end)
+    test("settings: folding sections, a renamed colour page, no Steel", function()
+        local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find("fact fd_", 1, true), "fold state facts")
+        assert(plm:find("= not fd_", 1, true), "a header press opens or folds it")
+        assert(plm:find('"Theme & colour"', 1, true), "Colour is Theme & colour")
+        eq(plm:find('"Steel"', 1, true), nil, "no Steel anywhere in the window")
+        local idx = require("lib/settings_index")
+        local seen = false
+        for _, r in ipairs(idx) do if r.title == "Density" then seen = r.page == "Bar & Frame" end end
+        eq(seen, true, "Density is a choice there")
     end)
 end
 

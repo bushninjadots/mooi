@@ -113,6 +113,8 @@ SETTERS = [
     "desktop.kitty_shader_tint", "desktop.kitty_shader_colour",
     # whether a free model may answer when Claude cannot (claude.free_fallback). Appended, so no code moved.
     "claude.free_fallback",
+    # D166: how much each module shows, and whether islands attach to the frame. Appended, so no code moved.
+    "bar.density", "frame.islands",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -176,12 +178,12 @@ SECTIONS = [
         ("choice", "Style", "Instrument, glass, floating, hairline or minimal", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHANGED ON THE BAR PAGE"),
         ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
-        ("button", "Arrange the bar", "Put any module anywhere, in any order", "Open Layout", "set_pick", "Layout"),
+        ("button", "The bar and the frame", "Shape, style, frame, every module's place and look", "Open Bar & Frame", "set_pick", "Bar & Frame"),
         ("card", "Workspaces"),
         ("choice", "Switcher", "Everyday", "bar.workspaces", "ws_style", SWITCHERS),
         ("choice", "", "…or an instrument", "bar.workspaces", "ws_style", INSTRUMENTS),
     ]),
-    ("Colour", "Colour", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "LOOK", [
+    ("Theme & colour", "Theme & colour", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "LOOK", [
         ("card", "Day and night"),
         ("choice", "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", "theme.mode", "sv_theme_mode", [("Dark", 0), ("Light", 1), ("Auto", 2)]),
         ("slider", "Light from", "The hour it turns light", "theme.light_at", 0, 23, "{sv_theme_light_at, 0}:00", "sv_theme_mode == 2"),
@@ -227,36 +229,52 @@ SECTIONS = [
         ("choice", "Saver", "Glow, aberration, the frame's music and the visualizer off", "motion.saver", "sv_motion_saver", ["Off", "On battery", "Always"]),
         ("note", "saving", "SAVING NOW"),
     ]),
-    ("Bar", "The bar", "A style sets the surface and the edges at once; change any of them and it reads Custom", "BAR", [
-        ("card", "Islands"),
-        ("toggle", "Morph", "An island grows out of its module as one body with the bar (and the Control Nexus out of the screen's edge), with the screen frame or without it", "island.morph", "sv_island_morph"),
-        ("choice", "Islands", "Without Morph: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
-        ("card", "Shape"),
-        ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
-        ("choice", "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", "clock.view", "sv_clock_view", ["Time and date", "Time", "Seconds"]),
-        ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
-        ("slider", "From the edge", "How far down from the top of the screen it sits", "bar.offset", 0, 40, "{sv_bar_offset, 0} px"),
-        ("slider", "Length", "How much of the screen's width it spans, centred", "bar.width", 30, 100, "{sv_bar_width + 30, 0}%"),
-        ("slider", "Corner rounding", "The bar, the notch and the islands", "bar.radius", 0, 16, "{sv_bar_radius, 0} px"),
-        ("card", "Style"),
-        ("choice", "Style", "Instrument, glass, floating, hairline or minimal", "bar.style", "sv_bar_style", STYLES),
+    ("Bar & Frame", "Bar & Frame", "Everything about the bar and the frame round the screen: four choices here, every detail folded below", "BAR", [
+        ("card", "Choose"),
+        ("choice", "Shape", "Islands, one bar across the screen, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
+        ("choice", "Style", "A starting point for every finer setting below: change any of them and it reads Custom", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHOOSE A STYLE TO START AGAIN"),
+        ("toggle", "Screen frame", "A band round the screen that the bar is part of; it can move with the music", "frame.on", "frame_on"),
+        ("choice", "Density", "How much each module shows: just the essentials, the usual, or everything (applied as modules learn it)", "bar.density", "sv_bar_density", ["Minimal", "Balanced", "Rich"]),
+        ("fold", "Edges & outline", "OUTLINE · COLOUR · CORNERS · ROUNDING · DETAILS"),
+        ("card", "Edges"),
+        ("choice", "Outline", "None, corner marks, or a line", "bar.edge", "sv_bar_edge", ["None", "Corners", "Thin", "Regular", "Bold"]),
+        ("choice", "Outline colour", "A quiet line, a bright one, or the main colour", "bar.outline_colour", "sv_bar_outline_colour", ["Subtle", "Bright", "Accent"], "sv_bar_edge > 0.5"),
+        ("slider", "Corner rounding", "The bar, the notch and the islands", "bar.radius", 0, 16, "{sv_bar_radius, 0} px"),
+        ("toggle", "Details", "Cuts in the outline, ticks, the comet and the seconds", "bar.accents", "bar_accents"),
+        ("fold", "Surface & depth", "MATERIAL · TRANSPARENCY · FROST · SHADOW · HOVER"),
+        ("card", "Surface"),
         ("choice", "Material", "What the bar is made of", "bar.surface", "bar_surface", ["Solid", "Glass", "Frosted", "None", "Machined"]),
         ("slider", "Transparency", "How much of the desktop shows through", "bar.opacity", 20, 100, "{100 - (sv_bar_opacity + 20), 0}%", "bar_surface < 2.5"),
         ("slider", "Frosting", "How frosted the glass is", "bar.frost", 0, 100, "{sv_bar_frost, 0}%", "bar_surface > 0.5 and bar_surface < 1.5"),
         ("slider", "Tint", "How much the glass darkens what is behind", "bar.smoke", 0, 80, "{sv_bar_smoke, 0}%", "bar_surface > 0.5 and bar_surface < 2.5"),
         ("choice", "Shadow", "Lifts the bar off the desktop", "bar.shadow", "sv_bar_shadow", ["Off", "Soft", "Medium", "Strong"], "bar_surface < 2.5 or bar_surface > 3.5"),
-        ("card", "Edges"),
-        ("choice", "Outline", "None, corner marks, or a line", "bar.edge", "sv_bar_edge", ["None", "Corners", "Thin", "Regular", "Bold"]),
-        ("choice", "Outline colour", "A quiet line, a bright one, or the main colour", "bar.outline_colour", "sv_bar_outline_colour", ["Subtle", "Bright", "Accent"], "sv_bar_edge > 0.5"),
         ("choice", "Hover", "What lights under the pointer", "bar.pill", "sv_bar_pill", ["Soft", "Outline", "Underline", "Glow"]),
+        ("fold", "Frame & music", "BAND · CORNERS · EDGE · ISLANDS · SWELL"),
+        ("card", "Frame", "not frame_on or not dk_manage"),
+        ("note", "not frame_on", "TURN THE SCREEN FRAME ON ABOVE FOR ITS BAND, CORNERS, EDGE AND MUSIC"),
+        ("note", "frame_on and not dk_manage", "IT LIES IN THE WINDOWS' OUTER GAP: TURN ON LET MOOI STYLE WINDOWS SO THE GAP FITS IT"),
+        ("card", "Band", "frame_on"),
+        ("slider", "Band thickness", "How wide the band is", "frame.band", 2, 16, "{sv_frame_band + 2, 0} px"),
+        ("slider", "Frame corners", "How round its inner corners are", "frame.radius", 0, 40, "{sv_frame_radius, 0} px"),
+        ("choice", "Frame edge", "The frame's line: plain, neon, or none (a style without an outline has none either)", "frame.edge", "sv_frame_edge", ["Line", "Neon", "None"]),
+        ("choice", "Islands with the frame", "Float under the band with a little air, or hang from it as one body", "frame.islands", "sv_frame_islands", ["Float", "Attach"], "not bar_full and not st_notch"),
+        ("card", "Music", "frame_on"),
+        ("choice", "Moves with music", "Still, or its inner edge rolling with the bass (iNiR's frame music)", "frame.motion", "sv_frame_motion", ["Off", "Wave"]),
+        ("slider", "Strength", "How far it moves at full volume", "frame.reach", 6, 40, "{sv_frame_reach + 6, 0} px", "frame_music"),
+        ("choice", "Which edges", "All of them, the sides, or top and bottom", "frame.edges", "frame_edges", ["All", "Sides", "Top & bottom"], "frame_music"),
+        ("fold", "Size & place", "THICKNESS · DISTANCE · LENGTH · RAIL · ISLANDS"),
+        ("card", "Size"),
+        ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
+        ("slider", "From the edge", "How far down from the top of the screen it sits", "bar.offset", 0, 40, "{sv_bar_offset, 0} px"),
+        ("slider", "Length", "How much of the screen's width it spans, centred", "bar.width", 30, 100, "{sv_bar_width + 30, 0}%"),
         ("toggle", "Info rail", "The thin scale line above the bar", "bar.rail", "bar_rail", None, "not st_notch"),
-        ("toggle", "Details", "Cuts in the outline, ticks, the comet and the seconds", "bar.accents", "bar_accents"),
-    ]),
-    ("Layout", "Layout", "Every module, where it sits. Select one, then move it, group it or send it anywhere", "BAR", [
+        ("choice", "Clock shows", "The time and date, the time, or the seconds too (a right press on it cycles them)", "clock.view", "sv_clock_view", ["Time and date", "Time", "Seconds"]),
+        ("card", "Islands"),
+        ("toggle", "Morph", "An island grows out of its module as one body with the bar (and the Control Nexus out of the screen's edge), with the screen frame or without it", "island.morph", "sv_island_morph"),
+        ("choice", "Island panels", "Without Morph: Ferrolume plates, or slabs tethered to their module", "island.style", "sv_island_style", [("Plate", 0), ("Tether", 1)]),
+        ("fold", "Modules", "ORDER · GROUPS · EACH MODULE'S LOOK · WORKSPACES · MEDIA"),
         ("layout",),
-    ]),
-    ("Workspaces", "Workspaces", "The switcher on the bar", "BAR", [
         ("card", "Switcher"),
         ("choice", "Everyday", "Pills, segments that show apps, dots or numbers", "bar.workspaces", "ws_style", SWITCHERS),
         ("choice", "Instrument", "The helix, prisms, grid, a compass or a radar", "bar.workspaces", "ws_style", INSTRUMENTS),
@@ -266,26 +284,15 @@ SECTIONS = [
         ("card", "Behaviour"),
         ("choice", "Mouse wheel", "Scrolling over the switcher", "bar.wheel", "sv_bar_wheel", [("Changes workspace", 0), ("Inverted", 2), ("Does nothing", 1)]),
         ("slider", "Always shown", "How many it shows at least; it grows to reach the one you are on", "spine.max_workspaces", 1, 16, "{sv_spine_max_workspaces + 1, 0}"),
-    ]),
-    ("Media", "Media", "The player on the bar", "BAR", [
+    
         ("card", "Player"),
         ("choice", "Shows", "How much of the player is on the bar", "media.mode", "media_mode", ["Everything", "Controls", "Cover", "Visualizer"]),
         ("choice", "When nothing plays", "Shrink to a note, stay, or leave the bar", "media.idle", "media_idle", ["Shrink", "Stay", "Hide"]),
         ("choice", "Visualizer", "Moves with the sound", "bar.visualizer", "viz", ["Mirror", "Bars", "Line", "Dots", "Off"], "media_mode != 2"),
-    ]),
-    ("Frame", "Screen frame", "One body with the bar: a band round the screen the bar grows out of; it can move with the music", "DESKTOP", [
-        ("card", "Frame"),
-        ("toggle", "Screen frame", "Draw the band round the screen", "frame.on", "frame_on"),
-        ("note", "not frame_on", "TURN IT ON FOR ITS THICKNESS, CORNERS, EDGE AND MUSIC"),
-        ("note", "frame_on and not dk_manage", "IT LIES IN THE WINDOWS' OUTER GAP: TURN ON LET MOOI STYLE WINDOWS SO THE GAP FITS IT"),
-        ("card", "Band", "frame_on"),
-        ("slider", "Thickness", "How wide the band is", "frame.band", 2, 16, "{sv_frame_band + 2, 0} px"),
-        ("slider", "Corners", "How round its inner corners are", "frame.radius", 0, 40, "{sv_frame_radius, 0} px"),
-        ("choice", "Outline", "One line round the frame and the bar together: quiet, neon, or none", "frame.edge", "sv_frame_edge", ["Line", "Neon", "None"]),
-        ("card", "Music", "frame_on"),
-        ("choice", "Moves with music", "Still, or its inner edge rolling with the bass (iNiR's frame music)", "frame.motion", "sv_frame_motion", ["Off", "Wave"]),
-        ("slider", "Strength", "How far it moves at full volume", "frame.reach", 6, 40, "{sv_frame_reach + 6, 0} px", "frame_music"),
-        ("choice", "Which edges", "All of them, the sides, or top and bottom", "frame.edges", "frame_edges", ["All", "Sides", "Top & bottom"], "frame_music"),
+    
+        ("fold", "The Pill", "A CAPSULE THAT BECOMES WHAT IS HAPPENING"),
+        ("card", "The Pill"),
+        ("note", "true", "COMES WITH THE PILL: THE NEXT STAGE OF THE BAR"),
     ]),
     ("Windows", "Windows", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "DESKTOP", [
         ("card", "Styling"),
@@ -894,23 +901,50 @@ def section(i, rows, indent, page):
         above.append((CARD_FOOT + CARD_GAP, cwhen)); y += CARD_FOOT + CARD_GAP
         card = None
     nk = 0
+    fold = "true"                       # the open/closed state of the fold everything below belongs to
+    nfold = 0
+    def both(a, b): return b if a == "true" else (a if b == "true" else f"({a}) and ({b})")
     for j, r in enumerate(rows):
+        if r[0] == "fold":
+            # D166: a fold's header (its name, what it holds, ▸/▾): everything after it, up to the next
+            # fold, shows only while it is open; the first fold on a page starts open
+            close_card()
+            fv = f"fd_{i}_{nfold}"
+            PROPS.append(f"    fact {fv} = {'true' if nfold == 0 else 'false'}")
+            hy = y
+            PROPS.append(f"    prop gy_{i}_f{nfold} = {y} ~m.reflow\n    follow gy_{i}_f{nfold} = {place()}")
+            hh = CARD_HEAD + 8
+            lines += ["group {", f"    move: 0, gy_{i}_f{nfold} - {hy}",
+                      f'    SCard({hy}, {hh}, "")',
+                      f'    text pick({fv}, "▸  {r[1]}", "▾  {r[1]}") {{ at: {TX}, {hy + 26}; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: mix(fl.ink, fl.phos, {fv}) }}',
+                      f'    text "{r[2]}" {{ at: {XR}, {hy + 26}; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 520; lines: 1; align: right }}',
+                      f'    zone box fz_{i}_{nfold} {{ from: 256, {hy}; size: 900, {hh}; cursor: pointer; role: button; label: "Open or fold {r[1]}" }}',
+                      f"    on press fz_{i}_{nfold} {{ {fv} = not {fv} }}",
+                      "}"]
+            above.append((hh + CARD_GAP, "true")); y += hh + CARD_GAP
+            fold = fv
+            nfold += 1
+            INDEX.append((r[1], r[2], i, page, hy))
+            continue
         if r[0] == "card":
             close_card()
-            cwhen = r[2] if len(r) > 2 else "true"
+            cwhen = both(r[2] if len(r) > 2 else "true", fold)
             PROPS.append(f"    prop gy_{i}_c{nk} = {y} ~m.reflow\n    follow gy_{i}_c{nk} = {place()}")
             card = [nk, cwhen, len(lines), [], y, r[1]]
             above.append((CARD_HEAD, cwhen)); y += CARD_HEAD
             nk += 1
             continue
         if r[0] == "layout":
+            close_card()
             ll, hexpr = layout_page(y)
-            lines.append("group {"); lines += ["    " + l for l in ll]; lines.append("}")
-            above.append((hexpr, "true"))
+            PROPS.append(f"    prop gy_{i}_lay = {y} ~m.reflow\n    follow gy_{i}_lay = {place()}")
+            lines.append("group {"); lines.append(f"    show: {fold}"); lines.append(f"    move: 0, gy_{i}_lay - {y}")
+            lines += ["    " + l for l in ll]; lines.append("}")
+            above.append((hexpr, fold))
             resets.append("@layout")
             INDEX.append(("Layout", "Put any module anywhere on the bar, in any order; group, hide, add spacers", i, page, y))
             continue
-        cwhen = card[1] if card else "true"
+        cwhen = card[1] if card else fold
         rwhen = ("theme_wallpaper" if r[0] == "schemes" else "sv_bar_bg == 9" if r[0] == "colourpick" else r[1] if r[0] == "note" else
                  (r[7] if r[0] == "slider" and len(r) > 7 else (r[6] if len(r) > 6 and r[0] not in ("slider", "button", "info") else "true")))
         when = rwhen if cwhen == "true" else (cwhen if rwhen == "true" else f"({cwhen}) and ({rwhen})")
@@ -1268,7 +1302,7 @@ def main():
         "-- each page's Reset puts back (`@layout`: the bar's lists; `@keys`: the keys).\n"
         "-- `tab` is the page (from 0), `y` the row's place on it with every row shown.\nlocal rows = {\n" + rows + "\n}\n"
         "rows.resets = {\n" + resets + "\n}\n"
-        f"rows.layout_tab = {TAB['Layout']}\nreturn rows\n")
+        f"rows.layout_tab = {TAB['Bar & Frame']}\nreturn rows\n")
     text = SCENE.read_text()
     pat = re.compile(r"([ \t]*)// <gen:edit>\n.*?// </gen:edit>", re.S)
     if not pat.search(text):
