@@ -4416,6 +4416,16 @@ do
                         for k, v in pairs(t or {}) do l[k] = v end; return l end
     local geo = { islands = { { x = 12, w = 182 }, { x = 0, w = 0 }, { x = 637, w = 280 } },
                   left = { x = 12, w = 448 }, center = { x = 637, w = 646 }, right = { x = 1492, w = 416 }, panel = { x = 12, w = 1896 } }
+    test("the bar's own plates are only a fallback for a missing frame", function()
+        local f = io.open("shell/mooi.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find("let pf = chassis_up", 1, true), "pf follows the running frame")
+        local g = io.open("shell/mooi.luau"); local lu = g:read("a"); g:close()
+        local sync = lu:match("function frame_sync%(%)(.-)\nend\n")
+        assert(sync and not sync:find("island.morph", 1, true), "the frame no longer depends on morph or frame.on")
+        assert(sync:find("fact.chassis_up = true", 1, true), "a running frame takes the plates")
+        assert(sync:find("fact.chassis_up = false", 1, true), "an exited frame hands the plates back to the bar")
+        assert(not sync:find("code ~= 0 and frame_tries", 1, true), "the frame comes back after any exit, not only a failure")
+    end)
     test("the frame scene draws pieces only from the model's facts", function()
         local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
         assert(plm:find("box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0", 1, true), "slot 0 from facts")

@@ -2147,14 +2147,9 @@ after(700, notch_sync)
 -- now runs round the bar's pieces from bar-geo.json, which the bar writes (shell/bar.luau).
 local frame_win, frame_tries = nil, 0
 function frame_sync()
-    -- it also draws the bar's pieces and the islands grown out of them (island.morph) without its band
-    local want = (type(settings.frame) == "table" and settings.frame.on == true)
-              or (type(settings.island) == "table" and settings.island.morph ~= false)
-    if not want then
-        frame_tries = 0
-        if frame_win then kill(frame_win, "term"); frame_win = nil end
-        return
-    end
+    -- D164 stage 1: the frame draws the bar's pieces (lib/chassis) in every mode, with or without its
+    -- band, so it always runs. While it runs the bar draws only content (`chassis_up`); if it ends, or
+    -- gives up after five quick failures, the bar draws its own plates again rather than stand bare.
     if frame_win then return end
     local mine
     local started = os.time()
@@ -2164,11 +2159,15 @@ function frame_sync()
     end, function(_, code)
         if frame_win ~= mine then return end
         frame_win = nil
+        fact.chassis_up = false
         if os.time() - started < 5 then frame_tries = frame_tries + 1 else frame_tries = 0 end
         if code ~= 0 then log("frame · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
-        if code ~= 0 and frame_tries < 5 then after(1000 * (frame_tries + 1), frame_sync) end
+        -- always wanted now (D164), so it comes back after any exit, a clean one too (a TERM ends it
+        -- with 0); five quick deaths in a row and the bar keeps its own plates
+        if frame_tries < 5 then after(1000 * (frame_tries + 1), frame_sync) end
     end, { errors = true })
     frame_win = mine
+    if mine then fact.chassis_up = true end
 end
 -- At once: while the frame is on, the bar leaves its plates to the frame (D127), so until the frame
 -- is up the bar's pieces stand on nothing. The notch and BMO follow soon after, one at a time, so

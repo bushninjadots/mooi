@@ -31,8 +31,10 @@ scene Mooi {
     fact cn_scale = 1
     fact isl_style = 0           // island.style: 0 plate · 1 tether (ui/island.plm reads it)
     fact ch_on = false           // D152/D153: islands grown out of the bar (island.morph), drawn by mooi-frame
-    // the frame paints the bar's plates: with its band (frame.on) or for the islands alone (island.morph)
-    let pf = frame_on or ch_on
+    // D164 stage 1: the frame (lib/chassis) paints the bar's plates in every mode while it runs; the
+    // bar's own plates are the fallback for when it is not running (mooi.luau's frame_sync says which)
+    fact chassis_up = false
+    let pf = chassis_up
     // the Control Nexus out under the chassis: the bar stays over the frame's body until it has gone back
     prop nxo = 0 ~m.isl_out
     follow nxo = if(nexus_open, 1, 0)
