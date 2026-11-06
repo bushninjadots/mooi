@@ -17,6 +17,8 @@ end
 -- A preset is a coherent set of the finer settings, written all at once: the bar's material,
 -- outline, depth and hover belong together, and so do a palette's finish, base and light — set
 -- one by one they can fight (a clear bar with a deep shadow, a light base with a neon glow).
+-- frost and tint only show on glass, so the styles without it keep the defaults (70, 38): a bar from
+-- before D166 then still reads as its style rather than Custom (review M1)
 M.BAR_PRESETS = {
     -- an instrument panel: solid hull, a regular line with its cuts, the rail and the details on
     { name = "instrument", set = { ["bar.surface"] = "solid", ["bar.frame"] = "line", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
@@ -27,13 +29,13 @@ M.BAR_PRESETS = {
         ["bar.rail"] = false, ["bar.accents"] = false } },
     -- floating: solid islands with no edge, lifted by a strong shadow, glowing under the pointer
     { name = "floating", set = { ["bar.surface"] = "solid", ["bar.frame"] = "none", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
-        ["bar.shadow"] = "strong", ["bar.ground"] = "clear", ["bar.pill"] = "glow", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 0, ["bar.smoke"] = 0} },
+        ["bar.shadow"] = "strong", ["bar.ground"] = "clear", ["bar.pill"] = "glow", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 70, ["bar.smoke"] = 38} },
     -- hairline (D166): no fill at all, only an accent line, so the wallpaper shows through
     { name = "hairline", set = { ["bar.surface"] = "clear", ["bar.frame"] = "line", ["bar.outline_width"] = 1, ["bar.outline_colour"] = "accent",
-        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 0, ["bar.smoke"] = 0} },
+        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 70, ["bar.smoke"] = 38} },
     -- minimal: only the readings on the desktop, an underline for hover
     { name = "minimal", set = { ["bar.surface"] = "clear", ["bar.frame"] = "none", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
-        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 0, ["bar.smoke"] = 0} },
+        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 70, ["bar.smoke"] = 38} },
     -- (steel was removed in D166: its look stays reachable as the mech surface with an accent line)
 }
 M.THEME_PRESETS = {

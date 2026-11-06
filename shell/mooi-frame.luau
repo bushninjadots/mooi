@@ -36,7 +36,10 @@ local function paint()
     local roles = ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
     if not roles then return end
     roles_now = roles
-    roles_now.primary = roles.phos
+    -- "from the wallpaper": the wallpaper's own primary (palette.json, Matugen), not the theme's main
+    -- colour, which a preset like Phosphor sets apart from the wallpaper (review I4)
+    local wall = type(palette) == "table" and type(palette.colours) == "table" and ferro.hex(palette.colours.primary) or nil
+    roles_now.primary = wall or roles.phos
     for _, role in ipairs(ferro.ROLES) do
         local c = roles[role]
         fact["fr_" .. role .. "_r"], fact["fr_" .. role .. "_g"], fact["fr_" .. role .. "_b"] = c.r, c.g, c.b

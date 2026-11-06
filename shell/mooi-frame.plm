@@ -1040,7 +1040,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0, -40
                                line W * 0, bt + ft0
                                line W * 0.015625, bt + ft1
@@ -1102,7 +1102,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, -40
                                line W * 0.046875, bt + ft3
                                line W * 0.0625, bt + ft4
@@ -1167,7 +1167,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, -40
                                line W * 0.140625, bt + ft9
                                line W * 0.15625, bt + ft10
@@ -1217,7 +1217,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, -40
                                line W * 0.234375, bt + ft15
                                line W * 0.25, bt + ft16
@@ -1267,7 +1267,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, -40
                                line W * 0.328125, bt + ft21
                                line W * 0.34375, bt + ft22
@@ -1317,7 +1317,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, -40
                                line W * 0.421875, bt + ft27
                                line W * 0.4375, bt + ft28
@@ -1367,7 +1367,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, -40
                                line W * 0.515625, bt + ft33
                                line W * 0.53125, bt + ft34
@@ -1417,7 +1417,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, -40
                                line W * 0.609375, bt + ft39
                                line W * 0.625, bt + ft40
@@ -1467,7 +1467,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, -40
                                line W * 0.703125, bt + ft45
                                line W * 0.71875, bt + ft46
@@ -1517,7 +1517,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, -40
                                line W * 0.796875, bt + ft51
                                line W * 0.8125, bt + ft52
@@ -1582,7 +1582,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, -40
                                line W * 0.890625, bt + ft57
                                line W * 0.90625, bt + ft58
@@ -1644,11 +1644,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf0 > 1.5 and pf0 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf0 > 1.5 and pf0 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf0 > 2.5, 0, 1)
-                    border: if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc0_r, 0), pc0_g, pc0_b), if(pc0_r >= 0, 1, 0)), if(po0 > 1.5, 1, if(if(pc0_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc0_r, 0), pc0_g, pc0_b), if(pc0_r >= 0, 1, 0)), if(po0 > 1.5, 1, if(if(pc0_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px0, py0; size: if(pj0 or pf0 > 2.5, 0, pw0), if(pj0 or pf0 > 2.5, 0, ph0); corner: pr0 }
                 }
                 // plate 0 outline
-                box { from: px0, py0; size: if(pj0 or pf0 < 2.5 or if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw0), if(pj0 or pf0 < 2.5 or if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph0); corner: pr0; stroke: if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc0_r, 0), pc0_g, pc0_b), if(pc0_r >= 0, 1, 0)), if(po0 > 1.5, 1, if(if(pc0_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px0, py0; size: if(pj0 or pf0 < 2.5 or if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw0), if(pj0 or pf0 < 2.5 or if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph0); corner: pr0; stroke: if(po0 > 1.5, st_owidth, if(po0 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc0_r, 0), pc0_g, pc0_b), if(pc0_r >= 0, 1, 0)), if(po0 > 1.5, 1, if(if(pc0_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj0 and pw0 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px0, py0 + 7; line px0, py0; line px0 + 7, py0 }
@@ -1668,11 +1668,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf1 > 1.5 and pf1 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf1 > 1.5 and pf1 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf1 > 2.5, 0, 1)
-                    border: if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc1_r, 0), pc1_g, pc1_b), if(pc1_r >= 0, 1, 0)), if(po1 > 1.5, 1, if(if(pc1_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc1_r, 0), pc1_g, pc1_b), if(pc1_r >= 0, 1, 0)), if(po1 > 1.5, 1, if(if(pc1_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px1, py1; size: if(pj1 or pf1 > 2.5, 0, pw1), if(pj1 or pf1 > 2.5, 0, ph1); corner: pr1 }
                 }
                 // plate 1 outline
-                box { from: px1, py1; size: if(pj1 or pf1 < 2.5 or if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw1), if(pj1 or pf1 < 2.5 or if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph1); corner: pr1; stroke: if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc1_r, 0), pc1_g, pc1_b), if(pc1_r >= 0, 1, 0)), if(po1 > 1.5, 1, if(if(pc1_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px1, py1; size: if(pj1 or pf1 < 2.5 or if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw1), if(pj1 or pf1 < 2.5 or if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph1); corner: pr1; stroke: if(po1 > 1.5, st_owidth, if(po1 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc1_r, 0), pc1_g, pc1_b), if(pc1_r >= 0, 1, 0)), if(po1 > 1.5, 1, if(if(pc1_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj1 and pw1 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px1, py1 + 7; line px1, py1; line px1 + 7, py1 }
@@ -1692,11 +1692,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf2 > 1.5 and pf2 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf2 > 1.5 and pf2 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf2 > 2.5, 0, 1)
-                    border: if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc2_r, 0), pc2_g, pc2_b), if(pc2_r >= 0, 1, 0)), if(po2 > 1.5, 1, if(if(pc2_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc2_r, 0), pc2_g, pc2_b), if(pc2_r >= 0, 1, 0)), if(po2 > 1.5, 1, if(if(pc2_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px2, py2; size: if(pj2 or pf2 > 2.5, 0, pw2), if(pj2 or pf2 > 2.5, 0, ph2); corner: pr2 }
                 }
                 // plate 2 outline
-                box { from: px2, py2; size: if(pj2 or pf2 < 2.5 or if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw2), if(pj2 or pf2 < 2.5 or if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph2); corner: pr2; stroke: if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc2_r, 0), pc2_g, pc2_b), if(pc2_r >= 0, 1, 0)), if(po2 > 1.5, 1, if(if(pc2_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px2, py2; size: if(pj2 or pf2 < 2.5 or if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw2), if(pj2 or pf2 < 2.5 or if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph2); corner: pr2; stroke: if(po2 > 1.5, st_owidth, if(po2 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc2_r, 0), pc2_g, pc2_b), if(pc2_r >= 0, 1, 0)), if(po2 > 1.5, 1, if(if(pc2_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj2 and pw2 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px2, py2 + 7; line px2, py2; line px2 + 7, py2 }
@@ -1716,11 +1716,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf3 > 1.5 and pf3 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf3 > 1.5 and pf3 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf3 > 2.5, 0, 1)
-                    border: if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc3_r, 0), pc3_g, pc3_b), if(pc3_r >= 0, 1, 0)), if(po3 > 1.5, 1, if(if(pc3_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc3_r, 0), pc3_g, pc3_b), if(pc3_r >= 0, 1, 0)), if(po3 > 1.5, 1, if(if(pc3_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px3, py3; size: if(pj3 or pf3 > 2.5, 0, pw3), if(pj3 or pf3 > 2.5, 0, ph3); corner: pr3 }
                 }
                 // plate 3 outline
-                box { from: px3, py3; size: if(pj3 or pf3 < 2.5 or if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw3), if(pj3 or pf3 < 2.5 or if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph3); corner: pr3; stroke: if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc3_r, 0), pc3_g, pc3_b), if(pc3_r >= 0, 1, 0)), if(po3 > 1.5, 1, if(if(pc3_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px3, py3; size: if(pj3 or pf3 < 2.5 or if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw3), if(pj3 or pf3 < 2.5 or if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph3); corner: pr3; stroke: if(po3 > 1.5, st_owidth, if(po3 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc3_r, 0), pc3_g, pc3_b), if(pc3_r >= 0, 1, 0)), if(po3 > 1.5, 1, if(if(pc3_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj3 and pw3 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px3, py3 + 7; line px3, py3; line px3 + 7, py3 }
@@ -1740,11 +1740,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf4 > 1.5 and pf4 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf4 > 1.5 and pf4 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf4 > 2.5, 0, 1)
-                    border: if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc4_r, 0), pc4_g, pc4_b), if(pc4_r >= 0, 1, 0)), if(po4 > 1.5, 1, if(if(pc4_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc4_r, 0), pc4_g, pc4_b), if(pc4_r >= 0, 1, 0)), if(po4 > 1.5, 1, if(if(pc4_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px4, py4; size: if(pj4 or pf4 > 2.5, 0, pw4), if(pj4 or pf4 > 2.5, 0, ph4); corner: pr4 }
                 }
                 // plate 4 outline
-                box { from: px4, py4; size: if(pj4 or pf4 < 2.5 or if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw4), if(pj4 or pf4 < 2.5 or if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph4); corner: pr4; stroke: if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc4_r, 0), pc4_g, pc4_b), if(pc4_r >= 0, 1, 0)), if(po4 > 1.5, 1, if(if(pc4_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px4, py4; size: if(pj4 or pf4 < 2.5 or if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw4), if(pj4 or pf4 < 2.5 or if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph4); corner: pr4; stroke: if(po4 > 1.5, st_owidth, if(po4 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc4_r, 0), pc4_g, pc4_b), if(pc4_r >= 0, 1, 0)), if(po4 > 1.5, 1, if(if(pc4_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj4 and pw4 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px4, py4 + 7; line px4, py4; line px4 + 7, py4 }
@@ -1764,11 +1764,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf5 > 1.5 and pf5 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf5 > 1.5 and pf5 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf5 > 2.5, 0, 1)
-                    border: if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc5_r, 0), pc5_g, pc5_b), if(pc5_r >= 0, 1, 0)), if(po5 > 1.5, 1, if(if(pc5_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc5_r, 0), pc5_g, pc5_b), if(pc5_r >= 0, 1, 0)), if(po5 > 1.5, 1, if(if(pc5_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px5, py5; size: if(pj5 or pf5 > 2.5, 0, pw5), if(pj5 or pf5 > 2.5, 0, ph5); corner: pr5 }
                 }
                 // plate 5 outline
-                box { from: px5, py5; size: if(pj5 or pf5 < 2.5 or if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw5), if(pj5 or pf5 < 2.5 or if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph5); corner: pr5; stroke: if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc5_r, 0), pc5_g, pc5_b), if(pc5_r >= 0, 1, 0)), if(po5 > 1.5, 1, if(if(pc5_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px5, py5; size: if(pj5 or pf5 < 2.5 or if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw5), if(pj5 or pf5 < 2.5 or if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph5); corner: pr5; stroke: if(po5 > 1.5, st_owidth, if(po5 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc5_r, 0), pc5_g, pc5_b), if(pc5_r >= 0, 1, 0)), if(po5 > 1.5, 1, if(if(pc5_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj5 and pw5 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px5, py5 + 7; line px5, py5; line px5 + 7, py5 }
@@ -1788,11 +1788,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf6 > 1.5 and pf6 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf6 > 1.5 and pf6 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf6 > 2.5, 0, 1)
-                    border: if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc6_r, 0), pc6_g, pc6_b), if(pc6_r >= 0, 1, 0)), if(po6 > 1.5, 1, if(if(pc6_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc6_r, 0), pc6_g, pc6_b), if(pc6_r >= 0, 1, 0)), if(po6 > 1.5, 1, if(if(pc6_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px6, py6; size: if(pj6 or pf6 > 2.5, 0, pw6), if(pj6 or pf6 > 2.5, 0, ph6); corner: pr6 }
                 }
                 // plate 6 outline
-                box { from: px6, py6; size: if(pj6 or pf6 < 2.5 or if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw6), if(pj6 or pf6 < 2.5 or if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph6); corner: pr6; stroke: if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc6_r, 0), pc6_g, pc6_b), if(pc6_r >= 0, 1, 0)), if(po6 > 1.5, 1, if(if(pc6_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px6, py6; size: if(pj6 or pf6 < 2.5 or if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw6), if(pj6 or pf6 < 2.5 or if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph6); corner: pr6; stroke: if(po6 > 1.5, st_owidth, if(po6 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc6_r, 0), pc6_g, pc6_b), if(pc6_r >= 0, 1, 0)), if(po6 > 1.5, 1, if(if(pc6_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj6 and pw6 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px6, py6 + 7; line px6, py6; line px6 + 7, py6 }
@@ -1812,11 +1812,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf7 > 1.5 and pf7 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf7 > 1.5 and pf7 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf7 > 2.5, 0, 1)
-                    border: if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc7_r, 0), pc7_g, pc7_b), if(pc7_r >= 0, 1, 0)), if(po7 > 1.5, 1, if(if(pc7_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc7_r, 0), pc7_g, pc7_b), if(pc7_r >= 0, 1, 0)), if(po7 > 1.5, 1, if(if(pc7_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px7, py7; size: if(pj7 or pf7 > 2.5, 0, pw7), if(pj7 or pf7 > 2.5, 0, ph7); corner: pr7 }
                 }
                 // plate 7 outline
-                box { from: px7, py7; size: if(pj7 or pf7 < 2.5 or if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw7), if(pj7 or pf7 < 2.5 or if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph7); corner: pr7; stroke: if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc7_r, 0), pc7_g, pc7_b), if(pc7_r >= 0, 1, 0)), if(po7 > 1.5, 1, if(if(pc7_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px7, py7; size: if(pj7 or pf7 < 2.5 or if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw7), if(pj7 or pf7 < 2.5 or if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph7); corner: pr7; stroke: if(po7 > 1.5, st_owidth, if(po7 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc7_r, 0), pc7_g, pc7_b), if(pc7_r >= 0, 1, 0)), if(po7 > 1.5, 1, if(if(pc7_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj7 and pw7 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px7, py7 + 7; line px7, py7; line px7 + 7, py7 }
@@ -1836,11 +1836,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf8 > 1.5 and pf8 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf8 > 1.5 and pf8 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf8 > 2.5, 0, 1)
-                    border: if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc8_r, 0), pc8_g, pc8_b), if(pc8_r >= 0, 1, 0)), if(po8 > 1.5, 1, if(if(pc8_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc8_r, 0), pc8_g, pc8_b), if(pc8_r >= 0, 1, 0)), if(po8 > 1.5, 1, if(if(pc8_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px8, py8; size: if(pj8 or pf8 > 2.5, 0, pw8), if(pj8 or pf8 > 2.5, 0, ph8); corner: pr8 }
                 }
                 // plate 8 outline
-                box { from: px8, py8; size: if(pj8 or pf8 < 2.5 or if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw8), if(pj8 or pf8 < 2.5 or if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph8); corner: pr8; stroke: if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc8_r, 0), pc8_g, pc8_b), if(pc8_r >= 0, 1, 0)), if(po8 > 1.5, 1, if(if(pc8_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px8, py8; size: if(pj8 or pf8 < 2.5 or if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw8), if(pj8 or pf8 < 2.5 or if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph8); corner: pr8; stroke: if(po8 > 1.5, st_owidth, if(po8 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc8_r, 0), pc8_g, pc8_b), if(pc8_r >= 0, 1, 0)), if(po8 > 1.5, 1, if(if(pc8_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj8 and pw8 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px8, py8 + 7; line px8, py8; line px8 + 7, py8 }
@@ -1860,11 +1860,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf9 > 1.5 and pf9 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf9 > 1.5 and pf9 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf9 > 2.5, 0, 1)
-                    border: if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc9_r, 0), pc9_g, pc9_b), if(pc9_r >= 0, 1, 0)), if(po9 > 1.5, 1, if(if(pc9_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc9_r, 0), pc9_g, pc9_b), if(pc9_r >= 0, 1, 0)), if(po9 > 1.5, 1, if(if(pc9_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px9, py9; size: if(pj9 or pf9 > 2.5, 0, pw9), if(pj9 or pf9 > 2.5, 0, ph9); corner: pr9 }
                 }
                 // plate 9 outline
-                box { from: px9, py9; size: if(pj9 or pf9 < 2.5 or if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw9), if(pj9 or pf9 < 2.5 or if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph9); corner: pr9; stroke: if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc9_r, 0), pc9_g, pc9_b), if(pc9_r >= 0, 1, 0)), if(po9 > 1.5, 1, if(if(pc9_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px9, py9; size: if(pj9 or pf9 < 2.5 or if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw9), if(pj9 or pf9 < 2.5 or if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph9); corner: pr9; stroke: if(po9 > 1.5, st_owidth, if(po9 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc9_r, 0), pc9_g, pc9_b), if(pc9_r >= 0, 1, 0)), if(po9 > 1.5, 1, if(if(pc9_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj9 and pw9 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px9, py9 + 7; line px9, py9; line px9 + 7, py9 }
@@ -1884,11 +1884,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf10 > 1.5 and pf10 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf10 > 1.5 and pf10 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf10 > 2.5, 0, 1)
-                    border: if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc10_r, 0), pc10_g, pc10_b), if(pc10_r >= 0, 1, 0)), if(po10 > 1.5, 1, if(if(pc10_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc10_r, 0), pc10_g, pc10_b), if(pc10_r >= 0, 1, 0)), if(po10 > 1.5, 1, if(if(pc10_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px10, py10; size: if(pj10 or pf10 > 2.5, 0, pw10), if(pj10 or pf10 > 2.5, 0, ph10); corner: pr10 }
                 }
                 // plate 10 outline
-                box { from: px10, py10; size: if(pj10 or pf10 < 2.5 or if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw10), if(pj10 or pf10 < 2.5 or if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph10); corner: pr10; stroke: if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc10_r, 0), pc10_g, pc10_b), if(pc10_r >= 0, 1, 0)), if(po10 > 1.5, 1, if(if(pc10_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px10, py10; size: if(pj10 or pf10 < 2.5 or if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw10), if(pj10 or pf10 < 2.5 or if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph10); corner: pr10; stroke: if(po10 > 1.5, st_owidth, if(po10 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc10_r, 0), pc10_g, pc10_b), if(pc10_r >= 0, 1, 0)), if(po10 > 1.5, 1, if(if(pc10_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj10 and pw10 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px10, py10 + 7; line px10, py10; line px10 + 7, py10 }
@@ -1908,11 +1908,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf11 > 1.5 and pf11 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf11 > 1.5 and pf11 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf11 > 2.5, 0, 1)
-                    border: if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc11_r, 0), pc11_g, pc11_b), if(pc11_r >= 0, 1, 0)), if(po11 > 1.5, 1, if(if(pc11_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc11_r, 0), pc11_g, pc11_b), if(pc11_r >= 0, 1, 0)), if(po11 > 1.5, 1, if(if(pc11_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px11, py11; size: if(pj11 or pf11 > 2.5, 0, pw11), if(pj11 or pf11 > 2.5, 0, ph11); corner: pr11 }
                 }
                 // plate 11 outline
-                box { from: px11, py11; size: if(pj11 or pf11 < 2.5 or if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw11), if(pj11 or pf11 < 2.5 or if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph11); corner: pr11; stroke: if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc11_r, 0), pc11_g, pc11_b), if(pc11_r >= 0, 1, 0)), if(po11 > 1.5, 1, if(if(pc11_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px11, py11; size: if(pj11 or pf11 < 2.5 or if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw11), if(pj11 or pf11 < 2.5 or if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph11); corner: pr11; stroke: if(po11 > 1.5, st_owidth, if(po11 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc11_r, 0), pc11_g, pc11_b), if(pc11_r >= 0, 1, 0)), if(po11 > 1.5, 1, if(if(pc11_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj11 and pw11 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px11, py11 + 7; line px11, py11; line px11 + 7, py11 }
@@ -1932,11 +1932,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf12 > 1.5 and pf12 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf12 > 1.5 and pf12 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf12 > 2.5, 0, 1)
-                    border: if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc12_r, 0), pc12_g, pc12_b), if(pc12_r >= 0, 1, 0)), if(po12 > 1.5, 1, if(if(pc12_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc12_r, 0), pc12_g, pc12_b), if(pc12_r >= 0, 1, 0)), if(po12 > 1.5, 1, if(if(pc12_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px12, py12; size: if(pj12 or pf12 > 2.5, 0, pw12), if(pj12 or pf12 > 2.5, 0, ph12); corner: pr12 }
                 }
                 // plate 12 outline
-                box { from: px12, py12; size: if(pj12 or pf12 < 2.5 or if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw12), if(pj12 or pf12 < 2.5 or if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph12); corner: pr12; stroke: if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc12_r, 0), pc12_g, pc12_b), if(pc12_r >= 0, 1, 0)), if(po12 > 1.5, 1, if(if(pc12_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px12, py12; size: if(pj12 or pf12 < 2.5 or if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw12), if(pj12 or pf12 < 2.5 or if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph12); corner: pr12; stroke: if(po12 > 1.5, st_owidth, if(po12 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc12_r, 0), pc12_g, pc12_b), if(pc12_r >= 0, 1, 0)), if(po12 > 1.5, 1, if(if(pc12_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj12 and pw12 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px12, py12 + 7; line px12, py12; line px12 + 7, py12 }
@@ -1956,11 +1956,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf13 > 1.5 and pf13 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf13 > 1.5 and pf13 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf13 > 2.5, 0, 1)
-                    border: if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc13_r, 0), pc13_g, pc13_b), if(pc13_r >= 0, 1, 0)), if(po13 > 1.5, 1, if(if(pc13_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc13_r, 0), pc13_g, pc13_b), if(pc13_r >= 0, 1, 0)), if(po13 > 1.5, 1, if(if(pc13_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px13, py13; size: if(pj13 or pf13 > 2.5, 0, pw13), if(pj13 or pf13 > 2.5, 0, ph13); corner: pr13 }
                 }
                 // plate 13 outline
-                box { from: px13, py13; size: if(pj13 or pf13 < 2.5 or if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw13), if(pj13 or pf13 < 2.5 or if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph13); corner: pr13; stroke: if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc13_r, 0), pc13_g, pc13_b), if(pc13_r >= 0, 1, 0)), if(po13 > 1.5, 1, if(if(pc13_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px13, py13; size: if(pj13 or pf13 < 2.5 or if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw13), if(pj13 or pf13 < 2.5 or if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph13); corner: pr13; stroke: if(po13 > 1.5, st_owidth, if(po13 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc13_r, 0), pc13_g, pc13_b), if(pc13_r >= 0, 1, 0)), if(po13 > 1.5, 1, if(if(pc13_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj13 and pw13 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px13, py13 + 7; line px13, py13; line px13 + 7, py13 }
@@ -1980,11 +1980,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf14 > 1.5 and pf14 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf14 > 1.5 and pf14 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf14 > 2.5, 0, 1)
-                    border: if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc14_r, 0), pc14_g, pc14_b), if(pc14_r >= 0, 1, 0)), if(po14 > 1.5, 1, if(if(pc14_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc14_r, 0), pc14_g, pc14_b), if(pc14_r >= 0, 1, 0)), if(po14 > 1.5, 1, if(if(pc14_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px14, py14; size: if(pj14 or pf14 > 2.5, 0, pw14), if(pj14 or pf14 > 2.5, 0, ph14); corner: pr14 }
                 }
                 // plate 14 outline
-                box { from: px14, py14; size: if(pj14 or pf14 < 2.5 or if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw14), if(pj14 or pf14 < 2.5 or if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph14); corner: pr14; stroke: if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc14_r, 0), pc14_g, pc14_b), if(pc14_r >= 0, 1, 0)), if(po14 > 1.5, 1, if(if(pc14_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px14, py14; size: if(pj14 or pf14 < 2.5 or if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw14), if(pj14 or pf14 < 2.5 or if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph14); corner: pr14; stroke: if(po14 > 1.5, st_owidth, if(po14 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc14_r, 0), pc14_g, pc14_b), if(pc14_r >= 0, 1, 0)), if(po14 > 1.5, 1, if(if(pc14_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj14 and pw14 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px14, py14 + 7; line px14, py14; line px14 + 7, py14 }
@@ -2004,11 +2004,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf15 > 1.5 and pf15 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf15 > 1.5 and pf15 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf15 > 2.5, 0, 1)
-                    border: if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc15_r, 0), pc15_g, pc15_b), if(pc15_r >= 0, 1, 0)), if(po15 > 1.5, 1, if(if(pc15_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc15_r, 0), pc15_g, pc15_b), if(pc15_r >= 0, 1, 0)), if(po15 > 1.5, 1, if(if(pc15_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px15, py15; size: if(pj15 or pf15 > 2.5, 0, pw15), if(pj15 or pf15 > 2.5, 0, ph15); corner: pr15 }
                 }
                 // plate 15 outline
-                box { from: px15, py15; size: if(pj15 or pf15 < 2.5 or if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw15), if(pj15 or pf15 < 2.5 or if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph15); corner: pr15; stroke: if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc15_r, 0), pc15_g, pc15_b), if(pc15_r >= 0, 1, 0)), if(po15 > 1.5, 1, if(if(pc15_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px15, py15; size: if(pj15 or pf15 < 2.5 or if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw15), if(pj15 or pf15 < 2.5 or if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph15); corner: pr15; stroke: if(po15 > 1.5, st_owidth, if(po15 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc15_r, 0), pc15_g, pc15_b), if(pc15_r >= 0, 1, 0)), if(po15 > 1.5, 1, if(if(pc15_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj15 and pw15 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px15, py15 + 7; line px15, py15; line px15 + 7, py15 }
@@ -2028,11 +2028,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf16 > 1.5 and pf16 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf16 > 1.5 and pf16 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf16 > 2.5, 0, 1)
-                    border: if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc16_r, 0), pc16_g, pc16_b), if(pc16_r >= 0, 1, 0)), if(po16 > 1.5, 1, if(if(pc16_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc16_r, 0), pc16_g, pc16_b), if(pc16_r >= 0, 1, 0)), if(po16 > 1.5, 1, if(if(pc16_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px16, py16; size: if(pj16 or pf16 > 2.5, 0, pw16), if(pj16 or pf16 > 2.5, 0, ph16); corner: pr16 }
                 }
                 // plate 16 outline
-                box { from: px16, py16; size: if(pj16 or pf16 < 2.5 or if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw16), if(pj16 or pf16 < 2.5 or if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph16); corner: pr16; stroke: if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc16_r, 0), pc16_g, pc16_b), if(pc16_r >= 0, 1, 0)), if(po16 > 1.5, 1, if(if(pc16_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px16, py16; size: if(pj16 or pf16 < 2.5 or if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw16), if(pj16 or pf16 < 2.5 or if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph16); corner: pr16; stroke: if(po16 > 1.5, st_owidth, if(po16 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc16_r, 0), pc16_g, pc16_b), if(pc16_r >= 0, 1, 0)), if(po16 > 1.5, 1, if(if(pc16_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj16 and pw16 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px16, py16 + 7; line px16, py16; line px16 + 7, py16 }
@@ -2052,11 +2052,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf17 > 1.5 and pf17 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf17 > 1.5 and pf17 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf17 > 2.5, 0, 1)
-                    border: if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc17_r, 0), pc17_g, pc17_b), if(pc17_r >= 0, 1, 0)), if(po17 > 1.5, 1, if(if(pc17_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc17_r, 0), pc17_g, pc17_b), if(pc17_r >= 0, 1, 0)), if(po17 > 1.5, 1, if(if(pc17_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px17, py17; size: if(pj17 or pf17 > 2.5, 0, pw17), if(pj17 or pf17 > 2.5, 0, ph17); corner: pr17 }
                 }
                 // plate 17 outline
-                box { from: px17, py17; size: if(pj17 or pf17 < 2.5 or if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw17), if(pj17 or pf17 < 2.5 or if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph17); corner: pr17; stroke: if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc17_r, 0), pc17_g, pc17_b), if(pc17_r >= 0, 1, 0)), if(po17 > 1.5, 1, if(if(pc17_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px17, py17; size: if(pj17 or pf17 < 2.5 or if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw17), if(pj17 or pf17 < 2.5 or if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph17); corner: pr17; stroke: if(po17 > 1.5, st_owidth, if(po17 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc17_r, 0), pc17_g, pc17_b), if(pc17_r >= 0, 1, 0)), if(po17 > 1.5, 1, if(if(pc17_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj17 and pw17 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px17, py17 + 7; line px17, py17; line px17 + 7, py17 }
@@ -2076,11 +2076,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf18 > 1.5 and pf18 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf18 > 1.5 and pf18 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf18 > 2.5, 0, 1)
-                    border: if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc18_r, 0), pc18_g, pc18_b), if(pc18_r >= 0, 1, 0)), if(po18 > 1.5, 1, if(if(pc18_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc18_r, 0), pc18_g, pc18_b), if(pc18_r >= 0, 1, 0)), if(po18 > 1.5, 1, if(if(pc18_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px18, py18; size: if(pj18 or pf18 > 2.5, 0, pw18), if(pj18 or pf18 > 2.5, 0, ph18); corner: pr18 }
                 }
                 // plate 18 outline
-                box { from: px18, py18; size: if(pj18 or pf18 < 2.5 or if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw18), if(pj18 or pf18 < 2.5 or if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph18); corner: pr18; stroke: if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc18_r, 0), pc18_g, pc18_b), if(pc18_r >= 0, 1, 0)), if(po18 > 1.5, 1, if(if(pc18_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px18, py18; size: if(pj18 or pf18 < 2.5 or if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw18), if(pj18 or pf18 < 2.5 or if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph18); corner: pr18; stroke: if(po18 > 1.5, st_owidth, if(po18 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc18_r, 0), pc18_g, pc18_b), if(pc18_r >= 0, 1, 0)), if(po18 > 1.5, 1, if(if(pc18_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj18 and pw18 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px18, py18 + 7; line px18, py18; line px18 + 7, py18 }
@@ -2100,11 +2100,11 @@ scene Frame {
                     frost: 1% * st_frost * if(pf19 > 1.5 and pf19 < 2.5, 1, 0)
                     smoke: 1% * st_smoke * if(pf19 > 1.5 and pf19 < 2.5, 1, 0)
                     shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf19 > 2.5, 0, 1)
-                    border: if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc19_r, 0), pc19_g, pc19_b), if(pc19_r >= 0, 1, 0)), if(po19 > 1.5, 1, if(if(pc19_r >= 0, 1, 0) > 0.5, 0.6, 0)))
+                    border: if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)), mix(fnec, mix(fl.phos, rgb(max(pc19_r, 0), pc19_g, pc19_b), if(pc19_r >= 0, 1, 0)), if(po19 > 1.5, 1, if(if(pc19_r >= 0, 1, 0) > 0.5, 0.6, 0)))
                     box { from: px19, py19; size: if(pj19 or pf19 > 2.5, 0, pw19), if(pj19 or pf19 > 2.5, 0, ph19); corner: pr19 }
                 }
                 // plate 19 outline
-                box { from: px19, py19; size: if(pj19 or pf19 < 2.5 or if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, pw19), if(pj19 or pf19 < 2.5 or if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)) < 0.5, 0, ph19); corner: pr19; stroke: if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc19_r, 0), pc19_g, pc19_b), if(pc19_r >= 0, 1, 0)), if(po19 > 1.5, 1, if(if(pc19_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
+                box { from: px19, py19; size: if(pj19 or pf19 < 2.5 or if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, pw19), if(pj19 or pf19 < 2.5 or if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)) < 0.5, 0, ph19); corner: pr19; stroke: if(po19 > 1.5, st_owidth, if(po19 > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)); color: mix(fnec, mix(fl.phos, rgb(max(pc19_r, 0), pc19_g, pc19_b), if(pc19_r >= 0, 1, 0)), if(po19 > 1.5, 1, if(if(pc19_r >= 0, 1, 0) > 0.5, 0.6, 0))) }
                 group {
                     show: not pj19 and pw19 > 0 and bar_frame > 0.5 and bar_frame < 1.5
                     path { stroke: st_owidth + 0.1; color: fnec; move px19, py19 + 7; line px19, py19; line px19 + 7, py19 }
@@ -2137,7 +2137,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0, H + 40
                                line W * 0, H - bb - fw0
                                line W * 0.015625, H - bb - fw1
@@ -2178,7 +2178,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, H + 40
                                line W * 0.046875, H - bb - fw3
                                line W * 0.0625, H - bb - fw4
@@ -2222,7 +2222,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, H + 40
                                line W * 0.140625, H - bb - fw9
                                line W * 0.15625, H - bb - fw10
@@ -2252,7 +2252,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, H + 40
                                line W * 0.234375, H - bb - fw15
                                line W * 0.25, H - bb - fw16
@@ -2282,7 +2282,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, H + 40
                                line W * 0.328125, H - bb - fw21
                                line W * 0.34375, H - bb - fw22
@@ -2312,7 +2312,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, H + 40
                                line W * 0.421875, H - bb - fw27
                                line W * 0.4375, H - bb - fw28
@@ -2342,7 +2342,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, H + 40
                                line W * 0.515625, H - bb - fw33
                                line W * 0.53125, H - bb - fw34
@@ -2372,7 +2372,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, H + 40
                                line W * 0.609375, H - bb - fw39
                                line W * 0.625, H - bb - fw40
@@ -2402,7 +2402,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, H + 40
                                line W * 0.703125, H - bb - fw45
                                line W * 0.71875, H - bb - fw46
@@ -2432,7 +2432,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, H + 40
                                line W * 0.796875, H - bb - fw51
                                line W * 0.8125, H - bb - fw52
@@ -2476,7 +2476,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, H + 40
                                line W * 0.890625, H - bb - fw57
                                line W * 0.90625, H - bb - fw58
@@ -2530,7 +2530,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.0625
                                line bs + sw3, H * 0.0625
                                line bs + sw4, H * 0.083333
@@ -2561,7 +2561,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.1875
                                line bs + sw9, H * 0.1875
                                line bs + sw10, H * 0.208333
@@ -2592,7 +2592,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.3125
                                line bs + sw15, H * 0.3125
                                line bs + sw16, H * 0.333333
@@ -2622,7 +2622,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.4375
                                line bs + sw21, H * 0.4375
                                line bs + sw22, H * 0.458333
@@ -2652,7 +2652,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.5625
                                line bs + sw27, H * 0.5625
                                line bs + sw28, H * 0.583333
@@ -2683,7 +2683,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.6875
                                line bs + sw33, H * 0.6875
                                line bs + sw34, H * 0.708333
@@ -2714,7 +2714,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.8125
                                line bs + sw39, H * 0.8125
                                line bs + sw40, H * 0.833333
@@ -2757,7 +2757,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.0625
                                line W - bs - sw3, H * 0.0625
                                line W - bs - sw4, H * 0.083333
@@ -2788,7 +2788,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.1875
                                line W - bs - sw9, H * 0.1875
                                line W - bs - sw10, H * 0.208333
@@ -2819,7 +2819,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.3125
                                line W - bs - sw15, H * 0.3125
                                line W - bs - sw16, H * 0.333333
@@ -2849,7 +2849,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.4375
                                line W - bs - sw21, H * 0.4375
                                line W - bs - sw22, H * 0.458333
@@ -2879,7 +2879,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.5625
                                line W - bs - sw27, H * 0.5625
                                line W - bs - sw28, H * 0.583333
@@ -2910,7 +2910,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.6875
                                line W - bs - sw33, H * 0.6875
                                line W - bs - sw34, H * 0.708333
@@ -2941,7 +2941,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.8125
                                line W - bs - sw39, H * 0.8125
                                line W - bs - sw40, H * 0.833333
@@ -2986,7 +2986,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0, -40
                                line W * 0, bt + ft0
                                line W * 0.015625, bt + ft1
@@ -3015,26 +3015,26 @@ scene Frame {
                                line -40, H * 0.208333
                                close }
                         path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.09375 + 48 and px0 + pw0 > -40 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.09375 + 48 and px1 + pw1 > -40 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.09375 + 48 and px2 + pw2 > -40 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.09375 + 48 and px3 + pw3 > -40 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.09375 + 48 and px4 + pw4 > -40 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.09375 + 48 and px5 + pw5 > -40 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.09375 + 48 and px6 + pw6 > -40 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.09375 + 48 and px7 + pw7 > -40 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.09375 + 48 and px8 + pw8 > -40 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.09375 + 48 and px9 + pw9 > -40 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.09375 + 48 and px10 + pw10 > -40 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.09375 + 48 and px11 + pw11 > -40 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.09375 + 48 and px12 + pw12 > -40 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.09375 + 48 and px13 + pw13 > -40 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.09375 + 48 and px14 + pw14 > -40 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.09375 + 48 and px15 + pw15 > -40 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.09375 + 48 and px16 + pw16 > -40 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.09375 + 48 and px17 + pw17 > -40 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.09375 + 48 and px18 + pw18 > -40 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.09375 + 48 and px19 + pw19 > -40 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.09375 + 48 and px0 + pw0 > -40 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.09375 + 48 and px1 + pw1 > -40 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.09375 + 48 and px2 + pw2 > -40 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.09375 + 48 and px3 + pw3 > -40 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.09375 + 48 and px4 + pw4 > -40 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.09375 + 48 and px5 + pw5 > -40 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.09375 + 48 and px6 + pw6 > -40 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.09375 + 48 and px7 + pw7 > -40 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.09375 + 48 and px8 + pw8 > -40 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.09375 + 48 and px9 + pw9 > -40 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.09375 + 48 and px10 + pw10 > -40 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.09375 + 48 and px11 + pw11 > -40 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.09375 + 48 and px12 + pw12 > -40 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.09375 + 48 and px13 + pw13 > -40 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.09375 + 48 and px14 + pw14 > -40 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.09375 + 48 and px15 + pw15 > -40 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.09375 + 48 and px16 + pw16 > -40 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.09375 + 48 and px17 + pw17 > -40 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.09375 + 48 and px18 + pw18 > -40 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.09375 + 48 and px19 + pw19 > -40 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3050,7 +3050,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, -40
                                line W * 0.046875, bt + ft3
                                line W * 0.0625, bt + ft4
@@ -3082,26 +3082,26 @@ scene Frame {
                                line -40, H * 0.208333
                                close }
                         path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.1875 + 48 and px0 + pw0 > W * 0.09375 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.1875 + 48 and px1 + pw1 > W * 0.09375 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.1875 + 48 and px2 + pw2 > W * 0.09375 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.1875 + 48 and px3 + pw3 > W * 0.09375 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.1875 + 48 and px4 + pw4 > W * 0.09375 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.1875 + 48 and px5 + pw5 > W * 0.09375 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.1875 + 48 and px6 + pw6 > W * 0.09375 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.1875 + 48 and px7 + pw7 > W * 0.09375 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.1875 + 48 and px8 + pw8 > W * 0.09375 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.1875 + 48 and px9 + pw9 > W * 0.09375 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.1875 + 48 and px10 + pw10 > W * 0.09375 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.1875 + 48 and px11 + pw11 > W * 0.09375 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.1875 + 48 and px12 + pw12 > W * 0.09375 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.1875 + 48 and px13 + pw13 > W * 0.09375 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.1875 + 48 and px14 + pw14 > W * 0.09375 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.1875 + 48 and px15 + pw15 > W * 0.09375 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.1875 + 48 and px16 + pw16 > W * 0.09375 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.1875 + 48 and px17 + pw17 > W * 0.09375 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.1875 + 48 and px18 + pw18 > W * 0.09375 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.1875 + 48 and px19 + pw19 > W * 0.09375 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.1875 + 48 and px0 + pw0 > W * 0.09375 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.1875 + 48 and px1 + pw1 > W * 0.09375 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.1875 + 48 and px2 + pw2 > W * 0.09375 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.1875 + 48 and px3 + pw3 > W * 0.09375 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.1875 + 48 and px4 + pw4 > W * 0.09375 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.1875 + 48 and px5 + pw5 > W * 0.09375 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.1875 + 48 and px6 + pw6 > W * 0.09375 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.1875 + 48 and px7 + pw7 > W * 0.09375 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.1875 + 48 and px8 + pw8 > W * 0.09375 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.1875 + 48 and px9 + pw9 > W * 0.09375 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.1875 + 48 and px10 + pw10 > W * 0.09375 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.1875 + 48 and px11 + pw11 > W * 0.09375 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.1875 + 48 and px12 + pw12 > W * 0.09375 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.1875 + 48 and px13 + pw13 > W * 0.09375 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.1875 + 48 and px14 + pw14 > W * 0.09375 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.1875 + 48 and px15 + pw15 > W * 0.09375 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.1875 + 48 and px16 + pw16 > W * 0.09375 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.1875 + 48 and px17 + pw17 > W * 0.09375 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.1875 + 48 and px18 + pw18 > W * 0.09375 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.1875 + 48 and px19 + pw19 > W * 0.09375 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3117,7 +3117,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, -40
                                line W * 0.140625, bt + ft9
                                line W * 0.15625, bt + ft10
@@ -3134,26 +3134,26 @@ scene Frame {
                                line W * 0.328125, bt + ft21
                                line W * 0.328125, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.28125 + 48 and px0 + pw0 > W * 0.1875 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.28125 + 48 and px1 + pw1 > W * 0.1875 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.28125 + 48 and px2 + pw2 > W * 0.1875 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.28125 + 48 and px3 + pw3 > W * 0.1875 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.28125 + 48 and px4 + pw4 > W * 0.1875 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.28125 + 48 and px5 + pw5 > W * 0.1875 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.28125 + 48 and px6 + pw6 > W * 0.1875 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.28125 + 48 and px7 + pw7 > W * 0.1875 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.28125 + 48 and px8 + pw8 > W * 0.1875 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.28125 + 48 and px9 + pw9 > W * 0.1875 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.28125 + 48 and px10 + pw10 > W * 0.1875 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.28125 + 48 and px11 + pw11 > W * 0.1875 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.28125 + 48 and px12 + pw12 > W * 0.1875 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.28125 + 48 and px13 + pw13 > W * 0.1875 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.28125 + 48 and px14 + pw14 > W * 0.1875 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.28125 + 48 and px15 + pw15 > W * 0.1875 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.28125 + 48 and px16 + pw16 > W * 0.1875 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.28125 + 48 and px17 + pw17 > W * 0.1875 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.28125 + 48 and px18 + pw18 > W * 0.1875 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.28125 + 48 and px19 + pw19 > W * 0.1875 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.28125 + 48 and px0 + pw0 > W * 0.1875 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.28125 + 48 and px1 + pw1 > W * 0.1875 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.28125 + 48 and px2 + pw2 > W * 0.1875 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.28125 + 48 and px3 + pw3 > W * 0.1875 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.28125 + 48 and px4 + pw4 > W * 0.1875 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.28125 + 48 and px5 + pw5 > W * 0.1875 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.28125 + 48 and px6 + pw6 > W * 0.1875 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.28125 + 48 and px7 + pw7 > W * 0.1875 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.28125 + 48 and px8 + pw8 > W * 0.1875 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.28125 + 48 and px9 + pw9 > W * 0.1875 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.28125 + 48 and px10 + pw10 > W * 0.1875 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.28125 + 48 and px11 + pw11 > W * 0.1875 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.28125 + 48 and px12 + pw12 > W * 0.1875 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.28125 + 48 and px13 + pw13 > W * 0.1875 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.28125 + 48 and px14 + pw14 > W * 0.1875 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.28125 + 48 and px15 + pw15 > W * 0.1875 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.28125 + 48 and px16 + pw16 > W * 0.1875 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.28125 + 48 and px17 + pw17 > W * 0.1875 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.28125 + 48 and px18 + pw18 > W * 0.1875 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.28125 + 48 and px19 + pw19 > W * 0.1875 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3169,7 +3169,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, -40
                                line W * 0.234375, bt + ft15
                                line W * 0.25, bt + ft16
@@ -3186,26 +3186,26 @@ scene Frame {
                                line W * 0.421875, bt + ft27
                                line W * 0.421875, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.375 + 48 and px0 + pw0 > W * 0.28125 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.375 + 48 and px1 + pw1 > W * 0.28125 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.375 + 48 and px2 + pw2 > W * 0.28125 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.375 + 48 and px3 + pw3 > W * 0.28125 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.375 + 48 and px4 + pw4 > W * 0.28125 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.375 + 48 and px5 + pw5 > W * 0.28125 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.375 + 48 and px6 + pw6 > W * 0.28125 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.375 + 48 and px7 + pw7 > W * 0.28125 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.375 + 48 and px8 + pw8 > W * 0.28125 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.375 + 48 and px9 + pw9 > W * 0.28125 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.375 + 48 and px10 + pw10 > W * 0.28125 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.375 + 48 and px11 + pw11 > W * 0.28125 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.375 + 48 and px12 + pw12 > W * 0.28125 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.375 + 48 and px13 + pw13 > W * 0.28125 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.375 + 48 and px14 + pw14 > W * 0.28125 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.375 + 48 and px15 + pw15 > W * 0.28125 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.375 + 48 and px16 + pw16 > W * 0.28125 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.375 + 48 and px17 + pw17 > W * 0.28125 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.375 + 48 and px18 + pw18 > W * 0.28125 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.375 + 48 and px19 + pw19 > W * 0.28125 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.375 + 48 and px0 + pw0 > W * 0.28125 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.375 + 48 and px1 + pw1 > W * 0.28125 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.375 + 48 and px2 + pw2 > W * 0.28125 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.375 + 48 and px3 + pw3 > W * 0.28125 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.375 + 48 and px4 + pw4 > W * 0.28125 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.375 + 48 and px5 + pw5 > W * 0.28125 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.375 + 48 and px6 + pw6 > W * 0.28125 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.375 + 48 and px7 + pw7 > W * 0.28125 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.375 + 48 and px8 + pw8 > W * 0.28125 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.375 + 48 and px9 + pw9 > W * 0.28125 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.375 + 48 and px10 + pw10 > W * 0.28125 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.375 + 48 and px11 + pw11 > W * 0.28125 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.375 + 48 and px12 + pw12 > W * 0.28125 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.375 + 48 and px13 + pw13 > W * 0.28125 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.375 + 48 and px14 + pw14 > W * 0.28125 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.375 + 48 and px15 + pw15 > W * 0.28125 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.375 + 48 and px16 + pw16 > W * 0.28125 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.375 + 48 and px17 + pw17 > W * 0.28125 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.375 + 48 and px18 + pw18 > W * 0.28125 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.375 + 48 and px19 + pw19 > W * 0.28125 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3221,7 +3221,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, -40
                                line W * 0.328125, bt + ft21
                                line W * 0.34375, bt + ft22
@@ -3238,26 +3238,26 @@ scene Frame {
                                line W * 0.515625, bt + ft33
                                line W * 0.515625, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.46875 + 48 and px0 + pw0 > W * 0.375 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.46875 + 48 and px1 + pw1 > W * 0.375 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.46875 + 48 and px2 + pw2 > W * 0.375 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.46875 + 48 and px3 + pw3 > W * 0.375 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.46875 + 48 and px4 + pw4 > W * 0.375 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.46875 + 48 and px5 + pw5 > W * 0.375 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.46875 + 48 and px6 + pw6 > W * 0.375 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.46875 + 48 and px7 + pw7 > W * 0.375 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.46875 + 48 and px8 + pw8 > W * 0.375 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.46875 + 48 and px9 + pw9 > W * 0.375 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.46875 + 48 and px10 + pw10 > W * 0.375 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.46875 + 48 and px11 + pw11 > W * 0.375 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.46875 + 48 and px12 + pw12 > W * 0.375 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.46875 + 48 and px13 + pw13 > W * 0.375 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.46875 + 48 and px14 + pw14 > W * 0.375 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.46875 + 48 and px15 + pw15 > W * 0.375 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.46875 + 48 and px16 + pw16 > W * 0.375 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.46875 + 48 and px17 + pw17 > W * 0.375 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.46875 + 48 and px18 + pw18 > W * 0.375 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.46875 + 48 and px19 + pw19 > W * 0.375 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.46875 + 48 and px0 + pw0 > W * 0.375 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.46875 + 48 and px1 + pw1 > W * 0.375 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.46875 + 48 and px2 + pw2 > W * 0.375 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.46875 + 48 and px3 + pw3 > W * 0.375 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.46875 + 48 and px4 + pw4 > W * 0.375 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.46875 + 48 and px5 + pw5 > W * 0.375 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.46875 + 48 and px6 + pw6 > W * 0.375 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.46875 + 48 and px7 + pw7 > W * 0.375 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.46875 + 48 and px8 + pw8 > W * 0.375 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.46875 + 48 and px9 + pw9 > W * 0.375 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.46875 + 48 and px10 + pw10 > W * 0.375 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.46875 + 48 and px11 + pw11 > W * 0.375 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.46875 + 48 and px12 + pw12 > W * 0.375 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.46875 + 48 and px13 + pw13 > W * 0.375 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.46875 + 48 and px14 + pw14 > W * 0.375 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.46875 + 48 and px15 + pw15 > W * 0.375 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.46875 + 48 and px16 + pw16 > W * 0.375 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.46875 + 48 and px17 + pw17 > W * 0.375 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.46875 + 48 and px18 + pw18 > W * 0.375 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.46875 + 48 and px19 + pw19 > W * 0.375 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3273,7 +3273,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, -40
                                line W * 0.421875, bt + ft27
                                line W * 0.4375, bt + ft28
@@ -3290,26 +3290,26 @@ scene Frame {
                                line W * 0.609375, bt + ft39
                                line W * 0.609375, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.5625 + 48 and px0 + pw0 > W * 0.46875 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.5625 + 48 and px1 + pw1 > W * 0.46875 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.5625 + 48 and px2 + pw2 > W * 0.46875 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.5625 + 48 and px3 + pw3 > W * 0.46875 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.5625 + 48 and px4 + pw4 > W * 0.46875 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.5625 + 48 and px5 + pw5 > W * 0.46875 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.5625 + 48 and px6 + pw6 > W * 0.46875 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.5625 + 48 and px7 + pw7 > W * 0.46875 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.5625 + 48 and px8 + pw8 > W * 0.46875 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.5625 + 48 and px9 + pw9 > W * 0.46875 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.5625 + 48 and px10 + pw10 > W * 0.46875 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.5625 + 48 and px11 + pw11 > W * 0.46875 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.5625 + 48 and px12 + pw12 > W * 0.46875 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.5625 + 48 and px13 + pw13 > W * 0.46875 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.5625 + 48 and px14 + pw14 > W * 0.46875 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.5625 + 48 and px15 + pw15 > W * 0.46875 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.5625 + 48 and px16 + pw16 > W * 0.46875 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.5625 + 48 and px17 + pw17 > W * 0.46875 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.5625 + 48 and px18 + pw18 > W * 0.46875 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.5625 + 48 and px19 + pw19 > W * 0.46875 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.5625 + 48 and px0 + pw0 > W * 0.46875 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.5625 + 48 and px1 + pw1 > W * 0.46875 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.5625 + 48 and px2 + pw2 > W * 0.46875 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.5625 + 48 and px3 + pw3 > W * 0.46875 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.5625 + 48 and px4 + pw4 > W * 0.46875 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.5625 + 48 and px5 + pw5 > W * 0.46875 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.5625 + 48 and px6 + pw6 > W * 0.46875 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.5625 + 48 and px7 + pw7 > W * 0.46875 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.5625 + 48 and px8 + pw8 > W * 0.46875 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.5625 + 48 and px9 + pw9 > W * 0.46875 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.5625 + 48 and px10 + pw10 > W * 0.46875 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.5625 + 48 and px11 + pw11 > W * 0.46875 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.5625 + 48 and px12 + pw12 > W * 0.46875 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.5625 + 48 and px13 + pw13 > W * 0.46875 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.5625 + 48 and px14 + pw14 > W * 0.46875 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.5625 + 48 and px15 + pw15 > W * 0.46875 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.5625 + 48 and px16 + pw16 > W * 0.46875 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.5625 + 48 and px17 + pw17 > W * 0.46875 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.5625 + 48 and px18 + pw18 > W * 0.46875 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.5625 + 48 and px19 + pw19 > W * 0.46875 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3325,7 +3325,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, -40
                                line W * 0.515625, bt + ft33
                                line W * 0.53125, bt + ft34
@@ -3342,26 +3342,26 @@ scene Frame {
                                line W * 0.703125, bt + ft45
                                line W * 0.703125, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.65625 + 48 and px0 + pw0 > W * 0.5625 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.65625 + 48 and px1 + pw1 > W * 0.5625 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.65625 + 48 and px2 + pw2 > W * 0.5625 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.65625 + 48 and px3 + pw3 > W * 0.5625 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.65625 + 48 and px4 + pw4 > W * 0.5625 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.65625 + 48 and px5 + pw5 > W * 0.5625 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.65625 + 48 and px6 + pw6 > W * 0.5625 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.65625 + 48 and px7 + pw7 > W * 0.5625 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.65625 + 48 and px8 + pw8 > W * 0.5625 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.65625 + 48 and px9 + pw9 > W * 0.5625 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.65625 + 48 and px10 + pw10 > W * 0.5625 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.65625 + 48 and px11 + pw11 > W * 0.5625 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.65625 + 48 and px12 + pw12 > W * 0.5625 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.65625 + 48 and px13 + pw13 > W * 0.5625 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.65625 + 48 and px14 + pw14 > W * 0.5625 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.65625 + 48 and px15 + pw15 > W * 0.5625 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.65625 + 48 and px16 + pw16 > W * 0.5625 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.65625 + 48 and px17 + pw17 > W * 0.5625 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.65625 + 48 and px18 + pw18 > W * 0.5625 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.65625 + 48 and px19 + pw19 > W * 0.5625 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.65625 + 48 and px0 + pw0 > W * 0.5625 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.65625 + 48 and px1 + pw1 > W * 0.5625 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.65625 + 48 and px2 + pw2 > W * 0.5625 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.65625 + 48 and px3 + pw3 > W * 0.5625 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.65625 + 48 and px4 + pw4 > W * 0.5625 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.65625 + 48 and px5 + pw5 > W * 0.5625 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.65625 + 48 and px6 + pw6 > W * 0.5625 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.65625 + 48 and px7 + pw7 > W * 0.5625 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.65625 + 48 and px8 + pw8 > W * 0.5625 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.65625 + 48 and px9 + pw9 > W * 0.5625 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.65625 + 48 and px10 + pw10 > W * 0.5625 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.65625 + 48 and px11 + pw11 > W * 0.5625 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.65625 + 48 and px12 + pw12 > W * 0.5625 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.65625 + 48 and px13 + pw13 > W * 0.5625 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.65625 + 48 and px14 + pw14 > W * 0.5625 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.65625 + 48 and px15 + pw15 > W * 0.5625 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.65625 + 48 and px16 + pw16 > W * 0.5625 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.65625 + 48 and px17 + pw17 > W * 0.5625 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.65625 + 48 and px18 + pw18 > W * 0.5625 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.65625 + 48 and px19 + pw19 > W * 0.5625 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3377,7 +3377,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, -40
                                line W * 0.609375, bt + ft39
                                line W * 0.625, bt + ft40
@@ -3394,26 +3394,26 @@ scene Frame {
                                line W * 0.796875, bt + ft51
                                line W * 0.796875, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.75 + 48 and px0 + pw0 > W * 0.65625 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.75 + 48 and px1 + pw1 > W * 0.65625 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.75 + 48 and px2 + pw2 > W * 0.65625 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.75 + 48 and px3 + pw3 > W * 0.65625 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.75 + 48 and px4 + pw4 > W * 0.65625 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.75 + 48 and px5 + pw5 > W * 0.65625 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.75 + 48 and px6 + pw6 > W * 0.65625 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.75 + 48 and px7 + pw7 > W * 0.65625 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.75 + 48 and px8 + pw8 > W * 0.65625 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.75 + 48 and px9 + pw9 > W * 0.65625 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.75 + 48 and px10 + pw10 > W * 0.65625 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.75 + 48 and px11 + pw11 > W * 0.65625 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.75 + 48 and px12 + pw12 > W * 0.65625 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.75 + 48 and px13 + pw13 > W * 0.65625 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.75 + 48 and px14 + pw14 > W * 0.65625 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.75 + 48 and px15 + pw15 > W * 0.65625 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.75 + 48 and px16 + pw16 > W * 0.65625 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.75 + 48 and px17 + pw17 > W * 0.65625 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.75 + 48 and px18 + pw18 > W * 0.65625 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.75 + 48 and px19 + pw19 > W * 0.65625 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.75 + 48 and px0 + pw0 > W * 0.65625 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.75 + 48 and px1 + pw1 > W * 0.65625 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.75 + 48 and px2 + pw2 > W * 0.65625 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.75 + 48 and px3 + pw3 > W * 0.65625 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.75 + 48 and px4 + pw4 > W * 0.65625 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.75 + 48 and px5 + pw5 > W * 0.65625 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.75 + 48 and px6 + pw6 > W * 0.65625 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.75 + 48 and px7 + pw7 > W * 0.65625 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.75 + 48 and px8 + pw8 > W * 0.65625 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.75 + 48 and px9 + pw9 > W * 0.65625 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.75 + 48 and px10 + pw10 > W * 0.65625 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.75 + 48 and px11 + pw11 > W * 0.65625 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.75 + 48 and px12 + pw12 > W * 0.65625 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.75 + 48 and px13 + pw13 > W * 0.65625 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.75 + 48 and px14 + pw14 > W * 0.65625 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.75 + 48 and px15 + pw15 > W * 0.65625 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.75 + 48 and px16 + pw16 > W * 0.65625 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.75 + 48 and px17 + pw17 > W * 0.65625 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.75 + 48 and px18 + pw18 > W * 0.65625 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.75 + 48 and px19 + pw19 > W * 0.65625 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3429,7 +3429,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, -40
                                line W * 0.703125, bt + ft45
                                line W * 0.71875, bt + ft46
@@ -3446,26 +3446,26 @@ scene Frame {
                                line W * 0.890625, bt + ft57
                                line W * 0.890625, -40
                                close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.84375 + 48 and px0 + pw0 > W * 0.75 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.84375 + 48 and px1 + pw1 > W * 0.75 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.84375 + 48 and px2 + pw2 > W * 0.75 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.84375 + 48 and px3 + pw3 > W * 0.75 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.84375 + 48 and px4 + pw4 > W * 0.75 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.84375 + 48 and px5 + pw5 > W * 0.75 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.84375 + 48 and px6 + pw6 > W * 0.75 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.84375 + 48 and px7 + pw7 > W * 0.75 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.84375 + 48 and px8 + pw8 > W * 0.75 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.84375 + 48 and px9 + pw9 > W * 0.75 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.84375 + 48 and px10 + pw10 > W * 0.75 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.84375 + 48 and px11 + pw11 > W * 0.75 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.84375 + 48 and px12 + pw12 > W * 0.75 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.84375 + 48 and px13 + pw13 > W * 0.75 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.84375 + 48 and px14 + pw14 > W * 0.75 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.84375 + 48 and px15 + pw15 > W * 0.75 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.84375 + 48 and px16 + pw16 > W * 0.75 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.84375 + 48 and px17 + pw17 > W * 0.75 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.84375 + 48 and px18 + pw18 > W * 0.75 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.84375 + 48 and px19 + pw19 > W * 0.75 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.84375 + 48 and px0 + pw0 > W * 0.75 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.84375 + 48 and px1 + pw1 > W * 0.75 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.84375 + 48 and px2 + pw2 > W * 0.75 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.84375 + 48 and px3 + pw3 > W * 0.75 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.84375 + 48 and px4 + pw4 > W * 0.75 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.84375 + 48 and px5 + pw5 > W * 0.75 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.84375 + 48 and px6 + pw6 > W * 0.75 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.84375 + 48 and px7 + pw7 > W * 0.75 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.84375 + 48 and px8 + pw8 > W * 0.75 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.84375 + 48 and px9 + pw9 > W * 0.75 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.84375 + 48 and px10 + pw10 > W * 0.75 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.84375 + 48 and px11 + pw11 > W * 0.75 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.84375 + 48 and px12 + pw12 > W * 0.75 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.84375 + 48 and px13 + pw13 > W * 0.75 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.84375 + 48 and px14 + pw14 > W * 0.75 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.84375 + 48 and px15 + pw15 > W * 0.75 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.84375 + 48 and px16 + pw16 > W * 0.75 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.84375 + 48 and px17 + pw17 > W * 0.75 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.84375 + 48 and px18 + pw18 > W * 0.75 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.84375 + 48 and px19 + pw19 > W * 0.75 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3481,7 +3481,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, -40
                                line W * 0.796875, bt + ft51
                                line W * 0.8125, bt + ft52
@@ -3513,26 +3513,26 @@ scene Frame {
                                line W + 40, H * 0.208333
                                close }
                         path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.9375 + 48 and px0 + pw0 > W * 0.84375 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.9375 + 48 and px1 + pw1 > W * 0.84375 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.9375 + 48 and px2 + pw2 > W * 0.84375 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.9375 + 48 and px3 + pw3 > W * 0.84375 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.9375 + 48 and px4 + pw4 > W * 0.84375 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.9375 + 48 and px5 + pw5 > W * 0.84375 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.9375 + 48 and px6 + pw6 > W * 0.84375 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.9375 + 48 and px7 + pw7 > W * 0.84375 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.9375 + 48 and px8 + pw8 > W * 0.84375 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.9375 + 48 and px9 + pw9 > W * 0.84375 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.9375 + 48 and px10 + pw10 > W * 0.84375 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.9375 + 48 and px11 + pw11 > W * 0.84375 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.9375 + 48 and px12 + pw12 > W * 0.84375 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.9375 + 48 and px13 + pw13 > W * 0.84375 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.9375 + 48 and px14 + pw14 > W * 0.84375 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.9375 + 48 and px15 + pw15 > W * 0.84375 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.9375 + 48 and px16 + pw16 > W * 0.84375 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.9375 + 48 and px17 + pw17 > W * 0.84375 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.9375 + 48 and px18 + pw18 > W * 0.84375 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.9375 + 48 and px19 + pw19 > W * 0.84375 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.9375 + 48 and px0 + pw0 > W * 0.84375 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.9375 + 48 and px1 + pw1 > W * 0.84375 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.9375 + 48 and px2 + pw2 > W * 0.84375 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W * 0.9375 + 48 and px3 + pw3 > W * 0.84375 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W * 0.9375 + 48 and px4 + pw4 > W * 0.84375 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W * 0.9375 + 48 and px5 + pw5 > W * 0.84375 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W * 0.9375 + 48 and px6 + pw6 > W * 0.84375 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W * 0.9375 + 48 and px7 + pw7 > W * 0.84375 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W * 0.9375 + 48 and px8 + pw8 > W * 0.84375 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W * 0.9375 + 48 and px9 + pw9 > W * 0.84375 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W * 0.9375 + 48 and px10 + pw10 > W * 0.84375 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W * 0.9375 + 48 and px11 + pw11 > W * 0.84375 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W * 0.9375 + 48 and px12 + pw12 > W * 0.84375 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W * 0.9375 + 48 and px13 + pw13 > W * 0.84375 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W * 0.9375 + 48 and px14 + pw14 > W * 0.84375 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W * 0.9375 + 48 and px15 + pw15 > W * 0.84375 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W * 0.9375 + 48 and px16 + pw16 > W * 0.84375 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.9375 + 48 and px17 + pw17 > W * 0.84375 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.9375 + 48 and px18 + pw18 > W * 0.84375 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.9375 + 48 and px19 + pw19 > W * 0.84375 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3548,7 +3548,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, -40
                                line W * 0.890625, bt + ft57
                                line W * 0.90625, bt + ft58
@@ -3575,26 +3575,26 @@ scene Frame {
                                line W + 40, H * 0.208333
                                close }
                         path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
-                        box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W + 40 + 48 and px0 + pw0 > W * 0.9375 - 48 }
-                        box { from: px1, py1; size: if(pj1, pw1, 0), if(pj1, ph1, 0); corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W + 40 + 48 and px1 + pw1 > W * 0.9375 - 48 }
-                        box { from: px2, py2; size: if(pj2, pw2, 0), if(pj2, ph2, 0); corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W + 40 + 48 and px2 + pw2 > W * 0.9375 - 48 }
-                        box { from: px3, py3; size: if(pj3, pw3, 0), if(pj3, ph3, 0); corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W + 40 + 48 and px3 + pw3 > W * 0.9375 - 48 }
-                        box { from: px4, py4; size: if(pj4, pw4, 0), if(pj4, ph4, 0); corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W + 40 + 48 and px4 + pw4 > W * 0.9375 - 48 }
-                        box { from: px5, py5; size: if(pj5, pw5, 0), if(pj5, ph5, 0); corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W + 40 + 48 and px5 + pw5 > W * 0.9375 - 48 }
-                        box { from: px6, py6; size: if(pj6, pw6, 0), if(pj6, ph6, 0); corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W + 40 + 48 and px6 + pw6 > W * 0.9375 - 48 }
-                        box { from: px7, py7; size: if(pj7, pw7, 0), if(pj7, ph7, 0); corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W + 40 + 48 and px7 + pw7 > W * 0.9375 - 48 }
-                        box { from: px8, py8; size: if(pj8, pw8, 0), if(pj8, ph8, 0); corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W + 40 + 48 and px8 + pw8 > W * 0.9375 - 48 }
-                        box { from: px9, py9; size: if(pj9, pw9, 0), if(pj9, ph9, 0); corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W + 40 + 48 and px9 + pw9 > W * 0.9375 - 48 }
-                        box { from: px10, py10; size: if(pj10, pw10, 0), if(pj10, ph10, 0); corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W + 40 + 48 and px10 + pw10 > W * 0.9375 - 48 }
-                        box { from: px11, py11; size: if(pj11, pw11, 0), if(pj11, ph11, 0); corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W + 40 + 48 and px11 + pw11 > W * 0.9375 - 48 }
-                        box { from: px12, py12; size: if(pj12, pw12, 0), if(pj12, ph12, 0); corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W + 40 + 48 and px12 + pw12 > W * 0.9375 - 48 }
-                        box { from: px13, py13; size: if(pj13, pw13, 0), if(pj13, ph13, 0); corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W + 40 + 48 and px13 + pw13 > W * 0.9375 - 48 }
-                        box { from: px14, py14; size: if(pj14, pw14, 0), if(pj14, ph14, 0); corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W + 40 + 48 and px14 + pw14 > W * 0.9375 - 48 }
-                        box { from: px15, py15; size: if(pj15, pw15, 0), if(pj15, ph15, 0); corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W + 40 + 48 and px15 + pw15 > W * 0.9375 - 48 }
-                        box { from: px16, py16; size: if(pj16, pw16, 0), if(pj16, ph16, 0); corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W + 40 + 48 and px16 + pw16 > W * 0.9375 - 48 }
-                        box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W + 40 + 48 and px17 + pw17 > W * 0.9375 - 48 }
-                        box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W + 40 + 48 and px18 + pw18 > W * 0.9375 - 48 }
-                        box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W + 40 + 48 and px19 + pw19 > W * 0.9375 - 48 }
+                        box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W + 40 + 48 and px0 + pw0 > W * 0.9375 - 48 }
+                        box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W + 40 + 48 and px1 + pw1 > W * 0.9375 - 48 }
+                        box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W + 40 + 48 and px2 + pw2 > W * 0.9375 - 48 }
+                        box { from: px3, py3; size: pw3, ph3; corner: pr3; blend: pk3; show: pw3 > 0 and px3 < W + 40 + 48 and px3 + pw3 > W * 0.9375 - 48 }
+                        box { from: px4, py4; size: pw4, ph4; corner: pr4; blend: pk4; show: pw4 > 0 and px4 < W + 40 + 48 and px4 + pw4 > W * 0.9375 - 48 }
+                        box { from: px5, py5; size: pw5, ph5; corner: pr5; blend: pk5; show: pw5 > 0 and px5 < W + 40 + 48 and px5 + pw5 > W * 0.9375 - 48 }
+                        box { from: px6, py6; size: pw6, ph6; corner: pr6; blend: pk6; show: pw6 > 0 and px6 < W + 40 + 48 and px6 + pw6 > W * 0.9375 - 48 }
+                        box { from: px7, py7; size: pw7, ph7; corner: pr7; blend: pk7; show: pw7 > 0 and px7 < W + 40 + 48 and px7 + pw7 > W * 0.9375 - 48 }
+                        box { from: px8, py8; size: pw8, ph8; corner: pr8; blend: pk8; show: pw8 > 0 and px8 < W + 40 + 48 and px8 + pw8 > W * 0.9375 - 48 }
+                        box { from: px9, py9; size: pw9, ph9; corner: pr9; blend: pk9; show: pw9 > 0 and px9 < W + 40 + 48 and px9 + pw9 > W * 0.9375 - 48 }
+                        box { from: px10, py10; size: pw10, ph10; corner: pr10; blend: pk10; show: pw10 > 0 and px10 < W + 40 + 48 and px10 + pw10 > W * 0.9375 - 48 }
+                        box { from: px11, py11; size: pw11, ph11; corner: pr11; blend: pk11; show: pw11 > 0 and px11 < W + 40 + 48 and px11 + pw11 > W * 0.9375 - 48 }
+                        box { from: px12, py12; size: pw12, ph12; corner: pr12; blend: pk12; show: pw12 > 0 and px12 < W + 40 + 48 and px12 + pw12 > W * 0.9375 - 48 }
+                        box { from: px13, py13; size: pw13, ph13; corner: pr13; blend: pk13; show: pw13 > 0 and px13 < W + 40 + 48 and px13 + pw13 > W * 0.9375 - 48 }
+                        box { from: px14, py14; size: pw14, ph14; corner: pr14; blend: pk14; show: pw14 > 0 and px14 < W + 40 + 48 and px14 + pw14 > W * 0.9375 - 48 }
+                        box { from: px15, py15; size: pw15, ph15; corner: pr15; blend: pk15; show: pw15 > 0 and px15 < W + 40 + 48 and px15 + pw15 > W * 0.9375 - 48 }
+                        box { from: px16, py16; size: pw16, ph16; corner: pr16; blend: pk16; show: pw16 > 0 and px16 < W + 40 + 48 and px16 + pw16 > W * 0.9375 - 48 }
+                        box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W + 40 + 48 and px17 + pw17 > W * 0.9375 - 48 }
+                        box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W + 40 + 48 and px18 + pw18 > W * 0.9375 - 48 }
+                        box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W + 40 + 48 and px19 + pw19 > W * 0.9375 - 48 }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3610,7 +3610,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0, H + 40
                                line W * 0, H - bb - fw0
                                line W * 0.015625, H - bb - fw1
@@ -3652,7 +3652,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, H + 40
                                line W * 0.046875, H - bb - fw3
                                line W * 0.0625, H - bb - fw4
@@ -3697,7 +3697,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, H + 40
                                line W * 0.140625, H - bb - fw9
                                line W * 0.15625, H - bb - fw10
@@ -3728,7 +3728,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, H + 40
                                line W * 0.234375, H - bb - fw15
                                line W * 0.25, H - bb - fw16
@@ -3759,7 +3759,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, H + 40
                                line W * 0.328125, H - bb - fw21
                                line W * 0.34375, H - bb - fw22
@@ -3790,7 +3790,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, H + 40
                                line W * 0.421875, H - bb - fw27
                                line W * 0.4375, H - bb - fw28
@@ -3821,7 +3821,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, H + 40
                                line W * 0.515625, H - bb - fw33
                                line W * 0.53125, H - bb - fw34
@@ -3852,7 +3852,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, H + 40
                                line W * 0.609375, H - bb - fw39
                                line W * 0.625, H - bb - fw40
@@ -3883,7 +3883,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, H + 40
                                line W * 0.703125, H - bb - fw45
                                line W * 0.71875, H - bb - fw46
@@ -3914,7 +3914,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, H + 40
                                line W * 0.796875, H - bb - fw51
                                line W * 0.8125, H - bb - fw52
@@ -3959,7 +3959,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, H + 40
                                line W * 0.890625, H - bb - fw57
                                line W * 0.90625, H - bb - fw58
@@ -3999,7 +3999,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4014,7 +4014,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4029,7 +4029,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4044,7 +4044,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4059,7 +4059,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4074,7 +4074,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4089,7 +4089,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4104,7 +4104,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4119,7 +4119,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4134,7 +4134,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4149,7 +4149,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4164,7 +4164,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4179,7 +4179,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -4194,7 +4194,7 @@ scene Frame {
                         frost: 1% * st_frost * if(glassy, 1, 0)
                         smoke: 1% * st_smoke * if(glassy, 1, 0)
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
+                        border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }

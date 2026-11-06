@@ -145,6 +145,10 @@ PIECES = [(f"px{i}", f"px{i} + pw{i}",
            f"box {{ from: px{i}, py{i}; size: if(pj{i}, pw{i}, 0), if(pj{i}, ph{i}, 0); corner: pr{i}; blend: pk{i}; show: pw{i} > 0", "}")
           for i in range(SLOTS)]
 
+PLACE_PIECES = [(f"px{i}", f"px{i} + pw{i}",
+                 f"box {{ from: px{i}, py{i}; size: pw{i}, ph{i}; corner: pr{i}; blend: pk{i}; show: pw{i} > 0", "}")
+                for i in range(SLOTS)]
+
 def piece_decls(ind):
     out = [f"{ind}// the pieces' slots: targets from the logic, sprung here"]
     for i in range(SLOTS):
@@ -170,7 +174,8 @@ BODY = [
     # One outline, one width (the bar's Outline: thin 1 · regular 1.4 · bold 2 px), and the style decides
     # whether there is one at all (D166): a style without an outline (Floating, Minimal) gives the frame
     # no line either, so turning the frame on never adds a line; frame.edge chooses plain, neon or none.
-    "border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec",
+    # frame.edge (line · neon · none) is the frame's: it only matters with the band on (review I5)
+    "border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec",
 ]
 
 def plate_bodies(ind):
@@ -182,7 +187,7 @@ def plate_bodies(ind):
         has = f"if(pc{i}_r >= 0, 1, 0)"
         tint = f"{has} * if(pf{i} > 0.5 and pf{i} < 1.5, 0.22, 0.45)"
         edge = f"mix(fnec, mix(fl.phos, {col}, {has}), if(po{i} > 1.5, 1, if({has} > 0.5, 0.6, 0)))"
-        wid = f"if(po{i} > 1.5, st_owidth, if(po{i} > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0))"
+        wid = f"if(po{i} > 1.5, st_owidth, if(po{i} > 0.5 and bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0))"
         out += [f"{ind}// plate {i}", f"{ind}group {{",
                 f"{ind}    glow: 8, pg{i} * 0.5 * st_glow, mix(fl.phos, {col}, {has})",
                 f"{ind}    body {{",
@@ -276,7 +281,10 @@ def end_tiles(ind, which, place=False):
             shapes.append(EDGES["right"].path("", -1, reach / REF_H) if top else EDGES["right"].path("", 1 - reach / REF_H, 2))
             shapes.append([CORNERS["tr" if top else "br"]])
         if top:
-            shapes += [[f"{box} and {a} < {x1} + 48 and {b} > {x0} - 48 {end}"] for a, b, box, end in PIECES]
+            # the place's copies (frame_p) hold every piece, floating plates too, so an island grows out
+            # of its plate in one body (review I3); the band's own tiles hold only joined pieces
+            pieces = PLACE_PIECES if place else PIECES
+            shapes += [[f"{box} and {a} < {x1} + 48 and {b} > {x0} - 48 {end}"] for a, b, box, end in pieces]
         cr = crossed(which, x0, x1)
         if place:
             shapes += [[place_box(p)] for p in (PLACES if top else PLACES[1:])]

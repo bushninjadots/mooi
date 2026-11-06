@@ -586,7 +586,13 @@ local function jump(n)
     find("")
     if r then
         fact.set_tab = r.tab
-        fact.set_scroll = math.max(0, r.y - 160)
+        if r.fold then
+            -- a row in a fold (review I1): that fold open, the page's others closed, so its place is known
+            for _, f in ipairs((index.page_folds or {})[r.tab] or {}) do fact[f] = (f == r.fold) end
+            fact.set_scroll = math.max(0, r.fy - 160)
+        else
+            fact.set_scroll = math.max(0, r.y - 160)
+        end
     end
 end
 on("set_jump", function(v) jump(math.floor(tonumber(v) or -1)) end)

@@ -140,13 +140,13 @@ test("presets: five styles, hairline is an accent line with no fill, steel is no
     end
     local g0 = config.validate({ bar = { frost = 94, smoke = 69, opacity = 31 } })
     st.apply_preset(g0, st.BAR_PRESETS, "minimal")
-    eq(g0.bar.frost, 0, "no frost left over from glass"); eq(g0.bar.smoke, 0)
+    eq(g0.bar.frost, 70, "glass's frost is replaced by the style's own (frost only shows on glass)"); eq(g0.bar.smoke, 38)
     local f = io.open("tools/gen-settings.py"); local g = f:read("a"); f:close()
     assert(g:find('STYLES = [("Instrument", 0), ("Glass", 1), ("Floating", 2), ("Hairline", 3), ("Minimal", 4)]', 1, true), "the window lists the same five")
 end)
 test("edges: a style without an outline gives the frame no line either", function()
     local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
-    assert(plm:find("border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec", 1, true))
+    assert(plm:find("border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0), fnec", 1, true))
 end)
 test("the bar's material and density: defaults, and an unknown one falls back", function()
     local d = config.defaults()
@@ -4678,6 +4678,34 @@ do
             for _, r in ipairs(idx) do if r.title == title and r.page == "Bar & Frame" then found = true end end
             eq(found, true, title .. " is on Bar & Frame")
         end
+    end)
+    test("review I1/I2: search opens a row's fold, lands where it is, and the scroll stays on the page", function()
+        local idx = require("lib/settings_index")
+        local wheel, frame_edge
+        for _, r in ipairs(idx) do
+            if r.page == "Bar & Frame" and r.title == "Mouse wheel" then wheel = r end
+            if r.page == "Bar & Frame" and r.title == "Frame edge" then frame_edge = r end
+        end
+        assert(wheel and wheel.fold == idx.modules_fold, "a row knows its fold")
+        assert(wheel.fy > idx.modules_look_y + 300, "rows after the layout sit below it (" .. tostring(wheel.fy) .. ")")
+        assert(frame_edge.fold ~= nil and frame_edge.fy < frame_edge.y, "with only its fold open it is higher than with all open")
+        local f = io.open("shell/mooi-settings.luau"); local lu = f:read("a"); f:close()
+        assert(lu:find("r.fold", 1, true) and lu:find("r.fy", 1, true), "jump opens the fold and uses its place")
+        local g = io.open("shell/mooi-settings.plm"); local plm = g:read("a"); g:close()
+        assert(plm:find("follow set_scroll_s = clamp(set_scroll, 0, ", 1, true), "the scroll never stays past a page that shrank")
+    end)
+    test("review I3/I4/I5/M1", function()
+        local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
+        local fp = plm:sub((plm:find("surface frame_p", 1, true)))
+        assert(fp:find("box { from: px0, py0; size: pw0, ph0;", 1, true), "an island grows out of its plate in the place's body (no seam)")
+        assert(plm:find("border: if(bar_frame < 0.5 and (not band_on or st_frame_edge < 1.5), st_owidth, 0)", 1, true),
+            "frame edge None only matters with the band on")
+        local g = io.open("shell/mooi-frame.luau"); local lu = g:read("a"); g:close()
+        assert(lu:find("palette.colours", 1, true) and lu:find("ferro.hex", 1, true), "Wallpaper is the wallpaper's primary, not the theme's main")
+        local st = require("lib/style")
+        local old = config.validate({ bar = { style = "floating", surface = "solid", frame = "none", outline_width = 2, outline_colour = "subtle",
+            shadow = "strong", ground = "clear", pill = "glow", opacity = 100, rail = false, accents = false } })
+        eq(st.preset_index(old, st.BAR_PRESETS), 2, "a Floating bar from before still reads Floating, not Custom")
     end)
     test("Look…: the bar's edit mode opens Settings at the module's look", function()
         local f = io.open("shell/mooi.plm"); local plm = f:read("a"); f:close()

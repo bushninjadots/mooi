@@ -652,6 +652,7 @@ def controls(kind, path, expr, opts, y):
     return out, left
 
 MODULES_FOLD = [None]  # the Modules fold's fact, for "Look…" (D166), then the Look card's y with only it open
+MAXS = [""]           # each page's scroll limit (review I2)
 PAGE_FOLDS = {}       # each page's folds: (fact, nominal y)
 PROPS = []          # each row's and card's place and height, springs they glide on (scene level)
 INDEX = []          # (title, what it does, page, page title, its place): what search looks through
@@ -936,6 +937,13 @@ def section(i, rows, indent, page):
         card = None
     nk = 0
     fold = "true"                       # the open/closed state of the fold everything below belongs to
+    fold_meta = [None]                  # the current fold, for search (review I1)
+    def where(yy):
+        """A row's fold and its y with only that fold open (the page's other folds closed)."""
+        m = fold_meta[0]
+        if m is None: return (None, yy)
+        fv, k, body, f0, step = m
+        return (fv, f0 + (k + 1) * step + (yy - body))
     nfold = 0
     def both(a, b): return b if a == "true" else (a if b == "true" else f"({a}) and ({b})")
     for j, r in enumerate(rows):
@@ -958,6 +966,7 @@ def section(i, rows, indent, page):
             above.append((hh + CARD_GAP, "true")); y += hh + CARD_GAP
             fold = fv
             PAGE_FOLDS.setdefault(i, []).append((fv, hy))
+            fold_meta[0] = (fv, nfold, y, PAGE_FOLDS[i][0][1], hh + CARD_GAP)   # (fact, k, body start, first fold y, header step)
             if r[1] == "Modules":
                 MODULES_FOLD[0] = fv
                 # where the Look card is with only this fold open: the first fold's place, a closed header
@@ -965,7 +974,7 @@ def section(i, rows, indent, page):
                 f0 = PAGE_FOLDS[i][0][1]
                 MODULES_FOLD.append(f0 + (len(PAGE_FOLDS[i]) - 1) * (hh + CARD_GAP) + hh + CARD_GAP + 308)
             nfold += 1
-            INDEX.append((r[1], r[2], i, page, hy))
+            INDEX.append((r[1], r[2], i, page, hy, None, hy))
             continue
         if r[0] == "card":
             close_card()
@@ -983,7 +992,9 @@ def section(i, rows, indent, page):
             lines += ["    " + l for l in ll]; lines.append("}")
             above.append((hexpr, fold))
             resets.append("@layout")
-            INDEX.append(("Layout", "Put any module anywhere on the bar, in any order; group, hide, add spacers", i, page, y))
+            INDEX.append(("Layout", "Put any module anywhere on the bar, in any order; group, hide, add spacers", i, page, y) + where(y))
+            # what follows the layout sits below it (review I1): its nominal height, the zones at a usual 400
+            y += 308 + LOOK_H + 14 + 400 + 48
             continue
         cwhen = card[1] if card else fold
         rwhen = ("theme_wallpaper" if r[0] == "schemes" else "sv_bar_bg == 9" if r[0] == "colourpick" else r[1] if r[0] == "note" else
@@ -999,7 +1010,7 @@ def section(i, rows, indent, page):
         lines += ["    " + l for l in rl]
         lines.append("}")
         if r[0] in ("choice", "toggle", "slider", "source", "button") and r[1]:
-            INDEX.append((r[1], r[2], i, page, y))
+            INDEX.append((r[1], r[2], i, page, y) + where(y))
         if r[0] in ("choice", "toggle", "slider", "source") and r[3] not in resets:
             resets.append(r[3])
         if r[0] == "colourpick" and "bar.bg_colour" not in resets:
@@ -1034,6 +1045,7 @@ def generate():
     titles = ", ".join(f'"{t}"' for _, t, _, _, _ in SECTIONS)
     subs = ", ".join(f'"{s}"' for _, _, s, _, _ in SECTIONS)
     maxs = ", ".join(f"max(0, {h} + 24 - screen.height)" for h in heights)
+    MAXS[0] = f"pick(set_tab, {maxs})"
     return f"""{ind}// The rail: mooi's mark, search, the pages in their groups, and the bar's own edit mode.
 {ind}box {{ from: 0, 0; size: 232, screen.height; color: mix(fl.steel_900, fl.hull, 0.35) }}
 {ind}group {{ glow: 6, (0.6) * st_glow, fl.phos; box {{ from: 231, 0; size: 1, screen.height; color: fl.phos; opacity: 0.3 }} }}
@@ -1227,7 +1239,7 @@ def main():
     prop set_navs_s = 0 ~m.reflow
     follow set_navs_s = set_navs
     prop set_scroll_s = 0 ~m.reflow
-    follow set_scroll_s = set_scroll
+    follow set_scroll_s = clamp(set_scroll, 0, @MAXS@)
     event set_value ->        // to the logic: one setting to one value (lib/setters)
     event set_action ->       // to the logic: 1 the bar's edit mode
     event set_pick            // a section chosen
@@ -1343,16 +1355,19 @@ def main():
 }
 """
     out = out.replace("on press set_close { settings_open = false }", "on press set_close { emit set_action(9) }")
+    out = out.replace("@MAXS@", MAXS[0])
     (ROOT / "shell" / "mooi-settings.plm").write_text(out)
     def lua(t): return '"' + t.replace("\\", "\\\\").replace('"', '\\"') + '"'
-    rows = "\n".join(f'    {{ title = {lua(t)}, desc = {lua(d)}, tab = {tab}, page = {lua(pg)}, y = {yy} }},' for t, d, tab, pg, yy in INDEX)
+    rows = "\n".join(f'    {{ title = {lua(t)}, desc = {lua(d)}, tab = {tab}, page = {lua(pg)}, y = {yy}'
+                     + (f', fold = "{fd}", fy = {fy}' if fd else '') + ' },' for t, d, tab, pg, yy, fd, fy in INDEX)
     resets = "\n".join(f'    [{tab}] = {{ ' + ", ".join(lua(x) for x in paths) + ' },' for tab, paths in sorted(RESETS.items()))
     (ROOT / "shell" / "lib" / "settings_index.luau").write_text(
         "-- GENERATED by tools/gen-settings.py: every setting the window shows, for its search, and what\n"
         "-- each page's Reset puts back (`@layout`: the bar's lists; `@keys`: the keys).\n"
         "-- `tab` is the page (from 0), `y` the row's place on it with every row shown.\nlocal rows = {\n" + rows + "\n}\n"
         "rows.resets = {\n" + resets + "\n}\n"
-        f"rows.layout_tab = {TAB['Bar & Frame']}\nrows.modules_fold = \"{MODULES_FOLD[0]}\"\nrows.modules_look_y = {MODULES_FOLD[1]}\nrows.layout_folds = {{ " + ", ".join('\"' + f + '\"' for f, _ in PAGE_FOLDS[TAB['Bar & Frame']]) + " }\nreturn rows\n")
+        f"rows.layout_tab = {TAB['Bar & Frame']}\nrows.modules_fold = \"{MODULES_FOLD[0]}\"\nrows.modules_look_y = {MODULES_FOLD[1]}\nrows.layout_folds = {{ " + ", ".join('\"' + f + '\"' for f, _ in PAGE_FOLDS[TAB['Bar & Frame']]) + " }\n"
+        "rows.page_folds = { " + ", ".join(f"[{k}] = {{ " + ", ".join('\"' + f + '\"' for f, _ in v) + " }" for k, v in sorted(PAGE_FOLDS.items())) + " }\nreturn rows\n")
     text = SCENE.read_text()
     pat = re.compile(r"([ \t]*)// <gen:edit>\n.*?// </gen:edit>", re.S)
     if not pat.search(text):
