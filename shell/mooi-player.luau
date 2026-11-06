@@ -5,6 +5,7 @@
 -- it): palette.json paints it, the covers are cached in it.
 
 local config = require("lib/config")
+local settingsfile = require("lib/settingsfile")
 local ferro = require("lib/ferro")
 local P = require("lib/player")
 local VZ = require("lib/vizbands")
@@ -25,6 +26,20 @@ local COVERS = folder .. "/player-covers"
 
 -- ── The shell's colours ──────────────────────────────────────
 local settings = config.parse(read("settings.json"), json.decode)
+-- One write policy for settings.json (audit 2026-10-31 F3; the player was the last whole-file
+-- writer, audit 2026-11-06 G5): read the file as it is now, lay only the player's changed leaves
+-- over it, and make a failed save visible instead of discarding the result.
+local function player_settings()
+    local s, _, _, state = config.parse(read("settings.json"), json.decode)
+    if state == "broken" then return nil end
+    return s
+end
+local function save_player(before, after)
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return true end
+    local doc = settingsfile.save(sys, "settings.json", before, after, player_settings)
+    if not doc then say("COULD NOT SAVE THE SETTING"); return false end
+    return true
+end
 fact.cn_kind, fact.cn_scale = require("lib/style").corners(settings)   -- corners on every plate (look.corners)
 local palette = read("palette.json", "json")
 local tint = nil -- the cover's palette while player.colours is "cover" (Matugen roles)
@@ -420,10 +435,10 @@ local library = require("player/library").new({
     use_library = function() if fact.src ~= "library" and set_source then set_source("library") end end,
     -- the grouping and sort are remembered (player.library, player.sort)
     remember = function(group, sort)
-        if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+        local before = settingsfile.copy(settings)
         local fresh = config.parse(read("settings.json"), json.decode)
         fresh.player.library, fresh.player.sort = group, sort
-        pcall(sys.call, "files.write", "settings.json", fresh)
+        if save_player(before, fresh) then settings.player = fresh.player end
     end,
 })
 local function set_pane(v)
@@ -500,9 +515,10 @@ show_viz_styles()
 on("viz_next", function(v)
     local key = VIZ_PLACES[math.floor(tonumber(v) or -1)]
     if not key then return end
+    local before = settingsfile.copy(settings)
     local fresh = config.parse(read("settings.json"), json.decode)
     fresh.player[key] = VZ.next(fresh.player[key])
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then pcall(sys.call, "files.write", "settings.json", fresh) end
+    if not save_player(before, fresh) then return end
     settings.player = fresh.player
     show_viz_styles()
 end)
@@ -513,11 +529,11 @@ fact.view = settings.player.view
 on("pl_view", function(v)
     local want = VIEWS[math.floor(tonumber(v) or 0)] or "deck"
     fact.view = want
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+    local before = settingsfile.copy(settings)
     local fresh = config.parse(read("settings.json"), json.decode)
     fresh.player.view = want
+    if not save_player(before, fresh) then return end
     settings.player = fresh.player
-    pcall(sys.call, "files.write", "settings.json", fresh)
 end)
 -- CUE: back to where the song was last carried to, if that is behind the needle; else its start.
 on("pl_cue", function()
@@ -540,11 +556,10 @@ audio_for = function(s)
 end
 
 on("pl_tint", function()
+    local before = settingsfile.copy(settings)
     local fresh = config.parse(read("settings.json"), json.decode)
     fresh.player.colours = fresh.player.colours == "cover" and "shell" or "cover"
-    if tostring(sys.ask("env", "MOOI_SAFE") or "") ~= "1" then
-        if not pcall(sys.call, "files.write", "settings.json", fresh) then say("COULD NOT SAVE THE SETTING"); return end
-    end
+    if not save_player(before, fresh) then return end
     settings.player = fresh.player
     retint()
 end)

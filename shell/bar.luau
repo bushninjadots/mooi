@@ -10,6 +10,8 @@
 
 local barlayout = require("lib/barlayout")
 local sysinfo = require("lib/sysinfo")
+local forecast = require("lib/forecast")
+local weathershare = require("lib/weathershare")
 local updates = require("lib/updates")
 local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
@@ -244,40 +246,33 @@ return function(ctx)
         end)
     end
 
-    local loc = nil
     local read_weather
     function read_weather()
-        local function forecast()
-            run("curl", { "-fsSL", "--max-time", "15", "https://api.open-meteo.com/v1/forecast?latitude=" .. loc.lat
-                .. "&longitude=" .. loc.lon .. "&current=temperature_2m,weather_code,is_day" }, function(out, code)
+        -- One location memo and one forecast cache for every panel (audit 2026-11-06, G7): the bar
+        -- reads the notch's/Nexus's answer instead of asking ipinfo and open-meteo on its own.
+        local function fetch(url, done)
+            run("curl", { "-fsSL", "--max-time", "15", url }, function(out, code)
                 local ok, t = pcall(json.decode, out or "")
-                if code ~= 0 or not ok or type(t) ~= "table" or type(t.current) ~= "table" then
-                    -- A failed fetch (open-meteo answers 503 now and then) keeps the last good
-                    -- reading on the bar, and tries again in a minute rather than in ten.
-                    log("bar · weather: no answer (" .. tostring(code) .. "); trying again in 60 s")
-                    after(60000, function() if placed.weather then read_weather() end end)
-                    return
-                end
-                local kind, word = sysinfo.weather(t.current.weather_code, t.current.is_day)
-                for i, k in ipairs(sysinfo.WEATHER_KINDS) do if k == kind then fact.wx_kind = i - 1 end end
-                fact.wx_temp = tonumber(t.current.temperature_2m) or 0
-                text.wx_word = word
-                fact.wx_ok = true
+                done(code == 0 and ok and type(t) == "table" and t or nil)
             end)
         end
-        if loc then forecast(); return end
-        run("curl", { "-fsSL", "--max-time", "10", "https://ipinfo.io/json" }, function(out, code)
-            local ok, t = pcall(json.decode, out or "")
-            local lat, lon = nil, nil
-            if ok and type(t) == "table" then lat, lon = string.match(tostring(t.loc or ""), "^([%d%.%-]+),([%d%.%-]+)$") end
-            if code ~= 0 or not lat then
-                log("bar · weather: no location (" .. tostring(code) .. "); trying again in 60 s")
+        local function get(name) local ok, v = pcall(sys.ask, "files.read", name); return ok and v or nil end
+        weathershare.refresh({ read = get, fetch = fetch,
+                               write = function(name, doc) pcall(sys.call, "files.write", name, doc) end }, function(doc)
+            local f = doc and forecast.parse(doc.answer) or nil
+            if not f then
+                -- A failed fetch (open-meteo answers 503 now and then) keeps the last good
+                -- reading on the bar, and tries again in a minute rather than in ten.
+                log("bar · weather: no answer; trying again in 60 s")
                 after(60000, function() if placed.weather then read_weather() end end)
                 return
             end
-            loc = { lat = lat, lon = lon }
-            text.wx_city = string.upper(tostring(t.city or ""))
-            forecast()
+            local kind, word = sysinfo.weather(f.now.code, f.now.day)
+            for i, k in ipairs(sysinfo.WEATHER_KINDS) do if k == kind then fact.wx_kind = i - 1 end end
+            fact.wx_temp = tonumber(f.now.temp) or 0
+            text.wx_word = word
+            text.wx_city = string.upper(tostring(doc.city or ""))
+            fact.wx_ok = true
         end)
     end
 

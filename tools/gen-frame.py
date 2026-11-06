@@ -239,16 +239,18 @@ def side_tiles(ind, which, place=False):
         y0 = f"max({TOP}, H * {num(lo)})"
         y1 = f"min(H - {BOT}, H * {num(hi)})"
         x0, w = ("-40", "W / 2 + 40") if left else ("W / 2", "W / 2 + 40")
-        shapes = [edge.path("", lo - m, hi + m)]
-        if lo * REF_H < CORNER:
-            shapes.append([CORNERS["tl" if left else "tr"]])
-        if hi * REF_H > REF_H - CORNER:
-            shapes.append([CORNERS["bl" if left else "br"]])
         cr = crossed(which, y0, y1)
         if place:
-            shapes += [[place_box(p)] for p in PLACES[1:]]
+            # only the place's box: frame_p sits on the top layer, and the band's side edge here would
+            # paint the music swell down the screen over the windows (the band is frame_t's, D156)
+            shapes = [[place_box(p)] for p in PLACES[1:]]
             out += tile(ind, f"from: {x0}, {y0}; size: {w}, max(0, {y1} - {y0})", shapes, cr)
         else:
+            shapes = [edge.path("", lo - m, hi + m)]
+            if lo * REF_H < CORNER:
+                shapes.append([CORNERS["tl" if left else "tr"]])
+            if hi * REF_H > REF_H - CORNER:
+                shapes.append([CORNERS["bl" if left else "br"]])
             out += tile(ind, f"from: {x0}, {y0}; size: {w}, max(0, {y1} - {y0})", shapes, f"not ({cr})")
     return out
 

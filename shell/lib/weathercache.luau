@@ -32,4 +32,19 @@ function M.coordinates(location)
     return lat, lon
 end
 
+-- The location memo (audit 2026-11-06, G7): one cached IP answer, reused by every panel. It is
+-- usable only with valid coordinates and a sane, non-future timestamp inside its TTL.
+function M.location(doc, now, ttl)
+    if type(doc) ~= "table" then return nil end
+    local lat, lon = M.coordinates(doc)
+    if not lat then return nil end
+    local at = tonumber(doc.at)
+    now = tonumber(now)
+    ttl = tonumber(ttl)
+    if not finite(at) or not finite(now) or not finite(ttl) or ttl <= 0 then return nil end
+    local age = now - at
+    if age < 0 or age >= ttl then return nil end
+    return { lat = lat, lon = lon, city = doc.city }
+end
+
 return M

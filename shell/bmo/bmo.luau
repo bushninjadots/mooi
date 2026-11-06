@@ -101,18 +101,34 @@ local function only_one()
 end
 after(600, only_one)
 
--- His panel's choices go back into mooi's settings, the rest of the file as it is now.
+-- His panel's choices go back into mooi's settings (fourth pass, L7). BMO's scene resolves modules
+-- from shell/bmo, so lib/settingsfile is out of reach; the same rule is kept here for the one
+-- subtree he owns: only the companion leaves that changed are laid over the file as it is at the
+-- moment of writing, so a change another program made meanwhile is kept, and a failed write is logged.
+local function save_companion(change)
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+    local before = companion_of(read(FILE))
+    local mine = {}
+    for k, v in pairs(type(before) == "table" and before or {}) do mine[k] = v end
+    change(mine)
+    local doc = read(FILE)          -- read again just before writing
+    if type(doc) ~= "table" then return end
+    local c = type(doc.companion) == "table" and doc.companion or {}
+    for k, v in pairs(mine) do
+        if type(before) ~= "table" or before[k] ~= v then c[k] = v end
+    end
+    doc.companion = c
+    local ok, err = pcall(sys.call, "files.write", FILE, doc)   -- settings-write: ok (merged above)
+    if not ok then pcall(log, "bmo · settings not saved: " .. tostring(err)) end
+end
 local function save()
     if spare then return end
     if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
-    local doc = read(FILE)
-    if type(doc) ~= "table" then return end
-    local c = type(doc.companion) == "table" and doc.companion or {}
-    c.wander, c.locked, c.size, c.motion = cfg.wander, cfg.locked, B.size_name(cfg.size), cfg.motion
-    c.music, c.above, c.doze, c.clock = cfg.music, cfg.above, cfg.doze, cfg.clock
-    c.place, c.variant, c.throw, c.talk, c.react = cfg.place, cfg.variant, cfg.throw, cfg.talk, cfg.react
-    doc.companion = c
-    pcall(sys.call, "files.write", FILE, doc)
+    save_companion(function(c)
+        c.wander, c.locked, c.size, c.motion = cfg.wander, cfg.locked, B.size_name(cfg.size), cfg.motion
+        c.music, c.above, c.doze, c.clock = cfg.music, cfg.above, cfg.doze, cfg.clock
+        c.place, c.variant, c.throw, c.talk, c.react = cfg.place, cfg.variant, cfg.throw, cfg.talk, cfg.react
+    end)
 end
 local function save_state() if not spare then pcall(sys.call, "files.write", STATE, state) end end
 
@@ -1019,13 +1035,7 @@ on("ui", function(v)
     elseif n == 7 then
         -- Quit BMO: off in mooi's settings as well (Settings → BMO), so the shell does not start
         -- him again — a BMO that ended only for this would be back a second later
-        local doc = read(FILE)
-        if type(doc) == "table" then
-            local c = type(doc.companion) == "table" and doc.companion or {}
-            c.bmo = false
-            doc.companion = c
-            pcall(sys.call, "files.write", FILE, doc)
-        end
+        save_companion(function(c) c.bmo = false end)   -- honours safe mode like every other save
         run("pleamar", { "--say", "bmo", "quit" }); return
     -- asking him (D106): the side notch's chat, as BMO; what Claude answers comes back here to be said
     elseif n == 8 then

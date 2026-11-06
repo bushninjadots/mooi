@@ -2,7 +2,13 @@
 package.path = "shell/?.luau;" .. package.path
 
 local failures, count = 0, 0
+-- --filter <text> (or MOOI_TEST_FILTER) runs only the sections or test names containing it.
+local filter = os.getenv("MOOI_TEST_FILTER")
+if arg[1] == "--filter" then filter = arg[2] elseif arg[1] then filter = arg[1] end
+local current = ""
+local function section(name) current = name; print(name) end
 local function test(name, fn)
+    if filter and filter ~= "" and not current:find(filter, 1, true) and not name:find(filter, 1, true) then return end
     count = count + 1
     local ok, err = pcall(fn)
     if ok then print("  ok    " .. name) else failures = failures + 1; print("  FAIL  " .. name .. "\n        " .. tostring(err)) end
@@ -19,7 +25,7 @@ local apps = require("lib/apps")
 local spaces = require("lib/spaces")
 
 
-print("config")
+section("config")
 test("defaults are complete and versioned", function()
     local d = config.defaults()
     eq(d.version, 2, "version"); eq(d.bar.modules.clock.show, true, "clock"); eq(d.spine.max_workspaces, 10, "max")
@@ -113,7 +119,7 @@ test("a newer version is noted", function()
     local _, p, n = config.validate({ version = 3 }); eq(#p, 0, "problems"); eq(#n, 1, "notes")
 end)
 
-print("wfx")
+section("wfx")
 local wfx = require("lib/wfx")
 test("every pair writes both shaders, in the palette, for the plugin's ES 3.20", function()
     eq(wfx.pair("off", nil), nil, "off is no shader")
@@ -171,7 +177,7 @@ test("the window rules: two _default tags, or none while off", function()
     assert(string.find(with[4], 'class = "^(kitty)$"', 1, true), "matched by class")
 end)
 
-print("fx colours")
+section("fx colours")
 local fxpal = require("lib/fxpal")
 test("the shaders' light: the bar's palette, or a way of its own", function()
     local pal = { phos = "#112233", ember = "#445566", trace = "#778899" }
@@ -217,7 +223,7 @@ test("the workspace shader's length scales, and its own clock with it", function
     eq(wsfx.duration("nothing"), nil, "an unknown kind too")
 end)
 
-print("hypr")
+section("hypr")
 local A = "0x556d06fdfab0"
 test("addresses are validated before reaching a command", function()
     eq(hypr.valid_address(A), true, "good")
@@ -268,7 +274,7 @@ test("verify() only reports what changed", function()
     eq((hypr.verify("move", before, before, { workspace = 5 })), false, "not moved")
 end)
 
-print("apps")
+section("apps")
 local list = {
     { name = "Zen Browser", id = "zen", exec = "/opt/zen-browser-bin/zen-bin %u", icon = "zen-browser", wmclass = "zen" },
     { name = "Files", id = "org.gnome.Nautilus", exec = "nautilus --new-window %U", icon = "org.gnome.Nautilus" },
@@ -309,7 +315,7 @@ test("windows(): mapped, visible, most recent first", function()
     eq(#list, 2, "hidden and unmapped left out"); eq(list[1].class, "b", "focused first"); eq(list[2].class, "a", "then older")
 end)
 
-print("spaces")
+section("spaces")
 test("rows make a bounded map including empty slots", function()
     local rows = spaces.rows({ { id = 1, windows = 2, name = "1", monitor = "eDP-1" }, { id = 4, windows = 0, name = "mail" }, { id = -99, windows = 7 } }, 4, 6)
     eq(#rows, 6, "configured slot count")
@@ -355,7 +361,7 @@ test("tail keeps the end of a path, for a plate 196 px wide", function()
     eq(spaces.tail("short.json", 26), "short.json", "left as it is")
 end)
 
-print("theme")
+section("theme")
 local theme = require("lib/theme")
 local matugen_dark = { version = 1, mode = "dark", colours = {
     surface_dim = "#16130b", surface_container_low = "#1e1b13", surface_container = "#221f17",
@@ -440,7 +446,7 @@ test("the bar's own settings are validated like any other", function()
     local _, p3 = config.validate({ bar = { labels = "off" } }); eq(#p3, 1, "labels is a boolean")
 end)
 
-print("search")
+section("search")
 local search = require("lib/search")
 test("score orders exact > prefix > word start > substring > fuzzy", function()
     local e, p, w, s, f = search.score("code", "code"), search.score("code", "codeblocks"),
@@ -487,7 +493,7 @@ test("remember counts and forgets the least used half past the cap", function()
     search.remember(u, "k5", 4); eq(u.k5, 2, "counted")
 end)
 
-print("ferro")
+section("ferro")
 local ferro = require("lib/ferro")
 local black = { r = 0, g = 0, b = 0 }
 -- A real Matugen dark palette (scheme-tonal-spot, a teal wallpaper), and a monochrome one.
@@ -568,7 +574,7 @@ test("no palette or no primary falls back to Ferrolume, with a note", function()
     eq(why2, "fixed (the palette has no primary)", "says why")
 end)
 
-print("barlayout")
+section("barlayout")
 local barlayout = require("lib/barlayout")
 local function ctx(t)
     local c = { screen = 1920, inset = 12, gap = 10, ws_style = "dna", ws_count = 10, visualizer = "mirror",
@@ -704,7 +710,7 @@ test("a layout that places a module twice is refused whole", function()
     eq(string.find(p2[1], "unknown module nonsense") ~= nil, true, "names the unknown module")
 end)
 
-print("sysinfo")
+section("sysinfo")
 local sysinfo = require("lib/sysinfo")
 test("cpu: busy fraction between two samples, nothing on the first", function()
     local v, p = sysinfo.cpu("cpu  100 0 100 700 100 0 0 0 0 0\ncpu0 1 2 3")
@@ -804,7 +810,7 @@ test("weather: WMO codes to a glyph kind and a word", function()
     eq(select(2, sysinfo.weather(63, 1)), "RAIN", "rain"); eq(sysinfo.weather(95, 1), "storm", "storm")
 end)
 
-print("setters")
+section("setters")
 local setters = require("lib/setters")
 function setters_code(path) for i, p in ipairs(setters.SETTERS) do if p == path then return i end end end
 test("a control's number sets its setting, and nonsense sets nothing", function()
@@ -872,7 +878,7 @@ test("settings from an older mooi: the outline's old names, the border switch", 
     eq(#p3, 1, "a key that is not a key combination is refused")
 end)
 
-print("desktop")
+section("desktop")
 local desktop = require("lib/desktop")
 local pal = { phos = "#7fcfb6", ember = "#e07b2e", trace = "#3d6a60" }
 test("the desktop's look: nothing unless managed, the palette on the border", function()
@@ -1006,7 +1012,7 @@ test("the screen frame keeps the windows' outer gap wide enough to be seen", fun
     assert(string.find(desktop.look(d, nil, { on = true, band = 8 }), "gaps_out = 30", 1, true), "a wider gap stays")
 end)
 
-print("style")
+section("style")
 test("presets: one choice writes a coherent set, and Custom once a detail differs", function()
     local s = config.defaults()
     eq(setters.apply(s, setters_code("bar.style") * 1000 + 1) ~= nil, true, "glass chosen")
@@ -1349,8 +1355,9 @@ test("the lock's picture and its visualiser are wired (D160/D161)", function()
     assert(luau:find("vizfeed.newer", 1, true), "the lock redraws a line it has already drawn")
     assert(luau:find("vizfeed.resample", 1, true), "the lock does not thin the bands")
     -- an image fact draws a path as it stands, so each copy is named by its whole path
-    assert(sh:find("$d/avatar.", 1, true), "the profile picture is named without its folder, and nothing draws it")
-    assert(sh:find("$d/banner.", 1, true), "the banner is named without its folder, and nothing draws it")
+    assert(sh:find('printf \'%s\' "$3/$2.$ext"', 1, true), "a lock picture is named without its folder, and nothing draws it")
+    assert(sh:find('lock_picture "$rel" avatar "$d"', 1, true), "the profile picture is not copied beside the lock")
+    assert(sh:find('lock_picture "$rel" banner "$d"', 1, true), "the banner is not copied beside the lock")
     -- both at once: the strip is the place, the plate is the person
     local lockplm = slurp("shell/mooi-lock.plm")
     assert(lockplm:find("has_ban", 1, true), "a banner has nowhere to draw")
@@ -1816,7 +1823,7 @@ test("environments: a launch line from the installed entry, the folder quoted", 
     eq(envs.exec_cmd(3, "kitty --directory '/a b'"), "hl.exec_cmd('[workspace 3 silent] kitty --directory \\'/a b\\'')", "onto its workspace, as Lua")
 end)
 
-print("signals")
+section("signals")
 local sig = require("lib/signals")
 local function N(t)
     local base = { id = 1, app = "Chat", title = "Ana", body = "hi", icon = "", image = "", urgency = "normal", time = 100, actions = {} }
@@ -1896,7 +1903,7 @@ test("signals: the stack, joined where one app follows itself", function()
     eq(sig.rail(0, 0, 3600), 0, "now at the start"); eq(sig.rail(0, 3600, 3600), 1, "the span at the end"); eq(sig.rail(0, 4000, 3600), nil, "past it: off")
 end)
 
-print("notes")
+section("notes")
 local notes = require("lib/notes")
 test("notes: what is written is cleaned, never kept raw", function()
     eq(notes.clean("  call Ana \r\n  about the \tbuild  "), "call Ana\nabout the build", "edges trimmed, lines kept")
@@ -1981,7 +1988,7 @@ test("notes: editing keeps the id and its place; a forgotten one comes back", fu
     eq(nothing, nil, "an empty one is not restored")
 end)
 
-print("board")
+section("board")
 local board = require("lib/board")
 local function titles(b, col) local t = {}; for _, c in ipairs(board.cards_in(b, col)) do t[#t + 1] = c.title end; return table.concat(t, ",") end
 test("board: a new board, cards added at the top, empty titles refused", function()
@@ -2059,7 +2066,7 @@ test("board: a file read back, and where a dragged card lands", function()
     eq(f.cards[2].shown, false, "the filter hides x"); eq(f.cols[1].len, board.CARD_NOTE_H + board.CARD_GAP, "and it takes no room")
 end)
 
-print("stash")
+section("stash")
 local stash = require("lib/stash")
 test("stash: a drop is a link, an image, a video, a song, a file or text", function()
     eq(stash.kind_of("https://mooi.example/paper"), 0, "link")
@@ -2215,7 +2222,7 @@ test("stash: how long ago, and a text item's name cut", function()
 end)
 
 local desk_lib = require("lib/desk")
-print("desk pictures")
+section("desk pictures")
 test("desk: a file is a picture by its extension, whatever its case", function()
     eq(desk_lib.is_image("a.JPG"), true, "case does not matter")
     eq(desk_lib.is_image("a.webp"), true, "a picture")
@@ -2263,7 +2270,7 @@ test("cover art: the URL pleamar 0.4 hands over and the path 0.7 does both draw"
 end)
 
 local player = require("lib/player")
-print("player")
+section("player")
 test("lyric_lines gives the lines around now", function()
     local d = player.parse_lrc("[00:01.00]one\n[00:02.00]two\n[00:03.00]three")
     local a, b, c = player.lyric_lines(d, 2.5, 0); eq(a, "one", "prev"); eq(b, "two", "cur"); eq(c, "three", "next")
@@ -2491,7 +2498,7 @@ test("player: LRCLIB's address and answer", function()
 end)
 
 local desk = require("lib/desk")
-print("desk")
+section("desk")
 test("desk: the settings are read whatever the file holds", function()
     local d = desk.normalize(nil)
     eq(d.on, false, "off by default"); eq(d.parallax, "workspaces", "parallax"); eq(d.cutout, true, "cutout"); eq(d.depth, true, "depth")
@@ -2642,6 +2649,40 @@ test("weather cache: coordinates are parsed and bounded before URL construction"
     eq(weathercache.coordinates({ loc = "41.1;os.execute('bad'),1" }), nil, "injected text")
     eq(weathercache.coordinates({ loc = "41,1,2" }), nil, "extra coordinate")
     eq(weathercache.coordinates(nil), nil, "missing location")
+end)
+
+local weathershare = require("lib/weathershare")
+local function share_world(files)
+    local fetched = {}
+    return fetched, {
+        now = 2000,
+        read = function(name) return files[name] end,
+        write = function(name, doc) files[name] = doc end,
+        fetch = function(url, done)
+            fetched[#fetched + 1] = url
+            if url:find("ipinfo", 1, true) then done({ loc = "41.1,1.2", city = "Springfield" }) else done(meteo()) end
+        end,
+    }
+end
+test("weather share: a fresh forecast is the answer, with nothing fetched", function()
+    local files = { ["nexus-weather.json"] = { at = 1900, answer = meteo(), city = "Springfield" },
+                    ["ipinfo.json"] = { at = 1900, loc = "41.1,1.2", city = "Springfield" } }
+    local fetched, opts = share_world(files)
+    local got
+    weathershare.refresh(opts, function(doc) got = doc end)
+    eq(#fetched, 0, "no request"); eq(got.city, "Springfield", "cached doc handed back")
+    opts.force = true
+    weathershare.refresh(opts, function(doc) got = doc end)
+    eq(#fetched, 1, "force asks open-meteo"); eq(fetched[1]:find("open%-meteo") ~= nil, true, "the forecast, not ipinfo")
+end)
+test("weather share: a cold start asks ipinfo once, then remembers the place", function()
+    local files = {}
+    local fetched, opts = share_world(files)
+    weathershare.refresh(opts, function() end)
+    eq(#fetched, 2, "ipinfo + forecast"); eq(files["ipinfo.json"].city, "Springfield", "location memo written")
+    files["nexus-weather.json"] = nil
+    weathershare.refresh(opts, function() end)
+    eq(#fetched, 3, "only the forecast the second time")
 end)
 
 test("stats: upower's battery — state, time left, rate, health", function()
@@ -2906,6 +2947,28 @@ test("activity: minutes by day, hour and app; only the last eight days kept", fu
 end)
 
 local claude = require("lib/claude")
+test("claude: the prompt goes last, after --, so a dash is never a flag", function()
+    local a = claude.args("--dangerously-skip-permissions", {})
+    eq(a[#a], "--dangerously-skip-permissions", "prompt is the last argument")
+    eq(a[#a - 1], "--", "after the end of options")
+    eq(a[1], "-p", "print mode")
+end)
+test("claude: free models only when the setting says so", function()
+    eq(claude.free_allowed(nil), false); eq(claude.free_allowed({}), false)
+    eq(claude.free_allowed({ claude = { free_fallback = false } }), false)
+    eq(claude.free_allowed({ claude = { free_fallback = true } }), true)
+    eq(claude.FREE_ENV[1]:find('"*":"deny"', 1, true) ~= nil, true, "opencode denies every tool")
+end)
+test("github: only GitHub's own https pages reach xdg-open", function()
+    local GPw = require("lib/ghparse")
+    eq(GPw.web_url("https://github.com/bushninjadots/mooi/pull/3"), "https://github.com/bushninjadots/mooi/pull/3")
+    eq(GPw.web_url("http://github.com/x"), nil, "not https")
+    eq(GPw.web_url("https://github.com.evil.example/x"), nil, "lookalike host")
+    eq(GPw.web_url("file:///etc/passwd"), nil, "file url")
+    eq(GPw.web_url("https://github.com/x y"), nil, "space")
+    eq(GPw.web_url("https://github.com/x\n--help"), nil, "control character")
+    eq(GPw.web_url(nil), nil)
+end)
 test("claude: asked lean, carried on by session, and its stream read", function()
     local joined = table.concat(claude.args("hi", { session = "8a91e81c-1234", persona = "bmo" }), " ")
     assert(joined:find("--tools  ", 1, true), "no tools"); assert(joined:find("disableAllHooks", 1, true), "no hooks")
@@ -3091,7 +3154,7 @@ test("notch: the fan's tabs on their arc, panels on the screen, the carousel, th
     eq(c0, 31 + 314 - notch.NUB_REACH); eq(c1, 31 + 314 + notch.NUB_REACH)
 end)
 
-print("games")
+section("games")
 local games = require("lib/games")
 test("games: Steam's libraries and manifests, the desktop's menus, one list of both", function()
     local vdf = '"libraryfolders"\n{\n\t"0"\n\t{\n\t\t"path"\t\t"/home/u/.local/share/Steam"\n\t}\n\t"1"\n\t{\n\t\t"path"\t\t"/mnt/games/SteamLibrary"\n\t}\n}\n'
@@ -3256,7 +3319,7 @@ test("games: a picture from Steam's store, for the games the machine has none of
     eq(rows[5].wide, true, "and is drawn whole")
 end)
 
-print("vizfeed")
+section("vizfeed")
 local vizfeed = require("lib/vizfeed")
 test("vizfeed: a full frame round-trips", function()
     local t = vizfeed.silent(7)
@@ -3416,7 +3479,7 @@ test("geom: his monitor, and where he goes when the screens change", function()
 end)
 
 local settingsfile = require("lib/settingsfile")
-print("vizfeed v2")
+section("vizfeed v2")
 do
     local vf = require("lib/vizfeed")
     test("v2 round-trips 64 bands; v1 still decodes", function()
@@ -3445,7 +3508,7 @@ do
     end)
 end
 
-print("settingsfile")
+section("settingsfile")
 test("changes: only the leaves that moved, with their key path", function()
     local before = { bar = { labels = true, wheel = "step" }, theme = { source = "wallpaper" } }
     local after = { bar = { labels = false, wheel = "step" }, theme = { source = "wallpaper" } }
@@ -3488,10 +3551,39 @@ test("copy: a snapshot does not alias the settings", function()
     eq(c.bar.labels, true, "the snapshot kept the old value")
 end)
 
-
+local index = require("lib/settings_index")
+section("settings index")
+test("every row names a page, a title and a place", function()
+    assert(#index >= 150, "the window has far fewer rows than expected")
+    for i, row in ipairs(index) do
+        eq(type(row.title), "string", "title " .. i)
+        assert(row.title ~= "", "empty title " .. i)
+        eq(type(row.page), "string", "page " .. i)
+        assert(row.page ~= "", "empty page " .. i)
+        eq(type(row.tab), "number", "tab " .. i)
+        eq(type(row.y), "number", "y " .. i)
+    end
+end)
+test("every Reset names a real setting or a page marker", function()
+    local known = {}
+    for _, r in ipairs(config.SCHEMA) do known[r.path] = true end
+    for tab, paths in pairs(index.resets) do
+        eq(type(tab), "number", "reset tab")
+        for _, p in ipairs(paths) do
+            assert(p == "@layout" or p == "@keys" or known[p], "unknown reset path: " .. tostring(p))
+        end
+    end
+end)
+test("the pages the window offers are the pages the rows carry", function()
+    local pages = {}
+    for _, r in ipairs(index) do pages[r.page] = true end
+    for _, name in ipairs({ "Quick settings", "Colour", "The bar", "Windows", "Wallpapers", "Control Nexus" }) do
+        assert(pages[name], "missing page: " .. name)
+    end
+end)
 
 local themeprofiles = require("lib/themeprofiles")
-print("notch · wallhaven")
+section("notch · wallhaven")
 test("the search asks for safe pictures the screen's size and shape, a colour when one is chosen", function()
     local u = notch.wallhaven_url(3, -1, 1920, 1080)
     assert(u:find("purity=100", 1, true), "sfw only"); assert(u:find("atleast=1920x1080", 1, true), "size")
@@ -3517,7 +3609,7 @@ test("an answer gives its pictures and pages; anything off Wallhaven's hosts is 
     eq(notch.wallhaven_page({ error = "x" }), nil, "not an answer")
 end)
 
-print("theme packages")
+section("theme packages")
 test("capture exports a complete visual profile but no personal or behavioural settings", function()
     local current = config.defaults()
     current.keys = { overview = "SUPER + Tab" }
@@ -3604,7 +3696,7 @@ test("captured packages are independent copies and empty packages are refused", 
 end)
 
 local components = require("lib/components")
-print("components")
+section("components")
 test("catalogue lists the existing button surfaces in stable order", function()
     local ids = components.ids()
     eq(#ids, 1, "registered components (Lumen's went with the wallpaper studio, D118)")
@@ -3643,7 +3735,7 @@ end)
 local W = require("lib/widgets")
 local S = { w = 1920, h = 1080, top = 34 }
 local json_decode_stub = decode_table(nil)
-print("widgets")
+section("widgets")
 test("widgets.on survives a reload", function()
     local s = config.parse("x", decode_table({ version = 2, widgets = { on = false } }))
     eq(s.widgets.on, false, "kept off")
@@ -3848,7 +3940,7 @@ test("same_doc ignores own write", function()
     local d = W.defaults(1920, 1080); eq(W.same_doc(W.encode(d), W.encode(d)), true, "equal")
 end)
 
-print("wallmap")
+section("wallmap")
 do
     local WM = require("lib/wallmap")
     local W2 = require("lib/widgets")
@@ -3927,7 +4019,7 @@ do
     end)
 end
 
-print("widgets scene ↔ logic")
+section("widgets scene ↔ logic")
 test("every fact the widgets logic writes is declared in its scene", function()
     local function slurp(f) local h = assert(io.open(f)); local x = h:read("a"); h:close(); return x end
     local plm, lua = slurp("shell/mooi-widgets.plm"), slurp("shell/mooi-widgets.luau")
@@ -3952,7 +4044,7 @@ test("every slot the logic can fill has its facts and its model row (W.MAX)", fu
     eq(tonumber(plm:match("model wg max (%d+)")), W.MAX, "the model holds W.MAX")
 end)
 
-print("clock face")
+section("clock face")
 do
     local CF = require("lib/clockface")
     test("the time in words, rounded to five minutes", function()
@@ -3981,7 +4073,7 @@ do
         eq(CF.next_due({ columns = {}, cards = {} }, 200), nil, "none")
     end)
 end
-print("github")
+section("github")
 do
     local GP = require("lib/ghparse")
     local function slurp(f) local h = assert(io.open(f)); local x = h:read("a"); h:close(); return x end
@@ -4012,7 +4104,7 @@ do
         eq(GP.ago("2026-11-01T17:00:00Z", GP.utc("2026-11-03T19:30:00Z")), "2 D", "days")
     end)
 end
-print("widgets · new kinds")
+section("widgets · new kinds")
 test("clock, notes and github: layouts, defaults and limits", function()
     local d = W.defaults(1920, 1080)
     local id
@@ -4029,7 +4121,7 @@ test("clock, notes and github: layouts, defaults and limits", function()
     d = W.set_option(d, g1, "repo", "bad repo"); eq(select(2, W.find(d, g1)).options.repo, "torvalds/linux", "a bad repo is ignored")
 end)
 
-print("widgets · D141")
+section("widgets · D141")
 test("seven more kinds, one each; only music follows the idle rule", function()
     local d, id = W.defaults(1920, 1080), nil
     for _, k in ipairs({ "weather", "system", "calendar", "timer", "claude", "photo", "launch" }) do
@@ -4070,7 +4162,7 @@ test("groups, look and the desk arrangement survive the file", function()
 end)
 
 local json_null_stub = nil
-print("github activity map")
+section("github activity map")
 do
     test("activity map: weeks of days, levels, the total", function()
         local GP2 = require("lib/ghparse")
@@ -4085,7 +4177,7 @@ do
         eq(GP2.heat({ data = { user = json_null_stub } }), nil, "junk refused")
     end)
 end
-print("widgets data")
+section("widgets data")
 do
     local DD = require("lib/deskdata")
     local apps = require("lib/apps")
@@ -4147,7 +4239,7 @@ do
     end)
 end
 
-print("claude fallback, BMO's jokes")
+section("claude fallback, BMO's jokes")
 do
     local CL = require("lib/claude")
     local BR = require("bmo/brain")
@@ -4165,7 +4257,7 @@ do
     end)
 end
 
-print("the settings window's codes (D147)")
+section("the settings window's codes (D147)")
 test("tools/gen-settings.py and lib/setters list the same settings in the same order", function()
     local f = assert(io.open("tools/gen-settings.py"))
     local py = f:read("a"); f:close()
@@ -4182,7 +4274,7 @@ test("tools/gen-settings.py and lib/setters list the same settings in the same o
     local _, p = config.validate({ walls = { folders = { "relative/path" } } }); eq(#p, 1, "a folder must be absolute or ~/")
 end)
 
-print("wallpapers (D145)")
+section("wallpapers (D145)")
 do
     local W = require("lib/walls")
     test("kinds by extension, the index's word first", function()

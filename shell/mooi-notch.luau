@@ -12,7 +12,8 @@ local style = require("lib/style")
 local sysinfo = require("lib/sysinfo")
 local forecast = require("lib/forecast")
 local games = require("lib/games")
-local weathercache = require("lib/weathercache")
+local weathershare = require("lib/weathershare")
+local weatherpanel = require("lib/weatherpanel")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
 local walls = require("lib/walls")
@@ -181,10 +182,16 @@ local function show_chat()
 end
 show_chat()
 local asking = nil
+-- Where Claude and the free models are run: an empty folder of mooi's own under the runtime dir that
+-- `mooi` makes at session start (fourth pass, L3), not the runtime dir itself with its sockets in it.
+-- The runtime dir stands in if the folder is not there (an older launcher), as before.
+local ASK_DIR = env("MOOI_ASK_DIR", "")
+if ASK_DIR == "" then ASK_DIR = env("XDG_RUNTIME_DIR", "/tmp") end
 -- Claude could not answer (D143: no credits, offline, signed out): a free model through opencode, its
 -- models tried in turn, in the same voice, with the last few turns. cb(answer, model) or cb(nil).
 local function ask_free(prompt, persona, cb, i)
     i = i or 1
+    if not claude.free_allowed(settings) then cb(nil, nil, "off"); return end
     local model = claude.FALLBACK_MODELS[i]
     if not model then cb(nil); return end
     local recent = {}
@@ -192,7 +199,9 @@ local function ask_free(prompt, persona, cb, i)
         local t = chat.turns[k]
         if t and t.who ~= "note" and t.text ~= prompt then recent[#recent + 1] = t end
     end
-    local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "timeout", "90", "opencode" }
+    local cmd = { "-C", ASK_DIR }
+    for _, e in ipairs(claude.FREE_ENV) do cmd[#cmd + 1] = e end
+    for _, a in ipairs({ "timeout", "90", "opencode" }) do cmd[#cmd + 1] = a end
     for _, a in ipairs(claude.fallback_args(prompt, persona, model, recent)) do cmd[#cmd + 1] = a end
     launch("env", cmd, function(out)
         local said = claude.fallback_text(out)
@@ -211,7 +220,7 @@ local function ask(prompt)
     local bmo = fact.ch_bmo
     local args = claude.args(prompt, { session = bmo and chat.bmo_session or chat.session, persona = bmo and "bmo" or "chat",
                                        model = type(settings.claude) == "table" and settings.claude.model ~= "default" and settings.claude.model or nil })
-    local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "claude" }
+    local cmd = { "-C", ASK_DIR, "claude" }
     for _, a in ipairs(args) do cmd[#cmd + 1] = a end
     local done, failed = false, nil
     local mine
@@ -243,10 +252,13 @@ local function ask(prompt)
         -- Claude did not answer: a free model instead (D143)
         live = nil
         local why = failed or (code == 127 and "CLAUDE CODE IS NOT INSTALLED" or "CLAUDE ENDED WITHOUT AN ANSWER")
-        text.ch_status = "CLAUDE DIDN'T ANSWER · ASKING A FREE MODEL…"
+        text.ch_status = claude.free_allowed(settings) and "CLAUDE DIDN'T ANSWER · ASKING A FREE MODEL…" or "CLAUDE DIDN'T ANSWER"
         show_chat()
-        ask_free(prompt, bmo and "bmo" or "chat", function(said, model)
-            if said then
+        ask_free(prompt, bmo and "bmo" or "chat", function(said, model, off)
+            if off then
+                chat.turns[#chat.turns + 1] = { who = "note", text = "COULD NOT ASK: " .. string.upper(why) .. " · FREE MODELS ARE OFF (SETTINGS → NEXUS → CLAUDE)" }
+                text.ch_status = "NOT ANSWERED"
+            elseif said then
                 chat.turns[#chat.turns + 1] = { who = bmo and "bmo" or "claude", text = said }
                 chat.turns[#chat.turns + 1] = { who = "note", text = "ANSWERED BY " .. free_name(model) .. " (FREE) · CLAUDE: " .. string.upper(why) }
                 if bmo then launch("pleamar", { "--say", "bmo", wire.say(said), "emit speak" }) end
@@ -270,7 +282,7 @@ on("nt_bmo_q", function()
     if q:match("^%s*$") or bmo_asking then return end
     local args = claude.args(q, { session = chat.bmo_session, persona = "bmo",
                                   model = type(settings.claude) == "table" and settings.claude.model ~= "default" and settings.claude.model or nil })
-    local cmd = { "-C", env("XDG_RUNTIME_DIR", "/tmp"), "claude" }
+    local cmd = { "-C", ASK_DIR, "claude" }
     for _, a in ipairs(args) do cmd[#cmd + 1] = a end
     local said = nil
     local mine
@@ -887,56 +899,35 @@ on("nt_src", function(v)
     base = 0
     if k == 1 then wh.restart() else show_pictures(true) end
 end)
--- ── Weather: the Nexus's cache (ten minutes), else open-meteo ──
-local function kind_of(code, day)
-    local k = sysinfo.weather(code, day)
-    for i, name in ipairs(sysinfo.WEATHER_KINDS) do if name == k then return i - 1 end end
-    return 2
-end
+-- ── Weather: the shared cache and location memo, else open-meteo ──
 local function show_weather(doc)
     local f = forecast.parse(doc.answer)
     if not f then return end
-    local _, word = sysinfo.weather(f.now.code, f.now.day)
-    fact.wx_kind = kind_of(f.now.code, f.now.day)
-    text.wx_temp = string.format("%d°", math.floor(f.now.temp + 0.5))
-    text.wx_word = string.upper(tostring(word or ""))
-    text.wx_feels = string.format("FEELS %d°", math.floor((tonumber(f.now.feels) or f.now.temp) + 0.5))
-    text.wx_range = f.today and f.today.hi and string.format("↑ %d°  ↓ %d°", math.floor(f.today.hi + 0.5), math.floor(f.today.lo + 0.5)) or ""
+    local cur = weatherpanel.current(f)
+    fact.wx_kind = cur.kind
+    text.wx_temp = cur.temp
+    text.wx_word = cur.word
+    text.wx_feels = cur.feels
+    text.wx_range = cur.range
     text.wx_place = string.upper(tostring(doc.city or ""))
-    local bars = N.bars(f.hours)
-    local rows = {}
-    for i, h in ipairs(f.hours) do rows[i] = { label = h.label .. ":00", t = string.format("%d°", math.floor(h.temp + 0.5)), v = bars[i], kind = kind_of(h.code, h.day) } end
-    model.hrs = rows
-    local lo, hi = math.huge, -math.huge
-    for _, d in ipairs(f.days) do lo, hi = math.min(lo, d.lo), math.max(hi, d.hi) end
-    local span = math.max(1, hi - lo)
-    local drows = {}
-    for i, d in ipairs(f.days) do
-        drows[i] = { label = string.upper(string.sub(d.label, 1, 3)), hi = tostring(math.floor(d.hi + 0.5)), lo = tostring(math.floor(d.lo + 0.5)),
-                     kind = kind_of(d.code, 1), lo_v = (d.lo - lo) / span, hi_v = (d.hi - lo) / span }
-    end
-    model.dys = drows
+    model.hrs = weatherpanel.hours(f, N.bars(f.hours))
+    model.dys = weatherpanel.days(f)
     fact.wx_ok = true
 end
 local function read_weather()
-    local cached = read("nexus-weather.json")
-    if type(cached) == "table" and type(cached.answer) == "table" then show_weather(cached) end
-    if weathercache.fresh(cached, os.time(), 600) then return end
-    launch("curl", { "-fsSL", "--max-time", "8", "https://ipinfo.io/json" }, function(out)
-        local where = decode(out)
-        local lat, lon = weathercache.coordinates(where)
-        if not lat then return end
-        launch("curl", { "-fsSL", "--max-time", "12", forecast.url(lat, lon) }, function(ans)
-            local t = decode(ans)
-            if type(t) ~= "table" then return end
-            local doc = { at = os.time(), city = where.city, answer = t }
-            pcall(sys.call, "files.write", "nexus-weather.json", doc)
-            show_weather(doc)
-        end)
+    local cached = weathershare.cached(read, os.time())
+    if cached then show_weather(cached) end
+    local function fetch(url, done)
+        launch("curl", { "-fsSL", "--max-time", "12", url }, function(out) done(decode(out)) end)
+    end
+    weathershare.refresh({ read = read, fetch = fetch,
+                           write = function(name, doc) pcall(sys.call, "files.write", name, doc) end }, function(doc)
+        if doc and doc ~= cached then show_weather(doc) end
     end)
 end
 
 -- ── GitHub: through `gh`, signed in as you; read when the panel opens, kept five minutes ──
+local ghparse = require("lib/ghparse")
 local gh_at, gh_urls, gh_user = 0, {}, nil
 local function ago(iso)
     local y, mo, d, h, mi = tostring(iso or ""):match("^(%d+)-(%d+)-(%d+)T(%d+):(%d+)")
@@ -1018,6 +1009,7 @@ end
 on("nt_gh", function(v)
     local n = math.floor(tonumber(v) or -1)
     local url = n == 0 and gh_user and ("https://github.com/" .. gh_user) or (n == 10 and "https://github.com/notifications") or gh_urls[n]
+    url = ghparse.web_url(url)
     if url then launch("xdg-open", { url }); fact.nt_open, fact.nt_tab, fact.nt_pin = false, -1, false; viz() end
 end)
 

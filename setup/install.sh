@@ -34,6 +34,8 @@ command -v pacman >/dev/null || { echo "install: this is for Arch-based systems 
 missing=""
 if $packages; then
     say "packages: updating and installing from the repositories (sudo)"
+    # -Syu, not -Sy: Arch does not support installing onto a partly upgraded system. Unattended on
+    # purpose; run with --no-packages to manage packages yourself.
     sudo pacman -Syu --needed --noconfirm base-devel git rsync
     avail=$(mktemp)
     pacman -Slq | sort -u > "$avail"
@@ -103,7 +105,9 @@ backup="$HOME/.setup-backup-$(date +%Y%m%d-%H%M%S)"
 say "files: into your home (what they replace goes to $backup)"
 # each top-level thing the capture holds (~/.config/hypr, ~/.local/share/fonts, …) is replaced whole,
 # so nothing of an old config is left mixed into the new one
-for item in $(cd "$here/home" && find . -mindepth 1 -maxdepth 3 \( -path './.config/*' -o -path './.local/share/*' -o -path './.icons' -o -path './.themes' \) -prune -print | sed 's|^\./||'); do
+# (read line by line, not split by the shell: a name with a space in it stays one name; fourth pass, L12)
+(cd "$here/home" && find . -mindepth 1 -maxdepth 3 \( -path './.config/*' -o -path './.local/share/*' -o -path './.icons' -o -path './.themes' \) -prune -print | sed 's|^\./||') > "$backup.list" || exit 1
+while IFS= read -r item <&3; do
     case "$item" in .local/share/pleamar) continue ;; esac
     if [ -e "$HOME/$item" ] || [ -L "$HOME/$item" ]; then
         mkdir -p "$backup/$(dirname "$item")"
@@ -111,7 +115,8 @@ for item in $(cd "$here/home" && find . -mindepth 1 -maxdepth 3 \( -path './.con
     fi
     mkdir -p "$HOME/$(dirname "$item")"
     cp -a "$here/home/$item" "$HOME/$item"
-done
+done 3< "$backup.list"
+rm -f "$backup.list"
 # mooi's state folder: its files laid over, never the whole folder (caches and pictures it makes stay)
 mkdir -p "$HOME/.local/share/pleamar/mooi"
 if [ -d "$HOME/.local/share/pleamar/mooi" ] && [ -n "$(ls -A "$HOME/.local/share/pleamar/mooi" 2>/dev/null)" ]; then

@@ -14,7 +14,8 @@ local sysinfo = require("lib/sysinfo")
 local stats = require("lib/stats")
 local coverart = require("lib/cover")
 local forecast = require("lib/forecast")
-local weathercache = require("lib/weathercache")
+local weathershare = require("lib/weathershare")
+local weatherpanel = require("lib/weatherpanel")
 local nexusfeed = require("lib/nexusfeed")
 local hypr = require("lib/hypr")
 local atlas = require("lib/atlas")
@@ -28,6 +29,7 @@ local function env(name, fallback)
     if ok and type(v) == "string" and v ~= "" then return v end
     return fallback
 end
+local settingsfile = require("lib/settingsfile")
 local function read(name, kind)
     local ok, v = pcall(sys.ask, "files.read", name, kind or "json")
     return ok and v or nil
@@ -265,13 +267,17 @@ local function read_parts()
     canvas = deck.clean_canvas(n.canvas)
 end
 read_parts()
+-- Through lib/settingsfile like every other writer (fourth pass, L7): only the leaves this change
+-- touched are laid over the file as it is at the moment of writing, and a failed write is logged.
 local function save_settings(change)
     if SAFE then return end
-    local doc = read(FILE)       -- read again: whatever changed elsewhere is kept
-    if type(doc) ~= "table" then return end
-    doc.nexus = type(doc.nexus) == "table" and doc.nexus or {}
-    change(doc.nexus)
-    pcall(sys.call, "files.write", FILE, doc)
+    local before = read(FILE)
+    if type(before) ~= "table" then return end
+    local after = settingsfile.copy(before)
+    after.nexus = type(after.nexus) == "table" and after.nexus or {}
+    change(after.nexus)
+    local doc, why = settingsfile.save(sys, FILE, before, after, function() return read(FILE) end)
+    if not doc then pcall(log, "nexus · settings not saved: " .. tostring(why)) end
 end
 local function save_parts()
     save_settings(function(n)
@@ -710,11 +716,11 @@ end
 local function show_weather(doc)
     local f = forecast.parse(doc.answer)
     if not f then return end
-    local kind, word = sysinfo.weather(f.now.code, f.now.day)
-    weather = string.format("%s %d°", tostring(word or ""), math.floor((tonumber(f.now.temp) or 0) + 0.5))
-    for i, name in ipairs(sysinfo.WEATHER_KINDS) do if name == kind then fact.wx_kind = i - 1 end end
-    text.wx_t = string.format("%d°", math.floor((tonumber(f.now.temp) or 0) + 0.5))
-    text.wx_word = string.upper(tostring(word or ""))
+    local cur = weatherpanel.current(f)
+    weather = string.format("%s %s", cur.word, cur.temp)
+    fact.wx_kind = cur.kind
+    text.wx_t = cur.temp
+    text.wx_word = cur.word
     fact.wx_ok = true
     publish_wait()
 end
@@ -735,22 +741,15 @@ do
     model.days = rows
 end
 do
-    local cached = read("nexus-weather.json")
-    if type(cached) == "table" and type(cached.answer) == "table" then show_weather(cached) end
-    if not weathercache.fresh(cached, os.time(), 600) then
-        launch("curl", { "-fsSL", "--max-time", "8", "https://ipinfo.io/json" }, function(out)
-            local where = decode(out)
-            local lat, lon = weathercache.coordinates(where)
-            if not lat then return end
-            launch("curl", { "-fsSL", "--max-time", "12", forecast.url(lat, lon) }, function(ans)
-                local t = decode(ans)
-                if type(t) ~= "table" then return end
-                local doc = { at = os.time(), city = where.city, answer = t }
-                pcall(sys.call, "files.write", "nexus-weather.json", doc)
-                show_weather(doc)
-            end)
-        end)
+    local cached = weathershare.cached(read, os.time())
+    if cached then show_weather(cached) end
+    local function fetch(url, done)
+        launch("curl", { "-fsSL", "--max-time", "12", url }, function(out) done(decode(out)) end)
     end
+    weathershare.refresh({ read = read, fetch = fetch,
+                           write = function(name, doc) pcall(sys.call, "files.write", name, doc) end }, function(doc)
+        if doc and doc ~= cached then show_weather(doc) end
+    end)
 end
 
 -- ── Scenes: whole setups at a press ──

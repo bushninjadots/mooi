@@ -107,6 +107,12 @@ SETTERS = [
     # Nautilus's own layer on top of GTK (apps.files): its CSS classes and Papirus's folders
     # recoloured to the palette. Appended, so no code moved.
     "apps.files",
+    # D159: kitty's own custom shaders (kitty >= 0.49): the switch, which pipeline, and the pipeline
+    # of your own that `custom` wears. Appended, so no code moved; `mooi kitty-shaders` writes it.
+    "desktop.kitty_shader_on", "desktop.kitty_shader", "desktop.kitty_shader_custom",
+    "desktop.kitty_shader_tint", "desktop.kitty_shader_colour",
+    # whether a free model may answer when Claude cannot (claude.free_fallback). Appended, so no code moved.
+    "claude.free_fallback",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -351,6 +357,23 @@ SECTIONS = [
          ["Off", "Channel", "Circuit", "Stretch", "Halftone", "Board", "Sigil"]),
         ("slider", "How long", "The shader's own length, against the kind's timing; the move itself has its Duration above", "desktop.ws_fx_speed", 50, 200,
          "{sv_desktop_ws_fx_speed + 50, 0}%", "sv_desktop_ws_fx != 0"),
+        # D159: kitty's own custom shaders. A card of its own, because the conf file mooi writes is
+        # kitty's, not the compositor's, and it survives mooi not styling the windows at all.
+        ("card", "Kitty screen shaders"),
+        ("toggle", "On", "kitty's own custom_shaders (kitty 0.49+): mooi writes a small include into kitty.conf and asks kitty to read its config again", "desktop.kitty_shader_on", "sv_desktop_kitty_shader_on"),
+        ("choice", "Shader", "A pipeline kitty ships with. Cursor trails need cursor trails on in kitty.conf first", "desktop.kitty_shader", "sv_desktop_kitty_shader",
+         ["CRT", "Mooi CRT", "CRT blue", "Thin-film LCD", "Dim inactive", "Matrix", "Cursor trail", "Mine"]),
+        ("choice", "Colour", "Which of the palette's colours tints the glass; a role it lacks falls back to primary",
+         "desktop.kitty_shader_colour", "sv_desktop_kitty_shader_colour",
+         [("Primary", 0), ("Secondary", 1), ("Tertiary", 2), ("Text", 3), ("Text dim", 4), ("Outline", 5), ("Error", 12)],
+         "sv_desktop_kitty_shader == 1"),
+        ("choice", "", "…or a neutral one", "desktop.kitty_shader_colour", "sv_desktop_kitty_shader_colour",
+         [("Outline dim", 6), ("Panel low", 7), ("Panel", 8), ("Panel mid", 9), ("Panel high", 10), ("Surface", 11)],
+         "sv_desktop_kitty_shader == 1"),
+        ("slider", "Tint", "How much of that colour is laid over the CRT; 0 is kitty's own picture", "desktop.kitty_shader_tint", 0, 100,
+         "{sv_desktop_kitty_shader_tint, 0}%", "sv_desktop_kitty_shader == 1"),
+        ("kittyfile", "Your pipeline", "A .pipeline or .slang of your own, chosen by path and read by kitty itself (Mine above)", "desktop.kitty_shader_custom", "set_kitty_shader_file", None,
+         "sv_desktop_kitty_shader == 7"),
         ("card", "Tiling", "dk_manage"),
         ("choice", "Layout", "How tiled windows are arranged", "desktop.layout", "sv_desktop_layout", ["Keep mine", "Dwindle", "Master", "Scrolling", "Monocle"]),
         ("slider", "Column width", "Scrolling layout: a new column's width", "desktop.column", 9, 100,
@@ -586,6 +609,7 @@ SECTIONS = [
         ("note", "sv_notch_on == 1", "DRAG IT ALONG THE EDGE TO MOVE IT; IT STAYS WHERE YOU LEAVE IT"),
         ("card", "Claude"),
         ("choice", "Model", "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", "claude.model", "sv_claude_model", ["Default", "Haiku", "Sonnet", "Opus"]),
+        ("toggle", "Free models when Claude can't", "If Claude doesn't answer, ask a free model through opencode instead. It sends your question and the last few turns to a third party", "claude.free_fallback", "sv_claude_free_fallback"),
         ("note", "true", "IT CAN TALK, NOT ACT: NO TOOLS, NO FILES. BMO'S CHAT IS IN HIS PANEL"),
     ]),
 ]
@@ -715,6 +739,14 @@ def row_lines(r, y, first, reverted):
         lines.append(f'box {{ from: {XR - 100}, {y + 13}; size: 88, 34; corner: 6; stroke: 1; color: fl.trace_lit }}')
         lines.append(f'text {key}_hex {{ at: {XR - 56}, {y + 30}; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }}')
         return lines, 62
+    if k == "kittyfile":
+        # a pipeline of the user's own (desktop.kitty_shader == custom): chosen with zenity and kept
+        # as the path kitty reads, never copied; the logic saves it (set_kitty_shader_file)
+        _, title, desc, path, ev = r[:5]
+        lines.append(f'SRow({y}, "{title}", "{desc}", true, "", 400, {rule})')
+        lines.append(f'text kitty_shader_now {{ at: {XR - 200}, {y + 30}; anchor: right center; size: 10; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 300; lines: 1; align: right }}')
+        lines.append(f'SButton({XR - 190}, {y + 15}, 190, "Choose a pipeline", {ev}, 0)')
+        return lines, 60
     if k == "button":
         _, title, desc, label, ev, n = r
         n = TAB[n] if n in TAB else n
@@ -1205,7 +1237,7 @@ def main():
         for i in range(1, 4)) + (
         "    // The shaders' own three colours (desktop.fx_phos/ember/trace), the `custom` light: each typed\n"
         "    // as #rrggbb into its field, read back and saved by the logic (set_fxcolour: 1, 2 or 3).\n"
-        "    event set_fxcolour ->\n") + "".join(f"    fact lay_c{n} = true\n" for n in range(1, 9)) + "".join(f"    fact lz{z}_y = 0\n    fact lz{z}_h = 90\n    fact lz{z}_n = 0\n" for z in range(4)) + """
+        "    event set_fxcolour ->\n    text kitty_shader_now = \"\"\n    event set_kitty_shader_file ->\n") + "".join(f"    fact lay_c{n} = true\n" for n in range(1, 9)) + "".join(f"    fact lz{z}_y = 0\n    fact lz{z}_h = 90\n    fact lz{z}_n = 0\n" for z in range(4)) + """
 """ + "\n".join(PROPS) + """
     // A page chosen slides in: it starts a little low and clear, and settles.
     prop pg = 1

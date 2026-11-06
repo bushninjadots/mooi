@@ -2,6 +2,8 @@ language 0.9
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 
+// GENERATED in part by tools/gen-frame.py — edit the generator, not the <gen:frame> block.
+//
 // mooi's screen frame (D119, D127): the chassis, after iNiR's iRiS frame. The band round the screen and
 // every piece of the bar are one body — melted together, one fill, one border, one shadow — so the bar
 // grows out of the frame instead of floating over it, in every mode (islands, full, notch). It is a
@@ -3483,23 +3485,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.0625
-                               line bs + sw3, H * 0.0625
-                               line bs + sw4, H * 0.083333
-                               line bs + sw5, H * 0.104167
-                               line bs + sw6, H * 0.125
-                               line bs + sw7, H * 0.145833
-                               line bs + sw8, H * 0.166667
-                               line bs + sw9, H * 0.1875
-                               line bs + sw10, H * 0.208333
-                               line bs + sw11, H * 0.229167
-                               line bs + sw12, H * 0.25
-                               line bs + sw13, H * 0.270833
-                               line bs + sw14, H * 0.291667
-                               line bs + sw15, H * 0.3125
-                               line -40, H * 0.3125
-                               close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3515,23 +3500,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.1875
-                               line bs + sw9, H * 0.1875
-                               line bs + sw10, H * 0.208333
-                               line bs + sw11, H * 0.229167
-                               line bs + sw12, H * 0.25
-                               line bs + sw13, H * 0.270833
-                               line bs + sw14, H * 0.291667
-                               line bs + sw15, H * 0.3125
-                               line bs + sw16, H * 0.333333
-                               line bs + sw17, H * 0.354167
-                               line bs + sw18, H * 0.375
-                               line bs + sw19, H * 0.395833
-                               line bs + sw20, H * 0.416667
-                               line bs + sw21, H * 0.4375
-                               line -40, H * 0.4375
-                               close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3547,22 +3515,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.3125
-                               line bs + sw15, H * 0.3125
-                               line bs + sw16, H * 0.333333
-                               line bs + sw17, H * 0.354167
-                               line bs + sw18, H * 0.375
-                               line bs + sw19, H * 0.395833
-                               line bs + sw20, H * 0.416667
-                               line bs + sw21, H * 0.4375
-                               line bs + sw22, H * 0.458333
-                               line bs + sw23, H * 0.479167
-                               line bs + sw24, H * 0.5
-                               line bs + sw25, H * 0.520833
-                               line bs + sw26, H * 0.541667
-                               line bs + sw27, H * 0.5625
-                               line -40, H * 0.5625
-                               close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3578,22 +3530,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.4375
-                               line bs + sw21, H * 0.4375
-                               line bs + sw22, H * 0.458333
-                               line bs + sw23, H * 0.479167
-                               line bs + sw24, H * 0.5
-                               line bs + sw25, H * 0.520833
-                               line bs + sw26, H * 0.541667
-                               line bs + sw27, H * 0.5625
-                               line bs + sw28, H * 0.583333
-                               line bs + sw29, H * 0.604167
-                               line bs + sw30, H * 0.625
-                               line bs + sw31, H * 0.645833
-                               line bs + sw32, H * 0.666667
-                               line bs + sw33, H * 0.6875
-                               line -40, H * 0.6875
-                               close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3609,23 +3545,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.5625
-                               line bs + sw27, H * 0.5625
-                               line bs + sw28, H * 0.583333
-                               line bs + sw29, H * 0.604167
-                               line bs + sw30, H * 0.625
-                               line bs + sw31, H * 0.645833
-                               line bs + sw32, H * 0.666667
-                               line bs + sw33, H * 0.6875
-                               line bs + sw34, H * 0.708333
-                               line bs + sw35, H * 0.729167
-                               line bs + sw36, H * 0.75
-                               line bs + sw37, H * 0.770833
-                               line bs + sw38, H * 0.791667
-                               line bs + sw39, H * 0.8125
-                               line -40, H * 0.8125
-                               close }
-                        path { show: band_on; move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3641,23 +3560,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.6875
-                               line bs + sw33, H * 0.6875
-                               line bs + sw34, H * 0.708333
-                               line bs + sw35, H * 0.729167
-                               line bs + sw36, H * 0.75
-                               line bs + sw37, H * 0.770833
-                               line bs + sw38, H * 0.791667
-                               line bs + sw39, H * 0.8125
-                               line bs + sw40, H * 0.833333
-                               line bs + sw41, H * 0.854167
-                               line bs + sw42, H * 0.875
-                               line bs + sw43, H * 0.895833
-                               line bs + sw44, H * 0.916667
-                               line bs + sw45, H * 0.9375
-                               line -40, H * 0.9375
-                               close }
-                        path { show: band_on; move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3673,20 +3575,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move -40, H * 0.8125
-                               line bs + sw39, H * 0.8125
-                               line bs + sw40, H * 0.833333
-                               line bs + sw41, H * 0.854167
-                               line bs + sw42, H * 0.875
-                               line bs + sw43, H * 0.895833
-                               line bs + sw44, H * 0.916667
-                               line bs + sw45, H * 0.9375
-                               line bs + sw46, H * 0.958333
-                               line bs + sw47, H * 0.979167
-                               line bs + sw48, H * 1
-                               line -40, H * 1
-                               close }
-                        path { show: band_on; move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3702,23 +3590,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.0625
-                               line W - bs - sw3, H * 0.0625
-                               line W - bs - sw4, H * 0.083333
-                               line W - bs - sw5, H * 0.104167
-                               line W - bs - sw6, H * 0.125
-                               line W - bs - sw7, H * 0.145833
-                               line W - bs - sw8, H * 0.166667
-                               line W - bs - sw9, H * 0.1875
-                               line W - bs - sw10, H * 0.208333
-                               line W - bs - sw11, H * 0.229167
-                               line W - bs - sw12, H * 0.25
-                               line W - bs - sw13, H * 0.270833
-                               line W - bs - sw14, H * 0.291667
-                               line W - bs - sw15, H * 0.3125
-                               line W + 40, H * 0.3125
-                               close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3734,23 +3605,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.1875
-                               line W - bs - sw9, H * 0.1875
-                               line W - bs - sw10, H * 0.208333
-                               line W - bs - sw11, H * 0.229167
-                               line W - bs - sw12, H * 0.25
-                               line W - bs - sw13, H * 0.270833
-                               line W - bs - sw14, H * 0.291667
-                               line W - bs - sw15, H * 0.3125
-                               line W - bs - sw16, H * 0.333333
-                               line W - bs - sw17, H * 0.354167
-                               line W - bs - sw18, H * 0.375
-                               line W - bs - sw19, H * 0.395833
-                               line W - bs - sw20, H * 0.416667
-                               line W - bs - sw21, H * 0.4375
-                               line W + 40, H * 0.4375
-                               close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3766,22 +3620,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.3125
-                               line W - bs - sw15, H * 0.3125
-                               line W - bs - sw16, H * 0.333333
-                               line W - bs - sw17, H * 0.354167
-                               line W - bs - sw18, H * 0.375
-                               line W - bs - sw19, H * 0.395833
-                               line W - bs - sw20, H * 0.416667
-                               line W - bs - sw21, H * 0.4375
-                               line W - bs - sw22, H * 0.458333
-                               line W - bs - sw23, H * 0.479167
-                               line W - bs - sw24, H * 0.5
-                               line W - bs - sw25, H * 0.520833
-                               line W - bs - sw26, H * 0.541667
-                               line W - bs - sw27, H * 0.5625
-                               line W + 40, H * 0.5625
-                               close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3797,22 +3635,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.4375
-                               line W - bs - sw21, H * 0.4375
-                               line W - bs - sw22, H * 0.458333
-                               line W - bs - sw23, H * 0.479167
-                               line W - bs - sw24, H * 0.5
-                               line W - bs - sw25, H * 0.520833
-                               line W - bs - sw26, H * 0.541667
-                               line W - bs - sw27, H * 0.5625
-                               line W - bs - sw28, H * 0.583333
-                               line W - bs - sw29, H * 0.604167
-                               line W - bs - sw30, H * 0.625
-                               line W - bs - sw31, H * 0.645833
-                               line W - bs - sw32, H * 0.666667
-                               line W - bs - sw33, H * 0.6875
-                               line W + 40, H * 0.6875
-                               close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3828,23 +3650,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.5625
-                               line W - bs - sw27, H * 0.5625
-                               line W - bs - sw28, H * 0.583333
-                               line W - bs - sw29, H * 0.604167
-                               line W - bs - sw30, H * 0.625
-                               line W - bs - sw31, H * 0.645833
-                               line W - bs - sw32, H * 0.666667
-                               line W - bs - sw33, H * 0.6875
-                               line W - bs - sw34, H * 0.708333
-                               line W - bs - sw35, H * 0.729167
-                               line W - bs - sw36, H * 0.75
-                               line W - bs - sw37, H * 0.770833
-                               line W - bs - sw38, H * 0.791667
-                               line W - bs - sw39, H * 0.8125
-                               line W + 40, H * 0.8125
-                               close }
-                        path { show: band_on; move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3860,23 +3665,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.6875
-                               line W - bs - sw33, H * 0.6875
-                               line W - bs - sw34, H * 0.708333
-                               line W - bs - sw35, H * 0.729167
-                               line W - bs - sw36, H * 0.75
-                               line W - bs - sw37, H * 0.770833
-                               line W - bs - sw38, H * 0.791667
-                               line W - bs - sw39, H * 0.8125
-                               line W - bs - sw40, H * 0.833333
-                               line W - bs - sw41, H * 0.854167
-                               line W - bs - sw42, H * 0.875
-                               line W - bs - sw43, H * 0.895833
-                               line W - bs - sw44, H * 0.916667
-                               line W - bs - sw45, H * 0.9375
-                               line W + 40, H * 0.9375
-                               close }
-                        path { show: band_on; move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3892,20 +3680,6 @@ scene Frame {
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
                         border: if(st_frame_edge < 1.5, st_owidth, 0), fnec
-                        path { show: band_on; move W + 40, H * 0.8125
-                               line W - bs - sw39, H * 0.8125
-                               line W - bs - sw40, H * 0.833333
-                               line W - bs - sw41, H * 0.854167
-                               line W - bs - sw42, H * 0.875
-                               line W - bs - sw43, H * 0.895833
-                               line W - bs - sw44, H * 0.916667
-                               line W - bs - sw45, H * 0.9375
-                               line W - bs - sw46, H * 0.958333
-                               line W - bs - sw47, H * 0.979167
-                               line W - bs - sw48, H * 1
-                               line W + 40, H * 1
-                               close }
-                        path { show: band_on; move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }

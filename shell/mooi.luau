@@ -178,7 +178,7 @@ local function load_settings()
         end
     end
     if state == "missing" then
-        sys.call("files.write", FILE, config.defaults())
+        sys.call("files.write", FILE, config.defaults())   -- settings-write: ok (no file yet: nothing to merge into)
         log("settings · wrote defaults to " .. sys.ask("files.folder") .. "/" .. FILE)
     end
     if state == "ok" then sys.call("files.write", KNOWN_GOOD, s) end

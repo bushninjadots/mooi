@@ -11,7 +11,7 @@ language 0.9
 
 scene Desk {
     permissions {
-        run: "readlink", "pleamar", "mooi", "hyprctl"
+        run: "readlink", "mooi", "hyprctl"
         services: "workspaces", "files", "env"
     }
 

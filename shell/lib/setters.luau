@@ -111,6 +111,13 @@ M.SETTERS = {
     -- Nautilus's own layer on top of apps.gtk (apps.files): the CSS classes apps-sync appends to
     -- gtk.css and Papirus's folders recoloured to the palette. Appended, so no code moved.
     "apps.files",
+    -- D159: kitty's own custom shaders (kitty ≥ 0.49): the switch, which pipeline, and the pipeline
+    -- of your own that `custom` wears. Appended, so no code moved. The conf is written by
+    -- `mooi kitty-shaders` (bin/mooi), never by a scene: the files service stops at mooi's folder.
+    "desktop.kitty_shader_on", "desktop.kitty_shader", "desktop.kitty_shader_custom",
+    "desktop.kitty_shader_tint", "desktop.kitty_shader_colour",
+    -- whether a free model may answer when Claude cannot (claude.free_fallback). Appended, so no code moved.
+    "claude.free_fallback",
 }
 
 local function row_of(path)

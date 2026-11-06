@@ -129,6 +129,9 @@ M.SCHEMA = {
     -- wallpapers, weather and GitHub; the Claude it asks (an alias `claude --model` takes; empty: its default)
     { path = "notch.on", kind = "boolean", default = true },
     { path = "claude.model", kind = "enum", values = { "default", "haiku", "sonnet", "opus" }, default = "default", empty = true },
+    -- When Claude cannot answer, whether a free model through opencode may (D143). Off by default:
+    -- it sends the question and the last turns to a third party (fourth pass, L3).
+    { path = "claude.free_fallback", kind = "boolean", default = false },
     { path = "motion.reduced", kind = "boolean", default = false },
     -- How fast everything moves (%, the springs scaled when the bar starts: bin/mooi snapshot), and
     -- the battery saver: glow, aberration, the frame's music and the visualizer off — on battery,
@@ -214,6 +217,26 @@ M.SCHEMA = {
     { path = "desktop.ws_feel", kind = "enum", values = { "keep", "ease", "spring", "bounce" }, default = "keep" },
     { path = "desktop.ws_speed", kind = "integer", default = 0, min = 0, max = 12 },
     { path = "desktop.ws_swipe", kind = "enum", values = { "keep", "flick", "steady" }, default = "keep" },
+    -- Kitty's own custom shaders (kitty ≥ 0.49, the `custom_shaders` option): mooi writes a small
+    -- include beside the settings and points kitty.conf at it, then asks kitty to read its config
+    -- again. The value names a pipeline kitty ships with, `mooi-crt` (kitty's crt tinted with a
+    -- colour from the bar's palette, rendered from palette.json), or — `custom` — a pipeline of
+    -- your own, kept as the path kitty itself understands (absolute, or under ~/.config/kitty/shaders/).
+    { path = "desktop.kitty_shader_on", kind = "boolean", default = false },
+    { path = "desktop.kitty_shader", kind = "enum",
+      values = { "crt", "mooi-crt", "crt-blue", "tft", "dim-inactive-windows", "inside-the-matrix", "cursor-trail-motion-blur", "custom" },
+      default = "crt" },
+    -- Which of the palette's colours does the tinting: a role from palette.json, `primary` by
+    -- default (the accent the bar wears), or a neutral for a colder glass. A role the palette
+    -- does not carry falls back to `primary`.
+    { path = "desktop.kitty_shader_colour", kind = "enum",
+      values = { "primary", "secondary", "tertiary", "on_surface", "on_surface_variant", "outline",
+                 "outline_variant", "surface_container_lowest", "surface_container_low",
+                 "surface_container", "surface_container_high", "surface_dim", "error" },
+      default = "primary" },
+    -- How much of that colour is laid over the picture: 0 is kitty's own crt, 100 the full tint.
+    { path = "desktop.kitty_shader_tint", kind = "integer", default = 55, min = 0, max = 100 },
+    { path = "desktop.kitty_shader_custom", kind = "text", max = 200, default = "" },
     -- D158: the workspaces' shader transition. One switch and one choice in one: `off` is the
     -- switch, and naming a kind is what turns it on. Hyprland's screen shader (lib/wsfx writes it,
     -- bin/mooi ws-fx applies it at each workspace change) runs for the length of that move and is
@@ -438,7 +461,8 @@ M.SCHEMA = {
     { path = "walls.auto_from", kind = "enum", values = { "all", "pictures", "live", "colour", "wallhaven" }, default = "pictures" },
     { path = "walls.auto_fullscreen", kind = "boolean", default = true },
     -- Wallhaven (wallhaven.cc) in the picker: what its searches ask for. Sketchy and NSFW need an API
-    -- key, kept in ~/.config/mooi/wallhaven.key (never in the settings)
+    -- key, kept in mooi's data folder as wallhaven.key (0600), with ~/.config/mooi/wallhaven.key as a
+    -- fallback (audit 2026-11-06, G13); never in the settings
     { path = "wallhaven.categories", kind = "enum", values = { "general", "anime", "people", "general+anime", "general+people", "anime+people", "all" }, default = "general+anime" },
     { path = "wallhaven.purity", kind = "enum", values = { "sfw", "sfw+sketchy", "sketchy", "nsfw", "all" }, default = "sfw" },
     { path = "wallhaven.sorting", kind = "enum", values = { "toplist", "hot", "latest", "random" }, default = "toplist" },

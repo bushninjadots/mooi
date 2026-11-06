@@ -109,4 +109,13 @@ function M.heat(doc, weeks, null)
     return { total = tonumber(cal.totalContributions) or 0, cells = cells }
 end
 
+-- A link from `gh`'s output that may be handed to xdg-open (fourth pass, L11): GitHub's own web
+-- pages only, https, no spaces or control characters. Anything else is nil, so nothing else opens.
+function M.web_url(u)
+    if type(u) ~= "string" or #u > 2048 then return nil end
+    if u:find("[%c%s]") then return nil end
+    if not u:match("^https://github%.com/") then return nil end
+    return u
+end
+
 return M

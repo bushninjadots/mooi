@@ -1189,7 +1189,8 @@ on("gh_open", function(v)
     local e = repo and gh[repo]
     if not e or not e.card then return end
     local url = i == 0 and e.card.url or (i <= 8 and e.card.commits[i] and e.card.commits[i].url) or (i >= 11 and e.runs[i - 10] and e.runs[i - 10].url)
-    if url and url ~= "" then run("xdg-open", { url }) end
+    url = GP.web_url(url)
+    if url then run("xdg-open", { url }) end
 end)
 
 -- ── D141: the feeders of the weather, system, calendar, focus timer, Claude, photo and launcher ──

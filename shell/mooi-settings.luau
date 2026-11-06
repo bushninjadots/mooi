@@ -117,6 +117,10 @@ local function publish(s)
     local id = type(s.nexus) == "table" and type(s.nexus.identity) == "table" and s.nexus.identity or {}
     local function ispic(rel) return type(rel) == "string" and rel ~= "" end
     text.lock_pic_now = ispic(id.banner) and "BANNER" or (ispic(id.avatar) and "PROFILE PICTURE" or "NONE YET")
+    -- the kitty pipeline the Custom choice picked (Settings → Windows): its last path part, and
+    -- NONE YET when there is none to name
+    local kp = tostring(s.desktop.kitty_shader_custom or "")
+    text.kitty_shader_now = (kp ~= "" and string.match(kp, "[^/]+$")) or "NONE YET"
     if layout then layout(s) end
     if show_colour then show_colour() end
     if show_fxcolours then show_fxcolours() end
@@ -245,10 +249,23 @@ on("key_up", function(name) if MODS[name] then held[MODS[name]] = nil end end)
 
 -- A control pressed: the setting, written. mooi's file watch does the rest (and extracts a new
 -- palette when the scheme, the colour or the contrast changed).
+-- A strength dragged step by step would recompile the pipeline on every step, so the tint waits
+-- for the hand to settle: one write 350 ms after the last step, and nothing while it is moving.
+local tint_drag = 0
 on("set_value", function(n)
-    if not setters.apply(settings, n) then return end
+    local path = setters.apply(settings, n)
+    if not path then return end
     save()
     paint()
+    -- kitty's own screen shader is a file kitty reads, not a fact the bar wears: the shell writes it
+    -- and asks kitty to reload (`mooi kitty-shaders`), so a change lands in windows already open
+    if path == "desktop.kitty_shader_tint" then
+        tint_drag = tint_drag + 1
+        local mine = tint_drag
+        after(350, function() if tint_drag == mine then run("mooi", { "kitty-shaders" }) end end)
+    elseif path == "desktop.kitty_shader_on" or path == "desktop.kitty_shader" then
+        run("mooi", { "kitty-shaders" })
+    end
 end)
 
 -- 1: the bar's edit mode (the bar is told, it is the bar's state); 9: close this window.
@@ -484,6 +501,22 @@ local function reset_page(tab)
     end
     save(); paint()
 end
+-- ── Kitty's own screen shaders (D159) ────────────────────
+-- A pipeline of the user's own (desktop.kitty_shader = custom): chosen with zenity and kept as the
+-- path kitty itself understands, never copied. It is kitty's file; mooi only points kitty at it.
+on("set_kitty_shader_file", function()
+    local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose a kitty shader pipeline",
+                                       "--file-filter=Pipelines | *.pipeline *.slang" }, function(out, code)
+        local path = (out or ""):match("^%s*(.-)%s*$")
+        if code ~= 0 or path == "" or #path > 200 then return end
+        settings.desktop.kitty_shader = "custom"
+        settings.desktop.kitty_shader_custom = path
+        save()
+        run("mooi", { "kitty-shaders" })
+    end)
+    if not ok then log("kitty · install zenity to choose a pipeline") end
+end)
+
 local armed_at = 0
 on("set_reset", function(v)
     local tab = math.floor(tonumber(v) or -1)

@@ -42,6 +42,9 @@
 #                          theme/palette.json.hbs), using mooi's own config so nothing of
 #                          the user's theming is written; then asks a running mooi to read it
 #   mooi theme-watch       follow the wallpaper: recolour with Matugen whenever it changes.
+#   mooi theme save <name> [description]  the current look as a package (--force replaces one)
+#   mooi theme list        the packages saved in mooi's own folder
+#   mooi theme apply <name|file>  wear a package: its visual settings, nothing behavioural
 #   mooi idle              write hypridle's file from the lock's idle timeout (Settings → Lock)
 #                          and restart it; `session` and the settings window call it
 #   mooi lock | unlock     the lock screen (D160): the session through pleamar's `kind: lock`
@@ -52,6 +55,8 @@
 #                          `session` runs this beside the bar, `stop` ends it
 #   mooi apps-sync         put mooi's palette on Kitty, GTK and Qt as the settings say (the watch
 #                          does it by itself; switched off, an app gets its own colours back)
+#   mooi kitty-shaders     write kitty's own screen shader (`custom_shaders`, kitty ≥ 0.49) as a conf
+#                          beside the settings and point kitty.conf at it; the switch off takes it back
 #   mooi check             compile the scene and run the unit tests
 #
 # --safe / MOOI_SAFE=1 ignores settings.json. MOOI_PLEAMAR picks another pleamar binary.
@@ -77,6 +82,10 @@ state="${XDG_STATE_HOME:-$HOME/.local/state}/mooi"
 log="$state/mooi.log"
 settings="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$name/settings.json"
 mkdir -p "$rt" "$state"
+# An empty folder the notch runs Claude and the free models in (fourth pass, L3): never the runtime
+# dir itself, which holds the session's sockets. Exported, so every scene mooi starts has it.
+mkdir -p "$rt/ask" 2>/dev/null && chmod 700 "$rt/ask" 2>/dev/null
+export MOOI_ASK_DIR="$rt/ask"
 
 reduced_flag() {
     [ "${MOOI_SAFE:-0}" = 1 ] && return 0
@@ -150,7 +159,12 @@ theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdou
     theme_unlock() { if command -v flock >/dev/null 2>&1; then flock -u 9 2>/dev/null; exec 9>&-; fi; }
     mkdir -p "$folder"
     cfg="$folder/matugen.toml"
-    sed -e "s|@TPL@|$root/theme/palette.json.hbs|" -e "s|@OUT@|$folder/palette.json|" \
+    # Escape the replacement: a repo path with `&`, `|` or a backslash used to mangle the TOML
+    # (audit 2026-11-06, G13).
+    sed_escape() { printf '%s' "$1" | sed 's/[\\&|]/\\&/g'; }
+    tpl_esc=$(sed_escape "$root/theme/palette.json.hbs")
+    out_esc=$(sed_escape "$folder/palette.json")
+    sed -e "s|@TPL@|$tpl_esc|" -e "s|@OUT@|$out_esc|" \
         "$root/theme/matugen.toml.in" > "$cfg" || { theme_unlock; return 1; }
     # `--source-color-index 0` is what the user's own matugen-theme.sh passes, so mooi and the
     # rest of the desktop take their colours from the same source colour of the same wallpaper;
@@ -424,6 +438,125 @@ PY
     return 0
 }
 
+# ── Kitty's own screen shaders (D159, kitty ≥ 0.49) ──
+# `custom_shaders` in kitty.conf names a pipeline: one kitty ships (crt, tft, dim-inactive-windows…),
+# or one of your own — a name under ~/.config/kitty/shaders/, or a path. mooi never edits your
+# kitty.conf in place: it writes one small file beside the settings and points kitty.conf at it with
+# a single `include` line at the end, so mooi's choice is the one kitty ends up with and your own
+# lines stay where they are. kitty reads its config again on SIGUSR1, which is how a change lands in
+# the windows already open. The switch off takes exactly the file and the include away again.
+kitty_conf_dir="${XDG_CONFIG_HOME:-$HOME/.config}/kitty"
+kitty_shaders_sync() {
+    [ -f "$settings" ] && command -v jq >/dev/null 2>&1 || return 0
+    kc="$kitty_conf_dir/kitty.conf"
+    conf="$folder/kitty-shaders.conf"
+    pipe="$folder/kitty-mooi-crt.pipeline"   # mooi's own pipeline: kitty's crt in the bar's colour
+    inc="include $conf"
+    on=$(jq -r '.desktop.kitty_shader_on // false' "$settings" 2>/dev/null)
+    # mooi's include line, wherever it is: every other line of kitty.conf is left exactly as it was
+    kitty_drop_inc() {
+        [ -f "$kc" ] || return 0
+        grep -qF "$inc" "$kc" || return 0
+        grep -vF "$inc" "$kc" > "$kc.mooi-tmp" && mv "$kc.mooi-tmp" "$kc"
+    }
+    if [ "$on" != true ]; then
+        if [ -f "$conf" ] || { [ -f "$kc" ] && grep -qF "$inc" "$kc"; }; then
+            kitty_drop_inc
+            rm -f "$conf" "$pipe"
+            pkill -USR1 -x kitty 2>/dev/null || :
+            echo "kitty: your own shaders again"
+        fi
+        return 0
+    fi
+    kind=$(jq -r '.desktop.kitty_shader // "crt"' "$settings" 2>/dev/null)
+    wantpipe=""; shown=$kind
+    if [ "$kind" = custom ]; then
+        name=$(jq -r '.desktop.kitty_shader_custom // ""' "$settings" 2>/dev/null)
+        [ -n "$name" ] || { echo "kitty-shaders: Mine is chosen but no pipeline is named (Settings → Windows → Kitty screen shaders)" >&2; return 1; }
+        # one option value and nothing else: no spaces (that is two shaders), no quote or # to end the line
+        case "$name" in
+            ''|*[!A-Za-z0-9._/~-]*) echo "kitty-shaders: a pipeline name cannot hold spaces, quotes or #: $name" >&2; return 1 ;;
+        esac
+        shown=$name
+    elif [ "$kind" = mooi-crt ]; then
+        # kitty's crt, tinted with a colour from the bar's palette (palette.json): a pipeline of
+        # mooi's, so the CRT follows the wallpaper. TINT is a multiplier in linear RGB, so the
+        # colour is scaled until its brightest channel is 1 (a normalised tint leaves the screen as
+        # bright as kitty's own), and the alpha is how much of it is laid over the picture.
+        cname=$(jq -r '.desktop.kitty_shader_colour // "primary"' "$settings" 2>/dev/null)
+        case "$cname" in ''|*[!a-z_]*) cname=primary ;; esac
+        phex=$(jq -r --arg c "$cname" '.colours[$c] // ""' "$palette" 2>/dev/null)
+        [ -n "$phex" ] || phex=$(jq -r '.colours.primary // ""' "$palette" 2>/dev/null)
+        case "$phex" in
+            \#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) ;;
+            *) phex="" ;;
+        esac
+        if [ -z "$phex" ]; then
+            echo "kitty-shaders: no palette yet; wearing kitty's own crt until the bar has one" >&2
+            name=crt; shown=crt
+        else
+            h=${phex#\#}
+            r=$((0x$(printf '%s' "$h" | cut -c1-2)))
+            g=$((0x$(printf '%s' "$h" | cut -c3-4)))
+            b=$((0x$(printf '%s' "$h" | cut -c5-6)))
+            tint=$(awk -v r="$r" -v g="$g" -v b="$b" 'function lin(v, c) { c = v / 255; return (c <= 0.04045) ? c / 12.92 : ((c + 0.055) / 1.055) ^ 2.4 }
+                BEGIN { R = lin(r); G = lin(g); B = lin(b); m = R; if (G > m) m = G; if (B > m) m = B; if (m <= 0) m = 1
+                        printf "%.6f, %.6f, %.6f", R / m, G / m, B / m }')
+            # how much of it is laid on (Settings → Windows → Tint), 0–100 % as the shader's alpha
+            tstr=$(jq -r '.desktop.kitty_shader_tint // 55' "$settings" 2>/dev/null)
+            case "$tstr" in ''|*[!0-9]*) tstr=55 ;; esac
+            if [ "$tstr" -gt 100 ]; then tstr=100; fi
+            alpha=$(awk -v a="$tstr" 'BEGIN { printf "%.2f", a / 100 }')
+            case "$pipe" in
+                *[[:space:]]*) echo "kitty-shaders: mooi's folder has a space in it; kitty cannot be pointed at the pipeline" >&2; return 1 ;;
+            esac
+            wantpipe="# mooi · kitty's crt in the bar's $cname ($phex), from Settings → Windows.
+# Written by mooi kitty-shaders out of palette.json, so it follows the wallpaper's palette.
+# The tint is linear RGB, normalised so its brightest channel is 1; the last number is how much
+# of it is laid on (desktop.kitty_shader_tint, ${tstr}% now).
+var float4 TINT = float4($tint, $alpha)
+
+startgroup
+    shaders crt
+endgroup"
+            name=$pipe; shown="mooi-crt ($cname $phex, ${tstr}%)"
+        fi
+    else
+        name=$kind
+        case "$name" in
+            ''|*[!A-Za-z0-9._/~-]*) echo "kitty-shaders: a pipeline name cannot hold spaces, quotes or #: $name" >&2; return 1 ;;
+        esac
+    fi
+    if [ ! -f "$kc" ]; then
+        echo "kitty-shaders: no $kc; nothing to point at it" >&2
+        return 1
+    fi
+    want="# mooi · kitty's own screen shaders (kitty ≥ 0.49), from Settings → Windows.
+# Written by mooi kitty-shaders; turning the switch off removes it and its include.
+# Your own lines in kitty.conf are untouched.
+custom_shaders $name"
+    changed=false
+    [ "$(cat "$conf" 2>/dev/null)" = "$want" ] || changed=true
+    if [ -n "$wantpipe" ]; then
+        [ "$(cat "$pipe" 2>/dev/null)" = "$wantpipe" ] || changed=true
+    elif [ -f "$pipe" ]; then
+        rm -f "$pipe"; changed=true                 # another shader is chosen: mooi's pipeline goes
+    fi
+    if [ "$(grep -cF "$inc" "$kc" 2>/dev/null)" != 1 ] || [ "$(tail -n 1 "$kc")" != "$inc" ]; then changed=true; fi
+    if [ "$changed" = true ]; then
+        mkdir -p "$folder"
+        if [ -n "$wantpipe" ]; then
+            printf '%s\n' "$wantpipe" > "$pipe.mooi-tmp" && mv "$pipe.mooi-tmp" "$pipe" || return 1
+        fi
+        printf '%s\n' "$want" > "$conf.mooi-tmp" && mv "$conf.mooi-tmp" "$conf" || return 1
+        kitty_drop_inc
+        printf '%s\n' "$inc" >> "$kc" || return 1
+        pkill -USR1 -x kitty 2>/dev/null || :
+        echo "kitty: custom_shaders $shown"
+    fi
+    return 0
+}
+
 # Follow the wallpaper. `mooi session` runs this beside the bar and `mooi
 # stop` ends it; on its own it is a foreground loop, so a session can also run it from a
 # service of its own. Two waits: inotify where it exists (the symlink is replaced, so the
@@ -465,6 +598,17 @@ theme_watch() {
     apps_seen=""
     motion_key() { jq -c '[.motion.speed, .motion.reduced]' "$settings" 2>/dev/null; }
     motion_seen=$(motion_key)
+    # the colour the tint is drawn from is part of the question too: Mooi CRT is rendered from that
+    # palette role, so a recoloured desk re-tints the terminal (the palette is watched in this folder)
+    kitty_key() {
+        _kc=$(jq -r '.desktop.kitty_shader_colour // "primary"' "$settings" 2>/dev/null)
+        _kh=$(jq -r --arg c "$_kc" '.colours[$c] // ""' "$palette" 2>/dev/null)
+        printf '%s|%s|%s' "$(jq -c '[.desktop.kitty_shader_on, .desktop.kitty_shader, .desktop.kitty_shader_custom, .desktop.kitty_shader_tint]' "$settings" 2>/dev/null)" "$_kc" "$_kh"
+    }
+    kitty_seen=$(kitty_key)
+    # what a session starts with: the shader kitty should be reading now (quiet when it already is)
+    said=$(kitty_shaders_sync 2>&1) || :
+    [ -n "$said" ] && echo "$(date +%T) $said"
     while :; do
         if command -v inotifywait >/dev/null 2>&1; then
             # `8>&-`: the lock is the watcher's, not its child's — an inotifywait left over from
@@ -498,6 +642,13 @@ theme_watch() {
         if [ -n "$a" ] && [ "$a" != "$apps_seen" ]; then
             apps_seen=$a
             said=$(apps_sync 2>&1) || :
+            [ -n "$said" ] && echo "$(date +%T) $said"
+        fi
+        # kitty's own screen shader: another pipeline, or the switch turned, in the settings file
+        kt=$(kitty_key)
+        if [ -n "$kt" ] && [ "$kt" != "$kitty_seen" ]; then
+            kitty_seen=$kt
+            said=$(kitty_shaders_sync 2>&1) || :
             [ -n "$said" ] && echo "$(date +%T) $said"
         fi
     done
@@ -586,9 +737,10 @@ wall_apply() { # FILE [--from-y N] [--transition KIND]
     echo "wearing $(basename "$file") ($kind)"
 }
 # ── Wallhaven (D147): searched with your settings, saved into your first folder, worn ──
-# The API key (for sketchy/NSFW and your account's own filters) is ~/.config/mooi/wallhaven.key, mode
-# 0600, never in the settings or the repo; it goes to curl as a header on stdin, so it is never in a
-# process list. Every URL is checked to be on Wallhaven's own hosts, every id to be letters and digits.
+# The API key (for sketchy/NSFW and your account's own filters) is mooi's data folder
+# (wallhaven.key, mode 0600), with ~/.config/mooi/wallhaven.key read as a fallback; never in the
+# settings or the repo. It goes to curl as a header on stdin, so it is never in a process list.
+# Every URL is checked to be on Wallhaven's own hosts, every id to be letters and digits.
 # the key Settings → Wallpapers saves (mooi's data folder, 0600), or one put there by hand
 wh_keyfile="$folder/wallhaven.key"
 [ -s "$wh_keyfile" ] || wh_keyfile="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
@@ -773,7 +925,13 @@ settings_link() {
     for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
-        [ -e "$link" ] && mv "$link" "$link.old.$$"
+        if [ -e "$link" ]; then
+            # Do not let moved-aside folders accumulate for ever (audit G13): prune backups
+            # older than a month, then move this one aside as before.
+            find "$(dirname "$link")" -maxdepth 1 -name "$(basename "$link").old.*" -type d -mtime +30 \
+                -exec rm -rf -- {} + 2>/dev/null || :
+            mv "$link" "$link.old.$$"
+        fi
         mkdir -p "$folder" && ln -s "$folder" "$link"
     done
     # BMO shares mooi's data folder too (his settings are its companion section; a link to a single
@@ -958,6 +1116,16 @@ lock_name=mooi-lock
 # The lock scene's `files.read` reaches only its own folder, and what it wants is the shell's palette,
 # settings and wallpaper: they are copied in before it starts and before every lock, so a new
 # wallpaper or a re-colour shows on the next lock without the scene having to read outside at all.
+# One of the lock's pictures (D161): REL (relative to mooi's folder), the name to give it, the lock's
+# folder. Prints the copy's whole path, or nothing.
+lock_picture() {
+    case "$1" in '' | /* | ../* | */../* | *..) return 0 ;; esac
+    ext=${1##*.}
+    ext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
+    case "$ext" in png | jpg | jpeg | webp | avif | gif) ;; *) return 0 ;; esac
+    [ -f "$folder/$1" ] || return 0
+    cp -f "$folder/$1" "$3/$2.$ext" 2>/dev/null && printf '%s' "$3/$2.$ext"
+}
 lock_files() {
     local d="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$lock_name"
     mkdir -p "$d" || return 1
@@ -985,16 +1153,18 @@ lock_files() {
     rm -f "$d"/avatar.* "$d"/banner.* "$d"/picture.* "$d/identity.json" 2>/dev/null
     local a="" b="" rel
     if command -v jq >/dev/null 2>&1 && [ -r "$settings" ]; then
+        # Only a picture inside mooi's own folder, with a plain image extension (fourth pass, L10):
+        # a `..` in the path, or an extension with quotes in it, is refused rather than copied.
         rel=$(jq -r '.nexus.identity.avatar // empty' "$settings" 2>/dev/null)
-        if [ -n "$rel" ] && [ -f "$folder/$rel" ]; then
-            cp -f "$folder/$rel" "$d/avatar.${rel##*.}" && a="$d/avatar.${rel##*.}"
-        fi
+        a=$(lock_picture "$rel" avatar "$d")
         rel=$(jq -r '.nexus.identity.banner // empty' "$settings" 2>/dev/null)
-        if [ -n "$rel" ] && [ -f "$folder/$rel" ]; then
-            cp -f "$folder/$rel" "$d/banner.${rel##*.}" && b="$d/banner.${rel##*.}"
-        fi
+        b=$(lock_picture "$rel" banner "$d")
     fi
-    printf '{"avatar":"%s","banner":"%s"}\n' "$a" "$b" > "$d/identity.json" 2>/dev/null
+    if command -v jq >/dev/null 2>&1; then
+        jq -n --arg a "$a" --arg b "$b" '{avatar: $a, banner: $b}' > "$d/identity.json" 2>/dev/null
+    else
+        printf '{"avatar":"","banner":""}\n' > "$d/identity.json" 2>/dev/null
+    fi
 
     # An animated wallpaper is a picture the renderer plays by itself (a GIF, an animated PNG or
     # WebP): the scene is simply handed the file. A video is not one, and a lock surface has nothing
@@ -1041,19 +1211,25 @@ lock_files() {
 # ── The visualiser's feed on the lock ──────────────────────────────────────────
 # cava's bands are the bar's (`viz-levels.txt` in the shell's folder) and the lock scene reads only
 # its own folder, so the line is carried across while the lock screen is up: a few hundred bytes,
-# thirty times a second, nothing cava does not already compute. The scene reads it at that pace
+# about thirty times a second while music plays, nothing cava does not already compute. The scene reads it at that pace
 # (`every(33)` in mooi-lock.luau) rather than trusting its file watch, which coalesces. It stops two
 # seconds after the lock comes down (or at once from `mooi unlock`), and with the session.
 lock_feed_start() {
     local d="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$lock_name"
     lock_feed_stop
+    # Copied only while something plays (L5): with nothing playing the bands do not move, and a
+    # lock left up for half an hour should cost one check a second, not fifty copies.
     (
-        n=0
-        while :; do
-            [ -r "$folder/viz-levels.txt" ] && cp -f "$folder/viz-levels.txt" "$d/viz-levels.txt" 2>/dev/null
-            n=$((n + 1))
-            if [ $((n % 100)) -eq 0 ] && [ "$("$pleamar" --say "$lock_name" "get locked" 2>/dev/null)" != "true" ]; then break; fi
-            sleep 0.02
+        while [ "$("$pleamar" --say "$lock_name" "get locked" 2>/dev/null)" = "true" ]; do
+            if [ "$("$pleamar" --say "$lock_name" "get lk_playing" 2>/dev/null)" = "true" ]; then
+                n=0
+                while [ "$n" -lt 30 ]; do
+                    [ -r "$folder/viz-levels.txt" ] && cp -f "$folder/viz-levels.txt" "$d/viz-levels.txt" 2>/dev/null
+                    n=$((n + 1)); sleep 0.033
+                done
+            else
+                sleep 1
+            fi
         done
     ) >/dev/null 2>&1 < /dev/null &
     echo "$!" > "$state/lock-feed.pid"
@@ -1086,6 +1262,7 @@ idle_apply() {
 general {
     lock_cmd = ~/.config/hypr/scripts/lock-session.sh
     before_sleep_cmd = loginctl lock-session
+    inhibit_sleep = 3                         # sleep waits until the session lock is held
     after_sleep_cmd = hyprctl eval 'hl.dispatch(hl.dsp.dpms({ action = "on" }))'
 }
 
@@ -1108,11 +1285,15 @@ EOF
     fi
     mkdir -p "$(dirname "$f")" || return 1
     printf '%s\n' "$want" > "$f.tmp.$$" && mv "$f.tmp.$$" "$f" || { rm -f "$f.tmp.$$"; echo "idle: could not write $f" >&2; return 1; }
-    if systemctl --user list-unit-files hypridle.service 2>/dev/null | grep -q '^hypridle\.service'; then
-        systemctl --user restart hypridle >/dev/null 2>&1 || echo "idle: the file is written; hypridle did not restart" >&2
-    elif command -v hypridle >/dev/null 2>&1; then
+    # One hypridle, started the way ~/.config/hypr/scripts/idle-mode.sh starts it, and only if one
+    # was running: none running is idle-mode's "keep awake", which a new file must not undo.
+    # Restarting only the systemd unit left a second, session-started hypridle on the old file
+    # (two found on 2026-11-06, the older still suspending without waiting for the lock).
+    if pgrep -x hypridle >/dev/null 2>&1; then
+        systemctl --user is-active --quiet hypridle 2>/dev/null && systemctl --user stop hypridle >/dev/null 2>&1
         pkill -x hypridle 2>/dev/null
-        setsid -f hypridle >/dev/null 2>&1 < /dev/null
+        n=0; while [ "$n" -lt 20 ] && pgrep -x hypridle >/dev/null 2>&1; do n=$((n + 1)); sleep 0.1; done
+        setsid -f hypridle >/dev/null 2>&1 < /dev/null || echo "idle: the file is written; hypridle did not restart" >&2
     fi
     echo "idle: lock after $mins min, suspend after $((suspend_at / 60)) min"
 }
@@ -1132,11 +1313,30 @@ lock_start() {
         return 1
     }
 }
+# `locked` is only the request; the lock exists when the compositor says so (`lock.held`). This
+# returns 0 only then, so lock-session.sh's suspend and hypridle's `inhibit_sleep` never go on
+# behind an open screen, and a refused lock (another locker holds it) is reported as a failure and
+# falls through to hyprlock instead of passing as a lock (audit 2026-11-06, fourth pass, L1).
+lock_held() {
+    case "$("$pleamar" --say "$lock_name" "get lock.held" 2>/dev/null)" in
+        1 | true) return 0 ;;
+    esac
+    return 1
+}
 lock_only() {
     snapshot || return 1
     lock_start || return 1
+    "$pleamar" --say "$lock_name" "fact locked true" >/dev/null 2>&1 || return 1
+    n=0
+    while [ "$n" -lt 50 ] && ! lock_held; do
+        n=$((n + 1)); sleep 0.1
+    done
+    if ! lock_held; then
+        "$pleamar" --say "$lock_name" "fact locked false" >/dev/null 2>&1
+        echo "mooi lock: the compositor did not grant the lock (see $state/lock.log)" >&2
+        return 1
+    fi
     lock_feed_start
-    "$pleamar" --say "$lock_name" "fact locked true"
 }
 unlock_only() {
     "$pleamar" --say "$lock_name" "fact locked false" >/dev/null 2>&1 || {
@@ -1384,7 +1584,9 @@ case "$cmd" in
                 value=$(printf '%s' "$*" | tr '\n' ' ')
                 [ -n "$value" ] || { echo 'usage: mooi identity name "Display name"' >&2; exit 2; }
                 [ "${#value}" -le 48 ] || { echo "display name must be 48 characters or fewer" >&2; exit 2; }
-                case "$value" in *"$(printf '\001')"*|*"$(printf '\177')"*) echo "control characters are not allowed" >&2; exit 2 ;; esac
+                # Every C0 control and DEL, not only \001 and \177 (audit G13).
+                clean=$(printf '%s' "$value" | tr -d '\000-\037\177')
+                [ "$clean" = "$value" ] || { echo "control characters are not allowed" >&2; exit 2; }
                 tmp="$settings.tmp.$"
                 jq --arg value "$value" '.nexus.identity.name = $value' "$settings" > "$tmp" && mv "$tmp" "$settings" || { rm -f "$tmp"; echo "could not update settings" >&2; exit 1; }
                 echo "System identity name set to: $value"
@@ -1450,37 +1652,18 @@ case "$cmd" in
     shutter-here) exec "$pleamar" --say "$name" "emit open_shutter 1" ;;
     say)  exec "$pleamar" --say "$name" "$@" ;;
     check)
-        sh -n "$self" || exit 1
-        for t in "$root"/tests/*.sh; do sh -n "$t" || exit 1; done
-        # A gate, not a style report: errors only. The launcher holds the keeper and
-        # lock logic, and `sh -n` cannot see word splitting or a bad expansion (audit F5).
-        if command -v shellcheck >/dev/null 2>&1; then
-            shellcheck -S error -q "$self" "$root"/tests/*.sh || exit 1
-        else
-            echo "shellcheck: not installed; syntax checked with sh -n only"
-        fi
-        "$pleamar" --check "$src" || exit 1
-        "$pleamar" --check "$root/shell/mooi-settings.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-board.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-nexus.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-frame.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-desk.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-player.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-notch.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-widgets.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-walls.plm" || exit 1
-        "$pleamar" --check "$root/shell/mooi-viz.plm" || exit 1
-        "$pleamar" --check "$root/shell/bmo/bmo.plm" || exit 1
-        # `pleamar --check` compiles a scene, not its logic: a logic file that does not even
-        # parse is found only when the scene starts (a logic file that lost an `end`, 2026-10-20). Every
-        # file is written in the subset Lua 5.4 and Luau share, so Lua 5.4 can parse them all.
-        for f in "$root"/shell/*.luau "$root"/shell/lib/*.luau "$root"/shell/player/*.luau "$root"/shell/bmo/*.luau; do
-            F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
+        # The static/unit half is one script, run by CI as well: local and CI cannot drift
+        # (audit 2026-11-06, G12).
+        ( cd "$root" && sh tests/gate.sh ) || exit 1
+        # Compile every scene by enumeration, not a hand-kept list: mooi-lock.plm used to be left
+        # out while every document said `check` compiled every scene (audit 2026-11-06, G3).
+        scenes=0
+        for scene in "$root"/shell/*.plm "$root"/shell/bmo/*.plm; do
+            "$pleamar" --check "$scene" || exit 1
+            scenes=$((scenes + 1))
         done
-        # Each suite must be able to fail the check (audit 2026-10-31, F1): before this the unit
-        # tests' status was thrown away and the last `echo` made the command exit 0.
-        ( cd "$root" && lua5.4 shell/bmo/test.lua ) || exit 1
-        ( cd "$root" && lua5.4 tests/unit/run.lua ) || exit 1
+        [ "$scenes" -gt 0 ] || { echo "no scenes found under $root/shell" >&2; exit 1; }
+        echo "scenes: $scenes compile"
         # What this machine lacks: the scenes fall back quietly, so name it here rather than let a
         # visualizer or a store module look broken (audit 2026-10-29).
         missing=
@@ -1489,18 +1672,27 @@ case "$cmd" in
         done
         [ -n "$missing" ] && echo "optional, not installed:$missing"
         # The scenes are written for language 0.9; another one may compile and still behave
-        # differently, so say which pleamar this is.
+        # differently, so it fails the gate rather than printing a warning and exiting 0
+        # (audit 2026-11-06, G16).
         ver=$("$pleamar" --version 2>/dev/null | head -1)
         case "$ver" in
             *"language 0.9"*) echo "pleamar: $ver" ;;
-            *) echo "warning: $ver · the scenes are written for language 0.9" >&2 ;;
+            *) echo "error: $ver · the scenes are written for language 0.9" >&2; exit 1 ;;
         esac ;;
     theme-sync)
         theme_sync "$@" || { echo "theme-sync: failed" >&2; exit 1; }
         running && echo "mooi asked to read it" || echo "mooi is not running; it will read the palette when it starts"
         ;;
+    theme)
+        sub=${1:-}; [ $# -gt 0 ] && shift
+        case "$sub" in
+            save|list|apply) ;;
+            *) echo "usage: mooi theme save <name> [description] [--force] | list | apply <name|file>" >&2; exit 2 ;;
+        esac
+        ( cd "$root" && exec lua5.4 shell/theme-cli.luau "$sub" "$@" ) ;;
     theme-watch) theme_watch ;;
     ws-fx) ws_fx ;;
     apps-sync) apps_sync ;;
+    kitty-shaders) kitty_shaders_sync ;;
     *) sed -n '2,/^# --safe/p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

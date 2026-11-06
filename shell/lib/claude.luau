@@ -23,6 +23,15 @@ M.PERSONAS = {
 -- without --auto, so it can only talk: nothing it would need permission for is approved.
 M.FALLBACK_MODELS = { "opencode/deepseek-v4.1-flash-free", "opencode/big-pickle", "opencode/beam-free" }
 
+-- The free models are a third party: they are asked only when Settings → Nexus → Claude says so
+-- (claude.free_fallback, off by default), and opencode is told to deny every tool rather than
+-- trusting the prompt's "do not use tools" (fourth pass, L3). `env` reads these before the command.
+M.FREE_ENV = { 'OPENCODE_CONFIG_CONTENT={"permission":{"*":"deny","edit":"deny","bash":"deny","webfetch":"deny"}}',
+               "OPENCODE_DISABLE_AUTOUPDATE=1" }
+function M.free_allowed(settings)
+    return type(settings) == "table" and type(settings.claude) == "table" and settings.claude.free_fallback == true
+end
+
 function M.fallback_args(prompt, persona, model, recent)
     local lines = { M.PERSONAS[persona or "chat"] or M.PERSONAS.chat,
                     "Answer in plain words only; do not use tools, files or commands." }
@@ -48,9 +57,11 @@ function M.fallback_text(out)
 end
 
 -- The arguments for one question. `session`: a previous answer's session, to go on from it.
+-- The prompt goes last, after `--` (fourth pass, L9): `-p` is Claude Code's print switch, not an
+-- option that takes the prompt, so a prompt beginning with `-` was read as one of its flags.
 function M.args(prompt, opts)
     opts = opts or {}
-    local a = { "-p", tostring(prompt or ""), "--output-format", "stream-json", "--verbose", "--include-partial-messages",
+    local a = { "-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages",
                 "--tools", "", "--disable-slash-commands", "--strict-mcp-config", "--setting-sources", "user",
                 "--settings", '{"disableAllHooks": true}',
                 "--append-system-prompt", M.PERSONAS[opts.persona or "chat"] or M.PERSONAS.chat }
@@ -60,6 +71,7 @@ function M.args(prompt, opts)
     if type(opts.model) == "string" and opts.model:match("^[%w%-%.]+$") then
         a[#a + 1] = "--model"; a[#a + 1] = opts.model
     end
+    a[#a + 1] = "--"; a[#a + 1] = tostring(prompt or "")
     return a
 end
 
