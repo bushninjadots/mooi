@@ -16,12 +16,15 @@ function M.look(s)
     local top = b.offset + (notch and 6 or (b.rail and 15 or 8))
     local band = f.on == true
     local band_w = band and f.band or 0
-    local floating = b.mode == "islands"
+    -- D166: with the frame on, islands may attach to it (frame.islands = attach): the band comes down to
+    -- the islands' top and each hangs from it, so the gaps between them are recesses in one body, not tabs
+    local attach = band and b.mode == "islands" and f.islands == "attach"
+    local floating = b.mode == "islands" and not attach
     -- Floating plates keep AIR px between them and the band: a band thicker than the room above the
     -- row is held thinner along the top (it fused with every plate otherwise; review I2).
-    local top_band = floating and math.min(band_w, math.max(0, top - M.AIR)) or band_w
+    local top_band = attach and top or (floating and math.min(band_w, math.max(0, top - M.AIR)) or band_w)
     return {
-        mode = b.mode, band = band, top = top, mod_h = b.height, radius = b.radius,
+        mode = b.mode, band = band, attach = attach, top = top, mod_h = b.height, radius = b.radius,
         n_pad = M.NOTCH_PAD, n_r = b.radius + 4,
         -- the notch's foot: the windows' reserve line (st_res) with the band or without, so toggling the
         -- frame does not move it (it was 5 px lower without the band before D164)
@@ -30,7 +33,7 @@ function M.look(s)
         band_w = band_w, top_band = top_band, frame_r = f.radius, reach = f.reach * 1.6,
         -- how far the band's top edge may swell: down to AIR px above floating plates, or freely where
         -- the pieces join the band (full, notch)
-        top_room = floating and math.max(0, top - top_band - M.AIR) or M.NO_CAP,
+        top_room = attach and 0 or (floating and math.max(0, top - top_band - M.AIR) or M.NO_CAP),
     }
 end
 
@@ -39,9 +42,11 @@ local function span(p)
     return tonumber(p.x) or 0, tonumber(p.w) or 0
 end
 
+-- `looks` (optional): { [island index] = lib/modlook's look } for floating islands; their own fill, rounding,
+-- outline, glow and colour ride on the piece. Without one the frame draws the style's.
 -- The pieces, in slot order, at most SLOTS: { x, y, w, h, r, k, j } (k: the blend radius with the band;
 -- j: joined to it).
-function M.pieces(geo, look)
+function M.pieces(geo, look, looks)
     geo = type(geo) == "table" and geo or {}
     local out = {}
     -- j: joined to the band (full, notch); a floating plate is not
@@ -72,9 +77,20 @@ function M.pieces(geo, look)
             end
         end
     else
-        for _, isl in ipairs(type(geo.islands) == "table" and geo.islands or {}) do
+        for i, isl in ipairs(type(geo.islands) == "table" and geo.islands or {}) do
             local x, w = span(isl)
-            if w > 0 then add(x - 3, look.top, w + 6, look.mod_h, look.radius, 0, false) end
+            if w > 0 then
+                if look.attach then
+                    add(x - 3, -40, w + 6, foot + 40, 0, 0, true)
+                else
+                    add(x - 3, look.top, w + 6, look.mod_h, look.radius, 0, false)
+                    local lk = type(looks) == "table" and looks[i] or nil
+                    if lk and #out > 0 then
+                        local p = out[#out]
+                        p.r, p.fill, p.outline, p.glow, p.colour = lk.r or p.r, lk.fill, lk.outline, lk.glow, lk.colour
+                    end
+                end
+            end
         end
     end
     return out

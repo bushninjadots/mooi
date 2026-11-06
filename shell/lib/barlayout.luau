@@ -274,7 +274,7 @@ function M.layout(cfg, ctx)
                 after_spacer = false
                 -- Every group has its box: islands mode frames it, full mode sets it in a bay when
                 -- the bar is a mechanism.
-                out.frames[#out.frames + 1] = { x = x, w = g.w, style = (cfg.frame or {})[g.ids[1]] or 0,
+                out.frames[#out.frames + 1] = { x = x, w = g.w, style = (cfg.frame or {})[g.ids[1]] or 0, id = g.ids[1],
                     a = M.INDEX[g.ids[1]], b = M.INDEX[g.ids[#g.ids]] }
                 local mx = x
                 for j, id in ipairs(g.ids) do

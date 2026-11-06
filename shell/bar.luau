@@ -83,7 +83,8 @@ return function(ctx)
         -- the islands and the full panel too (D127): with the frame on, the frame paints every plate
         -- as part of one silhouette (the chassis) and the bar draws only what is on them
         local isl = {}
-        for _, f in ipairs(out.frames) do isl[#isl + 1] = { x = f.x, w = f.w } end
+        -- each island names its module (a group's first), for its own look (D166, lib/modlook)
+        for _, f in ipairs(out.frames) do isl[#isl + 1] = { x = f.x, w = f.w, id = f.id } end
         local geo = { left = cl.left and { x = cl.left.x, w = cl.left.w } or nil,
                       center = cl.center and { x = cl.center.x, w = cl.center.w } or nil,
                       right = cl.right and { x = cl.right.x, w = cl.right.w } or nil,
