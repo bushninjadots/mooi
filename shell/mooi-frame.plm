@@ -324,7 +324,9 @@ scene Frame {
     let bs = frame_band                                        // the sides
     let bb = frame_band                                        // the foot
     let bt = min(frame_band, btop)                             // the top (thinner above floating plates: lib/chassis top_band)
-    let frr = clamp(st_frame_r, 0, 40)                         // the inner corners
+    // the inner corners; none without the band: a body ignores `show` on its shapes, so the corners
+    // were still drawn with the frame off and left dark wedges in the screen's corners
+    let frr = if(band_on, clamp(st_frame_r, 0, 40), 0)
     let frl = min(frr, capL)                                   // the top-left round, kept off a plate there
     let frq = min(frr, capR)                                   // the top-right
     let reach = frame_reach * 1.6

@@ -39,18 +39,27 @@ local function span(p)
     return tonumber(p.x) or 0, tonumber(p.w) or 0
 end
 
--- The pieces, in slot order, at most SLOTS: { x, y, w, h, r, k } (k: the blend radius with the band).
+-- The pieces, in slot order, at most SLOTS: { x, y, w, h, r, k, j } (k: the blend radius with the band;
+-- j: joined to it).
 function M.pieces(geo, look)
     geo = type(geo) == "table" and geo or {}
     local out = {}
-    local function add(x, y, w, h, r, k)
-        if w > 0 and h > 0 and #out < M.SLOTS then out[#out + 1] = { x = x, y = y, w = w, h = h, r = r, k = k } end
+    -- j: joined to the band (full, notch); a floating plate is not
+    local function add(x, y, w, h, r, k, j)
+        if w > 0 and h > 0 and #out < M.SLOTS then out[#out + 1] = { x = x, y = y, w = w, h = h, r = r, k = k, j = j == true } end
     end
     local foot = look.top + look.mod_h
     if look.mode == "full" then
         local x, w = span(geo.panel)
-        local y = look.band and -40 or look.top
-        if w > 0 then add(x, y, w, foot - y, look.radius, M.BLEND) end
+        if w > 0 then
+            if look.band then
+                -- with the frame the full bar IS its top: edge to edge, into the band's sides, so the two
+                -- never meet in a notch, and the frame's inner corners round off at the bar's foot
+                add(0, -40, look.screen_w, foot + 40, 0, 0, true)
+            else
+                add(x, look.top, w, look.mod_h, look.radius, M.BLEND, false)
+            end
+        end
     elseif look.mode == "notch" then
         -- hanging from above the screen whether the band is on or not, as the bar's own notch does, and
         -- never past the screen's sides (review I5)
@@ -59,13 +68,13 @@ function M.pieces(geo, look)
             if w > 0 then
                 local a = math.max(0, x - look.n_pad)
                 local e = math.min(look.screen_w, x + w + look.n_pad)
-                add(a, -40, e - a, look.n_b + 40, look.n_r, M.BLEND)
+                add(a, -40, e - a, look.n_b + 40, look.n_r, M.BLEND, true)
             end
         end
     else
         for _, isl in ipairs(type(geo.islands) == "table" and geo.islands or {}) do
             local x, w = span(isl)
-            if w > 0 then add(x - 3, look.top, w + 6, look.mod_h, look.radius, 0) end
+            if w > 0 then add(x - 3, look.top, w + 6, look.mod_h, look.radius, 0, false) end
         end
     end
     return out
@@ -83,12 +92,12 @@ local function near(p, look, side)
 end
 
 -- Does a piece joined to the band sit in that screen corner's reach? Then the frame's corner turns at
--- the piece's foot. A floating plate (k = 0) never does: it would pull the band down over it. With the
+-- the piece's foot. A floating plate (j false) never does: it would pull the band down over it. With the
 -- band off there is no corner to turn (review I4).
 function M.covers(pieces, look, side)
     if not look.band then return false end
     for _, p in ipairs(pieces or {}) do
-        if p.k > 0 and near(p, look, side) then return true end
+        if p.j and near(p, look, side) then return true end
     end
     return false
 end
@@ -98,7 +107,7 @@ end
 function M.corner_cap(pieces, look, side)
     local cap = M.NO_CAP
     for _, p in ipairs(pieces or {}) do
-        if p.k == 0 and near(p, look, side) then cap = math.min(cap, math.max(0, p.y - (look.top_band or look.band_w) - 2)) end
+        if not p.j and near(p, look, side) then cap = math.min(cap, math.max(0, p.y - (look.top_band or look.band_w) - 2)) end
     end
     return cap
 end

@@ -3,7 +3,8 @@
 # screenshotted and measured — the foot of the bar's pieces sits at one height whatever the frame
 # does, the outline's weight follows the Outline choice (none draws nothing), and in islands mode no
 # outline crosses a gap between two pieces (the old "empty humps"). The frame's edge is held at
-# "line": neon's glow is meant to light the rows round the line, which is not a second line.
+# "line" and the bar's surface at "solid": neon's glow and glass's light rim are the materials' own,
+# not the outline, and are not what this measures.
 #
 # It needs mooi running as the desktop, grim, jq and ImageMagick. It changes settings.json for about
 # two minutes and restores it byte for byte afterwards (also on Ctrl-C), with the player as it was.
@@ -46,7 +47,7 @@ for shape in islands full notch; do
             for swell in false true; do
                 mo=off; [ "$swell" = true ] && mo=swell
                 jq --arg m "$shape" --arg e "$edge" --arg fr "$fr" --argjson ow "$ow" --argjson on "$frame" --argjson mu "$swell" --arg mo "$mo" \
-                    '.bar.mode=$m | .bar.edge=$e | .bar.frame=$fr | .bar.outline_width=$ow | .frame.on=$on | .frame.music=$mu | .frame.motion=$mo | .frame.style="swell" | .frame.edge="line"' \
+                    '.bar.mode=$m | .bar.edge=$e | .bar.frame=$fr | .bar.outline_width=$ow | .frame.on=$on | .frame.music=$mu | .frame.motion=$mo | .frame.style="swell" | .frame.edge="line" | .bar.surface="solid"' \
                     "$t/restore.json" > "$F.tmp" && mv "$F.tmp" "$F"
                 sleep 3
                 shot="$t/$shape-$edge-$frame-$swell.png"
@@ -69,7 +70,11 @@ for shape in islands full notch; do
                 name="$shape · outline $edge · frame $frame · swell $swell"
                 echo "  ..    $name: foot y=$peak, $lit rows lit"
                 if [ "$edge" = none ] && [ "$shape" = islands ] && [ "$frame" = false ]; then
-                    if [ "$lit" -eq 0 ]; then ok; else bad "$name: an outline is drawn ($lit rows lit at x=$x)"; fi
+                    # a line is brighter than both the plate's own fill (inside, 3 rows above the foot) and
+                    # the ground below; a lighter glass fill meeting a dark shadow is an edge, not a line
+                    line=$(echo "$vals" | awk '{ f = $2; b = $NF; base = (f > b ? f : b); m = 0
+                           for (i = 3; i <= NF - 4; i++) if ($i > m) m = $i; print (m > base + 25) ? 1 : 0 }')
+                    if [ "$line" -eq 0 ]; then ok; else bad "$name: an outline is drawn at x=$x"; fi
                 elif [ "$edge" != none ]; then
                     if [ "$lit" -ge 1 ] && [ "$lit" -le 3 ]; then ok; else bad "$name: outline weight $lit rows at x=$x (want 1-3)"; fi
                     d=$((peak - foot)); [ "$d" -lt 0 ] && d=$((-d))

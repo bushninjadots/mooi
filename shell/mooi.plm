@@ -1901,7 +1901,8 @@ scene Mooi {
         }
         // The edge: straight runs and rounded ends — open where they become the strands.
         group {
-            show: hc_edge
+            // with the frame drawing the chassis the full panel's outline is the chassis's (D164)
+            show: hc_edge and not (pf and bar_full)
             let ec = mix(mix(mix(fl.trace, fl.trace_lit, ob), fl.phos_fill, oa), fl.steel_300, mech)
             path { stroke: st_owidth; color: ec; show: not helix_edges
                    move hc_x + hc_r, pt; line hc_x + hc_w - hc_r, pt; curve hc_x + hc_w, pt + hc_r via hc_x + hc_w, pt; line hc_x + hc_w, pb - hc_r
@@ -1917,7 +1918,7 @@ scene Mooi {
 
     // The container's corners (outline = corners): four marks at its ends.
     group {
-        show: (bar_full or helix_edges) and hc_corners
+        show: (bar_full or helix_edges) and hc_corners and not (pf and bar_full)
         path { stroke: 1.5; color: fl.trace_lit; move hc_x, pt + 7; line hc_x, pt; line hc_x + 7, pt }
         path { stroke: 1.5; color: fl.trace_lit; move hc_x, pb - 7; line hc_x, pb; line hc_x + 7, pb }
         path { stroke: 1.5; color: fl.trace_lit; move hc_x + hc_w - 7, pt; line hc_x + hc_w, pt; line hc_x + hc_w, pt + 7 }
