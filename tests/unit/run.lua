@@ -4796,6 +4796,10 @@ do
         assert(plm:find("PillBody()", 1, true), "drawn")
         local g = io.open("shell/ui/pill.plm"); local ui = g:read("a"); g:close()
         assert(ui:find("show: pill_on", 1, true), "only in Pill mode")
+        -- an event without "->" stays in the scene: the logic never hears the press
+        for _, ev in ipairs({ "pill_press", "pill_scroll", "pill_moon" }) do
+            assert(plm:find("event " .. ev .. " ->", 1, true), ev .. " reaches the logic")
+        end
         assert(ui:find("emit pill_press", 1, true) and ui:find("emit pill_scroll", 1, true) and ui:find("emit pill_moon", 1, true), "presses, scroll, moons")
     end)
     test("pill.reorder: up, down, on and off — idle always stays and stays on", function()

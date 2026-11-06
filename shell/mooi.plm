@@ -1141,7 +1141,7 @@ scene Mooi {
     fact moon_k1 = -1
     fact moon_k2 = -1
     fact moon_k3 = -1
-    event pill_press
+    event pill_press ->        // to the logic (D168): the Pill pressed
     event pill_scroll ->
     event pill_moon ->
     event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)
