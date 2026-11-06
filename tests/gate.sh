@@ -21,6 +21,16 @@ for f in shell/*.luau shell/lib/*.luau shell/player/*.luau shell/bmo/*.luau; do
     F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
 done
 
+echo "requires are pleamar paths"
+# Pleamar resolves `require("lib/x")` only: a dotted name works under plain Lua (so the unit tests
+# pass) and kills the scene's logic at start (2026-11-06: lib.sysinfo took the whole bar down).
+dotted=$(grep -rnE 'require\("[^"/]*\.[^"]*"\)' shell --include='*.luau' || true)
+if [ -n "$dotted" ]; then
+    echo "a require pleamar cannot resolve (use slashes):" >&2
+    printf '%s\n' "$dotted" >&2
+    exit 1
+fi
+
 echo "settings.json has one write policy"
 # A write is `sys.call("files.write", FILE, …)` where FILE is "settings.json", or the name spelled
 # out. Every such call outside lib/settingsfile must say why on its line (`settings-write: ok`);

@@ -2,7 +2,7 @@
 -- G8: the first panel moved out of the two duplicated logic files). The forecast parsing is
 -- lib/forecast's; this only turns a parsed forecast into the facts, text and rows both scenes draw.
 
-local sysinfo = require("lib.sysinfo")
+local sysinfo = require("lib/sysinfo")
 
 local M = {}
 
