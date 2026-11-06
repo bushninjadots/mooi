@@ -31,6 +31,7 @@ Needs `pleamar` 0.7.11, `hyprctl`, `jq`, `lua5.4` and `wpctl`/`brightnessctl` fo
 
 ## A new machine
 
-`setup/` holds the rest of this desktop (Hyprland's config, package lists and a shareable baseline state). On a fresh EndeavourOS/Arch install: clone this repo to `~/Projects/mooi` and run `setup/install.sh`. Run `setup/capture.sh` before committing to keep the shareable baseline current. See [setup/README.md](setup/README.md).
-
-The setup directory is intentionally not a backup of personal notebooks, identity, board state or machine-local runtime files.
+On a fresh EndeavourOS/Arch install: clone this repo to `~/Projects/mooi` and run
+`setup/install.sh`. It installs what mooi needs and a neutral desktop configuration; nothing of the
+author's comes with it — no settings, notes, pictures, accounts or package choices beyond mooi's
+own. See [setup/README.md](setup/README.md).

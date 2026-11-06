@@ -2641,7 +2641,7 @@ test("weather cache: only a parseable forecast with a sane timestamp is fresh", 
 end)
 test("weather cache: coordinates are parsed and bounded before URL construction", function()
     local lat, lon = weathercache.coordinates({ loc = "39.7817,-89.6501" })
-    eq(lat, 41.1189, "latitude"); eq(lon, 1.2445, "longitude")
+    eq(lat, 39.7817, "latitude"); eq(lon, -89.6501, "longitude")
     eq(select(1, weathercache.coordinates({ loc = "90,-180" })), 90, "valid lower longitude")
     eq(weathercache.coordinates({ loc = "91,0" }), nil, "latitude out of range")
     eq(weathercache.coordinates({ loc = "0,181" }), nil, "longitude out of range")
@@ -2660,13 +2660,13 @@ local function share_world(files)
         write = function(name, doc) files[name] = doc end,
         fetch = function(url, done)
             fetched[#fetched + 1] = url
-            if url:find("ipinfo", 1, true) then done({ loc = "41.1,1.2", city = "Springfield" }) else done(meteo()) end
+            if url:find("ipinfo", 1, true) then done({ loc = "39.78,-89.65", city = "Springfield" }) else done(meteo()) end
         end,
     }
 end
 test("weather share: a fresh forecast is the answer, with nothing fetched", function()
     local files = { ["nexus-weather.json"] = { at = 1900, answer = meteo(), city = "Springfield" },
-                    ["ipinfo.json"] = { at = 1900, loc = "41.1,1.2", city = "Springfield" } }
+                    ["ipinfo.json"] = { at = 1900, loc = "39.78,-89.65", city = "Springfield" } }
     local fetched, opts = share_world(files)
     local got
     weathershare.refresh(opts, function(doc) got = doc end)

@@ -29,6 +29,8 @@ ipinfo.json
 # ...except personal identity pictures (audit G1) and caches/state under the baseline
 setup/home/**/identity/
 setup/home/**/.cache/
+# the author's own full package lists (setup/capture.sh → install.sh --personal): never public
+setup/personal/
 
 # caches and tool state
 __pycache__/

@@ -13,18 +13,24 @@ The capture script keeps only config, package lists, fonts, themes and the neutr
 
 ## On a new machine
 
-1. Install EndeavourOS (or Arch), with SDDM or no login screen, and log in.
-2. `git clone git@github.com:bushninjadots/mooi.git ~/Projects/mooi`
+1. Install EndeavourOS or Arch (with your graphics driver), and log in.
+2. `git clone https://github.com/bushninjadots/mooi.git ~/Projects/mooi`
 3. `~/Projects/mooi/setup/install.sh`
-4. Copy wallpapers into `~/Pictures/wallpapers` if you want them.
+4. Put pictures in `~/Pictures/wallpapers`, or choose a folder in Settings → Wallpapers.
 5. Log out and choose the Hyprland session.
 
-`install.sh` asks for sudo. What it replaces in your home is moved, not deleted, to `~/.setup-backup-<date>/`.
+`install.sh` installs only what mooi needs (`packages.pacman`, `packages.aur`, curated by hand),
+asks for sudo, and moves whatever it replaces in your home to `~/.setup-backup-<date>/` instead of
+deleting it. Your settings, notes, profile picture, GitHub account and the rest start empty: they
+are yours to fill in.
 
-## Keeping it current
-
-Before committing a desktop change, run:
+## For the author: keeping it current
 
     setup/capture.sh && git add -A setup && git commit -m "setup: captured"
 
-This capture intentionally writes neutral starter state, not your live board, notes or profile data.
+The capture copies the desktop's configuration, writes neutral starter state, turns your home path
+into `@HOME@` (the installer writes the installing user's home there) and blanks your GitHub login.
+It **refuses to finish** if anything left still names you — your `/home/<user>` path, your git name
+or email, your GitHub login — or looks like a credential. Your full package lists go to
+`setup/personal/`, which is gitignored; `install.sh --personal` restores your exact machine from
+your own checkout.

@@ -1,17 +1,27 @@
 #!/bin/sh
-# Capture only shareable desktop configuration. Per-user state (notes, board,
-# identity, settings, caches and credentials) stays local and is intentionally not
-# kept in the public repo. The checked-in files are a clean default, not a copy of
-# this machine's runtime state.
+# Capture the shareable desktop configuration into setup/home — a public starting point for anyone,
+# never a copy of the author. Per-user state (notes, board, identity, settings, caches, project lists,
+# bookmarks, credentials) stays local, home paths become @HOME@ (install.sh puts the installer's own
+# back), and the capture refuses to finish while anything still names the person who ran it.
+#
+# The author's full package lists (everything this machine has installed, hardware included) go to
+# setup/personal/, which is gitignored: `install.sh --personal` restores this exact machine from a
+# local checkout, while the public lists (setup/packages.*) stay curated to what mooi needs.
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
 out="$root/setup/home"
+personal="$root/setup/personal"
 command -v rsync >/dev/null || { echo "capture: rsync is needed (pacman -S rsync)" >&2; exit 1; }
 
-# keep shareable config only; runtime state is excluded from capture.
 CONFIG="hypr desktop-widgets kitty matugen environment.d pleamar gtk-3.0 gtk-4.0 qt5ct qt6ct"
-EXCLUDE="--exclude=.git --exclude=.gitignore --exclude=hypr/wallpapers --exclude=hypr/legacy --exclude=*.bak --exclude=*.before-* \
- --exclude=pleamar/shells --exclude=__pycache__ --exclude=node_modules --exclude=*.log --exclude=.cache"
+# Runtime state and personal files, wherever they sit in those folders.
+EXCLUDE="--exclude=.git --exclude=.gitignore --exclude=__pycache__ --exclude=node_modules --exclude=*.log --exclude=.cache
+ --exclude=*.bak --exclude=*.bak-* --exclude=*.bak.* --exclude=bak-* --exclude=*.before-* --exclude=*.orig
+ --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=.claude
+ --exclude=hypr/wallpapers --exclude=hypr/legacy --exclude=hypr/evremap
+ --exclude=hypr/config/custom/browser.lua --exclude=hypr/config/custom/discord_client.lua
+ --exclude=pleamar/shells --exclude=kitty/sidecar/state --exclude=gtk-3.0/bookmarks
+ --exclude=desktop-widgets/docs"
 
 rm -rf "$out.new"
 mkdir -p "$out.new/.config" "$out.new/.local/share/pleamar/mooi"
@@ -24,8 +34,7 @@ for d in $CONFIG; do
 done
 rm -f "$dead"
 
-# Replace the live state directory with neutral defaults. This is a starting point,
-# never a copy of the user's notes, board, settings, identity or caches.
+# Neutral starter state for mooi: never the user's notes, board, settings, identity or caches.
 cat > "$out.new/.local/share/pleamar/mooi/settings.json" <<'JSON'
 {"version":2}
 JSON
@@ -48,26 +57,55 @@ if command -v gsettings >/dev/null 2>&1; then
     done > "$out.new/.gsettings"
 fi
 
-# Credentials never go in: a file that looks like it holds one stops the capture.
-creds='(gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY)'
-set +e
-hits=$(grep -rIlE "$creds" "$out.new")
-rc=$?
-set -e
-if [ "$rc" -gt 1 ] || [ -n "$hits" ]; then
-    [ "$rc" -gt 1 ] && echo "capture: the credential scan could not run; nothing was replaced" >&2
-    [ -n "$hits" ] && { echo "capture: these look like they hold a credential; nothing was replaced:" >&2; echo "$hits" >&2; }
-    rm -rf "$out.new"; exit 1
+# ── Make it nobody's ──────────────────────────────────────────────────────────────────────────────
+# pleamar's autostart names shells that are not captured; their lines would fail on another machine.
+auto="$out.new/.config/pleamar/autostart"
+[ -f "$auto" ] && { grep -v '/\.config/pleamar/shells/' "$auto" > "$auto.new" || :; mv "$auto.new" "$auto"; }
+# The GitHub heatmap widget starts with no account: the installer's own is theirs to type.
+w="$out.new/.config/desktop-widgets/settings/widgets.json"
+if [ -f "$w" ] && command -v jq >/dev/null 2>&1; then
+    jq '.heatmapUsername = ""' "$w" > "$w.new" && mv "$w.new" "$w"
+fi
+# Every home path becomes @HOME@; install.sh writes the installer's home in its place.
+home_re=$(printf '%s' "$HOME" | sed 's/[][\.*^$|/]/\\&/g')
+grep -rIl -- "$HOME" "$out.new" 2>/dev/null | while IFS= read -r f; do
+    sed -i "s|$home_re|@HOME@|g" "$f"
+done
+# The author's GitHub login, where it is only an example or a default, becomes GitHub's own example.
+login=$(gh api user -q .login 2>/dev/null || :)
+if [ -n "$login" ]; then
+    grep -rIlw -- "$login" "$out.new" 2>/dev/null | while IFS= read -r f; do
+        sed -i "s/\\b$login\\b/octocat/g" "$f"
+    done
 fi
 
-pacman -Qqen > "$root/setup/packages.new.pacman" 2>/dev/null || :
-pacman -Qqem > "$root/setup/packages.new.aur" 2>/dev/null || :
+# ── Refuse what still names someone ─────────────────────────────────────────────────────────────
+# Credentials, and the identity of whoever ran this: their user name in a path, their git name and
+# email, their GitHub login. Anything found stops the capture and nothing is replaced.
+creds='(gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY)'
+who="/home/$(id -un)"
+for v in "$(git config user.email 2>/dev/null || :)" "$(git config user.name 2>/dev/null || :)" "$login"; do
+    [ -n "$v" ] && who="$who|$(printf '%s' "$v" | sed 's/[][\.*^$|(){}+?]/\\&/g')"
+done
+set +e
+hits=$(grep -rIlE "$creds" "$out.new"; grep -rIliE -- "$who" "$out.new")
+rc=$?
+set -e
+if [ -n "$hits" ]; then
+    echo "capture: these hold a credential or name you ($who); nothing was replaced:" >&2
+    printf '%s\n' "$hits" | sort -u >&2
+    rm -rf "$out.new"; exit 1
+fi
+[ "$rc" -le 1 ] || { echo "capture: the privacy scan could not run; nothing was replaced" >&2; rm -rf "$out.new"; exit 1; }
+
+# This machine's full package lists, for `install.sh --personal`: local only (setup/personal is ignored).
+mkdir -p "$personal"
+pacman -Qqen > "$personal/packages.pacman" 2>/dev/null || :
+pacman -Qqem > "$personal/packages.aur" 2>/dev/null || :
 src="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/src/pleamar"
 if [ -d "$src/.git" ]; then
     printf '%s %s\n' "$(git -C "$src" remote get-url origin)" "$(git -C "$src" rev-parse HEAD)" > "$root/setup/pleamar.ref"
 fi
-mv "$root/setup/packages.new.pacman" "$root/setup/packages.pacman"
-mv "$root/setup/packages.new.aur" "$root/setup/packages.aur"
 
 rm -rf "$out" && mv "$out.new" "$out"
 echo "captured shareable setup into setup/: $(du -sh "$out" | cut -f1)"

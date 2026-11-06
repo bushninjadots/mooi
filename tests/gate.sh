@@ -40,6 +40,17 @@ if [ -n "$bad" ]; then
     exit 1
 fi
 
+echo "the public setup names nobody"
+# setup/home is for anyone: a real home path means a capture leaked someone's machine into it.
+# (setup/capture.sh writes @HOME@ and also refuses its runner's name, email and GitHub login.)
+leak=$(grep -rIlE '/home/[A-Za-z0-9_.-]+/' setup/home 2>/dev/null || true)
+if [ -n "$leak" ]; then
+    echo "setup/home holds a real home path; run setup/capture.sh:" >&2
+    printf '%s\n' "$leak" >&2
+    exit 1
+fi
+[ ! -e setup/personal ] || git check-ignore -q setup/personal || { echo "setup/personal must stay gitignored" >&2; exit 1; }
+
 echo "unit suites"
 lua5.4 shell/bmo/test.lua || exit 1
 lua5.4 tests/unit/run.lua || exit 1

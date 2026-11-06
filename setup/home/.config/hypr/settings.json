@@ -3,7 +3,7 @@
   "appScale": 1,
   "workspaceCount": 5,
   "unifiedDesktops": true,
-  "wallpaperDir": "/home/user/.config/hypr/wallpapers",
+  "wallpaperDir": "@HOME@/.config/hypr/wallpapers",
   "language": "",
   "kbOptions": "grp:alt_shift_toggle",
   "plugins": {},

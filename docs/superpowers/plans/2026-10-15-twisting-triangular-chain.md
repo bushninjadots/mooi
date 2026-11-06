@@ -70,7 +70,7 @@
   ```
 
 - [ ] **Step 3: Verify compilation**  
-  Run: `cd /home/user/Projects/mooi && bin/mooi check 2>&1 | tail -15`  
+  Run: `cd ~/Projects/mooi && bin/mooi check 2>&1 | tail -15`  
   Expected: "check passed" (or no errors). Scene compiles.
 
 - [ ] **Step 4: Commit**  
@@ -120,11 +120,11 @@
   Keep scale zone? Or rely on per-triangle hits. Current scale zone is box over whole span; triangles are on top. Can keep zone for scroll (backwards compat) or remove — but scroll over scale is used. Either keep scale zone (covers vertical span) and also triangles accept hits (triangles on top win). Keep scale zone as is.
 
 - [ ] **Step 4: Verify compilation and basic behavior**  
-  Run: `cd /home/user/Projects/mooi && bin/mooi check 2>&1 | tail -10`  
+  Run: `cd ~/Projects/mooi && bin/mooi check 2>&1 | tail -10`  
   Expected: check passed.
 
 - [ ] **Step 5: Run scene tests**  
-  Run: `cd /home/user/Projects/mooi && bash tests/scene.sh 2>&1 | tail -20`  
+  Run: `cd ~/Projects/mooi && bash tests/scene.sh 2>&1 | tail -20`  
   Expected: all scene tests pass (68 state + 9 motion, 0 failed). Existing contracts preserved.
 
 - [ ] **Step 6: Commit**  
@@ -175,7 +175,7 @@
   Update docs/MECHANISM.md to note triangular chain replaces ticks, global index-driven helical twist, wheel above chain. Keep constraints.
 
 - [ ] **Step 3: Final verification**  
-  Run: `cd /home/user/Projects/mooi && bin/mooi check && bash tests/scene.sh && bash tests/unit/run.lua >/dev/null && bash tests/integration.sh >/dev/null && echo 'ALL OK'`  
+  Run: `cd ~/Projects/mooi && bin/mooi check && bash tests/scene.sh && bash tests/unit/run.lua >/dev/null && bash tests/integration.sh >/dev/null && echo 'ALL OK'`  
   Expected: ALL OK.
 
 - [ ] **Step 4: Commit**  

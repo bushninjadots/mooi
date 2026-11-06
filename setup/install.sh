@@ -1,11 +1,14 @@
 #!/bin/sh
-# setup/install.sh — rebuild this desktop on a fresh Arch-based system (EndeavourOS here) from the repo:
-# the packages, pleamar at the exact commit it ran on, the Hyprland config and its helpers, mooi's own
-# settings and state, the fonts and themes, and the login screen. setup/capture.sh made what it reads.
+# setup/install.sh — put mooi's desktop on a fresh Arch-based system (EndeavourOS, Arch): the packages
+# mooi needs, pleamar at the commit mooi was built against, Hyprland's config and its helpers, mooi's
+# neutral starting state, the fonts and themes, and the login screen. Nothing in it is anyone's own:
+# no settings, notes, pictures or accounts — you start from defaults and sign in to your own services.
 #
-#   git clone git@github.com:bushninjadots/mooi.git ~/Projects/mooi
-#   ~/Projects/mooi/setup/install.sh          everything
+#   git clone https://github.com/bushninjadots/mooi.git ~/Projects/mooi
+#   ~/Projects/mooi/setup/install.sh                 everything
 #   ~/Projects/mooi/setup/install.sh --no-packages   the files only (packages already there)
+#   ~/Projects/mooi/setup/install.sh --personal      the author's own machine: the full package lists
+#                                                    setup/capture.sh keeps in setup/personal/ (local only)
 #
 # Whatever it replaces in your home is moved, not deleted, to ~/.setup-backup-<date>/ first.
 # Run it as yourself (it asks for sudo for packages and the login screen). Then log out and pick the
@@ -14,11 +17,13 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/.." && pwd)
 packages=true
+personal=false
 for a in "$@"; do
     case "$a" in
         --no-packages) packages=false ;;
+        --personal) personal=true ;;
         -h|--help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        *) echo "install: I don't know «$a» (--no-packages, --help)" >&2; exit 2 ;;
+        *) echo "install: I don't know «$a» (--no-packages, --personal, --help)" >&2; exit 2 ;;
     esac
 done
 say() { printf '\033[1;36msetup ·\033[0m %s\n' "$*"; }
@@ -32,6 +37,14 @@ command -v pacman >/dev/null || { echo "install: this is for Arch-based systems 
 # package since renamed) is listed at the end rather than stopping everything. Then the AUR's, with
 # paru or yay (paru is built from the AUR if neither is there).
 missing=""
+# The public lists are what mooi needs; --personal reads the author's full lists instead, which only
+# exist in a checkout where setup/capture.sh ran (setup/personal/ is never committed).
+list_pacman="$here/packages.pacman" list_aur="$here/packages.aur"
+if $personal; then
+    [ -f "$here/personal/packages.pacman" ] || { echo "install: --personal needs setup/personal/ (made by setup/capture.sh on your machine)" >&2; exit 1; }
+    list_pacman="$here/personal/packages.pacman" list_aur="$here/personal/packages.aur"
+fi
+wanted() { sed -e 's/#.*//' -e 's/[[:space:]]*$//' -e '/^$/d' "$1" 2>/dev/null; }
 if $packages; then
     say "packages: updating and installing from the repositories (sudo)"
     # -Syu, not -Sy: Arch does not support installing onto a partly upgraded system. Unattended on
@@ -39,18 +52,12 @@ if $packages; then
     sudo pacman -Syu --needed --noconfirm base-devel git rsync
     avail=$(mktemp)
     pacman -Slq | sort -u > "$avail"
-    have=$(grep -Fxf "$avail" "$here/packages.pacman" || :)
-    missing=$(grep -Fvxf "$avail" "$here/packages.pacman" | tr '\n' ' ' || :)
+    have=$(wanted "$list_pacman" | grep -Fxf "$avail" || :)
+    missing=$(wanted "$list_pacman" | grep -Fvxf "$avail" | tr '\n' ' ' || :)
     rm -f "$avail"
     [ -z "$have" ] || printf '%s\n' "$have" | sudo pacman -S --needed --noconfirm -
-    # Iosevka Nerd Font was not copied (690 MB): it is a package
-    sudo pacman -S --needed --noconfirm ttf-iosevka-nerd 2>/dev/null || warn "ttf-iosevka-nerd not found; the bar's icons fall back"
-    # the widgets read the wallpaper with ImageMagick and cut its subject out with rembg via uv (D139);
-    # both come in as dependencies here, so the captured list does not name them
-    sudo pacman -S --needed --noconfirm imagemagick uv python || warn "imagemagick / uv not installed; the widgets will not read the wallpaper"
-    # the wallpapers (D145): the picker's index reads them with Pillow, a video's frame with ffmpeg,
-    # and mpvpaper (from the AUR list) plays a video wallpaper under mooi's desk
-    sudo pacman -S --needed --noconfirm python-pillow ffmpeg jq || warn "python-pillow / ffmpeg not installed; the wallpaper picker cannot read the folders"
+    # the widgets cut the wallpaper's subject out with rembg, through uv (D139): optional
+    sudo pacman -S --needed --noconfirm uv 2>/dev/null || warn "uv not installed; the widgets will not cut out the wallpaper's subject"
     helper=""
     for h in paru yay; do command -v "$h" >/dev/null && { helper=$h; break; }; done
     if [ -z "$helper" ]; then
@@ -67,7 +74,9 @@ if $packages; then
         [ -n "$p" ] || continue
         pacman -Qq "$p" >/dev/null 2>&1 && continue
         "$helper" -S --needed --noconfirm "$p" >/dev/null 2>&1 || missing="$missing $p(aur)"
-    done < "$here/packages.aur"
+    done <<EOF
+$(wanted "$list_aur")
+EOF
     # rembg, for the widgets' depth (D139): its own Python 3.13 (onnxruntime trails the system's)
     if ! command -v rembg >/dev/null; then
         if command -v uv >/dev/null; then
@@ -102,6 +111,7 @@ echo "$src" > "$HOME/.local/bin/.pleamar-src"
 
 # ── 3. The files: config, mooi's state, fonts, themes ────────────────────────────────────────────
 backup="$HOME/.setup-backup-$(date +%Y%m%d-%H%M%S)"
+home_sed=$(printf '%s' "$HOME" | sed 's/[&|\\]/\\&/g')
 say "files: into your home (what they replace goes to $backup)"
 # each top-level thing the capture holds (~/.config/hypr, ~/.local/share/fonts, …) is replaced whole,
 # so nothing of an old config is left mixed into the new one
@@ -115,6 +125,10 @@ while IFS= read -r item <&3; do
     fi
     mkdir -p "$HOME/$(dirname "$item")"
     cp -a "$here/home/$item" "$HOME/$item"
+    # the capture wrote @HOME@ where the author's home was: this is yours
+    grep -rIl -- '@HOME@' "$HOME/$item" 2>/dev/null | while IFS= read -r f; do
+        sed -i "s|@HOME@|$home_sed|g" "$f"
+    done
 done 3< "$backup.list"
 rm -f "$backup.list"
 # mooi's state folder: its files laid over, never the whole folder (caches and pictures it makes stay)
@@ -148,7 +162,7 @@ if $packages && pacman -Qq sddm >/dev/null 2>&1; then
 fi
 
 say "done. Log out, choose the Hyprland session, and mooi starts with it."
-[ -d "$HOME/Pictures/wallpapers" ] || warn "your wallpapers (~/Pictures/wallpapers, 8 GB) are not in the repo: copy them over from a backup"
+[ -d "$HOME/Pictures/wallpapers" ] || warn "no wallpapers yet: put pictures in ~/Pictures/wallpapers (or pick a folder in Settings → Wallpapers)"
 [ -n "$(printf '%s' "$missing" | tr -d ' ')" ] && warn "not installed (not in your repositories, or the AUR build failed): $missing"
 warn "not restored: the kernel's command line (/etc/kernel/cmdline) and other system files; see setup/README.md"
 exit 0

@@ -84,8 +84,8 @@ def get_system_username():
 def normalize_user(raw):
     """Accept a username, @handle, or a full GitHub URL and return the bare login.
 
-    Examples: "bushninjadots", "@bushninjadots", "github.com/bushninjadots",
-    "https://github.com/bushninjadots?tab=overview" -> "bushninjadots".
+    Examples: "octocat", "@octocat", "github.com/octocat",
+    "https://github.com/octocat?tab=overview" -> "octocat".
     """
     if not raw:
         return ""

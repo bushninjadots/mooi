@@ -3201,7 +3201,7 @@ telemetry and their 82 tests; the nexus.* settings only they read (a migration k
 folds, tested). The scene went from ~3500 lines and thousands of properties to 255 properties.
 
 **Checked live:** both styles top to bottom with real data (networks, devices, apps, updates
-"6 updates · 5 packages · 1 AUR", Springfield's weather); fold and unfold (saved, everything below
+"6 updates · 5 packages · 1 AUR", the local weather); fold and unfold (saved, everything below
 moves); the night light toggled through the bar and back (process 1 → 0); the wheel scrolls; Today
 opens the calendar island; a notification opens the Signal Field; Esc closes; another app's window
 closes it. Unit 234 + BMO 27; integration.sh 42/42. Not pressed live: Wi-Fi join, Bluetooth connect,

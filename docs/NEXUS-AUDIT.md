@@ -1,6 +1,6 @@
 # mooi · Control Nexus — Phase 0 audit
 
-*2026-10-23 · repository `/home/user/Projects/mooi` · Pleamar 0.4.6 (language 0.4)*
+*2026-10-23 · repository `~/Projects/mooi` · Pleamar 0.4.6 (language 0.4)*
 
 This is the Phase 0 reconnaissance for Control Nexus: what exists, what can be reused, what has
 to be built, how the new component fits the shell, and which limits are real on this machine.
