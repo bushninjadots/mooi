@@ -11,7 +11,7 @@ echo "launcher and test scripts"
 bash -n bin/mooi    # the launcher is bash ([[ =~ ]], process substitution); dash rejects it
 for t in tests/*.sh setup/*.sh; do sh -n "$t"; done
 if command -v shellcheck >/dev/null 2>&1; then
-    shellcheck -S error -q bin/mooi tests/*.sh setup/*.sh || exit 1
+    shellcheck -S error -f gcc bin/mooi tests/*.sh setup/*.sh || exit 1
 else
     echo "shellcheck: not installed; syntax checked with sh -n only"
 fi

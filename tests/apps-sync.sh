@@ -36,7 +36,7 @@ apps() { # kitty gtk qt [files] (true/false; files defaults to on)
         io.write('}}')" > "$D/apps.json" || exit 1
 }
 
-sync() { sh "$root/bin/mooi" apps-sync; }
+sync() { bash "$root/bin/mooi" apps-sync; }
 
 # ── a machine that already has colours of its own ────────────────────────────
 printf 'font_size 11\ninclude colors-user.conf\n' > "$C/kitty/kitty.conf"

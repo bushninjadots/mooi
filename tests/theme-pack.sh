@@ -30,7 +30,7 @@ seed() {
 seed
 
 echo "save: the current look becomes a package, with only visual settings"
-attempt sh "$root/bin/mooi" theme save Foundry "Graphite and phosphor"
+attempt bash "$root/bin/mooi" theme save Foundry "Graphite and phosphor"
 is "save exits 0" "$status" "0"
 [ -f "$D/themes/foundry.json" ] && ok "the package was written to themes/foundry.json" || bad "no package file"
 is "format" "$(jq -r '.format' "$D/themes/foundry.json")" "mooi-theme"
@@ -43,26 +43,26 @@ is "workspace counts are not" "$(jq -r '.settings.spine // "absent"' "$D/themes/
 is "unknown sections are not" "$(jq -r '.settings.custom // "absent"' "$D/themes/foundry.json")" "absent"
 
 echo "save: an existing name is refused, and --force replaces it"
-attempt sh "$root/bin/mooi" theme save Foundry
+attempt bash "$root/bin/mooi" theme save Foundry
 is "a second save is refused" "$status" "1"
 printf '%s' "$out" > "$t/out"
 has "the refusal says how to replace it" "use --force" "$t/out"
-attempt sh "$root/bin/mooi" theme save Foundry --force
+attempt bash "$root/bin/mooi" theme save Foundry --force
 is "--force saves over it" "$status" "0"
 
 echo "list: saved packages are named"
-attempt sh "$root/bin/mooi" theme list
+attempt bash "$root/bin/mooi" theme list
 is "list exits 0" "$status" "0"
 printf '%s' "$out" > "$t/out"
 has "it names the package" "Foundry" "$t/out"
 jq -n '{format:"mooi-theme", version:1, name:"Broken", settings:{theme:{overrides:{"accent.nope":"#112233"}}}}' > "$D/themes/broken.json"
-attempt sh "$root/bin/mooi" theme list
+attempt bash "$root/bin/mooi" theme list
 printf '%s' "$out" > "$t/out"
 has "an invalid package is marked, not hidden" "INVALID" "$t/out"
 
 echo "apply: only the package's leaves change; everything else stays"
 jq '.theme.mode="light" | .bar.radius=2 | .spine.max_workspaces=3 | .custom.keep="still"' "$D/settings.json" > "$D/s.json" && mv "$D/s.json" "$D/settings.json"
-attempt sh "$root/bin/mooi" theme apply Foundry
+attempt bash "$root/bin/mooi" theme apply Foundry
 is "apply exits 0" "$status" "0"
 is "the palette mode came from the package" "$(jq -r '.theme.mode' "$D/settings.json")" "dark"
 is "the bar radius came from the package" "$(jq -r '.bar.radius' "$D/settings.json")" "7"
@@ -71,23 +71,23 @@ is "an unknown section stayed" "$(jq -r '.custom.keep' "$D/settings.json")" "sti
 
 echo "apply: a package can be a file, and a bad one changes nothing"
 jq '.theme.mode="light"' "$D/settings.json" > "$D/s.json" && mv "$D/s.json" "$D/settings.json"
-attempt sh "$root/bin/mooi" theme apply "$D/themes/foundry.json"
+attempt bash "$root/bin/mooi" theme apply "$D/themes/foundry.json"
 is "apply by path exits 0" "$status" "0"
 is "the mode came from the file" "$(jq -r '.theme.mode' "$D/settings.json")" "dark"
 jq -n '{format:"mooi-theme", version:1, name:"Bad", settings:{theme:{overrides:{"accent.nope":"#112233"}}}}' > "$D/bad.json"
 jq '.theme.mode="light"' "$D/settings.json" > "$D/s.json" && mv "$D/s.json" "$D/settings.json"
-attempt sh "$root/bin/mooi" theme apply "$D/bad.json"
+attempt bash "$root/bin/mooi" theme apply "$D/bad.json"
 is "the bad package is refused" "$status" "1"
 is "the refused package wrote nothing" "$(jq -r '.theme.mode' "$D/settings.json")" "light"
 
 echo "apply: safe mode and a missing package are refused"
-attempt env MOOI_SAFE=1 sh "$root/bin/mooi" theme apply Foundry
+attempt env MOOI_SAFE=1 bash "$root/bin/mooi" theme apply Foundry
 is "safe mode exits 1" "$status" "1"
-attempt sh "$root/bin/mooi" theme apply nowhere
+attempt bash "$root/bin/mooi" theme apply nowhere
 is "an unknown package exits 1" "$status" "1"
-attempt sh "$root/bin/mooi" theme save
+attempt bash "$root/bin/mooi" theme save
 is "save without a name exits 2" "$status" "2"
-attempt sh "$root/bin/mooi" theme
+attempt bash "$root/bin/mooi" theme
 is "theme without a command exits 2" "$status" "2"
 
 echo

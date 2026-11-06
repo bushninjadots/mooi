@@ -27,7 +27,7 @@ settings() { # on|off SHADER [CUSTOM] [TINT] [COLOUR]
     jq -n --argjson on "$o" --arg s "$2" --arg c "${3:-}" --arg t "${4:-55}" --arg k "${5:-primary}" \
       '{desktop: {kitty_shader_on: $on, kitty_shader: $s, kitty_shader_custom: $c, kitty_shader_tint: ($t | tonumber), kitty_shader_colour: $k}}' > "$D/settings.json"
 }
-sync() { sh "$root/bin/mooi" kitty-shaders 2>&1; }
+sync() { bash "$root/bin/mooi" kitty-shaders 2>&1; }
 
 printf 'font_size 11\ncustom_shaders northern-lights\n' > "$C/kitty/kitty.conf"
 
