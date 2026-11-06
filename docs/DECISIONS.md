@@ -4805,3 +4805,16 @@ G4); the summaries follow the commit messages._
   balanced, rich). Every current setting is kept and applies to every material.
 - One chassis shape drawn by mooi-frame in every mode: no humps, one bottom edge, swell on one outline.
 - Built in stages, Ferrolume first. Spec: docs/superpowers/specs/2026-11-06-bar-redesign-design.md.
+
+## D165 · 2026-11-06 · Bar redesign stage 1: one chassis
+- `lib/chassis` lays out the bar's pieces for every shape; mooi-frame draws them (20 sprung slots) in
+  every mode and always runs; the bar's own plates are only its fallback (`chassis_up`), and a frame
+  that exits is started again.
+- Islands float as plates on the bar's row, so no gap reads as an empty tab; full joins the band;
+  notch hangs from the top with one foot (st_res) whether the frame is on or not.
+- Swell moves only a band that is on (Pleamar ignores `show` inside a body, so a hidden band drew the
+  music as a stray line), and the top edge's swell stops above the floating plates.
+- Only a neon edge glows with the music; on a plain line the glow was brighter than a thin edge.
+- `tests/chassis.sh` measures it live: islands foot 30–31 px, full 31, notch 29–30 in every state
+  (31/34/37 before); 93 checks, 0 failed. Performance unchanged (bar 9.0 → 7.9 % of a core).
+
