@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # mooi — launcher. mooi is the whole desktop: the login starts `mooi session`
 # (~/.config/hypr/config/custom/mooi.lua) and there is no other shell beside it (D133).
 #
