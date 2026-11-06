@@ -1,14 +1,8 @@
-# A public repo should not ship live user state.
-# These rules apply to the repo snapshot itself; cargo-culting local runtime state
-# into the repository is explicitly avoided.
-!important
-!
-**
+# A public repo should not ship live user state, but it must not hide new work either.
+# These are explicit rules: a new test, doc, scene or theme package is visible to git unless a
+# rule below names it. (The old `**` rule made every new file invisible; audit G2.)
 
-# keep setup files tracked if they are shareable config
-!setup/home/**
-
-# runtime and machine state live outside the repo and should not be committed
+# runtime and machine state, wherever it lands
 settings.json
 notes.json
 board.json
@@ -24,12 +18,17 @@ nexus-anchor.json
 player-anchor.json
 notch-state.json
 bmo-state.json
-identity/
-*.jpg
-*.png
+nexus-weather.json
+ipinfo.json
 *.log
 *.tsv
 *.cache
+
+# the shareable setup baseline is tracked...
+!setup/home/**
+# ...except personal identity pictures (audit G1) and caches/state under the baseline
+setup/home/**/identity/
+setup/home/**/.cache/
 
 # caches and tool state
 __pycache__/
@@ -38,6 +37,11 @@ __pycache__/
 .open-design/
 .swarm/
 .superpowers/
+.devin/
+.show-your-work/
+.freebuff/
+pleamar helix bar/
 ruvector.db
 agentdb.rvf
 agentdb.rvf.idmap.json
+*.db
