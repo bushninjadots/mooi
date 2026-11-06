@@ -20,20 +20,20 @@ end
 M.BAR_PRESETS = {
     -- an instrument panel: solid hull, a regular line with its cuts, the rail and the details on
     { name = "instrument", set = { ["bar.surface"] = "solid", ["bar.frame"] = "line", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
-        ["bar.shadow"] = "off", ["bar.ground"] = "black", ["bar.pill"] = "soft", ["bar.opacity"] = 100, ["bar.rail"] = true, ["bar.accents"] = true } },
+        ["bar.shadow"] = "off", ["bar.ground"] = "black", ["bar.pill"] = "soft", ["bar.opacity"] = 100, ["bar.rail"] = true, ["bar.accents"] = true , ["bar.frost"] = 70, ["bar.smoke"] = 38} },
     -- glass: bent and frosted, a thin bright edge, a soft shadow, nothing else
     { name = "glass", set = { ["bar.surface"] = "glass", ["bar.frame"] = "line", ["bar.outline_width"] = 1, ["bar.outline_colour"] = "bright",
         ["bar.shadow"] = "soft", ["bar.ground"] = "clear", ["bar.pill"] = "outline", ["bar.opacity"] = 85, ["bar.frost"] = 60, ["bar.smoke"] = 30,
         ["bar.rail"] = false, ["bar.accents"] = false } },
     -- floating: solid islands with no edge, lifted by a strong shadow, glowing under the pointer
     { name = "floating", set = { ["bar.surface"] = "solid", ["bar.frame"] = "none", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
-        ["bar.shadow"] = "strong", ["bar.ground"] = "clear", ["bar.pill"] = "glow", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false } },
+        ["bar.shadow"] = "strong", ["bar.ground"] = "clear", ["bar.pill"] = "glow", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 0, ["bar.smoke"] = 0} },
     -- hairline (D166): no fill at all, only an accent line, so the wallpaper shows through
     { name = "hairline", set = { ["bar.surface"] = "clear", ["bar.frame"] = "line", ["bar.outline_width"] = 1, ["bar.outline_colour"] = "accent",
-        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false } },
+        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 0, ["bar.smoke"] = 0} },
     -- minimal: only the readings on the desktop, an underline for hover
     { name = "minimal", set = { ["bar.surface"] = "clear", ["bar.frame"] = "none", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
-        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false } },
+        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false , ["bar.frost"] = 0, ["bar.smoke"] = 0} },
     -- (steel was removed in D166: its look stays reachable as the mech surface with an accent line)
 }
 M.THEME_PRESETS = {

@@ -17,6 +17,21 @@ D="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/mooi"
 F="$D/settings.json"
 t=$(mktemp -d)
 cp "$F" "$t/restore.json"
+# the styles' own values (lib/style), so each style is shown as it is defined
+lua5.4 - "$root" > "$t/presets.json" <<'LUA'
+package.path = arg[1] .. "/shell/?.luau;" .. package.path
+local st = require("lib/style")
+local out = {}
+for _, p in ipairs(st.BAR_PRESETS) do
+    local parts = {}
+    for k, v in pairs(p.set) do
+        local key = k:match("^bar%.(.+)$")
+        if key then parts[#parts + 1] = string.format("%q: %s", key, type(v) == "string" and string.format("%q", v) or tostring(v)) end
+    end
+    out[#out + 1] = string.format("%q: {%s}", p.name, table.concat(parts, ","))
+end
+print("{" .. table.concat(out, ",") .. "}")
+LUA
 was=$(playerctl status 2>/dev/null || echo none)
 restore() {
     cp "$t/restore.json" "$F"
@@ -98,6 +113,66 @@ for shape in islands full notch; do
     hi=$(echo "$feet" | tr ' ' '\n' | grep . | sort -n | tail -1)
     if [ -n "$lo" ] && [ $((hi - lo)) -le 1 ]; then ok; else bad "$shape: the foot moves between states (y $lo…$hi)"; fi
     echo "$shape: foot y $lo…$hi"
+done
+
+# ── Styles (D166): every style with the frame off and on, still and swelling, in islands mode ──
+# A style with an outline has one line at the foot; one without (floating, minimal) has none even with
+# the frame on; no state crosses the gaps between islands; the foot holds one height.
+for style in instrument glass floating hairline minimal; do
+    for frame in false true; do
+        for swell in false true; do
+            mo=off; [ "$swell" = true ] && mo=swell
+            jq --arg st "$style" --argjson on "$frame" --argjson mu "$swell" --arg mo "$mo" --slurpfile pr "$t/presets.json" \
+                '.bar.mode="islands" | .bar.style=$st | (.bar += $pr[0][$st]) | .frame.on=$on | .frame.music=$mu | .frame.motion=$mo | .frame.style="swell" | .frame.edge="line" | .frame.islands="float"' \
+                "$t/restore.json" > "$F.tmp" && mv "$F.tmp" "$F"
+            sleep 3
+            shot="$t/style-$style-$frame-$swell.png"
+            grim -g "0,0 1920x130" "$shot"
+            g="$D/bar-geo.json"
+            x=$(jq -r '[.islands[] | select(.w > 0)][0] | (.x + .w / 2 | floor)' "$g")
+            # a style may turn the info rail on, which moves the row down: this state's own top
+            stop=$((off + 8)); [ "$(jq -r '.bar.rail' "$F")" = true ] && stop=$((off + 15))
+            foot=$((stop + height)); y0=$((foot - 4))
+            vals=$(col "$shot" "$x" "$y0" 14)
+            name="style $style · frame $frame · swell $swell"
+            line=$(echo "$vals" | awk '{ f = $2; b = $NF; base = (f > b ? f : b); m = 0; at = 0
+                   for (i = 3; i <= NF - 4; i++) if ($i > m) { m = $i; at = i }; print (m > base + 25) ? at : 0 }')
+            case $style in floating | minimal) want=0 ;; *) want=1 ;; esac
+            if [ "$want" = 0 ]; then
+                if [ "$line" -eq 0 ]; then ok; else bad "$name: a line where the style has none"; fi
+            else
+                if [ "$line" -gt 0 ]; then ok; else bad "$name: no line where the style has one"; fi
+                d=$((y0 + line - 1 - foot)); [ "$d" -lt 0 ] && d=$((-d))
+                if [ "$line" -eq 0 ] || [ "$d" -le 2 ]; then ok; else bad "$name: foot at y=$((y0 + line - 1)), want $foot"; fi
+            fi
+            gx=$(jq -r '[.islands[] | select(.w > 0)] | [range(1; length) as $i | {g: (.[$i].x - (.[$i-1].x + .[$i-1].w)), m: ((.[$i].x + .[$i-1].x + .[$i-1].w) / 2 | floor)}] | max_by(.g) | .m' "$g")
+            gv=$(col "$shot" "$gx" "$stop" $((foot - stop - 2)))
+            gb=$(col "$shot" "$gx" $((foot + 10)) 1)
+            hump=$(echo "$gv" | awk -v bg="$gb" '{ c = 0; for (i = 1; i <= NF; i++) if ($i > bg + 25) c++; print c }')
+            if [ "$hump" -eq 0 ]; then ok; else bad "$name: an outline crosses the gap at x=$gx"; fi
+        done
+    done
+done
+
+# ── Attach (D166): the band comes down to the islands' top; the gaps are recesses, not tabs ──
+for swell in false true; do
+    mo=off; [ "$swell" = true ] && mo=swell
+    jq --argjson mu "$swell" --arg mo "$mo" '.bar.mode="islands" | .frame.on=true | .frame.islands="attach" | .frame.music=$mu | .frame.motion=$mo | .frame.edge="line" | .bar.frame="line" | .bar.outline_width=2 | .bar.surface="solid"' \
+        "$t/restore.json" > "$F.tmp" && mv "$F.tmp" "$F"
+    sleep 3
+    shot="$t/attach-$swell.png"; grim -g "0,0 1920x130" "$shot"
+    g="$D/bar-geo.json"
+    foot=$((top + height))
+    gx=$(jq -r '[.islands[] | select(.w > 0)] | [range(1; length) as $i | {g: (.[$i].x - (.[$i-1].x + .[$i-1].w)), m: ((.[$i].x + .[$i-1].x + .[$i-1].w) / 2 | floor)}] | max_by(.g) | .m' "$g")
+    gv=$(col "$shot" "$gx" $((top + 3)) $((foot - top - 5)))
+    gb=$(col "$shot" "$gx" $((foot + 10)) 1)
+    tab=$(echo "$gv" | awk -v bg="$gb" '{ c = 0; for (i = 1; i <= NF; i++) if ($i > bg + 25) c++; print c }')
+    if [ "$tab" -eq 0 ]; then ok; else bad "attach · swell $swell: a line inside the recess at x=$gx (a tab)"; fi
+    x=$(jq -r '[.islands[] | select(.w > 0)][0] | (.x + .w / 2 | floor)' "$g")
+    vals=$(col "$shot" "$x" $((foot - 4)) 14)
+    peak=$(echo "$vals" | awk -v y0=$((foot - 4)) '{ m = -1; at = -1; for (i = 1; i <= NF - 4; i++) if ($i > m) { m = $i; at = y0 + i - 1 }; print at }')
+    d=$((peak - foot)); [ "$d" -lt 0 ] && d=$((-d))
+    if [ "$d" -le 2 ]; then ok; else bad "attach · swell $swell: foot at y=$peak, want $foot"; fi
 done
 
 echo "$n checks, $fail failed"

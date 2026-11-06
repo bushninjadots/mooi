@@ -164,8 +164,8 @@ BODY = [
     "opacity: fop",
     "glass: if(glassy, 100%, 0%)",
     "lens: false",
-    "frost: 1% * st_frost",
-    "smoke: 1% * st_smoke",
+    "frost: 1% * st_frost * if(glassy, 1, 0)",
+    "smoke: 1% * st_smoke * if(glassy, 1, 0)",
     "shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a",
     # One outline, one width (the bar's Outline: thin 1 · regular 1.4 · bold 2 px), and the style decides
     # whether there is one at all (D166): a style without an outline (Floating, Minimal) gives the frame
@@ -190,15 +190,27 @@ def plate_bodies(ind):
                 f"{ind}        opacity: if(pf{i} > 2.5, 0, max(st_opacity, 0.3))",
                 f"{ind}        glass: if(pf{i} > 1.5 and pf{i} < 2.5, 100%, 0%)",
                 f"{ind}        lens: false",
-                f"{ind}        frost: 1% * st_frost",
-                f"{ind}        smoke: 1% * st_smoke",
+                # frost and tint are glass's: on a solid or clear plate they frosted the wallpaper into a fill
+                f"{ind}        frost: 1% * st_frost * if(pf{i} > 1.5 and pf{i} < 2.5, 1, 0)",
+                f"{ind}        smoke: 1% * st_smoke * if(pf{i} > 1.5 and pf{i} < 2.5, 1, 0)",
                 f"{ind}        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf{i} > 2.5, 0, 1)",
                 f"{ind}        border: {wid}, {edge}",
-                f"{ind}        box {{ from: px{i}, py{i}; size: if(pj{i}, 0, pw{i}), if(pj{i}, 0, ph{i}); corner: pr{i} }}",
+                # no fill: no body at all (a body's opacity did not clear a frosted fill), only the outline below
+                f"{ind}        box {{ from: px{i}, py{i}; size: if(pj{i} or pf{i} > 2.5, 0, pw{i}), if(pj{i} or pf{i} > 2.5, 0, ph{i}); corner: pr{i} }}",
                 f"{ind}    }}",
                 # with no fill the body is clear, and its border with it: the outline as a stroke of its own
                 f"{ind}    // plate {i} outline",
-                f"{ind}    box {{ from: px{i}, py{i}; size: if(pj{i} or pf{i} < 2.5, 0, pw{i}), if(pj{i} or pf{i} < 2.5, 0, ph{i}); corner: pr{i}; stroke: {wid}; color: {edge} }}",
+                # only when there is an outline: a box with stroke 0 is a filled box, and a plate with neither
+                # fill nor outline (Minimal) became a solid accent fill over the readings
+                f"{ind}    box {{ from: px{i}, py{i}; size: if(pj{i} or pf{i} < 2.5 or {wid} < 0.5, 0, pw{i}), if(pj{i} or pf{i} < 2.5 or {wid} < 0.5, 0, ph{i}); corner: pr{i}; stroke: {wid}; color: {edge} }}",
+                # Outline: Corners — four marks at the plate's corners (outside any body, so `show` holds)
+                f"{ind}    group {{",
+                f"{ind}        show: not pj{i} and pw{i} > 0 and bar_frame > 0.5 and bar_frame < 1.5",
+                f"{ind}        path {{ stroke: st_owidth + 0.1; color: fnec; move px{i}, py{i} + 7; line px{i}, py{i}; line px{i} + 7, py{i} }}",
+                f"{ind}        path {{ stroke: st_owidth + 0.1; color: fnec; move px{i} + pw{i} - 7, py{i}; line px{i} + pw{i}, py{i}; line px{i} + pw{i}, py{i} + 7 }}",
+                f"{ind}        path {{ stroke: st_owidth + 0.1; color: fnec; move px{i}, py{i} + ph{i} - 7; line px{i}, py{i} + ph{i}; line px{i} + 7, py{i} + ph{i} }}",
+                f"{ind}        path {{ stroke: st_owidth + 0.1; color: fnec; move px{i} + pw{i} - 7, py{i} + ph{i}; line px{i} + pw{i}, py{i} + ph{i}; line px{i} + pw{i}, py{i} + ph{i} - 7 }}",
+                f"{ind}    }}",
                 f"{ind}}}"]
     return out
 

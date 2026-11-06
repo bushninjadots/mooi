@@ -132,6 +132,15 @@ test("presets: five styles, hairline is an accent line with no fill, steel is no
     local s = config.defaults(); st.apply_preset(s, st.BAR_PRESETS, "hairline")
     eq(s.bar.surface, "clear"); eq(s.bar.frame, "line"); eq(s.bar.outline_width, 1); eq(s.bar.outline_colour, "accent")
     eq(st.preset_index(s, st.BAR_PRESETS), 3)
+    -- every style sets every finer value, so it looks the same whatever was chosen before it
+    local keys = {}
+    for _, p in ipairs(st.BAR_PRESETS) do for k in pairs(p.set) do keys[k] = true end end
+    for _, p in ipairs(st.BAR_PRESETS) do
+        for k in pairs(keys) do assert(p.set[k] ~= nil, p.name .. " leaves " .. k .. " to whatever came before") end
+    end
+    local g0 = config.validate({ bar = { frost = 94, smoke = 69, opacity = 31 } })
+    st.apply_preset(g0, st.BAR_PRESETS, "minimal")
+    eq(g0.bar.frost, 0, "no frost left over from glass"); eq(g0.bar.smoke, 0)
     local f = io.open("tools/gen-settings.py"); local g = f:read("a"); f:close()
     assert(g:find('STYLES = [("Instrument", 0), ("Glass", 1), ("Floating", 2), ("Hairline", 3), ("Minimal", 4)]', 1, true), "the window lists the same five")
 end)
@@ -4553,7 +4562,12 @@ do
         assert(plm:find("let bt = if(battach, btop, min(frame_band, btop))", 1, true), "attach: the band reaches the islands' top")
         local g = io.open("shell/mooi-frame.luau"); local lu = g:read("a"); g:close()
         assert(lu:find("modlook.of", 1, true), "the frame resolves each island's look")
-        assert(plm:find("// plate 0 outline", 1, true) and plm:find("size: if(pj0 or pf0 < 2.5, 0, pw0)", 1, true),
+        assert(plm:find("size: if(pj0 or pf0 > 2.5, 0, pw0)", 1, true), "no fill: no body at all, not an invisible one")
+        assert(plm:find("frost: 1% * st_frost * if(pf0 > 1.5 and pf0 < 2.5, 1, 0)", 1, true), "frost only on a glass plate")
+        assert(plm:find("frost: 1% * st_frost * if(glassy, 1, 0)", 1, true), "and on the band only when glassy")
+        assert(plm:find("size: if(pj0 or pf0 < 2.5 or if(po0 > 1.5", 1, true), "no outline: no outline box (stroke 0 would fill it)")
+        assert(plm:find("show: not pj0 and pw0 > 0 and bar_frame > 0.5 and bar_frame < 1.5", 1, true), "Outline: Corners marks each floating plate")
+        assert(plm:find("// plate 0 outline", 1, true),
             "a plate with no fill still draws its outline (a body's opacity takes its border with it)")
     end)
     test("chassis: islands float as plates, one per visible module, never up into the band", function()
