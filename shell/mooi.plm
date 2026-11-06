@@ -337,7 +337,7 @@ scene Mooi {
     fact ed_drag = -1           // the module being carried (its index), or −1
     fact ed_x = 0               // where the pointer is while it is carried
     fact ed_y = 0
-    model shelf_items max 24 { i: number; name: text }
+    model shelf_items max 40 { i: number; name: text }
     model edit_gaps max 24 { x: number; w: number; own: number; fixed: bool; n: number }   // spacers and gaps (shell/bar.luau)
     // The layout (shell/bar.luau, lib/barlayout): per module its left edge (−9999: not
     // placed) and width, whether it is shown (`m_`), the frame it wears (`f_`, `inherit`

@@ -4686,7 +4686,7 @@ do
             eq(pages[gone], nil, "no page " .. gone)
         end
         eq(pages["Bar & Frame"], true)
-        local want = { "Shape", "Style", "Screen frame", "Outline", "Material", "Thickness", "Islands with the frame", "Everyday", "Shows", "Layout", "Band thickness", "Frame corners" }
+        local want = { "Shape", "Style", "Screen frame", "Outline", "Surface", "Thickness", "Islands with the frame", "Everyday", "Shows", "Layout", "Band thickness", "Frame corners" }
         for _, title in ipairs(want) do
             local found = false
             for _, r in ipairs(idx) do if r.title == title and r.page == "Bar & Frame" then found = true end end
@@ -4742,9 +4742,18 @@ do
         assert(plm:find('"Theme & colour"', 1, true), "Colour is Theme & colour")
         eq(plm:find('"Steel"', 1, true), nil, "no Steel anywhere in the window")
         local idx = require("lib/settings_index")
-        local seen = false
-        for _, r in ipairs(idx) do if r.title == "Density" then seen = r.page == "Bar & Frame" end end
-        eq(seen, true, "Density is a choice there")
+        -- one name per thing, the same on every page; nothing shown that does nothing yet
+        local titles = {}
+        for _, r in ipairs(idx) do titles[r.title] = (titles[r.title] or 0) + 1 end
+        eq(titles["Density"], nil, "Density waits until the modules follow it (stage 4)")
+        for _, r in ipairs(idx) do
+            if r.tab == 0 then assert(r.title ~= "Layout", "the bar's shape is called Shape on Quick too") end
+        end
+        eq(titles["Material"], nil, "the surface is called Surface (Material is D164's ferrolume/liquid/cartridge)")
+        assert(titles["Surface"], "Surface")
+        assert(plm:find('"Shape", "Islands, one bar across the screen, pieces hanging from the top, or the Pill", "bar.mode"', 1, true) == nil
+            and select(2, plm:gsub('"Pill"', "")) >= 2, "Shape offers Pill on Quick as on Bar & Frame")
+        assert(plm:find("a thin line round each, or no plates at all", 1, true), "Style says what each one is")
     end)
 end
 
@@ -4788,6 +4797,18 @@ do
         assert(b:find("pill_timed = pillmod.next_change(pst, pill_ms) ~= nil", 1, true), "the Pill is looked at again after a timed thing ends")
         for _, ev in ipairs({ "pill_press", "pill_scroll", "pill_moon" }) do
             assert(b:find('on("' .. ev .. '"', 1, true), ev .. " handled")
+        end
+    end)
+    test("edit mode's shelf can hold every module, each with a name", function()
+        local bl = require("lib/barlayout")
+        local f = io.open("shell/mooi.plm"); local plm = f:read("a"); f:close()
+        local max = tonumber(plm:match("model shelf_items max (%d+)"))
+        assert(max and max >= #bl.ORDER, "the shelf holds all " .. #bl.ORDER .. " modules (max " .. tostring(max) .. ")")
+        local g = io.open("shell/bar.luau"); local b = g:read("a"); g:close()
+        local names = b:match("local NAMES = (%b{})")
+        assert(names, "the shelf's names")
+        for _, id in ipairs(bl.ORDER) do
+            assert(names:find("[%s{,]" .. id .. " = \"") or names:find('%["' .. id .. '"%] = "'), id .. " has a name on the shelf")
         end
     end)
     test("the bar draws the Pill: imported, drawn while on, its presses wired", function()
