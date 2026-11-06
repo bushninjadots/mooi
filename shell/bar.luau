@@ -24,6 +24,11 @@ return function(ctx)
     local readers = nil       -- starts and stops the readers; defined below, once they exist
     local geo_sent = nil      -- bar-geo.json as last written (the frame's program reads it)
     local dnd_hook = nil      -- do not disturb, looked at again when a focus block starts or ends
+    -- The Pill (D168): what happens, noted for lib/pill; its own clock (a quarter-second tick, only
+    -- doing anything in Pill mode), what it last showed, and where it sits
+    local pillmod = require("lib/pill")
+    local pst, pill_ms, pill_now = pillmod.state(), 0, nil
+    local pill_update        -- defined after relayout, which it calls when the Pill's size changes
 
     -- ── Layout ─────────────────────────────────────────────────
     -- The bar's edge inset: 12 px at full width; a narrower bar (bar.width) is centred.
@@ -43,8 +48,13 @@ return function(ctx)
                        visualizer = b.visualizer, tray = env.tray, battery = env.battery,
                        brightness = env.brightness, bluetooth = env.bluetooth, playing = env.playing,
                        media_mode = s.media.mode, media_idle = s.media.idle }
-        local out = barlayout.layout({ left = b.left, center = b.center, right = b.right, show = show,
-                                       frame = frame, mode = b.mode }, lctx)
+        -- Pill mode (D168): laid out as islands round an empty centre (the Pill sits there), the side
+        -- groups left out when the Pill is alone; the saved lists are never changed
+        local pillmode = b.mode == "pill"
+        local sides = not (pillmode and type(s.pill) == "table" and s.pill.sides == "hide")
+        local lists = pillmode and { left = sides and b.left or {}, center = {}, right = sides and b.right or {} } or b
+        local out = barlayout.layout({ left = lists.left, center = lists.center, right = lists.right, show = show,
+                                       frame = frame, mode = pillmode and "islands" or b.mode }, lctx)
         local grouped = {}
         for _, side in ipairs({ "left", "center", "right" }) do
             for _, entry in ipairs(b[side] or {}) do
@@ -92,6 +102,19 @@ return function(ctx)
                       panel = out.panel and { x = out.panel.x, w = out.panel.w } or nil,
                       saving = ctx.saving() == true,
                       screen = env.screen }   -- the frame's corners need the screen's width (lib/chassis)
+        fact.pill_on = pillmode
+        if pillmode then
+            -- the Pill and its moons, for the frame's chassis and the scene's content
+            local w = pill_now and pill_now.width or 160
+            local n = pill_now and #pill_now.moons or 0
+            local pl = pillmod.place(env.screen, w, n)
+            geo.pill = { x = pl.x, w = w }
+            geo.moons = {}
+            for k, mx in ipairs(pl.moons) do geo.moons[k] = { x = mx, w = pillmod.MOON } end
+            fact.pill_x, fact.pill_w = pl.x, w
+            for k = 0, 3 do fact["moon_x" .. k] = pl.moons[k + 1] or pl.x end
+            fact.moon_n = n
+        end
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
         fact.px = out.panel and out.panel.x or 0
@@ -106,6 +129,89 @@ return function(ctx)
         -- a preview while a module is carried (`quiet`) starts and stops nothing
         if readers and not quiet then readers() end
     end
+
+    -- ── The Pill (D168) ─────────────────────────────────────────
+    local KIND = { idle = 0, music = 1, osd = 2, notify = 3, record = 4, battery = 5 }
+    local GLYPH = { idle = 0, music = 1, vol = 2, bri = 3, notify = 4, record = 5, low = 6, charging = 7 }
+    local function pill_cfg(s)
+        local p = type(s.pill) == "table" and s.pill or {}
+        local off = {}
+        for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
+        return { order = p.order, off = off, moons = p.moons, multi = p.multi }
+    end
+    function pill_update()
+        local s = ctx.settings()
+        if s.bar.mode ~= "pill" then fact.pill_on = false; return end
+        local r = pillmod.compute(pst, pill_cfg(s), pill_ms)
+        local v = r.view[r.main]
+        fact.pill_kind = KIND[r.main] or 0
+        fact.pill_glyph = GLYPH[v.glyph] or 0
+        text.pill_t1, text.pill_t2 = v.t1 or "", v.t2 or ""
+        fact.pill_val = v.value or 0
+        fact.pill_two = r.two_lines
+        fact.pill_split = r.split ~= nil
+        if r.split then
+            local sv = r.view[r.split]
+            fact.pill_kind2, fact.pill_glyph2 = KIND[r.split] or 0, GLYPH[sv.glyph] or 0
+            text.pill_s1, fact.pill_val2 = sv.t1 or "", sv.value or 0
+            fact.pill_w1 = r.width - (math.max(120, 44 + 7 * #(sv.t1 or "")) + 8)
+        end
+        for k = 0, 3 do
+            local id = r.moons[k + 1]
+            fact["moon_k" .. k] = id and (GLYPH[r.view[id].glyph] or 0) or -1
+        end
+        local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
+        pill_now = r
+        if changed then relayout(true) end
+    end
+    every(250, function()
+        pill_ms = pill_ms + 250
+        if fact.pill_on and (pillmod.next_change(pst, pill_ms) or pst.recording) then pill_update() end
+    end)
+    local function note(kind, payload) pillmod.note(pst, kind, payload, pill_ms); pill_update() end
+    -- what it hears: the volume and the brightness changing, notifications arriving (by their id)
+    local last_vol, last_bri, seen_note = nil, nil, nil
+    pcall(sys.watch, "audio", function(a)
+        if type(a) ~= "table" then return end
+        local v = tonumber(a.volume)
+        if v and last_vol and math.abs(v - last_vol) > 0.001 then note("osd", { kind = "vol", value = v > 1 and v / 100 or v }) end
+        last_vol = v
+    end)
+    pcall(sys.watch, "notifications", function(list)
+        if type(list) ~= "table" then return end
+        local newest = nil
+        for _, n in ipairs(list) do
+            if type(n) == "table" and tonumber(n.id) and (not newest or tonumber(n.id) > tonumber(newest.id)) then newest = n end
+        end
+        if newest and seen_note and tonumber(newest.id) > seen_note then
+            note("notify", { app = newest.app ~= "" and newest.app or "notice", summary = newest.title or "" })
+        end
+        if newest then seen_note = math.max(seen_note or 0, tonumber(newest.id)) end
+    end)
+    -- what a press does: the thing it shows, opened; a scroll: volume or workspaces; a moon: brought in
+    on("pill_press", function()
+        local main = pill_now and pill_now.main or "idle"
+        fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
+        if main == "music" then run("pleamar", { "--say", "mooi", "emit open_player 0" })
+        elseif main == "notify" then run("pleamar", { "--say", "mooi", "emit loom_field" })
+        elseif main == "record" then run("pleamar", { "--say", "mooi", "emit record 0" })
+        elseif main == "osd" then fact.open = (pst.osd and pst.osd.kind == "bri") and "display" or "sound"
+        elseif main == "battery" then fact.open = "power"
+        else fact.open = "calendar" end
+    end)
+    on("pill_scroll", function(v)
+        local d = tonumber(v) or 0
+        local main = pill_now and pill_now.main or "idle"
+        if main == "idle" then
+            run("hyprctl", { "dispatch", "workspace", d > 0 and "e-1" or "e+1" })
+        else
+            pcall(sys.call, "audio.volume", (d > 0) and "+5" or "-5")
+        end
+    end)
+    on("pill_moon", function(v)
+        local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
+        if id then note("pin", { id = id }) end
+    end)
 
     -- The screen the bar is on, in logical pixels (the layout is arithmetic on it).
     local function measure()
@@ -131,10 +237,14 @@ return function(ctx)
 
     -- What the machine has decides what can be placed.
     sys.watch("battery", function(v)
+        if type(v) == "table" and v.present then note("battery", { percent = v.percent, charging = v.charging }) end
         local p = type(v) == "table" and v.present == true
         if p ~= env.battery then env.battery = p; relayout() end
     end)
     sys.watch("brightness", function(v)
+        local lv = type(v) == "table" and tonumber(v.level) or nil
+        if lv and last_bri and math.abs(lv - last_bri) > 0.001 then note("osd", { kind = "bri", value = lv > 1 and lv / 100 or lv }) end
+        last_bri = lv
         local p = type(v) == "table" and v.present == true
         if p ~= env.brightness then env.brightness = p; relayout() end
     end)
@@ -444,6 +554,7 @@ return function(ctx)
         else pcall(sys.call, ({ [1] = "media.previous", [2] = "media.toggle", [3] = "media.next" })[v]) end
     end)
     sys.watch("media", function(m)
+        if type(m) == "table" then note("media", { playing = m.playing, title = m.title, artist = m.artist }) end
         local now = type(m) == "table" and m.playing == true
         if type(m) == "table" then
             cover(m.art)
@@ -569,10 +680,11 @@ return function(ctx)
                     args[#args + 1] = "-f"; args[#args + 1] = home .. "/Videos/mooi_" .. t .. ".mp4"
                     local mine
                     mine = spawn("wf-recorder", args, function() end, function()
-                        if rec == mine then rec = nil; fact.recording = false; log("bar · recording saved in ~/Videos") end
+                        if rec == mine then rec = nil; fact.recording = false; note("recording", { on = false }); log("bar · recording saved in ~/Videos") end
                     end)
                     rec = mine
                     fact.recording = true
+                    note("recording", { on = true })
                 end)
             end)
         end

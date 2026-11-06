@@ -117,4 +117,18 @@ function M.next_change(st, now)
     return best
 end
 
+-- Where the Pill and its moons sit: the Pill centred on the screen; moons 24 px, 8 px apart, the first to
+-- its left, the next to its right, and so on outwards.
+M.MOON = 24
+function M.place(screen_w, w, n)
+    local x = math.floor((screen_w - w) / 2)
+    local out = { x = x, moons = {} }
+    local l, r = x, x + w
+    for k = 1, n do
+        if k % 2 == 1 then l = l - 8 - M.MOON; out.moons[k] = l
+        else out.moons[k] = r + 8; r = r + 8 + M.MOON end
+    end
+    return out
+end
+
 return M

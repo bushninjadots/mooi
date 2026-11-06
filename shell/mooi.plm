@@ -1115,6 +1115,34 @@ scene Mooi {
     event open_wallpaper ->    // to the logic: open or close the wallpaper picker, mooi-walls (`mooi walls`, D145)
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event feed_want ->         // from the notch or the Nexus: a music panel is open and wants the feed (D118)
+    // D168: the Pill (shell/bar.luau feeds it from lib/pill; shell/ui/pill.plm draws it)
+    fact pill_on = false
+    fact pill_x = 860
+    fact pill_w = 160
+    fact pill_kind = 0           // 0 idle · 1 music · 2 osd · 3 notify · 4 record · 5 battery
+    fact pill_glyph = 0          // 0 idle · 1 music · 2 vol · 3 bri · 4 notify · 5 record · 6 low · 7 charging
+    fact pill_val = 0
+    fact pill_two = false
+    text pill_t1 = ""
+    text pill_t2 = ""
+    fact pill_split = false
+    fact pill_kind2 = 0
+    fact pill_glyph2 = 0
+    fact pill_val2 = 0
+    fact pill_w1 = 0
+    text pill_s1 = ""
+    fact moon_n = 0
+    fact moon_x0 = 0
+    fact moon_x1 = 0
+    fact moon_x2 = 0
+    fact moon_x3 = 0
+    fact moon_k0 = -1
+    fact moon_k1 = -1
+    fact moon_k2 = -1
+    fact moon_k3 = -1
+    event pill_press
+    event pill_scroll ->
+    event pill_moon ->
     event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal
