@@ -1083,7 +1083,10 @@ test("the frame draws one outline: no second music line, one width everywhere", 
     local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
     eq(plm:find("stroke: 1.4", 1, true), nil, "the etched 1.4 px light beside the edge is gone")
     local widths = {}
-    for b in plm:gmatch("border: ([^\n]+)") do widths[b] = true end
+    for b in plm:gmatch("border: ([^\n]+)") do
+        -- D166: a floating plate's border is its own (its outline choice), still at the one width
+        if b:find("po%d") then assert(b:find("st_owidth", 1, true), "a plate's outline is the one width") else widths[b] = true end
+    end
     local n = 0; for _ in pairs(widths) do n = n + 1 end
     eq(n, 1, "every tile's border is the same expression")
     assert(next(widths):find("bar_frame", 1, true), "and it honours the bar's Outline when the band is off")
@@ -4465,7 +4468,7 @@ do
     end)
     test("the frame scene draws pieces only from the model's facts", function()
         local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
-        assert(plm:find("box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0", 1, true), "slot 0 from facts")
+        assert(plm:find("box { from: px0, py0; size: if(pj0, pw0, 0), if(pj0, ph0, 0); corner: pr0; blend: pk0", 1, true), "slot 0 from facts")
         assert(plm:find("px19", 1, true), "all 20 slots")
         eq(plm:find("ix0 - 3", 1, true), nil, "no geometry re-derived in the scene")
         eq(plm:find("let covL", 1, true), nil, "corner coverage comes from the logic")
@@ -4527,6 +4530,7 @@ do
         eq(l.attach, true); eq(l.top_band, 8, "band to the row's top: gaps are recesses, not tabs"); eq(l.top_room, 0)
         local p = chassis.pieces({ islands = { { x = 12, w = 100 } } }, l)
         eq(p[1].y, -40); eq(p[1].y + p[1].h, 32, "one foot"); eq(p[1].j, true)
+        eq(p[1].r, l.radius, "rounded at the foot like any plate"); eq(p[1].k, 8, "a small fillet where it meets the band: no hard recess corners")
         local off = chassis.look(config.validate({ bar = { mode = "islands" }, frame = { on = false, islands = "attach" } }))
         eq(off.attach, false, "no frame, nothing to attach to")
     end)
@@ -4540,6 +4544,17 @@ do
     test("bar-geo names each island's module, for its look", function()
         local f = io.open("shell/bar.luau"); local b = f:read("a"); f:close()
         assert(b:find("id = f.id", 1, true), "the bar writes each island's module id")
+    end)
+    test("floating plates are drawn by their own bodies with their own look", function()
+        local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find("size: if(pj0, pw0, 0), if(pj0, ph0, 0)", 1, true), "the band's tiles draw only joined pieces")
+        assert(plm:find("// plate 0", 1, true) and plm:find("pf0 > 2.5", 1, true) and plm:find("po0", 1, true) and plm:find("pc0_r", 1, true),
+            "each floating plate is its own body, with its fill, outline and colour")
+        assert(plm:find("let bt = if(battach, btop, min(frame_band, btop))", 1, true), "attach: the band reaches the islands' top")
+        local g = io.open("shell/mooi-frame.luau"); local lu = g:read("a"); g:close()
+        assert(lu:find("modlook.of", 1, true), "the frame resolves each island's look")
+        assert(plm:find("// plate 0 outline", 1, true) and plm:find("size: if(pj0 or pf0 < 2.5, 0, pw0)", 1, true),
+            "a plate with no fill still draws its outline (a body's opacity takes its border with it)")
     end)
     test("chassis: islands float as plates, one per visible module, never up into the band", function()
         local p = chassis.pieces(geo, L())

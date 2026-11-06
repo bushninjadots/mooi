@@ -81,7 +81,8 @@ function M.pieces(geo, look, looks)
             local x, w = span(isl)
             if w > 0 then
                 if look.attach then
-                    add(x - 3, -40, w + 6, foot + 40, 0, 0, true)
+                    -- rounded at the foot as any plate; a small fillet (8) where it meets the band
+                    add(x - 3, -40, w + 6, foot + 40, look.radius, 8, true)
                 else
                     add(x - 3, look.top, w + 6, look.mod_h, look.radius, 0, false)
                     local lk = type(looks) == "table" and looks[i] or nil

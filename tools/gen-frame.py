@@ -142,14 +142,19 @@ CORNERS = {
 # blend into the band (pk: 12 joined, 0 a floating plate) as plain facts. A slot with no width is off.
 SLOTS = 20
 PIECES = [(f"px{i}", f"px{i} + pw{i}",
-           f"box {{ from: px{i}, py{i}; size: pw{i}, ph{i}; corner: pr{i}; blend: pk{i}; show: pw{i} > 0", "}")
+           f"box {{ from: px{i}, py{i}; size: if(pj{i}, pw{i}, 0), if(pj{i}, ph{i}, 0); corner: pr{i}; blend: pk{i}; show: pw{i} > 0", "}")
           for i in range(SLOTS)]
 
 def piece_decls(ind):
     out = [f"{ind}// the pieces' slots: targets from the logic, sprung here"]
     for i in range(SLOTS):
         out += [f"{ind}fact t{a}{i} = 0" for a in "xywh"]
-        out += [f"{ind}fact pr{i} = 0", f"{ind}fact pk{i} = 0"]
+        out += [f"{ind}fact pr{i} = 0", f"{ind}fact pk{i} = 0",
+                # D166: joined to the band (drawn by its tiles) or a floating plate with its own look:
+                # fill 0 solid · 1 tinted · 2 glass · 3 none, outline 0 none · 1 the style's · 2 accent,
+                # glow 0–2, colour (-1 red: the theme's)
+                f"{ind}fact pj{i} = true", f"{ind}fact pf{i} = 0", f"{ind}fact po{i} = 1", f"{ind}fact pg{i} = 0",
+                f"{ind}fact pc{i}_r = -1", f"{ind}fact pc{i}_g = 0", f"{ind}fact pc{i}_b = 0"]
         for a in "xywh":
             out += [f"{ind}prop p{a}{i} = 0 ~fr.flow", f"{ind}follow p{a}{i} = t{a}{i}"]
     return out
@@ -167,6 +172,35 @@ BODY = [
     # no line either, so turning the frame on never adds a line; frame.edge chooses plain, neon or none.
     "border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec",
 ]
+
+def plate_bodies(ind):
+    """D166: each floating island plate as a body of its own, so each can have its own fill, colour,
+    rounding, outline and glow (lib/modlook). A joined piece (pj) is the band tiles'; here it is zero."""
+    out = [f"{ind}// the floating plates (D166), one body each"]
+    for i in range(SLOTS):
+        col = f"rgb(max(pc{i}_r, 0), pc{i}_g, pc{i}_b)"
+        has = f"if(pc{i}_r >= 0, 1, 0)"
+        tint = f"{has} * if(pf{i} > 0.5 and pf{i} < 1.5, 0.22, 0.45)"
+        edge = f"mix(fnec, mix(fl.phos, {col}, {has}), if(po{i} > 1.5, 1, if({has} > 0.5, 0.6, 0)))"
+        wid = f"if(po{i} > 1.5, st_owidth, if(po{i} > 0.5 and bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0))"
+        out += [f"{ind}// plate {i}", f"{ind}group {{",
+                f"{ind}    glow: 8, pg{i} * 0.5 * st_glow, mix(fl.phos, {col}, {has})",
+                f"{ind}    body {{",
+                f"{ind}        color: mix(fcol, {col}, {tint})",
+                f"{ind}        opacity: if(pf{i} > 2.5, 0, max(st_opacity, 0.3))",
+                f"{ind}        glass: if(pf{i} > 1.5 and pf{i} < 2.5, 100%, 0%)",
+                f"{ind}        lens: false",
+                f"{ind}        frost: 1% * st_frost",
+                f"{ind}        smoke: 1% * st_smoke",
+                f"{ind}        shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a * if(pf{i} > 2.5, 0, 1)",
+                f"{ind}        border: {wid}, {edge}",
+                f"{ind}        box {{ from: px{i}, py{i}; size: if(pj{i}, 0, pw{i}), if(pj{i}, 0, ph{i}); corner: pr{i} }}",
+                f"{ind}    }}",
+                # with no fill the body is clear, and its border with it: the outline as a stroke of its own
+                f"{ind}    // plate {i} outline",
+                f"{ind}    box {{ from: px{i}, py{i}; size: if(pj{i} or pf{i} < 2.5, 0, pw{i}), if(pj{i} or pf{i} < 2.5, 0, ph{i}); corner: pr{i}; stroke: {wid}; color: {edge} }}",
+                f"{ind}}}"]
+    return out
 
 def tile(ind, clip, shapes, show=None):
     i2, i3 = ind + "    ", ind + "        "
@@ -293,6 +327,8 @@ def strips(ind):
         out += [f"{i3}group {{", f"{i4}glow: {GLOW}"]
         out += tiles(i4)
         out.append(f"{i3}}}")
+        if name == "frame_t":
+            out += plate_bodies(i3)
         out += [f"{i2}}}", f"{ind}}}", ""]
     return out[:-1]
 

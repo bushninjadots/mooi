@@ -8,6 +8,7 @@ local theme = require("lib/theme")
 local style = require("lib/style")
 local vizfeed = require("lib/vizfeed")
 local chassis = require("lib/chassis")
+local modlook = require("lib/modlook")
 
 local FILE, GEO = "settings.json", "bar-geo.json"
 
@@ -29,10 +30,13 @@ local settings = config.parse(read(FILE), json.decode)
 local saving = false          -- the bar's battery saver (bar-geo.json says): the frame's music rests
 
 -- ── The look ──
+local roles_now = {}           -- the palette's roles, for the islands' own colours (lib/modlook)
 local function paint()
     local palette = read("palette.json", "json")
     local roles = ferro.resolve(settings.theme.source, palette, settings.theme.signal, false, ferro.options(settings))
     if not roles then return end
+    roles_now = roles
+    roles_now.primary = roles.phos
     for _, role in ipairs(ferro.ROLES) do
         local c = roles[role]
         fact["fr_" .. role .. "_r"], fact["fr_" .. role .. "_g"], fact["fr_" .. role .. "_b"] = c.r, c.g, c.b
@@ -132,12 +136,23 @@ local announced = false
 local function place()
     local look = chassis.look(settings)
     if type(geo_doc) == "table" and tonumber(geo_doc.screen) then look.screen_w = tonumber(geo_doc.screen) end
-    local pieces = chassis.pieces(geo_doc, look)
+    -- every island's own look (D166): style defaults, or what Settings → Modules set for its module
+    local looks = {}
+    if type(geo_doc) == "table" and type(geo_doc.islands) == "table" then
+        for i, isl in ipairs(geo_doc.islands) do
+            if type(isl) == "table" and type(isl.id) == "string" then looks[i] = modlook.of(settings, isl.id, roles_now) end
+        end
+    end
+    local pieces = chassis.pieces(geo_doc, look, looks)
     for i = 0, chassis.SLOTS - 1 do
         local p = pieces[i + 1]
         if p then
             fact["tx" .. i], fact["ty" .. i], fact["tw" .. i], fact["th" .. i] = p.x, p.y, p.w, p.h
             fact["pr" .. i], fact["pk" .. i] = p.r, p.k
+            fact["pj" .. i] = p.j or p.fill == nil      -- a plate with no look of its own stays in the band's tiles
+            fact["pf" .. i], fact["po" .. i], fact["pg" .. i] = p.fill or 0, p.outline or 1, p.glow or 0
+            local c = p.colour
+            fact["pc" .. i .. "_r"], fact["pc" .. i .. "_g"], fact["pc" .. i .. "_b"] = c and c.r or -1, c and c.g or 0, c and c.b or 0
         else
             -- every value of an unused slot: a zero-size box that kept its blend still pulled a bulge
             -- out of a neighbour (review M1)
@@ -151,6 +166,7 @@ local function place()
     fact.pfoot = chassis.foot(look)
     fact.troom = look.top_room
     fact.btop = look.top_band
+    fact.battach = look.attach == true
     fact.capL = chassis.corner_cap(pieces, look, "left")
     fact.capR = chassis.corner_cap(pieces, look, "right")
     -- the bar hides its own plates only once the pieces are placed (review I3): a frame that started but
@@ -171,7 +187,7 @@ local function geo()
 end
 
 paint(); apply(); geo(); listen()
-pcall(sys.watch, "files:palette.json", paint)
+pcall(sys.watch, "files:palette.json", function() paint(); place() end)
 pcall(sys.watch, "files:" .. GEO, geo)
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
