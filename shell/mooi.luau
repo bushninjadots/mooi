@@ -2494,6 +2494,7 @@ bar = require("bar")({
     bmo = bmo_tell,
     signal = loom.signal,
     requiet = loom.requiet,
+    on_signal = loom.on_signal,
     settings = function() return settings end,
     save = save_settings,
     mode = sys.ask("env", "MOOI_MODE") or "run",

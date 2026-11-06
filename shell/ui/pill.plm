@@ -30,7 +30,8 @@ library Pill {
         Mark(x + 18, cy, g)
         group {
             show: g < 1.5 or g > 3.5
-            text t1 { at: x + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: w - 44; lines: 1 }
+            // the line and its second part (the artist, a notice's summary): the width counts both (review M1)
+            text "{t1}{? · {t2}}" { at: x + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: w - 44; lines: 1 }
         }
         group {
             show: g > 1.5 and g < 3.5
@@ -128,9 +129,12 @@ library Pill {
                 box { from: px + pill_w1 + 3, cy - 8; size: 2, 16; corner: 1; color: fl.trace_dim }
                 Half(px + pill_w1 + 8, pw - pill_w1 - 8, pill_glyph2, pill_s1, "", pill_val2)
             }
-            zone box pillz { from: px, fl.top; size: pw, fl.mod_h; cursor: pointer; role: button; label: "The Pill: open what it shows" }
+            // hidden with the frame on, the tab hangs in the top strip: the zone reaches the top (review M5)
+            zone box pillz { from: px, if(pill_hidden, 0, fl.top); size: pw, if(pill_hidden, fl.top + fl.mod_h, fl.mod_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
             on press pillz { emit pill_press }
-            on hover pillz for 60ms { emit pill_hover }
+            // pointed at: 1, and 0 when the pointer leaves — a resting pointer keeps it open (review M4)
+            on change pillz.hover while pillz.hover > 0.5 { emit pill_hover(1) }
+            on change pillz.hover while pillz.hover < 0.5 { emit pill_hover(0) }
             // nodes (D169): each pad on a circuit trace to the one inside it, a via at each end
             group {
                 show: pill_nodes

@@ -18,7 +18,7 @@ import "ui/viz.plm" as viz
 
 scene MooiLock {
     permissions {
-        services: "files", "auth", "clock", "clock.seconds", "env", "media", "media.*", "battery", "notification_history"
+        services: "files", "auth", "clock", "clock.seconds", "env", "media", "media.*", "battery"
         run: "systemctl"
     }
 

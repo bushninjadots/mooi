@@ -1407,7 +1407,15 @@ end
 local function list_of(a) return type(a) == "table" and (type(a.list) == "table" and a.list or (a[1] ~= nil and a) or {}) or {} end
 pcall(sys.watch, "apps", function(a) apps_now = list_of(a); show_launch() end)
 pcall(sys.watch, "window", function(a) wins_now = list_of(a); show_launch() end)
-pcall(sys.watch, "notification_history", function(a) unseen_now = list_of(a); show_launch() end)
+-- the notices waiting, from Signal Loom's feed (its newest five, each with app and time): watching a
+-- notification service here would take the name from the shell, and Loom would hear nothing
+local function feed_now()
+    local f = read("nexus-feed.json", "json")
+    unseen_now = type(f) == "table" and type(f.items) == "table" and f.items or {}
+    show_launch()
+end
+pcall(sys.watch, "files:nexus-feed.json", feed_now)
+feed_now()
 on("ln_go", function(v)
     local r = launch_rows[math.floor(tonumber(v) or -1) + 1]
     if not r then return end

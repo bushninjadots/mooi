@@ -26,8 +26,9 @@ function M.note(st, kind, p, now)
         st.media = { playing = p.playing == true, title = tostring(p.title or ""), artist = tostring(p.artist or "") }
     elseif kind == "battery" then
         local was = st.battery.charging == true
+        local first = st.battery.percent == nil      -- mooi starting on AC is not "plugged in" (review M2)
         st.battery = { percent = tonumber(p.percent), charging = p.charging == true }
-        if st.battery.charging and not was then st.charge_at = now end
+        if st.battery.charging and not was and not first then st.charge_at = now end
         if not st.battery.charging then st.charge_at = nil end
     elseif kind == "recording" then
         if p.on and not st.recording then st.rec_since = now end
@@ -89,8 +90,8 @@ local function width(v, cfg)
         local face = cfg and M.FACE_W[cfg.face] and cfg.face or "time"
         return M.FACE_W[face] + ((face == "bmo" and v.t1 ~= "") and (7 * #v.t1 + 16) or 0)
     end
-    local n = #(v.t1 or "") + ((v.t2 and v.t2 ~= "" and v.glyph ~= "notify") and (#v.t2 + 2) or 0)
-    if v.glyph == "notify" then n = math.max(#(v.t1 or ""), #(v.t2 or "")) end
+    -- what ui/pill.plm draws: "t1 · t2" on one line (a notice too: its app and its summary)
+    local n = #(v.t1 or "") + ((v.t2 and v.t2 ~= "") and (#v.t2 + 2) or 0)
     if v.glyph == "vol" or v.glyph == "bri" then n = n + 16 end
     return math.max(120, 44 + 7 * n)
 end
@@ -115,11 +116,15 @@ function M.compute(st, cfg, now)
     for i = 1, math.min(#rest, tonumber(cfg.moons) or 3) do moons[i] = rest[i] end
     local views = {}
     for _, id in ipairs(M.ACTIVITIES) do views[id] = view(st, id, now, cfg) end
-    local w = width(views[main], cfg) + (split and (width(views[split], cfg) + 8) or 0)
+    local w1 = width(views[main], cfg)
+    local w = w1 + (split and (width(views[split], cfg) + 8) or 0)
+    -- never past the room between the side groups (review I3): a long title is cut, not spread over them
+    local cap = tonumber(cfg.max_w)
+    if cap and cap >= 120 and w > cap then w1 = math.floor(w1 * cap / w); w = cap end
     -- D169: idle and nothing beside it, with hiding on and not just pointed at: a sliver
     local hidden = cfg.autohide == true and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
     if hidden then w = M.SLIVER end
-    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, view = views, hidden = hidden }
+    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, w1 = w1, view = views, hidden = hidden }
 end
 
 -- ms until a timed activity ends (so the logic can look again then), or nil
