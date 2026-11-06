@@ -4933,6 +4933,13 @@ do
         eq(st.mood, "grumpy")
         assert(v.say == nil or type(v.say) == "string")
     end)
+    test("pillface: a first poke always gets a line, whatever his mood (the face depends on it)", function()
+        for _, mood in ipairs({ "happy", "curious", "sleepy", "excited", "surprised", "playful", "focused", "grumpy" }) do
+            local st = F.new(mood)
+            F.poke(st, 0, 0.9)
+            assert(F.view(st, 100).say ~= "", mood .. ": a line")
+        end
+    end)
     test("pillface: sleepy at night; talks only as BMO's Talk allows", function()
         local st = F.new("happy")
         F.tick(st, 0, { hour = 2, talk = "off" }, 0.1, 0.0)
