@@ -12,6 +12,7 @@ local style = require("lib/style")
 local arrange = require("lib/arrange")
 local index = require("lib/settings_index")
 local settingsfile = require("lib/settingsfile")
+local modlook = require("lib/modlook")
 
 local FILE, PALETTE = "settings.json", "palette.json"
 local settings = config.defaults()
@@ -300,6 +301,7 @@ local NAMES = {
 local SIDE_NAME = { left = "LEFT", center = "CENTRE", right = "RIGHT" }
 local X0, X1 = 274, 1138                     -- a card's inside, as the window draws it
 local sel = nil                              -- { side, i, j } on the bar, or { shelf = id }
+local look_id = nil                          -- the module the Look card styles (D166)
 local chips = {}                             -- the model's chips, by index from 0
 local function chip_w(label) return math.max(68, 30 + math.floor(#label * 7.2 + 0.5)) end
 local function name_of(id)
@@ -403,10 +405,25 @@ function layout(s)
         for k, id in ipairs(barlayout.ORDER) do if id == m.id then fact.lay_mod = k - 1 end end
         fact.lay_fi = setters.position("bar.modules." .. m.id .. ".frame", b.modules[m.id].frame)
         fact.lay_grouped = m.n > 1
+        -- D166: the selected module's own look, for the Look card (a group shows its first module's)
+        look_id = m.id
+        local li = modlook.index(s, m.id)
+        fact.lk_colour, fact.lk_fill, fact.lk_round = li.colour, li.fill, li.rounding
+        fact.lk_outline, fact.lk_glow, fact.lk_display, fact.lk_width = li.outline, li.glow, li.display, li.width
     end
 end
 
 layout(settings)
+
+-- D166: the Look card — one event, key * 16 + value (lib/modlook), for the selected module or its group
+on("lay_look", function(v)
+    if not look_id or tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+    local key, value = modlook.decode(v)
+    if not key then return end
+    modlook.apply(settings, look_id, key, value)
+    save()
+    layout(settings)
+end)
 
 -- One write policy for settings.json (audit 2026-10-31, F3): read the file as it is now and lay
 -- this window's changes over it. Writing the in-memory copy whole reverted whatever the bar had
@@ -451,6 +468,19 @@ on("lay_pick", function(v)
     elseif sel and not sel.shelf and sel.side == c.side and sel.i == c.i and sel.j == c.j then sel = nil
     else sel = { side = c.side, i = c.i, j = c.j } end
     layout(settings)
+end)
+-- D166: "Look…" in the bar's edit mode: this module, selected, on Bar & Frame with Modules open
+on("open_module", function(v)
+    local id = barlayout.ORDER[(math.floor(tonumber(v) or -1)) + 1]
+    if not id then return end
+    for _, c in ipairs(chips) do
+        if c.id == id and not c.shelf then sel = { side = c.side, i = c.i, j = c.j } end
+    end
+    layout(settings)
+    fact.set_tab = index.layout_tab
+    -- only Modules open, so the page's place for the Look card is known; scrolled to it
+    for _, f in ipairs(index.layout_folds or {}) do fact[f] = (f == index.modules_fold) end
+    if index.modules_look_y then fact.set_scroll = math.max(0, index.modules_look_y - 160) end
 end)
 on("lay_act", function(v)
     local op = math.floor(tonumber(v) or 0)

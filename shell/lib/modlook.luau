@@ -55,4 +55,57 @@ function M.of(s, id, roles)
     return { fill = fill, r = r, outline = outline, glow = GLOW[m.glow] or 0, colour = colour }
 end
 
+-- ── The Look card (Settings → Bar & Frame → Modules) ──
+-- One event carries a choice: key * 16 + value, the key and value as positions (from 0) in these lists;
+-- key 15 resets the module's look to the style's.
+M.KEYS = { "colour", "fill", "rounding", "outline", "glow", "display", "width" }
+M.VALUES = {
+    colour = { "style", "phos", "ember", "flare", "trace", "wallpaper" },
+    fill = { "style", "solid", "tinted", "glass", "none" },
+    rounding = { "style", "square", "soft", "round", "pill" },
+    outline = { "style", "none", "accent" },
+    glow = { "off", "soft", "strong" },
+    display = { "icon", "icon+value", "label+value" },
+    width = { "fit", "fixed" },
+}
+M.DEFAULTS = { colour = "style", fill = "style", rounding = "style", outline = "style", glow = "off", display = "icon+value", width = "fit" }
+
+function M.decode(n)
+    n = math.floor(tonumber(n) or -1)
+    if n < 0 then return nil end
+    local k, v = math.floor(n / 16), n % 16
+    if k == 15 then return "reset" end
+    local key = M.KEYS[k + 1]
+    local val = key and M.VALUES[key][v + 1]
+    if not val then return nil end
+    return key, val
+end
+
+-- Writes the choice into settings (in place) on the module's group head; "reset" puts every key back
+-- to its default as a value (a merge never removes a key, lib/settingsfile).
+function M.apply(s, id, key, value)
+    local h = M.head(s, id)
+    s.bar.modules = type(s.bar.modules) == "table" and s.bar.modules or {}
+    local m = type(s.bar.modules[h]) == "table" and s.bar.modules[h] or {}
+    s.bar.modules[h] = m
+    if key == "reset" then
+        for k, v in pairs(M.DEFAULTS) do m[k] = v end
+    elseif M.VALUES[key] then
+        m[key] = value
+    end
+    return h
+end
+
+-- Where each key's current value sits in its list (-1: none of them, e.g. a custom #colour).
+function M.index(s, id)
+    local m = (type(s.bar.modules) == "table" and s.bar.modules[M.head(s, id)]) or {}
+    local out = {}
+    for _, key in ipairs(M.KEYS) do
+        local cur = m[key] or M.DEFAULTS[key]
+        out[key] = -1
+        for i, v in ipairs(M.VALUES[key]) do if v == cur then out[key] = i - 1 end end
+    end
+    return out
+end
+
 return M

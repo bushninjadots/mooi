@@ -4616,6 +4616,24 @@ do
         local w = ML.of(s, "weather", roles)
         eq(w.fill, 2, "glass from the bar's surface"); eq(w.r, 7); eq(w.outline, 1); eq(w.colour, nil)
     end)
+    test("modlook: the Look card's codes round-trip, and a choice lands on the group's head", function()
+        for k, key in ipairs(ML.KEYS) do
+            for v, val in ipairs(ML.VALUES[key]) do
+                local kk, vv = ML.decode((k - 1) * 16 + (v - 1))
+                eq(kk, key); eq(vv, val)
+            end
+        end
+        eq(ML.decode(15 * 16), "reset")
+        local s = config.validate({ bar = { left = { "settings+resources" }, center = { "media" }, right = { "clock" } } })
+        ML.apply(s, "resources", "fill", "glass")
+        eq(s.bar.modules.settings.fill, "glass", "written on the head"); eq(s.bar.modules.resources.fill, "style", "not on the member")
+        ML.apply(s, "settings", "reset")
+        eq(s.bar.modules.settings.fill, "style", "reset puts the style back (a value, so a merge keeps it)")
+        local idx = ML.index(config.validate({ bar = { left = { "weather" }, center = { "media" }, right = { "clock" },
+            modules = { weather = { colour = "ember", rounding = "pill" } } } }), "weather")
+        eq(idx.colour, 2); eq(idx.rounding, 4); eq(idx.fill, 0)
+        eq(ML.index(config.validate({ bar = { modules = { clock = { colour = "#123456" } } } }), "clock").colour, -1, "a custom colour is none of the swatches")
+    end)
     test("modlook: every value maps, and a hex or the wallpaper's colour is a colour", function()
         local s = config.validate({ bar = { surface = "clear", frame = "none", radius = 7, height = 30, modules = {
             clock = { colour = "#ff0000", rounding = "square", outline = "accent", glow = "strong", fill = "tinted" },
@@ -4647,10 +4665,24 @@ do
             eq(found, true, title .. " is on Bar & Frame")
         end
     end)
+    test("Look…: the bar's edit mode opens Settings at the module's look", function()
+        local f = io.open("shell/mooi.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find('"Look…", edit_op, ed_sel * 10 + 6', 1, true), "a Look… button in the inspector")
+        local g = io.open("shell/bar.luau"); local b = g:read("a"); g:close()
+        assert(b:find("op == 6", 1, true) and b:find("open_module", 1, true), "it opens Settings at that module")
+        local h = io.open("shell/mooi-settings.luau"); local s = h:read("a"); h:close()
+        assert(s:find('on("open_module"', 1, true), "Settings selects it and opens the Modules fold")
+        local w = io.open("shell/mooi-settings.plm"); local wp = w:read("a"); w:close()
+        assert(wp:find("event open_module ->", 1, true), "the window declares the event (an undeclared one is dropped)")
+        local idx = require("lib/settings_index")
+        assert(type(idx.modules_fold) == "string" and idx.modules_fold:match("^fd_%d+_%d+$"), "the Modules fold's fact is known")
+    end)
     test("settings: folding sections, a renamed colour page, no Steel", function()
         local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
         assert(plm:find("fact fd_", 1, true), "fold state facts")
         assert(plm:find("= not fd_", 1, true), "a header press opens or folds it")
+        eq(plm:find("color: fl.ink }", 1, true), nil, "no title in the dark ink (it is for light surfaces)")
+        eq(plm:find("mix(fl.ink, fl.phos, fd_", 1, true), nil, "a closed fold's name is legible")
         assert(plm:find('"Theme & colour"', 1, true), "Colour is Theme & colour")
         eq(plm:find('"Steel"', 1, true), nil, "no Steel anywhere in the window")
         local idx = require("lib/settings_index")

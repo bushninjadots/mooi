@@ -863,6 +863,16 @@ return function(ctx)
         local id = barlayout.ORDER[math.floor(n / 10) + 1]
         local op = n % 10
         if not id then return end
+        -- D166: "Look…" — Settings at this module's own look (started if it is not open)
+        if op == 6 then
+            local k = math.floor(n / 10)
+            if not fact.settings_open then run("pleamar", { "--say", "mooi", "emit open_settings" }) end
+            -- a window just started may not hear the first one: said again a moment later (it is idempotent)
+            for _, ms in ipairs(fact.settings_open and { 50 } or { 1500, 3000 }) do
+                after(ms, function() run("pleamar", { "--say", "mooi-settings", "emit open_module " .. tostring(k) }) end)
+            end
+            return
+        end
         local b = ctx.settings().bar
         if op == 5 then b.modules[id].show = false
         else

@@ -651,6 +651,8 @@ def controls(kind, path, expr, opts, y):
         x += w
     return out, left
 
+MODULES_FOLD = [None]  # the Modules fold's fact, for "Look…" (D166), then the Look card's y with only it open
+PAGE_FOLDS = {}       # each page's folds: (fact, nominal y)
 PROPS = []          # each row's and card's place and height, springs they glide on (scene level)
 INDEX = []          # (title, what it does, page, page title, its place): what search looks through
 RESETS = {}         # page → the settings its Reset puts back
@@ -822,10 +824,41 @@ def row_lines(r, y, first, reverted):
         lines.append(revert(path, left - 30, y + 30)); reverted.add(path)
     return lines, 60
 
+LOOK_ROWS = [  # D166: (title, fact, key, labels) — the keys and values are lib/modlook's KEYS and VALUES
+    ("Colour", "lk_colour", 0, ["Style", "Main", "Ember", "Flare", "Trace", "Wallpaper"]),
+    ("Fill", "lk_fill", 1, ["Style", "Solid", "Tinted", "Glass", "None"]),
+    ("Rounding", "lk_round", 2, ["Style", "Square", "Soft", "Round", "Pill"]),
+    ("Outline", "lk_outline", 3, ["Style", "None", "Accent"]),
+    ("Glow", "lk_glow", 4, ["Off", "Soft", "Strong"]),
+    ("Shows", "lk_display", 5, ["Icon", "Icon + value", "Label + value"]),
+    ("Width", "lk_width", 6, ["Fit", "Fixed"]),
+]
+LOOK_H = 44 + 36 * len(LOOK_ROWS) + 48
+
+def look_card(y):
+    """D166: the selected module's own look — colour, fill, rounding, outline, glow, what it shows and
+    its width — each "as the style" until chosen; a group is styled through its first module."""
+    ln = [f'SCard({y}, {LOOK_H}, "Look")',
+          f'text "SELECT A MODULE ON THE BAR TO GIVE IT A LOOK OF ITS OWN" {{ at: {TX}, {y + 70}; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: lay_kind < 0.5 or lay_kind > 1.5 }}',
+          'group {', '    show: lay_kind > 0.5 and lay_kind < 1.5']
+    for n, (title, f, key, labels) in enumerate(LOOK_ROWS):
+        yy = y + 44 + n * 36
+        w = 96 if len(labels) > 3 else 120
+        x0 = XR - w * len(labels)
+        ln.append(f'    text "{title}" {{ at: {TX}, {yy + 15}; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.engrave }}')
+        ln.append(f'    STrack({x0}, {yy}, {w * len(labels)})')
+        for v, label in enumerate(labels):
+            ln.append(f'    SChoice({x0 + v * w}, {yy}, {w}, "{label}", {f} == {v}, lay_look, {key * 16 + v})')
+    yb = y + 44 + 36 * len(LOOK_ROWS) + 8
+    ln.append(f'    text "A GROUP SHARES ITS FIRST MODULE\'S LOOK · ICONS KEEP THE THEME\'S INK" {{ at: {TX}, {yb + 15}; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }}')
+    ln.append(f'    SButton({XR - 180}, {yb}, 180, "Same as the style", lay_look, {15 * 16})')
+    ln.append('}')
+    return ln
+
 def layout_page(y):
     """The Layout page: a preview of the bar, what is selected and what can be done with it, and
     the three lists and the shelf as chips (all placed by the logic: mooi-settings.luau)."""
-    yz = y + 308
+    yz = y + 308 + LOOK_H + 14
     ln = []
     ln.append(f'SCard({y}, 112, "Preview")')
     ln.append(f'text "TO SCALE · CLICK A MODULE TO SELECT IT" {{ at: {XR}, {y + 21}; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }}')
@@ -870,6 +903,7 @@ def layout_page(y):
         ln.append(f'        SButton({bx}, {by}, 120, "{label}", lay_act, {op}, true)'); bx += 126
     ln.append('    }')
     ln.append('}')
+    ln += look_card(y + 308)
     # the zones and the shelf
     for z, name in enumerate(["Left", "Centre", "Right", "Shelf — not on the bar"]):
         ln.append(f'SCard({yz} + lz{z}_y, lz{z}_h, "{name}")')
@@ -881,7 +915,7 @@ def layout_page(y):
     ln.append(f'for g in lay_groups {{ LGroup(g, {yz}) }}')
     ln.append(f'for c in lay_chips {{ LChip(c, {yz}, lay_pick) }}')
     ln.append(f'SButton({TX}, {yz} + lay_zh + 4, 200, "Edit on the bar instead", set_action, 1, bar_edit)')
-    return ln, f"308 + lay_zh + 48"
+    return ln, f"{308 + LOOK_H + 14} + lay_zh + 48"
 
 def section(i, rows, indent, page):
     """A page's cards and rows, each at its place as if every row above were shown; the props that
@@ -916,13 +950,20 @@ def section(i, rows, indent, page):
             hh = CARD_HEAD + 8
             lines += ["group {", f"    move: 0, gy_{i}_f{nfold} - {hy}",
                       f'    SCard({hy}, {hh}, "")',
-                      f'    text pick({fv}, "▸  {r[1]}", "▾  {r[1]}") {{ at: {TX}, {hy + 26}; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: mix(fl.ink, fl.phos, {fv}) }}',
+                      f'    text pick({fv}, "▸  {r[1]}", "▾  {r[1]}") {{ at: {TX}, {hy + 26}; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: mix(fl.engrave, fl.phos, {fv}) }}',
                       f'    text "{r[2]}" {{ at: {XR}, {hy + 26}; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 520; lines: 1; align: right }}',
                       f'    zone box fz_{i}_{nfold} {{ from: 256, {hy}; size: 900, {hh}; cursor: pointer; role: button; label: "Open or fold {r[1]}" }}',
                       f"    on press fz_{i}_{nfold} {{ {fv} = not {fv} }}",
                       "}"]
             above.append((hh + CARD_GAP, "true")); y += hh + CARD_GAP
             fold = fv
+            PAGE_FOLDS.setdefault(i, []).append((fv, hy))
+            if r[1] == "Modules":
+                MODULES_FOLD[0] = fv
+                # where the Look card is with only this fold open: the first fold's place, a closed header
+                # for each fold before this one, this header, then the layout's own 308 px to the Look card
+                f0 = PAGE_FOLDS[i][0][1]
+                MODULES_FOLD.append(f0 + (len(PAGE_FOLDS[i]) - 1) * (hh + CARD_GAP) + hh + CARD_GAP + 308)
             nfold += 1
             INDEX.append((r[1], r[2], i, page, hy))
             continue
@@ -1105,7 +1146,7 @@ def edit():
 {ind}            opacity: if(ed_g, 1, 0.35)
 {ind}            SButton(106, 104, 144, "Split from group", edit_op, ed_sel * 10 + 4)
 {ind}        }}
-{ind}        text "← → MOVE · DEL HIDE" {{ at: 326, 115; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }}
+{ind}        SButton(254, 104, 72, "Look…", edit_op, ed_sel * 10 + 6)
 {ind}    }}
 {ind}}}
 {ind}on key Left while bar_edit and ed_sel >= 0 {{ emit edit_op(ed_sel * 10 + 0) }}
@@ -1214,6 +1255,15 @@ def main():
     fact lay_mod = 0          // the selected module's place in the order (its outline's code)
     fact lay_fi = 0           // its outline
     fact lay_grouped = false
+    event lay_look ->         // to the logic (D166): the selected module's look, key * 16 + value (lib/modlook)
+    event open_module ->      // from the bar (D166, its edit mode's Look…): select that module (barlayout.ORDER index) on Bar & Frame
+    fact lk_colour = 0        // its look's positions in lib/modlook's lists (-1: none, a custom colour)
+    fact lk_fill = 0
+    fact lk_round = 0
+    fact lk_outline = 0
+    fact lk_glow = 0
+    fact lk_display = 1
+    fact lk_width = 0
     fact lay_zh = 400         // how tall the zones and the shelf are, together
     // The system pages (mooi-settings.luau reads them): sound, displays, power, the log.
     model snd_out max 12 { name: text; on: bool; n: number }
@@ -1302,7 +1352,7 @@ def main():
         "-- each page's Reset puts back (`@layout`: the bar's lists; `@keys`: the keys).\n"
         "-- `tab` is the page (from 0), `y` the row's place on it with every row shown.\nlocal rows = {\n" + rows + "\n}\n"
         "rows.resets = {\n" + resets + "\n}\n"
-        f"rows.layout_tab = {TAB['Bar & Frame']}\nreturn rows\n")
+        f"rows.layout_tab = {TAB['Bar & Frame']}\nrows.modules_fold = \"{MODULES_FOLD[0]}\"\nrows.modules_look_y = {MODULES_FOLD[1]}\nrows.layout_folds = {{ " + ", ".join('\"' + f + '\"' for f, _ in PAGE_FOLDS[TAB['Bar & Frame']]) + " }\nreturn rows\n")
     text = SCENE.read_text()
     pat = re.compile(r"([ \t]*)// <gen:edit>\n.*?// </gen:edit>", re.S)
     if not pat.search(text):

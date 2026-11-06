@@ -3563,7 +3563,7 @@ scene Mooi {
                 opacity: if(ed_g, 1, 0.35)
                 SButton(106, 104, 144, "Split from group", edit_op, ed_sel * 10 + 4)
             }
-            text "← → MOVE · DEL HIDE" { at: 326, 115; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            SButton(254, 104, 72, "Look…", edit_op, ed_sel * 10 + 6)
         }
     }
     on key Left while bar_edit and ed_sel >= 0 { emit edit_op(ed_sel * 10 + 0) }

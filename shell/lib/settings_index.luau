@@ -251,4 +251,7 @@ rows.resets = {
     [19] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model", "claude.free_fallback" },
 }
 rows.layout_tab = 3
+rows.modules_fold = "fd_3_4"
+rows.modules_look_y = 1084
+rows.layout_folds = { "fd_3_0", "fd_3_1", "fd_3_2", "fd_3_3", "fd_3_4", "fd_3_5" }
 return rows
