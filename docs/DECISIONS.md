@@ -4865,5 +4865,9 @@ G4); the summaries follow the commit messages._
   - The edit shelf holds every module, so Nexus, Claude and GitHub are back.
   - Settings use one name per thing: Shape, Surface, and Style with what each style is. Density is
     hidden until stage 4.
+- Only Signal Loom may run the notification service. Watching `notification_history` starts one,
+  and mooi-widgets (launcher dots) and mooi-lock (count) did, so whichever started first took the
+  D-Bus name and Loom heard nothing. Both now read Loom's `nexus-feed.json`; the lock gets a copy
+  from `mooi lock`. A unit test keeps every other program off the service.
 - Spec: docs/superpowers/specs/2026-11-06-the-pill-design.md §8.
 
