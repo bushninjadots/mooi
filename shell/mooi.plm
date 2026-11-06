@@ -3180,6 +3180,10 @@ scene Mooi {
             glow: 8, (70%) * st_glow, if(ed_merge, fl.ember, fl.phos)
             box { at: ed_x, ed_y + 2; size: 132, 34; corner: 7; color: if(ed_y > st_res + 4, fl.muted, if(ed_merge, fl.ember_fill, fl.phos_fill)); opacity: 0.95 }
         }
+        // The Pill (D168): its content over the body the frame draws, in Pill mode only (outside the
+        // generated edit block, which tools/gen-settings.py rewrites).
+        PillBody()
+
         // <gen:edit>
     group {
         show: bar_edit and p_workspaces
@@ -3568,9 +3572,6 @@ scene Mooi {
     // The ghost's word: what letting go now will do.
     text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
-    // The Pill (D168): its content over the body the frame draws, in Pill mode only.
-    PillBody()
-
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
     let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates, xs_claude, xs_github) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates, ws_claude, ws_github) / 2 - 170, 12, screen.width - 352)
     let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates, fi_claude, fi_github)

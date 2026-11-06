@@ -131,4 +131,25 @@ function M.place(screen_w, w, n)
     return out
 end
 
+-- The order list in Settings (row from 0): move up or down, switch on or off. Idle stays last and on —
+-- it is what the Pill shows when nothing else is happening.
+function M.reorder(order, off, row, op)
+    local o = {}
+    for _, id in ipairs(order or M.ACTIVITIES) do if id ~= "idle" then o[#o + 1] = id end end
+    local f = {}
+    for _, id in ipairs(off or {}) do if id ~= "idle" then f[#f + 1] = id end end
+    local i = (tonumber(row) or -1) + 1
+    if o[i] then
+        if op == "up" and i > 1 then o[i], o[i - 1] = o[i - 1], o[i]
+        elseif op == "down" and i < #o then o[i], o[i + 1] = o[i + 1], o[i]
+        elseif op == "toggle" then
+            local at = nil
+            for k, id in ipairs(f) do if id == o[i] then at = k end end
+            if at then table.remove(f, at) else f[#f + 1] = o[i] end
+        end
+    end
+    o[#o + 1] = "idle"
+    return o, f
+end
+
 return M
