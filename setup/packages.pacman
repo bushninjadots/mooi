@@ -1,0 +1,73 @@
+# What mooi needs on Arch (core/extra), curated by hand: the public install gets only this.
+# Your graphics driver and firmware are your system's business, not mooi's.
+# build pleamar
+base-devel
+git
+rustup
+pkgconf
+wayland
+libxkbcommon
+pam
+vulkan-icd-loader
+# the launcher, its scripts and the tests
+rsync
+jq
+curl
+socat
+inotify-tools
+lua54
+python
+python-pillow
+imagemagick
+ffmpeg
+libnotify
+gtk3
+xdg-utils
+pacman-contrib
+# Hyprland and the session
+hyprland
+hypridle
+hyprlock
+hyprsunset
+hyprpolkitagent
+xdg-desktop-portal-hyprland
+uwsm
+sddm
+# sound, network, bluetooth, power, sensors
+pipewire
+pipewire-pulse
+wireplumber
+pavucontrol
+networkmanager
+network-manager-applet
+bluez
+bluez-utils
+blueman
+brightnessctl
+power-profiles-daemon
+upower
+lm_sensors
+# what the bar, the player and the widgets drive
+kitty
+playerctl
+cava
+matugen
+mpv
+wl-clipboard
+cliphist
+grim
+slurp
+wf-recorder
+btop
+zenity
+nautilus
+# the look
+qt5ct
+qt6ct
+papirus-icon-theme
+ttf-jetbrains-mono
+ttf-jetbrains-mono-nerd
+ttf-iosevka-nerd
+inter-font
+noto-fonts
+noto-fonts-emoji
