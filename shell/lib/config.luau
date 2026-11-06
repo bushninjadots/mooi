@@ -44,6 +44,8 @@ M.SCHEMA = {
     -- the top of, swelling with the music. How thick, whether and how it moves with the music,
     -- how far it swells, and along which edges.
     { path = "frame.on", kind = "boolean", default = true },
+    -- D166: with the frame on, islands float under its band or attach to it (lib/chassis)
+    { path = "frame.islands", kind = "enum", values = { "float", "attach" }, default = "float" },
     { path = "frame.band", kind = "integer", default = 6, min = 2, max = 16 },
     { path = "frame.music", kind = "boolean", default = false },
     { path = "frame.style", kind = "enum", values = { "swell", "crests", "pulse" }, default = "swell" },
@@ -73,7 +75,7 @@ M.SCHEMA = {
     -- look the bar had before they existed.
     -- Presets: one choice that sets a coherent look (lib/style). What is stored is the last one
     -- chosen; the settings window shows "Custom" when the details no longer match it.
-    { path = "bar.style", kind = "enum", values = { "instrument", "glass", "floating", "minimal", "steel" }, default = "instrument" },
+    { path = "bar.style", kind = "enum", values = { "instrument", "glass", "floating", "hairline", "minimal" }, default = "instrument" },   -- D166: steel removed (migrated in validate), hairline added
     { path = "theme.preset", kind = "enum", values = { "phosphor", "neon_noir", "concrete", "gunmetal", "alien", "titanium" }, default = "phosphor" },
     { path = "bar.radius", kind = "integer", default = 8, min = 0, max = 16 },
     -- How much of the screen's width the bar spans, centred (islands, the full bar, the notch).
@@ -501,7 +503,21 @@ for _, id in ipairs(barlayout.ORDER) do
     M.SCHEMA[#M.SCHEMA + 1] = { path = "bar.modules." .. id .. ".show", kind = "boolean", default = true }
     M.SCHEMA[#M.SCHEMA + 1] = { path = "bar.modules." .. id .. ".frame", kind = "enum",
         values = { "inherit", "line", "corners", "none" }, default = "inherit" }
+    -- D166: each module's (or group's, on its first module) own look; "style" is the bar's own
+    local base = "bar.modules." .. id
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".colour", kind = "modcolour", default = "style" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".fill", kind = "enum", values = { "style", "solid", "tinted", "glass", "none" }, default = "style" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".rounding", kind = "enum", values = { "style", "square", "soft", "round", "pill" }, default = "style" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".outline", kind = "enum", values = { "style", "none", "accent" }, default = "style" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".glow", kind = "enum", values = { "off", "soft", "strong" }, default = "off" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".display", kind = "enum", values = { "icon", "icon+value", "label+value" }, default = "icon+value" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".width", kind = "enum", values = { "fit", "fixed" }, default = "fit" }
 end
+
+-- The palette roles a module's colour may name (lib/ferro's ROLES; listed here so config needs no ferro)
+local MODCOLOUR_ROLES = { ground = true, hull = true, hull_raised = true, well = true, trace_dim = true, trace = true,
+    trace_lit = true, phos = true, phos_fill = true, ember = true, ember_fill = true, flare = true, muted = true, ink = true,
+    steel_900 = true, steel_700 = true, steel_500 = true, steel_300 = true, engrave = true }
 
 local function copy(v)
     if type(v) ~= "table" then return v end
@@ -555,6 +571,10 @@ local function check(row, value)
         local known = false
         for _, allowed in ipairs(row.values) do if value == allowed then known = true end end
         if not known then return false, "expected one of " .. table.concat(row.values, ", ") end
+    elseif row.kind == "modcolour" then
+        local ok = type(value) == "string" and (value == "style" or value == "wallpaper" or MODCOLOUR_ROLES[value]
+            or string.match(value, "^#%x%x%x%x%x%x$") ~= nil)
+        if not ok then return false, "expected style, wallpaper, a palette role or a colour like #e07b2e" end
     elseif row.kind == "colour" then
         if type(value) ~= "string" or not string.match(value, "^#%x%x%x%x%x%x$") then return false, "expected a colour like #101418" end
     elseif row.kind == "text" then
@@ -705,6 +725,12 @@ function M.validate(t)
     if type(t) ~= "table" then
         problems[#problems + 1] = "settings are not a JSON object; using defaults"
         return out, problems, notes
+    end
+    -- D166: the Steel style is gone; a file on it reads as Instrument, every finer value it set kept
+    -- (surface mech, accent outline, …), so the bar looks the same until something is changed
+    if type(t.bar) == "table" and t.bar.style == "steel" then
+        t.bar.style = "instrument"
+        notes[#notes + 1] = "bar.style: steel is no longer a style; now instrument, with its finer settings kept"
     end
     if t.version ~= nil and t.version ~= M.VERSION then
         notes[#notes + 1] = string.format("settings say version %s, this mooi reads %d", tostring(t.version), M.VERSION)
