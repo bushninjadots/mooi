@@ -106,6 +106,13 @@ test("a whole section of the wrong type is reported, not silently reset", functi
     eq(#q, 2, "every wrong group, and nothing for the right one")
     eq(#(config.validate({ atlas = { rows = 2 } })), 0, "a right group stays quiet")
 end)
+test("the bar's material and density: defaults, and an unknown one falls back", function()
+    local d = config.defaults()
+    eq(d.bar.material, "ferrolume"); eq(d.bar.density, "balanced")
+    local s, p = config.validate({ bar = { material = "chrome", density = "rich", height = 30 } })
+    eq(s.bar.material, "ferrolume", "unknown material falls back")
+    eq(s.bar.density, "rich"); eq(s.bar.height, 30, "the rest is kept"); eq(#p, 1, "one problem")
+end)
 test("the two choice transports have a default, and the window derives the real one", function()
     -- bar.edge / frame.motion had no default: a file carrying one kept a value nothing read.
     local d = config.defaults()

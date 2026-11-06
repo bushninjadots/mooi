@@ -27,6 +27,10 @@ M.SCHEMA = {
     -- `notch`: each cluster hangs from the screen's top edge, the centre one a notch, the side
     -- ones flush with the corners, joined to the edge by inner fillets.
     { path = "bar.mode", kind = "enum", values = { "islands", "full", "notch" }, default = "islands" },
+    -- D164: what the bar's body is made of (stage 1 draws Ferrolume; Liquid and Cartridge arrive in
+    -- stages 7 and 8) and how much each module shows (stage 4 applies it)
+    { path = "bar.material", kind = "enum", values = { "ferrolume", "liquid", "cartridge" }, default = "ferrolume" },
+    { path = "bar.density", kind = "enum", values = { "minimal", "balanced", "rich" }, default = "balanced" },
     { path = "bar.surface", kind = "enum", values = { "solid", "glass", "blur", "clear", "mech" }, default = "solid" },
     { path = "bar.visualizer", kind = "enum", values = { "mirror", "bars", "line", "dots", "off" }, default = "mirror" },
     -- The instruments (dna, prism, cells) and the everyday switchers: pills (occupied plates that
