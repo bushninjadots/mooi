@@ -60,12 +60,15 @@ function M.foot(look)
     return look.mode == "notch" and look.n_b or (look.top + look.mod_h)
 end
 
--- Does a piece sit in that screen corner's reach? Then the frame's corner turns at the piece's foot.
+-- Does a piece joined to the band sit in that screen corner's reach? Then the frame's corner turns at
+-- the piece's foot. A floating plate (k = 0) never does: it would pull the band down over it.
 function M.covers(pieces, look, side)
     local cr = look.band_w + look.frame_r + look.reach + M.BLEND
     for _, p in ipairs(pieces or {}) do
-        if side == "left" and p.x <= cr then return true end
-        if side == "right" and p.x + p.w >= look.screen_w - cr then return true end
+        if p.k > 0 then
+            if side == "left" and p.x <= cr then return true end
+            if side == "right" and p.x + p.w >= look.screen_w - cr then return true end
+        end
     end
     return false
 end

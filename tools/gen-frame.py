@@ -135,17 +135,22 @@ CORNERS = {
     "br": "path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }",
 }
 
-# Without the band (D153) the pieces float where the bar's own plates would: from its offset, not the top.
-PY = "if(band_on, -40, st_offset)"
-PH = "if(band_on, 40 + {b}, {b} - st_offset)"
-PIECES = [(f"ix{i} - 3", f"ix{i} + iw{i} + 3",
-           f"box {{ from: ix{i} - 3, {PY}; size: iw{i} + 6, {PH.format(b='row_b')}; corner: fl.radius; blend: kf; show: bar_mode == 0 and iw{i} > 1", "}")
-          for i in range(16)] + [
-    ("plx - n_pad", "plx + plw + n_pad", f"box {{ from: plx - n_pad, {PY}; size: plw + 2 * n_pad, {PH.format(b='n_b')}; corner: n_r; blend: kf; show: bar_mode == 2 and plw > 1", "}"),
-    ("pcx - n_pad", "pcx + pcw + n_pad", f"box {{ from: pcx - n_pad, {PY}; size: pcw + 2 * n_pad, {PH.format(b='n_b')}; corner: n_r; blend: kf; show: bar_mode == 2 and pcw > 1", "}"),
-    ("prx - n_pad", "prx + prw + n_pad", f"box {{ from: prx - n_pad, {PY}; size: prw + 2 * n_pad, {PH.format(b='n_b')}; corner: n_r; blend: kf; show: bar_mode == 2 and prw > 1", "}"),
-    ("gp_x", "gp_x + gp_w", f"box {{ from: gp_x, {PY}; size: gp_w, {PH.format(b='row_b')}; corner: fl.radius; blend: kf; show: bar_mode == 1 and gp_w > 1", "}"),
-]
+# The bar's pieces (D164 stage 1): SLOTS boxes whose place lib/chassis decides and mooi-frame.luau
+# writes as targets (tx, ty, tw, th); the scene springs to them (fr.flow), with the corner (pr) and the
+# blend into the band (pk: 12 joined, 0 a floating plate) as plain facts. A slot with no width is off.
+SLOTS = 20
+PIECES = [(f"px{i}", f"px{i} + pw{i}",
+           f"box {{ from: px{i}, py{i}; size: pw{i}, ph{i}; corner: pr{i}; blend: pk{i}; show: pw{i} > 0", "}")
+          for i in range(SLOTS)]
+
+def piece_decls(ind):
+    out = [f"{ind}// the pieces' slots: targets from the logic, sprung here"]
+    for i in range(SLOTS):
+        out += [f"{ind}fact t{a}{i} = 0" for a in "xywh"]
+        out += [f"{ind}fact pr{i} = 0", f"{ind}fact pk{i} = 0"]
+        for a in "xywh":
+            out += [f"{ind}prop p{a}{i} = 0 ~fr.flow", f"{ind}follow p{a}{i} = t{a}{i}"]
+    return out
 
 BODY = [
     "color: fcol",
@@ -311,7 +316,7 @@ def place_surface(ind):
 
 def frame():
     ind = "    "
-    return "\n".join(wave_lets(ind) + [""] + strips(ind) + [""] + place_surface(ind))
+    return "\n".join(piece_decls(ind) + [""] + wave_lets(ind) + [""] + strips(ind) + [""] + place_surface(ind))
 
 GEN = {
     HELIX: {"slices": lambda: slices("            ", "pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700)")},

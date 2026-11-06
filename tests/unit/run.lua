@@ -4416,6 +4416,13 @@ do
                         for k, v in pairs(t or {}) do l[k] = v end; return l end
     local geo = { islands = { { x = 12, w = 182 }, { x = 0, w = 0 }, { x = 637, w = 280 } },
                   left = { x = 12, w = 448 }, center = { x = 637, w = 646 }, right = { x = 1492, w = 416 }, panel = { x = 12, w = 1896 } }
+    test("the frame scene draws pieces only from the model's facts", function()
+        local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find("box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0", 1, true), "slot 0 from facts")
+        assert(plm:find("px19", 1, true), "all 20 slots")
+        eq(plm:find("ix0 - 3", 1, true), nil, "no geometry re-derived in the scene")
+        eq(plm:find("let covL", 1, true), nil, "corner coverage comes from the logic")
+    end)
     test("chassis: islands float as plates, one per visible module, never up into the band", function()
         local p = chassis.pieces(geo, L())
         eq(#p, 2, "the 0-wide module has no piece")
@@ -4441,11 +4448,16 @@ do
         eq(#n, 3); eq(n[1].y, -40); eq(n[1].x, 2); eq(n[1].w, 468); eq(n[1].y + n[1].h, 33); eq(n[1].k, 12)
         eq(chassis.pieces(geo, L({ mode = "full" }))[1].y, -40)
     end)
-    test("chassis: an island at the screen's edge is covered by the corner", function()
-        local edge = { islands = { { x = 4, w = 40 }, { x = 1880, w = 36 } } }
-        local p = chassis.pieces(edge, L())
-        eq(chassis.covers(p, L(), "left"), true); eq(chassis.covers(p, L(), "right"), true)
-        eq(chassis.covers(chassis.pieces(geo, L()), L(), "right"), false)
+    test("chassis: the corner turns at a joined piece's foot; floating islands leave it alone", function()
+        local edge = { islands = { { x = 4, w = 40 }, { x = 1880, w = 36 } }, panel = { x = 0, w = 1920 },
+                       left = { x = 6, w = 300 }, right = { x = 1500, w = 410 } }
+        eq(chassis.covers(chassis.pieces(edge, L()), L(), "left"), false, "a floating island never pulls the band down")
+        local full = chassis.pieces(edge, L({ mode = "full" }))
+        eq(chassis.covers(full, L(), "left"), true); eq(chassis.covers(full, L(), "right"), true)
+        local notch = chassis.pieces(edge, L({ mode = "notch" }))
+        eq(chassis.covers(notch, L(), "left"), true); eq(chassis.covers(notch, L(), "right"), true)
+        local mid = chassis.pieces({ center = { x = 800, w = 300 } }, L({ mode = "notch" }))
+        eq(chassis.covers(mid, L(), "left"), false); eq(chassis.covers(mid, L(), "right"), false)
     end)
 end
 

@@ -89,7 +89,8 @@ return function(ctx)
                       right = cl.right and { x = cl.right.x, w = cl.right.w } or nil,
                       islands = isl,
                       panel = out.panel and { x = out.panel.x, w = out.panel.w } or nil,
-                      saving = ctx.saving() == true }
+                      saving = ctx.saving() == true,
+                      screen = env.screen }   -- the frame's corners need the screen's width (lib/chassis)
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
         fact.px = out.panel and out.panel.x or 0

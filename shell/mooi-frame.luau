@@ -7,6 +7,7 @@ local ferro = require("lib/ferro")
 local theme = require("lib/theme")
 local style = require("lib/style")
 local vizfeed = require("lib/vizfeed")
+local chassis = require("lib/chassis")
 
 local FILE, GEO = "settings.json", "bar-geo.json"
 
@@ -125,24 +126,30 @@ local function listen()
     end
 end
 
--- ── Where the bar's pieces are (bar-geo.json, written by shell/bar.luau) ──
-local SLOTS = 16
+-- ── Where the bar's pieces are (bar-geo.json, written by shell/bar.luau), laid out by lib/chassis ──
+local geo_doc = nil
+local function place()
+    local look = chassis.look(settings)
+    if type(geo_doc) == "table" and tonumber(geo_doc.screen) then look.screen_w = tonumber(geo_doc.screen) end
+    local pieces = chassis.pieces(geo_doc, look)
+    for i = 0, chassis.SLOTS - 1 do
+        local p = pieces[i + 1]
+        if p then
+            fact["tx" .. i], fact["ty" .. i], fact["tw" .. i], fact["th" .. i] = p.x, p.y, p.w, p.h
+            fact["pr" .. i], fact["pk" .. i] = p.r, p.k
+        else
+            fact["tw" .. i], fact["th" .. i] = 0, 0
+        end
+    end
+    fact.covL = chassis.covers(pieces, look, "left")
+    fact.covR = chassis.covers(pieces, look, "right")
+    fact.pfoot = chassis.foot(look)
+end
 local function geo()
     local g = read(GEO, "json")
     if type(g) ~= "table" then return end
-    local function piece(p) return type(p) == "table" and tonumber(p.x) or 0, type(p) == "table" and tonumber(p.w) or 0 end
-    fact.gl_x, fact.gl_w = piece(g.left)
-    fact.gc_x, fact.gc_w = piece(g.center)
-    fact.gr_x, fact.gr_w = piece(g.right)
-    fact.gp_x, fact.gp_w = piece(g.panel)
-    local isl = type(g.islands) == "table" and g.islands or {}
-    local first, last = nil, nil          -- where the islands begin and end: does one sit in a corner?
-    for i = 0, SLOTS - 1 do
-        local x, w = piece(isl[i + 1])
-        fact["ix" .. i], fact["iw" .. i] = x, w
-        if w > 0 then first = first or x; last = x + w end
-    end
-    fact.il_x, fact.ir_e = first or -1, last or -1
+    geo_doc = g
+    place()
     local was = saving
     saving = g.saving == true
     if was ~= saving then listen() end
@@ -153,6 +160,6 @@ pcall(sys.watch, "files:palette.json", paint)
 pcall(sys.watch, "files:" .. GEO, geo)
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
-    paint(); apply(); listen()
+    paint(); apply(); place(); listen()
 end)
 log("frame · up")
