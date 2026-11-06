@@ -1,0 +1,99 @@
+language 0.9
+
+// The Pill's content (D168): what the capsule at the top centre shows, drawn by the bar's scene over
+// the body mooi-frame draws for it (lib/chassis). shell/bar.luau feeds the facts from lib/pill:
+//   pill_kind  0 idle · 1 music · 2 osd · 3 notify · 4 record · 5 battery
+//   pill_glyph 0 idle · 1 music · 2 vol · 3 bri · 4 notify · 5 record · 6 low · 7 charging
+// with the first and second lines (pill_t1, pill_t2), a value (pill_val), a split partner on the right
+// (pill_split, pill_glyph2, pill_s1, pill_val2 from pill_w1 on) and up to four moons (moon_x*, moon_k*).
+// The visualiser's bars are ui/viz.plm's, read from the scene's bands like every other.
+
+import "viz.plm" as viz
+
+library Pill {
+    // A mark for an activity, centred at (cx, cy): bars for music, a dot for the rest, coloured by what it is.
+    component Mark(cx: number, cy: number, g: number) {
+        size: 18, 18
+        group {
+            show: g > 0.5 and g < 1.5
+            viz.Spectrum(cx - 9, cy - 7, 18, 14, fl.phos, fl.ember)
+        }
+        ellipse { at: cx, cy; radius: 4; color: pick(g, fl.trace_lit, fl.phos, fl.phos, fl.ember, fl.phos, #e05a5a, fl.ember, fl.phos); show: g < 0.5 or g > 1.5 }
+        ellipse { at: cx, cy; radius: 6.5; stroke: 1.2; color: #e05a5a; opacity: 0.5; show: g > 4.5 and g < 5.5 }
+    }
+
+    // One half (or the whole) of the Pill: its mark, its words, and for a volume or brightness change
+    // a track filled to the value.
+    component Half(x: number, w: number, g: number, t1: text, t2: text, v: number) {
+        size: w, fl.mod_h
+        let cy = fl.cy
+        Mark(x + 18, cy, g)
+        group {
+            show: g < 1.5 or g > 3.5
+            text t1 { at: x + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: w - 44; lines: 1 }
+        }
+        group {
+            show: g > 1.5 and g < 3.5
+            text t1 { at: x + 34, cy; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            box { from: x + 64, cy - 2; size: max(4, w - 104), 4; corner: 2; color: fl.well }
+            box { from: x + 64, cy - 2; size: max(0, (w - 104) * v), 4; corner: 2; color: fl.phos }
+            text t2 { at: x + w - 14, cy; anchor: right center; size: 11; weight: 600; family: "Exo 2"; color: fl.engrave }
+        }
+    }
+
+    component PillBody() {
+        size: 1, 1
+        group {
+            show: pill_on
+            let px = pill_x
+            let pw = pill_w
+            let cy = fl.cy
+            // idle: the time, and the workspace it is on
+            group {
+                show: pill_kind < 0.5 and not pill_split
+                text clock.time { at: px + pw / 2 - 8, cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text "· {ws.active, 0}" { at: px + pw / 2 + 26, cy; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.phos }
+            }
+            // anything else, whole
+            group {
+                show: pill_kind > 0.5 and not pill_split
+                Half(px, pw, pill_glyph, pill_t1, pill_t2, pill_val)
+            }
+            // split: the main on the left, its partner on the right, a pinch between
+            group {
+                show: pill_split
+                Half(px, pill_w1, pill_glyph, pill_t1, pill_t2, pill_val)
+                box { from: px + pill_w1 + 3, cy - 8; size: 2, 16; corner: 1; color: fl.trace_dim }
+                Half(px + pill_w1 + 8, pw - pill_w1 - 8, pill_glyph2, pill_s1, "", pill_val2)
+            }
+            zone box pillz { from: px, fl.top; size: pw, fl.mod_h; cursor: pointer; role: button; label: "The Pill: open what it shows" }
+            on press pillz { emit pill_press }
+            on scroll pillz { emit pill_scroll(wheel) }
+            // the moons: a mark each, a press brings it into the Pill
+            group {
+                show: moon_k0 > -0.5
+                Mark(moon_x0 + 12, cy, moon_k0)
+                zone box pmoon0 { from: moon_x0, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon0 { emit pill_moon(0) }
+            }
+            group {
+                show: moon_k1 > -0.5
+                Mark(moon_x1 + 12, cy, moon_k1)
+                zone box pmoon1 { from: moon_x1, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon1 { emit pill_moon(1) }
+            }
+            group {
+                show: moon_k2 > -0.5
+                Mark(moon_x2 + 12, cy, moon_k2)
+                zone box pmoon2 { from: moon_x2, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon2 { emit pill_moon(2) }
+            }
+            group {
+                show: moon_k3 > -0.5
+                Mark(moon_x3 + 12, cy, moon_k3)
+                zone box pmoon3 { from: moon_x3, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon3 { emit pill_moon(3) }
+            }
+        }
+    }
+}

@@ -164,11 +164,17 @@ return function(ctx)
         pill_now = r
         if changed then relayout(true) end
     end
+    -- looked at again while something timed is up or has just run out (a volume change showed on after
+    -- its 2 s when the tick only ran while one was still pending), and every tick while recording
+    local pill_timed = false
     every(250, function()
         pill_ms = pill_ms + 250
-        if fact.pill_on and (pillmod.next_change(pst, pill_ms) or pst.recording) then pill_update() end
+        if fact.pill_on and (pill_timed or pst.recording) then
+            pill_update()
+            pill_timed = pillmod.next_change(pst, pill_ms) ~= nil
+        end
     end)
-    local function note(kind, payload) pillmod.note(pst, kind, payload, pill_ms); pill_update() end
+    local function note(kind, payload) pillmod.note(pst, kind, payload, pill_ms); pill_timed = true; pill_update() end
     -- what it hears: the volume and the brightness changing, notifications arriving (by their id)
     local last_vol, last_bri, seen_note = nil, nil, nil
     pcall(sys.watch, "audio", function(a)
@@ -177,7 +183,9 @@ return function(ctx)
         if v and last_vol and math.abs(v - last_vol) > 0.001 then note("osd", { kind = "vol", value = v > 1 and v / 100 or v }) end
         last_vol = v
     end)
-    pcall(sys.watch, "notifications", function(list)
+    -- the history, not the live list: the live service belongs to whichever program took the name
+    -- (here the widgets'), while every program reads the same history (as the lock screen does)
+    pcall(sys.watch, "notification_history", function(list)
         if type(list) ~= "table" then return end
         local newest = nil
         for _, n in ipairs(list) do
