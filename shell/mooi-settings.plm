@@ -2075,13 +2075,13 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_0_8 - 550
-                    SRow(550, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, true)
+                    SRow(550, "Style", "Instrument, glass, floating, hairline or minimal", true, "", 344, true)
                     STrack(668, 566, 470)
                     SChoice(668, 566, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
                     SChoice(762, 566, 94, "Glass", sv_bar_style == 1, set_value, 65001)
                     SChoice(856, 566, 94, "Floating", sv_bar_style == 2, set_value, 65002)
-                    SChoice(950, 566, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
-                    SChoice(1044, 566, 94, "Steel", sv_bar_style == 4, set_value, 65004)
+                    SChoice(950, 566, 94, "Hairline", sv_bar_style == 3, set_value, 65003)
+                    SChoice(1044, 566, 94, "Minimal", sv_bar_style == 4, set_value, 65004)
                     SRevert(638, 580, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
                 }
                 group {
@@ -2531,13 +2531,13 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_3_11 - 768
-                    SRow(768, "Style", "Instrument, glass, floating, minimal or machined steel", true, "", 344, false)
+                    SRow(768, "Style", "Instrument, glass, floating, hairline or minimal", true, "", 344, false)
                     STrack(668, 784, 470)
                     SChoice(668, 784, 94, "Instrument", sv_bar_style == 0, set_value, 65000)
                     SChoice(762, 784, 94, "Glass", sv_bar_style == 1, set_value, 65001)
                     SChoice(856, 784, 94, "Floating", sv_bar_style == 2, set_value, 65002)
-                    SChoice(950, 784, 94, "Minimal", sv_bar_style == 3, set_value, 65003)
-                    SChoice(1044, 784, 94, "Steel", sv_bar_style == 4, set_value, 65004)
+                    SChoice(950, 784, 94, "Hairline", sv_bar_style == 3, set_value, 65003)
+                    SChoice(1044, 784, 94, "Minimal", sv_bar_style == 4, set_value, 65004)
                     SRevert(638, 798, sv_bar_style != df_bar_style, set_value, 65000 + df_bar_style)
                 }
                 group {
@@ -2554,7 +2554,7 @@ scene Mooi {
                     SChoice(762, 872, 94, "Glass", bar_surface == 1, set_value, 2001)
                     SChoice(856, 872, 94, "Frosted", bar_surface == 2, set_value, 2002)
                     SChoice(950, 872, 94, "None", bar_surface == 3, set_value, 2003)
-                    SChoice(1044, 872, 94, "Steel", bar_surface == 4, set_value, 2004)
+                    SChoice(1044, 872, 94, "Machined", bar_surface == 4, set_value, 2004)
                     SRevert(638, 886, sv_bar_surface != df_bar_surface, set_value, 2000 + df_bar_surface)
                 }
                 group {

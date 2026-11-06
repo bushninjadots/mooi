@@ -28,12 +28,13 @@ M.BAR_PRESETS = {
     -- floating: solid islands with no edge, lifted by a strong shadow, glowing under the pointer
     { name = "floating", set = { ["bar.surface"] = "solid", ["bar.frame"] = "none", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
         ["bar.shadow"] = "strong", ["bar.ground"] = "clear", ["bar.pill"] = "glow", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false } },
+    -- hairline (D166): no fill at all, only an accent line, so the wallpaper shows through
+    { name = "hairline", set = { ["bar.surface"] = "clear", ["bar.frame"] = "line", ["bar.outline_width"] = 1, ["bar.outline_colour"] = "accent",
+        ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false } },
     -- minimal: only the readings on the desktop, an underline for hover
     { name = "minimal", set = { ["bar.surface"] = "clear", ["bar.frame"] = "none", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "subtle",
         ["bar.shadow"] = "off", ["bar.ground"] = "clear", ["bar.pill"] = "underline", ["bar.opacity"] = 100, ["bar.rail"] = false, ["bar.accents"] = false } },
-    -- steel: machined housings, bolts and bays, an accent line, the rail and the details on
-    { name = "steel", set = { ["bar.surface"] = "mech", ["bar.frame"] = "line", ["bar.outline_width"] = 2, ["bar.outline_colour"] = "accent",
-        ["bar.shadow"] = "medium", ["bar.ground"] = "black", ["bar.pill"] = "soft", ["bar.opacity"] = 100, ["bar.rail"] = true, ["bar.accents"] = true } },
+    -- (steel was removed in D166: its look stays reachable as the mech surface with an accent line)
 }
 M.THEME_PRESETS = {
     { name = "phosphor", set = { ["theme.finish"] = "luminous", ["theme.saturation"] = 0, ["bar.bg"] = "black", ["bar.bg_light"] = 0,

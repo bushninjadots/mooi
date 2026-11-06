@@ -161,7 +161,7 @@ SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image"
 SWITCHERS = [("Pills", 3), ("Segments", 4), ("Dots", 5), ("Numbers", 6)]
 INSTRUMENTS = [("DNA", 0), ("Prisms", 1), ("Grid", 2), ("Compass", 7), ("Radar", 8)]
 LOOKS = [("Phosphor", 0), ("Neon noir", 1), ("Concrete", 2), ("Gunmetal", 3), ("Alien", 4), ("Titanium", 5)]
-STYLES = [("Instrument", 0), ("Glass", 1), ("Floating", 2), ("Minimal", 3), ("Steel", 4)]
+STYLES = [("Instrument", 0), ("Glass", 1), ("Floating", 2), ("Hairline", 3), ("Minimal", 4)]
 SECTIONS = [
     ("Quick", "Quick settings", "The few choices that change the most; every other page holds the rest", "LOOK", [
         ("card", "Look"),
@@ -173,7 +173,7 @@ SECTIONS = [
         ("toggle", "Morph", "Islands grow out of the bar as one body with it", "island.morph", "sv_island_morph"),
 
         ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
-        ("choice", "Style", "Instrument, glass, floating, minimal or machined steel", "bar.style", "sv_bar_style", STYLES),
+        ("choice", "Style", "Instrument, glass, floating, hairline or minimal", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHANGED ON THE BAR PAGE"),
         ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
         ("button", "Arrange the bar", "Put any module anywhere, in any order", "Open Layout", "set_pick", "Layout"),
@@ -239,9 +239,9 @@ SECTIONS = [
         ("slider", "Length", "How much of the screen's width it spans, centred", "bar.width", 30, 100, "{sv_bar_width + 30, 0}%"),
         ("slider", "Corner rounding", "The bar, the notch and the islands", "bar.radius", 0, 16, "{sv_bar_radius, 0} px"),
         ("card", "Style"),
-        ("choice", "Style", "Instrument, glass, floating, minimal or machined steel", "bar.style", "sv_bar_style", STYLES),
+        ("choice", "Style", "Instrument, glass, floating, hairline or minimal", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHOOSE A STYLE TO START AGAIN"),
-        ("choice", "Material", "What the bar is made of", "bar.surface", "bar_surface", ["Solid", "Glass", "Frosted", "None", "Steel"]),
+        ("choice", "Material", "What the bar is made of", "bar.surface", "bar_surface", ["Solid", "Glass", "Frosted", "None", "Machined"]),
         ("slider", "Transparency", "How much of the desktop shows through", "bar.opacity", 20, 100, "{100 - (sv_bar_opacity + 20), 0}%", "bar_surface < 2.5"),
         ("slider", "Frosting", "How frosted the glass is", "bar.frost", 0, 100, "{sv_bar_frost, 0}%", "bar_surface > 0.5 and bar_surface < 1.5"),
         ("slider", "Tint", "How much the glass darkens what is behind", "bar.smoke", 0, 80, "{sv_bar_smoke, 0}%", "bar_surface > 0.5 and bar_surface < 2.5"),

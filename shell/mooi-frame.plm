@@ -898,7 +898,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0, -40
                                line W * 0, bt + ft0
                                line W * 0.015625, bt + ft1
@@ -960,7 +960,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, -40
                                line W * 0.046875, bt + ft3
                                line W * 0.0625, bt + ft4
@@ -1025,7 +1025,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, -40
                                line W * 0.140625, bt + ft9
                                line W * 0.15625, bt + ft10
@@ -1075,7 +1075,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, -40
                                line W * 0.234375, bt + ft15
                                line W * 0.25, bt + ft16
@@ -1125,7 +1125,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, -40
                                line W * 0.328125, bt + ft21
                                line W * 0.34375, bt + ft22
@@ -1175,7 +1175,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, -40
                                line W * 0.421875, bt + ft27
                                line W * 0.4375, bt + ft28
@@ -1225,7 +1225,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, -40
                                line W * 0.515625, bt + ft33
                                line W * 0.53125, bt + ft34
@@ -1275,7 +1275,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, -40
                                line W * 0.609375, bt + ft39
                                line W * 0.625, bt + ft40
@@ -1325,7 +1325,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, -40
                                line W * 0.703125, bt + ft45
                                line W * 0.71875, bt + ft46
@@ -1375,7 +1375,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, -40
                                line W * 0.796875, bt + ft51
                                line W * 0.8125, bt + ft52
@@ -1440,7 +1440,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, -40
                                line W * 0.890625, bt + ft57
                                line W * 0.90625, bt + ft58
@@ -1514,7 +1514,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0, H + 40
                                line W * 0, H - bb - fw0
                                line W * 0.015625, H - bb - fw1
@@ -1555,7 +1555,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, H + 40
                                line W * 0.046875, H - bb - fw3
                                line W * 0.0625, H - bb - fw4
@@ -1599,7 +1599,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, H + 40
                                line W * 0.140625, H - bb - fw9
                                line W * 0.15625, H - bb - fw10
@@ -1629,7 +1629,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, H + 40
                                line W * 0.234375, H - bb - fw15
                                line W * 0.25, H - bb - fw16
@@ -1659,7 +1659,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, H + 40
                                line W * 0.328125, H - bb - fw21
                                line W * 0.34375, H - bb - fw22
@@ -1689,7 +1689,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, H + 40
                                line W * 0.421875, H - bb - fw27
                                line W * 0.4375, H - bb - fw28
@@ -1719,7 +1719,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, H + 40
                                line W * 0.515625, H - bb - fw33
                                line W * 0.53125, H - bb - fw34
@@ -1749,7 +1749,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, H + 40
                                line W * 0.609375, H - bb - fw39
                                line W * 0.625, H - bb - fw40
@@ -1779,7 +1779,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, H + 40
                                line W * 0.703125, H - bb - fw45
                                line W * 0.71875, H - bb - fw46
@@ -1809,7 +1809,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, H + 40
                                line W * 0.796875, H - bb - fw51
                                line W * 0.8125, H - bb - fw52
@@ -1853,7 +1853,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, H + 40
                                line W * 0.890625, H - bb - fw57
                                line W * 0.90625, H - bb - fw58
@@ -1907,7 +1907,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.0625
                                line bs + sw3, H * 0.0625
                                line bs + sw4, H * 0.083333
@@ -1938,7 +1938,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.1875
                                line bs + sw9, H * 0.1875
                                line bs + sw10, H * 0.208333
@@ -1969,7 +1969,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.3125
                                line bs + sw15, H * 0.3125
                                line bs + sw16, H * 0.333333
@@ -1999,7 +1999,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.4375
                                line bs + sw21, H * 0.4375
                                line bs + sw22, H * 0.458333
@@ -2029,7 +2029,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.5625
                                line bs + sw27, H * 0.5625
                                line bs + sw28, H * 0.583333
@@ -2060,7 +2060,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.6875
                                line bs + sw33, H * 0.6875
                                line bs + sw34, H * 0.708333
@@ -2091,7 +2091,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move -40, H * 0.8125
                                line bs + sw39, H * 0.8125
                                line bs + sw40, H * 0.833333
@@ -2134,7 +2134,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.0625
                                line W - bs - sw3, H * 0.0625
                                line W - bs - sw4, H * 0.083333
@@ -2165,7 +2165,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.1875
                                line W - bs - sw9, H * 0.1875
                                line W - bs - sw10, H * 0.208333
@@ -2196,7 +2196,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.3125
                                line W - bs - sw15, H * 0.3125
                                line W - bs - sw16, H * 0.333333
@@ -2226,7 +2226,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.4375
                                line W - bs - sw21, H * 0.4375
                                line W - bs - sw22, H * 0.458333
@@ -2256,7 +2256,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.5625
                                line W - bs - sw27, H * 0.5625
                                line W - bs - sw28, H * 0.583333
@@ -2287,7 +2287,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.6875
                                line W - bs - sw33, H * 0.6875
                                line W - bs - sw34, H * 0.708333
@@ -2318,7 +2318,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W + 40, H * 0.8125
                                line W - bs - sw39, H * 0.8125
                                line W - bs - sw40, H * 0.833333
@@ -2363,7 +2363,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0, -40
                                line W * 0, bt + ft0
                                line W * 0.015625, bt + ft1
@@ -2427,7 +2427,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, -40
                                line W * 0.046875, bt + ft3
                                line W * 0.0625, bt + ft4
@@ -2494,7 +2494,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, -40
                                line W * 0.140625, bt + ft9
                                line W * 0.15625, bt + ft10
@@ -2546,7 +2546,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, -40
                                line W * 0.234375, bt + ft15
                                line W * 0.25, bt + ft16
@@ -2598,7 +2598,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, -40
                                line W * 0.328125, bt + ft21
                                line W * 0.34375, bt + ft22
@@ -2650,7 +2650,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, -40
                                line W * 0.421875, bt + ft27
                                line W * 0.4375, bt + ft28
@@ -2702,7 +2702,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, -40
                                line W * 0.515625, bt + ft33
                                line W * 0.53125, bt + ft34
@@ -2754,7 +2754,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, -40
                                line W * 0.609375, bt + ft39
                                line W * 0.625, bt + ft40
@@ -2806,7 +2806,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, -40
                                line W * 0.703125, bt + ft45
                                line W * 0.71875, bt + ft46
@@ -2858,7 +2858,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, -40
                                line W * 0.796875, bt + ft51
                                line W * 0.8125, bt + ft52
@@ -2925,7 +2925,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, -40
                                line W * 0.890625, bt + ft57
                                line W * 0.90625, bt + ft58
@@ -2987,7 +2987,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0, H + 40
                                line W * 0, H - bb - fw0
                                line W * 0.015625, H - bb - fw1
@@ -3029,7 +3029,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.046875, H + 40
                                line W * 0.046875, H - bb - fw3
                                line W * 0.0625, H - bb - fw4
@@ -3074,7 +3074,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.140625, H + 40
                                line W * 0.140625, H - bb - fw9
                                line W * 0.15625, H - bb - fw10
@@ -3105,7 +3105,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.234375, H + 40
                                line W * 0.234375, H - bb - fw15
                                line W * 0.25, H - bb - fw16
@@ -3136,7 +3136,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.328125, H + 40
                                line W * 0.328125, H - bb - fw21
                                line W * 0.34375, H - bb - fw22
@@ -3167,7 +3167,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.421875, H + 40
                                line W * 0.421875, H - bb - fw27
                                line W * 0.4375, H - bb - fw28
@@ -3198,7 +3198,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.515625, H + 40
                                line W * 0.515625, H - bb - fw33
                                line W * 0.53125, H - bb - fw34
@@ -3229,7 +3229,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.609375, H + 40
                                line W * 0.609375, H - bb - fw39
                                line W * 0.625, H - bb - fw40
@@ -3260,7 +3260,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.703125, H + 40
                                line W * 0.703125, H - bb - fw45
                                line W * 0.71875, H - bb - fw46
@@ -3291,7 +3291,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.796875, H + 40
                                line W * 0.796875, H - bb - fw51
                                line W * 0.8125, H - bb - fw52
@@ -3336,7 +3336,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         path { show: band_on; move W * 0.890625, H + 40
                                line W * 0.890625, H - bb - fw57
                                line W * 0.90625, H - bb - fw58
@@ -3376,7 +3376,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3391,7 +3391,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3406,7 +3406,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3421,7 +3421,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3436,7 +3436,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3451,7 +3451,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3466,7 +3466,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3481,7 +3481,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3496,7 +3496,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3511,7 +3511,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3526,7 +3526,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3541,7 +3541,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3556,7 +3556,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }
@@ -3571,7 +3571,7 @@ scene Frame {
                         frost: 1% * st_frost
                         smoke: 1% * st_smoke
                         shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a
-                        border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec
+                        border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
                 }

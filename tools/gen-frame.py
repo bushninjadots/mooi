@@ -162,10 +162,10 @@ BODY = [
     "frost: 1% * st_frost",
     "smoke: 1% * st_smoke",
     "shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a",
-    # One outline, one width (the bar's Outline: thin 1 · regular 1.4 · bold 2 px). With the band on it is
-    # the frame's edge (line or neon; none hides it); with the band off the chassis is only the bar's
-    # pieces, so the bar's own choice says whether they have one.
-    "border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec",
+    # One outline, one width (the bar's Outline: thin 1 · regular 1.4 · bold 2 px), and the style decides
+    # whether there is one at all (D166): a style without an outline (Floating, Minimal) gives the frame
+    # no line either, so turning the frame on never adds a line; frame.edge chooses plain, neon or none.
+    "border: if(bar_frame < 0.5 and st_frame_edge < 1.5, st_owidth, 0), fnec",
 ]
 
 def tile(ind, clip, shapes, show=None):
