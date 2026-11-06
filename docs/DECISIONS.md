@@ -4827,3 +4827,21 @@ G4); the summaries follow the commit messages._
 - Every module or group may set its colour, fill, rounding, outline, glow, display and width.
 - With the frame on the bar and frame are one body; islands float or attach (`frame.islands`).
 - Spec: docs/superpowers/specs/2026-11-06-bar-styles-settings-design.md.
+
+## D167 · 2026-11-06 · Bar & Frame built: one page, five styles, attach, per-module looks
+- Settings: Bar & Frame replaces Bar, Layout, Workspaces, Media and Screen frame — Shape, Style, Screen
+  frame and Density on top, folds below (generator row kind `fold`); Colour is Theme & colour.
+- Styles: Instrument, Glass, Floating, Hairline, Minimal; Steel removed (a file on it reads as
+  Instrument, its values kept); the machined surface is labelled Machined. Every style sets every
+  finer value, so a style never inherits the last one's.
+- The frame's line follows the style: no outline, no frame line. `frame.islands = attach` brings the band
+  to the islands' top so they hang from it as one body.
+- Each module (a group through its first) has a look (`lib/modlook`): colour, fill, rounding, outline,
+  glow, display, width; the frame draws every floating plate as its own body. Settings → Modules has a
+  Look card; the bar's edit inspector has Look… which opens it.
+- Found by the extended harness and fixed: a box with stroke 0 is filled (Minimal drew a solid accent
+  over its readings); frost and tint applied on non-glass plates; Corners drew nothing on islands.
+- `tests/chassis.sh`: 149 checks, 0 failed. Performance: frame 8.8 %, GPU 57.5 % (no regression).
+- Deferred: a module's colour tints its plate, not its icons and text (stage 4); `display`/`width`
+  are stored and editable, applied with density in stage 4; no custom #hex picker in the Look card.
+

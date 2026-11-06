@@ -9,84 +9,84 @@
    app suite with one shared semantics rather than a base16 approximation. */
 
 :root {
-  --accent-bg-color: #99c5ab;
-  --accent-fg-color: #062312;
-  --accent-color: #99c5ab;
-  --destructive-bg-color: #ce888b;
-  --destructive-fg-color: #062312;
-  --destructive-color: #ce888b;
-  --success-bg-color: #87ad97;
-  --success-fg-color: #062312;
-  --success-color: #87ad97;
-  --warning-bg-color: #ce888b;
-  --warning-fg-color: #062312;
-  --warning-color: #ce888b;
-  --error-bg-color: #ce888b;
-  --error-fg-color: #062312;
-  --error-color: #ce888b;
-  --window-bg-color: #1e241f;
-  --window-fg-color: #9caba2;
-  --view-bg-color: #1e241f;
-  --view-fg-color: #9caba2;
-  --headerbar-bg-color: #1e241f;
-  --headerbar-fg-color: #9caba2;
-  --headerbar-border-color: #244230;
-  --headerbar-backdrop-color: #1e241f;
-  --sidebar-bg-color: #1b211d;
-  --sidebar-fg-color: #9caba2;
-  --sidebar-backdrop-color: #1e241f;
-  --secondary-sidebar-bg-color: #181d19;
-  --secondary-sidebar-fg-color: #9caba2;
-  --secondary-sidebar-backdrop-color: #1e241f;
-  --card-bg-color: #1b211d;
-  --card-fg-color: #9caba2;
-  --dialog-bg-color: #222923;
-  --dialog-fg-color: #9caba2;
-  --popover-bg-color: #1e241f;
-  --popover-fg-color: #9caba2;
-  --thumbnail-bg-color: #222923;
-  --thumbnail-fg-color: #9caba2;
-  --scrollbar-outline-color: #244230;
+  --accent-bg-color: #c0b887;
+  --accent-fg-color: #231f06;
+  --accent-color: #c0b887;
+  --destructive-bg-color: #5dbc7e;
+  --destructive-fg-color: #231f06;
+  --destructive-color: #5dbc7e;
+  --success-bg-color: #a9a277;
+  --success-fg-color: #231f06;
+  --success-color: #a9a277;
+  --warning-bg-color: #5dbc7e;
+  --warning-fg-color: #231f06;
+  --warning-color: #5dbc7e;
+  --error-bg-color: #5dbc7e;
+  --error-fg-color: #231f06;
+  --error-color: #5dbc7e;
+  --window-bg-color: #252318;
+  --window-fg-color: #aba89c;
+  --view-bg-color: #252318;
+  --view-fg-color: #aba89c;
+  --headerbar-bg-color: #252318;
+  --headerbar-fg-color: #aba89c;
+  --headerbar-border-color: #3f3b22;
+  --headerbar-backdrop-color: #252318;
+  --sidebar-bg-color: #222016;
+  --sidebar-fg-color: #aba89c;
+  --sidebar-backdrop-color: #252318;
+  --secondary-sidebar-bg-color: #1d1c13;
+  --secondary-sidebar-fg-color: #aba89c;
+  --secondary-sidebar-backdrop-color: #252318;
+  --card-bg-color: #222016;
+  --card-fg-color: #aba89c;
+  --dialog-bg-color: #2a291c;
+  --dialog-fg-color: #aba89c;
+  --popover-bg-color: #252318;
+  --popover-fg-color: #aba89c;
+  --thumbnail-bg-color: #2a291c;
+  --thumbnail-fg-color: #aba89c;
+  --scrollbar-outline-color: #3f3b22;
 }
 
-@define-color accent_bg_color #99c5ab;
-@define-color accent_fg_color #062312;
-@define-color accent_color #99c5ab;
-@define-color destructive_bg_color #ce888b;
-@define-color destructive_fg_color #062312;
-@define-color destructive_color #ce888b;
-@define-color success_bg_color #87ad97;
-@define-color success_fg_color #062312;
-@define-color success_color #87ad97;
-@define-color warning_bg_color #ce888b;
-@define-color warning_fg_color #062312;
-@define-color warning_color #ce888b;
-@define-color error_bg_color #ce888b;
-@define-color error_fg_color #062312;
-@define-color error_color #ce888b;
-@define-color window_bg_color #1e241f;
-@define-color window_fg_color #9caba2;
-@define-color view_bg_color #1e241f;
-@define-color view_fg_color #9caba2;
-@define-color headerbar_bg_color #1e241f;
-@define-color headerbar_fg_color #9caba2;
-@define-color headerbar_border_color #244230;
-@define-color headerbar_backdrop_color #1e241f;
-@define-color sidebar_bg_color #1b211d;
-@define-color sidebar_fg_color #9caba2;
-@define-color sidebar_backdrop_color #1e241f;
-@define-color secondary_sidebar_bg_color #181d19;
-@define-color secondary_sidebar_fg_color #9caba2;
-@define-color secondary_sidebar_backdrop_color #1e241f;
-@define-color card_bg_color #1b211d;
-@define-color card_fg_color #9caba2;
-@define-color dialog_bg_color #222923;
-@define-color dialog_fg_color #9caba2;
-@define-color popover_bg_color #1e241f;
-@define-color popover_fg_color #9caba2;
-@define-color thumbnail_bg_color #222923;
-@define-color thumbnail_fg_color #9caba2;
-@define-color scrollbar_outline_color #244230;
+@define-color accent_bg_color #c0b887;
+@define-color accent_fg_color #231f06;
+@define-color accent_color #c0b887;
+@define-color destructive_bg_color #5dbc7e;
+@define-color destructive_fg_color #231f06;
+@define-color destructive_color #5dbc7e;
+@define-color success_bg_color #a9a277;
+@define-color success_fg_color #231f06;
+@define-color success_color #a9a277;
+@define-color warning_bg_color #5dbc7e;
+@define-color warning_fg_color #231f06;
+@define-color warning_color #5dbc7e;
+@define-color error_bg_color #5dbc7e;
+@define-color error_fg_color #231f06;
+@define-color error_color #5dbc7e;
+@define-color window_bg_color #252318;
+@define-color window_fg_color #aba89c;
+@define-color view_bg_color #252318;
+@define-color view_fg_color #aba89c;
+@define-color headerbar_bg_color #252318;
+@define-color headerbar_fg_color #aba89c;
+@define-color headerbar_border_color #3f3b22;
+@define-color headerbar_backdrop_color #252318;
+@define-color sidebar_bg_color #222016;
+@define-color sidebar_fg_color #aba89c;
+@define-color sidebar_backdrop_color #252318;
+@define-color secondary_sidebar_bg_color #1d1c13;
+@define-color secondary_sidebar_fg_color #aba89c;
+@define-color secondary_sidebar_backdrop_color #252318;
+@define-color card_bg_color #222016;
+@define-color card_fg_color #aba89c;
+@define-color dialog_bg_color #2a291c;
+@define-color dialog_fg_color #aba89c;
+@define-color popover_bg_color #252318;
+@define-color popover_fg_color #aba89c;
+@define-color thumbnail_bg_color #2a291c;
+@define-color thumbnail_fg_color #aba89c;
+@define-color scrollbar_outline_color #3f3b22;
 
 /* Shades are the palette scrim at a fixed alpha, not a flat role, because the
    toolkit paints them as translucent overlays for edges and elevation and they
@@ -101,23 +101,23 @@
 
 /* Classic GTK 3 named palette, so non-libadwaita GTK 4 apps that still read the
    old theme_* / borders names track the scheme as well. */
-@define-color theme_bg_color #1e241f;
-@define-color theme_fg_color #9caba2;
-@define-color theme_base_color #1e241f;
-@define-color theme_text_color #9caba2;
-@define-color theme_selected_bg_color #99c5ab;
-@define-color theme_selected_fg_color #062312;
-@define-color theme_unfocused_bg_color #1e241f;
-@define-color theme_unfocused_fg_color #9caba2;
-@define-color theme_unfocused_base_color #1e241f;
-@define-color theme_unfocused_text_color #9caba2;
-@define-color theme_unfocused_selected_bg_color #99c5ab;
-@define-color theme_unfocused_selected_fg_color #062312;
-@define-color insensitive_bg_color #1e241f;
-@define-color insensitive_fg_color #679e7d;
-@define-color insensitive_base_color #1e241f;
-@define-color borders #244230;
-@define-color unfocused_borders #244230;
+@define-color theme_bg_color #252318;
+@define-color theme_fg_color #aba89c;
+@define-color theme_base_color #252318;
+@define-color theme_text_color #aba89c;
+@define-color theme_selected_bg_color #c0b887;
+@define-color theme_selected_fg_color #231f06;
+@define-color theme_unfocused_bg_color #252318;
+@define-color theme_unfocused_fg_color #aba89c;
+@define-color theme_unfocused_base_color #252318;
+@define-color theme_unfocused_text_color #aba89c;
+@define-color theme_unfocused_selected_bg_color #c0b887;
+@define-color theme_unfocused_selected_fg_color #231f06;
+@define-color insensitive_bg_color #252318;
+@define-color insensitive_fg_color #9c9363;
+@define-color insensitive_base_color #252318;
+@define-color borders #3f3b22;
+@define-color unfocused_borders #3f3b22;
 
    → Files (Nautilus) is off, so the file manager keeps its own classes. */
 /* ── Nautilus (GNOME Files) ──────────────────────────────────────────────────
@@ -132,14 +132,14 @@
    near-black scheme is barely a tint at all; the raised surface reads as a pill
    in every scheme. */
 .nautilus-window .nautilus-pathbar {
-  background-color: #222923;
+  background-color: #2a291c;
 }
 
 /* The sidebar: NautilusSidebar's CSS node is `placessidebar` (with class
    `.sidebar`). The split view does not paint it, so without this the places
    list sits on the window's surface and the two blend. */
 .nautilus-window placessidebar {
-  background-color: #1b211d;
+  background-color: #222016;
 }
 
 /* Selected files, in both views. Libadwaita paints these with a translucent
@@ -149,34 +149,34 @@
 .nautilus-grid-view gridview > child:selected:hover,
 .nautilus-list-view columnview > listview > row:selected,
 .nautilus-list-view columnview > listview > row:selected:hover {
-  background-color: #2d4234;
-  color: #99c5ab;
+  background-color: #423f27;
+  color: #c0b887;
 }
 
 /* Places rows, with their hover and selection. Hover is only for unselected
    rows; selection keeps the secondary container, so navigation and file
    selection stay tellable apart. */
 .nautilus-window placessidebar row:hover:not(:selected) {
-  background-color: color-mix(in srgb, #9caba2 7%, transparent);
+  background-color: color-mix(in srgb, #aba89c 7%, transparent);
 }
 
 .nautilus-window placessidebar row:selected,
 .nautilus-window placessidebar row:selected:hover {
-  background-color: #2d4234;
-  color: #87ad97;
+  background-color: #423f27;
+  color: #a9a277;
 }
 
 /* Search: the query editor is Nautilus's own widget on top of libadwaita's, so
    the bar takes the raised surface and reads as one control. */
 .nautilus-window .nautilus-query-editor {
-  background-color: #222923;
+  background-color: #2a291c;
   border-radius: 9px;
 }
 
 /* A starred file's star is the palette's accent, so "starred" is visible in
    the same colour the shell uses for the things you picked. */
 .nautilus-window button.star.starred image {
-  color: #99c5ab;
+  color: #c0b887;
 }
 
 /* Thumbnails: Nautilus draws transparent images over a stock checkerboard,
@@ -184,9 +184,9 @@
    in the palette. The preview frame takes it too. */
 .nautilus-window .nautilus-image.file-thumbnail {
   background-image: none;
-  background-color: #222923;
+  background-color: #2a291c;
 }
 
 .nautilus-window .image-frame {
-  background-color: #222923;
+  background-color: #2a291c;
 }

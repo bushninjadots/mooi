@@ -25,14 +25,14 @@ _Last updated 2026-11-06. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | Unit + BMO suites | 2026-11-06 | `bin/mooi check`, exit 0 |
 | Scene compilation (all 13) | 2026-11-06 | `bin/mooi check`, exit 0 |
 | Generator determinism | 2026-11-06 | run on a `/tmp` copy, no diff |
-| The bar's chassis (every shape × outline × frame × swell) | 2026-11-06 | `tests/chassis.sh`, 93 checks, 0 failed (D165) |
+| The bar's chassis, styles and attach (every shape × outline × frame × swell; every style) | 2026-11-06 | `tests/chassis.sh`, 149 checks, 0 failed (D167) |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |
 
 ## Open items
 
-1. The bar redesign (D164) is in stages; stage 1 (one chassis) is done, stage 2 (Ferrolume perfected)
-   is next — docs/superpowers/specs/2026-11-06-bar-redesign-design.md.
+1. The bar redesign (D164) is in stages: stage 1 (one chassis) and Bar & Frame (styles, settings,
+   per-module looks, D167) are done; the Pill is next — docs/superpowers/specs/2026-11-06-bar-redesign-design.md.
 2. `shell/mooi.plm`, `mooi-settings.plm` and `mooi-frame.plm` remain large generated/monolithic
    files; the panel extraction is incremental (G8).
 3. Theme packages have a model and a terminal interface, not yet a browser or a visual editor.
