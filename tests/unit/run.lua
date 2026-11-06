@@ -4566,5 +4566,34 @@ do
     end)
 end
 
+section("modlook (D166)")
+do
+    local ML = require("lib/modlook")
+    local roles = { ember = { r = 0.9, g = 0.5, b = 0.2 }, primary = { r = 0.5, g = 0.8, b = 0.7 } }
+    test("modlook: style means the bar's own; overrides win; a group is styled by its head", function()
+        local s = config.validate({ bar = { radius = 7, height = 24, surface = "glass", frame = "line",
+            left = { "settings+resources", "weather" }, center = { "media" }, right = { "clock" },
+            modules = { settings = { fill = "solid", rounding = "pill", colour = "ember" } } } })
+        eq(ML.head(s, "resources"), "settings", "a member's look is its head's")
+        eq(ML.head(s, "weather"), "weather")
+        local l = ML.of(s, "resources", roles)
+        eq(l.fill, 0); eq(l.r, 12, "pill = half the height"); eq(l.colour.r, 0.9)
+        local w = ML.of(s, "weather", roles)
+        eq(w.fill, 2, "glass from the bar's surface"); eq(w.r, 7); eq(w.outline, 1); eq(w.colour, nil)
+    end)
+    test("modlook: every value maps, and a hex or the wallpaper's colour is a colour", function()
+        local s = config.validate({ bar = { surface = "clear", frame = "none", radius = 7, height = 30, modules = {
+            clock = { colour = "#ff0000", rounding = "square", outline = "accent", glow = "strong", fill = "tinted" },
+            weather = { colour = "wallpaper", rounding = "soft", outline = "none", fill = "none" } } } })
+        local c = ML.of(s, "clock", roles)
+        eq(c.colour.r, 1); eq(c.colour.g, 0); eq(c.r, 0); eq(c.outline, 2); eq(c.glow, 2); eq(c.fill, 1)
+        local w = ML.of(s, "weather", roles)
+        eq(w.colour.g, 0.8, "the wallpaper's primary"); eq(w.r, 4); eq(w.outline, 0); eq(w.fill, 3)
+        local d = ML.of(s, "tray", roles)
+        eq(d.fill, 3, "clear surface: no fill"); eq(d.outline, 0, "no outline style: none"); eq(d.glow, 0)
+        eq(ML.of(config.validate({ bar = { surface = "mech" } }), "tray", roles).fill, 0, "machined reads as solid")
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
