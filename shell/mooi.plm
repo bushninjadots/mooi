@@ -1115,6 +1115,7 @@ scene Mooi {
     event open_wallpaper ->    // to the logic: open or close the wallpaper picker, mooi-walls (`mooi walls`, D145)
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event feed_want ->         // from the notch or the Nexus: a music panel is open and wants the feed (D118)
+    event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal
     event open_claude ->       // to the logic: the side notch's Claude panel

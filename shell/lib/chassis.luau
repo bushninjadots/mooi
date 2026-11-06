@@ -7,7 +7,7 @@
 -- as an empty tab. Here islands float as plates on the bar's row and never touch the band; full joins
 -- the band; notch hangs from the top, as its design intends. One foot in every case.
 
-local M = { SLOTS = 20, NOTCH_PAD = 10, BLEND = 12 }
+local M = { SLOTS = 20, NOTCH_PAD = 10, BLEND = 12, AIR = 3, NO_CAP = 999 }
 
 -- `s` is validated settings (lib/config). The row's top is theme/ferrolume.plm's fl.top.
 function M.look(s)
@@ -15,6 +15,11 @@ function M.look(s)
     local notch = b.mode == "notch"
     local top = b.offset + (notch and 6 or (b.rail and 15 or 8))
     local band = f.on == true
+    local band_w = band and f.band or 0
+    local floating = b.mode == "islands"
+    -- Floating plates keep AIR px between them and the band: a band thicker than the room above the
+    -- row is held thinner along the top (it fused with every plate otherwise; review I2).
+    local top_band = floating and math.min(band_w, math.max(0, top - M.AIR)) or band_w
     return {
         mode = b.mode, band = band, top = top, mod_h = b.height, radius = b.radius,
         n_pad = M.NOTCH_PAD, n_r = b.radius + 4,
@@ -22,10 +27,10 @@ function M.look(s)
         -- frame does not move it (it was 5 px lower without the band before D164)
         n_b = top + b.height + 1,
         offset = b.offset, screen_w = 1920,
-        band_w = band and f.band or 0, frame_r = f.radius, reach = f.reach * 1.6,
-        -- how far the band's top edge may swell: down to 3 px above floating plates (islands), or
-        -- freely where the pieces join the band (full, notch)
-        top_room = (b.mode == "islands") and math.max(0, top - (band and f.band or 0) - 3) or 999,
+        band_w = band_w, top_band = top_band, frame_r = f.radius, reach = f.reach * 1.6,
+        -- how far the band's top edge may swell: down to AIR px above floating plates, or freely where
+        -- the pieces join the band (full, notch)
+        top_room = floating and math.max(0, top - top_band - M.AIR) or M.NO_CAP,
     }
 end
 
@@ -47,10 +52,15 @@ function M.pieces(geo, look)
         local y = look.band and -40 or look.top
         if w > 0 then add(x, y, w, foot - y, look.radius, M.BLEND) end
     elseif look.mode == "notch" then
-        local y = look.band and -40 or look.offset
+        -- hanging from above the screen whether the band is on or not, as the bar's own notch does, and
+        -- never past the screen's sides (review I5)
         for _, side in ipairs({ "left", "center", "right" }) do
             local x, w = span(geo[side])
-            if w > 0 then add(x - look.n_pad, y, w + 2 * look.n_pad, look.n_b - y, look.n_r, M.BLEND) end
+            if w > 0 then
+                local a = math.max(0, x - look.n_pad)
+                local e = math.min(look.screen_w, x + w + look.n_pad)
+                add(a, -40, e - a, look.n_b + 40, look.n_r, M.BLEND)
+            end
         end
     else
         for _, isl in ipairs(type(geo.islands) == "table" and geo.islands or {}) do
@@ -65,17 +75,32 @@ function M.foot(look)
     return look.mode == "notch" and look.n_b or (look.top + look.mod_h)
 end
 
--- Does a piece joined to the band sit in that screen corner's reach? Then the frame's corner turns at
--- the piece's foot. A floating plate (k = 0) never does: it would pull the band down over it.
-function M.covers(pieces, look, side)
+-- Is that screen corner within reach of the piece? (its round, the side's swing and the fillet)
+local function near(p, look, side)
     local cr = look.band_w + look.frame_r + look.reach + M.BLEND
+    if side == "left" then return p.x <= cr end
+    return p.x + p.w >= look.screen_w - cr
+end
+
+-- Does a piece joined to the band sit in that screen corner's reach? Then the frame's corner turns at
+-- the piece's foot. A floating plate (k = 0) never does: it would pull the band down over it. With the
+-- band off there is no corner to turn (review I4).
+function M.covers(pieces, look, side)
+    if not look.band then return false end
     for _, p in ipairs(pieces or {}) do
-        if p.k > 0 then
-            if side == "left" and p.x <= cr then return true end
-            if side == "right" and p.x + p.w >= look.screen_w - cr then return true end
-        end
+        if p.k > 0 and near(p, look, side) then return true end
     end
     return false
+end
+
+-- The largest round that corner may have: a floating plate in its reach caps it so the round stops
+-- 2 px above the plate's top (review I1); NO_CAP otherwise.
+function M.corner_cap(pieces, look, side)
+    local cap = M.NO_CAP
+    for _, p in ipairs(pieces or {}) do
+        if p.k == 0 and near(p, look, side) then cap = math.min(cap, math.max(0, p.y - (look.top_band or look.band_w) - 2)) end
+    end
+    return cap
 end
 
 return M

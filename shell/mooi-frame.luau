@@ -128,6 +128,7 @@ end
 
 -- ── Where the bar's pieces are (bar-geo.json, written by shell/bar.luau), laid out by lib/chassis ──
 local geo_doc = nil
+local announced = false
 local function place()
     local look = chassis.look(settings)
     if type(geo_doc) == "table" and tonumber(geo_doc.screen) then look.screen_w = tonumber(geo_doc.screen) end
@@ -138,13 +139,26 @@ local function place()
             fact["tx" .. i], fact["ty" .. i], fact["tw" .. i], fact["th" .. i] = p.x, p.y, p.w, p.h
             fact["pr" .. i], fact["pk" .. i] = p.r, p.k
         else
+            -- every value of an unused slot: a zero-size box that kept its blend still pulled a bulge
+            -- out of a neighbour (review M1)
             fact["tw" .. i], fact["th" .. i] = 0, 0
+            fact["pr" .. i] = 0
+            fact["pk" .. i] = 0
         end
     end
     fact.covL = chassis.covers(pieces, look, "left")
     fact.covR = chassis.covers(pieces, look, "right")
     fact.pfoot = chassis.foot(look)
     fact.troom = look.top_room
+    fact.btop = look.top_band
+    fact.capL = chassis.corner_cap(pieces, look, "left")
+    fact.capR = chassis.corner_cap(pieces, look, "right")
+    -- the bar hides its own plates only once the pieces are placed (review I3): a frame that started but
+    -- never drew must not leave the bar bare
+    if type(geo_doc) == "table" and not announced then
+        announced = true
+        run("pleamar", { "--say", "mooi", "emit chassis_ready" })
+    end
 end
 local function geo()
     local g = read(GEO, "json")

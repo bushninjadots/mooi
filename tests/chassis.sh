@@ -23,7 +23,7 @@ restore() {
     rm -rf "$t"
 }
 trap 'restore' EXIT
-trap 'exit 130' INT TERM
+trap 'exit 130' INT TERM HUP   # closing the terminal restores too (review)
 playerctl play >/dev/null 2>&1
 
 fail=0; n=0

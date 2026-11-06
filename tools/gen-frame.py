@@ -72,12 +72,12 @@ def wave_lets(ind):
     out += [
         f"{ind}// where each corner's round starts on the top (or foot) and on the side: in two steps, as the",
         f"{ind}// moving side shifts where the top's edge is met; a corner a piece of the bar sits in turns at its foot",
-        f"{ind}let yTL0 = if(covL, foot, bt + {end_wave('bs + frr', 'wtt')})",
-        f"{ind}let xTL = bs + {side_wave('yTL0 + frr')}",
-        f"{ind}let yTL = if(covL, foot, bt + {end_wave('xTL + frr', 'wtt')})",
-        f"{ind}let yTR0 = if(covR, foot, bt + {end_wave('W - bs - frr', 'wtt')})",
-        f"{ind}let xTR = W - bs - {side_wave('yTR0 + frr')}",
-        f"{ind}let yTR = if(covR, foot, bt + {end_wave('xTR - frr', 'wtt')})",
+        f"{ind}let yTL0 = if(covL, foot, bt + {end_wave('bs + frl', 'wtt')})",
+        f"{ind}let xTL = bs + {side_wave('yTL0 + frl')}",
+        f"{ind}let yTL = if(covL, foot, bt + {end_wave('xTL + frl', 'wtt')})",
+        f"{ind}let yTR0 = if(covR, foot, bt + {end_wave('W - bs - frq', 'wtt')})",
+        f"{ind}let xTR = W - bs - {side_wave('yTR0 + frq')}",
+        f"{ind}let yTR = if(covR, foot, bt + {end_wave('xTR - frq', 'wtt')})",
         f"{ind}let yBL0 = H - bb - {end_wave('bs + frr')}",
         f"{ind}let xBL = bs + {side_wave('yBL0 - frr')}",
         f"{ind}let yBL = H - bb - {end_wave('xBL + frr')}",
@@ -131,8 +131,8 @@ EDGES = {
 }
 
 CORNERS = {
-    "tl": "path { move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }",
-    "tr": "path { move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }",
+    "tl": "path { move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }",
+    "tr": "path { move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }",
     "bl": "path { move -40, H + 40; line xBL + frr, H + 40; line xBL + frr, yBL; curve xBL, yBL - frr via xBL, yBL; line -40, yBL - frr; close }",
     "br": "path { move W + 40, H + 40; line xBR - frr, H + 40; line xBR - frr, yBR; curve xBR, yBR - frr via xBR, yBR; line W + 40, yBR - frr; close }",
 }

@@ -2167,8 +2167,9 @@ function frame_sync()
         if frame_tries < 5 then after(1000 * (frame_tries + 1), frame_sync) end
     end, { errors = true })
     frame_win = mine
-    if mine then fact.chassis_up = true end
 end
+-- The frame says it has drawn the pieces (review I3); only then does the bar hide its own plates.
+on("chassis_ready", function() if frame_win then fact.chassis_up = true end end)
 -- At once: while the frame is on, the bar leaves its plates to the frame (D127), so until the frame
 -- is up the bar's pieces stand on nothing. The notch and BMO follow soon after, one at a time, so
 -- the programs do not all start together.

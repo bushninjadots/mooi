@@ -323,8 +323,10 @@ scene Frame {
     let H = frame_l.height + 288                               // the sides stop short of the top (160) and the foot (128) strips
     let bs = frame_band                                        // the sides
     let bb = frame_band                                        // the foot
-    let bt = frame_band                                        // the top
+    let bt = min(frame_band, btop)                             // the top (thinner above floating plates: lib/chassis top_band)
     let frr = clamp(st_frame_r, 0, 40)                         // the inner corners
+    let frl = min(frr, capL)                                   // the top-left round, kept off a plate there
+    let frq = min(frr, capR)                                   // the top-right
     let reach = frame_reach * 1.6
     // no band, nothing to swell: a body ignores `show` on its shapes, so a hidden band of zero width
     // still drew the music as a stray line across the top (found 2026-11-06)
@@ -345,6 +347,9 @@ scene Frame {
     fact covR = false
     fact pfoot = 32
     fact troom = 999                // how far the top may swell (lib/chassis: top_room)
+    fact btop = 999                 // the top band's thickness cap (lib/chassis: top_band)
+    fact capL = 999                 // the top corners' largest round near a floating plate (lib/chassis: corner_cap)
+    fact capR = 999
     let foot = pfoot
 
     // the place's body as it grows (the same formula as ui/island.plm's content clip, D152): from the
@@ -858,12 +863,12 @@ scene Frame {
     let ft64 = wtt * (0.6 + 0.24 * sin((W * 1) * 0.515662 - wa) + 0.16 * sin((W * 1) * 1.317803 + wc))
     // where each corner's round starts on the top (or foot) and on the side: in two steps, as the
     // moving side shifts where the top's edge is met; a corner a piece of the bar sits in turns at its foot
-    let yTL0 = if(covL, foot, bt + wtt * (0.6 + 0.24 * sin((bs + frr) * 0.515662 - wa) + 0.16 * sin((bs + frr) * 1.317803 + wc)))
-    let xTL = bs + wl * (0.6 + 0.24 * sin((yTL0 + frr) * 0.630254 + wa) + 0.16 * sin((yTL0 + frr) * 1.546986 - wb))
-    let yTL = if(covL, foot, bt + wtt * (0.6 + 0.24 * sin((xTL + frr) * 0.515662 - wa) + 0.16 * sin((xTL + frr) * 1.317803 + wc)))
-    let yTR0 = if(covR, foot, bt + wtt * (0.6 + 0.24 * sin((W - bs - frr) * 0.515662 - wa) + 0.16 * sin((W - bs - frr) * 1.317803 + wc)))
-    let xTR = W - bs - wl * (0.6 + 0.24 * sin((yTR0 + frr) * 0.630254 + wa) + 0.16 * sin((yTR0 + frr) * 1.546986 - wb))
-    let yTR = if(covR, foot, bt + wtt * (0.6 + 0.24 * sin((xTR - frr) * 0.515662 - wa) + 0.16 * sin((xTR - frr) * 1.317803 + wc)))
+    let yTL0 = if(covL, foot, bt + wtt * (0.6 + 0.24 * sin((bs + frl) * 0.515662 - wa) + 0.16 * sin((bs + frl) * 1.317803 + wc)))
+    let xTL = bs + wl * (0.6 + 0.24 * sin((yTL0 + frl) * 0.630254 + wa) + 0.16 * sin((yTL0 + frl) * 1.546986 - wb))
+    let yTL = if(covL, foot, bt + wtt * (0.6 + 0.24 * sin((xTL + frl) * 0.515662 - wa) + 0.16 * sin((xTL + frl) * 1.317803 + wc)))
+    let yTR0 = if(covR, foot, bt + wtt * (0.6 + 0.24 * sin((W - bs - frq) * 0.515662 - wa) + 0.16 * sin((W - bs - frq) * 1.317803 + wc)))
+    let xTR = W - bs - wl * (0.6 + 0.24 * sin((yTR0 + frq) * 0.630254 + wa) + 0.16 * sin((yTR0 + frq) * 1.546986 - wb))
+    let yTR = if(covR, foot, bt + wtt * (0.6 + 0.24 * sin((xTR - frq) * 0.515662 - wa) + 0.16 * sin((xTR - frq) * 1.317803 + wc)))
     let yBL0 = H - bb - wt * (0.6 + 0.24 * sin((bs + frr) * 0.515662 - wa) + 0.16 * sin((bs + frr) * 1.317803 + wc))
     let xBL = bs + wl * (0.6 + 0.24 * sin((yBL0 - frr) * 0.630254 + wa) + 0.16 * sin((yBL0 - frr) * 1.546986 - wb))
     let yBL = H - bb - wt * (0.6 + 0.24 * sin((xBL + frr) * 0.515662 - wa) + 0.16 * sin((xBL + frr) * 1.317803 + wc))
@@ -919,7 +924,7 @@ scene Frame {
                                line bs + sw10, H * 0.208333
                                line -40, H * 0.208333
                                close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.09375 + 48 and px0 + pw0 > -40 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.09375 + 48 and px1 + pw1 > -40 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.09375 + 48 and px2 + pw2 > -40 - 48 }
@@ -984,7 +989,7 @@ scene Frame {
                                line bs + sw10, H * 0.208333
                                line -40, H * 0.208333
                                close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.1875 + 48 and px0 + pw0 > W * 0.09375 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.1875 + 48 and px1 + pw1 > W * 0.09375 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.1875 + 48 and px2 + pw2 > W * 0.09375 - 48 }
@@ -1399,7 +1404,7 @@ scene Frame {
                                line W - bs - sw10, H * 0.208333
                                line W + 40, H * 0.208333
                                close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.9375 + 48 and px0 + pw0 > W * 0.84375 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.9375 + 48 and px1 + pw1 > W * 0.84375 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.9375 + 48 and px2 + pw2 > W * 0.84375 - 48 }
@@ -1459,7 +1464,7 @@ scene Frame {
                                line W - bs - sw10, H * 0.208333
                                line W + 40, H * 0.208333
                                close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W + 40 + 48 and px0 + pw0 > W * 0.9375 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W + 40 + 48 and px1 + pw1 > W * 0.9375 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W + 40 + 48 and px2 + pw2 > W * 0.9375 - 48 }
@@ -1917,7 +1922,7 @@ scene Frame {
                                line bs + sw15, H * 0.3125
                                line -40, H * 0.3125
                                close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
                     }
                 }
                 group {
@@ -1948,7 +1953,7 @@ scene Frame {
                                line bs + sw21, H * 0.4375
                                line -40, H * 0.4375
                                close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
                     }
                 }
                 group {
@@ -2144,7 +2149,7 @@ scene Frame {
                                line W - bs - sw15, H * 0.3125
                                line W + 40, H * 0.3125
                                close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
                     }
                 }
                 group {
@@ -2175,7 +2180,7 @@ scene Frame {
                                line W - bs - sw21, H * 0.4375
                                line W + 40, H * 0.4375
                                close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
                     }
                 }
                 group {
@@ -2384,7 +2389,7 @@ scene Frame {
                                line bs + sw10, H * 0.208333
                                line -40, H * 0.208333
                                close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.09375 + 48 and px0 + pw0 > -40 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.09375 + 48 and px1 + pw1 > -40 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.09375 + 48 and px2 + pw2 > -40 - 48 }
@@ -2451,7 +2456,7 @@ scene Frame {
                                line bs + sw10, H * 0.208333
                                line -40, H * 0.208333
                                close }
-                        path { show: band_on; move -40, -40; line xTL + frr, -40; line xTL + frr, yTL; curve xTL, yTL + frr via xTL, yTL; line -40, yTL + frr; close }
+                        path { show: band_on; move -40, -40; line xTL + frl, -40; line xTL + frl, yTL; curve xTL, yTL + frl via xTL, yTL; line -40, yTL + frl; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.1875 + 48 and px0 + pw0 > W * 0.09375 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.1875 + 48 and px1 + pw1 > W * 0.09375 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.1875 + 48 and px2 + pw2 > W * 0.09375 - 48 }
@@ -2882,7 +2887,7 @@ scene Frame {
                                line W - bs - sw10, H * 0.208333
                                line W + 40, H * 0.208333
                                close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W * 0.9375 + 48 and px0 + pw0 > W * 0.84375 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W * 0.9375 + 48 and px1 + pw1 > W * 0.84375 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W * 0.9375 + 48 and px2 + pw2 > W * 0.84375 - 48 }
@@ -2944,7 +2949,7 @@ scene Frame {
                                line W - bs - sw10, H * 0.208333
                                line W + 40, H * 0.208333
                                close }
-                        path { show: band_on; move W + 40, -40; line xTR - frr, -40; line xTR - frr, yTR; curve xTR, yTR + frr via xTR, yTR; line W + 40, yTR + frr; close }
+                        path { show: band_on; move W + 40, -40; line xTR - frq, -40; line xTR - frq, yTR; curve xTR, yTR + frq via xTR, yTR; line W + 40, yTR + frq; close }
                         box { from: px0, py0; size: pw0, ph0; corner: pr0; blend: pk0; show: pw0 > 0 and px0 < W + 40 + 48 and px0 + pw0 > W * 0.9375 - 48 }
                         box { from: px1, py1; size: pw1, ph1; corner: pr1; blend: pk1; show: pw1 > 0 and px1 < W + 40 + 48 and px1 + pw1 > W * 0.9375 - 48 }
                         box { from: px2, py2; size: pw2, ph2; corner: pr2; blend: pk2; show: pw2 > 0 and px2 < W + 40 + 48 and px2 + pw2 > W * 0.9375 - 48 }
