@@ -4798,3 +4798,10 @@ G4); the summaries follow the commit messages._
 - When Claude cannot answer, a free model answers only if `claude.free_fallback` is on (off by
   default), with opencode's tools denied and an empty working folder.
 - See docs/AUDIT-2026-11-06.md, fourth pass.
+
+## D164 · 2026-11-06 · The bar as Shape × Material × Density
+- The bar becomes three free choices over one core: Shape (full, notch, islands, and a new dynamic
+  Pill with satellites or split), Material (Ferrolume, Liquid, Cartridge) and Density (minimal,
+  balanced, rich). Every current setting is kept and applies to every material.
+- One chassis shape drawn by mooi-frame in every mode: no humps, one bottom edge, swell on one outline.
+- Built in stages, Ferrolume first. Spec: docs/superpowers/specs/2026-11-06-bar-redesign-design.md.
