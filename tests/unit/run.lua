@@ -4408,5 +4408,46 @@ do
     end)
 end
 
+section("chassis (D164 stage 1)")
+do
+    local chassis = require("lib/chassis")
+    local function L(t) local l = { mode = "islands", band = true, top = 8, mod_h = 24, radius = 7, n_pad = 10, n_r = 11, n_b = 33,
+                                    screen_w = 1920, band_w = 2, frame_r = 14, reach = 16 }
+                        for k, v in pairs(t or {}) do l[k] = v end; return l end
+    local geo = { islands = { { x = 12, w = 182 }, { x = 0, w = 0 }, { x = 637, w = 280 } },
+                  left = { x = 12, w = 448 }, center = { x = 637, w = 646 }, right = { x = 1492, w = 416 }, panel = { x = 12, w = 1896 } }
+    test("chassis: islands float as plates, one per visible module, never up into the band", function()
+        local p = chassis.pieces(geo, L())
+        eq(#p, 2, "the 0-wide module has no piece")
+        eq(p[1].x, 9); eq(p[1].w, 188); eq(p[1].y, 8); eq(p[1].h, 24); eq(p[1].k, 0, "no blend: crisp plates")
+        for _, q in ipairs(p) do assert(q.y >= 8, "no piece reaches above the row: no hump") end
+    end)
+    test("chassis: one foot whatever the frame does", function()
+        for _, band in ipairs({ true, false }) do
+            local p = chassis.pieces(geo, L({ band = band }))
+            eq(p[1].y + p[1].h, 32, "islands foot, band " .. tostring(band))
+            local f = chassis.pieces(geo, L({ mode = "full", band = band }))
+            eq(f[1].y + f[1].h, 32, "full foot, band " .. tostring(band))
+        end
+        eq(chassis.foot(L()), 32); eq(chassis.foot(L({ mode = "notch" })), 33)
+    end)
+    test("chassis: offset and rail move the row and its foot together", function()
+        local s = config.validate({ bar = { offset = 6, rail = true, height = 30 } })
+        local l = chassis.look(s)
+        eq(l.top, 21); eq(chassis.foot(l), 51)
+    end)
+    test("chassis: notch pieces hang from the top, full joins the band", function()
+        local n = chassis.pieces(geo, L({ mode = "notch" }))
+        eq(#n, 3); eq(n[1].y, -40); eq(n[1].x, 2); eq(n[1].w, 468); eq(n[1].y + n[1].h, 33); eq(n[1].k, 12)
+        eq(chassis.pieces(geo, L({ mode = "full" }))[1].y, -40)
+    end)
+    test("chassis: an island at the screen's edge is covered by the corner", function()
+        local edge = { islands = { { x = 4, w = 40 }, { x = 1880, w = 36 } } }
+        local p = chassis.pieces(edge, L())
+        eq(chassis.covers(p, L(), "left"), true); eq(chassis.covers(p, L(), "right"), true)
+        eq(chassis.covers(chassis.pieces(geo, L()), L(), "right"), false)
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
