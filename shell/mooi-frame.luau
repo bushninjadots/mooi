@@ -144,6 +144,7 @@ local function place()
     fact.covL = chassis.covers(pieces, look, "left")
     fact.covR = chassis.covers(pieces, look, "right")
     fact.pfoot = chassis.foot(look)
+    fact.troom = look.top_room
 end
 local function geo()
     local g = read(GEO, "json")

@@ -56,9 +56,10 @@ def side_wave(y):
     pleamar's sin takes degrees)."""
     return f"wl * (0.6 + 0.24 * sin(({y}) * 0.630254 + wa) + 0.16 * sin(({y}) * 1.546986 - wb))"
 
-def end_wave(x):
-    """How far the top's and the foot's inner edge is pushed in at x (sin(x·0.009 − t), sin(x·0.023 + 1.2t))."""
-    return f"wt * (0.6 + 0.24 * sin(({x}) * 0.515662 - wa) + 0.16 * sin(({x}) * 1.317803 + wc))"
+def end_wave(x, amp="wt"):
+    """How far the top's and the foot's inner edge is pushed in at x (sin(x·0.009 − t), sin(x·0.023 + 1.2t)).
+    `amp`: wt for the foot, wtt (capped by the room above floating plates) for the top."""
+    return f"{amp} * (0.6 + 0.24 * sin(({x}) * 0.515662 - wa) + 0.16 * sin(({x}) * 1.317803 + wc))"
 
 def num(v):
     return f"{v:.6f}".rstrip("0").rstrip(".") or "0"
@@ -67,15 +68,16 @@ def wave_lets(ind):
     out = [f"{ind}// the moving edges, sampled: sw down the sides (left and right alike), fw along the top and foot"]
     out += [f"{ind}let sw{k} = {side_wave(f'H * {num(k / NS)}')}" for k in range(NS + 1)]
     out += [f"{ind}let fw{k} = {end_wave(f'W * {num(k / NF)}')}" for k in range(NF + 1)]
+    out += [f"{ind}let ft{k} = {end_wave(f'W * {num(k / NF)}', 'wtt')}" for k in range(NF + 1)]
     out += [
         f"{ind}// where each corner's round starts on the top (or foot) and on the side: in two steps, as the",
         f"{ind}// moving side shifts where the top's edge is met; a corner a piece of the bar sits in turns at its foot",
-        f"{ind}let yTL0 = if(covL, foot, bt + {end_wave('bs + frr')})",
+        f"{ind}let yTL0 = if(covL, foot, bt + {end_wave('bs + frr', 'wtt')})",
         f"{ind}let xTL = bs + {side_wave('yTL0 + frr')}",
-        f"{ind}let yTL = if(covL, foot, bt + {end_wave('xTL + frr')})",
-        f"{ind}let yTR0 = if(covR, foot, bt + {end_wave('W - bs - frr')})",
+        f"{ind}let yTL = if(covL, foot, bt + {end_wave('xTL + frr', 'wtt')})",
+        f"{ind}let yTR0 = if(covR, foot, bt + {end_wave('W - bs - frr', 'wtt')})",
         f"{ind}let xTR = W - bs - {side_wave('yTR0 + frr')}",
-        f"{ind}let yTR = if(covR, foot, bt + {end_wave('xTR - frr')})",
+        f"{ind}let yTR = if(covR, foot, bt + {end_wave('xTR - frr', 'wtt')})",
         f"{ind}let yBL0 = H - bb - {end_wave('bs + frr')}",
         f"{ind}let xBL = bs + {side_wave('yBL0 - frr')}",
         f"{ind}let yBL = H - bb - {end_wave('xBL + frr')}",
@@ -124,7 +126,7 @@ def xy(p):
 EDGES = {
     "left": Edge(NS, "sw", lambda w, f: f"bs + {w}, H * {f}", lambda p: f"-40, {xy(p)[1]}"),
     "right": Edge(NS, "sw", lambda w, f: f"W - bs - {w}, H * {f}", lambda p: f"W + 40, {xy(p)[1]}"),
-    "top": Edge(NF, "fw", lambda w, f: f"W * {f}, bt + {w}", lambda p: f"{xy(p)[0]}, -40"),
+    "top": Edge(NF, "ft", lambda w, f: f"W * {f}, bt + {w}", lambda p: f"{xy(p)[0]}, -40"),
     "foot": Edge(NF, "fw", lambda w, f: f"W * {f}, H - bb - {w}", lambda p: f"{xy(p)[0]}, H + 40"),
 }
 
@@ -265,8 +267,10 @@ def side_tiles(ind, which, place=False):
 # The edge's glow: neon's own, and the music's on top of it. The music once drew a second, 1.4 px
 # "etched light" 1.5 px inside the moving edge (iNiR's); beside an outline of another width it read as
 # two lines of two thicknesses wobbling against each other, so the music now lights the one edge.
-GLOW = ("8, (if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0)"
-        " + if(st_frame_edge < 1.5, 0.7 * clamp(flev * 2, 0, 1), 0)) * st_glow, fl.phos")
+# Only a neon edge glows, and only it brightens with the music: on a plain line, a music glow under a
+# thin edge was brighter than the edge itself and read as a second, thicker line (tests/chassis.sh).
+GLOW = ("8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8 + 0.35 * clamp(flev * 2, 0, 1), 0)"
+        " * st_glow, fl.phos")
 
 STRIPS = [
     # name, size, anchor, margin, move, tiles

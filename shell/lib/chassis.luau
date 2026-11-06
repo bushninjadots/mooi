@@ -18,9 +18,14 @@ function M.look(s)
     return {
         mode = b.mode, band = band, top = top, mod_h = b.height, radius = b.radius,
         n_pad = M.NOTCH_PAD, n_r = b.radius + 4,
-        n_b = band and (top + b.height + 1) or (top + b.height + 6),
+        -- the notch's foot: the windows' reserve line (st_res) with the band or without, so toggling the
+        -- frame does not move it (it was 5 px lower without the band before D164)
+        n_b = top + b.height + 1,
         offset = b.offset, screen_w = 1920,
         band_w = band and f.band or 0, frame_r = f.radius, reach = f.reach * 1.6,
+        -- how far the band's top edge may swell: down to 3 px above floating plates (islands), or
+        -- freely where the pieces join the band (full, notch)
+        top_room = (b.mode == "islands") and math.max(0, top - (band and f.band or 0) - 3) or 999,
     }
 end
 

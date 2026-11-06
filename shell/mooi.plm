@@ -1944,7 +1944,7 @@ scene Mooi {
     let n_pad = 10                               // the piece's room round its modules
     // its foot: with the screen frame on, it ends on the frame's own inner edge, so the bar and the
     // frame are one line and not a strip floating above a frame
-    let n_b = if(frame_on, st_res, fl.top + fl.mod_h + 6)
+    let n_b = st_res                     // one notch foot, frame or not (D164, lib/chassis)
     let n_r = st_radius + 4                      // the foot's corners
     let n_f = 10                                 // the fillets where it leaves the top edge
     // the piece's own border colour, and so the colour of the whole silhouette: the rim's caps and
