@@ -4570,6 +4570,20 @@ do
         assert(plm:find("// plate 0 outline", 1, true),
             "a plate with no fill still draws its outline (a body's opacity takes its border with it)")
     end)
+    test("chassis: the Pill and its moons, floating without the frame and hanging from it", function()
+        local geo = { islands = { { x = 12, w = 100 } }, pill = { x = 860, w = 200 }, moons = { { x = 828, w = 24 } } }
+        local off = chassis.pieces(geo, L({ mode = "pill", band = false }))
+        eq(#off, 3, "a side island, the Pill, a moon")
+        local p, m = off[2], off[3]
+        eq(p.x, 860); eq(p.w, 200); eq(p.y, 8); eq(p.h, 24); eq(p.r, 12, "a capsule: half its height"); eq(p.j, false)
+        eq(m.w, 24); eq(m.h, 24); eq(m.r, 12, "a moon is a circle"); eq(m.y, 8)
+        local on = chassis.pieces(geo, L({ mode = "pill", band = true }))
+        local q, n = on[2], on[3]
+        eq(q.y, -40); eq(q.y + q.h, 32, "one foot"); eq(q.j, true, "hangs from the band")
+        eq(n.j, true, "the moon pinches off the band"); eq(n.y + n.h, 30, "a little shorter than the Pill")
+        local alone = chassis.pieces({ islands = {}, pill = { x = 860, w = 200 }, moons = {} }, L({ mode = "pill", band = false }))
+        eq(#alone, 1, "Pill alone: no side islands")
+    end)
     test("chassis: islands float as plates, one per visible module, never up into the band", function()
         local p = chassis.pieces(geo, L())
         eq(#p, 2, "the 0-wide module has no piece")
