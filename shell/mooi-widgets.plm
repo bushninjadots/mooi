@@ -16,7 +16,7 @@ import "ui/wextra.plm" as wx
 scene Widgets {
     permissions {
         run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date", "sensors", "ps", "find"
-        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery", "apps", "apps.launch", "window", "notification_history"
+        services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery", "apps", "apps.launch", "window"
     }
 
 

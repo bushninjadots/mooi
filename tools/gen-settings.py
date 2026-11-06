@@ -115,6 +115,10 @@ SETTERS = [
     "claude.free_fallback",
     # D166: how much each module shows, and whether islands attach to the frame. Appended, so no code moved.
     "bar.density", "frame.islands",
+    # D168: the Pill — with the side groups, two at once, moons at most. Appended, so no code moved.
+    "pill.sides", "pill.multi", "pill.moons",
+    # D169: the Pill's face and hiding when idle. Appended, so no code moved.
+    "pill.face", "pill.autohide",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -174,8 +178,8 @@ SECTIONS = [
         ("card", "Bar"),
         ("toggle", "Morph", "Islands grow out of the bar as one body with it", "island.morph", "sv_island_morph"),
 
-        ("choice", "Layout", "Islands, one bar, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
-        ("choice", "Style", "Instrument, glass, floating, hairline or minimal", "bar.style", "sv_bar_style", STYLES),
+        ("choice", "Shape", "Islands, one bar across the screen, pieces hanging from the top, or the Pill", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch", "Pill"]),
+        ("choice", "Style", "Machined plates, see-through, lifted, a thin line round each, or no plates at all", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHANGED ON THE BAR PAGE"),
         ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
         ("button", "The bar and the frame", "Shape, style, frame, every module's place and look", "Open Bar & Frame", "set_pick", "Bar & Frame"),
@@ -231,11 +235,10 @@ SECTIONS = [
     ]),
     ("Bar & Frame", "Bar & Frame", "Everything about the bar and the frame round the screen: four choices here, every detail folded below", "BAR", [
         ("card", "Choose"),
-        ("choice", "Shape", "Islands, one bar across the screen, or pieces hanging from the top", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch"]),
-        ("choice", "Style", "A starting point for every finer setting below: change any of them and it reads Custom", "bar.style", "sv_bar_style", STYLES),
+        ("choice", "Shape", "Islands, one bar across the screen, pieces hanging from the top, or the Pill", "bar.mode", "sv_bar_mode", ["Islands", "Full bar", "Notch", "Pill"]),
+        ("choice", "Style", "Machined plates, see-through, lifted, a thin line round each, or no plates at all", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHOOSE A STYLE TO START AGAIN"),
         ("toggle", "Screen frame", "A band round the screen that the bar is part of; it can move with the music", "frame.on", "frame_on"),
-        ("choice", "Density", "How much each module shows: just the essentials, the usual, or everything (applied as modules learn it)", "bar.density", "sv_bar_density", ["Minimal", "Balanced", "Rich"]),
         ("fold", "Edges & outline", "OUTLINE · COLOUR · CORNERS · ROUNDING · DETAILS"),
         ("card", "Edges"),
         ("choice", "Outline", "None, corner marks, or a line", "bar.edge", "sv_bar_edge", ["None", "Corners", "Thin", "Regular", "Bold"]),
@@ -244,7 +247,7 @@ SECTIONS = [
         ("toggle", "Details", "Cuts in the outline, ticks, the comet and the seconds", "bar.accents", "bar_accents"),
         ("fold", "Surface & depth", "MATERIAL · TRANSPARENCY · FROST · SHADOW · HOVER"),
         ("card", "Surface"),
-        ("choice", "Material", "What the bar is made of", "bar.surface", "bar_surface", ["Solid", "Glass", "Frosted", "None", "Machined"]),
+        ("choice", "Surface", "What the plates are: solid, glass, frosted, none, or machined metal", "bar.surface", "bar_surface", ["Solid", "Glass", "Frosted", "None", "Machined"]),
         ("slider", "Transparency", "How much of the desktop shows through", "bar.opacity", 20, 100, "{100 - (sv_bar_opacity + 20), 0}%", "bar_surface < 2.5"),
         ("slider", "Frosting", "How frosted the glass is", "bar.frost", 0, 100, "{sv_bar_frost, 0}%", "bar_surface > 0.5 and bar_surface < 1.5"),
         ("slider", "Tint", "How much the glass darkens what is behind", "bar.smoke", 0, 80, "{sv_bar_smoke, 0}%", "bar_surface > 0.5 and bar_surface < 2.5"),
@@ -292,7 +295,14 @@ SECTIONS = [
     
         ("fold", "The Pill", "A CAPSULE THAT BECOMES WHAT IS HAPPENING"),
         ("card", "The Pill"),
-        ("note", "true", "COMES WITH THE PILL: THE NEXT STAGE OF THE BAR"),
+        ("note", "sv_bar_mode != 3", "CHOOSE SHAPE → PILL ABOVE TO SEE IT"),
+        ("choice", "With the side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
+        ("choice", "When nothing is happening", "The time and workspace, BMO's face (a press pokes him), or the Nexus button", "pill.face", "sv_pill_face", ["Time", "BMO", "Nexus"]),
+        ("toggle", "Hide when idle", "Tucks away to a sliver until you point at it or something happens", "pill.autohide", "sv_pill_autohide"),
+        ("choice", "Two at once", "Moons beside the Pill, the Pill split in two, or pads on circuit traces", "pill.multi", "sv_pill_multi", ["Satellites", "Split", "Nodes"]),
+        ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
+        ("card", "What may take it"),
+        ("pillorder",),
     ]),
     ("Windows", "Windows", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "DESKTOP", [
         ("card", "Styling"),
@@ -763,6 +773,19 @@ def row_lines(r, y, first, reverted):
         lines.append(f'SRow({y}, "{title}", "{desc}", true, "", 400, {rule})')
         lines.append(f'SButton({XR - 180}, {y + 15}, 180, "{label}", {ev}, {n})')
         return lines, 60
+    if k == "pillorder":
+        # D168: the activities in their order, each with on/off and up/down (mooi-settings.luau, lib/pill)
+        h = 0
+        for n in range(6):
+            yy = y + h
+            lines.append(f'text pord{n} {{ at: {TX}, {yy + 18}; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: if(pon{n}, fl.engrave, fl.steel_500) }}')
+            lines.append(f'text pdesc{n} {{ at: {TX + 160}, {yy + 18}; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 420; lines: 1 }}')
+            lines.append(f'group {{ show: n_pill > {n}; SButton({XR - 236}, {yy + 3}, 92, pick(pon{n}, "Off", "On"), pill_act, {n * 4}, pon{n}) }}')
+            lines.append(f'SButton({XR - 136}, {yy + 3}, 64, "▲", pill_act, {n * 4 + 1})')
+            lines.append(f'SButton({XR - 66}, {yy + 3}, 64, "▼", pill_act, {n * 4 + 2})')
+            h += 40
+        lines.append(f'text "THE TIME AND WORKSPACES SHOW WHEN NOTHING ELSE IS HAPPENING" {{ at: {TX}, {y + h + 14}; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }}')
+        return lines, h + 30
     if k == "keys":
         h = 0
         for n, (key, title, desc) in enumerate(KEYS):
@@ -1019,6 +1042,9 @@ def section(i, rows, indent, page):
             resets.append("theme.scheme")
         if r[0] == "keys":
             resets.append("@keys")
+        if r[0] == "pillorder":
+            INDEX.append(("What may take it", "The Pill's activities in order: battery, recording, notifications, music, volume and brightness", i, page, y) + where(y))
+            resets += ["pill.order", "pill.off"]
         if card is not None:
             card[3].append((h, rwhen))
         # a list's height is an expression; its rows' nominal places assume a short one (the
@@ -1268,6 +1294,26 @@ def main():
     fact lay_fi = 0           // its outline
     fact lay_grouped = false
     event lay_look ->         // to the logic (D166): the selected module's look, key * 16 + value (lib/modlook)
+    event pill_act ->         // to the logic (D168): row * 4 + 0 on/off · 1 up · 2 down (lib/pill.reorder)
+    fact n_pill = 5
+    fact pon0 = true
+    fact pon1 = true
+    fact pon2 = true
+    fact pon3 = true
+    fact pon4 = true
+    fact pon5 = true
+    text pord0 = ""
+    text pord1 = ""
+    text pord2 = ""
+    text pord3 = ""
+    text pord4 = ""
+    text pord5 = ""
+    text pdesc0 = ""
+    text pdesc1 = ""
+    text pdesc2 = ""
+    text pdesc3 = ""
+    text pdesc4 = ""
+    text pdesc5 = ""
     event open_module ->      // from the bar (D166, its edit mode's Look…): select that module (barlayout.ORDER index) on Bar & Frame
     fact lk_colour = 0        // its look's positions in lib/modlook's lists (-1: none, a custom colour)
     fact lk_fill = 0

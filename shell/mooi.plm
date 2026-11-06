@@ -5,6 +5,7 @@ import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
+import "ui/pill.plm"
 import "ui/stash.plm"
 import "ui/edgetab.plm" as edge
 
@@ -22,7 +23,7 @@ import "ui/edgetab.plm" as edge
 scene Mooi {
     permissions {
         run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
-        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*", "notification_history"
+        services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*"
     }
 
     // ── The island slot ───────────────────────────────────────
@@ -336,7 +337,7 @@ scene Mooi {
     fact ed_drag = -1           // the module being carried (its index), or −1
     fact ed_x = 0               // where the pointer is while it is carried
     fact ed_y = 0
-    model shelf_items max 24 { i: number; name: text }
+    model shelf_items max 40 { i: number; name: text }
     model edit_gaps max 24 { x: number; w: number; own: number; fixed: bool; n: number }   // spacers and gaps (shell/bar.luau)
     // The layout (shell/bar.luau, lib/barlayout): per module its left edge (−9999: not
     // placed) and width, whether it is shown (`m_`), the frame it wears (`f_`, `inherit`
@@ -1115,6 +1116,70 @@ scene Mooi {
     event open_wallpaper ->    // to the logic: open or close the wallpaper picker, mooi-walls (`mooi walls`, D145)
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event feed_want ->         // from the notch or the Nexus: a music panel is open and wants the feed (D118)
+    // D168: the Pill (shell/bar.luau feeds it from lib/pill; shell/ui/pill.plm draws it)
+    fact pill_on = false
+    fact pill_x = 860
+    fact pill_w = 160
+    fact pill_kind = 0           // 0 idle · 1 music · 2 osd · 3 notify · 4 record · 5 battery
+    fact pill_glyph = 0          // 0 idle · 1 music · 2 vol · 3 bri · 4 notify · 5 record · 6 low · 7 charging
+    fact pill_val = 0
+    fact pill_two = false
+    text pill_t1 = ""
+    text pill_t2 = ""
+    fact pill_split = false
+    fact pill_kind2 = 0
+    fact pill_glyph2 = 0
+    fact pill_val2 = 0
+    fact pill_w1 = 0
+    text pill_s1 = ""
+    fact moon_n = 0
+    fact moon_x0 = 0
+    fact moon_x1 = 0
+    fact moon_x2 = 0
+    fact moon_x3 = 0
+    fact moon_k0 = -1
+    fact moon_k1 = -1
+    fact moon_k2 = -1
+    fact moon_k3 = -1
+    event pill_press ->        // to the logic (D168): the Pill pressed
+    event pill_scroll ->
+    event pill_moon ->
+    // D169: the Pill's face (0 time · 1 BMO · 2 Nexus), hidden when idle, nodes; pointed at
+    fact pill_face = 0
+    fact pill_hidden = false
+    fact pill_nodes = false
+    event pill_hover ->        // to the logic: the hidden Pill pointed at
+    // BMO's face in the Pill: one row of bmo/brain's FACES, set by the logic; the scene glides to it
+    fact pb_ew = 8
+    fact pb_eh = 14
+    fact pb_lid = 0
+    fact pb_brow = 0
+    fact pb_bron = 0
+    fact pb_sql = 0
+    fact pb_sqr = 0
+    fact pb_mc = 0.7
+    fact pb_mo = 0.2
+    fact pb_mw = 24
+    fact pb_bl = 0
+    prop pbe_h = 14 ~m.isl_out
+    follow pbe_h = pb_eh
+    prop pbe_w = 8 ~m.isl_out
+    follow pbe_w = pb_ew
+    prop pbm_c = 0.7 ~m.isl_out
+    follow pbm_c = pb_mc
+    prop pbm_o = 0.2 ~m.isl_out
+    follow pbm_o = pb_mo
+    prop pbm_w = 24 ~m.isl_out
+    follow pbm_w = pb_mw
+    prop pb_lidf = 0 ~m.isl_out
+    follow pb_lidf = pb_lid
+    // his eyes on the pointer while it is on the bar (Pleamar's look: a surface hears the pointer
+    // only over itself), and his blink
+    prop pb_lx = 0
+    prop pb_ly = 0
+    look pb_lx, pb_ly at pill_x + 32, fl.cy reach 5, 2 within 700 rest 0, 0
+    prop pb_open = 1
+    blink pb_open every 2.2s..7s for 170ms
     event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal
@@ -3151,6 +3216,10 @@ scene Mooi {
             glow: 8, (70%) * st_glow, if(ed_merge, fl.ember, fl.phos)
             box { at: ed_x, ed_y + 2; size: 132, 34; corner: 7; color: if(ed_y > st_res + 4, fl.muted, if(ed_merge, fl.ember_fill, fl.phos_fill)); opacity: 0.95 }
         }
+        // The Pill (D168): its content over the body the frame draws, in Pill mode only (outside the
+        // generated edit block, which tools/gen-settings.py rewrites).
+        PillBody()
+
         // <gen:edit>
     group {
         show: bar_edit and p_workspaces

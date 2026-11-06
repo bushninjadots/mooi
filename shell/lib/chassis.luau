@@ -18,8 +18,10 @@ function M.look(s)
     local band_w = band and f.band or 0
     -- D166: with the frame on, islands may attach to it (frame.islands = attach): the band comes down to
     -- the islands' top and each hangs from it, so the gaps between them are recesses in one body, not tabs
-    local attach = band and b.mode == "islands" and f.islands == "attach"
-    local floating = b.mode == "islands" and not attach
+    -- Pill mode's side groups are islands too (D168)
+    local isl = b.mode == "islands" or b.mode == "pill"
+    local attach = band and isl and f.islands == "attach"
+    local floating = isl and not attach
     -- Floating plates keep AIR px between them and the band: a band thicker than the room above the
     -- row is held thinner along the top (it fused with every plate otherwise; review I2).
     local top_band = attach and top or (floating and math.min(band_w, math.max(0, top - M.AIR)) or band_w)
@@ -90,6 +92,29 @@ function M.pieces(geo, look, looks)
                         local p = out[#out]
                         p.r, p.fill, p.outline, p.glow, p.colour = lk.r or p.r, lk.fill, lk.outline, lk.glow, lk.colour
                     end
+                end
+            end
+        end
+        -- the Pill (D168): a capsule at the centre, and its moons beside it — hanging from the band with
+        -- the frame on (joined, a small fillet), floating as a capsule and circles without it
+        if look.mode == "pill" then
+            local px, pw = span(geo.pill)
+            local slim = type(geo.pill) == "table" and geo.pill.slim == true
+            if pw > 0 then
+                -- D169: hidden when idle, a 6 px sliver — or, with the band, a short tab hanging from it
+                if slim and look.band then add(px, -40, pw, 40 + (look.top_band or look.band_w or 0) + 6, 3, 8, true)
+                elseif slim then add(px, look.top, pw, 6, 3, 0, false)
+                elseif look.band then add(px, -40, pw, foot + 40, look.mod_h / 2, 8, true)
+                else add(px, look.top, pw, look.mod_h, look.mod_h / 2, 0, false) end
+            end
+            -- D169: nodes are square pads (r 5) on a circuit trace; satellites are round moons
+            local nodes = geo.nodes == true
+            for _, m in ipairs(type(geo.moons) == "table" and geo.moons or {}) do
+                local mx, mw = span(m)
+                if mw > 0 then
+                    local r = nodes and 5 or mw / 2
+                    if look.band then add(mx, -40, mw, foot + 40 - 2, r, 10, true)
+                    else add(mx, look.top + (look.mod_h - mw) / 2, mw, mw, r, 0, false) end
                 end
             end
         end

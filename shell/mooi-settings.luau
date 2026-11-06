@@ -47,7 +47,26 @@ positions(config.defaults(), "df_")
 local layout                 -- the Layout page (below), rebuilt with every change
 local save                   -- writes settings.json as a read-merge-write (below)
 local show_colour, show_power -- the custom colour's sliders and the Power page (below)
+-- D168: the Pill's activities in their order, for the "What may take it" rows
+local pillmod = require("lib/pill")
+local PILL_NAME = { battery = "Battery", record = "Recording", notify = "Notifications", music = "Music", osd = "Volume & brightness", idle = "Time & workspaces" }
+local PILL_DESC = { battery = "Low (15 % and less), or charging just started", record = "While the screen is being recorded",
+    notify = "For six seconds after one arrives", music = "While something plays", osd = "For two seconds after a change",
+    idle = "When nothing else is happening" }
+local function pill_rows(s)
+    local p = type(s.pill) == "table" and s.pill or {}
+    local order = pillmod.reorder(p.order, p.off, -1, "")
+    local off = {}
+    for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
+    for n = 0, 5 do
+        local id = order[n + 1]
+        text["pord" .. n] = id and PILL_NAME[id] or ""
+        text["pdesc" .. n] = id and PILL_DESC[id] or ""
+        fact["pon" .. n] = id ~= nil and not off[id]
+    end
+end
 local function publish(s)
+    pcall(pill_rows, s)
     local P = setters.position
     fact.ws_style = P("bar.workspaces", s.bar.workspaces)
     fact.bar_frame = P("bar.frame", s.bar.frame)
@@ -468,6 +487,17 @@ on("lay_pick", function(v)
     elseif sel and not sel.shelf and sel.side == c.side and sel.i == c.i and sel.j == c.j then sel = nil
     else sel = { side = c.side, i = c.i, j = c.j } end
     layout(settings)
+end)
+-- D168: the Pill's order list — on/off, up, down (lib/pill.reorder keeps idle last and on)
+on("pill_act", function(v)
+    if tostring(sys.ask("env", "MOOI_SAFE") or "") == "1" then return end
+    local n = math.floor(tonumber(v) or -1)
+    if n < 0 then return end
+    local op = ({ [0] = "toggle", [1] = "up", [2] = "down" })[n % 4]
+    if not op then return end
+    settings.pill = type(settings.pill) == "table" and settings.pill or {}
+    settings.pill.order, settings.pill.off = pillmod.reorder(settings.pill.order, settings.pill.off, math.floor(n / 4), op)
+    save()
 end)
 -- D166: "Look…" in the bar's edit mode: this module, selected, on Bar & Frame with Modules open
 on("open_module", function(v)

@@ -54,7 +54,7 @@ height=$(jq -r '.bar.height // 30' "$t/restore.json")
 rail=$(jq -r '.bar.rail // false' "$t/restore.json")
 top=$((off + 8)); [ "$rail" = true ] && top=$((off + 15))
 
-for shape in islands full notch; do
+for shape in islands full notch pill; do   # pill (D168): the side groups as islands, the Pill between
     feet=""
     for edge in none thin regular bold; do
         case $edge in none) fr=none; ow=2 ;; thin) fr=line; ow=1 ;; regular) fr=line; ow=2 ;; bold) fr=line; ow=3 ;; esac
@@ -70,27 +70,42 @@ for shape in islands full notch; do
                 g="$D/bar-geo.json"
                 case $shape in
                     islands) x=$(jq -r '[.islands[] | select(.w > 0)][0] | (.x + .w / 2 | floor)' "$g") ;;
+                    pill) x=$(jq -r '(.pill // .islands[0]) | (.x + .w / 2 | floor)' "$g") ;;   # the Pill is a piece of its own
                     full) x=$(jq -r '.panel | (.x + .w / 4 | floor)' "$g") ;;   # clear of the frame's corner, which swells
                     notch) x=$(jq -r '(.left // .center) | (.x + .w / 2 | floor)' "$g") ;;
                 esac
                 if [ "$shape" = notch ]; then foot=$((off + 6 + height + 1)); else foot=$((top + height)); fi
-                y0=$((foot - 4))
-                vals=$(col "$shot" "$x" "$y0" 14)
+                # The piece's last three rows and the ground two rows below it. The icon (and the value's
+                # baseline) sit higher: a column through the piece's centre read the icon as the brightest
+                # row, so the foot looked three rows too high (2026-11-06). The line lives in these rows.
+                y0=$((foot - 2))
+                vals=$(col "$shot" "$x" "$y0" 3)
+                vals="$vals $(col "$shot" "$x" $((foot + 2)) 1)"
                 bg=$(echo "$vals" | awk '{ print $NF }')
-                # the line's core: rows lit past 35 % of the way from the background to the brightest row
+                # the line's core: rows lit past 35 % of the way from the ground to the brightest row
                 # (a 2 px line off the pixel grid also tints its neighbours; that is antialiasing)
-                lit=$(echo "$vals" | awk -v bg="$bg" '{ m = bg; for (i = 1; i <= NF - 4; i++) if ($i > m) m = $i
-                       c = 0; if (m > bg + 25) for (i = 1; i <= NF - 4; i++) if ($i > bg + 0.35 * (m - bg)) c++; print c }')
-                peak=$(echo "$vals" | awk -v y0="$y0" '{ m = -1; at = -1; for (i = 1; i <= NF - 4; i++) if ($i > m) { m = $i; at = y0 + i - 1 }; print at }')
+                lit=$(echo "$vals" | awk -v bg="$bg" '{ m = bg; for (i = 1; i <= NF - 1; i++) if ($i > m) m = $i
+                       c = 0; if (m > bg + 25) for (i = 1; i <= NF - 1; i++) if ($i > bg + 0.35 * (m - bg)) c++; print c }')
+                peak=$(echo "$vals" | awk -v y0="$y0" '{ m = -1; at = -1; for (i = 1; i <= NF - 1; i++) if ($i > m) { m = $i; at = y0 + i - 1 }; print at }')
                 name="$shape · outline $edge · frame $frame · swell $swell"
                 echo "  ..    $name: foot y=$peak, $lit rows lit"
                 if [ "$edge" = none ] && [ "$shape" = islands ] && [ "$frame" = false ]; then
                     # a line is brighter than both the plate's own fill (inside, 3 rows above the foot) and
                     # the ground below; a lighter glass fill meeting a dark shadow is an edge, not a line
-                    line=$(echo "$vals" | awk '{ f = $2; b = $NF; base = (f > b ? f : b); m = 0
-                           for (i = 3; i <= NF - 4; i++) if ($i > m) m = $i; print (m > base + 25) ? 1 : 0 }')
+                    line=$(echo "$vals" | awk '{ f = $1; b = $NF; base = (f > b ? f : b); m = 0
+                           for (i = 1; i <= NF - 1; i++) if ($i > m) m = $i; print (m > base + 25) ? 1 : 0 }')
                     if [ "$line" -eq 0 ]; then ok; else bad "$name: an outline is drawn at x=$x"; fi
                 elif [ "$edge" != none ]; then
+                    # a piece swelling with the music may ride a pixel higher: look one row up, once,
+                    # before calling an outline missing
+                    if [ "$lit" -eq 0 ]; then
+                        vals=$(col "$shot" "$x" $((foot - 3)) 3)
+                        vals="$vals $(col "$shot" "$x" $((foot + 2)) 1)"
+                        bg=$(echo "$vals" | awk '{ print $NF }')
+                        lit=$(echo "$vals" | awk -v bg="$bg" '{ m = bg; for (i = 1; i <= NF - 1; i++) if ($i > m) m = $i
+                               c = 0; if (m > bg + 25) for (i = 1; i <= NF - 1; i++) if ($i > bg + 0.35 * (m - bg)) c++; print c }')
+                        peak=$(echo "$vals" | awk -v y0=$((foot - 3)) '{ m = -1; at = -1; for (i = 1; i <= NF - 1; i++) if ($i > m) { m = $i; at = y0 + i - 1 }; print at }')
+                    fi
                     if [ "$lit" -ge 1 ] && [ "$lit" -le 3 ]; then ok; else bad "$name: outline weight $lit rows at x=$x (want 1-3)"; fi
                     d=$((peak - foot)); [ "$d" -lt 0 ] && d=$((-d))
                     # the border sits on or just inside the piece's edge: within 2 px of the model's foot,
@@ -98,8 +113,9 @@ for shape in islands full notch; do
                     if [ "$d" -le 2 ]; then ok; else bad "$name: foot at y=$peak, want $foot"; fi
                     feet="$feet $peak"
                 fi
-                if [ "$shape" = islands ]; then
-                    gx=$(jq -r '[.islands[] | select(.w > 0)] | [range(1; length) as $i | {g: (.[$i].x - (.[$i-1].x + .[$i-1].w)), m: ((.[$i].x + .[$i-1].x + .[$i-1].w) / 2 | floor)}] | max_by(.g) | .m' "$g")
+                if [ "$shape" = islands ] || [ "$shape" = pill ]; then
+                    # the Pill is a piece too: the widest gap is looked for with it in the row
+                    gx=$(jq -r '[.islands[], (.pill // empty)] | map(select(.w > 0)) | sort_by(.x) | [range(1; length) as $i | {g: (.[$i].x - (.[$i-1].x + .[$i-1].w)), m: ((.[$i].x + .[$i-1].x + .[$i-1].w) / 2 | floor)}] | max_by(.g) | .m' "$g")
                     # between the plates' top and their foot: above the row is the band's (it may swell there)
                     gv=$(col "$shot" "$gx" "$top" $((foot - top - 2)))
                     gb=$(col "$shot" "$gx" $((foot + 10)) 1)
@@ -169,8 +185,9 @@ for swell in false true; do
     tab=$(echo "$gv" | awk -v bg="$gb" '{ c = 0; for (i = 1; i <= NF; i++) if ($i > bg + 25) c++; print c }')
     if [ "$tab" -eq 0 ]; then ok; else bad "attach · swell $swell: a line inside the recess at x=$gx (a tab)"; fi
     x=$(jq -r '[.islands[] | select(.w > 0)][0] | (.x + .w / 2 | floor)' "$g")
-    vals=$(col "$shot" "$x" $((foot - 4)) 14)
-    peak=$(echo "$vals" | awk -v y0=$((foot - 4)) '{ m = -1; at = -1; for (i = 1; i <= NF - 4; i++) if ($i > m) { m = $i; at = y0 + i - 1 }; print at }')
+    vals=$(col "$shot" "$x" $((foot - 2)) 3)
+    vals="$vals $(col "$shot" "$x" $((foot + 2)) 1)"
+    peak=$(echo "$vals" | awk -v y0=$((foot - 2)) '{ m = -1; at = -1; for (i = 1; i <= NF - 1; i++) if ($i > m) { m = $i; at = y0 + i - 1 }; print at }')
     d=$((peak - foot)); [ "$d" -lt 0 ] && d=$((-d))
     if [ "$d" -le 2 ]; then ok; else bad "attach · swell $swell: foot at y=$peak, want $foot"; fi
 done

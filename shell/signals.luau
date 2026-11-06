@@ -255,6 +255,7 @@ return function(ctx)
 
     -- New ones get their tier as they arrive (a later mute does not change one already out) and
     -- a time out; one updated in place pulses where it is and starts its time again.
+    local pill_hook = nil      -- the Pill (D168): told of each new signal that shows
     local function arrived(d)
         local q = quiet()
         for _, id in ipairs(d.added) do
@@ -272,6 +273,14 @@ return function(ctx)
         if ctx.bmo then
             for _, id in ipairs(d.added) do
                 if st.tiers[id] and st.tiers[id] ~= sig.WHISPER then ctx.bmo(1); break end
+            end
+        end
+        -- the Pill hears the newest one that shows (a whisper does not)
+        if pill_hook then
+            for i = #d.added, 1, -1 do
+                local id = d.added[i]
+                local n = find(id)
+                if n and st.tiers[id] and st.tiers[id] ~= sig.WHISPER then pcall(pill_hook, n); break end
             end
         end
         -- arm every group whose newest notice is new or changed; pulse a changed one's slot
@@ -481,6 +490,8 @@ return function(ctx)
 
     return {
         apply = apply,
+        -- the Pill's feed: fn(signal) for each new one that shows (D168, review I2)
+        on_signal = function(fn) pill_hook = fn end,
         -- do not disturb, looked at again (a focus block started or ended)
         requiet = function() if fact.notes_on then fact.dnd_now = quiet() end end,
         -- one of mooi's own signals (the focus timer's): it unfolds like any other, never reaches

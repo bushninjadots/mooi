@@ -120,6 +120,10 @@ M.SETTERS = {
     "claude.free_fallback",
     -- D166: how much each module shows, and whether islands attach to the frame. Appended, so no code moved.
     "bar.density", "frame.islands",
+    -- D168: the Pill — with the side groups, two at once, moons at most. Appended, so no code moved.
+    "pill.sides", "pill.multi", "pill.moons",
+    -- D169: the Pill's face and hiding when idle. Appended, so no code moved.
+    "pill.face", "pill.autohide",
 }
 
 local function row_of(path)

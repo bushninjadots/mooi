@@ -1,0 +1,192 @@
+language 0.9
+
+// The Pill's content (D168): what the capsule at the top centre shows, drawn by the bar's scene over
+// the body mooi-frame draws for it (lib/chassis). shell/bar.luau feeds the facts from lib/pill:
+//   pill_kind  0 idle · 1 music · 2 osd · 3 notify · 4 record · 5 battery
+//   pill_glyph 0 idle · 1 music · 2 vol · 3 bri · 4 notify · 5 record · 6 low · 7 charging
+// with the first and second lines (pill_t1, pill_t2), a value (pill_val), a split partner on the right
+// (pill_split, pill_glyph2, pill_s1, pill_val2 from pill_w1 on) and up to four moons (moon_x*, moon_k*).
+// The visualiser's bars are ui/viz.plm's, read from the scene's bands like every other.
+
+import "viz.plm" as viz
+
+library Pill {
+    // A mark for an activity, centred at (cx, cy): bars for music, a dot for the rest, coloured by what it is.
+    component Mark(cx: number, cy: number, g: number) {
+        size: 18, 18
+        group {
+            show: g > 0.5 and g < 1.5
+            viz.Spectrum(cx - 9, cy - 7, 18, 14, fl.phos, fl.ember)
+        }
+        ellipse { at: cx, cy; radius: 4; color: pick(g, fl.trace_lit, fl.phos, fl.phos, fl.ember, fl.phos, #e05a5a, fl.ember, fl.phos); show: g < 0.5 or g > 1.5 }
+        ellipse { at: cx, cy; radius: 6.5; stroke: 1.2; color: #e05a5a; opacity: 0.5; show: g > 4.5 and g < 5.5 }
+    }
+
+    // One half (or the whole) of the Pill: its mark, its words, and for a volume or brightness change
+    // a track filled to the value.
+    component Half(x: number, w: number, g: number, t1: text, t2: text, v: number) {
+        size: w, fl.mod_h
+        let cy = fl.cy
+        Mark(x + 18, cy, g)
+        group {
+            show: g < 1.5 or g > 3.5
+            // the line and its second part (the artist, a notice's summary): the width counts both (review M1)
+            text "{t1}{? · {t2}}" { at: x + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: w - 44; lines: 1 }
+        }
+        group {
+            show: g > 1.5 and g < 3.5
+            text t1 { at: x + 34, cy; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            box { from: x + 64, cy - 2; size: max(4, w - 104), 4; corner: 2; color: fl.well }
+            box { from: x + 64, cy - 2; size: max(0, (w - 104) * v), 4; corner: 2; color: fl.phos }
+            text t2 { at: x + w - 14, cy; anchor: right center; size: 11; weight: 600; family: "Exo 2"; color: fl.engrave }
+        }
+    }
+
+    // BMO's face on his own small screen (D169), 48 × 22 at (fx, fy): bmo/brain's numbers at 0.42 of
+    // the desktop BMO's face, eyes pulled toward the pointer (pb_lx, pb_ly), the blink (pb_open).
+    component BmoFace(fx: number, fy: number) {
+        size: 48, 22
+        let k = 0.42
+        let ink = #183d42
+        let lx = pb_lx
+        let ly = pb_ly
+        let shut = min(1, pb_lidf + 1 - pb_open)
+        let eh = pbe_h * k
+        let ew = pbe_w * k
+        let eye_h = max(1.2, eh * (1 - shut))
+        let ey = fy + 9 + ly
+        let mx = fx + 24 + lx * 0.3
+        let my = fy + 16.5 + ly * 0.5
+        let half = pbm_w * k / 2
+        let lower = my + pbm_c * 3.4 + pbm_o * 5.5
+        let upper = my + pbm_c * 1.9 - pbm_o * 3 * (1 - max(0, pbm_c))
+        box { from: fx, fy; size: 48, 22; corner: 6; color: #b8f5df }
+        box { from: fx, fy; size: 48, 22; corner: 6; stroke: 1; color: ink; opacity: 0.35 }
+        ellipse { at: fx + 8, fy + 15; radius: 2.6; scale: 1, 0.6; color: #f28aa0; opacity: pb_bl * 0.6 }
+        ellipse { at: fx + 40, fy + 15; radius: 2.6; scale: 1, 0.6; color: #f28aa0; opacity: pb_bl * 0.6 }
+        box { from: fx + 15 + lx - ew / 2, ey + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sql }
+        box { from: fx + 33 + lx - ew / 2, ey + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sqr }
+        path { stroke: 1.4; color: ink; opacity: pb_sql
+               move fx + 12.5 + lx, ey + 1.5; curve fx + 17.5 + lx, ey + 1.5 via fx + 15 + lx, ey - 2.5 }
+        path { stroke: 1.4; color: ink; opacity: pb_sqr
+               move fx + 30.5 + lx, ey + 1.5; curve fx + 35.5 + lx, ey + 1.5 via fx + 33 + lx, ey - 2.5 }
+        box { at: fx + 15 + lx, ey - eh / 2 - 2.2; size: 5, 1.3; corner: 0.6; rotate: -pb_brow * 1deg; color: ink; opacity: pb_bron }
+        box { at: fx + 33 + lx, ey - eh / 2 - 2.2; size: 5, 1.3; corner: 0.6; rotate: pb_brow * 1deg; color: ink; opacity: pb_bron }
+        path { color: ink; opacity: min(1, pbm_o * 4)
+               move mx - half, my; curve mx + half, my via mx, lower; curve mx - half, my via mx, upper; close }
+        path { stroke: 1.4; color: ink
+               move mx - half, my; curve mx + half, my via mx, my + pbm_c * 3.4 }
+    }
+
+    // The Control Nexus as the Pill's face (D169): its mark (a hub and three nodes) and its name, lit
+    // while the Nexus is open.
+    component NexusFace(x: number, w: number, cy: number) {
+        size: w, 20
+        let lit = if(nexus_open, 1, 0)
+        let cx = x + w / 2 - 22
+        line { from: cx, cy; to: cx - 7, cy - 5; width: 1.2; color: fl.trace_lit }
+        line { from: cx, cy; to: cx + 7, cy - 5; width: 1.2; color: fl.trace_lit }
+        line { from: cx, cy; to: cx, cy + 7; width: 1.2; color: fl.trace_lit }
+        ellipse { at: cx, cy; radius: 3.2; color: mix(fl.phos, fl.ember, lit) }
+        ellipse { at: cx - 7, cy - 5; radius: 1.8; color: fl.phos }
+        ellipse { at: cx + 7, cy - 5; radius: 1.8; color: fl.phos }
+        ellipse { at: cx, cy + 7; radius: 1.8; color: fl.phos }
+        text "NEXUS" { at: cx + 14, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(fl.engrave, fl.ember, lit) }
+    }
+
+    component PillBody() {
+        size: 1, 1
+        group {
+            show: pill_on
+            let px = pill_x
+            let pw = pill_w
+            let cy = fl.cy
+            // idle: its face (D169) — the time and the workspace it is on, BMO, or the Nexus button;
+            // nothing while it is hidden (a sliver the frame draws)
+            group {
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face < 0.5
+                text clock.time { at: px + pw / 2 - 8, cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text "· {ws.active, 0}" { at: px + pw / 2 + 26, cy; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.phos }
+            }
+            group {
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 0.5 and pill_face < 1.5
+                BmoFace(px + 8, cy - 11)
+                text pill_t1 { at: px + 62, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, pw - 70); lines: 1 }
+            }
+            group {
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5
+                NexusFace(px, pw, cy)
+            }
+            // anything else, whole
+            group {
+                show: pill_kind > 0.5 and not pill_split
+                Half(px, pw, pill_glyph, pill_t1, pill_t2, pill_val)
+            }
+            // split: the main on the left, its partner on the right, a pinch between
+            group {
+                show: pill_split
+                Half(px, pill_w1, pill_glyph, pill_t1, pill_t2, pill_val)
+                box { from: px + pill_w1 + 3, cy - 8; size: 2, 16; corner: 1; color: fl.trace_dim }
+                Half(px + pill_w1 + 8, pw - pill_w1 - 8, pill_glyph2, pill_s1, "", pill_val2)
+            }
+            // hidden with the frame on, the tab hangs in the top strip: the zone reaches the top (review M5)
+            zone box pillz { from: px, if(pill_hidden, 0, fl.top); size: pw, if(pill_hidden, fl.top + fl.mod_h, fl.mod_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
+            on press pillz { emit pill_press }
+            // pointed at: 1, and 0 when the pointer leaves — a resting pointer keeps it open (review M4)
+            on change pillz.hover while pillz.hover > 0.5 { emit pill_hover(1) }
+            on change pillz.hover while pillz.hover < 0.5 { emit pill_hover(0) }
+            // nodes (D169): each pad on a circuit trace to the one inside it, a via at each end
+            group {
+                show: pill_nodes
+                group {
+                    show: moon_k0 > -0.5
+                    line { from: moon_x0 + 24, cy; to: px, cy; width: 1.6; color: fl.trace_lit }
+                    ellipse { at: moon_x0 + 24, cy; radius: 2; color: fl.phos }
+                    ellipse { at: px, cy; radius: 2; color: fl.phos }
+                }
+                group {
+                    show: moon_k1 > -0.5
+                    line { from: px + pw, cy; to: moon_x1, cy; width: 1.6; color: fl.trace_lit }
+                    ellipse { at: px + pw, cy; radius: 2; color: fl.phos }
+                    ellipse { at: moon_x1, cy; radius: 2; color: fl.phos }
+                }
+                group {
+                    show: moon_k2 > -0.5
+                    line { from: moon_x2 + 24, cy; to: moon_x0, cy; width: 1.6; color: fl.trace_lit }
+                    ellipse { at: moon_x2 + 24, cy; radius: 2; color: fl.phos }
+                }
+                group {
+                    show: moon_k3 > -0.5
+                    line { from: moon_x1 + 24, cy; to: moon_x3, cy; width: 1.6; color: fl.trace_lit }
+                    ellipse { at: moon_x3, cy; radius: 2; color: fl.phos }
+                }
+            }
+            on scroll pillz { emit pill_scroll(wheel) }
+            // the moons: a mark each, a press brings it into the Pill
+            group {
+                show: moon_k0 > -0.5
+                Mark(moon_x0 + 12, cy, moon_k0)
+                zone box pmoon0 { from: moon_x0, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon0 { emit pill_moon(0) }
+            }
+            group {
+                show: moon_k1 > -0.5
+                Mark(moon_x1 + 12, cy, moon_k1)
+                zone box pmoon1 { from: moon_x1, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon1 { emit pill_moon(1) }
+            }
+            group {
+                show: moon_k2 > -0.5
+                Mark(moon_x2 + 12, cy, moon_k2)
+                zone box pmoon2 { from: moon_x2, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon2 { emit pill_moon(2) }
+            }
+            group {
+                show: moon_k3 > -0.5
+                Mark(moon_x3 + 12, cy, moon_k3)
+                zone box pmoon3 { from: moon_x3, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                on press pmoon3 { emit pill_moon(3) }
+            }
+        }
+    }
+}

@@ -127,9 +127,14 @@ pcall(sys.watch, "battery", function(b)
     local t = type(b) == "table" and b or {}
     fact.lk_batt, fact.lk_batt_pct, fact.lk_charging = t.present == true, tonumber(t.percent) or 0, t.charging == true
 end)
-pcall(sys.watch, "notification_history", function(l)
-    fact.lk_notes = type(l) == "table" and #l or 0
-end)
+-- the notices waiting, as Signal Loom keeps them (its feed, carried into this folder by `mooi lock`):
+-- watching a notification service here would claim the name from the shell
+local function notes_waiting()
+    local ok, f = pcall(sys.ask, "files.read", "nexus-feed.json", "json")
+    fact.lk_notes = (ok and type(f) == "table" and tonumber(f.count)) or 0
+end
+pcall(sys.watch, "files:nexus-feed.json", notes_waiting)
+notes_waiting()
 
 -- ── The music, drawn ─────────────────────────────────────────────────────
 -- cava's bands reach the glass the way the palette does: the bar writes them into the shell's folder

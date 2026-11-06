@@ -1221,6 +1221,9 @@ lock_feed_start() {
     # lock left up for half an hour should cost one check a second, not fifty copies.
     (
         while [ "$("$pleamar" --say "$lock_name" "get locked" 2>/dev/null)" = "true" ]; do
+            # the notices waiting: Signal Loom's feed, carried over too (the lock must not run its own
+            # notification service to count them: watching one claims the name)
+            [ -r "$folder/nexus-feed.json" ] && cp -f "$folder/nexus-feed.json" "$d/nexus-feed.json" 2>/dev/null
             if [ "$("$pleamar" --say "$lock_name" "get lk_playing" 2>/dev/null)" = "true" ]; then
                 n=0
                 while [ "$n" -lt 30 ]; do

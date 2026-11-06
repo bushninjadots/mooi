@@ -85,3 +85,29 @@ pinch off it.
 - The Pill as a placeable component in Full/Notch/Islands (D164 §4 last line) — after this stage.
 - Liquid and Cartridge materials (their Pill motion comes with them).
 - A timer activity (no timer exists yet; `pill.order` can gain it later).
+
+## 8. Addendum (D169): its face, hiding, and nodes
+
+Asked for after the first build, on 2026-11-06.
+
+- **Its face** (`pill.face`: `time` · `bmo` · `nexus`, default `time`) is what the Pill shows when
+  nothing is happening.
+  - `time` is the time and the workspace, as built.
+  - `bmo` is BMO's face on his own screen colour. His eyes follow the pointer while it is on the bar
+    (Pleamar's `look`), and he blinks. His mood drifts the way the desktop BMO's does, and it is sleepy
+    late at night. Now and then he says one of his lines, as often as BMO → Talk allows, and the Pill
+    widens to fit it. A press is a poke: the same faces and lines as poking him on the desktop.
+    Everything comes from `bmo/brain`; nothing of his is duplicated.
+  - `nexus` is the Control Nexus button, and a press opens or closes the Nexus.
+- **Hide when idle** (`pill.autohide`, default off). While the Pill would show its face, it shrinks:
+  - without the frame, to a 6 px sliver;
+  - with it, to a short tab from the band.
+
+  Pointing at it or pressing it brings it back for 4 s, and anything happening brings it back for
+  as long as it lasts. Moons never hide.
+- **Nodes** (`pill.multi` gains `nodes`): the moons become square pads, each joined to the Pill by a
+  circuit trace. This is Ferrolume's own language (trace colours, a via at each end). A pad is 24 px,
+  and its trace is 18 px.
+- Settings → Bar & Frame → The Pill gains "When nothing is happening" (Time · BMO · Nexus) and "Hide
+  when idle". "Two at once" becomes Satellites · Split · Nodes. Setters are appended:
+  `pill.face`, `pill.autohide`.
