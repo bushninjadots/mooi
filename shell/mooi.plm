@@ -1144,6 +1144,42 @@ scene Mooi {
     event pill_press ->        // to the logic (D168): the Pill pressed
     event pill_scroll ->
     event pill_moon ->
+    // D169: the Pill's face (0 time · 1 BMO · 2 Nexus), hidden when idle, nodes; pointed at
+    fact pill_face = 0
+    fact pill_hidden = false
+    fact pill_nodes = false
+    event pill_hover ->        // to the logic: the hidden Pill pointed at
+    // BMO's face in the Pill: one row of bmo/brain's FACES, set by the logic; the scene glides to it
+    fact pb_ew = 8
+    fact pb_eh = 14
+    fact pb_lid = 0
+    fact pb_brow = 0
+    fact pb_bron = 0
+    fact pb_sql = 0
+    fact pb_sqr = 0
+    fact pb_mc = 0.7
+    fact pb_mo = 0.2
+    fact pb_mw = 24
+    fact pb_bl = 0
+    prop pbe_h = 14 ~m.isl_out
+    follow pbe_h = pb_eh
+    prop pbe_w = 8 ~m.isl_out
+    follow pbe_w = pb_ew
+    prop pbm_c = 0.7 ~m.isl_out
+    follow pbm_c = pb_mc
+    prop pbm_o = 0.2 ~m.isl_out
+    follow pbm_o = pb_mo
+    prop pbm_w = 24 ~m.isl_out
+    follow pbm_w = pb_mw
+    prop pb_lidf = 0 ~m.isl_out
+    follow pb_lidf = pb_lid
+    // his eyes on the pointer while it is on the bar (Pleamar's look: a surface hears the pointer
+    // only over itself), and his blink
+    prop pb_lx = 0
+    prop pb_ly = 0
+    look pb_lx, pb_ly at pill_x + 32, fl.cy reach 5, 2 within 700 rest 0, 0
+    prop pb_open = 1
+    blink pb_open every 2.2s..7s for 170ms
     event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)
     event open_nexus ->        // to the logic: start Control Nexus, or close it (`mooi nexus`)
     event run_updates ->       // to the logic: run the system updater in a terminal

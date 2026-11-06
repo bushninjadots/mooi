@@ -9,10 +9,15 @@
 local M = {
     ACTIVITIES = { "battery", "record", "notify", "music", "osd", "idle" },
     OSD_MS = 2000, NOTIFY_MS = 6000, CHARGE_MS = 4000, PIN_MS = 6000, LOW = 15,
+    -- D169: pointed at, a hidden Pill comes back this long; hidden, it is this wide
+    PEEK_MS = 4000, SLIVER = 44,
+    -- the width of each face (BMO's grows with what he says)
+    FACE_W = { time = 120, nexus = 104, bmo = 64 },
 }
 
 function M.state()
-    return { media = {}, battery = {}, recording = false, rec_since = 0, osd = nil, notify = nil, charge_at = nil, pin = nil }
+    return { media = {}, battery = {}, recording = false, rec_since = 0, osd = nil, notify = nil, charge_at = nil, pin = nil,
+             say = "", peek = nil }
 end
 
 function M.note(st, kind, p, now)
@@ -33,6 +38,10 @@ function M.note(st, kind, p, now)
         st.notify = { app = tostring(p.app or ""), summary = tostring(p.summary or ""), at = now }
     elseif kind == "pin" then
         st.pin = { id = p.id, at = now }
+    elseif kind == "say" then          -- D169: BMO's line, or "" when he is quiet (lib/pillface times it)
+        st.say = tostring(p.text or "")
+    elseif kind == "peek" then         -- D169: the hidden Pill pointed at
+        st.peek = { at = now }
     end
 end
 
@@ -58,7 +67,7 @@ local function clock(ms)
 end
 
 -- What each activity shows: a glyph name the scene maps to a mark, a first and a second line, a value.
-local function view(st, id, now)
+local function view(st, id, now, cfg)
     if id == "music" then return { glyph = "music", t1 = st.media.title, t2 = st.media.artist } end
     if id == "osd" then
         local o = st.osd or { kind = "vol", value = 0 }
@@ -71,11 +80,15 @@ local function view(st, id, now)
         local charging = b.charging and st.charge_at and now - st.charge_at < M.CHARGE_MS
         return { glyph = charging and "charging" or "low", t1 = (charging and "Charging " or "Battery ") .. tostring(b.percent or 0) .. "%" }
     end
-    return { glyph = "idle", t1 = "", t2 = "" }
+    return { glyph = "idle", t1 = (cfg and cfg.face == "bmo") and (st.say or "") or "", t2 = "" }
 end
 
-local function width(v)
+local function width(v, cfg)
     if not v then return 0 end
+    if v.glyph == "idle" then
+        local face = cfg and M.FACE_W[cfg.face] and cfg.face or "time"
+        return M.FACE_W[face] + ((face == "bmo" and v.t1 ~= "") and (7 * #v.t1 + 16) or 0)
+    end
     local n = #(v.t1 or "") + ((v.t2 and v.t2 ~= "" and v.glyph ~= "notify") and (#v.t2 + 2) or 0)
     if v.glyph == "notify" then n = math.max(#(v.t1 or ""), #(v.t2 or "")) end
     if v.glyph == "vol" or v.glyph == "bri" then n = n + 16 end
@@ -101,9 +114,12 @@ function M.compute(st, cfg, now)
     local moons = {}
     for i = 1, math.min(#rest, tonumber(cfg.moons) or 3) do moons[i] = rest[i] end
     local views = {}
-    for _, id in ipairs(M.ACTIVITIES) do views[id] = view(st, id, now) end
-    local w = width(views[main]) + (split and (width(views[split]) + 8) or 0)
-    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, view = views }
+    for _, id in ipairs(M.ACTIVITIES) do views[id] = view(st, id, now, cfg) end
+    local w = width(views[main], cfg) + (split and (width(views[split], cfg) + 8) or 0)
+    -- D169: idle and nothing beside it, with hiding on and not just pointed at: a sliver
+    local hidden = cfg.autohide == true and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
+    if hidden then w = M.SLIVER end
+    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, view = views, hidden = hidden }
 end
 
 -- ms until a timed activity ends (so the logic can look again then), or nil
@@ -114,19 +130,22 @@ function M.next_change(st, now)
     if st.notify then at(st.notify.at + M.NOTIFY_MS) end
     if st.charge_at then at(st.charge_at + M.CHARGE_MS) end
     if st.pin then at(st.pin.at + M.PIN_MS) end
+    if st.peek then at(st.peek.at + M.PEEK_MS) end
     return best
 end
 
--- Where the Pill and its moons sit: the Pill centred on the screen; moons 24 px, 8 px apart, the first to
--- its left, the next to its right, and so on outwards.
+-- Where the Pill and its moons sit: the Pill centred on the screen; moons 24 px, 8 px apart (nodes: on
+-- an 18 px trace), the first to its left, the next to its right, and so on outwards.
 M.MOON = 24
-function M.place(screen_w, w, n)
+M.TRACE = 18
+function M.place(screen_w, w, n, multi)
+    local gap = multi == "nodes" and M.TRACE or 8
     local x = math.floor((screen_w - w) / 2)
     local out = { x = x, moons = {} }
     local l, r = x, x + w
     for k = 1, n do
-        if k % 2 == 1 then l = l - 8 - M.MOON; out.moons[k] = l
-        else out.moons[k] = r + 8; r = r + 8 + M.MOON end
+        if k % 2 == 1 then l = l - gap - M.MOON; out.moons[k] = l
+        else out.moons[k] = r + gap; r = r + gap + M.MOON end
     end
     return out
 end

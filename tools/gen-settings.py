@@ -117,6 +117,8 @@ SETTERS = [
     "bar.density", "frame.islands",
     # D168: the Pill — with the side groups, two at once, moons at most. Appended, so no code moved.
     "pill.sides", "pill.multi", "pill.moons",
+    # D169: the Pill's face and hiding when idle. Appended, so no code moved.
+    "pill.face", "pill.autohide",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -295,7 +297,9 @@ SECTIONS = [
         ("card", "The Pill"),
         ("note", "sv_bar_mode != 3", "CHOOSE SHAPE → PILL ABOVE TO SEE IT"),
         ("choice", "With the side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
-        ("choice", "Two at once", "Moons beside the Pill, or the Pill split in two", "pill.multi", "sv_pill_multi", ["Satellites", "Split"]),
+        ("choice", "When nothing is happening", "The time and workspace, BMO's face (a press pokes him), or the Nexus button", "pill.face", "sv_pill_face", ["Time", "BMO", "Nexus"]),
+        ("toggle", "Hide when idle", "Tucks away to a sliver until you point at it or something happens", "pill.autohide", "sv_pill_autohide"),
+        ("choice", "Two at once", "Moons beside the Pill, the Pill split in two, or pads on circuit traces", "pill.multi", "sv_pill_multi", ["Satellites", "Split", "Nodes"]),
         ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
         ("card", "What may take it"),
         ("pillorder",),

@@ -30,7 +30,10 @@ M.SCHEMA = {
     -- D168: the Pill — alone or with the side groups, satellites or split, how many moons, which activities
     -- may take it (pill.off) and in what order (pill.order); lib/pill decides from them
     { path = "pill.sides", kind = "enum", values = { "show", "hide" }, default = "show" },
-    { path = "pill.multi", kind = "enum", values = { "satellites", "split" }, default = "satellites" },
+    { path = "pill.multi", kind = "enum", values = { "satellites", "split", "nodes" }, default = "satellites" },   -- nodes: D169
+    -- D169: what the Pill shows when nothing is happening, and whether it tucks away then
+    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus" }, default = "time" },
+    { path = "pill.autohide", kind = "boolean", default = false },
     { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
     { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },

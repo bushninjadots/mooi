@@ -99,15 +99,22 @@ function M.pieces(geo, look, looks)
         -- the frame on (joined, a small fillet), floating as a capsule and circles without it
         if look.mode == "pill" then
             local px, pw = span(geo.pill)
+            local slim = type(geo.pill) == "table" and geo.pill.slim == true
             if pw > 0 then
-                if look.band then add(px, -40, pw, foot + 40, look.mod_h / 2, 8, true)
+                -- D169: hidden when idle, a 6 px sliver — or, with the band, a short tab hanging from it
+                if slim and look.band then add(px, -40, pw, 40 + (look.top_band or look.band_w or 0) + 6, 3, 8, true)
+                elseif slim then add(px, look.top, pw, 6, 3, 0, false)
+                elseif look.band then add(px, -40, pw, foot + 40, look.mod_h / 2, 8, true)
                 else add(px, look.top, pw, look.mod_h, look.mod_h / 2, 0, false) end
             end
+            -- D169: nodes are square pads (r 5) on a circuit trace; satellites are round moons
+            local nodes = geo.nodes == true
             for _, m in ipairs(type(geo.moons) == "table" and geo.moons or {}) do
                 local mx, mw = span(m)
                 if mw > 0 then
-                    if look.band then add(mx, -40, mw, foot + 40 - 2, mw / 2, 10, true)
-                    else add(mx, look.top + (look.mod_h - mw) / 2, mw, mw, mw / 2, 0, false) end
+                    local r = nodes and 5 or mw / 2
+                    if look.band then add(mx, -40, mw, foot + 40 - 2, r, 10, true)
+                    else add(mx, look.top + (look.mod_h - mw) / 2, mw, mw, r, 0, false) end
                 end
             end
         end

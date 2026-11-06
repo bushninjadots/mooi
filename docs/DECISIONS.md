@@ -4852,3 +4852,18 @@ G4); the summaries follow the commit messages._
   the next things are moons beside it (satellites) or share it (split).
 - Pill alone or with the side groups as islands (`pill.sides`); with the frame on it hangs from the band.
 - Spec: docs/superpowers/specs/2026-11-06-the-pill-design.md.
+
+## D169 · 2026-11-06 · The Pill's face, hiding, and nodes
+
+- When nothing is happening the Pill shows the time, BMO's face (eyes on the pointer, moods and
+  lines from `bmo/brain`, a press pokes him), or the Nexus button (`pill.face`).
+- It can hide when idle (`pill.autohide`): a sliver, or a short tab from the band with the frame on.
+  Pointing at it brings it back.
+- `pill.multi = nodes` joins the moons to the Pill with circuit traces.
+- Also in this round:
+  - `pill_press` reached the logic for the first time; it was declared scene-only.
+  - The edit shelf holds every module, so Nexus, Claude and GitHub are back.
+  - Settings use one name per thing: Shape, Surface, and Style with what each style is. Density is
+    hidden until stage 4.
+- Spec: docs/superpowers/specs/2026-11-06-the-pill-design.md §8.
+

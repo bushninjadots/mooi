@@ -27,7 +27,9 @@ return function(ctx)
     -- The Pill (D168): what happens, noted for lib/pill; its own clock (a quarter-second tick, only
     -- doing anything in Pill mode), what it last showed, and where it sits
     local pillmod = require("lib/pill")
+    local pillface = require("lib/pillface")     -- D169: BMO's face, when the Pill shows it
     local pst, pill_ms, pill_now = pillmod.state(), 0, nil
+    local face_st, face_said = pillface.new("happy"), ""
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
 
     -- ── Layout ─────────────────────────────────────────────────
@@ -107,8 +109,11 @@ return function(ctx)
             -- the Pill and its moons, for the frame's chassis and the scene's content
             local w = pill_now and pill_now.width or 160
             local n = pill_now and #pill_now.moons or 0
-            local pl = pillmod.place(env.screen, w, n)
-            geo.pill = { x = pl.x, w = w }
+            local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
+            local pl = pillmod.place(env.screen, w, n, pm)
+            geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true }
+            geo.nodes = pm == "nodes"      -- D169: square pads on traces
+            fact.pill_nodes = geo.nodes
             geo.moons = {}
             for k, mx in ipairs(pl.moons) do geo.moons[k] = { x = mx, w = pillmod.MOON } end
             fact.pill_x, fact.pill_w = pl.x, w
@@ -137,7 +142,7 @@ return function(ctx)
         local p = type(s.pill) == "table" and s.pill or {}
         local off = {}
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
-        return { order = p.order, off = off, moons = p.moons, multi = p.multi }
+        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face, autohide = p.autohide }
     end
     function pill_update()
         local s = ctx.settings()
@@ -160,18 +165,43 @@ return function(ctx)
             local id = r.moons[k + 1]
             fact["moon_k" .. k] = id and (GLYPH[r.view[id].glyph] or 0) or -1
         end
+        -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
+        local p = type(s.pill) == "table" and s.pill or {}
+        fact.pill_face = ({ time = 0, bmo = 1, nexus = 2 })[p.face] or 0
+        fact.pill_hidden = r.hidden == true
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
+            or (pill_now.hidden == true) ~= (r.hidden == true)
         pill_now = r
         if changed then relayout(true) end
     end
     -- looked at again while something timed is up or has just run out (a volume change showed on after
     -- its 2 s when the tick only ran while one was still pending), and every tick while recording
     local pill_timed = false
+    -- D169: BMO's face — his expression's numbers for the scene, and his line, which widens the Pill
+    local function face_show()
+        local v = pillface.view(face_st, pill_ms)
+        local f = pillface.numbers(v.face)
+        fact.pb_ew, fact.pb_eh, fact.pb_lid, fact.pb_brow, fact.pb_bron = f.ew, f.eh, f.lid, f.brow, f.bron
+        fact.pb_sql, fact.pb_sqr, fact.pb_mc, fact.pb_mo, fact.pb_mw, fact.pb_bl = f.sql, f.sqr, f.mc, f.mo, f.mw, f.bl
+        if v.say ~= face_said then
+            face_said = v.say
+            pillmod.note(pst, "say", { text = v.say }, pill_ms)
+            pill_update()
+        end
+    end
+    local face_beat = 0
     every(250, function()
         pill_ms = pill_ms + 250
         if fact.pill_on and (pill_timed or pst.recording) then
             pill_update()
             pill_timed = pillmod.next_change(pst, pill_ms) ~= nil
+        end
+        face_beat = face_beat + 1
+        if fact.pill_on and fact.pill_face == 1 and face_beat % 4 == 0 then
+            local c = ctx.settings().companion
+            pillface.tick(face_st, pill_ms, { hour = tonumber(os.date("%H")) or 12,
+                                             talk = type(c) == "table" and c.talk or "rare" }, math.random(), math.random())
+            face_show()
         end
     end)
     local function note(kind, payload) pillmod.note(pst, kind, payload, pill_ms); pill_timed = true; pill_update() end
@@ -205,8 +235,13 @@ return function(ctx)
         elseif main == "record" then run("pleamar", { "--say", "mooi", "emit record 0" })
         elseif main == "osd" then fact.open = (pst.osd and pst.osd.kind == "bri") and "display" or "sound"
         elseif main == "battery" then fact.open = "power"
+        elseif fact.pill_hidden then note("peek", {})          -- D169: a hidden Pill pressed comes back first
+        elseif fact.pill_face == 1 then pillface.poke(face_st, pill_ms, math.random()); face_show()
+        elseif fact.pill_face == 2 then run("pleamar", { "--say", "mooi", "emit open_nexus" })
         else fact.open = "calendar" end
     end)
+    -- D169: pointed at, a hidden Pill comes back for a while
+    on("pill_hover", function() if fact.pill_hidden then note("peek", {}) end end)
     on("pill_scroll", function(v)
         local d = tonumber(v) or 0
         local main = pill_now and pill_now.main or "idle"
@@ -1017,5 +1052,6 @@ return function(ctx)
 
     measure()
     relayout()
-    return { relayout = relayout, measure = measure }
+    -- a settings change arrives as relayout(): the Pill reads its face, hiding and order again first
+    return { relayout = function() pill_update(); relayout() end, measure = measure }
 end
