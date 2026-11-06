@@ -4818,3 +4818,12 @@ G4); the summaries follow the commit messages._
 - `tests/chassis.sh` measures it live: islands foot 30–31 px, full 31, notch 29–30 in every state
   (31/34/37 before); 93 checks, 0 failed. Performance unchanged (bar 9.0 → 7.9 % of a core).
 
+
+## D166 · 2026-11-06 · Bar & Frame: one settings page, five styles, per-module looks
+- One Settings page, Bar & Frame, replaces Bar, Layout and Screen frame: four big choices (Shape,
+  Style, Frame, Density) over folded sections; Workspaces and Media live under its Modules.
+- Styles: Instrument, Glass, Floating, Hairline (new), Minimal; Steel removed (migrated to
+  Instrument with its finer values kept).
+- Every module or group may set its colour, fill, rounding, outline, glow, display and width.
+- With the frame on the bar and frame are one body; islands float or attach (`frame.islands`).
+- Spec: docs/superpowers/specs/2026-11-06-bar-styles-settings-design.md.
