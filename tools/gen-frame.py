@@ -155,7 +155,10 @@ BODY = [
     "frost: 1% * st_frost",
     "smoke: 1% * st_smoke",
     "shadow: 0, st_sh_y, st_sh_blur, 100% * st_sh_a",
-    "border: if(st_frame_edge < 1.5, st_owidth, 0), fnec",
+    # One outline, one width (the bar's Outline: thin 1 · regular 1.4 · bold 2 px). With the band on it is
+    # the frame's edge (line or neon; none hides it); with the band off the chassis is only the bar's
+    # pieces, so the bar's own choice says whether they have one.
+    "border: if(band_on, if(st_frame_edge < 1.5, st_owidth, 0), if(bar_frame < 0.5, st_owidth, 0)), fnec",
 ]
 
 def tile(ind, clip, shapes, show=None):
@@ -254,41 +257,23 @@ def side_tiles(ind, which, place=False):
             out += tile(ind, f"from: {x0}, {y0}; size: {w}, max(0, {y1} - {y0})", shapes, f"not ({cr})")
     return out
 
-LIGHTS = {   # the edges again, 1.5 px back into the band
-    "left": Edge(NS, "sw", lambda w, f: f"bs - 1.5 + {w}, H * {f}", None),
-    "right": Edge(NS, "sw", lambda w, f: f"W - bs + 1.5 - {w}, H * {f}", None),
-    "foot": Edge(NF, "fw", lambda w, f: f"W * {f}, H - bb + 1.5 - {w}", None),
-}
-
-def light(ind, which):
-    """The etched light, 1.5 px inside the moving edge, along the straight run between two corners."""
-    edge = LIGHTS[which]
-    # its glow reaches 5 px past the clip, so the run stops 8 px short of each corner's round
-    clip = {"left": "from: -40, yTL + frr + 8; size: W + 80, max(0, yBL - yTL - 2 * frr - 16)",
-            "right": "from: -40, yTR + frr + 8; size: W + 80, max(0, yBR - yTR - 2 * frr - 16)",
-            "foot": "from: xBL + frr + 8, -40; size: max(0, xBR - xBL - 2 * frr - 16), H + 80"}[which]
-    pieces = edge.pieces()
-    path = [f"move {pieces[0][2]}"] + [p[3] for p in pieces]
-    pad = ind + "           "
-    return ([f"{ind}group {{",
-             f"{ind}    show: band_on and {'wt' if which == 'foot' else 'wl'} > 0.5",
-             f"{ind}    opacity: 0.35 * clamp(flev * 2, 0, 1)",
-             f"{ind}    glow: 5, 0.6 * st_glow, fg.primary",
-             f"{ind}    clip box {{ {clip} }}",
-             f"{ind}    path {{ stroke: 1.4; color: fg.primary"]
-            + [pad + s for s in path[:-1]] + [f"{pad}{path[-1]} }}", f"{ind}}}"])
+# The edge's glow: neon's own, and the music's on top of it. The music once drew a second, 1.4 px
+# "etched light" 1.5 px inside the moving edge (iNiR's); beside an outline of another width it read as
+# two lines of two thicknesses wobbling against each other, so the music now lights the one edge.
+GLOW = ("8, (if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0)"
+        " + if(st_frame_edge < 1.5, 0.7 * clamp(flev * 2, 0, 1), 0)) * st_glow, fl.phos")
 
 STRIPS = [
-    # name, size, anchor, margin, move, tiles, lights
-    ("frame_t", f"full, {TOP}", "top", None, None, lambda i: end_tiles(i, "top"), ["left", "right"]),
-    ("frame_b", f"full, {BOT}", "bottom", None, f"0, {BOT} - H", lambda i: end_tiles(i, "foot"), ["left", "right", "foot"]),
-    ("frame_l", f"{SIDE}, full", "left", f"{TOP}, 0, {BOT}, 0", f"0, -{TOP}", lambda i: side_tiles(i, "left"), ["left"]),
-    ("frame_r", f"{SIDE}, full", "right", f"{TOP}, 0, {BOT}, 0", f"{SIDE} - W, -{TOP}", lambda i: side_tiles(i, "right"), ["right"]),
+    # name, size, anchor, margin, move, tiles
+    ("frame_t", f"full, {TOP}", "top", None, None, lambda i: end_tiles(i, "top")),
+    ("frame_b", f"full, {BOT}", "bottom", None, f"0, {BOT} - H", lambda i: end_tiles(i, "foot")),
+    ("frame_l", f"{SIDE}, full", "left", f"{TOP}, 0, {BOT}, 0", f"0, -{TOP}", lambda i: side_tiles(i, "left")),
+    ("frame_r", f"{SIDE}, full", "right", f"{TOP}, 0, {BOT}, 0", f"{SIDE} - W, -{TOP}", lambda i: side_tiles(i, "right")),
 ]
 
 def strips(ind):
     out = []
-    for name, size, anchor, margin, move, tiles, lights in STRIPS:
+    for name, size, anchor, margin, move, tiles in STRIPS:
         i2, i3, i4 = ind + "    ", ind + "        ", ind + "            "
         out += [f"{ind}surface {name} {{", f"{i2}size: {size}", f"{i2}anchor: {anchor}"]
         if margin:
@@ -296,11 +281,9 @@ def strips(ind):
         out += [f"{i2}level: bottom", f"{i2}reserve: -1", f"{i2}rate: 30", f"{i2}group {{"]
         if move:
             out.append(f"{i3}move: {move}")
-        out += [f"{i3}group {{", f"{i4}glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos"]
+        out += [f"{i3}group {{", f"{i4}glow: {GLOW}"]
         out += tiles(i4)
         out.append(f"{i3}}}")
-        for l in lights:
-            out += light(i3, l)
         out += [f"{i2}}}", f"{ind}}}", ""]
     return out[:-1]
 
@@ -322,7 +305,7 @@ def place_surface(ind):
              # through them (D154). Only the place's box: the band keeps its own opacity.
              ] + [f"{i3}body {{ color: fcol; opacity: clamp(1 - 0.06 / max(0.06, 1 - fop), 0, 1); show: {p}_act; box {{ from: {p}_bx + 1, {p}_by + 1; size: max(1, {p}_bw - 2), max(1, {p}_bh - 2); corner: {p}_br }} }}" for p in PLACES] + [
              f"{i3}group {{",
-             f"{i4}glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8, 0) * st_glow, fl.phos"]
+             f"{i4}glow: {GLOW}"]
             + end_tiles(i4, "top", place=True) + end_tiles(i4, "foot", place=True)
             + side_tiles(i4, "left", place=True) + side_tiles(i4, "right", place=True) + [f"{i3}}}", f"{i2}}}", f"{ind}}}"])
 

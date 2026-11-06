@@ -109,7 +109,7 @@ end)
 test("the two choice transports have a default, and the window derives the real one", function()
     -- bar.edge / frame.motion had no default: a file carrying one kept a value nothing read.
     local d = config.defaults()
-    eq(d.bar.edge, "none", "bar edge"); eq(d.frame.motion, "off", "frame motion")
+    eq(d.bar.edge, "regular", "bar edge: the default line at width 2"); eq(d.frame.motion, "off", "frame motion")
     local style = require("lib/style")
     eq(style.edge_index(d), 3, "which edge is shown comes from bar.frame (line, 2 px: Regular)")
     eq(style.edge_index({ bar = { frame = "thin", outline_width = 2 } }), 3, "and from its width")
@@ -1026,6 +1026,27 @@ test("presets: one choice writes a coherent set, and Custom once a detail differ
     eq(st.preset_index(s, st.THEME_PRESETS), 4, "it reads as Alien")
     eq(st.preset_index(config.defaults(), st.BAR_PRESETS), 0, "the defaults are Instrument")
     eq(st.preset_index(config.defaults(), st.THEME_PRESETS), 0, "and Phosphor")
+end)
+test("the Outline shown is the outline drawn: a stale bar.edge is repaired on load", function()
+    -- 2026-11-06: settings.json said bar.edge = "bold" over bar.frame = "none" (a preset had set the
+    -- pair), so Settings and the bar disagreed about whether there was a border at all.
+    local s, _, notes = config.validate({ bar = { edge = "bold", frame = "none", outline_width = 2 } })
+    eq(s.bar.edge, "none", "the drawn pair wins")
+    local said = false
+    for _, n in ipairs(notes) do if n:find("bar.edge", 1, true) then said = true end end
+    eq(said, true, "and the repair is noted")
+    eq(config.validate({ bar = { frame = "line", outline_width = 3 } }).bar.edge, "bold", "line at 3 is Bold")
+    eq(config.validate({ bar = { frame = "line", outline_width = 1 } }).bar.edge, "thin", "line at 1 is Thin")
+    eq(config.validate({ bar = { frame = "corners" } }).bar.edge, "corners", "corners")
+end)
+test("the frame draws one outline: no second music line, one width everywhere", function()
+    local f = io.open("shell/mooi-frame.plm"); local plm = f:read("a"); f:close()
+    eq(plm:find("stroke: 1.4", 1, true), nil, "the etched 1.4 px light beside the edge is gone")
+    local widths = {}
+    for b in plm:gmatch("border: ([^\n]+)") do widths[b] = true end
+    local n = 0; for _ in pairs(widths) do n = n + 1 end
+    eq(n, 1, "every tile's border is the same expression")
+    assert(next(widths):find("bar_frame", 1, true), "and it honours the bar's Outline when the band is off")
 end)
 test("one choice for two settings: the outline, and the frame's music", function()
     local st = require("lib/style")

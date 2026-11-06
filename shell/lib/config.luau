@@ -86,7 +86,7 @@ M.SCHEMA = {
     -- by deriving it back (`edge_index`). They had no default until the 2026-11-01 audit: a file
     -- that carried one kept a value that meant nothing, so `defaults()` gains the neutral one and
     -- `validate` checks it like any other.
-    { path = "bar.edge", kind = "enum", values = { "none", "corners", "thin", "regular", "bold" }, default = "none" },
+    { path = "bar.edge", kind = "enum", values = { "none", "corners", "thin", "regular", "bold" }, default = "regular" },   -- = the default bar.frame line at width 2
     { path = "frame.motion", kind = "enum", values = { "off", "swell", "ripples", "pulse" }, default = "off" },
     { path = "bar.outline_width", kind = "integer", default = 2, min = 1, max = 3 },
     { path = "bar.outline_colour", kind = "enum", values = { "subtle", "bright", "accent" }, default = "subtle" },
@@ -729,6 +729,19 @@ function M.validate(t)
                     row.path, why, tostring(value), (type(row.default) == "table") and "the default" or tostring(row.default))
             end
         end
+    end
+    -- The bar's Outline (bar.edge) is one choice shown in Settings, but what is drawn is bar.frame
+    -- and bar.outline_width (lib/style.apply_edge writes all three). A preset or a theme profile that
+    -- set the pair without the choice left Settings saying "Bold" over a bar drawn with none; the pair
+    -- is the truth, so the choice is derived from it on every load.
+    do
+        local fr, ow = get(out, "bar.frame"), get(out, "bar.outline_width")
+        local edge = fr == "none" and "none" or fr == "corners" and "corners"
+            or ({ "thin", "regular", "bold" })[tonumber(ow) or 2] or "regular"
+        if get(t, "bar.edge") ~= nil and get(t, "bar.edge") ~= edge then
+            notes[#notes + 1] = "bar.edge: " .. tostring(get(t, "bar.edge")) .. " did not match the drawn outline; now " .. edge
+        end
+        set(out, "bar.edge", edge)
     end
     -- D112: the bar's foot switch was the first rim. A file that predates music.rim keeps its
     -- answer; a file that has the master is never overridden by the old key.
