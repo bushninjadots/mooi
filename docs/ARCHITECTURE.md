@@ -1,10 +1,10 @@
 # Architecture
 
-_Last checked against `main`: 2026-11-02. This describes the implementation that exists now, not the original proposed architecture. For intended future behaviour, see [VISION.md](VISION.md), [PHILOSOPHY.md](PHILOSOPHY.md) and [BRIEF.md](BRIEF.md). For reusable visual component rules, see [COMPONENT-SYSTEM.md](COMPONENT-SYSTEM.md). For verified test results and their dates, see [TESTING.md](TESTING.md) and [STATUS.md](../STATUS.md)._
+_Last checked against `main`: 2026-11-06. This describes the implementation that exists now, not the original proposed architecture. For intended future behaviour, see [VISION.md](VISION.md), [PHILOSOPHY.md](PHILOSOPHY.md) and [BRIEF.md](BRIEF.md). For reusable visual component rules, see [COMPONENT-SYSTEM.md](COMPONENT-SYSTEM.md). For verified test results and their dates, see [TESTING.md](TESTING.md) and [STATUS.md](../STATUS.md)._
 
 ## 1. System boundary
 
-mooi is a desktop shell built on **Pleamar 0.4.6** and **Hyprland**.
+mooi is a desktop shell built on **Pleamar 0.7.11 (language 0.9)** and **Hyprland**.
 
 - **Pleamar** owns scene rendering, scene input, surfaces, facts, models, events and the process that runs each scene.
 - **Hyprland** remains authoritative for windows, focus, workspaces, monitors and compositor operations. mooi asks Hyprland to perform actions and reads back the resulting state; it does not maintain a competing window-manager state.
@@ -24,9 +24,13 @@ The implementation is no longer the original one-scene prototype. The persistent
 | `shell/mooi-nexus.plm` + `shell/mooi-nexus.luau` | Control Nexus and its system/control views |
 | `shell/mooi-notch.plm` + `shell/mooi-notch.luau` | Side notch and its contextual panels |
 | `shell/mooi-player.plm` + `shell/mooi-player.luau` | Music player |
-| `shell/mooi-wallpaper.plm` + `shell/mooi-wallpaper.luau` | Lumen wallpaper studio |
 | `shell/mooi-board.plm` + `shell/mooi-board.luau` | Kanban board |
+| `shell/mooi-frame.plm` + `shell/mooi-frame.luau` | Screen frame: the band and bar chassis, its own program |
 | `shell/mooi-desk.plm` + `shell/mooi-desk.luau` | Desk scene / desktop integration |
+| `shell/mooi-walls.plm` + `shell/mooi-walls.luau` | Wallpaper picker (Lumen was removed, D118) |
+| `shell/mooi-viz.plm` + `shell/mooi-viz.luau` | Visualiser program (D155) |
+| `shell/mooi-widgets.plm` + `shell/mooi-widgets.luau` | Desktop widgets |
+| `shell/mooi-lock.plm` + `shell/mooi-lock.luau` | Lock screen (D160) |
 
 BMO has its own logic and UI resources under `shell/bmo/`. Shared visual building blocks live under `shell/ui/`; the component contract is documented in [COMPONENT-SYSTEM.md](COMPONENT-SYSTEM.md). Theme definitions and Ferrolume styling live under `shell/theme/`. Player-specific code is grouped under `shell/player/`.
 
@@ -122,7 +126,7 @@ bin/mooi check
 
 It checks scene compilation with the installed Pleamar version, parses the Luau logic with Lua 5.4, runs the pure unit suites and reports optional dependencies. Behavioural suites under `tests/` cover live scene interactions, recovery, degraded operation, surfaces, pointer input and individual tools. Some suites alter the live session or start real applications; read [TESTING.md](TESTING.md) before running them.
 
-GitHub Actions currently runs the portable static checks and unit suites. It does **not** yet compile Pleamar scenes, because the workflow does not provision the project's Pleamar 0.4.6 binary. A green CI run therefore does not replace `bin/mooi check` on a machine with the supported Pleamar version.
+GitHub Actions runs `tests/gate.sh`, the same portable static checks, unit suites and sandboxed suites `bin/mooi check` starts with. It does **not** compile Pleamar scenes, because the workflow does not provision the project's Pleamar 0.7.11 binary. A green CI run therefore does not replace `bin/mooi check` on a machine with the supported Pleamar version.
 
 Treat test evidence as dated. A suite's historical green result is not proof that it passed on the current commit. Do not update test counts or claim a suite passed unless it was actually run.
 

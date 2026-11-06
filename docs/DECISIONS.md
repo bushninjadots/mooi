@@ -4752,3 +4752,49 @@ and "on the nexus after adding the morphing the notches are not there anymore".
   the body settles (`smooth(0.86, 1)` of the reveal), so they rise out of the deck's edge once it is out.
 - Not done: the swipe's direction stays the desktop's own (config/gesture.lua: three fingers sideways;
   up is the special workspace), so Column's stacked workspaces are still swiped sideways.
+
+## D158 · 2026-11-04 · The workspaces' shader transition
+**Asked for:** a shader over the workspace switch, not another animation curve.
+- `mooi ws-fx` applies a Hyprland screen shader for the length of one workspace change — a channel
+  change and a circuit front — beside the theme watch; damage tracking and variable frame rate are
+  off for its length and put back after it.
+- The shader is mooi's own, runs only while the watch does, and is off in safe mode like the other
+  theme writes.
+
+## D159 · 2026-11-04 · The visualisers' angle and lean
+- The editor gains a turn about the widget's centre (a grip above the chosen one, ANGLE, and a
+  SQUARE reset) and a lean inside the widget's own box (`shaders/lean.wgsl`).
+- The lean shears the lane about its foot; the plate, footprint and handles stay put, so nothing
+  spills outside the widget.
+
+## D160 · 2026-11-04 · The lock screen
+- ext-session-lock through Pleamar's `kind: lock`: `mooi lock`/`unlock`, SUPER+L, and hypridle's
+  idle path all reach the same scene.
+- mooi's colours and wallpaper are copied beside the scene from the shell's own files; the password
+  goes through PAM and the remaining tries are shown before login locks; power off and reboot sit at
+  the foot, armed by a second press.
+- The scene starts with the session so the first keystroke is heard. There is no test hatch: Esc
+  empties the field and nothing else.
+
+## D161 · 2026-11-04 · The lock's idle timeout and pictures
+- `lock.idle` (Settings → Lock screen) is how long the session may sit idle before the lock takes
+  it; `mooi idle` writes hypridle's file and restarts it.
+- The Nexus's banner and profile picture can be worn on the lock independently: `lock.banner` and
+  `lock.avatar` are separate switches.
+
+## D162 · 2026-11-05 · The shaders' light and length, and the windows' arrival and exit
+- HyprWindowShade plays mooi's phosphor, glitch and iris pairs; terminals and browsers keep a pair of
+  their own, matched by class.
+- One speed for both shader families and one light for both: the bar's palette, a fixed way, three
+  colours typed as hex, or the wallpaper's own Matugen scheme before the bar re-lights it.
+
+_These five entries were missing from the file while HEAD already carried them (audit 2026-11-06,
+G4); the summaries follow the commit messages._
+
+## D163 · 2026-11-06 · The lock is held before it is reported, and the free models are opt-in
+- `mooi lock` succeeds only once the compositor confirms the session lock (`lock.held`), and
+  hypridle waits for the lock before sleeping (`inhibit_sleep = 3`); a refused lock falls through
+  to hyprlock.
+- When Claude cannot answer, a free model answers only if `claude.free_fallback` is on (off by
+  default), with opencode's tools denied and an empty working folder.
+- See docs/AUDIT-2026-11-06.md, fourth pass.

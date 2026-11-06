@@ -1,6 +1,6 @@
 # Theme packages
 
-_Status: pure package model and validation are implemented; no package browser or visual editor._
+_Status: implemented — save, list and apply from the terminal; no package browser or visual editor._
 
 Theme packages let a user preserve and share a coherent visual configuration without exporting unrelated personal settings.
 
@@ -60,7 +60,17 @@ Excluded categories:
 
 Applying a package preserves unrelated current settings, including keys and fields owned by integrations unknown to this version of mooi. Neither capture nor apply mutates its input.
 
-The model is pure Lua/Luau and is covered by `tests/unit/run.lua`. The next integration step is user-facing import/export and a saved-package location; this document does not claim those commands or UI exist yet.
+The model is pure Lua/Luau and is covered by `tests/unit/run.lua`.
+
+## From the terminal
+
+```sh
+mooi theme save Foundry "Graphite and phosphor"   # the current look, --force replaces one
+mooi theme list                                   # saved packages; invalid files are marked
+mooi theme apply Foundry                          # or a path to a package file
+```
+
+Packages live in `~/.local/share/pleamar/mooi/themes/<slug>.json`. `save` captures the current validated settings through the same allowlist; `apply` validates the package, re-reads `settings.json` as it is then, and writes only the package's own leaves over it, so a layout or an integration's field is never touched. A running mooi watches the file and applies the change. `MOOI_SAFE=1` refuses the write, and a package that fails validation writes nothing. The suite `tests/theme-pack.sh` covers the round trip in a throwaway XDG tree.
 
 ## Safety and compatibility
 

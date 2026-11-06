@@ -45,7 +45,7 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] Music island from the bar: ArchEclipse's player ported (D142). [ ] The full player (D92) still waits for its review; finish later (deferred review
       items in docs/superpowers/plans/2026-10-27-music-player.md's ledger, and: EasyEffects dies with the
       player, so the EQ only applies while it is open).
-- [ ] Settings
+- [x] Settings — `shell/mooi-settings.plm`, in daily use (D147)
 - [x] Wallpapers: Lumen removed; Skwd Wall is the one picker beside the notch's arc (D118)
 - [x] Wallpapers are mooi's (D145): the desk draws every kind (videos through mpvpaper), `mooi wall apply`,
       the picker (strip + colour orbit, Super+W), the notch wears through it
