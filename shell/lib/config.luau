@@ -38,6 +38,8 @@ M.SCHEMA = {
     -- D164: what the bar's body is made of (stage 1 draws Ferrolume; Liquid and Cartridge arrive in
     -- stages 7 and 8) and how much each module shows (stage 4 applies it)
     { path = "bar.material", kind = "enum", values = { "ferrolume", "liquid", "cartridge" }, default = "ferrolume" },
+-- Stage 4 (D170): how much each module tells at a glance — minimal (an icon, or nothing, or into the
+-- Pill) · balanced (icon and value) · rich (labels and graphs). A module's own choice wins over it.
     { path = "bar.density", kind = "enum", values = { "minimal", "balanced", "rich" }, default = "balanced" },
     { path = "bar.surface", kind = "enum", values = { "solid", "glass", "blur", "clear", "mech" }, default = "solid" },
     { path = "bar.visualizer", kind = "enum", values = { "mirror", "bars", "line", "dots", "off" }, default = "mirror" },
@@ -507,6 +509,7 @@ M.SCHEMA = {
     { path = "nexus.identity.banner", kind = "text", default = "", max = 180 },
 }
 
+
 for _, id in ipairs(barlayout.ORDER) do
     M.SCHEMA[#M.SCHEMA + 1] = { path = "bar.modules." .. id .. ".show", kind = "boolean", default = true }
     M.SCHEMA[#M.SCHEMA + 1] = { path = "bar.modules." .. id .. ".frame", kind = "enum",
@@ -520,6 +523,11 @@ for _, id in ipairs(barlayout.ORDER) do
     M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".glow", kind = "enum", values = { "off", "soft", "strong" }, default = "off" }
     M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".display", kind = "enum", values = { "icon", "icon+value", "label+value" }, default = "icon+value" }
     M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".width", kind = "enum", values = { "fit", "fixed" }, default = "fit" }
+    -- Stage 4: the module's own place in the density, and how its value warns (the value only: a
+    -- plate's colour stays the look's). lib/modtier resolves these against bar.density.
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".minimal", kind = "enum", values = { "style", "hide", "icon", "pill" }, default = "style" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".warn", kind = "enum", values = { "off", "soft", "strong" }, default = "off" }
+    M.SCHEMA[#M.SCHEMA + 1] = { path = base .. ".accent", kind = "modcolour", default = "style" }
 end
 
 -- The palette roles a module's colour may name (lib/ferro's ROLES; listed here so config needs no ferro)
