@@ -26,7 +26,15 @@ M.SCHEMA = {
     { path = "bar.right", kind = "layout", default = barlayout.DEFAULT.right },
     -- `notch`: each cluster hangs from the screen's top edge, the centre one a notch, the side
     -- ones flush with the corners, joined to the edge by inner fillets.
-    { path = "bar.mode", kind = "enum", values = { "islands", "full", "notch" }, default = "islands" },
+    { path = "bar.mode", kind = "enum", values = { "islands", "full", "notch", "pill" }, default = "islands" },
+    -- D168: the Pill — alone or with the side groups, satellites or split, how many moons, which activities
+    -- may take it (pill.off) and in what order (pill.order); lib/pill decides from them
+    { path = "pill.sides", kind = "enum", values = { "show", "hide" }, default = "show" },
+    { path = "pill.multi", kind = "enum", values = { "satellites", "split" }, default = "satellites" },
+    { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
+    { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
+    { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },
+      default = { "battery", "record", "notify", "music", "osd", "idle" } },
     -- D164: what the bar's body is made of (stage 1 draws Ferrolume; Liquid and Cartridge arrive in
     -- stages 7 and 8) and how much each module shows (stage 4 applies it)
     { path = "bar.material", kind = "enum", values = { "ferrolume", "liquid", "cartridge" }, default = "ferrolume" },
@@ -594,6 +602,11 @@ local function check(row, value)
         for _, id in ipairs(value) do
             if type(id) ~= "string" or #id > 24 or not string.match(id, "^[%w_]+$") then
                 return false, "expected ids like \"cpu\""
+            end
+            if row.allowed then
+                local ok = false
+                for _, a in ipairs(row.allowed) do if a == id then ok = true end end
+                if not ok then return false, "expected only " .. table.concat(row.allowed, ", ") end
             end
         end
     elseif row.kind == "paths" then
