@@ -13,7 +13,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
   see docs/AUDIT-2026-11-06.md, G1).
 - `bin/mooi check` compiles every scene by enumeration (13, including `mooi-lock.plm`) and runs
   `tests/gate.sh`; CI runs the same gate where Pleamar is not needed. On 2026-11-07 the gate passed:
-  **596 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
+  **597 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
   0.9**.
 - The generators (`tools/gen-settings.py`, `tools/gen-frame.py`) are deterministic and CI fails if
   their output differs from the committed scenes.
@@ -41,6 +41,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | The Pill's audit: every room photographed; wallpaper bleed, empty network list, visualiser band, Bluetooth button fixed (D193) | 2026-11-07 | unit 592/0; docs/AUDIT-PILL-2026-11-07.md |
 | Loom / Fold Phase 1: the model, modes, parking, the keeper, the program, `mooi loom` (D194) | 2026-11-07 | unit 592/0, 14 scenes; Hybrid start, park detection, unpark, crash return, recovery, Start again and `off` checked live on a throwaway window |
 | Loom / Fold Phase 2: the Accordion — rules, plans, the strip, settings, keys (D195) | 2026-11-07 | unit 596/0; fold, reorder, switch off/on, closing windows checked live on throwaway windows; pull/step/add by key not yet tried by the owner |
+| BMO as the Pill: his screen in the capsule, a hop, a typed line, notes, marks, sleep; the mark during other activities (D196) | 2026-11-07 | unit 597/0; resting, playful and curious faces and the hop seen live |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |
 

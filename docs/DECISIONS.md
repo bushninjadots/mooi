@@ -5470,3 +5470,25 @@ G4); the summaries follow the commit messages._
   and focus them, so they were not driven live while the owner worked — the owner's first try is their real
   test. The strip's opened look (pointer on it) was not photographed. No miniatures in the layers yet, and
   no fan.
+
+## D196 · 2026-11-07 · BMO as the Pill: his screen, alive
+
+- The owner: "improve BMO face integration as the pill much more lively and featuristic, aesthetically,
+  visually, animations and all". D187 still holds — one capsule, no body round it — so the change is what
+  the capsule's glass shows.
+- **The capsule's inside is his screen** (`BmoScreen`): the mint glass with a touch of the theme's light,
+  faint scanlines, a sheen across the top. His features — eyes, brows, mouth, without the face's empty
+  margins — fill the glass's height (about 1.5 × the old 32 px tile), clipped to it. What he says is typed
+  out on the same glass in his ink, a block cursor blinking at its end (`pb_say_n`, `pb_type`).
+- **Alive**: a hop with squash and stretch each time his face changes (`pb_bump` on the morph spring,
+  scaled about his feet), notes rising while he sings, a mark over his head — a drawn drop of sweat on low
+  battery, a bolt while charging, ! for a notice (`pb_mark`) — and asleep the glass dims to a third and a z
+  drifts up; waking, it flickers back on (`pb_pow`). Reduced motion stills the hop and the notes.
+- **He reacts to more**: a workspace change (a glance, curious), a volume or brightness turn (focused),
+  a song starting (excited) — through `bmo_react`, which shows at once.
+- **He stays when something takes the Pill**: with BMO as the face, the capsule's mark for music, a level,
+  a notice or the recording is BMO himself (`BmoMark`), not the generic mark.
+- Checks: unit 597 / 0 (one test replaced, one new), the scene compiles. Seen live: his resting smile,
+  a playful wink with his tongue out, and the curious face with the hop when the pointer arrived.
+- Limits: his typed line, the notes, the marks and the sleep dimming were not seen live (they need a line,
+  music, a battery or a long idle); the peek opens over him on a long hover.

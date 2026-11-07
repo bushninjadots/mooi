@@ -31,6 +31,15 @@ return function(ctx)
     local pillface = require("lib/pillface")     -- D169: BMO's face, when the Pill shows it
     local pst, pill_ms, pill_now = pillmod.state(), 0, nil
     local face_st, face_said = pillface.new("happy"), ""
+    -- D196: BMO as the Pill — a hop each time his face changes, a fresh typewriter for each new line,
+    -- and a small reaction: one table (the counters the scene's springs follow)
+    local bmo_fx = { bump = 0, say = 0, face = nil }
+    local function bmo_react(face, ms)
+        if fact.pill_on and fact.pill_face == 1 then
+            pillface.react(face_st, face, pill_ms, ms)
+            if bmo_fx.show then bmo_fx.show() end      -- face_show, set once it exists (below)
+        end
+    end
     local pill_room = nil          -- the width the Pill may take (relayout works it out)
     local pill_hovering = false    -- the pointer is on it (review M4)
     local cur_vol, cur_bri = nil, nil
@@ -232,6 +241,10 @@ return function(ctx)
         fact.pill_hidden = r.hidden == true
         fact.pill_vanish = r.vanish == true      -- D172: gone, 0 px wide; the scene keeps a seam
         fact.pill_record = r.record == true      -- D172: the disc, its cover as the label
+        -- D196: the mark over BMO's head: 1 low battery (a drop), 2 charging (a bolt), 3 a notice (!)
+        local b = pst.battery or {}
+        fact.pb_mark = (r.main == "notify" and 3) or ((b.charging and b.percent and b.percent < 100) and 2)
+                       or ((b.percent and b.percent < pillmod.LOW and not b.charging) and 1) or 0
         -- D187: one capsule, one height. BMO's face is a tile inside it now, not a taller Pill.
         local tall = false
         -- D181: when what it shows changes, the scene surges once — a ring out of the capsule and a
@@ -268,6 +281,11 @@ return function(ctx)
         local music = pst.media.playing == true and pst.media.title ~= ""
         local v = pillface.view(face_st, pill_ms, music)
         local f = pillface.numbers(v.face)
+        if v.face ~= bmo_fx.face then
+            bmo_fx.face = v.face
+            bmo_fx.bump = bmo_fx.bump + 1
+            fact.pb_bump = bmo_fx.bump
+        end
         fact.pb_ew, fact.pb_eh, fact.pb_lid, fact.pb_brow, fact.pb_bron = f.ew, f.eh, f.lid, f.brow, f.bron
         fact.pb_tg = f.tg or 0
         fact.pb_sing = v.face == "singing"         -- the scene opens his mouth on the bass
@@ -275,10 +293,13 @@ return function(ctx)
         fact.pb_sql, fact.pb_sqr, fact.pb_mc, fact.pb_mo, fact.pb_mw, fact.pb_bl = f.sql, f.sqr, f.mc, f.mo, f.mw, f.bl
         if v.say ~= face_said then
             face_said = v.say
+            if v.say ~= "" then bmo_fx.say = bmo_fx.say + 1; fact.pb_say_n = bmo_fx.say end
+            fact.pb_talk = v.say ~= ""
             pillmod.note(pst, "say", { text = v.say }, pill_ms)
             pill_update()
         end
     end
+    bmo_fx.show = face_show
     -- D173: the Pill's half disc turns once when the workspace changes (fact.active_row, set by
     -- mooi.luau) or the wheel turns its view; held a moment, then it settles (a newer turn wins).
     local pill_turn_seq, ws_row_seen = 0, nil
@@ -287,6 +308,7 @@ return function(ctx)
         local seq = pill_turn_seq
         fact.pill_turn = 1
         after(650, function() if seq == pill_turn_seq then fact.pill_turn = 0 end end)
+        bmo_react("curious", 500)      -- D196: he glances at the change
     end
     local face_beat = 0
     every(250, function()
@@ -324,7 +346,10 @@ return function(ctx)
             face_show()
         end
     end)
-    local function note(kind, payload) pillmod.note(pst, kind, payload, pill_ms); pill_timed = true; pill_update() end
+    local function note(kind, payload)
+        pillmod.note(pst, kind, payload, pill_ms); pill_timed = true; pill_update()
+        if kind == "osd" then bmo_react("focused", 700) end      -- D196: he concentrates on the turn
+    end
     -- what it hears: the volume and the brightness changing, notifications arriving (by their id)
     local last_vol, last_bri = nil, nil
     pcall(sys.watch, "audio", function(a)
@@ -844,6 +869,7 @@ return function(ctx)
             if mu.open then mu_modes() end
         end
         local changed = now ~= playing
+        if changed and now then bmo_react("excited", 900) end    -- D196: a song starts
         playing = now
         if changed then env.playing = now; relayout() elseif readers then readers() end
     end)
