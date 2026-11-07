@@ -159,6 +159,8 @@ M.SETTERS = {
     "loom.loom", "loom.threads", "keys.loom_link", "keys.loom_flow", "keys.loom_hop", "keys.loom_unlink",
     -- D205: a second and a third pill — each a face, and where it sits. Appended.
     "pill.two", "pill.two_at", "pill.three", "pill.three_at",
+    -- D207: the Sigil. Appended.
+    "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
 }
 
 local function row_of(path)

@@ -153,6 +153,8 @@ SETTERS = [
     "loom.loom", "loom.threads", "keys.loom_link", "keys.loom_flow", "keys.loom_hop", "keys.loom_unlink",
     # D205: a second and a third pill — each a face, and where it sits. Appended.
     "pill.two", "pill.two_at", "pill.three", "pill.three_at",
+    # D207: the Sigil. Appended.
+    "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -364,6 +366,15 @@ SECTIONS = [
         ("choice", "Side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
         ("choice", "Two at once", "Moons beside it, the Pill split in two, or pads on traces", "pill.multi", "sv_pill_multi", ["Moons", "Split", "Nodes"]),
         ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
+        # D207: the Sigil, beside the classic Pill until the owner switches (sigil.fixed is file-only for now)
+        ("fold", "The Sigil", "ONE LIVING LINE IN PLACE OF THE PILL"),
+        ("card", "The Sigil"),
+        ("choice", "In the Pill", "The classic Pill, or the Sigil: one living line that becomes what is happening", "sigil.pill", "sv_sigil_pill", ["Classic", "Sigil"]),
+        ("choice", "Temperament", "How much it moves: settled, alive, or restless", "sigil.temperament", "sv_sigil_temperament", ["Calm", "Lively", "Restless"]),
+        ("choice", "Colour", "The wallpaper's, the song's and the warnings' colours, or one of your own", "sigil.colour", "sv_sigil_colour", ["Follow", "Fixed"]),
+        ("choice", "At rest", "What it shows when nothing is happening", "sigil.rest", "sv_sigil_rest", [("Clock", 0), ("Song", 3), ("Weather", 2), ("Machine", 8), ("Battery", 9), ("Spaces", 6), ("BMO", 12)]),
+        ("choice", "Your pointer", "Near it, the line moves away, leans toward it, or ignores it", "sigil.pointer", "sv_sigil_pointer", ["Pushes", "Draws", "Ignores"]),
+        ("toggle", "The field", "A field of points behind its displays, warmed by your pointer", "sigil.field", "sv_sigil_field"),
         # D205: a second and a third pill, each a face at rest and a place of its own (the rest of the
         # faces — BMO, the Nexus, network, signals, the visualiser — are there by the file, pill.two/three)
         ("card", "More pills"),

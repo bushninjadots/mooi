@@ -7,7 +7,10 @@ local barlayout = require("lib/barlayout")
 
 local M = {}
 
-M.ORDER = barlayout.ORDER
+-- every bar module but the Sigil (D207): a Sigil inside the classic Pill's board means nothing, and it is last
+-- in the bar's order, so every other part keeps its index
+M.ORDER = {}
+for _, id in ipairs(barlayout.ORDER) do if id ~= "sigil" then M.ORDER[#M.ORDER + 1] = id end end
 
 -- The core's rooms, in the scene's numbering (fact pk_room).
 M.ROOMS = { "now", "calendar", "sound", "display", "connections", "power", "resources", "weather", "signals",

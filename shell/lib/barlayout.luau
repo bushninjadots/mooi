@@ -88,6 +88,8 @@ M.MODULES = {
     -- the side notch's doors (D106): Claude's chat, and GitHub with what waits there
     claude = { width = 32 },
     github = { width = 32 },
+    -- D207: the Sigil hosted in an island — the living line at the bar's height
+    sigil = { width = 180 },
 }
 
 -- In the order the scene declares their facts, and the bar menu lists them.
@@ -96,6 +98,7 @@ M.ORDER = {
     "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
     "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
     "notes", "wallpaper", "nexus", "updates", "claude", "github",
+    "sigil",   -- D207
 }
 
 M.DEFAULT = {

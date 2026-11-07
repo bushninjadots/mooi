@@ -540,6 +540,13 @@ scene Mooi {
     fact m_github = true
     fact fi_github = 0
     fact g_github = false
+    // D207: the Sigil's island — the bar keeps its place; mooi-sigil draws in it, on its own surface
+    fact x_sigil = 0
+    fact p_sigil = false
+    fact w_sigil = 0
+    fact m_sigil = true
+    fact fi_sigil = 0
+    fact g_sigil = false
     fact gh_unread = 0           // what waits on GitHub (the notch reads it)
     fact upd_n = 0               // system updates waiting (bar.luau, lib/updates)
     fact upd_busy = false        // looking

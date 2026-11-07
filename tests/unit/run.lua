@@ -5098,8 +5098,8 @@ do
         eq(#P.pads("garbage"), 8)
     end)
     test("pillpads: every bar module is a part, with a room or an act, an icon and a place", function()
-        eq(#PP.ORDER, #bl.ORDER)
-        for i, id in ipairs(bl.ORDER) do
+        eq(#PP.ORDER, #bl.ORDER - 1, "every module but the Sigil (D207)")
+        for i, id in ipairs(PP.ORDER) do
             local p = PP.get(id)
             assert(p, id .. " is a part")
             assert(p.room or p.act, id .. " has a room or an act")
@@ -5109,7 +5109,7 @@ do
         eq(PP.get("dragon"), nil)
         local rooms = {}
         for _, r in ipairs(PP.ROOMS) do rooms[r] = true end
-        for _, id in ipairs(bl.ORDER) do local p = PP.get(id); if p.room then assert(rooms[p.room], id .. "'s room exists") end end
+        for _, id in ipairs(PP.ORDER) do local p = PP.get(id); if p.room then assert(rooms[p.room], id .. "'s room exists") end end
         eq(PP.room_index("now"), 0); eq(PP.room_index("signals"), 8)
         eq(PP.get("volume").room, "sound"); eq(PP.get("clock").room, "calendar"); eq(PP.get("caffeine").switch, true)
         eq(PP.get("notes").room, "notes", "D201: notes is a room now, not a pad that closes the board")
@@ -7100,6 +7100,28 @@ test("a motion change restarts the bar the way refresh does: the keeper's mark f
     local block = sh:sub(i, i + 700)
     local mark, kill = block:find(': > "$again"', 1, true), block:find('kill -TERM', 1, true)
     assert(mark and kill and mark < kill, "the again mark is written before the scenes are ended")
+end)
+
+section("the sigil: settings (D207)")
+test("sigil settings: defaults leave the classic Pill", function()
+    local d = config.defaults()
+    eq(d.sigil.pill, "classic"); eq(d.sigil.temperament, "lively"); eq(d.sigil.colour, "follow")
+    eq(d.sigil.fixed, "#d6e38a"); eq(d.sigil.field, true); eq(d.sigil.pointer, "push"); eq(d.sigil.rest, "clock")
+end)
+test("sigil settings: bad values fall back, good ones stand", function()
+    local s, p = config.validate({ sigil = { pill = "sigil", temperament = "manic", rest = "kettle" } })
+    eq(s.sigil.pill, "sigil"); eq(s.sigil.temperament, "lively"); eq(s.sigil.rest, "clock"); eq(#p, 2)
+end)
+test("sigil settings: setters appended, the module placeable", function()
+    local S = require("lib/setters").SETTERS
+    eq(S[#S], "sigil.rest"); eq(S[#S - 6], "sigil.pill")
+    local bl = require("lib/barlayout")
+    eq(bl.ORDER[#bl.ORDER], "sigil"); eq(bl.width("sigil", { screen = 1920 }), 180)
+end)
+test("sigil settings: the page has its fold", function()
+    local f = io.open("shell/mooi-settings.plm"); local t = f:read("a"); f:close()
+    assert(t:find('"The Sigil"', 1, true), "fold title")
+    assert(t:find("sv_sigil_pill", 1, true) and t:find("sv_sigil_temperament", 1, true))
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

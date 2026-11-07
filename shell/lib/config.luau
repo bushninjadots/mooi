@@ -52,6 +52,17 @@ M.SCHEMA = {
     { path = "pill.two_at", kind = "integer", default = 0, min = 0, max = 100 },
     { path = "pill.three", kind = "enum", values = { "off", "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" }, default = "off" },
     { path = "pill.three_at", kind = "integer", default = 0, min = 0, max = 100 },
+    -- D207: the Sigil — one living line in place of the Pill (docs/superpowers/specs/2026-11-07-sigil-design.md).
+    -- `pill` chooses which draws in Pill mode (classic until the owner switches); `rest` is a wave-1 source
+    -- (lib/sigil/sources.WAVE1, the same list: a unit test keeps them equal).
+    { path = "sigil.pill", kind = "enum", values = { "classic", "sigil" }, default = "classic" },
+    { path = "sigil.temperament", kind = "enum", values = { "calm", "lively", "restless" }, default = "lively" },
+    { path = "sigil.colour", kind = "enum", values = { "follow", "fixed" }, default = "follow" },
+    { path = "sigil.fixed", kind = "colour", default = "#d6e38a" },
+    { path = "sigil.field", kind = "boolean", default = true },
+    { path = "sigil.pointer", kind = "enum", values = { "push", "draw", "ignore" }, default = "push" },
+    { path = "sigil.rest", kind = "enum", values = { "clock", "calendar", "weather", "music", "volume", "notifications",
+      "workspaces", "windows", "resources", "battery", "network", "bluetooth", "bmo" }, default = "clock" },
     { path = "pill.rest", kind = "integer", default = 10, min = 0, max = 60 },
     -- D169: the old hiding switch; D172 replaced it with the three-way choice below, and it stays here
     -- so a file that has it still reads (a true one becomes pill.hide = tuck when no choice is set)
