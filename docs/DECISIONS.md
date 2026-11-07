@@ -4871,3 +4871,30 @@ G4); the summaries follow the commit messages._
   from `mooi lock`. A unit test keeps every other program off the service.
 - Spec: docs/superpowers/specs/2026-11-06-the-pill-design.md §8.
 
+
+## D170 · 2026-11-07 · The Pill unfolds (the board)
+
+- A left press on the Pill — any face, any activity — unfolds it into a board: an island (`open = board`)
+  drawn with the island kit and, with the frame on, poured from the Pill. A core shows one room (Now or
+  Now Playing, the month, Sound, Display, Connections, Power, Resources, Weather, Signals) over up to
+  eight pads, each wired to it by a trace. The right press keeps the old jumps (calendar, player, the
+  activity's island). Moons dock in the header; the wheel turns the rooms; ←→ ↵ Esc work.
+- Pads are any bar module (`pill.pads`, `lib/pillpads`): a room, or the module's own press (a switch
+  lights its pad; one that opens another surface closes the board). Edit on the board (✎) or from
+  Settings → The Pill → Open. The closed Pill's face can be a module (`pill.face`: weather, CPU,
+  music, battery, workspaces, Wi-Fi, signals).
+- Music plays the board: the record in a HALO of the bands or a RIVER along the core's floor
+  (`pill.viz`), and every trace carries a pair of bands.
+- BMO's face in the Pill is the desktop BMO's own drawing, scaled; the Pill grows taller for him.
+  He looks, blinks, drifts, reacts (pointed at, the board opening, a pad, a signal, a poke), sings with
+  music, and falls asleep when left alone. Talk off silences his lines, not his faces (D169 M3).
+- Found on the way:
+  - The Pill's zone lived on `popup_surface` and a hand's click never reached it; scripted presses did.
+    It is on the bar's own surface now (a69e628).
+  - Reading `fact.open` back gives the logic's own last write, not a close made in the scene: the board
+    and the islands keep `open` as the scene reports it.
+  - The "intermittent calendar close" in the D169 live test was a real click on the desktop landing on
+    the dismiss zone while the test ran.
+  - Pleamar: a component's zones cannot be named from a `repeat` or an island's slot; each repeated
+    control is its own small component.
+- Spec: docs/superpowers/specs/2026-11-07-pill-board-design.md.
