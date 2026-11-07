@@ -20,6 +20,8 @@ local loom = require("lib/loom")
 local park = require("lib/loompark")
 local acc = require("lib/loomaccordion")
 local cube = require("lib/loomcube")          -- D197
+local links = require("lib/loomlinks")        -- D200
+local hypr = require("lib/hypr")
 local lm = require("lib/loommode")
 local config = require("lib/config")
 local ferro = require("lib/ferro")
@@ -120,6 +122,62 @@ local function publish()
     fact.lf_draw = #strips > 0 or #cubes > 0
 end
 
+-- D200: Loom's threads, for the workspace and monitor in front of the owner. `relevant` (the default)
+-- shows them for a few seconds when the focused window has connections, and while a link is being made;
+-- `always` while there are any; `hidden` only while a link is being made.
+local thr = { ws = 1, ox = 0, oy = 0, w = 1920, h = 1080, focus = nil, pick = nil, until_ms = 0, seq = 0, last_hop = nil }
+local function threads_mode()
+    local l = type(settings.loom) == "table" and settings.loom or {}
+    return l.threads == "always" and "always" or (l.threads == "hidden" and "hidden" or "relevant")
+end
+local function threads_publish()
+    if not features.on.loom then model.lf_threads = {}; fact.lf_thr_on = false; return end
+    local list = links.threads(doc, thr.ws, thr.w, thr.h, thr.ox, thr.oy, thr.focus)
+    model.lf_threads = list
+    local mode = threads_mode()
+    local on = thr.pick ~= nil
+    if mode == "always" then on = on or #list > 0
+    elseif mode == "relevant" then
+        local lit = false
+        for _, t in ipairs(list) do if t.lit then lit = true end end
+        on = on or (lit and thr.flash == true)
+    end
+    fact.lf_thr_on = on
+    fact.lf_pick = thr.pick ~= nil
+end
+-- after a change of focus or a new link: the threads light for 4 s, then fade
+local function threads_flash()
+    thr.seq = thr.seq + 1
+    local mine = thr.seq
+    thr.flash = true
+    threads_publish()
+    after(4000, function() if mine == thr.seq then thr.flash = false; threads_publish() end end)
+end
+-- where the owner is: the focused window, its workspace and its monitor
+local function threads_look(flash)
+    run("hyprctl", { "-j", "monitors" }, function(mo)
+        local okm, mons = pcall(json.decode, tostring(mo or ""))
+        if okm and type(mons) == "table" then
+            for _, m in ipairs(mons) do
+                if m.focused then
+                    local sc = tonumber(m.scale) or 1
+                    thr.ox, thr.oy = tonumber(m.x) or 0, tonumber(m.y) or 0
+                    thr.w, thr.h = math.floor((tonumber(m.width) or 1920) / sc), math.floor((tonumber(m.height) or 1080) / sc)
+                    thr.ws = type(m.activeWorkspace) == "table" and tonumber(m.activeWorkspace.id) or thr.ws
+                end
+            end
+        end
+        run("hyprctl", { "-j", "activewindow" }, function(aw)
+            local ok, a = pcall(json.decode, tostring(aw or ""))
+            local addr = ok and type(a) == "table" and a.address or nil
+            local _, oid = acc.of_window(doc, addr or "")
+            local changed = oid ~= thr.focus
+            thr.focus = oid
+            if flash or changed then threads_flash() else threads_publish() end
+        end)
+    end)
+end
+
 -- ── Hyprland ──────────────────────────────────────────────
 -- Run these commands one after another, then `done` (every command answers, so the next one starts
 -- only after Hyprland has had the last one).
@@ -171,6 +229,7 @@ local function refresh(done)
             save_soon()
             health()
             publish()
+            threads_look(false)
         end
         if done then done() end
         if again then again = false; refresh() end
@@ -270,7 +329,45 @@ end
 
 -- ── Commands: the keys (`mooi loom …`) and the strip ──────
 local CMD = { unpark = 1, add = 10, next = 11, prev = 12, fold = 13, open = 14, remove = 15, push = 16,
-              cube = 20, join = 21 }      -- D197
+              cube = 20, join = 21,       -- D197
+              link = 30, flow = 31, hop = 32, unlink = 33 }      -- D200
+local function loom_on()
+    if features.on.loom then return true end
+    log("loom · connections are off: " .. tostring(features.off.loom or ""))
+    return false
+end
+-- D200: a link is made in two presses — the first marks the focused window, the second (on another
+-- window) ties them; pressed again on the same window it lets go
+local function link_press(kind)
+    with_focused(function(_, oid)
+        if not thr.pick then thr.pick = oid; threads_publish(); return end
+        if thr.pick == oid then thr.pick = nil; threads_publish(); return end
+        local from = thr.pick
+        thr.pick = nil
+        if doc.objects[from] and links.link(doc, from, oid, kind) then
+            save_now(); health()
+            thr.focus = oid
+            threads_flash()
+        else threads_publish() end
+    end)
+end
+-- D200: along a connection — the next connected window, brought out of its park if it waits in one, and
+-- focused (Hyprland goes to its workspace)
+local function hop()
+    with_focused(function(_, oid)
+        local t = links.next_target(doc, oid, thr.last_hop)
+        thr.last_hop = t
+        local o = t and doc.objects[t]
+        if not o or o.state == "absent" or o.address == "" then return end
+        local cmds = {}
+        if o.state == "parked" then
+            for _, st in ipairs(park.unpark(doc, { t })) do for _, c in ipairs(st.cmds) do cmds[#cmds + 1] = c end; park.apply(doc, st) end
+        end
+        local f = hypr.dispatch("focus", o.address)
+        if f then cmds[#cmds + 1] = f end
+        dispatch_all(cmds, function() save_soon(); refresh_soon() end)
+    end)
+end
 local function cubes_on()
     if features.on.cubes then return true end
     log("loom · cubes are off: " .. tostring(features.off.cubes or ""))
@@ -313,6 +410,13 @@ end
 local command_acc      -- the Accordion's commands (below)
 local function command(n)
     if n == CMD.unpark then unpark_all(); return end
+    -- D200: Loom's keys
+    if n == CMD.link or n == CMD.flow then if loom_on() then link_press(n == CMD.flow and "workflow" or "association") end; return end
+    if n == CMD.hop then if loom_on() then hop() end; return end
+    if n == CMD.unlink then
+        if loom_on() then with_focused(function(_, oid) if links.unlink_all(doc, oid) > 0 then save_now(); threads_flash() end end) end
+        return
+    end
     -- D197: the Cube's keys, and fold for whichever structure the focused window is in
     if n == CMD.cube then if cubes_on() then make_cube() end; return end
     if n == CMD.join then
@@ -418,6 +522,7 @@ refresh(function()
     end)
 end)
 pcall(sys.watch, "workspaces", function() refresh_soon() end)
+pcall(sys.watch, "window", function() threads_look(false) end)        -- D200: the focus moved
 pcall(sys.watch, "files:palette.json", function() palette = read("palette.json"); pcall(paint) end)
 pcall(sys.watch, "files:settings.json", function()
     local was, was_c = features.on.accordions, features.on.cubes

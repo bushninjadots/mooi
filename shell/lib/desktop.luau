@@ -29,6 +29,10 @@ M.ACTIONS = {
     { key = "loom_remove", cmd = "loom remove", name = "Accordion: take the window out" },
     { key = "loom_cube", cmd = "loom cube", name = "Make a Cube of this workspace" },      -- D197
     { key = "loom_join", cmd = "loom join", name = "The window joins the Cube" },
+    { key = "loom_link", cmd = "loom link", name = "Link windows" },                       -- D200
+    { key = "loom_flow", cmd = "loom flow", name = "Link windows as a workflow" },
+    { key = "loom_hop", cmd = "loom hop", name = "Hop along a link" },
+    { key = "loom_unlink", cmd = "loom unlink", name = "Unlink the window" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

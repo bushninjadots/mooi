@@ -14,7 +14,7 @@ import "ui/loomcube.plm" as lc
 scene Loom {
     permissions {
         run: "hyprctl", "pleamar"
-        services: "files", "files.write", "workspaces", "env"
+        services: "files", "files.write", "workspaces", "window", "env"
     }
 
     // The bar's palette, as every program of the shell wears it (the logic paints the facts from
@@ -251,6 +251,16 @@ scene Loom {
                            n0: number; n1: number; n2: number; n3: number; n4: number; n5: number
                            i0: text; i1: text; i2: text; i3: text; i4: text; i5: text }
     fact lf_cn = 0
+    // D200: Loom's threads on the workspace in front of the owner (lib/loomlinks.threads)
+    model lf_threads max 24 { x1: number; y1: number; x2: number; y2: number; cx: number; cy: number
+                              ax: number; ay: number; bx: number; by: number; kind: number; directed: bool
+                              stub: bool; label: text; lit: bool }
+    fact lf_thr_on = false
+    fact lf_pick = false        // a link is half made: the first window is marked
+    prop lf_thr_f = 0 ~m.isl
+    follow lf_thr_f = if(lf_thr_on, 1, 0)
+    prop lf_flow = 0
+    spin lf_flow by if(lf_thr_f > 0.01, 60, 0)
     fact lf_edge = 0            // 0 right · 1 left (loom.edge)
     fact lf_draw = false        // an accordion to draw
     fact lf_side: right | left = right   // the edge the surface stands on (the logic sets it with lf_edge)
@@ -267,6 +277,52 @@ scene Loom {
     event cube_face ->          // to the logic: c: only the facing side out
     event cube_turn ->          // to the logic: c·10 + (1 next · 0 previous)
     event cube_dissolve ->      // to the logic: c: the cube gone, every window out
+
+    // D200: the threads — fine curves between connected windows, sagging with their length, an arrowhead
+    // where a link is directed, a short stub with an initial toward the edge where the other end is
+    // elsewhere. Purely drawn: no zones, every press goes through to the windows under it.
+    surface threads {
+        size: full, full
+        anchor: top
+        level: top
+        keyboard: none
+        open: lf_thr_f > 0.01
+        rate: 60, 10 while lf_thr_f < 0.01
+        group {
+            opacity: lf_thr_f
+            for t in lf_threads {
+                let col = pick(t.kind, fl.trace_lit, fl.phos, fl.phos, fl.ember)
+                let a = if(t.lit, 0.95, 0.45)
+                group {
+                    glow: 6, if(t.lit, 0.45, 0) * st_glow, col
+                    path { stroke: if(t.lit, 1.6, 1); color: col; opacity: a
+                           move t.x1, t.y1; curve t.x2, t.y2 via t.cx, t.cy }
+                }
+                // a bead running along a lit thread, the way the link goes
+                let u = lf_flow / 360 - floor(lf_flow / 360)
+                let qx = (1 - u) * (1 - u) * t.x1 + 2 * (1 - u) * u * t.cx + u * u * t.x2
+                let qy = (1 - u) * (1 - u) * t.y1 + 2 * (1 - u) * u * t.cy + u * u * t.y2
+                ellipse { at: qx, qy; radius: 2.2; color: col; opacity: a; show: t.lit }
+                ellipse { at: t.x1, t.y1; radius: 3; color: col; opacity: a }
+                path { color: col; opacity: a; show: t.directed
+                       move t.x2, t.y2; line t.ax, t.ay; line t.bx, t.by; close }
+                ellipse { at: t.x2, t.y2; radius: 3; color: col; opacity: a; show: not t.directed }
+                group {
+                    show: t.stub
+                    box { from: t.x2 - 9, t.y2 - 9; size: 18, 18; corner: 4; color: fl.hull; opacity: 0.9 }
+                    box { from: t.x2 - 9, t.y2 - 9; size: 18, 18; corner: 4; stroke: 1; color: col }
+                    text t.label { at: t.x2, t.y2 + 0.5; anchor: center; size: 10; weight: 800; family: "Exo 2"; color: fl.engrave }
+                }
+            }
+            // half a link: say what happens next
+            group {
+                show: lf_pick
+                box { from: threads.width / 2 - 190, threads.height - 64; size: 380, 30; corner: 8; color: fl.hull; opacity: 0.92 }
+                box { from: threads.width / 2 - 190, threads.height - 64; size: 380, 30; corner: 8; stroke: 1; color: fl.phos }
+                text "LINKING · FOCUS ANOTHER WINDOW AND PRESS AGAIN" { at: threads.width / 2, threads.height - 49; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+            }
+        }
+    }
 
     surface loom {
         size: 300, full
