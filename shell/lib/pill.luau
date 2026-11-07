@@ -184,6 +184,21 @@ function M.press(main, face, button, osd)
     return { kind = "board", room = room }
 end
 
+-- D170 (review I2): the readers Pill mode needs although their modules are not on the bar: the pads',
+-- the face's, and the weather Now shows. Returns a set of reader ids (resources, weather, bandwidth, keyboard).
+function M.needs(p)
+    p = type(p) == "table" and p or {}
+    local out = { weather = true }
+    local function want(id)
+        if id == "resources" then out.resources = true
+        elseif id == "bandwidth" or id == "network" then out.bandwidth = true
+        elseif id == "keyboard" then out.keyboard = true end
+    end
+    for _, id in ipairs(M.pads(p.pads)) do want(id) end
+    want(p.face)
+    return out
+end
+
 -- D170: the board's pads from pill.pads: known parts only, each once, eight at most, the owner's order.
 -- Not a list at all → the default eight; an empty list is an empty board.
 function M.pads(list)

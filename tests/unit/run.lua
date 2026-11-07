@@ -5233,7 +5233,7 @@ do
         local plm = read("shell/mooi.plm")
         assert(plm:find("follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)", 1, true), "the record turns")
         local ui = read("shell/ui/pillboard.plm")
-        assert(ui:find("on change pk_mus_on { emit music_isl(if(pk_mus_on, 1, 0)) }", 1, true), "position updates")
+        assert(ui:find("on change pk_mus_on { emit music_isl(if(pk_mus_on, 3, 2)) }", 1, true), "position updates")
         assert(ui:find("show: pk_viz < 0.5", 1, true) and ui:find("show: pk_viz > 0.5", 1, true), "HALO and RIVER")
         assert(ui:find("pick(i, lv0, lv2, lv4", 1, true), "each trace carries a pair of bands")
     end)
@@ -5389,6 +5389,49 @@ do
         local g = io.open("shell/bar.luau"); local b = g:read("a"); g:close()
         assert(b:find('pill_api.react("curious"', 1, true), "pointed at: curious")
         assert(b:find('pill_api.react("surprised"', 1, true) and b:find('"a letter!"', 1, true), "a signal: surprised, then a letter")
+    end)
+end
+
+section("the Pill board: the review's fixes (D170)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("review I1: the player quits while Now Playing shows: back to the idle Now", function()
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true, mu_playing = true, mu_has = true }, model = {}, text = {} }, { __index = _G })
+        local P = { now = function() return { main = "music", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                    touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = {} } end, save = function() end, pill = P })
+        api.press("left", "music")
+        eq(env.fact.pk_music, true)
+        assert(handlers["fact:mu_has"], "the board hears the player going")
+        env.fact.mu_has = false; handlers["fact:mu_has"](false)
+        eq(env.fact.pk_music, false)
+    end)
+    test("review I2: in Pill mode the readers run for the pads, the face and Now's weather", function()
+        local P = require("lib/pill")
+        local n = P.needs({ pads = { "resources", "volume" }, face = "time" })
+        eq(n.resources, true); eq(n.weather, true, "Now shows the weather"); eq(n.keyboard, nil)
+        eq(P.needs({ pads = {}, face = "resources" }).resources, true, "the CPU face")
+        eq(P.needs({ pads = { "network" } }).bandwidth, true, "Connections shows the throughput")
+        eq(P.needs({ pads = { "keyboard" } }).keyboard, true)
+        local bar = read("shell/bar.luau")
+        assert(bar:find("local need = pill_on_bar and pillmod.needs(s.pill) or {}", 1, true), "readers() asks")
+        assert(bar:find("if placed.resources or need.resources then", 1, true))
+    end)
+    test("review I3: the Signals room keeps signals.private", function()
+        local sig = read("shell/signals.luau")
+        assert(sig:find("local f = nexusfeed.feed(list, os.time(), private())", 1, true))
+    end)
+    test("review I4: the Tray pad does not press whichever app is first in the tray", function()
+        local PP = require("lib/pillpads")
+        assert(PP.get("tray").act ~= "tray_cmd")
+    end)
+    test("review I5: the board and the music island keep the song's position coming each on its own", function()
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("emit music_isl(if(pk_mus_on, 3, 2))", 1, true), "the board says 3 or 2")
+        local bar = read("shell/bar.luau")
+        assert(bar:find("mu.open = mu.isl or mu.board", 1, true), "either keeps it open")
     end)
 end
 

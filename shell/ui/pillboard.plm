@@ -300,7 +300,7 @@ library PillBoard {
         image pk_art = from med_art, 120, 120
         // the song's position keeps coming while Now Playing shows (as for the music island)
         let pk_mus_on = open == board and pk_room < 0.5 and pk_music
-        on change pk_mus_on { emit music_isl(if(pk_mus_on, 1, 0)) }
+        on change pk_mus_on { emit music_isl(if(pk_mus_on, 3, 2)) }
 
         group {
             move: 0, st_res + 6

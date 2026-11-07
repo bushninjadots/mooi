@@ -635,8 +635,12 @@ return function(ctx)
         mu.pos = math.min(mu.len, mu.pos + 0.5 * mu.rate)
         mu_show()
     end)
+    -- the music island says 1 or 0, the Pill's board 3 or 2 (D170, review I5): either keeps the song's
+    -- position coming, and one closing in the frame the other opens never stops it
     on("music_isl", function(v)
-        mu.open = math.floor(tonumber(v) or 0) == 1
+        local n = math.floor(tonumber(v) or 0)
+        if n >= 2 then mu.board = n == 3 else mu.isl = n == 1 end
+        mu.open = mu.isl or mu.board
         if mu.open then mu_modes() end
         if readers then readers() end
     end)
@@ -674,10 +678,13 @@ return function(ctx)
     -- Start what the placed modules need, stop the rest.
     readers = function()
         local s = ctx.settings()
-        if placed.resources then every_while("res", 2000, read_resources) else stop("res") end
-        if placed.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
-        if placed.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
-        if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
+        -- D170 (review I2): in Pill mode the pads, the face and Now read too, modules on the bar or not
+        local pill_on_bar = s.bar.mode == "pill"
+        local need = pill_on_bar and pillmod.needs(s.pill) or {}
+        if placed.resources or need.resources then every_while("res", 2000, read_resources) else stop("res") end
+        if placed.bandwidth or need.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
+        if placed.keyboard or need.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
+        if placed.weather or need.weather then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
         want_swell = s.frame.on and s.frame.music and not still
         -- The frame's music follows whatever is audible, not only what the media module knows

@@ -300,10 +300,13 @@ return function(ctx)
     end
 
     -- the Control Nexus's view of them (it cannot receive notifications itself): the latest five
-    local function share()
+    -- signals.private: titles stay in the bar (the Nexus's feed and the Pill board's Signals room)
+    local function private()
         local s = ctx.settings and ctx.settings() or {}
-        local private = type(s.signals) == "table" and s.signals.private == true
-        pcall(sys.call, "files.write", "nexus-feed.json", nexusfeed.feed(list, os.time(), private))
+        return type(s.signals) == "table" and s.signals.private == true
+    end
+    local function share()
+        pcall(sys.call, "files.write", "nexus-feed.json", nexusfeed.feed(list, os.time(), private()))
     end
 
     local function took(raw)
@@ -494,7 +497,7 @@ return function(ctx)
         on_signal = function(fn) pill_hook = fn end,
         -- the Pill board's Signals room (D170): the newest n, as the Nexus sees them, and clearing them
         recent = function(n)
-            local f = nexusfeed.feed(list, os.time(), false)
+            local f = nexusfeed.feed(list, os.time(), private())
             local out = {}
             for i = 1, math.min(tonumber(n) or 3, #f.items) do out[i] = f.items[i] end
             return out, f.count

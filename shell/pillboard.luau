@@ -106,6 +106,10 @@ return function(ctx)
         if v ~= "board" then fact.pk_edit, fact.pk_sel, fact.pk_kb = false, -1, -1 end
         if ctx.refresh then ctx.refresh() end      -- the Pill stays out while its board is open
     end)
+    -- the player gone while Now Playing shows: back to the idle Now (review I1)
+    on("fact:mu_has", function(v)
+        if not v and fact.pk_music then fact.pk_music = false end
+    end)
     -- the Signals room keeps up while it shows
     every(2000, function()
         if opened == "board" and fact.pk_room == parts.room_index("signals") then signals() end

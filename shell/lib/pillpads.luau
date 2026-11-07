@@ -22,7 +22,9 @@ local PARTS = {
     bandwidth     = { room = "connections" },
     keyboard      = { act = "open_settings", closes = true },
     weather       = { room = "weather" },
-    tray          = { act = "tray_cmd", arg = 0 },
+    -- the tray holds many apps, so its pad only shows and goes back to Now (review I4: tray_cmd 0
+    -- pressed whichever app happened to be first)
+    tray          = { room = "now" },
     notifications = { room = "signals" },
     mic           = { act = "mic_mute", switch = true },
     volume        = { room = "sound" },
