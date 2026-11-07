@@ -119,6 +119,8 @@ SETTERS = [
     "pill.sides", "pill.multi", "pill.moons",
     # D169: the Pill's face and hiding when idle. Appended, so no code moved.
     "pill.face", "pill.autohide",
+    # D170: the board's pads and its music visualiser. Appended, so no code moved.
+    "pill.pads", "pill.viz",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -294,13 +296,16 @@ SECTIONS = [
         ("choice", "Visualizer", "Moves with the sound", "bar.visualizer", "viz", ["Mirror", "Bars", "Line", "Dots", "Off"], "media_mode != 2"),
     
         ("fold", "The Pill", "A CAPSULE THAT BECOMES WHAT IS HAPPENING"),
-        ("card", "The Pill"),
+        ("card", "Closed"),
         ("note", "sv_bar_mode != 3", "CHOOSE SHAPE → PILL ABOVE TO SEE IT"),
         ("choice", "With the side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
-        ("choice", "When nothing is happening", "The time and workspace, BMO's face (a press pokes him), or the Nexus button", "pill.face", "sv_pill_face", ["Time", "BMO", "Nexus"]),
+        ("choice", "When nothing is happening", "The time, BMO's face, or the Nexus button; a module's face (weather, music…) is chosen on the board", "pill.face", "sv_pill_face", [("Time", 0), ("BMO", 1), ("Nexus", 2)]),
         ("toggle", "Hide when idle", "Tucks away to a sliver until you point at it or something happens", "pill.autohide", "sv_pill_autohide"),
-        ("choice", "Two at once", "Moons beside the Pill, the Pill split in two, or pads on circuit traces", "pill.multi", "sv_pill_multi", ["Satellites", "Split", "Nodes"]),
+        ("choice", "Two at once", "Moons beside the Pill, the Pill split in two, or pads on circuit traces; opened, they dock in the board", "pill.multi", "sv_pill_multi", ["Satellites", "Split", "Nodes"]),
         ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
+        ("card", "Open"),
+        ("button", "The pads", "Up to eight, from every module on the bar; a press opens what it is or does what it does", "Edit on the Pill", "pill_board_edit", 1),
+        ("choice", "Music", "What plays on the board: the record in a halo of the bands, or a river along its floor", "pill.viz", "sv_pill_viz", ["Halo", "River"]),
         ("card", "What may take it"),
         ("pillorder",),
     ]),
@@ -1351,6 +1356,7 @@ def main():
     fact sw_one = 0           // the one-of kinds there already, a bit each: weather 1 · system 2 · calendar 4 · timer 8 · claude 16 · photo 32 · launcher 64
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
+    event pill_board_edit ->  // to the logic (D170): the Pill's board, open in edit (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture

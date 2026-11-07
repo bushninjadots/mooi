@@ -45,37 +45,55 @@ library Pill {
     // BMO's face on his own small screen (D169), 48 × 22 at (fx, fy): bmo/brain's numbers at 0.42 of
     // the desktop BMO's face, eyes pulled toward the pointer (pb_lx, pb_ly), the blink (pb_open).
     component BmoFace(fx: number, fy: number) {
-        size: 48, 22
-        let k = 0.42
+        // D170: the desktop BMO's own face (bmo/bmo.plm's screen) at 50 × 34: drawn in its 96 × 66 units and
+        // scaled, so every expression is the same drawing — eyes with their shine, ^ when happy-shut, brows,
+        // a mouth of two curves that opens into a D or an O, the tongue, the blush. Singing, his mouth opens
+        // on the bass and his head bobs.
+        size: 50, 34
         let ink = #183d42
+        let glass = #b8f5df
+        let bass = clamp((lv0 + lv1 + lv2) / 3, 0, 1)
+        let mo = if(pb_sing, 0.15 + 0.85 * bass, pbm_o)
         let lx = pb_lx
         let ly = pb_ly
         let shut = min(1, pb_lidf + 1 - pb_open)
-        let eh = pbe_h * k
-        let ew = pbe_w * k
-        let eye_h = max(1.2, eh * (1 - shut))
-        let ey = fy + 9 + ly
-        let mx = fx + 24 + lx * 0.3
-        let my = fy + 16.5 + ly * 0.5
-        let half = pbm_w * k / 2
-        let lower = my + pbm_c * 3.4 + pbm_o * 5.5
-        let upper = my + pbm_c * 1.9 - pbm_o * 3 * (1 - max(0, pbm_c))
-        box { from: fx, fy; size: 48, 22; corner: 6; color: #b8f5df }
-        box { from: fx, fy; size: 48, 22; corner: 6; stroke: 1; color: ink; opacity: 0.35 }
-        ellipse { at: fx + 8, fy + 15; radius: 2.6; scale: 1, 0.6; color: #f28aa0; opacity: pb_bl * 0.6 }
-        ellipse { at: fx + 40, fy + 15; radius: 2.6; scale: 1, 0.6; color: #f28aa0; opacity: pb_bl * 0.6 }
-        box { from: fx + 15 + lx - ew / 2, ey + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sql }
-        box { from: fx + 33 + lx - ew / 2, ey + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sqr }
-        path { stroke: 1.4; color: ink; opacity: pb_sql
-               move fx + 12.5 + lx, ey + 1.5; curve fx + 17.5 + lx, ey + 1.5 via fx + 15 + lx, ey - 2.5 }
-        path { stroke: 1.4; color: ink; opacity: pb_sqr
-               move fx + 30.5 + lx, ey + 1.5; curve fx + 35.5 + lx, ey + 1.5 via fx + 33 + lx, ey - 2.5 }
-        box { at: fx + 15 + lx, ey - eh / 2 - 2.2; size: 5, 1.3; corner: 0.6; rotate: -pb_brow * 1deg; color: ink; opacity: pb_bron }
-        box { at: fx + 33 + lx, ey - eh / 2 - 2.2; size: 5, 1.3; corner: 0.6; rotate: pb_brow * 1deg; color: ink; opacity: pb_bron }
-        path { color: ink; opacity: min(1, pbm_o * 4)
-               move mx - half, my; curve mx + half, my via mx, lower; curve mx - half, my via mx, upper; close }
-        path { stroke: 1.4; color: ink
-               move mx - half, my; curve mx + half, my via mx, my + pbm_c * 3.4 }
+        let eh = pbe_h
+        let ew = pbe_w
+        let eye_h = max(2.5, eh * (1 - shut))
+        let mx = 48 + lx * 0.3
+        let half = pbm_w / 2
+        let bend = pbm_c * 8
+        let upper = 46 + bend * 0.55 - mo * 7 * (1 - max(0, pbm_c))
+        let lower = 46 + bend + mo * 13
+        group {
+            move: fx, fy - if(pb_sing, bass * 1.5, 0)
+            pivot: 0, 0
+            scale: 50 / 96
+            box { from: 0, 0; size: 96, 66; corner: 9; color: ink }
+            box { from: 2, 2; size: 92, 62; corner: 7; color: glass }
+            box { from: 6, 5; size: 84, 6; corner: 3; color: #ffffff; opacity: 0.22 }
+            ellipse { at: 18, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: pb_blf * 0.55 }
+            ellipse { at: 78, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: pb_blf * 0.55 }
+            box { from: 30 + lx - ew / 2, 26 + ly + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sqlf }
+            box { from: 66 + lx - ew / 2, 26 + ly + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sqrf }
+            box { from: 30 + lx + ew / 2 - 4, 26 + ly + eh / 2 - eye_h + 2.5; size: 2.5, 2.5; corner: 1.25; color: glass; opacity: 0.85 * (1 - pb_sqlf); show: eye_h > 8 }
+            box { from: 66 + lx + ew / 2 - 4, 26 + ly + eh / 2 - eye_h + 2.5; size: 2.5, 2.5; corner: 1.25; color: glass; opacity: 0.85 * (1 - pb_sqrf); show: eye_h > 8 }
+            path { stroke: 3; color: ink; opacity: pb_sqlf
+                   move 24 + lx, 29 + ly; curve 36 + lx, 29 + ly via 30 + lx, 20 + ly }
+            path { stroke: 3; color: ink; opacity: pb_sqrf
+                   move 60 + lx, 29 + ly; curve 72 + lx, 29 + ly via 66 + lx, 20 + ly }
+            box { at: 30 + lx, 26 + ly - eh / 2 - 6; size: 12, 3; corner: 1.5; rotate: -pb_browf * 1deg; color: ink; opacity: pb_bronf }
+            box { at: 66 + lx, 26 + ly - eh / 2 - 6; size: 12, 3; corner: 1.5; rotate: pb_browf * 1deg; color: ink; opacity: pb_bronf }
+            path { color: ink; opacity: min(1, mo * 4)
+                   move mx - half, 46; curve mx + half, 46 via mx, lower; curve mx - half, 46 via mx, upper; close }
+            path { stroke: 3.2; color: ink
+                   move mx - half, 46; curve mx + half, 46 via mx, lower }
+            path { stroke: 3.2; color: ink; opacity: min(1, mo * 4)
+                   move mx - half, 46; curve mx + half, 46 via mx, upper }
+            ellipse { at: mx + 3, (46 + lower) / 2 + 2; radius: 4.5; scale: 1, 0.66; color: #ef7f93; opacity: pb_tgf * if(mo > 0.25, 1, 0) }
+            // asleep: a z drifting up from the corner of his screen
+            text "z" { at: 82, 18 - (pk_flow2 - floor(pk_flow2 / 14) * 14); anchor: center; size: 13; family: "Share Tech Mono"; color: ink; opacity: 0.7; show: pb_asleep }
+        }
     }
 
     // The Control Nexus as the Pill's face (D169): its mark (a hub and three nodes) and its name, lit
@@ -110,12 +128,25 @@ library Pill {
             }
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 0.5 and pill_face < 1.5
-                BmoFace(px + 8, cy - 11)
-                text pill_t1 { at: px + 62, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, pw - 70); lines: 1 }
+                BmoFace(px + 10, fl.top + (pill_h - 34) / 2)
+                text pill_t1 { at: px + 68, fl.top + pill_h / 2; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, pw - 76); lines: 1 }
             }
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5
                 NexusFace(px, pw, cy)
+            }
+            // D170: a module's face — its icon and a short reading
+            group {
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 2.5
+                let fk = pick(pill_face - 3, 6, 3, 2, 12, 0, 13, 8)
+                PkIcon(fk, px + 20, cy, 15, fl.phos)
+                text "{wx_temp, 0}° {lower(wx_word)}" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 3 }
+                text "CPU {round(res_cpu * 100), 0}% · {round(res_temp), 0}°C" { at: px + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 4 }
+                text pick(mu_has, "Nothing playing", mu_title) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 5 }
+                text pick(battery.present, "No battery", "{battery.percent, 0}%") { at: px + 34, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 6 }
+                text "WORKSPACE {ws.active, 0}" { at: px + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 7 }
+                text pick(network.online, "Offline", network.name) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 8 }
+                text "{loom_count, 0} signals" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 9 }
             }
             // anything else, whole
             group {
@@ -130,11 +161,15 @@ library Pill {
                 Half(px + pill_w1 + 8, pw - pill_w1 - 8, pill_glyph2, pill_s1, "", pill_val2)
             }
             // hidden with the frame on, the tab hangs in the top strip: the zone reaches the top (review M5)
-            zone box pillz { from: px, if(pill_hidden, 0, fl.top); size: pw, if(pill_hidden, fl.top + fl.mod_h, fl.mod_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
+            zone box pillz { from: px, if(pill_hidden, 0, fl.top); size: pw, if(pill_hidden, fl.top + fl.mod_h, pill_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
             on press pillz { emit pill_press }
-            // pointed at: 1, and 0 when the pointer leaves — a resting pointer keeps it open (review M4)
-            on change pillz.hover while pillz.hover > 0.5 { emit pill_hover(1) }
-            on change pillz.hover while pillz.hover < 0.5 { emit pill_hover(0) }
+            // D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
+            on press right pillz { emit pill_rpress }
+            // pointed at: 1, and 0 when the pointer leaves — a resting pointer keeps it open (review M4).
+            // Once per crossing (D170): `on change pillz.hover` fired on every step of the hover's easing.
+            let pz_in = pillz.hover > 0.5
+            on change pz_in while pz_in { emit pill_hover(1) }
+            on change pz_in while not pz_in { emit pill_hover(0) }
             // nodes (D169): each pad on a circuit trace to the one inside it, a via at each end
             group {
                 show: pill_nodes
@@ -168,24 +203,28 @@ library Pill {
                 Mark(moon_x0 + 12, cy, moon_k0)
                 zone box pmoon0 { from: moon_x0, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon0 { emit pill_moon(0) }
+                on press right pmoon0 { emit pill_rmoon(0) }
             }
             group {
                 show: moon_k1 > -0.5
                 Mark(moon_x1 + 12, cy, moon_k1)
                 zone box pmoon1 { from: moon_x1, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon1 { emit pill_moon(1) }
+                on press right pmoon1 { emit pill_rmoon(1) }
             }
             group {
                 show: moon_k2 > -0.5
                 Mark(moon_x2 + 12, cy, moon_k2)
                 zone box pmoon2 { from: moon_x2, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon2 { emit pill_moon(2) }
+                on press right pmoon2 { emit pill_rmoon(2) }
             }
             group {
                 show: moon_k3 > -0.5
                 Mark(moon_x3 + 12, cy, moon_k3)
                 zone box pmoon3 { from: moon_x3, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon3 { emit pill_moon(3) }
+                on press right pmoon3 { emit pill_rmoon(3) }
             }
         }
     }

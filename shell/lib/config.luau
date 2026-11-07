@@ -32,7 +32,11 @@ M.SCHEMA = {
     { path = "pill.sides", kind = "enum", values = { "show", "hide" }, default = "show" },
     { path = "pill.multi", kind = "enum", values = { "satellites", "split", "nodes" }, default = "satellites" },   -- nodes: D169
     -- D169: what the Pill shows when nothing is happening, and whether it tucks away then
-    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus" }, default = "time" },
+    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications" }, default = "time" },   -- D170: module faces
+    -- D170: the board's pads (lib/pillpads: any bar module) and its music visualiser
+    { path = "pill.pads", kind = "ids", max = 8, allowed = barlayout.ORDER,
+      default = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" } },
+    { path = "pill.viz", kind = "enum", values = { "halo", "river" }, default = "halo" },
     { path = "pill.autohide", kind = "boolean", default = false },
     { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },

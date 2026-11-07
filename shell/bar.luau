@@ -34,6 +34,10 @@ return function(ctx)
     local pill_hovering = false    -- the pointer is on it (review M4)
     local cur_vol, cur_bri = nil, nil
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
+    local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
+    local pill_face_text = nil   -- D170: a module face's reading (pill_face_read), for its width
+    local pill_tall = false      -- D170: BMO's face is showing: the Pill is taller
+    local pill_api               -- D170: what the board needs from the Pill (defined at the end)
 
     -- ── Layout ─────────────────────────────────────────────────
     -- The bar's edge inset: 12 px at full width; a narrower bar (bar.width) is centred.
@@ -126,7 +130,9 @@ return function(ctx)
             local n = pill_now and #pill_now.moons or 0
             local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
             local pl = pillmod.place(env.screen, w, n, pm)
-            geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true }
+            geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true,
+                         h = pill_tall and math.max(40, tonumber(b.height) or 24) or nil }      -- D170: BMO's face
+            fact.pill_h = geo.pill.h or (tonumber(b.height) or 24)
             geo.nodes = pm == "nodes"      -- D169: square pads on traces
             fact.pill_nodes = geo.nodes
             geo.moons = {}
@@ -157,8 +163,9 @@ return function(ctx)
         local p = type(s.pill) == "table" and s.pill or {}
         local off = {}
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
-        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face, autohide = p.autohide,
-                 max_w = pill_room }
+        -- D170: never tucked away while its own board is open
+        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face,
+                 autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text }
     end
     function pill_update()
         local s = ctx.settings()
@@ -183,10 +190,14 @@ return function(ctx)
         end
         -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
         local p = type(s.pill) == "table" and s.pill or {}
-        fact.pill_face = ({ time = 0, bmo = 1, nexus = 2 })[p.face] or 0
+        local fi = 0
+        for i, f in ipairs(pillmod.FACES) do if f == p.face then fi = i - 1 end end
+        fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         fact.pill_hidden = r.hidden == true
+        local tall = fi == 1 and r.main == "idle" and not r.split and not r.hidden
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
-            or (pill_now.hidden == true) ~= (r.hidden == true)
+            or (pill_now.hidden == true) ~= (r.hidden == true) or tall ~= pill_tall
+        pill_tall = tall
         pill_now = r
         if changed then relayout(true) end
     end
@@ -195,9 +206,13 @@ return function(ctx)
     local pill_timed = false
     -- D169: BMO's face — his expression's numbers for the scene, and his line, which widens the Pill
     local function face_show()
-        local v = pillface.view(face_st, pill_ms)
+        local music = pst.media.playing == true and pst.media.title ~= ""
+        local v = pillface.view(face_st, pill_ms, music)
         local f = pillface.numbers(v.face)
         fact.pb_ew, fact.pb_eh, fact.pb_lid, fact.pb_brow, fact.pb_bron = f.ew, f.eh, f.lid, f.brow, f.bron
+        fact.pb_tg = f.tg or 0
+        fact.pb_sing = v.face == "singing"         -- the scene opens his mouth on the bass
+        fact.pb_asleep = v.face == "asleep"
         fact.pb_sql, fact.pb_sqr, fact.pb_mc, fact.pb_mo, fact.pb_mw, fact.pb_bl = f.sql, f.sqr, f.mc, f.mo, f.mw, f.bl
         if v.say ~= face_said then
             face_said = v.say
@@ -237,6 +252,11 @@ return function(ctx)
     if ctx.on_signal then
         ctx.on_signal(function(n)
             note("notify", { app = (n.app or "") ~= "" and n.app or "notice", summary = n.title or n.summary or "" })
+            -- D170: BMO is surprised, then pleased: a letter
+            if fact.pill_on and fact.pill_face == 1 and pill_api then
+                pill_api.react("surprised", 700)
+                after(650, function() pill_api.react("excited", 1000); pill_api.say("a letter!") end)
+            end
         end)
     end
     -- what a press does: the thing it shows, opened; a scroll: volume or workspaces; a moon: brought in
@@ -246,18 +266,26 @@ return function(ctx)
         -- it already brought it back; a press that only revealed it read as "nothing happens")
         if fact.pill_hidden then note("peek", {}) end
         fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
-        if main == "music" then run("pleamar", { "--say", "mooi", "emit open_player 0" })
-        elseif main == "notify" then run("pleamar", { "--say", "mooi", "emit loom_field" })
-        elseif main == "record" then run("pleamar", { "--say", "mooi", "emit record 0" })
-        elseif main == "osd" then fact.open = (pst.osd and pst.osd.kind == "bri") and "display" or "sound"
-        elseif main == "battery" then fact.open = "power"
-        elseif fact.pill_face == 1 then pillface.poke(face_st, pill_ms, math.random()); face_show()
-        elseif fact.pill_face == 2 then run("pleamar", { "--say", "mooi", "emit open_nexus" })
-        else fact.open = "calendar" end
+        -- D170: the board decides (lib/pill.press): it unfolds, or the Nexus face opens the Nexus
+        if pill_board then pill_board.press("left", main) end
+    end)
+    -- D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
+    on("pill_rpress", function()
+        local main = pill_now and pill_now.main or "idle"
+        if fact.pill_hidden then note("peek", {}) end
+        fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
+        if pill_board then pill_board.press("right", main) end
+    end)
+    -- D170: a moon's right press opens the board on its activity
+    on("pill_rmoon", function(v)
+        local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
+        if id and pill_board then pill_board.press("left", id) end
     end)
     -- D169: pointed at, a hidden Pill comes back for a while
     on("pill_hover", function(v)
         pill_hovering = tonumber(v) == 1
+        -- D170: BMO notices the pointer (and wakes up)
+        if pill_hovering and fact.pill_on and fact.pill_face == 1 then pill_api.touch(); pill_api.react("curious", 900) end
         -- on, or on leaving: 4 s more from now
         note("peek", {})
     end)
@@ -607,8 +635,12 @@ return function(ctx)
         mu.pos = math.min(mu.len, mu.pos + 0.5 * mu.rate)
         mu_show()
     end)
+    -- the music island says 1 or 0, the Pill's board 3 or 2 (D170, review I5): either keeps the song's
+    -- position coming, and one closing in the frame the other opens never stops it
     on("music_isl", function(v)
-        mu.open = math.floor(tonumber(v) or 0) == 1
+        local n = math.floor(tonumber(v) or 0)
+        if n >= 2 then mu.board = n == 3 else mu.isl = n == 1 end
+        mu.open = mu.isl or mu.board
         if mu.open then mu_modes() end
         if readers then readers() end
     end)
@@ -646,10 +678,13 @@ return function(ctx)
     -- Start what the placed modules need, stop the rest.
     readers = function()
         local s = ctx.settings()
-        if placed.resources then every_while("res", 2000, read_resources) else stop("res") end
-        if placed.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
-        if placed.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
-        if placed.weather then every_while("wx", 600000, read_weather) else stop("wx") end
+        -- D170 (review I2): in Pill mode the pads, the face and Now read too, modules on the bar or not
+        local pill_on_bar = s.bar.mode == "pill"
+        local need = pill_on_bar and pillmod.needs(s.pill) or {}
+        if placed.resources or need.resources then every_while("res", 2000, read_resources) else stop("res") end
+        if placed.bandwidth or need.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
+        if placed.keyboard or need.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
+        if placed.weather or need.weather then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
         want_swell = s.frame.on and s.frame.music and not still
         -- The frame's music follows whatever is audible, not only what the media module knows
@@ -1082,5 +1117,25 @@ return function(ctx)
     measure()
     relayout()
     -- a settings change arrives as relayout(): the Pill reads its face, hiding and order again first
-    return { relayout = function() pill_update(); relayout() end, measure = measure }
+    -- D170: what the board needs from the Pill: what it shows, the change showing, and BMO
+    local function talk()
+        local c = ctx.settings().companion
+        return type(c) == "table" and c.talk or "rare"
+    end
+    pill_api = {
+        now = function() return pill_now end,
+        osd = function() return pst.osd and pst.osd.kind or "vol" end,
+        bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,
+        react = function(face, ms) pillface.react(face_st, face, pill_ms, ms); face_show() end,
+        say = function(line) pillface.say(face_st, line, pill_ms, talk()); face_show() end,
+        poke = function() pillface.poke(face_st, pill_ms, math.random(), talk()); face_show() end,
+        touch = function()
+            if pillface.touch(face_st, pill_ms) then
+                pillface.react(face_st, "surprised", pill_ms, 900); pillface.say(face_st, "oh! hi", pill_ms, talk())
+            end
+            face_show()
+        end,
+    }
+    return { relayout = function() pill_update(); relayout() end, measure = measure,
+             pill = pill_api, set_board = function(b) pill_board = b end }
 end

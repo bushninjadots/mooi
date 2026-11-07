@@ -11,6 +11,21 @@ local weathershare = require("lib/weathershare")
 local weatherpanel = require("lib/weatherpanel")
 
 return function(ctx)
+    -- D170: the Pill board's rooms read what the islands gather, so an island's readers run while it
+    -- is open OR while the board shows its room (lib/pillpads.ROOMS: 1 calendar · 5 power ·
+    -- 6 resources · 7 weather). `wanted` is the island the data is for now, or nil.
+    local BOARD = { [1] = "calendar", [5] = "power", [6] = "stats", [7] = "weather" }
+    -- `open` as the scene says (reading fact.open back gives the logic's last write)
+    local opened = "none"
+    local function wanted()
+        if opened == "board" then return BOARD[math.floor(fact.pk_room or 0)] end
+        return opened
+    end
+    local hooks = {}
+    local function on_want(fn) hooks[#hooks + 1] = fn end
+    local function told() local v = wanted(); for _, fn in ipairs(hooks) do fn(v) end end
+    on("fact:open", function(v) opened = tostring(v or "none"); told() end)
+    on("fact:pk_room", told)
     -- ── The clock: what it shows (clock.view), a right press for the next ───
     local VIEWS = { "full", "time", "seconds" }
     on("clock_next", function()
@@ -59,7 +74,7 @@ return function(ctx)
         else cal.y, cal.m = calendar.shift(cal.y, cal.m, n == 0 and -1 or 1) end
         show_month()
     end)
-    on("fact:open", function(v)
+    on_want(function(v)
         if v == "calendar" then local t = today(); cal.y, cal.m = t.y, t.m; show_month() end
     end)
 
@@ -91,7 +106,7 @@ return function(ctx)
             if g then fact.st_gpu_f = g end
         end)
     end
-    on("fact:open", function(v)
+    on_want(function(v)
         if v == "stats" then
             read_stats()
             if not st_timer then st_timer = every(2000, read_stats) end
@@ -145,7 +160,7 @@ return function(ctx)
             end
         end)
     end
-    on("fact:open", function(v)
+    on_want(function(v)
         if v == "weather" and os.time() - wx_at >= 600 then fetch_weather() end
     end)
     on("wx_refresh", fetch_weather)
@@ -203,7 +218,7 @@ return function(ctx)
             end)
         end)
     end
-    on("fact:open", function(v)
+    on_want(function(v)
         if v == "power" then
             read_power()
             if not pw_timer then pw_timer = every(10000, read_power) end
