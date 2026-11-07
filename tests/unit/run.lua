@@ -5116,7 +5116,7 @@ do
         for _, id in ipairs(PP.DEFAULT) do assert(PP.get(id), id) end
     end)
     test("pill faces: the module faces, each with a width that fits its text", function()
-        eq(#P.FACES, 10); eq(P.FACES[1], "time"); eq(P.FACES[4], "weather")
+        eq(#P.FACES, 11, "D171 added the visualiser"); eq(P.FACES[1], "time"); eq(P.FACES[4], "weather")
         local st = P.state()
         local r = P.compute(st, { face = "weather", face_text = "11° partly cloudy" }, 0)
         eq(r.width, math.max(104, 44 + 7 * #"11° partly cloudy"))
@@ -5456,6 +5456,55 @@ do
         assert(src:find('on("fact:open", opens.pl_heard)', 1, true) and src:find("opens.listen(opens.pl_heard)", 1, true), "it hears the scene and the logic")
         local isl = io.open("shell/islands.luau"); local i = isl:read("a"); isl:close()
         assert(i:find("ctx.listen_open(heard)", 1, true), "the islands' readers hear the logic's opens too")
+    end)
+end
+
+section("the Pill, round two: views, shapes, detail (D171)")
+do
+    local P = require("lib/pill")
+    local chassis = require("lib/chassis")
+    test("settings: the shape, the views, the detail, the rest", function()
+        local d = config.defaults()
+        eq(d.pill.shape, "attached"); eq(d.pill.detail, "brief"); eq(d.pill.rest, 10)
+        assert(#d.pill.views >= 6, "a default list of views")
+        local s, p = config.validate({ pill = { shape = "dot", views = { "nexus", "workspaces", "notifications" }, detail = "full", rest = 0 } })
+        eq(#p, 0); eq(s.pill.shape, "dot"); eq(s.pill.views[2], "workspaces"); eq(s.pill.detail, "full"); eq(s.pill.rest, 0)
+        local _, p2 = config.validate({ pill = { views = { "dragon" } } }); eq(#p2, 1)
+        local setters = require("lib/setters")
+        local seen = {}
+        for _, q in ipairs(setters.SETTERS) do seen[q] = true end
+        assert(seen["pill.shape"] and seen["pill.views"] and seen["pill.detail"] and seen["pill.rest"])
+    end)
+    test("pill.next_view: round the owner's list, either way; unknown or empty → the default list", function()
+        local v = { "nexus", "workspaces", "notifications" }
+        eq(P.next_view(v, "nexus", 1), "workspaces")
+        eq(P.next_view(v, "notifications", 1), "nexus")
+        eq(P.next_view(v, "nexus", -1), "notifications")
+        eq(P.next_view(v, "weather", 1), "nexus", "not in the list: its first")
+        eq(P.next_view({}, "time", 1), P.VIEWS_DEFAULT[2], "empty: the default list")
+        eq(P.next_view({ "dragon", "bmo" }, "bmo", 1), "bmo", "unknown ids are skipped")
+    end)
+    test("widths by detail: icon is just the icon, full makes room for more", function()
+        local st = P.state()
+        eq(P.compute(st, { face = "weather", detail = "icon" }, 0).width, 44)
+        eq(P.compute(st, { face = "time", detail = "icon" }, 0).width, 120, "time keeps its own form")
+        assert(P.compute(st, { face = "weather", detail = "full" }, 0).width > P.compute(st, { face = "weather", detail = "brief" }, 0).width)
+    end)
+    test("the dot: idle, the Pill is a 14 px dot (hiding implied); pointed at, it comes back", function()
+        local st = P.state()
+        local r = P.compute(st, { face = "time", shape = "dot" }, 0)
+        eq(r.hidden, true); eq(r.width, P.DOT)
+        P.note(st, "peek", {}, 100)
+        eq(P.compute(st, { face = "time", shape = "dot" }, 200).hidden, false)
+    end)
+    test("chassis: floating hovers under the band, never joined; the dot is a small circle", function()
+        local L = { mode = "pill", band = true, top = 8, mod_h = 24, radius = 7, screen_w = 1920, band_w = 2, frame_r = 14, reach = 16 }
+        local f = chassis.pieces({ islands = {}, pill = { x = 860, w = 120, shape = "floating" }, moons = {} }, L)[1]
+        eq(f.j, false); eq(f.y, 8); eq(f.h, 24)
+        local d = chassis.pieces({ islands = {}, pill = { x = 953, w = 14, slim = true, shape = "dot" }, moons = {} }, L)[1]
+        eq(d.w, 14); eq(d.h, 14); eq(d.r, 7); eq(d.j, false); eq(d.y, 8 + 5)
+        local a = chassis.pieces({ islands = {}, pill = { x = 860, w = 120, shape = "attached" }, moons = {} }, L)[1]
+        eq(a.j, true, "attached: hangs from the band as before")
     end)
 end
 

@@ -37,6 +37,14 @@ M.SCHEMA = {
     { path = "pill.pads", kind = "ids", max = 8, allowed = barlayout.ORDER,
       default = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" } },
     { path = "pill.viz", kind = "enum", values = { "halo", "river" }, default = "halo" },
+    -- D171: the Pill's shape (joined to the band, hovering under it, or a dot until wanted), the views the
+    -- wheel turns through, how much each shows, and how long a turned view stays before the default returns
+    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot" }, default = "attached" },
+    { path = "pill.views", kind = "ids", max = 16,
+      allowed = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" },
+      default = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" } },
+    { path = "pill.detail", kind = "enum", values = { "icon", "brief", "full" }, default = "brief" },
+    { path = "pill.rest", kind = "integer", default = 10, min = 0, max = 60 },
     { path = "pill.autohide", kind = "boolean", default = false },
     { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },

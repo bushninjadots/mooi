@@ -874,6 +874,14 @@ scene Mooi {
     fact df_pill_pads = 0
     fact sv_pill_viz = 0
     fact df_pill_viz = 0
+    fact sv_pill_shape = 0
+    fact df_pill_shape = 0
+    fact sv_pill_views = 0
+    fact df_pill_views = 0
+    fact sv_pill_detail = 0
+    fact df_pill_detail = 0
+    fact sv_pill_rest = 0
+    fact df_pill_rest = 0
 
     text cap_text = "Press the new keys… (Esc cancels)"
     event key_change ->       // to the logic: change key n (99: all back to the defaults)
