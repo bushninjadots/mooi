@@ -198,6 +198,7 @@ return function(ctx)
         local shown = pill_view or p.face        -- D171: the view turned to, or the default
         for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
         fact.pill_detail = ({ icon = 0, brief = 1, full = 2 })[p.detail] or 1
+        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2 })[p.shape] or 0
         fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         fact.pill_hidden = r.hidden == true
         local tall = fi == 1 and r.main == "idle" and not r.split and not r.hidden
@@ -264,6 +265,9 @@ return function(ctx)
     if ctx.on_signal then
         ctx.on_signal(function(n)
             note("notify", { app = (n.app or "") ~= "" and n.app or "notice", summary = n.title or n.summary or "" })
+            -- D171: the Alerts face's newest, at full detail
+            text.pill_alert = ((n.app or "") ~= "" and (n.app .. " · ") or "") .. tostring(n.title or n.summary or "")
+            fact.pill_alert_on = true
             -- D170: BMO is surprised, then pleased: a letter
             if fact.pill_on and fact.pill_face == 1 and pill_api then
                 pill_api.react("surprised", 700)

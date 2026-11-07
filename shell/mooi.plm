@@ -1187,6 +1187,11 @@ scene Mooi {
     event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
     event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
     fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
+    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot (pill.shape)
+    text pill_alert = ""       // D171: the newest signal, for the Alerts face at full detail
+    fact pill_alert_on = false // D171: there is one
+    prop pill_pulse = 0
+    spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false

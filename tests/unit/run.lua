@@ -5015,7 +5015,7 @@ do
         local g = io.open("shell/signals.luau"); local sg = g:read("a"); g:close()
         assert(sg:find("on_signal = function(fn) pill_hook = fn end", 1, true), "Loom hands new signals on")
         local u = io.open("shell/ui/pill.plm"); local ui = u:read("a"); u:close()
-        assert(ui:find("from: px, if(pill_hidden, 0, fl.top)", 1, true), "hidden: the zone reaches the top")
+        assert(ui:find("if(pill_hidden, 0, fl.top)", 1, true), "hidden: the zone reaches the top")
         assert(ui:find("emit pill_hover(0)", 1, true) and ui:find("emit pill_hover(1)", 1, true), "entering and leaving reach the logic")
         assert(b:find('if pill_hovering then pillmod.note(pst, "peek"', 1, true), "a resting pointer keeps it open")
     end)
@@ -5534,6 +5534,30 @@ do
         assert(sh:find('pill) exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "`mooi pill`")
         local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
         assert(hl:find('hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true }', 1, true), "Super alone, on release")
+    end)
+end
+
+section("the Pill, round two: faces (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("BMO is BMO: his teal body, a D-pad and buttons round the screen", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("color: #69c7bb", 1, true) and ui:find("color: #f1c94a", 1, true) and ui:find("color: #e9606f", 1, true))
+    end)
+    test("faces at three details; workspaces as dots, alerts with the newest, the visualiser", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("if(pill_detail < 0.5, px + pw / 2, px + 20)", 1, true), "icon: just the glyph, centred")
+        assert(ui:find("show: pill_face == 7 and k < spaces.count", 1, true), "workspaces: a dot each")
+        assert(ui:find("text pill_alert {", 1, true), "alerts: the newest at full")
+        assert(ui:find("show: pill_face == 10", 1, true), "the visualiser")
+        assert(ui:find("text clock.date", 1, true), "time at full: the date")
+    end)
+    test("the dot breathes, and has room round it to land on", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("let dotted = pill_hidden and pill_shape > 1.5", 1, true))
+        assert(ui:find("from: if(dotted, px - 10, px)", 1, true))
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)", 1, true), "only while it is a dot")
     end)
 end
 
