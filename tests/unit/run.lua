@@ -5552,6 +5552,12 @@ do
         assert(ui:find("show: pill_face == 10", 1, true), "the visualiser")
         assert(ui:find("text clock.date", 1, true), "time at full: the date")
     end)
+    test("the Nexus face shows only as the Nexus face; a new face drops the turned view", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("pill_face > 1.5 and pill_face < 2.5\n                NexusFace", 1, true))
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if p.face ~= pill_face_was then pill_face_was = p.face; pill_view = nil end", 1, true))
+    end)
     test("the dot breathes, and has room round it to land on", function()
         local ui = read("shell/ui/pill.plm")
         assert(ui:find("let dotted = pill_hidden and pill_shape > 1.5", 1, true))
@@ -5607,13 +5613,27 @@ do
         b.h.pk_wp_scroll(-1); eq(b.text.pk_wp0, "/t/2.jpg", "on by one")
         b.h.pk_wp(2); assert(b.ran[#b.ran]:find("mooi wall apply /w/4.jpg", 1, true), "the third shown is the fourth")
     end)
+    test("the board tells the islands' readers its room (fact:pk_room is not heard for the logic's write)", function()
+        local told = {}
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = {} } end, save = function() end,
+            pill = P2, roomed = function(r) told[#told + 1] = r; env.fact.pk_room = r end })
+        api.press("left", "idle"); handlers.pk_go(6)
+        eq(told[#told], 6)
+        local f = io.open("shell/islands.luau"); local isl = f:read("a"); f:close()
+        assert(isl:find("ctx.listen_room(function() told() end)", 1, true))
+    end)
     test("diagnostics: the machine read once as the room opens", function()
         local b = board({ pill = {} })
         b.api.press("left", "idle")
         b.h.pk_go(PP.room_index("diagnostics"))
         local any = false
-        for _, r in ipairs(b.ran) do if r:find("uname", 1, true) then any = true end end
-        assert(any, "the kernel and host are read")
+        for _, r in ipairs(b.ran) do if r:find("cat /proc/sys/kernel/osrelease", 1, true) then any = true end end
+        assert(any, "the kernel and host are read (through cat: the logic may not run uname)")
     end)
 end
 

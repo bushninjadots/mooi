@@ -95,14 +95,19 @@ return function(ctx)
     -- ── D171: the new rooms' data ──
     -- Diagnostics: the machine, read once as the room opens
     local function diagnostics()
-        run("uname", { "-r" }, function(out) text.pk_dg_kernel = tostring(out or ""):gsub("%s+$", "") end)
-        run("hostname", {}, function(out) text.pk_dg_host = tostring(out or ""):gsub("%s+$", "") end)
-        run("uptime", { "-p" }, function(out) text.pk_dg_up = tostring(out or ""):gsub("^up ", ""):gsub("%s+$", "") end)
+        -- through cat: the logic may run cat, not uname or uptime
+        run("cat", { "/proc/sys/kernel/osrelease" }, function(out) text.pk_dg_kernel = (tostring(out or ""):gsub("%s+$", "")) end)
+        run("cat", { "/proc/sys/kernel/hostname" }, function(out) text.pk_dg_host = (tostring(out or ""):gsub("%s+$", "")) end)
+        run("cat", { "/proc/uptime" }, function(out)
+            local s = math.floor(tonumber(tostring(out or ""):match("^(%d+)")) or 0)
+            local d, h, m = s // 86400, (s % 86400) // 3600, (s % 3600) // 60
+            text.pk_dg_up = d > 0 and string.format("%d d %d h", d, h) or string.format("%d h %d min", h, m)
+        end)
     end
     -- Wallpaper: a strip of six from the picker's index, moved by the wheel
     local walls, wall_at = {}, 0
     local function wall_strip()
-        for k = 0, 5 do
+        for k = 0, 3 do
             local it = walls[wall_at + k + 1]
             text["pk_wp" .. k] = it and (it.thumb ~= "" and it.thumb or it.path) or ""
             fact["pk_wph" .. k] = it ~= nil
@@ -121,12 +126,13 @@ return function(ctx)
                 end
             end
         end
-        wall_at = math.max(0, math.min(wall_at, #walls - 6))
+        wall_at = math.max(0, math.min(wall_at, #walls - 4))
         wall_strip()
     end
 
     local function room(r)
-        fact.pk_room = r
+        -- told to the islands' readers too (they follow fact:pk_room, not heard for the logic's write)
+        if ctx.roomed then ctx.roomed(r) else fact.pk_room = r end
         if r == parts.room_index("diagnostics") then diagnostics() end
         if r == parts.room_index("wallpaper") then wall_read() end
         if r == 0 then fact.pk_music = fact.mu_playing == true end
@@ -207,7 +213,7 @@ return function(ctx)
     end)
     on("pk_wp_scroll", function(v)
         local d = (tonumber(v) or 0) > 0 and -1 or 1
-        wall_at = math.max(0, math.min(wall_at + d, math.max(0, #walls - 6)))
+        wall_at = math.max(0, math.min(wall_at + d, math.max(0, #walls - 4)))
         wall_strip()
     end)
     on("pk_wp", function(v)

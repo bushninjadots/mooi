@@ -142,7 +142,7 @@ library Pill {
                 text pill_t1 { at: px + 68, fl.top + pill_h / 2; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, pw - 76); lines: 1 }
             }
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5 and pill_face < 2.5
                 NexusFace(px, pw, cy)
             }
             // D170: a module's face — its icon and a short reading

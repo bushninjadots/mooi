@@ -39,6 +39,7 @@ return function(ctx)
     local pill_tall = false      -- D170: BMO's face is showing: the Pill is taller
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
     local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
+    local pill_face_was = nil                -- D171: a new face chosen drops the view the wheel turned to
     local pill_api               -- D170: what the board needs from the Pill (defined at the end)
 
     -- ── Layout ─────────────────────────────────────────────────
@@ -195,6 +196,7 @@ return function(ctx)
         -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
         local p = type(s.pill) == "table" and s.pill or {}
         local fi = 0
+        if p.face ~= pill_face_was then pill_face_was = p.face; pill_view = nil end
         local shown = pill_view or p.face        -- D171: the view turned to, or the default
         for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
         fact.pill_detail = ({ icon = 0, brief = 1, full = 2 })[p.detail] or 1

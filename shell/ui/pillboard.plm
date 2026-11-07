@@ -323,12 +323,10 @@ library PillBoard {
         let hf = pk_flow / 220 - floor(pk_flow / 220)
         image pk_art = from med_art, 120, 120
         // D171: the Wallpaper room's strip (shell/pillboard.luau fills the six)
-        image pk_wpi0 = from pk_wp0, 96, 128
-        image pk_wpi1 = from pk_wp1, 96, 128
-        image pk_wpi2 = from pk_wp2, 96, 128
-        image pk_wpi3 = from pk_wp3, 96, 128
-        image pk_wpi4 = from pk_wp4, 96, 128
-        image pk_wpi5 = from pk_wp5, 96, 128
+        image pk_wpi0 = from pk_wp0, 144, 96
+        image pk_wpi1 = from pk_wp1, 144, 96
+        image pk_wpi2 = from pk_wp2, 144, 96
+        image pk_wpi3 = from pk_wp3, 144, 96
         // the song's position keeps coming while Now Playing shows (as for the music island)
         let pk_mus_on = open == board and pk_room < 0.5 and pk_music
         on change pk_mus_on { emit music_isl(if(pk_mus_on, 3, 2)) }
@@ -639,24 +637,22 @@ library PillBoard {
                         group {
                             show: pk_room > 12.5
                             PkScroll(0, 6, 608, 140, pk_wp_scroll)
-                            repeat k in 0..6 {
-                                let tx = 6 + k * 100
+                            repeat k in 0..4 {
+                                let tx = 6 + k * 150
                                 group {
-                                    show: pick(k, pk_wph0, pk_wph1, pk_wph2, pk_wph3, pk_wph4, pk_wph5)
-                                    box { from: tx, 10; size: 96, 128; corner: 8; color: fl.hull_raised }
+                                    show: pick(k, pk_wph0, pk_wph1, pk_wph2, pk_wph3)
+                                    box { from: tx, 22; size: 144, 96; corner: 8; color: fl.hull_raised }
                                     group {
-                                        clip box { from: tx, 10; size: 96, 128; corner: 8 }
-                                        image pk_wpi0 { at: tx, 10; size: 96, 128; show: k == 0 }
-                                        image pk_wpi1 { at: tx, 10; size: 96, 128; show: k == 1 }
-                                        image pk_wpi2 { at: tx, 10; size: 96, 128; show: k == 2 }
-                                        image pk_wpi3 { at: tx, 10; size: 96, 128; show: k == 3 }
-                                        image pk_wpi4 { at: tx, 10; size: 96, 128; show: k == 4 }
-                                        image pk_wpi5 { at: tx, 10; size: 96, 128; show: k == 5 }
+                                        clip box { from: tx, 22; size: 144, 96; corner: 8 }
+                                        image pk_wpi0 { at: tx, 22; size: 144, 96; show: k == 0 }
+                                        image pk_wpi1 { at: tx, 22; size: 144, 96; show: k == 1 }
+                                        image pk_wpi2 { at: tx, 22; size: 144, 96; show: k == 2 }
+                                        image pk_wpi3 { at: tx, 22; size: 144, 96; show: k == 3 }
                                     }
-                                    PkHit(tx, 10, 96, 128, pk_wp, k, "Wear this wallpaper")
+                                    PkHit(tx, 22, 144, 96, pk_wp, k, "Wear this wallpaper")
                                 }
                             }
-                            text "{pk_wp_at + 1, 0}–{min(pk_wp_at + 6, pk_wp_n), 0} OF {pk_wp_n, 0} · THE WHEEL MOVES THEM" { at: 304, 150; anchor: center; size: 9; family: "Share Tech Mono"; color: dim }
+                            text "{pk_wp_at + 1, 0}–{min(pk_wp_at + 4, pk_wp_n), 0} OF {pk_wp_n, 0} · THE WHEEL MOVES THEM" { at: 304, 150; anchor: center; size: 9; family: "Share Tech Mono"; color: dim }
                         }
                     }
 

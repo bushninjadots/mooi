@@ -27,6 +27,7 @@ return function(ctx)
     local function heard(v) opened = tostring(v or "none"); told() end
     on("fact:open", heard)
     if ctx.listen_open then ctx.listen_open(heard) end
+    if ctx.listen_room then ctx.listen_room(function() told() end) end
     on("fact:pk_room", told)
     -- ── The clock: what it shows (clock.view), a right press for the next ───
     local VIEWS = { "full", "time", "seconds" }
