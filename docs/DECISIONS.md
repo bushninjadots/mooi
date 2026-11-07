@@ -5826,3 +5826,38 @@ G4); the summaries follow the commit messages._
   --dry-run` checked for pacman before its dry-run branch, so on CI's Ubuntu it stopped with "this is for
   Arch-based systems"; a dry run installs nothing, so the check now comes after it. Checked in an Ubuntu 24.04
   container as a normal user: `tests/setup-greeter.sh` 29 / 0.
+
+## D207 · 2026-11-07 · The Sigil, phase 1: one living line in the Pill and in islands
+
+- The owner wanted the Pill redesigned from nothing (docs/superpowers/specs/2026-11-07-sigil-design.md):
+  of five directions they chose **Sigil** (one living line that changes shape and reacts) mixed with
+  **Field**, displays that morph, one object any bar can host, with the Pill its home. A spike first: a
+  64-point line on springs in Pleamar costs 0.05 ms to compose and 0.3 ms to paint on its own surface (D204's
+  70 ms came from the frame's band bodies), so the object never draws inside the frame.
+- Built (plans/2026-11-07-sigil-phase1.md): **`mooi-sigil`**, its own program, started by mooi while it has a
+  host (`sigil_sync`, respawned like the frame; after five quick ends it stays down and the bar draws a plain
+  clock in the Pill's place). Pure parts under `shell/lib/sigil/`: `sources` (13 wave-1 sources: their
+  groups, glyph and display kinds, compact words — a dash for a dead reading — and what a press opens),
+  `shapes` (64 points for 12 kinds in any box, clamped into it), `director` (a fresh notice, a low battery, a
+  volume change, music, then each host's rest; two hosts never share a source; feed sources skipped when the
+  feed is 30 s stale), `palette` (fixed > event > cover > wallpaper primary > phosphor), `bodies` (Calm ·
+  Lively · Restless; reduced motion stills it), `hosts` (the Pill host and `sigil` island modules, from the
+  bar's layout) and `layout` (the display box under the Pill, where the line and words go). The scene is
+  generated (`tools/gen-sigil.py`): four hosts of 64 sprung points with wobble, the music's ripple and the
+  pointer's push; a `bar` surface and a `drop` surface open only while the Pill shows its display, on a plate.
+- The bar writes `sigil-hosts.json` and `sigil-feed.json` (resources, weather, the cover's colours, music;
+  rewritten every 10 s even unchanged so the Sigil can tell a live feed from a dead one). With `sigil.pill =
+  sigil` the classic Pill is not drawn and its place (the frame's plate) is the line's socket; `classic` stays
+  the default. Settings → Bar & Frame → The Sigil: in the Pill, temperament, colour, at rest, the pointer, the
+  field. The `sigil` module goes in any island; the classic board's pads skip it.
+- Found live and fixed (each with a failing test first): the program read an empty data folder of its own
+  (`bin/mooi` now links `mooi-sigil` to mooi's); `sigil_ready` was dropped (undeclared in `mooi.plm`); the
+  display had no plate; round glyphs squeezed into the wide compact box; the clock's hand pointed nowhere.
+- A press opens the module's existing panel (calendar, weather, music, sound, stats, power, system, the
+  Overview, the Nexus) until the detail views are built from the parts vocabulary (a later plan); the right
+  press opens Settings. Not yet: the pointer host, Venom and Circuit, context (focus, hover preview, icon
+  silhouettes), detail views, wave 2, retiring the classic Pill.
+- Checks: unit 667 / 0, 15 scenes compile, gate ok; live `tests/sigil.sh` 22 checks — the last full run 21 / 22
+  with the one failure a real notice outranking music (correct; the check now waits it out, re-run alone:
+  ok). Compose + paint with music: 0.74 and 0.86 ms (budget 1 ms). Settings restored byte for byte each run.
+

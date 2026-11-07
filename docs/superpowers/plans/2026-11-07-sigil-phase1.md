@@ -49,7 +49,7 @@
 - Produces settings: `sigil.pill` enum `{ "classic", "sigil" }` default `"classic"`; `sigil.temperament` enum `{ "calm", "lively", "restless" }` default `"lively"`; `sigil.colour` enum `{ "follow", "fixed" }` default `"follow"`; `sigil.fixed` colour default `"#d6e38a"`; `sigil.field` boolean default `true`; `sigil.pointer` enum `{ "push", "draw", "ignore" }` default `"push"`; `sigil.rest` enum of wave-1 source ids (Task 3's `WAVE1`) default `"clock"`.
 - Produces module `sigil` in `barlayout.ORDER` (appended last) with `width = 180`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```lua
 section("the sigil: settings (D207)")
@@ -75,13 +75,13 @@ test("sigil settings: the page has its fold", function()
 end)
 ```
 
-- [ ] **Step 2: Run to see them fail** — `MOOI_TEST_FILTER=sigil lua5.4 tests/unit/run.lua` → 4 FAIL.
+- [x] **Step 2: Run to see them fail** — `MOOI_TEST_FILTER=sigil lua5.4 tests/unit/run.lua` → 4 FAIL.
 
-- [ ] **Step 3: Add the rows, setters, module and the fold.** Fold in `gen-settings.py`: `("fold", "The Sigil", "ONE LIVING LINE IN PLACE OF THE PILL")`, then choices: "In the Pill" (`sigil.pill`: Classic · Sigil), "Temperament" (Calm · Lively · Restless), "Colour" (Follow · Fixed), "At rest" (`sigil.rest`, seven labelled choices max: Clock · Song · Weather · Machine · Battery · Spaces · BMO), "Its pointer" (Pushed · Drawn · Ignores), toggle "The field" (`sigil.field`). `sigil.fixed` stays file-only in this phase.
+- [x] **Step 3: Add the rows, setters, module and the fold.** Fold in `gen-settings.py`: `("fold", "The Sigil", "ONE LIVING LINE IN PLACE OF THE PILL")`, then choices: "In the Pill" (`sigil.pill`: Classic · Sigil), "Temperament" (Calm · Lively · Restless), "Colour" (Follow · Fixed), "At rest" (`sigil.rest`, seven labelled choices max: Clock · Song · Weather · Machine · Battery · Spaces · BMO), "Its pointer" (Pushed · Drawn · Ignores), toggle "The field" (`sigil.field`). `sigil.fixed` stays file-only in this phase.
 
-- [ ] **Step 4: Regenerate and run** — `python3 tools/gen-settings.py && MOOI_TEST_FILTER=sigil lua5.4 tests/unit/run.lua` → 4 ok; `pleamar --check shell/mooi-settings.plm` → ok.
+- [x] **Step 4: Regenerate and run** — `python3 tools/gen-settings.py && MOOI_TEST_FILTER=sigil lua5.4 tests/unit/run.lua` → 4 ok; `pleamar --check shell/mooi-settings.plm` → ok.
 
-- [ ] **Step 5: Commit** — `git commit -m "sigil: its settings, page and bar module (D207)"`
+- [x] **Step 5: Commit** — `git commit -m "sigil: its settings, page and bar module (D207)"`
 
 ---
 
@@ -95,7 +95,7 @@ end)
 - Produces: `M.N = 64`; `M.KINDS = { "clock", "wave", "disc", "ring", "card", "strip", "ribbon", "horizon", "spaces", "dots", "bars", "face" }`; `M.outline(kind: string, box: {x,y,w,h}, form: "glyph"|"compact"|"display", t?: number) -> { {x,y} × 64 }`; `M.batches(old, new, n: integer) -> { {from, to} × n }` (the front-first write order: index ranges, first range first); `M.icon_mark` is NOT in this phase.
 - Shape notes (the mockups, `sigil-displays-v5.html`, are the reference): `clock` circle + two hands; `wave` a baseline whose phase the scene animates; `disc` circle starting at its bottom that rolls out into a baseline to the box's right; `ring` a 0.65π…2.35π arc then a trace; `card` rounded rect traced once (radius 14, compact: H/2); `strip` a 24-hour skyline whose heights come from `opts.values` (24 numbers 0…1); `ribbon` a long capsule; `horizon` a line plus the sun's arc; `spaces` a row of cells (`opts.n`, `opts.active`); `dots` bluetooth/network dots; `bars` a bar meter (`opts.values`); `face` BMO's eyes and mouth as one stroke.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```lua
 section("the sigil: shapes")
@@ -133,10 +133,10 @@ test("shapes: an unknown kind is the clock, never an error", function()
 end)
 ```
 
-- [ ] **Step 2: Run to see them fail** — `MOOI_TEST_FILTER="sigil: shapes" lua5.4 tests/unit/run.lua` → FAIL (module not found).
-- [ ] **Step 3: Implement `shapes.luau`** — every kind as a parametric curve sampled at 64 `u` values, then clamped into the box; display sizes from the box, compact forms folded to the box's height.
-- [ ] **Step 4: Run** → 5 ok.
-- [ ] **Step 5: Commit** — `git commit -m "sigil: the shapes, 64 points for every kind (D207)"`
+- [x] **Step 2: Run to see them fail** — `MOOI_TEST_FILTER="sigil: shapes" lua5.4 tests/unit/run.lua` → FAIL (module not found).
+- [x] **Step 3: Implement `shapes.luau`** — every kind as a parametric curve sampled at 64 `u` values, then clamped into the box; display sizes from the box, compact forms folded to the box's height.
+- [x] **Step 4: Run** → 5 ok.
+- [x] **Step 5: Commit** — `git commit -m "sigil: the shapes, 64 points for every kind (D207)"`
 
 ---
 
@@ -152,7 +152,7 @@ end)
 - Press targets (this phase): clock→island `calendar`, calendar→island `calendar`, weather→island `weather`, music→island `music`, volume→island `sound`, notifications→`nexus`, workspaces→`overview`, windows→`overview`, resources→island `stats`, battery→island `power`, network→island `system`, bluetooth→island `system`, bmo→`bmo` (a poke).
 - Groups: Time (clock, calendar, weather), Sound (music, volume), Machine (resources, battery, network, bluetooth), Work (workspaces, windows), You (notifications), bmo.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```lua
 section("the sigil: sources")
@@ -185,10 +185,10 @@ test("sources: indexes are stable and 1-based", function()
 end)
 ```
 
-- [ ] **Step 2: Run to see them fail.**
-- [ ] **Step 3: Implement `sources.luau`** — a table literal per entry; `compact` guards `nil` first.
-- [ ] **Step 4: Run** → 5 ok.
-- [ ] **Step 5: Commit** — `git commit -m "sigil: the wave-1 sources (D207)"`
+- [x] **Step 2: Run to see them fail.**
+- [x] **Step 3: Implement `sources.luau`** — a table literal per entry; `compact` guards `nil` first.
+- [x] **Step 4: Run** → 5 ok.
+- [x] **Step 5: Commit** — `git commit -m "sigil: the wave-1 sources (D207)"`
 
 ---
 
@@ -202,7 +202,7 @@ end)
 - Produces `palette.resolve(source_id: string, ctx: { palette = palette.json table, cover = {hex,hex,hex}|nil, event = "warning"|"error"|"success"|nil, settings = settings }) -> {r, g, b}` (0…255). Order: fixed (when `sigil.colour == "fixed"`, from `sigil.fixed`) > event (warning `#e3743c`, error = palette `error`, success `#7fd38a`) > cover `[1]` for `music` > palette `primary` > `#d6e38a`. `palette.ease(cur, want, k) -> {r,g,b}`.
 - Produces `bodies.temperament(name, reduced: boolean) -> { wobble: px, breath: px, lag_ms: integer, batches: integer }`: calm `{ 1, 1.5, 60, 2 }`, lively `{ 2.5, 2.5, 90, 4 }`, restless `{ 5, 3, 120, 6 }`; reduced → `{ 0, 0, 0, 1 }`. `bodies.pointer(mode) -> number` (push `1.6`, draw `-1.0`, ignore `0`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```lua
 section("the sigil: palette")
@@ -223,8 +223,8 @@ test("bodies: temperaments, and reduced motion stills them", function()
 end)
 ```
 
-- [ ] **Step 2: Run to see them fail.** **Step 3: Implement both.** **Step 4: Run** → 6 ok.
-- [ ] **Step 5: Commit** — `git commit -m "sigil: palette and temperaments (D207)"`
+- [x] **Step 2: Run to see them fail.** **Step 3: Implement both.** **Step 4: Run** → 6 ok.
+- [x] **Step 5: Commit** — `git commit -m "sigil: palette and temperaments (D207)"`
 
 ---
 
@@ -240,7 +240,7 @@ end)
 - `State = { music = { playing, title }, notice = { at, app, title }|nil, battery = { percent, charging }, volume_at = ms|nil, feed_at = ms, open = { [host id] = true }, hover = { [host id] = true } }`.
 - Rules, in order: (1) a notice younger than 6000 ms → `notifications` (event `notable`); (2) battery ≤ 15 and not charging → `battery` (event `warning`); (3) a volume change younger than 2000 ms → `volume`; (4) music playing → `music`; (5) the host's `rest`. Each rule's source goes to the **first host (Pill first, then islands in order) not yet given one**; a host never repeats a source another host already shows; a host left over shows its `rest` unless taken, else the next free wave-1 source in `WAVE1` order. Form: `display` when the host kind is `pill` and (`hover[id]` or `open[id]`); else `compact`; `glyph` when the host's box height is under 18. Sources read from the feed (`weather`, `resources`) are skipped when `now - state.feed_at > 30000`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```lua
 section("the sigil: director")
@@ -272,8 +272,8 @@ end)
 test("director: no hosts, no choices", function() eq(next(DIR.choose({}, { feed_at = 0 }, 0)), nil) end)
 ```
 
-- [ ] **Step 2: Run to see them fail.** **Step 3: Implement.** **Step 4: Run** → 8 ok.
-- [ ] **Step 5: Commit** — `git commit -m "sigil: the director (D207)"`
+- [x] **Step 2: Run to see them fail.** **Step 3: Implement.** **Step 4: Run** → 8 ok.
+- [x] **Step 5: Commit** — `git commit -m "sigil: the director (D207)"`
 
 ---
 
@@ -290,7 +290,7 @@ test("director: no hosts, no choices", function() eq(next(DIR.choose({}, { feed_
 - The bar writes `sigil-hosts.json` = `{ screen, hosts = [...] }` only when it changes, and `sigil-feed.json` = `{ at = os.time()*1000, resources = { cpu, mem, temp }, weather = { temp, word, city }, cover = { "#rrggbb" × 3 }|null, music = { title, artist, playing } }` at most once a second, only when it changes.
 - In sigil mode the classic Pill is not drawn: `fact.pill_on = false`, but `geo.pill` stays (the frame keeps its plate as the line's socket) with `w = 180`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```lua
 section("the sigil: hosts")
@@ -313,9 +313,9 @@ test("hosts: never more than four", function()
 end)
 ```
 
-- [ ] **Step 2: Run to see them fail.** **Step 3: Implement `hosts.build`; wire the two writes and the classic switch into `bar.luau`** (one local table `sig = { hosts_sent, feed_sent, feed_at }`; bar.luau keeps to one new local).
-- [ ] **Step 4: Run** → 4 ok; `bin/mooi check` → gate ok, 14 scenes compile.
-- [ ] **Step 5: Commit** — `git commit -m "sigil: the bar writes its hosts and feed; classic off in sigil mode (D207)"`
+- [x] **Step 2: Run to see them fail.** **Step 3: Implement `hosts.build`; wire the two writes and the classic switch into `bar.luau`** (one local table `sig = { hosts_sent, feed_sent, feed_at }`; bar.luau keeps to one new local).
+- [x] **Step 4: Run** → 4 ok; `bin/mooi check` → gate ok, 14 scenes compile.
+- [x] **Step 5: Commit** — `git commit -m "sigil: the bar writes its hosts and feed; classic off in sigil mode (D207)"`
 
 ---
 
@@ -332,7 +332,7 @@ end)
 - Consumes: Task 6's hosts file (mooi only starts the program when `sigil.pill == "sigil"` or a `sigil` module is placed).
 - Produces: `fact.sigil_up` true after the program says `emit sigil_ready` (as the frame's `chassis_ready`), false when it ends; respawn after 1 s × tries, give up after 5 quick deaths with one log line `sigil · gave up after five quick ends`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```lua
 section("the sigil: running")
@@ -347,8 +347,8 @@ test("mooi: sigil respawn gives up after five and the bar falls back", function(
 end)
 ```
 
-- [ ] **Step 2: Run to see it fail.** **Step 3: Implement.** **Step 4: Run** → ok (the scene itself is Task 8; until then `bin/mooi check` needs a stub `shell/mooi-sigil.plm` header, which Task 8 replaces).
-- [ ] **Step 5: Commit** — `git commit -m "sigil: mooi starts it, and the bar's clock stands in (D207)"`
+- [x] **Step 2: Run to see it fail.** **Step 3: Implement.** **Step 4: Run** → ok (the scene itself is Task 8; until then `bin/mooi check` needs a stub `shell/mooi-sigil.plm` header, which Task 8 replaces).
+- [x] **Step 5: Commit** — `git commit -m "sigil: mooi starts it, and the bar's clock stands in (D207)"`
 
 ---
 
@@ -366,7 +366,7 @@ end)
 - Sigil body: three passes (8 px at 0.1, glow 22; 3.2 px at 0.3; 1.7 px solid) and a pen head; the field (when `field_on`): `box` dots every 8 px in the display box only, opacity from the pointer's distance.
 - Insides (from the mockups): clock text; music as halftone dots (a generated pattern tinted by the host's colour — the cover image itself is not drawn in this phase), title `t1`, artist `t2`; ring arc to `val`; card `t1` bold and `t2`; ribbon filled to `val`; horizon with the sun; spaces from the `workspaces` service; BMO's face. (`strip` is a shape for wave 2's health; it has no inside yet.)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```lua
 section("the sigil: scene")
@@ -380,10 +380,10 @@ test("scene: generated, four hosts, 64 sprung points each, two surfaces", functi
 end)
 ```
 
-- [ ] **Step 2: Run to see it fail.**
-- [ ] **Step 3: Write the generator** (header kept, `// <gen:sigil>` block regenerated, as `tools/gen-frame.py` does).
-- [ ] **Step 4: Generate and check** — `python3 tools/gen-sigil.py && pleamar --check shell/mooi-sigil.plm` → ok; the unit test → ok; running the generator twice changes nothing (`git diff --exit-code shell/mooi-sigil.plm` after a second run).
-- [ ] **Step 5: Commit** — `git commit -m "sigil: the scene, generated (D207)"`
+- [x] **Step 2: Run to see it fail.**
+- [x] **Step 3: Write the generator** (header kept, `// <gen:sigil>` block regenerated, as `tools/gen-frame.py` does).
+- [x] **Step 4: Generate and check** — `python3 tools/gen-sigil.py && pleamar --check shell/mooi-sigil.plm` → ok; the unit test → ok; running the generator twice changes nothing (`git diff --exit-code shell/mooi-sigil.plm` after a second run).
+- [x] **Step 5: Commit** — `git commit -m "sigil: the scene, generated (D207)"`
 
 ---
 
@@ -398,7 +398,7 @@ end)
 - Consumes: everything above. Reads `sigil-hosts.json`, `sigil-feed.json`, `settings.json`, `palette.json`, `nexus-feed.json` (watched with `sys.watch("files:…")`); services `media`, `audio`, `battery`, `network`, `bluetooth`, `workspaces`, `clock`.
 - Behaviour: on any change, `director.choose` → for each host: the source's shape `shapes.outline(entry.display or entry.glyph, box, form, t, opts)`, written as targets in `bodies.temperament(...).batches` batches `lag_ms` apart (front first, `shapes.batches`); colour from `palette.resolve` eased; texts from `entry.compact(reading)`. Presses: `entry.press` → `pleamar --say mooi "fact isl_cx <host centre>" "fact open <target>"` for islands, `emit open_nexus`, `emit open_overview`, BMO's poke. Says `pleamar --say mooi "emit sigil_ready"` once hosts are drawn.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 ```lua
 section("the sigil: logic")
@@ -413,8 +413,8 @@ test("logic: requires the five modules, reads the feeds, never the notification 
 end)
 ```
 
-- [ ] **Step 2: Run to see it fail.** **Step 3: Implement the logic.** **Step 4: Run** → ok; `bin/mooi check` → gate ok, 15 scenes compile.
-- [ ] **Step 5: Write `tests/sigil.sh`** (live; restores settings, players, volume; traps EXIT INT TERM PIPE; never moves the pointer). Checks, each through `pleamar --say`:
+- [x] **Step 2: Run to see it fail.** **Step 3: Implement the logic.** **Step 4: Run** → ok; `bin/mooi check` → gate ok, 15 scenes compile.
+- [x] **Step 5: Write `tests/sigil.sh`** (live; restores settings, players, volume; traps EXIT INT TERM PIPE; never moves the pointer). Checks, each through `pleamar --say`:
   1. classic mode, no module: `mooi-sigil` not running or every `h{k}_on` false, and the `drop` surface unmapped (`describe`);
   2. `sigil.pill = sigil`: `h0_on` true within 3 s; `sigil_up` true in `mooi`; the classic Pill's `pill_on` false;
   3. each wave-1 source forced through `fact` → its `h0_src` and 64 targets inside the box;
@@ -424,8 +424,8 @@ end)
   7. kill `mooi-sigil` six times quickly → mooi logs `gave up`, `sigil_up` false, the bar's plain clock fact on;
   8. `pleamar --report mooi-sigil --seconds 8` with music: compose + paint mean < 1 ms;
   9. `SHOTS=dir` keeps screenshots of every source's compact and display.
-- [ ] **Step 6: Run it on the desk** — `sh tests/sigil.sh` → all ok (warn the owner first: ~90 s, settings restored). Record results in D207 and STATUS; tick this plan.
-- [ ] **Step 7: Commit** — `git commit -m "sigil: phase 1 live — the line in the Pill and islands, wave 1 (D207)"`
+- [x] **Step 6: Run it on the desk** — `sh tests/sigil.sh` → all ok (warn the owner first: ~90 s, settings restored). Record results in D207 and STATUS; tick this plan.
+- [x] **Step 7: Commit** — `git commit -m "sigil: phase 1 live — the line in the Pill and islands, wave 1 (D207)"`
 
 ---
 
