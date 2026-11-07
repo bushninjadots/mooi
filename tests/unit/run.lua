@@ -5317,6 +5317,17 @@ do
         b.h.pk_chip(0); eq(b.fact.pk_room, 0); eq(b.fact.pk_music, true, "the music moon: Now Playing")
         b.h.pk_key(3); eq(b.fact.open, "none")
     end)
+    test("the board tells the others when it opens or closes (the scene does not hear the logic's own write)", function()
+        local handlers, told = {}, {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                    touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = {} } end, save = function() end,
+            pill = P, opened = function(v) told[#told + 1] = v; env.fact.open = v end })
+        api.press("left", "idle"); eq(told[1], "board")
+        api.press("left", "idle"); eq(told[2], "none")
+    end)
     test("closed by the scene (a press outside, Escape), the next press opens it again", function()
         local b = board(S())
         b.api.press("left", "idle"); eq(b.fact.open, "board")
@@ -5432,6 +5443,19 @@ do
         assert(ui:find("emit music_isl(if(pk_mus_on, 3, 2))", 1, true), "the board says 3 or 2")
         local bar = read("shell/bar.luau")
         assert(bar:find("mu.open = mu.isl or mu.board", 1, true), "either keeps it open")
+    end)
+end
+
+section("the Pill board: the frame lets go (D170 fix)")
+do
+    test("the frame's island follows open as the scene reports it, so a board closed in the scene leaves no plate", function()
+        local f = io.open("shell/mooi.luau"); local src = f:read("a"); f:close()
+        local body = src:match("local function pl_sync%(%)(.-)\nend")
+        assert(body, "pl_sync")
+        assert(not body:find("fact.open", 1, true), "pl_sync does not read fact.open back (it gives the logic's last write)")
+        assert(src:find('on("fact:open", opens.pl_heard)', 1, true) and src:find("opens.listen(opens.pl_heard)", 1, true), "it hears the scene and the logic")
+        local isl = io.open("shell/islands.luau"); local i = isl:read("a"); isl:close()
+        assert(i:find("ctx.listen_open(heard)", 1, true), "the islands' readers hear the logic's opens too")
     end)
 end
 

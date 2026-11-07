@@ -24,7 +24,9 @@ return function(ctx)
     local hooks = {}
     local function on_want(fn) hooks[#hooks + 1] = fn end
     local function told() local v = wanted(); for _, fn in ipairs(hooks) do fn(v) end end
-    on("fact:open", function(v) opened = tostring(v or "none"); told() end)
+    local function heard(v) opened = tostring(v or "none"); told() end
+    on("fact:open", heard)
+    if ctx.listen_open then ctx.listen_open(heard) end
     on("fact:pk_room", told)
     -- ── The clock: what it shows (clock.view), a right press for the next ───
     local VIEWS = { "full", "time", "seconds" }

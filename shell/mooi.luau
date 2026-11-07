@@ -1641,10 +1641,22 @@ require("command")({
     letter = apps.letter,
 })
 
+-- `open` changed by the logic itself: the scene's fact:open is only heard for the scene's own changes,
+-- and reading fact.open back gives the logic's last write, so whoever writes it says so here and
+-- everyone who follows it hears both (D170: the board opened by the logic got no plate from the frame)
+-- (one table: the main chunk is at Lua's 200-local limit)
+local opens = { listeners = {}, pl = "none" }
+function opens.listen(fn) opens.listeners[#opens.listeners + 1] = fn end
+function opens.by_logic(v)
+    fact.open = v
+    for _, fn in ipairs(opens.listeners) do fn(v) end
+end
+
 -- ── The modules' own islands (shell/islands.luau, D97) ───────
 require("islands")({
     settings = function() return settings end,
     save = save_settings,
+    listen_open = opens.listen,
 })
 
 -- ── The bar's own controls ─────────────────────────────────
@@ -1838,14 +1850,16 @@ end
 -- (three events); they go to the frame in one message with a count of openings, so its spring runs
 -- from 0 even when one island follows another. When `open` changes, the frame lets the last one go.
 -- Messages are sent one after another (two `--say`s at once could arrive the wrong way round).
-local pl_q, pl_busy, pl_geo, pl_count = {}, false, {}, 0
+-- The frame's island state in one table (the main chunk is at Lua's 200-local limit): the queue of
+-- messages, the geometry of the latest opening and what the frame was last told.
+local pl = { q = {}, busy = false, geo = {}, count = 0, seq = 0, sent_seq = -1, sent_on = false }
 local function pl_send(cmds)
-    pl_q[#pl_q + 1] = cmds
-    if pl_busy then return end
+    pl.q[#pl.q + 1] = cmds
+    if pl.busy then return end
     local function next_one()
-        local c = table.remove(pl_q, 1)
-        if not c then pl_busy = false; return end
-        pl_busy = true
+        local c = table.remove(pl.q, 1)
+        if not c then pl.busy = false; return end
+        pl.busy = true
         local args = { "--say", "mooi-frame" }
         for _, x in ipairs(c) do args[#args + 1] = x end
         run("pleamar", args, function() next_one() end)
@@ -1858,33 +1872,38 @@ end
 -- either that island (once per opening) or nothing.
 local CHASSIS = { window = true, system = true, stats = true, calendar = true, music = true, weather = true,
                   sound = true, display = true, power = true, board = true }      -- board: the Pill unfolded (D170)
-local pl_seq, pl_sent_seq, pl_sent_on = 0, -1, false
+-- `open` as the scene and the logic report it (opens.pl): reading fact.open back gives the logic's own
+-- last write, so a board the logic opened and the scene closed (a press outside, Escape) read as still
+-- open and the frame kept its plate up, empty (D170)
 local function pl_sync()
-    local o = tostring(fact.open or "none")
-    if CHASSIS[o] and fact.ch_on and pl_geo.x and pl_geo.w and pl_geo.t then
-        if pl_sent_seq ~= pl_seq or not pl_sent_on then
-            pl_sent_seq, pl_sent_on = pl_seq, true
-            pl_count = pl_count + 1
-            pl_send({ "fact pl_x " .. pl_geo.x, "fact pl_y " .. pl_geo.y, "fact pl_w " .. pl_geo.w, "fact pl_h " .. pl_geo.h,
-                      "fact pl_tx " .. pl_geo.t, "fact pl_n " .. pl_count, "fact pl_on true" })
+    local o, g = opens.pl, pl.geo
+    if CHASSIS[o] and fact.ch_on and g.x and g.w and g.t then
+        if pl.sent_seq ~= pl.seq or not pl.sent_on then
+            pl.sent_seq, pl.sent_on = pl.seq, true
+            pl.count = pl.count + 1
+            pl_send({ "fact pl_x " .. g.x, "fact pl_y " .. g.y, "fact pl_w " .. g.w, "fact pl_h " .. g.h,
+                      "fact pl_tx " .. g.t, "fact pl_n " .. pl.count, "fact pl_on true" })
         end
-    elseif pl_sent_on then
-        pl_sent_on = false
+    elseif pl.sent_on then
+        pl.sent_on = false
         pl_send({ "fact pl_on false" })
     end
 end
-on("pl_xy", function(v) v = math.floor(tonumber(v) or 0); pl_geo.x, pl_geo.y = v // 4096, v % 4096 end)
-on("pl_wh", function(v) v = math.floor(tonumber(v) or 0); pl_geo.w, pl_geo.h = v // 4096, v % 4096 end)
+on("pl_xy", function(v) v = math.floor(tonumber(v) or 0); pl.geo.x, pl.geo.y = v // 4096, v % 4096 end)
+on("pl_wh", function(v) v = math.floor(tonumber(v) or 0); pl.geo.w, pl.geo.h = v // 4096, v % 4096 end)
 on("pl_t", function(v)
-    pl_geo.t = math.floor(tonumber(v) or 0)
-    pl_seq = pl_seq + 1                 -- a new opening's geometry
+    pl.geo.t = math.floor(tonumber(v) or 0)
+    pl.seq = pl.seq + 1                 -- a new opening's geometry
     pl_sync()
 end)
 -- `open` changed: decided a moment later, once an island that opened has said where it is
 -- (closing needs no wait, and the sooner the frame hears, the less its body trails the content)
-on("fact:open", function(v)
-    if CHASSIS[tostring(v or fact.open or "none")] then after(20, pl_sync) else pl_sync() end
-end)
+function opens.pl_heard(v)
+    opens.pl = tostring(v or "none")
+    if CHASSIS[opens.pl] then after(20, pl_sync) else pl_sync() end
+end
+on("fact:open", opens.pl_heard)
+opens.listen(opens.pl_heard)
 
 on("open_settings", function()
     if settings_win then run("pleamar", { "--say", "mooi-settings", "quit" }); return end
@@ -2512,6 +2531,8 @@ bar.set_board(require("pillboard")({
     refresh = function() bar.relayout() end,
     pill = bar.pill,
     loom = loom,
+    opened = opens.by_logic,
+    listen_open = opens.listen,
 }))
 
 -- ── The Mechanical Shutter: a window's controls, unfolding from its edge (shell/shutter.luau) ──

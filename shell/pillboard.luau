@@ -24,7 +24,12 @@ return function(ctx)
     -- what is open, as the scene says: a press outside or Escape closes it in the scene, and reading
     -- fact.open back gives the logic's last write, not that (a closed board read as open, D170)
     local opened = "none"
-    local function set_open(v) opened = v; fact.open = v end
+    local function set_open(v)
+        opened = v
+        -- told to the others who follow open (the frame's plate, the rooms' readers): the scene's
+        -- fact:open is not heard for a change the logic makes
+        if ctx.opened then ctx.opened(v) else fact.open = v end
+    end
 
     local function emit_scene(ev, arg)
         run("pleamar", { "--say", "mooi", "emit " .. ev .. (arg ~= nil and (" " .. tostring(arg)) or "") })
