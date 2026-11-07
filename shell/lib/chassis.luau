@@ -102,7 +102,9 @@ function M.pieces(geo, look, looks)
             local slim = type(geo.pill) == "table" and geo.pill.slim == true
             -- D187/D202: one capsule, one height — the Pill is always the bar's module height
             local shape = type(geo.pill) == "table" and geo.pill.shape or "attached"
-            if pw > 0 and shape == "dot" and slim then
+            if shape == "morph" then
+                -- D204: the morph is an outline the frame draws from M.morph, not a box
+            elseif pw > 0 and shape == "dot" and slim then
                 -- D171: the dot — a small circle where the Pill rests, never joined
                 add(px, look.top + (look.mod_h - pw) / 2, pw, pw, pw / 2, 0, false)
             elseif pw > 0 and shape == "floating" then
@@ -114,6 +116,15 @@ function M.pieces(geo, look, looks)
                 elseif slim then add(px, look.top, pw, 6, 3, 0, false)
                 elseif look.band then add(px, -40, pw, foot + 40, look.mod_h / 2, 8, true)
                 else add(px, look.top, pw, look.mod_h, look.mod_h / 2, 0, false) end
+            end
+            -- D205: the second and third pills, each a capsule of its own — joined to the band like the
+            -- centre one (floating when it floats); they never tuck, so no sliver or dot
+            for _, e in ipairs(type(geo.pills) == "table" and geo.pills or {}) do
+                local ex, ew = span(e)
+                if ew > 0 then
+                    if shape ~= "floating" and look.band then add(ex, -40, ew, foot + 40, look.mod_h / 2, 8, true)
+                    else add(ex, look.top, ew, look.mod_h, look.mod_h / 2, 0, false) end
+                end
             end
             -- D169: nodes are square pads (r 5) on a circuit trace; satellites are round moons
             local nodes = geo.nodes == true
@@ -128,6 +139,21 @@ function M.pieces(geo, look, looks)
         end
     end
     return out
+end
+
+-- D204: the morph Pill's box, for lib/pillmorph's outline: where the attached (or floating) capsule
+-- would be, its corner radius and blend. nil when the Pill is not a morph. The outline itself, from
+-- the form the bar chose (geo.pill.form), is lib/pillmorph.points(form, x, y, w, h, r).
+function M.morph(geo, look)
+    if look.mode ~= "pill" or type(geo) ~= "table" or type(geo.pill) ~= "table" or geo.pill.shape ~= "morph" then return nil end
+    local px, pw = span(geo.pill)
+    local r = look.mod_h / 2
+    local form = type(geo.pill.form) == "string" and geo.pill.form or "capsule"
+    if pw <= 0 then form = "none" end
+    if look.band then
+        return { x = px, y = -40, w = pw, h = M.foot(look) + 40, r = r, k = 8, form = form }
+    end
+    return { x = px, y = look.top, w = pw, h = look.mod_h, r = r, k = 0, form = form }
 end
 
 function M.foot(look)

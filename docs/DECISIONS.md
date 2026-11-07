@@ -5735,3 +5735,62 @@ G4); the summaries follow the commit messages._
 - Checks: unit 607 / 0, 14 scenes compile (`bin/mooi check`, 2026-11-07). Not yet seen live: the rail's
   jumps and the turn's light need the desk. The wheel and the pads were already driven there (D170).
 
+## D204 · 2026-11-07 · The morph: one outline that flows, opt-in
+
+- **What was there.** Uncommitted edits from another tool (15:55–16:00, no Claude session ran then) added a
+  "semantic morph": with music the Pill became a breathing hull with sparks and a record-and-controls
+  object, a middle press summoned workspace and signal objects, and the frame hid the capsule whenever music
+  played, for every shape. That is D187's complaint again (separate objects, effects), on by default, and it
+  duplicated the wheel's views and the peek's controls; it also declared two events twice. The edits are kept
+  as a patch outside the repo and were replaced, not merged.
+- **What it is now** (plans/2026-11-07-pill-many.md, task 3, "the morph"): a fourth `pill.shape`, `morph`,
+  chosen in Settings → The Pill → Shape. The Pill's silhouette is twelve control points
+  (`lib/pillmorph.luau`, pure): the corners plus four along the top and four along the foot, joined by
+  quadratic curves through their midpoints, a closed B-spline that is a capsule of radius r, or a disc,
+  depending only on where the points are. The bar picks the form from what the Pill shows
+  (`pillmorph.form`): **capsule** (idle and the rest), **blob** (music playing), **drop** (a notice: a narrow
+  bead hangs from the middle of the foot), **bead** (tucked away, the dot's 14 px), **none** (vanished: every
+  point gathers at the centre, so it shrinks in place). What the capsule shows is unchanged (D187's one
+  layout); only its outline moves.
+- **Drawn by the frame, one body with the band.** `tools/gen-frame.py` puts the outline in every top tile
+  (and the island copies on `frame_p`) as a path with `blend: mk`, so attached it melts into the band like the
+  capsule piece did (`lib/chassis.morph` gives the box, radius and blend; no box piece is added for it). The
+  points are props on two springs (`fr.ooze` 260/20 and `fr.ooze2` 200/17, alternate points), so a change of
+  width or form flows with a little give instead of scaling. One spring per point, no per-frame simulation.
+- **The blob's edge rides the bass** that the frame already computes for `frame.music` (iNiR's level and
+  phase). It runs when either asks, but writes `flev` only for the band and `mlev`/`mph` only for the morph,
+  so the morph never makes the band wave. Each point moves along its normal by `mrip · mlev` at its own phase.
+- **Reduced motion / the saver:** the form stays the capsule (the bead too, which is a size, not a motion),
+  `mrip` is 0, and the band music level is not run for it. An open board keeps the capsule, so the board
+  still unfolds from one.
+- Checks: unit 613 / 0 at the time (6 new: points, the disc, every form, the form rules, the chassis, the
+  sources), 14 scenes compile, gate ok. **Not yet seen live:** the owner was using the board during the one
+  live attempt (settings restored byte for byte), so the outline, its springs and the ripple still need the
+  desk. The frame's cost is not measured either: every top tile now carries a 12-curve path (collapsed when
+  the shape is not morph), and `pleamar --report` on `mooi-frame` should be run with and without it.
+
+## D205 · 2026-11-07 · More pills: a second and a third, each a face, placed anywhere
+
+- The owner's ask (spec §3, revised): several pills, **placed wherever they want**. Four appended settings
+  (`pill.two`, `pill.two_at`, `pill.three`, `pill.three_at`) under a new card, Settings → The Pill → More
+  pills: each pill is a face at rest (Off, Time, Song, Weather, Machine, Battery, Spaces in the window; BMO,
+  the Nexus, network, signals and the visualiser by the file), and a place, its centre as a percentage of the
+  screen's width (0: beside the centre Pill, the second on its left and the third on its right).
+- **A deviation from the plan, on purpose:** the plan named one list, `pill.slots`, with up to three entries
+  that each repeat the centre Pill's settings. The settings window writes one value per control (lib/setters),
+  so a list would have needed its own editor and its own validation path; four ordinary settings give the same
+  placement with the controls the window already has, and the centre Pill keeps every setting it had.
+- **Placement is pure** (`lib/pill.place_extra`): the free stretches between the side groups, the centre Pill
+  with its moons and the pills already placed (12 px of air round each, 8 px to the screen's edge); the nearest
+  place to the wanted centre at its full width, else at its icon's 44 px, else it is not shown. It never sits
+  off the screen or over anything, and two pills wanting the same place end up side by side.
+- **One face tree.** The module faces moved into `ModuleFace(px, pw, cy, face, detail)` in `ui/pill.plm`; the
+  centre Pill's idle face and `ExtraPill(k, …)` both use it, so a second pill adds no copy of the markup. The
+  frame draws each extra as a capsule piece (`geo.pills`, joined to the band like the centre one, floating when
+  it floats). A press opens what its face opens (`pillboard.face_press`: the board on its room, the Nexus, the
+  calendar); its wheel turns its own view through `pill.views`.
+- Limits: the board still unfolds from the centre Pill (D186's one body); an extra's turned view does not rest
+  back after `pill.rest`; extras never tuck or vanish, have no moons, no activity of their own, no key
+  (`mooi pill left|right` is not built) and no Loom-style link between pills yet (task 3's links and node).
+- Checks: unit 620 / 0 (7 new: automatic gaps, clamping, the icon fallback and hiding, two pills on one place,
+  widths, settings and the chassis, the single face tree), 14 scenes compile, gate ok. **Not yet seen live.**

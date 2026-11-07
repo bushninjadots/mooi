@@ -149,6 +149,43 @@ PLACE_PIECES = [(f"px{i}", f"px{i} + pw{i}",
                  f"box {{ from: px{i}, py{i}; size: pw{i}, ph{i}; corner: pr{i}; blend: pk{i}; show: pw{i} > 0", "}")
                 for i in range(SLOTS)]
 
+# The morph (D204, lib/pillmorph): the Pill as twelve control points the logic places (mtx/mty) and
+# the scene springs to — two springs, alternate points, so a change of width flows rather than scales —
+# joined by quadratic curves through their midpoints (a closed B-spline), filled, melted into the band.
+# While it is a blob the bass pushes each point out along its normal (mrip · mlev), each at its own phase.
+# Off (another shape, or vanished) every point sits at one place: a path with no area draws nothing.
+MN = 12
+D = 0.707107
+MNORM = [(-D, -D), (0, -1), (0, -1), (0, -1), (0, -1), (D, -D), (D, D), (0, 1), (0, 1), (0, 1), (0, 1), (-D, D)]
+
+def morph_decls(ind):
+    out = [f"{ind}// the morph's outline (D204): targets from the logic, sprung here, rippled by the bass",
+           f"{ind}spring fr.ooze = 260, 20",
+           f"{ind}spring fr.ooze2 = 200, 17",
+           f"{ind}fact mrip = 0", f"{ind}fact mk = 0", f"{ind}fact mlev = 0", f"{ind}fact mph = 0", f"{ind}fact m_on = false"]
+    for i in range(MN):
+        sp = "fr.ooze" if i % 2 == 0 else "fr.ooze2"
+        out += [f"{ind}fact mtx{i} = -400", f"{ind}fact mty{i} = -400",
+                f"{ind}prop mx{i} = -400 ~{sp}", f"{ind}follow mx{i} = mtx{i}",
+                f"{ind}prop my{i} = -400 ~{sp}", f"{ind}follow my{i} = mty{i}"]
+    for i in range(MN):
+        nx, ny = MNORM[i]
+        wob = f"mrip * mlev * (0.55 + 0.3 * sin(mph + {i * 67}) + 0.15 * sin(mph * 2.3 - {i * 41}))"
+        out += [f"{ind}let mX{i} = mx{i}" + (f" + {num(nx)} * {wob}" if nx else ""),
+                f"{ind}let mY{i} = my{i}" + (f" + {num(ny)} * {wob}" if ny else "")]
+    return out
+
+def morph_steps():
+    def mid(a, b):
+        return f"(mX{a} + mX{b}) / 2, (mY{a} + mY{b}) / 2"
+    steps = [f"move {mid(MN - 1, 0)}"]
+    steps += [f"curve {mid(i, (i + 1) % MN)} via mX{i}, mY{i}" for i in range(MN)]
+    return "; ".join(steps + ["close }"])
+
+MORPH_PIECE = ("mx0", "mx5", "path { blend: mk; show: m_on", "; " + morph_steps())
+PIECES.append(MORPH_PIECE)
+PLACE_PIECES.append(MORPH_PIECE)
+
 def piece_decls(ind):
     out = [f"{ind}// the pieces' slots: targets from the logic, sprung here"]
     for i in range(SLOTS):
@@ -222,7 +259,8 @@ def plate_bodies(ind):
 def tile(ind, clip, shapes, show=None):
     i2, i3 = ind + "    ", ind + "        "
     # the band's shapes (its edges and corners are the tiles' paths) only while it is on (D153)
-    shapes = [[l.replace("path { ", "path { show: band_on; ", 1) for l in sh] for sh in shapes]
+    # (the morph's outline is the Pill's, not the band's: it stays with the band off, D204)
+    shapes = [[l if "blend: mk" in l else l.replace("path { ", "path { show: band_on; ", 1) for l in sh] for sh in shapes]
     head = [f"{ind}group {{"] + ([f"{i2}show: {show}"] if show else [])
     return (head + [f"{i2}clip box {{ {clip} }}", f"{i2}body {{"] + [i3 + b for b in BODY]
             + [l if l.startswith(i3) else i3 + l for s in shapes for l in s] + [f"{i2}}}", f"{ind}}}"])
@@ -376,7 +414,7 @@ def place_surface(ind):
 
 def frame():
     ind = "    "
-    return "\n".join(piece_decls(ind) + [""] + wave_lets(ind) + [""] + strips(ind) + [""] + place_surface(ind))
+    return "\n".join(piece_decls(ind) + [""] + morph_decls(ind) + [""] + wave_lets(ind) + [""] + strips(ind) + [""] + place_surface(ind))
 
 GEN = {
     HELIX: {"slices": lambda: slices("            ", "pick(bar_surface, fl.hull, fl.hull, fl.hull, fl.hull, fl.steel_700)")},

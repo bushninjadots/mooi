@@ -5645,10 +5645,10 @@ do
     end)
     test("faces at three details; workspaces as dots, alerts with the newest, the visualiser", function()
         local ui = read("shell/ui/pill.plm")
-        assert(ui:find("if(pill_detail < 0.5, px + pw / 2, px + 20)", 1, true), "icon: just the glyph, centred")
-        assert(ui:find("show: pill_face == 7 and wx < px + pw - 10", 1, true), "workspaces: a dot each, inside the Pill")
+        assert(ui:find("if(detail < 0.5, px + pw / 2, px + 20)", 1, true), "icon: just the glyph, centred (D205: ModuleFace)")
+        assert(ui:find("show: face == 7 and wx < px + pw - 10", 1, true), "workspaces: a dot each, inside the Pill")
         assert(ui:find("text pill_alert {", 1, true), "alerts: the newest at full")
-        assert(ui:find("show: pill_face == 10", 1, true), "the visualiser")
+        assert(ui:find("show: face == 10", 1, true), "the visualiser")
         assert(ui:find("text clock.date", 1, true), "time at full: the date")
     end)
     test("the Nexus face shows only as the Nexus face; a new face drops the turned view", function()
@@ -5662,7 +5662,7 @@ do
         assert(ui:find("let dotted = pill_hidden and pill_shape > 1.5", 1, true))
         assert(ui:find("if(dotted, px - 10, px)", 1, true))
         local plm = read("shell/mooi.plm")
-        assert(plm:find("spin pill_pulse by if(pill_hidden and pill_shape > 1.5 and not pill_still, 140, 0)", 1, true), "only while it is a dot, and never in reduced motion")
+        assert(plm:find("spin pill_pulse by if(pill_hidden and pill_shape > 1.5 and pill_shape < 2.5 and not pill_still, 140, 0)", 1, true), "only while it is a dot (not the morph, D204), and never in reduced motion")
     end)
 end
 
@@ -6921,6 +6921,174 @@ do
         eq(#st, 1); eq(st[1].structure, "s4")
         local cmds = LP.rescue(st, 6)
         assert(cmds[1]:find("workspace = 6, follow = false", 1, true))
+    end)
+end
+
+section("the morph (D204)")
+do
+    local PM = require("lib/pillmorph")
+    local chassis = require("lib/chassis")
+    local function near(a, b, what) if math.abs(a - b) > 0.01 then error(string.format("%s: expected %s, got %s", what, b, a), 2) end end
+    -- the outline the B-spline draws: the midpoints of consecutive points are on it
+    local function curve_pts(pts)
+        local out = {}
+        for _, st in ipairs(PM.steps(pts)) do out[#out + 1] = st[2] end
+        return out
+    end
+    test("the capsule: twelve points, its curve runs straight along the top and the foot, round ends of radius r", function()
+        local o = PM.points("capsule", 100, 10, 200, 24, 12)
+        eq(#o.pts, 12); eq(o.ripple, 0)
+        local c = curve_pts(o.pts)
+        -- the first curve ends at (x + r, y): the top's straight starts one radius in
+        near(c[2][1], 112, "top starts at x + r"); near(c[2][2], 10, "on the top")
+        -- the end of the top's run is one radius from the right
+        near(c[6][1], 288, "top ends at x + w - r")
+        -- the right end's middle: (x + w, y + h / 2)
+        near(c[7][1], 300, "the right end's middle x"); near(c[7][2], 22, "the right end's middle y")
+        for i = 8, 12 do near(c[i][2], 34, "the foot runs straight") end
+        near(c[13][1], 100, "the left end's middle"); near(c[13][2], 22, "half way down")
+        eq(#PM.steps(o.pts), 13, "a move and twelve curves")
+    end)
+    test("a disc when it is as wide as it is high; the corner radius never exceeds half of either", function()
+        local o = PM.points("capsule", 0, 0, 24, 24, 50)
+        local c = curve_pts(o.pts)
+        near(c[1][1], 0, "left middle x"); near(c[1][2], 12, "left middle y")
+        near(c[2][1], 12, "top middle"); near(c[2][2], 0, "the top")
+        for _, p in ipairs(o.pts) do assert(p[1] >= 0 and p[1] <= 24 and p[2] >= 0 and p[2] <= 24, "inside its box") end
+    end)
+    test("the forms: blob ripples, drop hangs a bead, bead is the dot's size, none gathers at the centre", function()
+        local b = PM.points("blob", 100, 10, 200, 24, 12)
+        eq(b.ripple, PM.RIPPLE); assert(b.pts[9][2] > 34 and b.pts[10][2] > 34, "a little swollen at the foot")
+        local d = PM.points("drop", 100, 10, 200, 24, 12)
+        assert(d.pts[9][2] > 34 + 10 and d.pts[10][2] > 34 + 10, "the bead hangs")
+        near((d.pts[9][1] + d.pts[10][1]) / 2, 200, "under the middle")
+        near(d.pts[8][2], 34, "its neighbours stay on the foot"); near(d.pts[11][2], 34, "both")
+        local e = PM.points("bead", 100, 10, 200, 24, 12)
+        local minx, maxx = 1e9, -1e9
+        for _, p in ipairs(e.pts) do minx = math.min(minx, p[1]); maxx = math.max(maxx, p[1]) end
+        near(maxx - minx, PM.BEAD, "the bead is as wide as the dot"); near((minx + maxx) / 2, 200, "where the Pill rests")
+        local n = PM.points("none", 100, 10, 200, 24, 12)
+        for _, p in ipairs(n.pts) do near(p[1], 200, "x at the centre"); near(p[2], 22, "y in the module's middle") end
+        local z = PM.points("capsule", 100, 10, 0, 24, 12)
+        for _, p in ipairs(z.pts) do near(p[1], 100, "a vanished Pill gathers where it was") end
+        local off = PM.points("none", nil, nil, nil, nil, nil)
+        eq(off.pts[1][1], PM.OFF, "no box: off the strip")
+    end)
+    test("the form follows the state; reduced motion and an open board keep the capsule", function()
+        eq(PM.form({ main = "idle" }), "capsule")
+        eq(PM.form({ main = "music" }), "blob")
+        eq(PM.form({ main = "notify" }), "drop")
+        eq(PM.form({ main = "osd" }), "capsule")
+        eq(PM.form({ main = "idle", hidden = true }), "bead")
+        eq(PM.form({ main = "idle", hidden = true, vanish = true }), "none")
+        eq(PM.form({ main = "music" }, { still = true }), "capsule", "still: no blob")
+        eq(PM.form({ main = "notify" }, { board = true }), "capsule", "the board unfolds from a capsule")
+        eq(PM.form({ main = "idle", hidden = true }, { still = true }), "bead", "a size, not a motion")
+        eq(PM.form(nil), "capsule")
+    end)
+    test("the chassis: a morph Pill is an outline, not a box; joined to the band with it, floating without", function()
+        local L = chassis.look(require("lib/config").defaults())
+        L.mode = "pill"; L.band = false; L.top = 6; L.mod_h = 24
+        local geo = { islands = {}, pill = { x = 900, w = 160, shape = "morph", form = "blob" }, moons = {} }
+        eq(#chassis.pieces(geo, L), 0, "no box for the Pill")
+        local m = chassis.morph(geo, L)
+        eq(m.form, "blob"); eq(m.x, 900); eq(m.w, 160); eq(m.y, 6); eq(m.h, 24); eq(m.k, 0)
+        L.band = true
+        local j = chassis.morph(geo, L)
+        eq(j.y, -40, "hangs from above the screen, as the attached capsule does"); eq(j.k, 8, "melted into the band")
+        geo.pill.w = 0
+        eq(chassis.morph(geo, L).form, "none", "no width: nothing drawn")
+        geo.pill.shape = "attached"
+        eq(chassis.morph(geo, L), nil, "any other shape: no outline")
+    end)
+    test("config, settings and the scenes know the morph", function()
+        local s, p = require("lib/config").validate({ pill = { shape = "morph" } })
+        eq(#p, 0); eq(s.pill.shape, "morph")
+        local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+        local bar = read("shell/bar.luau")
+        assert(bar:find("dot = 2, morph = 3 }", 1, true), "the scene's pill_shape")
+        assert(bar:find("form = pill_now and pill_now.form", 1, true), "the frame is told the form")
+        local fr = read("shell/mooi-frame.plm")
+        assert(fr:find("spring fr.ooze = 260, 20", 1, true) and fr:find("follow mx11 = mtx11", 1, true), "sprung points")
+        assert(fr:find("path { blend: mk; show: m_on", 1, true), "the outline melts into the band")
+        assert(not fr:find("path { show: band_on; blend: mk", 1, true), "and stays with the band off")
+        local fl = read("shell/mooi-frame.luau")
+        assert(fl:find("fact.mrip = (not still) and out.ripple or 0", 1, true), "no ripple in reduced motion")
+        assert(read("shell/mooi-settings.plm"):find('"Morph", 3', 1, true), "a fourth shape in Settings")
+    end)
+end
+
+section("more pills (D205)")
+do
+    local P = require("lib/pill")
+    local chassis = require("lib/chassis")
+    local function overlaps(a, b) return a.x < b.x + b.w and b.x < a.x + a.w end
+    local SIDES = { { x = 20, w = 300 }, { x = 860, w = 200 }, { x = 1600, w = 300 } }
+    test("automatic: the second in the gap left of the centre Pill, the third in the gap right", function()
+        local x2, w2 = P.place_extra(1920, 160, 0, "left", SIDES)
+        local x3, w3 = P.place_extra(1920, 160, 0, "right", SIDES)
+        eq(w2, 160); eq(w3, 160)
+        assert(x2 + w2 / 2 < 860 and x2 > 320, "left of the Pill, right of the left group")
+        assert(x3 > 1060 and x3 + w3 < 1600, "right of the Pill, left of the right group")
+    end)
+    test("a place across the screen is clamped: never off it, never over anything, the nearest free spot", function()
+        local x, w = P.place_extra(1920, 160, 100, "left", {})
+        eq(x + w, 1920 - P.EDGE, "the right edge, less its air")
+        local cx, cw = P.place_extra(1920, 160, 50, "left", { { x = 860, w = 200 } })
+        assert(not overlaps({ x = cx, w = cw }, { x = 860 - P.EXTRA_GAP, w = 200 + 2 * P.EXTRA_GAP }), "beside the Pill, not on it")
+        local x0 = P.place_extra(1920, 160, 1, "left", {})
+        eq(x0, P.EDGE, "the left edge")
+    end)
+    test("no room at its width: its icon's; no room at all: not shown", function()
+        local tight = { { x = 0, w = 900 }, { x = 990, w = 930 } }   -- a 90 px gap, 66 free after the air
+        local x, w = P.place_extra(1920, 160, 0, "left", tight)
+        eq(w, P.EXTRA_MIN, "shrunk to its icon"); assert(x >= 912 and x + w <= 978, "inside the gap")
+        local _, none = P.place_extra(1920, 160, 0, "left", { { x = 0, w = 1920 } })
+        eq(none, 0, "nowhere: hidden, never 0-wide while shown")
+    end)
+    test("two pills asking for the same place do not overlap", function()
+        local taken = { { x = 860, w = 200 } }
+        local ax, aw = P.place_extra(1920, 160, 30, "left", taken)
+        taken[#taken + 1] = { x = ax, w = aw }
+        local bx, bw = P.place_extra(1920, 160, 30, "right", taken)
+        assert(bw > 0 and not overlaps({ x = ax, w = aw }, { x = bx, w = bw }), "side by side")
+    end)
+    test("a face's width is the centre Pill's measure of it", function()
+        eq(P.face_width("weather", "brief"), P.FACE_W.weather)
+        eq(P.face_width("weather", "icon"), 44)
+        eq(P.face_width("media", "full"), P.FACE_W_FULL.media)
+        eq(P.face_width("time", "brief"), P.FACE_W.time)
+    end)
+    test("settings: off by default, every face, a place 0–100; the chassis draws a capsule for each", function()
+        local C = require("lib/config")
+        local d = C.defaults()
+        eq(d.pill.two, "off"); eq(d.pill.three, "off"); eq(d.pill.two_at, 0)
+        local s, p = C.validate({ pill = { two = "weather", two_at = 30, three = "battery" } })
+        eq(#p, 0); eq(s.pill.two, "weather"); eq(s.pill.two_at, 30)
+        local _, bad = C.validate({ pill = { two = "kettle", three_at = 140 } })
+        eq(#bad, 2, "an unknown face and a place past the screen are refused")
+        local seen = {}
+        for _, path in ipairs(require("lib/setters").SETTERS) do seen[path] = true end
+        assert(seen["pill.two"] and seen["pill.two_at"] and seen["pill.three"] and seen["pill.three_at"])
+        local L = chassis.look(C.defaults()); L.mode = "pill"; L.band = false; L.top = 6; L.mod_h = 24
+        local pcs = chassis.pieces({ islands = {}, pill = { x = 900, w = 160, shape = "attached" }, moons = {},
+                                     pills = { { x = 500, w = 120 }, { x = 1300, w = 0 } } }, L)
+        eq(#pcs, 2, "the centre Pill and one extra (a 0-wide one is not drawn)")
+        eq(pcs[2].x, 500); eq(pcs[2].w, 120); eq(pcs[2].r, 12)
+    end)
+    test("the scene: one face component for every pill, a zone and a wheel each", function()
+        local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+        local ui = read("shell/ui/pill.plm")
+        local _, faces = ui:gsub("component ModuleFace%(", "")
+        eq(faces, 1, "one module-face tree")
+        assert(ui:find("ModuleFace(px, pw, cy, pill_face, pill_detail)", 1, true), "the centre Pill uses it")
+        assert(ui:find("ModuleFace(px, pw, cy, face, pill_detail)", 1, true), "and the extras")
+        assert(ui:find("on press xz { emit pill_xpress(k) }", 1, true))
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("ExtraPill(2, pill2_on, pill2_x, pill2_w, pill2_face)", 1, true) and plm:find("ExtraPill(3,", 1, true))
+        local bar = read("shell/bar.luau")
+        assert(bar:find("pillmod.place_extra(env.screen", 1, true), "placed by the pure function")
+        assert(read("shell/pillboard.luau"):find("face_press = face_press", 1, true), "a press opens its room")
     end)
 end
 

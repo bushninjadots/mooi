@@ -281,6 +281,67 @@ function M.place(screen_w, w, n, multi)
     return out
 end
 
+-- D205: more pills. Besides the centre one, a second and a third (pill.two, pill.three), each a face of
+-- its own at rest, placed by `at` (a percentage of the screen's width for its centre; 0: automatic — the
+-- second in the gap left of the centre Pill, the third in the gap right of it). Where they go is clamped:
+-- never off the screen, never over the side groups, the centre Pill (with its moons) or each other. With no
+-- room at its full width a pill shrinks to its icon (44 px); with no room even for that it is not shown.
+M.EXTRA_MIN = 44
+M.EXTRA_GAP = 12      -- the air kept round every pill and group
+M.EDGE = 8            -- the air kept to the screen's edge
+
+-- a face's width at a detail, as the centre Pill measures its idle face (time · bmo · nexus · modules)
+function M.face_width(face, detail)
+    return width({ glyph = "idle", t1 = "" }, { face = face, detail = detail })
+end
+
+-- taken: a list of { x, w } already on the bar. Returns x, w (w = 0: no room).
+function M.place_extra(screen_w, w, at, side, taken)
+    screen_w, w = tonumber(screen_w) or 1920, math.max(M.EXTRA_MIN, math.floor(tonumber(w) or M.EXTRA_MIN))
+    taken = type(taken) == "table" and taken or {}
+    -- the free stretches between what is taken, inside the screen's edges
+    local iv = {}
+    for _, t in ipairs(taken) do
+        if tonumber(t.x) and tonumber(t.w) and t.w > 0 then iv[#iv + 1] = { t.x - M.EXTRA_GAP, t.x + t.w + M.EXTRA_GAP } end
+    end
+    table.sort(iv, function(a, b) return a[1] < b[1] end)
+    local free, cur = {}, M.EDGE
+    for _, v in ipairs(iv) do
+        if v[1] > cur then free[#free + 1] = { cur, v[1] } end
+        cur = math.max(cur, v[2])
+    end
+    if screen_w - M.EDGE > cur then free[#free + 1] = { cur, screen_w - M.EDGE } end
+    -- where it wants its centre: the chosen place, or the middle of the gap beside the centre Pill
+    local want
+    at = tonumber(at) or 0
+    if at > 0 then
+        want = screen_w * math.min(100, at) / 100
+    else
+        local mid = screen_w / 2
+        local best = nil
+        for _, f in ipairs(free) do
+            local c = (f[1] + f[2]) / 2
+            local ok = (side == "right") and c > mid or (side ~= "right" and c < mid)
+            -- the free stretch beside the centre Pill: the nearest to the middle on that side
+            if ok and (best == nil or math.abs(c - mid) < math.abs((best[1] + best[2]) / 2 - mid)) then best = f end
+        end
+        want = best and (best[1] + best[2]) / 2 or (side == "right" and screen_w * 0.75 or screen_w * 0.25)
+    end
+    -- the nearest place it fits, at its width, else at its icon's
+    for _, ww in ipairs({ w, M.EXTRA_MIN }) do
+        local bx, bd = nil, nil
+        for _, f in ipairs(free) do
+            if f[2] - f[1] >= ww then
+                local x = math.max(f[1], math.min(f[2] - ww, want - ww / 2))
+                local d = math.abs(x + ww / 2 - want)
+                if bd == nil or d < bd then bx, bd = x, d end
+            end
+        end
+        if bx then return math.floor(bx), ww end
+    end
+    return 0, 0
+end
+
 -- D170: what a press on the Pill does. main: the activity it shows; face: pill.face; button: "left" or
 -- "right"; osd: "vol" or "bri" (which change is showing). Left unfolds the board on the activity's room
 -- (the Nexus face's left is the Nexus button, while nothing is happening); right keeps the old jumps.

@@ -27,6 +27,7 @@ return function(ctx)
     -- The Pill (D168): what happens, noted for lib/pill; its own clock (a quarter-second tick, only
     -- doing anything in Pill mode), what it last showed, and where it sits
     local pillmod = require("lib/pill")
+    local pillmorph = require("lib/pillmorph")   -- D204: the morph shape's form
     local hypr = require("lib/hypr")      -- Hyprland's Lua dispatch
     local pillface = require("lib/pillface")     -- D169: BMO's face, when the Pill shows it
     local pst, pill_ms, pill_now = pillmod.state(), 0, nil
@@ -46,6 +47,8 @@ return function(ctx)
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
     local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
+    -- D205: the second and third pills — each its view turned by the wheel (nil: its face), where it sits
+    local extras = { [2] = { key = "two" }, [3] = { key = "three" } }
     local pill_idle_was = true               -- D175: the rest only runs while the Pill is idle
     local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
     local pill_face_was = nil                -- D171: a new face chosen drops the view the wheel turned to
@@ -150,7 +153,8 @@ return function(ctx)
             local pl = pillmod.place(env.screen, w, n, pm)
             -- D187/D202: one capsule, one height — no face makes it taller
             geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true,
-                         shape = type(s.pill) == "table" and s.pill.shape or "attached" }
+                         shape = type(s.pill) == "table" and s.pill.shape or "attached",
+                         form = pill_now and pill_now.form or "capsule" }   -- D204: what the morph's outline is
             fact.pill_h = tonumber(b.height) or 24
             geo.nodes = pm == "nodes"      -- D169: square pads on traces
             fact.pill_nodes = geo.nodes
@@ -159,6 +163,36 @@ return function(ctx)
             fact.pill_x, fact.pill_w = pl.x, w
             for k = 0, 3 do fact["moon_x" .. k] = pl.moons[k + 1] or pl.x end
             fact.moon_n = n
+            -- D205: the second and third pills, placed round what is already there (lib/pill.place_extra)
+            local taken = {}
+            for _, f in ipairs(out.frames or {}) do taken[#taken + 1] = { x = f.x, w = f.w } end
+            local lo, hi = pl.x, pl.x + w
+            for _, mx in ipairs(pl.moons) do lo = math.min(lo, mx); hi = math.max(hi, mx + pillmod.MOON) end
+            taken[#taken + 1] = { x = lo, w = hi - lo }
+            geo.pills = {}
+            local p = type(s.pill) == "table" and s.pill or {}
+            for k = 2, 3 do
+                local e = extras[k]
+                local face = p[e.key]
+                local on = type(face) == "string" and face ~= "off"
+                if not on then e.view = nil end
+                local shown = e.view or face
+                local ex, ew = 0, 0
+                if on then
+                    ex, ew = pillmod.place_extra(env.screen, pillmod.face_width(shown, p.detail), p[e.key .. "_at"],
+                                                 k == 2 and "left" or "right", taken)
+                end
+                if ew > 0 then
+                    taken[#taken + 1] = { x = ex, w = ew }
+                    geo.pills[#geo.pills + 1] = { x = ex, w = ew }
+                end
+                e.x, e.w, e.shown = ex, ew, shown
+                fact["pill" .. k .. "_on"] = ew > 0
+                fact["pill" .. k .. "_x"], fact["pill" .. k .. "_w"] = ex, ew
+                local fi = 0
+                for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
+                fact["pill" .. k .. "_face"] = fi
+            end
         end
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
@@ -259,7 +293,7 @@ return function(ctx)
         -- D186: the board's look — the wash over the bar's plate, and the edge it wears
         fact.pk_tint = ({ theme = 0, phosphor = 1, accent = 2 })[p.board_tint] or 0
         fact.pk_edge = ({ theme = 0, hairline = 1, none = 2 })[p.board_edge] or 0
-        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2 })[p.shape] or 0
+        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2, morph = 3 })[p.shape] or 0
         fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         -- D188: the saved face, which the editor marks (pill_face is the one showing: a turned view)
         local si = 0
@@ -289,8 +323,12 @@ return function(ctx)
             after(240, function() if seq == pill_swap_seq then fact.pill_swap = 0 end end)
         end
         pill_sig, pill_gst = sig, gst
+        -- D204: the morph's form (capsule · blob · drop · bead · none), held still under reduced motion
+        r.form = pillmorph.form(r, { still = s.motion.reduced == true or s.motion.saver == "always",
+                                     board = pill_board ~= nil and pill_board.open() == "board" })
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
             or (pill_now.hidden == true) ~= (r.hidden == true)
+            or (p.shape == "morph" and pill_now.form ~= r.form)
         pill_now = r
         if changed then relayout(true) end
     end
@@ -412,6 +450,23 @@ return function(ctx)
         if fact.pill_hidden then note("peek", {}) end
         fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
         if pill_board then pill_board.press("right", main) end
+    end)
+    -- D205: the second and third pills — a press opens what its face shows (the board on its room, from
+    -- under it), the wheel turns its own view through the owner's views
+    on("pill_xpress", function(v)
+        local e = extras[math.floor(tonumber(v) or 0)]
+        if not e or not e.shown or (e.w or 0) <= 0 or not pill_board then return end
+        fact.isl_cx = (e.x or 0) + (e.w or 0) / 2
+        pill_board.face_press(e.shown)
+    end)
+    on("pill_xscroll", function(v)
+        v = math.floor(tonumber(v) or 0)
+        local e = extras[v // 2]
+        if not e or not e.shown then return end
+        local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
+        e.view = pillmod.next_view(p.views, e.shown, v % 2 == 1 and -1 or 1)
+        if e.view == p[e.key] then e.view = nil end
+        relayout(true)
     end)
     -- D170: a moon's right press opens the board on its activity
     on("pill_rmoon", function(v)

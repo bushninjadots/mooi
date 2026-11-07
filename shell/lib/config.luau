@@ -40,11 +40,18 @@ M.SCHEMA = {
       default = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" } },
     -- D171: the Pill's shape (joined to the band, hovering under it, or a dot until wanted), the views the
     -- wheel turns through, how much each shows, and how long a turned view stays before the default returns
-    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot" }, default = "attached" },
+    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot", "morph" }, default = "attached" },   -- D204: morph
     { path = "pill.views", kind = "ids", max = 16,
       allowed = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser", "glance" },
       default = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" } },
     { path = "pill.detail", kind = "enum", values = { "icon", "brief", "full" }, default = "brief" },
+    -- D205: more pills — a second and a third, each a face of its own at rest (off: none), and where its
+    -- centre sits as a percentage of the screen's width (0: beside the centre Pill, left for the second and
+    -- right for the third). lib/pill.place_extra keeps them on the screen and off everything else.
+    { path = "pill.two", kind = "enum", values = { "off", "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" }, default = "off" },
+    { path = "pill.two_at", kind = "integer", default = 0, min = 0, max = 100 },
+    { path = "pill.three", kind = "enum", values = { "off", "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" }, default = "off" },
+    { path = "pill.three_at", kind = "integer", default = 0, min = 0, max = 100 },
     { path = "pill.rest", kind = "integer", default = 10, min = 0, max = 60 },
     -- D169: the old hiding switch; D172 replaced it with the three-way choice below, and it stays here
     -- so a file that has it still reads (a true one becomes pill.hide = tuck when no choice is set)

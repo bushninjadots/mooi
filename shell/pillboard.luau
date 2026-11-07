@@ -676,7 +676,16 @@ return function(ctx)
 
     publish()
 
+    -- D205: a press on the second or third pill — what its face opens, as a press on the centre one's
+    local function face_press(face)
+        P.touch()
+        local a = pillmod.press("idle", face, "left", nil)
+        if a.kind == "board" then open_board(a.room)
+        elseif a.kind == "nexus" then emit_scene("open_nexus")
+        elseif a.kind == "calendar" then set_open("calendar") end
+    end
     return {
+        face_press = face_press,
         -- a press on the Pill (bar.luau hears it): the board, or the old jumps on the right
         press = function(button, main)
             P.touch()

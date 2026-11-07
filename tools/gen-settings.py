@@ -151,6 +151,8 @@ SETTERS = [
     "loom.cubes", "keys.loom_cube", "keys.loom_join",
     # D200: Loom, its threads, and its four keys. Appended.
     "loom.loom", "loom.threads", "keys.loom_link", "keys.loom_flow", "keys.loom_hop", "keys.loom_unlink",
+    # D205: a second and a third pill — each a face, and where it sits. Appended.
+    "pill.two", "pill.two_at", "pill.three", "pill.three_at",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -362,6 +364,13 @@ SECTIONS = [
         ("choice", "Side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
         ("choice", "Two at once", "Moons beside it, the Pill split in two, or pads on traces", "pill.multi", "sv_pill_multi", ["Moons", "Split", "Nodes"]),
         ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
+        # D205: a second and a third pill, each a face at rest and a place of its own (the rest of the
+        # faces — BMO, the Nexus, network, signals, the visualiser — are there by the file, pill.two/three)
+        ("card", "More pills"),
+        ("choice", "Second pill", "A capsule of its own showing one thing; a press opens its room, the wheel turns its view", "pill.two", "sv_pill_two", [("Off", 0), ("Time", 1), ("Song", 6), ("Weather", 4), ("Machine", 5), ("Battery", 7), ("Spaces", 8)]),
+        ("slider", "Where", "Across the screen (0: beside the Pill, on its left); it never covers anything", "pill.two_at", 0, 100, 'pick(sv_pill_two_at > 0, "BESIDE THE PILL", "{sv_pill_two_at, 0}%")'),
+        ("choice", "Third pill", "Another, on the Pill's right unless you place it", "pill.three", "sv_pill_three", [("Off", 0), ("Time", 1), ("Song", 6), ("Weather", 4), ("Machine", 5), ("Battery", 7), ("Spaces", 8)]),
+        ("slider", "Where", "Across the screen (0: beside the Pill, on its right)", "pill.three_at", 0, 100, 'pick(sv_pill_three_at > 0, "BESIDE THE PILL", "{sv_pill_three_at, 0}%")'),
         ("card", "What may take it"),
         ("pillorder",),
         ("card", "The desk"),
@@ -877,7 +886,8 @@ def row_lines(r, y, first, reverted):
         return lines, 194
     if k == "pillshapes":
         # D174: the four shapes as pictures, the chosen one filled, edged and checked
-        for n, (label, v) in enumerate([("Attached", 0), ("Floating", 1), ("Dot", 2)]):
+        # D204: a fourth, the morph (its outline flows between capsule, blob, drop and bead)
+        for n, (label, v) in enumerate([("Attached", 0), ("Floating", 1), ("Dot", 2), ("Morph", 3)]):
             lines.append(f'SPillShape({TX + n * 212}, {y + 8}, 200, "{label}", {v}, sv_pill_shape == {v}, set_value, {code("pill.shape") * 1000 + v})')
         if "pill.shape" not in reverted:
             lines.append(revert("pill.shape", XR - 4, y + 16)); reverted.add("pill.shape")

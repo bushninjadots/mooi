@@ -1309,6 +1309,8 @@ scene Mooi {
     event pk_etab ->           // D188: to the logic: the editor's tab — 0 pads · 1 face
     event pk_sig_clear ->      // to the logic: clear the signals
     event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
+    event pill_xpress ->       // to the logic (D205): the second (2) or third (3) pill pressed
+    event pill_xscroll ->      // to the logic (D205): its wheel, k · 2 (+ 1 when turning back)
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
     event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
     event pill_superwheel ->   // to the logic (D171): Super + wheel: a pill's view if pointed at, else the workspace
@@ -1316,7 +1318,16 @@ scene Mooi {
     event loom_unpark ->       // to the logic (D194): every parked window back (`mooi loom unpark`)
     event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
     fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
-    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot (pill.shape)
+    // D205: the second and third pills — shown, where, and the face each shows (pill.FACES' place)
+    fact pill2_on = false
+    fact pill2_x = 0
+    fact pill2_w = 0
+    fact pill2_face = 0
+    fact pill3_on = false
+    fact pill3_x = 0
+    fact pill3_w = 0
+    fact pill3_face = 0
+    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot · 3 morph (D204) (pill.shape)
     text pill_alert = ""       // D171: the newest signal, for the Alerts face at full detail
     fact pill_alert_on = false // D171: there is one
     fact pill_still = false    // D172: reduced motion (motion.reduced, the saver): the record holds still
@@ -1369,7 +1380,7 @@ scene Mooi {
     fact pc3_g = 0.14
     fact pc3_b = 0.15
     prop pill_pulse = 0
-    spin pill_pulse by if(pill_hidden and pill_shape > 1.5 and not pill_still, 140, 0)   // D202: still holds still
+    spin pill_pulse by if(pill_hidden and pill_shape > 1.5 and pill_shape < 2.5 and not pill_still, 140, 0)   // D202: still holds still
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false
@@ -3351,6 +3362,8 @@ scene Mooi {
     // surface with every other module: on popup_surface (above) its zone was painted but real
     // presses never reached it (D170's fix; `pleamar --say press` reached it, a hand did not).
     PillBody()
+    ExtraPill(2, pill2_on, pill2_x, pill2_w, pill2_face)    // D205
+    ExtraPill(3, pill3_on, pill3_x, pill3_w, pill3_face)
 
     // ── The hot corner (OVERVIEW-PORT stage 3) ─────────────────
     // Four little surfaces, each mapped only while Settings → Overview chooses it. While on, a

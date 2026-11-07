@@ -14,7 +14,7 @@ library PillPreview {
         let w = 864
         let cx = x + w / 2
         let warm = sv_pill_warmth / 100
-        let shape = sv_pill_shape
+        let shape = if(sv_pill_shape > 2.5, 0, sv_pill_shape)   // D204: the morph rests as the attached capsule
         let hide = sv_pill_hide
         let tucked = hide > 0.5 and hide < 1.5
         let gone = hide > 1.5
@@ -204,13 +204,19 @@ library PillPreview {
         }
         group {
             show: kind > 2.5
-            box { from: cx + 2, y + 30; size: 84, 28; corner: 5; color: fl.hull_raised }
-            box { from: cx + 2, y + 30; size: 84, 28; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_lit) }
-            box { from: cx + 8, y + 37; size: 14, 14; corner: 3; color: fl.ember; opacity: 0.8 }
-            text "REC" { at: cx + 28, y + 44; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(on, fl.phos, fl.trace_lit) }
+            // D204: the morph — the capsule with a bead hanging from its foot, one outline
+            path { color: fl.hull_raised
+                   move cx + 14, y + 24; line cx + 70, y + 24; curve cx + 84, y + 38 via cx + 84, y + 24; curve cx + 70, y + 52 via cx + 84, y + 52
+                   line cx + 52, y + 52; curve cx + 42, y + 64 via cx + 46, y + 64; curve cx + 32, y + 52 via cx + 38, y + 64
+                   line cx + 14, y + 52; curve cx, y + 38 via cx, y + 52; curve cx + 14, y + 24 via cx, y + 24; close }
+            path { stroke: 1; color: if(on, fl.phos, fl.trace_lit)
+                   move cx + 14, y + 24; line cx + 70, y + 24; curve cx + 84, y + 38 via cx + 84, y + 24; curve cx + 70, y + 52 via cx + 84, y + 52
+                   line cx + 52, y + 52; curve cx + 42, y + 64 via cx + 46, y + 64; curve cx + 32, y + 52 via cx + 38, y + 64
+                   line cx + 14, y + 52; curve cx, y + 38 via cx, y + 52; curve cx + 14, y + 24 via cx, y + 24; close }
+            text "14:20" { at: cx + 10, y + 38; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave }
         }
         text label { at: x + w / 2, y + 82; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: if(on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
-        text pick(kind, "JOINED TO THE BAND", "HOVERING UNDER IT", "UNTIL IT IS WANTED", "THE COVER IN THE MARK'S PLACE") { at: x + w / 2, y + 96; anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
+        text pick(kind, "JOINED TO THE BAND", "HOVERING UNDER IT", "UNTIL IT IS WANTED", "ITS OUTLINE FLOWS") { at: x + w / 2, y + 96; anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
         on press hit { emit press(n) }
     }
 
