@@ -141,6 +141,8 @@ SETTERS = [
     "pill.board_tint", "pill.board_edge",
     # D188: the peek. Appended, so no code moved.
     "pill.peek",
+    # D194: Loom / Fold's operating mode. Appended, so no code moved.
+    "loom.mode",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -682,6 +684,15 @@ SECTIONS = [
         ("choice", "Model", "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", "claude.model", "sv_claude_model", ["Default", "Haiku", "Sonnet", "Opus"]),
         ("toggle", "Free models when Claude can't", "If Claude doesn't answer, ask a free model through opencode instead. It sends your question and the last few turns to a third party", "claude.free_fallback", "sv_claude_free_fallback"),
         ("note", "true", "IT CAN TALK, NOT ACT: NO TOOLS, NO FILES. BMO'S CHAT IS IN HIS PANEL"),
+    ]),
+    # D194: Loom / Fold, appended last so no page's place moves. Only what is built is offered (spec §7):
+    # Phase 1 is the mode, its status and the way back.
+    ("Loom / Fold", "Loom / Fold", "Experimental: connect and fold your windows into structures, alongside mooi or as the whole desktop", "SHELL", [
+        ("card", "Mode"),
+        ("choice", "Mode", "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", "loom.mode", "sv_loom_mode", [("Native", 0), ("Hybrid", 1), ("Loom / Fold", 2)]),
+        ("info", "Status", "What Loom / Fold is doing now", "lf_status"),
+        ("button", "Start again", "After it stopped on repeated failures (your windows were brought back)", "Start again", "lf_act", 1),
+        ("note", "sv_loom_mode > 0.5", "EXPERIMENTAL · PHASE 1: THE FOUNDATION RUNS — IT FOLLOWS YOUR WINDOWS, SAVES, RECOVERS. ACCORDIONS COME NEXT"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
@@ -1439,6 +1450,8 @@ def main():
     event pill_board_edit ->  // to the logic (D170): the Pill's board, open in edit (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
+    text lf_status = ""       // D194: Loom / Fold's status line (lib/loommode.status_line)
+    event lf_act ->           // to the logic (D194): 1 start Loom / Fold again after a recovery
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
     text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)
     fact lk_wp_on = false     // there is one to show

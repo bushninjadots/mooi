@@ -146,6 +146,8 @@ M.SETTERS = {
     "pill.board_tint", "pill.board_edge",
     -- D188: the peek. Appended, so no code moved.
     "pill.peek",
+    -- D194: Loom / Fold's operating mode. Appended, so no code moved.
+    "loom.mode",
 }
 
 local function row_of(path)

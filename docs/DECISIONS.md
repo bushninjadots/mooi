@@ -5376,3 +5376,57 @@ G4); the summaries follow the commit messages._
   pointer, recorded, moved across the reveal's items with each plate lit and the card held open.
 - Limits: the spectrum has not been seen live (nothing was playing, and playing the owner's music to test
   it was not done); the media item's cover arrives a moment after the reveal on the first open.
+
+## D193 · 2026-11-07 · The Pill, audited in every room: four bugs fixed
+
+- The owner asked for a deep audit of the Pill, visual included. Every board room, both editor tabs, the
+  reveal and the rest face were opened by scripted emits on the running desktop and photographed; the
+  full findings and recommendations are in [AUDIT-PILL-2026-11-07.md](AUDIT-PILL-2026-11-07.md).
+- **The Wallpaper strip bled into the Stash and Find rooms** (its group's `show: pk_room > 12.5` had no
+  upper bound) and covered Find's search field. Bounded to its own room.
+- **Connections said "no network in reach" while connected.** It asked the network service once
+  (`sys.ask`), which answers the radio's state without the scan list; the connections shelf watches the
+  service and has the list. `islands.luau` now hands it over (`ctx.networks`, kept in `opens.islands` —
+  no new local in mooi.luau), and the board still watches nothing itself (D169's rule, its test kept).
+- **The Visualiser room drew a grey band** along its foot even in silence: its spectrum's path started
+  4 px above the area it closed. It starts at the foot now.
+- **The Bluetooth button** sat under its name, over the rule; it sits beside it.
+- Open, not fixed here: the workspace viewer's empty miniatures, one unexplained close at opening, and
+  the design problems the audit lists (pads in every room, three kits in one card, dead space, one
+  colour, small uniform type, 34 Pill settings with overlaps). They feed the redesign.
+
+## D194 · 2026-11-07 · Loom / Fold: the dual-mode architecture, and Phase 1 (the foundation)
+
+- The owner's master brief: an optional interaction system inside mooi — Loom connects, Fold transforms
+  (Accordions, Cubes, later more) — usable as **Native mooi**, **Hybrid** or **Loom / Fold**, switchable
+  without losing anything, always recoverable. The design is
+  [specs/2026-11-07-loom-fold-design.md](superpowers/specs/2026-11-07-loom-fold-design.md), with the Phase 0
+  assessment of what mooi is.
+- **The deciding constraint**, found in Pleamar's reference: a scene holds other programs' windows only
+  under pleamar-wm; under Hyprland it holds none. So structures move real windows through Hyprland —
+  each structure's own special workspace (`special:loom-s3`) as its park — and draw them with
+  `thumbnails`. Verified live on throwaway windows: a window opened straight onto a Loom park, moved to
+  workspace 9 and back onto the park with `follow = false`, the owner's workspace never changing.
+- **Phase 1, built**: `lib/loom` (the shared model: objects, structures, connections, environments, the
+  journal; one parent per object; ids permanent; matching windows back after restarts; pruning what was
+  only open), `lib/loommode` (the modes, the features and their needs, the reason for every feature that is
+  off; only built features are offered), `lib/loompark` (park and unpark plans, strays, rescue) and
+  `lib/hypr`'s `park` action — all pure and unit-tested. The `mooi-loom` program (tracks windows into the
+  model, keeps loom.json with five backups and a `.rejected` copy of anything invalid, resolves interrupted
+  operations to "windows visible", brings everything back when asked to stop), and `loomkeeper` in the
+  bar's logic (wanted vs happening as for BMO; restarts after a death; three quick deaths → recovery with
+  one notice; brings parked windows back whenever the program ends, from the document and from Hyprland's
+  own list). Settings → Loom / Fold (the mode, the status, Start again), `mooi loom
+  status|mode|off|restart|unpark`. Native mooi starts none of it.
+- Found while testing live: the bar's settings watcher runs before `opens` is declared in mooi.luau, so
+  the keeper follows the settings file itself; and a logic's lines reach its parent through `log()`, not
+  `print`.
+- Checks: unit 592 / 0 (16 new: the model's cleaning and rules, matching, pruning, the journal, the modes,
+  parking, strays, the keeper's start, stop, recovery and its persistence), BMO 27 / 0, 14 scenes compile.
+  Live: Hybrid starts the program (running, 1 structure, 3 objects); a window parked by hand is seen as
+  parked; `mooi loom unpark` returns it to its workspace; a killed program's parked window comes back and
+  the program restarts; three quick deaths stop it in recovery; Start again starts it; `mooi loom off`
+  stops it with nothing parked. The test's probe window and loom.json were removed afterwards.
+- Limits: Phase 1 draws nothing — Accordions are Phase 2. A bar reload ends the program without the old
+  keeper's unpark; the new program finds the parked windows in loom.json and keeps them parked (tracked,
+  not stranded).

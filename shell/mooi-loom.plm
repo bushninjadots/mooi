@@ -1,0 +1,27 @@
+language 0.9
+
+// Loom / Fold (D194, docs/superpowers/specs/2026-11-07-loom-fold-design.md): its own program, started by
+// the bar's keeper (shell/loomkeeper.luau) only in Hybrid and Loom / Fold mode, so Native mooi runs none of
+// it and a failure here cannot reach the bar. Phase 1 is the foundation and draws nothing: it follows the
+// windows Hyprland reports into the shared model (lib/loom), keeps loom.json (with backups), recovers
+// interrupted operations, and brings every parked window back when it is asked to stop.
+// The logic is shell/mooi-loom.luau.
+
+scene Loom {
+    permissions {
+        run: "hyprctl", "pleamar"
+        services: "files", "files.write", "workspaces", "env"
+    }
+
+    fact lf_draw = false        // something to draw (Phase 2 on); until then the surface stays closed
+    event loom_quit ->          // to the logic: bring every window back, save, and end (the keeper asks)
+    event loom_cmd ->           // to the logic: 1 every parked window back
+
+    surface loom {
+        size: 1, 1
+        anchor: top
+        level: bottom
+        keyboard: none
+        open: lf_draw
+    }
+}

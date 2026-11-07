@@ -267,4 +267,7 @@ return function(ctx)
         local tool = (tonumber(n) == 1 and have.nvtop) and "nvtop" or "btop"
         spawn("kitty", { "--title", tool, tool }, function() end, function() end)
     end)
+
+    -- D193: the networks the shelf watches, for the Pill's Connections room (which watches nothing itself)
+    return { networks = function() return nets end }
 end

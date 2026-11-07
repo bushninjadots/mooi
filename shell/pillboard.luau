@@ -412,11 +412,17 @@ return function(ctx)
         if it then run("mooi", { "wall", "apply", it.path }) end
     end)
     -- D178: the Wi-Fi panel's networks — read from the service, not watched (only Loom watches, D169)
+    -- D193: the networks come from the connections shelf's watch (islands.luau, ctx.networks); a one-off
+    -- `sys.ask` returned the radio's state without the list, so the panel said "no network in reach"
+    -- while connected
     nets_publish = function()
         local rows = {}
         if type(sys) == "table" then
-            local ok, n = pcall(sys.ask, "network")
-            local list = ok and type(n) == "table" and type(n.networks) == "table" and n.networks or {}
+            local list = ctx.networks and ctx.networks() or nil
+            if type(list) ~= "table" then
+                local ok, n = pcall(sys.ask, "network")
+                list = ok and type(n) == "table" and type(n.networks) == "table" and n.networks or {}
+            end
             for i, w in ipairs(list) do
                 rows[i] = { n = i - 1, ssid = tostring(w.ssid or ""), strength = tonumber(w.strength) or 0,
                             secure = w.secure == true, known = w.known == true, active = w.active == true }
