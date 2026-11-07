@@ -87,6 +87,12 @@ M.SCHEMA = {
     { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
     -- D188: resting on the Pill grows it into a small card (the peek); a press makes it the board
     { path = "pill.peek", kind = "boolean", default = true },
+    -- D199: the Pill's three rows (after ArchEclipse's rest · core · detail): what the capsule shows at rest
+    -- (the glance face) and the reveal's two rows; arranged by dragging on the Pill's editor (ROWS)
+    { path = "pill.row_rest", kind = "ids", max = 6, allowed = { "spaces", "clock", "chip", "media", "bandwidth", "controls", "weather", "resources", "battery", "brightness", "volume", "network", "date" }, default = { "spaces", "clock", "chip" } },
+    { path = "pill.row_core", kind = "ids", max = 6, allowed = { "spaces", "clock", "chip", "media", "bandwidth", "controls", "weather", "resources", "battery", "brightness", "volume", "network", "date" }, default = { "media", "bandwidth", "controls", "clock" } },
+    { path = "pill.row_detail", kind = "ids", max = 6, allowed = { "spaces", "clock", "chip", "media", "bandwidth", "controls", "weather", "resources", "battery", "brightness", "volume", "network", "date" },
+      default = { "weather", "resources", "battery", "brightness", "volume", "network" } },
     -- D194: Loom / Fold (docs/superpowers/specs/2026-11-07-loom-fold-design.md): the operating mode, and
     -- Hybrid's feature switches (lib/loommode decides what is on; only built features are offered).
     -- Native runs nothing of it; switching keeps every structure saved in loom.json.

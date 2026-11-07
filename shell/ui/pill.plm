@@ -242,31 +242,14 @@ library Pill {
         box { from: x, cy - 2.5; size: dw, 5; corner: 2.5; color: if(on, fl.phos, if(busy, fl.engrave, fl.trace)) }
     }
 
-    // D191: ArchEclipse's rest face (PillBar's "rest" row): the workspace dots, the clock, and the live
-    // chip — the song while a player has one (its title, the artist muted, a faint accent plate), else the
-    // battery. 14 px between the three and at each end; lib/pill.glance_w measures the same.
+    // D191/D199: ArchEclipse's rest face — now the owner's rest row (lib/pillrows; arranged on the Pill's
+    // editor, ROWS): each item where bar.luau laid it out, 14 px apart and at each end
     component GlanceFace(px: number, pw: number, cy: number) {
         size: pw, 26
-        let n = pill_gl_n
-        let dots_w = n * 10 - 5 + 7
-        let x0 = px + 14 + dots_w + 14
-        let x1 = x0 + 46 + 14
-        let cw = max(24, px + pw - 14 - x1)
-        for w in spaces {
-            let dx = px + 14 + w.index * 10 + if(w.id > ws.active, 7, 0)
-            group { show: w.index < n
-                    GlanceDot(dx, cy, w.active, w.windows > 0) }
+        for it in pr_rest {
+            RowItem(it.k, px + it.x, cy, it.w, it.room, 1, false, fl.phos, fl.engrave, fl.muted)
         }
-        text clock.time { at: x0 + 23, cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
-        box { from: x1, cy - 12; size: cw, 24; corner: 12; color: fl.phos; opacity: if(mu_has, 0.16, 0) }
-        let low = battery.present and battery.percent < 15 and not battery.charging
-        let tw = if(mu_has and pill_gl_art, min(pill_gl_tw + 4, cw - 36), cw - 36)
-        text "♪" { at: x1 + 11, cy; anchor: left center; size: 12; weight: 700; color: fl.phos; show: mu_has }
-        text pick(battery.charging, "▮", "ϟ") { at: x1 + 11, cy; anchor: left center; size: 12; weight: 700; color: if(low, #a94545, fl.engrave); show: not mu_has }
-        text mu_title { at: x1 + 25, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, tw); lines: 1; show: mu_has }
-        text pick(battery.present, "—", "{battery.percent, 0}%") { at: x1 + 25, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.muted; width: max(1, tw); lines: 1; show: not mu_has }
-        text mu_artist { at: x1 + 25 + tw + 7, cy; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted
-                         width: max(1, cw - 36 - tw - 7); lines: 1; show: mu_has and pill_gl_art and cw - 36 - tw > 20 }
+        RowDots(if(pr_rest_sx > -0.5, px + pr_rest_sx, -1), cy, 1)
     }
 
     component PillBody() {

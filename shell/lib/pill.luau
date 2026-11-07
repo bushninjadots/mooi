@@ -409,9 +409,10 @@ M.CORE = {
 -- D189: how long a close takes to fold the body back into the capsule (the closing springs, m.exit and
 -- m.isl_out, settle within ~250 ms) — the peek's card and the editor are kept drawn until then.
 M.FOLD_MS = 400
-function M.board_size(room, edit, peek)
+function M.board_size(room, edit, peek, peek_w)
     if edit then return M.EDIT_W, M.EDIT_H, 160 end
-    if peek then return M.PEEK_W, M.PEEK_H, 0 end
+    -- D199: the reveal as wide as its wider row (lib/pillrows), within reason
+    if peek then return math.max(300, math.min(900, math.floor(tonumber(peek_w) or M.PEEK_W))), M.PEEK_H, 0 end
     local core = M.CORE[math.floor(tonumber(room) or 0)] or 160
     return M.BOARD_W, 34 + core + 118, core
 end
