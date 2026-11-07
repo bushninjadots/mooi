@@ -7160,5 +7160,42 @@ do
     end)
 end
 
+section("the sigil: sources")
+do
+    local SRC = require("lib/sigil/sources")
+    local BL = require("lib/barlayout")
+    test("sources: wave 1 complete, each with glyph, display, compact, press and a group", function()
+        for _, id in ipairs(SRC.WAVE1) do
+            local e = SRC.get(id); assert(e, id)
+            assert(e.glyph and e.display and e.compact and e.press and e.group, id)
+        end
+    end)
+    test("sources: every bar module is in wave 1, later, or explicitly not a source", function()
+        local skip = { tray = true, keyboard = true, bandwidth = true, caffeine = true, actions = true, core = true,
+                       focus = true, updates = true, claude = true, github = true, brightness = true, sigil = true }
+        local later = " " .. table.concat(SRC.LATER, " ") .. " "
+        for _, m in ipairs(BL.ORDER) do
+            local s = SRC.for_module(m)
+            assert(skip[m] or (s and (SRC.get(s) or later:find(" " .. s .. " ", 1, true))), m)
+        end
+    end)
+    test("sources: compact of a missing reading is a dash", function()
+        for _, id in ipairs(SRC.WAVE1) do eq(SRC.get(id).compact(nil).t1, "—", id) end
+    end)
+    test("sources: compact readings", function()
+        eq(SRC.get("volume").compact({ volume = 0.62 }).t1, "62%")
+        eq(SRC.get("battery").compact({ percent = 82, charging = false }).t1, "82%")
+        eq(SRC.get("music").compact({ title = "Renegade", artist = "(Hed) P.E." }).t1, "Renegade")
+    end)
+    test("sources: indexes are stable and 1-based", function()
+        eq(SRC.index("clock"), 1); eq(SRC.index("bmo"), #SRC.WAVE1); eq(SRC.index("kettle"), nil)
+    end)
+    test("sources: sigil.rest's choices are exactly wave 1 (pre-flight ruling)", function()
+        local row
+        for _, r in ipairs(require("lib/config").SCHEMA) do if r.path == "sigil.rest" then row = r end end
+        eq(table.concat(row.values, ","), table.concat(SRC.WAVE1, ","))
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
