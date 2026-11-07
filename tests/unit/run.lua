@@ -5597,6 +5597,18 @@ do
         eq(P.press("idle", "time", "left").room, "now")
         eq(P.press("music", "weather", "left").room, "now", "something happening: its own room")
     end)
+    test("a press means the view showing: turned to weather on the Nexus face, it opens the Weather room, not the Nexus", function()
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     face = function() return "weather" end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = { face = "nexus" } } end,
+            save = function() end, pill = P2, opened = function(v) env.fact.open = v end })
+        api.press("left", "idle")
+        eq(env.fact.open, "board"); eq(env.fact.pk_room, PP.room_index("weather"))
+    end)
     test("workspaces: a press switches; actions: the drop terminal toggles", function()
         local b = board({ pill = {} })
         b.api.press("left", "idle")

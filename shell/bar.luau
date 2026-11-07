@@ -1158,6 +1158,11 @@ return function(ctx)
     end
     pill_api = {
         now = function() return pill_now end,
+        -- D171: the face showing (the view the wheel turned to, or pill.face)
+        face = function()
+            local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
+            return pill_view or p.face or "time"
+        end,
         osd = function() return pst.osd and pst.osd.kind or "vol" end,
         bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,
         react = function(face, ms) pillface.react(face_st, face, pill_ms, ms); face_show() end,

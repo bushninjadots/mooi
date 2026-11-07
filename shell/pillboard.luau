@@ -339,7 +339,8 @@ return function(ctx)
                 if P.bmo() then P.poke() else close() end
                 return
             end
-            local a = pillmod.press(main, pill_settings().face or "time", button, P.osd())
+            -- the face showing: a view the wheel turned to is what a press means, not the saved face
+            local a = pillmod.press(main, (P.face and P.face()) or pill_settings().face or "time", button, P.osd())
             if a.kind == "board" then open_board(a.room)
             elseif a.kind == "nexus" then emit_scene("open_nexus")
             elseif a.kind == "calendar" then set_open("calendar")
