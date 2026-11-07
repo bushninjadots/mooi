@@ -1,7 +1,7 @@
 # mooi — Loom / Fold: dual-mode architecture and design
 
-Date: 2026-11-07 · Status: written from the owner's master brief (2026-11-07), Phase 0 assessment done,
-Phase 1 in progress · Decision: D194
+Date: 2026-11-07 · Status: approved 2026-11-07; Phase 1 built (D194), Phase 2 — the Accordion — built (D195) ·
+Decisions: D194, D195
 
 > **Loom connects. Fold transforms.** Loom / Fold is an optional interaction system *inside* mooi — never a
 > replacement for it. One installation, three selectable experiences, one shared foundation.
@@ -355,6 +355,8 @@ The journal's `pending` entry lists the moves an operation will make. On start, 
 | Add focused window to the active Accordion | `Super+Alt+A` | creates one if none |
 | Next / previous layer | `Super+Alt+]` / `[` | wheel over the strip too |
 | Fold / unfold the focused window's structure | `Super+Alt+F` | double press on the object too |
+| Every layer out (open all) | `Super+Alt+U` | `O` is the Overview's (D195) |
+| Take the focused window out | `Super+Alt+R` | |
 | Connect focused window to… | `Super+Alt+C`, then pick | drag between objects in the spatial view |
 | Jump along a connection | `Super+Alt+L` | |
 | Spatial view (full mode) | `Super+Tab` | |
@@ -409,7 +411,17 @@ Shown as it grows — only what exists:
 | 7 | Settings completion, polish, performance measurement, multi-monitor | performance budget met |
 | 8 | Ring, Spine, Cluster, Branch, Island | after 7 |
 
-## 11. Risks and limits
+## 11. The backend boundary, and pleamar-wm (D195)
+
+Every window move goes through `lib/hypr` (the commands) and `lib/loompark` (parking); nothing else knows
+the compositor. That is the boundary a second backend replaces. **pleamar-wm** (a compositor whose window
+manager is a Pleamar scene) would make a far richer one — a structure could draw the live windows
+themselves, scaled on its springs, and `send win(k) aside` is parking — but today it holds at most 16 windows
+and 4 monitors and would replace every Hyprland integration mooi has. So Loom / Fold stays on Hyprland; a
+pleamar-wm session for Loom / Fold mode alone (its window-manager scene being the spatial view) is a later,
+optional backend, after a nested spike shows a hosted window can be scaled and transformed.
+
+## 12. Risks and limits
 
 - **Special workspaces are visible to the owner's own binds** (`togglespecialworkspace`): a parked
   Accordion can be shown by Hyprland directly. Accepted; the strip notices and shows those layers as pulled.

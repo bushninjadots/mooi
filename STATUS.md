@@ -13,7 +13,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
   see docs/AUDIT-2026-11-06.md, G1).
 - `bin/mooi check` compiles every scene by enumeration (13, including `mooi-lock.plm`) and runs
   `tests/gate.sh`; CI runs the same gate where Pleamar is not needed. On 2026-11-07 the gate passed:
-  **592 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
+  **596 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
   0.9**.
 - The generators (`tools/gen-settings.py`, `tools/gen-frame.py`) are deterministic and CI fails if
   their output differs from the committed scenes.
@@ -40,6 +40,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | ArchEclipse's Pill: the glance face, the two-row reveal, the mirror spectrum (D191) | 2026-11-07 | unit 578/0, 13 scenes; glance and reveal seen live, the owner's pointer across the reveal recorded; the spectrum not yet seen playing |
 | The Pill's audit: every room photographed; wallpaper bleed, empty network list, visualiser band, Bluetooth button fixed (D193) | 2026-11-07 | unit 592/0; docs/AUDIT-PILL-2026-11-07.md |
 | Loom / Fold Phase 1: the model, modes, parking, the keeper, the program, `mooi loom` (D194) | 2026-11-07 | unit 592/0, 14 scenes; Hybrid start, park detection, unpark, crash return, recovery, Start again and `off` checked live on a throwaway window |
+| Loom / Fold Phase 2: the Accordion — rules, plans, the strip, settings, keys (D195) | 2026-11-07 | unit 596/0; fold, reorder, switch off/on, closing windows checked live on throwaway windows; pull/step/add by key not yet tried by the owner |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |
 
@@ -50,7 +51,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
    (hiding three ways, the record; D172) done, and the one-body Pill that becomes what it shows (D186–D189) finished — docs/superpowers/plans/2026-11-07-pill-many.md has the rest: many pills placed wherever the owner wants, connections
    and motion (including the owner's Venom-like morph), the look, then the stash/terminal/Super layer — and finally the bar's stage 4 (modules and density). Density stays hidden in
    Settings until then.
-   Loom / Fold (D194) is in phases: Phase 1 (the foundation) is built; Phase 2 is the Accordion
+   Loom / Fold (D194) is in phases: Phases 1 (the foundation) and 2 (the Accordion) are built; Phase 3 is the Cube
    (docs/superpowers/specs/2026-11-07-loom-fold-design.md §10).
 2. `shell/mooi.plm`, `mooi-settings.plm` and `mooi-frame.plm` remain large generated/monolithic
    files; the panel extraction is incremental (G8).

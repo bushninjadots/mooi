@@ -143,6 +143,10 @@ SETTERS = [
     "pill.peek",
     # D194: Loom / Fold's operating mode. Appended, so no code moved.
     "loom.mode",
+    # D195: Fold, Accordions, and the edge the strips stand on. Appended.
+    "loom.fold", "loom.accordions", "loom.edge",
+    # D195: the Accordion keys. Appended.
+    "keys.loom_add", "keys.loom_next", "keys.loom_prev", "keys.loom_fold", "keys.loom_open", "keys.loom_remove",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -174,6 +178,12 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("lock", "Lock screen", "mooi's own lock at once; the session also locks itself after the minutes in Settings → Lock"),
+        ("loom_add", "Accordion: add", "The focused window joins your Accordion (Loom / Fold, Hybrid or full mode)"),
+        ("loom_next", "Accordion: next", "The next layer out; the one you were using goes back in"),
+        ("loom_prev", "Accordion: previous", "The previous layer out"),
+        ("loom_fold", "Accordion: fold", "Every layer back in, or the last one out again"),
+        ("loom_open", "Accordion: open all", "Every layer out on this workspace, tiled"),
+        ("loom_remove", "Accordion: take out", "The focused window leaves its Accordion and stays"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -692,7 +702,14 @@ SECTIONS = [
         ("choice", "Mode", "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", "loom.mode", "sv_loom_mode", [("Native", 0), ("Hybrid", 1), ("Loom / Fold", 2)]),
         ("info", "Status", "What Loom / Fold is doing now", "lf_status"),
         ("button", "Start again", "After it stopped on repeated failures (your windows were brought back)", "Start again", "lf_act", 1),
-        ("note", "sv_loom_mode > 0.5", "EXPERIMENTAL · PHASE 1: THE FOUNDATION RUNS — IT FOLLOWS YOUR WINDOWS, SAVES, RECOVERS. ACCORDIONS COME NEXT"),
+        ("note", "sv_loom_mode > 0.5", "EXPERIMENTAL · WHAT IS BUILT: ACCORDIONS. CUBES AND CONNECTIONS COME NEXT"),
+        # D195: the features built so far, Hybrid's switches (Loom / Fold mode turns every built one on)
+        ("card", "Features"),
+        ("toggle", "Fold", "Structures your windows fold into. In Loom / Fold mode every built feature is on; these are Hybrid's", "loom.fold", "sv_loom_fold"),
+        ("toggle", "Accordions", "Windows as thin layers on a screen edge: pull the one you need, the rest wait. Needs Fold", "loom.accordions", "sv_loom_accordions"),
+        ("note", "sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5", "ACCORDIONS NEED FOLD — TURN FOLD ON FIRST"),
+        ("choice", "Strip edge", "The screen edge the Accordions' layers stand on", "loom.edge", "sv_loom_edge", [("Right", 0), ("Left", 1)]),
+        ("note", "true", "KEYS (SETTINGS → KEYS): SUPER+ALT+A ADD · ] [ NEXT, PREVIOUS · F FOLD · U OPEN ALL · R TAKE OUT. ON A STRIP: PRESS PULLS, DRAG REORDERS, RIGHT PRESS TAKES OUT, WHEEL STEPS"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}

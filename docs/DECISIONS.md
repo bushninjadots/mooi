@@ -5430,3 +5430,43 @@ G4); the summaries follow the commit messages._
 - Limits: Phase 1 draws nothing — Accordions are Phase 2. A bar reload ends the program without the old
   keeper's unpark; the new program finds the parked windows in loom.json and keeps them parked (tracked,
   not stranded).
+
+## D195 · 2026-11-07 · Loom / Fold Phase 2: the Accordion; and pleamar-wm weighed
+
+- The owner approved the spec ("cool go"). An Accordion keeps a sequence of windows as thin layers on a
+  screen edge: the one in use is out, the rest wait on the structure's park (`special:loom-<sid>`).
+- **Rules** (`lib/loomaccordion`, pure, tested): add (the added window becomes the one in use; the previous
+  one parks), pull (one at a time; it comes to the workspace you are on and takes the focus), push, next and
+  previous (round the ends, skipping absent ones), open all (tiled on your workspace), fold, remove (the
+  window stays), dissolve, reorder, the accordion "add" means (the window's, else the one used last), and the
+  rows the strip draws. `lib/loompark.unpark` takes a target workspace.
+- **The program** runs each operation as a plan: commands in order through Hyprland, journaled before they
+  move anything, then written into the model — one plan at a time (a second waits). A layer whose window
+  closes while it runs leaves its accordion (an absent one at start is a restart, kept); an accordion left
+  empty is removed; switching Accordions off brings every accordion's windows out.
+- **The strip** (`ui/loomstrip.plm`) stands on the chosen edge: compressed, machined plates 6 px apart, the
+  one in use slid out and lit; pointed at, rows with the app's initial and the title. One zone per strip,
+  reading where the pointer is, so its hover never splits: press pulls (or folds back the one out), drag
+  reorders, right press takes out, middle press opens all, the wheel steps; the tag above opens or folds all,
+  its right press dissolves. Pleamar lets every other press through the surface.
+- **Settings → Loom / Fold** gains Fold, Accordions (needs Fold, said on the page) and the strip's edge;
+  **Settings → Keys** six rebindable keys — Super+Alt+A add, ] and [ next and previous, F fold, U open all
+  (O is the Overview's), R take out — checked free of every other key (a test keeps defaults unique) and
+  bound live; `mooi loom add|next|prev|fold|open|remove`.
+- **pleamar-wm, weighed** (the owner asked whether it would improve mooi): it would host real windows in
+  the scene (an Accordion's layer could be the live window, scaled on its springs; `send aside` is parking),
+  and make drags and gestures scene events. Against it today: 16 windows and 4 monitors at most, version
+  0.5 from one author, and every Hyprland integration mooi has would be rewritten. Verdict: stay on
+  Hyprland; all window moves already go through `lib/hypr` and `lib/loompark`, now named the backend
+  boundary in the spec, so a pleamar-wm session for Loom / Fold mode can come later without touching the
+  model or the structures. A nested spike needs the owner's go-ahead to install it.
+- Checks: unit 596 / 0 (four new: the accordion's rules twice, the keys, the program and strip by source).
+  Live, on three throwaway windows on workspace 9 (none on the owner's screen): the model matched them by app
+  and title, the strip drew three lit layers, folding parked all three (journal `fold · done`, the owner's
+  workspace unchanged), a drag reordered, Accordions off brought all three back to workspace 9 and hid the
+  strip, on again showed it, closing the windows emptied and removed the accordion. Hyprland holds the six
+  binds. Mode returned to Native, the test's files removed.
+- Limits: pulling a layer, stepping, adding by key and opening all bring windows to the owner's workspace
+  and focus them, so they were not driven live while the owner worked — the owner's first try is their real
+  test. The strip's opened look (pointer on it) was not photographed. No miniatures in the layers yet, and
+  no fan.

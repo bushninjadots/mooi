@@ -20,6 +20,13 @@ M.ACTIONS = {
     -- D160: the lock screen at once (`mooi lock`, the same scene hypridle reaches when the session
     -- sits idle): the shell's own key for it, so it is rebindable and shown in Settings → Keys.
     { key = "lock", cmd = "lock", name = "Lock screen" },
+    -- D195: Loom / Fold's Accordions (`mooi loom …`; nothing happens in Native mooi)
+    { key = "loom_add", cmd = "loom add", name = "Accordion: add the window" },
+    { key = "loom_next", cmd = "loom next", name = "Accordion: next layer" },
+    { key = "loom_prev", cmd = "loom prev", name = "Accordion: previous layer" },
+    { key = "loom_fold", cmd = "loom fold", name = "Accordion: fold or bring back" },
+    { key = "loom_open", cmd = "loom open", name = "Accordion: every layer out" },
+    { key = "loom_remove", cmd = "loom remove", name = "Accordion: take the window out" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

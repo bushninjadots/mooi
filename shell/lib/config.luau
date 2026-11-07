@@ -96,6 +96,8 @@ M.SCHEMA = {
     { path = "loom.cubes", kind = "boolean", default = true },
     { path = "loom.loom", kind = "boolean", default = true },
     { path = "loom.transform", kind = "boolean", default = true },
+    -- D195: the screen edge the Accordions' strips stand on
+    { path = "loom.edge", kind = "enum", values = { "right", "left" }, default = "right" },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
     { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },
       default = { "battery", "record", "notify", "music", "osd", "idle" } },
@@ -408,6 +410,14 @@ M.SCHEMA = {
     { path = "atlas.spring_edges", kind = "boolean", default = true },
     { path = "keys.mode", kind = "key", default = "SUPER + ALT + T" },
     { path = "keys.overview", kind = "key", default = "SUPER + ALT + O" },
+    -- D195: Loom / Fold's Accordion keys (free of every other mooi key; O is the Overview's, so "open
+    -- all" is U, unfold)
+    { path = "keys.loom_add", kind = "key", default = "SUPER + ALT + A" },
+    { path = "keys.loom_next", kind = "key", default = "SUPER + ALT + bracketright" },
+    { path = "keys.loom_prev", kind = "key", default = "SUPER + ALT + bracketleft" },
+    { path = "keys.loom_fold", kind = "key", default = "SUPER + ALT + F" },
+    { path = "keys.loom_open", kind = "key", default = "SUPER + ALT + U" },
+    { path = "keys.loom_remove", kind = "key", default = "SUPER + ALT + R" },
     { path = "shutter.enabled", kind = "boolean", default = true },
     { path = "shutter.pointer", kind = "boolean", default = true },
     { path = "shutter.edge", kind = "enum", values = { "auto", "left", "inside" }, default = "auto" },

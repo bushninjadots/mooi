@@ -148,6 +148,10 @@ M.SETTERS = {
     "pill.peek",
     -- D194: Loom / Fold's operating mode. Appended, so no code moved.
     "loom.mode",
+    -- D195: Fold, Accordions, and the edge the strips stand on. Appended.
+    "loom.fold", "loom.accordions", "loom.edge",
+    -- D195: the Accordion keys. Appended.
+    "keys.loom_add", "keys.loom_next", "keys.loom_prev", "keys.loom_fold", "keys.loom_open", "keys.loom_remove",
 }
 
 local function row_of(path)

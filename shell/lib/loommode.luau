@@ -14,8 +14,8 @@ M.MODE_NAMES = { native = "Native mooi", hybrid = "Hybrid", loomfold = "Loom / F
 -- A feature that is not built is never on and never offered in Settings (spec §7): flip `built` in the
 -- phase that ships it.
 M.FEATURES = {
-    { id = "fold",       key = "fold",       name = "Fold",       needs = {},         built = false },  -- Phase 2
-    { id = "accordions", key = "accordions", name = "Accordions", needs = { "fold" }, built = false },  -- Phase 2
+    { id = "fold",       key = "fold",       name = "Fold",       needs = {},         built = true },   -- D195
+    { id = "accordions", key = "accordions", name = "Accordions", needs = { "fold" }, built = true },   -- D195
     { id = "cubes",      key = "cubes",      name = "Cubes",      needs = { "fold" }, built = false },  -- Phase 3
     { id = "loom",       key = "loom",       name = "Loom",       needs = {},         built = false },  -- Phase 4
     { id = "transform",  key = "transform",  name = "Transformations", needs = { "fold" }, built = false },  -- Phase 5

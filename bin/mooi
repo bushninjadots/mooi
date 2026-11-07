@@ -15,7 +15,7 @@
 #                          Advanced and the Nexus's rail); windows stay open, mooi's own close
 #   mooi window | system   toggle the window island (Super+Alt+W) or the system island
 #   mooi pill              call the Pill (Super alone): it comes back; twice quickly, its board (D171)
-#   mooi loom [status|mode native|hybrid|loomfold|off|restart|unpark]
+#   mooi loom [status|mode native|hybrid|loomfold|off|restart|unpark|add|next|prev|fold|open|remove]
 #                          Loom / Fold (D194): its mode, and the way back — `off` is Native mooi with
 #                          every parked window returned, whatever state it is in
 #   mooi wheel 1|-1        Super + wheel: a pill's next view when the pointer is on one, else the workspace
@@ -1464,7 +1464,12 @@ case "$cmd" in
             off) loom_set native; "$pleamar" --say "$name" "emit loom_unpark" >/dev/null 2>&1 || :; echo "loom mode: native" ;;
             restart) exec "$pleamar" --say "$name" "emit loom_restart" ;;
             unpark) exec "$pleamar" --say "$name" "emit loom_unpark" ;;
-            *) echo "mooi loom [status|mode native|hybrid|loomfold|off|restart|unpark]" >&2; exit 2 ;;
+            # D195: the Accordion's commands go to the Loom / Fold program; not running, nothing to do
+            add | next | prev | fold | open | remove | push)
+                case "$1" in add) n=10 ;; next) n=11 ;; prev) n=12 ;; fold) n=13 ;; open) n=14 ;; remove) n=15 ;; push) n=16 ;; esac
+                "$pleamar" --say mooi-loom "emit loom_cmd $n" >/dev/null 2>&1 \
+                    || echo "mooi loom: Loom / Fold is not running (Settings → Loom / Fold → Mode)" >&2 ;;
+            *) echo "mooi loom [status|mode native|hybrid|loomfold|off|restart|unpark|add|next|prev|fold|open|remove]" >&2; exit 2 ;;
         esac ;;
     # Super + wheel (D171): the bar decides — on a pill it turns the views, elsewhere the workspace;
     # with no bar to ask, the workspace as Hyprland did
