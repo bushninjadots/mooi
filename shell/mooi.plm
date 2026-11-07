@@ -1316,6 +1316,7 @@ scene Mooi {
     event pk_etab ->           // D188: to the logic: the editor's tab — 0 pads · 1 face
     event pk_sig_clear ->      // to the logic: clear the signals
     event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
+    event sigil_ready ->       // from mooi-sigil (D207): it has drawn its hosts; the bar's stand-in clock goes
     event pill_xpress ->       // to the logic (D205): the second (2) or third (3) pill pressed
     event pill_xscroll ->      // to the logic (D205): its wheel, k · 2 (+ 1 when turning back)
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)

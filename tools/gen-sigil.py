@@ -20,7 +20,7 @@ K = {k: i + 1 for i, k in enumerate(KINDS)}
 def host_decls(k):
     out = [f"    // host {k}"]
     for name, val in (("on", "false"), ("x", "0"), ("y", "0"), ("w", "0"), ("h", "0"), ("form", "1"), ("src", "0"),
-                      ("kind", "1"), ("r", "0.84"), ("g", "0.89"), ("b", "0.54"), ("val", "0"), ("rip", "0")):
+                      ("kind", "1"), ("cx", "0"), ("r", "0.84"), ("g", "0.89"), ("b", "0.54"), ("val", "0"), ("rip", "0")):
         out.append(f"    fact h{k}_{name} = {val}")
     out += [f"    text h{k}_t1 = \"\"", f"    text h{k}_t2 = \"\""]
     for i in range(N):
@@ -80,7 +80,7 @@ def zone_bar(k, ind):
 
 def compact_text(k, ind):
     col = f"mix(ink, rgb(h{k}_r, h{k}_g, h{k}_b), 0.15)"
-    return [f"{ind}text h{k}_t1 {{ at: h{k}_x + h{k}_w * 0.42, h{k}_y + h{k}_h / 2; anchor: left center; size: 12; weight: 700; family: \"Exo 2\"; color: {col}; width: max(10, h{k}_w * 0.56); lines: 1; show: h{k}_on and h{k}_form > 0.5 and h{k}_form < 1.5 }}"]
+    return [f"{ind}text h{k}_t1 {{ at: h{k}_cx, h{k}_y + h{k}_h / 2; anchor: left center; size: 12; weight: 700; family: \"Exo 2\"; color: {col}; width: max(10, h{k}_x + h{k}_w - h{k}_cx - 6); lines: 1; show: h{k}_on and h{k}_form > 0.5 and h{k}_form < 1.5 }}"]
 
 
 def display_insides(ind):
@@ -153,6 +153,8 @@ def scene():
          "    // its two text colours, from the palette (the logic): no theme import, nothing else to declare",
          "    fact ink_r = 0.93", "    fact ink_g = 0.88", "    fact ink_b = 0.84", "    fact mut_r = 0.55", "    fact mut_g = 0.56", "    fact mut_b = 0.52",
          "    let ink = rgb(ink_r, ink_g, ink_b)", "    let muted = rgb(mut_r, mut_g, mut_b)",
+         "    // the display's plate: the palette's surface (seen live: without one the windows showed through)",
+         "    fact pl_r = 0.09", "    fact pl_g = 0.10", "    fact pl_b = 0.09",
          "    // the Pill's display box and where its words go (from the logic, which put the line in the same box)",
          "    fact d_x = 0", "    fact d_y = 40", "    fact d_w = 600", "    fact d_h = 220", "    fact d_tx = 0", "    fact d_ty = 0",
          "    prop h0_drop = 0 ~sg.drop",
@@ -174,7 +176,10 @@ def scene():
         L += zone_bar(k, "        ")
     L += ["    }", "", "    surface drop {", "        size: full, 300", "        anchor: top", "        level: top", "        reserve: -1",
           "        keyboard: none", "        rate: 60, 20 while calm", "        open: h0_drop > 0.01",
-          "        group {", "            opacity: h0_drop"]
+          "        group {", "            opacity: h0_drop",
+          "            // the display's plate: the bar's surface, a hairline in the line's colour",
+          "            box { from: d_x, d_y; size: d_w, d_h; corner: 18; color: rgb(pl_r, pl_g, pl_b); opacity: 0.98 }",
+          "            box { from: d_x + 0.5, d_y + 0.5; size: d_w - 1, d_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.3 }"]
     L += field("            ")
     L += display_insides("            ")
     L += line(0, "            ", "h0_on")

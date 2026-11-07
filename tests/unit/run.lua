@@ -7300,7 +7300,11 @@ test("mooi: sigil respawn gives up after five and the bar falls back", function(
     assert(m:find('on("sigil_ready"', 1, true), "it says when it is up")
     assert(m:find("sigil · gave up after five quick ends", 1, true))
     assert(read("bin/mooi"):find("mooi-sigil.plm:the Sigil", 1, true), "compiled with the others")
+    -- found live: without the link it read its files from an empty folder of its own and drew nothing
+    assert(read("bin/mooi"):match("for prog in [^\n]*mooi%-sigil"), "shares mooi's data folder")
     assert(read("shell/ui/pill.plm"):find("sigil_mode and not sigil_up", 1, true), "the plain clock")
+    -- found live: an undeclared event from another program is dropped, so sigil_up never came on
+    assert(read("shell/mooi.plm"):find("event sigil_ready ->", 1, true), "the bar hears that it is up")
 end)
 
 section("the sigil: scene")
@@ -7313,6 +7317,10 @@ test("scene: generated, four hosts, 64 sprung points each, two surfaces", functi
     assert(not t:find("notification", 1, true), "it never watches notifications (spec §3)")
 end)
 
+test("scene: the display stands on a plate, not over the windows", function()
+    local f = io.open("shell/mooi-sigil.plm"); local t = f:read("a"); f:close()
+    assert(t:find("// the display's plate", 1, true) and t:find("fact pl_r", 1, true))
+end)
 section("the sigil: logic")
 test("logic: requires the five modules, reads the feeds, never the notification service", function()
     local f = io.open("shell/mooi-sigil.luau"); local t = f:read("a"); f:close()
@@ -7337,6 +7345,13 @@ test("logic: the display's layout keeps its words beside the line, inside the bo
     end
     local c = LY.compact({ x = 400, y = 6, w = 180, h = 24 })
     assert(c.x >= 400 and c.x + c.w <= 400 + 180 * 0.42, "the compact line keeps left of its words")
+    -- found live: a round glyph squeezed into the wide compact box read as a blob — round kinds get a square
+    for _, k in ipairs({ "clock", "disc", "ring", "face", "dots" }) do
+        local q = LY.compact({ x = 400, y = 6, w = 180, h = 24 }, k); eq(q.w, q.h, k .. " is square")
+    end
+    eq(LY.compact({ x = 400, y = 6, w = 180, h = 24 }, "ribbon").w > 24, true, "a long kind keeps its width")
+    -- the clock's hands tell the real time: 15:00 points the hour hand right (0 rad), 18:00 down (pi/2)
+    eq(LY.clock_angle(15, 0), 0); assert(math.abs(LY.clock_angle(18, 0) - math.pi / 2) < 1e-9)
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

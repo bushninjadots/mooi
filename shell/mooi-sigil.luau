@@ -114,6 +114,7 @@ update = function()
     end
     fact.ink_r, fact.ink_g, fact.ink_b = rgb01(cols.on_surface, 0.93, 0.88, 0.84)
     fact.mut_r, fact.mut_g, fact.mut_b = rgb01(cols.on_surface_variant, 0.55, 0.56, 0.52)
+    fact.pl_r, fact.pl_g, fact.pl_b = rgb01(cols.surface_container, 0.09, 0.10, 0.09)
 
     local state = { music = S.r.music, notice = S.notice, battery = S.r.battery, volume_at = S.volume_at,
                     feed_at = S.feed_at, hover = S.hover, open = S.open }
@@ -147,10 +148,12 @@ update = function()
                 box, tx, ty = layout.display(kind, D)
                 fact.d_x, fact.d_y, fact.d_w, fact.d_h, fact.d_tx, fact.d_ty = D.x, D.y, D.w, D.h, tx, ty
             elseif form == "glyph" then box = layout.glyph(b)
-            else box = layout.compact(b) end
+            else box = layout.compact(b, kind) end
+            fact["h" .. k .. "_cx"] = box.x + box.w + 10     -- the compact words follow the line
             local opts = opts_for(c.source)
+            if kind == "clock" then local t = os.date("*t"); opts.angle = layout.clock_angle(t.hour, t.min) end
             local sigkey = table.concat({ c.source, form, kind, box.x, box.y, box.w, box.h, opts.n or "", opts.active or "",
-                                          opts.values and table.concat(opts.values, ",") or "" }, "|")
+                                          opts.values and table.concat(opts.values, ",") or "", opts.angle or "" }, "|")
             if S.drawn[k] ~= sigkey then write_targets(k, shapes.outline(kind, box, form, os.time(), opts), temper, sigkey) end
             -- its colour: the layers (lib/sigil/palette), eased in the tick below
             local col = palette.resolve(c.source, { palette = S.pal, cover = S.feed.cover, event = c.event, settings = s })

@@ -29,6 +29,10 @@ scene Sigil {
     fact mut_b = 0.52
     let ink = rgb(ink_r, ink_g, ink_b)
     let muted = rgb(mut_r, mut_g, mut_b)
+    // the display's plate: the palette's surface (seen live: without one the windows showed through)
+    fact pl_r = 0.09
+    fact pl_g = 0.10
+    fact pl_b = 0.09
     // the Pill's display box and where its words go (from the logic, which put the line in the same box)
     fact d_x = 0
     fact d_y = 40
@@ -51,6 +55,7 @@ scene Sigil {
     fact h0_form = 1
     fact h0_src = 0
     fact h0_kind = 1
+    fact h0_cx = 0
     fact h0_r = 0.84
     fact h0_g = 0.89
     fact h0_b = 0.54
@@ -451,6 +456,7 @@ scene Sigil {
     fact h1_form = 1
     fact h1_src = 0
     fact h1_kind = 1
+    fact h1_cx = 0
     fact h1_r = 0.84
     fact h1_g = 0.89
     fact h1_b = 0.54
@@ -851,6 +857,7 @@ scene Sigil {
     fact h2_form = 1
     fact h2_src = 0
     fact h2_kind = 1
+    fact h2_cx = 0
     fact h2_r = 0.84
     fact h2_g = 0.89
     fact h2_b = 0.54
@@ -1251,6 +1258,7 @@ scene Sigil {
     fact h3_form = 1
     fact h3_src = 0
     fact h3_kind = 1
+    fact h3_cx = 0
     fact h3_r = 0.84
     fact h3_g = 0.89
     fact h3_b = 0.54
@@ -3197,7 +3205,7 @@ scene Sigil {
             group { glow: 12, 0.9 * st_glow, #ffffff
                 ellipse { at: pick(mod(floor(ph * 0.3), 64), h0_X0, h0_X1, h0_X2, h0_X3, h0_X4, h0_X5, h0_X6, h0_X7, h0_X8, h0_X9, h0_X10, h0_X11, h0_X12, h0_X13, h0_X14, h0_X15, h0_X16, h0_X17, h0_X18, h0_X19, h0_X20, h0_X21, h0_X22, h0_X23, h0_X24, h0_X25, h0_X26, h0_X27, h0_X28, h0_X29, h0_X30, h0_X31, h0_X32, h0_X33, h0_X34, h0_X35, h0_X36, h0_X37, h0_X38, h0_X39, h0_X40, h0_X41, h0_X42, h0_X43, h0_X44, h0_X45, h0_X46, h0_X47, h0_X48, h0_X49, h0_X50, h0_X51, h0_X52, h0_X53, h0_X54, h0_X55, h0_X56, h0_X57, h0_X58, h0_X59, h0_X60, h0_X61, h0_X62, h0_X63), pick(mod(floor(ph * 0.3), 64), h0_Y0, h0_Y1, h0_Y2, h0_Y3, h0_Y4, h0_Y5, h0_Y6, h0_Y7, h0_Y8, h0_Y9, h0_Y10, h0_Y11, h0_Y12, h0_Y13, h0_Y14, h0_Y15, h0_Y16, h0_Y17, h0_Y18, h0_Y19, h0_Y20, h0_Y21, h0_Y22, h0_Y23, h0_Y24, h0_Y25, h0_Y26, h0_Y27, h0_Y28, h0_Y29, h0_Y30, h0_Y31, h0_Y32, h0_Y33, h0_Y34, h0_Y35, h0_Y36, h0_Y37, h0_Y38, h0_Y39, h0_Y40, h0_Y41, h0_Y42, h0_Y43, h0_Y44, h0_Y45, h0_Y46, h0_Y47, h0_Y48, h0_Y49, h0_Y50, h0_Y51, h0_Y52, h0_Y53, h0_Y54, h0_Y55, h0_Y56, h0_Y57, h0_Y58, h0_Y59, h0_Y60, h0_Y61, h0_Y62, h0_Y63); radius: 2; color: #ffffff; show: wob > 0 } }
         }
-        text h0_t1 { at: h0_x + h0_w * 0.42, h0_y + h0_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h0_r, h0_g, h0_b), 0.15); width: max(10, h0_w * 0.56); lines: 1; show: h0_on and h0_form > 0.5 and h0_form < 1.5 }
+        text h0_t1 { at: h0_cx, h0_y + h0_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h0_r, h0_g, h0_b), 0.15); width: max(10, h0_x + h0_w - h0_cx - 6); lines: 1; show: h0_on and h0_form > 0.5 and h0_form < 1.5 }
         zone box hz0 { from: h0_x, h0_y; size: max(1, h0_w), max(1, h0_h); cursor: pointer; role: button; label: "The Sigil"; show: h0_on }
         on press hz0 { emit sg_press(0) }
         on press right hz0 { emit sg_rpress(0) }
@@ -3216,7 +3224,7 @@ scene Sigil {
             group { glow: 12, 0.9 * st_glow, #ffffff
                 ellipse { at: pick(mod(floor(ph * 0.3), 64), h1_X0, h1_X1, h1_X2, h1_X3, h1_X4, h1_X5, h1_X6, h1_X7, h1_X8, h1_X9, h1_X10, h1_X11, h1_X12, h1_X13, h1_X14, h1_X15, h1_X16, h1_X17, h1_X18, h1_X19, h1_X20, h1_X21, h1_X22, h1_X23, h1_X24, h1_X25, h1_X26, h1_X27, h1_X28, h1_X29, h1_X30, h1_X31, h1_X32, h1_X33, h1_X34, h1_X35, h1_X36, h1_X37, h1_X38, h1_X39, h1_X40, h1_X41, h1_X42, h1_X43, h1_X44, h1_X45, h1_X46, h1_X47, h1_X48, h1_X49, h1_X50, h1_X51, h1_X52, h1_X53, h1_X54, h1_X55, h1_X56, h1_X57, h1_X58, h1_X59, h1_X60, h1_X61, h1_X62, h1_X63), pick(mod(floor(ph * 0.3), 64), h1_Y0, h1_Y1, h1_Y2, h1_Y3, h1_Y4, h1_Y5, h1_Y6, h1_Y7, h1_Y8, h1_Y9, h1_Y10, h1_Y11, h1_Y12, h1_Y13, h1_Y14, h1_Y15, h1_Y16, h1_Y17, h1_Y18, h1_Y19, h1_Y20, h1_Y21, h1_Y22, h1_Y23, h1_Y24, h1_Y25, h1_Y26, h1_Y27, h1_Y28, h1_Y29, h1_Y30, h1_Y31, h1_Y32, h1_Y33, h1_Y34, h1_Y35, h1_Y36, h1_Y37, h1_Y38, h1_Y39, h1_Y40, h1_Y41, h1_Y42, h1_Y43, h1_Y44, h1_Y45, h1_Y46, h1_Y47, h1_Y48, h1_Y49, h1_Y50, h1_Y51, h1_Y52, h1_Y53, h1_Y54, h1_Y55, h1_Y56, h1_Y57, h1_Y58, h1_Y59, h1_Y60, h1_Y61, h1_Y62, h1_Y63); radius: 2; color: #ffffff; show: wob > 0 } }
         }
-        text h1_t1 { at: h1_x + h1_w * 0.42, h1_y + h1_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h1_r, h1_g, h1_b), 0.15); width: max(10, h1_w * 0.56); lines: 1; show: h1_on and h1_form > 0.5 and h1_form < 1.5 }
+        text h1_t1 { at: h1_cx, h1_y + h1_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h1_r, h1_g, h1_b), 0.15); width: max(10, h1_x + h1_w - h1_cx - 6); lines: 1; show: h1_on and h1_form > 0.5 and h1_form < 1.5 }
         zone box hz1 { from: h1_x, h1_y; size: max(1, h1_w), max(1, h1_h); cursor: pointer; role: button; label: "The Sigil"; show: h1_on }
         on press hz1 { emit sg_press(1) }
         on press right hz1 { emit sg_rpress(1) }
@@ -3235,7 +3243,7 @@ scene Sigil {
             group { glow: 12, 0.9 * st_glow, #ffffff
                 ellipse { at: pick(mod(floor(ph * 0.3), 64), h2_X0, h2_X1, h2_X2, h2_X3, h2_X4, h2_X5, h2_X6, h2_X7, h2_X8, h2_X9, h2_X10, h2_X11, h2_X12, h2_X13, h2_X14, h2_X15, h2_X16, h2_X17, h2_X18, h2_X19, h2_X20, h2_X21, h2_X22, h2_X23, h2_X24, h2_X25, h2_X26, h2_X27, h2_X28, h2_X29, h2_X30, h2_X31, h2_X32, h2_X33, h2_X34, h2_X35, h2_X36, h2_X37, h2_X38, h2_X39, h2_X40, h2_X41, h2_X42, h2_X43, h2_X44, h2_X45, h2_X46, h2_X47, h2_X48, h2_X49, h2_X50, h2_X51, h2_X52, h2_X53, h2_X54, h2_X55, h2_X56, h2_X57, h2_X58, h2_X59, h2_X60, h2_X61, h2_X62, h2_X63), pick(mod(floor(ph * 0.3), 64), h2_Y0, h2_Y1, h2_Y2, h2_Y3, h2_Y4, h2_Y5, h2_Y6, h2_Y7, h2_Y8, h2_Y9, h2_Y10, h2_Y11, h2_Y12, h2_Y13, h2_Y14, h2_Y15, h2_Y16, h2_Y17, h2_Y18, h2_Y19, h2_Y20, h2_Y21, h2_Y22, h2_Y23, h2_Y24, h2_Y25, h2_Y26, h2_Y27, h2_Y28, h2_Y29, h2_Y30, h2_Y31, h2_Y32, h2_Y33, h2_Y34, h2_Y35, h2_Y36, h2_Y37, h2_Y38, h2_Y39, h2_Y40, h2_Y41, h2_Y42, h2_Y43, h2_Y44, h2_Y45, h2_Y46, h2_Y47, h2_Y48, h2_Y49, h2_Y50, h2_Y51, h2_Y52, h2_Y53, h2_Y54, h2_Y55, h2_Y56, h2_Y57, h2_Y58, h2_Y59, h2_Y60, h2_Y61, h2_Y62, h2_Y63); radius: 2; color: #ffffff; show: wob > 0 } }
         }
-        text h2_t1 { at: h2_x + h2_w * 0.42, h2_y + h2_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h2_r, h2_g, h2_b), 0.15); width: max(10, h2_w * 0.56); lines: 1; show: h2_on and h2_form > 0.5 and h2_form < 1.5 }
+        text h2_t1 { at: h2_cx, h2_y + h2_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h2_r, h2_g, h2_b), 0.15); width: max(10, h2_x + h2_w - h2_cx - 6); lines: 1; show: h2_on and h2_form > 0.5 and h2_form < 1.5 }
         zone box hz2 { from: h2_x, h2_y; size: max(1, h2_w), max(1, h2_h); cursor: pointer; role: button; label: "The Sigil"; show: h2_on }
         on press hz2 { emit sg_press(2) }
         on press right hz2 { emit sg_rpress(2) }
@@ -3254,7 +3262,7 @@ scene Sigil {
             group { glow: 12, 0.9 * st_glow, #ffffff
                 ellipse { at: pick(mod(floor(ph * 0.3), 64), h3_X0, h3_X1, h3_X2, h3_X3, h3_X4, h3_X5, h3_X6, h3_X7, h3_X8, h3_X9, h3_X10, h3_X11, h3_X12, h3_X13, h3_X14, h3_X15, h3_X16, h3_X17, h3_X18, h3_X19, h3_X20, h3_X21, h3_X22, h3_X23, h3_X24, h3_X25, h3_X26, h3_X27, h3_X28, h3_X29, h3_X30, h3_X31, h3_X32, h3_X33, h3_X34, h3_X35, h3_X36, h3_X37, h3_X38, h3_X39, h3_X40, h3_X41, h3_X42, h3_X43, h3_X44, h3_X45, h3_X46, h3_X47, h3_X48, h3_X49, h3_X50, h3_X51, h3_X52, h3_X53, h3_X54, h3_X55, h3_X56, h3_X57, h3_X58, h3_X59, h3_X60, h3_X61, h3_X62, h3_X63), pick(mod(floor(ph * 0.3), 64), h3_Y0, h3_Y1, h3_Y2, h3_Y3, h3_Y4, h3_Y5, h3_Y6, h3_Y7, h3_Y8, h3_Y9, h3_Y10, h3_Y11, h3_Y12, h3_Y13, h3_Y14, h3_Y15, h3_Y16, h3_Y17, h3_Y18, h3_Y19, h3_Y20, h3_Y21, h3_Y22, h3_Y23, h3_Y24, h3_Y25, h3_Y26, h3_Y27, h3_Y28, h3_Y29, h3_Y30, h3_Y31, h3_Y32, h3_Y33, h3_Y34, h3_Y35, h3_Y36, h3_Y37, h3_Y38, h3_Y39, h3_Y40, h3_Y41, h3_Y42, h3_Y43, h3_Y44, h3_Y45, h3_Y46, h3_Y47, h3_Y48, h3_Y49, h3_Y50, h3_Y51, h3_Y52, h3_Y53, h3_Y54, h3_Y55, h3_Y56, h3_Y57, h3_Y58, h3_Y59, h3_Y60, h3_Y61, h3_Y62, h3_Y63); radius: 2; color: #ffffff; show: wob > 0 } }
         }
-        text h3_t1 { at: h3_x + h3_w * 0.42, h3_y + h3_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h3_r, h3_g, h3_b), 0.15); width: max(10, h3_w * 0.56); lines: 1; show: h3_on and h3_form > 0.5 and h3_form < 1.5 }
+        text h3_t1 { at: h3_cx, h3_y + h3_h / 2; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(ink, rgb(h3_r, h3_g, h3_b), 0.15); width: max(10, h3_x + h3_w - h3_cx - 6); lines: 1; show: h3_on and h3_form > 0.5 and h3_form < 1.5 }
         zone box hz3 { from: h3_x, h3_y; size: max(1, h3_w), max(1, h3_h); cursor: pointer; role: button; label: "The Sigil"; show: h3_on }
         on press hz3 { emit sg_press(3) }
         on press right hz3 { emit sg_rpress(3) }
@@ -3274,6 +3282,9 @@ scene Sigil {
         open: h0_drop > 0.01
         group {
             opacity: h0_drop
+            // the display's plate: the bar's surface, a hairline in the line's colour
+            box { from: d_x, d_y; size: d_w, d_h; corner: 18; color: rgb(pl_r, pl_g, pl_b); opacity: 0.98 }
+            box { from: d_x + 0.5, d_y + 0.5; size: d_w - 1, d_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.3 }
             group {
                 show: field_on
                 box { from: d_x + 0, d_y + 0; size: 1.4, 1.4; color: rgb(h0_r, h0_g, h0_b); opacity: 0.06 + 0.4 * max(0, 1 - (abs(d_x + 0 - cursor.x) + abs(d_y + 0 - cursor.y)) / 150) }

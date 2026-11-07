@@ -29,8 +29,17 @@ function M.display(kind, D)
     return { x = D.x + 20, y = D.y + 30, w = lw - 40, h = D.h - 60 }, D.x + lw + 10, math.floor(D.y + D.h / 2 - 14)
 end
 
-function M.compact(host)
-    return { x = host.x + 4, y = host.y + 3, w = math.max(4, host.w * 0.38 - 4), h = math.max(4, host.h - 6) }
+-- round kinds keep a square box (squeezed into the wide one they read as a blob — seen live)
+local ROUND = { clock = true, disc = true, ring = true, face = true, dots = true }
+function M.compact(host, kind)
+    local h = math.max(4, host.h - 6)
+    if ROUND[kind] then return { x = host.x + 4, y = host.y + 3, w = h, h = h } end
+    return { x = host.x + 4, y = host.y + 3, w = math.max(4, host.w * 0.38 - 4), h = h }
+end
+
+-- the clock's hour hand for a time, in radians from three o'clock, clockwise (the screen's y runs down)
+function M.clock_angle(hour, minute)
+    return (((tonumber(hour) or 0) % 12) + (tonumber(minute) or 0) / 60) / 12 * 2 * math.pi - math.pi / 2
 end
 
 function M.glyph(host)

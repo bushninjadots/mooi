@@ -979,7 +979,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-loom; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-loom mooi-sigil; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         if [ -e "$link" ]; then
