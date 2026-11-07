@@ -37,6 +37,8 @@ return function(ctx)
     local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
     local pill_face_text = nil   -- D170: a module face's reading (pill_face_read), for its width
     local pill_tall = false      -- D170: BMO's face is showing: the Pill is taller
+    local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
+    local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
     local pill_api               -- D170: what the board needs from the Pill (defined at the end)
 
     -- ── Layout ─────────────────────────────────────────────────
@@ -131,6 +133,7 @@ return function(ctx)
             local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
             local pl = pillmod.place(env.screen, w, n, pm)
             geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true,
+                         shape = type(s.pill) == "table" and s.pill.shape or "attached",       -- D171
                          h = pill_tall and math.max(40, tonumber(b.height) or 24) or nil }      -- D170: BMO's face
             fact.pill_h = geo.pill.h or (tonumber(b.height) or 24)
             geo.nodes = pm == "nodes"      -- D169: square pads on traces
@@ -164,7 +167,8 @@ return function(ctx)
         local off = {}
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
         -- D170: never tucked away while its own board is open
-        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face,
+        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = pill_view or p.face,
+                 shape = p.shape, detail = p.detail,
                  autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text }
     end
     function pill_update()
@@ -191,7 +195,9 @@ return function(ctx)
         -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
         local p = type(s.pill) == "table" and s.pill or {}
         local fi = 0
-        for i, f in ipairs(pillmod.FACES) do if f == p.face then fi = i - 1 end end
+        local shown = pill_view or p.face        -- D171: the view turned to, or the default
+        for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
+        fact.pill_detail = ({ icon = 0, brief = 1, full = 2 })[p.detail] or 1
         fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         fact.pill_hidden = r.hidden == true
         local tall = fi == 1 and r.main == "idle" and not r.split and not r.hidden
@@ -225,6 +231,12 @@ return function(ctx)
         pill_ms = pill_ms + 250
         -- a pointer resting on it keeps it peeked (review M4)
         if pill_hovering then pillmod.note(pst, "peek", {}, pill_ms); pill_timed = true end
+        -- D171: a turned view rests back to the default after pill.rest seconds (0: it stays)
+        local rest = tonumber(type(ctx.settings().pill) == "table" and ctx.settings().pill.rest or 10) or 10
+        local open_board = pill_board and pill_board.open() == "board"
+        if pill_view and rest > 0 and pill_ms - pill_view_at >= rest * 1000 and not pill_hovering and not open_board then
+            pill_view = nil; pill_timed = true
+        end
         if fact.pill_on and (pill_timed or pst.recording) then
             pill_update()
             pill_timed = pillmod.next_change(pst, pill_ms) ~= nil
@@ -281,6 +293,18 @@ return function(ctx)
         local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
         if id and pill_board then pill_board.press("left", id) end
     end)
+    -- D171: Super (`mooi pill`): the Pill comes back (the dot opens); called again within a moment, the board
+    on("pill_call", function()
+        if not fact.pill_on then return end
+        if pill_ms - pill_called < 1500 and pill_board then
+            pill_called = -10000
+            fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
+            pill_board.press("left", pill_now and pill_now.main or "idle")
+        else
+            pill_called = pill_ms
+            note("peek", {})
+        end
+    end)
     -- D169: pointed at, a hidden Pill comes back for a while
     on("pill_hover", function(v)
         pill_hovering = tonumber(v) == 1
@@ -293,7 +317,11 @@ return function(ctx)
         local d = tonumber(v) or 0
         local main = pill_now and pill_now.main or "idle"
         if main == "idle" then
-            run("hyprctl", { "dispatch", "workspace", d > 0 and "e-1" or "e+1" })
+            -- D171: the wheel turns the idle Pill through the owner's views (pill.views)
+            local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
+            pill_view = pillmod.next_view(p.views, pill_view or p.face or "time", d > 0 and -1 or 1)
+            pill_view_at = pill_ms
+            note("peek", {})
         else
             -- review C1: audio.volume and brightness.level are absolute (0–1), so step from the current
             -- level; a brightness change steps brightness, music and volume step the volume, the rest

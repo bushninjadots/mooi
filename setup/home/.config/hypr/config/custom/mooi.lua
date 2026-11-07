@@ -64,6 +64,8 @@ if cfg.standalone == true or not archeclipse then
     for _, k in ipairs({ "SUPER + SUPER_L", "SUPER + ALT_L", "SUPER + m", "SUPER + period", "SUPER + SHIFT + n" }) do
         pcall(hl.unbind, k)                          -- toggle bar, media panel, emoji, notes: ArchEclipse's alone
     end
+    -- D171: Super alone, on release (never after Super+a key): the Pill comes back; twice, its board
+    pcall(hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true })
     bound[#bound + 1] = "standalone"
 end
 

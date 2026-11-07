@@ -1185,6 +1185,8 @@ scene Mooi {
     event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
     event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
+    event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
+    fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false

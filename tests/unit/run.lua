@@ -5032,7 +5032,7 @@ do
     test("the bar feeds the face, the hiding and the nodes", function()
         local f = io.open("shell/bar.luau"); local b = f:read("a"); f:close()
         assert(b:find('require("lib/pillface")', 1, true), "BMO's face")
-        assert(b:find("face = p.face", 1, true) and b:find("autohide = p.autohide", 1, true), "the settings reach compute")
+        assert(b:find("face = pill_view or p.face", 1, true) and b:find("autohide = p.autohide", 1, true), "the settings reach compute")
         assert(b:find("slim = pill_now ~= nil and pill_now.hidden == true", 1, true), "the chassis is told")
         -- a settings change reaches the bar as relayout(): the Pill's face and hiding are read again then
         assert(b:find("relayout = function() pill_update(); relayout() end", 1, true), "settings re-read the Pill")
@@ -5505,6 +5505,35 @@ do
         eq(d.w, 14); eq(d.h, 14); eq(d.r, 7); eq(d.j, false); eq(d.y, 8 + 5)
         local a = chassis.pieces({ islands = {}, pill = { x = 860, w = 120, shape = "attached" }, moons = {} }, L)[1]
         eq(a.j, true, "attached: hangs from the band as before")
+    end)
+end
+
+section("the Pill, round two: the bar turns its views (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the wheel over an idle Pill turns its view; over music or a volume change it stays the volume", function()
+        local bar = read("shell/bar.luau")
+        local h = bar:match('on%("pill_scroll", function%(v%)(.-)\n    end%)')
+        assert(h, "the scroll handler")
+        assert(h:find('pill_view = pillmod.next_view(', 1, true), "idle: the next view")
+        assert(not h:find('"workspace", d > 0', 1, true), "idle no longer switches workspace")
+        assert(h:find('cur_vol + step', 1, true), "music and volume keep the volume")
+    end)
+    test("a turned view rests back to the default after pill.rest, not while pointed at or open", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if pill_view and rest > 0 and pill_ms - pill_view_at >= rest * 1000 and not pill_hovering", 1, true))
+        assert(bar:find("face = pill_view or p.face", 1, true), "the face shown is the turned view")
+        assert(bar:find("shape = p.shape", 1, true) and bar:find("detail = p.detail", 1, true))
+    end)
+    test("Super calls the Pill: it comes back; again within a moment, the board", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find('on("pill_call"', 1, true))
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("event pill_call ->", 1, true))
+        local sh = read("bin/mooi")
+        assert(sh:find('pill) exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "`mooi pill`")
+        local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
+        assert(hl:find('hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true }', 1, true), "Super alone, on release")
     end)
 end
 

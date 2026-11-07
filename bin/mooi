@@ -14,6 +14,7 @@
 #   mooi restart-hypr      Hyprland reads its config again, then the bar restarts on it (Settings →
 #                          Advanced and the Nexus's rail); windows stay open, mooi's own close
 #   mooi window | system   toggle the window island (Super+Alt+W) or the system island
+#   mooi pill              call the Pill (Super alone): it comes back; twice quickly, its board (D171)
 #   mooi mode [light|dark|auto]  day or night for the whole desktop; no word turns to the other one (Super+Alt+T)
 #   mooi overview          every workspace zoomed out (Super+Tab)
 #   mooi shutter | shutter-here   the Mechanical Shutter on the focused window (Super+Alt+D), or the
@@ -1432,6 +1433,7 @@ case "$cmd" in
         PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
+    pill) exec "$pleamar" --say "$name" "emit pill_call" ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
     wallpaper|walls) # the wallpaper picker (D145): mooi-walls, the strip and the colour orbit
         running || { echo "mooi is not running; start it first" >&2; exit 1; }
