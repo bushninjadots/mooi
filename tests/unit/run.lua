@@ -5582,13 +5582,29 @@ end
 section("the Pill, round two: faces (D171)")
 do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
-    test("BMO is a tile in the same capsule, not a Pill of his own", function()
+    test("BMO is the capsule's own glass, not a Pill of his own (D187, D196)", function()
         local ui = read("shell/ui/pill.plm")
-        assert(ui:find("group { move: px + 6, fl.top + (pill_h - 22) / 2; pivot: 0, 0; scale: 0.65; BmoFace(0, 0) }", 1, true),
-               "his face at the mark's size")
+        assert(ui:find("BmoScreen(px, pw, cy, pill_t1, pb_talk)", 1, true), "his screen is the capsule's inside")
+        assert(ui:find("box { from: px + 2.5, gy; size: max(4, pw - 5), gh; corner: gh / 2; color: glass }", 1, true),
+               "the glass inside the capsule's own outline, never larger")
         assert(not ui:find("color: #69c7bb", 1, true), "no teal body round a taller Pill")
         local bar = read("shell/bar.luau")
         assert(bar:find("local tall = false", 1, true), "one height, whatever he shows")
+    end)
+    test("D196: BMO lives — a hop, a typed line, notes, a mark, a screen that sleeps; he stays as the mark", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("let rise = if(pill_still, 0, sin(min(h, 1) * 180) * 2.6)", 1, true), "the hop, still with reduced motion")
+        assert(ui:find("let tf = clamp(pb_type - (pb_say_n - 1), 0, 1)", 1, true), "each new line typed out")
+        assert(ui:find("show: pb_sing and not pill_still", 1, true), "notes while he sings")
+        assert(ui:find("follow pb_pow = if(pb_asleep, 0.32, 1)", 1, true) == nil, "(declared in mooi.plm)")
+        assert(read("shell/mooi.plm"):find("follow pb_pow = if(pb_asleep, 0.32, 1)", 1, true), "the glass dims asleep")
+        assert(ui:find("let bmo = pill_face > 0.5 and pill_face < 1.5", 1, true) and ui:find("BmoMark(x + 6, cy)", 1, true),
+               "with BMO as the face he is the mark for music, a level, a notice")
+        local bar = read("shell/bar.luau")
+        assert(bar:find('if kind == "osd" then bmo_react("focused", 700) end', 1, true), "a turn of the volume")
+        assert(bar:find('bmo_react("curious", 500)', 1, true), "a workspace change")
+        assert(bar:find('if changed and now then bmo_react("excited", 900) end', 1, true), "a song starting")
+        assert(bar:find("fact.pb_mark = (r.main == \"notify\" and 3)", 1, true), "the mark over his head")
     end)
     test("faces at three details; workspaces as dots, alerts with the newest, the visualiser", function()
         local ui = read("shell/ui/pill.plm")

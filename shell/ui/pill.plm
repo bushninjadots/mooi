@@ -35,10 +35,13 @@ library Pill {
         let cy = fl.cy
         let cover = med_has_art and (g > 0.5 and g < 1.5 or g > 4.5)
         image art = from med_art, 64, 64
-        box { from: x + 6, cy - 8; size: 16, 16; corner: 4; color: fl.well; show: cover }
-        image art { at: x + 6, cy - 8; size: 16, 16; show: cover }
-        group { show: not cover
+        let bmo = pill_face > 0.5 and pill_face < 1.5      // D196: with BMO as the face, he is the mark
+        box { from: x + 6, cy - 8; size: 16, 16; corner: 4; color: fl.well; show: cover and not bmo }
+        image art { at: x + 6, cy - 8; size: 16, 16; show: cover and not bmo }
+        group { show: not cover and not bmo
                 Mark(x + 18, cy, g) }
+        group { show: bmo
+                BmoMark(x + 6, cy) }
         text "{t1}{? · {t2}}" { at: x + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, w - 44); lines: 1 }
         box { from: x + 10, fl.top + pill_h - 3.5; size: max(4, w - 20), 2; corner: 1; color: fl.well; show: g > 1.5 and g < 3.5 }
         box { from: x + 10, fl.top + pill_h - 3.5; size: max(0, (w - 20) * v), 2; corner: 1; color: fl.phos; show: g > 1.5 and g < 3.5 }
@@ -46,7 +49,7 @@ library Pill {
 
     // BMO's face on his own small screen (D169), 48 × 22 at (fx, fy): bmo/brain's numbers at 0.42 of
     // the desktop BMO's face, eyes pulled toward the pointer (pb_lx, pb_ly), the blink (pb_open).
-    component BmoFace(fx: number, fy: number) {
+    component BmoFace(fx: number, fy: number, framed: bool = true) {
         // D170: the desktop BMO's own face (bmo/bmo.plm's screen) at 50 × 34: drawn in its 96 × 66 units and
         // scaled, so every expression is the same drawing — eyes with their shine, ^ when happy-shut, brows,
         // a mouth of two curves that opens into a D or an O, the tongue, the blush. Singing, his mouth opens
@@ -71,9 +74,10 @@ library Pill {
             move: fx, fy - if(pb_sing, bass * 1.5, 0)
             pivot: 0, 0
             scale: 50 / 96
-            box { from: 0, 0; size: 96, 66; corner: 9; color: ink }
-            box { from: 2, 2; size: 92, 62; corner: 7; color: glass }
-            box { from: 6, 5; size: 84, 6; corner: 3; color: #ffffff; opacity: 0.22 }
+            // D196: framed, his own screen; unframed, the face alone (drawn on the capsule's glass, BmoScreen)
+            box { from: 0, 0; size: 96, 66; corner: 9; color: ink; show: framed }
+            box { from: 2, 2; size: 92, 62; corner: 7; color: glass; show: framed }
+            box { from: 6, 5; size: 84, 6; corner: 3; color: #ffffff; opacity: 0.22; show: framed }
             ellipse { at: 18, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: pb_blf * 0.55 }
             ellipse { at: 78, 39; radius: 6.5; scale: 1, 0.46; color: #f28aa0; opacity: pb_blf * 0.55 }
             box { from: 30 + lx - ew / 2, 26 + ly + eh / 2 - eye_h; size: ew, eye_h; corner: min(ew, eye_h) / 2; color: ink; opacity: 1 - pb_sqlf }
@@ -96,6 +100,90 @@ library Pill {
             // asleep: a z drifting up from the corner of his screen
             text "z" { at: 82, 18 - (pk_flow2 - floor(pk_flow2 / 14) * 14); anchor: center; size: 13; family: "Share Tech Mono"; color: ink; opacity: 0.7; show: pb_asleep }
         }
+    }
+
+    // D196: BMO as the Pill. The capsule's inside becomes his screen — the mint glass (a touch of the
+    // theme's light in it), faint scanlines, a sheen across the top — with his face as tall as the capsule
+    // lets it be and his line typed out beside it on the same glass, a block cursor at its end. He hops
+    // (squash and stretch, on the morph spring) whenever his face changes; notes rise while he sings; a mark
+    // over his head says what he feels (a drop on low battery, a bolt charging, ! for a notice); asleep the
+    // glass dims and a z drifts up, and waking it flickers back on. Still one capsule (D187): no body round
+    // it, only what its glass shows.
+    component BmoScreen(px: number, pw: number, cy: number, say: text, talking: bool) {
+        size: pw, 30
+        let ink = #183d42
+        let glass = mix(#b8f5df, fl.phos, 0.18)
+        let gh = pill_h - 5
+        let gy = fl.top + 2.5
+        // the screen: dims asleep; waking, a flicker as the power comes back
+        let flick = if(pb_pow < 0.98 and not pb_asleep, 0.25 * sin(pb_pow * 3000), 0)
+        let lit = clamp(pb_pow + flick, 0.2, 1)
+        group {
+            opacity: lit
+            box { from: px + 2.5, gy; size: max(4, pw - 5), gh; corner: gh / 2; color: glass }
+            // scanlines, and the sheen across the top
+            repeat sl in 0..6 {
+                box { from: px + gh / 2, gy + 3 + sl * (gh - 6) / 5; size: max(1, pw - 5 - gh), 1; color: ink; opacity: 0.05 }
+            }
+            box { from: px + gh / 2, gy + 1.5; size: max(1, pw - 5 - gh), max(1, gh * 0.22); corner: 2; color: #ffffff; opacity: 0.22 }
+        }
+        // the hop: up and back on the morph spring, squashing as it lands
+        let h = clamp(pb_hop - (pb_bump - 1), 0, 1.3)
+        let rise = if(pill_still, 0, sin(min(h, 1) * 180) * 2.6)
+        let squash = if(pill_still, 0, max(0, h - 1) * 0.5)
+        // his features (eyes, brows, mouth: x 9…40, y 9…28 of the face's 50 × 34 units) fill the glass's
+        // height — the face's empty margins left out, clipped to the glass; scaled about his feet so a
+        // squash lands on the glass's floor
+        let sc = (gh - 3) / 19
+        let fcx = px + 6 + 15.5 * sc
+        let fby = gy + gh / 2 + 9.5 * sc
+        group {
+            clip box { from: px + 2.5, gy; size: max(4, pw - 5), gh; corner: gh / 2 }
+            group {
+                move: fcx - 24.5, fby - 28 - rise
+                pivot: 24.5, 28
+                scale: sc * (1 + squash), sc * (1 - squash)
+                BmoFace(0, 0, false)
+            }
+        }
+        // the mark over his head
+        let mx = fcx + 15.5 * sc + 2
+        let my = gy + 2 - 2 * sin(pb_t * 4)
+        group {
+            show: pb_mark > 0.5 and not pb_asleep
+            // low battery: a drop of sweat, drawn
+            path { color: #4aa3df; show: pb_mark < 1.5
+                   move mx, my - 4.5; line mx + 3, my + 0.5; curve mx - 3, my + 0.5 via mx, my + 4.5; close }
+            text pick(pb_mark - 2, "ϟ", "!") { at: mx, my; anchor: center; size: 10; weight: 800; family: "Exo 2"
+                  color: pick(pb_mark - 2, #f3c64a, fl.ember); show: pb_mark > 1.5 }
+        }
+        // singing: notes rising out of his screen and fading
+        repeat nt in 0..3 {
+            let ph = (pb_t / 360 + nt / 3) - floor(pb_t / 360 + nt / 3)
+            text pick(nt, "♪", "♫", "♪") { at: fcx + 15.5 * sc + 6 + nt * 7, gy + gh - ph * (gh + 6); anchor: center; size: 9; color: ink
+                  opacity: (1 - ph) * 0.8; show: pb_sing and not pill_still }
+        }
+        // his line, typed out on the glass, a block cursor at its end
+        let tx = fcx + 15.5 * sc + 9
+        let tw = max(1, px + pw - 14 - tx)
+        let tf = clamp(pb_type - (pb_say_n - 1), 0, 1)
+        group {
+            show: talking
+            clip box { from: tx, gy; size: tw * tf, gh }
+            text say { at: tx, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: ink; width: tw; lines: 1 }
+        }
+        box { from: tx + min(tw - 4, say_w.width * tf) + 2, cy - 5; size: 5, 10; color: ink; opacity: if(talking, 0.65 * pb_cur, 0) }
+        measure say_w = say
+    }
+
+    // D196: BMO small, as the capsule's mark while something else takes it (music, a level, a notice)
+    component BmoMark(x: number, cy: number) {
+        size: 22, 16
+        let glass = mix(#b8f5df, fl.phos, 0.18)
+        let h = clamp(pb_hop - (pb_bump - 1), 0, 1.3)
+        let rise = if(pill_still, 0, sin(min(h, 1) * 180) * 1.6)
+        box { from: x, cy - 8; size: 23, 16; corner: 4; color: glass }
+        group { move: x + 0.5, cy - 8 - rise; pivot: 0, 0; scale: 0.46; BmoFace(0, 0, false) }
     }
 
     // The Control Nexus as the Pill's face (D169): its mark (a hub and three nodes) and its name, lit
@@ -230,10 +318,8 @@ library Pill {
             }
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 0.5 and pill_face < 1.5
-                // D187: BMO is a tile in the same capsule — his face at the mark's size, then his line.
-                // He used to paint a whole teal body round a taller Pill: that was a second pill.
-                group { move: px + 6, fl.top + (pill_h - 22) / 2; pivot: 0, 0; scale: 0.65; BmoFace(0, 0) }
-                text pill_t1 { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, pw - 44); lines: 1 }
+                // D196: the capsule's glass is his screen (BmoScreen); D187 still holds — no body round it
+                BmoScreen(px, pw, cy, pill_t1, pb_talk)
             }
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 1.5 and pill_face < 2.5

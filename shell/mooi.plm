@@ -1360,6 +1360,23 @@ scene Mooi {
     fact pb_tg = 0               // D170: his tongue (bmo/brain.FACES tg)
     fact pb_sing = false         // D170: music playing: he sings along
     fact pb_asleep = false       // D170: left alone long enough
+    // D196: BMO as the Pill — a hop when his face changes (pb_bump counts them), a typewriter for each new
+    // line (pb_say_n), the mark over his head (pb_mark: 0 none · 1 low battery · 2 charging · 3 a notice),
+    // and his screen's power (dim asleep, a flicker when he wakes)
+    fact pb_bump = 0
+    fact pb_say_n = 0
+    fact pb_mark = 0
+    fact pb_talk = false         // D196: he has a line showing
+    prop pb_hop = 0 ~m.morph
+    follow pb_hop = pb_bump
+    prop pb_type = 0 ~m.isl_out
+    follow pb_type = pb_say_n
+    prop pb_pow = 1 ~m.isl
+    follow pb_pow = if(pb_asleep, 0.32, 1)
+    prop pb_t = 0
+    spin pb_t by if(pill_still, 0, if(pb_sing, 90, if(pb_mark > 0.5 or pb_asleep, 40, 0)))
+    prop pb_cur = 1
+    blink pb_cur every 0.5s..0.5s for 250ms
     fact pill_h = 24             // D170: the Pill's height (taller with BMO's face)
     prop pb_sqlf = 0 ~m.isl_out
     follow pb_sqlf = pb_sql
