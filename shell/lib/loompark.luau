@@ -35,13 +35,16 @@ function M.park(doc, sid, oids)
 end
 
 -- Bring these parked objects back where they came from: to their workspace (never following, so the
--- owner's view does not jump), then — a floating window — to its old place and size.
-function M.unpark(doc, oids)
+-- owner's view does not jump), then — a floating window — to its old place and size. `to`: a workspace
+-- to bring them to instead (D195: an Accordion's layer comes to where the owner is).
+function M.unpark(doc, oids, to)
     local steps = {}
     for _, oid in ipairs(oids or {}) do
         local o = doc.objects[oid]
         if o and o.kind == "window" and o.state == "parked" and o.address ~= "" then
-            local ws = (o.workspace and o.workspace >= 1 and o.workspace <= 99) and o.workspace or 1
+            local target = tonumber(to)
+            local ws = (target and target >= 1 and target <= 99) and math.floor(target)
+                or ((o.workspace and o.workspace >= 1 and o.workspace <= 99) and o.workspace or 1)
             local cmds = {}
             local mv = hypr.dispatch("move", o.address, { workspace = ws, follow = false })
             if mv then cmds[#cmds + 1] = mv end
@@ -52,7 +55,7 @@ function M.unpark(doc, oids)
                 if sz then cmds[#cmds + 1] = sz end
             end
             if #cmds > 0 then
-                steps[#steps + 1] = { object = oid, address = o.address, cmds = cmds, record = { state = "live" } }
+                steps[#steps + 1] = { object = oid, address = o.address, cmds = cmds, record = { state = "live", workspace = ws } }
             end
         end
     end

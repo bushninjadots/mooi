@@ -253,6 +253,9 @@ local rows = {
     { title = "Free models when Claude can't", desc = "If Claude doesn't answer, ask a free model through opencode instead. It sends your question and the last few turns to a third party", tab = 19, page = "Control Nexus", y = 704 },
     { title = "Mode", desc = "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", tab = 20, page = "Loom / Fold", y = 156 },
     { title = "Start again", desc = "After it stopped on repeated failures (your windows were brought back)", tab = 20, page = "Loom / Fold", y = 276 },
+    { title = "Fold", desc = "Structures your windows fold into. In Loom / Fold mode every built feature is on; these are Hybrid's", tab = 20, page = "Loom / Fold", y = 430 },
+    { title = "Accordions", desc = "Windows as thin layers on a screen edge: pull the one you need, the rest wait. Needs Fold", tab = 20, page = "Loom / Fold", y = 490 },
+    { title = "Strip edge", desc = "The screen edge the Accordions' layers stand on", tab = 20, page = "Loom / Fold", y = 578 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -275,7 +278,7 @@ rows.resets = {
     [17] = { "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density", "signals.chamfer", "signals.travel", "signals.effects", "signals.private" },
     [18] = {  },
     [19] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model", "claude.free_fallback" },
-    [20] = { "loom.mode" },
+    [20] = { "loom.mode", "loom.fold", "loom.accordions", "loom.edge" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"
