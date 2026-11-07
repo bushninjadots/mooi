@@ -141,7 +141,7 @@ def scene():
          "scene Sigil {",
          "    permissions {",
          '        run: "pleamar", "mooi", "hyprctl"',
-         '        services: "files", "env", "audio.level", "media", "audio", "battery", "network", "bluetooth", "workspaces", "window", "clock"',
+         '        services: "files", "env", "audio.level", "media", "audio", "audio.*", "battery", "network", "bluetooth", "workspaces", "window", "clock"',
          "    }",
          "    service audio.level as lv { level: number }",
          "    spring sg.pt = 260, 20",

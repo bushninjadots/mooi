@@ -7313,5 +7313,31 @@ test("scene: generated, four hosts, 64 sprung points each, two surfaces", functi
     assert(not t:find("notification", 1, true), "it never watches notifications (spec §3)")
 end)
 
+section("the sigil: logic")
+test("logic: requires the five modules, reads the feeds, never the notification service", function()
+    local f = io.open("shell/mooi-sigil.luau"); local t = f:read("a"); f:close()
+    for _, m in ipairs({ "lib/sigil/sources", "lib/sigil/shapes", "lib/sigil/director", "lib/sigil/palette", "lib/sigil/bodies" }) do
+        assert(t:find('require("' .. m .. '")', 1, true), m)
+    end
+    assert(t:find("sigil-hosts.json", 1, true) and t:find("nexus-feed.json", 1, true))
+    assert(not t:find('sys.watch("notification', 1, true))
+    assert(t:find('"emit sigil_ready"', 1, true))
+end)
+test("logic: the display's layout keeps its words beside the line, inside the box", function()
+    package.loaded["lib/sigil/layout"] = nil
+    local LY = require("lib/sigil/layout")
+    local D = LY.display_box({ x = 870, y = 6, w = 180, h = 24 }, 1920)
+    eq(D.w, 600); eq(D.h, 220); eq(D.x, 660); eq(D.y, 40)
+    local edge = LY.display_box({ x = 1800, y = 6, w = 180, h = 24 }, 1920)
+    eq(edge.x, 1920 - 608, "never past the screen's edge")
+    for _, kind in ipairs(require("lib/sigil/shapes").KINDS) do
+        local line, tx, ty = LY.display(kind, D)
+        assert(line.x >= D.x and line.x + line.w <= D.x + D.w, kind .. " line in the box")
+        assert(tx >= D.x and tx < D.x + D.w and ty >= D.y and ty < D.y + D.h, kind .. " words in the box")
+    end
+    local c = LY.compact({ x = 400, y = 6, w = 180, h = 24 })
+    assert(c.x >= 400 and c.x + c.w <= 400 + 180 * 0.42, "the compact line keeps left of its words")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
