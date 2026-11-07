@@ -34,7 +34,7 @@ M.SCHEMA = {
     -- D169: what the Pill shows when nothing is happening, and whether it tucks away then
     -- D185: every face the board's picker offers, or the one it wrote was refused (`visualiser` was:
     -- the board could save a face the config then fell back from, so the Pill kept the time)
-    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" }, default = "time" },   -- D170: module faces
+    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser", "glance" }, default = "time" },   -- D170: module faces
     -- D170: the board's pads (lib/pillpads: any bar module) and its music visualiser
     { path = "pill.pads", kind = "ids", max = 8, allowed = barlayout.ORDER,
       default = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" } },
@@ -44,7 +44,7 @@ M.SCHEMA = {
     -- D172: `record` is the Pill as a turning disc, the song's cover its label
     { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot", "record" }, default = "attached" },
     { path = "pill.views", kind = "ids", max = 16,
-      allowed = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" },
+      allowed = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser", "glance" },
       default = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" } },
     { path = "pill.detail", kind = "enum", values = { "icon", "brief", "full" }, default = "brief" },
     { path = "pill.rest", kind = "integer", default = 10, min = 0, max = 60 },

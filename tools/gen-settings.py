@@ -327,7 +327,7 @@ SECTIONS = [
         ("card", "When idle"),
         ("pillhide",),
         ("card", "Behaviour"),
-        ("toggle", "Peek on hover", "Rest the pointer on the Pill and it grows into a small card: the time, the song, three levels. A press makes it the whole board", "pill.peek", "sv_pill_peek"),
+        ("toggle", "Peek on hover", "Rest the pointer on the Pill and it grows in place into two rows: the song, throughput, controls and clock; weather, the machine, battery, brightness, volume and network. A press on one opens its room, anywhere else the whole board", "pill.peek", "sv_pill_peek"),
         ("toggle", "Flash on a change", "The Pill's edge lights for a moment when the workspace changes or a notice arrives", "pill.ping", "sv_pill_ping"),
         ("slider", "Pointer warmth", "A soft light behind the capsule as the pointer comes near (0: none)", "pill.warmth", 0, 100, "{sv_pill_warmth, 0}%"),
         ("choice", "Right press", "What a right press on the Pill does", "pill.right", "sv_pill_right", ["Calendar", "Board", "Notes", "Settings", "Nothing"]),

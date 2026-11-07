@@ -5338,3 +5338,41 @@ G4); the summaries follow the commit messages._
   for one frame — `frame_p` stops drawing the strip on the same frame the frame's main surface shows its
   tile again, and the two surfaces commit separately. Overlapping them would double-draw the translucent
   band for a few frames, a worse blink; left as it is. The peek was driven by emits, not a real pointer.
+
+## D191 · 2026-11-07 · The Pill looks and behaves like ArchEclipse's
+
+- The owner: "look either at my archeclipse local or the github repo fork of mine, look at what we built
+  with dynamic pill … get it working, behaving and looking like that". ArchEclipse's Quickshell shell was
+  removed from `~` in 112b86d; its pill was read from the commit before: `widgets/bar/pill/PillBar.qml`
+  (the face), `PillDots`, `PillChip`, `PillMusic`, `PillSpectrum`, the pill surface in `Bar.qml`, and its
+  defaults in `theme/Settings.qml` (`defaultBarLayoutPill`, `barSpectrum = mirror`, height 45, strength 55).
+- **Its rest face is a new face, `glance`** (Settings → The Pill → Edit → Face → GLANCE; the owner chose
+  it as theirs): ArchEclipse's "rest" row — workspace dots (5 px, 5 apart, the one you are on a capsule
+  2.4 × as wide in the accent on its own spring, a workspace with windows in the ink, an empty one in the
+  trace), the clock, and the live chip (♪, the title, the artist muted, on a faint accent plate while a
+  player has a song; else the battery and its percent). 14 px between and at the ends, as there.
+  `lib/pill.glance_w` measures it (pure, tested); the bar hands the title's room to the scene
+  (`pill_gl_tw`). The dots draw only: a zone per dot would sit under the Pill's zone and split the hover
+  the peek follows, and a press on the Pill is the board.
+- **The peek is its reveal**: the Pill grows in place into ArchEclipse's expanded face — the core row (the
+  song with its cover, throughput, network · Bluetooth · sound, the clock), a 180 px hairline, the detail
+  row (weather, processor · memory, battery, brightness, volume, the network); items without a reading
+  (no song, no battery, no brightness control) leave and the row re-centres. The rows come in over the
+  second half of the growth from 98 %, as `PillBar`'s `openContent`. A press on an item is the board on
+  its room (`pk_rev`); elsewhere, the board. 600 × 92 (`PEEK_W/H`). The tray is not in it.
+- **The peek's hover is a count**, not a flag: the card and each item are zones, and an item's enter can
+  arrive before the card's leave — a flag would fold the reveal under the pointer.
+- **The spectrum**: ArchEclipse's `PillSpectrum` in its default look replaces D187's glow under the foot —
+  the song's bands rise from the capsule's foot behind its face, mirrored (the bass in the middle), 45 %
+  of its height, 55 %, solid at the edge and lighter above, clipped to the capsule, easing in and out. Only
+  while a song plays, never with reduced motion, hidden, or opened into the board. This brings back a band
+  of sound inside the capsule, which D187 removed; it is ArchEclipse's, which the owner asked for.
+- Kept from mooi: the press is the board (ArchEclipse's click-to-expand is the hover peek here, its
+  `barHoverReveal` mode), the morph's springs, the islands' radius.
+- Checks: unit 578 / 0 (new: `glance_w`, the face's width and press, the config accepting it, the
+  reveal's item press and its hover count — behaviourally, the spectrum by source), BMO 27 / 0,
+  13 scenes compile, generator rerun. Live (mooi refreshed, emits only): the glance face with a paused
+  song, the reveal at 600 × 92 with every item, `pk_rev 7` → Weather at the board's size. The owner's own
+  pointer, recorded, moved across the reveal's items with each plate lit and the card held open.
+- Limits: the spectrum has not been seen live (nothing was playing, and playing the owner's music to test
+  it was not done); the media item's cover arrives a moment after the reveal on the first open.

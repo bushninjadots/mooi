@@ -183,7 +183,10 @@ return function(ctx)
                  -- D172: the record's diameter is the bar's height; never tucked away or gone while its
                  -- own board is open
                  disc = tonumber(s.bar.height) or 24,
-                 autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text }
+                 autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text,
+                 -- D191: ArchEclipse's rest face is as wide as its dots, the clock and its live chip
+                 glance_w = pillmod.glance_w(ctx.space_count(), pst.media.title, pst.media.title ~= "" and pst.media.artist or "",
+                                             pst.battery.percent) }
     end
     function pill_update()
         local s = ctx.settings()
@@ -211,6 +214,7 @@ return function(ctx)
         -- D174: the pointer warmth (0: blind) and whether it pings at all, handed to the scene
         fact.pill_warm = (tonumber(p.warmth) or 55) / 100
         fact.pill_ping = p.ping ~= false
+        fact.pill_gl_n = math.max(1, math.min(10, math.floor(tonumber(ctx.space_count()) or 5)))     -- D191
         local fi = 0
         if p.face ~= pill_face_was then pill_face_was = p.face; pill_view = nil end
         local shown = pill_view or p.face        -- D171: the view turned to, or the default
@@ -830,6 +834,8 @@ return function(ctx)
             cover(m.art)
             local title = type(m.title) == "string" and m.title or ""
             text.mu_title, text.mu_artist = title, tostring(m.artist or "")
+            fact.pill_gl_art = tostring(m.artist or "") ~= ""      -- D191
+            fact.pill_gl_tw = math.min(150, 7 * #title)            -- D191: the title's room, as lib/pill.glance_w measures it
             text.med_album = string.upper(tostring(m.album or ""))
             text.med_player = string.upper((tostring(m.player or ""):gsub("^org%.mpris%.MediaPlayer2%.", ""):gsub("%..*$", "")))
             fact.mu_has, fact.mu_playing = title ~= "", now

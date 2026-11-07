@@ -1269,6 +1269,7 @@ scene Mooi {
     fact pk_vw8 = false
     fact pk_vw9 = false
     fact pk_vw10 = false
+    fact pk_vw11 = false          // D191: the glance face
     text pk_dg_kernel = ""
     text pk_dg_host = ""
     text pk_dg_up = ""
@@ -1294,6 +1295,7 @@ scene Mooi {
     event pk_viz ->            // to the logic: HALO ⇄ RIVER
     event pk_slot ->           // D188: to the logic: editing, pad slot n chosen (an empty one too)
     event pk_peek_hover ->     // D188: to the logic: the pointer on the peek card (1) or off it (0)
+    event pk_rev ->            // D191: to the logic: a reveal item pressed — the board on room n
     event pk_peek_open ->      // D188: to the logic: the peek pressed — the whole board
     event pk_etab ->           // D188: to the logic: the editor's tab — 0 pads · 1 face
     event pk_sig_clear ->      // to the logic: clear the signals
@@ -1313,6 +1315,9 @@ scene Mooi {
     fact pill_turn = 0
     // D174: how much it feels the pointer (pill.warmth), and whether it pings at all (pill.ping)
     fact pill_warm = 0.55
+    fact pill_gl_art = false       // D191: the song has an artist (the glance chip shows it)
+    fact pill_gl_tw = 150          // D191: the room the song's title takes in the glance chip
+    fact pill_gl_n = 5             // D191: the glance face's dots (the bar's workspace count, ten at most)
     fact pill_ping = true
     prop pill_turn_f = 0 ~m.isl_out
     follow pill_turn_f = pill_turn
