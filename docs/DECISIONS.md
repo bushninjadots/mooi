@@ -5568,3 +5568,26 @@ G4); the summaries follow the commit messages._
 - Cost: the bar's scene grew from 49 k to 62.8 k instructions (six items a row, the editor's chips). Not
   yet measured in frames.
 - Checks: unit 603 / 0, scenes compile, the ROWS tab seen live. Not driven: a real drag (the owner's mouse).
+
+## D200 · 2026-11-07 · Loom / Fold Phase 4: Loom — connections that do something
+
+- **The rules** (`lib/loomlinks`, pure, tested): association, workflow (directed), navigation,
+  dependency (from depends on to), containment (membership, never a route). A hop from a window goes to its
+  connected ones in order — a workflow's next first, then navigation, association, dependency; a directed
+  link walked backwards still counts, later — and pressed again goes on round. Links are by id, so folding,
+  parking and moving never break them (tested through a Cube's fold).
+- **The keys** (Settings → Keys, all free): Super+Alt+N marks the focused window, Super+Alt+N on another ties
+  them (pressed on the same window, it lets go); Super+Alt+Shift+N ties them as a workflow step; Super+Alt+H
+  hops — a parked target is brought out of its park first, then focused (Hyprland goes to its workspace);
+  Super+Alt+Shift+H lets every link of the focused window go. `mooi loom link|flow|hop|unlink`.
+- **The threads**: their own full-screen surface with no zones (every press goes through), open only while
+  shown. Between windows on the workspace in front of the owner: a fine quadratic curve sagging with its
+  length, a dot at the source, an arrowhead where directed, a bead running along a lit one; a link whose
+  other end is elsewhere is a stub to the nearest screen edge carrying that end's initial. Colours by kind
+  from the theme (workflow and navigation the accent, dependency the ember, association the trace). By
+  default (`loom.threads = relevant`) they light for 4 s when the focus lands on a window with links, and
+  while a link is half made ("LINKING · FOCUS ANOTHER WINDOW AND PRESS AGAIN"); `always`, `hidden` too.
+- Checks: unit 606 / 0, 14 scenes compile; the six keys bound in Hyprland after a refresh. Not driven live:
+  linking, hopping and the threads need windows on the owner's own workspace and their focus.
+- Found: a settings window open during a refresh that adds settings can end once (its logic reloads before
+  its scene); reopening it is fine.

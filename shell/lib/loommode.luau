@@ -17,7 +17,7 @@ M.FEATURES = {
     { id = "fold",       key = "fold",       name = "Fold",       needs = {},         built = true },   -- D195
     { id = "accordions", key = "accordions", name = "Accordions", needs = { "fold" }, built = true },   -- D195
     { id = "cubes",      key = "cubes",      name = "Cubes",      needs = { "fold" }, built = true },   -- D197
-    { id = "loom",       key = "loom",       name = "Loom",       needs = {},         built = false },  -- Phase 4
+    { id = "loom",       key = "loom",       name = "Loom",       needs = {},         built = true },   -- D200
     { id = "transform",  key = "transform",  name = "Transformations", needs = { "fold" }, built = false },  -- Phase 5
     { id = "spatial",    key = nil,          name = "The spatial view", needs = {}, built = false, full_only = true },  -- Phase 6
 }

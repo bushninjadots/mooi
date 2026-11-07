@@ -154,6 +154,8 @@ M.SETTERS = {
     "keys.loom_add", "keys.loom_next", "keys.loom_prev", "keys.loom_fold", "keys.loom_open", "keys.loom_remove",
     -- D197: Cubes, and their two keys. Appended.
     "loom.cubes", "keys.loom_cube", "keys.loom_join",
+    -- D200: Loom, its threads, and its four keys. Appended.
+    "loom.loom", "loom.threads", "keys.loom_link", "keys.loom_flow", "keys.loom_hop", "keys.loom_unlink",
 }
 
 local function row_of(path)

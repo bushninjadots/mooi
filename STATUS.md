@@ -13,7 +13,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
   see docs/AUDIT-2026-11-06.md, G1).
 - `bin/mooi check` compiles every scene by enumeration (13, including `mooi-lock.plm`) and runs
   `tests/gate.sh`; CI runs the same gate where Pleamar is not needed. On 2026-11-07 the gate passed:
-  **603 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
+  **606 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
   0.9**.
 - The generators (`tools/gen-settings.py`, `tools/gen-frame.py`) are deterministic and CI fails if
   their output differs from the committed scenes.
@@ -53,7 +53,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
    (hiding three ways, the record; D172) done, and the one-body Pill that becomes what it shows (D186–D189) finished — docs/superpowers/plans/2026-11-07-pill-many.md has the rest: many pills placed wherever the owner wants, connections
    and motion (including the owner's Venom-like morph), the look, then the stash/terminal/Super layer — and finally the bar's stage 4 (modules and density). Density stays hidden in
    Settings until then.
-   Loom / Fold (D194) is in phases: Phases 1–3 (the foundation, the Accordion, the Cube) are built; Phase 4 is Loom (connections)
+   Loom / Fold (D194) is in phases: Phases 1–4 (the foundation, the Accordion, the Cube, Loom) are built; Phase 5 is transformations
    (docs/superpowers/specs/2026-11-07-loom-fold-design.md §10).
 2. `shell/mooi.plm`, `mooi-settings.plm` and `mooi-frame.plm` remain large generated/monolithic
    files; the panel extraction is incremental (G8).

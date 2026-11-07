@@ -149,6 +149,8 @@ SETTERS = [
     "keys.loom_add", "keys.loom_next", "keys.loom_prev", "keys.loom_fold", "keys.loom_open", "keys.loom_remove",
     # D197: Cubes, and their two keys. Appended.
     "loom.cubes", "keys.loom_cube", "keys.loom_join",
+    # D200: Loom, its threads, and its four keys. Appended.
+    "loom.loom", "loom.threads", "keys.loom_link", "keys.loom_flow", "keys.loom_hop", "keys.loom_unlink",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -188,6 +190,10 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("loom_remove", "Accordion: take out", "The focused window leaves its Accordion and stays"),
         ("loom_cube", "Make a Cube", "Every window on this workspace folded into one Cube (the focused one on its front)"),
         ("loom_join", "Join the Cube", "The focused window joins the last Cube's facing side"),
+        ("loom_link", "Link windows", "Press on one window, then on another: they are connected"),
+        ("loom_flow", "Link as a workflow", "The same, as a step: hopping goes forward along it first"),
+        ("loom_hop", "Hop along a link", "To the next window connected to this one, wherever it is"),
+        ("loom_unlink", "Unlink the window", "Every connection of the focused window let go"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -706,7 +712,7 @@ SECTIONS = [
         ("choice", "Mode", "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", "loom.mode", "sv_loom_mode", [("Native", 0), ("Hybrid", 1), ("Loom / Fold", 2)]),
         ("info", "Status", "What Loom / Fold is doing now", "lf_status"),
         ("button", "Start again", "After it stopped on repeated failures (your windows were brought back)", "Start again", "lf_act", 1),
-        ("note", "sv_loom_mode > 0.5", "EXPERIMENTAL · WHAT IS BUILT: ACCORDIONS AND CUBES. CONNECTIONS COME NEXT"),
+        ("note", "sv_loom_mode > 0.5", "EXPERIMENTAL · WHAT IS BUILT: ACCORDIONS, CUBES AND LOOM'S CONNECTIONS. TRANSFORMATIONS COME NEXT"),
         # D195: the features built so far, Hybrid's switches (Loom / Fold mode turns every built one on)
         ("card", "Features"),
         ("toggle", "Fold", "Structures your windows fold into. In Loom / Fold mode every built feature is on; these are Hybrid's", "loom.fold", "sv_loom_fold"),
@@ -715,7 +721,9 @@ SECTIONS = [
         ("toggle", "Cubes", "A whole workspace folded into one small solid and unfolded back where it was. Needs Fold", "loom.cubes", "sv_loom_cubes"),
         ("note", "sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5", "CUBES NEED FOLD — TURN FOLD ON FIRST"),
         ("choice", "Edge", "The screen edge the Accordions' strips and the docked Cubes stand on", "loom.edge", "sv_loom_edge", [("Right", 0), ("Left", 1)]),
-        ("note", "true", "KEYS (SETTINGS → KEYS): SUPER+ALT+A ADD · ] [ NEXT, PREVIOUS · F FOLD · U OPEN ALL · R TAKE OUT · K MAKE A CUBE · J JOIN THE CUBE. A STRIP: PRESS PULLS, DRAG REORDERS, WHEEL STEPS. A CUBE: PRESS FOLDS OR UNFOLDS, WHEEL TURNS, MIDDLE OPENS ONE SIDE"),
+        ("toggle", "Loom", "Connections between windows that do something: hop along them, see them as threads", "loom.loom", "sv_loom_loom"),
+        ("choice", "Threads", "When the threads show: a few seconds when the focused window has connections, always, or only while linking", "loom.threads", "sv_loom_threads", [("When relevant", 0), ("Always", 1), ("Hidden", 2)], "sv_loom_loom > 0.5"),
+        ("note", "true", "KEYS (SETTINGS → KEYS): SUPER+ALT+A ADD · ] [ NEXT, PREVIOUS · F FOLD · U OPEN ALL · R TAKE OUT · K MAKE A CUBE · J JOIN THE CUBE · N LINK (SHIFT: A WORKFLOW) · H HOP ALONG A LINK. A STRIP: PRESS PULLS, DRAG REORDERS, WHEEL STEPS. A CUBE: PRESS FOLDS OR UNFOLDS, WHEEL TURNS, MIDDLE OPENS ONE SIDE"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}

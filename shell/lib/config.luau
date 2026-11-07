@@ -104,6 +104,9 @@ M.SCHEMA = {
     { path = "loom.transform", kind = "boolean", default = true },
     -- D195: the screen edge the Accordions' strips stand on
     { path = "loom.edge", kind = "enum", values = { "right", "left" }, default = "right" },
+    -- D200: when Loom's threads show — a few seconds when the focused window has connections, always, or
+    -- only while a link is being made
+    { path = "loom.threads", kind = "enum", values = { "relevant", "always", "hidden" }, default = "relevant" },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
     { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },
       default = { "battery", "record", "notify", "music", "osd", "idle" } },
@@ -427,6 +430,11 @@ M.SCHEMA = {
     -- D197: the Cube's keys (both free)
     { path = "keys.loom_cube", kind = "key", default = "SUPER + ALT + K" },
     { path = "keys.loom_join", kind = "key", default = "SUPER + ALT + J" },
+    -- D200: Loom's keys (free)
+    { path = "keys.loom_link", kind = "key", default = "SUPER + ALT + N" },
+    { path = "keys.loom_flow", kind = "key", default = "SUPER + ALT + SHIFT + N" },
+    { path = "keys.loom_hop", kind = "key", default = "SUPER + ALT + H" },
+    { path = "keys.loom_unlink", kind = "key", default = "SUPER + ALT + SHIFT + H" },
     { path = "shutter.enabled", kind = "boolean", default = true },
     { path = "shutter.pointer", kind = "boolean", default = true },
     { path = "shutter.edge", kind = "enum", values = { "auto", "left", "inside" }, default = "auto" },

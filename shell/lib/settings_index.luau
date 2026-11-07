@@ -257,6 +257,8 @@ local rows = {
     { title = "Accordions", desc = "Windows as thin layers on a screen edge: pull the one you need, the rest wait. Needs Fold", tab = 20, page = "Loom / Fold", y = 490 },
     { title = "Cubes", desc = "A whole workspace folded into one small solid and unfolded back where it was. Needs Fold", tab = 20, page = "Loom / Fold", y = 578 },
     { title = "Edge", desc = "The screen edge the Accordions' strips and the docked Cubes stand on", tab = 20, page = "Loom / Fold", y = 666 },
+    { title = "Loom", desc = "Connections between windows that do something: hop along them, see them as threads", tab = 20, page = "Loom / Fold", y = 726 },
+    { title = "Threads", desc = "When the threads show: a few seconds when the focused window has connections, always, or only while linking", tab = 20, page = "Loom / Fold", y = 786 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -279,7 +281,7 @@ rows.resets = {
     [17] = { "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density", "signals.chamfer", "signals.travel", "signals.effects", "signals.private" },
     [18] = {  },
     [19] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model", "claude.free_fallback" },
-    [20] = { "loom.mode", "loom.fold", "loom.accordions", "loom.cubes", "loom.edge" },
+    [20] = { "loom.mode", "loom.fold", "loom.accordions", "loom.cubes", "loom.edge", "loom.loom", "loom.threads" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"
