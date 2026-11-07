@@ -166,6 +166,25 @@ else
     echo "  ..    no player: Now Playing skipped"
 fi
 
+echo "views, shapes and Super (D171)"
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="attached" | .pill.autohide=false | .pill.views=["time","weather","workspaces"] | .pill.rest=2'
+playerctl -a pause >/dev/null 2>&1; i=0; while [ "$(get pill_kind)" != 0 ] && [ $i -lt 20 ]; do sleep 0.25; i=$((i + 1)); done
+pleamar --say mooi "emit pill_scroll -1" >/dev/null 2>&1; sleep 0.6
+is "the wheel turns to the next view (weather)" "$(get pill_face)" 3
+pleamar --say mooi "emit pill_scroll -1" >/dev/null 2>&1; sleep 0.6
+is "and the next (workspaces)" "$(get pill_face)" 7
+sleep 3
+is "back to its face after pill.rest" "$(get pill_face)" 0
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="dot" | .pill.autohide=false'
+sleep 4.5
+is "the dot: idle, a dot" "$(get pill_hidden)/$(get pill_w)" true/14
+is "the chassis is told" "$(jq -r '.pill.shape' "$D/bar-geo.json")" dot
+pleamar --say mooi "emit pill_call" >/dev/null 2>&1; sleep 0.6
+is "Super: it comes back" "$(get pill_hidden)" false
+pleamar --say mooi "emit pill_call" >/dev/null 2>&1; sleep 1
+is "Super twice: the board" "$(get open)" board
+pleamar --say mooi "emit pk_key 3" >/dev/null 2>&1; sleep 0.4
+
 echo "back to Islands"
 cp "$t/restore.json" "$F.tmp" && jq '.bar.mode="islands"' "$F.tmp" > "$F" && rm -f "$F.tmp"; sleep 3
 is "Pill mode is off" "$(get pill_on)" false
