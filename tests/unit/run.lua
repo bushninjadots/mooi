@@ -5059,5 +5059,82 @@ do
     end)
 end
 
+section("the Pill board (D170)")
+do
+    local P = require("lib/pill")
+    local PP = require("lib/pillpads")
+    local bl = require("lib/barlayout")
+    test("pill.press: left opens the board from every face and activity, right keeps the old jumps", function()
+        for _, face in ipairs({ "time", "bmo", "weather", "resources" }) do
+            for _, main in ipairs({ "idle", "music", "osd", "notify", "record", "battery" }) do
+                eq(P.press(main, face, "left").kind, "board", face .. "/" .. main .. " left")
+            end
+        end
+        eq(P.press("idle", "nexus", "left").kind, "nexus", "the Nexus face is the Nexus button")
+        eq(P.press("music", "nexus", "left").kind, "board", "an activity on the Nexus face opens the board")
+        eq(P.press("idle", "time", "right").kind, "calendar")
+        eq(P.press("idle", "nexus", "right").kind, "board", "right on the Nexus face: the board")
+        eq(P.press("music", "time", "right").kind, "player")
+        local o = P.press("osd", "time", "right", "bri"); eq(o.kind, "island"); eq(o.island, "display")
+        eq(P.press("osd", "time", "right", "vol").island, "sound")
+        eq(P.press("battery", "time", "right").island, "power")
+        local n = P.press("notify", "time", "right"); eq(n.kind, "board"); eq(n.room, "signals")
+        eq(P.press("record", "time", "right").kind, "record", "right on a recording still stops it")
+    end)
+    test("pill.press: the board opens on the activity's room", function()
+        eq(P.press("idle", "time", "left").room, "now")
+        eq(P.press("music", "time", "left").room, "now", "Now is Now Playing while music plays")
+        eq(P.press("osd", "time", "left", "vol").room, "sound")
+        eq(P.press("osd", "time", "left", "bri").room, "display")
+        eq(P.press("battery", "time", "left").room, "power")
+        eq(P.press("notify", "time", "left").room, "signals")
+    end)
+    test("pill.pads: known ids, no repeats, eight at most; nothing usable → the default", function()
+        local d = P.pads(nil); eq(#d, 8); eq(d[1], "volume"); eq(d[8], "nexus")
+        local v = P.pads({ "weather", "dragon", "weather", "clock" }); eq(#v, 2); eq(v[1], "weather"); eq(v[2], "clock")
+        local nine = P.pads({ "workspaces", "window", "media", "resources", "bandwidth", "keyboard", "weather", "tray", "mic" })
+        eq(#nine, 8)
+        eq(#P.pads({}), 0, "an empty board is allowed")
+        eq(#P.pads("garbage"), 8)
+    end)
+    test("pillpads: every bar module is a part, with a room or an act, an icon and a place", function()
+        eq(#PP.ORDER, #bl.ORDER)
+        for i, id in ipairs(bl.ORDER) do
+            local p = PP.get(id)
+            assert(p, id .. " is a part")
+            assert(p.room or p.act, id .. " has a room or an act")
+            assert(type(p.icon) == "number", id .. " has an icon")
+            eq(PP.index(id), i - 1, id .. " index")
+        end
+        eq(PP.get("dragon"), nil)
+        local rooms = {}
+        for _, r in ipairs(PP.ROOMS) do rooms[r] = true end
+        for _, id in ipairs(bl.ORDER) do local p = PP.get(id); if p.room then assert(rooms[p.room], id .. "'s room exists") end end
+        eq(PP.room_index("now"), 0); eq(PP.room_index("signals"), 8)
+        eq(PP.get("volume").room, "sound"); eq(PP.get("clock").room, "calendar"); eq(PP.get("caffeine").switch, true)
+        eq(PP.get("notes").closes, true, "a pad that opens another surface closes the board")
+        for _, id in ipairs(PP.DEFAULT) do assert(PP.get(id), id) end
+    end)
+    test("pill faces: the module faces, each with a width that fits its text", function()
+        eq(#P.FACES, 10); eq(P.FACES[1], "time"); eq(P.FACES[4], "weather")
+        local st = P.state()
+        local r = P.compute(st, { face = "weather", face_text = "11° partly cloudy" }, 0)
+        eq(r.width, math.max(104, 44 + 7 * #"11° partly cloudy"))
+    end)
+    test("pill settings: face from the modules, pads, the visualiser", function()
+        local d = config.defaults()
+        eq(#d.pill.pads, 8); eq(d.pill.viz, "halo")
+        local s, p = config.validate({ pill = { face = "weather", pads = { "clock", "weather" }, viz = "river" } })
+        eq(#p, 0); eq(s.pill.face, "weather"); eq(s.pill.pads[2], "weather"); eq(s.pill.viz, "river")
+        local _, p2 = config.validate({ pill = { pads = { "dragon" } } }); eq(#p2, 1, "an unknown pad is refused")
+        local setters = require("lib/setters")
+        local seen = {}
+        for _, q in ipairs(setters.SETTERS) do seen[q] = true end
+        assert(seen["pill.pads"] and seen["pill.viz"], "setters appended")
+        local g = io.open("tools/gen-settings.py"); local py = g:read("a"); g:close()
+        assert(py:find('"pill.pads", "pill.viz"', 1, true), "gen-settings mirrors the codes")
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

@@ -119,6 +119,8 @@ SETTERS = [
     "pill.sides", "pill.multi", "pill.moons",
     # D169: the Pill's face and hiding when idle. Appended, so no code moved.
     "pill.face", "pill.autohide",
+    # D170: the board's pads and its music visualiser. Appended, so no code moved.
+    "pill.pads", "pill.viz",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)

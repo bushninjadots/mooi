@@ -13,6 +13,8 @@ local M = {
     PEEK_MS = 4000, SLIVER = 44,
     -- the width of each face (BMO's grows with what he says)
     FACE_W = { time = 120, nexus = 104, bmo = 64 },
+    -- D170: what the closed Pill may show when nothing is happening: three of its own, and module faces
+    FACES = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications" },
 }
 
 function M.state()
@@ -87,6 +89,10 @@ end
 local function width(v, cfg)
     if not v then return 0 end
     if v.glyph == "idle" then
+        -- D170: a module's face is its glyph and a short reading (the bar works it out: cfg.face_text)
+        if cfg and cfg.face and not M.FACE_W[cfg.face] and cfg.face_text then
+            return math.max(104, 44 + 7 * #tostring(cfg.face_text))
+        end
         local face = cfg and M.FACE_W[cfg.face] and cfg.face or "time"
         return M.FACE_W[face] + ((face == "bmo" and v.t1 ~= "") and (7 * #v.t1 + 16) or 0)
     end
@@ -151,6 +157,39 @@ function M.place(screen_w, w, n, multi)
     for k = 1, n do
         if k % 2 == 1 then l = l - gap - M.MOON; out.moons[k] = l
         else out.moons[k] = r + gap; r = r + gap + M.MOON end
+    end
+    return out
+end
+
+-- D170: what a press on the Pill does. main: the activity it shows; face: pill.face; button: "left" or
+-- "right"; osd: "vol" or "bri" (which change is showing). Left unfolds the board on the activity's room
+-- (the Nexus face's left is the Nexus button, while nothing is happening); right keeps the old jumps.
+local ROOM = { idle = "now", music = "now", record = "now", battery = "power", notify = "signals" }
+function M.press(main, face, button, osd)
+    main = main or "idle"
+    local room = ROOM[main] or (main == "osd" and (osd == "bri" and "display" or "sound")) or "now"
+    if button == "right" then
+        if face == "nexus" and main == "idle" then return { kind = "board", room = "now" } end
+        if main == "idle" then return { kind = "calendar" } end
+        if main == "music" then return { kind = "player" } end
+        if main == "record" then return { kind = "record" } end
+        if main == "osd" then return { kind = "island", island = osd == "bri" and "display" or "sound" } end
+        if main == "battery" then return { kind = "island", island = "power" } end
+        return { kind = "board", room = room }
+    end
+    if face == "nexus" and main == "idle" then return { kind = "nexus" } end
+    return { kind = "board", room = room }
+end
+
+-- D170: the board's pads from pill.pads: known parts only, each once, eight at most, the owner's order.
+-- Not a list at all → the default eight; an empty list is an empty board.
+function M.pads(list)
+    local parts = require("lib/pillpads")
+    if type(list) ~= "table" then list = parts.DEFAULT end
+    local out, seen = {}, {}
+    for _, id in ipairs(list) do
+        if #out >= 8 then break end
+        if type(id) == "string" and parts.get(id) and not seen[id] then out[#out + 1] = id; seen[id] = true end
     end
     return out
 end
