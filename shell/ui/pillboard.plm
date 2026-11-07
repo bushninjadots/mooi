@@ -128,6 +128,16 @@ library PillBoard {
         on press b { emit go(n) }
     }
 
+    // D203: one room on the rail — a tick under the header, wide and lit for the room showing; a press
+    // jumps straight to it (the wheel and ↑ ↓ turn one at a time)
+    component PkRailTick(x: number, i: number, on: bool, acc: color, dim: color) {
+        size: 9, 14
+        zone box rt { from: x - 2, 20; size: 9, 14; cursor: pointer; role: button; label: "Go to this room" }
+        box { from: if(on, x - 0.5, x), if(on, 24, 26); size: if(on, 5, 4), if(on, 5, 2); corner: 1
+              color: mix(dim, acc, if(on, 1, rt.hover)); opacity: if(on, 0.95, 0.4 + 0.55 * rt.hover) }
+        on press rt { emit pk_go(i) }
+    }
+
     // The song's progress: pressed, it seeks
     // D201: the music's timeline (Cue's: a hairline that thickens under the pointer, the played part lit,
     // a head), anywhere: from x0 at y, w long; a press seeks
@@ -572,7 +582,7 @@ library PillBoard {
                     // ── the header ──
                     text pick(pk_music, "NOW", "NOW PLAYING") { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and not pk_peek and pk_room < 0.5 }
                     text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS", "VISUALISER", "ACTIONS", "DIAGNOSTICS", "WORKSPACES", "WALLPAPER", "STASH", "FIND", "NOTES") {
-                        at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room > 0.5 }
+                        at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(acc, fl.phos, 0.6 * pk_turn_f); show: not pk_edit and pk_room > 0.5 }
                     text "EDIT THE PILL" { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: pk_edit }
                     // the moons, docked: what else is happening, a press shows its room
                     let nm = if(moon_k0 > -0.5, 1, 0) + if(moon_k1 > -0.5, 1, 0) + if(moon_k2 > -0.5, 1, 0) + if(moon_k3 > -0.5, 1, 0)
@@ -585,6 +595,18 @@ library PillBoard {
                             PkLink(488, 70, "◂ NOW", false, pk_back, 0, acc, dim) }
                     group { show: not pk_edit and not pk_peek
                             PkLink(562, 64, "✎ EDIT", false, pk_edit_cmd, 0, acc, dim) }
+                    // D203: the rail — every room a tick, the one showing lit and wide, a press jumps there,
+                    // and the count says where in the wheel you are. ↑ ↓ (or the wheel) turn it one at a time.
+                    group { show: not pk_edit and not pk_peek
+                        repeat i in 0..17 { PkRailTick(18 + i * 8, i, pk_room > i - 0.5 and pk_room < i + 0.5, acc, fl.trace_dim) }
+                        text "{pk_room + 1, 0}/{pk_rn, 0}" { at: 18 + pk_rn * 8 + 6, 26; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim } }
+                    // D203: the turn's light — a lit hairline under the header, drawn from the side the turn
+                    // came from, then folded back; the title brightens with it
+                    group { show: not pk_edit and not pk_peek and not pill_still and pk_turn_f > 0.01
+                        glow: 6, (0.5 * (1 - pk_turn_f)) * st_glow, acc
+                        box { from: if(pk_turn_dir > 0, 18, 622 - 604 * pk_turn_f), 31.5
+                              size: 604 * pk_turn_f, 1.5; corner: 0.75; color: mix(acc, fl.phos, 0.35)
+                              opacity: 0.85 * (1 - 0.55 * pk_turn_f) } }
 
                     // ── the core ──
                     // D188: as tall as the room needs (pk_ch); the pads ride under it

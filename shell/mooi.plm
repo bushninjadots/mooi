@@ -1183,6 +1183,13 @@ scene Mooi {
     fact pk_sw = 0
     fact pk_sh = 0
     fact pk_mn = 0
+    // D203: the rooms on a rail — how many there are, and the turn's light (the logic says which way it
+    // went and how long it lives; the scene sweeps the lip from that side while it is on)
+    fact pk_rn = 17
+    fact pk_turn_dir = 1
+    fact pk_turn_on = false
+    prop pk_turn_f = 0 ~m.isl_out
+    follow pk_turn_f = if(pk_turn_on, 1, 0)
     fact pk_peek = false
     prop pk_mv = 0 ~m.morph
     follow pk_mv = pk_mn
@@ -1256,6 +1263,7 @@ scene Mooi {
     event pk_back ->           // to the logic: back to Now
     event pk_go ->             // to the logic: room n
     event pk_scroll ->         // to the logic: the wheel over the board: the next room
+    event pk_turn ->           // D203: to the logic: the next room (1) or the one before (-1); ↑ ↓
     event pk_ws ->             // to the logic (D171): go to workspace n
     event pk_term ->           // to the logic: the drop terminal, out or away
     event pk_wp_scroll ->      // to the logic: the wallpaper strip moves
@@ -6091,6 +6099,8 @@ scene Mooi {
     on key Left while open == board { emit pk_key(0) }
     on key Right while open == board { emit pk_key(1) }
     on key Return while open == board { emit pk_key(2) }
+    on key Up while open == board { emit pk_turn(-1) }     // D203: the rooms, one at a time
+    on key Down while open == board { emit pk_turn(1) }
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,
     // Ctrl+M, Ctrl+Z, F2, Menu, Shift+F10, Escape — Enter is its submit.

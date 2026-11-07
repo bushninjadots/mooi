@@ -67,6 +67,7 @@ return function(ctx)
     local function publish()
         pads = pillmod.pads(pill_settings().pads)
         fact.pk_n = #pads
+        fact.pk_rn = #parts.ROOMS      -- D203: the rail's length (a tick per room)
         for i = 0, 7 do fact["pk_k" .. i] = pads[i + 1] and parts.index(pads[i + 1]) or -1 end
         local sel = -1
         local r = fact.pk_room or 0
@@ -479,13 +480,32 @@ return function(ctx)
     -- D202: the names come from the room catalogue (lib/pillpads.ROOM_NAME) — one list, not two
     local NAMES = {}
     for i, r in ipairs(parts.ROOMS) do NAMES[i - 1] = parts.ROOM_NAME[r] or r end
-    on("pk_scroll", function(v)
-        local d = (tonumber(v) or 0) > 0 and -1 or 1
-        local r = ((fact.pk_room or 0) + d) % #parts.ROOMS
+    -- D203: a turn's light — which way it went, and a short life, so the scene can sweep the board's lip
+    -- from that side. A newer turn outlives the older one's timer (it would otherwise cut the new one short).
+    local turn_seq = 0
+    local function sweep(d)
+        turn_seq = turn_seq + 1
+        local mine = turn_seq
+        fact.pk_turn_dir = (tonumber(d) or 1) < 0 and -1 or 1
+        fact.pk_turn_on = true
+        after(320, function() if mine == turn_seq then fact.pk_turn_on = false end end)
+    end
+    -- D203: the next room round the wheel (d +1 forward, -1 back), named by BMO as it goes
+    local function turn(d)
+        local n = #parts.ROOMS
+        sweep(d)
+        local r = (((fact.pk_room or 0) + d) % n + n) % n
         room(r)
         if P.bmo() then P.say(NAMES[r]) end
+    end
+    on("pk_turn", function(v) turn((tonumber(v) or 1) < 0 and -1 or 1) end)
+    on("pk_scroll", function(v) turn((tonumber(v) or 0) > 0 and -1 or 1) end)
+    on("pk_go", function(v)
+        local r = math.floor(tonumber(v) or 0)
+        local cur = fact.pk_room or 0
+        if r ~= cur then sweep(r > cur and 1 or -1) end
+        room(r)
     end)
-    on("pk_go", function(v) room(math.floor(tonumber(v) or 0)) end)
     -- a docked moon: its activity's room
     on("pk_chip", function(v)
         local now = P.now()

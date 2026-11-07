@@ -5194,11 +5194,11 @@ do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
     test("the board's events reach the logic", function()
         local plm = read("shell/mooi.plm")
-        for _, ev in ipairs({ "pk_pad", "pk_hover", "pk_back", "pk_go", "pk_chip", "pk_key", "pk_edit_cmd", "pk_part", "pk_face", "pk_sig_clear", "pill_rpress", "pill_rmoon" }) do
+        for _, ev in ipairs({ "pk_pad", "pk_hover", "pk_back", "pk_go", "pk_turn", "pk_chip", "pk_key", "pk_edit_cmd", "pk_part", "pk_face", "pk_sig_clear", "pill_rpress", "pill_rmoon" }) do
             assert(plm:find("event " .. ev .. " ->", 1, true), ev .. " is declared with ->")
         end
         local lua = read("shell/pillboard.luau")
-        for _, ev in ipairs({ "pk_pad", "pk_hover", "pk_back", "pk_go", "pk_chip", "pk_key", "pk_edit_cmd", "pk_part", "pk_face", "pk_sig_clear" }) do
+        for _, ev in ipairs({ "pk_pad", "pk_hover", "pk_back", "pk_go", "pk_turn", "pk_chip", "pk_key", "pk_edit_cmd", "pk_part", "pk_face", "pk_sig_clear" }) do
             assert(lua:find('on("' .. ev .. '"', 1, true), ev .. " is heard")
         end
         local bar = read("shell/bar.luau")
@@ -5396,6 +5396,27 @@ do
         b.api.press("left", "idle")
         b.h.pk_scroll(-1); eq(b.fact.pk_room, 1, "down: the next")
         b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, #require("lib/pillpads").ROOMS - 1, "up from Now: round to the last room")
+    end)
+    test("D203: the room rail — a tick per room, a jump, ↑↓ and the wheel, the light from its side", function()
+        local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+        local b = board(S())
+        local PP = require("lib/pillpads")
+        b.api.press("left", "idle")
+        eq(b.fact.pk_rn, #PP.ROOMS, "a tick for every room")
+        b.h.pk_go(3); eq(b.fact.pk_room, 3, "a tick jumps straight there")
+        eq(b.fact.pk_turn_dir, 1); eq(b.fact.pk_turn_on, true, "the light runs forward")
+        b.h.pk_turn(-1); eq(b.fact.pk_room, 2); eq(b.fact.pk_turn_dir, -1, "↑ turns back, and says so")
+        b.h.pk_go(0); b.h.pk_turn(-1); eq(b.fact.pk_room, #PP.ROOMS - 1, "back from Now: the last room")
+        b.h.pk_turn(1); eq(b.fact.pk_room, 0, "and on round to Now")
+        b.h.pk_scroll(1); eq(b.fact.pk_room, #PP.ROOMS - 1, "the wheel still turns one at a time")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("on key Up while open == board { emit pk_turn(-1) }", 1, true), "↑ turns back")
+        assert(plm:find("on key Down while open == board { emit pk_turn(1) }", 1, true), "↓ turns on")
+        assert(plm:find("follow pk_turn_f = if(pk_turn_on, 1, 0)", 1, true), "the light is a spring")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("component PkRailTick", 1, true) and ui:find("on press rt { emit pk_go(i) }", 1, true), "a tick jumps")
+        assert(ui:find("repeat i in 0..17 { PkRailTick", 1, true), "the rail is drawn once per room")
+        assert(ui:find("622 - 604 * pk_turn_f", 1, true), "and the light comes from the side it went")
     end)
     test("the keyboard walks the pads and presses one", function()
         local b = board(S())

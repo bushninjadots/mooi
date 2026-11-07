@@ -13,7 +13,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
   see docs/AUDIT-2026-11-06.md, G1).
 - `bin/mooi check` compiles every scene by enumeration (13, including `mooi-lock.plm`) and runs
   `tests/gate.sh`; CI runs the same gate where Pleamar is not needed. On 2026-11-07 the gate passed:
-  **606 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
+  **607 unit tests, 0 failed; 27 BMO tests, 0 failed; 14 scenes compile; Pleamar 0.7.11 · language
   0.9**.
 - The generators (`tools/gen-settings.py`, `tools/gen-frame.py`) are deterministic and CI fails if
   their output differs from the committed scenes.
@@ -22,7 +22,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 
 | Area | Last verified | Evidence |
 | --- | --- | --- |
-| Unit + BMO suites | 2026-11-07 | `tests/gate.sh`: 606 unit + 27 BMO, 0 failed |
+| Unit + BMO suites | 2026-11-07 | `tests/gate.sh`: 607 unit + 27 BMO, 0 failed |
 | Scene compilation (all 14) | 2026-11-07 | `bin/mooi check`, exit 0 (gate green: 606 unit + 27 BMO) |
 | Generator determinism | 2026-11-06 | run on a `/tmp` copy, no diff |
 | The bar's chassis, styles and attach (every shape × outline × frame × swell; every style; Pill mode) | 2026-11-06 | `tests/chassis.sh`, 190 checks, 0 failed (D167, D168) |
@@ -45,6 +45,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | Loom / Fold Phase 3: the Cube — rules, projection, keys K/J, partial unfold; BMO centred; keys applied at start (D197) | 2026-11-07 | unit 600/0; fold, unfold, turn, partial checked live on a test copy |
 | The Pill's music as Cue draws it, the Notes room, four pads that open rooms (D201) | 2026-11-07 | unit 606/0, 14 scenes compile; not yet seen live (needs the desk and a player) |
 | The Pill's audit: dead surface pruned, one height, board-open hiding, peek rows, room names (D202) | 2026-11-07 | unit 606/0, BMO 27/0, 14 scenes compile, settings regenerated; the live suite not re-run |
+| The board's rooms on a rail: direct jumps, ↑↓ turning, the turn's light (D203) | 2026-11-07 | unit 607/0, 14 scenes compile; not yet seen live |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |
 

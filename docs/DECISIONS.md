@@ -5717,3 +5717,21 @@ G4); the summaries follow the commit messages._
   never-touched sleep test and a room-name invariant), BMO 27 / 0, settings regenerated. Not run: the live
   `tests/pill.sh`, and scene compilation (no Pleamar here).
 
+## D203 · 2026-11-07 · The board's rooms on a rail: jump, turn, and see where you are
+
+- **The rail.** The board had seventeen rooms reachable only by wheeling through them one at a time, and
+  nothing said which one you were on. The header now carries a tick per room — the one showing wide and lit,
+  the others the trace's dim — and a count (`3/17`) beside them. A press on a tick jumps straight to that
+  room (`pk_go`), so nothing has to be wheeled past to be found.
+- **↑ ↓ turn the rooms** (`pk_turn`, `lib/pillboard`), one at a time and round, with BMO naming each as it
+  arrives; ← → still walk the pads and ↵ presses one, and the wheel turns the same way it did. The rail
+  hides in the editor and in the peek, where the board has other work.
+- **The turn has a light.** A hairline under the header draws out from the side the turn came from — forward
+  from the left, back from the right — and folds away in about 200 ms (`m.isl_out`), the room's title
+  brightening with it. The logic sets the direction and a 320 ms life (`fact.pk_turn_on`, `pk_turn_dir`), the
+  scene follows it with one spring (`pk_turn_f`), so a run of turns retargets the same spring instead of
+  stacking effects. The sweep is hidden in edit and peek, and holds still under reduced motion
+  (`pill_still`), where the room still changes without the travel.
+- Checks: unit 607 / 0, 14 scenes compile (`bin/mooi check`, 2026-11-07). Not yet seen live: the rail's
+  jumps and the turn's light need the desk. The wheel and the pads were already driven there (D170).
+
