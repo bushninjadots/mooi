@@ -1441,7 +1441,7 @@ case "$cmd" in
     # Super + wheel (D171): the bar decides — on a pill it turns the views, elsewhere the workspace;
     # with no bar to ask, the workspace as Hyprland did
     wheel) "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}" >/dev/null 2>&1 \
-               || hyprctl dispatch workspace "e$( [ "${1:-1}" -lt 0 ] && echo - || echo + )1" >/dev/null ;;
+               || hyprctl dispatch "hl.dsp.focus({ workspace = \"e$( [ "${1:-1}" -lt 0 ] && echo - || echo + )1\" })" >/dev/null ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
     wallpaper|walls) # the wallpaper picker (D145): mooi-walls, the strip and the colour orbit
         running || { echo "mooi is not running; start it first" >&2; exit 1; }

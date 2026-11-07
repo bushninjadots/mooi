@@ -217,6 +217,17 @@ function M.press(main, face, button, osd)
     return { kind = "board", room = room }
 end
 
+-- The wheel's next workspace: one step along 1..count (the ones the bar shows), round the ends; past the
+-- count it comes back in at 1 (or count going back). `e+1` moved only between workspaces that exist, so
+-- with one Super + wheel went nowhere (2026-11-07).
+function M.ws_step(active, d, count)
+    count = math.max(1, math.floor(tonumber(count) or 1))
+    active = math.floor(tonumber(active) or 1)
+    d = (tonumber(d) or 1) < 0 and -1 or 1
+    if active > count then active = d > 0 and 0 or count + 1 elseif active < 1 then active = d > 0 and 0 or count + 1 end
+    return (active - 1 + d) % count + 1
+end
+
 -- D170 (review I2): the readers Pill mode needs although their modules are not on the bar: the pads',
 -- the face's, and the weather Now shows. Returns a set of reader ids (resources, weather, bandwidth, keyboard).
 function M.needs(p)

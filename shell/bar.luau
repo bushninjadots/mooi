@@ -27,6 +27,7 @@ return function(ctx)
     -- The Pill (D168): what happens, noted for lib/pill; its own clock (a quarter-second tick, only
     -- doing anything in Pill mode), what it last showed, and where it sits
     local pillmod = require("lib/pill")
+    local hypr = require("lib/hypr")      -- Hyprland's Lua dispatch
     local pillface = require("lib/pillface")     -- D169: BMO's face, when the Pill shows it
     local pst, pill_ms, pill_now = pillmod.state(), 0, nil
     local face_st, face_said = pillface.new("happy"), ""
@@ -40,6 +41,7 @@ return function(ctx)
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
     local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
     local pill_face_was = nil                -- D171: a new face chosen drops the view the wheel turned to
+    local pill_ws_step                       -- the wheel's next workspace (defined with the handlers)
     local pill_api               -- D170: what the board needs from the Pill (defined at the end)
 
     -- ── Layout ─────────────────────────────────────────────────
@@ -301,6 +303,15 @@ return function(ctx)
         local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
         if id and pill_board then pill_board.press("left", id) end
     end)
+    -- the next workspace along the ones the bar shows (lib/pill.ws_step), from the one Hyprland is on
+    pill_ws_step = function(d)
+        run("hyprctl", { "-j", "activeworkspace" }, function(out)
+            local ok, w = pcall(json.decode, out or "")
+            local id = ok and type(w) == "table" and tonumber(w.id) or 1
+            local n = pillmod.ws_step(id, d, ctx.space_count and ctx.space_count() or 4)
+            run("hyprctl", { "dispatch", hypr.go_workspace(n) })
+        end)
+    end
     -- D171: Super + wheel (`mooi wheel`): over a pill, its next view; elsewhere, the workspace
     on("pill_superwheel", function(v)
         local d = (tonumber(v) or 1) < 0 and -1 or 1
@@ -310,7 +321,7 @@ return function(ctx)
             pill_view_at = pill_ms
             note("peek", {})
         else
-            run("hyprctl", { "dispatch", "workspace", d > 0 and "e+1" or "e-1" })
+            pill_ws_step(d)
         end
     end)
     -- D171: Super (`mooi pill`): the Pill comes back (the dot opens); called again within a moment, the board

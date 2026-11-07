@@ -8,6 +8,7 @@
 local pillmod = require("lib/pill")
 local parts = require("lib/pillpads")
 local calendar = require("lib/calendar")
+local hypr = require("lib/hypr")
 
 -- what BMO says when a pad is pointed at
 local WORDS = { volume = "sound!", brightness = "so bright", network = "wi-fi", bluetooth = "bluetooth",
@@ -194,19 +195,15 @@ return function(ctx)
     -- D171: the Workspaces room switches; the Actions room's drop terminal; the Wallpaper strip
     on("pk_ws", function(v)
         local n = math.floor(tonumber(v) or 0)
-        if n >= 1 then run("hyprctl", { "dispatch", "workspace", tostring(n) }) end
+        if n >= 1 then run("hyprctl", { "dispatch", hypr.go_workspace(n) }) end
     end)
     on("pk_term", function()
         run("hyprctl", { "-j", "clients" }, function(out)
             if tostring(out or ""):find('"class": "mooi-drop"', 1, true) then
-                run("hyprctl", { "dispatch", "closewindow", "class:mooi-drop" })
+                run("hyprctl", { "dispatch", hypr.close_class("mooi-drop") })
             else
-                local s = ctx.settings()
-                local size = type(s.pill) == "table" and s.pill.term_size or nil
-                local w, h = 960, 420
-                if type(size) == "table" then w, h = tonumber(size[1]) or w, tonumber(size[2]) or h end
-                local x = math.max(8, math.floor((fact.pill_x or 900) + (fact.pill_w or 120) / 2 - w / 2))
-                run("hyprctl", { "dispatch", "exec", string.format("[float; size %d %d; move %d %d; pin] kitty --class mooi-drop", w, h, x, 54) })
+                -- floating, pinned, a fixed size: its window rule (mooi's Hyprland file, class mooi-drop)
+                run("hyprctl", { "dispatch", hypr.exec("kitty --class mooi-drop") })
             end
         end)
         close()

@@ -5612,7 +5612,7 @@ do
     test("workspaces: a press switches; actions: the drop terminal toggles", function()
         local b = board({ pill = {} })
         b.api.press("left", "idle")
-        b.h.pk_ws(3); assert(b.ran[#b.ran]:find("hyprctl dispatch workspace 3", 1, true))
+        b.h.pk_ws(3); assert(b.ran[#b.ran]:find('hyprctl dispatch hl.dsp.focus({ workspace = "3" })', 1, true), "Hyprland's Lua form")
         b.h.pk_term(); assert(b.ran[#b.ran]:find("mooi-drop", 1, true), "the terminal, by its class")
     end)
     test("wallpaper: the strip moves with the wheel, a press wears it", function()
@@ -5690,11 +5690,15 @@ do
         assert(hl:find('hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1")', 1, true))
         local sh = read("bin/mooi")
         assert(sh:find('wheel) "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}"', 1, true), "asks the bar")
-        assert(sh:find('|| hyprctl dispatch workspace "e$(', 1, true), "no bar: the workspace, as before")
+        assert(sh:find('|| hyprctl dispatch "hl.dsp.focus({ workspace', 1, true), "no bar: the workspace (Hyprland's Lua form)")
         local bar = read("shell/bar.luau")
         local h = bar:match('on%("pill_superwheel", function%(v%)(.-)\n    end%)')
         assert(h and h:find("if pill_hovering and fact.pill_on", 1, true), "on a pill")
-        assert(h:find('"dispatch", "workspace"', 1, true), "elsewhere")
+        assert(h:find("pill_ws_step(d)", 1, true), "elsewhere: the workspace")
+        -- e+1 only moves between workspaces that exist: with one, Super + wheel went nowhere (2026-11-07)
+        assert(h:find("pill_ws_step(d)", 1, true), "steps within the workspaces the bar shows")
+        local B = require("lib/pill")
+        eq(B.ws_step(2, 1, 4), 3); eq(B.ws_step(4, 1, 4), 1, "round"); eq(B.ws_step(1, -1, 4), 4); eq(B.ws_step(9, 1, 4), 1, "past the count: back to 1")
     end)
 end
 
@@ -5733,6 +5737,31 @@ do
         api.call("idle"); eq(env.fact.open, "none", "again: it closes (no poke)"); eq(poked, 0)
         local bar = read("shell/bar.luau")
         assert(bar:find("pill_board.call(pill_now and pill_now.main or \"idle\")", 1, true))
+    end)
+end
+
+section("Hyprland's Lua dispatch (2026-11-07)")
+do
+    local H = require("lib/hypr")
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the workspace, a command and a window by class, as Lua (`hyprctl dispatch workspace 3` is refused)", function()
+        eq(H.go_workspace(3), 'hl.dsp.focus({ workspace = "3" })')
+        eq(H.go_workspace("e+1"), 'hl.dsp.focus({ workspace = "e+1" })')
+        eq(H.exec('kitty --class mooi-drop'), 'hl.dsp.exec_cmd("kitty --class mooi-drop")')
+        eq(H.exec('say "hi"'), 'hl.dsp.exec_cmd("say \\"hi\\"")', "quotes escaped")
+        eq(H.close_class("mooi-drop"), 'hl.dsp.window.close({ window = "class:mooi-drop" })')
+    end)
+    test("no caller sends the old form", function()
+        for _, f in ipairs({ "shell/bar.luau", "shell/pillboard.luau" }) do
+            local src = read(f)
+            assert(not src:find('{ "dispatch", "workspace"', 1, true), f .. ": old workspace form")
+            assert(not src:find('{ "dispatch", "exec"', 1, true), f .. ": old exec form")
+            assert(not src:find('{ "dispatch", "closewindow"', 1, true), f .. ": old close form")
+        end
+        local sh = read("bin/mooi")
+        assert(not sh:find('hyprctl dispatch workspace "e', 1, true), "bin/mooi's wheel fallback")
+        local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
+        assert(hl:find('match = { class = "^(mooi%-drop)$" }', 1, false) or hl:find('match = { class = "^(mooi-drop)$" }', 1, true), "the drop terminal's rule")
     end)
 end
 

@@ -93,6 +93,14 @@ if type(cfg.look) == "string" and cfg.look ~= "" then
 end
 
 --- mooi's settings window floats, centred, at its own size
+-- the Pill's drop terminal (D171): floating, pinned, a fixed size near the top
+hl.window_rule({
+    match = { class = "^(mooi-drop)$" },
+    float = true,
+    pin = true,
+    size = "960 420",
+    move = "480 54",
+})
 hl.window_rule({
     match = { title = "^(mooi · settings)$" },
     float = true,

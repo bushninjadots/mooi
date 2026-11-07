@@ -23,6 +23,13 @@ local function target(address)
     return 'window = "address:' .. address .. '"'
 end
 
+-- Hyprland's Lua config takes dispatch as Lua (`hyprctl dispatch workspace 3` is refused): a workspace
+-- to go to, a command to run, a window to close by its class (2026-11-07).
+local function quoted(s) return '"' .. tostring(s):gsub("\\", "\\\\"):gsub('"', '\\"') .. '"' end
+function M.go_workspace(n) return 'hl.dsp.focus({ workspace = ' .. quoted(n) .. ' })' end
+function M.exec(cmd) return 'hl.dsp.exec_cmd(' .. quoted(cmd) .. ')' end
+function M.close_class(class) return 'hl.dsp.window.close({ window = ' .. quoted("class:" .. class) .. ' })' end
+
 -- The Lua expression for `hyprctl dispatch`, or nil and why.
 function M.dispatch(action, address, opts)
     opts = opts or {}
