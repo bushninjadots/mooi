@@ -37,6 +37,22 @@ bar module**; and for **BMO's real face** — expressions, blinking and everythi
   **Keyboard:** ←→ across the pads, ↵ presses one, Esc backs out.
 - Size: 640 × 356 (the core 592 × 172); edit mode (§4) adds the parts bin below.
 
+## 2a. Two at once, when it unfolds (moons, satellites, split, nodes)
+
+`pill.multi` and `pill.moons` keep their meaning: they are how the **closed** Pill shows more than one
+activity (D168, D169). When the board unfolds, what was beside the Pill comes **into** it:
+
+- **Satellites:** the moons glide in and dock at the ends of the lip as small chips (glyph and a word),
+  one each side, then alternating, so the lip still says everything that is happening.
+- **Split:** the second half becomes the lip's chip on its side; the core opens on the first half.
+- **Nodes:** as satellites, and the node traces that hung the moons off the Pill carry on into the board:
+  each docked chip is wired down into the core, so the closed circuit becomes the open one.
+- Pressing a docked chip re-routes the core to that activity's room. Closed, a moon press still pins it
+  as main for 6 s; a right press on a moon opens the board straight onto its room.
+- Settings → The Pill is regrouped: **Closed** (with the side groups · face · hide when idle · two at
+  once · moons at most · what may take it) and **Open** (pads — "Edit on the board" opens it in edit mode,
+  and the list as rows · visualiser HALO/RIVER).
+
 ## 3. Music: the board plays
 
 - While something plays the board **plays it**: every trace carries a pair of the sixteen bands
