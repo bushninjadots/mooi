@@ -7292,5 +7292,16 @@ do
     end)
 end
 
+section("the sigil: running")
+test("mooi: sigil respawn gives up after five and the bar falls back", function()
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    local m = read("shell/mooi.luau")
+    assert(m:find("function sigil_sync()", 1, true), "spawned like the frame")
+    assert(m:find('on("sigil_ready"', 1, true), "it says when it is up")
+    assert(m:find("sigil · gave up after five quick ends", 1, true))
+    assert(read("bin/mooi"):find("mooi-sigil.plm:the Sigil", 1, true), "compiled with the others")
+    assert(read("shell/ui/pill.plm"):find("sigil_mode and not sigil_up", 1, true), "the plain clock")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

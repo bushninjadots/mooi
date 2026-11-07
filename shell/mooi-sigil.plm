@@ -1,0 +1,9 @@
+language 0.9
+
+// The Sigil (D207): stub until tools/gen-sigil.py generates the scene (plan task 8).
+scene Sigil {
+    permissions {
+        run: "pleamar"
+        services: "files"
+    }
+}

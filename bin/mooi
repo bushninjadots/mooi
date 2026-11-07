@@ -1041,6 +1041,7 @@ mooi-walls.plm:the wallpaper picker
 mooi-viz.plm:the visualisers
 mooi-lock.plm:the lock screen
 mooi-loom.plm:Loom / Fold
+mooi-sigil.plm:the Sigil
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
