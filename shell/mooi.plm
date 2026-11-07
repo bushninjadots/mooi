@@ -1126,7 +1126,6 @@ scene Mooi {
     fact pill_kind = 0           // 0 idle · 1 music · 2 osd · 3 notify · 4 record · 5 battery
     fact pill_glyph = 0          // 0 idle · 1 music · 2 vol · 3 bri · 4 notify · 5 record · 6 low · 7 charging
     fact pill_val = 0
-    fact pill_two = false
     text pill_t1 = ""
     text pill_t2 = ""
     fact pill_split = false
@@ -1226,6 +1225,11 @@ scene Mooi {
     // D178: the Pill's search (the forms it can open, lib/pillfind) and its stash (the left edge's box,
     // drawn in the board too)
     text pk_q = ""
+    // D201: a new cover resolves out of pixels in the Pill's music view (bar.luau counts the covers)
+    fact pk_cov_n = 0
+    prop pk_dis = 0 ~m.isl_out
+    follow pk_dis = pk_cov_n
+    text pk_qn = ""             // D201: the Notes room's field (shell/notes.luau hears it)
     fact pk_find_n = 0
     model pk_finds max 5 { n: number; name: text; sub: text; tag: text; k: number }
     // the networks the radio can see, for the internet panel (shell/pillboard.luau reads the service)
@@ -1242,7 +1246,6 @@ scene Mooi {
     event pk_wv_scroll ->      // to the logic: the wheel over the viewer (one card along)
     event pk_wv_hover ->       // to the logic: the card under the pointer
     event pk_wv_go ->          // to the logic: go to the card's workspace
-    fact pk_viz = 0              // 0 HALO · 1 RIVER (pill.viz)
     fact pk_sig_n = 0
     text pk_date = ""
     text pk_wk = ""
@@ -1292,9 +1295,7 @@ scene Mooi {
     event pk_edit_cmd ->       // to the logic: 0 edit on/off · 10+i take pad i off · 20+i move it left · 30+i right
     event pk_part ->           // to the logic: part n (the bar's module order) onto the board
     event pk_face ->           // to the logic: face n (lib/pill.FACES)
-    event pk_viz ->            // to the logic: HALO ⇄ RIVER
     event pk_slot ->           // D188: to the logic: editing, pad slot n chosen (an empty one too)
-    event pk_peek_hover ->     // D188: to the logic: the pointer on the peek card (1) or off it (0)
     event pk_rev ->            // D191: to the logic: a reveal item pressed — the board on room n
     event pk_peek_open ->      // D188: to the logic: the peek pressed — the whole board
     event pk_etab ->           // D188: to the logic: the editor's tab — 0 pads · 1 face
@@ -1307,10 +1308,9 @@ scene Mooi {
     event loom_unpark ->       // to the logic (D194): every parked window back (`mooi loom unpark`)
     event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
     fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
-    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot · 3 record (pill.shape)
+    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot (pill.shape)
     text pill_alert = ""       // D171: the newest signal, for the Alerts face at full detail
     fact pill_alert_on = false // D171: there is one
-    fact pill_record = false   // D172: the disc (pill.shape = record), the song's cover its label
     fact pill_still = false    // D172: reduced motion (motion.reduced, the saver): the record holds still
     // D173: the Pill feels the pointer — a warmth behind the capsule, the dot leaning toward it — and a
     // half disc turns once when the workspace changes (or the wheel turns its view)
@@ -1361,7 +1361,7 @@ scene Mooi {
     fact pc3_g = 0.14
     fact pc3_b = 0.15
     prop pill_pulse = 0
-    spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)
+    spin pill_pulse by if(pill_hidden and pill_shape > 1.5 and not pill_still, 140, 0)   // D202: still holds still
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false
@@ -1401,7 +1401,7 @@ scene Mooi {
     spin pb_t by if(pill_still, 0, if(pb_sing, 90, if(pb_mark > 0.5 or pb_asleep, 40, 0)))
     prop pb_cur = 1
     blink pb_cur every 0.5s..0.5s for 250ms
-    fact pill_h = 24             // D170: the Pill's height (taller with BMO's face)
+    fact pill_h = 24             // D170: the Pill's height (the bar's module height, one capsule)
     prop pb_sqlf = 0 ~m.isl_out
     follow pb_sqlf = pb_sql
     prop pb_sqrf = 0 ~m.isl_out
@@ -1492,7 +1492,7 @@ scene Mooi {
     prop rv.board = 0 ~m.enter
     // the music island's record (D142): it turns while the song plays and the island is open
     prop mu_spd = 0 ~600ms
-    follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music) or pill_record), 120, 0)
+    follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)
     prop mu_ang = 0
     spin mu_ang by mu_spd
     prop med_prg = 0 ~500ms

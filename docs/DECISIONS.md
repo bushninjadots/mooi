@@ -5661,3 +5661,59 @@ G4); the summaries follow the commit messages._
   linking, hopping and the threads need windows on the owner's own workspace and their focus.
 - Found: a settings window open during a refresh that adds settings can end once (its logic reloads before
   its scene); reopening it is fine.
+## D201 · 2026-11-07 · The Pill's music as Cue draws it; notes get a room, and a pad can open one
+
+- **The music view is Cue's.** The board's Now room dropped the record in its halo and RIVER's ribbon for
+  Cue's arrangement: the cover at 112 px, a light behind it in the cover's own colours (two ellipses that
+  breathe with the bass), the spectrum as two dotted wings — six columns a side, each dot lit from the middle
+  out by its band — the words in a column beside it, and a floating dock carrying the timeline (a hairline
+  that thickens under the pointer, the played part lit, a head), the transport (previous · play or pause, the
+  large one · next) and the volume chip. A new cover resolves out of an 8 × 8 grid of pixels, each in its
+  turn (`shell/bar.luau` counts the covers, `pk_cov_n`; `pk_dis` follows it), and the cover leans toward the
+  pointer up to 5° — never under reduced motion.
+- **The song's colours, in Pill mode.** `tint_for` used to run only while `pill.shape = record`; the record
+  disc is gone (D188, and D202 removes its remains), so the bar now reads the cover's colours whenever
+  `bar.mode = pill` — which is what the music view's light is mixed from (`pc1…pc3`).
+- **The HALO/RIVER choice has no view left to choose.** The two buttons left the editor and the music view;
+  the stored `pill.viz` is dropped quietly by `lib/config.migrate` (D202) and is no longer settable, so the
+  setter codes after it do not shift.
+- **Notes have a room** (the seventeenth, after the stash and the search): the same notes as the bar's pad —
+  `shell/notes.luau` hears `pk_qn` and `submit:pk_qn` as well as the pad's field — written in a field at the
+  room's top, the newest four listed with copy · pin · done · forget, the count above and a line naming what
+  a press does. `pill.right = notes` opens this room instead of the bar's pad.
+- **A pad can open a room.** `power`, `actions`, `core` and `notes` used to leave the board and call something
+  else (`open_window`, `open_command`, the session menu, `qn_toggle`); `lib/pillpads.PARTS` now names a room
+  for each (`power`, `actions`, `find`, `notes`), so their press stays in the Pill like the other rooms' do.
+  The wheel's reach and the tests read `#ROOMS`, not a literal sixteen.
+- Checks: unit 606 / 0 with D202's corrections (five expectations the port left stale); `tests/pill.sh` drops
+  the record's two checks and photographs Now Playing; 14 scenes compile (`bin/mooi check`, 2026-11-07). Not
+  seen live: the new music view and the Notes room need the desk and the owner's player.
+
+## D202 · 2026-11-07 · The Pill's audit, fixed: one height, one door, one name
+
+- **The record is gone as a form.** `pill.shape = record` and its disc were already retired (D187: the
+  capsule keeps its clock and its cover); what remained was dead surface — `M.RECORD`, `cfg.disc`, the
+  chassis' record branch, `fact.pill_record`, `component Record` and its zone. An old file's
+  `shape = record` still migrates to `attached`. `pill.viz` (the board's HALO/RIVER choice, whose view is
+  Cue's since D201) is dropped quietly in `config.migrate` and is no longer settable, so the codes after it
+  do not shift.
+- **One height.** BMO's face had a second, taller Pill (`pill_tall`, `geo.pill.h`); he is a tile inside the
+  same capsule, so the chassis draws one height, `fact.pill_h` is the bar's module height, and
+  `pill_face_text` (a measured face width) went with it — a face's width is the one its `FACE_W` names.
+- **Never hidden while its own board is open.** The bar only turned `autohide` off; `lib/pill.compute` now
+  reads `cfg.board` and refuses to tuck, vanish or hide while it is true, so the rule lives in the state
+  machine and is tested there rather than in the bar.
+- **The peek's width follows its rows.** `pillboard.rows()` re-shapes the card when the bar re-lays the
+  peek's rows (`pr_peek_w`), instead of resizing only when a room is entered. The zone counts of D191 are
+  gone: the pointer is measured from the global cursor (D198), so `pk_peek_hover` and `peek_state.card`
+  were dead and are removed.
+- **Room names have one home.** `lib/pillpads.ROOM_NAME` names every room; the board's wheel derives its
+  names from `ROOMS`, so a new room cannot lack one (the notes room, D201, had none).
+- **Smaller fixes.** BMO falls asleep from a cold start (`pillface.new(mood, now)` seeds `touched`); the
+  hidden dot's pulse obeys reduced motion; the capsule's zone says what it shows (music, a notice, a
+  recording, the battery) and the four moon zones have distinct labels; `M.glance_w` is gone — the bar
+  measures the rest row, and `M.FACE_W.glance` is only the nominal before it has.
+- Checks: unit 606 / 0 (D201's five stale expectations corrected, plus a board-open hide test, a
+  never-touched sleep test and a room-name invariant), BMO 27 / 0, settings regenerated. Not run: the live
+  `tests/pill.sh`, and scene compilation (no Pleamar here).
+

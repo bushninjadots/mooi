@@ -117,7 +117,7 @@ is "pointed at: back" "$(get pill_hidden)" false
 sleep 4.5
 is "and away again after 4 s" "$(get pill_hidden)" true
 
-echo "when idle: stay, tuck, vanish — and the record (D172)"
+echo "when idle: stay, tuck, vanish"
 set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="attached" | .pill.hide="stay" | .pill.autohide=false | .pill.off=["battery","record","notify","music","osd"]'
 pleamar --say mooi "emit pill_hover 0" >/dev/null 2>&1; sleep 0.6
 is "stay: never tucked away" "$(get pill_hidden)" false
@@ -129,17 +129,6 @@ pleamar --say mooi "emit pill_call" >/dev/null 2>&1; sleep 0.6
 is "called: back" "$(get pill_hidden)" false
 sleep 4.5
 is "and gone again after the peek" "$(get pill_hidden)/$(get pill_vanish)" true/true
-if playerctl status >/dev/null 2>&1; then
-    set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="record" | .pill.hide="stay" | .pill.autohide=false'
-    playerctl play >/dev/null 2>&1; sleep 2.5
-    is "a disc, not a capsule" "$(get pill_shape)/$(get pill_record)/$(jq -r '.pill.shape' "$D/bar-geo.json")" 3/true/record
-    w=$(get pill_w); h=$(get pill_h)
-    [ "${w%.*}" = "${h%.*}" ] && ok "the disc is square ($w × $h)" || bad "the disc is not square ($w × $h)"
-    [ -n "${SHOTS:-}" ] && grim -g "860,0 220x60" "$SHOTS/record.png"
-    playerctl -a pause >/dev/null 2>&1; sleep 1.5
-else
-    echo "  ..    no player: the record skipped"
-fi
 set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="attached" | .pill.hide="stay"'
 
 echo "nodes (D169)"
@@ -147,7 +136,7 @@ set_ '.bar.mode="pill" | .pill.multi="nodes" | .pill.autohide=false'
 is "pads on traces" "$(jq '.nodes' "$D/bar-geo.json")" true
 
 echo "the board (D170)"
-set_ '.bar.mode="pill" | .pill.sides="show" | .pill.face="time" | .pill.autohide=false | .pill.pads=["volume","clock","weather","caffeine"] | .pill.viz="halo"'
+set_ '.bar.mode="pill" | .pill.sides="show" | .pill.face="time" | .pill.autohide=false | .pill.pads=["volume","clock","weather","caffeine"]'
 playerctl -a pause >/dev/null 2>&1
 i=0; while [ "$(get pill_kind)" != 0 ] && [ $i -lt 20 ]; do sleep 0.25; i=$((i + 1)); done
 caf=$(get caffeine_on)
@@ -184,10 +173,7 @@ if playerctl status >/dev/null 2>&1; then
     playerctl play >/dev/null 2>&1; sleep 2.5
     pleamar --say mooi "emit pill_press" >/dev/null 2>&1; sleep 1.5
     is "music: Now Playing" "$(get pk_music)/$(get pk_room)" true/0
-    shot halo
-    pleamar --say mooi "emit pk_viz" >/dev/null 2>&1; sleep 1.5
-    is "the river" "$(get pk_viz)" 1
-    shot river
+    shot now_playing
     pleamar --say mooi "fact open none" >/dev/null 2>&1
     playerctl -a pause >/dev/null 2>&1
 else

@@ -22,14 +22,12 @@ local M = {
     -- D171: the views the wheel turns through when the owner has not chosen (pill.views), and the dot
     VIEWS_DEFAULT = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" },
     DOT = 14,
-    -- D172: the record shape's diameter when the bar does not say (cfg.disc = bar.height)
-    RECORD = 24,
     -- D171: detail full makes room for a second part (a date, hi/lo, memory, the artist…)
     FACE_W_FULL = { time = 190, weather = 230, resources = 220, media = 300, battery = 170, workspaces = 190,
                     network = 230, notifications = 260, visualiser = 170 },
 }
 M.FACE_W.visualiser = 110
-M.FACE_W.glance = 220     -- D191: nominal; the bar measures the real one (cfg.glance_w, M.glance_w)
+M.FACE_W.glance = 220     -- D191: nominal; the bar measures the real one (cfg.glance_w, lib/pillrows)
 
 local function is_face(id)
     for _, f in ipairs(M.FACES) do if f == id then return true end end
@@ -191,37 +189,17 @@ local function view(st, id, now, cfg)
     return { glyph = "idle", t1 = (cfg and cfg.face == "bmo") and (st.say or "") or "", t2 = "" }
 end
 
--- D191: the width of ArchEclipse's rest face (its PillBar "rest" row: PillDots · clock · PillChip, 14 apart,
--- 14 each side). Dots 5 px, 5 apart, the one you are on 2.4 × as wide; the clock ~46 px at 14 px; the chip
--- a music glyph, the title (≤ 150) and the artist (≤ 120) while something plays, else the battery glyph
--- and its percent — the chip's own plate 22 px wider than its row. Text measured at ~7 px a character.
-function M.glance_w(n, title, artist, pct)
-    n = math.max(1, math.min(10, math.floor(tonumber(n) or 5)))
-    local dots = n * 5 + (n - 1) * 5 + 7
-    local row
-    title = tostring(title or "")
-    if title ~= "" then
-        row = 14 + 7 + math.min(150, 7 * #title)
-        artist = tostring(artist or "")
-        if artist ~= "" then row = row + 7 + math.min(120, 6 * #artist) end
-    else
-        row = 14 + 7 + 7 * #(tostring(math.floor(tonumber(pct) or 0)) .. "%")
-    end
-    return 14 + dots + 14 + 46 + 14 + row + 22 + 14
-end
-
+-- D191/D202: the rest face's width is measured once, by lib/pillrows (the bar's `glance_w`); the nominal
+-- M.FACE_W.glance is only what it is before the bar has said.
 local function width(v, cfg)
     if not v then return 0 end
     if v.glyph == "idle" then
-        if cfg and cfg.face == "glance" then return math.floor(tonumber(cfg.glance_w) or M.glance_w(5)) end
-        -- D170: a module's face is its glyph and a short reading (the bar works it out: cfg.face_text)
+        if cfg and cfg.face == "glance" then return math.floor(tonumber(cfg.glance_w) or M.FACE_W.glance) end
+        -- D170: a module's face is its glyph and a short reading, at the width its face names
         local builtin = cfg and (cfg.face == "time" or cfg.face == "bmo" or cfg.face == "nexus")
         -- D171: the detail — icon is just the glyph (a module's face), full has room for a second part
         if cfg and not builtin and cfg.detail == "icon" and M.FACE_W[cfg.face] then return 44 end
         if cfg and cfg.detail == "full" and M.FACE_W_FULL[cfg.face] then return M.FACE_W_FULL[cfg.face] end
-        if cfg and cfg.face and not builtin and cfg.face_text then
-            return math.max(104, 44 + 7 * #tostring(cfg.face_text))
-        end
         local face = cfg and M.FACE_W[cfg.face] and cfg.face or "time"
         return M.FACE_W[face] + ((face == "bmo" and v.t1 ~= "") and (7 * #v.t1 + 16) or 0)
     end
@@ -261,20 +239,18 @@ function M.compute(st, cfg, now)
     -- D169: idle and nothing beside it, in the owner's hiding mode and not just pointed at
     local dot = cfg.shape == "dot"       -- D171: the dot hides when idle by being one
     local mode = M.hide_mode(cfg)        -- D172: stay · tuck · vanish
-    local hidden = (mode ~= "stay" or dot) and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
+    -- D170/D202: never tucked away, hidden or gone while its own board is open (the bar says so: cfg.board)
+    local hidden = (mode ~= "stay" or dot) and main == "idle" and not split and not cfg.board
+        and not fresh(st.peek, M.PEEK_MS, now)
     local vanish = hidden and mode == "vanish"
-    -- D187: the record is the capsule showing the song — its mark where the face's mark would be. With
-    -- nothing to play there is no record: the same capsule simply keeps its face (D172 had a disc here).
-    local record = cfg.shape == "record" and not hidden and not split
-        and st.media.playing == true and st.media.title ~= ""
     if hidden then
-        -- vanished is 0 px wide (the scene keeps a seam); a record tucks to its dot, not to a sliver
+        -- vanished is 0 px wide (the scene keeps a seam); the dot tucks to itself
         if vanish then w = 0
-        elseif dot or cfg.shape == "record" then w = M.DOT
+        elseif dot then w = M.DOT
         else w = M.SLIVER end
     end
-    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, w1 = w1, view = views,
-             hidden = hidden, vanish = vanish, record = record, hide = mode }
+    return { main = main, moons = moons, split = split, width = w, w1 = w1, view = views,
+             hidden = hidden, vanish = vanish, hide = mode }
 end
 
 -- ms until a timed activity ends (so the logic can look again then), or nil

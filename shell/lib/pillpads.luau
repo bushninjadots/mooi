@@ -12,7 +12,16 @@ M.ORDER = barlayout.ORDER
 -- The core's rooms, in the scene's numbering (fact pk_room).
 M.ROOMS = { "now", "calendar", "sound", "display", "connections", "power", "resources", "weather", "signals",
             "visualiser", "actions", "diagnostics", "workspaces", "wallpaper",
-            "stash", "find" }     -- D171: the first five added; D178: the stash and the search
+            "stash", "find",      -- D171: the first five added; D178: the stash and the search
+            "notes" }             -- D201: quick notes, grown out of the Pill like every room
+
+-- What each room is called when it is said aloud (the board's wheel, and BMO's line): one name per room,
+-- beside the room, so a new room cannot be added without one (D202).
+M.ROOM_NAME = { now = "now", calendar = "the month", sound = "sound", display = "display",
+                connections = "connections", power = "power", resources = "resources", weather = "weather",
+                signals = "signals", visualiser = "music!", actions = "actions", diagnostics = "diagnostics",
+                workspaces = "workspaces", wallpaper = "wallpaper", stash = "the stash", find = "find it",
+                notes = "notes" }
 
 M.DEFAULT = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" }
 
@@ -39,13 +48,13 @@ local PARTS = {
     recorder      = { act = "record", arg = 1, switch = true },
     screenshot    = { act = "shot", arg = 0, closes = true },
     clipboard     = { act = "clips", side = "clips", closes = true },
-    power         = { act = "power", arg = 0, closes = true },
-    actions       = { act = "open_window", closes = true },
+    power         = { room = "power" },          -- D201: its room, not the session menu elsewhere
+    actions       = { room = "actions" },        -- D201
     overview      = { act = "open_overview_cmd", closes = true },
-    core          = { act = "open_command", closes = true },
+    core          = { room = "find" },           -- D201: the Pill's own search
     focus         = { act = "focus_cmd", arg = 0, switch = true },
     settings      = { act = "bar_menu", closes = true },
-    notes         = { act = "qn_toggle", closes = true },
+    notes         = { room = "notes" },          -- D201: the notes grow out of the Pill
     wallpaper     = { room = "wallpaper" },      -- D171
     nexus         = { act = "open_nexus", closes = true },
     updates       = { act = "run_updates", closes = true },

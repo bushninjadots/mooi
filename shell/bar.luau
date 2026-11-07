@@ -45,8 +45,6 @@ return function(ctx)
     local cur_vol, cur_bri = nil, nil
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
     local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
-    local pill_face_text = nil   -- D170: a module face's reading (pill_face_read), for its width
-    local pill_tall = false      -- D170: BMO's face is showing: the Pill is taller
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
     local pill_idle_was = true               -- D175: the rest only runs while the Pill is idle
     local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
@@ -150,10 +148,10 @@ return function(ctx)
             local n = pill_now and #pill_now.moons or 0
             local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
             local pl = pillmod.place(env.screen, w, n, pm)
+            -- D187/D202: one capsule, one height — no face makes it taller
             geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true,
-                         shape = type(s.pill) == "table" and s.pill.shape or "attached",       -- D171
-                         h = pill_tall and math.max(40, tonumber(b.height) or 24) or nil }      -- D170: BMO's face
-            fact.pill_h = geo.pill.h or (tonumber(b.height) or 24)
+                         shape = type(s.pill) == "table" and s.pill.shape or "attached" }
+            fact.pill_h = tonumber(b.height) or 24
             geo.nodes = pm == "nodes"      -- D169: square pads on traces
             fact.pill_nodes = geo.nodes
             geo.moons = {}
@@ -186,13 +184,11 @@ return function(ctx)
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
         -- D185: do not disturb quiets the Pill too — a notice does not take it (it waits in the panel)
         if fact.dnd_now then off.notify = true end
-        -- D170: never tucked away while its own board is open
+        -- D170: never tucked away (or gone) while its own board is open — compute reads cfg.board (D202)
         return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = pill_view or p.face,
                  shape = p.shape, detail = p.detail, hide = p.hide,
-                 -- D172: the record's diameter is the bar's height; never tucked away or gone while its
-                 -- own board is open
-                 disc = tonumber(s.bar.height) or 24,
-                 autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text,
+                 autohide = p.autohide == true, max_w = pill_room,
+                 board = pill_board ~= nil and pill_board.open() == "board",
                  -- D191: ArchEclipse's rest face is as wide as its dots, the clock and its live chip
                  glance_w = bmo_fx.rest_w }        -- D199: the rest row's width (pill_rows below)
     end
@@ -224,6 +220,8 @@ return function(ctx)
         model.pr_rest, model.pr_core, model.pr_detail = out.rest.m, out.core.m, out.detail.m
         fact.pr_rest_w, fact.pr_core_w, fact.pr_detail_w = out.rest.w, out.core.w, out.detail.w
         fact.pr_peek_w = math.max(out.core.w, out.detail.w)
+        -- D202: the peek card is up and its rows just changed width — the card springs to the new one
+        if pill_board and pill_board.rows then pill_board.rows() end
         fact.pr_rest_sx, fact.pr_core_sx, fact.pr_detail_sx = out.rest.sx, out.core.sx, out.detail.sx
     end
     function pill_update()
@@ -236,7 +234,6 @@ return function(ctx)
         fact.pill_glyph = GLYPH[v.glyph] or 0
         text.pill_t1, text.pill_t2 = v.t1 or "", v.t2 or ""
         fact.pill_val = v.value or 0
-        fact.pill_two = r.two_lines
         fact.pill_split = r.split ~= nil
         if r.split then
             local sv = r.view[r.split]
@@ -262,7 +259,7 @@ return function(ctx)
         -- D186: the board's look — the wash over the bar's plate, and the edge it wears
         fact.pk_tint = ({ theme = 0, phosphor = 1, accent = 2 })[p.board_tint] or 0
         fact.pk_edge = ({ theme = 0, hairline = 1, none = 2 })[p.board_edge] or 0
-        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2, record = 3 })[p.shape] or 0
+        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2 })[p.shape] or 0
         fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         -- D188: the saved face, which the editor marks (pill_face is the one showing: a turned view)
         local si = 0
@@ -270,13 +267,10 @@ return function(ctx)
         fact.pill_face_saved = si
         fact.pill_hidden = r.hidden == true
         fact.pill_vanish = r.vanish == true      -- D172: gone, 0 px wide; the scene keeps a seam
-        fact.pill_record = r.record == true      -- D172: the disc, its cover as the label
         -- D196: the mark over BMO's head: 1 low battery (a drop), 2 charging (a bolt), 3 a notice (!)
         local b = pst.battery or {}
         fact.pb_mark = (r.main == "notify" and 3) or ((b.charging and b.percent and b.percent < 100) and 2)
                        or ((b.percent and b.percent < pillmod.LOW and not b.charging) and 1) or 0
-        -- D187: one capsule, one height. BMO's face is a tile inside it now, not a taller Pill.
-        local tall = false
         -- D181: when what it shows changes, the scene surges once — a ring out of the capsule and a
         -- flash along its top — then settles. A first read does not: the Pill is where it already was.
         local sig = pillmod.signature(r, fi)
@@ -296,11 +290,8 @@ return function(ctx)
         end
         pill_sig, pill_gst = sig, gst
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
-            or (pill_now.hidden == true) ~= (r.hidden == true) or tall ~= pill_tall
-        pill_tall = tall
+            or (pill_now.hidden == true) ~= (r.hidden == true)
         pill_now = r
-        -- D172: the record's colours, read from the song's cover the first time it shows
-        if p.shape == "record" then tint_for(art_now) end
         if changed then relayout(true) end
     end
     -- looked at again while something timed is up or has just run out (a volume change showed on after
@@ -795,6 +786,7 @@ return function(ctx)
         art_url = url
         if type(url) ~= "string" or url == "" then art_now = ""; text.med_art = ""; fact.med_has_art = false; tint_for(""); return end
         local path = coverart.path(url)
+        if path and path ~= art_now then bmo_fx.cov = (bmo_fx.cov or 0) + 1; fact.pk_cov_n = bmo_fx.cov end   -- D201: the dissolve
         if path then art_now = path; text.med_art = path; fact.med_has_art = true; tint_for(path); return end
         if coverart.remote(url) then
             -- two names in turn, so the image is a new file each time and not a cached one
@@ -802,6 +794,7 @@ return function(ctx)
             local dest = folder .. "/cover-" .. tostring(covers % 2) .. ".img"
             run("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(_, code)
                 if code == 0 and art_url == url then
+                    if dest ~= art_now then bmo_fx.cov = (bmo_fx.cov or 0) + 1; fact.pk_cov_n = bmo_fx.cov end
                     art_now = dest; text.med_art = dest; fact.med_has_art = true; tint_for(dest)
                 end
             end)
@@ -821,8 +814,10 @@ return function(ctx)
     paint_tint(nil)
     tint_for = function(cover_path)
         local s = ctx.settings()
-        local record = s.bar.mode == "pill" and type(s.pill) == "table" and s.pill.shape == "record"
-        if not record or type(cover_path) ~= "string" or cover_path == "" then paint_tint(nil); return end
+        -- D201: in Pill mode always (the music view's light is the cover's colours; the record shape that
+        -- needed them first is gone, D188)
+        local pill = s.bar.mode == "pill"
+        if not pill or type(cover_path) ~= "string" or cover_path == "" then paint_tint(nil); return end
         local have = tints[cover_path]
         if have ~= nil then paint_tint(have or nil); return end
         if tint_busy then return end
@@ -897,7 +892,7 @@ return function(ctx)
             local title = type(m.title) == "string" and m.title or ""
             text.mu_title, text.mu_artist = title, tostring(m.artist or "")
             fact.pill_gl_art = tostring(m.artist or "") ~= ""      -- D191
-            fact.pill_gl_tw = math.min(150, 7 * #title)            -- D191: the title's room, as lib/pill.glance_w measures it
+            fact.pill_gl_tw = math.min(150, 7 * #title)            -- D191: the title's room, as lib/pillrows measures it
             text.med_album = string.upper(tostring(m.album or ""))
             text.med_player = string.upper((tostring(m.player or ""):gsub("^org%.mpris%.MediaPlayer2%.", ""):gsub("%..*$", "")))
             fact.mu_has, fact.mu_playing = title ~= "", now

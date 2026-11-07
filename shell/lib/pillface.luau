@@ -14,9 +14,11 @@ local M = {
     ASLEEP_MS = 1200000,
 }
 
-function M.new(mood)
+-- `now` is when the Pill started: he is left alone from the first moment, not only after a first touch
+-- (D202: never touched, he used to stay awake for ever and the sleepy faces were unreachable).
+function M.new(mood, now)
     return { mood = brain.is_mood(mood) and mood or "happy", face = nil, face_until = 0, say = "", say_until = 0,
-             pokes = {}, recent = {}, mood_at = 0, chat_at = 0, touched = nil, asleep = false }
+             pokes = {}, recent = {}, mood_at = 0, chat_at = 0, touched = tonumber(now) or 0, asleep = false }
 end
 
 local function show(st, face, ms, now)

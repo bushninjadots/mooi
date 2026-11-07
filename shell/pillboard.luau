@@ -68,15 +68,15 @@ return function(ctx)
         pads = pillmod.pads(pill_settings().pads)
         fact.pk_n = #pads
         for i = 0, 7 do fact["pk_k" .. i] = pads[i + 1] and parts.index(pads[i + 1]) or -1 end
-        local on = -1
+        local sel = -1
         local r = fact.pk_room or 0
         if r > 0 then
             for i, id in ipairs(pads) do
                 local p = parts.get(id)
-                if p.room and parts.room_index(p.room) == r then on = i - 1; break end
+                if p.room and parts.room_index(p.room) == r then sel = i - 1; break end
             end
         end
-        fact.pk_on = on
+        fact.pk_on = sel
         -- D175: the desk — the tiles the owner switched on, placed by lib/deskgrid, and its own look
         local s = pill_settings()
         -- D188: a tile is on unless its size says Off (the old switch is migrated into it, lib/config)
@@ -104,12 +104,11 @@ return function(ctx)
         fact.pk_dk_glow = ({ none = 0, soft = 1, bright = 2 })[s.desk_glow] or 1
         -- D176: the viewer takes the card instead of the tiles
         fact.pk_wv = s.desk_workspaces == true
-        fact.pk_viz = pill_settings().viz == "river" and 1 or 0
         -- D171: which faces are in the wheel's views (the edit bin's dots)
         local views = pill_settings().views
-        local on = {}
-        for _, id in ipairs(type(views) == "table" and views or pillmod.VIEWS_DEFAULT) do on[id] = true end
-        for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = on[id] == true end
+        local shown = {}
+        for _, id in ipairs(type(views) == "table" and views or pillmod.VIEWS_DEFAULT) do shown[id] = true end
+        for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = shown[id] == true end
     end
 
     -- Now's week strip and its date line
@@ -293,9 +292,9 @@ return function(ctx)
 
     -- D188: the peek (ZenoShell's): resting on the Pill grows it into a small card; a press makes it the
     -- whole board; the pointer off both the capsule and the card folds it back. `pill.peek = false` stops it.
-    -- D191: `card` counts the card's zones the pointer is in (the card, and each reveal item over it): an
-    -- item's enter and the card's leave can come in either order, so a flag folded a peek under the pointer
-    local peek_state = { cap = false, card = 0, seq = 0 }
+    -- D198/D202: whether the pointer is still on the capsule or the card is measured from the global cursor
+    -- (bar.luau pill_over); the zones' counts were the old way and are gone.
+    local peek_state = { cap = false, seq = 0 }
     local function peek_on()
         return pill_settings().peek ~= false and fact.pill_on == true
     end
@@ -322,15 +321,9 @@ return function(ctx)
         after(250, function()
             if mine ~= peek_state.seq or not peek_state.cap or not peek_on() then return end
             if opened ~= "none" then return end           -- the board, or another island, is already out
-            peek_state.card = 0
             open_board("now", true, true)
         end)
     end
-    on("pk_peek_hover", function(v)
-        local inn = tonumber(v) == 1
-        peek_state.card = math.max(0, peek_state.card + (inn and 1 or -1))
-        if inn then peek_state.seq = peek_state.seq + 1 elseif peek_state.card <= 0 then peek_leave() end
-    end)
     on("pk_peek_open", function() peek_full() end)
     -- D191: a reveal item pressed — the board, on that item's room
     on("pk_rev", function(v)
@@ -483,8 +476,9 @@ return function(ctx)
         end
     end)
     -- the wheel over the board: the next room, or the one before, and round (the owner asked, 2026-11-07)
-    local NAMES = { [0] = "now", "the month", "sound", "display", "connections", "power", "resources", "weather", "signals",
-                    "music!", "actions", "diagnostics", "workspaces", "wallpaper", "the stash", "find it" }
+    -- D202: the names come from the room catalogue (lib/pillpads.ROOM_NAME) — one list, not two
+    local NAMES = {}
+    for i, r in ipairs(parts.ROOMS) do NAMES[i - 1] = parts.ROOM_NAME[r] or r end
     on("pk_scroll", function(v)
         local d = (tonumber(v) or 0) > 0 and -1 or 1
         local r = ((fact.pk_room or 0) + d) % #parts.ROOMS
@@ -589,14 +583,6 @@ return function(ctx)
         for _, id in ipairs(list) do on[id] = true end
         for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = on[id] == true end
     end)
-    on("pk_viz", function(v)
-        local p = pill_settings()
-        local n = tonumber(v)
-        -- D188: the editor names the one it wants (0 halo · 1 river); anything else turns it over
-        if n == 0 then p.viz = "halo" elseif n == 1 then p.viz = "river"
-        else p.viz = p.viz == "river" and "halo" or "river" end
-        save(); publish()
-    end)
     -- ── D199: the ROWS tab — ArchEclipse's editor: the three rows and a shelf, arranged by dragging ──
     local pillrows = require("lib/pillrows")
     -- each item's name on its chip (by its k), and so its width
@@ -679,7 +665,7 @@ return function(ctx)
                 local r = pill_settings().right
                 if r == "nothing" then return end
                 if r == "board" then open_board("now"); return end
-                if r == "notes" then emit_scene("qn_toggle"); return end
+                if r == "notes" then open_board("notes"); return end      -- D201: grown out of the Pill
                 if r == "settings" then emit_scene("bar_menu"); return end
             end
             if button == "left" and opened == "board" then
@@ -710,5 +696,9 @@ return function(ctx)
         end,
         open = function() return opened end,
         hover = peek_hover,     -- D188: the capsule pointed at (1) or left (0)
+        -- D202: the peek's rows were re-laid out (bar.luau pill_rows): its card springs to their width
+        rows = function()
+            if opened == "board" and fact.pk_peek then reshape(false) end
+        end,
     }
 end

@@ -79,7 +79,7 @@ local rows = {
     { title = "When nothing plays", desc = "Shrink to a note, stay, or leave the bar", tab = 3, page = "Bar & Frame", y = 4384, fold = "fd_3_4", fy = 2426 },
     { title = "Visualizer", desc = "Moves with the sound", tab = 3, page = "Bar & Frame", y = 4444, fold = "fd_3_4", fy = 2486 },
     { title = "The Pill", desc = "ONE CAPSULE THAT BECOMES WHAT IS HAPPENING", tab = 3, page = "Bar & Frame", y = 4526 },
-    { title = "Shape", desc = "Attached, floating, a dot or a record: as pictures", tab = 3, page = "Bar & Frame", y = 4924, fold = "fd_3_5", fy = 1114 },
+    { title = "Shape", desc = "Attached, floating or a dot: as pictures", tab = 3, page = "Bar & Frame", y = 4924, fold = "fd_3_5", fy = 1114 },
     { title = "When idle", desc = "Stay, tuck away or vanish: as pictures", tab = 3, page = "Bar & Frame", y = 5114, fold = "fd_3_5", fy = 1304 },
     { title = "Peek on hover", desc = "Rest the pointer on the Pill and it grows in place into two rows: the song, throughput, controls and clock; weather, the machine, battery, brightness, volume and network. A press on one opens its room, anywhere else the whole board", tab = 3, page = "Bar & Frame", y = 5304, fold = "fd_3_5", fy = 1494 },
     { title = "Flash on a change", desc = "The Pill's edge lights for a moment when the workspace changes or a notice arrives", tab = 3, page = "Bar & Frame", y = 5364, fold = "fd_3_5", fy = 1554 },

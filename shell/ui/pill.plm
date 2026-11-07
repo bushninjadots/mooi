@@ -203,34 +203,6 @@ library Pill {
         text "NEXUS" { at: cx + 14, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: mix(fl.engrave, fl.ember, lit) }
     }
 
-    // D172: the Pill as a record (pill.shape = record): the song's cover as the label on a turning disc,
-    // a ring of the bands round it, coloured from the cover itself while it plays (pc1…pc3, shell/bar.luau)
-    component Record(cx: number, cy: number, d: number) {
-        size: d + 16, d + 16
-        let r = d / 2
-        let on = mu_playing
-        let c1 = rgb(pc1_r, pc1_g, pc1_b)
-        let c2 = rgb(pc2_r, pc2_g, pc2_b)
-        let c3 = rgb(pc3_r, pc3_g, pc3_b)
-        image rec = from med_art, 96, 96
-        // D185: the grooves are the disc's own, inside its rim — the ring of bands reached past a 31 px
-        // capsule and buried the cover; the bands are the capsule's aura now (D181), the disc keeps its
-        // own light: two hairline grooves that breathe with the bass
-        let beat = if(pill_still, 0, clamp((lv0 + lv1 + lv2) / 2.4, 0, 1))
-        ellipse { at: cx, cy; radius: max(2, r - 1.6); stroke: 1.2; color: mix(c1, c3, 0.4); opacity: 0.5 + 0.35 * beat }
-        ellipse { at: cx, cy; radius: max(1.5, r - 3.8); stroke: 1; color: mix(c2, c3, 0.5); opacity: 0.3 + 0.3 * beat }
-        group {
-            glow: 5, if(on, 0.5 * st_glow, 0), c1
-            pivot: cx, cy
-            rotate: if(mu_playing and not pill_still, mu_ang, 0) * 1deg
-            ellipse { at: cx, cy; radius: r; color: mix(c3, c1, if(on, 0.2, 0)) }
-            ellipse { at: cx, cy; radius: max(1, r - 1.6); color: mix(c3, fl.ground, 0.45) }
-            image rec { at: cx - (r - 5.2), cy - (r - 5.2); size: max(2, (r - 5.2) * 2), max(2, (r - 5.2) * 2); show: med_has_art }
-            ellipse { at: cx, cy; radius: 1.3; color: fl.engrave; opacity: 0.85 }
-            box { from: cx - 0.7, cy - r + 2; size: 1.4, 3.2; corner: 0.7; color: fl.ink; opacity: 0.4; show: med_has_art }
-        }
-    }
-
     // D191: one of the glance face's workspace dots (ArchEclipse's PillDots): 5 px, the one you are on a
     // capsule 2.4 × as wide in the accent, a workspace with windows in the ink, an empty one in the trace.
     // Its own component so each dot keeps its own spring. Drawn only: a zone per dot would sit under the
@@ -287,7 +259,7 @@ library Pill {
             // the foot: one light, still the sound's, and still silent when nothing plays (D131), with reduced
             // motion, while the capsule is hidden or has become the board.
             prop spec_f = 0 ~m.isl
-            follow spec_f = if(mu_playing and not pill_still and not pill_hidden and not pill_vanish and rv.board < 0.02 and (pill_kind < 1.5 or pill_record), 1, 0)
+            follow spec_f = if(mu_playing and not pill_still and not pill_hidden and not pill_vanish and rv.board < 0.02 and pill_kind < 1.5, 1, 0)
             group {
                 show: spec_f > 0.01
                 opacity: spec_f * 0.55
@@ -305,23 +277,23 @@ library Pill {
             // idle: its face (D169) — the time and the workspace it is on, BMO, or the Nexus button;
             // nothing while it is hidden (a sliver the frame draws)
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face < 0.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face < 0.5
                 text clock.time { at: px + pw / 2 - 8 - if(pill_detail > 1.5, 30, 0), cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
                 text "· {ws.active, 0}" { at: px + pw / 2 + 26 - if(pill_detail > 1.5, 30, 0), cy; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.phos }
                 text clock.date { at: px + pw / 2 + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; width: 90; lines: 1; show: pill_detail > 1.5 }
             }
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 0.5 and pill_face < 1.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 0.5 and pill_face < 1.5
                 // D196: the capsule's glass is his screen (BmoScreen); D187 still holds — no body round it
                 BmoScreen(px, pw, cy, pill_t1, pb_talk)
             }
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 1.5 and pill_face < 2.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5 and pill_face < 2.5
                 NexusFace(px, pw, cy)
             }
             // D170: a module's face — its icon and a short reading
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 2.5 and pill_face < 10.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 2.5 and pill_face < 10.5
                 let fk = pick(pill_face - 3, 6, 3, 2, 12, 0, 13, 8, 2)
                 // D171: icon — just the glyph, centred; brief and full — the glyph and its words
                 PkIcon(fk, if(pill_detail < 0.5, px + pw / 2, px + 20), cy, 15, fl.phos)
@@ -353,12 +325,12 @@ library Pill {
             }
             // D191: ArchEclipse's rest face
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 10.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 10.5
                 GlanceFace(px, pw, cy)
             }
             // D173: the pointer's warmth behind the capsule — nearer is brighter, and never while it is gone
             group {
-                show: not pill_hidden and not pill_record and near > 0.02
+                show: not pill_hidden and near > 0.02
                 glow: 9, (0.5 * near) * st_glow, fl.phos
                 box { from: px + 2, cy - 2; size: max(4, pw - 4), 4; corner: 2; color: fl.phos; opacity: 0.3 * near }
             }
@@ -371,7 +343,7 @@ library Pill {
             }
             // anything else, whole
             group {
-                show: pill_kind > 0.5 and not pill_split and not pill_record
+                show: pill_kind > 0.5 and not pill_split
                 Half(px, pw, pill_glyph, pill_t1, pill_t2, pill_val)
             }
             // split: the main on the left, its partner on the right, a pinch between
@@ -380,12 +352,6 @@ library Pill {
                 Half(px, pill_w1, pill_glyph, pill_t1, pill_t2, pill_val)
                 box { from: px + pill_w1 + 3, cy - 8; size: 2, 16; corner: 1; color: fl.trace_dim }
                 Half(px + pill_w1 + 8, pw - pill_w1 - 8, pill_glyph2, pill_s1, "", pill_val2)
-            }
-            // D187: the record is the same capsule with the cover as its mark — not a disc that replaces
-            // it. Never beside a split (lib/pill).
-            group {
-                show: pill_record
-                Half(px, pw, 5, pill_t1, pill_t2, 0)
             }
             // hidden with the frame on, the tab hangs in the top strip: the zone reaches the top (review M5)
             // D171: the dot — a ring breathing out of it now and then, and room round it to land on
@@ -404,7 +370,8 @@ library Pill {
                 line { from: px - 9, fl.cy; to: px + 9, fl.cy; width: 1.4; color: fl.trace_lit }
                 ellipse { at: px, fl.cy; radius: 1.6; color: fl.phos; opacity: 0.6 }
             }
-            zone box pillz { from: if(pill_vanish, px - 12, if(pill_record, px - 8, if(dotted, px - 10, px))), if(pill_hidden, 0, fl.top); size: if(pill_vanish, 24, if(pill_record, pw + 16, if(dotted, pw + 20, pw))), if(pill_hidden, fl.top + fl.mod_h, pill_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
+            // D202: the zone says what the Pill is showing, not just that it is the Pill
+            zone box pillz { from: if(pill_vanish, px - 12, if(dotted, px - 10, px)), if(pill_hidden, 0, fl.top); size: if(pill_vanish, 24, if(dotted, pw + 20, pw)), if(pill_hidden, fl.top + fl.mod_h, pill_h); cursor: pointer; role: button; label: pick(pill_kind, "The Pill: what it shows", "The Pill: the music playing", "The Pill: the volume or the brightness", "The Pill: a notice", "The Pill: the screen is being recorded", "The Pill: the battery") }
             on press pillz { emit pill_press }
             // D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
             on press right pillz { emit pill_rpress }
@@ -446,7 +413,7 @@ library Pill {
                 opacity: moon_f0
                 move: (1 - moon_f0) * 8, 0
                 Mark(moon_x0 + 12, cy, max(0, moon_k0))
-                zone box pmoon0 { from: moon_x0, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                zone box pmoon0 { from: moon_x0, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show the first pad in the Pill" }
                 on press pmoon0 { emit pill_moon(0) }
                 on press right pmoon0 { emit pill_rmoon(0) }
             }
@@ -455,7 +422,7 @@ library Pill {
                 opacity: moon_f1
                 move: (1 - moon_f1) * -8, 0
                 Mark(moon_x1 + 12, cy, max(0, moon_k1))
-                zone box pmoon1 { from: moon_x1, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                zone box pmoon1 { from: moon_x1, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show the second pad in the Pill" }
                 on press pmoon1 { emit pill_moon(1) }
                 on press right pmoon1 { emit pill_rmoon(1) }
             }
@@ -464,7 +431,7 @@ library Pill {
                 opacity: moon_f2
                 move: (1 - moon_f2) * 8, 0
                 Mark(moon_x2 + 12, cy, max(0, moon_k2))
-                zone box pmoon2 { from: moon_x2, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                zone box pmoon2 { from: moon_x2, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show the third pad in the Pill" }
                 on press pmoon2 { emit pill_moon(2) }
                 on press right pmoon2 { emit pill_rmoon(2) }
             }
@@ -473,7 +440,7 @@ library Pill {
                 opacity: moon_f3
                 move: (1 - moon_f3) * -8, 0
                 Mark(moon_x3 + 12, cy, max(0, moon_k3))
-                zone box pmoon3 { from: moon_x3, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
+                zone box pmoon3 { from: moon_x3, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show the fourth pad in the Pill" }
                 on press pmoon3 { emit pill_moon(3) }
                 on press right pmoon3 { emit pill_rmoon(3) }
             }

@@ -34,6 +34,7 @@ return function(ctx)
     local function reset_draft()
         draft = ""
         text.qn_draft = ""
+        text.pk_qn = ""              -- D201: the Pill's Notes room writes here too
         fact.qn_drafting = false
         fact.qn_editing = false
         fact.qn_edit_id = -1
@@ -119,6 +120,12 @@ return function(ctx)
         fact.qn_drafting = pad.clean(draft) ~= ""
     end)
     on("submit:qn_draft", function() add() end)
+    -- D201: the Pill's Notes room (the board grows into it) — the same notes, its own field
+    on("text:pk_qn", function(v)
+        draft = tostring(v or "")
+        fact.qn_drafting = pad.clean(draft) ~= ""
+    end)
+    on("submit:pk_qn", function() add() end)
     on("qn_add", function() add() end)
     -- D86: a note's colour (its stripe, pressed), its tick, and the search
     on("qn_tag", function(v)

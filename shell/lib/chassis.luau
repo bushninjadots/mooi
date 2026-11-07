@@ -100,25 +100,20 @@ function M.pieces(geo, look, looks)
         if look.mode == "pill" then
             local px, pw = span(geo.pill)
             local slim = type(geo.pill) == "table" and geo.pill.slim == true
-            -- D170: as tall as it says (BMO's face is taller than a module)
-            local ph = (type(geo.pill) == "table" and tonumber(geo.pill.h)) or look.mod_h
+            -- D187/D202: one capsule, one height — the Pill is always the bar's module height
             local shape = type(geo.pill) == "table" and geo.pill.shape or "attached"
-            if pw > 0 and (shape == "dot" or shape == "record") and slim then
-                -- D171: the dot — a small circle where the Pill rests, never joined (a tucked record too)
+            if pw > 0 and shape == "dot" and slim then
+                -- D171: the dot — a small circle where the Pill rests, never joined
                 add(px, look.top + (look.mod_h - pw) / 2, pw, pw, pw / 2, 0, false)
-            elseif pw > 0 and shape == "record" then
-                -- D187: the record is the same capsule — its plate is the capsule's, not a disc behind it
-                if look.band then add(px, -40, pw, foot + 40 + (ph - look.mod_h), look.mod_h / 2, 8, true)
-                else add(px, look.top, pw, ph, look.mod_h / 2, 0, false) end
             elseif pw > 0 and shape == "floating" then
                 -- D171: hovering under the band, never joined (a sliver when hidden)
-                if slim then add(px, look.top, pw, 6, 3, 0, false) else add(px, look.top, pw, ph, look.mod_h / 2, 0, false) end
+                if slim then add(px, look.top, pw, 6, 3, 0, false) else add(px, look.top, pw, look.mod_h, look.mod_h / 2, 0, false) end
             elseif pw > 0 then
                 -- D169: hidden when idle, a 6 px sliver — or, with the band, a short tab hanging from it
                 if slim and look.band then add(px, -40, pw, 40 + (look.top_band or look.band_w or 0) + 6, 3, 8, true)
                 elseif slim then add(px, look.top, pw, 6, 3, 0, false)
-                elseif look.band then add(px, -40, pw, foot + 40 + (ph - look.mod_h), look.mod_h / 2, 8, true)
-                else add(px, look.top, pw, ph, look.mod_h / 2, 0, false) end
+                elseif look.band then add(px, -40, pw, foot + 40, look.mod_h / 2, 8, true)
+                else add(px, look.top, pw, look.mod_h, look.mod_h / 2, 0, false) end
             end
             -- D169: nodes are square pads (r 5) on a circuit trace; satellites are round moons
             local nodes = geo.nodes == true

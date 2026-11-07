@@ -880,8 +880,6 @@ scene Mooi {
     fact df_pill_autohide = 0
     fact sv_pill_pads = 0
     fact df_pill_pads = 0
-    fact sv_pill_viz = 0
-    fact df_pill_viz = 0
     fact sv_pill_shape = 0
     fact df_pill_shape = 0
     fact sv_pill_views = 0
@@ -3359,10 +3357,10 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_61 - 4924
-                    SPillShape(274, 4932, 200, "Attached", 0, sv_pill_shape == 0, set_value, 440000)
-                    SPillShape(486, 4932, 200, "Floating", 1, sv_pill_shape == 1, set_value, 440001)
-                    SPillShape(698, 4932, 200, "Dot", 2, sv_pill_shape == 2, set_value, 440002)
-                    SRevert(1134, 4940, sv_pill_shape != df_pill_shape, set_value, 440000 + df_pill_shape)
+                    SPillShape(274, 4932, 200, "Attached", 0, sv_pill_shape == 0, set_value, 439000)
+                    SPillShape(486, 4932, 200, "Floating", 1, sv_pill_shape == 1, set_value, 439001)
+                    SPillShape(698, 4932, 200, "Dot", 2, sv_pill_shape == 2, set_value, 439002)
+                    SRevert(1134, 4940, sv_pill_shape != df_pill_shape, set_value, 439000 + df_pill_shape)
                 }
                 group {
                     show: fd_3_5
@@ -3372,10 +3370,10 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_63 - 5114
-                    SPillHide(274, 5122, 200, "Stay", 0, sv_pill_hide == 0, set_value, 444000)
-                    SPillHide(486, 5122, 200, "Tuck away", 1, sv_pill_hide == 1, set_value, 444001)
-                    SPillHide(698, 5122, 200, "Vanish", 2, sv_pill_hide == 2, set_value, 444002)
-                    SRevert(1134, 5130, sv_pill_hide != df_pill_hide, set_value, 444000 + df_pill_hide)
+                    SPillHide(274, 5122, 200, "Stay", 0, sv_pill_hide == 0, set_value, 443000)
+                    SPillHide(486, 5122, 200, "Tuck away", 1, sv_pill_hide == 1, set_value, 443001)
+                    SPillHide(698, 5122, 200, "Vanish", 2, sv_pill_hide == 2, set_value, 443002)
+                    SRevert(1134, 5130, sv_pill_hide != df_pill_hide, set_value, 443000 + df_pill_hide)
                 }
                 group {
                     show: fd_3_5
@@ -3386,34 +3384,34 @@ scene Mooi {
                     show: fd_3_5
                     move: 0, gy_3_65 - 5304
                     SRow(5304, "Peek on hover", "Rest the pointer on the Pill and it grows in place into two rows: the song, throughput, controls and clock; weather, the machine, battery, brightness, volume and network. A press on one opens its room, anywhere else the whole board", true, "", 768, false)
-                    SToggle(1092, 5322, sv_pill_peek, set_value, 464, "pill.peek")
-                    SRevert(1062, 5334, sv_pill_peek != df_pill_peek, set_value, 464000 + df_pill_peek)
+                    SToggle(1092, 5322, sv_pill_peek, set_value, 463, "pill.peek")
+                    SRevert(1062, 5334, sv_pill_peek != df_pill_peek, set_value, 463000 + df_pill_peek)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_66 - 5364
                     SRow(5364, "Flash on a change", "The Pill's edge lights for a moment when the workspace changes or a notice arrives", true, "", 768, true)
-                    SToggle(1092, 5382, sv_pill_ping, set_value, 446, "pill.ping")
-                    SRevert(1062, 5394, sv_pill_ping != df_pill_ping, set_value, 446000 + df_pill_ping)
+                    SToggle(1092, 5382, sv_pill_ping, set_value, 445, "pill.ping")
+                    SRevert(1062, 5394, sv_pill_ping != df_pill_ping, set_value, 445000 + df_pill_ping)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_67 - 5424
                     SRow(5424, "Pointer warmth", "A soft light behind the capsule as the pointer comes near (0: none)", true, "", 404, true)
-                    SSlider(728, 5440, 330, sv_pill_warmth, 100, set_value, 445, "Pointer warmth", "{sv_pill_warmth, 0}%", true)
-                    SRevert(698, 5454, sv_pill_warmth != df_pill_warmth, set_value, 445000 + df_pill_warmth)
+                    SSlider(728, 5440, 330, sv_pill_warmth, 100, set_value, 444, "Pointer warmth", "{sv_pill_warmth, 0}%", true)
+                    SRevert(698, 5454, sv_pill_warmth != df_pill_warmth, set_value, 444000 + df_pill_warmth)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_68 - 5484
                     SRow(5484, "Right press", "What a right press on the Pill does", true, "", 344, true)
                     STrack(668, 5500, 470)
-                    SChoice(668, 5500, 94, "Calendar", sv_pill_right == 0, set_value, 461000)
-                    SChoice(762, 5500, 94, "Board", sv_pill_right == 1, set_value, 461001)
-                    SChoice(856, 5500, 94, "Notes", sv_pill_right == 2, set_value, 461002)
-                    SChoice(950, 5500, 94, "Settings", sv_pill_right == 3, set_value, 461003)
-                    SChoice(1044, 5500, 94, "Nothing", sv_pill_right == 4, set_value, 461004)
-                    SRevert(638, 5514, sv_pill_right != df_pill_right, set_value, 461000 + df_pill_right)
+                    SChoice(668, 5500, 94, "Calendar", sv_pill_right == 0, set_value, 460000)
+                    SChoice(762, 5500, 94, "Board", sv_pill_right == 1, set_value, 460001)
+                    SChoice(856, 5500, 94, "Notes", sv_pill_right == 2, set_value, 460002)
+                    SChoice(950, 5500, 94, "Settings", sv_pill_right == 3, set_value, 460003)
+                    SChoice(1044, 5500, 94, "Nothing", sv_pill_right == 4, set_value, 460004)
+                    SRevert(638, 5514, sv_pill_right != df_pill_right, set_value, 460000 + df_pill_right)
                 }
                 group {
                     show: fd_3_5
@@ -3431,17 +3429,17 @@ scene Mooi {
                     move: 0, gy_3_71 - 5670
                     SRow(5670, "Detail", "How much each view shows: its icon, a word or two, or more", true, "", 418, true)
                     STrack(742, 5686, 396)
-                    SChoice(742, 5686, 132, "Icon", sv_pill_detail == 0, set_value, 442000)
-                    SChoice(874, 5686, 132, "Brief", sv_pill_detail == 1, set_value, 442001)
-                    SChoice(1006, 5686, 132, "Full", sv_pill_detail == 2, set_value, 442002)
-                    SRevert(712, 5700, sv_pill_detail != df_pill_detail, set_value, 442000 + df_pill_detail)
+                    SChoice(742, 5686, 132, "Icon", sv_pill_detail == 0, set_value, 441000)
+                    SChoice(874, 5686, 132, "Brief", sv_pill_detail == 1, set_value, 441001)
+                    SChoice(1006, 5686, 132, "Full", sv_pill_detail == 2, set_value, 441002)
+                    SRevert(712, 5700, sv_pill_detail != df_pill_detail, set_value, 441000 + df_pill_detail)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_72 - 5730
                     SRow(5730, "Back to its face after", "A view the wheel turned to returns to the face after this long (0: it stays)", true, "", 404, true)
-                    SSlider(728, 5746, 330, sv_pill_rest, 60, set_value, 443, "Back to its face after", "{sv_pill_rest, 0} s", true)
-                    SRevert(698, 5760, sv_pill_rest != df_pill_rest, set_value, 443000 + df_pill_rest)
+                    SSlider(728, 5746, 330, sv_pill_rest, 60, set_value, 442, "Back to its face after", "{sv_pill_rest, 0} s", true)
+                    SRevert(698, 5760, sv_pill_rest != df_pill_rest, set_value, 442000 + df_pill_rest)
                 }
                 group {
                     show: fd_3_5
@@ -3528,97 +3526,97 @@ scene Mooi {
                     show: fd_3_5
                     move: 0, gy_3_81 - 6602
                     SRow(6602, "Live workspaces instead", "Each workspace's windows, live, in place of the tiles", true, "", 768, true)
-                    SToggle(1092, 6620, sv_pill_desk_workspaces, set_value, 453, "pill.desk_workspaces")
-                    SRevert(1062, 6632, sv_pill_desk_workspaces != df_pill_desk_workspaces, set_value, 453000 + df_pill_desk_workspaces)
+                    SToggle(1092, 6620, sv_pill_desk_workspaces, set_value, 452, "pill.desk_workspaces")
+                    SRevert(1062, 6632, sv_pill_desk_workspaces != df_pill_desk_workspaces, set_value, 452000 + df_pill_desk_workspaces)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_82 - 6662
                     SRow(6662, "The time", "The clock, the date and the week", true, "", 418, true)
                     STrack(742, 6678, 396)
-                    SChoice(742, 6678, 132, "Off", sv_pill_desk_clock_size == 2, set_value, 454002)
-                    SChoice(874, 6678, 132, "Small", sv_pill_desk_clock_size == 0, set_value, 454000)
-                    SChoice(1006, 6678, 132, "Wide", sv_pill_desk_clock_size == 1, set_value, 454001)
-                    SRevert(712, 6692, sv_pill_desk_clock_size != df_pill_desk_clock_size, set_value, 454000 + df_pill_desk_clock_size)
+                    SChoice(742, 6678, 132, "Off", sv_pill_desk_clock_size == 2, set_value, 453002)
+                    SChoice(874, 6678, 132, "Small", sv_pill_desk_clock_size == 0, set_value, 453000)
+                    SChoice(1006, 6678, 132, "Wide", sv_pill_desk_clock_size == 1, set_value, 453001)
+                    SRevert(712, 6692, sv_pill_desk_clock_size != df_pill_desk_clock_size, set_value, 453000 + df_pill_desk_clock_size)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_83 - 6722
                     SRow(6722, "The song", "The cover, the title and how far it has come", true, "", 418, true)
                     STrack(742, 6738, 396)
-                    SChoice(742, 6738, 132, "Off", sv_pill_desk_playing_size == 2, set_value, 455002)
-                    SChoice(874, 6738, 132, "Small", sv_pill_desk_playing_size == 0, set_value, 455000)
-                    SChoice(1006, 6738, 132, "Wide", sv_pill_desk_playing_size == 1, set_value, 455001)
-                    SRevert(712, 6752, sv_pill_desk_playing_size != df_pill_desk_playing_size, set_value, 455000 + df_pill_desk_playing_size)
+                    SChoice(742, 6738, 132, "Off", sv_pill_desk_playing_size == 2, set_value, 454002)
+                    SChoice(874, 6738, 132, "Small", sv_pill_desk_playing_size == 0, set_value, 454000)
+                    SChoice(1006, 6738, 132, "Wide", sv_pill_desk_playing_size == 1, set_value, 454001)
+                    SRevert(712, 6752, sv_pill_desk_playing_size != df_pill_desk_playing_size, set_value, 454000 + df_pill_desk_playing_size)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_84 - 6782
                     SRow(6782, "The machine", "The processor, the memory and the temperature", true, "", 418, true)
                     STrack(742, 6798, 396)
-                    SChoice(742, 6798, 132, "Off", sv_pill_desk_diagnostics_size == 2, set_value, 456002)
-                    SChoice(874, 6798, 132, "Small", sv_pill_desk_diagnostics_size == 0, set_value, 456000)
-                    SChoice(1006, 6798, 132, "Wide", sv_pill_desk_diagnostics_size == 1, set_value, 456001)
-                    SRevert(712, 6812, sv_pill_desk_diagnostics_size != df_pill_desk_diagnostics_size, set_value, 456000 + df_pill_desk_diagnostics_size)
+                    SChoice(742, 6798, 132, "Off", sv_pill_desk_diagnostics_size == 2, set_value, 455002)
+                    SChoice(874, 6798, 132, "Small", sv_pill_desk_diagnostics_size == 0, set_value, 455000)
+                    SChoice(1006, 6798, 132, "Wide", sv_pill_desk_diagnostics_size == 1, set_value, 455001)
+                    SRevert(712, 6812, sv_pill_desk_diagnostics_size != df_pill_desk_diagnostics_size, set_value, 455000 + df_pill_desk_diagnostics_size)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_85 - 6842
                     SRow(6842, "The week", "Seven days in a row, today lit", true, "", 418, true)
                     STrack(742, 6858, 396)
-                    SChoice(742, 6858, 132, "Off", sv_pill_desk_calendar_size == 2, set_value, 457002)
-                    SChoice(874, 6858, 132, "Small", sv_pill_desk_calendar_size == 0, set_value, 457000)
-                    SChoice(1006, 6858, 132, "Wide", sv_pill_desk_calendar_size == 1, set_value, 457001)
-                    SRevert(712, 6872, sv_pill_desk_calendar_size != df_pill_desk_calendar_size, set_value, 457000 + df_pill_desk_calendar_size)
+                    SChoice(742, 6858, 132, "Off", sv_pill_desk_calendar_size == 2, set_value, 456002)
+                    SChoice(874, 6858, 132, "Small", sv_pill_desk_calendar_size == 0, set_value, 456000)
+                    SChoice(1006, 6858, 132, "Wide", sv_pill_desk_calendar_size == 1, set_value, 456001)
+                    SRevert(712, 6872, sv_pill_desk_calendar_size != df_pill_desk_calendar_size, set_value, 456000 + df_pill_desk_calendar_size)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_86 - 6902
                     SRow(6902, "Form", "Flat tiles, or the opened vial: the capsule parted, the tiles inside", true, "", 550, true)
                     STrack(874, 6918, 264)
-                    SChoice(874, 6918, 132, "Tiles", sv_pill_desk_form == 0, set_value, 458000)
-                    SChoice(1006, 6918, 132, "Opened vial", sv_pill_desk_form == 1, set_value, 458001)
-                    SRevert(844, 6932, sv_pill_desk_form != df_pill_desk_form, set_value, 458000 + df_pill_desk_form)
+                    SChoice(874, 6918, 132, "Tiles", sv_pill_desk_form == 0, set_value, 457000)
+                    SChoice(1006, 6918, 132, "Opened vial", sv_pill_desk_form == 1, set_value, 457001)
+                    SRevert(844, 6932, sv_pill_desk_form != df_pill_desk_form, set_value, 457000 + df_pill_desk_form)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_87 - 6962
                     SRow(6962, "Surface", "A plate, glass, or a slab tethered to the core", true, "", 418, true)
                     STrack(742, 6978, 396)
-                    SChoice(742, 6978, 132, "Plate", sv_pill_desk_surface == 0, set_value, 451000)
-                    SChoice(874, 6978, 132, "Glass", sv_pill_desk_surface == 1, set_value, 451001)
-                    SChoice(1006, 6978, 132, "Tether", sv_pill_desk_surface == 2, set_value, 451002)
-                    SRevert(712, 6992, sv_pill_desk_surface != df_pill_desk_surface, set_value, 451000 + df_pill_desk_surface)
+                    SChoice(742, 6978, 132, "Plate", sv_pill_desk_surface == 0, set_value, 450000)
+                    SChoice(874, 6978, 132, "Glass", sv_pill_desk_surface == 1, set_value, 450001)
+                    SChoice(1006, 6978, 132, "Tether", sv_pill_desk_surface == 2, set_value, 450002)
+                    SRevert(712, 6992, sv_pill_desk_surface != df_pill_desk_surface, set_value, 450000 + df_pill_desk_surface)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_88 - 7022
                     SRow(7022, "Tiles' edge", "A hairline, a cut corner, or none", true, "", 418, true)
                     STrack(742, 7038, 396)
-                    SChoice(742, 7038, 132, "Hairline", sv_pill_desk_border == 0, set_value, 452000)
-                    SChoice(874, 7038, 132, "Cut", sv_pill_desk_border == 1, set_value, 452001)
-                    SChoice(1006, 7038, 132, "None", sv_pill_desk_border == 2, set_value, 452002)
-                    SRevert(712, 7052, sv_pill_desk_border != df_pill_desk_border, set_value, 452000 + df_pill_desk_border)
+                    SChoice(742, 7038, 132, "Hairline", sv_pill_desk_border == 0, set_value, 451000)
+                    SChoice(874, 7038, 132, "Cut", sv_pill_desk_border == 1, set_value, 451001)
+                    SChoice(1006, 7038, 132, "None", sv_pill_desk_border == 2, set_value, 451002)
+                    SRevert(712, 7052, sv_pill_desk_border != df_pill_desk_border, set_value, 451000 + df_pill_desk_border)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_89 - 7082
                     SRow(7082, "Tint", "The wallpaper's colours, the accent's, or the ink's", true, "", 418, true)
                     STrack(742, 7098, 396)
-                    SChoice(742, 7098, 132, "Wallpaper", sv_pill_desk_tint == 0, set_value, 459000)
-                    SChoice(874, 7098, 132, "Accent", sv_pill_desk_tint == 1, set_value, 459001)
-                    SChoice(1006, 7098, 132, "Mono", sv_pill_desk_tint == 2, set_value, 459002)
-                    SRevert(712, 7112, sv_pill_desk_tint != df_pill_desk_tint, set_value, 459000 + df_pill_desk_tint)
+                    SChoice(742, 7098, 132, "Wallpaper", sv_pill_desk_tint == 0, set_value, 458000)
+                    SChoice(874, 7098, 132, "Accent", sv_pill_desk_tint == 1, set_value, 458001)
+                    SChoice(1006, 7098, 132, "Mono", sv_pill_desk_tint == 2, set_value, 458002)
+                    SRevert(712, 7112, sv_pill_desk_tint != df_pill_desk_tint, set_value, 458000 + df_pill_desk_tint)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_90 - 7142
                     SRow(7142, "Glow", "None, a soft halo, or a bright one", true, "", 418, true)
                     STrack(742, 7158, 396)
-                    SChoice(742, 7158, 132, "None", sv_pill_desk_glow == 0, set_value, 460000)
-                    SChoice(874, 7158, 132, "Soft", sv_pill_desk_glow == 1, set_value, 460001)
-                    SChoice(1006, 7158, 132, "Bright", sv_pill_desk_glow == 2, set_value, 460002)
-                    SRevert(712, 7172, sv_pill_desk_glow != df_pill_desk_glow, set_value, 460000 + df_pill_desk_glow)
+                    SChoice(742, 7158, 132, "None", sv_pill_desk_glow == 0, set_value, 459000)
+                    SChoice(874, 7158, 132, "Soft", sv_pill_desk_glow == 1, set_value, 459001)
+                    SChoice(1006, 7158, 132, "Bright", sv_pill_desk_glow == 2, set_value, 459002)
+                    SRevert(712, 7172, sv_pill_desk_glow != df_pill_desk_glow, set_value, 459000 + df_pill_desk_glow)
                 }
                 group {
                     show: fd_3_5
@@ -3635,20 +3633,20 @@ scene Mooi {
                     move: 0, gy_3_93 - 7296
                     SRow(7296, "A wash over it", "The plate as it is, a phosphor glow over it, or the accent's", true, "", 418, true)
                     STrack(742, 7312, 396)
-                    SChoice(742, 7312, 132, "None", sv_pill_board_tint == 0, set_value, 462000)
-                    SChoice(874, 7312, 132, "Phosphor", sv_pill_board_tint == 1, set_value, 462001)
-                    SChoice(1006, 7312, 132, "Accent", sv_pill_board_tint == 2, set_value, 462002)
-                    SRevert(712, 7326, sv_pill_board_tint != df_pill_board_tint, set_value, 462000 + df_pill_board_tint)
+                    SChoice(742, 7312, 132, "None", sv_pill_board_tint == 0, set_value, 461000)
+                    SChoice(874, 7312, 132, "Phosphor", sv_pill_board_tint == 1, set_value, 461001)
+                    SChoice(1006, 7312, 132, "Accent", sv_pill_board_tint == 2, set_value, 461002)
+                    SRevert(712, 7326, sv_pill_board_tint != df_pill_board_tint, set_value, 461000 + df_pill_board_tint)
                 }
                 group {
                     show: fd_3_5
                     move: 0, gy_3_94 - 7356
                     SRow(7356, "Its edge", "The frame's own edge, a lit hairline round it, or none", true, "", 418, true)
                     STrack(742, 7372, 396)
-                    SChoice(742, 7372, 132, "Theme", sv_pill_board_edge == 0, set_value, 463000)
-                    SChoice(874, 7372, 132, "Hairline", sv_pill_board_edge == 1, set_value, 463001)
-                    SChoice(1006, 7372, 132, "None", sv_pill_board_edge == 2, set_value, 463002)
-                    SRevert(712, 7386, sv_pill_board_edge != df_pill_board_edge, set_value, 463000 + df_pill_board_edge)
+                    SChoice(742, 7372, 132, "Theme", sv_pill_board_edge == 0, set_value, 462000)
+                    SChoice(874, 7372, 132, "Hairline", sv_pill_board_edge == 1, set_value, 462001)
+                    SChoice(1006, 7372, 132, "None", sv_pill_board_edge == 2, set_value, 462002)
+                    SRevert(712, 7386, sv_pill_board_edge != df_pill_board_edge, set_value, 462000 + df_pill_board_edge)
                 }
             }
             group {
@@ -5588,10 +5586,10 @@ scene Mooi {
                     move: 0, gy_20_1 - 156
                     SRow(156, "Mode", "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", true, "", 418, false)
                     STrack(742, 172, 396)
-                    SChoice(742, 172, 132, "Native", sv_loom_mode == 0, set_value, 465000)
-                    SChoice(874, 172, 132, "Hybrid", sv_loom_mode == 1, set_value, 465001)
-                    SChoice(1006, 172, 132, "Loom / Fold", sv_loom_mode == 2, set_value, 465002)
-                    SRevert(712, 186, sv_loom_mode != df_loom_mode, set_value, 465000 + df_loom_mode)
+                    SChoice(742, 172, 132, "Native", sv_loom_mode == 0, set_value, 464000)
+                    SChoice(874, 172, 132, "Hybrid", sv_loom_mode == 1, set_value, 464001)
+                    SChoice(1006, 172, 132, "Loom / Fold", sv_loom_mode == 2, set_value, 464002)
+                    SRevert(712, 186, sv_loom_mode != df_loom_mode, set_value, 464000 + df_loom_mode)
                 }
                 group {
                     show: true
@@ -5619,15 +5617,15 @@ scene Mooi {
                     show: true
                     move: 0, gy_20_6 - 430
                     SRow(430, "Fold", "Structures your windows fold into. In Loom / Fold mode every built feature is on; these are Hybrid's", true, "", 768, false)
-                    SToggle(1092, 448, sv_loom_fold, set_value, 466, "loom.fold")
-                    SRevert(1062, 460, sv_loom_fold != df_loom_fold, set_value, 466000 + df_loom_fold)
+                    SToggle(1092, 448, sv_loom_fold, set_value, 465, "loom.fold")
+                    SRevert(1062, 460, sv_loom_fold != df_loom_fold, set_value, 465000 + df_loom_fold)
                 }
                 group {
                     show: true
                     move: 0, gy_20_7 - 490
                     SRow(490, "Accordions", "Windows as thin layers on a screen edge: pull the one you need, the rest wait. Needs Fold", true, "", 768, true)
-                    SToggle(1092, 508, sv_loom_accordions, set_value, 467, "loom.accordions")
-                    SRevert(1062, 520, sv_loom_accordions != df_loom_accordions, set_value, 467000 + df_loom_accordions)
+                    SToggle(1092, 508, sv_loom_accordions, set_value, 466, "loom.accordions")
+                    SRevert(1062, 520, sv_loom_accordions != df_loom_accordions, set_value, 466000 + df_loom_accordions)
                 }
                 group {
                     show: sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5
@@ -5638,8 +5636,8 @@ scene Mooi {
                     show: true
                     move: 0, gy_20_9 - 578
                     SRow(578, "Cubes", "A whole workspace folded into one small solid and unfolded back where it was. Needs Fold", true, "", 768, true)
-                    SToggle(1092, 596, sv_loom_cubes, set_value, 475, "loom.cubes")
-                    SRevert(1062, 608, sv_loom_cubes != df_loom_cubes, set_value, 475000 + df_loom_cubes)
+                    SToggle(1092, 596, sv_loom_cubes, set_value, 474, "loom.cubes")
+                    SRevert(1062, 608, sv_loom_cubes != df_loom_cubes, set_value, 474000 + df_loom_cubes)
                 }
                 group {
                     show: sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5
@@ -5651,26 +5649,26 @@ scene Mooi {
                     move: 0, gy_20_11 - 666
                     SRow(666, "Edge", "The screen edge the Accordions' strips and the docked Cubes stand on", true, "", 550, true)
                     STrack(874, 682, 264)
-                    SChoice(874, 682, 132, "Right", sv_loom_edge == 0, set_value, 468000)
-                    SChoice(1006, 682, 132, "Left", sv_loom_edge == 1, set_value, 468001)
-                    SRevert(844, 696, sv_loom_edge != df_loom_edge, set_value, 468000 + df_loom_edge)
+                    SChoice(874, 682, 132, "Right", sv_loom_edge == 0, set_value, 467000)
+                    SChoice(1006, 682, 132, "Left", sv_loom_edge == 1, set_value, 467001)
+                    SRevert(844, 696, sv_loom_edge != df_loom_edge, set_value, 467000 + df_loom_edge)
                 }
                 group {
                     show: true
                     move: 0, gy_20_12 - 726
                     SRow(726, "Loom", "Connections between windows that do something: hop along them, see them as threads", true, "", 768, true)
-                    SToggle(1092, 744, sv_loom_loom, set_value, 478, "loom.loom")
-                    SRevert(1062, 756, sv_loom_loom != df_loom_loom, set_value, 478000 + df_loom_loom)
+                    SToggle(1092, 744, sv_loom_loom, set_value, 477, "loom.loom")
+                    SRevert(1062, 756, sv_loom_loom != df_loom_loom, set_value, 477000 + df_loom_loom)
                 }
                 group {
                     show: sv_loom_loom > 0.5
                     move: 0, gy_20_13 - 786
                     SRow(786, "Threads", "When the threads show: a few seconds when the focused window has connections, always, or only while linking", true, "", 418, true)
                     STrack(742, 802, 396)
-                    SChoice(742, 802, 132, "When relevant", sv_loom_threads == 0, set_value, 479000)
-                    SChoice(874, 802, 132, "Always", sv_loom_threads == 1, set_value, 479001)
-                    SChoice(1006, 802, 132, "Hidden", sv_loom_threads == 2, set_value, 479002)
-                    SRevert(712, 816, sv_loom_threads != df_loom_threads, set_value, 479000 + df_loom_threads)
+                    SChoice(742, 802, 132, "When relevant", sv_loom_threads == 0, set_value, 478000)
+                    SChoice(874, 802, 132, "Always", sv_loom_threads == 1, set_value, 478001)
+                    SChoice(1006, 802, 132, "Hidden", sv_loom_threads == 2, set_value, 478002)
+                    SRevert(712, 816, sv_loom_threads != df_loom_threads, set_value, 478000 + df_loom_threads)
                 }
                 group {
                     show: true

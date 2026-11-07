@@ -38,11 +38,9 @@ M.SCHEMA = {
     -- D170: the board's pads (lib/pillpads: any bar module) and its music visualiser
     { path = "pill.pads", kind = "ids", max = 8, allowed = barlayout.ORDER,
       default = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" } },
-    { path = "pill.viz", kind = "enum", values = { "halo", "river" }, default = "halo" },
     -- D171: the Pill's shape (joined to the band, hovering under it, or a dot until wanted), the views the
     -- wheel turns through, how much each shows, and how long a turned view stays before the default returns
-    -- D172: `record` is the Pill as a turning disc, the song's cover its label
-    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot", "record" }, default = "attached" },
+    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot" }, default = "attached" },
     { path = "pill.views", kind = "ids", max = 16,
       allowed = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser", "glance" },
       default = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" } },
@@ -807,6 +805,8 @@ local function migrate(t)
             end
         end
         if t.pill.shape == "record" then t.pill.shape = "attached" end
+        -- D201/D202: the board's music is Cue's now; the old visualiser choice is dropped quietly
+        t.pill.viz = nil
     end
     local b = t.bar
     if type(b) ~= "table" then return end

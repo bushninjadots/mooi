@@ -124,8 +124,9 @@ M.SETTERS = {
     "pill.sides", "pill.multi", "pill.moons",
     -- D169: the Pill's face and hiding when idle. Appended, so no code moved.
     "pill.face", "pill.autohide",
-    -- D170: the board's pads and its music visualiser. Appended, so no code moved.
-    "pill.pads", "pill.viz",
+    -- D170: the board's pads. Appended, so no code moved. (D202: the board's music visualiser went with
+    -- Cue, D201.)
+    "pill.pads",
     -- D171: the Pill's shape, views, detail and rest. Appended, so no code moved.
     "pill.shape", "pill.views", "pill.detail", "pill.rest",
     -- D172: what it does when it is idle — stay, tuck or vanish. Appended, so no code moved.

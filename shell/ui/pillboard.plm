@@ -7,7 +7,7 @@ language 0.9
 //   pk_room   0 now · 1 calendar · 2 sound · 3 display · 4 connections · 5 power · 6 resources · 7 weather · 8 signals
 //   pk_n, pk_k0…7   how many pads, and each pad's part (lib/pillpads: its place in the bar's module order)
 //   pk_on     the pad whose room shows · pk_kb the pad the keyboard is on · pk_music Now is Now Playing
-//   pk_edit, pk_sel  editing, and the pad chosen · pk_viz 0 HALO · 1 RIVER
+//   pk_edit, pk_sel  editing, and the pad chosen
 // The rooms read what the islands gather (shell/islands.luau gathers for the board's room too).
 
 library PillBoard {
@@ -129,16 +129,18 @@ library PillBoard {
     }
 
     // The song's progress: pressed, it seeks
-    component PkSeek(acc: color) {
-        size: 412, 14
-        zone box sk { from: 176, 76; size: 412, 14; cursor: pointer; role: slider; label: "Seek" }
-        box { from: 176, 82; size: 412, 3 + sk.hover; corner: 2; color: fl.well }
+    // D201: the music's timeline (Cue's: a hairline that thickens under the pointer, the played part lit,
+    // a head), anywhere: from x0 at y, w long; a press seeks
+    component CueSeek(x0: number, y: number, w: number, acc: color) {
+        size: w, 14
+        zone box sk { from: x0, y - 7; size: w, 14; cursor: pointer; role: slider; label: "Seek" }
+        box { from: x0, y - 1.5; size: w, 3 + sk.hover; corner: 2; color: fl.well }
         group {
             glow: 5, (0.6) * st_glow, acc
-            box { from: 176, 82; size: 412 * med_prg, 3 + sk.hover; corner: 2; color: acc }
+            box { from: x0, y - 1.5; size: w * med_prg, 3 + sk.hover; corner: 2; color: acc }
         }
-        ellipse { at: 176 + 412 * med_prg, 83.5; radius: 4 + sk.hover; color: acc }
-        on press sk { emit med_seek(round(clamp((local.x - 176) / 412, 0, 1) * 999)) }
+        ellipse { at: x0 + w * med_prg, y; radius: 4 + sk.hover; color: acc }
+        on press sk { emit med_seek(round(clamp((local.x - x0) / w, 0, 1) * 999)) }
     }
 
     // The wheel anywhere on the board turns its rooms
@@ -183,10 +185,11 @@ library PillBoard {
     }
 
     // The transport's round buttons (0 previous · 1 play or pause · 2 next)
-    component PkRound(tx: number, mt: number, acc: color, ink: color) {
+    // D201: a transport button on the music's dock: previous, play or pause (the large one), next
+    component CueRound(tx: number, ty: number, mt: number, acc: color, ink: color) {
         size: 34, 34
-        zone box r { from: tx - 17, 108; size: 34, 34; cursor: pointer; role: button; label: pick(mt, "Previous", "Play or pause", "Next") }
-        ellipse { at: tx, 125; radius: if(mt == 1, 17, 14); color: if(mt == 1, acc, ink); opacity: if(mt == 1, 0.95, 0.06 + 0.1 * r.hover) }
+        zone box r { from: tx - 16, ty - 16; size: 32, 32; cursor: pointer; role: button; label: pick(mt, "Previous", "Play or pause", "Next") }
+        ellipse { at: tx, ty; radius: if(mt == 1, 16, 13) + r.hover; color: if(mt == 1, acc, ink); opacity: if(mt == 1, 0.95, 0.06 + 0.12 * r.hover) }
         on press r { emit med_mode(mt + 1) }
     }
 
@@ -224,9 +227,6 @@ library PillBoard {
     component PeekHit(w: number, h: number) {
         size: w, h
         zone box pkz { from: 0, 0; size: w, h; cursor: pointer; role: button; label: "Open the whole board" }
-        let pkin = pkz.hover > 0.5
-        on change pkin while pkin { emit pk_peek_hover(1) }
-        on change pkin while not pkin { emit pk_peek_hover(0) }
         on press pkz { emit pk_peek_open }
     }
 
@@ -238,9 +238,6 @@ library PillBoard {
         size: w, 24
         image ri_art = from med_art, 32, 32
         zone box c { from: x, cy - 12; size: w, 24; cursor: pointer; role: button; label: "Open it"; show: zoned }
-        let cin = c.hover > 0.5
-        on change cin while cin and zoned { emit pk_peek_hover(1) }
-        on change cin while not cin and zoned { emit pk_peek_hover(0) }
         on press c { emit pk_rev(room) }
         group {
             opacity: f
@@ -574,7 +571,7 @@ library PillBoard {
 
                     // ── the header ──
                     text pick(pk_music, "NOW", "NOW PLAYING") { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and not pk_peek and pk_room < 0.5 }
-                    text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS", "VISUALISER", "ACTIONS", "DIAGNOSTICS", "WORKSPACES", "WALLPAPER", "STASH", "FIND") {
+                    text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS", "VISUALISER", "ACTIONS", "DIAGNOSTICS", "WORKSPACES", "WALLPAPER", "STASH", "FIND", "NOTES") {
                         at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room > 0.5 }
                     text "EDIT THE PILL" { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: pk_edit }
                     // the moons, docked: what else is happening, a press shows its room
@@ -641,73 +638,79 @@ library PillBoard {
                         // Now Playing: the record in its halo, the song, the transport
                         group {
                             show: pk_room < 0.5 and pk_music
-                            let dcx = 84
-                            let dcy = 80
-                            let dr = 54
-                            // RIVER: the bands as a ribbon flowing along the core's floor (faint under HALO)
+                            // D201: the music as Cue draws it — the cover with the spectrum as two dotted wings
+                            // beside it, a light behind tinted by the cover's own colours that swells with the
+                            // loudness, the words in a column, and a floating dock with the timeline and the
+                            // transport. A new cover resolves out of pixels; the cover leans toward the mouse.
+                            let c1 = rgb(pc1_r, pc1_g, pc1_b)
+                            let c2 = rgb(pc2_r, pc2_g, pc2_b)
+                            let c3 = rgb(pc3_r, pc3_g, pc3_b)
+                            let ccx = 150
+                            let ccy = 80
+                            let cs = 112
+                            let lit = if(mu_playing, 1, 0.35)
+                            // the light behind, the cover's colours, breathing with the bass
                             group {
-                                opacity: if(pk_viz > 0.5, 0.5, 0.14)
-                                path { color: mix(acc2, acc, 0.4)
-                                       move 0, 160
-                                       line 0, 156 - lv0 * 52; line 40.5, 156 - lv1 * 52; line 81, 156 - lv2 * 52; line 121.6, 156 - lv3 * 52
-                                       line 162, 156 - lv4 * 52; line 202.7, 156 - lv5 * 52; line 243, 156 - lv6 * 52; line 283.7, 156 - lv7 * 52
-                                       line 324, 156 - lv8 * 52; line 364.8, 156 - lv9 * 52; line 405, 156 - lv10 * 52; line 445.9, 156 - lv11 * 52
-                                       line 486, 156 - lv12 * 52; line 527, 156 - lv13 * 52; line 567, 156 - lv14 * 52; line 608, 156 - lv15 * 52
-                                       line 608, 160; close }
+                                opacity: lit
+                                ellipse { at: ccx, ccy; radius: 96 + 36 * bass; scale: 1.5, 1; color: c1; opacity: 0.12 + 0.18 * bass }
+                                ellipse { at: ccx + 30, ccy + 10; radius: 60 + 24 * bass; scale: 1.6, 1; color: c2; opacity: 0.10 + 0.14 * bass }
                             }
-                            group {
-                                show: pk_viz > 0.5
-                                glow: 6, (0.7) * st_glow, acc
-                                path { stroke: 1.6; color: acc
-                                       move 0, 156 - lv0 * 52; line 40.5, 156 - lv1 * 52; line 81, 156 - lv2 * 52; line 121.6, 156 - lv3 * 52
-                                       line 162, 156 - lv4 * 52; line 202.7, 156 - lv5 * 52; line 243, 156 - lv6 * 52; line 283.7, 156 - lv7 * 52
-                                       line 324, 156 - lv8 * 52; line 364.8, 156 - lv9 * 52; line 405, 156 - lv10 * 52; line 445.9, 156 - lv11 * 52
-                                       line 486, 156 - lv12 * 52; line 527, 156 - lv13 * 52; line 567, 156 - lv14 * 52; line 608, 156 - lv15 * 52 }
-                            }
-                            // HALO: 48 spokes round the record, the bands mirrored, a breath on the bass
-                            group {
-                                show: pk_viz < 0.5
-                                ellipse { at: dcx, dcy; radius: dr + 10 + bass * 10; color: acc2; opacity: 0.16 * bass }
-                                repeat sp in 0..48 {
-                                    let b = floor(if(sp < 24, sp, 47 - sp) * 16 / 24)
-                                    let v = clamp(pick(b, lv0, lv1, lv2, lv3, lv4, lv5, lv6, lv7, lv8, lv9, lv10, lv11, lv12, lv13, lv14, lv15), 0, 1)
-                                    let ln = 3 + 18 * v * if(mu_playing, 1, 0.2)
-                                    line { from: dcx + sin(sp * 7.5) * (dr + 5), dcy - cos(sp * 7.5) * (dr + 5); to: dcx + sin(sp * 7.5) * (dr + 5 + ln), dcy - cos(sp * 7.5) * (dr + 5 + ln)
-                                           width: 2.6; color: mix(acc, acc2, v); opacity: 0.45 + 0.55 * v }
+                            // the wings: six columns a side, dots that stack up and down from the middle with each band
+                            repeat wq in 0..12 {
+                                let wsd = if(wq < 6, 0 - 1, 1)
+                                let wcl = wq - floor(wq / 6) * 6
+                                let wv = clamp(pick(wcl, lv0, lv2, lv4, lv6, lv8, lv10), 0, 1) * lit
+                                let wx = ccx + wsd * (cs / 2 + 14 + wcl * 11)
+                                repeat dt in 0..5 {
+                                    let on = wv * 5 > dt
+                                    box { from: wx - 2, ccy - 3.5 - dt * 7 - 2; size: 4, 4; corner: 1; color: mix(c1, acc, 0.3); opacity: if(on, 0.9 - dt * 0.12, 0.08) }
+                                    box { from: wx - 2, ccy + 3.5 + dt * 7 - 2; size: 4, 4; corner: 1; color: mix(c1, acc, 0.3); opacity: if(on, 0.9 - dt * 0.12, 0.08) }
                                 }
                             }
-                            ellipse { at: dcx, dcy; radius: dr; color: #0d0f11 }
-                            repeat gr in 0..5 { ellipse { at: dcx, dcy; radius: dr * 0.46 + gr * dr * 0.1; stroke: 0.8; color: #262a2f } }
+                            // the cover, leaning toward the mouse (its shadow away from it), resolving out of pixels
+                            let tilt = if(pill_still, 0, clamp((cursor.x - bx - 16 - ccx) / 600, -1, 1) * 5)
+                            box { from: ccx - cs / 2 - tilt * 1.2 + 3, ccy - cs / 2 + 6; size: cs, cs; corner: 10; color: fl.ground; opacity: 0.45 }
                             group {
-                                pivot: dcx, dcy
-                                rotate: mu_ang * 1deg
-                                mask: radial dcx, dcy radius dr * 0.42 - 1 to dr * 0.42
-                                box { from: dcx - dr * 0.42, dcy - dr * 0.42; size: dr * 0.84, dr * 0.84; color: mix(fl.ember_fill, fl.hull, 0.3) }
-                                image pk_art { at: dcx - dr * 0.42, dcy - dr * 0.42; size: dr * 0.84, dr * 0.84; show: med_has_art }
+                                pivot: ccx, ccy
+                                rotate: tilt * 1deg
+                                box { from: ccx - cs / 2, ccy - cs / 2; size: cs, cs; corner: 10; color: mix(c3, fl.hull, 0.4) }
+                                group {
+                                    clip box { from: ccx - cs / 2, ccy - cs / 2; size: cs, cs; corner: 10 }
+                                    image pk_art { at: ccx - cs / 2, ccy - cs / 2; size: cs, cs; show: med_has_art }
+                                    // the dissolve: an 8 × 8 of pixels over the new cover, each going in its turn
+                                    let dz = clamp(pk_dis - (pk_cov_n - 1), 0, 1)
+                                    repeat px8 in 0..64 {
+                                        let th = ((px8 * 37) - floor(px8 * 37 / 64) * 64) / 64
+                                        box { from: ccx - cs / 2 + (px8 - floor(px8 / 8) * 8) * cs / 8, ccy - cs / 2 + floor(px8 / 8) * cs / 8
+                                              size: cs / 8 + 0.5, cs / 8 + 0.5; color: mix(c3, fl.hull, 0.2); opacity: clamp((th - dz) * 10, 0, 1) }
+                                    }
+                                }
+                                box { from: ccx - cs / 2, ccy - cs / 2; size: cs, cs; corner: 10; stroke: 1; color: mix(c1, fl.trace_lit, 0.4); opacity: 0.7 }
+                                text "♪" { at: ccx, ccy; anchor: center; size: 30; color: c1; show: not med_has_art }
                             }
-                            arc { at: dcx, dcy; radius: dr * 0.7; width: dr * 0.16; span: 40deg; rotate: -40deg; color: #ffffff; opacity: 0.06 }
-                            ellipse { at: dcx, dcy; radius: dr; stroke: 1.5; color: fl.steel_700 }
-                            ellipse { at: dcx, dcy; radius: 3; color: fl.steel_300 }
-                            text pick(mu_has, "Nothing playing", mu_title) { at: 176, 22; anchor: left center; size: 18; weight: 700; family: "Exo 2"; color: ink; width: 410; lines: 1 }
-                            text mu_artist { at: 176, 46; anchor: left center; size: 12; family: "Exo 2"; color: acc; width: 410; lines: 1 }
-                            text med_album { at: 176, 63; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim; width: 410; lines: 1 }
+                            // the words
+                            text pick(mu_has, "Nothing playing", mu_title) { at: 316, 26; anchor: left center; size: 18; weight: 700; family: "Exo 2"; color: ink; width: 276; lines: 1 }
+                            text mu_artist { at: 316, 49; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: mix(c1, acc, 0.4); width: 276; lines: 1 }
+                            text med_album { at: 316, 66; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim; width: 276; lines: 1 }
+                            // the dock: floating, the timeline across it, the transport in the middle, the volume
+                            box { from: 306, 82; size: 292, 70; corner: 14; color: fl.hull; opacity: 0.82 }
+                            box { from: 306, 82; size: 292, 70; corner: 14; stroke: 1; color: mix(fl.trace_dim, c1, 0.35) }
                             group { show: med_len > 0
-                                    PkSeek(acc) }
-                            text med_tpos { at: 176, 98; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim }
-                            text med_tlen { at: 588, 98; anchor: right center; size: 10; family: "Share Tech Mono"; color: dim }
-                            repeat mt in 0..3 { PkRound(196 + mt * 44, mt, acc, ink) }
-                            box { from: 187, 119; size: 2, 12; color: ink }
+                                    CueSeek(326, 96, 252, mix(c1, acc, 0.3)) }
+                            text med_tpos { at: 326, 108; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim }
+                            text med_tlen { at: 578, 108; anchor: right center; size: 9; family: "Share Tech Mono"; color: dim }
+                            repeat mt in 0..3 { CueRound(408 + mt * 44, 132, mt, mix(c1, acc, 0.3), ink) }
+                            box { from: 399, 126; size: 2, 12; color: ink }
                             path { color: ink
-                                   move 190, 125; line 200, 119; line 200, 131; close }
+                                   move 402, 132; line 412, 126; line 412, 138; close }
                             path { color: fl.hull; show: not mu_playing
-                                   move 235, 118; line 246, 125; line 235, 132; close }
-                            box { from: 234, 118; size: 4, 14; color: fl.hull; show: mu_playing }
-                            box { from: 242, 118; size: 4, 14; color: fl.hull; show: mu_playing }
+                                   move 447, 125; line 458, 132; line 447, 139; close }
+                            box { from: 446, 125; size: 4, 14; color: fl.hull; show: mu_playing }
+                            box { from: 454, 125; size: 4, 14; color: fl.hull; show: mu_playing }
                             path { color: ink
-                                   move 278, 119; line 288, 125; line 278, 131; close }
-                            box { from: 288, 119; size: 2, 12; color: ink }
-                            PkBtn(330, 112, 110, pick(audio.muted, "VOL {round(audio.volume * 100), 0}%", "MUTED"), 0, pk_go, 2)
-                            PkBtn(450, 112, 138, pick(pk_viz, "◐ HALO", "◐ RIVER"), 0, pk_viz, 0)
+                                   move 490, 126; line 500, 132; line 490, 138; close }
+                            box { from: 500, 126; size: 2, 12; color: ink }
+                            PkBtn(514, 120, 74, pick(audio.muted, "{round(audio.volume * 100), 0}%", "MUTED"), 0, pk_go, 2, 24)
                         }
                         // Calendar: the month (the calendar island's), turned with the arrows
                         group {
@@ -832,6 +835,40 @@ library PillBoard {
                                 on press fn { emit pk_find(f.k) }
                             }
                             text "TYPE IN IT · A PRESS OPENS THE FORM IT NAMES" { at: 304, 156; anchor: center; size: 9; family: "Share Tech Mono"; color: dim }
+                        }
+                        // D201: Notes — the quick notes, grown out of the Pill (the same notes as the bar's pad,
+                        // shell/notes.luau): a field to write one, the newest four, a press copies it
+                        group {
+                            show: pk_room > 15.5 and pk_room < 16.5
+                            box { from: 10, 8; size: 588, 28; corner: 8; color: fl.well; opacity: 0.85 }
+                            box { from: 10, 8; size: 588, 28; corner: 8; stroke: 1; color: mix(fl.trace_dim, acc, 0.55) }
+                            input pk_qn { at: 22, 22; width: 470; size: 13; color: ink; selection: fl.hull_raised
+                                          placeholder: "Write a note — the first line is its name · Enter keeps it"; label: "A new note" }
+                            text "{qn_count, 0} KEPT" { at: 588, 22; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(qn_count > 0.5, acc, dim) }
+                            for r in qn {
+                                let ny = 44 + r.n * 27
+                                group {
+                                    show: r.n < 4
+                                    box { from: 10, ny; size: 588, 24; corner: 6; color: fl.hull_raised; opacity: if(r.done, 0.3, 0.55) }
+                                    box { from: 12, ny + 4; size: 3, 16; corner: 1.5; color: pick(r.tag, acc, fl.ember, fl.phos, acc2, fl.trace_lit) }
+                                    text r.text { at: 24, ny + 12; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: if(r.done, dim, ink); width: 400; lines: 1 }
+                                    text r.when { at: 470, ny + 12; anchor: right center; size: 9; family: "Share Tech Mono"; color: dim }
+                                    zone box nrow { from: 10, ny; size: 470, 24; cursor: pointer; role: button; label: "Copy {r.text}" }
+                                    on press nrow { emit qn_copy(r.id) }
+                                    text pick(r.pinned, "☆", "★") { at: 500, ny + 12; anchor: center; size: 13; color: if(r.pinned, acc, dim) }
+                                    zone box npin { from: 488, ny; size: 24, 24; cursor: pointer; role: button; label: "Pin it" }
+                                    on press npin { emit qn_pin(r.id) }
+                                    text "✓" { at: 532, ny + 12; anchor: center; size: 12; weight: 700; color: if(r.done, acc, dim) }
+                                    zone box ndone { from: 520, ny; size: 24, 24; cursor: pointer; role: button; label: "Done" }
+                                    on press ndone { emit qn_done(r.id) }
+                                    text "×" { at: 566, ny + 12; anchor: center; size: 14; color: fl.ember; opacity: 0.8 }
+                                    zone box ndel { from: 554, ny; size: 24, 24; cursor: pointer; role: button; label: "Forget it" }
+                                    on press ndel { emit qn_del(r.id) }
+                                }
+                            }
+                            text "NO NOTES YET — WRITE ONE ABOVE" { at: 304, 100; anchor: center; size: 10; family: "Share Tech Mono"; color: dim; show: qn_count < 0.5 }
+                            text qn_said { at: 14, 152; anchor: left center; size: 9; family: "Share Tech Mono"; color: acc; width: 300; lines: 1; show: qn_saying }
+                            text "A PRESS COPIES · ☆ PINS · ✓ DONE · × FORGETS" { at: 594, 152; anchor: right center; size: 9; family: "Share Tech Mono"; color: dim }
                         }
                         // Power: the battery, its state, the profile, the session
                         group {
@@ -1107,9 +1144,6 @@ library PillBoard {
                                       if(vin, 1, 0), pk_view_toggle, f, 30)
                                 text "✓" { at: 20 + (f - floor(f / 6) * 6) * 100 + 11, 196 + floor(f / 6) * 36 + 15; anchor: center; size: 11; weight: 700; color: if(isl_style > 0.5, bg.primary, fl.ink); show: vin }
                             }
-                            text "MUSIC ON THE BOARD" { at: 20, 290; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
-                            PkBtn(20, 304, 96, "HALO", if(pk_viz < 0.5, 1, 0), pk_viz, 0, 30)
-                            PkBtn(120, 304, 96, "RIVER", if(pk_viz > 0.5, 1, 0), pk_viz, 1, 30)
                         }
                     }
                 }

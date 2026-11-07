@@ -119,8 +119,8 @@ SETTERS = [
     "pill.sides", "pill.multi", "pill.moons",
     # D169: the Pill's face and hiding when idle. Appended, so no code moved.
     "pill.face", "pill.autohide",
-    # D170: the board's pads and its music visualiser. Appended, so no code moved.
-    "pill.pads", "pill.viz",
+    # D170: the board's pads. Appended, so no code moved. (D202: its music visualiser went with Cue.)
+    "pill.pads",
     # D171: the Pill's shape, views, detail and rest. Appended, so no code moved.
     "pill.shape", "pill.views", "pill.detail", "pill.rest",
     # D172: what it does when it is idle. Appended, so no code moved.
@@ -1163,7 +1163,7 @@ def section(i, rows, indent, page):
         if r[0] == "keys":
             resets.append("@keys")
         if r[0] == "pillshapes":
-            INDEX.append(("Shape", "Attached, floating, a dot or a record: as pictures", i, page, y) + where(y))
+            INDEX.append(("Shape", "Attached, floating or a dot: as pictures", i, page, y) + where(y))
             if "pill.shape" not in resets: resets.append("pill.shape")
         if r[0] == "pillhide":
             INDEX.append(("When idle", "Stay, tuck away or vanish: as pictures", i, page, y) + where(y))
