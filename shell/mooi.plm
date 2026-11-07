@@ -1344,6 +1344,7 @@ scene Mooi {
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false
+    event pill_over ->         // to the logic (D198): the mouse over the capsule or the peek's card (1), or off both (0)
     event pill_hover ->        // to the logic: the hidden Pill pointed at
     // BMO's face in the Pill: one row of bmo/brain's FACES, set by the logic; the scene glides to it
     fact pb_ew = 8
@@ -1408,9 +1409,11 @@ scene Mooi {
     follow pb_lidf = pb_lid
     // his eyes on the pointer while it is on the bar (Pleamar's look: a surface hears the pointer
     // only over itself), and his blink
-    prop pb_lx = 0
-    prop pb_ly = 0
-    look pb_lx, pb_ly at pill_x + 35, fl.top + pill_h / 2 reach 9, 4 within 1400 rest 0, 0
+    // D198: wherever the mouse is on the screen (cursor.x/y, from Hyprland), not only over the bar
+    prop pb_lx = 0 ~m.select
+    follow pb_lx = clamp((cursor.x - pill_x - pill_w / 2) / 180, -1, 1) * 9
+    prop pb_ly = 0 ~m.select
+    follow pb_ly = clamp((cursor.y - fl.top - pill_h / 2) / 260, -1, 1) * 4
     prop pb_open = 1
     blink pb_open every 2.2s..7s for 170ms
     event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)

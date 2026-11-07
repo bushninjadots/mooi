@@ -308,7 +308,9 @@ return function(ctx)
         local mine = peek_state.seq
         after(300, function()
             if mine ~= peek_state.seq then return end
-            if fact.pk_peek and opened == "board" and not peek_state.cap and peek_state.card <= 0 then close() end
+            -- D198: `cap` is the mouse over the capsule or the card, measured from the global cursor
+            -- (bar.luau pill_over); the zones' counts are no longer what decides
+            if fact.pk_peek and opened == "board" and not peek_state.cap then close() end
         end)
     end
     local function peek_hover(on)

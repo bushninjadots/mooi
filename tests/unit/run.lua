@@ -5038,7 +5038,7 @@ do
         assert(b:find("relayout = function() pill_update(); relayout() end", 1, true), "settings re-read the Pill")
         local g = io.open("shell/mooi.plm"); local plm = g:read("a"); g:close()
         assert(plm:find("event pill_hover ->", 1, true), "pointing at it reaches the logic")
-        assert(plm:find("look pb_lx, pb_ly at", 1, true), "his eyes follow the pointer")
+        assert(plm:find("follow pb_lx = clamp((cursor.x - pill_x - pill_w / 2) / 180, -1, 1) * 9", 1, true), "his eyes follow the mouse anywhere (D198)")
         local u = io.open("shell/ui/pill.plm"); local ui = u:read("a"); u:close()
         assert(ui:find("emit pill_hover", 1, true), "the sliver can be pointed at")
     end)
@@ -5293,10 +5293,11 @@ do
         eq(b.fact.open, "board"); eq(b.fact.pk_peek, true)
         local W, H = require("lib/pill").PEEK_W, require("lib/pill").PEEK_H
         eq(b.fact.pk_bw, W); eq(b.fact.pk_bh, H)
-        -- the pointer goes capsule → card → an item over it: the item's enter comes before the card's leave
-        b.api.hover(false); b.h.pk_peek_hover(1); b.h.pk_peek_hover(1); b.h.pk_peek_hover(0)
+        -- D198: the mouse moves onto the card: still over (the measure covers the card), the zones' enters and
+        -- leaves in any order change nothing
+        b.h.pk_peek_hover(1); b.h.pk_peek_hover(1); b.h.pk_peek_hover(0)
         b.tick()
-        eq(b.fact.open, "board", "still on an item: not folded")
+        eq(b.fact.open, "board", "still on the card: not folded")
         b.h.pk_rev(7)
         eq(b.fact.pk_peek, false); eq(b.fact.pk_room, 7); eq(b.fact.pk_bw, 640)
         b.tick()
@@ -5903,8 +5904,9 @@ do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
     test("the pointer's warmth: brighter as it comes near, and the dot leans toward it", function()
         local ui = read("shell/ui/pill.plm")
-        assert(ui:find("let near = clamp(1 - (abs(pointer.x - cx) + abs(pointer.y - cy)) / 190, 0, 1) * pill_warm", 1, true), "nearness, as pill.warmth scales it")
-        assert(ui:find("let lean = clamp((pointer.x - cx) / 70, -1, 1) * 2.5 * near", 1, true), "the lean")
+        assert(ui:find("let near = clamp(1 - (abs(cursor.x - cx) + abs(cursor.y - cy)) / 260, 0, 1) * pill_warm", 1, true), "nearness from the global cursor (D198)")
+        assert(ui:find("let lean = clamp((cursor.x - cx) / 70, -1, 1) * 2.5 * near", 1, true), "the lean")
+        assert(ui:find("on change p_over while p_over { emit pill_over(1) }", 1, true), "the peek follows the measured mouse (D198)")
         assert(ui:find("ellipse { at: px + pw / 2 + lean, fl.cy; radius: 3;", 1, true), "the dot moves, not the mark")
         assert(ui:find("glow: 9, (0.5 * near) * st_glow, fl.phos", 1, true), "the warmth, on the theme's glow")
     end)
@@ -6805,6 +6807,18 @@ do
         local lua = read("shell/mooi-loom.luau")
         assert(lua:find("if sid then run_plan(\"fold\", sid, function() return cube.fold(doc, sid) end, cube.commit); return end", 1, true),
                "fold acts on the focused window's cube first")
+    end)
+    test("D198: the reveal's items arrive in turn; the strip swells and the cube leans toward the mouse", function()
+        local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+        local bd = read("shell/ui/pillboard.plm")
+        assert(bd:find('RevChip(d5, 66, 110, 13, pick(network.online, "offline", "{network.name}"), 4, if(network.online, acc, dim), ink, f: clamp((rf - 0.54) * 3, 0, 1))', 1, true), "the last item, last")
+        assert(bd:find("move: 0, 5 * (1 - f)", 1, true), "each rises as it fades in")
+        local st = read("shell/ui/loomstrip.plm")
+        assert(st:find("let mag = clamp(1 - abs(cursor.y - (y + lh / 2)) / 70, 0, 1) * edge_near * (1 - ext)", 1, true), "a dock's swell")
+        local cb = read("shell/ui/loomcube.plm")
+        assert(cb:find("let lean = clamp((cursor.x - cx) / 420, -1, 1) * 14", 1, true), "the cube leans")
+        local pill = read("shell/ui/pill.plm")
+        assert(not pill:find("pill_swap_f", 1, true), "and still no effect on the capsule itself (D187)")
     end)
     test("strays: a window on a Loom park the document does not know is still brought out", function()
         local st = LP.stray({ { address = "0xd1", workspace = { name = "special:loom-s4" } },

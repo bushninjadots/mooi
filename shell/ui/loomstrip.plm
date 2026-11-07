@@ -38,7 +38,11 @@ library LoomStrip {
                 let y = top + l.i * pitch + (pitch - lh) / 2
                 let out = if(l.open, 1, 0)
                 // the one in use stands out of the stack (compressed), and every row is as wide (open)
-                let w = lw + 22 * out * (1 - ext)
+                // D198: the layers nearest the mouse swell toward it as it comes to the edge (a dock's
+                // magnification, only while the strip is compressed)
+                let edge_near = clamp(1 - abs(cursor.x - ex) / 160, 0, 1)
+                let mag = clamp(1 - abs(cursor.y - (y + lh / 2)) / 70, 0, 1) * edge_near * (1 - ext)
+                let w = lw + 22 * out * (1 - ext) + 20 * mag
                 let x0 = if(left, 3, 297 - w)
                 let hot = z.hover > 0.5 and hrow == l.i
                 let fade = if(l.absent, 0.35, 1)

@@ -5528,3 +5528,22 @@ G4); the summaries follow the commit messages._
 - Limits: making a Cube from the keys, joining, and the Cube's top/bottom/back faces were not driven live
   (making one uses the focused workspace — the owner's); absent members are not relaunched yet; no
   miniatures on the faces.
+
+## D198 · 2026-11-07 · The hover that looped, a mouse-aware Pill, and motion where it belongs
+
+- The owner: "improve animations, hovering state is glitchy, mouse aware needs more".
+- **The glitch**: the peek followed the capsule zone's hover. The card opening over the capsule took that
+  hover away, so the card folded; the capsule under the resting pointer was hovered again, so it opened —
+  over and over. The peek now follows where the mouse *is*: the scene measures the global cursor
+  (`cursor.x/y`, which Pleamar reads from Hyprland about thirty times a second once a scene names them)
+  against the capsule and, while it shows, the card, and tells the logic `pill_over` on each change. The
+  card's zone counts no longer decide (a lost leave could have held it open).
+- **Mouse aware**: BMO's eyes follow the mouse anywhere on the screen, not only over the bar; the capsule's
+  warmth grows as the mouse comes from anywhere; an Accordion's layers swell toward the mouse as it nears the
+  edge (a dock's magnification, while compressed); a Cube leans toward it (up to 14°) and its edges light as
+  it comes near.
+- **Motion**: the reveal's items arrive in turn, each rising 5 px as it fades in. A "breath" on the capsule
+  at every change was tried and taken out again the same hour: it was D187's dim and lift, which the owner
+  had rejected — the tests caught it.
+- Checks: unit 601 / 0, scenes compile, applied live. Not driven: the hover itself needs the owner's mouse
+  (scripted pointers are not used while the owner works).

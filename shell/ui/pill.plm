@@ -282,8 +282,18 @@ library Pill {
             let cy = fl.cy
             // D173: how near the pointer is (0 far, 1 on it) and how far the dot leans toward it
             let cx = px + pw / 2
-            let near = clamp(1 - (abs(pointer.x - cx) + abs(pointer.y - cy)) / 190, 0, 1) * pill_warm
-            let lean = clamp((pointer.x - cx) / 70, -1, 1) * 2.5 * near
+            // D198: from the global cursor, so the capsule warms as the mouse comes from anywhere
+            let near = clamp(1 - (abs(cursor.x - cx) + abs(cursor.y - cy)) / 260, 0, 1) * pill_warm
+            let lean = clamp((cursor.x - cx) / 70, -1, 1) * 2.5 * near
+            // D198: the mouse over the capsule or over the peek's card while it shows — measured, so the card
+            // opening under a resting pointer is not "leaving" (the zone's hover was, and the card looped)
+            let pbw = max(200, pk_bw)
+            let pbx = clamp(cx - pbw / 2, 8, screen.width - pbw - 8)
+            let on_cap = cursor.x > px - 6 and cursor.x < px + pw + 6 and cursor.y < fl.top + pill_h + 4
+            let on_card = pk_peek and open == board and cursor.x > pbx and cursor.x < pbx + pbw and cursor.y < fl.top + max(60, pk_bh) + 4
+            let p_over = on_cap or on_card
+            on change p_over while p_over { emit pill_over(1) }
+            on change p_over while not p_over { emit pill_over(0) }
             // D187: one light, and it is the sound's — a soft glow under the capsule's own foot. No band
             // inside it, no hairline over its top, no ring, no sweep, no flash: the effects D181 and D182
             // added read as noise on a capsule that is meant to sit still. Silent when nothing plays
