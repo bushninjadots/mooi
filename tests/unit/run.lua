@@ -5243,5 +5243,110 @@ do
     end)
 end
 
+section("the Pill board: its logic, run (D170)")
+do
+    -- shell/pillboard.luau against stand-ins for Pleamar's globals: events are called by hand
+    local function board(settings)
+        local handlers, ran = {}, {}
+        local env = setmetatable({
+            on = function(name, fn) handlers[name] = fn end,
+            every = function() end,
+            run = function(cmd, args) ran[#ran + 1] = table.concat(args or {}, " ") end,
+            fact = { open = "none", pk_room = 0, pill_on = true, mu_playing = false, mu_has = false },
+            model = {}, text = {},
+        }, { __index = _G })
+        local saved = 0
+        local said, reacted, poked = {}, {}, 0
+        local P = { now = function() return { main = "idle", moons = { "music" } } end, osd = function() return "vol" end,
+                    bmo = function() return true end, touch = function() end,
+                    react = function(f) reacted[#reacted + 1] = f end, say = function(l) said[#said + 1] = l end,
+                    poke = function() poked = poked + 1 end }
+        local chunk = assert(loadfile("shell/pillboard.luau", "t", env))
+        local api = chunk()({ settings = function() return settings end, save = function() saved = saved + 1 end, pill = P,
+                              loom = { recent = function() return { { app = "a", title = "t", ago = "now" } }, 1 end, clear = function() end } })
+        return { api = api, h = handlers, fact = env.fact, model = env.model, ran = ran, saves = function() return saved end,
+                 said = said, reacted = reacted, poked = function() return poked end }
+    end
+    local function S() return { pill = { face = "time", pads = { "volume", "clock", "caffeine", "notes" } } } end
+    test("a left press unfolds the board on Now; BMO says hi", function()
+        local b = board(S())
+        b.api.press("left", "idle")
+        eq(b.fact.open, "board"); eq(b.fact.pk_room, 0); eq(b.fact.pk_n, 4)
+        eq(b.said[1], "hi!")
+        eq(#b.model.pk_week, 7)
+    end)
+    test("a press while it is open: BMO is poked (he is the face); a right press is the calendar", function()
+        local b = board(S())
+        b.api.press("left", "idle"); b.api.press("left", "idle")
+        eq(b.poked(), 1); eq(b.fact.open, "board")
+        local c = board(S()); c.api.press("right", "idle"); eq(c.fact.open, "calendar")
+    end)
+    test("pads: a room toggles, a switch acts in place, one that opens elsewhere closes the board", function()
+        local b = board(S())
+        b.api.press("left", "idle")
+        b.h.pk_pad(0); eq(b.fact.pk_room, 2, "volume → Sound"); eq(b.fact.pk_on, 0)
+        b.h.pk_pad(0); eq(b.fact.pk_room, 0, "again → Now")
+        b.h.pk_pad(2); eq(b.fact.open, "board"); assert(b.ran[#b.ran]:find("emit caffeine", 1, true), "caffeine's own event")
+        b.h.pk_pad(3); eq(b.fact.open, "none", "notes opens its pad: the board goes"); assert(b.ran[#b.ran]:find("emit qn_toggle", 1, true))
+    end)
+    test("edit: a part goes on the chosen pad or at the end; × takes one off; ◂ ▸ move it; each saved", function()
+        local st = S()
+        local b = board(st)
+        b.api.press("left", "idle")
+        b.h.pk_edit_cmd(0); eq(b.fact.pk_edit, true)
+        b.h.pk_part(6); eq(st.pill.pads[5], "weather", "added at the end")
+        b.h.pk_pad(1); eq(b.fact.pk_sel, 1, "a press in edit chooses the pad")
+        b.h.pk_part(3); eq(st.pill.pads[2], "resources", "put on the chosen pad")
+        b.h.pk_part(3); eq(#st.pill.pads, 5, "a part already there is not added twice")
+        b.h.pk_edit_cmd(31); eq(st.pill.pads[3], "resources"); eq(st.pill.pads[2], "caffeine", "moved right")
+        b.h.pk_edit_cmd(10); eq(st.pill.pads[1], "caffeine", "the first taken off")
+        assert(b.saves() >= 4, "saved each time")
+        b.h.pk_key(3); eq(b.fact.pk_edit, false, "Escape leaves edit first")
+    end)
+    test("the face and the visualiser are chosen on the board", function()
+        local st = S()
+        local b = board(st)
+        b.h.pk_face(3); eq(st.pill.face, "weather")
+        b.h.pk_viz(); eq(st.pill.viz, "river"); b.h.pk_viz(); eq(st.pill.viz, "halo")
+    end)
+    test("Escape backs out: a room, then the board; a docked moon shows its room", function()
+        local b = board(S())
+        b.api.press("left", "idle")
+        b.h.pk_go(5); eq(b.fact.pk_room, 5)
+        b.h.pk_key(3); eq(b.fact.pk_room, 0)
+        b.h.pk_chip(0); eq(b.fact.pk_room, 0); eq(b.fact.pk_music, true, "the music moon: Now Playing")
+        b.h.pk_key(3); eq(b.fact.open, "none")
+    end)
+    test("the keyboard walks the pads and presses one", function()
+        local b = board(S())
+        b.api.press("left", "idle")
+        b.h.pk_key(1); eq(b.fact.pk_kb, 0)
+        b.h.pk_key(0); eq(b.fact.pk_kb, 3, "left from the first wraps")
+        b.h.pk_key(1); b.h.pk_key(1); eq(b.fact.pk_kb, 1)
+        b.h.pk_key(2); eq(b.fact.pk_room, 1, "clock → the month")
+    end)
+end
+
+section("the Pill board: Settings and faces (D170)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("Settings: the Pill's Closed and Open cards, the pads button, the visualiser", function()
+        local plm = read("shell/mooi-settings.plm")
+        assert(plm:find('"Closed"', 1, true) and plm:find('"Open"', 1, true), "two cards")
+        assert(plm:find("pill_board_edit", 1, true), "Edit on the Pill")
+        assert(plm:find('"Halo", sv_pill_viz == 0', 1, true), "the visualiser")
+        local lua = read("shell/mooi-settings.luau")
+        assert(lua:find('emit pill_edit_open', 1, true), "it opens the board in edit")
+        assert(read("shell/pillboard.luau"):find('on("pill_edit_open"', 1, true))
+    end)
+    test("a module's face: its icon and reading in the closed Pill, a width of its own", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("pill_face > 2.5", 1, true) and ui:find("PkIcon(fk", 1, true))
+        local P = require("lib/pill")
+        for _, f in ipairs(P.FACES) do assert(P.FACE_W[f], f .. " has a width") end
+        eq(P.compute(P.state(), { face = "media" }, 0).width, 220)
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

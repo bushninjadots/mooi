@@ -12,7 +12,9 @@ local M = {
     -- D169: pointed at, a hidden Pill comes back this long; hidden, it is this wide
     PEEK_MS = 4000, SLIVER = 44,
     -- the width of each face (BMO's grows with what he says)
-    FACE_W = { time = 120, nexus = 104, bmo = 64 },
+    FACE_W = { time = 120, nexus = 104, bmo = 64,
+               -- D170: a module's face: its icon and a short reading (ui/pill.plm)
+               weather = 160, resources = 150, media = 220, battery = 104, workspaces = 140, network = 170, notifications = 130 },
     -- D170: what the closed Pill may show when nothing is happening: three of its own, and module faces
     FACES = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications" },
 }
@@ -90,7 +92,8 @@ local function width(v, cfg)
     if not v then return 0 end
     if v.glyph == "idle" then
         -- D170: a module's face is its glyph and a short reading (the bar works it out: cfg.face_text)
-        if cfg and cfg.face and not M.FACE_W[cfg.face] and cfg.face_text then
+        local builtin = cfg and (cfg.face == "time" or cfg.face == "bmo" or cfg.face == "nexus")
+        if cfg and cfg.face and not builtin and cfg.face_text then
             return math.max(104, 44 + 7 * #tostring(cfg.face_text))
         end
         local face = cfg and M.FACE_W[cfg.face] and cfg.face or "time"

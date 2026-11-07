@@ -1183,6 +1183,7 @@ scene Mooi {
     event pk_sig_clear ->      // to the logic: clear the signals
     event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
+    event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false

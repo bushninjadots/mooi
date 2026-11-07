@@ -206,6 +206,11 @@ return function(ctx)
         p.viz = p.viz == "river" and "halo" or "river"
         save(); publish()
     end)
+    on("pill_edit_open", function()
+        if not fact.pill_on then return end
+        open_board("now")
+        fact.pk_edit = true
+    end)
     on("pk_sig_clear", function()
         if ctx.loom and ctx.loom.clear then ctx.loom.clear() end
         signals()
