@@ -1831,6 +1831,10 @@ function sync_desktop()
     end
     applied.keys, applied.look, applied.managed, applied.claims = ksig, look, look ~= nil, claims
 end
+-- D197: once now it exists — at start the settings and the palette were applied before it was defined, so
+-- their calls skipped it, and a key added in a new version (Loom / Fold's) reached Hyprland only after the
+-- next settings change. It reloads Hyprland only when the keys really differ from what it bound.
+if bar_palette then sync_desktop() end
 -- ── The settings window ─────────────────────────────────────
 -- A program of its own (shell/mooi-settings.plm and .luau): a window in the same scene as the
 -- bar intermittently took the keyboard's routing from the islands (← → in the membrane's

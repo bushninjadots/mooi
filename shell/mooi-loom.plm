@@ -2,6 +2,7 @@ language 0.9
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/loomstrip.plm" as ls
+import "ui/loomcube.plm" as lc
 
 // Loom / Fold (D194, D195; docs/superpowers/specs/2026-11-07-loom-fold-design.md): its own program, started
 // by the bar's keeper (shell/loomkeeper.luau) only in Hybrid and Loom / Fold mode, so Native mooi runs none
@@ -245,6 +246,11 @@ scene Loom {
     model lf_strips max 4 { s: number; n: number; name: text; open: number; tiled: bool }
     model lf_layers max 64 { s: number; i: number; title: text; app: text; initial: text; open: bool; absent: bool }
     fact lf_n = 0
+    // D197: the docked cubes (lib/loomcube.rows)
+    model lf_cubes max 6 { c: number; name: text; folded: bool; partial: bool; face: number; turn: number; n: number
+                           n0: number; n1: number; n2: number; n3: number; n4: number; n5: number
+                           i0: text; i1: text; i2: text; i3: text; i4: text; i5: text }
+    fact lf_cn = 0
     fact lf_edge = 0            // 0 right · 1 left (loom.edge)
     fact lf_draw = false        // an accordion to draw
     fact lf_side: right | left = right   // the edge the surface stands on (the logic sets it with lf_edge)
@@ -257,6 +263,10 @@ scene Loom {
     event acc_move ->           // to the logic: k·10000 + from·100 + to
     event acc_all ->            // to the logic: k: every layer out, or all back in
     event acc_dissolve ->       // to the logic: k: the accordion gone, its windows out
+    event cube_press ->         // to the logic (D197): c: unfold it, or fold it
+    event cube_face ->          // to the logic: c: only the facing side out
+    event cube_turn ->          // to the logic: c·10 + (1 next · 0 previous)
+    event cube_dissolve ->      // to the logic: c: the cube gone, every window out
 
     surface loom {
         size: 300, full
@@ -268,6 +278,10 @@ scene Loom {
 
         for st in lf_strips {
             ls.LoomStrip(st.s, st.n, st.open, st.tiled, lf_n, lf_edge > 0.5, loom.height)
+        }
+        for cb in lf_cubes {
+            lc.LoomCube(cb.c, cb.folded, cb.partial, cb.face, cb.turn, cb.n, cb.n0, cb.n1, cb.n2, cb.n3, cb.i0, cb.i1, cb.i2, cb.i3,
+                        cb.name, lf_edge > 0.5, loom.height)
         }
     }
 }

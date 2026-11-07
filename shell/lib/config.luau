@@ -418,6 +418,9 @@ M.SCHEMA = {
     { path = "keys.loom_fold", kind = "key", default = "SUPER + ALT + F" },
     { path = "keys.loom_open", kind = "key", default = "SUPER + ALT + U" },
     { path = "keys.loom_remove", kind = "key", default = "SUPER + ALT + R" },
+    -- D197: the Cube's keys (both free)
+    { path = "keys.loom_cube", kind = "key", default = "SUPER + ALT + K" },
+    { path = "keys.loom_join", kind = "key", default = "SUPER + ALT + J" },
     { path = "shutter.enabled", kind = "boolean", default = true },
     { path = "shutter.pointer", kind = "boolean", default = true },
     { path = "shutter.edge", kind = "enum", values = { "auto", "left", "inside" }, default = "auto" },

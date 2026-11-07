@@ -152,6 +152,8 @@ M.SETTERS = {
     "loom.fold", "loom.accordions", "loom.edge",
     -- D195: the Accordion keys. Appended.
     "keys.loom_add", "keys.loom_next", "keys.loom_prev", "keys.loom_fold", "keys.loom_open", "keys.loom_remove",
+    -- D197: Cubes, and their two keys. Appended.
+    "loom.cubes", "keys.loom_cube", "keys.loom_join",
 }
 
 local function row_of(path)

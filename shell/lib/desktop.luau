@@ -27,6 +27,8 @@ M.ACTIONS = {
     { key = "loom_fold", cmd = "loom fold", name = "Accordion: fold or bring back" },
     { key = "loom_open", cmd = "loom open", name = "Accordion: every layer out" },
     { key = "loom_remove", cmd = "loom remove", name = "Accordion: take the window out" },
+    { key = "loom_cube", cmd = "loom cube", name = "Make a Cube of this workspace" },      -- D197
+    { key = "loom_join", cmd = "loom join", name = "The window joins the Cube" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 
