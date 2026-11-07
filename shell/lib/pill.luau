@@ -197,6 +197,8 @@ end
 -- "right"; osd: "vol" or "bri" (which change is showing). Left unfolds the board on the activity's room
 -- (the Nexus face's left is the Nexus button, while nothing is happening); right keeps the old jumps.
 local ROOM = { idle = "now", music = "now", record = "now", battery = "power", notify = "signals" }
+local FACE_ROOM = { weather = "weather", resources = "resources", media = "now", battery = "power", workspaces = "workspaces",
+                    network = "connections", notifications = "signals", visualiser = "visualiser" }
 function M.press(main, face, button, osd)
     main = main or "idle"
     local room = ROOM[main] or (main == "osd" and (osd == "bri" and "display" or "sound")) or "now"
@@ -210,6 +212,8 @@ function M.press(main, face, button, osd)
         return { kind = "board", room = room }
     end
     if face == "nexus" and main == "idle" then return { kind = "nexus" } end
+    -- D171: idle, the board opens on the room of the view the Pill shows
+    if main == "idle" then room = FACE_ROOM[face] or "now" end
     return { kind = "board", room = room }
 end
 

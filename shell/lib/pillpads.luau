@@ -10,12 +10,13 @@ local M = {}
 M.ORDER = barlayout.ORDER
 
 -- The core's rooms, in the scene's numbering (fact pk_room).
-M.ROOMS = { "now", "calendar", "sound", "display", "connections", "power", "resources", "weather", "signals" }
+M.ROOMS = { "now", "calendar", "sound", "display", "connections", "power", "resources", "weather", "signals",
+            "visualiser", "actions", "diagnostics", "workspaces", "wallpaper" }     -- D171: the last five
 
 M.DEFAULT = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" }
 
 local PARTS = {
-    workspaces    = { act = "open_overview_cmd", closes = true },
+    workspaces    = { room = "workspaces" },     -- D171
     window        = { act = "open_window", closes = true },
     media         = { room = "now" },
     resources     = { room = "resources" },
@@ -44,7 +45,7 @@ local PARTS = {
     focus         = { act = "focus_cmd", arg = 0, switch = true },
     settings      = { act = "bar_menu", closes = true },
     notes         = { act = "qn_toggle", closes = true },
-    wallpaper     = { act = "open_wallpaper", closes = true },
+    wallpaper     = { room = "wallpaper" },      -- D171
     nexus         = { act = "open_nexus", closes = true },
     updates       = { act = "run_updates", closes = true },
     claude        = { act = "open_claude", closes = true },

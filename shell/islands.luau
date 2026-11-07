@@ -14,7 +14,7 @@ return function(ctx)
     -- D170: the Pill board's rooms read what the islands gather, so an island's readers run while it
     -- is open OR while the board shows its room (lib/pillpads.ROOMS: 1 calendar · 5 power ·
     -- 6 resources · 7 weather). `wanted` is the island the data is for now, or nil.
-    local BOARD = { [1] = "calendar", [5] = "power", [6] = "stats", [7] = "weather" }
+    local BOARD = { [1] = "calendar", [5] = "power", [6] = "stats", [7] = "weather", [11] = "stats" }   -- 11: Diagnostics (D171)
     -- `open` as the scene says (reading fact.open back gives the logic's last write)
     local opened = "none"
     local function wanted()

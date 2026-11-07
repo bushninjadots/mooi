@@ -87,8 +87,43 @@ return function(ctx)
         fact.pk_sig_n = tonumber(count) or 0
     end
 
+    -- ── D171: the new rooms' data ──
+    -- Diagnostics: the machine, read once as the room opens
+    local function diagnostics()
+        run("uname", { "-r" }, function(out) text.pk_dg_kernel = tostring(out or ""):gsub("%s+$", "") end)
+        run("hostname", {}, function(out) text.pk_dg_host = tostring(out or ""):gsub("%s+$", "") end)
+        run("uptime", { "-p" }, function(out) text.pk_dg_up = tostring(out or ""):gsub("^up ", ""):gsub("%s+$", "") end)
+    end
+    -- Wallpaper: a strip of six from the picker's index, moved by the wheel
+    local walls, wall_at = {}, 0
+    local function wall_strip()
+        for k = 0, 5 do
+            local it = walls[wall_at + k + 1]
+            text["pk_wp" .. k] = it and (it.thumb ~= "" and it.thumb or it.path) or ""
+            fact["pk_wph" .. k] = it ~= nil
+        end
+        fact.pk_wp_n, fact.pk_wp_at = #walls, wall_at
+    end
+    local function wall_read()
+        local ok, raw = pcall(function() return sys.ask("files.read", "walls-index.json") end)
+        local doc = raw
+        if ok and type(raw) == "string" then ok, doc = pcall(json.decode, raw) end
+        walls = {}
+        if ok and type(doc) == "table" and type(doc.items) == "table" then
+            for _, it in ipairs(doc.items) do
+                if type(it) == "table" and type(it.path) == "string" and it.kind ~= "video" then
+                    walls[#walls + 1] = { path = it.path, thumb = type(it.thumb) == "string" and it.thumb or "" }
+                end
+            end
+        end
+        wall_at = math.max(0, math.min(wall_at, #walls - 6))
+        wall_strip()
+    end
+
     local function room(r)
         fact.pk_room = r
+        if r == parts.room_index("diagnostics") then diagnostics() end
+        if r == parts.room_index("wallpaper") then wall_read() end
         if r == 0 then fact.pk_music = fact.mu_playing == true end
         if r == parts.room_index("signals") then signals() end
         publish()
@@ -145,8 +180,38 @@ return function(ctx)
         if P.bmo() then P.react("curious", 800); P.say(WORDS[id] or id) end
     end)
     on("pk_back", function() room(0) end)
+    -- D171: the Workspaces room switches; the Actions room's drop terminal; the Wallpaper strip
+    on("pk_ws", function(v)
+        local n = math.floor(tonumber(v) or 0)
+        if n >= 1 then run("hyprctl", { "dispatch", "workspace", tostring(n) }) end
+    end)
+    on("pk_term", function()
+        run("hyprctl", { "-j", "clients" }, function(out)
+            if tostring(out or ""):find('"class": "mooi-drop"', 1, true) then
+                run("hyprctl", { "dispatch", "closewindow", "class:mooi-drop" })
+            else
+                local s = ctx.settings()
+                local size = type(s.pill) == "table" and s.pill.term_size or nil
+                local w, h = 960, 420
+                if type(size) == "table" then w, h = tonumber(size[1]) or w, tonumber(size[2]) or h end
+                local x = math.max(8, math.floor((fact.pill_x or 900) + (fact.pill_w or 120) / 2 - w / 2))
+                run("hyprctl", { "dispatch", "exec", string.format("[float; size %d %d; move %d %d; pin] kitty --class mooi-drop", w, h, x, 54) })
+            end
+        end)
+        close()
+    end)
+    on("pk_wp_scroll", function(v)
+        local d = (tonumber(v) or 0) > 0 and -1 or 1
+        wall_at = math.max(0, math.min(wall_at + d, math.max(0, #walls - 6)))
+        wall_strip()
+    end)
+    on("pk_wp", function(v)
+        local it = walls[wall_at + (math.floor(tonumber(v) or -1)) + 1]
+        if it then run("mooi", { "wall", "apply", it.path }) end
+    end)
     -- the wheel over the board: the next room, or the one before, and round (the owner asked, 2026-11-07)
-    local NAMES = { [0] = "now", "the month", "sound", "display", "connections", "power", "resources", "weather", "signals" }
+    local NAMES = { [0] = "now", "the month", "sound", "display", "connections", "power", "resources", "weather", "signals",
+                    "music!", "actions", "diagnostics", "workspaces", "wallpaper" }
     on("pk_scroll", function(v)
         local d = (tonumber(v) or 0) > 0 and -1 or 1
         local r = ((fact.pk_room or 0) + d) % #parts.ROOMS

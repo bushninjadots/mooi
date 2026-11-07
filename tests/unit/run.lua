@@ -5339,7 +5339,7 @@ do
         local b = board(S())
         b.api.press("left", "idle")
         b.h.pk_scroll(-1); eq(b.fact.pk_room, 1, "down: the next")
-        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 8, "up from Now: round to the last")
+        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 13, "up from Now: round to the last (D171: fourteen rooms)")
     end)
     test("the keyboard walks the pads and presses one", function()
         local b = board(S())
@@ -5558,6 +5558,62 @@ do
         assert(ui:find("from: if(dotted, px - 10, px)", 1, true))
         local plm = read("shell/mooi.plm")
         assert(plm:find("spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)", 1, true), "only while it is a dot")
+    end)
+end
+
+section("the Pill, round two: the new rooms (D171)")
+do
+    local P = require("lib/pill")
+    local PP = require("lib/pillpads")
+    local function board(settings, files)
+        local handlers, ran = {}, {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end,
+            run = function(cmd, args, cb) ran[#ran + 1] = cmd .. " " .. table.concat(args or {}, " "); if cb then cb("", 0) end end,
+            sys = { ask = function(what, name) return files and files[name] or nil end, call = function() end },
+            json = { decode = function(t) return t end },
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return settings end, save = function() end, pill = P2,
+            opened = function(v) env.fact.open = v end })
+        return { api = api, h = handlers, fact = env.fact, text = env.text, ran = ran }
+    end
+    test("five new rooms, reached by the wheel; workspaces and wallpaper pads open theirs", function()
+        eq(#PP.ROOMS, 14)
+        for _, r in ipairs({ "visualiser", "actions", "diagnostics", "workspaces", "wallpaper" }) do assert(PP.room_index(r), r) end
+        eq(PP.get("workspaces").room, "workspaces"); eq(PP.get("wallpaper").room, "wallpaper")
+    end)
+    test("a press opens the board on the room of the view the Pill shows", function()
+        eq(P.press("idle", "workspaces", "left").room, "workspaces")
+        eq(P.press("idle", "notifications", "left").room, "signals")
+        eq(P.press("idle", "weather", "left").room, "weather")
+        eq(P.press("idle", "visualiser", "left").room, "visualiser")
+        eq(P.press("idle", "time", "left").room, "now")
+        eq(P.press("music", "weather", "left").room, "now", "something happening: its own room")
+    end)
+    test("workspaces: a press switches; actions: the drop terminal toggles", function()
+        local b = board({ pill = {} })
+        b.api.press("left", "idle")
+        b.h.pk_ws(3); assert(b.ran[#b.ran]:find("hyprctl dispatch workspace 3", 1, true))
+        b.h.pk_term(); assert(b.ran[#b.ran]:find("mooi-drop", 1, true), "the terminal, by its class")
+    end)
+    test("wallpaper: the strip moves with the wheel, a press wears it", function()
+        local items = {}
+        for i = 1, 20 do items[i] = { path = "/w/" .. i .. ".jpg", kind = "still", thumb = "/t/" .. i .. ".jpg" } end
+        local b = board({ pill = {} }, { ["walls-index.json"] = { items = items } })
+        b.api.press("left", "idle")
+        b.h.pk_go(PP.room_index("wallpaper"))
+        eq(b.text.pk_wp0, "/t/1.jpg")
+        b.h.pk_wp_scroll(-1); eq(b.text.pk_wp0, "/t/2.jpg", "on by one")
+        b.h.pk_wp(2); assert(b.ran[#b.ran]:find("mooi wall apply /w/4.jpg", 1, true), "the third shown is the fourth")
+    end)
+    test("diagnostics: the machine read once as the room opens", function()
+        local b = board({ pill = {} })
+        b.api.press("left", "idle")
+        b.h.pk_go(PP.room_index("diagnostics"))
+        local any = false
+        for _, r in ipairs(b.ran) do if r:find("uname", 1, true) then any = true end end
+        assert(any, "the kernel and host are read")
     end)
 end
 

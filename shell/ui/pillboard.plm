@@ -148,6 +148,30 @@ library PillBoard {
         on scroll wh { emit pk_scroll(wheel) }
     }
 
+    // An invisible place to press (a wallpaper in the strip, a workspace's tile)
+    component PkHit(x: number, y: number, w: number, h: number, go: event, n: number, word: text) {
+        size: w, h
+        zone box b { from: x, y; size: w, h; cursor: pointer; role: button; label: word }
+        box { from: x, y; size: w, h; corner: 8; stroke: 1.5; color: fl.phos; opacity: 0.9 * b.hover }
+        on press b { emit go(n) }
+    }
+
+    // The wheel over a strip: its own event
+    component PkScroll(x: number, y: number, w: number, h: number, go: event) {
+        size: w, h
+        zone box s { from: x, y; size: w, h; role: region; agent: hidden }
+        on scroll s { emit go(wheel) }
+    }
+
+    // A tile of the Diagnostics room
+    component PkTile(x: number, y: number, label: text, value: text, hot: bool, acc: color, ink: color, dim: color) {
+        size: 142, 66
+        box { from: x, y; size: 142, 66; corner: 9; color: fl.hull_raised; opacity: 0.75 }
+        box { from: x, y; size: 142, 66; corner: 9; stroke: 1; color: if(hot, fl.ember, fl.trace_dim) }
+        text label { at: x + 12, y + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+        text value { at: x + 12, y + 42; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: if(hot, fl.ember, ink); width: 122; lines: 1 }
+    }
+
     // A moon docked in the header: its mark in a chip; a press shows its room
     component PkChip(cx: number, mk: number, k: number, acc: color) {
         size: 30, 24
@@ -298,6 +322,13 @@ library PillBoard {
         let bi = bk * 5 - floor(bk * 5 / n) * n
         let hf = pk_flow / 220 - floor(pk_flow / 220)
         image pk_art = from med_art, 120, 120
+        // D171: the Wallpaper room's strip (shell/pillboard.luau fills the six)
+        image pk_wpi0 = from pk_wp0, 96, 128
+        image pk_wpi1 = from pk_wp1, 96, 128
+        image pk_wpi2 = from pk_wp2, 96, 128
+        image pk_wpi3 = from pk_wp3, 96, 128
+        image pk_wpi4 = from pk_wp4, 96, 128
+        image pk_wpi5 = from pk_wp5, 96, 128
         // the song's position keeps coming while Now Playing shows (as for the music island)
         let pk_mus_on = open == board and pk_room < 0.5 and pk_music
         on change pk_mus_on { emit music_isl(if(pk_mus_on, 3, 2)) }
@@ -316,7 +347,7 @@ library PillBoard {
 
                     // ── the header ──
                     text pick(pk_music, "NOW", "NOW PLAYING") { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room < 0.5 }
-                    text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS") {
+                    text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS", "VISUALISER", "ACTIONS", "DIAGNOSTICS", "WORKSPACES", "WALLPAPER") {
                         at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room > 0.5 }
                     text "EDIT THE PILL" { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc2; show: pk_edit }
                     // the moons, docked: what else is happening, a press shows its room
@@ -523,7 +554,7 @@ library PillBoard {
                         }
                         // Signals: the newest three, clearing them, the whole Field
                         group {
-                            show: pk_room > 7.5
+                            show: pk_room > 7.5 and pk_room < 8.5
                             text pick(pk_sig_n > 0.5, "NOTHING WAITING", "{pk_sig_n, 0} WAITING") { at: 14, 12; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(pk_sig_n > 0.5, acc2, dim) }
                             for sg in pk_sigs {
                                 let sy = 28 + sg.n * 28
@@ -534,6 +565,98 @@ library PillBoard {
                             }
                             PkBtn(14, 120, 104, "CLEAR", 0, pk_sig_clear, 0)
                             PkBtn(124, 120, 150, "SIGNAL FIELD…", 0, loom_field, 0, 26, true)
+                        }
+
+                        // D171 · Visualiser: the core is the music
+                        group {
+                            show: pk_room > 8.5 and pk_room < 9.5
+                            group {
+                                opacity: 0.35
+                                path { color: mix(acc2, acc, 0.4)
+                                       move 0, 160
+                                       line 0, 156 - lv0 * 70; line 40.5, 156 - lv1 * 70; line 81, 156 - lv2 * 70; line 121.6, 156 - lv3 * 70
+                                       line 162, 156 - lv4 * 70; line 202.7, 156 - lv5 * 70; line 243, 156 - lv6 * 70; line 283.7, 156 - lv7 * 70
+                                       line 324, 156 - lv8 * 70; line 364.8, 156 - lv9 * 70; line 405, 156 - lv10 * 70; line 445.9, 156 - lv11 * 70
+                                       line 486, 156 - lv12 * 70; line 527, 156 - lv13 * 70; line 567, 156 - lv14 * 70; line 608, 156 - lv15 * 70
+                                       line 608, 160; close }
+                            }
+                            ellipse { at: 304, 80; radius: 44 + bass * 10; color: acc2; opacity: 0.14 * bass }
+                            repeat sp in 0..64 {
+                                let b = floor(if(sp < 32, sp, 63 - sp) / 2)
+                                let v = clamp(pick(b, lv0, lv1, lv2, lv3, lv4, lv5, lv6, lv7, lv8, lv9, lv10, lv11, lv12, lv13, lv14, lv15), 0, 1)
+                                line { from: 304 + sin(sp * 5.625) * 40, 80 - cos(sp * 5.625) * 40; to: 304 + sin(sp * 5.625) * (44 + 30 * v), 80 - cos(sp * 5.625) * (44 + 30 * v)
+                                       width: 2.4; color: mix(acc, acc2, v); opacity: 0.4 + 0.6 * v }
+                            }
+                            ellipse { at: 304, 80; radius: 36; color: #0d0f11 }
+                            ellipse { at: 304, 80; radius: 36; stroke: 1.2; color: fl.steel_700 }
+                            text pick(mu_has, "♪", "♫") { at: 304, 80; anchor: center; size: 22; color: acc }
+                            text pick(mu_has, "Nothing playing", mu_title) { at: 14, 12; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: ink; width: 240; lines: 1 }
+                        }
+                        // D171 · Actions: the session, capture, switches, the terminal
+                        group {
+                            show: pk_room > 9.5 and pk_room < 10.5
+                            PkBtn(14, 14, 140, "LOCK", 0, power, 1, 30, true)
+                            PkBtn(162, 14, 140, "SESSION…", 0, power, 0, 30, true)
+                            PkBtn(310, 14, 140, "SCREENSHOT", 0, shot, 0, 30, true)
+                            PkBtn(458, 14, 136, pick(recording, "RECORD", "STOP REC"), if(recording, 1, 0), record, 1, 30, true)
+                            PkBtn(14, 60, 140, "KEEP AWAKE", if(caffeine_on, 1, 0), caffeine, 0, 30)
+                            PkBtn(162, 60, 140, "DO NOT DISTURB", if(dnd_now, 1, 0), note_dnd, 0, 30)
+                            PkBtn(310, 60, 140, "TERMINAL", 0, pk_term, 0, 30)
+                            PkBtn(458, 60, 136, "SETTINGS", 0, open_settings, 0, 30, true)
+                            PkBtn(14, 106, 140, "OVERVIEW", 0, open_overview_cmd, 0, 30, true)
+                            PkBtn(162, 106, 140, "SEARCH", 0, open_command, 0, 30, true)
+                            PkBtn(310, 106, 140, "NEXUS", 0, open_nexus, 0, 30, true)
+                            PkBtn(458, 106, 136, "WALLPAPER", 0, pk_go, 13, 30)
+                        }
+                        // D171 · Diagnostics: about this computer, live
+                        group {
+                            show: pk_room > 10.5 and pk_room < 11.5
+                            PkTile(4, 8, "PROCESSOR", "{round(res_cpu * 100), 0}% · {round(res_temp), 0}°C", res_cpu > 0.85 or res_temp > 85, acc, ink, dim)
+                            PkTile(154, 8, "MEMORY", "{round(res_mem * 100), 0}%", res_mem > 0.9, acc, ink, dim)
+                            PkTile(304, 8, "DISK", st_disk_t, st_disk_f > 0.9, acc, ink, dim)
+                            PkTile(454, 8, "GRAPHICS", pick(st_gpu_ok, "—", "{round(st_gpu_f * 100), 0}%"), st_gpu_ok and st_gpu_f > 0.9, acc, ink, dim)
+                            PkTile(4, 84, "KERNEL", pk_dg_kernel, false, acc, ink, dim)
+                            PkTile(154, 84, "HOST", pk_dg_host, false, acc, ink, dim)
+                            PkTile(304, 84, "UP FOR", pk_dg_up, false, acc, ink, dim)
+                            PkTile(454, 84, "UPDATES", "{upd_n, 0} waiting", upd_n > 50, acc, ink, dim)
+                        }
+                        // D171 · Workspaces: a tile each, the one you are on lit; a press goes there
+                        group {
+                            show: pk_room > 11.5 and pk_room < 12.5
+                            repeat k in 0..8 {
+                                let wx = 8 + k * 75
+                                group {
+                                    show: k < spaces.count
+                                    box { from: wx, 14; size: 70, 132; corner: 10; color: if(k + 1 == ws.active, acc, fl.hull_raised); opacity: if(k + 1 == ws.active, 0.16, 0.7) }
+                                    box { from: wx, 14; size: 70, 132; corner: 10; stroke: 1; color: if(k + 1 == ws.active, acc, fl.trace_dim) }
+                                    text "{k + 1, 0}" { at: wx + 35, 70; anchor: center; size: 30; weight: 300; family: "Exo 2"; color: if(k + 1 == ws.active, acc, ink) }
+                                    text pick(k + 1 == ws.active, "", "HERE") { at: wx + 35, 120; anchor: center; size: 9; family: "Share Tech Mono"; color: acc }
+                                    PkHit(wx, 14, 70, 132, pk_ws, k + 1, "Go to this workspace")
+                                }
+                            }
+                        }
+                        // D171 · Wallpaper: a strip of six; the wheel moves it, a press wears one
+                        group {
+                            show: pk_room > 12.5
+                            PkScroll(0, 6, 608, 140, pk_wp_scroll)
+                            repeat k in 0..6 {
+                                let tx = 6 + k * 100
+                                group {
+                                    show: pick(k, pk_wph0, pk_wph1, pk_wph2, pk_wph3, pk_wph4, pk_wph5)
+                                    box { from: tx, 10; size: 96, 128; corner: 8; color: fl.hull_raised }
+                                    group {
+                                        clip box { from: tx, 10; size: 96, 128; corner: 8 }
+                                        image pk_wpi0 { at: tx, 10; size: 96, 128; show: k == 0 }
+                                        image pk_wpi1 { at: tx, 10; size: 96, 128; show: k == 1 }
+                                        image pk_wpi2 { at: tx, 10; size: 96, 128; show: k == 2 }
+                                        image pk_wpi3 { at: tx, 10; size: 96, 128; show: k == 3 }
+                                        image pk_wpi4 { at: tx, 10; size: 96, 128; show: k == 4 }
+                                        image pk_wpi5 { at: tx, 10; size: 96, 128; show: k == 5 }
+                                    }
+                                    PkHit(tx, 10, 96, 128, pk_wp, k, "Wear this wallpaper")
+                                }
+                            }
+                            text "{pk_wp_at + 1, 0}–{min(pk_wp_at + 6, pk_wp_n), 0} OF {pk_wp_n, 0} · THE WHEEL MOVES THEM" { at: 304, 150; anchor: center; size: 9; family: "Share Tech Mono"; color: dim }
                         }
                     }
 

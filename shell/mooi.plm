@@ -1175,6 +1175,27 @@ scene Mooi {
     event pk_back ->           // to the logic: back to Now
     event pk_go ->             // to the logic: room n
     event pk_scroll ->         // to the logic: the wheel over the board: the next room
+    event pk_ws ->             // to the logic (D171): go to workspace n
+    event pk_term ->           // to the logic: the drop terminal, out or away
+    event pk_wp_scroll ->      // to the logic: the wallpaper strip moves
+    event pk_wp ->             // to the logic: wear the wallpaper shown n-th
+    text pk_dg_kernel = ""
+    text pk_dg_host = ""
+    text pk_dg_up = ""
+    text pk_wp0 = ""
+    text pk_wp1 = ""
+    text pk_wp2 = ""
+    text pk_wp3 = ""
+    text pk_wp4 = ""
+    text pk_wp5 = ""
+    fact pk_wph0 = false
+    fact pk_wph1 = false
+    fact pk_wph2 = false
+    fact pk_wph3 = false
+    fact pk_wph4 = false
+    fact pk_wph5 = false
+    fact pk_wp_n = 0
+    fact pk_wp_at = 0
     event pk_chip ->           // to the logic: a docked moon pressed
     event pk_key ->            // to the logic: 0 left · 1 right · 2 enter · 3 escape
     event pk_edit_cmd ->       // to the logic: 0 edit on/off · 10+i take pad i off · 20+i move it left · 30+i right
