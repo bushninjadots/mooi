@@ -31,6 +31,7 @@ return function(ctx)
     -- what is open, as the scene says: a press outside or Escape closes it in the scene, and reading
     -- fact.open back gives the logic's last write, not that (a closed board read as open, D170)
     local opened = "none"
+    local rows_ed = {}      -- D199: the ROWS tab's publish, set once it is defined (handlers above it call it)
     -- D189: the editor and the peek are reset only after a close has folded the body (~the closing spring)
     local fold = { seq = 0 }
     function fold.later()
@@ -248,7 +249,7 @@ return function(ctx)
     -- grows from the capsule; otherwise from the size it had (pk_sw/pk_sh), and only if that changed.
     local function reshape(fresh)
         if opened ~= "board" then return end
-        local w, h, core = pillmod.board_size(fact.pk_room or 0, fact.pk_edit == true, fact.pk_peek == true)
+        local w, h, core = pillmod.board_size(fact.pk_room or 0, fact.pk_edit == true, fact.pk_peek == true, fact.pr_peek_w)
         if core > 0 then fact.pk_ch = core end
         if not fresh and w == fact.pk_bw and h == fact.pk_bh then return end
         if fresh then fact.pk_sw, fact.pk_sh = 0, 0
@@ -565,7 +566,8 @@ return function(ctx)
         if i < 0 or i > 7 then return end
         fact.pk_sel = math.min(i, #pads, 7)
     end)
-    on("pk_etab", function(v) fact.pk_etab = (math.floor(tonumber(v) or 0) == 1) and 1 or 0 end)
+    -- 0 pads · 1 face · 2 rows (D199)
+    on("pk_etab", function(v) local t = math.floor(tonumber(v) or 0); fact.pk_etab = (t == 1 or t == 2) and t or 0; if t == 2 and rows_ed.publish then rows_ed.publish() end end)
     on("pk_face", function(v)
         local f = pillmod.FACES[(math.floor(tonumber(v) or -1)) + 1]
         if not f then return end
@@ -595,6 +597,65 @@ return function(ctx)
         else p.viz = p.viz == "river" and "halo" or "river" end
         save(); publish()
     end)
+    -- ── D199: the ROWS tab — ArchEclipse's editor: the three rows and a shelf, arranged by dragging ──
+    local pillrows = require("lib/pillrows")
+    -- each item's name on its chip (by its k), and so its width
+    local ROW_NAME = { [0] = "SPACES", "CLOCK", "SONG · BATTERY", "MUSIC", "THROUGHPUT", "CONTROLS", "WEATHER",
+                       "MACHINE", "BATTERY", "BRIGHTNESS", "VOLUME", "NETWORK", "DATE" }
+    local function chip_w(k) return 34 + 7 * #(ROW_NAME[k] or "") end
+    local function ed_layout(list)
+        local out, x = {}, 0
+        for _, id in ipairs(list) do
+            local it = pillrows.BY[id]
+            if it then local w = chip_w(it.k); out[#out + 1] = { id = id, k = it.k, x = x, w = w }; x = x + w + 8 end
+        end
+        return out
+    end
+    local function ed_rows()
+        local rows = pillrows.rows(pill_settings())
+        return rows, { ed_layout(rows.rest), ed_layout(rows.core), ed_layout(rows.detail), ed_layout(pillrows.shelf(rows)) }
+    end
+    local function ed_publish()
+        local _, lays = ed_rows()
+        for r = 1, 4 do
+            local m = {}
+            for i, it in ipairs(lays[r]) do m[i] = { k = it.k, x = it.x, w = it.w } end
+            model["pe_r" .. (r - 1)] = m
+        end
+    end
+    local held = nil
+    on("pe_grab", function(v)
+        v = math.floor(tonumber(v) or -1)
+        held = { row = v // 100, i = v % 100 + 1 }
+        fact.pe_held = v
+    end)
+    on("pe_drop", function(v)
+        v = math.floor(tonumber(v) or -1)
+        fact.pe_held = -1
+        if not held then return end
+        local to_r, x = v // 10000, v % 10000
+        local rows, lays = ed_rows()
+        local names = { "rest", "core", "detail", "shelf" }
+        local from, to = names[held.row + 1], names[to_r + 1]
+        local held_now = held; held = nil
+        if not from or not to then return end
+        local at = to ~= "shelf" and pillrows.drop_at(lays[to_r + 1], x) or nil
+        local new = pillrows.move(rows, from, held_now.i, to, at)
+        local p = pill_settings()
+        p.row_rest, p.row_core, p.row_detail = new.rest, new.core, new.detail
+        save(); publish(); ed_publish()
+        if ctx.relayout then ctx.relayout() end
+        if P.bmo() then P.react("happy", 600) end
+    end)
+    on("pe_reset", function()
+        local p = pill_settings()
+        p.row_rest, p.row_core, p.row_detail = nil, nil, nil
+        save(); publish(); ed_publish()
+        if ctx.relayout then ctx.relayout() end
+    end)
+    ed_publish()
+    rows_ed.publish = ed_publish
+
     on("pill_edit_open", function()
         if not fact.pill_on then return end
         open_board("now")

@@ -1317,6 +1317,27 @@ scene Mooi {
     fact pill_turn = 0
     // D174: how much it feels the pointer (pill.warmth), and whether it pings at all (pill.ping)
     fact pill_warm = 0.55
+    // D199: the Pill's three rows, laid out by bar.luau (lib/pillrows): k the item, x from the row's start,
+    // w its width, room what a press opens; and each row's width
+    model pr_rest max 6 { k: number; x: number; w: number; room: number }
+    model pr_core max 6 { k: number; x: number; w: number; room: number }
+    model pr_detail max 6 { k: number; x: number; w: number; room: number }
+    fact pr_rest_w = 200
+    fact pr_core_w = 560
+    fact pr_detail_w = 560
+    fact pr_peek_w = 600
+    fact pr_rest_sx = -1       // where each row's workspace dots go (its spaces item's x), -1 none
+    fact pr_core_sx = -1
+    fact pr_detail_sx = -1
+    // the editor's ROWS tab (shell/pillboard.luau): the three rows and the shelf as chips; the one held
+    model pe_r0 max 6 { k: number; x: number; w: number }
+    model pe_r1 max 6 { k: number; x: number; w: number }
+    model pe_r2 max 6 { k: number; x: number; w: number }
+    model pe_r3 max 13 { k: number; x: number; w: number }
+    fact pe_held = -1
+    event pe_grab ->           // to the logic: a chip picked up (row · 100 + its place)
+    event pe_drop ->           // to the logic: let go (target row · 10000 + x along it; row 3 the shelf)
+    event pe_reset ->          // to the logic: ArchEclipse's rows again
     fact pill_gl_art = false       // D191: the song has an artist (the glance chip shows it)
     fact pill_gl_tw = 150          // D191: the room the song's title takes in the glance chip
     fact pill_gl_n = 5             // D191: the glance face's dots (the bar's workspace count, ten at most)

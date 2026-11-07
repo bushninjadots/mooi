@@ -230,43 +230,92 @@ library PillBoard {
         on press pkz { emit pk_peek_open }
     }
 
-    // D191: one item of the reveal (ArchEclipse's expanded pill rows): its icon and a short reading, a
-    // plate under it on hover; a press grows the reveal into the board on that item's room. Its zone also
-    // counts as the card for the peek's hover (pk_peek_hover is a count of zones entered, not a flag).
-    component RevChip(x: number, cy: number, w: number, k: number, word: text, r: number, acc: color, ink: color, f: number = 1) {
+    // D199: one item of the Pill's rows (lib/pillrows; ArchEclipse's rest · core · detail), drawn by its kind
+    // at x, w wide, centred on cy: the capsule's rest row (zoned false — a press there is the board) or a
+    // reveal row (zoned: a press opens its room, and its zone counts as the card for the peek's hover).
+    // f: its arrival (rising 5 px as it fades in).
+    component RowItem(k: number, x: number, cy: number, w: number, room: number, f: number, zoned: bool, acc: color, ink: color, dim: color) {
         size: w, 24
-        zone box c { from: x, cy - 12; size: w, 24; cursor: pointer; role: button; label: word }
+        image ri_art = from med_art, 32, 32
+        zone box c { from: x, cy - 12; size: w, 24; cursor: pointer; role: button; label: "Open it"; show: zoned }
         let cin = c.hover > 0.5
-        on change cin while cin { emit pk_peek_hover(1) }
-        on change cin while not cin { emit pk_peek_hover(0) }
-        on press c { emit pk_rev(r) }
-        // D198: each item arrives in its turn — rising 5 px and fading in (f, the caller's stagger)
+        on change cin while cin and zoned { emit pk_peek_hover(1) }
+        on change cin while not cin and zoned { emit pk_peek_hover(0) }
+        on press c { emit pk_rev(room) }
         group {
             opacity: f
             move: 0, 5 * (1 - f)
-            box { from: x, cy - 12; size: w, 24; corner: 12; color: fl.hull_raised; opacity: 0.85 * c.hover }
-            PkIcon(k, x + 14, cy, 13, acc)
-            text word { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: max(1, w - 33); lines: 1 }
+            box { from: x, cy - 12; size: w, 24; corner: 12; color: fl.hull_raised; opacity: if(zoned, 0.85 * c.hover, 0) }
+            // 0 the workspaces: drawn once per row by RowDots (bar.luau gives its place), not in every slot
+            // 1 the clock · 12 the date
+            text clock.time { at: x + w / 2, cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink; show: k > 0.5 and k < 1.5 }
+            text clock.date { at: x + w / 2, cy; anchor: center; size: 11; weight: 600; family: "Exo 2"; color: dim; width: w; lines: 1; show: k > 11.5 }
+            // 2 the live chip: the song on a faint accent plate, or the battery (ArchEclipse's PillChip)
+            group {
+                show: k > 1.5 and k < 2.5
+                let tw = if(mu_has and pill_gl_art, min(pill_gl_tw + 4, w - 36), w - 36)
+                box { from: x, cy - 12; size: w, 24; corner: 12; color: fl.phos; opacity: if(mu_has, 0.16, 0) }
+                text "♪" { at: x + 11, cy; anchor: left center; size: 12; weight: 700; color: fl.phos; show: mu_has }
+                text pick(battery.charging, "▮", "ϟ") { at: x + 11, cy; anchor: left center; size: 12; weight: 700; color: ink; show: not mu_has }
+                text mu_title { at: x + 25, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: max(1, tw); lines: 1; show: mu_has }
+                text pick(battery.present, "—", "{battery.percent, 0}%") { at: x + 25, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: dim; width: max(1, tw); lines: 1; show: not mu_has }
+                text mu_artist { at: x + 25 + tw + 7, cy; anchor: left center; size: 11; family: "Exo 2"; color: dim; width: max(1, w - 36 - tw - 7); lines: 1; show: mu_has and pill_gl_art and w - 36 - tw > 20 }
+            }
+            // 3 the song with its cover
+            group {
+                show: k > 2.5 and k < 3.5
+                box { from: x + 6, cy - 8; size: 16, 16; corner: 4; color: fl.well }
+                image ri_art { at: x + 6, cy - 8; size: 16, 16; show: med_has_art }
+                text mu_title { at: x + 28, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: max(1, w - 34); lines: 1 }
+            }
+            // 5 the controls: network, Bluetooth, sound, each lit while on
+            group {
+                show: k > 4.5 and k < 5.5
+                PkIcon(13, x + 16, cy, 13, if(network.online, acc, dim))
+                PkIcon(14, x + 42, cy, 13, if(bluetooth.powered, acc, dim))
+                PkIcon(10, x + 68, cy, 13, if(audio.muted, dim, acc))
+            }
+            // the rest: an icon and a short reading
+            let ic = pick(k, 0, 0, 0, 0, 4, 0, 6, 3, 12, 11, 10, 13, 15)
+            group {
+                show: k > 3.5 and k != 5 and k < 11.5
+                PkIcon(ic, x + 14, cy, 13, if(k > 10.5 and not network.online, dim, if(k > 7.5 and k < 8.5 and battery.percent < 15 and not battery.charging, fl.ember, acc)))
+                text "{bw_down}  ↑ {bw_up}" { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: max(1, w - 33); lines: 1; show: k > 3.5 and k < 4.5 }
+                text "{wx_temp, 0}°" { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; show: k > 5.5 and k < 6.5 }
+                text "{round(res_cpu * 100), 0}% · {round(res_mem * 100), 0}%" { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; show: k > 6.5 and k < 7.5 }
+                text "{battery.percent, 0}%" { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; show: k > 7.5 and k < 8.5 }
+                text "{round(brightness.level * 100), 0}%" { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; show: k > 8.5 and k < 9.5 }
+                text pick(audio.muted, "{round(audio.volume * 100), 0}%", "muted") { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; show: k > 9.5 and k < 10.5 }
+                text pick(network.online, "offline", "{network.name}") { at: x + 27, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: max(1, w - 33); lines: 1; show: k > 10.5 and k < 11.5 }
+            }
         }
     }
 
-    // D191: the reveal's controls item (ArchEclipse's ControlWidget): the network, Bluetooth and the sound,
-    // each lit while on; a press is the board on Sound
-    component RevCtl(x: number, cy: number, acc: color, dim: color, f: number = 1) {
-        size: 84, 24
-        zone box c { from: x, cy - 12; size: 84, 24; cursor: pointer; role: button; label: "Sound and connections" }
-        let cin = c.hover > 0.5
-        on change cin while cin { emit pk_peek_hover(1) }
-        on change cin while not cin { emit pk_peek_hover(0) }
-        on press c { emit pk_rev(2) }
+    // D199: a row's workspace dots (ArchEclipse's PillDots), at x (the row's spaces item), -1 none
+    component RowDots(x: number, cy: number, f: number) {
+        size: 110, 6
         group {
+            show: x > -0.5
             opacity: f
-            move: 0, 5 * (1 - f)
-            box { from: x, cy - 12; size: 84, 24; corner: 12; color: fl.hull_raised; opacity: 0.85 * c.hover }
-            PkIcon(13, x + 16, cy, 13, if(network.online, acc, dim))
-            PkIcon(14, x + 42, cy, 13, if(bluetooth.powered, acc, dim))
-            PkIcon(10, x + 68, cy, 13, if(audio.muted, dim, acc))
+            for sp in spaces {
+                group { show: sp.index < pill_gl_n
+                        GlanceDot(x + 1 + sp.index * 10 + if(sp.id > ws.active, 7, 0), cy, sp.active, sp.windows > 0) }
+            }
         }
+    }
+
+    // D199: a chip in the ROWS editor: picked up with a press, carried with the mouse, let go on a row (a
+    // place in it) or on the shelf (hidden). r its row (3 the shelf), i its place, k the item.
+    component EdChip(r: number, i: number, k: number, x: number, y: number, w: number, acc: color, ink: color, dim: color) {
+        size: w, 26
+        let held = pe_held > -0.5 and pe_held == r * 100 + i
+        zone box c { from: x, y; size: w, 26; cursor: if(held, grabbing, grab); role: button; label: "Drag to move" }
+        box { from: x, y; size: w, 26; corner: 13; color: mix(fl.hull_raised, fl.phos_fill, c.hover * 0.5); opacity: if(held, 0.3, 1) }
+        box { from: x, y; size: w, 26; corner: 13; stroke: 1; color: mix(fl.trace_dim, acc, c.hover); opacity: if(held, 0.3, 1) }
+        text pick(k, "SPACES", "CLOCK", "SONG · BATTERY", "MUSIC", "THROUGHPUT", "CONTROLS", "WEATHER", "MACHINE", "BATTERY", "BRIGHTNESS", "VOLUME", "NETWORK", "DATE")
+             { at: x + w / 2, y + 13.5; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r > 2.5, dim, ink); opacity: if(held, 0.3, 1) }
+        on press c { emit pe_grab(r * 100 + i) }
+        on release c { emit pe_drop(if(local.y < 136, 0, if(local.y < 206, 1, if(local.y < 276, 2, 3))) * 10000 + clamp(round(local.x - 20), 0, 9999)) }
     }
 
     // D188: a pad's slot in the editor — the module on it (its icon and name), or a + for an empty one.
@@ -961,40 +1010,19 @@ library PillBoard {
                             opacity: min(1, rf * 2)
                             pivot: bw / 2, bh / 2
                             scale: 0.98 + 0.02 * rf
-                            // the core row, centred: each item only while it has something to say
-                            let wm = if(mu_has, 210, 0)
-                            let cwt = wm + if(mu_has, 14, 0) + 150 + 14 + 84 + 14 + 64
-                            let c0 = (bw - cwt) / 2
-                            group { show: mu_has
-                                    box { from: c0 + 6, 18; size: 16, 16; corner: 4; color: fl.well }
-                                    image pk_art { at: c0 + 6, 18; size: 16, 16; show: med_has_art }
-                                    RevChip(c0, 26, wm, 2, "{mu_title}", 0, acc, ink, f: clamp((rf - 0.00) * 3, 0, 1)) }
-                            let c1 = c0 + wm + if(mu_has, 14, 0)
-                            RevChip(c1, 26, 150, 4, "{bw_down}  ↑ {bw_up}", 4, acc, ink, f: clamp((rf - 0.06) * 3, 0, 1))
-                            let c2 = c1 + 164
-                            RevCtl(c2, 26, acc, dim, f: clamp((rf - 0.12) * 3, 0, 1))
-                            let c3 = c2 + 98
-                            RevChip(c3, 26, 64, 15, "{clock.time}", 1, acc, ink, f: clamp((rf - 0.18) * 3, 0, 1))
-                            // the hairline between them (ArchEclipse: 180 px, the border colour)
+                            // D199: the two rows are the owner's (lib/pillrows: ArchEclipse's core and detail), each
+                            // centred, each item arriving in its turn
+                            let c0 = (bw - pr_core_w) / 2
+                            for it in pr_core {
+                                RowItem(it.k, c0 + it.x, 26, it.w, it.room, clamp((rf - it.x / pr_core_w * 0.3) * 3, 0, 1), true, acc, ink, dim)
+                            }
+                            RowDots(if(pr_core_sx > -0.5, c0 + pr_core_sx, -1), 26, min(1, rf * 2))
                             line { from: bw / 2 - 90, 46; to: bw / 2 + 90, 46; width: 1; color: fl.trace_dim; opacity: 0.6 }
-                            // the detail row
-                            let wb = if(battery.present, 70, 0)
-                            let wl = if(brightness.present, 70, 0)
-                            let dwt = 70 + 14 + 100 + 14 + wb + if(battery.present, 14, 0) + wl + if(brightness.present, 14, 0) + 70 + 14 + 110
-                            let d0 = (bw - dwt) / 2
-                            RevChip(d0, 66, 70, 6, "{wx_temp, 0}°", 7, acc, ink, f: clamp((rf - 0.24) * 3, 0, 1))
-                            let d1 = d0 + 84
-                            RevChip(d1, 66, 100, 3, "{round(res_cpu * 100), 0}% · {round(res_mem * 100), 0}%", 6, acc, ink, f: clamp((rf - 0.30) * 3, 0, 1))
-                            let d2 = d1 + 114
-                            group { show: battery.present
-                                    RevChip(d2, 66, 70, 12, "{battery.percent, 0}%", 5, if(battery.percent < 15 and not battery.charging, fl.ember, acc), ink, f: clamp((rf - 0.36) * 3, 0, 1)) }
-                            let d3 = d2 + wb + if(battery.present, 14, 0)
-                            group { show: brightness.present
-                                    RevChip(d3, 66, 70, 11, "{round(brightness.level * 100), 0}%", 3, acc, ink, f: clamp((rf - 0.42) * 3, 0, 1)) }
-                            let d4 = d3 + wl + if(brightness.present, 14, 0)
-                            RevChip(d4, 66, 70, 10, pick(audio.muted, "{round(audio.volume * 100), 0}%", "muted"), 2, acc, ink, f: clamp((rf - 0.48) * 3, 0, 1))
-                            let d5 = d4 + 84
-                            RevChip(d5, 66, 110, 13, pick(network.online, "offline", "{network.name}"), 4, if(network.online, acc, dim), ink, f: clamp((rf - 0.54) * 3, 0, 1))
+                            let d0 = (bw - pr_detail_w) / 2
+                            for it in pr_detail {
+                                RowItem(it.k, d0 + it.x, 66, it.w, it.room, clamp((rf - 0.15 - it.x / pr_detail_w * 0.3) * 3, 0, 1), true, acc, ink, dim)
+                            }
+                            RowDots(if(pr_detail_sx > -0.5, d0 + pr_detail_sx, -1), 66, min(1, rf * 2))
                         }
                     }
 
@@ -1006,7 +1034,8 @@ library PillBoard {
                         // a denser backing than the bar's own plate, so the editor reads over any window
                         box { from: 0, 0; size: bw, bh; corner: 14; color: fl.hull; opacity: 0.82 }
                         PkBtn(150, 4, 96, "PADS", if(pk_etab < 0.5, 1, 0), pk_etab, 0)
-                        PkBtn(252, 4, 96, "FACE", if(pk_etab > 0.5, 1, 0), pk_etab, 1)
+                        PkBtn(252, 4, 96, "FACE", if(pk_etab > 0.5 and pk_etab < 1.5, 1, 0), pk_etab, 1)
+                        PkBtn(354, 4, 96, "ROWS", if(pk_etab > 1.5, 1, 0), pk_etab, 2)
                         PkBtn(524, 4, 100, "DONE", 1, pk_edit_cmd, 0)
                         line { from: 16, 40; to: 624, 40; width: 1; color: fl.trace_dim; opacity: 0.7 }
 
@@ -1036,9 +1065,34 @@ library PillBoard {
                             }
                         }
 
+                        // ── D199: rows — ArchEclipse's editor: the capsule's row and the reveal's two, stacked as
+                        // drop targets, and the shelf; a chip is carried with the mouse and let go where it goes
+                        group {
+                            show: pk_etab > 1.5
+                            repeat rr in 0..4 {
+                                let ry = 84 + rr * 70
+                                text pick(rr, "AT REST · THE CAPSULE", "WHEN IT GROWS · FIRST ROW", "WHEN IT GROWS · SECOND ROW", "NOT SHOWN · DRAG ONE UP TO SHOW IT")
+                                     { at: 20, ry - 12; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                                box { from: 16, ry - 4; size: 608, 34; corner: 10; color: fl.well; opacity: if(rr > 2.5, 0.35, 0.6) }
+                                box { from: 16, ry - 4; size: 608, 34; corner: 10; stroke: 1
+                                      color: if(pe_held > -0.5 and pointer.y - btop > ry - 18 and pointer.y - btop < ry + 52, acc, fl.trace_dim); opacity: 0.8 }
+                            }
+                            for ch in pe_r0 { EdChip(0, ch.index, ch.k, 20 + ch.x, 84, ch.w, acc, ink, dim) }
+                            for ch in pe_r1 { EdChip(1, ch.index, ch.k, 20 + ch.x, 154, ch.w, acc, ink, dim) }
+                            for ch in pe_r2 { EdChip(2, ch.index, ch.k, 20 + ch.x, 224, ch.w, acc, ink, dim) }
+                            for ch in pe_r3 { EdChip(3, ch.index, ch.k, 20 + ch.x, 294, ch.w, acc, ink, dim) }
+                            // the chip in the hand, following the mouse
+                            group {
+                                show: pe_held > -0.5
+                                box { from: pointer.x - bx - 50, pointer.y - btop - 13; size: 100, 26; corner: 13; color: fl.phos; opacity: 0.85 }
+                                text "MOVE IT" { at: pointer.x - bx, pointer.y - btop + 0.5; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+                            }
+                            PkBtn(524, 344, 100, "RESET", 0, pe_reset, 0)
+                            text "DRAG A CHIP TO MOVE IT · ONTO THE SHELF TO HIDE IT" { at: 20, 357; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim }
+                        }
                         // ── face ──
                         group {
-                            show: pk_etab > 0.5
+                            show: pk_etab > 0.5 and pk_etab < 1.5
                             text "AT REST, THE PILL SHOWS" { at: 20, 74; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
                             repeat f in 0..12 {
                                 PkBtn(20 + (f - floor(f / 6) * 6) * 100, 88 + floor(f / 6) * 36, 96,

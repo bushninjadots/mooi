@@ -194,12 +194,42 @@ return function(ctx)
                  disc = tonumber(s.bar.height) or 24,
                  autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text,
                  -- D191: ArchEclipse's rest face is as wide as its dots, the clock and its live chip
-                 glance_w = pillmod.glance_w(ctx.space_count(), pst.media.title, pst.media.title ~= "" and pst.media.artist or "",
-                                             pst.battery.percent) }
+                 glance_w = bmo_fx.rest_w }        -- D199: the rest row's width (pill_rows below)
+    end
+    -- D199: the Pill's three rows laid out for what they say now (lib/pillrows), for the scene: the rest
+    -- row is the glance face, the other two the reveal's. Published only when they change.
+    local pillrows = require("lib/pillrows")
+    local function pill_rows(s)
+        local p = type(s.pill) == "table" and s.pill or {}
+        local rows = pillrows.rows(p)
+        local title = tostring(pst.media.title or "")
+        local d = { spaces = ctx.space_count(), title = title, artist = title ~= "" and tostring(pst.media.artist or "") or "",
+                    percent = pst.battery.percent, battery = env.battery, brightness = env.brightness }
+        local out, sig = {}, {}
+        for _, r in ipairs(pillrows.ROWS) do
+            local lay, w = pillrows.layout(rows[r], d)
+            local m = {}
+            local sx = -1
+            for i, it in ipairs(lay) do
+                m[i] = { k = it.k, x = it.x, w = it.w, room = it.room }; sig[#sig + 1] = it.k .. ":" .. it.x .. ":" .. it.w
+                if it.id == "spaces" then sx = it.x end
+            end
+            out[r] = { m = m, w = w, sx = sx }
+            sig[#sig + 1] = "|"
+        end
+        bmo_fx.rest_w = out.rest.w
+        local key = table.concat(sig, ",")
+        if key == bmo_fx.rows_sig then return end
+        bmo_fx.rows_sig = key
+        model.pr_rest, model.pr_core, model.pr_detail = out.rest.m, out.core.m, out.detail.m
+        fact.pr_rest_w, fact.pr_core_w, fact.pr_detail_w = out.rest.w, out.core.w, out.detail.w
+        fact.pr_peek_w = math.max(out.core.w, out.detail.w)
+        fact.pr_rest_sx, fact.pr_core_sx, fact.pr_detail_sx = out.rest.sx, out.core.sx, out.detail.sx
     end
     function pill_update()
         local s = ctx.settings()
         if s.bar.mode ~= "pill" then fact.pill_on = false; fact.pill_swap = 0; pill_sig, pill_gst = nil, nil; return end
+        pill_rows(s)
         local r = pillmod.compute(pst, pill_cfg(s), pill_ms)
         local v = r.view[r.main]
         fact.pill_kind = KIND[r.main] or 0

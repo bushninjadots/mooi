@@ -5547,3 +5547,24 @@ G4); the summaries follow the commit messages._
   had rejected — the tests caught it.
 - Checks: unit 601 / 0, scenes compile, applied live. Not driven: the hover itself needs the owner's mouse
   (scripted pointers are not used while the owner works).
+
+## D199 · 2026-11-07 · ArchEclipse's editor, ported: the Pill's three rows, arranged by dragging
+
+- The owner asked whether the Pill's editing had been ported from ArchEclipse. It had not: D191 brought
+  its rest face, reveal and spectrum, not its editor. ArchEclipse's pill had three sections — rest (what
+  shows), core and detail (the expanded face's two rows) — arranged in edit mode by dragging widgets
+  between rows stacked as drop targets.
+- **The rows are now the owner's** (`lib/pillrows`, pure, tested): `pill.row_rest`, `pill.row_core`,
+  `pill.row_detail`, each up to six of thirteen items (workspaces, clock, the live chip, music,
+  throughput, controls, weather, machine, battery, brightness, volume, network, date), ArchEclipse's lists
+  the default. The bar lays each row out for what it says now (an item with nothing to say — no song, no
+  battery — leaves) and publishes it; the glance face is the rest row, the reveal draws the other two, each
+  centred, and grows as wide as its wider row (300–900 px). One `RowItem` draws any item; a row's workspace
+  dots are drawn once per row, not in every slot (that alone was 18 k instructions).
+- **The editor's ROWS tab**, in ArchEclipse's arrangement: the capsule's row, the reveal's first and
+  second rows, and a shelf of what is not shown, stacked as drop targets. A chip is pressed, carried with
+  the mouse (the row under it lights), and let go — before the chip under the pointer, or on the shelf to
+  hide it; RESET brings ArchEclipse's rows back. The move is `lib/pillrows.move`.
+- Cost: the bar's scene grew from 49 k to 62.8 k instructions (six items a row, the editor's chips). Not
+  yet measured in frames.
+- Checks: unit 603 / 0, scenes compile, the ROWS tab seen live. Not driven: a real drag (the owner's mouse).

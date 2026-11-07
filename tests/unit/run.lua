@@ -6811,7 +6811,8 @@ do
     test("D198: the reveal's items arrive in turn; the strip swells and the cube leans toward the mouse", function()
         local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
         local bd = read("shell/ui/pillboard.plm")
-        assert(bd:find('RevChip(d5, 66, 110, 13, pick(network.online, "offline", "{network.name}"), 4, if(network.online, acc, dim), ink, f: clamp((rf - 0.54) * 3, 0, 1))', 1, true), "the last item, last")
+        assert(bd:find("RowItem(it.k, d0 + it.x, 66, it.w, it.room, clamp((rf - 0.15 - it.x / pr_detail_w * 0.3) * 3, 0, 1), true, acc, ink, dim)", 1, true),
+               "each item in its turn, along its row (D199: the rows are the owner's)")
         assert(bd:find("move: 0, 5 * (1 - f)", 1, true), "each rises as it fades in")
         local st = read("shell/ui/loomstrip.plm")
         assert(st:find("let mag = clamp(1 - abs(cursor.y - (y + lh / 2)) / 70, 0, 1) * edge_near * (1 - ext)", 1, true), "a dock's swell")
@@ -6819,6 +6820,43 @@ do
         assert(cb:find("let lean = clamp((cursor.x - cx) / 420, -1, 1) * 14", 1, true), "the cube leans")
         local pill = read("shell/ui/pill.plm")
         assert(not pill:find("pill_swap_f", 1, true), "and still no effect on the capsule itself (D187)")
+    end)
+    test("D199: the Pill's three rows (ArchEclipse's rest · core · detail): clean, lay out, move, shelf", function()
+        local R = require("lib/pillrows")
+        local rows = R.rows({})
+        eq(rows.rest[1], "spaces"); eq(#rows.core, 4); eq(#rows.detail, 6)
+        eq(#R.clean({ "clock", "clock", "nonsense", "date" }, "rest"), 2, "known, once")
+        local lay, w = R.layout(rows.core, { title = "", battery = true })
+        eq(#lay, 3, "no song: the media item leaves"); eq(lay[1].id, "bandwidth"); eq(lay[1].x, 14)
+        eq(w, 14 + 150 + 14 + 84 + 14 + 46 + 14)
+        local r2 = R.move(rows, "detail", 1, "rest", 2)               -- weather into the rest row, second
+        eq(r2.rest[2], "weather"); eq(#r2.detail, 5); eq(rows.detail[1], "weather", "the old rows are left alone")
+        local r3 = R.move(r2, "rest", 1, "rest", 5)                  -- spaces past the last: the end of its own row
+        eq(r3.rest[#r3.rest], "spaces"); eq(r3.rest[1], "weather")
+        local r4 = R.move(r3, "core", 2, "shelf")                    -- bandwidth hidden
+        eq(#r4.core, 3); local sh = R.shelf(r4); assert(sh[1] == "bandwidth" or sh[2] == "bandwidth")
+        local r5 = R.move(r4, "shelf", 1, "detail", 1)
+        eq(r5.detail[1], R.shelf(r4)[1], "back from the shelf")
+        local r6 = R.move(rows, "core", 4, "rest", 1)                -- clock is in rest already: one copy
+        local n = 0; for _, id in ipairs(r6.rest) do if id == "clock" then n = n + 1 end end; eq(n, 1)
+        eq(R.drop_at(lay, 0), 1); eq(R.drop_at(lay, 1000), 4)
+    end)
+    test("D199: the rows drive the glance face and the reveal; the ROWS tab drags chips between them", function()
+        local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+        local pill = read("shell/ui/pill.plm")
+        assert(pill:find("for it in pr_rest {", 1, true), "the capsule's rest row")
+        local bd = read("shell/ui/pillboard.plm")
+        assert(bd:find("for it in pr_core {", 1, true) and bd:find("for it in pr_detail {", 1, true), "the reveal's two rows")
+        assert(not bd:find("component RevChip(", 1, true), "the fixed items are gone")
+        assert(bd:find('PkBtn(354, 4, 96, "ROWS", if(pk_etab > 1.5, 1, 0), pk_etab, 2)', 1, true), "a ROWS tab")
+        assert(bd:find("on release c { emit pe_drop(", 1, true), "let go where it goes")
+        local lua = read("shell/pillboard.luau")
+        assert(lua:find("local new = pillrows.move(rows, from, held_now.i, to, at)", 1, true), "the move is lib/pillrows'")
+        local bar = read("shell/bar.luau")
+        assert(bar:find("glance_w = bmo_fx.rest_w", 1, true), "the capsule is as wide as its rest row")
+        local P = require("lib/pill")
+        local w = P.board_size(0, false, true, 720); eq(w, 720, "the reveal as wide as its wider row")
+        eq((P.board_size(0, false, true, 50)), 300); eq((P.board_size(0, false, true, 5000)), 900)
     end)
     test("strays: a window on a Loom park the document does not know is still brought out", function()
         local st = LP.stray({ { address = "0xd1", workspace = { name = "special:loom-s4" } },
