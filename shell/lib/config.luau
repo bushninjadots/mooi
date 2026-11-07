@@ -87,6 +87,15 @@ M.SCHEMA = {
     { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
     -- D188: resting on the Pill grows it into a small card (the peek); a press makes it the board
     { path = "pill.peek", kind = "boolean", default = true },
+    -- D194: Loom / Fold (docs/superpowers/specs/2026-11-07-loom-fold-design.md): the operating mode, and
+    -- Hybrid's feature switches (lib/loommode decides what is on; only built features are offered).
+    -- Native runs nothing of it; switching keeps every structure saved in loom.json.
+    { path = "loom.mode", kind = "enum", values = { "native", "hybrid", "loomfold" }, default = "native" },
+    { path = "loom.fold", kind = "boolean", default = true },
+    { path = "loom.accordions", kind = "boolean", default = true },
+    { path = "loom.cubes", kind = "boolean", default = true },
+    { path = "loom.loom", kind = "boolean", default = true },
+    { path = "loom.transform", kind = "boolean", default = true },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
     { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },
       default = { "battery", "record", "notify", "music", "osd", "idle" } },

@@ -251,6 +251,8 @@ local rows = {
     { title = "The side notch", desc = "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", tab = 19, page = "Control Nexus", y = 490 },
     { title = "Model", desc = "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", tab = 19, page = "Control Nexus", y = 644 },
     { title = "Free models when Claude can't", desc = "If Claude doesn't answer, ask a free model through opencode instead. It sends your question and the last few turns to a third party", tab = 19, page = "Control Nexus", y = 704 },
+    { title = "Mode", desc = "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", tab = 20, page = "Loom / Fold", y = 156 },
+    { title = "Start again", desc = "After it stopped on repeated failures (your windows were brought back)", tab = 20, page = "Loom / Fold", y = 276 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -273,6 +275,7 @@ rows.resets = {
     [17] = { "signals.edge", "signals.max", "signals.linger", "signals.grouping", "signals.density", "signals.chamfer", "signals.travel", "signals.effects", "signals.private" },
     [18] = {  },
     [19] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model", "claude.free_fallback" },
+    [20] = { "loom.mode" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"

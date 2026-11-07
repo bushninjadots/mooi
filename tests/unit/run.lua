@@ -6254,6 +6254,18 @@ do
         assert(ui:find("clip box { from: px, fl.top; size: max(1, pw), pill_h; corner: pill_h / 2 }", 1, true), "inside the capsule")
         assert(not ui:find("ellipse { at: px + pw / 2, fl.top + pill_h + 1", 1, true), "the glow under the foot is gone")
     end)
+    test("D193: the audit's fixes — rooms stay in their room, the networks are listed, the band is silent", function()
+        local bd = read("shell/ui/pillboard.plm")
+        assert(bd:find("show: pk_room > 12.5 and pk_room < 13.5", 1, true), "the wallpaper strip is the Wallpaper room's only")
+        assert(not bd:find("show: pk_room > 12.5\n", 1, true))
+        assert(bd:find("line 0, 160 - lv0 * 70", 1, true) and not bd:find("line 0, 156 - lv0 * 70", 1, true),
+               "the visualiser's band starts at its foot: silent, it draws nothing")
+        assert(bd:find("PkBtn(518, 6, 80, pick(bluetooth.powered", 1, true), "the Bluetooth button beside its name")
+        local lua = read("shell/pillboard.luau")
+        assert(lua:find("local list = ctx.networks and ctx.networks() or nil", 1, true), "the shelf's watched list")
+        assert(read("shell/islands.luau"):find("return { networks = function() return nets end }", 1, true))
+        assert(read("shell/mooi.luau"):find("networks = function() return opens.islands and opens.islands.networks() or nil end", 1, true))
+    end)
     test("D191: the glance face — dots, the clock and the live chip, measured like ArchEclipse's", function()
         local P = require("lib/pill")
         -- 5 dots: 5·5 + 4·5 + 7 = 52; battery chip "80%": 14 + 7 + 21 = 42
@@ -6449,6 +6461,216 @@ do
         local cfg = read("shell/lib/config.luau")
         assert(cfg:find("pill.board_tint", 1, true) and cfg:find("pill.board_edge", 1, true), "both are choices")
         assert(cfg:find("The plate under it is the bar's own material", 1, true), "the comment says where the material comes from")
+    end)
+end
+
+section("Loom / Fold: the shared model, modes, parking (D194)")
+do
+    local L = require("lib/loom")
+    local LM = require("lib/loommode")
+    local LP = require("lib/loompark")
+    local function win(doc, addr, ws, extra)
+        local f = { kind = "window", app = "kitty", title = "t" .. addr, address = addr, workspace = ws, at = { 10, 20, 800, 600 } }
+        for k, v in pairs(extra or {}) do f[k] = v end
+        return L.add_object(doc, f)
+    end
+    test("a document from anything is valid; what was dropped is said", function()
+        local d, p = L.clean(nil); eq(#p, 0); eq(d.version, 1)
+        d, p = L.clean("nonsense"); eq(#p, 1)
+        d, p = L.clean({ version = 1, seq = 3,
+            objects = { o1 = { kind = "window", app = "kitty", state = "live", address = "0xab", parent = "s2" },
+                        bad = { kind = "window" }, o9 = { kind = "spaceship" } },
+            structures = { s2 = { kind = "accordion", members = { "o1", "o1", "o404" }, arrangement = { order = { "o404" } } },
+                           s3 = { kind = "ring" } },
+            connections = { c4 = { from = "o1", to = "s2", kind = "workflow" }, c5 = { from = "o1", to = "o77", kind = "association" },
+                            c6 = { from = "o1", to = "o1", kind = "association" }, c7 = { from = "o1", to = "s2", kind = "workflow" } } })
+        assert(d.objects.o1 and not d.objects.bad and not d.objects.o9, "valid objects only")
+        assert(d.structures.s2 and not d.structures.s3, "only the structures mooi has (a ring is not built)")
+        eq(#d.structures.s2.members, 1, "no duplicate, no missing member"); eq(d.structures.s2.arrangement.order[1], "o1")
+        eq(d.objects.o1.parent, "s2")
+        assert(d.connections.c4 and not d.connections.c5 and not d.connections.c6 and not d.connections.c7,
+               "a connection needs both ends, two of them, and is not duplicated")
+        assert(#p >= 3, "it says what it dropped")
+        eq(d.seq >= 9, true, "the counter is past every id seen")
+        d = L.clean({ version = 9 }); eq(d.version, 1)
+    end)
+    test("an object belongs to one structure; members, order and parent always agree", function()
+        local d = L.empty()
+        local a, b, c = win(d, "0x1", 1), win(d, "0x2", 1), win(d, "0x3", 2)
+        local s1 = L.add_structure(d, "accordion", "Writing", { a, b })
+        local s2 = L.add_structure(d, "cube", "Dev", { c })
+        eq(d.objects[a].parent, s1); eq(#d.structures[s1].arrangement.order, 2)
+        assert(L.add_member(d, s2, a), "moving a member")
+        eq(d.objects[a].parent, s2); eq(#d.structures[s1].members, 1); eq(#d.structures[s2].members, 2)
+        assert(L.reorder(d, s2, a, 1)); eq(d.structures[s2].arrangement.order[1], a)
+        assert(not L.add_structure(d, "ring", "x"), "a structure mooi does not have is refused")
+        assert(L.remove_structure(d, s1)); eq(d.objects[b].parent, nil, "its members are kept, loose")
+        assert(d.objects[b], "nothing is lost with a structure")
+    end)
+    test("connections: kinds, ends, no duplicates, and they follow removals", function()
+        local d = L.empty()
+        local a, b = win(d, "0x1", 1), win(d, "0x2", 1)
+        local s = L.add_structure(d, "accordion", "A", { a })
+        local c1 = L.connect(d, a, b, "workflow", true)
+        eq(L.connect(d, a, b, "workflow", true), c1, "the same connection twice is one")
+        assert(not L.connect(d, a, a, "association"), "not to itself")
+        assert(not L.connect(d, a, "o999", "association"), "both ends exist")
+        assert(not L.connect(d, a, b, "friendship"), "a kind mooi knows")
+        local c2 = L.connect(d, s, b, "dependency")
+        local r = L.related(d, b); eq(#r, 2); eq(r[1].id, a); eq(r[1].out, false)
+        L.remove_object(d, a)
+        assert(not d.connections[c1] and d.connections[c2], "a removed object takes its connections with it")
+    end)
+    test("windows matched after a restart: by address, then app and title; the rest kept absent", function()
+        local d = L.empty()
+        local a = win(d, "0xaa", 2, { title = "notes" })
+        local b = win(d, "0xbb", 3, { title = "build" })
+        local c = win(d, "0xcc", 4, { title = "gone" })
+        local s = L.add_structure(d, "accordion", "A", { a, b, c })
+        local r = L.match(d, {
+            { address = "0xaa", class = "kitty", title = "notes", workspace = { id = 5, name = "5" }, at = { 0, 0 }, size = { 900, 700 } },
+            { address = "0x99", class = "kitty", title = "build", workspace = { id = -98, name = "special:loom-" .. s } },
+            { address = "0x77", class = "firefox", title = "web", workspace = { id = 1, name = "1" } } })
+        eq(r.matched, 2); eq(r.absent, 1); eq(#r.loose, 1); eq(r.loose[1].address, "0x77")
+        eq(d.objects[a].workspace, 5); eq(d.objects[a].at[3], 900)
+        eq(d.objects[b].address, "0x99", "the new handle"); eq(d.objects[b].state, "parked")
+        eq(d.objects[b].workspace, 3, "where it came from is kept for the way back")
+        eq(d.objects[c].state, "absent"); eq(d.objects[c].parent, s, "an absent window is kept in its structure")
+    end)
+    test("prune keeps what the owner organised, drops windows only registered because they were open", function()
+        local d = L.empty()
+        local a, b, c = win(d, "0x1", 1), win(d, "0x2", 1), win(d, "0x3", 1)
+        L.add_structure(d, "accordion", "A", { a })
+        L.connect(d, b, a, "association")
+        local loose = win(d, "0x4", 1)
+        eq(L.prune(d), 2, "c and the last one were only open")
+        assert(d.objects[a] and d.objects[b], "a member and a connected window stay")
+        assert(not d.objects[c] and not d.objects[loose])
+    end)
+    test("the journal: pending until done; at start the safe side is always windows visible", function()
+        local d = L.empty()
+        local j = L.journal_begin(d, "fold", "s1", { { object = "o1", from = "2", to = "special:loom-s1" } }, 100)
+        eq(#L.pending(d), 1); eq(L.recovery_for(L.pending(d)[1]), "rollback")
+        eq(L.recovery_for({ op = "unfold" }), "complete")
+        L.journal_end(d, j); eq(#L.pending(d), 0)
+        for i = 1, 60 do L.journal_end(d, L.journal_begin(d, "fold", "s1", {}, i)) end
+        eq(#d.journal, L.MAX.journal, "the journal is bounded")
+        local back = L.clean(d); eq(#back.journal, L.MAX.journal, "and survives a round trip")
+    end)
+    test("modes: native runs nothing; hybrid follows switches and needs; loomfold turns on what is built", function()
+        eq(LM.runs("native"), false); eq(LM.runs("hybrid"), true); eq(LM.runs("weird"), false, "an unknown mode is native")
+        local e = LM.effective("hybrid", {}, nil)
+        assert(not e.on.accordions and e.off.accordions == "not built yet", "nothing is on before it is built")
+        local built = { fold = true, accordions = true, cubes = true, loom = true }
+        e = LM.effective("hybrid", { fold = false, accordions = true }, built)
+        assert(not e.on.accordions); eq(e.off.accordions, "Accordions needs Fold — turn Fold on first")
+        assert(e.on.loom, "Loom does not need Fold")
+        e = LM.effective("loomfold", { fold = false, loom = false }, built)
+        assert(e.on.fold and e.on.accordions and e.on.loom, "full mode: every built feature, whatever Hybrid's switches")
+        assert(not e.on.spatial and e.off.spatial == "not built yet")
+        e = LM.effective("hybrid", {}, { spatial = true }); eq(e.off.spatial, "only in Loom / Fold mode")
+        e = LM.effective("native", { fold = true }, built); assert(not e.on.fold)
+        local offered = LM.offered("hybrid", {}, { fold = true, accordions = true })
+        eq(#offered, 2, "Settings offers only what is built")
+        eq(LM.status_line("native", {}), "Off — Native mooi")
+        eq(LM.status_line("hybrid", { running = true, structures = 2 }), "Hybrid · running · 2 structures")
+        assert(LM.status_line("hybrid", { recovery = true }):find("repeated failures", 1, true))
+    end)
+    test("parking: to the structure's own special workspace and back where it came from", function()
+        local d = L.empty()
+        local a = win(d, "0xa1", 3)
+        local b = win(d, "0xb1", 4, { floating = true })
+        local s = L.add_structure(d, "accordion", "A", { a, b })
+        local steps = LP.park(d, s, { a, b })
+        eq(#steps, 2)
+        assert(steps[1].cmd:find('workspace = "special:loom-' .. s .. '", follow = false', 1, true), steps[1].cmd)
+        for _, st in ipairs(steps) do LP.apply(d, st) end
+        eq(d.objects[a].state, "parked"); eq(#LP.park(d, s, { a }), 0, "a parked window is not parked twice")
+        eq(#L.parked(d), 2)
+        local back = LP.unpark_all(d)
+        eq(#back, 2)
+        assert(back[1].cmds[1]:find("workspace = 3, follow = false", 1, true), "to its own workspace, the view does not jump")
+        eq(#back[2].cmds, 3, "a floating one also goes back to its place and size")
+        assert(back[2].cmds[2]:find("x = 10, y = 20", 1, true))
+        for _, st in ipairs(back) do LP.apply(d, st) end
+        eq(#L.parked(d), 0)
+        eq(LP.park_name("s12"), "loom-s12"); eq(LP.park_name("x; rm -rf"), nil)
+        local hypr = require("lib/hypr")
+        assert(not hypr.dispatch("park", "0xa1", { park = 'loom-s1" })' }), "a park name is checked")
+    end)
+    -- the keeper (shell/loomkeeper.luau) against stand-ins for Pleamar's globals
+    local function keeper(settings, files)
+        files = files or {}
+        local h, ran, spawned, timers, killed = {}, {}, {}, {}, {}
+        local env = setmetatable({
+            on = function(n, fn) h[n] = fn end,
+            after = function(ms, fn) timers[#timers + 1] = fn end,
+            run = function(cmd, args, cb) ran[#ran + 1] = cmd .. " " .. table.concat(args or {}, " ")
+                      if cb then cb(cmd == "hyprctl" and args[1] == "-j" and (args[2] == "clients" and "[]" or '{"id": 4}') or "") end end,
+            spawn = function(cmd, args, on_line, on_exit) spawned[#spawned + 1] = { args = args, line = on_line, exit = on_exit }; return #spawned end,
+            kill = function(id) killed[#killed + 1] = id end,
+            sys = { ask = function(_, name) return files[name] end,
+                    call = function(what, name, t) if what == "files.write" then files[name] = t end end },
+        }, { __index = _G })
+        local sync = assert(loadfile("shell/loomkeeper.luau", "t", env))()({
+            settings = function() return settings end, shell_dir = function() return "/live" end,
+            log = function() end, decode = function() return {} end, safe_mode = false })
+        local function tick() local t = timers; timers = {}; for _, f in ipairs(t) do f() end end
+        return { sync = sync, h = h, ran = ran, spawned = spawned, tick = tick, killed = killed, files = files }
+    end
+    local function has(list, pat) for _, r in ipairs(list) do if r:find(pat, 1, true) then return true end end; return false end
+    test("the keeper: native starts nothing; hybrid starts the program and says when it is up", function()
+        local st = { loom = { mode = "native" } }
+        local k = keeper(st)
+        k.tick(); eq(#k.spawned, 0, "Native mooi runs none of it")
+        st.loom.mode = "hybrid"; k.sync()
+        eq(#k.spawned, 1); eq(k.spawned[1].args[2], "/live/mooi-loom.plm")
+        k.spawned[1].line("logic · loom-ready"); eq(k.files["loom-state.json"].running, true)
+        k.spawned[1].line("loom-health structures=2 objects=7 parked=1"); eq(k.files["loom-state.json"].structures, 2)
+        st.loom.mode = "native"; k.sync()
+        assert(has(k.ran, "--say mooi-loom emit loom_quit"), "asked to stop politely")
+        k.tick(); eq(k.killed[1], 1, "and ended if it has not gone in 4 s")
+    end)
+    test("the keeper: three quick deaths → recovery, said once, every parked window brought back", function()
+        local parked = { version = 1, objects = { o1 = { kind = "window", app = "kitty", state = "parked", address = "0xaa", workspace = 3 } },
+                         structures = {}, connections = {}, environments = {}, journal = {} }
+        local st = { loom = { mode = "hybrid" } }
+        local k = keeper(st, { ["loom.json"] = parked })
+        k.tick()
+        for i = 1, 3 do
+            eq(#k.spawned, i, "started again after death " .. (i - 1))
+            k.spawned[i].exit(nil, 1)
+            k.tick()
+        end
+        eq(#k.spawned, 3, "it gives up after three")
+        eq(k.files["loom-state.json"].recovery, true)
+        assert(has(k.ran, "notify-send"), "the owner is told")
+        assert(has(k.ran, 'hl.dsp.window.move({ workspace = 3, follow = false, window = "address:0xaa" })'), "the parked window comes back")
+        k.sync(); eq(#k.spawned, 3, "a recovery stands until Start again")
+        k.h.loom_restart(); eq(#k.spawned, 4, "Start again starts it")
+        eq(k.files["loom-state.json"].recovery, false)
+    end)
+    test("the keeper follows the settings file itself (the bar's watcher runs before `opens` exists)", function()
+        local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+        local kp = read("shell/loomkeeper.luau")
+        assert(kp:find('pcall(sys.watch, "files:settings.json", function() after(100, function() sync() end) end)', 1, true))
+        local m = read("shell/mooi.luau")
+        local at_watch = m:find('sys.watch("files:" .. FILE, function()', 1, true)
+        local at_opens = m:find("local opens = {", 1, true)
+        assert(at_watch < at_opens, "the watcher is above `opens`")
+        assert(not m:sub(at_watch, at_opens):find("opens.loom", 1, true), "so it must not name opens.loom")
+    end)
+    test("the keeper: a recovery stands across a bar restart", function()
+        local k = keeper({ loom = { mode = "hybrid" } }, { ["loom-state.json"] = { recovery = true } })
+        k.tick(); eq(#k.spawned, 0)
+    end)
+    test("strays: a window on a Loom park the document does not know is still brought out", function()
+        local st = LP.stray({ { address = "0xd1", workspace = { name = "special:loom-s4" } },
+                              { address = "0xd2", workspace = { name = "special:scratch" } },
+                              { address = "0xd3", workspace = { name = "2" } } })
+        eq(#st, 1); eq(st[1].structure, "s4")
+        local cmds = LP.rescue(st, 6)
+        assert(cmds[1]:find("workspace = 6, follow = false", 1, true))
     end)
 end
 

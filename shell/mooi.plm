@@ -23,7 +23,7 @@ import "ui/edgetab.plm" as edge
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol"
+        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol", "notify-send"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*"
     }
 
@@ -1303,6 +1303,8 @@ scene Mooi {
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
     event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
     event pill_superwheel ->   // to the logic (D171): Super + wheel: a pill's view if pointed at, else the workspace
+    event loom_restart ->      // to the logic (D194): Loom / Fold, started again after a recovery (`mooi loom restart`)
+    event loom_unpark ->       // to the logic (D194): every parked window back (`mooi loom unpark`)
     event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
     fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
     fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot · 3 record (pill.shape)

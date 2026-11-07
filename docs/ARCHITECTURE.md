@@ -31,6 +31,7 @@ The implementation is no longer the original one-scene prototype. The persistent
 | `shell/mooi-viz.plm` + `shell/mooi-viz.luau` | Visualiser program (D155) |
 | `shell/mooi-widgets.plm` + `shell/mooi-widgets.luau` | Desktop widgets |
 | `shell/mooi-lock.plm` + `shell/mooi-lock.luau` | Lock screen (D160) |
+| `shell/mooi-loom.plm` + `shell/mooi-loom.luau` | Loom / Fold (D194): runs only in Hybrid and Loom / Fold mode, started and kept by `shell/loomkeeper.luau` in the bar's logic; owns `loom.json` |
 
 BMO has its own logic and UI resources under `shell/bmo/`. Shared visual building blocks live under `shell/ui/`; the component contract is documented in [COMPONENT-SYSTEM.md](COMPONENT-SYSTEM.md). Theme definitions and Ferrolume styling live under `shell/theme/`. Player-specific code is grouped under `shell/player/`.
 

@@ -1659,7 +1659,9 @@ function opens.by_logic(v)
 end
 
 -- ── The modules' own islands (shell/islands.luau, D97) ───────
-require("islands")({
+-- D193: what it hands back (the networks its shelf watches) is kept in `opens` — the main chunk is at
+-- Lua's 200-local limit, so no new local
+opens.islands = require("islands")({
     settings = function() return settings end,
     save = save_settings,
     listen_open = opens.listen,
@@ -2548,10 +2550,21 @@ bar.set_board(require("pillboard")({
     refresh = function() bar.relayout() end,
     pill = bar.pill,
     loom = loom,
+    networks = function() return opens.islands and opens.islands.networks() or nil end,     -- D193
     opened = opens.by_logic,
     roomed = opens.by_room,
     listen_open = opens.listen,
 }))
+
+-- ── Loom / Fold's keeper (D194, shell/loomkeeper.luau): starts the program in Hybrid and Loom / Fold mode,
+-- brings parked windows back whenever it ends. Kept in `opens` (no new local: the main chunk is full).
+opens.loom = require("loomkeeper")({
+    settings = function() return settings end,
+    shell_dir = shell_dir,
+    log = log,
+    decode = decode,
+    safe_mode = safe_mode,
+})
 
 -- ── The Mechanical Shutter: a window's controls, unfolding from its edge (shell/shutter.luau) ──
 require("shutter")({

@@ -706,8 +706,8 @@ library PillBoard {
                             text pick(network.kind == wifi, "{bw_down} ↓ · {bw_up} ↑", "{network.strength, 0} % · {bw_down} ↓ · {bw_up} ↑") { at: 42, 28; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim }
                             PkBtn(298, 8, 104, pick(network.online, "WI-FI OFF", "WI-FI ON"), if(network.online, 1, 0), sh_net, -1, 24)
                             figure pk_i14 { at: 412, 14; size: 16, 16; color: if(bluetooth.powered, acc, dim) }
-                            text pick(bluetooth.powered, "Bluetooth off", "Bluetooth · {bt_conn, 0}") { at: 434, 12; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: ink; width: 118; lines: 1 }
-                            PkBtn(434, 26, 80, pick(bluetooth.powered, "BT ON", "BT OFF"), if(bluetooth.powered, 1, 0), sh_bt, -1, 20)
+                            text pick(bluetooth.powered, "Bluetooth off", "Bluetooth · {bt_conn, 0}") { at: 434, 18; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: ink; width: 80; lines: 1 }
+                            PkBtn(518, 6, 80, pick(bluetooth.powered, "BT ON", "BT OFF"), if(bluetooth.powered, 1, 0), sh_bt, -1, 24)      // D193: beside its name, not over the rule
                             line { from: 12, 40; to: 596, 40; width: 1; color: acc; opacity: 0.12 + 0.16 * clamp(sin(pk_flow / 260), -1, 1) }
                             text "NETWORKS IN REACH" { at: 14, 48; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
                             for w in pk_nets {
@@ -839,10 +839,10 @@ library PillBoard {
                                 opacity: 0.35
                                 path { color: mix(acc2, acc, 0.4)
                                        move 0, 160
-                                       line 0, 156 - lv0 * 70; line 40.5, 156 - lv1 * 70; line 81, 156 - lv2 * 70; line 121.6, 156 - lv3 * 70
-                                       line 162, 156 - lv4 * 70; line 202.7, 156 - lv5 * 70; line 243, 156 - lv6 * 70; line 283.7, 156 - lv7 * 70
-                                       line 324, 156 - lv8 * 70; line 364.8, 156 - lv9 * 70; line 405, 156 - lv10 * 70; line 445.9, 156 - lv11 * 70
-                                       line 486, 156 - lv12 * 70; line 527, 156 - lv13 * 70; line 567, 156 - lv14 * 70; line 608, 156 - lv15 * 70
+                                       line 0, 160 - lv0 * 70; line 40.5, 160 - lv1 * 70; line 81, 160 - lv2 * 70; line 121.6, 160 - lv3 * 70
+                                       line 162, 160 - lv4 * 70; line 202.7, 160 - lv5 * 70; line 243, 160 - lv6 * 70; line 283.7, 160 - lv7 * 70
+                                       line 324, 160 - lv8 * 70; line 364.8, 160 - lv9 * 70; line 405, 160 - lv10 * 70; line 445.9, 160 - lv11 * 70
+                                       line 486, 160 - lv12 * 70; line 527, 160 - lv13 * 70; line 567, 160 - lv14 * 70; line 608, 160 - lv15 * 70
                                        line 608, 160; close }
                             }
                             ellipse { at: 304, 80; radius: 44 + bass * 10; color: acc2; opacity: 0.14 * bass }
@@ -904,7 +904,7 @@ library PillBoard {
                         }
                         // D171 · Wallpaper: a strip of six; the wheel moves it, a press wears one
                         group {
-                            show: pk_room > 12.5
+                            show: pk_room > 12.5 and pk_room < 13.5      // D193: it bled into the Stash and Find
                             PkScroll(0, 6, 608, 140, pk_wp_scroll)
                             repeat k in 0..4 {
                                 let tx = 6 + k * 150
