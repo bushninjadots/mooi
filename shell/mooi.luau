@@ -2222,15 +2222,11 @@ after(50, frame_sync)
 -- five quick ends it stays down and the bar draws a plain clock in the Pill's place (ui/pill.plm). The main
 -- chunk is at Lua's 200 locals, so its state is one global table.
 SIGIL = { win = nil, tries = 0, gave_up = false }
+-- wanted exactly when the bar placed a host for it (review I1: reading the settings' lists ran it with
+-- none — a `sigil` in the Pill's ignored centre list or a hidden side group)
 function SIGIL.wanted()
-    local b = settings.bar or {}
-    if b.mode == "pill" and type(settings.sigil) == "table" and settings.sigil.pill == "sigil" then return true end
-    for _, side in ipairs({ "left", "center", "right" }) do
-        for _, entry in ipairs(type(b[side]) == "table" and b[side] or {}) do
-            for id in string.gmatch(tostring(entry), "[^+]+") do if id == "sigil" then return true end end
-        end
-    end
-    return false
+    local ok, h = pcall(sys.ask, "files.read", "sigil-hosts.json", "json")
+    return ok and type(h) == "table" and type(h.hosts) == "table" and #h.hosts > 0
 end
 function sigil_sync()
     local b = settings.bar or {}
@@ -2258,6 +2254,7 @@ function sigil_sync()
     SIGIL.win = mine
 end
 on("sigil_ready", function() if SIGIL.win then fact.sigil_up = true end end)
+pcall(sys.watch, "files:sigil-hosts.json", function() sigil_sync() end)
 after(400, sigil_sync)
 -- Where the notch's nub is on the screen (it writes notch-state.json when it places it): the stash's
 -- edge strip, overlay and over the same edge, leaves that band alone so pointing at the nub opens it.

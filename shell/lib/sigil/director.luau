@@ -52,4 +52,14 @@ function M.choose(hosts, state, now)
     return out
 end
 
+-- A notice is fresh when the feed's newest item is newer than the last one seen. The feed's first read only
+-- sets the mark — an empty feed sets it at 0, so the first notice after a clean start still counts (review I3).
+-- Returns the new mark, and { at = now } for a fresh notice (or nil).
+function M.notice_step(seen, t, now)
+    t = tonumber(t)
+    if seen == nil then return t or 0, nil end
+    if t and t > seen then return t, { at = now } end
+    return seen, nil
+end
+
 return M

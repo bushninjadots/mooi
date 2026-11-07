@@ -56,10 +56,9 @@ local function notices()
     if type(n) ~= "table" then return end
     local first = type(n.items) == "table" and n.items[1] or nil
     S.r.notifications = { count = tonumber(n.count) or 0, title = first and first.title or "", app = first and first.app or "" }
-    local t = first and tonumber(first.time)
-    -- a notice newer than the last one seen is fresh; the first read only sets the mark
-    if t and S.notice_seen and t > S.notice_seen then S.notice = { at = S.now } end
-    if t then S.notice_seen = math.max(S.notice_seen or 0, t) end
+    local fresh
+    S.notice_seen, fresh = director.notice_step(S.notice_seen, first and first.time, S.now)
+    if fresh then S.notice = fresh end
 end
 
 -- ── what each host shows, and its points ──

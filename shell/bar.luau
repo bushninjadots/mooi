@@ -670,7 +670,7 @@ return function(ctx)
     local function read_resources()
         run("cat", { "/proc/stat" }, function(out)
             local v; v, cpu_prev = sysinfo.cpu(out, cpu_prev)
-            if v then fact.res_cpu = v end
+            if v then fact.res_cpu = v; sig.res_ok = true end
         end)
         run("cat", { "/proc/meminfo" }, function(out)
             local f, used = sysinfo.mem(out)
@@ -928,13 +928,14 @@ return function(ctx)
         end)
     end
     -- D207: what only the bar reads, for mooi-sigil (sigil-feed.json): once a second while it has a host,
-    -- written only when it changed. `at` is the logic's clock in ms, so the Sigil can tell a dead feed.
+    -- written only when it changed. `at` is the wall clock in ms, so the Sigil can tell a dead feed.
     every(1000, function()
         if sig.n == 0 then return end
         local function hex(r, g, b) return string.format("#%02x%02x%02x", math.floor((r or 0) * 255 + .5), math.floor((g or 0) * 255 + .5), math.floor((b or 0) * 255 + .5)) end
         local doc = {
-            resources = { cpu = fact.res_cpu, mem = fact.res_mem, temp = fact.res_temp },
-            weather = { temp = fact.wx_temp, word = text.wx_word, city = text.wx_city },
+            -- nothing before it was read: the Sigil shows a dash, not "0°" (review I2)
+            resources = sig.res_ok and { cpu = fact.res_cpu, mem = fact.res_mem, temp = fact.res_temp } or nil,
+            weather = fact.wx_ok and { temp = fact.wx_temp, word = text.wx_word, city = text.wx_city } or nil,
             music = { title = text.mu_title, artist = text.mu_artist, playing = fact.mu_playing == true },
             cover = fact.mu_has and { hex(fact.pc1_r, fact.pc1_g, fact.pc1_b), hex(fact.pc2_r, fact.pc2_g, fact.pc2_b), hex(fact.pc3_r, fact.pc3_g, fact.pc3_b) } or nil,
         }
@@ -1001,10 +1002,11 @@ return function(ctx)
         -- D170 (review I2): in Pill mode the pads, the face and Now read too, modules on the bar or not
         local pill_on_bar = s.bar.mode == "pill"
         local need = pill_on_bar and pillmod.needs(s.pill) or {}
-        if placed.resources or need.resources then every_while("res", 2000, read_resources) else stop("res") end
+        -- D207: the Sigil may show them whenever it has a host (review I2: unfetched, they read 0)
+        if placed.resources or need.resources or sig.n > 0 then every_while("res", 2000, read_resources) else stop("res") end
         if placed.bandwidth or need.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
         if placed.keyboard or need.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
-        if placed.weather or need.weather then every_while("wx", 600000, read_weather) else stop("wx") end
+        if placed.weather or need.weather or sig.n > 0 then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
         want_swell = s.frame.on and s.frame.music and not still
         -- The frame's music follows whatever is audible, not only what the media module knows

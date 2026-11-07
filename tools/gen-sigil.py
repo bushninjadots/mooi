@@ -147,7 +147,7 @@ def scene():
          "    spring sg.pt = 260, 20",
          "    spring sg.drop = 300, 30",
          "    prop ph = 0",
-         "    spin ph by if(wob > 0 or h0_rip > 0 or h1_rip > 0, 220, 0)",
+         "    spin ph by if((h0_on or h1_on or h2_on or h3_on) and (wob > 0 or h0_rip > 0 or h1_rip > 0), 220, 0)",
          "    fact wob = 2.5", "    fact breath = 2.5", "    fact push = 1.6", "    fact field_on = true", "    fact calm = true",
          "    fact st_glow = 1",
          "    // its two text colours, from the palette (the logic): no theme import, nothing else to declare",
@@ -168,7 +168,8 @@ def scene():
     for k in range(HOSTS):
         L += host_lets(k)
     L += ["", "    surface bar {", "        size: full, 40", "        anchor: top", "        level: top", "        reserve: -1",
-          "        keyboard: none", "        rate: 60, 20 while calm"]
+          "        keyboard: none", "        rate: 60, 20 while calm",
+          "        open: h0_on or h1_on or h2_on or h3_on      // no host, no surface (review I1)"]
     for k in range(HOSTS):
         show = f"h{k}_on" + (" and h0_drop < 0.5" if k == 0 else "")
         L += line(k, "        ", show)

@@ -1886,6 +1886,13 @@ scene Mooi {
     prop pv_github = 0 ~m.enter
     follow pv_github = p_github
     on change p_github while p_github { xs_github: x_github ~1ms; ws_github: w_github ~1ms }
+    prop xs_sigil = 0 ~fl.flow
+    follow xs_sigil = x_sigil
+    prop ws_sigil = 0 ~fl.flow
+    follow ws_sigil = w_sigil
+    prop pv_sigil = 0 ~m.enter
+    follow pv_sigil = p_sigil
+    on change p_sigil while p_sigil { xs_sigil: x_sigil ~1ms; ws_sigil: w_sigil ~1ms }
     prop upd_pulse = 0
     spin upd_pulse by if(upd_busy, 1400, 0)
     let vv = round(audio.volume * 100)
@@ -3901,6 +3908,19 @@ scene Mooi {
     on drag ez_github while ed_press == 31 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 31; ed_sel = -1 }
     on release ez_github while ed_drag == 31 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_github while ed_drag < 0 and ed_press == 31 { ed_sel = if(ed_sel == 31, -1, 31); ed_press = -1 }
+    // D207: the Sigil's island, moved like any module (review I4)
+    group {
+        show: bar_edit and p_sigil
+        zone box ez_sigil { from: xs_sigil, fl.top; size: ws_sigil, fl.mod_h; cursor: grab; role: button; label: "Move the Sigil" }
+        box { from: xs_sigil + 1, fl.top + 1; size: ws_sigil - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 32 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 32, 0.6, if(ed_sel == 32, 0.4, 0.2 * ez_sigil.hover)) }
+        box { from: xs_sigil + 1, fl.top + 1; size: ws_sigil - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 32, 2, 1.2)
+              color: if(ed_sel == 32 or ed_drag == 32, fl.flare, mix(fl.trace_lit, fl.flare, ez_sigil.hover)); opacity: if(ed_drag >= 0 and ed_drag != 32, 0.45, 0.85) }
+    }
+    on press ez_sigil while bar_edit { ed_press = 32; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_sigil while ed_press == 32 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 32; ed_sel = -1 }
+    on release ez_sigil while ed_drag == 32 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_sigil while ed_drag < 0 and ed_press == 32 { ed_sel = if(ed_sel == 32, -1, 32); ed_press = -1 }
     // The ghost's word: what letting go now will do.
     text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
