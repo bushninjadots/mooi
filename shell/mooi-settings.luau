@@ -311,6 +311,13 @@ local version = sys.ask("env", "MOOI_VERSION")
 text.bar_version = (type(version) == "string" and version ~= "") and version or "dev"
 text.bar_path = tostring(sys.ask("files.folder")) .. "/settings.json"
 
+-- D190: the login screen is greetd running sysc-greet, and it wears this palette through the theme
+-- `mooi greet-theme` writes. This window cannot read /var itself (files.read stays in its own folder),
+-- so it asks the same script, which answers in one line — the Theme & colour page shows it.
+run("mooi", { "greet-theme", "--status" }, function(out)
+    text.gr_theme = string.gsub(tostring(out or ""), "%s+$", "")
+end)
+
 -- ── The Layout page ────────────────────────────────────────
 -- The bar's three lists as chips in cards (Left, Centre, Right) and the modules not on it on a
 -- shelf, every chip placed here (the scene cannot measure text); above them a preview of the bar

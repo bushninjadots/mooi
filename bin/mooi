@@ -47,6 +47,9 @@
 #                          theme/palette.json.hbs), using mooi's own config so nothing of
 #                          the user's theming is written; then asks a running mooi to read it
 #   mooi theme-watch       follow the wallpaper: recolour with Matugen whenever it changes.
+#   mooi greet-theme       the login screen in mooi's colours (D190): write sysc-greet's theme out
+#                          of the palette and name it. `theme-sync` calls it too, so every recolour
+#                          reaches the greeter; `--status` prints the one line Settings shows
 #   mooi theme save <name> [description]  the current look as a package (--force replaces one)
 #   mooi theme list        the packages saved in mooi's own folder
 #   mooi theme apply <name|file>  wear a package: its visual settings, nothing behavioural
@@ -190,6 +193,7 @@ theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdou
     if command -v jq >/dev/null 2>&1 && [ -f "$palette" ]; then
         jq --arg m "$mode" '. + {mode: $m}' "$palette" > "$palette.mooi-tmp" && mv "$palette.mooi-tmp" "$palette"
     fi
+    greet_theme   # the login screen turns with it too (D190); nothing on a machine with no greeter
     # Your own Matugen templates (apps.others): the same image, scheme and mode, so btop, fish,
     # cava, Vesktop, Zen, Spicetify and the widgets turn with the day too. Your config's hooks run
     # as they always do; a failure there is reported, never mooi's.
@@ -205,6 +209,48 @@ theme_sync() { # [--light | --dark] [image] — quiet: says what it did on stdou
     # land in the frame after the write rather than on the next wallpaper change.
     "$pleamar" --say "$name" "emit recolor" >/dev/null 2>&1 || :
     theme_unlock
+    return 0
+}
+
+# The login screen in mooi's colours (D190). sysc-greet — the greeter greetd runs — chooses its
+# theme by name: it reads /var/lib/sysc-greet/shell-theme/theme and looks that name up among the
+# themes it loads from /usr/share/sysc-greet/themes (upstream's cmd/sysc-greet/follow_shell.go).
+# setup/install.sh makes that folder yours and points a system-wide `mooi.toml` at it, so writing
+# the palette here is all a recolour has to do: no password, no root, and the greeter wears it the
+# next time it starts. Its eleven roles are coarser than mooi's tokens, so: the base is the dimmest
+# surface, the active row the highest container, the accent our tertiary — and warning is the
+# tertiary too, because mooi has no warn role of its own (the ember is `error`, which stays danger).
+greet_theme() { # quiet, and a no-op where no greeter is installed: `theme-sync` calls it every time
+    dir=${MOOI_SYSC_THEME_DIR:-/var/lib/sysc-greet/shell-theme}
+    [ -d "$dir" ] && [ -w "$dir" ] && [ -f "$palette" ] || return 0
+    command -v jq >/dev/null 2>&1 || return 0
+    col() { # $1 a token of the palette, $2 what to use when the palette does not carry it
+        v=$(jq -r --arg k "$1" '.colours[$k] // ""' "$palette" 2>/dev/null)
+        case "$v" in
+            \#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) printf '%s' "$v" ;;
+            *) printf '%s' "$2" ;;
+        esac
+    }
+    tmp="$dir/mooi.toml.$$"
+    {
+        printf '# mooi (D190): written by `bin/mooi greet-theme` out of the shell palette, so the\n'
+        printf '# login screen turns with the wallpaper. Rewritten, never edited: change the palette.\n'
+        printf 'name = "Mooi"\n\n[colors]\n'
+        printf 'bg_base = "%s"\n'      "$(col surface_dim            '#1c1b1f')"
+        printf 'bg_active = "%s"\n'    "$(col surface_container_high '#2b2930')"
+        printf 'primary = "%s"\n'      "$(col primary                '#a8c7fa')"
+        printf 'secondary = "%s"\n'    "$(col secondary              '#7cacf8')"
+        printf 'accent = "%s"\n'       "$(col tertiary               '#8ab4f8')"
+        printf 'warning = "%s"\n'      "$(col tertiary               '#e6b450')"
+        printf 'danger = "%s"\n'       "$(col error                  '#ffb4ab')"
+        printf 'fg_primary = "%s"\n'   "$(col on_surface             '#e6e1e5')"
+        printf 'fg_secondary = "%s"\n' "$(col on_surface_variant     '#cac4d0')"
+        printf 'fg_muted = "%s"\n'     "$(col outline                '#938f99')"
+        printf 'border_focus = "%s"\n' "$(col primary                '#a8c7fa')"
+    } > "$tmp" 2>/dev/null || { rm -f "$tmp"; return 0; }
+    chmod 644 "$tmp" 2>/dev/null
+    mv -f "$tmp" "$dir/mooi.toml" || return 0
+    printf 'Mooi\n' > "$dir/theme.$$" 2>/dev/null && mv -f "$dir/theme.$$" "$dir/theme"
     return 0
 }
 
@@ -1311,6 +1357,10 @@ EOF
 }
 idle_conf="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hypridle.conf"
 lock_start() {
+    # The login screen behind this lock wears the palette that is about to be covered (D190): the
+    # greeter's theme is written before the lock comes up, so logging out lands on these colours rather
+    # than on whichever ones were there when the desktop started.
+    greet_theme
     lock_files
     "$pleamar" --say "$lock_name" "get locked" >/dev/null 2>&1 && return 0
     PLEAMAR_SWAPCHAIN=1 MOOI_MODE=session MOOI_SHELL=$live MOOI_BIN=$self \
@@ -1738,6 +1788,24 @@ case "$cmd" in
         esac
         ( cd "$root" && exec lua5.4 shell/theme-cli.luau "$sub" "$@" ) ;;
     theme-watch) theme_watch ;;
+    greet-theme)
+        dir=${MOOI_SYSC_THEME_DIR:-/var/lib/sysc-greet/shell-theme}
+        # One line for the Settings window (D190), which runs this and shows what it says: whether the
+        # login screen has mooi's theme at all, and whether it is the one the greeter follows now.
+        if [ "${1:-}" = --status ]; then
+            if [ ! -d "$dir" ]; then echo "not set up (setup/install.sh)"
+            elif [ ! -f "$dir/mooi.toml" ]; then echo "no theme yet"
+            elif [ "$(cat "$dir/theme" 2>/dev/null)" = Mooi ]; then echo "Mooi · followed"
+            else echo "Mooi · not followed"; fi
+            exit 0
+        fi
+        if [ -d "$dir" ] && [ -w "$dir" ]; then
+            greet_theme
+            echo "the login screen wears mooi's palette → $dir/mooi.toml"
+        else
+            echo "no writable greeter theme folder at $dir: setup/install.sh makes it (sysc-greet, D190)" >&2
+            exit 1
+        fi ;;
     ws-fx) ws_fx ;;
     apps-sync) apps_sync ;;
     kitty-shaders) kitty_shaders_sync ;;

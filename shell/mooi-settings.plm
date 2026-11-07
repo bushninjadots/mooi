@@ -1108,7 +1108,7 @@ scene Mooi {
     prop set_navs_s = 0 ~m.reflow
     follow set_navs_s = set_navs
     prop set_scroll_s = 0 ~m.reflow
-    follow set_scroll_s = clamp(set_scroll, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 270, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 202, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 1500 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28 + 22 + 24 - screen.height)))
+    follow set_scroll_s = clamp(set_scroll, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 270, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 202, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 1500 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28 + 22 + 24 - screen.height)))
     event set_value ->        // to the logic: one setting to one value (lib/setters)
     event set_action ->       // to the logic: 1 the bar's edit mode
     event set_pick            // a section chosen
@@ -1209,6 +1209,7 @@ scene Mooi {
     fact saving = false       // the battery saver is on now
     text adv_version = ""
     text adv_usage = ""
+    text gr_theme = ""        // D190: what the login screen wears, asked of `mooi greet-theme --status`
     model adv_log max 12 { line: text; warn: bool }
     event adv_act ->          // to the logic: 1 open settings.json · 2 open the log · 3 open the shell's folder · 4 restart Hyprland and the bar
     // The custom base colour (bar.bg_colour) as hue, richness and lightness, and eight quick picks.
@@ -1325,74 +1326,80 @@ scene Mooi {
     follow gy_1_c0 = 112
     prop gy_1_1 = 156 ~m.reflow
     follow gy_1_1 = 112 + 44
-    prop gy_1_2 = 216 ~m.reflow
-    follow gy_1_2 = 112 + 44 + 60
-    prop gy_1_3 = 276 ~m.reflow
-    follow gy_1_3 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0)
-    prop gc_1_0 = 232 ~m.reflow
-    follow gc_1_0 = 52 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0)
-    prop gy_1_c1 = 358 ~m.reflow
-    follow gy_1_c1 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22
+    prop gc_1_0 = 112 ~m.reflow
+    follow gc_1_0 = 52 + 60
+    prop gy_1_c1 = 238 ~m.reflow
+    follow gy_1_c1 = 112 + 44 + 60 + 22
+    prop gy_1_3 = 282 ~m.reflow
+    follow gy_1_3 = 112 + 44 + 60 + 22 + 44
+    prop gy_1_4 = 342 ~m.reflow
+    follow gy_1_4 = 112 + 44 + 60 + 22 + 44 + 60
     prop gy_1_5 = 402 ~m.reflow
-    follow gy_1_5 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44
-    prop gy_1_6 = 462 ~m.reflow
-    follow gy_1_6 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60
-    prop gc_1_1 = 172 ~m.reflow
-    follow gc_1_1 = 52 + 60 + if(sv_look_corners != 3, 60, 0)
-    prop gy_1_c2 = 544 ~m.reflow
-    follow gy_1_c2 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22
+    follow gy_1_5 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0)
+    prop gc_1_1 = 232 ~m.reflow
+    follow gc_1_1 = 52 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0)
+    prop gy_1_c2 = 484 ~m.reflow
+    follow gy_1_c2 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22
+    prop gy_1_7 = 528 ~m.reflow
+    follow gy_1_7 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44
     prop gy_1_8 = 588 ~m.reflow
-    follow gy_1_8 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44
-    prop gy_1_9 = 648 ~m.reflow
-    follow gy_1_9 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60
-    prop gy_1_10 = 708 ~m.reflow
-    follow gy_1_10 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60
-    prop gy_1_11 = 768 ~m.reflow
-    follow gy_1_11 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0)
-    prop gy_1_12 = 910 ~m.reflow
-    follow gy_1_12 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0)
-    prop gc_1_2 = 434 ~m.reflow
-    follow gc_1_2 = 52 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60
-    prop gy_1_c3 = 992 ~m.reflow
-    follow gy_1_c3 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22
+    follow gy_1_8 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60
+    prop gc_1_2 = 172 ~m.reflow
+    follow gc_1_2 = 52 + 60 + if(sv_look_corners != 3, 60, 0)
+    prop gy_1_c3 = 670 ~m.reflow
+    follow gy_1_c3 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22
+    prop gy_1_10 = 714 ~m.reflow
+    follow gy_1_10 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44
+    prop gy_1_11 = 774 ~m.reflow
+    follow gy_1_11 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60
+    prop gy_1_12 = 834 ~m.reflow
+    follow gy_1_12 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60
+    prop gy_1_13 = 894 ~m.reflow
+    follow gy_1_13 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0)
     prop gy_1_14 = 1036 ~m.reflow
-    follow gy_1_14 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44
-    prop gy_1_15 = 1096 ~m.reflow
-    follow gy_1_15 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60
-    prop gc_1_3 = 172 ~m.reflow
-    follow gc_1_3 = 52 + 60 + 60
-    prop gy_1_c4 = 1178 ~m.reflow
-    follow gy_1_c4 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22
+    follow gy_1_14 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0)
+    prop gc_1_3 = 434 ~m.reflow
+    follow gc_1_3 = 52 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60
+    prop gy_1_c4 = 1118 ~m.reflow
+    follow gy_1_c4 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22
+    prop gy_1_16 = 1162 ~m.reflow
+    follow gy_1_16 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44
     prop gy_1_17 = 1222 ~m.reflow
-    follow gy_1_17 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44
-    prop gy_1_18 = 1282 ~m.reflow
-    follow gy_1_18 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60
-    prop gy_1_19 = 1342 ~m.reflow
-    follow gy_1_19 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60
-    prop gy_1_20 = 1570 ~m.reflow
-    follow gy_1_20 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0)
-    prop gy_1_21 = 1630 ~m.reflow
-    follow gy_1_21 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0)
-    prop gy_1_22 = 1690 ~m.reflow
-    follow gy_1_22 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0)
-    prop gc_1_4 = 580 ~m.reflow
-    follow gc_1_4 = 52 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0)
-    prop gy_1_c5 = 1772 ~m.reflow
-    follow gy_1_c5 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22
+    follow gy_1_17 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60
+    prop gc_1_4 = 172 ~m.reflow
+    follow gc_1_4 = 52 + 60 + 60
+    prop gy_1_c5 = 1304 ~m.reflow
+    follow gy_1_c5 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22
+    prop gy_1_19 = 1348 ~m.reflow
+    follow gy_1_19 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44
+    prop gy_1_20 = 1408 ~m.reflow
+    follow gy_1_20 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60
+    prop gy_1_21 = 1468 ~m.reflow
+    follow gy_1_21 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60
+    prop gy_1_22 = 1696 ~m.reflow
+    follow gy_1_22 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0)
+    prop gy_1_23 = 1756 ~m.reflow
+    follow gy_1_23 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0)
     prop gy_1_24 = 1816 ~m.reflow
-    follow gy_1_24 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44
-    prop gy_1_25 = 1844 ~m.reflow
-    follow gy_1_25 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28
-    prop gy_1_26 = 1904 ~m.reflow
-    follow gy_1_26 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60
-    prop gy_1_27 = 1964 ~m.reflow
-    follow gy_1_27 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60
-    prop gy_1_28 = 2024 ~m.reflow
-    follow gy_1_28 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60
-    prop gy_1_29 = 2084 ~m.reflow
-    follow gy_1_29 = 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60
-    prop gc_1_5 = 380 ~m.reflow
-    follow gc_1_5 = 52 + 28 + 60 + 60 + 60 + 60 + 60
+    follow gy_1_24 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0)
+    prop gc_1_5 = 580 ~m.reflow
+    follow gc_1_5 = 52 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0)
+    prop gy_1_c6 = 1898 ~m.reflow
+    follow gy_1_c6 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22
+    prop gy_1_26 = 1942 ~m.reflow
+    follow gy_1_26 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44
+    prop gy_1_27 = 1970 ~m.reflow
+    follow gy_1_27 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28
+    prop gy_1_28 = 2030 ~m.reflow
+    follow gy_1_28 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60
+    prop gy_1_29 = 2090 ~m.reflow
+    follow gy_1_29 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60
+    prop gy_1_30 = 2150 ~m.reflow
+    follow gy_1_30 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60
+    prop gy_1_31 = 2210 ~m.reflow
+    follow gy_1_31 = 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60
+    prop gc_1_6 = 380 ~m.reflow
+    follow gc_1_6 = 52 + 28 + 60 + 60 + 60 + 60 + 60
     prop gy_2_c0 = 112 ~m.reflow
     follow gy_2_c0 = 112
     prop gy_2_1 = 156 ~m.reflow
@@ -2321,7 +2328,7 @@ scene Mooi {
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 270, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 202, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 1500 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 270, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 202, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 28, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 1500 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -2457,255 +2464,266 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_c0 - 112
-                    SCard(112, gc_1_0, "Day and night")
+                    SCard(112, gc_1_0, "The login screen")
                 }
                 group {
                     show: true
                     move: 0, gy_1_1 - 156
-                    SRow(156, "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", true, "", 418, false)
-                    STrack(742, 172, 396)
-                    SChoice(742, 172, 132, "Dark", sv_theme_mode == 0, set_value, 325000)
-                    SChoice(874, 172, 132, "Light", sv_theme_mode == 1, set_value, 325001)
-                    SChoice(1006, 172, 132, "Auto", sv_theme_mode == 2, set_value, 325002)
-                    SRevert(712, 186, sv_theme_mode != df_theme_mode, set_value, 325000 + df_theme_mode)
-                }
-                group {
-                    show: sv_theme_mode == 2
-                    move: 0, gy_1_2 - 216
-                    SRow(216, "Light from", "The hour it turns light", true, "", 404, true)
-                    SSlider(728, 232, 330, sv_theme_light_at, 23, set_value, 326, "Light from", "{sv_theme_light_at, 0}:00", true)
-                    SRevert(698, 246, sv_theme_light_at != df_theme_light_at, set_value, 326000 + df_theme_light_at)
-                }
-                group {
-                    show: sv_theme_mode == 2
-                    move: 0, gy_1_3 - 276
-                    SRow(276, "Dark from", "The hour it turns dark", true, "", 404, true)
-                    SSlider(728, 292, 330, sv_theme_dark_at, 23, set_value, 327, "Dark from", "{sv_theme_dark_at, 0}:00", true)
-                    SRevert(698, 306, sv_theme_dark_at != df_theme_dark_at, set_value, 327000 + df_theme_dark_at)
+                    SRow(156, "What it wears", "greetd runs sysc-greet, in this palette: `mooi greet-theme` writes the theme it follows (D190)", true, "", 360, false)
+                    text gr_theme { at: 1138, 186; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
-                    move: 0, gy_1_c1 - 358
-                    SCard(358, gc_1_1, "Shape")
+                    move: 0, gy_1_c1 - 238
+                    SCard(238, gc_1_1, "Day and night")
                 }
                 group {
                     show: true
+                    move: 0, gy_1_3 - 282
+                    SRow(282, "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", true, "", 418, false)
+                    STrack(742, 298, 396)
+                    SChoice(742, 298, 132, "Dark", sv_theme_mode == 0, set_value, 325000)
+                    SChoice(874, 298, 132, "Light", sv_theme_mode == 1, set_value, 325001)
+                    SChoice(1006, 298, 132, "Auto", sv_theme_mode == 2, set_value, 325002)
+                    SRevert(712, 312, sv_theme_mode != df_theme_mode, set_value, 325000 + df_theme_mode)
+                }
+                group {
+                    show: sv_theme_mode == 2
+                    move: 0, gy_1_4 - 342
+                    SRow(342, "Light from", "The hour it turns light", true, "", 404, true)
+                    SSlider(728, 358, 330, sv_theme_light_at, 23, set_value, 326, "Light from", "{sv_theme_light_at, 0}:00", true)
+                    SRevert(698, 372, sv_theme_light_at != df_theme_light_at, set_value, 326000 + df_theme_light_at)
+                }
+                group {
+                    show: sv_theme_mode == 2
                     move: 0, gy_1_5 - 402
-                    SRow(402, "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", true, "", 374, false)
-                    STrack(698, 418, 440)
-                    SChoice(698, 418, 110, "Chamfer", sv_look_corners == 0, set_value, 329000)
-                    SChoice(808, 418, 110, "Bevel", sv_look_corners == 1, set_value, 329001)
-                    SChoice(918, 418, 110, "Rounded", sv_look_corners == 2, set_value, 329002)
-                    SChoice(1028, 418, 110, "Square", sv_look_corners == 3, set_value, 329003)
-                    SRevert(668, 432, sv_look_corners != df_look_corners, set_value, 329000 + df_look_corners)
+                    SRow(402, "Dark from", "The hour it turns dark", true, "", 404, true)
+                    SSlider(728, 418, 330, sv_theme_dark_at, 23, set_value, 327, "Dark from", "{sv_theme_dark_at, 0}:00", true)
+                    SRevert(698, 432, sv_theme_dark_at != df_theme_dark_at, set_value, 327000 + df_theme_dark_at)
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_c2 - 484
+                    SCard(484, gc_1_2, "Shape")
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_7 - 528
+                    SRow(528, "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", true, "", 374, false)
+                    STrack(698, 544, 440)
+                    SChoice(698, 544, 110, "Chamfer", sv_look_corners == 0, set_value, 329000)
+                    SChoice(808, 544, 110, "Bevel", sv_look_corners == 1, set_value, 329001)
+                    SChoice(918, 544, 110, "Rounded", sv_look_corners == 2, set_value, 329002)
+                    SChoice(1028, 544, 110, "Square", sv_look_corners == 3, set_value, 329003)
+                    SRevert(668, 558, sv_look_corners != df_look_corners, set_value, 329000 + df_look_corners)
                 }
                 group {
                     show: sv_look_corners != 3
-                    move: 0, gy_1_6 - 462
-                    SRow(462, "Corner size", "How big the cut or the rounding is (12 is as designed)", true, "", 404, true)
-                    SSlider(728, 478, 330, sv_look_corner_size, 24, set_value, 330, "Corner size", "{sv_look_corner_size, 0}", true)
-                    SRevert(698, 492, sv_look_corner_size != df_look_corner_size, set_value, 330000 + df_look_corner_size)
-                }
-                group {
-                    show: true
-                    move: 0, gy_1_c2 - 544
-                    SCard(544, gc_1_2, "Palette")
-                }
-                group {
-                    show: true
                     move: 0, gy_1_8 - 588
-                    SRow(588, "Look", "A finished palette: base, finish and light together", true, "", 346, false)
-                    STrack(670, 604, 468)
-                    SChoice(670, 604, 78, "Phosphor", sv_theme_preset == 0, set_value, 66000)
-                    SChoice(748, 604, 78, "Neon noir", sv_theme_preset == 1, set_value, 66001)
-                    SChoice(826, 604, 78, "Concrete", sv_theme_preset == 2, set_value, 66002)
-                    SChoice(904, 604, 78, "Gunmetal", sv_theme_preset == 3, set_value, 66003)
-                    SChoice(982, 604, 78, "Alien", sv_theme_preset == 4, set_value, 66004)
-                    SChoice(1060, 604, 78, "Titanium", sv_theme_preset == 5, set_value, 66005)
-                    SRevert(640, 618, sv_theme_preset != df_theme_preset, set_value, 66000 + df_theme_preset)
+                    SRow(588, "Corner size", "How big the cut or the rounding is (12 is as designed)", true, "", 404, true)
+                    SSlider(728, 604, 330, sv_look_corner_size, 24, set_value, 330, "Corner size", "{sv_look_corner_size, 0}", true)
+                    SRevert(698, 618, sv_look_corner_size != df_look_corner_size, set_value, 330000 + df_look_corner_size)
                 }
                 group {
                     show: true
-                    move: 0, gy_1_9 - 648
-                    SRow(648, "Colours from", "Your wallpaper, or mooi's own teal and orange", true, "", 550, true)
-                    STrack(874, 664, 264)
-                    SChoice(874, 664, 132, "mooi default", theme_wallpaper == 0, set_value, 21000)
-                    SChoice(1006, 664, 132, "Wallpaper", theme_wallpaper == 1, set_value, 21001)
-                    SRevert(844, 678, sv_theme_source != df_theme_source, set_value, 21000 + df_theme_source)
+                    move: 0, gy_1_c3 - 670
+                    SCard(670, gc_1_3, "Palette")
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_10 - 714
+                    SRow(714, "Look", "A finished palette: base, finish and light together", true, "", 346, false)
+                    STrack(670, 730, 468)
+                    SChoice(670, 730, 78, "Phosphor", sv_theme_preset == 0, set_value, 66000)
+                    SChoice(748, 730, 78, "Neon noir", sv_theme_preset == 1, set_value, 66001)
+                    SChoice(826, 730, 78, "Concrete", sv_theme_preset == 2, set_value, 66002)
+                    SChoice(904, 730, 78, "Gunmetal", sv_theme_preset == 3, set_value, 66003)
+                    SChoice(982, 730, 78, "Alien", sv_theme_preset == 4, set_value, 66004)
+                    SChoice(1060, 730, 78, "Titanium", sv_theme_preset == 5, set_value, 66005)
+                    SRevert(640, 744, sv_theme_preset != df_theme_preset, set_value, 66000 + df_theme_preset)
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_11 - 774
+                    SRow(774, "Colours from", "Your wallpaper, or mooi's own teal and orange", true, "", 550, true)
+                    STrack(874, 790, 264)
+                    SChoice(874, 790, 132, "mooi default", theme_wallpaper == 0, set_value, 21000)
+                    SChoice(1006, 790, 132, "Wallpaper", theme_wallpaper == 1, set_value, 21001)
+                    SRevert(844, 804, sv_theme_source != df_theme_source, set_value, 21000 + df_theme_source)
                 }
                 group {
                     show: theme_wallpaper
-                    move: 0, gy_1_10 - 708
-                    SRow(708, "Start from", "Which of the wallpaper's main colours leads", true, "", 364, true)
-                    SColour(688, 722, "1st", rgb(sc0_r, sc0_g, sc0_b), th_index == 0, set_value, 22000, true)
-                    SColour(778, 722, "2nd", rgb(sc1_r, sc1_g, sc1_b), th_index == 1, set_value, 22001, true)
-                    SColour(868, 722, "3rd", rgb(sc2_r, sc2_g, sc2_b), th_index == 2, set_value, 22002, true)
-                    SColour(958, 722, "4th", rgb(sc3_r, sc3_g, sc3_b), th_index == 3, set_value, 22003, true)
-                    SColour(1048, 722, "5th", rgb(sc4_r, sc4_g, sc4_b), th_index == 4, set_value, 22004, true)
-                    SRevert(658, 738, sv_theme_color_index != df_theme_color_index, set_value, 22000 + df_theme_color_index)
+                    move: 0, gy_1_12 - 834
+                    SRow(834, "Start from", "Which of the wallpaper's main colours leads", true, "", 364, true)
+                    SColour(688, 848, "1st", rgb(sc0_r, sc0_g, sc0_b), th_index == 0, set_value, 22000, true)
+                    SColour(778, 848, "2nd", rgb(sc1_r, sc1_g, sc1_b), th_index == 1, set_value, 22001, true)
+                    SColour(868, 848, "3rd", rgb(sc2_r, sc2_g, sc2_b), th_index == 2, set_value, 22002, true)
+                    SColour(958, 848, "4th", rgb(sc3_r, sc3_g, sc3_b), th_index == 3, set_value, 22003, true)
+                    SColour(1048, 848, "5th", rgb(sc4_r, sc4_g, sc4_b), th_index == 4, set_value, 22004, true)
+                    SRevert(658, 864, sv_theme_color_index != df_theme_color_index, set_value, 22000 + df_theme_color_index)
                 }
                 group {
                     show: theme_wallpaper
-                    move: 0, gy_1_11 - 768
-                    SScheme(274, 774, "Balanced", rgb(sp0_r, sp0_g, sp0_b), rgb(se0_r, se0_g, se0_b), th_scheme == 0, set_value, 23000, true)
-                    SScheme(448, 774, "Faithful", rgb(sp1_r, sp1_g, sp1_b), rgb(se1_r, se1_g, se1_b), th_scheme == 1, set_value, 23001, true)
-                    SScheme(622, 774, "Expressive", rgb(sp2_r, sp2_g, sp2_b), rgb(se2_r, se2_g, se2_b), th_scheme == 2, set_value, 23002, true)
-                    SScheme(796, 774, "True to image", rgb(sp3_r, sp3_g, sp3_b), rgb(se3_r, se3_g, se3_b), th_scheme == 3, set_value, 23003, true)
-                    SScheme(970, 774, "Playful", rgb(sp4_r, sp4_g, sp4_b), rgb(se4_r, se4_g, se4_b), th_scheme == 4, set_value, 23004, true)
-                    SScheme(274, 840, "Monochrome", rgb(sp5_r, sp5_g, sp5_b), rgb(se5_r, se5_g, se5_b), th_scheme == 5, set_value, 23005, true)
-                    SScheme(448, 840, "Muted", rgb(sp6_r, sp6_g, sp6_b), rgb(se6_r, se6_g, se6_b), th_scheme == 6, set_value, 23006, true)
-                    SScheme(622, 840, "Rainbow", rgb(sp7_r, sp7_g, sp7_b), rgb(se7_r, se7_g, se7_b), th_scheme == 7, set_value, 23007, true)
-                    SScheme(796, 840, "Vibrant", rgb(sp8_r, sp8_g, sp8_b), rgb(se8_r, se8_g, se8_b), th_scheme == 8, set_value, 23008, true)
-                    SScheme(970, 840, "Automatic", rgb(sp9_r, sp9_g, sp9_b), rgb(se9_r, se9_g, se9_b), th_scheme == 9, set_value, 23009, true)
-                }
-                group {
-                    show: true
-                    move: 0, gy_1_12 - 910
-                    SRow(910, "Second colour", "The highlight: picked for you, or the main colour's opposite, neighbour or third", true, "", 374, true)
-                    STrack(698, 926, 440)
-                    SChoice(698, 926, 110, "Auto", th_signal == 0, set_value, 24000)
-                    SChoice(808, 926, 110, "Opposite", th_signal == 3, set_value, 24003)
-                    SChoice(918, 926, 110, "Neighbour", th_signal == 4, set_value, 24004)
-                    SChoice(1028, 926, 110, "Triad", th_signal == 5, set_value, 24005)
-                    SRevert(668, 940, sv_theme_signal != df_theme_signal, set_value, 24000 + df_theme_signal)
-                }
-                group {
-                    show: true
-                    move: 0, gy_1_c3 - 992
-                    SCard(992, gc_1_3, "Light")
+                    move: 0, gy_1_13 - 894
+                    SScheme(274, 900, "Balanced", rgb(sp0_r, sp0_g, sp0_b), rgb(se0_r, se0_g, se0_b), th_scheme == 0, set_value, 23000, true)
+                    SScheme(448, 900, "Faithful", rgb(sp1_r, sp1_g, sp1_b), rgb(se1_r, se1_g, se1_b), th_scheme == 1, set_value, 23001, true)
+                    SScheme(622, 900, "Expressive", rgb(sp2_r, sp2_g, sp2_b), rgb(se2_r, se2_g, se2_b), th_scheme == 2, set_value, 23002, true)
+                    SScheme(796, 900, "True to image", rgb(sp3_r, sp3_g, sp3_b), rgb(se3_r, se3_g, se3_b), th_scheme == 3, set_value, 23003, true)
+                    SScheme(970, 900, "Playful", rgb(sp4_r, sp4_g, sp4_b), rgb(se4_r, se4_g, se4_b), th_scheme == 4, set_value, 23004, true)
+                    SScheme(274, 966, "Monochrome", rgb(sp5_r, sp5_g, sp5_b), rgb(se5_r, se5_g, se5_b), th_scheme == 5, set_value, 23005, true)
+                    SScheme(448, 966, "Muted", rgb(sp6_r, sp6_g, sp6_b), rgb(se6_r, se6_g, se6_b), th_scheme == 6, set_value, 23006, true)
+                    SScheme(622, 966, "Rainbow", rgb(sp7_r, sp7_g, sp7_b), rgb(se7_r, se7_g, se7_b), th_scheme == 7, set_value, 23007, true)
+                    SScheme(796, 966, "Vibrant", rgb(sp8_r, sp8_g, sp8_b), rgb(se8_r, se8_g, se8_b), th_scheme == 8, set_value, 23008, true)
+                    SScheme(970, 966, "Automatic", rgb(sp9_r, sp9_g, sp9_b), rgb(se9_r, se9_g, se9_b), th_scheme == 9, set_value, 23009, true)
                 }
                 group {
                     show: true
                     move: 0, gy_1_14 - 1036
-                    SRow(1036, "Finish", "Matte is calm, Luminous glows, Neon burns", true, "", 418, false)
-                    STrack(742, 1052, 396)
-                    SChoice(742, 1052, 132, "Matte", sv_theme_finish == 1, set_value, 51001)
-                    SChoice(874, 1052, 132, "Luminous", sv_theme_finish == 0, set_value, 51000)
-                    SChoice(1006, 1052, 132, "Neon", sv_theme_finish == 2, set_value, 51002)
-                    SRevert(712, 1066, sv_theme_finish != df_theme_finish, set_value, 51000 + df_theme_finish)
+                    SRow(1036, "Second colour", "The highlight: picked for you, or the main colour's opposite, neighbour or third", true, "", 374, true)
+                    STrack(698, 1052, 440)
+                    SChoice(698, 1052, 110, "Auto", th_signal == 0, set_value, 24000)
+                    SChoice(808, 1052, 110, "Opposite", th_signal == 3, set_value, 24003)
+                    SChoice(918, 1052, 110, "Neighbour", th_signal == 4, set_value, 24004)
+                    SChoice(1028, 1052, 110, "Triad", th_signal == 5, set_value, 24005)
+                    SRevert(668, 1066, sv_theme_signal != df_theme_signal, set_value, 24000 + df_theme_signal)
                 }
                 group {
                     show: true
-                    move: 0, gy_1_15 - 1096
-                    SRow(1096, "Colourfulness", "The whole palette's colour, down or up", true, "", 404, true)
-                    SSlider(728, 1112, 330, sv_theme_saturation, 100, set_value, 52, "Colourfulness", "{sv_theme_saturation - 50, 0}", true)
-                    SRevert(698, 1126, sv_theme_saturation != df_theme_saturation, set_value, 52000 + df_theme_saturation)
+                    move: 0, gy_1_c4 - 1118
+                    SCard(1118, gc_1_4, "Light")
                 }
                 group {
                     show: true
-                    move: 0, gy_1_c4 - 1178
-                    SCard(1178, gc_1_4, "Base")
+                    move: 0, gy_1_16 - 1162
+                    SRow(1162, "Finish", "Matte is calm, Luminous glows, Neon burns", true, "", 418, false)
+                    STrack(742, 1178, 396)
+                    SChoice(742, 1178, 132, "Matte", sv_theme_finish == 1, set_value, 51001)
+                    SChoice(874, 1178, 132, "Luminous", sv_theme_finish == 0, set_value, 51000)
+                    SChoice(1006, 1178, 132, "Neon", sv_theme_finish == 2, set_value, 51002)
+                    SRevert(712, 1192, sv_theme_finish != df_theme_finish, set_value, 51000 + df_theme_finish)
                 }
                 group {
                     show: true
                     move: 0, gy_1_17 - 1222
-                    SRow(1222, "Base", "What everything stands on; text stays readable on any", true, "", 374, false)
-                    STrack(698, 1238, 440)
-                    SChoice(698, 1238, 110, "Black", sv_bar_bg == 0, set_value, 45000)
-                    SChoice(808, 1238, 110, "Wallpaper", sv_bar_bg == 1, set_value, 45001)
-                    SChoice(918, 1238, 110, "Main colour", sv_bar_bg == 2, set_value, 45002)
-                    SChoice(1028, 1238, 110, "Custom", sv_bar_bg == 9, set_value, 45009)
-                    SRevert(668, 1252, sv_bar_bg != df_bar_bg, set_value, 45000 + df_bar_bg)
+                    SRow(1222, "Colourfulness", "The whole palette's colour, down or up", true, "", 404, true)
+                    SSlider(728, 1238, 330, sv_theme_saturation, 100, set_value, 52, "Colourfulness", "{sv_theme_saturation - 50, 0}", true)
+                    SRevert(698, 1252, sv_theme_saturation != df_theme_saturation, set_value, 52000 + df_theme_saturation)
                 }
                 group {
                     show: true
-                    move: 0, gy_1_18 - 1282
-                    SRow(1282, "", "…or an industrial material", true, "", 346, true)
-                    STrack(670, 1298, 468)
-                    SChoice(670, 1298, 78, "Obsidian", sv_bar_bg == 10, set_value, 45010)
-                    SChoice(748, 1298, 78, "Gunmetal", sv_bar_bg == 11, set_value, 45011)
-                    SChoice(826, 1298, 78, "Concrete", sv_bar_bg == 12, set_value, 45012)
-                    SChoice(904, 1298, 78, "Titanium", sv_bar_bg == 13, set_value, 45013)
-                    SChoice(982, 1298, 78, "Oxide", sv_bar_bg == 14, set_value, 45014)
-                    SChoice(1060, 1298, 78, "Alien", sv_bar_bg == 15, set_value, 45015)
+                    move: 0, gy_1_c5 - 1304
+                    SCard(1304, gc_1_5, "Base")
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_19 - 1348
+                    SRow(1348, "Base", "What everything stands on; text stays readable on any", true, "", 374, false)
+                    STrack(698, 1364, 440)
+                    SChoice(698, 1364, 110, "Black", sv_bar_bg == 0, set_value, 45000)
+                    SChoice(808, 1364, 110, "Wallpaper", sv_bar_bg == 1, set_value, 45001)
+                    SChoice(918, 1364, 110, "Main colour", sv_bar_bg == 2, set_value, 45002)
+                    SChoice(1028, 1364, 110, "Custom", sv_bar_bg == 9, set_value, 45009)
+                    SRevert(668, 1378, sv_bar_bg != df_bar_bg, set_value, 45000 + df_bar_bg)
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_20 - 1408
+                    SRow(1408, "", "…or an industrial material", true, "", 346, true)
+                    STrack(670, 1424, 468)
+                    SChoice(670, 1424, 78, "Obsidian", sv_bar_bg == 10, set_value, 45010)
+                    SChoice(748, 1424, 78, "Gunmetal", sv_bar_bg == 11, set_value, 45011)
+                    SChoice(826, 1424, 78, "Concrete", sv_bar_bg == 12, set_value, 45012)
+                    SChoice(904, 1424, 78, "Titanium", sv_bar_bg == 13, set_value, 45013)
+                    SChoice(982, 1424, 78, "Oxide", sv_bar_bg == 14, set_value, 45014)
+                    SChoice(1060, 1424, 78, "Alien", sv_bar_bg == 15, set_value, 45015)
                 }
                 group {
                     show: sv_bar_bg == 9
-                    move: 0, gy_1_19 - 1342
-                    SRow(1342, "Custom colour", "Pick the base: hue, then how rich and how light", true, "", 300, true)
-                    box { from: 1052, 1354; size: 86, 36; corner: 6; color: rgb(cp_r, cp_g, cp_b) }
-                    box { from: 1052, 1354; size: 86, 36; corner: 6; stroke: 1; color: fl.trace_lit }
-                    text cp_hex { at: 1095, 1372; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }
-                    text "HUE" { at: 274, 1416; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                    SSlider(394, 1402, 560, cp_h, 360, set_colour, 1, "Hue", "{cp_h, 0}°", true)
-                    text "RICHNESS" { at: 274, 1456; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                    SSlider(394, 1442, 560, cp_s, 100, set_colour, 2, "Richness", "{cp_s, 0}%", true)
-                    text "LIGHTNESS" { at: 274, 1496; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
-                    SSlider(394, 1482, 560, cp_l, 60, set_colour, 3, "Lightness", "{cp_l, 0}%", true)
-                    SColour(274, 1526, "", rgb(cq0_r, cq0_g, cq0_b), false, set_colour, 9000, true)
-                    SColour(380, 1526, "", rgb(cq1_r, cq1_g, cq1_b), false, set_colour, 9001, true)
-                    SColour(486, 1526, "", rgb(cq2_r, cq2_g, cq2_b), false, set_colour, 9002, true)
-                    SColour(592, 1526, "", rgb(cq3_r, cq3_g, cq3_b), false, set_colour, 9003, true)
-                    SColour(698, 1526, "", rgb(cq4_r, cq4_g, cq4_b), false, set_colour, 9004, true)
-                    SColour(804, 1526, "", rgb(cq5_r, cq5_g, cq5_b), false, set_colour, 9005, true)
-                    SColour(910, 1526, "", rgb(cq6_r, cq6_g, cq6_b), false, set_colour, 9006, true)
-                    SColour(1016, 1526, "", rgb(cq7_r, cq7_g, cq7_b), false, set_colour, 9007, true)
+                    move: 0, gy_1_21 - 1468
+                    SRow(1468, "Custom colour", "Pick the base: hue, then how rich and how light", true, "", 300, true)
+                    box { from: 1052, 1480; size: 86, 36; corner: 6; color: rgb(cp_r, cp_g, cp_b) }
+                    box { from: 1052, 1480; size: 86, 36; corner: 6; stroke: 1; color: fl.trace_lit }
+                    text cp_hex { at: 1095, 1498; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; outline: 2, fl.ground }
+                    text "HUE" { at: 274, 1542; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    SSlider(394, 1528, 560, cp_h, 360, set_colour, 1, "Hue", "{cp_h, 0}°", true)
+                    text "RICHNESS" { at: 274, 1582; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    SSlider(394, 1568, 560, cp_s, 100, set_colour, 2, "Richness", "{cp_s, 0}%", true)
+                    text "LIGHTNESS" { at: 274, 1622; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    SSlider(394, 1608, 560, cp_l, 60, set_colour, 3, "Lightness", "{cp_l, 0}%", true)
+                    SColour(274, 1652, "", rgb(cq0_r, cq0_g, cq0_b), false, set_colour, 9000, true)
+                    SColour(380, 1652, "", rgb(cq1_r, cq1_g, cq1_b), false, set_colour, 9001, true)
+                    SColour(486, 1652, "", rgb(cq2_r, cq2_g, cq2_b), false, set_colour, 9002, true)
+                    SColour(592, 1652, "", rgb(cq3_r, cq3_g, cq3_b), false, set_colour, 9003, true)
+                    SColour(698, 1652, "", rgb(cq4_r, cq4_g, cq4_b), false, set_colour, 9004, true)
+                    SColour(804, 1652, "", rgb(cq5_r, cq5_g, cq5_b), false, set_colour, 9005, true)
+                    SColour(910, 1652, "", rgb(cq6_r, cq6_g, cq6_b), false, set_colour, 9006, true)
+                    SColour(1016, 1652, "", rgb(cq7_r, cq7_g, cq7_b), false, set_colour, 9007, true)
                 }
                 group {
                     show: sv_bar_bg > 0.5 and sv_bar_bg != 9
-                    move: 0, gy_1_20 - 1570
-                    SRow(1570, "Lightness", "Darker or lighter than the base", true, "", 404, true)
-                    SSlider(728, 1586, 330, sv_bar_bg_light, 50, set_value, 46, "Lightness", "{sv_bar_bg_light - 10, 0}", true)
-                    SRevert(698, 1600, sv_bar_bg_light != df_bar_bg_light, set_value, 46000 + df_bar_bg_light)
+                    move: 0, gy_1_22 - 1696
+                    SRow(1696, "Lightness", "Darker or lighter than the base", true, "", 404, true)
+                    SSlider(728, 1712, 330, sv_bar_bg_light, 50, set_value, 46, "Lightness", "{sv_bar_bg_light - 10, 0}", true)
+                    SRevert(698, 1726, sv_bar_bg_light != df_bar_bg_light, set_value, 46000 + df_bar_bg_light)
                 }
                 group {
                     show: sv_bar_bg > 0.5 and sv_bar_bg != 9
-                    move: 0, gy_1_21 - 1630
-                    SRow(1630, "Saturation", "From grey to richer than the base", true, "", 404, true)
-                    SSlider(728, 1646, 330, sv_bar_bg_sat, 150, set_value, 47, "Saturation", "{sv_bar_bg_sat, 0}%", true)
-                    SRevert(698, 1660, sv_bar_bg_sat != df_bar_bg_sat, set_value, 47000 + df_bar_bg_sat)
+                    move: 0, gy_1_23 - 1756
+                    SRow(1756, "Saturation", "From grey to richer than the base", true, "", 404, true)
+                    SSlider(728, 1772, 330, sv_bar_bg_sat, 150, set_value, 47, "Saturation", "{sv_bar_bg_sat, 0}%", true)
+                    SRevert(698, 1786, sv_bar_bg_sat != df_bar_bg_sat, set_value, 47000 + df_bar_bg_sat)
                 }
                 group {
                     show: sv_bar_bg > 0.5 and sv_bar_bg != 9
-                    move: 0, gy_1_22 - 1690
-                    SRow(1690, "Hue", "Turn the base round the colour wheel", true, "", 404, true)
-                    SSlider(728, 1706, 330, sv_bar_bg_hue, 360, set_value, 48, "Hue", "{sv_bar_bg_hue - 180, 0}°", true)
-                    SRevert(698, 1720, sv_bar_bg_hue != df_bar_bg_hue, set_value, 48000 + df_bar_bg_hue)
-                }
-                group {
-                    show: true
-                    move: 0, gy_1_c5 - 1772
-                    SCard(1772, gc_1_5, "Your apps")
-                }
-                group {
-                    show: true
                     move: 0, gy_1_24 - 1816
-                    text "OFF, AN APP KEEPS ITS OWN COLOURS (YOUR MATUGEN SETUP); ON, IT WEARS THIS PALETTE" { at: 274, 1830; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    SRow(1816, "Hue", "Turn the base round the colour wheel", true, "", 404, true)
+                    SSlider(728, 1832, 330, sv_bar_bg_hue, 360, set_value, 48, "Hue", "{sv_bar_bg_hue - 180, 0}°", true)
+                    SRevert(698, 1846, sv_bar_bg_hue != df_bar_bg_hue, set_value, 48000 + df_bar_bg_hue)
                 }
                 group {
                     show: true
-                    move: 0, gy_1_25 - 1844
-                    SRow(1844, "Kitty terminal", "Text, selection, cursor and the 16 terminal colours", true, "", 768, true)
-                    SToggle(1092, 1862, sv_apps_kitty, set_value, 78, "apps.kitty")
-                    SRevert(1062, 1874, sv_apps_kitty != df_apps_kitty, set_value, 78000 + df_apps_kitty)
+                    move: 0, gy_1_c6 - 1898
+                    SCard(1898, gc_1_6, "Your apps")
                 }
                 group {
                     show: true
-                    move: 0, gy_1_26 - 1904
-                    SRow(1904, "GTK apps", "GTK 3 and 4 (libadwaita), light or dark with mooi; open windows change when reopened", true, "", 768, true)
-                    SToggle(1092, 1922, sv_apps_gtk, set_value, 79, "apps.gtk")
-                    SRevert(1062, 1934, sv_apps_gtk != df_apps_gtk, set_value, 79000 + df_apps_gtk)
+                    move: 0, gy_1_26 - 1942
+                    text "OFF, AN APP KEEPS ITS OWN COLOURS (YOUR MATUGEN SETUP); ON, IT WEARS THIS PALETTE" { at: 274, 1956; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: true
-                    move: 0, gy_1_27 - 1964
-                    SRow(1964, "Files (Nautilus)", "Its path bar, Places list and file selection in the palette, and Papirus's folder icons recoloured to match; off leaves Nautilus as GTK gives it", true, "", 768, true)
-                    SToggle(1092, 1982, sv_apps_files, set_value, 424, "apps.files")
-                    SRevert(1062, 1994, sv_apps_files != df_apps_files, set_value, 424000 + df_apps_files)
+                    move: 0, gy_1_27 - 1970
+                    SRow(1970, "Kitty terminal", "Text, selection, cursor and the 16 terminal colours", true, "", 768, true)
+                    SToggle(1092, 1988, sv_apps_kitty, set_value, 78, "apps.kitty")
+                    SRevert(1062, 2000, sv_apps_kitty != df_apps_kitty, set_value, 78000 + df_apps_kitty)
                 }
                 group {
                     show: true
-                    move: 0, gy_1_28 - 2024
-                    SRow(2024, "Qt and KDE apps", "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", true, "", 768, true)
-                    SToggle(1092, 2042, sv_apps_qt, set_value, 80, "apps.qt")
-                    SRevert(1062, 2054, sv_apps_qt != df_apps_qt, set_value, 80000 + df_apps_qt)
+                    move: 0, gy_1_28 - 2030
+                    SRow(2030, "GTK apps", "GTK 3 and 4 (libadwaita), light or dark with mooi; open windows change when reopened", true, "", 768, true)
+                    SToggle(1092, 2048, sv_apps_gtk, set_value, 79, "apps.gtk")
+                    SRevert(1062, 2060, sv_apps_gtk != df_apps_gtk, set_value, 79000 + df_apps_gtk)
                 }
                 group {
                     show: true
-                    move: 0, gy_1_29 - 2084
-                    SRow(2084, "Everything else", "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", true, "", 768, true)
-                    SToggle(1092, 2102, sv_apps_others, set_value, 328, "apps.others")
-                    SRevert(1062, 2114, sv_apps_others != df_apps_others, set_value, 328000 + df_apps_others)
+                    move: 0, gy_1_29 - 2090
+                    SRow(2090, "Files (Nautilus)", "Its path bar, Places list and file selection in the palette, and Papirus's folder icons recoloured to match; off leaves Nautilus as GTK gives it", true, "", 768, true)
+                    SToggle(1092, 2108, sv_apps_files, set_value, 424, "apps.files")
+                    SRevert(1062, 2120, sv_apps_files != df_apps_files, set_value, 424000 + df_apps_files)
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_30 - 2150
+                    SRow(2150, "Qt and KDE apps", "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", true, "", 768, true)
+                    SToggle(1092, 2168, sv_apps_qt, set_value, 80, "apps.qt")
+                    SRevert(1062, 2180, sv_apps_qt != df_apps_qt, set_value, 80000 + df_apps_qt)
+                }
+                group {
+                    show: true
+                    move: 0, gy_1_31 - 2210
+                    SRow(2210, "Everything else", "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", true, "", 768, true)
+                    SToggle(1092, 2228, sv_apps_others, set_value, 328, "apps.others")
+                    SRevert(1062, 2240, sv_apps_others != df_apps_others, set_value, 328000 + df_apps_others)
                 }
             }
             group {

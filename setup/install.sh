@@ -9,6 +9,8 @@
 #   ~/Projects/mooi/setup/install.sh --no-packages   the files only (packages already there)
 #   ~/Projects/mooi/setup/install.sh --personal      the author's own machine: the full package lists
 #                                                    setup/capture.sh keeps in setup/personal/ (local only)
+#   ~/Projects/mooi/setup/install.sh --dry-run       the login screen's step only, printed into a
+#                                                    scratch folder: nothing installed or changed
 #
 # Whatever it replaces in your home is moved, not deleted, to ~/.setup-backup-<date>/ first.
 # Run it as yourself (it asks for sudo for packages and the login screen). Then log out and pick the
@@ -18,18 +20,27 @@ here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/.." && pwd)
 packages=true
 personal=false
+dry=false
 for a in "$@"; do
     case "$a" in
         --no-packages) packages=false ;;
         --personal) personal=true ;;
-        -h|--help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        *) echo "install: I don't know «$a» (--no-packages, --personal, --help)" >&2; exit 2 ;;
+        --dry-run) dry=true ;;
+        -h|--help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "install: I don't know «$a» (--no-packages, --personal, --dry-run, --help)" >&2; exit 2 ;;
     esac
 done
 say() { printf '\033[1;36msetup ·\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33msetup ·\033[0m %s\n' "$*" >&2; }
 [ "$(id -u)" -ne 0 ] || { echo "install: run it as yourself, not root (it uses sudo where it must)" >&2; exit 1; }
 command -v pacman >/dev/null || { echo "install: this is for Arch-based systems (pacman)" >&2; exit 1; }
+# --dry-run is the login screen's step and nothing else: steps 1–4 install packages and write into the
+# home, and a preview of those is not a preview — it is the same work. The greeter's step is config
+# and accounts, and it can say exactly what it would do (setup/greeter.sh --dry-run).
+if $dry; then
+    sh "$here/greeter.sh" --dry-run
+    exit 0
+fi
 [ -d "$here/home" ] || { echo "install: $here/home is missing: run setup/capture.sh on the old machine first" >&2; exit 1; }
 
 # ── 1. Packages ──────────────────────────────────────────────────────────────────────────────────
@@ -156,9 +167,13 @@ if [ "$root" != "$HOME/Projects/mooi" ]; then
 fi
 "$root/bin/mooi" check >/dev/null 2>&1 || warn "\`mooi check\` found something missing: run it to see what"
 
-# ── 5. The login screen ──────────────────────────────────────────────────────────────────────────
-if $packages && pacman -Qq sddm >/dev/null 2>&1; then
-    sudo systemctl enable sddm >/dev/null 2>&1 && say "login screen: sddm enabled"
+# ── 5. The login screen: greetd runs sysc-greet's Hyprland greeter ───────────────────────────────
+# The step is a script of its own (setup/greeter.sh, D190): the greeter's account and folders, the
+# greetd config (a foreign one kept beside it), the theme and its link, then sddm off and greetd on.
+# Run that on its own to set the login screen up again; `setup/greeter.sh --dry-run` — which
+# `install.sh --dry-run` reaches — writes it all into a scratch folder, printing what would need root.
+if $packages; then
+    sh "$here/greeter.sh"
 fi
 
 say "done. Log out, choose the Hyprland session, and mooi starts with it."

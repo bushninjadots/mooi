@@ -1,5 +1,8 @@
-# From the AUR (built with paru or yay): video wallpapers under the desk, the logout menu, and
-# Papirus folders recoloured to the palette.
+# From the AUR (built with paru or yay): video wallpapers under the desk, the logout menu, the
+# login screen, and Papirus folders recoloured to the palette.
 mpvpaper
 wlogout
+# sysc-greet's Hyprland 0.55+ backend (https://github.com/Nomadcxx/sysc-greet): the greeter and
+# /etc/greetd/hyprland-greeter-config.lua. The niri/sway/cagebreak/mango variants conflict with it.
+sysc-greet-hyprland
 papirus-folders

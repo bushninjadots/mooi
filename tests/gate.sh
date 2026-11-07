@@ -70,6 +70,8 @@ sh tests/components.sh
 sh tests/apps-sync.sh
 sh tests/theme-pack.sh
 sh tests/kitty-shaders.sh
+sh tests/greet-theme.sh
+sh tests/setup-greeter.sh
 
 echo "test suites and docs agree"
 for t in tests/*.sh; do

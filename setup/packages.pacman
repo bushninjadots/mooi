@@ -32,7 +32,8 @@ hyprsunset
 hyprpolkitagent
 xdg-desktop-portal-hyprland
 uwsm
-sddm
+# the login screen: greetd starts sysc-greet's Hyprland greeter (the package is in packages.aur)
+greetd
 # sound, network, bluetooth, power, sensors
 pipewire
 pipewire-pulse

@@ -5339,6 +5339,63 @@ G4); the summaries follow the commit messages._
   tile again, and the two surfaces commit separately. Overlapping them would double-draw the translucent
   band for a few frames, a worse blink; left as it is. The peek was driven by emits, not a real pointer.
 
+## D190 · 2026-11-07 · The login screen is greetd with sysc-greet, not sddm
+
+- The owner asked for [sysc-greet](https://github.com/Nomadcxx/sysc-greet), a console greeter for
+  greetd, in place of what the setup had. The setup's answer to "the login screen" was one line in
+  `setup/install.sh` enabling `sddm`; nothing else in mooi is a greeter.
+- **The pieces.** `sddm` leaves `setup/packages.pacman` for `greetd`; the AUR list gains
+  `sysc-greet-hyprland` (the backend for Hyprland 0.55+, which is what this desktop runs — the niri,
+  sway, cagebreak and mango variants conflict with it). kitty and socat, which the greeter needs,
+  were already there.
+- **What `install.sh` writes.** `/etc/greetd/config.toml` with
+  `command = "start-hyprland -- --config /etc/greetd/hyprland-greeter-config.lua"` and `user = "greeter"`
+  (only when no config exists, so a chosen backend is not overwritten), the `greeter` account with
+  `video,render,input` and `/var/cache/sysc-greet` plus `/var/lib/greeter`'s directories, sddm
+  disabled if it is enabled, and `greetd` enabled. The greeter's own Lua config is the package's:
+  it starts fullscreen kitty and quits Hyprland when kitty exits.
+- **What stays.** The lock screen is still mooi's own (`mooi lock`, with hyprlock the fallback);
+  this decision is only about the screen before a session. Sessions are unchanged: the greeter
+  lists Hyprland from `/usr/share/wayland-sessions`, so the Hyprland session is picked as before.
+- Not checked here: the greeter's startup, a real login and its quit on the desk — docs' own warning
+  is to test those on the target machine before relying on greetd (`sysc-greet --test`, then a real
+  reboot). This change is the setup's files only; nothing was installed on a machine from this
+  checkout.
+- *To change back:* `sudo systemctl disable greetd && sudo pacman -S sddm && sudo systemctl enable sddm`,
+  and swap the two package lines back; `docs/SWITCHING.md` and the session's keys are untouched.
+- **The greeter in mooi's colours.** sysc-greet picks a theme by name, not by file: it reads
+  `/var/lib/sysc-greet/shell-theme/theme` (or its own user's `~/.config/sysc-shell/shell-theme`),
+  matches the name case-insensitively among the themes it loads from `/usr/share/sysc-greet/themes`
+  and `~/.config/sysc-greet/themes`, and follows the shell by default (`-follow-shell`, on unless its
+  F1 menu turned it off). `install.sh` makes that theme folder owned by the installing user —
+  upstream's own installer does the same, which is what lets the choice be published without root —
+  and links `/usr/share/sysc-greet/themes/mooi.toml` at it. `mooi greet-theme` writes `mooi.toml`
+  from `palette.json` and the name `Mooi`; `theme-sync` calls it, so every recolour reaches the login
+  screen with no password. The greeter's eleven roles are coarser than mooi's tokens: base
+  `surface_dim`, active row `surface_container_high`, accent `tertiary`, warning `tertiary` as well
+  (mooi has no warn role of its own; the ember is `error`, which stays danger), text
+  `on_surface`/`on_surface_variant`/`outline`, focus `primary`. A token the palette lacks falls back
+  to Material's own hex, because sysc-greet refuses a theme with a field missing.
+- **Where it shows, and when it is refreshed.** `mooi lock` writes the theme before the lock comes
+  up, so logging out lands on the palette that was on screen rather than on the one mooi started
+  with. Settings → Theme & colour has a card of its own that says what the login screen wears
+  (`Mooi · followed`, `Mooi · not followed`, `no theme yet`, `not set up`); the window cannot read
+  `/var` — `files.read` stays in the scene's own folder — so it asks `mooi greet-theme --status`, the
+  script that writes it, for the one line. The row is an `info` row of `tools/gen-settings.py`
+  (regenerated with it), not a setting: nothing to set, nothing in `settings.json`.
+- **A greetd config is kept, not trusted.** This machine already had an `/etc/greetd/config.toml`
+  no greeter could parse — two `[default_session]` tables, so greetd failed on a duplicate key —
+  naming `/usr/bin/noctalia-greeter-session` rather than sysc-greet. Writing the file only when it
+  was missing would have enabled greetd on a config it rejects. `install.sh` now keeps a foreign one
+  as `config.toml.before-mooi-<date>` and writes its own; one that already names sysc-greet is left
+  alone.
+- Checked here, without root: the upstream Hyprland greeter config passes `luac -p`, sysc-greet
+  builds against this Hyprland 0.57.1 (`start-hyprland` present), and `sysc-greet --test` reads
+  mooi's generated theme and draws the login panel in its colours when the follow file names `Mooi`.
+  `tests/greet-theme.sh` (31 checks, in the gate) holds the writer: the eleven roles, the mapping,
+  the fallbacks, a light palette, and the two refusals. What still needs the desk: a real greetd
+  start, a login and the quit back to greetd.
+
 ## D191 · 2026-11-07 · The Pill looks and behaves like ArchEclipse's
 
 - The owner: "look either at my archeclipse local or the github repo fork of mine, look at what we built
@@ -5376,6 +5433,19 @@ G4); the summaries follow the commit messages._
   pointer, recorded, moved across the reveal's items with each plate lit and the card held open.
 - Limits: the spectrum has not been seen live (nothing was playing, and playing the owner's music to test
   it was not done); the media item's cover arrives a moment after the reveal on the first open.
+
+## D192 · 2026-11-07 · The lock screen stays mooi's: sysc-lock is Niri-only
+
+- The same request asked whether the lock screen should become sysc-lock so what locks matches what
+  greets. It cannot on this desktop: sysc-lock registers its session owner with the compositor over
+  `NIRI_SOCKET` and verifies the IPC peer, and its README states support for Niri and
+  sysc-compositor only. Under Hyprland 0.57 no owner registers, so the first lock would fail.
+- mooi's lock stays as D160/D161 built it: `mooi lock` through pleamar's `kind: lock`
+  (ext-session-lock), its backdrop and visualiser settings, `hyprlock` as the fallback in
+  `lock-session.sh`. Nothing changed here; this is recorded so the question is answered once.
+- A Hyprland-capable replacement would have to speak ext-session-lock without a compositor-specific
+  handshake; hyprlock already does and is installed, so it is the one to reach for if mooi's own lock
+  is ever dropped.
 
 ## D193 · 2026-11-07 · The Pill, audited in every room: four bugs fixed
 

@@ -232,6 +232,8 @@ SECTIONS = [
         ("choice", "", "…or an instrument", "bar.workspaces", "ws_style", INSTRUMENTS),
     ]),
     ("Theme & colour", "Theme & colour", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "LOOK", [
+        ("card", "The login screen"),
+        ("info", "What it wears", "greetd runs sysc-greet, in this palette: `mooi greet-theme` writes the theme it follows (D190)", "gr_theme"),
         ("card", "Day and night"),
         ("choice", "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", "theme.mode", "sv_theme_mode", [("Dark", 0), ("Light", 1), ("Auto", 2)]),
         ("slider", "Light from", "The hour it turns light", "theme.light_at", 0, 23, "{sv_theme_light_at, 0}:00", "sv_theme_mode == 2"),
@@ -1493,6 +1495,7 @@ def main():
     fact saving = false       // the battery saver is on now
     text adv_version = ""
     text adv_usage = ""
+    text gr_theme = ""        // D190: what the login screen wears, asked of `mooi greet-theme --status`
     model adv_log max 12 { line: text; warn: bool }
     event adv_act ->          // to the logic: 1 open settings.json · 2 open the log · 3 open the shell's folder · 4 restart Hyprland and the bar
     // The custom base colour (bar.bg_colour) as hue, richness and lightness, and eight quick picks.
