@@ -19,6 +19,7 @@
 local loom = require("lib/loom")
 local park = require("lib/loompark")
 local acc = require("lib/loomaccordion")
+local cube = require("lib/loomcube")          -- D197
 local lm = require("lib/loommode")
 local config = require("lib/config")
 local ferro = require("lib/ferro")
@@ -112,7 +113,11 @@ local function publish()
     model.lf_strips = strips
     model.lf_layers = layers
     fact.lf_n = #strips
-    fact.lf_draw = #strips > 0
+    -- D197: the cubes, docked below the strips
+    local cubes = features.on.cubes and cube.rows(doc) or {}
+    model.lf_cubes = cubes
+    fact.lf_cn = #cubes
+    fact.lf_draw = #strips > 0 or #cubes > 0
 end
 
 -- ── Hyprland ──────────────────────────────────────────────
@@ -213,15 +218,16 @@ end
 -- ── Running a plan (D195) ─────────────────────────────────
 -- One at a time: a second command while a plan is moving windows waits for it.
 local busy, queue = false, {}
-local function run_plan(op, sid, make)
-    if busy then queue[#queue + 1] = { op, sid, make }; return end
+local function run_plan(op, sid, make, commit)
+    commit = commit or acc.commit             -- D197: a cube's plan commits through lib/loomcube
+    if busy then queue[#queue + 1] = { op, sid, make, commit }; return end
     busy = true
     local function finish()
         busy = false
         publish()
         refresh_soon()
         local q = table.remove(queue, 1)
-        if q then run_plan(q[1], q[2], q[3]) end
+        if q then run_plan(q[1], q[2], q[3], q[4]) end
     end
     run("hyprctl", { "-j", "activeworkspace" }, function(aw)
         local okw, w = pcall(json.decode, tostring(aw or ""))
@@ -229,11 +235,11 @@ local function run_plan(op, sid, make)
         if ws < 1 then ws = 1 end
         local p, target = make(ws)
         target = target or sid
-        if not p or (#p.cmds == 0 and not p.open and not p.remove and not p.dissolve) then finish(); return end
+        if not p or (#p.cmds == 0 and not p.open and not p.remove and not p.dissolve and not p.state and not p.faces) then finish(); return end
         local j = loom.journal_begin(doc, op, target or "", p.moves, os.time())
         save_now()
         dispatch_all(p.cmds, function()
-            acc.commit(doc, target, p, os.time())
+            commit(doc, target, p, os.time())
             loom.journal_end(doc, j, "done")
             save_now(); health()
             finish()
@@ -263,9 +269,82 @@ local function accordions_on()
 end
 
 -- ── Commands: the keys (`mooi loom …`) and the strip ──────
-local CMD = { unpark = 1, add = 10, next = 11, prev = 12, fold = 13, open = 14, remove = 15, push = 16 }
+local CMD = { unpark = 1, add = 10, next = 11, prev = 12, fold = 13, open = 14, remove = 15, push = 16,
+              cube = 20, join = 21 }      -- D197
+local function cubes_on()
+    if features.on.cubes then return true end
+    log("loom · cubes are off: " .. tostring(features.off.cubes or ""))
+    return false
+end
+-- D197: every window on the focused window's workspace, into the model, then made a cube
+local function make_cube()
+    run("hyprctl", { "-j", "activewindow" }, function(aw)
+        local ok, a = pcall(json.decode, tostring(aw or ""))
+        if not ok or type(a) ~= "table" or type(a.workspace) ~= "table" then return end
+        local ws = tonumber(a.workspace.id)
+        run("hyprctl", { "-j", "clients" }, function(out)
+            local okc, clients = pcall(json.decode, tostring(out or ""))
+            if not okc or type(clients) ~= "table" then return end
+            loom.match(doc, clients)
+            local oids, focus = {}, nil
+            for _, c in ipairs(clients) do
+                if type(c.workspace) == "table" and tonumber(c.workspace.id) == ws then
+                    local _, oid = acc.of_window(doc, c.address)
+                    if not oid then
+                        oid = loom.add_object(doc, { kind = "window", app = c.class, title = c.title, address = c.address, pid = c.pid,
+                                                     workspace = ws, floating = c.floating, state = "live",
+                                                     at = (type(c.at) == "table" and type(c.size) == "table") and { c.at[1], c.at[2], c.size[1], c.size[2] } or nil })
+                    end
+                    if oid then
+                        oids[#oids + 1] = oid
+                        if c.address == a.address then focus = oid end
+                    end
+                end
+            end
+            if #oids == 0 then return end
+            run_plan("cube", nil, function()
+                local sid = cube.create(doc, oids, focus, "Workspace " .. tostring(ws))
+                if not sid then return nil end
+                return { cmds = {}, records = {}, moves = {}, state = "unfolded" }, sid
+            end, cube.commit)
+        end)
+    end)
+end
+local command_acc      -- the Accordion's commands (below)
 local function command(n)
     if n == CMD.unpark then unpark_all(); return end
+    -- D197: the Cube's keys, and fold for whichever structure the focused window is in
+    if n == CMD.cube then if cubes_on() then make_cube() end; return end
+    if n == CMD.join then
+        if not cubes_on() then return end
+        with_focused(function(address, oid)
+            local sid = cube.last(doc)
+            if sid and doc.objects[oid].parent ~= sid then run_plan("join", sid, function() return cube.add(doc, sid, oid) end, cube.commit) end
+        end)
+        return
+    end
+    if n == CMD.fold and features.on.cubes then
+        with_focused(function(address)
+            local sid = cube.of_window(doc, address)
+            if sid then run_plan("fold", sid, function() return cube.fold(doc, sid) end, cube.commit); return end
+            if acc.of_window(doc, address) then command_acc(n); return end
+            local last = cube.last(doc, true)
+            if last then run_plan("unfold", last, function() return cube.unfold(doc, last) end, cube.commit)
+            else command_acc(n) end
+        end)
+        return
+    end
+    if n == CMD.remove and features.on.cubes then
+        with_focused(function(address, oid)
+            local sid = cube.of_window(doc, address)
+            if sid then run_plan("remove", sid, function() return { cmds = {}, records = {}, moves = {}, remove = { oid } } end, cube.commit)
+            else command_acc(n) end
+        end)
+        return
+    end
+    command_acc(n)
+end
+command_acc = function(n)
     if not accordions_on() then return end
     if n == CMD.add then
         with_focused(function(address, oid)
@@ -341,14 +420,16 @@ end)
 pcall(sys.watch, "workspaces", function() refresh_soon() end)
 pcall(sys.watch, "files:palette.json", function() palette = read("palette.json"); pcall(paint) end)
 pcall(sys.watch, "files:settings.json", function()
-    local was = features.on.accordions
+    local was, was_c = features.on.accordions, features.on.cubes
     read_settings(); pcall(paint)
     -- turned off: every accordion's windows come out (nothing stays hidden behind a switch)
-    if was and not features.on.accordions then
-        local only = {}
-        for sid, s in pairs(doc.structures) do if s.kind == "accordion" then only[sid] = true end end
-        unpark_all(nil, only)
+    local only, any = {}, false
+    for sid, s in pairs(doc.structures) do
+        if (was and not features.on.accordions and s.kind == "accordion") or (was_c and not features.on.cubes and s.kind == "cube") then
+            only[sid] = true; any = true
+        end
     end
+    if any then unpark_all(nil, only) end
     publish()
 end)
 
@@ -363,6 +444,34 @@ on("loom_quit", function()
     end)
 end)
 on("loom_cmd", function(v) command(math.floor(tonumber(v) or 0)) end)
+
+-- D197: a docked cube (shell/ui/loomcube.plm), by its place c (from 0)
+on("cube_press", function(v)           -- c: folded or partly → unfold all; unfolded → fold
+    if not cubes_on() then return end
+    local sid = cube.cube_sid(doc, v)
+    if not sid then return end
+    if doc.structures[sid].state == "unfolded" then run_plan("fold", sid, function() return cube.fold(doc, sid) end, cube.commit)
+    else run_plan("unfold", sid, function() return cube.unfold(doc, sid) end, cube.commit) end
+end)
+on("cube_face", function(v)            -- c: only the facing face out (a partial unfold)
+    if not cubes_on() then return end
+    local sid = cube.cube_sid(doc, v)
+    if sid then
+        local _, face = cube.facing(doc, sid)
+        run_plan("unfold", sid, function() return cube.unfold(doc, sid, face) end, cube.commit)
+    end
+end)
+on("cube_turn", function(v)            -- c·10 + (1 next · 0 previous): turning moves no window
+    if not cubes_on() then return end
+    v = math.floor(tonumber(v) or -1)
+    local sid = cube.cube_sid(doc, v // 10)
+    if sid then cube.turn(doc, sid, v % 10 == 1 and 1 or -1); save_soon(); publish() end
+end)
+on("cube_dissolve", function(v)        -- c: the cube gone, every window out where it was
+    if not cubes_on() then return end
+    local sid = cube.cube_sid(doc, v)
+    if sid then run_plan("dissolve", sid, function() return cube.dissolve(doc, sid) end, cube.commit) end
+end)
 
 -- The strip (shell/ui/loomstrip.plm): k is the strip's place, i a layer's (both from 0)
 on("acc_press", function(v)            -- k * 100 + i: pull that layer (pressing the one out folds it back)

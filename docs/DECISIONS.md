@@ -5492,3 +5492,39 @@ G4); the summaries follow the commit messages._
   a playful wink with his tongue out, and the curious face with the hop when the pointer arrived.
 - Limits: his typed line, the notes, the marks and the sleep dimming were not seen live (they need a line,
   music, a battery or a long idle); the peek opens over him on a long hover.
+
+## D197 · 2026-11-07 · Loom / Fold Phase 3: the Cube; BMO centred; new keys reach Hyprland at start
+
+- **The Cube** (`lib/loomcube`, pure, tested): a workspace's windows as one environment. Made with
+  Super+Alt+K (every window on the focused window's workspace: the focused one on the front, file managers
+  on the left, the rest on the right; faces back, top, bottom wait for later); Super+Alt+J adds the focused
+  window to the last Cube's facing side (parked at once if the Cube is folded). Folding parks every member;
+  unfolding returns each to its own workspace and place; a partial unfold opens one side only; turning moves
+  no window; dissolving brings everything out and removes the Cube. Super+Alt+F now folds whichever
+  structure the focused window is in, and with none, unfolds the Cube folded last; Super+Alt+R takes a
+  window out of a Cube too.
+- **Drawn as a projection** (`ui/loomcube.plm`): four sides and a top as quads computed in the scene from a
+  spring on its turn count (so 3 → 0 keeps rolling the same way), standing 25° askew at rest so it reads as
+  a solid, one key light from the upper left, hairline edges, a contact shadow. Folded it is steel; unfolded
+  its sides are glass; partly unfolded, only the facing side is. The facing side carries its first app's
+  initial and its count; its name and side under it. One zone: press folds or unfolds, middle press opens
+  the facing side, the wheel turns it, right press dissolves. Docked at the foot of the Loom edge.
+- **Settings → Loom / Fold**: Cubes (needs Fold), the edge now for strips and Cubes; **Settings → Keys**:
+  Make a Cube (Super+Alt+K), Join the Cube (Super+Alt+J), both free.
+- **Found: new keys never reached Hyprland at start.** `sync_desktop` is defined at the end of mooi.luau,
+  so the settings and palette applied at start skipped it, and a key added in a new version (K, J) stayed
+  unbound until the next settings change. It now runs once right where it is defined (it reloads Hyprland
+  only when the keys differ from what it bound). Verified: K and J bound after a refresh.
+- **BMO centred** (the owner): quiet, his face sits in the middle of the capsule's glass; talking, it slides
+  to the left on a spring (`pb_talkf`) to make room for his line. The other faces were checked: the glance,
+  module faces, the activity layout and the reveal's rows are centred by construction; the time face is
+  within 3 px.
+- Checks: unit 600 / 0, BMO 27 / 0, 14 scenes compile. Live, on a separate test copy of the program (its
+  own data folder, so the owner's own Accordion — in use at the time — was never touched) acting on three
+  throwaway windows on workspace 8: the Cube drew, folding parked all three on `special:loom-s5`, unfolding
+  brought them back to workspace 8, turning advanced the side, an empty side opened nothing. The recording
+  shows the owner's own pointer pressing and turning the test Cube meanwhile. The test copy was killed
+  outright (its quit would rescue every parked window, the owner's too) and its windows and folder removed.
+- Limits: making a Cube from the keys, joining, and the Cube's top/bottom/back faces were not driven live
+  (making one uses the focused workspace — the owner's); absent members are not relaunched yet; no
+  miniatures on the faces.

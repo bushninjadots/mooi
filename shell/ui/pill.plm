@@ -135,7 +135,8 @@ library Pill {
         // height — the face's empty margins left out, clipped to the glass; scaled about his feet so a
         // squash lands on the glass's floor
         let sc = (gh - 3) / 19
-        let fcx = px + 6 + 15.5 * sc
+        // centred in the capsule while he is quiet; talking, he slides to the left end to make room for his line
+        let fcx = px + pw / 2 + (px + 8 + 15.5 * sc - px - pw / 2) * pb_talkf
         let fby = gy + gh / 2 + 9.5 * sc
         group {
             clip box { from: px + 2.5, gy; size: max(4, pw - 5), gh; corner: gh / 2 }

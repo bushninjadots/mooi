@@ -1371,6 +1371,8 @@ scene Mooi {
     follow pb_hop = pb_bump
     prop pb_type = 0 ~m.isl_out
     follow pb_type = pb_say_n
+    prop pb_talkf = 0 ~m.isl
+    follow pb_talkf = if(pb_talk, 1, 0)
     prop pb_pow = 1 ~m.isl
     follow pb_pow = if(pb_asleep, 0.32, 1)
     prop pb_t = 0
