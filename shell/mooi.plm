@@ -6,6 +6,7 @@ import "ui/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
 import "ui/pill.plm"
+import "ui/pillboard.plm"
 import "ui/stash.plm"
 import "ui/edgetab.plm" as edge
 
@@ -51,7 +52,7 @@ scene Mooi {
     text pw_state = ""
     text pw_time = ""
     text pw_rate = ""
-    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music = none
+    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music | board = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     // The spine (D100) is gone (D119): islands open under the bar only. `isl_shelf` stays false — the
     // island geometry still reads it, as the shelf it no longer has.
@@ -1147,6 +1148,43 @@ scene Mooi {
     // D169: the Pill's face (0 time · 1 BMO · 2 Nexus), hidden when idle, nodes; pointed at
     fact pill_face = 0
     fact pill_hidden = false
+    // D170: the Pill board (shell/pillboard.luau, ui/pillboard.plm)
+    fact pk_room = 0             // 0 now · 1 calendar · 2 sound · 3 display · 4 connections · 5 power · 6 resources · 7 weather · 8 signals
+    fact pk_n = 8                // how many pads
+    fact pk_k0 = -1              // each pad's part: its place in the bar's module order (lib/pillpads)
+    fact pk_k1 = -1
+    fact pk_k2 = -1
+    fact pk_k3 = -1
+    fact pk_k4 = -1
+    fact pk_k5 = -1
+    fact pk_k6 = -1
+    fact pk_k7 = -1
+    fact pk_on = -1              // the pad whose room is showing
+    fact pk_kb = -1              // the pad the keyboard is on
+    fact pk_edit = false
+    fact pk_sel = -1             // editing: the pad chosen
+    fact pk_music = false        // Now is Now Playing
+    fact pk_viz = 0              // 0 HALO · 1 RIVER (pill.viz)
+    fact pk_sig_n = 0
+    text pk_date = ""
+    text pk_wk = ""
+    model pk_week max 7 { n: number; label: text; day: number; today: bool }
+    model pk_sigs max 3 { n: number; app: text; title: text; ago: text }
+    event pk_pad ->            // to the logic (D170): pad n pressed
+    event pk_hover ->          // to the logic: pad n pointed at (BMO names it)
+    event pk_back ->           // to the logic: back to Now
+    event pk_go ->             // to the logic: room n
+    event pk_chip ->           // to the logic: a docked moon pressed
+    event pk_key ->            // to the logic: 0 left · 1 right · 2 enter · 3 escape
+    event pk_edit_cmd ->       // to the logic: 0 edit on/off · 10+i take pad i off · 20+i move it left · 30+i right
+    event pk_part ->           // to the logic: part n (the bar's module order) onto the board
+    event pk_face ->           // to the logic: face n (lib/pill.FACES)
+    event pk_viz ->            // to the logic: HALO ⇄ RIVER
+    event pk_sig_clear ->      // to the logic: clear the signals
+    event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
+    event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
+    prop pk_flow = 0
+    spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false
     event pill_hover ->        // to the logic: the hidden Pill pointed at
     // BMO's face in the Pill: one row of bmo/brain's FACES, set by the logic; the scene glides to it
@@ -1232,9 +1270,10 @@ scene Mooi {
     prop rv.display = 0 ~m.enter
     prop rv.power = 0 ~m.enter
     prop rv.music = 0 ~m.enter
+    prop rv.board = 0 ~m.enter
     // the music island's record (D142): it turns while the song plays and the island is open
     prop mu_spd = 0 ~600ms
-    follow mu_spd = if(mu_playing and open == music, 120, 0)
+    follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)
     prop mu_ang = 0
     spin mu_ang by mu_spd
     prop med_prg = 0 ~500ms
@@ -1299,6 +1338,10 @@ scene Mooi {
     layer life.power {
         shown while open == power { rv.power: 1 ~m.isl after 30ms }
         gone                      { rv.power: 0 ~m.exit }
+    }
+    layer life.board {
+        shown while open == board { rv.board: 1 ~m.isl after 30ms }
+        gone                      { rv.board: 0 ~m.exit }
     }
     // The shutter's motion: the anchor answers first, the plates follow down the track in a short
     // stagger, a panel slides out of its plate, the third level out of its row; going, the panel
@@ -3150,7 +3193,7 @@ scene Mooi {
         // panel is up (they switch panels), and a press inside a panel never reaches it. The
         // overview, the shutter and the Atlas are surfaces of their own (overlay), above this one.
         group {
-            show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music
+            show: qn_open or mark_open or side == notes or open == window or open == system or open == command or stash_pin or open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music or open == board
             zone box dismiss { from: 0, st_res; size: screen.width, popup_surface.height - st_res; role: region; label: "Close the open panel" }
             on press dismiss while qn_open { qn_open = false }
             on press dismiss while mark_open { mark_open = false }
@@ -3158,7 +3201,7 @@ scene Mooi {
             on press dismiss while open == window { open = none }
             on press dismiss while open == system { open = none }
             on press dismiss while open == command { open = none }
-            on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music { open = none }
+            on press dismiss while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music or open == board { open = none }
             on press dismiss while stash_pin { stash_pin = false }
         }
 
@@ -4123,6 +4166,8 @@ scene Mooi {
                 }
             }
         }
+        // ── The Pill board (D170): the Pill unfolded ──
+        PillBoard()
         // ── calendar_island (D97): the month under the clock ──
         group {
             move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - (292) - 20), st_res + 6)
@@ -5822,6 +5867,11 @@ scene Mooi {
     on key Right while open == calendar { emit cal_shift(2) }
     on key Home while open == calendar  { emit cal_shift(1) }
     on key Escape while open == stats or open == calendar or open == weather or open == sound or open == display or open == power or open == music { open = none }
+    // D170: the board's keys (the logic decides: Escape backs out of edit, then a room, then closes)
+    on key Escape while open == board { emit pk_key(3) }
+    on key Left while open == board { emit pk_key(0) }
+    on key Right while open == board { emit pk_key(1) }
+    on key Return while open == board { emit pk_key(2) }
     // The Overview: Super+Tab (or its key) opens it, zooming out of the workspace you are on, the
     // search row taking the keys: typing searches (D41). What the row leaves to rules: Tab, ↑ ↓, Alt,
     // Ctrl+M, Ctrl+Z, F2, Menu, Shift+F10, Escape — Enter is its submit.

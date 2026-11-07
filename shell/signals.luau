@@ -492,6 +492,16 @@ return function(ctx)
         apply = apply,
         -- the Pill's feed: fn(signal) for each new one that shows (D168, review I2)
         on_signal = function(fn) pill_hook = fn end,
+        -- the Pill board's Signals room (D170): the newest n, as the Nexus sees them, and clearing them
+        recent = function(n)
+            local f = nexusfeed.feed(list, os.time(), false)
+            local out = {}
+            for i = 1, math.min(tonumber(n) or 3, #f.items) do out[i] = f.items[i] end
+            return out, f.count
+        end,
+        clear = function()
+            for _, n in ipairs(list) do if n and n.id then dismiss(n.id) end end
+        end,
         -- do not disturb, looked at again (a focus block started or ended)
         requiet = function() if fact.notes_on then fact.dnd_now = quiet() end end,
         -- one of mooi's own signals (the focus timer's): it unfolds like any other, never reaches

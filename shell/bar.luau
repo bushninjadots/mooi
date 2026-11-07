@@ -34,6 +34,8 @@ return function(ctx)
     local pill_hovering = false    -- the pointer is on it (review M4)
     local cur_vol, cur_bri = nil, nil
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
+    local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
+    local pill_face_text = nil   -- D170: a module face's reading (pill_face_read), for its width
 
     -- ── Layout ─────────────────────────────────────────────────
     -- The bar's edge inset: 12 px at full width; a narrower bar (bar.width) is centred.
@@ -157,8 +159,9 @@ return function(ctx)
         local p = type(s.pill) == "table" and s.pill or {}
         local off = {}
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
-        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face, autohide = p.autohide,
-                 max_w = pill_room }
+        -- D170: never tucked away while its own board is open
+        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face,
+                 autohide = p.autohide == true and fact.open ~= "board", max_w = pill_room, face_text = pill_face_text }
     end
     function pill_update()
         local s = ctx.settings()
@@ -183,7 +186,9 @@ return function(ctx)
         end
         -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
         local p = type(s.pill) == "table" and s.pill or {}
-        fact.pill_face = ({ time = 0, bmo = 1, nexus = 2 })[p.face] or 0
+        local fi = 0
+        for i, f in ipairs(pillmod.FACES) do if f == p.face then fi = i - 1 end end
+        fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         fact.pill_hidden = r.hidden == true
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
             or (pill_now.hidden == true) ~= (r.hidden == true)
@@ -246,14 +251,20 @@ return function(ctx)
         -- it already brought it back; a press that only revealed it read as "nothing happens")
         if fact.pill_hidden then note("peek", {}) end
         fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
-        if main == "music" then run("pleamar", { "--say", "mooi", "emit open_player 0" })
-        elseif main == "notify" then run("pleamar", { "--say", "mooi", "emit loom_field" })
-        elseif main == "record" then run("pleamar", { "--say", "mooi", "emit record 0" })
-        elseif main == "osd" then fact.open = (pst.osd and pst.osd.kind == "bri") and "display" or "sound"
-        elseif main == "battery" then fact.open = "power"
-        elseif fact.pill_face == 1 then pillface.poke(face_st, pill_ms, math.random()); face_show()
-        elseif fact.pill_face == 2 then run("pleamar", { "--say", "mooi", "emit open_nexus" })
-        else fact.open = "calendar" end
+        -- D170: the board decides (lib/pill.press): it unfolds, or the Nexus face opens the Nexus
+        if pill_board then pill_board.press("left", main) end
+    end)
+    -- D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
+    on("pill_rpress", function()
+        local main = pill_now and pill_now.main or "idle"
+        if fact.pill_hidden then note("peek", {}) end
+        fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
+        if pill_board then pill_board.press("right", main) end
+    end)
+    -- D170: a moon's right press opens the board on its activity
+    on("pill_rmoon", function(v)
+        local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
+        if id and pill_board then pill_board.press("left", id) end
     end)
     -- D169: pointed at, a hidden Pill comes back for a while
     on("pill_hover", function(v)
@@ -1082,5 +1093,25 @@ return function(ctx)
     measure()
     relayout()
     -- a settings change arrives as relayout(): the Pill reads its face, hiding and order again first
-    return { relayout = function() pill_update(); relayout() end, measure = measure }
+    -- D170: what the board needs from the Pill: what it shows, the change showing, and BMO
+    local function talk()
+        local c = ctx.settings().companion
+        return type(c) == "table" and c.talk or "rare"
+    end
+    local pill_api = {
+        now = function() return pill_now end,
+        osd = function() return pst.osd and pst.osd.kind or "vol" end,
+        bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,
+        react = function(face, ms) pillface.react(face_st, face, pill_ms, ms); face_show() end,
+        say = function(line) pillface.say(face_st, line, pill_ms, talk()); face_show() end,
+        poke = function() pillface.poke(face_st, pill_ms, math.random(), talk()); face_show() end,
+        touch = function()
+            if pillface.touch(face_st, pill_ms) then
+                pillface.react(face_st, "surprised", pill_ms, 900); pillface.say(face_st, "oh! hi", pill_ms, talk())
+            end
+            face_show()
+        end,
+    }
+    return { relayout = function() pill_update(); relayout() end, measure = measure,
+             pill = pill_api, set_board = function(b) pill_board = b end }
 end

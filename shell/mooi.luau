@@ -1857,7 +1857,7 @@ end
 -- frame kept a body with nothing in it). Geometry comes with each opening; `pl_sync` sends the frame
 -- either that island (once per opening) or nothing.
 local CHASSIS = { window = true, system = true, stats = true, calendar = true, music = true, weather = true,
-                  sound = true, display = true, power = true }
+                  sound = true, display = true, power = true, board = true }      -- board: the Pill unfolded (D170)
 local pl_seq, pl_sent_seq, pl_sent_on = 0, -1, false
 local function pl_sync()
     local o = tostring(fact.open or "none")
@@ -2503,6 +2503,16 @@ bar = require("bar")({
     saving = function() return saving() end,
     player_up = function() return player_win ~= nil end,
 })
+
+-- ── The Pill board: the Pill unfolded (shell/pillboard.luau, D170) ──
+bar.set_board(require("pillboard")({
+    settings = function() return settings end,
+    save = save_settings,
+    relayout = function() bar.relayout() end,
+    refresh = function() bar.relayout() end,
+    pill = bar.pill,
+    loom = loom,
+}))
 
 -- ── The Mechanical Shutter: a window's controls, unfolding from its edge (shell/shutter.luau) ──
 require("shutter")({

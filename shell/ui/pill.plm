@@ -132,9 +132,13 @@ library Pill {
             // hidden with the frame on, the tab hangs in the top strip: the zone reaches the top (review M5)
             zone box pillz { from: px, if(pill_hidden, 0, fl.top); size: pw, if(pill_hidden, fl.top + fl.mod_h, fl.mod_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
             on press pillz { emit pill_press }
-            // pointed at: 1, and 0 when the pointer leaves — a resting pointer keeps it open (review M4)
-            on change pillz.hover while pillz.hover > 0.5 { emit pill_hover(1) }
-            on change pillz.hover while pillz.hover < 0.5 { emit pill_hover(0) }
+            // D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
+            on press right pillz { emit pill_rpress }
+            // pointed at: 1, and 0 when the pointer leaves — a resting pointer keeps it open (review M4).
+            // Once per crossing (D170): `on change pillz.hover` fired on every step of the hover's easing.
+            let pz_in = pillz.hover > 0.5
+            on change pz_in while pz_in { emit pill_hover(1) }
+            on change pz_in while not pz_in { emit pill_hover(0) }
             // nodes (D169): each pad on a circuit trace to the one inside it, a via at each end
             group {
                 show: pill_nodes
@@ -168,24 +172,28 @@ library Pill {
                 Mark(moon_x0 + 12, cy, moon_k0)
                 zone box pmoon0 { from: moon_x0, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon0 { emit pill_moon(0) }
+                on press right pmoon0 { emit pill_rmoon(0) }
             }
             group {
                 show: moon_k1 > -0.5
                 Mark(moon_x1 + 12, cy, moon_k1)
                 zone box pmoon1 { from: moon_x1, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon1 { emit pill_moon(1) }
+                on press right pmoon1 { emit pill_rmoon(1) }
             }
             group {
                 show: moon_k2 > -0.5
                 Mark(moon_x2 + 12, cy, moon_k2)
                 zone box pmoon2 { from: moon_x2, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon2 { emit pill_moon(2) }
+                on press right pmoon2 { emit pill_rmoon(2) }
             }
             group {
                 show: moon_k3 > -0.5
                 Mark(moon_x3 + 12, cy, moon_k3)
                 zone box pmoon3 { from: moon_x3, cy - 12; size: 24, 24; cursor: pointer; role: button; label: "Show this in the Pill" }
                 on press pmoon3 { emit pill_moon(3) }
+                on press right pmoon3 { emit pill_rmoon(3) }
             }
         }
     }

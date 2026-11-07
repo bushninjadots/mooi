@@ -5176,5 +5176,72 @@ do
     end)
 end
 
+section("the Pill board: the scene and its logic (D170)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the board's events reach the logic", function()
+        local plm = read("shell/mooi.plm")
+        for _, ev in ipairs({ "pk_pad", "pk_hover", "pk_back", "pk_go", "pk_chip", "pk_key", "pk_edit_cmd", "pk_part", "pk_face", "pk_viz", "pk_sig_clear", "pill_rpress", "pill_rmoon" }) do
+            assert(plm:find("event " .. ev .. " ->", 1, true), ev .. " is declared with ->")
+        end
+        local lua = read("shell/pillboard.luau")
+        for _, ev in ipairs({ "pk_pad", "pk_hover", "pk_back", "pk_go", "pk_chip", "pk_key", "pk_edit_cmd", "pk_part", "pk_face", "pk_viz", "pk_sig_clear" }) do
+            assert(lua:find('on("' .. ev .. '"', 1, true), ev .. " is heard")
+        end
+        local bar = read("shell/bar.luau")
+        assert(bar:find('on("pill_rpress"', 1, true) and bar:find('on("pill_rmoon"', 1, true), "the bar hears the right presses")
+    end)
+    test("the board is an island: drawn on popup_surface, its life, dismissed by a press outside and Escape", function()
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("| music | board = none", 1, true), "open can be board")
+        assert(plm:find("shown while open == board { rv.board: 1", 1, true), "its reveal")
+        local popup = plm:find("surface popup_surface {", 1, true)
+        local at = plm:find("        PillBoard()", 1, true)
+        assert(at and popup and at > popup, "drawn with the panels")
+        assert(plm:find("open == power or open == music or open == board { open = none }", 1, true), "a press outside closes it")
+        assert(plm:find("on key Escape while open == board { emit pk_key(3) }", 1, true), "Escape backs out")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("IslandFrame(rv.board", 1, true), "the island kit draws it")
+        assert(ui:find("want: open == board", 1, true), "the frame pours it from the Pill")
+    end)
+    test("the islands' readers run for the board's rooms", function()
+        local isl = read("shell/islands.luau")
+        assert(isl:find('on("fact:pk_room", told)', 1, true), "a room change is heard")
+        assert(isl:find('[1] = "calendar", [5] = "power", [6] = "stats", [7] = "weather"', 1, true), "the rooms that need readers")
+        local parts = require("lib/pillpads")
+        eq(parts.room_index("calendar"), 1); eq(parts.room_index("power"), 5); eq(parts.room_index("resources"), 6); eq(parts.room_index("weather"), 7)
+    end)
+    test("the Pill's hover is heard once per crossing, and the right presses are wired", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(not ui:find("on change pillz.hover while", 1, true), "not on every step of the hover's easing")
+        assert(ui:find("on change pz_in while pz_in { emit pill_hover(1) }", 1, true))
+        assert(ui:find("on press right pillz { emit pill_rpress }", 1, true))
+        assert(ui:find("on press right pmoon0 { emit pill_rmoon(0) }", 1, true))
+    end)
+    test("Loom shares its newest signals and can clear them, without a second watch", function()
+        local sig = read("shell/signals.luau")
+        assert(sig:find("recent = function(n)", 1, true) and sig:find("clear = function()", 1, true))
+        local board = read("shell/pillboard.luau")
+        assert(not board:find("sys.watch", 1, true), "the board watches nothing itself (no notification server, D169)")
+    end)
+end
+
+section("the Pill board: music (D170)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the record turns and the song's position comes while the board plays", function()
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)", 1, true), "the record turns")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("on change pk_mus_on { emit music_isl(if(pk_mus_on, 1, 0)) }", 1, true), "position updates")
+        assert(ui:find("show: pk_viz < 0.5", 1, true) and ui:find("show: pk_viz > 0.5", 1, true), "HALO and RIVER")
+        assert(ui:find("pick(i, lv0, lv2, lv4", 1, true), "each trace carries a pair of bands")
+    end)
+    test("the Pill never tucks away while its board is open", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find('autohide = p.autohide == true and fact.open ~= "board"', 1, true))
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
