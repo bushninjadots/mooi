@@ -7303,5 +7303,15 @@ test("mooi: sigil respawn gives up after five and the bar falls back", function(
     assert(read("shell/ui/pill.plm"):find("sigil_mode and not sigil_up", 1, true), "the plain clock")
 end)
 
+section("the sigil: scene")
+test("scene: generated, four hosts, 64 sprung points each, two surfaces", function()
+    local f = io.open("shell/mooi-sigil.plm"); local t = f:read("a"); f:close()
+    assert(t:find("follow h3_x63 = h3_tx63", 1, true), "the last host's last point follows its target")
+    assert(t:find("spring sg.pt = 260, 20", 1, true))
+    assert(t:find("surface bar {", 1, true) and t:find("surface drop {", 1, true))
+    assert(t:find("rate: 60, 20 while calm", 1, true), "it rests")
+    assert(not t:find("notification", 1, true), "it never watches notifications (spec §3)")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
