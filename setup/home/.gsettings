@@ -1,5 +1,5 @@
-icon-theme 'Adwaita'
+icon-theme 'Papirus-Mooi'
 cursor-theme 'phinger-cursors-dark'
-gtk-theme 'Adwaita'
-color-scheme 'default'
+gtk-theme 'adw-gtk3-dark'
+color-scheme 'prefer-dark'
 font-name 'Inter 10'

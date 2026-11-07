@@ -202,10 +202,10 @@ library PillBoard {
     }
 
     // A part in the edit bin
-    component PkPart(p: number, used: bool, acc: color, ink: color, dim: color) {
+    component PkPart(p: number, used: bool, acc: color, ink: color, dim: color, y0: number = 398) {
         size: 72, 26
-        let qx = 16 + (p - floor(p / 8) * 8) * 76
-        let qy = 398 + floor(p / 8) * 30
+        let qx = 20 + (p - floor(p / 8) * 8) * 76
+        let qy = y0 + floor(p / 8) * 34
         group {
             opacity: if(used, 0.35, 1)
             zone box z { from: qx, qy; size: 72, 26; cursor: pointer; role: button; active: not used
@@ -218,6 +218,45 @@ library PillBoard {
                 at: qx + 24, qy + 13; anchor: left center; size: 8.5; family: "Share Tech Mono"; color: mix(ink, acc, z.hover); width: 46; lines: 1 }
             on press z { emit pk_part(p) }
         }
+    }
+
+    // D188: the peek card's own place to point and press (a zone cannot be named in an island's slot)
+    component PeekHit(w: number, h: number) {
+        size: w, h
+        zone box pkz { from: 0, 0; size: w, h; cursor: pointer; role: button; label: "Open the whole board" }
+        let pkin = pkz.hover > 0.5
+        on change pkin while pkin { emit pk_peek_hover(1) }
+        on change pkin while not pkin { emit pk_peek_hover(0) }
+        on press pkz { emit pk_peek_open }
+    }
+
+    // D188: one of the peek's upright levels — a track, its fill from the foot, a word under it
+    component PeekLevel(x: number, v: number, word: text, acc: color, dim: color) {
+        size: 14, 80
+        box { from: x, 18; size: 8, 60; corner: 4; color: fl.well }
+        box { from: x, 18 + 60 * (1 - clamp(v, 0, 1)); size: 8, 60 * clamp(v, 0, 1); corner: 4; color: acc }
+        text word { at: x + 4, 92; anchor: center; size: 8; family: "Share Tech Mono"; color: dim }
+    }
+
+    // D188: a pad's slot in the editor — the module on it (its icon and name), or a + for an empty one.
+    // A press chooses it; the module pressed below then goes on it.
+    component EdSlot(i: number, k: number, acc: color, ink: color, dim: color) {
+        size: 68, 64
+        let x = 20 + i * 76
+        let y = 92
+        let sel = pk_sel == i
+        let has = k > -0.5
+        zone box z { from: x, y; size: 68, 64; cursor: pointer; role: button
+                     label: pick(has, "Empty slot {i + 1, 0}: choose it, then a module below", "Slot {i + 1, 0}: choose it") }
+        box { from: x, y; size: 68, 64; corner: 10; color: if(sel, mix(fl.hull_raised, acc, 0.22), fl.hull_raised); opacity: if(has or sel, 0.95, 0.4) }
+        box { from: x, y; size: 68, 64; corner: 10; stroke: if(sel, 2, 1); color: if(sel, acc, mix(fl.trace_dim, acc, z.hover)); opacity: if(has or sel, 1, 0.7) }
+        group { show: has
+                PkIcon(k, x + 34, y + 24, 18, if(sel, acc, mix(ink, acc, z.hover)))
+                text pick(k, "SPACES", "WINDOW", "MUSIC", "CPU", "NET", "KEYS", "WEATHER", "TRAY", "SIGNALS", "MIC", "SOUND", "BRIGHT", "BATTERY", "WI-FI", "BT", "CLOCK",
+                          "AWAKE", "REC", "SHOT", "CLIPS", "SESSION", "ACTIONS", "OVERVIEW", "SEARCH", "FOCUS", "SETTINGS", "NOTES", "WALL", "NEXUS", "UPDATES", "CLAUDE", "GITHUB") {
+                    at: x + 34, y + 49; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: if(sel, acc, dim); width: 62; lines: 1 } }
+        text "+" { at: x + 34, y + 30; anchor: center; size: 22; weight: 300; family: "Exo 2"; color: if(sel, acc, mix(dim, acc, z.hover)); show: not has }
+        on press z { emit pk_slot(i) }
     }
 
     // A pad: its trace from the pin under the core, the pad, its icon and reading, and in edit its ×, ◂ ▸
@@ -302,12 +341,117 @@ library PillBoard {
         on press mr { emit pk_edit_cmd(30 + i) }
     }
 
+    // D176: the desk as the workspace viewer — a card per workspace, its windows where they really are
+    // (live where the thumbnails service lends a picture). The wheel turns the cards, hover chooses one,
+    // a press goes there: the wallpapers' orbit on the desk.
+    component WvCard(p, x, acc, ink, dim) {
+        size: 190, 140
+        zone box wz { from: x, 8; size: 190, 140; corner: 8; cursor: pointer; role: button; selected: pk_wv_focus == p.slot; label: "Workspace {p.id}" }
+        on enter wz { emit pk_wv_hover(p.slot) }
+        on press wz { emit pk_wv_go(p.id) }
+        on scroll wz { emit pk_wv_scroll(wheel) }
+        box { from: x, 8; size: 190, 140; corner: 8; color: fl.ground; opacity: 0.7 }
+        box { from: x, 8; size: 190, 140; corner: 8; stroke: if(p.on or pk_wv_focus == p.slot, 1.8, 1)
+              color: if(p.on, acc, mix(fl.trace_dim, acc, wz.hover)) }
+        text "WS {p.id}" { at: x + 10, 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(p.on, acc, dim) }
+        text pick(p.n > 1.5, "{p.n, 0} WINDOW", "{p.n, 0} WINDOWS") { at: x + 180, 20; anchor: right center; size: 9; family: "Share Tech Mono"; color: dim }
+        for b in pk_wbox {
+            let lit = b.k == p.slot
+            let bx = x + 8 + b.nx * 174
+            let by = 30 + b.ny * 112
+            box { from: bx, by; size: max(4, b.nw * 174), max(4, b.nh * 112); corner: 2; color: fl.hull_raised; opacity: if(lit, 0.9, 0) }
+            image b.pic { at: bx, by; size: max(4, b.nw * 174), max(4, b.nh * 112); show: lit and b.pictured }
+            box { from: bx, by; size: max(4, b.nw * 174), max(4, b.nh * 112); corner: 2; stroke: 1
+                  color: if(b.focused, acc, fl.trace_dim); opacity: if(lit, 1, 0) }
+        }
+    }
+
+    // D175/D177: the desk — the board's first card as the owner's own tiles (pill.desk_*), placed by
+    // lib/deskgrid: the time, the song, the machine, the week. `k` is the tile's number (0 clock · 1
+    // playing · 2 diagnostics · 3 calendar), `w`/`h` its size (a wide tile takes the row); its surface,
+    // edge, tint and glow are the choices.
+    component DeskTile(k, x, y, w, h, acc, ink, dim) {
+        size: w, h
+        let tone = pick(pk_dk_tint, acc, acc2, ink)
+        let dglow = pick(pk_dk_glow, 0, 5, 11)
+        image dk_art = from med_art, 64, 64
+        group {
+            show: k >= 0
+            glow: dglow, 0.5, tone
+            box { from: x, y; size: w, h; corner: if(pk_dk_border > 0.5 and pk_dk_border < 1.5, 2, 8)
+                  color: mix(fl.well, fl.hull_raised, 0.3 * pk_dk_surface); opacity: if(pk_dk_form > 0.5, 0.22, if(pk_dk_surface > 1.5, 0.55, 0.9)) }
+            box { from: x, y; size: w, h; corner: if(pk_dk_border > 0.5 and pk_dk_border < 1.5, 2, 8)
+                  stroke: if(pk_dk_border < 0.5, 1, 0); color: mix(fl.trace_dim, tone, 0.35) }
+            zone box dkz { from: x, y; size: w, h; cursor: pointer; role: button
+                           label: pick(k, "The time", "The song", "The machine", "The week") }
+            on press dkz { emit pk_dk_press(k) }
+            // the time, the date, the week
+            group {
+                show: k < 0.5
+                text clock.time { at: x + 16, y + 30; anchor: left center; size: 30; weight: 300; family: "Exo 2"; color: ink }
+                text pk_date { at: x + 16, y + 56; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: dim; width: w - 70; lines: 1 }
+                text pk_wk { at: x + w - 16, y + 56; anchor: right center; size: 10; family: "Share Tech Mono"; color: tone }
+            }
+            // the song: the cover, its title and how far it has come
+            group {
+                show: k > 0.5 and k < 1.5
+                box { from: x + 12, y + 10; size: 56, 56; corner: 6; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                image dk_art { at: x + 12, y + 10; size: 56, 56; show: med_has_art }
+                text pick(mu_has, "Nothing playing", mu_title) { at: x + 80, y + 24; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: ink; width: max(60, w - 96); lines: 1 }
+                text mu_artist { at: x + 80, y + 42; anchor: left center; size: 10; family: "Exo 2"; color: dim; width: max(60, w - 96); lines: 1 }
+                box { from: x + 80, y + 58; size: max(40, w - 96), 3; corner: 1.5; color: fl.ground }
+                box { from: x + 80, y + 58; size: max(40, w - 96) * clamp(med_prg, 0, 1), 3; corner: 1.5; color: tone }
+            }
+            // the machine: the processor, the memory, the temperature
+            group {
+                show: k > 1.5 and k < 2.5
+                text "CPU" { at: x + 16, y + 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim }
+                box { from: x + 48, y + 15; size: max(30, w - 124), 6; corner: 3; color: fl.ground }
+                box { from: x + 48, y + 15; size: max(30, w - 124) * clamp(res_cpu, 0, 1), 6; corner: 3; color: tone }
+                text "{round(res_cpu * 100), 0}%" { at: x + w - 16, y + 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: ink }
+                text "MEM" { at: x + 16, y + 38; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim }
+                box { from: x + 48, y + 35; size: max(30, w - 124), 6; corner: 3; color: fl.ground }
+                box { from: x + 48, y + 35; size: max(30, w - 124) * clamp(res_mem, 0, 1), 6; corner: 3; color: mix(tone, fl.ember, 0.6) }
+                text "{round(res_mem * 100), 0}%" { at: x + w - 16, y + 38; anchor: right center; size: 10; family: "Share Tech Mono"; color: ink }
+                text "TMP" { at: x + 16, y + 58; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim }
+                text "{round(res_temp), 0} °C" { at: x + 48, y + 58; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: ink }
+            }
+            // the week: seven days, today lit
+            group {
+                show: k > 2.5
+                for d in pk_week {
+                    let cw = (w - 28) / 7
+                    let wx = x + 14 + d.n * cw
+                    box { from: wx, y + 20; size: cw - 6, 36; corner: 6; color: tone; opacity: if(d.today, 0.18, 0) }
+                    box { from: wx, y + 20; size: cw - 6, 36; corner: 6; stroke: 1; color: tone; opacity: if(d.today, 1, 0) }
+                    text d.label { at: wx + (cw - 6) / 2, y + 32; anchor: center; size: 8; family: "Share Tech Mono"; color: if(d.today, tone, dim) }
+                    text "{d.day, 0}" { at: wx + (cw - 6) / 2, y + 46; anchor: center; size: 12; weight: if(d.today, 700, 400); family: "Exo 2"; color: if(d.today, tone, ink) }
+                }
+            }
+        }
+    }
+
     component PillBoard() {
         size: 1, 1
-        let bw = 640
-        let bh = if(pk_edit, 528, 312)
+        // D188: its size is the logic's (shell/pillboard.luau `shape()`): a room, the peek, edit
+        let bw = max(200, pk_bw)
+        let bh = max(60, pk_bh)
         let pcx = pill_x + pill_w / 2
         let bx = clamp(pcx - bw / 2, 8, screen.width - bw - 8)
+        // D188: the board IS the capsule, stretched (ZenoShell's one pill that grows). It starts from the
+        // capsule's own box — or, taking a new size, from the size it had — and springs to its own,
+        // overshooting a little; closing, it goes back into the capsule. Its top is the capsule's top.
+        let btop = fl.top
+        let ms_w = if(pk_sw > 0, pk_sw, pill_w)
+        let ms_h = if(pk_sw > 0, pk_sh, pill_h)
+        let ms_x = if(pk_sw > 0, clamp(pcx - pk_sw / 2, 8, screen.width - pk_sw - 8), pill_x)
+        let mg = if(open == board, clamp(pk_mv - (pk_mn - 1), 0, 1.3), rv.board)
+        // where it is, for the frame: each new shape restarts the frame's spring from the start box
+        on change pk_mn while ch_on and pk_mn > 0.5 {
+            emit pl_xy(round(bx) * 4096 + round(btop)); emit pl_wh(round(bw) * 4096 + round(bh))
+            emit pl_s(round(if(pk_sw > 0, ms_x, 0)) * 4096 + round(if(pk_sw > 0, ms_w, 0)))
+            emit pl_sy(round(btop) * 4096 + round(ms_h)); emit pl_t(round(pcx))
+        }
         let acc = if(isl_style > 0.5, accent.primary, fl.phos)
         let acc2 = if(isl_style > 0.5, accent.secondary, fl.ember)
         let ink = if(isl_style > 0.5, fg.primary, fl.engrave)
@@ -332,41 +476,49 @@ library PillBoard {
         on change pk_mus_on { emit music_isl(if(pk_mus_on, 3, 2)) }
 
         group {
-            move: 0, st_res + 6
+            move: 0, btop
             group {
-                show: rv.board > 0.03
+                show: rv.board > 0.03 or mg > 0.01
                 move: bx, 0
-                // edit grows it: the frame hears the new size (IslandFrame tells it only as it opens)
-                on change pk_edit while open == board and ch_on { emit pl_wh(round(bw) * 4096 + round(bh)); emit pl_t(round(pcx)) }
-                IslandFrame(rv.board, bw, bh, tx: pcx - bx, ox: bx, oy: st_res + 6, want: open == board, busy: open != none) {
+                IslandFrame(rv.board, bw, bh, ox: bx, oy: btop, want: open == board, busy: open != none,
+                            mg: mg, msx: ms_x - bx, msw: ms_w, msh: ms_h, msr: if(pk_sw > 0, 14, pill_h / 2)) {
                     zone box keep_board { from: 0, 0; size: bw, bh; role: region; agent: hidden }
+                    // D186: its look — a wash of the theme's own light over the bar's plate, and the edge
+                    // it wears; the plate's material (opacity, frost, blur, radius) stays the bar's
+                    group { show: pk_tint > 0.5
+                            box { from: 0, 0; size: bw, bh; corner: 10; color: if(pk_tint > 1.5, acc, fl.phos); opacity: 0.12 } }
+                    group { show: rv.board > 0.02 and pk_edge > 0.5 and pk_edge < 1.5
+                            box { from: 1, 1; size: bw - 2, bh - 2; corner: 10; stroke: 1; color: mix(fl.trace_lit, acc, 0.4); opacity: 0.7 } }
                     group { show: not pk_edit
                             PkWheel(bw, 312) }
 
                     // ── the header ──
-                    text pick(pk_music, "NOW", "NOW PLAYING") { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room < 0.5 }
-                    text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS", "VISUALISER", "ACTIONS", "DIAGNOSTICS", "WORKSPACES", "WALLPAPER") {
+                    text pick(pk_music, "NOW", "NOW PLAYING") { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and not pk_peek and pk_room < 0.5 }
+                    text pick(pk_room, "", "CALENDAR", "SOUND", "DISPLAY", "CONNECTIONS", "POWER", "RESOURCES", "WEATHER", "SIGNALS", "VISUALISER", "ACTIONS", "DIAGNOSTICS", "WORKSPACES", "WALLPAPER", "STASH", "FIND") {
                         at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room > 0.5 }
-                    text "EDIT THE PILL" { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc2; show: pk_edit }
+                    text "EDIT THE PILL" { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: pk_edit }
                     // the moons, docked: what else is happening, a press shows its room
                     let nm = if(moon_k0 > -0.5, 1, 0) + if(moon_k1 > -0.5, 1, 0) + if(moon_k2 > -0.5, 1, 0) + if(moon_k3 > -0.5, 1, 0)
                     repeat k in 0..4 {
                         let mk = pick(k, moon_k0, moon_k1, moon_k2, moon_k3)
-                        group { show: mk > -0.5 and not pk_edit
+                        group { show: mk > -0.5 and not pk_edit and not pk_peek
                                 PkChip(320 - nm * 17 + k * 34 + 17, mk, k, acc) }
                     }
                     group { show: pk_room > 0.5 and not pk_edit
                             PkLink(488, 70, "◂ NOW", false, pk_back, 0, acc, dim) }
-                    PkLink(562, 64, pick(pk_edit, "✎ EDIT", "✓ DONE"), pk_edit, pk_edit_cmd, 0, acc, dim)
+                    group { show: not pk_edit and not pk_peek
+                            PkLink(562, 64, "✎ EDIT", false, pk_edit_cmd, 0, acc, dim) }
 
                     // ── the core ──
-                    box { from: 16, 34; size: 608, 160; corner: 10; color: fl.well; opacity: 0.55 }
-                    box { from: 16, 34; size: 608, 160; corner: 10; stroke: 1; color: fl.trace_dim }
+                    // D188: as tall as the room needs (pk_ch); the pads ride under it
+                    box { from: 16, 34; size: 608, pk_ch; corner: 10; color: fl.well; opacity: 0.55; show: not pk_edit and not pk_peek }
+                    box { from: 16, 34; size: 608, pk_ch; corner: 10; stroke: 1; color: fl.trace_dim; show: not pk_edit and not pk_peek }
                     group {
                         move: 16, 34
-                        // Now (idle): the time, the day, the week
+                        show: not pk_edit and not pk_peek          // D188: the editor (and the peek) have the board to themselves
+                        // Now (idle): the time, the day, the week — or the owner's desk (D175)
                         group {
-                            show: pk_room < 0.5 and not pk_music
+                            show: pk_room < 0.5 and not pk_music and pk_dk_n < 0.5
                             text clock.time { at: 18, 46; anchor: left center; size: 50; weight: 300; family: "Exo 2"; color: ink }
                             text pk_date { at: 590, 22; anchor: right center; size: 12; weight: 600; family: "Exo 2"; color: ink }
                             text "{pk_wk} · {wx_temp, 0}° {lower(wx_word)}" { at: 590, 42; anchor: right center; size: 10; family: "Share Tech Mono"; color: dim }
@@ -379,6 +531,32 @@ library PillBoard {
                                 text "{d.day, 0}" { at: x + 26, 128; anchor: center; size: 16; weight: 700; family: "Exo 2"; color: if(d.today, acc, ink) }
                             }
                             PkBtn(420, 106, 170, "THE MONTH", 0, pk_go, 1)
+                        }
+                        // D175: the desk — the owner's tiles, where lib/deskgrid put them
+                        group {
+                            show: pk_room < 0.5 and not pk_music and pk_dk_n > 0.5 and not pk_wv
+                            // D177: the opened vial — the Pill's capsule parted, a lit seam between the halves
+                            group {
+                                show: pk_dk_form > 0.5
+                                box { from: -6, -8; size: 620, 81; corner: 40; color: mix(fl.well, fl.hull_raised, 0.5); opacity: 0.7 }
+                                box { from: -6, 93; size: 620, 79; corner: 40; color: mix(fl.well, fl.hull_raised, 0.5); opacity: 0.7 }
+                                box { from: -6, -8; size: 620, 81; corner: 40; stroke: 1; color: mix(fl.trace_dim, pick(pk_dk_tint, acc, acc2, ink), 0.45) }
+                                box { from: -6, 93; size: 620, 79; corner: 40; stroke: 1; color: mix(fl.trace_dim, pick(pk_dk_tint, acc, acc2, ink), 0.45) }
+                                line { from: 4, 87; to: 604, 87; width: 1; color: pick(pk_dk_tint, acc, acc2, ink); opacity: 0.4 }
+                            }
+                            repeat t in 0..4 {
+                                let dk = pick(t, pk_dk_t0, pk_dk_t1, pk_dk_t2, pk_dk_t3)
+                                DeskTile(dk, pick(t, pk_dk_x0, pk_dk_x1, pk_dk_x2, pk_dk_x3), pick(t, pk_dk_y0, pk_dk_y1, pk_dk_y2, pk_dk_y3),
+                                         pick(t, pk_dk_w0, pk_dk_w1, pk_dk_w2, pk_dk_w3), pick(t, pk_dk_h0, pk_dk_h1, pk_dk_h2, pk_dk_h3),
+                                         acc, ink, dim)
+                            }
+                        }
+                        // D176: the workspace viewer — live miniatures, hover to choose, the wheel to turn
+                        group {
+                            show: pk_room < 0.5 and not pk_music and pk_wv
+                            for p in pk_prev { WvCard(p, 8 + p.slot * 196, acc, ink, dim) }
+                            // D188: no hint line under the cards (it ran into them); only the empty case speaks
+                            text "NO WINDOWS OPEN" { at: 304, 80; anchor: center; size: 10; family: "Share Tech Mono"; color: dim; show: pk_wv_n < 0.5 }
                         }
                         // Now Playing: the record in its halo, the song, the transport
                         group {
@@ -494,19 +672,86 @@ library PillBoard {
                             PkBtn(172, 116, 150, "WALLPAPER…", 0, open_wallpaper, 0, 26, true)
                             PkBtn(330, 116, 150, "SCREENSHOT", 0, shot, 0, 26, true)
                         }
-                        // Connections: Wi-Fi, Bluetooth, the throughput
+                        // Connections (D178): the internet panel — the radio, whether it is up, and the
+                        // networks in reach; a press joins one. Bluetooth beside it.
                         group {
                             show: pk_room > 3.5 and pk_room < 4.5
-                            figure pk_i13 { at: 30, 30; size: 22, 22; color: if(network.online, acc, dim) }
-                            text pick(network.online, "Offline", "{network.name}") { at: 50, 24; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: ink; width: 230; lines: 1 }
-                            text pick(network.kind == wifi, "{bw_down} ↓ · {bw_up} ↑", "{network.strength, 0} % · {bw_down} ↓ · {bw_up} ↑") { at: 50, 44; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim }
-                            PkBtn(14, 116, 130, "WI-FI", if(network.online, 1, 0), sh_net, -1)
-                            figure pk_i14 { at: 326, 30; size: 22, 22; color: if(bluetooth.powered, acc, dim) }
-                            text pick(bluetooth.powered, "Bluetooth off", "Bluetooth · {bt_conn, 0} connected") { at: 346, 24; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: ink; width: 240; lines: 1; show: bluetooth.present }
-                            text "No Bluetooth" { at: 346, 24; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: dim; show: not bluetooth.present }
-                            group { show: bluetooth.present
-                                    PkBtn(310, 116, 130, "BLUETOOTH", if(bluetooth.powered, 1, 0), sh_bt, -1) }
-                            PkBtn(448, 116, 140, "ALL OF THEM…", 0, open_system, 0)
+                            group {
+                                glow: 8, 0.4 * if(network.online, 1, 0), acc
+                                figure pk_i13 { at: 18, 14; size: 18, 18; color: if(network.online, acc, dim) }
+                            }
+                            text pick(network.online, "Offline", "{network.name}") { at: 42, 12; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: ink; width: 250; lines: 1 }
+                            text pick(network.kind == wifi, "{bw_down} ↓ · {bw_up} ↑", "{network.strength, 0} % · {bw_down} ↓ · {bw_up} ↑") { at: 42, 28; anchor: left center; size: 10; family: "Share Tech Mono"; color: dim }
+                            PkBtn(298, 8, 104, pick(network.online, "WI-FI OFF", "WI-FI ON"), if(network.online, 1, 0), sh_net, -1, 24)
+                            figure pk_i14 { at: 412, 14; size: 16, 16; color: if(bluetooth.powered, acc, dim) }
+                            text pick(bluetooth.powered, "Bluetooth off", "Bluetooth · {bt_conn, 0}") { at: 434, 12; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                            PkBtn(434, 26, 80, pick(bluetooth.powered, "BT ON", "BT OFF"), if(bluetooth.powered, 1, 0), sh_bt, -1, 20)
+                            line { from: 12, 40; to: 596, 40; width: 1; color: acc; opacity: 0.12 + 0.16 * clamp(sin(pk_flow / 260), -1, 1) }
+                            text "NETWORKS IN REACH" { at: 14, 48; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                            for w in pk_nets {
+                                let wy = 58 + w.n * 24
+                                group {
+                                    show: w.n < 4
+                                    box { from: 10, wy; size: 588, 22; corner: 6; color: mix(fl.hull_raised, acc, 0.14); opacity: if(w.active, 0.7, 0.4) }
+                                    box { from: 10, wy; size: 588, 22; corner: 6; stroke: 1; color: if(w.active, acc, fl.trace_dim); opacity: if(w.active, 1, 0.45) }
+                                    repeat s in 0..4 {
+                                        let hb = (s + 1) * 3
+                                        box { from: 18 + s * 5, wy + 19 - hb; size: 3, hb; corner: 1
+                                              color: if(clamp(w.strength, 0, 1) * 4.2 > s, acc, fl.ground) }
+                                    }
+                                    text w.ssid { at: 46, wy + 11; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: 380; lines: 1 }
+                                    text pick(w.secure, "SECURE", "OPEN") { at: 452, wy + 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: if(w.secure, dim, acc2) }
+                                    text pick(w.known, "JOINED", "SAVED") { at: 590, wy + 11; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: acc; show: w.active }
+                                    text "JOIN" { at: 590, wy + 11; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(w.known, ink, dim); show: not w.active }
+                                    zone box nz { from: 10, wy; size: 588, 22; cursor: pointer; role: button; selected: w.active; label: "Join {w.ssid}" }
+                                    on press nz { emit sh_net(w.n) }
+                                }
+                            }
+                            text "NO NETWORK IN REACH · THE RADIO MAY BE OFF" { at: 304, 90; anchor: center; size: 10; family: "Share Tech Mono"; color: dim; show: pk_nets_n < 1 }
+                            PkBtn(14, 126, 140, "ALL OF THEM…", 0, open_system, 0, 24, true)
+                        }
+                        // D178: the stash, in the Pill — the left edge's box, its own rows here too
+                        group {
+                            show: pk_room > 13.5 and pk_room < 14.5
+                            text pick(stash_empty, "THE STASH · {stash_count, 0} KEPT", "THE STASH · NOTHING KEPT YET") { at: 14, 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(stash_empty, dim, acc) }
+                            line { from: 12, 24; to: 596, 24; width: 1; color: mix(fl.trace_dim, acc, 0.4) }
+                            for r in stash {
+                                let sy = 32 + r.n * 24
+                                group {
+                                    show: r.n < 5
+                                    box { from: 10, sy; size: 588, 22; corner: 6; color: fl.hull_raised; opacity: 0.45 }
+                                    box { from: 12, sy + 4; size: 2, 14; color: acc }
+                                    text r.name { at: 24, sy + 11; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: ink; width: 330; lines: 1 }
+                                    text r.sub { at: 366, sy + 11; anchor: left center; size: 9; family: "Share Tech Mono"; color: dim; width: 170; lines: 1 }
+                                    text "OPEN" { at: 590, sy + 11; anchor: right center; size: 9; family: "Share Tech Mono"; color: dim }
+                                    zone box sz { from: 10, sy; size: 588, 22; cursor: pointer; role: item; label: r.name; carries: "{r.url}" }
+                                    on press sz { emit stash_open(r.id) }
+                                    on press right sz { emit stash_del(r.id) }
+                                }
+                            }
+                            text "DROP A FILE, A LINK OR A LINE ON THE LEFT EDGE TO KEEP IT · A PRESS OPENS IT, THE RIGHT ONE LETS IT GO"
+                                 { at: 304, 100; anchor: center; size: 10; family: "Share Tech Mono"; color: dim; show: stash_empty }
+                        }
+                        // D178: the Pill's search — it opens the forms it knows, as the owner types
+                        group {
+                            show: pk_room > 14.5 and pk_room < 15.5
+                            box { from: 10, 8; size: 588, 28; corner: 8; color: fl.well; opacity: 0.85 }
+                            box { from: 10, 8; size: 588, 28; corner: 8; stroke: 1; color: mix(fl.trace_dim, acc, 0.55) }
+                            input pk_q { at: 22, 22; width: 420; size: 13; color: ink; selection: fl.hull_raised
+                                         placeholder: "Find a form: player, signals, notes, stash, Wi-Fi…"; label: "Search the Pill" }
+                            text "{pk_find_n, 0} FOUND" { at: 588, 22; anchor: right center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(pk_find_n > 0.5, acc, dim) }
+                            line { from: 12, 38; to: 596, 38; width: 1; color: acc; opacity: 0.12 + 0.2 * clamp(sin(pk_flow / 240), -1, 1) }
+                            for f in pk_finds {
+                                let fy = 48 + f.n * 22
+                                box { from: 10, fy; size: 588, 20; corner: 6; color: fl.hull_raised; opacity: 0.5 }
+                                box { from: 12, fy + 4; size: 2, 12; color: acc }
+                                text f.name { at: 22, fy + 10; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: ink; width: 200; lines: 1 }
+                                text f.sub { at: 232, fy + 10; anchor: left center; size: 10; family: "Exo 2"; color: dim; width: 300; lines: 1 }
+                                text f.tag { at: 590, fy + 10; anchor: right center; size: 9; family: "Share Tech Mono"; color: acc2 }
+                                zone box fn { from: 10, fy; size: 588, 20; cursor: pointer; role: button; label: "Open {f.name}" }
+                                on press fn { emit pk_find(f.k) }
+                            }
+                            text "TYPE IN IT · A PRESS OPENS THE FORM IT NAMES" { at: 304, 156; anchor: center; size: 9; family: "Share Tech Mono"; color: dim }
                         }
                         // Power: the battery, its state, the profile, the session
                         group {
@@ -658,29 +903,106 @@ library PillBoard {
                         }
                     }
 
-                    // ── the traces and the pads ──
-                    repeat i in 0..8 {
-                        let k = pick(i, pk_k0, pk_k1, pk_k2, pk_k3, pk_k4, pk_k5, pk_k6, pk_k7)
-                        let e = if(playing, clamp((pick(i, lv0, lv2, lv4, lv6, lv8, lv10, lv12, lv14) + pick(i, lv1, lv3, lv5, lv7, lv9, lv11, lv13, lv15)) * 0.8, 0, 1), 0)
-                        group { show: i < pk_n
-                                PkPad(i, k, 320 + (i - (n - 1) / 2) * 64, if(pk_n > 1, 49 + i * pitch, 320), e, playing, bf, bi, hf, acc, acc2, ink, dim) }
+                    // ── the traces and the pads (under the core, wherever its foot is: D188) ──
+                    group {
+                        move: 0, pk_ch - 160
+                        show: not pk_edit and not pk_peek
+                        repeat i in 0..8 {
+                            let k = pick(i, pk_k0, pk_k1, pk_k2, pk_k3, pk_k4, pk_k5, pk_k6, pk_k7)
+                            let e = if(playing, clamp((pick(i, lv0, lv2, lv4, lv6, lv8, lv10, lv12, lv14) + pick(i, lv1, lv3, lv5, lv7, lv9, lv11, lv13, lv15)) * 0.8, 0, 1), 0)
+                            group { show: i < pk_n
+                                    PkPad(i, k, 320 + (i - (n - 1) / 2) * 64, if(pk_n > 1, 49 + i * pitch, 320), e, playing, bf, bi, hf, acc, acc2, ink, dim) }
+                        }
                     }
                     text "NO PADS: ✎ EDIT ADDS THEM" { at: 320, 276; anchor: center; size: 10; family: "Share Tech Mono"; color: dim; show: pk_n < 0.5 and not pk_edit }
 
-                    // ── edit: the face, and the parts bin ──
+                    // ── D188: the peek — resting on the Pill grows it into this card (ZenoShell's peek): the
+                    // time, the song or the weather, three levels. A press anywhere on it is the whole board;
+                    // the pointer leaving it and the capsule folds it back in.
+                    group {
+                        show: pk_peek
+                        PeekHit(bw, bh)
+                        text clock.time { at: 20, 46; anchor: left center; size: 34; weight: 300; family: "Exo 2"; color: ink }
+                        text pk_date { at: 20, 80; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: dim; width: 120; lines: 1 }
+                        line { from: 146, 22; to: 146, 92; width: 1; color: fl.trace_dim; opacity: 0.7 }
+                        group {
+                            show: mu_has
+                            box { from: 162, 26; size: 60, 60; corner: 8; color: mix(fl.ember_fill, fl.hull, 0.3) }
+                            image pk_art { at: 162, 26; size: 60, 60; show: med_has_art }
+                            text mu_title { at: 234, 40; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: ink; width: 120; lines: 1 }
+                            text mu_artist { at: 234, 58; anchor: left center; size: 10; family: "Exo 2"; color: dim; width: 120; lines: 1 }
+                            box { from: 234, 76; size: 120, 3; corner: 1.5; color: fl.well }
+                            box { from: 234, 76; size: 120 * clamp(med_prg, 0, 1), 3; corner: 1.5; color: acc }
+                        }
+                        group {
+                            show: not mu_has
+                            text "{wx_temp, 0}°" { at: 162, 46; anchor: left center; size: 28; weight: 300; family: "Exo 2"; color: ink }
+                            text "{lower(wx_word)}" { at: 162, 76; anchor: left center; size: 10; family: "Exo 2"; color: dim; width: 190; lines: 1 }
+                            text pick(loom_count > 0.5, "nothing waiting", "{loom_count, 0} signals waiting") { at: 354, 76; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(loom_count > 0.5, acc2, dim); width: 120; lines: 1 }
+                        }
+                        PeekLevel(374, if(audio.muted, 0, audio.volume), "VOL", acc, dim)
+                        PeekLevel(396, if(brightness.present, brightness.level, 0), "BRI", acc, dim)
+                        PeekLevel(418, if(battery.present, battery.percent / 100, 0), "BAT", if(battery.present and battery.percent < 20, fl.ember, acc), dim)
+                    }
+
+                    // ── D188: edit — one job per tab. Pads: choose a slot, then what goes on it; the slot's
+                    // moves and removal in words beside it. Face: what the Pill shows at rest, and what the
+                    // wheel turns through. Done is a button, not a word in the corner.
                     group {
                         show: pk_edit
-                        text "THE FACE · WHAT THE CLOSED PILL SHOWS — A DOT UNDER IT: IN THE WHEEL'S VIEWS" { at: 18, 326; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
-                        repeat f in 0..11 {
-                            PkBtn(16 + f * 55, 336, 51, pick(f, "TIME", "BMO", "NEXUS", "WX", "CPU", "MUSIC", "POWER", "SPACES", "WI-FI", "ALERTS", "VIZ"), if(pill_face == f, 1, 0), pk_face, f, 22)
-                            // in the wheel's views, or not (D171)
-                            let vin = pick(f, pk_vw0, pk_vw1, pk_vw2, pk_vw3, pk_vw4, pk_vw5, pk_vw6, pk_vw7, pk_vw8, pk_vw9, pk_vw10)
-                            ellipse { at: 16 + f * 55 + 25.5, 366; radius: 3.2; color: if(vin, acc, fl.trace_dim) }
-                            PkHit(16 + f * 55 + 13, 359, 25, 14, pk_view_toggle, f, "In the wheel's views, or not")
+                        // a denser backing than the bar's own plate, so the editor reads over any window
+                        box { from: 0, 0; size: bw, bh; corner: 14; color: fl.hull; opacity: 0.82 }
+                        PkBtn(150, 4, 96, "PADS", if(pk_etab < 0.5, 1, 0), pk_etab, 0)
+                        PkBtn(252, 4, 96, "FACE", if(pk_etab > 0.5, 1, 0), pk_etab, 1)
+                        PkBtn(524, 4, 100, "DONE", 1, pk_edit_cmd, 0)
+                        line { from: 16, 40; to: 624, 40; width: 1; color: fl.trace_dim; opacity: 0.7 }
+
+                        // ── pads ──
+                        group {
+                            show: pk_etab < 0.5
+                            text "YOUR PADS · CHOOSE A SLOT, THEN WHAT GOES ON IT" { at: 20, 74; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                            text "{pk_n, 0} OF 8" { at: 620, 74; anchor: right center; size: 9; family: "Share Tech Mono"; color: dim }
+                            repeat i in 0..8 {
+                                EdSlot(i, if(i < pk_n, pick(i, pk_k0, pk_k1, pk_k2, pk_k3, pk_k4, pk_k5, pk_k6, pk_k7), -1), acc, ink, dim)
+                            }
+                            // the chosen slot's own controls
+                            let sk = pick(pk_sel, pk_k0, pk_k1, pk_k2, pk_k3, pk_k4, pk_k5, pk_k6, pk_k7)
+                            let filled = pk_sel > -0.5 and pk_sel < pk_n
+                            text pick(filled, "SLOT {pk_sel + 1, 0} IS EMPTY · CHOOSE A MODULE BELOW", "SLOT {pk_sel + 1, 0}") { at: 20, 184; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: ink; show: pk_sel > -0.5 }
+                            group {
+                                show: filled
+                                group { show: pk_sel > 0.5
+                                        PkBtn(326, 171, 96, "◂ MOVE", 0, pk_edit_cmd, 20 + pk_sel) }
+                                group { show: pk_sel < pk_n - 1.5
+                                        PkBtn(426, 171, 96, "MOVE ▸", 0, pk_edit_cmd, 30 + pk_sel) }
+                                PkBtn(526, 171, 96, "REMOVE", 0, pk_edit_cmd, 10 + pk_sel)
+                            }
+                            text pick(filled, "MODULES · PRESS ONE TO ADD IT · DIMMED ONES ARE ON A PAD", "MODULES · PRESS ONE TO PUT IT ON SLOT {pk_sel + 1, 0} · DIMMED ONES ARE ON A PAD") { at: 20, 216; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                            repeat p in 0..32 {
+                                PkPart(p, p == pk_k0 or p == pk_k1 or p == pk_k2 or p == pk_k3 or p == pk_k4 or p == pk_k5 or p == pk_k6 or p == pk_k7, acc, ink, dim, y0: 228)
+                            }
                         }
-                        text pick(pk_sel > -0.5, "PARTS · PRESS ONE TO ADD IT · PRESS A PAD FIRST TO REPLACE IT", "PARTS · PRESS ONE TO PUT IT ON PAD J{pk_sel + 1, 0}") { at: 18, 388; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
-                        repeat p in 0..32 {
-                            PkPart(p, p == pk_k0 or p == pk_k1 or p == pk_k2 or p == pk_k3 or p == pk_k4 or p == pk_k5 or p == pk_k6 or p == pk_k7, acc, ink, dim)
+
+                        // ── face ──
+                        group {
+                            show: pk_etab > 0.5
+                            text "AT REST, THE PILL SHOWS" { at: 20, 74; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                            repeat f in 0..11 {
+                                PkBtn(20 + (f - floor(f / 6) * 6) * 100, 88 + floor(f / 6) * 36, 96,
+                                      pick(f, "TIME", "BMO", "NEXUS", "WEATHER", "RESOURCES", "MUSIC", "BATTERY", "SPACES", "WI-FI", "ALERTS", "VISUALISER"),
+                                      if(pill_face_saved == f, 1, 0), pk_face, f, 30)
+                            }
+                            text "THE WHEEL OVER THE PILL TURNS THROUGH" { at: 20, 182; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                            repeat f in 0..11 {
+                                let vin = pick(f, pk_vw0, pk_vw1, pk_vw2, pk_vw3, pk_vw4, pk_vw5, pk_vw6, pk_vw7, pk_vw8, pk_vw9, pk_vw10)
+                                PkBtn(20 + (f - floor(f / 6) * 6) * 100, 196 + floor(f / 6) * 36, 96,
+                                      pick(f, "TIME", "BMO", "NEXUS", "WEATHER", "RESOURCES", "MUSIC", "BATTERY", "SPACES", "WI-FI", "ALERTS", "VISUALISER"),
+                                      if(vin, 1, 0), pk_view_toggle, f, 30)
+                                text "✓" { at: 20 + (f - floor(f / 6) * 6) * 100 + 11, 196 + floor(f / 6) * 36 + 15; anchor: center; size: 11; weight: 700; color: if(isl_style > 0.5, bg.primary, fl.ink); show: vin }
+                            }
+                            text "MUSIC ON THE BOARD" { at: 20, 290; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                            PkBtn(20, 304, 96, "HALO", if(pk_viz < 0.5, 1, 0), pk_viz, 0, 30)
+                            PkBtn(120, 304, 96, "RIVER", if(pk_viz > 0.5, 1, 0), pk_viz, 1, 30)
                         }
                     }
                 }

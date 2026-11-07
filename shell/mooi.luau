@@ -1888,15 +1888,25 @@ local function pl_sync()
         if pl.sent_seq ~= pl.seq or not pl.sent_on then
             pl.sent_seq, pl.sent_on = pl.seq, true
             pl.count = pl.count + 1
+            -- D188: the Pill's board starts from the capsule (1) or, taking a new size, from the one it had (2)
+            local from = (o == "board") and ((g.sw or 0) > 0 and 2 or 1) or 0
             pl_send({ "fact pl_x " .. g.x, "fact pl_y " .. g.y, "fact pl_w " .. g.w, "fact pl_h " .. g.h,
-                      "fact pl_tx " .. g.t, "fact pl_n " .. pl.count, "fact pl_on true" })
+                      "fact pl_tx " .. g.t, "fact pl_from " .. from,
+                      "fact pl_sx " .. (g.sx or 0), "fact pl_sy " .. (g.sy or 0),
+                      "fact pl_sw " .. (g.sw or 0), "fact pl_sh " .. (g.sh or 0),
+                      "fact pl_n " .. pl.count, "fact pl_on true" })
         end
     elseif pl.sent_on then
         pl.sent_on = false
         pl_send({ "fact pl_on false" })
     end
 end
-on("pl_xy", function(v) v = math.floor(tonumber(v) or 0); pl.geo.x, pl.geo.y = v // 4096, v % 4096 end)
+on("pl_xy", function(v)
+    v = math.floor(tonumber(v) or 0); pl.geo.x, pl.geo.y = v // 4096, v % 4096
+    pl.geo.sw = nil                     -- a start box is the board's own, said after this (D188)
+end)
+on("pl_s", function(v) v = math.floor(tonumber(v) or 0); pl.geo.sx, pl.geo.sw = v // 4096, v % 4096 end)
+on("pl_sy", function(v) v = math.floor(tonumber(v) or 0); pl.geo.sy, pl.geo.sh = v // 4096, v % 4096 end)
 on("pl_wh", function(v) v = math.floor(tonumber(v) or 0); pl.geo.w, pl.geo.h = v // 4096, v % 4096 end)
 on("pl_t", function(v)
     pl.geo.t = math.floor(tonumber(v) or 0)

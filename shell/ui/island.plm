@@ -19,25 +19,33 @@ library Island {
     // `ox`, `oy`: where the island is on the screen. With the frame on (`ch_on`, D152) an island under a
     // module is drawn by the frame as part of its body — it grows out of the bar's piece — and this
     // draws only its content, clipped to the same shape; it tells the bar where it is as it opens.
-    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1, ox: number = -1, oy: number = 0, want: bool = false, busy: bool = false) {
+    // D188 `mg` ≥ 0: a morph instead — the body is the box (`msx`, 0, `msw` × `msh`, round `msr`, from the
+    // island's left and top) stretched to w × h by `mg`, which may pass 1 (it overshoots); its content is
+    // pinned to the top and fades in once it has grown. The caller tells the frame where it is (the Pill's
+    // board does, ui/pillboard.plm), so `want` says only whether the content shows.
+    component IslandFrame(rv: number, w: number, h: number, up: bool = false, centre: bool = false, aw: number = 36, ah: number = 36, tx: number = -1, ox: number = -1, oy: number = 0, want: bool = false, busy: bool = false, mg: number = -1, msx: number = 0, msw: number = 0, msh: number = 0, msr: number = 0) {
         size: w, h
-        let ch = ch_on and tx >= 0 and ox >= 0 and not up and not centre
-        let cp = clamp(rv, 0, 1)
+        let mo = mg > -0.5
+        let ch = ch_on and (mo or tx >= 0 and ox >= 0 and not up and not centre)
+        let cp = clamp(if(mo, mg, rv), 0, 1)
         let cl = cp * cp
+        let mw = msw + (w - msw) * max(0, mg)
+        let mh = msh + (h - msh) * max(0, mg)
+        let mx = msx + msw / 2 + (w / 2 - msx - msw / 2) * cp - mw / 2
         let cx0 = tx - 22 * 0.55
-        let cbx = cx0 + (0 - cx0) * cp
-        let cbw = 44 * 0.55 + (w - 44 * 0.55) * cp
-        let cby = -14 + 14 * cp
-        let cbh = 12 + (h - 12) * cl
-        let cbr = min(min(cbw, cbh) / 2, 6 + (14 - 6) * cp)
+        let cbx = if(mo, mx, cx0 + (0 - cx0) * cp)
+        let cbw = if(mo, mw, 44 * 0.55 + (w - 44 * 0.55) * cp)
+        let cby = if(mo, 0, -14 + 14 * cp)
+        let cbh = if(mo, mh, 12 + (h - 12) * cl)
+        let cbr = min(min(cbw, cbh) / 2, if(mo, msr + (14 - msr) * cp, 6 + (14 - 6) * cp))
         // the moment it is asked for (its own reveal starts ~60 ms later, when the frame has heard)
-        on change want while want and ch { emit pl_xy(round(ox) * 4096 + round(oy)); emit pl_wh(round(w) * 4096 + round(h)); emit pl_t(round(ox + tx)) }
+        on change want while want and ch and not mo { emit pl_xy(round(ox) * 4096 + round(oy)); emit pl_wh(round(w) * 4096 + round(h)); emit pl_t(round(ox + tx)) }
         let tether = isl_style > 0.5
-        let drop = if(tether and not up and not centre and not ch, 12, 0)
-        let iw = aw + (w - aw) * rv
-        let ih = ah + (h - ah) * rv
+        let drop = if(tether and not up and not centre and not ch and not mo, 12, 0)
+        let iw = if(mo, max(1, mw), aw + (w - aw) * rv)
+        let ih = if(mo, max(1, mh), ah + (h - ah) * rv)
         let top = if(up, h - ih, 0) + drop
-        let left = if(centre, (w - iw) / 2, 0)
+        let left = if(mo, mx, if(centre, (w - iw) / 2, 0))
         // the tether's corner: the theme's radius on look.corner_size, none when square
         let irad = if(cn_kind > 2.5, 0, (g.radius + 4) * cn_scale)
         let k = clamp(fl.chamfer * 1.4 * cn_scale, 0, min(iw, ih) / 2)
@@ -86,10 +94,10 @@ library Island {
             // (another island taking over: the frame draws that one now, so this one goes at once)
             // closing (or another island taking over): the content goes at once, the body shrinks away
             // empty — it never stands outside its body (D154)
-            opacity: if(ch, smooth(0.08, 0.38, cl) * if(want, 1, 0), smooth(0.45, 1, rv))
-            move: if(ch, cbx + (cbw - w) / 2, if(centre, 0, -10 * (1 - rv))), if(ch, cby + cbh - h, if(centre, -6 * (1 - rv), 0) + drop)
-            clip box { from: if(ch, (w - cbw) / 2, left), if(ch, h - cbh, top - drop); size: if(ch, max(1, cbw), iw), if(ch, max(1, cbh), ih)
-                       corner: if(ch, cbr, if(tether, irad, 0)) }
+            opacity: if(mo, smooth(0.35, 0.85, cp) * if(want, 1, 0), if(ch, smooth(0.08, 0.38, cl) * if(want, 1, 0), smooth(0.45, 1, rv)))
+            move: if(mo, 0, if(ch, cbx + (cbw - w) / 2, if(centre, 0, -10 * (1 - rv)))), if(mo, 0, if(ch, cby + cbh - h, if(centre, -6 * (1 - rv), 0) + drop))
+            clip box { from: if(mo, cbx, if(ch, (w - cbw) / 2, left)), if(mo, 0, if(ch, h - cbh, top - drop)); size: if(ch, max(1, cbw), iw), if(ch, max(1, cbh), ih)
+                       corner: if(ch or mo, cbr, if(tether, irad, 0)) }
             children
         }
     }

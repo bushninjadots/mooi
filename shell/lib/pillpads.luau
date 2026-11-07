@@ -11,7 +11,8 @@ M.ORDER = barlayout.ORDER
 
 -- The core's rooms, in the scene's numbering (fact pk_room).
 M.ROOMS = { "now", "calendar", "sound", "display", "connections", "power", "resources", "weather", "signals",
-            "visualiser", "actions", "diagnostics", "workspaces", "wallpaper" }     -- D171: the last five
+            "visualiser", "actions", "diagnostics", "workspaces", "wallpaper",
+            "stash", "find" }     -- D171: the first five added; D178: the stash and the search
 
 M.DEFAULT = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" }
 

@@ -21,6 +21,8 @@ local M = {
     -- D171: the views the wheel turns through when the owner has not chosen (pill.views), and the dot
     VIEWS_DEFAULT = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" },
     DOT = 14,
+    -- D172: the record shape's diameter when the bar does not say (cfg.disc = bar.height)
+    RECORD = 24,
     -- D171: detail full makes room for a second part (a date, hi/lo, memory, the artist…)
     FACE_W_FULL = { time = 190, weather = 230, resources = 220, media = 300, battery = 170, workspaces = 190,
                     network = 230, notifications = 260, visualiser = 170 },
@@ -42,6 +44,78 @@ function M.next_view(views, current, dir)
     for i, v in ipairs(list) do if v == current then at = i end end
     if not at then return list[1] end
     return list[(at - 1 + ((tonumber(dir) or 1) < 0 and -1 or 1)) % #list + 1]
+end
+
+-- D184: the words of a view, or — for one whose words count up (the record's clock, a battery's
+-- percent, a volume's number) — just its mark. A counter stepping is not the Pill telling you anything
+-- new: it would otherwise surge once a second for the whole of a recording, and on every notch of the
+-- volume wheel.
+local function words(v)
+    if type(v) ~= "table" then return "" end
+    if v.steady then return tostring(v.glyph or "") end
+    return tostring(v.t1 or "") .. "|" .. tostring(v.t2 or "")
+end
+
+-- D181: what the Pill is showing, as one string — the activity, its face, a split and its moons, whether
+-- it is hidden or the record, its width, and the words. The bar keeps the last one and, when the next
+-- differs, the scene surges once: the Pill says something happened (a new song, a notice, a face turned,
+-- BMO speaking, the Pill coming back). A width alone counts: a shorter title is a different reading.
+function M.signature(r, face)
+    if type(r) ~= "table" then return "" end
+    local main = r.main or "idle"
+    local v = (type(r.view) == "table" and r.view[main]) or {}
+    local s = (type(r.view) == "table" and r.split and r.view[r.split]) or {}
+    local moons = {}
+    for i, id in ipairs(r.moons or {}) do moons[i] = i .. tostring(id) end
+    return table.concat({ main, tostring(face or ""), tostring(r.split or ""), table.concat(moons, ","),
+                          r.hidden and "h" or "-", r.vanish and "v" or "-", r.record and "r" or "-",
+                          tostring(r.width or 0), words(v), words(s) }, "|")
+end
+
+-- D184: the same reading without its words — the activity, the face, a split, its moons, whether it is
+-- hidden or the record, and which mark each shows. Changed, the Pill itself changed (an activity began,
+-- a notice arrived, the record showed, the Pill went away) and the scene surges whole. Unchanged while
+-- the signature differs, the same face merely has new words (a new song, a notice's summary, BMO's line)
+-- and the scene only ripples.
+function M.gesture(r, face)
+    if type(r) ~= "table" then return "" end
+    local main = r.main or "idle"
+    local v = (type(r.view) == "table" and r.view[main]) or {}
+    local s = (type(r.view) == "table" and r.split and r.view[r.split]) or {}
+    local moons = {}
+    for i, id in ipairs(r.moons or {}) do moons[i] = i .. tostring(id) end
+    return table.concat({ main, tostring(face or ""), tostring(r.split or ""), table.concat(moons, ","),
+                          r.hidden and "h" or "-", r.vanish and "v" or "-", r.record and "r" or "-",
+                          tostring(v.glyph or ""), tostring(s.glyph or "") }, "|")
+end
+
+-- D175: the view the wheel turned to, while the Pill may still keep it — nil once `rest` seconds have
+-- passed since it was last seen (rest 0: it is kept for good). The bar counts the rest only while the
+-- Pill is idle: an activity takes the face, and when it is over you find the view you left.
+function M.view_hold(view, seen_at, rest, now)
+    if view == nil then return nil end
+    rest = tonumber(rest) or 0
+    if rest <= 0 then return view end
+    if (tonumber(now) or 0) - (tonumber(seen_at) or 0) >= rest * 1000 then return nil end
+    return view
+end
+
+-- D172: what the Pill does when it is idle — `stay` (always there), `tuck` (a sliver, or its dot),
+-- or `vanish` (gone; a faint seam keeps its place). A file written before D172 asked with the switch
+-- pill.autohide, which config reads as `tuck`; the choice wins when it is there.
+function M.hide_mode(cfg)
+    cfg = type(cfg) == "table" and cfg or {}
+    local h = cfg.hide
+    if h == "stay" or h == "tuck" or h == "vanish" then return h end
+    return cfg.autohide == true and "tuck" or "stay"
+end
+
+-- D172: a colour like "#FF8000" as three numbers 0 … 1 — the record's colours come from the song's
+-- cover, which Matugen names in hex; anything else is nothing, and the caller keeps the palette's.
+function M.hex_rgb(hex)
+    local r, g, b = tostring(hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
+    if not r then return nil end
+    return tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255
 end
 
 function M.state()
@@ -101,14 +175,16 @@ local function view(st, id, now, cfg)
     if id == "music" then return { glyph = "music", t1 = st.media.title, t2 = st.media.artist } end
     if id == "osd" then
         local o = st.osd or { kind = "vol", value = 0 }
-        return { glyph = o.kind, t1 = o.kind == "bri" and "BRI" or "VOL", t2 = string.format("%d", math.floor(o.value * 100 + 0.5)), value = o.value }
+        -- D184: the number counts up while the wheel turns; only the change of kind is news
+        return { glyph = o.kind, t1 = o.kind == "bri" and "BRI" or "VOL", t2 = string.format("%d", math.floor(o.value * 100 + 0.5)), value = o.value, steady = true, chars = 9 }
     end
     if id == "notify" then local n = st.notify or {}; return { glyph = "notify", t1 = n.app or "", t2 = n.summary or "" } end
-    if id == "record" then return { glyph = "record", t1 = "REC " .. clock(now - (st.rec_since or now)) } end
+    -- D184: the clock (record) and the percent (battery) count; the mark is what changes
+    if id == "record" then return { glyph = "record", t1 = "REC " .. clock(now - (st.rec_since or now)), steady = true, chars = 9 } end
     if id == "battery" then
         local b = st.battery
         local charging = b.charging and st.charge_at and now - st.charge_at < M.CHARGE_MS
-        return { glyph = charging and "charging" or "low", t1 = (charging and "Charging " or "Battery ") .. tostring(b.percent or 0) .. "%" }
+        return { glyph = charging and "charging" or "low", t1 = (charging and "Charging " or "Battery ") .. tostring(b.percent or 0) .. "%", steady = true, chars = 13 }
     end
     return { glyph = "idle", t1 = (cfg and cfg.face == "bmo") and (st.say or "") or "", t2 = "" }
 end
@@ -128,7 +204,9 @@ local function width(v, cfg)
         return M.FACE_W[face] + ((face == "bmo" and v.t1 ~= "") and (7 * #v.t1 + 16) or 0)
     end
     -- what ui/pill.plm draws: "t1 · t2" on one line (a notice too: its app and its summary)
-    local n = #(v.t1 or "") + ((v.t2 and v.t2 ~= "") and (#v.t2 + 2) or 0)
+    -- D184: a view that counts is measured by its longest form (`chars`), so its step never resizes the
+    -- capsule — the bar would otherwise relayout (and, before D184, surge) on every notch of the wheel
+    local n = v.chars or (#(v.t1 or "") + ((v.t2 and v.t2 ~= "") and (#v.t2 + 2) or 0))
     if v.glyph == "vol" or v.glyph == "bri" then n = n + 16 end
     return math.max(120, 44 + 7 * n)
 end
@@ -158,11 +236,23 @@ function M.compute(st, cfg, now)
     -- never past the room between the side groups (review I3): a long title is cut, not spread over them
     local cap = tonumber(cfg.max_w)
     if cap and cap >= 120 and w > cap then w1 = math.floor(w1 * cap / w); w = cap end
-    -- D169: idle and nothing beside it, with hiding on and not just pointed at: a sliver
+    -- D169: idle and nothing beside it, in the owner's hiding mode and not just pointed at
     local dot = cfg.shape == "dot"       -- D171: the dot hides when idle by being one
-    local hidden = (cfg.autohide == true or dot) and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
-    if hidden then w = dot and M.DOT or M.SLIVER end
-    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, w1 = w1, view = views, hidden = hidden }
+    local mode = M.hide_mode(cfg)        -- D172: stay · tuck · vanish
+    local hidden = (mode ~= "stay" or dot) and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
+    local vanish = hidden and mode == "vanish"
+    -- D187: the record is the capsule showing the song — its mark where the face's mark would be. With
+    -- nothing to play there is no record: the same capsule simply keeps its face (D172 had a disc here).
+    local record = cfg.shape == "record" and not hidden and not split
+        and st.media.playing == true and st.media.title ~= ""
+    if hidden then
+        -- vanished is 0 px wide (the scene keeps a seam); a record tucks to its dot, not to a sliver
+        if vanish then w = 0
+        elseif dot or cfg.shape == "record" then w = M.DOT
+        else w = M.SLIVER end
+    end
+    return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, w1 = w1, view = views,
+             hidden = hidden, vanish = vanish, record = record, hide = mode }
 end
 
 -- ms until a timed activity ends (so the logic can look again then), or nil
@@ -276,6 +366,31 @@ function M.reorder(order, off, row, op)
     end
     o[#o + 1] = "idle"
     return o, f
+end
+
+-- D188: the board's size — one body taking the shape of what it shows. The board is a header (34), a
+-- core as tall as the room needs, then the pads (118 under the core's foot); the peek is a small card,
+-- edit the editor's own size. Rooms are by index (lib/pillpads.ROOMS); a room not listed keeps 160,
+-- the size every room was drawn for. D189: a room is listed only where its drawing (ui/pillboard.plm)
+-- ends clearly short of 160 — its lowest mark plus an 8 px margin. Sound was 128 (D188), but its buttons
+-- sit at 120–146 and its outputs reach 154: they hung over the pads' traces, so it is back at 160.
+M.BOARD_W = 640
+M.PEEK_W, M.PEEK_H = 440, 112
+M.EDIT_W, M.EDIT_H = 640, 380
+M.CORE = {
+    [3]  = 150,   -- display: a level, three buttons ending at 142
+    [6]  = 152,   -- resources: four gauges, processes… ending at 144
+    [7]  = 150,   -- weather: the hours' tiles ending at 142
+    [10] = 144,   -- actions: three rows of buttons ending at 136
+}
+-- D189: how long a close takes to fold the body back into the capsule (the closing springs, m.exit and
+-- m.isl_out, settle within ~250 ms) — the peek's card and the editor are kept drawn until then.
+M.FOLD_MS = 400
+function M.board_size(room, edit, peek)
+    if edit then return M.EDIT_W, M.EDIT_H, 160 end
+    if peek then return M.PEEK_W, M.PEEK_H, 0 end
+    local core = M.CORE[math.floor(tonumber(room) or 0)] or 160
+    return M.BOARD_W, 34 + core + 118, core
 end
 
 return M

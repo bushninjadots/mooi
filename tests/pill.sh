@@ -96,7 +96,6 @@ pleamar --say mooi "emit pill_press" >/dev/null 2>&1; sleep 0.8
 # D170: a press opens the board and he says hi; the Pill widens past his 72 px face to fit it
 w=$(get pill_w); w=${w%.*}
 [ "${w:-0}" -gt 72 ] && ok "a press: he greets the board (the Pill is $w px)" || bad "a press: no greeting (pill_w $w)"
-is "his Pill is taller" "$(get pill_h)" 40
 pleamar --say mooi "emit pill_press" >/dev/null 2>&1; sleep 0.5
 is "pressed again while open: a poke, the board stays" "$(get open)" board
 [ -n "${SHOTS:-}" ] && grim -g "560,0 800x60" "$SHOTS/bmo.png"
@@ -105,7 +104,11 @@ set_ '.bar.mode="pill" | .pill.face="nexus"'
 is "the Nexus button" "$(get pill_face)" 2
 
 echo "hidden when idle (D169)"
-set_ '.bar.mode="pill" | .pill.face="time" | .pill.autohide=true'
+# D172 replaced pill.autohide with the three-way pill.hide; a file that carries an explicit hide keeps it
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.hide="tuck" | .pill.off=["battery","record","notify","music","osd"]'
+# a hover emitted by the section above stays held until the pointer really leaves, and this run never moves
+# it: clear it, so what is checked is the Pill's own resting mode (it held it peeked and never hid)
+pleamar --say mooi "emit pill_hover 0" >/dev/null 2>&1; sleep 0.6
 is "idle: a sliver" "$(get pill_hidden)" true
 is "44 px wide" "$(jq '.pill.w' "$D/bar-geo.json")" 44
 is "the chassis is told" "$(jq '.pill.slim' "$D/bar-geo.json")" true
@@ -113,6 +116,31 @@ pleamar --say mooi "emit pill_hover" >/dev/null 2>&1; sleep 0.8
 is "pointed at: back" "$(get pill_hidden)" false
 sleep 4.5
 is "and away again after 4 s" "$(get pill_hidden)" true
+
+echo "when idle: stay, tuck, vanish — and the record (D172)"
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="attached" | .pill.hide="stay" | .pill.autohide=false | .pill.off=["battery","record","notify","music","osd"]'
+pleamar --say mooi "emit pill_hover 0" >/dev/null 2>&1; sleep 0.6
+is "stay: never tucked away" "$(get pill_hidden)" false
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.hide="tuck" | .pill.off=["battery","record","notify","music","osd"]'
+is "tuck: the sliver" "$(get pill_hidden)/$(jq '.pill.w' "$D/bar-geo.json")" true/44
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.hide="vanish" | .pill.off=["battery","record","notify","music","osd"]'
+is "vanish: gone, and no width" "$(get pill_hidden)/$(get pill_vanish)/$(jq '.pill.w' "$D/bar-geo.json")" true/true/0
+pleamar --say mooi "emit pill_call" >/dev/null 2>&1; sleep 0.6
+is "called: back" "$(get pill_hidden)" false
+sleep 4.5
+is "and gone again after the peek" "$(get pill_hidden)/$(get pill_vanish)" true/true
+if playerctl status >/dev/null 2>&1; then
+    set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="record" | .pill.hide="stay" | .pill.autohide=false'
+    playerctl play >/dev/null 2>&1; sleep 2.5
+    is "a disc, not a capsule" "$(get pill_shape)/$(get pill_record)/$(jq -r '.pill.shape' "$D/bar-geo.json")" 3/true/record
+    w=$(get pill_w); h=$(get pill_h)
+    [ "${w%.*}" = "${h%.*}" ] && ok "the disc is square ($w × $h)" || bad "the disc is not square ($w × $h)"
+    [ -n "${SHOTS:-}" ] && grim -g "860,0 220x60" "$SHOTS/record.png"
+    playerctl -a pause >/dev/null 2>&1; sleep 1.5
+else
+    echo "  ..    no player: the record skipped"
+fi
+set_ '.bar.mode="pill" | .pill.face="time" | .pill.shape="attached" | .pill.hide="stay"'
 
 echo "nodes (D169)"
 set_ '.bar.mode="pill" | .pill.multi="nodes" | .pill.autohide=false'

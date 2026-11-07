@@ -288,7 +288,7 @@ def end_tiles(ind, which, place=False):
         cr = crossed(which, x0, x1)
         if place:
             shapes += [[place_box(p)] for p in (PLACES if top else PLACES[1:])]
-            h = f"max({y1}, if(pl_act, pl_y + pl_h + 80, 0))" if top else y1
+            h = f"max({y1}, if(pl_act, pl_b + 16, 0))" if top else y1
             out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {h}", shapes, cr)
         else:
             out += tile(ind, f"from: {x0}, {y0}; size: ({x1}) - ({x0}), {y1}", shapes, f"not ({cr})")

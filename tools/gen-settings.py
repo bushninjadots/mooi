@@ -123,6 +123,24 @@ SETTERS = [
     "pill.pads", "pill.viz",
     # D171: the Pill's shape, views, detail and rest. Appended, so no code moved.
     "pill.shape", "pill.views", "pill.detail", "pill.rest",
+    # D172: what it does when it is idle. Appended, so no code moved.
+    "pill.hide",
+    # D174: the Pill's pointer warmth and its ping on a change (its own visual page). Appended.
+    "pill.warmth", "pill.ping",
+    # D175: the desk on the board's first card — its tiles, its surface, its edge. Appended.
+    "pill.desk_clock", "pill.desk_playing", "pill.desk_diagnostics", "pill.desk_calendar",
+    "pill.desk_surface", "pill.desk_border",
+    # D176: the desk as the workspace viewer (live miniatures). Appended.
+    "pill.desk_workspaces",
+    # D177: the desk's sizes and its look (form, tint, glow). Appended.
+    "pill.desk_clock_size", "pill.desk_playing_size", "pill.desk_diagnostics_size", "pill.desk_calendar_size",
+    "pill.desk_form", "pill.desk_tint", "pill.desk_glow",
+    # D179: what the right button does. Appended.
+    "pill.right",
+    # D186: the board's look — a wash over the bar's own plate, and the edge it wears. Appended.
+    "pill.board_tint", "pill.board_edge",
+    # D188: the peek. Appended, so no code moved.
+    "pill.peek",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -297,22 +315,48 @@ SECTIONS = [
         ("choice", "When nothing plays", "Shrink to a note, stay, or leave the bar", "media.idle", "media_idle", ["Shrink", "Stay", "Hide"]),
         ("choice", "Visualizer", "Moves with the sound", "bar.visualizer", "viz", ["Mirror", "Bars", "Line", "Dots", "Off"], "media_mode != 2"),
     
-        ("fold", "The Pill", "A CAPSULE THAT BECOMES WHAT IS HAPPENING"),
-        ("card", "Closed"),
+        ("fold", "The Pill", "ONE CAPSULE THAT BECOMES WHAT IS HAPPENING"),
+        # D188: one control for each thing. The face, the wheel's views, the pads and the board's music
+        # are edited on the Pill itself (one button); the desk's tiles are one Off · Small · Wide each,
+        # under a picture of the desk; the record shape is gone (it was the attached capsule since D187).
+        ("card", "At a glance"),
         ("note", "sv_bar_mode != 3", "CHOOSE SHAPE → PILL ABOVE TO SEE IT"),
-        ("choice", "With the side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
-        ("choice", "When nothing is happening", "The time, BMO's face, or the Nexus button; a module's face (weather, music…) is chosen on the board", "pill.face", "sv_pill_face", [("Time", 0), ("BMO", 1), ("Nexus", 2)]),
-        ("toggle", "Hide when idle", "Tucks away to a sliver until you point at it or something happens", "pill.autohide", "sv_pill_autohide"),
-        ("choice", "Two at once", "Moons beside the Pill, the Pill split in two, or pads on circuit traces; opened, they dock in the board", "pill.multi", "sv_pill_multi", ["Satellites", "Split", "Nodes"]),
-        ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
-        ("choice", "Shape", "Joined to the frame's band, hovering just under it, or a dot until it is wanted (pointed at, Super, the wheel, something happening)", "pill.shape", "sv_pill_shape", ["Attached", "Floating", "Dot"]),
-        ("choice", "Detail", "How much each view shows: just its icon, a word or two, or more", "pill.detail", "sv_pill_detail", ["Icon", "Brief", "Full"]),
+        ("pillstage",),
+        ("card", "Shape"),
+        ("pillshapes",),
+        ("card", "When idle"),
+        ("pillhide",),
+        ("card", "Behaviour"),
+        ("toggle", "Peek on hover", "Rest the pointer on the Pill and it grows into a small card: the time, the song, three levels. A press makes it the whole board", "pill.peek", "sv_pill_peek"),
+        ("toggle", "Flash on a change", "The Pill's edge lights for a moment when the workspace changes or a notice arrives", "pill.ping", "sv_pill_ping"),
+        ("slider", "Pointer warmth", "A soft light behind the capsule as the pointer comes near (0: none)", "pill.warmth", 0, 100, "{sv_pill_warmth, 0}%"),
+        ("choice", "Right press", "What a right press on the Pill does", "pill.right", "sv_pill_right", ["Calendar", "Board", "Notes", "Settings", "Nothing"]),
+        ("card", "What it shows"),
+        ("button", "Face, wheel and pads", "Its face at rest, what the wheel turns through, the pads", "Edit on the Pill", "pill_board_edit", 1),
+        ("choice", "Detail", "How much each view shows: its icon, a word or two, or more", "pill.detail", "sv_pill_detail", ["Icon", "Brief", "Full"]),
         ("slider", "Back to its face after", "A view the wheel turned to returns to the face after this long (0: it stays)", "pill.rest", 0, 60, "{sv_pill_rest, 0} s"),
-        ("card", "Open"),
-        ("button", "The pads", "Up to eight, from every module on the bar; a press opens what it is or does what it does", "Edit on the Pill", "pill_board_edit", 1),
-        ("choice", "Music", "What plays on the board: the record in a halo of the bands, or a river along its floor", "pill.viz", "sv_pill_viz", ["Halo", "River"]),
+        ("choice", "Side groups", "The left and right groups as islands beside the Pill, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
+        ("choice", "Two at once", "Moons beside it, the Pill split in two, or pads on traces", "pill.multi", "sv_pill_multi", ["Moons", "Split", "Nodes"]),
+        ("slider", "Moons at most", "How many things wait beside the Pill", "pill.moons", 1, 4, "{sv_pill_moons + 1, 0}"),
         ("card", "What may take it"),
         ("pillorder",),
+        ("card", "The desk"),
+        ("note", "true", "THE BOARD'S FIRST CARD"),
+        ("deskstage",),
+        ("toggle", "Live workspaces instead", "Each workspace's windows, live, in place of the tiles", "pill.desk_workspaces", "sv_pill_desk_workspaces"),
+        ("choice", "The time", "The clock, the date and the week", "pill.desk_clock_size", "sv_pill_desk_clock_size", [("Off", 2), ("Small", 0), ("Wide", 1)]),
+        ("choice", "The song", "The cover, the title and how far it has come", "pill.desk_playing_size", "sv_pill_desk_playing_size", [("Off", 2), ("Small", 0), ("Wide", 1)]),
+        ("choice", "The machine", "The processor, the memory and the temperature", "pill.desk_diagnostics_size", "sv_pill_desk_diagnostics_size", [("Off", 2), ("Small", 0), ("Wide", 1)]),
+        ("choice", "The week", "Seven days in a row, today lit", "pill.desk_calendar_size", "sv_pill_desk_calendar_size", [("Off", 2), ("Small", 0), ("Wide", 1)]),
+        ("choice", "Form", "Flat tiles, or the opened vial: the capsule parted, the tiles inside", "pill.desk_form", "sv_pill_desk_form", ["Tiles", "Opened vial"]),
+        ("choice", "Surface", "A plate, glass, or a slab tethered to the core", "pill.desk_surface", "sv_pill_desk_surface", ["Plate", "Glass", "Tether"]),
+        ("choice", "Tiles' edge", "A hairline, a cut corner, or none", "pill.desk_border", "sv_pill_desk_border", ["Hairline", "Cut", "None"]),
+        ("choice", "Tint", "The wallpaper's colours, the accent's, or the ink's", "pill.desk_tint", "sv_pill_desk_tint", ["Wallpaper", "Accent", "Mono"]),
+        ("choice", "Glow", "None, a soft halo, or a bright one", "pill.desk_glow", "sv_pill_desk_glow", ["None", "Soft", "Bright"]),
+        ("card", "The board's look"),
+        ("note", "true", "THE BOARD IS THE BAR'S OWN MATERIAL — ITS OPACITY, FROST, BLUR AND RADIUS COME FROM BAR & FRAME"),
+        ("choice", "A wash over it", "The plate as it is, a phosphor glow over it, or the accent's", "pill.board_tint", "sv_pill_board_tint", ["None", "Phosphor", "Accent"]),
+        ("choice", "Its edge", "The frame's own edge, a lit hairline round it, or none", "pill.board_edge", "sv_pill_board_edge", ["Theme", "Hairline", "None"]),
     ]),
     ("Windows", "Windows", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "DESKTOP", [
         ("card", "Styling"),
@@ -585,7 +629,7 @@ SECTIONS = [
     ("System", "System", "Notifications, the islands and comfort", "SYSTEM", [
         ("card", "Notifications and tray"),
         ("choice", "mooi shows notifications", "As the desktop (not a development run), always, or never", "notifications.server", "note_server", ["Desktop", "Always", "Never"]),
-        ("choice", "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel", "notifications.dnd", "sv_notifications_dnd",
+        ("choice", "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel, and the Pill is not taken by them", "notifications.dnd", "sv_notifications_dnd",
          ["Off", "On", "While focusing", "Quiet hours"]),
         ("slider", "Quiet from", "The hour quiet begins", "notifications.quiet_from", 0, 23, "{sv_notifications_quiet_from, 0}:00", "sv_notifications_dnd == 3"),
         ("slider", "Quiet until", "The hour it ends", "notifications.quiet_to", 0, 23, "{sv_notifications_quiet_to, 0}:00", "sv_notifications_dnd == 3"),
@@ -783,6 +827,28 @@ def row_lines(r, y, first, reverted):
         lines.append(f'SRow({y}, "{title}", "{desc}", true, "", 400, {rule})')
         lines.append(f'SButton({XR - 180}, {y + 15}, 180, "{label}", {ev}, {n})')
         return lines, 60
+    if k == "pillstage":
+        # D174: the Pill as the choices make it, at twice its size (ui/pillpreview.plm)
+        lines.append(f"SPillStage({y + 6})")
+        return lines, 194
+    if k == "pillshapes":
+        # D174: the four shapes as pictures, the chosen one filled, edged and checked
+        for n, (label, v) in enumerate([("Attached", 0), ("Floating", 1), ("Dot", 2)]):
+            lines.append(f'SPillShape({TX + n * 212}, {y + 8}, 200, "{label}", {v}, sv_pill_shape == {v}, set_value, {code("pill.shape") * 1000 + v})')
+        if "pill.shape" not in reverted:
+            lines.append(revert("pill.shape", XR - 4, y + 16)); reverted.add("pill.shape")
+        return lines, 124
+    if k == "pillhide":
+        # D174: the three resting forms as pictures
+        for n, (label, v) in enumerate([("Stay", 0), ("Tuck away", 1), ("Vanish", 2)]):
+            lines.append(f'SPillHide({TX + n * 212}, {y + 8}, 200, "{label}", {v}, sv_pill_hide == {v}, set_value, {code("pill.hide") * 1000 + v})')
+        if "pill.hide" not in reverted:
+            lines.append(revert("pill.hide", XR - 4, y + 16)); reverted.add("pill.hide")
+        return lines, 124
+    if k == "deskstage":
+        # D180: the desk's visual editor — drawn as the settings make it, presses change its look
+        lines.append(f'SDeskStage({y + 6})')
+        return lines, 202
     if k == "pillorder":
         # D168: the activities in their order, each with on/off and up/down (mooi-settings.luau, lib/pill)
         h = 0
@@ -1052,6 +1118,12 @@ def section(i, rows, indent, page):
             resets.append("theme.scheme")
         if r[0] == "keys":
             resets.append("@keys")
+        if r[0] == "pillshapes":
+            INDEX.append(("Shape", "Attached, floating, a dot or a record: as pictures", i, page, y) + where(y))
+            if "pill.shape" not in resets: resets.append("pill.shape")
+        if r[0] == "pillhide":
+            INDEX.append(("When idle", "Stay, tuck away or vanish: as pictures", i, page, y) + where(y))
+            if "pill.hide" not in resets: resets.append("pill.hide")
         if r[0] == "pillorder":
             INDEX.append(("What may take it", "The Pill's activities in order: battery, recording, notifications, music, volume and brightness", i, page, y) + where(y))
             resets += ["pill.order", "pill.off"]
@@ -1207,6 +1279,7 @@ HEADER = """language 0.9
 import "theme/tokens.plm"
 import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
+import "ui/pillpreview.plm"
 
 // GENERATED by tools/gen-settings.py — edit that, not this.
 //
@@ -1269,6 +1342,8 @@ def main():
         f"    fact sp{v}_r = 0.5\n    fact sp{v}_g = 0.8\n    fact sp{v}_b = 0.7\n    fact se{v}_r = 0.9\n    fact se{v}_g = 0.5\n    fact se{v}_b = 0.2\n" for v in range(10)) + "".join(
         f"    fact sc{v}_r = 0.3\n    fact sc{v}_g = 0.3\n    fact sc{v}_b = 0.3\n" for v in range(5)) + """
     fact bar_edit = false     // the bar's edit mode (the logic asks the bar)
+    prop sp_ang = 0           // D174, D188: the stage's flash — the edge breathing while pill.ping is on
+    spin sp_ang by if(sv_pill_ping > 0.5, 70, 0)
     fact set_tab = 0          // the section shown
     fact set_scroll = 0       // how far its rows are scrolled
     fact set_navs = 0         // how far the rail's pages are scrolled

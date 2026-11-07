@@ -128,6 +128,24 @@ M.SETTERS = {
     "pill.pads", "pill.viz",
     -- D171: the Pill's shape, views, detail and rest. Appended, so no code moved.
     "pill.shape", "pill.views", "pill.detail", "pill.rest",
+    -- D172: what it does when it is idle — stay, tuck or vanish. Appended, so no code moved.
+    "pill.hide",
+    -- D174: the Pill's pointer warmth and its ping on a change (Settings → The Pill, the visual page)
+    "pill.warmth", "pill.ping",
+    -- D175: the desk on the board's first card — its tiles, its surface, its edge
+    "pill.desk_clock", "pill.desk_playing", "pill.desk_diagnostics", "pill.desk_calendar",
+    "pill.desk_surface", "pill.desk_border",
+    -- D176: the desk as the workspace viewer (live miniatures)
+    "pill.desk_workspaces",
+    -- D177: the desk's sizes and its look (form, tint, glow)
+    "pill.desk_clock_size", "pill.desk_playing_size", "pill.desk_diagnostics_size", "pill.desk_calendar_size",
+    "pill.desk_form", "pill.desk_tint", "pill.desk_glow",
+    -- D179: what the right button does
+    "pill.right",
+    -- D186: the board's look — a wash of the theme's light over the bar's plate, and its edge
+    "pill.board_tint", "pill.board_edge",
+    -- D188: the peek. Appended, so no code moved.
+    "pill.peek",
 }
 
 local function row_of(path)
