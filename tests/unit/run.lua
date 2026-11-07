@@ -6958,7 +6958,7 @@ do
     end)
     test("the forms: blob ripples, drop hangs a bead, bead is the dot's size, none gathers at the centre", function()
         local b = PM.points("blob", 100, 10, 200, 24, 12)
-        eq(b.ripple, PM.RIPPLE); assert(b.pts[9][2] > 34 and b.pts[10][2] > 34, "a little swollen at the foot")
+        eq(b.ripple, PM.RIPPLE); eq(PM.RIPPLE, 0, "still since the live measure"); assert(b.pts[9][2] >= 34 + PM.SWELL and b.pts[10][2] >= 34 + PM.SWELL, "fuller at the foot")
         local d = PM.points("drop", 100, 10, 200, 24, 12)
         assert(d.pts[9][2] > 34 + 10 and d.pts[10][2] > 34 + 10, "the bead hangs")
         near((d.pts[9][1] + d.pts[10][1]) / 2, 200, "under the middle")
@@ -7091,6 +7091,16 @@ do
         assert(read("shell/pillboard.luau"):find("face_press = face_press", 1, true), "a press opens its room")
     end)
 end
+
+section("the launcher's restarts (D206)")
+test("a motion change restarts the bar the way refresh does: the keeper's mark first", function()
+    local f = io.open("bin/mooi"); local sh = f:read("a"); f:close()
+    local i = sh:find('if [ -n "$m" ] && [ "$m" != "$motion_seen" ]; then', 1, true)
+    assert(i, "the motion watch")
+    local block = sh:sub(i, i + 700)
+    local mark, kill = block:find(': > "$again"', 1, true), block:find('kill -TERM', 1, true)
+    assert(mark and kill and mark < kill, "the again mark is written before the scenes are ended")
+end)
 
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

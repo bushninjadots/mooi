@@ -46,8 +46,9 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | The Pill's music as Cue draws it, the Notes room, four pads that open rooms (D201) | 2026-11-07 | unit 606/0, 14 scenes compile; not yet seen live (needs the desk and a player) |
 | The Pill's audit: dead surface pruned, one height, board-open hiding, peek rows, room names (D202) | 2026-11-07 | unit 606/0, BMO 27/0, 14 scenes compile, settings regenerated; the live suite not re-run |
 | The board's rooms on a rail: direct jumps, ↑↓ turning, the turn's light (D203) | 2026-11-07 | unit 607/0, 14 scenes compile; not yet seen live |
-| The morph: `pill.shape = morph`, one outline of twelve sprung points, capsule · blob · drop · bead (D204) | 2026-11-07 | unit 620/0, 14 scenes compile; not yet seen live; frame cost not measured |
-| More pills: a second and a third, each a face, placed anywhere and clamped (D205) | 2026-11-07 | unit 620/0, 14 scenes compile; not yet seen live |
+| The morph: `pill.shape = morph`, one outline of twelve sprung points, capsule · blob · drop · bead (D204) | 2026-11-07 | unit 621/0, 14 scenes; seen live (idle, drop, blob, reduced motion); frame measured: ~70 ms a frame while it flows vs ~27 attached, so the music ripple is off |
+| More pills: a second and a third, each a face, placed anywhere and clamped (D205) | 2026-11-07 | unit 621/0; seen live (automatic gaps, 25 %/50 % placement clamped beside the Pill, the wheel) |
+| A motion change restarts the bar instead of stopping it (D206) | 2026-11-07 | unit 621/0; seen live: reduced motion on and off, back in ~4 s each |
 | The login screen on this desk (D190): greetd + sysc-greet installed and enabled, sddm disabled, mooi's palette followed | 2026-11-07 | `gslapper` 1.5.3-2 and `sysc-greet-hyprland` 1.3.1-2 installed; `greetd` enabled / `sddm` disabled; `greet-theme --status` = `Mooi · followed`; the broken old config kept as `/etc/greetd/config.toml.bak`; **reboot pending** — no real login seen yet |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |

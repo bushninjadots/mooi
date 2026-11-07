@@ -264,7 +264,8 @@ library Pill {
         size: 1, 1
         group {
             show: pill_on and on and pw > 0
-            opacity: 1 - smooth(0, 0.2, rv.board)
+            // the board unfolds from the centre Pill, not from this one: its face stays (a fade left an
+            // empty capsule on the bar while the board was open — seen live, D205)
             let cy = fl.cy
             group {
                 show: face < 0.5

@@ -5763,11 +5763,22 @@ G4); the summaries follow the commit messages._
 - **Reduced motion / the saver:** the form stays the capsule (the bead too, which is a size, not a motion),
   `mrip` is 0, and the band music level is not run for it. An open board keeps the capsule, so the board
   still unfolds from one.
-- Checks: unit 613 / 0 at the time (6 new: points, the disc, every form, the form rules, the chassis, the
-  sources), 14 scenes compile, gate ok. **Not yet seen live:** the owner was using the board during the one
-  live attempt (settings restored byte for byte), so the outline, its springs and the ripple still need the
-  desk. The frame's cost is not measured either: every top tile now carries a 12-curve path (collapsed when
-  the shape is not morph), and `pleamar --report` on `mooi-frame` should be run with and without it.
+- **Seen live (2026-11-07, the owner's go-ahead):** idle it is indistinguishable from the attached capsule;
+  a notice hangs a narrow bead under the middle (points 8–9 at 45.2 against the foot's 32); with music the
+  rippled foot moved between frames 0.4 s apart; with reduced motion the foot stays flat (`mrip` 0).
+- **The cost, measured** (`pleamar --report mooi-frame`, 12 s, notices arriving): the outline in every top
+  tile (22 copies with the island copies) composed in ~110 ms a frame; a path inside a tile's body is not
+  culled by the tile's clip. Now it is only in the five tiles within 420 px of the middle (`MORPH_REACH`,
+  the outline narrowed to 800 px about its centre in `lib/chassis.morph`): ~70 ms while it flows, against
+  ~26–29 ms for the attached capsule. Straight segments instead of curves cost nearly the same (59 ms), so
+  the cost is the path's presence, not its curves. With another shape the collapsed outline is within the
+  noise of a frame without it.
+- **So the ripple is off** (`lib/pillmorph.RIPPLE = 0`): rippled, the strip redrew 30 times a second at
+  60–90 ms (a core, ~12 fps). The blob is now a still form, fuller in the middle of the foot (`SWELL` 3 px),
+  and the morph costs only during its half-second changes — or on every frame the band redraws for its own
+  reasons (with `frame.music` on and music playing, ~52 ms against ~33 ms). The frame's ripple stays wired
+  behind that one constant. Still opt-in; the default shape is untouched.
+- Checks: unit 621 / 0 (6 for the morph), 14 scenes compile, gate ok.
 
 ## D205 · 2026-11-07 · More pills: a second and a third, each a face, placed anywhere
 
@@ -5792,5 +5803,22 @@ G4); the summaries follow the commit messages._
 - Limits: the board still unfolds from the centre Pill (D186's one body); an extra's turned view does not rest
   back after `pill.rest`; extras never tuck or vanish, have no moons, no activity of their own, no key
   (`mooi pill left|right` is not built) and no Loom-style link between pills yet (task 3's links and node).
-- Checks: unit 620 / 0 (7 new: automatic gaps, clamping, the icon fallback and hiding, two pills on one place,
-  widths, settings and the chassis, the single face tree), 14 scenes compile, gate ok. **Not yet seen live.**
+- **Seen live:** automatic, weather sat at x 298 (w 230) and battery at x 1422 (w 170), each a capsule joined
+  to the band; placed at 25 % and 50 %, the second went to x 330 and the third, asked for the middle where the
+  centre Pill is, was put beside it at x 1102. The wheel turned the second's view. An extra's face faded while
+  the board was open, leaving an empty capsule on the bar: it no longer fades (the board is the centre's).
+- Checks: unit 621 / 0 (7 new: automatic gaps, clamping, the icon fallback and hiding, two pills on one place,
+  widths, settings and the chassis, the single face tree), 14 scenes compile, gate ok.
+
+## D206 · 2026-11-07 · A motion change no longer leaves the desktop without its bar
+
+- Found during D204's live test: turning reduced motion on took the whole shell down — the bar, the frame,
+  the notch, BMO, the widgets, the Nexus and the desk — and nothing brought it back until `mooi session`.
+- The theme watch restarts the scenes when `motion.speed` or `motion.reduced` changes (a new live copy at the
+  new pace) by ending them and leaving the rest to the keeper. Since D135 pleamar exits 0 on SIGTERM, and the
+  keeper reads a clean exit as a stop unless `refresh`'s mark (`$rt/again`) is there; `refresh` was taught to
+  leave it, this path was not. So any change of the motion speed or reduced motion in Settings has been able
+  to leave the desktop bare since D135.
+- The motion path now writes the mark before ending the scenes (`bin/mooi`), as `refresh` does; a unit test
+  checks the order. Live: reduced motion on, the bar came back in ~4 s (`mooi-keep: refreshed`), and again
+  when it was turned off.

@@ -17,8 +17,13 @@ local M = {
     FORMS = { "capsule", "blob", "drop", "bead", "none" },
     BEAD = 14,            -- the tucked disc, as the dot shape's (lib/pill.DOT)
     DROP = 0.55,          -- how far the notice's bead hangs below the foot, in heights
-    RIPPLE = 5,           -- px the blob's edge moves at full bass
+    -- px the blob's edge moves at full bass. 0 since D204's live measure: rippled, the frame redraws its
+    -- top strip 30 times a second at 60–90 ms a frame (a core, ~12 fps); still, the morph costs only while
+    -- it flows. The frame's ripple stays wired: a positive value turns it back on.
+    RIPPLE = 0,
+    SWELL = 3,            -- px the blob's foot is fuller in the middle, sound or not
     OFF = -400,           -- where a collapsed outline sits (off the strip; a zero-area path draws nothing)
+    MAX_W = 800,          -- the widest it is drawn: the frame holds it only in the tiles within 420 px of the middle
 }
 
 -- each point's outward normal (unit), in order; the corners at 45°
@@ -77,9 +82,9 @@ function M.points(form, x, y, w, h, r)
         return { pts = pts, ripple = 0 }
     end
     if form == "blob" then
-        -- swollen a little in the middle of the foot even before the sound moves it
-        pts[9][2] = pts[9][2] + 2
-        pts[10][2] = pts[10][2] + 2
+        -- fuller in the middle of the foot: the music's form, still
+        pts[9][2] = pts[9][2] + M.SWELL
+        pts[10][2] = pts[10][2] + M.SWELL
         return { pts = pts, ripple = M.RIPPLE }
     end
     return { pts = pts, ripple = 0 }

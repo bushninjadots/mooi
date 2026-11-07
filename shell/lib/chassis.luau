@@ -147,6 +147,10 @@ end
 function M.morph(geo, look)
     if look.mode ~= "pill" or type(geo) ~= "table" or type(geo.pill) ~= "table" or geo.pill.shape ~= "morph" then return nil end
     local px, pw = span(geo.pill)
+    -- the frame draws the outline only near the middle (tools/gen-frame.py MORPH_REACH): wider is narrowed
+    -- about its centre (lib/pill caps the Pill's width to the room between the side groups already)
+    local cap = 800
+    if pw > cap then px, pw = px + (pw - cap) / 2, cap end
     local r = look.mod_h / 2
     local form = type(geo.pill.form) == "string" and geo.pill.form or "capsule"
     if pw <= 0 then form = "none" end

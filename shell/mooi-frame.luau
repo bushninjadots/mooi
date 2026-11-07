@@ -211,7 +211,8 @@ local function geo()
     place()
     local was, blob_was = saving, morph_blob
     saving = g.saving == true
-    morph_blob = type(g.pill) == "table" and g.pill.shape == "morph" and g.pill.form == "blob"
+    -- only while the blob ripples (lib/pillmorph.RIPPLE > 0): a still blob needs no level at all
+    morph_blob = pillmorph.RIPPLE > 0 and type(g.pill) == "table" and g.pill.shape == "morph" and g.pill.form == "blob"
     if was ~= saving or blob_was ~= morph_blob then listen() end
 end
 

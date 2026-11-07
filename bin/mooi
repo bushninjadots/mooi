@@ -687,6 +687,9 @@ theme_watch() {
         if [ -n "$m" ] && [ "$m" != "$motion_seen" ]; then
             motion_seen=$m
             if [ -n "$(scene_pids)" ] && snapshot; then
+                # the mark, as `refresh` leaves it (D135): pleamar exits 0 on SIGTERM, and without it
+                # the keeper took this ending for a stop and left the desktop with no bar (D206)
+                : > "$again"
                 for p in $(scene_pids); do kill -TERM "$p" 2>/dev/null; done
                 echo "$(date +%T) motion $m: the bar restarted to move at that pace"
             fi

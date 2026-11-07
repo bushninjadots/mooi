@@ -183,8 +183,12 @@ def morph_steps():
     return "; ".join(steps + ["close }"])
 
 MORPH_PIECE = ("mx0", "mx5", "path { blend: mk; show: m_on", "; " + morph_steps())
-PIECES.append(MORPH_PIECE)
-PLACE_PIECES.append(MORPH_PIECE)
+# Only in the tiles that can hold it: the morph is the centre Pill, at most MORPH_REACH px either side of the
+# middle (the bar caps the Pill's width to that, lib/pillmorph.MAX_W). In every tile it was flattened 22 times
+# a frame and composing the strip took ~110 ms (D204's live measure); a path is not culled by its tile's clip.
+MORPH_REACH = 420
+def morph_in(lo, hi):
+    return hi * REF_W > REF_W / 2 - MORPH_REACH and lo * REF_W < REF_W / 2 + MORPH_REACH
 
 def piece_decls(ind):
     out = [f"{ind}// the pieces' slots: targets from the logic, sprung here"]
@@ -321,7 +325,7 @@ def end_tiles(ind, which, place=False):
         if top:
             # the place's copies (frame_p) hold every piece, floating plates too, so an island grows out
             # of its plate in one body (review I3); the band's own tiles hold only joined pieces
-            pieces = PLACE_PIECES if place else PIECES
+            pieces = (PLACE_PIECES if place else PIECES) + ([MORPH_PIECE] if morph_in(lo, hi) else [])
             shapes += [[f"{box} and {a} < {x1} + 48 and {b} > {x0} - 48 {end}"] for a, b, box, end in pieces]
         cr = crossed(which, x0, x1)
         if place:

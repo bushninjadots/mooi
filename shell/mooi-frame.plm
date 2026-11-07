@@ -1224,7 +1224,6 @@ scene Frame {
                         box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.09375 + 48 and px17 + pw17 > -40 - 48 }
                         box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.09375 + 48 and px18 + pw18 > -40 - 48 }
                         box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.09375 + 48 and px19 + pw19 > -40 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.09375 + 48 and mx5 > -40 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                     }
                 }
                 group {
@@ -1290,7 +1289,6 @@ scene Frame {
                         box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.1875 + 48 and px17 + pw17 > W * 0.09375 - 48 }
                         box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.1875 + 48 and px18 + pw18 > W * 0.09375 - 48 }
                         box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.1875 + 48 and px19 + pw19 > W * 0.09375 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.1875 + 48 and mx5 > W * 0.09375 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                     }
                 }
                 group {
@@ -1341,7 +1339,6 @@ scene Frame {
                         box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.28125 + 48 and px17 + pw17 > W * 0.1875 - 48 }
                         box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.28125 + 48 and px18 + pw18 > W * 0.1875 - 48 }
                         box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.28125 + 48 and px19 + pw19 > W * 0.1875 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.28125 + 48 and mx5 > W * 0.1875 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                     }
                 }
                 group {
@@ -1647,7 +1644,6 @@ scene Frame {
                         box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.84375 + 48 and px17 + pw17 > W * 0.75 - 48 }
                         box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.84375 + 48 and px18 + pw18 > W * 0.75 - 48 }
                         box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.84375 + 48 and px19 + pw19 > W * 0.75 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.84375 + 48 and mx5 > W * 0.75 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                     }
                 }
                 group {
@@ -1713,7 +1709,6 @@ scene Frame {
                         box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.9375 + 48 and px17 + pw17 > W * 0.84375 - 48 }
                         box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.9375 + 48 and px18 + pw18 > W * 0.84375 - 48 }
                         box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.9375 + 48 and px19 + pw19 > W * 0.84375 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.9375 + 48 and mx5 > W * 0.84375 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                     }
                 }
                 group {
@@ -1774,7 +1769,6 @@ scene Frame {
                         box { from: px17, py17; size: if(pj17, pw17, 0), if(pj17, ph17, 0); corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W + 40 + 48 and px17 + pw17 > W * 0.9375 - 48 }
                         box { from: px18, py18; size: if(pj18, pw18, 0), if(pj18, ph18, 0); corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W + 40 + 48 and px18 + pw18 > W * 0.9375 - 48 }
                         box { from: px19, py19; size: if(pj19, pw19, 0), if(pj19, ph19, 0); corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W + 40 + 48 and px19 + pw19 > W * 0.9375 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W + 40 + 48 and mx5 > W * 0.9375 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                     }
                 }
             }
@@ -3181,7 +3175,6 @@ scene Frame {
                         box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.09375 + 48 and px17 + pw17 > -40 - 48 }
                         box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.09375 + 48 and px18 + pw18 > -40 - 48 }
                         box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.09375 + 48 and px19 + pw19 > -40 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.09375 + 48 and mx5 > -40 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3249,7 +3242,6 @@ scene Frame {
                         box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.1875 + 48 and px17 + pw17 > W * 0.09375 - 48 }
                         box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.1875 + 48 and px18 + pw18 > W * 0.09375 - 48 }
                         box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.1875 + 48 and px19 + pw19 > W * 0.09375 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.1875 + 48 and mx5 > W * 0.09375 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3302,7 +3294,6 @@ scene Frame {
                         box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.28125 + 48 and px17 + pw17 > W * 0.1875 - 48 }
                         box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.28125 + 48 and px18 + pw18 > W * 0.1875 - 48 }
                         box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.28125 + 48 and px19 + pw19 > W * 0.1875 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.28125 + 48 and mx5 > W * 0.1875 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3620,7 +3611,6 @@ scene Frame {
                         box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.84375 + 48 and px17 + pw17 > W * 0.75 - 48 }
                         box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.84375 + 48 and px18 + pw18 > W * 0.75 - 48 }
                         box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.84375 + 48 and px19 + pw19 > W * 0.75 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.84375 + 48 and mx5 > W * 0.75 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3688,7 +3678,6 @@ scene Frame {
                         box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W * 0.9375 + 48 and px17 + pw17 > W * 0.84375 - 48 }
                         box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W * 0.9375 + 48 and px18 + pw18 > W * 0.84375 - 48 }
                         box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W * 0.9375 + 48 and px19 + pw19 > W * 0.84375 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W * 0.9375 + 48 and mx5 > W * 0.84375 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
@@ -3751,7 +3740,6 @@ scene Frame {
                         box { from: px17, py17; size: pw17, ph17; corner: pr17; blend: pk17; show: pw17 > 0 and px17 < W + 40 + 48 and px17 + pw17 > W * 0.9375 - 48 }
                         box { from: px18, py18; size: pw18, ph18; corner: pr18; blend: pk18; show: pw18 > 0 and px18 < W + 40 + 48 and px18 + pw18 > W * 0.9375 - 48 }
                         box { from: px19, py19; size: pw19, ph19; corner: pr19; blend: pk19; show: pw19 > 0 and px19 < W + 40 + 48 and px19 + pw19 > W * 0.9375 - 48 }
-                        path { blend: mk; show: m_on and mx0 < W + 40 + 48 and mx5 > W * 0.9375 - 48 ; move (mX11 + mX0) / 2, (mY11 + mY0) / 2; curve (mX0 + mX1) / 2, (mY0 + mY1) / 2 via mX0, mY0; curve (mX1 + mX2) / 2, (mY1 + mY2) / 2 via mX1, mY1; curve (mX2 + mX3) / 2, (mY2 + mY3) / 2 via mX2, mY2; curve (mX3 + mX4) / 2, (mY3 + mY4) / 2 via mX3, mY3; curve (mX4 + mX5) / 2, (mY4 + mY5) / 2 via mX4, mY4; curve (mX5 + mX6) / 2, (mY5 + mY6) / 2 via mX5, mY5; curve (mX6 + mX7) / 2, (mY6 + mY7) / 2 via mX6, mY6; curve (mX7 + mX8) / 2, (mY7 + mY8) / 2 via mX7, mY7; curve (mX8 + mX9) / 2, (mY8 + mY9) / 2 via mX8, mY8; curve (mX9 + mX10) / 2, (mY9 + mY10) / 2 via mX9, mY9; curve (mX10 + mX11) / 2, (mY10 + mY11) / 2 via mX10, mY10; curve (mX11 + mX0) / 2, (mY11 + mY0) / 2 via mX11, mY11; close }
                         box { from: pl_bx, pl_by; size: max(1, pl_bw), max(1, pl_bh); corner: pl_br; blend: 30; show: pl_act }
                         box { from: dk_bx, dk_by; size: max(1, dk_bw), max(1, dk_bh); corner: dk_br; blend: 30; show: dk_act }
                     }
