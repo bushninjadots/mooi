@@ -7124,5 +7124,41 @@ test("sigil settings: the page has its fold", function()
     assert(t:find("sv_sigil_pill", 1, true) and t:find("sv_sigil_temperament", 1, true))
 end)
 
+section("the sigil: shapes")
+do
+    local SH = require("lib/sigil/shapes")
+    test("shapes: every kind, every form, 64 points inside its box", function()
+        for _, k in ipairs(SH.KINDS) do
+            for _, form in ipairs({ "glyph", "compact", "display" }) do
+                local b = form == "display" and { x = 660, y = 40, w = 600, h = 220 } or { x = 900, y = 4, w = 180, h = 24 }
+                local p = SH.outline(k, b, form, 0, { values = { .2, .9, .1 }, n = 5, active = 2 })
+                eq(#p, 64, k .. " " .. form)
+                for _, q in ipairs(p) do
+                    assert(q[1] >= b.x - 0.5 and q[1] <= b.x + b.w + 0.5 and q[2] >= b.y - 0.5 and q[2] <= b.y + b.h + 0.5, k .. " " .. form .. " outside its box")
+                end
+            end
+        end
+    end)
+    test("shapes: every kind stays inside a 60 x 24 box", function()
+        for _, k in ipairs(SH.KINDS) do
+            for _, q in ipairs(SH.outline(k, { x = 0, y = 0, w = 60, h = 24 }, "compact", 0, {})) do
+                assert(q[1] >= -0.5 and q[1] <= 60.5 and q[2] >= -0.5 and q[2] <= 24.5, k)
+            end
+        end
+    end)
+    test("shapes: the disc starts at its bottom, so the line rolls out of it", function()
+        local p = SH.outline("disc", { x = 0, y = 0, w = 600, h = 220 }, "display", 0, {})
+        assert(p[1][2] > p[17][2], "the first point is the disc's lowest")
+        assert(p[64][1] > 400, "the line runs out to the right")
+    end)
+    test("shapes: front-first batches cover 1..64 in order", function()
+        local b = SH.batches(nil, nil, 4)
+        eq(#b, 4); eq(b[1][1], 1); eq(b[4][2], 64); eq(b[2][1], b[1][2] + 1)
+    end)
+    test("shapes: an unknown kind is the clock, never an error", function()
+        eq(#SH.outline("kettle", { x = 0, y = 0, w = 100, h = 24 }, "compact"), 64)
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

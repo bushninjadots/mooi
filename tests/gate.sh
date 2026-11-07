@@ -17,7 +17,7 @@ else
 fi
 
 echo "logic files parse with Lua 5.4"
-for f in shell/*.luau shell/lib/*.luau shell/player/*.luau shell/bmo/*.luau; do
+for f in shell/*.luau shell/lib/*.luau shell/lib/sigil/*.luau shell/player/*.luau shell/bmo/*.luau; do
     F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
 done
 
