@@ -4899,10 +4899,10 @@ do
         local st = P.state()
         eq(P.compute(st, cfg({ face = "time" }), 0).width, 120)
         eq(P.compute(st, cfg({ face = "nexus" }), 0).width, 104)
-        eq(P.compute(st, cfg({ face = "bmo" }), 0).width, 64, "just his face")
+        eq(P.compute(st, cfg({ face = "bmo" }), 0).width, 72, "just his face (D170: his full face)")
         P.note(st, "say", { text = "beep boop!" }, 0)
         local r = P.compute(st, cfg({ face = "bmo" }), 100)
-        eq(r.width, 64 + 7 * 10 + 16, "his line fits"); eq(r.view.idle.t1, "beep boop!")
+        eq(r.width, 72 + 7 * 10 + 16, "his line fits"); eq(r.view.idle.t1, "beep boop!")
         eq(P.compute(st, cfg({ face = "time" }), 100).view.idle.t1, "", "only BMO speaks")
     end)
     test("pill: hidden when idle, back while pointed at, never over something happening", function()
@@ -5345,6 +5345,37 @@ do
         local P = require("lib/pill")
         for _, f in ipairs(P.FACES) do assert(P.FACE_W[f], f .. " has a width") end
         eq(P.compute(P.state(), { face = "media" }, 0).width, 220)
+    end)
+end
+
+section("the Pill board: BMO in the Pill (D170)")
+do
+    local F = require("lib/pillface")
+    local chassis = require("lib/chassis")
+    test("pillface.view: music playing, he sings — unless something just made him react", function()
+        local st = F.new("happy")
+        eq(F.view(st, 1000, true).face, "singing")
+        F.react(st, "surprised", 1000, 700)
+        eq(F.view(st, 1200, true).face, "surprised")
+        eq(F.view(st, 1800, true).face, "singing")
+        eq(F.view(st, 1800, false).face, "happy")
+    end)
+    test("chassis: the Pill is as tall as it says (BMO's face)", function()
+        local L = { mode = "pill", band = false, top = 8, mod_h = 24, radius = 7, screen_w = 1920, band_w = 2, frame_r = 14, reach = 16 }
+        local off = chassis.pieces({ islands = {}, pill = { x = 860, w = 72, h = 40 }, moons = {} }, L)
+        eq(off[1].h, 40, "floating: 40 tall"); eq(off[1].y, 8)
+        L.band = true
+        local on = chassis.pieces({ islands = {}, pill = { x = 860, w = 72, h = 40 }, moons = {} }, L)
+        eq(on[1].y + on[1].h, 48, "hanging from the band: its foot 16 px lower than a module's")
+        eq(chassis.pieces({ islands = {}, pill = { x = 860, w = 72 }, moons = {} }, L)[1].y + 0, -40, "no h: as before")
+        local g = io.open("shell/bar.luau"); local b = g:read("a"); g:close()
+        assert(b:find("h = pill_tall and", 1, true), "the bar asks for a taller Pill with BMO")
+        assert(b:find("fact.pb_tg = f.tg", 1, true) and b:find("fact.pb_sing", 1, true) and b:find("fact.pb_asleep", 1, true))
+    end)
+    test("BMO reacts in the Pill: pointed at, a signal", function()
+        local g = io.open("shell/bar.luau"); local b = g:read("a"); g:close()
+        assert(b:find('pill_api.react("curious"', 1, true), "pointed at: curious")
+        assert(b:find('pill_api.react("surprised"', 1, true) and b:find('"a letter!"', 1, true), "a signal: surprised, then a letter")
     end)
 end
 

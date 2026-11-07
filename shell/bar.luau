@@ -36,6 +36,8 @@ return function(ctx)
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
     local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
     local pill_face_text = nil   -- D170: a module face's reading (pill_face_read), for its width
+    local pill_tall = false      -- D170: BMO's face is showing: the Pill is taller
+    local pill_api               -- D170: what the board needs from the Pill (defined at the end)
 
     -- ── Layout ─────────────────────────────────────────────────
     -- The bar's edge inset: 12 px at full width; a narrower bar (bar.width) is centred.
@@ -128,7 +130,9 @@ return function(ctx)
             local n = pill_now and #pill_now.moons or 0
             local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
             local pl = pillmod.place(env.screen, w, n, pm)
-            geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true }
+            geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true,
+                         h = pill_tall and math.max(40, tonumber(b.height) or 24) or nil }      -- D170: BMO's face
+            fact.pill_h = geo.pill.h or (tonumber(b.height) or 24)
             geo.nodes = pm == "nodes"      -- D169: square pads on traces
             fact.pill_nodes = geo.nodes
             geo.moons = {}
@@ -190,8 +194,10 @@ return function(ctx)
         for i, f in ipairs(pillmod.FACES) do if f == p.face then fi = i - 1 end end
         fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
         fact.pill_hidden = r.hidden == true
+        local tall = fi == 1 and r.main == "idle" and not r.split and not r.hidden
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
-            or (pill_now.hidden == true) ~= (r.hidden == true)
+            or (pill_now.hidden == true) ~= (r.hidden == true) or tall ~= pill_tall
+        pill_tall = tall
         pill_now = r
         if changed then relayout(true) end
     end
@@ -200,9 +206,13 @@ return function(ctx)
     local pill_timed = false
     -- D169: BMO's face — his expression's numbers for the scene, and his line, which widens the Pill
     local function face_show()
-        local v = pillface.view(face_st, pill_ms)
+        local music = pst.media.playing == true and pst.media.title ~= ""
+        local v = pillface.view(face_st, pill_ms, music)
         local f = pillface.numbers(v.face)
         fact.pb_ew, fact.pb_eh, fact.pb_lid, fact.pb_brow, fact.pb_bron = f.ew, f.eh, f.lid, f.brow, f.bron
+        fact.pb_tg = f.tg or 0
+        fact.pb_sing = v.face == "singing"         -- the scene opens his mouth on the bass
+        fact.pb_asleep = v.face == "asleep"
         fact.pb_sql, fact.pb_sqr, fact.pb_mc, fact.pb_mo, fact.pb_mw, fact.pb_bl = f.sql, f.sqr, f.mc, f.mo, f.mw, f.bl
         if v.say ~= face_said then
             face_said = v.say
@@ -242,6 +252,11 @@ return function(ctx)
     if ctx.on_signal then
         ctx.on_signal(function(n)
             note("notify", { app = (n.app or "") ~= "" and n.app or "notice", summary = n.title or n.summary or "" })
+            -- D170: BMO is surprised, then pleased: a letter
+            if fact.pill_on and fact.pill_face == 1 and pill_api then
+                pill_api.react("surprised", 700)
+                after(650, function() pill_api.react("excited", 1000); pill_api.say("a letter!") end)
+            end
         end)
     end
     -- what a press does: the thing it shows, opened; a scroll: volume or workspaces; a moon: brought in
@@ -269,6 +284,8 @@ return function(ctx)
     -- D169: pointed at, a hidden Pill comes back for a while
     on("pill_hover", function(v)
         pill_hovering = tonumber(v) == 1
+        -- D170: BMO notices the pointer (and wakes up)
+        if pill_hovering and fact.pill_on and fact.pill_face == 1 then pill_api.touch(); pill_api.react("curious", 900) end
         -- on, or on leaving: 4 s more from now
         note("peek", {})
     end)
@@ -1098,7 +1115,7 @@ return function(ctx)
         local c = ctx.settings().companion
         return type(c) == "table" and c.talk or "rare"
     end
-    local pill_api = {
+    pill_api = {
         now = function() return pill_now end,
         osd = function() return pst.osd and pst.osd.kind or "vol" end,
         bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,

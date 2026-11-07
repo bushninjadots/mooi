@@ -82,8 +82,9 @@ function M.tick(st, now, env, r1, r2)
 end
 
 -- What he looks like now: { face = a brain.FACES name, say = his line or "" }.
-function M.view(st, now)
-    local face = (st.face and now < st.face_until) and st.face or st.mood
+function M.view(st, now, music)
+    local reacting = st.face and now < st.face_until
+    local face = reacting and st.face or (music and "singing" or st.mood)     -- D170: music: he sings along
     if face == "sleepy" and (st.asleep or now - st.mood_at > 600000) then face = "asleep" end
     return { face = brain.FACES[face] and face or "happy", say = now < st.say_until and st.say or "" }
 end

@@ -1200,6 +1200,24 @@ scene Mooi {
     fact pb_mo = 0.2
     fact pb_mw = 24
     fact pb_bl = 0
+    fact pb_tg = 0               // D170: his tongue (bmo/brain.FACES tg)
+    fact pb_sing = false         // D170: music playing: he sings along
+    fact pb_asleep = false       // D170: left alone long enough
+    fact pill_h = 24             // D170: the Pill's height (taller with BMO's face)
+    prop pb_sqlf = 0 ~m.isl_out
+    follow pb_sqlf = pb_sql
+    prop pb_sqrf = 0 ~m.isl_out
+    follow pb_sqrf = pb_sqr
+    prop pb_browf = 0 ~m.isl_out
+    follow pb_browf = pb_brow
+    prop pb_bronf = 0 ~m.isl_out
+    follow pb_bronf = pb_bron
+    prop pb_blf = 0 ~m.isl_out
+    follow pb_blf = pb_bl
+    prop pb_tgf = 0 ~m.isl_out
+    follow pb_tgf = pb_tg
+    prop pk_flow2 = 0
+    spin pk_flow2 by if(pb_asleep, 8, 0)
     prop pbe_h = 14 ~m.isl_out
     follow pbe_h = pb_eh
     prop pbe_w = 8 ~m.isl_out
@@ -1216,7 +1234,7 @@ scene Mooi {
     // only over itself), and his blink
     prop pb_lx = 0
     prop pb_ly = 0
-    look pb_lx, pb_ly at pill_x + 32, fl.cy reach 5, 2 within 700 rest 0, 0
+    look pb_lx, pb_ly at pill_x + 35, fl.top + pill_h / 2 reach 9, 4 within 1400 rest 0, 0
     prop pb_open = 1
     blink pb_open every 2.2s..7s for 170ms
     event chassis_ready ->     // from mooi-frame: the chassis is placed, the bar may hide its own plates (D164, review I3)
