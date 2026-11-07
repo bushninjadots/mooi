@@ -15,6 +15,8 @@ local weathershare = require("lib/weathershare")
 local updates = require("lib/updates")
 local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
+local sigilhosts = require("lib/sigil/hosts")   -- D207: where the Sigil may live
+local chassis_look = require("lib/chassis").look
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -46,6 +48,8 @@ return function(ctx)
     local cur_vol, cur_bri = nil, nil
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
     local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
+    -- D207: the Sigil's side of the bar — what was last written, and whether the classic Pill steps aside
+    local sig = { hosts_sent = nil, feed_sent = nil, classic_off = false, n = 0, pill = nil }
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
     -- D205: the second and third pills — each its view turned by the wheel (nil: its face), where it sits
     local extras = { [2] = { key = "two" }, [3] = { key = "three" } }
@@ -144,11 +148,15 @@ return function(ctx)
                       saving = ctx.saving() == true,
                       screen = env.screen }   -- the frame's corners need the screen's width (lib/chassis)
         fact.pill_still = s.motion.reduced == true or s.motion.saver == "always"   -- D172: the record holds still
-        fact.pill_on = pillmode
+        -- D207: with sigil.pill = sigil the classic Pill is not drawn; its place stays (the frame's plate is the
+        -- line's socket), 180 wide, no moons, and mooi-sigil draws in it
+        sig.classic_off = pillmode and type(s.sigil) == "table" and s.sigil.pill == "sigil"
+        fact.pill_on = pillmode and not sig.classic_off
+        sig.pill = nil
         if pillmode then
             -- the Pill and its moons, for the frame's chassis and the scene's content
-            local w = pill_now and pill_now.width or 160
-            local n = pill_now and #pill_now.moons or 0
+            local w = sig.classic_off and 180 or (pill_now and pill_now.width or 160)
+            local n = (not sig.classic_off and pill_now) and #pill_now.moons or 0
             local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
             local pl = pillmod.place(env.screen, w, n, pm)
             -- D187/D202: one capsule, one height — no face makes it taller
@@ -196,6 +204,12 @@ return function(ctx)
         end
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
+        -- D207: the Sigil's hosts, written when they change
+        if geo.pill then sig.pill = { x = geo.pill.x, w = geo.pill.w } end
+        local hosts = sigilhosts.build(s, out, sig.pill, chassis_look(s), env.screen)
+        sig.n = #hosts
+        local henc = json.encode({ screen = env.screen, hosts = hosts })
+        if henc ~= sig.hosts_sent then sig.hosts_sent = henc; pcall(sys.call, "files.write", "sigil-hosts.json", { screen = env.screen, hosts = hosts }) end
         fact.px = out.panel and out.panel.x or 0
         fact.pw = out.panel and out.panel.w or 0
         -- the spacers and gaps, which edit mode shows (and can take out): `n` = 100 · side + entry
@@ -913,6 +927,26 @@ return function(ctx)
             if code == 0 then fact.med_loop = tostring(out):match("Track") and 2 or (tostring(out):match("Playlist") and 1 or 0) end
         end)
     end
+    -- D207: what only the bar reads, for mooi-sigil (sigil-feed.json): once a second while it has a host,
+    -- written only when it changed. `at` is the logic's clock in ms, so the Sigil can tell a dead feed.
+    every(1000, function()
+        if sig.n == 0 then return end
+        local function hex(r, g, b) return string.format("#%02x%02x%02x", math.floor((r or 0) * 255 + .5), math.floor((g or 0) * 255 + .5), math.floor((b or 0) * 255 + .5)) end
+        local doc = {
+            resources = { cpu = fact.res_cpu, mem = fact.res_mem, temp = fact.res_temp },
+            weather = { temp = fact.wx_temp, word = text.wx_word, city = text.wx_city },
+            music = { title = text.mu_title, artist = text.mu_artist, playing = fact.mu_playing == true },
+            cover = fact.mu_has and { hex(fact.pc1_r, fact.pc1_g, fact.pc1_b), hex(fact.pc2_r, fact.pc2_g, fact.pc2_b), hex(fact.pc3_r, fact.pc3_g, fact.pc3_b) } or nil,
+        }
+        local enc = json.encode(doc)
+        if enc == sig.feed_sent then
+            -- unchanged: rewrite at most every 10 s so the Sigil still sees it alive
+            if os.time() - (sig.feed_t or 0) < 10 then return end
+        end
+        sig.feed_sent, sig.feed_t = enc, os.time()
+        doc.at = os.time() * 1000
+        pcall(sys.call, "files.write", "sigil-feed.json", doc)
+    end)
     every(500, function()
         if not mu.open or not playing or mu.len <= 0 then return end
         mu.pos = math.min(mu.len, mu.pos + 0.5 * mu.rate)

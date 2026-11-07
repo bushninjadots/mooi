@@ -7262,5 +7262,35 @@ do
     test("director: no hosts, no choices", function() eq(next(DIR.choose({}, { feed_at = 0 }, 0)), nil) end)
 end
 
+section("the sigil: hosts")
+do
+    local HO = require("lib/sigil/hosts")
+    local cfg = function(pill, mode) local d = config.defaults(); d.sigil.pill = pill; d.bar.mode = mode; return d end
+    local LOOK = { top = 6, mod_h = 24 }
+    test("hosts: classic mode and no module, no hosts", function() eq(#HO.build(cfg("classic", "pill"), { x = {} }, { x = 870, w = 180 }, LOOK, 1920), 0) end)
+    test("hosts: sigil in the Pill", function()
+        local h = HO.build(cfg("sigil", "pill"), { x = {} }, { x = 870, w = 180 }, LOOK, 1920)
+        eq(#h, 1); eq(h[1].id, "pill"); eq(h[1].kind, "pill"); eq(h[1].box.x, 870); eq(h[1].box.y, 6); eq(h[1].box.h, 24)
+        eq(h[1].room, 240); eq(h[1].max_form, "display"); eq(h[1].rest, "clock")
+    end)
+    test("hosts: sigil chosen but the bar is not in Pill mode, no Pill host", function()
+        eq(#HO.build(cfg("sigil", "islands"), { x = {} }, nil, LOOK, 1920), 0)
+    end)
+    test("hosts: an island module, at its place", function()
+        local h = HO.build(cfg("classic", "islands"), { x = { sigil = 400 } }, nil, LOOK, 1920)
+        eq(#h, 1); eq(h[1].id, "isl1"); eq(h[1].kind, "island"); eq(h[1].box.x, 400); eq(h[1].box.w, 180); eq(h[1].room, 0); eq(h[1].max_form, "compact")
+    end)
+    test("hosts: the Pill and an island together, the Pill first, never more than four", function()
+        local h = HO.build(cfg("sigil", "pill"), { x = { sigil = 100 } }, { x = 870, w = 180 }, LOOK, 1920)
+        assert(#h <= 4); eq(#h, 2); eq(h[1].id, "pill"); eq(h[2].id, "isl1")
+    end)
+    test("hosts: the bar writes them, and the feed, and turns the classic Pill off in sigil mode", function()
+        local f = io.open("shell/bar.luau"); local b = f:read("a"); f:close()
+        assert(b:find('"sigil-hosts.json"', 1, true) and b:find('"sigil-feed.json"', 1, true))
+        assert(b:find("sigilhosts.build(", 1, true), "built by the pure function")
+        assert(b:find("sig.classic_off", 1, true), "the classic Pill steps aside")
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
