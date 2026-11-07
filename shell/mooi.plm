@@ -1179,6 +1179,18 @@ scene Mooi {
     event pk_term ->           // to the logic: the drop terminal, out or away
     event pk_wp_scroll ->      // to the logic: the wallpaper strip moves
     event pk_wp ->             // to the logic: wear the wallpaper shown n-th
+    event pk_view_toggle ->    // to the logic: face n in the wheel's views, or out
+    fact pk_vw0 = false
+    fact pk_vw1 = false
+    fact pk_vw2 = false
+    fact pk_vw3 = false
+    fact pk_vw4 = false
+    fact pk_vw5 = false
+    fact pk_vw6 = false
+    fact pk_vw7 = false
+    fact pk_vw8 = false
+    fact pk_vw9 = false
+    fact pk_vw10 = false
     text pk_dg_kernel = ""
     text pk_dg_host = ""
     text pk_dg_up = ""

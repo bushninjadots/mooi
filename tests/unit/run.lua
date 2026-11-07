@@ -5617,5 +5617,28 @@ do
     end)
 end
 
+section("the Pill, round two: choosing the views (D171)")
+do
+    test("edit: a face's toggle puts it in the wheel's views or takes it out, saved", function()
+        local st = { pill = { views = { "time", "weather" } } }
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return st end, save = function() end, pill = P2 })
+        handlers.pk_view_toggle(7); eq(st.pill.views[3], "workspaces", "in")
+        handlers.pk_view_toggle(3); eq(#st.pill.views, 2, "weather out"); eq(st.pill.views[2], "workspaces")
+        handlers.pk_view_toggle(0); handlers.pk_view_toggle(7)
+        eq(#st.pill.views, 0); handlers.pk_view_toggle(99); eq(#st.pill.views, 0, "an unknown face does nothing")
+    end)
+    test("Settings: the shape, the detail and the rest", function()
+        local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find('"Attached"', 1, true) and plm:find('"Floating"', 1, true) and plm:find('"Dot"', 1, true))
+        assert(plm:find('"Icon"', 1, true) and plm:find('"Full"', 1, true))
+        assert(plm:find("sv_pill_rest", 1, true))
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

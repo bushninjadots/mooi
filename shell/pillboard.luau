@@ -59,6 +59,11 @@ return function(ctx)
         end
         fact.pk_on = on
         fact.pk_viz = pill_settings().viz == "river" and 1 or 0
+        -- D171: which faces are in the wheel's views (the edit bin's dots)
+        local views = pill_settings().views
+        local on = {}
+        for _, id in ipairs(type(views) == "table" and views or pillmod.VIEWS_DEFAULT) do on[id] = true end
+        for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = on[id] == true end
     end
 
     -- Now's week strip and its date line
@@ -287,6 +292,21 @@ return function(ctx)
         if not f then return end
         pill_settings().face = f
         save()
+    end)
+    -- D171: a face's toggle in the edit bin: in the wheel's views, or out
+    on("pk_view_toggle", function(v)
+        local f = pillmod.FACES[(math.floor(tonumber(v) or -1)) + 1]
+        if not f then return end
+        local p = pill_settings()
+        local list, found = {}, false
+        local src = type(p.views) == "table" and p.views or pillmod.VIEWS_DEFAULT
+        for _, id in ipairs(src) do if id == f then found = true else list[#list + 1] = id end end
+        if not found then list[#list + 1] = f end
+        p.views = list
+        save()
+        local on = {}
+        for _, id in ipairs(list) do on[id] = true end
+        for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = on[id] == true end
     end)
     on("pk_viz", function()
         local p = pill_settings()

@@ -205,7 +205,7 @@ library PillBoard {
     component PkPart(p: number, used: bool, acc: color, ink: color, dim: color) {
         size: 72, 26
         let qx = 16 + (p - floor(p / 8) * 8) * 76
-        let qy = 382 + floor(p / 8) * 30
+        let qy = 398 + floor(p / 8) * 30
         group {
             opacity: if(used, 0.35, 1)
             zone box z { from: qx, qy; size: 72, 26; cursor: pointer; role: button; active: not used
@@ -305,7 +305,7 @@ library PillBoard {
     component PillBoard() {
         size: 1, 1
         let bw = 640
-        let bh = if(pk_edit, 512, 312)
+        let bh = if(pk_edit, 528, 312)
         let pcx = pill_x + pill_w / 2
         let bx = clamp(pcx - bw / 2, 8, screen.width - bw - 8)
         let acc = if(isl_style > 0.5, accent.primary, fl.phos)
@@ -672,9 +672,15 @@ library PillBoard {
                     // ── edit: the face, and the parts bin ──
                     group {
                         show: pk_edit
-                        text "THE FACE · WHAT THE CLOSED PILL SHOWS" { at: 18, 326; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
-                        repeat f in 0..10 { PkBtn(16 + f * 61, 336, 57, pick(f, "TIME", "BMO", "NEXUS", "WEATHER", "CPU", "MUSIC", "BATTERY", "SPACES", "WI-FI", "SIGNALS"), if(pill_face == f, 1, 0), pk_face, f, 22) }
-                        text pick(pk_sel > -0.5, "PARTS · PRESS ONE TO ADD IT · PRESS A PAD FIRST TO REPLACE IT", "PARTS · PRESS ONE TO PUT IT ON PAD J{pk_sel + 1, 0}") { at: 18, 372; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                        text "THE FACE · WHAT THE CLOSED PILL SHOWS — A DOT UNDER IT: IN THE WHEEL'S VIEWS" { at: 18, 326; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
+                        repeat f in 0..11 {
+                            PkBtn(16 + f * 55, 336, 51, pick(f, "TIME", "BMO", "NEXUS", "WX", "CPU", "MUSIC", "POWER", "SPACES", "WI-FI", "ALERTS", "VIZ"), if(pill_face == f, 1, 0), pk_face, f, 22)
+                            // in the wheel's views, or not (D171)
+                            let vin = pick(f, pk_vw0, pk_vw1, pk_vw2, pk_vw3, pk_vw4, pk_vw5, pk_vw6, pk_vw7, pk_vw8, pk_vw9, pk_vw10)
+                            ellipse { at: 16 + f * 55 + 25.5, 366; radius: 3.2; color: if(vin, acc, fl.trace_dim) }
+                            PkHit(16 + f * 55 + 13, 359, 25, 14, pk_view_toggle, f, "In the wheel's views, or not")
+                        }
+                        text pick(pk_sel > -0.5, "PARTS · PRESS ONE TO ADD IT · PRESS A PAD FIRST TO REPLACE IT", "PARTS · PRESS ONE TO PUT IT ON PAD J{pk_sel + 1, 0}") { at: 18, 388; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: dim }
                         repeat p in 0..32 {
                             PkPart(p, p == pk_k0 or p == pk_k1 or p == pk_k2 or p == pk_k3 or p == pk_k4 or p == pk_k5 or p == pk_k6 or p == pk_k7, acc, ink, dim)
                         }
