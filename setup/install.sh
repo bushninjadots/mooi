@@ -33,14 +33,15 @@ done
 say() { printf '\033[1;36msetup ·\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33msetup ·\033[0m %s\n' "$*" >&2; }
 [ "$(id -u)" -ne 0 ] || { echo "install: run it as yourself, not root (it uses sudo where it must)" >&2; exit 1; }
-command -v pacman >/dev/null || { echo "install: this is for Arch-based systems (pacman)" >&2; exit 1; }
 # --dry-run is the login screen's step and nothing else: steps 1–4 install packages and write into the
 # home, and a preview of those is not a preview — it is the same work. The greeter's step is config
-# and accounts, and it can say exactly what it would do (setup/greeter.sh --dry-run).
+# and accounts, and it can say exactly what it would do (setup/greeter.sh --dry-run). It installs
+# nothing, so it does not need pacman (CI runs it on Ubuntu: the check came first and failed it, D206).
 if $dry; then
     sh "$here/greeter.sh" --dry-run
     exit 0
 fi
+command -v pacman >/dev/null || { echo "install: this is for Arch-based systems (pacman)" >&2; exit 1; }
 [ -d "$here/home" ] || { echo "install: $here/home is missing: run setup/capture.sh on the old machine first" >&2; exit 1; }
 
 # ── 1. Packages ──────────────────────────────────────────────────────────────────────────────────

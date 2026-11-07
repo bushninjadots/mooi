@@ -5822,3 +5822,7 @@ G4); the summaries follow the commit messages._
 - The motion path now writes the mark before ending the scenes (`bin/mooi`), as `refresh` does; a unit test
   checks the order. Live: reduced motion on, the bar came back in ~4 s (`mooi-keep: refreshed`), and again
   when it was turned off.
+- Also in this push: CI failed on D190's greeter test, which had not been pushed before. `setup/install.sh
+  --dry-run` checked for pacman before its dry-run branch, so on CI's Ubuntu it stopped with "this is for
+  Arch-based systems"; a dry run installs nothing, so the check now comes after it. Checked in an Ubuntu 24.04
+  container as a normal user: `tests/setup-greeter.sh` 29 / 0.
