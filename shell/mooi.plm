@@ -3076,6 +3076,12 @@ scene Mooi {
     }
 
 
+    // ── The Pill (D168) ───────────────────────────────────────
+    // Its content over the body the frame draws, in Pill mode only. It lives on the bar's own
+    // surface with every other module: on popup_surface (above) its zone was painted but real
+    // presses never reached it (D170's fix; `pleamar --say press` reached it, a hand did not).
+    PillBody()
+
     // ── The hot corner (OVERVIEW-PORT stage 3) ─────────────────
     // Four little surfaces, each mapped only while Settings → Overview chooses it. While on, a
     // 6×6 patch of that corner belongs to the shell: the price of a corner that answers a rest.
@@ -3216,10 +3222,6 @@ scene Mooi {
             glow: 8, (70%) * st_glow, if(ed_merge, fl.ember, fl.phos)
             box { at: ed_x, ed_y + 2; size: 132, 34; corner: 7; color: if(ed_y > st_res + 4, fl.muted, if(ed_merge, fl.ember_fill, fl.phos_fill)); opacity: 0.95 }
         }
-        // The Pill (D168): its content over the body the frame draws, in Pill mode only (outside the
-        // generated edit block, which tools/gen-settings.py rewrites).
-        PillBody()
-
         // <gen:edit>
     group {
         show: bar_edit and p_workspaces

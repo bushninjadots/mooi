@@ -5042,6 +5042,21 @@ do
         local u = io.open("shell/ui/pill.plm"); local ui = u:read("a"); u:close()
         assert(ui:find("emit pill_hover", 1, true), "the sliver can be pointed at")
     end)
+    -- D170 fix: the Pill's zone was on popup_surface, where a hand's press never arrived (a scripted
+    -- `pleamar --say press` did, so every check passed while the real Pill did nothing)
+    test("the Pill is on the bar's surface, with the other modules, not on popup_surface", function()
+        local f = io.open(MOOI_PLM or "shell/mooi.plm"); local plm = f:read("a"); f:close()
+        local at = plm:find("\n    PillBody()", 1, true)
+        local popup = plm:find("surface popup_surface {", 1, true)
+        assert(at and popup and at < popup, "PillBody() is drawn at the top level, before popup_surface")
+    end)
+    test("a press on a hidden Pill comes back and acts in the same press", function()
+        local f = io.open("shell/bar.luau"); local b = f:read("a"); f:close()
+        local h = b:match('on%("pill_press", function%(%)(.-)\n    end%)')
+        assert(h, "the handler")
+        assert(not h:find('elseif fact.pill_hidden then note%("peek"'), "a hidden press does not stop at the peek")
+        assert(h:find('if fact.pill_hidden then note%("peek", {}%) end'), "it peeks and goes on")
+    end)
 end
 
 print(string.format("\n%d tests, %d failed", count, failures))

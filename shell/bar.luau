@@ -242,13 +242,15 @@ return function(ctx)
     -- what a press does: the thing it shows, opened; a scroll: volume or workspaces; a moon: brought in
     on("pill_press", function()
         local main = pill_now and pill_now.main or "idle"
+        -- D170 fix: a hidden Pill pressed comes back AND does what it shows, in one press (pointing at
+        -- it already brought it back; a press that only revealed it read as "nothing happens")
+        if fact.pill_hidden then note("peek", {}) end
         fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
         if main == "music" then run("pleamar", { "--say", "mooi", "emit open_player 0" })
         elseif main == "notify" then run("pleamar", { "--say", "mooi", "emit loom_field" })
         elseif main == "record" then run("pleamar", { "--say", "mooi", "emit record 0" })
         elseif main == "osd" then fact.open = (pst.osd and pst.osd.kind == "bri") and "display" or "sound"
         elseif main == "battery" then fact.open = "power"
-        elseif fact.pill_hidden then note("peek", {})          -- D169: a hidden Pill pressed comes back first
         elseif fact.pill_face == 1 then pillface.poke(face_st, pill_ms, math.random()); face_show()
         elseif fact.pill_face == 2 then run("pleamar", { "--say", "mooi", "emit open_nexus" })
         else fact.open = "calendar" end
