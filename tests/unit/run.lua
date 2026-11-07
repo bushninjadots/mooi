@@ -7197,5 +7197,30 @@ do
     end)
 end
 
+section("the sigil: palette")
+do
+    local PAL = require("lib/sigil/palette")
+    local base = { colours = { primary = "#fbba73", error = "#ffb4ab" } }
+    local follow = { sigil = { colour = "follow" } }
+    test("palette: base is the wallpaper's primary", function() local c = PAL.resolve("clock", { palette = base, settings = follow }); eq(c[1], 0xfb); eq(c[3], 0x73) end)
+    test("palette: music takes the cover", function() local c = PAL.resolve("music", { palette = base, cover = { "#ec78aa" }, settings = follow }); eq(c[1], 0xec) end)
+    test("palette: the cover is only music's", function() local c = PAL.resolve("clock", { palette = base, cover = { "#ec78aa" }, settings = follow }); eq(c[1], 0xfb) end)
+    test("palette: an event beats the cover", function() local c = PAL.resolve("music", { palette = base, cover = { "#ec78aa" }, event = "warning", settings = follow }); eq(c[1], 0xe3) end)
+    test("palette: an error is the palette's error", function() local c = PAL.resolve("clock", { palette = base, event = "error", settings = follow }); eq(c[1], 0xff); eq(c[2], 0xb4) end)
+    test("palette: fixed beats everything", function() local c = PAL.resolve("music", { palette = base, event = "error", settings = { sigil = { colour = "fixed", fixed = "#102030" } } }); eq(c[1], 0x10) end)
+    test("palette: no palette at all is the phosphor", function() local c = PAL.resolve("clock", { settings = follow }); eq(c[1], 0xd6) end)
+    test("palette: easing moves part of the way", function() local c = PAL.ease({ 0, 0, 0 }, { 100, 200, 50 }, 0.5); eq(c[1], 50); eq(c[2], 100) end)
+end
+section("the sigil: bodies")
+do
+    local BOD = require("lib/sigil/bodies")
+    test("bodies: temperaments, and reduced motion stills them", function()
+        eq(BOD.temperament("calm", false).wobble, 1); eq(BOD.temperament("restless", false).batches, 6)
+        local r = BOD.temperament("restless", true); eq(r.wobble, 0); eq(r.breath, 0); eq(r.batches, 1); eq(r.lag_ms, 0)
+        eq(BOD.temperament("kettle", false).wobble, 2.5, "unknown is lively")
+        eq(BOD.pointer("push"), 1.6); eq(BOD.pointer("draw"), -1.0); eq(BOD.pointer("x"), 0)
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
