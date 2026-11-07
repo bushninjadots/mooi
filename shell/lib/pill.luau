@@ -221,7 +221,8 @@ end
 -- the face's, and the weather Now shows. Returns a set of reader ids (resources, weather, bandwidth, keyboard).
 function M.needs(p)
     p = type(p) == "table" and p or {}
-    local out = { weather = true }
+    -- weather for Now; the processor and memory for the Resources view and room and Diagnostics (review I1)
+    local out = { weather = true, resources = true }
     local function want(id)
         if id == "resources" then out.resources = true
         elseif id == "bandwidth" or id == "network" then out.bandwidth = true

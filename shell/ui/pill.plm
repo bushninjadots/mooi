@@ -161,16 +161,17 @@ library Pill {
                     text pick(battery.present, "No battery", "{battery.percent, 0}%") { at: px + 34, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 6 and pill_detail < 1.5 }
                     text pick(battery.charging, "{battery.percent, 0}% · on battery", "{battery.percent, 0}% · charging") { at: px + 34, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 6 and pill_detail > 1.5 and battery.present }
                     // workspaces: a dot each, the one you are on lit (full: and its number)
-                    repeat k in 0..10 {
-                        let wx = px + 34 + k * 12
-                        ellipse { at: wx, cy; radius: if(k + 1 == ws.active, 4, 2.6); color: if(k + 1 == ws.active, fl.phos, fl.trace); show: pill_face == 7 and k < spaces.count }
+                    // by each workspace's own place and state, not 1..count (review I2)
+                    for w in spaces {
+                        let wx = px + 34 + w.index * 12
+                        ellipse { at: wx, cy; radius: if(w.active, 4, 2.6); color: if(w.active, fl.phos, if(w.windows > 0, fl.trace_lit, fl.trace)); show: pill_face == 7 and wx < px + pw - 10 }
                     }
                     text "{ws.active, 0}" { at: px + pw - 14, cy; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.phos; show: pill_face == 7 and pill_detail > 1.5 }
                     text pick(network.online, "Offline", network.name) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw - if(pill_detail > 1.5, 44, 0); lines: 1; show: pill_face == 8 }
                     text "{network.strength, 0}%" { at: px + pw - 14, cy; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: pill_face == 8 and pill_detail > 1.5 and network.online }
                     // signals: how many (full: the newest, its app and title)
-                    text "{loom_count, 0} signals" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 9 and (pill_detail < 1.5 or not pill_alert_on) }
-                    text pill_alert { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 9 and pill_detail > 1.5 and pill_alert_on }
+                    text "{loom_count, 0} signals" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 9 and (pill_detail < 1.5 or not (pill_alert_on and loom_count > 0.5)) }
+                    text pill_alert { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 9 and pill_detail > 1.5 and pill_alert_on and loom_count > 0.5 }
                     // the visualiser: the music's bands
                     group { show: pill_face == 10
                             viz.Spectrum(px + 34, cy - 8, pw - 48, 16, fl.phos, fl.ember) }

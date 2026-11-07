@@ -237,6 +237,8 @@ return function(ctx)
         -- D171: a turned view rests back to the default after pill.rest seconds (0: it stays)
         local rest = tonumber(type(ctx.settings().pill) == "table" and ctx.settings().pill.rest or 10) or 10
         local open_board = pill_board and pill_board.open() == "board"
+        -- the rest counts from when the pointer leaves and the board closes (review, re-graded)
+        if pill_view and (pill_hovering or open_board) then pill_view_at = pill_ms end
         if pill_view and rest > 0 and pill_ms - pill_view_at >= rest * 1000 and not pill_hovering and not open_board then
             pill_view = nil; pill_timed = true
         end
@@ -299,13 +301,25 @@ return function(ctx)
         local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
         if id and pill_board then pill_board.press("left", id) end
     end)
+    -- D171: Super + wheel (`mooi wheel`): over a pill, its next view; elsewhere, the workspace
+    on("pill_superwheel", function(v)
+        local d = (tonumber(v) or 1) < 0 and -1 or 1
+        if pill_hovering and fact.pill_on then
+            local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
+            pill_view = pillmod.next_view(p.views, pill_view or p.face or "time", d)
+            pill_view_at = pill_ms
+            note("peek", {})
+        else
+            run("hyprctl", { "dispatch", "workspace", d > 0 and "e+1" or "e-1" })
+        end
+    end)
     -- D171: Super (`mooi pill`): the Pill comes back (the dot opens); called again within a moment, the board
     on("pill_call", function()
         if not fact.pill_on then return end
         if pill_ms - pill_called < 1500 and pill_board then
             pill_called = -10000
             fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
-            pill_board.press("left", pill_now and pill_now.main or "idle")
+            pill_board.call(pill_now and pill_now.main or "idle")
         else
             pill_called = pill_ms
             note("peek", {})

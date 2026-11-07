@@ -621,15 +621,17 @@ library PillBoard {
                         // D171 · Workspaces: a tile each, the one you are on lit; a press goes there
                         group {
                             show: pk_room > 11.5 and pk_room < 12.5
-                            repeat k in 0..8 {
-                                let wx = 8 + k * 75
+                            // each workspace by its own id and place (review I2), its windows counted
+                            for w in spaces {
+                                let wx = 8 + w.index * 75
                                 group {
-                                    show: k < spaces.count
-                                    box { from: wx, 14; size: 70, 132; corner: 10; color: if(k + 1 == ws.active, acc, fl.hull_raised); opacity: if(k + 1 == ws.active, 0.16, 0.7) }
-                                    box { from: wx, 14; size: 70, 132; corner: 10; stroke: 1; color: if(k + 1 == ws.active, acc, fl.trace_dim) }
-                                    text "{k + 1, 0}" { at: wx + 35, 70; anchor: center; size: 30; weight: 300; family: "Exo 2"; color: if(k + 1 == ws.active, acc, ink) }
-                                    text pick(k + 1 == ws.active, "", "HERE") { at: wx + 35, 120; anchor: center; size: 9; family: "Share Tech Mono"; color: acc }
-                                    PkHit(wx, 14, 70, 132, pk_ws, k + 1, "Go to this workspace")
+                                    show: w.index < 8
+                                    box { from: wx, 14; size: 70, 132; corner: 10; color: if(w.active, acc, fl.hull_raised); opacity: if(w.active, 0.16, 0.7) }
+                                    box { from: wx, 14; size: 70, 132; corner: 10; stroke: 1; color: if(w.active, acc, fl.trace_dim) }
+                                    text "{w.id, 0}" { at: wx + 35, 64; anchor: center; size: 30; weight: 300; family: "Exo 2"; color: if(w.active, acc, ink) }
+                                    text pick(w.windows > 0.5, "EMPTY", "{w.windows, 0} WIN") { at: wx + 35, 104; anchor: center; size: 9; family: "Share Tech Mono"; color: dim }
+                                    text pick(w.active, "", "HERE") { at: wx + 35, 126; anchor: center; size: 9; family: "Share Tech Mono"; color: acc }
+                                    PkHit(wx, 14, 70, 132, pk_ws, w.id, "Go to this workspace")
                                 }
                             }
                         }

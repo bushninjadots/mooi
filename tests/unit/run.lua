@@ -5547,7 +5547,7 @@ do
     test("faces at three details; workspaces as dots, alerts with the newest, the visualiser", function()
         local ui = read("shell/ui/pill.plm")
         assert(ui:find("if(pill_detail < 0.5, px + pw / 2, px + 20)", 1, true), "icon: just the glyph, centred")
-        assert(ui:find("show: pill_face == 7 and k < spaces.count", 1, true), "workspaces: a dot each")
+        assert(ui:find("show: pill_face == 7 and wx < px + pw - 10", 1, true), "workspaces: a dot each, inside the Pill")
         assert(ui:find("text pill_alert {", 1, true), "alerts: the newest at full")
         assert(ui:find("show: pill_face == 10", 1, true), "the visualiser")
         assert(ui:find("text clock.date", 1, true), "time at full: the date")
@@ -5678,6 +5678,61 @@ do
         local f = io.open("bin/mooi"); local sh = f:read("a"); f:close()
         assert(sh:find("resync; seen=$now", 1, true), "seen is the key the extraction was for")
         assert(not sh:find("resync; seen=$(key)", 1, true), "not the key read again after it")
+    end)
+end
+
+section("the Pill: Super and the wheel (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("Super + wheel: on a pill it turns the views, anywhere else the workspace", function()
+        local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
+        assert(hl:find('hl.bind, "SUPER + mouse_down", hl.dsp.exec_cmd(mooi .. " wheel 1")', 1, true))
+        assert(hl:find('hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1")', 1, true))
+        local sh = read("bin/mooi")
+        assert(sh:find('wheel) "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}"', 1, true), "asks the bar")
+        assert(sh:find('|| hyprctl dispatch workspace "e$(', 1, true), "no bar: the workspace, as before")
+        local bar = read("shell/bar.luau")
+        local h = bar:match('on%("pill_superwheel", function%(v%)(.-)\n    end%)')
+        assert(h and h:find("if pill_hovering and fact.pill_on", 1, true), "on a pill")
+        assert(h:find('"dispatch", "workspace"', 1, true), "elsewhere")
+    end)
+end
+
+section("the Pill, round two: the review's fixes (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    local P = require("lib/pill")
+    test("review I1: in Pill mode the processor and memory are read (the Resources view, Diagnostics)", function()
+        eq(P.needs({ pads = {}, face = "time", views = { "time" } }).resources, true)
+    end)
+    test("review I2: workspaces by their own ids and places, not 1..count", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("for w in spaces", 1, true) and ui:find("w.active", 1, true), "the face's dots")
+        local b = read("shell/ui/pillboard.plm")
+        assert(b:find("for w in spaces", 1, true) and b:find("pk_ws, w.id", 1, true), "the room's tiles go to their id")
+    end)
+    test("review I3: the Alerts face's newest goes when the signals do", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("pill_alert_on and loom_count > 0.5", 1, true))
+    end)
+    test("review (re-graded): the rest counts from when the pointer leaves and the board closes, not from the scroll", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if pill_view and (pill_hovering or open_board) then pill_view_at = pill_ms end", 1, true))
+    end)
+    test("review I4: Super twice opens the board (never the Nexus), or closes it", function()
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local poked = 0
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return true end,
+                     face = function() return "nexus" end, touch = function() end, react = function() end, say = function() end,
+                     poke = function() poked = poked + 1 end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = { face = "nexus" } } end,
+            save = function() end, pill = P2, opened = function(v) env.fact.open = v end })
+        api.call("idle"); eq(env.fact.open, "board", "the board, not the Nexus")
+        api.call("idle"); eq(env.fact.open, "none", "again: it closes (no poke)"); eq(poked, 0)
+        local bar = read("shell/bar.luau")
+        assert(bar:find("pill_board.call(pill_now and pill_now.main or \"idle\")", 1, true))
     end)
 end
 

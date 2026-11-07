@@ -349,6 +349,16 @@ return function(ctx)
             elseif a.kind == "island" then set_open(a.island) end
         end,
         publish = publish,
+        -- Super twice (`mooi pill`): the board on the room of the view showing — never the Nexus — or,
+        -- open, closed (no poke) (review I4)
+        call = function(main)
+            P.touch()
+            if opened == "board" then close(); return end
+            local face = (P.face and P.face()) or pill_settings().face or "time"
+            if face == "nexus" then face = "time" end
+            local a = pillmod.press(main, face, "left", P.osd())
+            open_board(a.room)
+        end,
         open = function() return opened end,
     }
 end

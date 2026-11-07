@@ -66,6 +66,11 @@ if cfg.standalone == true or not archeclipse then
     end
     -- D171: Super alone, on release (never after Super+a key): the Pill comes back; twice, its board
     pcall(hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true })
+    -- D171: Super + wheel asks the bar: over a pill it turns the views, elsewhere the workspace
+    pcall(hl.unbind, "SUPER + mouse_down")
+    pcall(hl.unbind, "SUPER + mouse_up")
+    pcall(hl.bind, "SUPER + mouse_down", hl.dsp.exec_cmd(mooi .. " wheel 1"))
+    pcall(hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1"))
     bound[#bound + 1] = "standalone"
 end
 
