@@ -15,14 +15,16 @@ return function(ctx)
     -- is open OR while the board shows its room (lib/pillpads.ROOMS: 1 calendar · 5 power ·
     -- 6 resources · 7 weather). `wanted` is the island the data is for now, or nil.
     local BOARD = { [1] = "calendar", [5] = "power", [6] = "stats", [7] = "weather" }
+    -- `open` as the scene says (reading fact.open back gives the logic's last write)
+    local opened = "none"
     local function wanted()
-        if fact.open == "board" then return BOARD[math.floor(fact.pk_room or 0)] end
-        return fact.open
+        if opened == "board" then return BOARD[math.floor(fact.pk_room or 0)] end
+        return opened
     end
     local hooks = {}
     local function on_want(fn) hooks[#hooks + 1] = fn end
     local function told() local v = wanted(); for _, fn in ipairs(hooks) do fn(v) end end
-    on("fact:open", told)
+    on("fact:open", function(v) opened = tostring(v or "none"); told() end)
     on("fact:pk_room", told)
     -- ── The clock: what it shows (clock.view), a right press for the next ───
     local VIEWS = { "full", "time", "seconds" }

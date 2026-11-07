@@ -1174,6 +1174,7 @@ scene Mooi {
     event pk_hover ->          // to the logic: pad n pointed at (BMO names it)
     event pk_back ->           // to the logic: back to Now
     event pk_go ->             // to the logic: room n
+    event pk_scroll ->         // to the logic: the wheel over the board: the next room
     event pk_chip ->           // to the logic: a docked moon pressed
     event pk_key ->            // to the logic: 0 left · 1 right · 2 enter · 3 escape
     event pk_edit_cmd ->       // to the logic: 0 edit on/off · 10+i take pad i off · 20+i move it left · 30+i right

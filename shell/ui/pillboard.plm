@@ -141,6 +141,13 @@ library PillBoard {
         on press sk { emit med_seek(round(clamp((local.x - 176) / 412, 0, 1) * 999)) }
     }
 
+    // The wheel anywhere on the board turns its rooms
+    component PkWheel(w: number, h: number) {
+        size: w, h
+        zone box wh { from: 0, 0; size: w, h; role: region; agent: hidden }
+        on scroll wh { emit pk_scroll(wheel) }
+    }
+
     // A moon docked in the header: its mark in a chip; a press shows its room
     component PkChip(cx: number, mk: number, k: number, acc: color) {
         size: 30, 24
@@ -229,7 +236,7 @@ library PillBoard {
         text pick(k, "{ws.active, 0}", "WINDOW", "", "{round(res_cpu * 100), 0}%", bw_down, kb_name, "{wx_temp, 0}°", "TRAY", "{loom_count, 0} NEW",
                   "", "", "", "", "", "", clock.time, "", "", "SNAP", "HISTORY", "SESSION", "ACTIONS", "ALL", "SEARCH", "",
                   "MOOI", "NOTES", "NEXT", "NEXUS", "{upd_n, 0}", "ASK", "REPOS") {
-            at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; width: 60; lines: 1; show: not pk_edit }
+            at: rx, ry; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: rc; width: 60; lines: 1; show: not pk_edit }
         group {
             show: not pk_edit
             text pick(mu_playing, "IDLE", "PLAYING") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 2 }
@@ -237,7 +244,7 @@ library PillBoard {
             text pick(audio.muted, "{round(audio.volume * 100), 0}%", "MUTED") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 10 }
             text pick(brightness.present, "—", "{round(brightness.level * 100), 0}%") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 11 }
             text pick(battery.present, "—", "{battery.percent, 0}%") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 12 }
-            text pick(network.online, "OFFLINE", network.name) { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; width: 60; lines: 1; show: k == 13 }
+            text pick(network.online, "OFFLINE", network.name) { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; width: 60; lines: 1; align: center; show: k == 13 }
             text pick(bluetooth.powered, "OFF", "{bt_conn, 0} ON") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 14 }
             text pick(caffeine_on, "OFF", "ON") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 16 }
             text pick(recording, "OFF", "REC") { at: rx, ry; anchor: center; size: 9; family: "Share Tech Mono"; color: rc; show: k == 17 }
@@ -245,7 +252,7 @@ library PillBoard {
         }
         text pick(k, "SPACES", "WINDOW", "MUSIC", "CPU", "NET", "KEYS", "WEATHER", "TRAY", "SIGNALS", "MIC", "SOUND", "BRIGHT", "BATTERY", "WI-FI", "BT", "CLOCK",
                   "AWAKE", "REC", "SHOT", "CLIPS", "SESSION", "ACTIONS", "OVERVIEW", "SEARCH", "FOCUS", "SETTINGS", "NOTES", "WALL", "NEXUS", "UPDATES", "CLAUDE", "GITHUB") {
-            at: pd, ly + 37; anchor: center; size: 9; family: "Share Tech Mono"; color: mix(dim, acc, max(lit, hov)); width: 60; lines: 1; show: pk_edit }
+            at: pd, ly + 37; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: mix(dim, acc, max(lit, hov)); width: 60; lines: 1; show: pk_edit }
         // a count waiting
         group {
             show: (k == 8 and loom_count > 0.5) or (k == 29 and upd_n > 0.5)
@@ -304,6 +311,8 @@ library PillBoard {
                 on change pk_edit while open == board and ch_on { emit pl_wh(round(bw) * 4096 + round(bh)); emit pl_t(round(pcx)) }
                 IslandFrame(rv.board, bw, bh, tx: pcx - bx, ox: bx, oy: st_res + 6, want: open == board, busy: open != none) {
                     zone box keep_board { from: 0, 0; size: bw, bh; role: region; agent: hidden }
+                    group { show: not pk_edit
+                            PkWheel(bw, 312) }
 
                     // ── the header ──
                     text pick(pk_music, "NOW", "NOW PLAYING") { at: 18, 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: acc; show: not pk_edit and pk_room < 0.5 }

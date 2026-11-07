@@ -21,6 +21,10 @@ local WORDS = { volume = "sound!", brightness = "so bright", network = "wi-fi", 
 return function(ctx)
     local P = ctx.pill
     local pads = {}
+    -- what is open, as the scene says: a press outside or Escape closes it in the scene, and reading
+    -- fact.open back gives the logic's last write, not that (a closed board read as open, D170)
+    local opened = "none"
+    local function set_open(v) opened = v; fact.open = v end
 
     local function emit_scene(ev, arg)
         run("pleamar", { "--say", "mooi", "emit " .. ev .. (arg ~= nil and (" " .. tostring(arg)) or "") })
@@ -90,20 +94,21 @@ return function(ctx)
         fact.pk_edit, fact.pk_sel, fact.pk_kb = false, -1, -1
         fact.isl_shelf = false
         room(parts.room_index(name or "now") or 0)
-        fact.open = "board"
+        set_open("board")
         if P.bmo() then P.react("excited", 1300); P.say("hi!") end
     end
     local function close()
-        if fact.open == "board" then fact.open = "none" end
+        if opened == "board" then set_open("none") end
     end
 
     on("fact:open", function(v)
+        opened = tostring(v or "none")
         if v ~= "board" then fact.pk_edit, fact.pk_sel, fact.pk_kb = false, -1, -1 end
         if ctx.refresh then ctx.refresh() end      -- the Pill stays out while its board is open
     end)
     -- the Signals room keeps up while it shows
     every(2000, function()
-        if fact.open == "board" and fact.pk_room == parts.room_index("signals") then signals() end
+        if opened == "board" and fact.pk_room == parts.room_index("signals") then signals() end
     end)
 
     local function do_pad(i)
@@ -131,6 +136,14 @@ return function(ctx)
         if P.bmo() then P.react("curious", 800); P.say(WORDS[id] or id) end
     end)
     on("pk_back", function() room(0) end)
+    -- the wheel over the board: the next room, or the one before, and round (the owner asked, 2026-11-07)
+    local NAMES = { [0] = "now", "the month", "sound", "display", "connections", "power", "resources", "weather", "signals" }
+    on("pk_scroll", function(v)
+        local d = (tonumber(v) or 0) > 0 and -1 or 1
+        local r = ((fact.pk_room or 0) + d) % #parts.ROOMS
+        room(r)
+        if P.bmo() then P.say(NAMES[r]) end
+    end)
     on("pk_go", function(v) room(math.floor(tonumber(v) or 0)) end)
     -- a docked moon: its activity's room
     on("pk_chip", function(v)
@@ -222,18 +235,19 @@ return function(ctx)
         -- a press on the Pill (bar.luau hears it): the board, or the old jumps on the right
         press = function(button, main)
             P.touch()
-            if button == "left" and fact.open == "board" then
+            if button == "left" and opened == "board" then
                 if P.bmo() then P.poke() else close() end
                 return
             end
             local a = pillmod.press(main, pill_settings().face or "time", button, P.osd())
             if a.kind == "board" then open_board(a.room)
             elseif a.kind == "nexus" then emit_scene("open_nexus")
-            elseif a.kind == "calendar" then fact.open = "calendar"
+            elseif a.kind == "calendar" then set_open("calendar")
             elseif a.kind == "player" then emit_scene("open_player", 0)
             elseif a.kind == "record" then emit_scene("record", 0)
-            elseif a.kind == "island" then fact.open = a.island end
+            elseif a.kind == "island" then set_open(a.island) end
         end,
         publish = publish,
+        open = function() return opened end,
     }
 end

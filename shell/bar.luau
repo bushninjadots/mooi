@@ -165,7 +165,7 @@ return function(ctx)
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
         -- D170: never tucked away while its own board is open
         return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = p.face,
-                 autohide = p.autohide == true and fact.open ~= "board", max_w = pill_room, face_text = pill_face_text }
+                 autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text }
     end
     function pill_update()
         local s = ctx.settings()

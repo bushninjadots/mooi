@@ -5239,7 +5239,7 @@ do
     end)
     test("the Pill never tucks away while its board is open", function()
         local bar = read("shell/bar.luau")
-        assert(bar:find('autohide = p.autohide == true and fact.open ~= "board"', 1, true))
+        assert(bar:find('autohide = p.autohide == true and not (pill_board and pill_board.open() == "board")', 1, true))
     end)
 end
 
@@ -5316,6 +5316,19 @@ do
         b.h.pk_key(3); eq(b.fact.pk_room, 0)
         b.h.pk_chip(0); eq(b.fact.pk_room, 0); eq(b.fact.pk_music, true, "the music moon: Now Playing")
         b.h.pk_key(3); eq(b.fact.open, "none")
+    end)
+    test("closed by the scene (a press outside, Escape), the next press opens it again", function()
+        local b = board(S())
+        b.api.press("left", "idle"); eq(b.fact.open, "board")
+        b.h["fact:open"]("none")             -- the scene closed it; the logic's own fact still says board
+        b.api.press("left", "idle")
+        eq(b.poked(), 0, "not a poke: it was closed"); eq(b.api.open(), "board")
+    end)
+    test("the wheel over the board turns to the next room, and round", function()
+        local b = board(S())
+        b.api.press("left", "idle")
+        b.h.pk_scroll(-1); eq(b.fact.pk_room, 1, "down: the next")
+        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 8, "up from Now: round to the last")
     end)
     test("the keyboard walks the pads and presses one", function()
         local b = board(S())
