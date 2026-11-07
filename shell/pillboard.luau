@@ -292,7 +292,9 @@ return function(ctx)
 
     -- D188: the peek (ZenoShell's): resting on the Pill grows it into a small card; a press makes it the
     -- whole board; the pointer off both the capsule and the card folds it back. `pill.peek = false` stops it.
-    local peek_state = { cap = false, card = false, seq = 0 }
+    -- D191: `card` counts the card's zones the pointer is in (the card, and each reveal item over it): an
+    -- item's enter and the card's leave can come in either order, so a flag folded a peek under the pointer
+    local peek_state = { cap = false, card = 0, seq = 0 }
     local function peek_on()
         return pill_settings().peek ~= false and fact.pill_on == true
     end
@@ -306,7 +308,7 @@ return function(ctx)
         local mine = peek_state.seq
         after(300, function()
             if mine ~= peek_state.seq then return end
-            if fact.pk_peek and opened == "board" and not peek_state.cap and not peek_state.card then close() end
+            if fact.pk_peek and opened == "board" and not peek_state.cap and peek_state.card <= 0 then close() end
         end)
     end
     local function peek_hover(on)
@@ -317,14 +319,22 @@ return function(ctx)
         after(250, function()
             if mine ~= peek_state.seq or not peek_state.cap or not peek_on() then return end
             if opened ~= "none" then return end           -- the board, or another island, is already out
+            peek_state.card = 0
             open_board("now", true, true)
         end)
     end
     on("pk_peek_hover", function(v)
-        peek_state.card = tonumber(v) == 1
-        if peek_state.card then peek_state.seq = peek_state.seq + 1 else peek_leave() end
+        local inn = tonumber(v) == 1
+        peek_state.card = math.max(0, peek_state.card + (inn and 1 or -1))
+        if inn then peek_state.seq = peek_state.seq + 1 elseif peek_state.card <= 0 then peek_leave() end
     end)
     on("pk_peek_open", function() peek_full() end)
+    -- D191: a reveal item pressed — the board, on that item's room
+    on("pk_rev", function(v)
+        if opened ~= "board" then return end
+        fact.pk_peek = false
+        room(math.floor(tonumber(v) or 0))
+    end)
 
     on("fact:open", function(v)
         opened = tostring(v or "none")

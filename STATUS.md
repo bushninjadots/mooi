@@ -13,7 +13,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
   see docs/AUDIT-2026-11-06.md, G1).
 - `bin/mooi check` compiles every scene by enumeration (13, including `mooi-lock.plm`) and runs
   `tests/gate.sh`; CI runs the same gate where Pleamar is not needed. On 2026-11-07 the gate passed:
-  **575 unit tests, 0 failed; 27 BMO tests, 0 failed; 13 scenes compile; Pleamar 0.7.11 · language
+  **578 unit tests, 0 failed; 27 BMO tests, 0 failed; 13 scenes compile; Pleamar 0.7.11 · language
   0.9**.
 - The generators (`tools/gen-settings.py`, `tools/gen-frame.py`) are deterministic and CI fails if
   their output differs from the committed scenes.
@@ -37,6 +37,7 @@ _Last updated 2026-11-07. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | The desk's visual editor in Settings (D180) | 2026-11-07 | unit suite, both scenes compile, generator deterministic; not yet seen live |
 | The Pill becomes its board (one body), the peek, the edge flash, the new editor, the simpler page (D188) | 2026-11-07 | unit 572/0, 13 scenes, generators deterministic; opening, resize, peek, editor and page seen live; closing and the peek's fold-on-leave not yet watched |
 | The fold: closing keeps the card or editor until the body is back in the capsule; rooms at their true heights (D189) | 2026-11-07 | unit 575/0, 13 scenes; the peek's fold-on-leave and the editor's close recorded live at 60 fps (emits, not a real pointer) |
+| ArchEclipse's Pill: the glance face, the two-row reveal, the mirror spectrum (D191) | 2026-11-07 | unit 578/0, 13 scenes; glance and reveal seen live, the owner's pointer across the reveal recorded; the spectrum not yet seen playing |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |
 

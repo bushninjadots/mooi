@@ -3261,7 +3261,7 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_65 - 5304
-                    SRow(5304, "Peek on hover", "Rest the pointer on the Pill and it grows into a small card: the time, the song, three levels. A press makes it the whole board", true, "", 768, false)
+                    SRow(5304, "Peek on hover", "Rest the pointer on the Pill and it grows in place into two rows: the song, throughput, controls and clock; weather, the machine, battery, brightness, volume and network. A press on one opens its room, anywhere else the whole board", true, "", 768, false)
                     SToggle(1092, 5322, sv_pill_peek, set_value, 464, "pill.peek")
                     SRevert(1062, 5334, sv_pill_peek != df_pill_peek, set_value, 464000 + df_pill_peek)
                 }

@@ -81,7 +81,7 @@ local rows = {
     { title = "The Pill", desc = "ONE CAPSULE THAT BECOMES WHAT IS HAPPENING", tab = 3, page = "Bar & Frame", y = 4526 },
     { title = "Shape", desc = "Attached, floating, a dot or a record: as pictures", tab = 3, page = "Bar & Frame", y = 4924, fold = "fd_3_5", fy = 1114 },
     { title = "When idle", desc = "Stay, tuck away or vanish: as pictures", tab = 3, page = "Bar & Frame", y = 5114, fold = "fd_3_5", fy = 1304 },
-    { title = "Peek on hover", desc = "Rest the pointer on the Pill and it grows into a small card: the time, the song, three levels. A press makes it the whole board", tab = 3, page = "Bar & Frame", y = 5304, fold = "fd_3_5", fy = 1494 },
+    { title = "Peek on hover", desc = "Rest the pointer on the Pill and it grows in place into two rows: the song, throughput, controls and clock; weather, the machine, battery, brightness, volume and network. A press on one opens its room, anywhere else the whole board", tab = 3, page = "Bar & Frame", y = 5304, fold = "fd_3_5", fy = 1494 },
     { title = "Flash on a change", desc = "The Pill's edge lights for a moment when the workspace changes or a notice arrives", tab = 3, page = "Bar & Frame", y = 5364, fold = "fd_3_5", fy = 1554 },
     { title = "Pointer warmth", desc = "A soft light behind the capsule as the pointer comes near (0: none)", tab = 3, page = "Bar & Frame", y = 5424, fold = "fd_3_5", fy = 1614 },
     { title = "Right press", desc = "What a right press on the Pill does", tab = 3, page = "Bar & Frame", y = 5484, fold = "fd_3_5", fy = 1674 },

@@ -17,7 +17,8 @@ local M = {
                weather = 160, resources = 150, media = 220, battery = 104, workspaces = 140, network = 170, notifications = 130 },
     -- D170: what the closed Pill may show when nothing is happening: three of its own, and module faces
     FACES = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications",
-              "visualiser" },     -- D171
+              "visualiser",       -- D171
+              "glance" },         -- D191: ArchEclipse's rest face — workspace dots · the clock · a live chip
     -- D171: the views the wheel turns through when the owner has not chosen (pill.views), and the dot
     VIEWS_DEFAULT = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" },
     DOT = 14,
@@ -28,6 +29,7 @@ local M = {
                     network = 230, notifications = 260, visualiser = 170 },
 }
 M.FACE_W.visualiser = 110
+M.FACE_W.glance = 220     -- D191: nominal; the bar measures the real one (cfg.glance_w, M.glance_w)
 
 local function is_face(id)
     for _, f in ipairs(M.FACES) do if f == id then return true end end
@@ -189,9 +191,29 @@ local function view(st, id, now, cfg)
     return { glyph = "idle", t1 = (cfg and cfg.face == "bmo") and (st.say or "") or "", t2 = "" }
 end
 
+-- D191: the width of ArchEclipse's rest face (its PillBar "rest" row: PillDots · clock · PillChip, 14 apart,
+-- 14 each side). Dots 5 px, 5 apart, the one you are on 2.4 × as wide; the clock ~46 px at 14 px; the chip
+-- a music glyph, the title (≤ 150) and the artist (≤ 120) while something plays, else the battery glyph
+-- and its percent — the chip's own plate 22 px wider than its row. Text measured at ~7 px a character.
+function M.glance_w(n, title, artist, pct)
+    n = math.max(1, math.min(10, math.floor(tonumber(n) or 5)))
+    local dots = n * 5 + (n - 1) * 5 + 7
+    local row
+    title = tostring(title or "")
+    if title ~= "" then
+        row = 14 + 7 + math.min(150, 7 * #title)
+        artist = tostring(artist or "")
+        if artist ~= "" then row = row + 7 + math.min(120, 6 * #artist) end
+    else
+        row = 14 + 7 + 7 * #(tostring(math.floor(tonumber(pct) or 0)) .. "%")
+    end
+    return 14 + dots + 14 + 46 + 14 + row + 22 + 14
+end
+
 local function width(v, cfg)
     if not v then return 0 end
     if v.glyph == "idle" then
+        if cfg and cfg.face == "glance" then return math.floor(tonumber(cfg.glance_w) or M.glance_w(5)) end
         -- D170: a module's face is its glyph and a short reading (the bar works it out: cfg.face_text)
         local builtin = cfg and (cfg.face == "time" or cfg.face == "bmo" or cfg.face == "nexus")
         -- D171: the detail — icon is just the glyph (a module's face), full has room for a second part
@@ -287,7 +309,7 @@ end
 -- "right"; osd: "vol" or "bri" (which change is showing). Left unfolds the board on the activity's room
 -- (the Nexus face's left is the Nexus button, while nothing is happening); right keeps the old jumps.
 local ROOM = { idle = "now", music = "now", record = "now", battery = "power", notify = "signals" }
-local FACE_ROOM = { weather = "weather", resources = "resources", media = "now", battery = "power", workspaces = "workspaces",
+local FACE_ROOM = { glance = "now", weather = "weather", resources = "resources", media = "now", battery = "power", workspaces = "workspaces",
                     network = "connections", notifications = "signals", visualiser = "visualiser" }
 function M.press(main, face, button, osd)
     main = main or "idle"
@@ -375,7 +397,8 @@ end
 -- ends clearly short of 160 — its lowest mark plus an 8 px margin. Sound was 128 (D188), but its buttons
 -- sit at 120–146 and its outputs reach 154: they hung over the pads' traces, so it is back at 160.
 M.BOARD_W = 640
-M.PEEK_W, M.PEEK_H = 440, 112
+-- D191: the peek is ArchEclipse's reveal — the core row, a hairline, the detail row
+M.PEEK_W, M.PEEK_H = 600, 92
 M.EDIT_W, M.EDIT_H = 640, 380
 M.CORE = {
     [3]  = 150,   -- display: a level, three buttons ending at 142

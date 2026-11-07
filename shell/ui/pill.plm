@@ -142,6 +142,44 @@ library Pill {
         }
     }
 
+    // D191: one of the glance face's workspace dots (ArchEclipse's PillDots): 5 px, the one you are on a
+    // capsule 2.4 × as wide in the accent, a workspace with windows in the ink, an empty one in the trace.
+    // Its own component so each dot keeps its own spring. Drawn only: a zone per dot would sit under the
+    // Pill's own zone and split its hover, and the peek follows that hover (a press is the board).
+    component GlanceDot(x: number, cy: number, on: bool, busy: bool) {
+        size: 12, 5
+        prop dw = 5 ~m.select
+        follow dw = if(on, 12, 5)
+        box { from: x, cy - 2.5; size: dw, 5; corner: 2.5; color: if(on, fl.phos, if(busy, fl.engrave, fl.trace)) }
+    }
+
+    // D191: ArchEclipse's rest face (PillBar's "rest" row): the workspace dots, the clock, and the live
+    // chip — the song while a player has one (its title, the artist muted, a faint accent plate), else the
+    // battery. 14 px between the three and at each end; lib/pill.glance_w measures the same.
+    component GlanceFace(px: number, pw: number, cy: number) {
+        size: pw, 26
+        let n = pill_gl_n
+        let dots_w = n * 10 - 5 + 7
+        let x0 = px + 14 + dots_w + 14
+        let x1 = x0 + 46 + 14
+        let cw = max(24, px + pw - 14 - x1)
+        for w in spaces {
+            let dx = px + 14 + w.index * 10 + if(w.id > ws.active, 7, 0)
+            group { show: w.index < n
+                    GlanceDot(dx, cy, w.active, w.windows > 0) }
+        }
+        text clock.time { at: x0 + 23, cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
+        box { from: x1, cy - 12; size: cw, 24; corner: 12; color: fl.phos; opacity: if(mu_has, 0.16, 0) }
+        let low = battery.present and battery.percent < 15 and not battery.charging
+        let tw = if(mu_has and pill_gl_art, min(pill_gl_tw + 4, cw - 36), cw - 36)
+        text "♪" { at: x1 + 11, cy; anchor: left center; size: 12; weight: 700; color: fl.phos; show: mu_has }
+        text pick(battery.charging, "▮", "ϟ") { at: x1 + 11, cy; anchor: left center; size: 12; weight: 700; color: if(low, #a94545, fl.engrave); show: not mu_has }
+        text mu_title { at: x1 + 25, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, tw); lines: 1; show: mu_has }
+        text pick(battery.present, "—", "{battery.percent, 0}%") { at: x1 + 25, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.muted; width: max(1, tw); lines: 1; show: not mu_has }
+        text mu_artist { at: x1 + 25 + tw + 7, cy; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted
+                         width: max(1, cw - 36 - tw - 7); lines: 1; show: mu_has and pill_gl_art and cw - 36 - tw > 20 }
+    }
+
     component PillBody() {
         size: 1, 1
         group {
@@ -161,12 +199,26 @@ library Pill {
             // inside it, no hairline over its top, no ring, no sweep, no flash: the effects D181 and D182
             // added read as noise on a capsule that is meant to sit still. Silent when nothing plays
             // (D131), with reduced motion, or with the theme's glow off.
-            let bass = clamp((lv0 + lv1 + lv2) / 2.1, 0, 1)
-            let live = if(pill_still, 0, bass * st_glow)
+            // D191: ArchEclipse's PillSpectrum in its default look (mirror, 45 % of the capsule, 55 %): the
+            // song's bands rise from the capsule's foot behind what it shows, the bass in the middle fanning
+            // out to both ends, solid at the edge and fading toward the words. It replaces D187's glow under
+            // the foot: one light, still the sound's, and still silent when nothing plays (D131), with reduced
+            // motion, while the capsule is hidden or has become the board.
+            prop spec_f = 0 ~m.isl
+            follow spec_f = if(mu_playing and not pill_still and not pill_hidden and not pill_vanish and rv.board < 0.02 and (pill_kind < 1.5 or pill_record), 1, 0)
             group {
-                show: not pill_hidden and not pill_vanish and live > 0.02
-                glow: 9, 0.35 * live, fl.phos
-                ellipse { at: px + pw / 2, fl.top + pill_h + 1; radius: max(10, pw / 2); scale: 1, 0.16; color: fl.phos; opacity: 0.2 * live }
+                show: spec_f > 0.01
+                opacity: spec_f * 0.55
+                clip box { from: px, fl.top; size: max(1, pw), pill_h; corner: pill_h / 2 }
+                repeat b in 0..16 {
+                    let k = if(b < 8, 7 - b, b - 8)
+                    let v = clamp(pick(k, lv0, lv1, lv2, lv3, lv4, lv5, lv6, lv7), 0, 1)
+                    let bw = pw / 16
+                    let bh = v * pill_h * 0.45
+                    let fy = fl.top + pill_h
+                    box { from: px + b * bw + 1, fy - bh; size: max(1, bw - 2), bh * 0.55; corner: 1; color: fl.phos; opacity: 0.35 }
+                    box { from: px + b * bw + 1, fy - bh * 0.45; size: max(1, bw - 2), bh * 0.45; corner: 1; color: fl.phos; opacity: 0.95 }
+                }
             }
             // idle: its face (D169) — the time and the workspace it is on, BMO, or the Nexus button;
             // nothing while it is hidden (a sliver the frame draws)
@@ -189,7 +241,7 @@ library Pill {
             }
             // D170: a module's face — its icon and a short reading
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 2.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 2.5 and pill_face < 10.5
                 let fk = pick(pill_face - 3, 6, 3, 2, 12, 0, 13, 8, 2)
                 // D171: icon — just the glyph, centred; brief and full — the glyph and its words
                 PkIcon(fk, if(pill_detail < 0.5, px + pw / 2, px + 20), cy, 15, fl.phos)
@@ -218,6 +270,11 @@ library Pill {
                     group { show: pill_face == 10
                             viz.Spectrum(px + 34, cy - 8, pw - 48, 16, fl.phos, fl.ember) }
                 }
+            }
+            // D191: ArchEclipse's rest face
+            group {
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and not pill_record and pill_face > 10.5
+                GlanceFace(px, pw, cy)
             }
             // D173: the pointer's warmth behind the capsule — nearer is brighter, and never while it is gone
             group {
