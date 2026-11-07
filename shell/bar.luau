@@ -434,11 +434,18 @@ return function(ctx)
     -- D169: pointed at, a hidden Pill comes back for a while
     on("pill_hover", function(v)
         pill_hovering = tonumber(v) == 1
-        if pill_board and pill_board.hover then pill_board.hover(pill_hovering) end     -- D188: the peek
+        -- D198: the peek follows where the mouse really is (pill_over, from cursor.x/y), not this zone's
+        -- hover — the card opening over the capsule took the hover away, folded the card, and opened it
+        -- again under a resting pointer, over and over
         -- D170: BMO notices the pointer (and wakes up)
         if pill_hovering and fact.pill_on and fact.pill_face == 1 then pill_api.touch(); pill_api.react("curious", 900) end
         -- on, or on leaving: 4 s more from now
         note("peek", {})
+    end)
+    -- D198: the mouse over the capsule, or over the peek's card while it shows (the scene measures it from
+    -- the global cursor, so a card opening under a resting pointer does not count as leaving)
+    on("pill_over", function(v)
+        if pill_board and pill_board.hover then pill_board.hover(tonumber(v) == 1) end
     end)
     on("pill_scroll", function(v)
         local d = tonumber(v) or 0

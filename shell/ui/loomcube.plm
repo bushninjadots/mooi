@@ -22,14 +22,16 @@ library LoomCube {
         let cy = sh - 84 - c * 96
         prop yaw = 0 ~m.isl
         // at rest it stands a quarter-turn askew (25°), so two sides and its top show like a solid's
-        follow yaw = 0 - turn * 90 - 25
+        // D198: and leans toward the mouse (up to 14°) as it moves across the screen
+        let lean = clamp((cursor.x - cx) / 420, -1, 1) * 14
+        follow yaw = 0 - turn * 90 - 25 + lean
         prop open_f = 0 ~m.isl
         follow open_f = if(folded, 0, 1)
         let r = 30
         let h = 21
         let sp = 0.47
         let cp = 0.88
-        let hot = z.hover > 0.5
+        let hot = z.hover > 0.5 or abs(cursor.x - cx) + abs(cursor.y - cy) < 70
         // the shadow it casts on the edge below it
         ellipse { at: cx, cy + h * cp + r * sp + 6; radius: r * 1.1; scale: 1, 0.22; color: fl.ground; opacity: 0.45 }
         // the four sides, each drawn only while it faces you (a convex solid needs no sorting)
@@ -70,9 +72,9 @@ library LoomCube {
                line cx + r * sin(ta + 270), cy - h * cp + r * cos(ta + 270) * sp; close }
         // the facing side's content: its first app's initial and its count (once the turn has settled)
         // on the facing side's centre (it stands at -25° once the turn settles)
-        let settled = abs(yaw - (0 - turn * 90 - 25)) < 10
-        let fx = cx + 0.707 * r * sin(-25)
-        let fy = cy + 0.707 * r * cos(-25) * sp
+        let settled = abs(yaw - (0 - turn * 90 - 25 + lean)) < 10
+        let fx = cx + 0.707 * r * sin(lean - 25)
+        let fy = cy + 0.707 * r * cos(lean - 25) * sp
         group {
             show: settled
             text pick(face, i0, i1, i2, i3) { at: fx, fy - 3; anchor: center; size: 16; weight: 800; family: "Exo 2"; color: fl.engrave }
