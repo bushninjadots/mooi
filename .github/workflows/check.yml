@@ -31,4 +31,5 @@ jobs:
         run: |
           python3 tools/gen-settings.py
           python3 tools/gen-frame.py
+          python3 tools/gen-sigil.py
           git diff --exit-code -- shell tools

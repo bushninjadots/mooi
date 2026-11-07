@@ -153,6 +153,9 @@ scene Mooi {
     fact m_github = true
     fact fi_github = 0
     fact g_github = false
+    fact m_sigil = true
+    fact fi_sigil = 0
+    fact g_sigil = false
     fact helix_frame = true   // bar.helix_frame
     fact media_mode = 0       // media.mode · 0 full · 1 compact · 2 art · 3 viz
     fact media_idle = 0       // media.idle · 0 collapse · 1 keep · 2 hide
