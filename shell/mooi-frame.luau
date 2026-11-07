@@ -164,6 +164,12 @@ local function place()
             fact["pk" .. i] = 0
         end
     end
+    -- D188: the Pill's capsule, where its board starts growing from (and goes back into)
+    local gp = type(geo_doc) == "table" and type(geo_doc.pill) == "table" and geo_doc.pill or nil
+    if gp and tonumber(gp.x) and tonumber(gp.w) then
+        fact.pp_x, fact.pp_w = tonumber(gp.x), tonumber(gp.w)
+        fact.pp_y, fact.pp_h = look.top or 0, tonumber(gp.h) or look.mod_h or 24
+    end
     fact.covL = chassis.covers(pieces, look, "left")
     fact.covR = chassis.covers(pieces, look, "right")
     fact.pfoot = chassis.foot(look)

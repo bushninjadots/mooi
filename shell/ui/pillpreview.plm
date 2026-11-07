@@ -1,0 +1,257 @@
+language 0.9
+
+// D174: the Pill's page in Settings, as pictures rather than words. The stage shows the Pill the
+// choices actually make (at twice its size); each shape and each resting form is its own card with a
+// diagram, a name and a check when it is the one. Everything reads the window's own facts
+// (sv_pill_*), so a press shows at once; the palette stands in for the song's colours on the record.
+
+library PillPreview {
+    // The stage: the bar's band, the Pill resting on it (attached) or under it (floating), the dot or the
+    // record, its resting form (stay, tuck, vanish), the pointer's warmth, and the ping's half disc.
+    component SPillStage(y: number) {
+        size: 864, 188
+        let x = 274
+        let w = 864
+        let cx = x + w / 2
+        let warm = sv_pill_warmth / 100
+        let shape = sv_pill_shape
+        let hide = sv_pill_hide
+        let tucked = hide > 0.5 and hide < 1.5
+        let gone = hide > 1.5
+        box { from: x, y; size: w, 188; corner: 6; color: fl.ground }
+        box { from: x, y; size: w, 188; corner: 6; stroke: 1; color: fl.steel_700 }
+        text "THE PILL AS YOU HAVE IT" { at: x + 16, y + 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+        text "POINTED AT, IT PEEKS; PRESSED, IT BECOMES THE BOARD; ITS EDGE FLASHES ON A CHANGE" { at: x + w - 16, y + 17; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 560; lines: 1; align: right }
+        // the frame's band, and the desktop's line under it
+        line { from: cx - 220, y + 56; to: cx + 220, y + 56; width: 1.4; color: fl.trace_lit; opacity: 0.8; show: shape < 1.5 and not gone }
+        line { from: x + 40, y + 120; to: x + w - 40, y + 120; width: 1; color: fl.trace_dim; opacity: 0.5 }
+        // the warmth behind it: nearer the pointer is brighter (pill.warmth sets how much)
+        group {
+            show: not gone and warm > 0.02
+            glow: 18, (0.55 * warm) * st_glow, fl.phos
+            ellipse { at: cx, y + 84; radius: 44; color: fl.phos; opacity: 0.04 + 0.1 * warm }
+        }
+        // attached (touching the band) or floating (a little air)
+        group {
+            show: shape < 1.5 and not tucked and not gone
+            let cy = if(shape < 0.5, y + 80, y + 88)
+            box { from: cx - 160, cy - 24; size: 320, 48; corner: 8; color: fl.hull_raised }
+            box { from: cx - 160, cy - 24; size: 320, 48; corner: 8; stroke: 1.2; color: fl.trace_lit }
+            ellipse { at: cx - 122, cy; radius: 5; color: fl.phos }
+            text "14:20" { at: cx - 92, cy; anchor: left center; size: 20; weight: 700; family: "Exo 2"; color: fl.engrave }
+            text "· 3" { at: cx + 6, cy; anchor: left center; size: 14; family: "Share Tech Mono"; color: fl.phos }
+            text "THE PILL" { at: cx + 58, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.muted; show: sv_pill_detail < 1.5 }
+            text "FRIDAY 7 NOV" { at: cx + 58, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.muted; show: sv_pill_detail > 1.5 }
+        }
+        // the dot
+        group {
+            show: shape > 1.5 and shape < 2.5 and not tucked and not gone
+            glow: 8, 0.5 * st_glow, fl.phos
+            ellipse { at: cx, y + 84; radius: 26; stroke: 1.2; color: fl.phos; opacity: 0.35 }
+            ellipse { at: cx, y + 84; radius: 9; color: fl.phos }
+        }
+        // tucked away: the sliver, or the dot
+        group {
+            show: tucked
+            box { from: cx - 44, y + 56; size: 88, 48; corner: 6; color: fl.hull_raised; show: shape < 1.5 }
+            box { from: cx - 44, y + 56; size: 88, 48; corner: 6; stroke: 1; color: fl.trace_lit; show: shape < 1.5 }
+            ellipse { at: cx, y + 84; radius: 14; color: fl.phos; show: shape > 1.5 }
+            ellipse { at: cx, y + 84; radius: 14; stroke: 1.2; color: fl.phos; opacity: 0.45; show: shape > 1.5 }
+            text "A SLIVER (OR ITS DOT) UNTIL YOU POINT AT IT" { at: cx + 62, y + 84; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: shape < 1.5 }
+        }
+        // vanished: a faint seam and a dot keep its place
+        group {
+            show: gone
+            line { from: cx - 20, y + 84; to: cx + 20, y + 84; width: 1.4; color: fl.trace_lit }
+            ellipse { at: cx, y + 84; radius: 2; color: fl.phos; opacity: 0.7 }
+            text "GONE — THE SEAM STAYS TO POINT AT" { at: cx + 40, y + 84; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        }
+        // D188: the flash — the capsule's own edge lit, breathing slowly here so it can be seen
+        group {
+            show: sv_pill_ping > 0.5 and shape < 1.5 and not gone and not tucked
+            let cy = if(shape < 0.5, y + 80, y + 88)
+            box { from: cx - 161, cy - 25; size: 322, 50; corner: 9; stroke: 2; color: fl.phos; opacity: 0.35 + 0.35 * sin(sp_ang) }
+        }
+        // what it is: the words that decide it, and the two effects' own readings
+        text pick(round(min(shape, 2)), "ATTACHED", "FLOATING", "THE DOT") { at: cx, y + 146; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.phos }
+        text pick(round(hide), "STAYS WHEN IDLE", "TUCKS AWAY WHEN IDLE", "VANISHES WHEN IDLE") { at: cx, y + 164; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        text "{sv_pill_warmth, 0}% WARMTH" { at: x + 16, y + 168; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+        text "FLASH ON" { at: x + w - 16, y + 168; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.phos; show: sv_pill_ping > 0.5 }
+        text "FLASH OFF" { at: x + w - 16, y + 168; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.steel_500; show: sv_pill_ping < 0.5 }
+    }
+
+    // D180, D188 · the desk as the settings make it: the opened vial, its edge, its surface, its tint and
+    // glow, each tile that is on at its own size, packed as lib/deskgrid packs them (a wide tile takes its
+    // row; an off one takes nothing), scaled down to fit when the tiles need more than two rows. A picture
+    // only: the rows under it are the controls (D188 — one control for each thing, not two).
+    component SDeskCell(x: number, y: number, w: number, label: text, tone: color, gl: number, form: number, surface: number) {
+        size: w, 76
+        group {
+            glow: gl, 0.45, tone
+            box { from: x, y; size: w, 76; corner: 8; color: mix(fl.well, fl.hull_raised, 0.3 * surface); opacity: if(form > 0.5, 0.22, 0.9) }
+            box { from: x, y; size: w, 76; corner: 8; stroke: 1; color: mix(fl.trace_dim, tone, 0.35) }
+        }
+        box { from: x + 14, y + 14; size: max(20, w - 28), 8; corner: 4; color: fl.ground }
+        box { from: x + 14, y + 14; size: max(20, w - 28) * 0.62, 8; corner: 4; color: tone }
+        box { from: x + 14, y + 30; size: max(20, w - 28) * 0.9, 4; corner: 2; color: mix(fl.well, tone, 0.4) }
+        box { from: x + 14, y + 40; size: max(20, w - 28) * 0.5, 4; corner: 2; color: mix(fl.well, tone, 0.25) }
+        text label { at: x + 14, y + 62; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: tone }
+    }
+
+    component SDeskStage(y: number) {
+        size: 864, 196
+        let x = 274
+        let oy = y + 34
+        let tone = pick(sv_pill_desk_tint, fl.phos, fl.ember, fl.engrave)
+        let gl = pick(sv_pill_desk_glow, 0, 5, 11) * st_glow
+        // each tile: on (its size is not Off, 2) and wide (1)
+        let o0 = sv_pill_desk_clock_size < 1.5
+        let o1 = sv_pill_desk_playing_size < 1.5
+        let o2 = sv_pill_desk_diagnostics_size < 1.5
+        let o3 = sv_pill_desk_calendar_size < 1.5
+        let d0 = o0 and sv_pill_desk_clock_size > 0.5
+        let d1 = o1 and sv_pill_desk_playing_size > 0.5
+        let d2 = o2 and sv_pill_desk_diagnostics_size > 0.5
+        let d3 = o3 and sv_pill_desk_calendar_size > 0.5
+        // the packing: (r, u) is the row and the column used in it before each tile
+        let q0 = 0
+        let c0 = 0
+        let p0 = q0 + if(d0 and c0 > 0, 1, 0)
+        let k0 = if(d0, 0, c0)
+        let q1 = if(not o0, q0, if(d0, p0 + 1, if(c0 > 0, q0 + 1, q0)))
+        let c1 = if(not o0, c0, if(d0, 0, if(c0 > 0, 0, 1)))
+        let p1 = q1 + if(d1 and c1 > 0, 1, 0)
+        let k1 = if(d1, 0, c1)
+        let q2 = if(not o1, q1, if(d1, p1 + 1, if(c1 > 0, q1 + 1, q1)))
+        let c2 = if(not o1, c1, if(d1, 0, if(c1 > 0, 0, 1)))
+        let p2 = q2 + if(d2 and c2 > 0, 1, 0)
+        let k2 = if(d2, 0, c2)
+        let q3 = if(not o2, q2, if(d2, p2 + 1, if(c2 > 0, q2 + 1, q2)))
+        let c3 = if(not o2, c2, if(d2, 0, if(c2 > 0, 0, 1)))
+        let p3 = q3 + if(d3 and c3 > 0, 1, 0)
+        let k3 = if(d3, 0, c3)
+        let q4 = if(not o3, q3, if(d3, p3 + 1, if(c3 > 0, q3 + 1, q3)))
+        let c4 = if(not o3, c3, if(d3, 0, if(c3 > 0, 0, 1)))
+        let rows = q4 + if(c4 > 0, 1, 0)
+        let fit = min(1, 2 / max(1, rows))
+        let bx = x + 6
+        let none = not (o0 or o1 or o2 or o3)
+        text "THE DESK AS YOU HAVE IT" { at: x + 16, y + 17; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+        text pick(rows > 1.5, "1 ROW", "2 ROWS") { at: x + 610, y + 17; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: not none and rows < 2.5 }
+        text "{rows, 0} ROWS · SHOWN SMALLER" { at: x + 610, y + 17; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: rows > 2.5 }
+        box { from: bx - 6, oy - 8; size: 620, 180; corner: 10; color: fl.ground; opacity: 0.6 }
+        box { from: bx - 6, oy - 8; size: 620, 180; corner: 10; stroke: 1; color: fl.steel_700 }
+        text "EVERY TILE IS OFF — THE BOARD SHOWS THE TIME AND THE WEEK" { at: bx + 304, oy + 82; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: none }
+        group {
+            show: sv_pill_desk_form > 0.5 and not none
+            box { from: bx - 6, oy - 8; size: 620, 81; corner: 40; color: mix(fl.well, fl.hull_raised, 0.5); opacity: 0.7 }
+            box { from: bx - 6, oy + 93; size: 620, 79; corner: 40; color: mix(fl.well, fl.hull_raised, 0.5); opacity: 0.7 }
+            box { from: bx - 6, oy - 8; size: 620, 81; corner: 40; stroke: 1; color: mix(fl.trace_dim, tone, 0.45) }
+            box { from: bx - 6, oy + 93; size: 620, 79; corner: 40; stroke: 1; color: mix(fl.trace_dim, tone, 0.45) }
+            line { from: bx + 10, oy + 87; to: bx + 610, oy + 87; width: 1; color: tone; opacity: 0.4 }
+        }
+        group {
+            pivot: bx, oy
+            scale: fit
+            group { show: o0
+                    SDeskCell(bx + k0 * 304, oy + p0 * 84, if(d0, 600, 296), "THE TIME", tone, gl, sv_pill_desk_form, sv_pill_desk_surface) }
+            group { show: o1
+                    SDeskCell(bx + k1 * 304, oy + p1 * 84, if(d1, 600, 296), "THE SONG", tone, gl, sv_pill_desk_form, sv_pill_desk_surface) }
+            group { show: o2
+                    SDeskCell(bx + k2 * 304, oy + p2 * 84, if(d2, 600, 296), "THE MACHINE", tone, gl, sv_pill_desk_form, sv_pill_desk_surface) }
+            group { show: o3
+                    SDeskCell(bx + k3 * 304, oy + p3 * 84, if(d3, 600, 296), "THE WEEK", tone, gl, sv_pill_desk_form, sv_pill_desk_surface) }
+        }
+    }
+
+    // One shape, drawn: joined to the band, hovering under it, a dot until wanted, or a record. The one
+    // that is chosen is filled, edged in the accent, and carries a check — you can see the pick, not just
+    // read it.
+    component SPillShape(x: number, y: number, w: number, label: text, kind: number, on: bool, press: event, n: number, en: bool = true) {
+        size: w, 104
+        let cx = x + 56
+        zone box hit { from: x, y; size: w, 104; corner: 6; cursor: pointer; role: button; selected: on; label: label; active: en }
+        box { from: x, y; size: w, 104; corner: 6; color: mix(fl.hull_raised, fl.well, max(if(on, 0.9, 0), 0.5 * hit.hover)) }
+        box { from: x, y; size: w, 104; corner: 6; stroke: if(on, 2, 1); color: if(on, fl.phos, mix(fl.steel_700, fl.trace_lit, hit.hover)) }
+        group {
+            glow: 8, (if(on, 0.7, 0)) * st_glow, fl.phos
+            box { from: x + 1, y + 1; size: w - 2, 102; corner: 6; stroke: 1; color: fl.phos; opacity: if(on, 0.5, 0) }
+        }
+        group {
+            show: on
+            ellipse { at: x + w - 16, y + 16; radius: 8; color: fl.phos }
+            path { color: fl.ink; move x + w - 20, y + 16; line x + w - 17, y + 19.5; line x + w - 11, y + 12.5; close }
+        }
+        line { from: x + 14, y + 24; to: x + w - 32, y + 24; width: 1.2; color: fl.trace_lit; opacity: 0.8; show: kind < 1.5 }
+        group {
+            show: kind < 0.5
+            box { from: cx, y + 24; size: 84, 28; corner: 5; color: fl.hull_raised }
+            box { from: cx, y + 24; size: 84, 28; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_lit) }
+            text "14:20" { at: cx + 10, y + 38; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave }
+            ellipse { at: cx + 58, y + 38; radius: 2.4; color: fl.phos }
+        }
+        group {
+            show: kind > 0.5 and kind < 1.5
+            box { from: cx, y + 38; size: 84, 28; corner: 5; color: fl.hull_raised }
+            box { from: cx, y + 38; size: 84, 28; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_lit) }
+            text "14:20" { at: cx + 10, y + 52; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave }
+            ellipse { at: cx + 58, y + 52; radius: 2.4; color: fl.phos }
+        }
+        group {
+            show: kind > 1.5 and kind < 2.5
+            ellipse { at: cx + 42, y + 44; radius: 13; stroke: 1; color: fl.trace_lit }
+            ellipse { at: cx + 42, y + 44; radius: 5; color: if(on, fl.phos, fl.trace_lit) }
+        }
+        group {
+            show: kind > 2.5
+            box { from: cx + 2, y + 30; size: 84, 28; corner: 5; color: fl.hull_raised }
+            box { from: cx + 2, y + 30; size: 84, 28; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_lit) }
+            box { from: cx + 8, y + 37; size: 14, 14; corner: 3; color: fl.ember; opacity: 0.8 }
+            text "REC" { at: cx + 28, y + 44; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(on, fl.phos, fl.trace_lit) }
+        }
+        text label { at: x + w / 2, y + 82; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: if(on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
+        text pick(kind, "JOINED TO THE BAND", "HOVERING UNDER IT", "UNTIL IT IS WANTED", "THE COVER IN THE MARK'S PLACE") { at: x + w / 2, y + 96; anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
+        on press hit { emit press(n) }
+    }
+
+    // One resting form, drawn: always there, a sliver (or its dot), or gone with a seam left in its place.
+    component SPillHide(x: number, y: number, w: number, label: text, kind: number, on: bool, press: event, n: number, en: bool = true) {
+        size: w, 104
+        let cx = x + w / 2
+        zone box hit { from: x, y; size: w, 104; corner: 6; cursor: pointer; role: button; selected: on; label: label; active: en }
+        box { from: x, y; size: w, 104; corner: 6; color: mix(fl.hull_raised, fl.well, max(if(on, 0.9, 0), 0.5 * hit.hover)) }
+        box { from: x, y; size: w, 104; corner: 6; stroke: if(on, 2, 1); color: if(on, fl.phos, mix(fl.steel_700, fl.trace_lit, hit.hover)) }
+        group {
+            glow: 8, (if(on, 0.7, 0)) * st_glow, fl.phos
+            box { from: x + 1, y + 1; size: w - 2, 102; corner: 6; stroke: 1; color: fl.phos; opacity: if(on, 0.5, 0) }
+        }
+        group {
+            show: on
+            ellipse { at: x + w - 16, y + 16; radius: 8; color: fl.phos }
+            path { color: fl.ink; move x + w - 20, y + 16; line x + w - 17, y + 19.5; line x + w - 11, y + 12.5; close }
+        }
+        line { from: x + 14, y + 24; to: x + w - 14, y + 24; width: 1.2; color: fl.trace_lit; opacity: 0.8 }
+        group {
+            show: kind < 0.5
+            box { from: cx - 42, y + 32; size: 84, 28; corner: 5; color: fl.hull_raised }
+            box { from: cx - 42, y + 32; size: 84, 28; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_lit) }
+            ellipse { at: cx - 26, y + 46; radius: 2.4; color: fl.phos }
+            text "14:20" { at: cx - 12, y + 46; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave }
+        }
+        group {
+            show: kind > 0.5 and kind < 1.5
+            box { from: cx - 42, y + 32; size: 26, 28; corner: 5; color: fl.hull_raised }
+            box { from: cx - 42, y + 32; size: 26, 28; corner: 5; stroke: 1; color: if(on, fl.phos, fl.trace_lit) }
+            ellipse { at: cx + 8, y + 46; radius: 5; color: fl.phos; opacity: 0.6 }
+            line { from: cx + 22, y + 46; to: cx + 42, y + 46; width: 1; color: fl.trace }
+        }
+        group {
+            show: kind > 1.5
+            line { from: cx - 22, y + 46; to: cx + 22, y + 46; width: 1.4; color: if(on, fl.phos, fl.trace_lit) }
+            ellipse { at: cx, y + 46; radius: 2; color: fl.phos; opacity: 0.7 }
+        }
+        text label { at: cx, y + 82; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: if(on, fl.phos, mix(fl.engrave, fl.trace_lit, hit.hover)) }
+        text pick(kind, "ALWAYS THERE", "A SLIVER, OR ITS DOT", "GONE; A SEAM STAYS") { at: cx, y + 96; anchor: center; size: 8.5; family: "Share Tech Mono"; color: fl.muted }
+        on press hit { emit press(n) }
+    }
+}

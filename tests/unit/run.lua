@@ -4835,7 +4835,7 @@ do
     end)
     test("settings: Shape offers Pill, and the Pill's own fold", function()
         local idx = require("lib/settings_index")
-        local want = { ["With the side groups"] = 1, ["Two at once"] = 1, ["Moons at most"] = 1, ["What may take it"] = 1 }
+        local want = { ["Side groups"] = 1, ["Two at once"] = 1, ["Moons at most"] = 1, ["What may take it"] = 1 }   -- D188 titles
         for _, r in ipairs(idx) do if want[r.title] and r.page == "Bar & Frame" then want[r.title] = nil end end
         eq(next(want), nil, "every Pill row on Bar & Frame")
         local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
@@ -4963,7 +4963,7 @@ do
     end)
     test("settings: the Pill's face, hiding when idle, and Nodes", function()
         local idx = require("lib/settings_index")
-        local want = { ["When nothing is happening"] = 1, ["Hide when idle"] = 1 }
+        local want = { ["Face, wheel and pads"] = 1, ["When idle"] = 1 }   -- D188: the face is chosen on the Pill
         for _, r in ipairs(idx) do if want[r.title] and r.page == "Bar & Frame" then want[r.title] = nil end end
         eq(next(want), nil, "both rows on Bar & Frame")
         local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
@@ -5231,7 +5231,7 @@ do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
     test("the record turns and the song's position comes while the board plays", function()
         local plm = read("shell/mooi.plm")
-        assert(plm:find("follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)", 1, true), "the record turns")
+        assert(plm:find("follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music) or pill_record), 120, 0)", 1, true), "the record turns")
         local ui = read("shell/ui/pillboard.plm")
         assert(ui:find("on change pk_mus_on { emit music_isl(if(pk_mus_on, 3, 2)) }", 1, true), "position updates")
         assert(ui:find("show: pk_viz < 0.5", 1, true) and ui:find("show: pk_viz > 0.5", 1, true), "HALO and RIVER")
@@ -5247,10 +5247,11 @@ section("the Pill board: its logic, run (D170)")
 do
     -- shell/pillboard.luau against stand-ins for Pleamar's globals: events are called by hand
     local function board(settings)
-        local handlers, ran = {}, {}
+        local handlers, ran, timers = {}, {}, {}
         local env = setmetatable({
             on = function(name, fn) handlers[name] = fn end,
             every = function() end,
+            after = function(ms, fn) timers[#timers + 1] = { ms = ms, fn = fn } end,
             run = function(cmd, args) ran[#ran + 1] = table.concat(args or {}, " ") end,
             fact = { open = "none", pk_room = 0, pill_on = true, mu_playing = false, mu_has = false },
             model = {}, text = {},
@@ -5265,9 +5266,27 @@ do
         local api = chunk()({ settings = function() return settings end, save = function() saved = saved + 1 end, pill = P,
                               loom = { recent = function() return { { app = "a", title = "t", ago = "now" } }, 1 end, clear = function() end } })
         return { api = api, h = handlers, fact = env.fact, model = env.model, ran = ran, saves = function() return saved end,
-                 said = said, reacted = reacted, poked = function() return poked end }
+                 said = said, reacted = reacted, poked = function() return poked end,
+                 -- run the timers set so far (Pleamar's `after`), as if their time had passed
+                 tick = function() local t = timers; timers = {}; for _, x in ipairs(t) do x.fn() end; return t end }
     end
     local function S() return { pill = { face = "time", pads = { "volume", "clock", "caffeine", "notes" } } } end
+    test("D189: closing keeps the editor drawn until the body has folded; a reopen is not reset", function()
+        local b = board(S())
+        b.api.press("left", "idle")
+        b.h.pk_edit_cmd(0); eq(b.fact.pk_edit, true)
+        b.tick()
+        b.h["fact:open"]("none")                 -- a press outside, from the scene
+        eq(b.fact.pk_edit, true)                 -- still drawn while it folds
+        local t = b.tick()
+        eq(#t > 0, true); eq(b.fact.pk_edit, false)
+        b.api.press("left", "idle"); b.h.pk_edit_cmd(0)
+        b.h["fact:open"]("none")
+        b.api.press("left", "idle")              -- opened again before the fold's reset ran
+        b.h.pk_edit_cmd(0)                       -- and edited
+        b.tick()                                 -- the stale reset fires: it must not undo that
+        eq(b.fact.open, "board"); eq(b.fact.pk_edit, true); eq(b.fact.pk_peek, false)
+    end)
     test("a left press unfolds the board on Now; BMO says hi", function()
         local b = board(S())
         b.api.press("left", "idle")
@@ -5319,7 +5338,7 @@ do
     end)
     test("the board tells the others when it opens or closes (the scene does not hear the logic's own write)", function()
         local handlers, told = {}, {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end, run = function() end,
             fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
         local P = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
                     touch = function() end, react = function() end, say = function() end, poke = function() end }
@@ -5339,7 +5358,7 @@ do
         local b = board(S())
         b.api.press("left", "idle")
         b.h.pk_scroll(-1); eq(b.fact.pk_room, 1, "down: the next")
-        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 13, "up from Now: round to the last (D171: fourteen rooms)")
+        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 15, "up from Now: round to the last (D178: sixteen rooms)")
     end)
     test("the keyboard walks the pads and presses one", function()
         local b = board(S())
@@ -5354,11 +5373,11 @@ end
 section("the Pill board: Settings and faces (D170)")
 do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
-    test("Settings: the Pill's Closed and Open cards, the pads button, the visualiser", function()
+    test("Settings: one button edits the face, the wheel and the pads on the Pill (D188)", function()
         local plm = read("shell/mooi-settings.plm")
-        assert(plm:find('"Closed"', 1, true) and plm:find('"Open"', 1, true), "two cards")
+        assert(plm:find('"Behaviour"', 1, true) and plm:find('"What it shows"', 1, true), "the cards")
         assert(plm:find("pill_board_edit", 1, true), "Edit on the Pill")
-        assert(plm:find('"Halo", sv_pill_viz == 0', 1, true), "the visualiser")
+        assert(not plm:find('"Halo", sv_pill_viz == 0', 1, true), "the board's music is chosen in the editor, not twice")
         local lua = read("shell/mooi-settings.luau")
         assert(lua:find('emit pill_edit_open', 1, true), "it opens the board in edit")
         assert(read("shell/pillboard.luau"):find('on("pill_edit_open"', 1, true))
@@ -5408,7 +5427,7 @@ do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
     test("review I1: the player quits while Now Playing shows: back to the idle Now", function()
         local handlers = {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end, run = function() end,
             fact = { open = "none", pk_room = 0, pill_on = true, mu_playing = true, mu_has = true }, model = {}, text = {} }, { __index = _G })
         local P = { now = function() return { main = "music", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
                     touch = function() end, react = function() end, say = function() end, poke = function() end }
@@ -5521,7 +5540,8 @@ do
     end)
     test("a turned view rests back to the default after pill.rest, not while pointed at or open", function()
         local bar = read("shell/bar.luau")
-        assert(bar:find("if pill_view and rest > 0 and pill_ms - pill_view_at >= rest * 1000 and not pill_hovering", 1, true))
+        assert(bar:find("if pill_view and pill_idle and not pill_hovering and not open_board", 1, true), "the rest, while idle and away")
+        assert(bar:find("pillmod.view_hold(pill_view, pill_view_at, rest, pill_ms) == nil then", 1, true), "pill.rest, by lib/pill's rule")
         assert(bar:find("face = pill_view or p.face", 1, true), "the face shown is the turned view")
         assert(bar:find("shape = p.shape", 1, true) and bar:find("detail = p.detail", 1, true))
     end)
@@ -5540,9 +5560,13 @@ end
 section("the Pill, round two: faces (D171)")
 do
     local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
-    test("BMO is BMO: his teal body, a D-pad and buttons round the screen", function()
+    test("BMO is a tile in the same capsule, not a Pill of his own", function()
         local ui = read("shell/ui/pill.plm")
-        assert(ui:find("color: #69c7bb", 1, true) and ui:find("color: #f1c94a", 1, true) and ui:find("color: #e9606f", 1, true))
+        assert(ui:find("group { move: px + 6, fl.top + (pill_h - 22) / 2; pivot: 0, 0; scale: 0.65; BmoFace(0, 0) }", 1, true),
+               "his face at the mark's size")
+        assert(not ui:find("color: #69c7bb", 1, true), "no teal body round a taller Pill")
+        local bar = read("shell/bar.luau")
+        assert(bar:find("local tall = false", 1, true), "one height, whatever he shows")
     end)
     test("faces at three details; workspaces as dots, alerts with the newest, the visualiser", function()
         local ui = read("shell/ui/pill.plm")
@@ -5561,9 +5585,401 @@ do
     test("the dot breathes, and has room round it to land on", function()
         local ui = read("shell/ui/pill.plm")
         assert(ui:find("let dotted = pill_hidden and pill_shape > 1.5", 1, true))
-        assert(ui:find("from: if(dotted, px - 10, px)", 1, true))
+        assert(ui:find("if(dotted, px - 10, px)", 1, true))
         local plm = read("shell/mooi.plm")
         assert(plm:find("spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)", 1, true), "only while it is a dot")
+    end)
+end
+
+section("the desk's visual editor, in Settings (D180)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the desk is drawn as the choices make it; the rows under it are its only controls (D188)", function()
+        local gen = read("tools/gen-settings.py")
+        assert(gen:find('("deskstage",)', 1, true), "its row")
+        assert(gen:find("SDeskStage({y + 6})", 1, true), "a picture, no codes of its own")
+        local prev = read("shell/ui/pillpreview.plm")
+        assert(prev:find("component SDeskStage(", 1, true) and prev:find("component SDeskCell(", 1, true))
+        assert(not prev:find("emit set_value", 1, true), "no second set of controls in the picture")
+        assert(prev:find("let fit = min(1, 2 / max(1, rows))", 1, true), "more than two rows are shown smaller, never spilling")
+        assert(gen:find('[("Off", 2), ("Small", 0), ("Wide", 1)]', 1, true), "one Off · Small · Wide per tile")
+        assert(prev:find("show: sv_pill_desk_form > 0.5", 1, true), "the vial drawn")
+        local scene = read("shell/mooi-settings.plm")
+        assert(scene:find("SDeskStage(", 1, true), "in the page")
+    end)
+end
+
+section("the search, the stash and the internet panel (D178)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    local F = require("lib.pillfind")
+    test("the search names the forms, and the best match comes first", function()
+        eq(#F.search(""), 5, "an empty query: what the core has room for")
+        eq(F.search("music")[1].key, "player")
+        eq(F.search("loom")[1].key, "signals")
+        eq(F.search("internet")[1].key, "wifi")
+        eq(F.search("wifi")[1].key, "wifi")
+        eq(F.search("stash")[1].key, "stash")
+        eq(F.search("note")[1].key, "notes")
+        eq(#F.search("zzzz"), 0)
+        eq(#F.search("", 2), 2, "a cap")
+        eq(F.get(0).key, "player")
+        assert(F.search("wifi")[1].room, "Wi-Fi is a room of the board's")
+    end)
+    test("the board grows two rooms, draws them, and reads the radio", function()
+        local PP = require("lib.pillpads")
+        eq(PP.room_index("stash"), 14); eq(PP.room_index("find"), 15)
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("text pk_q = \"\"", 1, true) and plm:find("model pk_finds max 5", 1, true), "the search")
+        assert(plm:find("model pk_nets max 8", 1, true) and plm:find("event pk_find ->", 1, true), "the panel")
+        local board = read("shell/pillboard.luau")
+        assert(board:find('local pillfind = require("lib/pillfind")', 1, true))
+        assert(board:find('on("text:pk_q"', 1, true), "typed in")
+        assert(board:find('pcall(sys.ask, "network")', 1, true), "the networks, read")
+        assert(board:find('on("pk_find"', 1, true), "a press opens it")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("input pk_q {", 1, true), "the field")
+        assert(ui:find("for f in pk_finds {", 1, true) and ui:find("emit pk_find(f.k)", 1, true), "the rows")
+        assert(ui:find("for r in stash {", 1, true) and ui:find("emit stash_open(r.id)", 1, true), "the stash")
+        assert(ui:find("for w in pk_nets {", 1, true) and ui:find("emit sh_net(w.n)", 1, true), "the networks")
+        assert(ui:find('"STASH", "FIND"', 1, true), "named in the header")
+        local conf = read("shell/lib/config.luau")
+        assert(conf:find('{ path = "pill.right"', 1, true), "the right button's choice (D179)")
+        assert(read("shell/lib/setters.luau"):find('"pill.right"', 1, true) and read("tools/gen-settings.py"):find('"Right press"', 1, true), "its setter and page")
+        assert(board:find('local r = pill_settings().right', 1, true), "the choice is read")
+    end)
+end
+
+section("the desk's sizes and its look: the opened vial (D177)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("a wide tile takes its row, and a tile that no longer fits is dropped", function()
+        local dg = require("lib.deskgrid")
+        local wide = dg.place({ "clock", "playing" }, { clock = "wide" })
+        eq(wide[1].w, 600); eq(wide[1].x, 0); eq(wide[1].y, 0)
+        eq(wide[2].y, 84); eq(wide[2].w, 296, "the next tile starts a row")
+        eq(dg.place({ "diagnostics" }, { diagnostics = "wide" })[1].x, 0, "wide leads the row")
+        local two = dg.place({ "clock", "playing", "calendar", "diagnostics" }, { clock = "wide", playing = "wide" })
+        eq(#two, 2, "two wide rows fill the core")
+        eq(two[2].y, 84)
+        eq(dg.place({ "clock", "playing" }, { clock = "wide", playing = "wide" })[2].w, 600, "both wide")
+    end)
+    test("the sizes are the owner's, the form is the vial, and a press goes somewhere", function()
+        local conf = read("shell/lib/config.luau")
+        for _, p in ipairs({ "pill.desk_clock_size", "pill.desk_playing_size", "pill.desk_diagnostics_size",
+                             "pill.desk_calendar_size", "pill.desk_form", "pill.desk_tint", "pill.desk_glow" }) do
+            assert(conf:find('{ path = "' .. p .. '"', 1, true), p)
+        end
+        local set = read("shell/lib/setters.luau")
+        assert(set:find('"pill.desk_form", "pill.desk_tint", "pill.desk_glow"', 1, true), "three setters")
+        local gen = read("tools/gen-settings.py")
+        assert(gen:find('"pill.desk_clock_size", "sv_pill_desk_clock_size", [("Off", 2)', 1, true) and gen:find('["Tiles", "Opened vial"]', 1, true), "their rows")
+        local board = read("shell/pillboard.luau")
+        assert(board:find('sizes[id] = s["desk_" .. id .. "_size"]', 1, true), "a size each")
+        assert(board:find('fact["pk_dk_w" .. i] = t and t.w or 0', 1, true), "published")
+        assert(board:find('fact.pk_dk_form = s.desk_form == "vial" and 1 or 0', 1, true))
+        assert(board:find('on("pk_dk_press"', 1, true), "a press inside one")
+        assert(board:find('run("hyprctl", { "-j", "monitors" }, function(out)', 1, true), "the monitor's real size")
+        assert(board:find('deskprev.cards(wv_rows, wv_at, wv_sw, wv_sh)', 1, true), "used, not 1920")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("component DeskTile(k, x, y, w, h, acc, ink, dim)", 1, true), "sized per tile")
+        assert(ui:find("on press dkz { emit pk_dk_press(k) }", 1, true), "the press")
+        assert(ui:find("glow: dglow, 0.5, tone", 1, true) and ui:find("pick(pk_dk_tint, acc, acc2, ink)", 1, true), "tint and glow")
+        assert(ui:find("show: pk_dk_form > 0.5", 1, true), "the vial's two halves")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("fact pk_dk_w0 = 0", 1, true) and plm:find("fact pk_dk_form = 0", 1, true), "declared")
+        assert(plm:find("event pk_dk_press ->", 1, true))
+    end)
+end
+
+section("the desk as the workspace viewer (D176)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    local D = require("lib.deskprev")
+    local function win(ws, x, y, w, h, cls, title, focus)
+        return { workspace = { id = ws }, at = { x, y }, size = { w, h }, class = cls or "kitty",
+                 title = title or "", focusHistoryID = focus or 1 }
+    end
+    test("the windows are grouped by their workspace, in order, and a card holds eight", function()
+        local rows = D.group({ win(2, 0, 0, 800, 600), win(1, 1920, 0, 640, 480, "firefox", "mooi", 0), win(2, 40, 40, 400, 300) }, 1)
+        eq(#rows, 2)
+        eq(rows[1].id, 1); eq(rows[1].n, 1); eq(rows[1].active, true)
+        eq(rows[2].id, 2); eq(rows[2].n, 2); eq(rows[2].active, false)
+        eq(rows[1].wins[1].class, "firefox"); eq(rows[1].wins[1].focused, true)
+        eq(D.group({ win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10),
+                     win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10),
+                     win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10) })[1].n, 10, "counted")
+        eq(#D.group({ win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10),
+                      win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10),
+                      win(1, 0, 0, 10, 10), win(1, 0, 0, 10, 10) })[1].wins, D.WIN_MAX, "drawn")
+        eq(#D.group({}), 0)
+    end)
+    test("a window sits where it really is in its miniature, and three cards show at once", function()
+        local rows = D.group({ win(1, 960, 540, 960, 540), win(2, 0, 0, 1920, 1080), win(3, 100, 200, 800, 600) })
+        local cards = D.cards(rows, 0, 1920, 1080)
+        eq(#cards, 3, "three workspaces")
+        eq(cards[1].wins[1].nx, 0.5); eq(cards[1].wins[1].ny, 0.5)
+        eq(cards[1].wins[1].nw, 0.5); eq(cards[1].wins[1].nh, 0.5)
+        eq(cards[1].slot, 0); eq(cards[2].slot, 1); eq(cards[2].wins[1].nw, 1)
+        local many = { { id = 1, n = 0, wins = {} }, { id = 2, n = 0, wins = {} }, { id = 3, n = 0, wins = {} }, { id = 4, n = 0, wins = {} } }
+        eq(#D.cards(many, 0, 1920, 1080), 3, "no more than three")
+        eq(D.cards(many, 3, 1920, 1080)[1].id, 2, "the last is never past the end")
+        eq(D.cards({}, 2, 1920, 1080)[1], nil)
+    end)
+    test("the thumbnails are matched by class and title", function()
+        local pics = D.picture({ { class = "firefox", title = "mooi" }, { class = "kitty", title = "shell" } },
+                               { { app = "firefox", title = "mooi", picture = "/tmp/a.png" },
+                                 { app = "kitty", title = "other", picture = "/tmp/b.png" } })
+        eq(pics[1], "/tmp/a.png")
+        eq(pics[2], "")
+        eq(D.picture({}, nil)[1], nil)
+    end)
+    test("the board draws it with the thumbnails service, and the settings own it", function()
+        local conf = read("shell/lib/config.luau")
+        assert(conf:find('{ path = "pill.desk_workspaces"', 1, true))
+        local set = read("shell/lib/setters.luau")
+        assert(set:find('"pill.desk_workspaces"', 1, true), "a setter, appended")
+        local gen = read("tools/gen-settings.py")
+        assert(gen:find('"Live workspaces instead"', 1, true), "its page")
+        local board = read("shell/pillboard.luau")
+        assert(board:find('local deskprev = require("lib/deskprev")', 1, true))
+        assert(board:find('pcall(sys.ask, "thumbnails")', 1, true), "the pictures, read not watched (D169)")
+        assert(board:find('run("hyprctl", { "-j", "clients" }, function(out)', 1, true), "the workspaces")
+        assert(board:find('fact.pk_wv = s.desk_workspaces == true', 1, true), "published")
+        assert(board:find('on("pk_wv_scroll"', 1, true) and board:find('on("pk_wv_go"', 1, true), "the wheel and the press")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("component WvCard(", 1, true), "drawn")
+        assert(ui:find("show: pk_room < 0.5 and not pk_music and pk_wv", 1, true), "only Now, only when chosen")
+        assert(ui:find("and pk_dk_n > 0.5 and not pk_wv", 1, true), "the tiles wait while the viewer shows")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("model pk_prev max 3", 1, true) and plm:find("model pk_wbox max 24", 1, true), "declared")
+        assert(plm:find("event pk_wv_go ->", 1, true) and plm:find("event pk_wv_hover ->", 1, true), "and its events")
+        assert(plm:find("model pk_prev max 3 { id: number; slot: number;", 1, true), "no `index` (the language's)")
+    end)
+end
+
+section("where you left it, and the desk (D175)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("a turned view is kept while it is young, and forgotten after the rest", function()
+        local P = require("lib/pill")
+        eq(P.view_hold(nil, 0, 10, 5000), nil, "no view")
+        eq(P.view_hold("media", 0, 10, 9999), "media", "come back inside the rest: where you left it")
+        eq(P.view_hold("media", 0, 10, 10000), nil, "the rest is up: the default face")
+        eq(P.view_hold("media", 0, 0, 999999), "media", "rest 0 keeps it")
+        local bar = read("shell/bar.luau")
+        assert(bar:find("local pill_idle = not pill_now or pill_now.main == \"idle\"", 1, true), "idle, not busy")
+        assert(bar:find("if pill_view and pill_idle and not pill_idle_was then pill_view_at = pill_ms end", 1, true), "the rest starts again when an activity ends")
+        assert(bar:find("pillmod.view_hold(pill_view, pill_view_at, rest, pill_ms) == nil", 1, true), "the rule is lib/pill's")
+    end)
+    test("the desk: tiles in reading order, two a row, no overlap, a fifth dropped", function()
+        local dg = require("lib.deskgrid")
+        local all = dg.place({ "clock", "playing", "diagnostics", "calendar" })
+        eq(#all, 4)
+        eq(all[1].x, 0); eq(all[1].y, 0); eq(all[1].k, 0)
+        eq(all[2].x, 304); eq(all[2].y, 0); eq(all[2].k, 1)
+        eq(all[3].x, 0); eq(all[3].y, 84); eq(all[3].k, 2)
+        eq(all[4].x, 304); eq(all[4].y, 84); eq(all[4].k, 3)
+        eq(dg.place({ "playing" })[1].id, "playing")
+        local dirty = dg.place({ "clock", "clock", "nope", "playing", "calendar", "diagnostics" })
+        eq(#dirty, 4, "a duplicate, an unknown and the fifth are dropped")
+        eq(#dg.chosen({ clock = true, playing = false, diagnostics = true, calendar = true }), 3, "the switches")
+    end)
+    test("the board draws it, and the settings own it", function()
+        local conf = read("shell/lib/config.luau")
+        for _, p in ipairs({ "pill.desk_clock", "pill.desk_playing", "pill.desk_diagnostics", "pill.desk_calendar", "pill.desk_surface", "pill.desk_border" }) do
+            assert(conf:find('{ path = "' .. p .. '"', 1, true), p)
+        end
+        local board = read("shell/pillboard.luau")
+        assert(board:find('local deskgrid = require("lib/deskgrid")', 1, true))
+        assert(board:find("fact.pk_dk_n = #tiles", 1, true) and board:find('fact["pk_dk_t" .. i] = t and t.k or -1', 1, true), "the tiles, and where")
+        local ui = read("shell/ui/pillboard.plm")
+        assert(ui:find("component DeskTile(", 1, true), "drawn once")
+        assert(ui:find("show: pk_room < 0.5 and not pk_music and pk_dk_n > 0.5", 1, true), "only Now, only with tiles")
+        assert(ui:find("show: pk_room < 0.5 and not pk_music and pk_dk_n < 0.5", 1, true), "the old clock waits when the desk is empty")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("fact pk_dk_n = 0", 1, true) and plm:find("fact pk_dk_surface = 0", 1, true), "declared")
+        local gen = read("tools/gen-settings.py")
+        assert(gen:find('"pill.desk_clock", "pill.desk_playing"', 1, true), "the setters, appended")
+        assert(gen:find('("choice", "The time",', 1, true) and gen:find('("card", "The desk")', 1, true), "their page (D188: one choice each)")
+    end)
+end
+
+section("the Pill's settings, one control for each thing (D188)")
+do
+    local config = require("lib/config")
+    test("a tile switched off keeps being off; the record reads as the attached capsule", function()
+        local t = config.validate({ pill = { desk_clock = false, desk_clock_size = "wide", shape = "record" } })
+        eq(t.pill.desk_clock_size, "off", "the old switch becomes the size")
+        eq(t.pill.shape, "attached", "no record shape")
+    end)
+    test("the peek is a setting, on unless switched off", function()
+        local found
+        for _, e in ipairs(config.SCHEMA or {}) do if e.path == "pill.peek" then found = e end end
+        assert(found and found.default == true, "pill.peek, default on")
+    end)
+end
+
+section("the Pill's page: pictures, not words (D174)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("settings: a warmth and a ping, appended after the hiding choice", function()
+        local cfg = read("shell/lib/config.luau")
+        assert(cfg:find('{ path = "pill.warmth", kind = "integer", default = 55, min = 0, max = 100 }', 1, true), "the warmth")
+        assert(cfg:find('{ path = "pill.ping", kind = "boolean", default = true }', 1, true), "the ping")
+        local setters = require("lib/setters")
+        local at = nil
+        for i, p in ipairs(setters.SETTERS) do if p == "pill.warmth" then at = i end end
+        assert(at and setters.SETTERS[at + 1] == "pill.ping", "the pair, in order, after everything")
+        local gen = read("tools/gen-settings.py")
+        assert(gen:find('"pill.warmth", "pill.ping",', 1, true), "the generator's copy, in the same place")
+    end)
+    test("the bar hands them over; the Pill obeys them", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("fact.pill_warm = (tonumber(p.warmth) or 55) / 100", 1, true), "the warmth, a number")
+        assert(bar:find("fact.pill_ping = p.ping ~= false", 1, true), "the ping, on unless off")
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("* pill_warm", 1, true), "the warmth scales the nearness")
+        assert(ui:find("not pill_vanish and pill_ping and pill_turn_f > 0.02", 1, true), "and can be turned off")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("fact pill_warm = 0.55", 1, true) and plm:find("fact pill_ping = true", 1, true), "declared")
+    end)
+    test("the page shows it: a stage, and a card for every shape and form", function()
+        local gen = read("tools/gen-settings.py")
+        assert(gen:find('import "ui/pillpreview.plm"', 1, true), "the preview library is imported")
+        assert(gen:find('if k == "pillstage":', 1, true) and gen:find('if k == "pillshapes":', 1, true)
+               and gen:find('if k == "pillhide":', 1, true), "the three rows")
+        local plm = read("shell/mooi-settings.plm")
+        assert(plm:find("SPillStage(", 1, true), "the stage")
+        assert(plm:find("SPillShape(", 1, true) and plm:find("SPillHide(", 1, true), "the cards")
+        local lib = read("shell/ui/pillpreview.plm")
+        assert(lib:find("component SPillStage", 1, true) and lib:find("component SPillShape", 1, true)
+               and lib:find("component SPillHide", 1, true), "drawn in one place")
+        assert(lib:find("ellipse { at: x + w - 16, y + 16; radius: 8; color: fl.phos }", 1, true), "a check on the chosen one")
+        assert(plm:find("spin sp_ang by if(sv_pill_ping > 0.5, 70, 0)", 1, true), "the stage's ping turns")
+    end)
+end
+
+section("the Pill feels the pointer, and turns with the workspaces (D173)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the pointer's warmth: brighter as it comes near, and the dot leans toward it", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("let near = clamp(1 - (abs(pointer.x - cx) + abs(pointer.y - cy)) / 190, 0, 1) * pill_warm", 1, true), "nearness, as pill.warmth scales it")
+        assert(ui:find("let lean = clamp((pointer.x - cx) / 70, -1, 1) * 2.5 * near", 1, true), "the lean")
+        assert(ui:find("ellipse { at: px + pw / 2 + lean, fl.cy; radius: 3;", 1, true), "the dot moves, not the mark")
+        assert(ui:find("glow: 9, (0.5 * near) * st_glow, fl.phos", 1, true), "the warmth, on the theme's glow")
+    end)
+    test("the edge flash replaces the half disc: one switch, one effect (D188)", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(not ui:find("rotate: pill_turn_ang * 1deg", 1, true), "no turning half disc")
+        assert(ui:find("stroke: 2; color: fl.phos; opacity: pill_turn_f", 1, true), "the capsule's edge lights and fades")
+        local plm = read("shell/mooi.plm")
+        assert(not plm:find("spin pill_turn_ang", 1, true), "nothing spins")
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if not fact.dnd_now then pill_flare() end", 1, true), "a notice flashes it, not while do not disturb")
+    end)
+    test("a workspace change and a turned view both turn it, and a newer turn wins", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("local function pill_flare()", 1, true), "one turn for both")
+        assert(bar:find("local row = tonumber(fact.active_row)", 1, true), "the workspace the bar reads")
+        assert(bar:find("if seq == pill_turn_seq then fact.pill_turn = 0 end", 1, true), "the newer flare is not cut short")
+        local _, n = bar:gsub("pill_flare", "")
+        assert(n >= 4, "the definition, the tick and both view turns (" .. n .. ")")
+    end)
+end
+
+section("the Pill when idle: stay, tuck, vanish — and the record (D172)")
+do
+    local P = require("lib/pill")
+    local chassis = require("lib/chassis")
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("settings: hiding is a three-way choice; the old switch keeps its answer", function()
+        local d = config.defaults()
+        eq(d.pill.hide, "stay")
+        local s, pr = config.validate({ pill = { hide = "vanish" } })
+        eq(#pr, 0); eq(s.pill.hide, "vanish")
+        local bad, p2 = config.validate({ pill = { hide = "poof" } })
+        eq(#p2, 1); eq(bad.pill.hide, "stay", "refused: the default")
+        eq(config.validate({ pill = { autohide = true } }).pill.hide, "tuck", "the old switch, read as tuck")
+        eq(config.validate({ pill = { autohide = true, hide = "stay" } }).pill.hide, "stay", "the choice wins")
+        local setters = require("lib/setters")
+        local seen = false
+        for _, q in ipairs(setters.SETTERS) do if q == "pill.hide" then seen = true end end
+        assert(seen, "the setter is appended")
+    end)
+    test("hide_mode: the choice, else the old switch's answer", function()
+        eq(P.hide_mode({ hide = "stay" }), "stay")
+        eq(P.hide_mode({ hide = "tuck" }), "tuck")
+        eq(P.hide_mode({ hide = "vanish" }), "vanish")
+        eq(P.hide_mode({ autohide = true }), "tuck", "a file written before the choice")
+        eq(P.hide_mode({}), "stay", "nothing asked: it stays")
+        eq(P.hide_mode(nil), "stay", "no config at all")
+    end)
+    test("vanish: idle and gone (0 px), back on a point or a call, and away again", function()
+        local st = P.state()
+        local v = P.compute(st, { face = "time", hide = "vanish" }, 0)
+        eq(v.hidden, true); eq(v.vanish, true); eq(v.width, 0)
+        local stay = P.compute(st, { face = "time", hide = "stay" }, 0)
+        eq(stay.hidden, false); eq(stay.width, 120)
+        eq(P.compute(st, { face = "time", hide = "tuck" }, 0).width, P.SLIVER)
+        P.note(st, "peek", {}, 1000)
+        local back = P.compute(st, { face = "time", hide = "vanish" }, 2000)
+        eq(back.hidden, false); eq(back.vanish, false); eq(back.width, 120, "called or pointed at")
+        eq(P.compute(st, { face = "time", hide = "vanish" }, 5100).vanish, true, "and away again")
+        P.note(st, "media", { playing = true, title = "Song" }, 6000)
+        eq(P.compute(st, { face = "time", hide = "vanish" }, 6000).hidden, false, "something happening: back")
+    end)
+    test("the record: the same capsule; tucking still makes it a dot", function()
+        local st = P.state()
+        local idle = P.compute(st, { face = "time" }, 0)
+        local r = P.compute(st, { face = "time", shape = "record", disc = 26 }, 0)
+        eq(r.record, false, "nothing to play: the capsule keeps its face")
+        eq(r.width, idle.width, "and its width")
+        local ch = read("shell/lib/chassis.luau")
+        assert(ch:find("D187: the record is the same capsule", 1, true), "its plate is the capsule's")
+        assert(not ch:find("the record — a disc", 1, true), "no disc plate behind it")
+        local dot = P.compute(st, { face = "time", shape = "record", hide = "tuck" }, 0)
+        eq(dot.hidden, true); eq(dot.width, P.DOT, "tucked: the dot, not a sliver")
+        eq(dot.record, false, "hidden: not the record")
+        eq(P.compute(st, { face = "time", shape = "record", hide = "vanish" }, 0).width, 0)
+        P.note(st, "media", { playing = true, title = "Song" }, 100)
+        local rec = P.compute(st, { face = "time", shape = "record", disc = 26 }, 100)
+        eq(rec.record, true, "playing: the record")
+        eq(rec.width, P.compute(st, { face = "time", shape = "record" }, 100).width,
+           "the cover takes the mark's place, not the Pill's")
+        local nm = P.note(st, "notify", { app = "app", summary = "one" }, 200)
+        assert(nm == nil)
+        eq(P.compute(st, { face = "time", shape = "record", disc = 26 }, 200).record, true, "a signal: still the record")
+    end)
+    test("hex_rgb: a colour, or nothing", function()
+        local r, g, b = P.hex_rgb("#FF8000")
+        eq(math.floor(r * 255 + 0.5), 255); eq(math.floor(g * 255 + 0.5), 128); eq(b, 0)
+        eq(P.hex_rgb("dragon"), nil); eq(P.hex_rgb(nil), nil); eq(P.hex_rgb("#ff800"), nil)
+    end)
+    test("the chassis draws the record as the same capsule, not a disc", function()
+        local L = { mode = "pill", band = true, top = 8, mod_h = 24, radius = 7, screen_w = 1920, band_w = 2, frame_r = 14, reach = 16 }
+        local d = chassis.pieces({ islands = {}, pill = { x = 948, w = 24, shape = "record" }, moons = {} }, L)[1]
+        eq(d.w, 24); eq(d.h, 72); eq(d.r, 12); eq(d.j, true); eq(d.y, -40, "the attached capsule's plate")
+        local free = { mode = "pill", band = false, top = 8, mod_h = 24, radius = 7, screen_w = 1920, band_w = 2, frame_r = 14, reach = 16 }
+        local f = chassis.pieces({ islands = {}, pill = { x = 948, w = 24, shape = "record" }, moons = {} }, free)[1]
+        eq(f.w, 24); eq(f.h, 24); eq(f.r, 12); eq(f.j, false); eq(f.y, 8, "a floating capsule's")
+        local tuck = chassis.pieces({ islands = {}, pill = { x = 953, w = 14, slim = true, shape = "record" }, moons = {} }, L)[1]
+        eq(tuck.w, 14); eq(tuck.h, 14); eq(tuck.r, 7)
+    end)
+    test("the bar, the scene and the disc carry it", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("hide = p.hide", 1, true), "the hiding choice reaches compute")
+        assert(bar:find("fact.pill_vanish = r.vanish == true", 1, true))
+        assert(bar:find("fact.pill_record = r.record == true", 1, true))
+        assert(bar:find('run("matugen"', 1, true) and bar:find("pillmod.hex_rgb", 1, true), "the song's own colours")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("fact pill_vanish = false", 1, true) and plm:find("fact pill_record = false", 1, true))
+        assert(plm:find("fact pc1_r", 1, true) and plm:find("or pill_record", 1, true), "declared, and it turns")
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("show: vanished", 1, true), "the seam")
+        assert(ui:find("show: pill_record", 1, true) and ui:find("component Record", 1, true), "the disc")
+        assert(ui:find("if(pill_record, px - 8", 1, true), "its zone")
     end)
 end
 
@@ -5573,7 +5989,7 @@ do
     local PP = require("lib/pillpads")
     local function board(settings, files)
         local handlers, ran = {}, {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end,
             run = function(cmd, args, cb) ran[#ran + 1] = cmd .. " " .. table.concat(args or {}, " "); if cb then cb("", 0) end end,
             sys = { ask = function(what, name) return files and files[name] or nil end, call = function() end },
             json = { decode = function(t) return t end },
@@ -5585,7 +6001,7 @@ do
         return { api = api, h = handlers, fact = env.fact, text = env.text, ran = ran }
     end
     test("five new rooms, reached by the wheel; workspaces and wallpaper pads open theirs", function()
-        eq(#PP.ROOMS, 14)
+        eq(#PP.ROOMS, 16)
         for _, r in ipairs({ "visualiser", "actions", "diagnostics", "workspaces", "wallpaper" }) do assert(PP.room_index(r), r) end
         eq(PP.get("workspaces").room, "workspaces"); eq(PP.get("wallpaper").room, "wallpaper")
     end)
@@ -5599,7 +6015,7 @@ do
     end)
     test("a press means the view showing: turned to weather on the Nexus face, it opens the Weather room, not the Nexus", function()
         local handlers = {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end, run = function() end,
             fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
         local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
                      face = function() return "weather" end,
@@ -5628,7 +6044,7 @@ do
     test("the board tells the islands' readers its room (fact:pk_room is not heard for the logic's write)", function()
         local told = {}
         local handlers = {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end, run = function() end,
             fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
         local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
                      touch = function() end, react = function() end, say = function() end, poke = function() end }
@@ -5654,7 +6070,7 @@ do
     test("edit: a face's toggle puts it in the wheel's views or takes it out, saved", function()
         local st = { pill = { views = { "time", "weather" } } }
         local handlers = {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end, run = function() end,
             fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
         local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
                      touch = function() end, react = function() end, say = function() end, poke = function() end }
@@ -5725,7 +6141,7 @@ do
     end)
     test("review I4: Super twice opens the board (never the Nexus), or closes it", function()
         local handlers = {}
-        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, after = function() end, run = function() end,
             fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
         local poked = 0
         local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return true end,
@@ -5762,6 +6178,233 @@ do
         assert(not sh:find('hyprctl dispatch workspace "e', 1, true), "bin/mooi's wheel fallback")
         local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
         assert(hl:find('match = { class = "^(mooi%-drop)$" }', 1, false) or hl:find('match = { class = "^(mooi-drop)$" }', 1, true), "the drop terminal's rule")
+    end)
+end
+
+section("the Pill is alive: it follows the sound and says when it changes (D181)")
+do
+    local P = require("lib/pill")
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("a signature: what it shows, in one string", function()
+        local st = P.state()
+        local idle = P.compute(st, { face = "time" }, 0)
+        eq(P.signature(idle, 0), P.signature(idle, 0), "the same reading twice")
+        eq(P.signature(nil, 0), "", "nothing to sign")
+        assert(P.signature(idle, 0) ~= P.signature(idle, 1), "the face is part of it")
+        local music = P.state()
+        P.note(music, "media", { playing = true, title = "Song", artist = "Band" }, 0)
+        local m = P.compute(music, { face = "time" }, 0)
+        assert(P.signature(m, 0) ~= P.signature(idle, 0), "music playing")
+        local other = P.state()
+        P.note(other, "media", { playing = true, title = "Tune", artist = "Band" }, 0)
+        assert(P.signature(P.compute(other, { face = "time" }, 0), 0) ~= P.signature(m, 0),
+               "a new title of the same length is a new reading")
+        local split = P.state()
+        P.note(split, "media", { playing = true, title = "Song", artist = "Band" }, 0)
+        P.note(split, "notify", { app = "app", summary = "hi" }, 0)
+        local sp = P.compute(split, { face = "time", multi = "split" }, 0)
+        assert(sp.split ~= nil, "a split")
+        assert(P.signature(sp, 0) ~= P.signature(m, 0), "the split is part of it")
+        local hid = P.compute(P.state(), { face = "time", hide = "tuck" }, 0)
+        assert(P.signature(hid, 0) ~= P.signature(idle, 0), "hidden is not shown")
+    end)
+    test("the bar raises it on a change and lets it settle; the scene eases it back", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("local sig = pillmod.signature(r, fi)", 1, true), "the reading, from lib/pill")
+        assert(bar:find("if pill_sig and (sig ~= pill_sig or gst ~= pill_gst) then", 1, true), "only a change surges")
+        assert(bar:find("fact.pill_swap = 1", 1, true), "raised")
+        assert(bar:find("if seq == pill_swap_seq then fact.pill_swap = 0 end", 1, true), "settled, the newer one winning")
+        assert(bar:find("pill_sig, pill_gst = nil, nil", 1, true), "leaving Pill mode forgets it, so coming back surges")
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("fact pill_swap = 0", 1, true), "declared")
+        assert(plm:find("prop pill_swap_f = 0 ~m.isl_out", 1, true), "on the island's spring out")
+        assert(plm:find("follow pill_swap_f = pill_swap", 1, true), "eased, never snapped")
+        local ui = read("shell/ui/pill.plm")
+        assert(not ui:find("pill_swap_f", 1, true), "D187: the capsule itself does nothing on a change")
+    end)
+    test("the aura follows the sound, and is silent when nothing plays", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("let bass = clamp((lv0 + lv1 + lv2) / 2.1, 0, 1)", 1, true), "the same bands the visualiser reads")
+        assert(ui:find("let live = if(pill_still, 0, bass * st_glow)", 1, true), "reduced motion and the glow's setting both silence it")
+        assert(ui:find("show: not pill_hidden and not pill_vanish and live > 0.02", 1, true), "only while it has a body to light")
+        assert(ui:find("ellipse { at: px + pw / 2, fl.top + pill_h + 1", 1, true), "under its foot, where a light belongs")
+        assert(not ui:find("fl.top + 1.5", 1, true), "no hairline over its top")
+    end)
+end
+
+section("the Pill arrives, and the board pours out of it (D182, D183)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("nothing lifts, dims, sweeps or flashes: the capsule sits still", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(not ui:find("3 * pill_swap_f", 1, true), "no lift")
+        assert(not ui:find("1 - 0.35 * pill_swap_f", 1, true), "no dim")
+        assert(not ui:find("1 - pill_swap_f", 1, true), "no sweep band")
+        assert(not ui:find("pill_swap_f", 1, true), "D187: the scene does not read the surge at all")
+    end)
+    test("every activity is the same capsule, in the same layout", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("component Half(x: number, w: number, g: number, t1: text, t2: text, v: number)", 1, true), "one layout")
+        assert(ui:find("let cover = med_has_art and (g > 0.5 and g < 1.5 or g > 4.5)", 1, true), "the cover takes the mark's place")
+        assert(ui:find("text \"{t1}{? · {t2}}\" { at: x + 34, cy", 1, true), "one line, one left edge, whatever it is")
+        assert(ui:find("Half(px, pw, 5, pill_t1, pill_t2, 0)", 1, true), "the record is the same capsule")
+        assert(not ui:find("Record(px + pw / 2", 1, true), "no disc replaces it")
+        assert(not ui:find("#69c7bb", 1, true), "BMO no longer paints a body round a different Pill")
+    end)
+    test("one body: the board is the capsule stretched, not a plate with shoulders (D188)", function()
+        local bd = read("shell/ui/pillboard.plm")
+        assert(not bd:find("curve bx + 1, btop via nkx - 4", 1, true), "D186's shoulders are gone")
+        assert(bd:find("let btop = fl.top", 1, true), "its top is the capsule's top")
+        assert(bd:find("mg: mg, msx: ms_x - bx, msw: ms_w, msh: ms_h", 1, true), "it grows from the start box")
+        assert(bd:find("let ms_x = if(pk_sw > 0, clamp(pcx - pk_sw / 2, 8, screen.width - pk_sw - 8), pill_x)", 1, true),
+               "from the capsule, or from the size it had")
+        local isl = read("shell/ui/island.plm")
+        assert(isl:find("let mw = msw + (w - msw) * max(0, mg)", 1, true), "the morph is not clamped at 1: it overshoots")
+        assert(isl:find("on change want while want and ch and not mo", 1, true), "a morph tells the frame itself")
+        local fr = read("shell/mooi-frame.plm")
+        assert(fr:find("let pl_g = if(pl_on, clamp(pl_qm - (pl_n - 1), 0, 1.3), pl_c)", 1, true), "the frame runs the same spring")
+        assert(fr:find("let pl_s_x = if(pl_re, pl_sx, pp_x)", 1, true), "and closes back into the capsule")
+        local pill = read("shell/ui/pill.plm")
+        assert(pill:find("opacity: 1 - smooth(0, 0.2, rv.board)", 1, true), "the capsule's face makes way")
+    end)
+    test("the board takes the size of what it shows (D188)", function()
+        local P = require("lib/pill")
+        local w, h, c = P.board_size(0, false, false)
+        eq(w, 640); eq(h, 312); eq(c, 160)
+        w, h, c = P.board_size(2, false, false)
+        eq(h, 312); eq(c, 160)                   -- D189: sound's outputs reach 154, it keeps 160
+        w, h, c = P.board_size(10, false, false)
+        eq(h, 34 + 144 + 118); eq(c, 144)
+        w, h = P.board_size(2, false, true)
+        eq(w, P.PEEK_W); eq(h, P.PEEK_H)
+        w, h = P.board_size(2, true, true)
+        eq(w, P.EDIT_W); eq(h, P.EDIT_H)
+        w, h, c = P.board_size("nonsense", false, false)
+        eq(h, 312); eq(c, 160)
+    end)
+    test("every room's core fits a 160 drawing or is listed with its own (D189)", function()
+        local P = require("lib/pill")
+        for r, core in pairs(P.CORE) do
+            assert(r >= 0 and r < 16, "a room by index")
+            assert(core >= 144 and core <= 160, "room " .. r .. " cut below its drawing: " .. core)
+        end
+    end)
+    test("a close keeps the peek's card and the editor until the body has folded (D189)", function()
+        local f = io.open("shell/pillboard.luau"); local src = f:read("a"); f:close()
+        local close = src:match("local function close%(%)(.-)\n    end")
+        assert(close and not close:find("pk_peek", 1, true), "close() does not clear the peek at once")
+        assert(src:find("if v ~= \"board\" then fact.pk_sw, fact.pk_sh = 0, 0; fold.later() end", 1, true),
+               "a close the logic makes resets them later")
+        assert(src:find("after(pillmod.FOLD_MS", 1, true), "after the fold")
+        assert(src:find("if mine ~= fold.seq or opened == \"board\" then return end", 1, true),
+               "unless the board opened again")
+        assert(src:find("fact.pk_peek = peek == true", 1, true), "an opening says whether it is the peek")
+        assert(src:find("open_board(\"now\", true, true)", 1, true), "the peek opens as the peek")
+        local P = require("lib/pill")
+        assert(P.FOLD_MS >= 250 and P.FOLD_MS <= 600, "longer than the closing springs, short enough to reopen")
+    end)
+end
+
+section("a change is read, a counter stepping is not (D184)")
+do
+    local P = require("lib/pill")
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("a view that counts up is not a new reading", function()
+        local rec = P.state()
+        P.note(rec, "recording", { on = true }, 0)
+        local a = P.compute(rec, { face = "time" }, 1000)
+        local b = P.compute(rec, { face = "time" }, 2000)
+        eq(a.main, "record", "recording is showing")
+        assert(a.view.record.t1 ~= b.view.record.t1, "the clock moves")
+        eq(P.signature(a, 0), P.signature(b, 0), "but it is the same reading, so no surge a second")
+        eq(P.gesture(a, 0), P.gesture(b, 0), "and the same shape")
+        local osd = P.state()
+        P.note(osd, "osd", { kind = "vol", value = 0.4 }, 0)
+        local o1 = P.compute(osd, { face = "time" }, 0)
+        P.note(osd, "osd", { kind = "vol", value = 0.45 }, 0)
+        local o2 = P.compute(osd, { face = "time" }, 0)
+        eq(o1.main, "osd", "the volume is showing")
+        eq(P.signature(o1, 0), P.signature(o2, 0), "a notch of the wheel is not news")
+        eq(o1.width, o2.width, "nor a resize")
+        P.note(osd, "osd", { kind = "bri", value = 0.5 }, 0)
+        assert(P.gesture(P.compute(osd, { face = "time" }, 0), 0) ~= P.gesture(o2, 0), "turning to brightness is")
+    end)
+    test("the battery's percent steps without a surge, plugging in is a change", function()
+        local st = P.state()
+        P.note(st, "battery", { percent = 10, charging = false }, 0)
+        local a = P.compute(st, { face = "time" }, 0)
+        eq(a.main, "battery", "low enough to show")
+        P.note(st, "battery", { percent = 9, charging = false }, 0)
+        local b = P.compute(st, { face = "time" }, 0)
+        eq(P.signature(a, 0), P.signature(b, 0), "a percent step is the same reading")
+        eq(P.gesture(a, 0), P.gesture(b, 0), "and the same shape")
+        eq(a.width, b.width, "and it does not resize the capsule")
+        P.note(st, "battery", { percent = 5, charging = false }, 0)
+        eq(P.compute(st, { face = "time" }, 0).width, a.width, "measured by its longest form, not by its luck")
+        P.note(st, "battery", { percent = 9, charging = true }, 0)
+        local c = P.compute(st, { face = "time" }, 0)
+        assert(P.gesture(c, 0) ~= P.gesture(b, 0), "plugging in turns the mark: a whole surge")
+    end)
+    test("new words on the same face are a ripple; a new shape is a surge", function()
+        local st = P.state()
+        P.note(st, "media", { playing = true, title = "Song", artist = "Band" }, 0)
+        local a = P.compute(st, { face = "time" }, 0)
+        P.note(st, "media", { playing = true, title = "Another", artist = "Band" }, 0)
+        local b = P.compute(st, { face = "time" }, 0)
+        assert(P.signature(a, 0) ~= P.signature(b, 0), "a new song is a new reading")
+        eq(P.gesture(a, 0), P.gesture(b, 0), "but the same shape: the bar ripples")
+        local n = P.state()
+        P.note(n, "media", { playing = true, title = "Song", artist = "Band" }, 0)
+        P.note(n, "notify", { app = "app", summary = "hi" }, 0)
+        local s = P.compute(n, { face = "time", multi = "split" }, 0)
+        assert(s.split ~= nil, "a notice beside the music splits the Pill")
+        assert(P.gesture(s, 0) ~= P.gesture(a, 0), "its shape changed: the bar surges")
+    end)
+    test("the bar grades it: whole for a new shape, a ripple for new words", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("local gst = pillmod.gesture(r, fi)", 1, true), "the shape, from lib/pill")
+        assert(bar:find("if gst ~= pill_gst then", 1, true), "the shape is what makes it whole")
+        assert(bar:find("fact.pill_swap = 0.55", 1, true), "new words only ripple")
+        assert(bar:find("pill_sig, pill_gst = nil, nil", 1, true), "leaving Pill mode forgets both")
+        local lib = read("shell/lib/pill.luau")
+        assert(lib:find("if v.steady then return tostring(v.glyph or \"\") end", 1, true), "a counter is signed by its mark")
+        assert(lib:find("return { glyph = \"record\", t1 = \"REC \" .. clock(now - (st.rec_since or now)), steady = true, chars = 9 }", 1, true),
+               "the record's clock")
+    end)
+end
+
+section("the Pill's audit: moons, quiet, grooves, and the board's look (D185, D186)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("a moon slides out of the capsule and back in instead of popping", function()
+        local plm = read("shell/mooi.plm")
+        local ui = read("shell/ui/pill.plm")
+        assert(plm:find("follow moon_f0 = if(moon_k0 > -0.5, 1, 0)", 1, true), "eased by the moon's own presence")
+        assert(ui:find("show: moon_f0 > 0.02", 1, true), "shown while it has any body")
+        assert(ui:find("move: (1 - moon_f0) * 8, 0", 1, true), "sliding out to the left")
+        assert(ui:find("move: (1 - moon_f1) * -8, 0", 1, true), "and the other way on the right")
+        assert(ui:find("Mark(moon_x0 + 12, cy, max(0, moon_k0))", 1, true), "fading as a mark that is valid at any moment")
+    end)
+    test("do not disturb quiets the Pill too", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if fact.dnd_now then off.notify = true end", 1, true), "a notice does not take it")
+        assert(bar:find("if fact.dnd_now then fact.pill_swap = 0.4 end", 1, true), "and nothing surges hard")
+        assert(bar:find("if fact.dnd_now then fact.pill_swap = 0.3 end", 1, true), "a ripple is quieter still")
+    end)
+    test("the recording is a capsule with its clock, not a disc", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("Half(px, pw, 5, pill_t1, pill_t2, 0)", 1, true), "the same layout, the record's own mark")
+        local lib = read("shell/lib/pill.luau")
+        assert(not lib:find("local dw = tonumber(cfg.disc)", 1, true), "and it no longer resizes the Pill to a disc")
+    end)
+    test("the board's look is the bar's material with a wash and an edge of its own", function()
+        local bd = read("shell/ui/pillboard.plm")
+        assert(bd:find("group { show: pk_tint > 0.5", 1, true), "the wash, or none")
+        assert(bd:find("color: if(pk_tint > 1.5, acc, fl.phos); opacity: 0.12", 1, true), "the theme's own light")
+        assert(bd:find("show: rv.board > 0.02 and pk_edge > 0.5 and pk_edge < 1.5", 1, true), "the edge, hairline or none")
+        local cfg = read("shell/lib/config.luau")
+        assert(cfg:find("pill.board_tint", 1, true) and cfg:find("pill.board_edge", 1, true), "both are choices")
+        assert(cfg:find("The plate under it is the bar's own material", 1, true), "the comment says where the material comes from")
     end)
 end
 

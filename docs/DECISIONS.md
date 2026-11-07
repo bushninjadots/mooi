@@ -4919,3 +4919,422 @@ G4); the summaries follow the commit messages._
   own writes, so rooms opened on the board had no data and a closed board kept its plate. The theme
   watch lost a mode changed while Matugen ran (it took the settings read after the recolour as done).
 - Spec: docs/superpowers/specs/2026-11-07-pill-round-two-design.md (stage 1 of 4).
+
+## D172 · 2026-11-07 · The Pill when idle: stay, tuck, vanish; the record
+
+- **Hiding is a choice of three** (`pill.hide`), stage 2's first slice:
+  - `stay` — always there (the default, and what `pill.autohide` off meant);
+  - `tuck` — a 44 px sliver, or the 14 px dot with `pill.shape = dot` (what `autohide` meant); back on a
+    point, the wheel, a call or anything happening;
+  - `vanish` — gone: 0 px wide, no chassis piece; an 18 px faint seam with a dot keeps its place on the
+    bar, to point at and press, and the wheel and `mooi pill` still bring it back.
+- `pill.autohide` is still read (append-only settings): a file that had it on, with no `pill.hide`, is read
+  as `tuck`; a written choice is never overridden by the switch left beside it. Settings → The Pill's
+  switch is the three-way choice now.
+- **The record** (`pill.shape = record`, the owner's idea the same day): the closed Pill is a disc as tall
+  as the bar, the song's cover for its label, turning while it plays (`mu_ang`), a ring of the sixteen
+  bands round it, and the colours are **the song's own**: `shell/bar.luau` reads the cover with Matugen
+  (a dry run, once per cover, cached, as the player does) into nine colour facts; the palette's phosphor,
+  ember and trace stand in until it has been read. Reduced motion (`pill_still`) stops the turn. Idle with
+  `tuck`, it tucks to the dot; `vanish` takes it away as any Pill. There is no record beside a split.
+- Found on the way: the vanishing seam is drawn by the bar's scene, not the chassis — a 0 px Pill has no
+  piece, and the frame would otherwise have to pour a mark it does not own.
+- Spec: docs/superpowers/specs/2026-11-07-pill-round-two-design.md §3 (stage 2, first slice); the plan for
+  the rest (many pills wherever the owner wants, connections and motion, the Venom-like morph) is
+  docs/superpowers/plans/2026-11-07-pill-many.md.
+
+## D173 · 2026-11-07 · The Pill feels the pointer, and turns with the workspaces
+
+- **Warmth**: `near` is the pointer's Manhattan distance from the Pill's centre over 190 px, clamped to
+  0 … 1; a soft glow behind the capsule (and over the dot) scales with it and with the theme's `st_glow`.
+  Hidden and the record have none: a vanished Pill must not glow at nothing.
+- **The dot leans** up to 2.5 px toward the pointer (`clamp((pointer.x - cx) / 70, -1, 1)`, scaled by
+  `near`) — the two ellipses move, the seam in the chassis does not, so it never wanders off its place.
+  It is the dot only: the capsule's text stays put to read.
+- **A half disc turns once** when the workspace changes, or when the wheel (Super + wheel too) turns the
+  Pill's view: `shell/bar.luau`'s `pill_flare` sets `fact.pill_turn` for 650 ms; the scene's `pill_turn_ang`
+  spins at 900°/s and `pill_turn_f` fades it in and out; a newer turn restarts the hold rather than having
+  an old one cut it short. The bar reads `fact.active_row` (mooi.luau's own workspace watch, the same
+  fact its switchers use) on its quarter-second tick — the first read is where it already is, so nothing
+  turns at start-up.
+- **Reduced motion** (`pill_still`) stops the spin; the fade still lands, so the state reads without it.
+  Lite needs nothing: `st_glow` is already 0 there.
+- Spec: docs/superpowers/specs/2026-11-07-pill-round-two-design.md §2 (revision, the owner's ask); plan:
+  docs/superpowers/plans/2026-11-07-pill-many.md task 3 (the first slice of it is done), and task 2b for
+  the owner's other ask the same day — the board's first card made a desk.
+
+## D174 · 2026-11-07 · The Pill's own page: a stage, pictures for every shape and form, and two effects
+
+- **The page is pictures now**, not rows of words (the owner: "good ui/ux, visual customization"):
+  - **the stage** (`ui/pillpreview.plm`, `SPillStage`) draws the Pill at twice its size as the choices
+    make it — the band it joins, attached or floating, the dot, the record with the cover for a label,
+    the sliver, the dot a record tucks to, the seam when it vanishes — with the chosen detail's words,
+    the warmth's glow and the ping's half disc turning;
+  - **the shape and resting-form cards** (`SPillShape`, `SPillHide`) each hold a diagram, a name, a line
+    saying what it means, and — the chosen one — a filled accent edge, a tint and **a check in its
+    corner**: selection is visible, not inferred from a label's colour.
+- **Two settings, appended** (`pill.warmth` 0–100, default 55; `pill.ping`, default on): how much the
+  Pill feels the pointer (the warmth and the dot's lean; 0 is blind) and whether it pings — the half disc
+  and the glow — on a workspace change or a turned view. `shell/bar.luau` hands them to the scene as
+  `fact.pill_warm` and `fact.pill_ping`; the spin and the half disc are gated by both reduced motion and
+  the ping.
+- The old rows for "Shape" and "When idle" are gone from the list (their cards say more); the revert
+  arrows, Reset and search index still know both settings. The rest of the page is regrouped: At a
+  glance · Shape · When idle · Reactive · Closed (side groups, two at once, moons, detail, rest) · Open.
+- The generator stays the only source: `tools/gen-settings.py` grows the row kinds and imports the
+  preview library, and the settings scene gets one prop for the stage's ping. Everything regenerates
+  byte for byte (checked).
+
+## D175 · 2026-11-07 · Wake where you left it; the desk's first slice
+
+- **Where you left it** (the owner: leaving tucks it, coming back should find it where it was unless time
+  has passed, and it should still react): a turned view is kept, and the rest only counts **while the Pill
+  is idle** — music, a notice or a recording takes the face for as long as it lasts, and when it is over
+  the view returns with the rest starting again. After `pill.rest` it is the default face (rest 0: kept
+  for good), and it stays reactive throughout — the warmth, the ping and any activity. The rule is
+  `lib/pill.view_hold` (pure, tested); `shell/bar.luau` uses it and remembers whether the Pill was idle.
+- **The desk** (plan task 2b, slice 1): the board's first card, Now at rest, is a grid of tiles.
+  `lib/deskgrid` (pure) places them in reading order, two a row (296 × 76, an 8 px gap), dropping
+  duplicates, unknown tiles and a fifth: the time (the clock, the date, the week), the song (the cover,
+  its title, how far it has come), the machine (processor, memory, temperature), the week (seven days,
+  today lit). `pill.desk_clock` / `_playing` / `_diagnostics` / `_calendar` switch them (all on);
+  `pill.desk_surface` (plate · glass · tether) and `pill.desk_border` (hairline · cut · none) give the
+  card its own look. `shell/pillboard.luau` publishes `pk_dk_*`; `ui/pillboard.plm`'s `DeskTile` draws it;
+  with every tile off, the old clock and week strip are back, so nothing is lost by turning them off.
+  Six setters appended (the codes after `pill.ping` do not move).
+- Not yet, the rest of task 2b: a size and a free order per tile, presses inside a tile (the player, the
+  Resources room), the activity and profile tiles, the desk's own backdrop and tint, and a full-screen
+  way in.
+
+## D176 · 2026-11-07 · The desk's workspace viewer: live miniatures
+
+- The owner asked that the workspace viewer in the desk **show live previews of the workspaces**, with
+  hovering to go through the choice (the interaction the wallpapers' orbit already has: the wheel turns
+  it, the picture under the pointer is the one).
+- `lib/deskprev` (pure, tested): Hyprland's clients grouped by workspace (sorted, counted, eight windows
+  a card at most), each window placed as a share of the screen so it sits where it really is in its
+  miniature, and the pictures the `thumbnails` service lends matched by class and title (as the notch
+  does).
+- `pill.desk_workspaces` (off by default) gives the desk's card to the viewer instead of the tiles:
+  three cards at once (`pk_prev`), each with its windows (`pk_wbox`) drawn **live** where a picture is
+  there and as a raised rectangle where not; `on enter` chooses a card (`pk_wv_hover`), the wheel turns
+  the strip (`pk_wv_scroll`), a press goes to that workspace and closes the board (`pk_wv_go`).
+  `shell/pillboard.luau` reads `hyprctl -j clients`, asks `thumbnails.want`, and refreshes while it
+  shows — a **read, not a watch** (only Loom watches, D169). One setter appended (`pill.desk_workspaces`),
+  so every code after `pill.desk_border` stays put and the generator is byte-identical.
+- Limits: the logic is not told the monitor's size, so positions are scaled to a 1920 × 1080 screen; a
+  card shows the windows the compositor reports (a window dragged to another workspace moves next
+  refresh); pictures appear only where the service has already made them, and the viewer has not been
+  seen live.
+
+## D177 · 2026-11-07 · The desk's sizes, its presses, its look: the owner's opened vial
+
+- The owner: “do all suggested, for desk mode no — it's an opened pill vial that will have whatever
+  icons, design I want. where are the visual customizations”. So there is **no full-screen desk mode**:
+  the desk **is** the opened vial, and its look is settings, not code.
+- **Sizes**: each tile has its own `pill.desk_*_size` (`small` · `wide`); a wide tile takes its whole
+  row, and a tile that no longer fits the core is dropped (`lib/deskgrid.place(ids, sizes)`, pure,
+  tested). `ui/pillboard.plm`'s `DeskTile(k, x, y, w, h, …)` draws each at the size it is given, its
+  contents laid out to that width; `pk_dk_w*`/`pk_dk_h*` publish it.
+- **Presses inside a tile**: a zone per tile sends `pk_dk_press(k)` — the time opens the calendar, the
+  song the player, the machine the Resources room, the week the board's month.
+- **Its look**, in Settings → The Pill → The desk: `pill.desk_form` (tiles · opened vial: the Pill's
+  capsule parted with a lit seam), `pill.desk_tint` (the wallpaper's colours · the accent's · the ink's)
+  and `pill.desk_glow` (none · soft · bright, a halo on each tile). With the existing surface and edge
+  that is six visual choices and four sizes, all live — and the answer to where the customizations are.
+- **The viewer's true scale**: `shell/pillboard.luau` reads `hyprctl -j monitors` for the focused
+  monitor's size instead of assuming 1920 × 1080, so a window sits where it really is.
+- Limits: the vial is the capsule drawn around the grid, not yet a physical object that opens; a free
+  (dragged) order per tile and the owner's own icons inside the vial are the next slice. None of it has
+  been seen live.
+
+## D178 · 2026-11-07 · The Pill's search, its stash, and the internet panel
+
+- The owner: the search box should open the forms from the Pill (the player, Loom's signals, notes, the
+  stash), the Pill should have its own stash box like the left edge's, be livelier, and have a Wi-Fi /
+  internet control panel.
+- **The search** is a room of the board's (`find`): `lib/pillfind` (pure, tested) is the catalogue of
+  forms — the player, Signals, Notes, Stash, Wi-Fi, the month, workspaces, Diagnostics, Resources, the
+  Overview, Settings — each a room of the board's or an act; `M.search` ranks a name that starts with
+  what is typed, then one that holds it, then the reading and the other names ("internet" finds Wi-Fi,
+  "loom" finds Signals). `ui/pillboard.plm` draws an `input` (`text pk_q`, so the logic hears
+  `text:pk_q`), the core has five rows (`pk_finds`), a press sends `pk_find` and the logic opens the form.
+- **The stash** is its own room (`stash`): the same `model stash` the left edge's box fills, drawn in the
+  core — a press `stash_open`, a right press `stash_del`, the same events, so it is the same stash and
+  not a second one.
+- **The internet panel** is the Connections room rewritten: the radio's state and strength, Wi-Fi on/off,
+  Bluetooth beside it, and the networks in reach (read from the `network` service with `sys.ask`, not
+  watched — only Loom watches, D169) — signal bars, SECURE/OPEN, JOINED/SAVED/JOIN — a press joins
+  (`sh_net n`, the event that already existed). It refreshes every 2 s while it shows.
+- Both rooms are appended (`ROOMS`: `stash` 14, `find` 15), so no earlier room number moves; the header
+  names them; the wheel counts them.
+- Limits: the search has no Enter-to-open (a press opens a row); the stash's rows are those the box last
+  published; none of it has been seen live.
+
+## D179 · 2026-11-07 · The right button is the owner's choice
+
+- The owner asked for a setting for what a right press does, chosen from Settings. `pill.right`
+  (Calendar · Board · Notes · Settings · Nothing; Calendar is the old behaviour and stays the default)
+  is read before the press table in `shell/pillboard.luau`'s `press`, so a right press opens the board,
+  the quick notes, Settings, does nothing, or falls through to the calendar the Pill always opened.
+- One setter appended after `pill.desk_glow` (`pill.right`), with its row on The Pill's page under **Its
+  buttons**. Nothing before it moves; the generator is byte-identical on a second run.
+
+## D180 · 2026-11-07 · The desk's visual editor
+
+- The owner: “where the fuck is the visual editor”. There was none — the desk's look was rows of choices
+  with no picture. Now **Settings → The Pill → The desk** opens with the desk drawn: `SDeskStage` (in
+  `ui/pillpreview.plm`) draws the opened vial, the edge, the surface, the tint and the glow, and each tile
+  at its own size, **packed as `lib/deskgrid` packs it** (a wide tile takes its row). A press on a tile
+  flips it between a cell and the row (`set_value` on that tile's size); the chips under it walk the
+  form, the tint and the glow. Everything reads the window's `sv_pill_desk_*` facts, so a press shows at
+  once — the look is chosen by looking at it.
+- The generator gained the `deskstage` row kind (it emits `SDeskStage(y, …codes)`), placed as the first
+  row of **The desk** card; the rows that follow still set the same settings.
+- Limits: it edits the look and the tiles' sizes, not their order or which ones are on (those are the
+  rows below it); and it has not been seen live.
+
+## D181 · 2026-11-07 · The Pill is alive: it follows the sound, and says when it changes
+
+- The owner: “make my dynamic pill more dyanmic reactive change and imrpove it allot”. Two things were
+  missing. It never **said** that something changed — a new song, a notice, a face turned all swapped
+  in one frame — and it was deaf to the sound it was playing.
+- **A surge on a change.** `lib/pill` gains `signature(r, face)`: what the Pill shows as one string —
+  the activity, its face, a split and its moons, hidden/vanish/record, its width and its words. The bar
+  keeps the last one and, when the next differs, raises `fact.pill_swap` for 240 ms; a newer surge
+  cancels the older one's settle (`pill_swap_seq`), and leaving Pill mode forgets the reading so
+  coming back surges once. The scene eases it (`prop pill_swap_f = 0 ~m.isl_out`, `follow`) and draws
+  the capsule's own rim swelling out from it once, with a flash along its top edge — over the content,
+  so the surge reads on whatever the Pill is showing.
+- **An aura that follows the sound.** A band of light inside the capsule takes the bass from `lv0…lv2`
+  — the same facts the visualiser reads — and its glow and the hairline along the top follow it. It is
+  silent when nothing plays, so an idle Pill still costs no frames (D131); reduced motion (`pill_still`)
+  and the theme's glow (`st_glow`) silence it too, which is why no new setting was needed: a Pill that
+  says nothing when nothing happens is not a new thing to switch off.
+- The pointers warmth, the dot's lean and the half disc that turns with the workspace (D173) are
+  unchanged: the surge sits on top of them, it does not replace them.
+- Checks: unit suite 558/0 (three new), both scenes compile, the generator byte-identical on a second
+  run.
+- Limits: not seen live. A change that keeps both the words and the width identical (the same title
+  reported twice) does not surge; the aura follows the low three bands, not the whole spectrum.
+
+## D182 · 2026-11-07 · The Pill arrives, and is lit — after vitrum
+
+- Asked to translate vitrum's pill into mooi. vitrum has no capsule: its centre is an **island** whose
+  contents cross-fade ("the old contents fade out before the new ones fade in, so two never show over
+  each other"), and its lit glass is `components/Tint.qml` — a band of light crosses a piece once as it
+  turns on, then a light rests under it and drifts with the pointer.
+- **The arrival.** mooi's Pill is one set of facts, so the outgoing face cannot be kept. What is kept is
+  the *effect*: on a change (`pill_swap_f`, D181) the whole Pill **lifts 3 px and dims to 65 %** for the
+  length of the surge and settles back, and a **band of light crosses the capsule once**, left to right,
+  inside its edges, fading as the surge settles. The new face is read arriving, never snapped.
+- **The lit glass.** While an activity is showing (and not hidden, not the record) the capsule carries an
+  **inner hairline just inside its top edge** and a **soft light under its foot** — vitrum's "as if it lit
+  the panel beneath", in mooi's phosphor. Silent when idle, with reduced motion (`pill_still`) or with
+  the theme's glow (`st_glow`) off: an idle Pill still draws nothing extra (D131).
+- Not translated, and why: vitrum's *hover only ever widens* rule (mooi's Pill has no hover-widening to
+  protect), its `press 0.97` scale (the Pill's zone exposes no press value to the scene), the 1.2 s OSD
+  hold and 1.5 s arming (mooi's own timings are 2 s and are unit-tested), and the swipe-to-dismiss
+  notification cards (a notification-panel change of its own, not a Pill one).
+- Checks: both scenes compile, unit 561/0 (three new).
+- Limits: not seen live; the sweep and the lift are one surge, so a change that comes while the last is
+  still settling restarts it rather than queueing.
+
+## D183 · 2026-11-07 · The board pours out of the Pill — vitrum's drop, in the bar's own material
+
+- vitrum's panel is not a plate below its island: one `t` grows a **neck** out of the island, spreads a
+  sheet from the neck's end and pours down, and niri's concave fillets melt the three into one shape; the
+  shell paints its tint along the same path (`lib/drop.js`).
+- mooi already had the right anchor — the board grows from the capsule on `rv.board` (`IslandFrame`) —
+  but it read as a plate under the bar. Now a **neck is drawn from the capsule's foot to the board's top
+  edge**, born at `nkx` (the capsule's x, inset 6) and **flaring into the board on two concave quadratic
+  fillets** (`curve bx + 8, btop via nkx, btop - 3` and its mirror), filled with the bar's hull mixed 6 %
+  toward the accent, with a lit trace down each side. It fades in with the reveal
+  (`smooth(0.04, 0.5, rv.board)`), so the board is seen coming out of the Pill while it opens.
+- It is drawn only when there is room for a neck (`btop > fl.top + pill_h + 2`), so it never inverts when
+  the bar sits low or the board's top is above the capsule's foot.
+- The fillet geometry is the drop's, in mooi's own shape language: no shaped-glass path, no SVG — one
+  filled path in the bar's scene, which is where mooi's board already lives.
+- Checks: scenes compile, unit 561/0.
+- Limits: not seen live. The neck is a straight-sided flare with two fillets, not vitrum's neck+sheet
+  two-stage geometry (the sheet itself is `IslandFrame`'s), and it does not follow the board's width while
+  `pk_edit` changes it mid-open beyond the reveal.
+
+## D184 · 2026-11-07 · The Pill surges when it is told something, not when its number ticks
+
+- Asked to improve what is already there rather than port another vitrum feature. Reading D181 again
+  against the faces it signs showed the fault: `M.signature` carried the words, and three faces word a
+  **counter** — the record's `REC 00:07`, a battery's `Battery 41%`, a volume's `73`. So the capsule
+  lifted, dimmed, flashed and swept **once a second for the whole of a recording**, and on **every notch
+  of the volume wheel**: the surge read as a tic rather than as an event.
+- A view may now be `steady` (`lib/pill`, `words()`): it counts, so the reading is signed by its **mark**
+  instead. Record, battery and the OSD are steady. What changes the mark still counts — plugging in turns
+  `low` into `charging`, so that is news and still surges.
+- The width had the same fault twice over: it measured the counting words, so the capsule itself
+  **resized** on every volume notch and every battery percent — and the width is part of the reading, so it
+  surged too. A steady view now carries `chars`, its longest form (`VOL · 100`, `Battery 100%`,
+  `REC 00:07`), and is measured by that: the capsule holds still while the number moves.
+- The surge is graded as well. `M.gesture` is the reading *without* its words: the activity, the face, a
+  split, its moons, whether it is hidden or the record, and each mark. Changed, the Pill itself changed
+  (an activity began, a notice split it, the record showed, it went away) and `pill_swap = 1` — the whole
+  surge. Unchanged while the signature differs, the same face merely has new words (a new song, a
+  notice's summary, BMO's line) and `pill_swap = 0.55`: the same lift, dim, ring and sweep at a little
+  over half, a ripple. Every effect the scene draws already reads `pill_swap_f`, so the grading needed no
+  new prop and no new setting (D131: an idle Pill still repaints nothing).
+- Checks: unit 565/0 (four new), both scenes compile.
+- Limits: not seen live. A timed activity's own end is a shape change, so a notice going away is a whole
+  surge, not a ripple; a second notice while one shows is the same shape and only ripples.
+
+## D185 · 2026-11-07 · The Pill, audited against the running desktop
+
+- Ran `tests/pill.sh` against the live mooi (54 checks) and read its screenshots, then read every Pill
+  setting against the code that reads it.
+- **The board never opened, and it was not a flake.** The script's own note blamed an open island's
+  dismiss zone; the mooi log shows `pillboard.luau:238: attempt to call a nil value` — `room()` calls
+  `nets_publish()`, which was still a `local function` declared *below* it, so the local was nil at the
+  moment a room opened. It is forward-declared now, as `finds_publish` already was (the same gotcha).
+  Every earlier "board did not stay open" was this crash.
+- **The board's face picker could save a face the config refuses.** It offers all eleven (`VIZ` too), but
+  `pill.face`'s enum stopped at `notifications`: `visualiser` was rejected and silently fell back to the
+  time face — the log said so twice. The enum now carries every face `lib/pill.FACES` has.
+- Four **"hidden when idle" checks failed, and the fault is the test, not the code**: the live
+  settings.json carries `pill.hide = "stay"`, which D172 says wins over the legacy `pill.autohide`. The
+  script was still driving the old switch; it now sets `pill.hide = "tuck"`, as its own D172 section
+  already did. The migration in `lib/config` is intact.
+- Two checks failed on the board not staying open — the flake the script already documents (an open
+  island's dismiss zone covers the screen, so a press elsewhere closes it); it passed in the same run's
+  music section. Left as it is, noted here.
+- **The record's ring reached past the capsule.** At `pill.shape = record` the Pill is as wide as the bar
+  is tall (31 px) and `viz.Ring` drew outward from r + 1.5: the bands spilled over the bar and buried the
+  cover. The disc now keeps its light **inside its own rim** — two hairline grooves that breathe with the
+  bass, the cover inset behind them. The bands are the capsule's aura (D181) and the board's halo, where
+  there is room for them.
+- **Moons popped.** Each of the four now follows its own presence (`moon_f0…3`, `lib`-free: the scene's
+  props): the mark slides out of the capsule 8 px and fades in, and slides back and fades out; an absent
+  moon fades out as its dot rather than snapping away with its kind.
+- **Do not disturb holds the Pill.** While `fact.dnd_now` (Settings → System → Do not disturb) a notice
+  does not take the Pill at all, and nothing surges hard: a whole change is 0.4, new words 0.3. No new
+  setting — DND was already the owner's word for this, and the row now says so.
+- Settings text corrected where it was untrue: the stage said "point at the bar above" (Settings has no
+  bar; the capsule warms as the pointer comes near it, in the bar), and the DND row now says the Pill is
+  not taken by notices either.
+- Checks: 569 unit / 0, both scenes compile, generator deterministic.
+
+## D186 · 2026-11-07 · One body: the capsule stretches into the board
+
+- The owner's correction: "the actual pill is a piece then necks off to connected island — no, it's one
+  organism morphing". D183's neck was a second piece however it was filleted: a run of straight side
+  between the capsule's foot and the board's top edge.
+- **The neck is gone.** The capsule's own sides turn outward the moment they leave its foot and become
+  the board's top edge on two **concave shoulders** — one filled path in `fl.hull`, the material the
+  capsule itself is drawn in (the chassis's pill body), with that hairline carried round the shoulders
+  and nowhere else. No straight run is left: the curve reaches the board's top edge, so there is one
+  silhouette, not two outlines meeting.
+- **The board's look is now its own**, in Settings → The Pill → The board's look: **a wash** over the
+  plate (none, phosphor, or the accent's) and **its edge** (the frame's own, a lit hairline, or none).
+  The plate under them stays the bar's material — its opacity, frost, blur and radius are Bar & Frame's —
+  so the board never disagrees with the bar, and the page says exactly that.
+- Checks: 569 unit / 0 (five new), both scenes compile, generator deterministic.
+- Limits: not yet seen opened live. The shoulders are read from `st_res`, `pill_h` and the board's rect,
+  so a bar pushed far down gives them a different length.
+
+## D187 · 2026-11-07 · One capsule: what it shows changes, it does not
+
+- The owner, on the result: "it still morphs into another fucking pill… it is one, so the next thing
+  takes over and it accommodates it whatever it is… looks horrible and effects suck".
+- Right, and the cause was structural. The Pill was four different **objects**: a teal BMO body round a
+  taller capsule, a disc for the record, an icon-and-bar arrangement for the OSD, a title-and-artist one
+  for music. And on every change it lifted, dimmed, swept a band of light across itself, swelled a ring
+  out of its rim and flashed its own top edge. Four pills and five effects where the owner asked for one.
+- There is now **one layout** (`Half`, `ui/pill.plm`): a mark — or the song's cover in the mark's place —
+  one line of words at one size and one left edge, and for a volume or brightness change a hairline of a
+  track along the capsule's foot instead of a different arrangement. Music, a notice, the OSD, the record
+  and BMO all use it. BMO's face is a 16 px tile, not a body; the record is the capsule with the song's
+  title and the record's mark, and with nothing to play it is not a record at all — the same capsule
+  keeps its face (its plate too: `lib/chassis.luau` drew a disc behind it until now); his taller Pill is
+  gone (`bar.luau`: `tall = false`).
+- **The effects are gone.** No lift, no dim, no sweep band, no surge ring, no top flash, no lit rim, no
+  band of sound inside the capsule. One light remains: a soft glow under the capsule's own foot that
+  follows the bass, silent when nothing plays (D131). The bar still raises and grades `pill_swap`, but
+  nothing in the scene reads it — the capsule does not perform.
+- The width still accommodates what it shows (D184's steady measures keep a counter from resizing it),
+  and the board's shoulders still make it one body (D186).
+- Checks: 569 unit / 0, both scenes compile.
+- Limits: judged from stills, not motion. The volume track along the foot has not been tried on a real
+  wheel, and `shape = dot` / `hide = tuck` are still the owner's choices for a resting Pill.
+
+## D188 · 2026-11-07 · One body that becomes what it shows — after ZenoShell; a new editor; half the settings
+
+- The owner, pointing at ZenoShell (github.com/mohamedmousamm777-eng/ZenoShell): the Pill should morph
+  *itself* into each view, as the subject — not open a panel beside itself. And: "its settings are
+  complicated and confusing … the editing controls are horrible … there are redundancies"; "the edit the
+  pill is horribly done, completely change that ui, ux". They chose all four ideas offered.
+- **ZenoShell's mechanism**, read from `DashIsland.qml`: one `Rectangle` whose width, height and radius
+  animate (OutElastic open, OutBack close) between closed · peek · open; contents are layers cross-fading
+  inside it (old out in ~90 ms, new in after ~150 ms); its only effect is a 650 ms accent border on a
+  workspace change or notice.
+- **The board is the capsule, stretched.** Opening, the board's body starts from the capsule's own box
+  (x, width, height, round = half its height) and springs to the board's, its top the capsule's top; closing,
+  it goes back into the capsule. With the frame on, `mooi-frame` runs it (`pl_from` 1 · capsule, 2 · the size
+  it had; `pp_*` the capsule as lib/chassis places it; `pl_qm` on the new `m.morph` spring, 26/6 (measured: full size at ~285 ms, ~9.7 %
+  over at ~400 ms, settled by ~700 ms; not clamped at 1 while open); the bar's content clip runs the same formula
+  (`IslandFrame` `mg`, `msx/msw/msh/msr`; `pk_mv` following `pk_mn`). The capsule's face fades out in the
+  first fifth of the growth. D186's shoulders are gone — the 30 px blend with the band is the joint.
+- **It takes the size of what it shows.** `lib/pill.board_size(room, edit, peek)` (pure, tested); the logic
+  (`pillboard.luau reshape`) publishes `pk_bw/pk_bh/pk_ch` and a start box, and a new size grows from the
+  old one rather than from the capsule again. The core is as tall as its room (`pk_ch`), the pads ride its
+  foot. Only Sound is shorter so far (128): the other rooms were not all seen, and a room drawn for 160
+  is left at 160 rather than risk clipping it.
+- **The peek** (`pill.peek`, on): the pointer resting 250 ms on the Pill grows it into a 440 × 112 card — the
+  time and date, the song (cover, title, progress) or the weather, three upright levels; a press on it or
+  on the capsule grows it into the board; off the capsule and the card for 300 ms, it folds back.
+- **The edge flash** replaces D173's turning half disc: `pill.ping` is now "Flash on a change", the capsule's
+  edge lit in phosphor and fading, on a workspace change, a turned view, or a notice (not under DND). One
+  switch, one effect.
+- **The editor, redone.** Before: the face, the wheel's views (3 px dots), the pads (a press on a pad *then*
+  a part to replace it), 32 parts and tiny × / ◂ ▸ — one panel, three jobs, over a room still drawn behind
+  it. Now two tabs and a DONE button: **Pads** — eight large slots (an empty one shows +), the chosen slot's
+  ◂ MOVE · MOVE ▸ · REMOVE in words beside it, and the modules below (a press puts it on the chosen slot;
+  filling an empty slot moves on to the next); **Face** — what it shows at rest, the views the wheel turns
+  through (checked chips), the board's music. On a denser backing than the bar's plate so it reads over
+  any window; the room behind it is not drawn.
+- **Settings, one control for each thing.** The face and the board's music are chosen on the Pill (one
+  button), not twice; each desk tile is one Off · Small · Wide (`pill.desk_*_size` gains `off`; a tile the
+  old switch turned off is migrated to `off`); the desk's picture is a picture only — it packs only the tiles
+  that are on and scales to fit (with four wide tiles it used to draw 336 px into a 180 px box) — and its
+  duplicate chips are gone; the record shape is gone (since D187 it was the attached capsule; a file with it
+  reads as attached). The cards are now At a glance, Shape, When idle, Behaviour, What it shows, What may
+  take it, The desk, The board's look.
+- Also fixed on the way: "1 WINDOWS", and the viewer's hint line running into its cards.
+- Checks: unit 572 / 0 (new: the morph's source, `board_size`, the migrations, the flash), BMO 27 / 0,
+  the live-free suites, 13 scenes compile, both generators deterministic. Live: the frame hears an opening
+  in 28–50 ms with `pl_from` 1 and a room change with `pl_from` 2; the bar's spring sampled (overshoot ~8 %
+  at the old 300/21, then slowed); the peek card, the full board, both editor tabs and the page seen.
+- Limits: the slowed spring and the closing have not been watched at full frame rate on the desk; the
+  peek's fold-on-leave was confounded by the owner's own pointer and is unverified live; Sound is the only
+  room with its own height.
+
+## D189 · 2026-11-07 · The dynamic Pill, finished: a clean fold, every room its true height
+
+- The owner: "finish the dynamic pill". D188's open limits were the closing, the peek's fold-on-leave and
+  the rooms' heights; each was checked against the running desktop.
+- **A close swapped the board's contents into a shrinking card.** `pillboard.luau` cleared `pk_peek` and
+  `pk_edit` the instant `open` left `board`, so while the body was still folding back into the capsule the
+  scene drew the full board's header and its 608 px core inside the peek's 440 px card (and the room behind
+  the editor). Now a close keeps what it showed: `fold.later()` resets them after `lib/pill.FOLD_MS` (400 ms,
+  past the closing springs `m.exit` / `m.isl_out`), unless the board opened again in the meantime (a sequence,
+  so a stale reset never undoes a fresh edit). An opening states whether it is the peek
+  (`open_board(name, quiet, peek)`), so nothing depends on the old instant reset.
+- **Sound was cut short.** D188 gave it a 128 px core, but its buttons sit at 120–146 and its outputs reach
+  154: they hung over the pads' traces. Each room was measured from `ui/pillboard.plm` (its lowest mark plus
+  8 px). Only the rooms clearly shorter than 160 are listed: Display 150, Resources 152, Weather 150,
+  Actions 144. The rest keep 160 (a 4 px change would read as a jitter, not a shape).
+- Checks: unit 575 / 0 (new: the fold, behaviourally with Pleamar's `after` stood in, and by source; every
+  listed core between 144 and 160), BMO 27 / 0, 13 scenes compile. Live, by `pleamar --say` only: the peek
+  opened on `pill_hover 1` and folded 300 ms after `pill_hover 0`; the editor stayed drawn mid-close and
+  reset after; a 60 fps recording shows both folds clean — the content leaves, then the body shrinks into
+  the capsule in ~100 ms.
+- Limits: on the last frame of any fold (every island, not only the Pill) the capsule's plate is missing
+  for one frame — `frame_p` stops drawing the strip on the same frame the frame's main surface shows its
+  tile again, and the two surfaces commit separately. Overlapping them would double-draw the translucent
+  band for a few frames, a worse blink; left as it is. The peek was driven by emits, not a real pointer.

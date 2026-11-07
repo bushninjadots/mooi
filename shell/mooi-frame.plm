@@ -246,8 +246,23 @@ scene Frame {
     fact pl_h = 0
     fact pl_tx = 0
     fact pl_r = 14
+    // D188: where the place starts. 0 the module's stub (every island), 1 the Pill's own capsule (its
+    // board: the capsule itself becomes the board), 2 the start box below (the board taking a new size —
+    // a room, the peek, edit — grows from the size it had, not from the capsule again)
+    fact pl_from = 0
+    fact pl_sx = 0
+    fact pl_sy = 0
+    fact pl_sw = 0
+    fact pl_sh = 0
+    // the Pill's capsule as lib/chassis places it (mooi-frame.luau)
+    fact pp_x = 0
+    fact pp_y = 0
+    fact pp_w = 0
+    fact pp_h = 0
     prop pl_q = 0 ~m.isl
     follow pl_q = pl_n
+    prop pl_qm = 0 ~m.morph
+    follow pl_qm = pl_n
     prop pl_c = 0 ~m.isl_out
     follow pl_c = if(pl_on, 1, 0)
     // the Control Nexus's deck (shell/mooi-nexus.luau hands it over): its box on the screen, the edge it grows out of (0 foot · 1 top · 2 left · 3 right), a count
@@ -359,21 +374,36 @@ scene Frame {
     // the place's body as it grows (the same formula as ui/island.plm's content clip, D152): from the
     // module's pill at 55 % on the bar's foot to the island — across on the spring, down on the spring
     // squared (it pours rather than scales), its corners from the pill's to its own
-    let pl_rv = min(clamp(pl_q - (pl_n - 1), 0, 1), pl_c)
+    let pl_rv0 = min(clamp(pl_q - (pl_n - 1), 0, 1), pl_c)
+    // D188: the Pill's board is the capsule stretched — from the capsule's box (or the size it had) to
+    // its own, on a spring that overshoots (it is not clamped at 1 while open); closing, it goes back
+    // into the capsule on the place's closing spring
+    let pl_mo = pl_from > 0.5
+    let pl_g = if(pl_on, clamp(pl_qm - (pl_n - 1), 0, 1.3), pl_c)
+    let pl_g1 = min(pl_g, 1)
+    let pl_re = pl_on and pl_from > 1.5
+    let pl_s_x = if(pl_re, pl_sx, pp_x)
+    let pl_s_y = if(pl_re, pl_sy, pp_y)
+    let pl_s_w = if(pl_re, pl_sw, pp_w)
+    let pl_s_h = if(pl_re, pl_sh, pp_h)
+    let pl_s_r = if(pl_re, pl_r, pp_h / 2)
+    let pl_mw = pl_s_w + (pl_w - pl_s_w) * pl_g
+    let pl_mcx = pl_s_x + pl_s_w / 2 + (pl_x + pl_w / 2 - pl_s_x - pl_s_w / 2) * pl_g1
+    let pl_rv = if(pl_mo, pl_g1, pl_rv0)
     let pl_act = pl_rv > 0.002
     let pl_lag = pl_rv * pl_rv
-    let pl_x0 = pl_tx - 22 * 0.55
-    let pl_y0 = pl_y - 14
-    let pl_bx = pl_x0 + (pl_x - pl_x0) * pl_rv
-    let pl_bw = 44 * 0.55 + (pl_w - 44 * 0.55) * pl_rv
-    let pl_by = pl_y0 + (pl_y - pl_y0) * pl_rv
-    let pl_bh = 12 + (pl_h - 12) * pl_lag
-    let pl_br = min(min(pl_bw, pl_bh) / 2, 6 + (pl_r - 6) * pl_rv)
+    let pl_x0 = if(pl_mo, pl_s_x, pl_tx - 22 * 0.55)
+    let pl_y0 = if(pl_mo, pl_s_y, pl_y - 14)
+    let pl_bx = if(pl_mo, pl_mcx - pl_mw / 2, pl_x0 + (pl_x - pl_x0) * pl_rv)
+    let pl_bw = if(pl_mo, pl_mw, 44 * 0.55 + (pl_w - 44 * 0.55) * pl_rv)
+    let pl_by = if(pl_mo, pl_s_y + (pl_y - pl_s_y) * pl_g1, pl_y0 + (pl_y - pl_y0) * pl_rv)
+    let pl_bh = if(pl_mo, pl_s_h + (pl_h - pl_s_h) * pl_g, 12 + (pl_h - 12) * pl_lag)
+    let pl_br = min(min(pl_bw, pl_bh) / 2, if(pl_mo, pl_s_r + (pl_r - pl_s_r) * pl_g1, 6 + (pl_r - 6) * pl_rv))
     // the stretch of the top strip it crosses (its tiles are drawn by `frame_p` while it is out)
-    let pl_l = min(pl_x, pl_tx - 40) - 64
-    let pl_e = max(pl_x + pl_w, pl_tx + 40) + 64
+    let pl_l = min(pl_x - pl_w * 0.2, pl_tx - 40) - 64
+    let pl_e = max(pl_x + pl_w * 1.2, pl_tx + 40) + 64
     let pl_t = pl_y0 - 64
-    let pl_b = pl_y + pl_h + 64
+    let pl_b = pl_y + pl_h * 1.3 + 64
     // an edge's place: a sliver on the band's inner edge, a third of the place's length, spreads along
     // the edge on the spring and pours out of it on the spring squared (iNiR: it spreads, then pours)
     let dk_rv = min(clamp(dk_q - (dk_n - 1), 0, 1), dk_c)
@@ -2977,7 +3007,7 @@ scene Frame {
                 glow: 8, if(st_frame_edge > 0.5 and st_frame_edge < 1.5, 0.8 + 0.35 * clamp(flev * 2, 0, 1), 0) * st_glow, fl.phos
                 group {
                     show: (pl_act and pl_l < W * 0.09375 and pl_e > -40 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.09375 and dk_e > -40 and dk_t < 160 + 40)
-                    clip box { from: -40, -40; size: (W * 0.09375) - (-40), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: -40, -40; size: (W * 0.09375) - (-40), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3041,7 +3071,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.1875 and pl_e > W * 0.09375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.1875 and dk_e > W * 0.09375 and dk_t < 160 + 40)
-                    clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.09375, -40; size: (W * 0.1875) - (W * 0.09375), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3108,7 +3138,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.28125 and pl_e > W * 0.1875 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.28125 and dk_e > W * 0.1875 and dk_t < 160 + 40)
-                    clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.1875, -40; size: (W * 0.28125) - (W * 0.1875), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3160,7 +3190,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.375 and pl_e > W * 0.28125 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.375 and dk_e > W * 0.28125 and dk_t < 160 + 40)
-                    clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.28125, -40; size: (W * 0.375) - (W * 0.28125), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3212,7 +3242,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.46875 and pl_e > W * 0.375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.46875 and dk_e > W * 0.375 and dk_t < 160 + 40)
-                    clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.375, -40; size: (W * 0.46875) - (W * 0.375), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3264,7 +3294,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.5625 and pl_e > W * 0.46875 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.5625 and dk_e > W * 0.46875 and dk_t < 160 + 40)
-                    clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.46875, -40; size: (W * 0.5625) - (W * 0.46875), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3316,7 +3346,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.65625 and pl_e > W * 0.5625 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.65625 and dk_e > W * 0.5625 and dk_t < 160 + 40)
-                    clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.5625, -40; size: (W * 0.65625) - (W * 0.5625), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3368,7 +3398,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.75 and pl_e > W * 0.65625 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.75 and dk_e > W * 0.65625 and dk_t < 160 + 40)
-                    clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.65625, -40; size: (W * 0.75) - (W * 0.65625), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3420,7 +3450,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.84375 and pl_e > W * 0.75 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.84375 and dk_e > W * 0.75 and dk_t < 160 + 40)
-                    clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.75, -40; size: (W * 0.84375) - (W * 0.75), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3472,7 +3502,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W * 0.9375 and pl_e > W * 0.84375 and pl_t < 160 + 40) or (dk_act and dk_l < W * 0.9375 and dk_e > W * 0.84375 and dk_t < 160 + 40)
-                    clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.84375, -40; size: (W * 0.9375) - (W * 0.84375), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop
@@ -3539,7 +3569,7 @@ scene Frame {
                 }
                 group {
                     show: (pl_act and pl_l < W + 40 and pl_e > W * 0.9375 and pl_t < 160 + 40) or (dk_act and dk_l < W + 40 and dk_e > W * 0.9375 and dk_t < 160 + 40)
-                    clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), max(160 + 40, if(pl_act, pl_y + pl_h + 80, 0)) }
+                    clip box { from: W * 0.9375, -40; size: (W + 40) - (W * 0.9375), max(160 + 40, if(pl_act, pl_b + 16, 0)) }
                     body {
                         color: fcol
                         opacity: fop

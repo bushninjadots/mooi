@@ -39,10 +39,15 @@ return function(ctx)
     local pill_face_text = nil   -- D170: a module face's reading (pill_face_read), for its width
     local pill_tall = false      -- D170: BMO's face is showing: the Pill is taller
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
+    local pill_idle_was = true               -- D175: the rest only runs while the Pill is idle
     local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
     local pill_face_was = nil                -- D171: a new face chosen drops the view the wheel turned to
+    local pill_sig = nil                     -- D181: what it showed last, for the surge on a change
+    local pill_gst = nil                     -- D184: its shape without the words: a whole surge or a ripple
+    local pill_swap_seq = 0                  -- D181: the newer surge settles the older one
     local pill_ws_step                       -- the wheel's next workspace (defined with the handlers)
     local pill_api               -- D170: what the board needs from the Pill (defined at the end)
+    local tint_for, art_now = nil, ""   -- D172: the record's colours, from the song's cover (the media watch)
 
     -- ── Layout ─────────────────────────────────────────────────
     -- The bar's edge inset: 12 px at full width; a narrower bar (bar.width) is centred.
@@ -128,6 +133,7 @@ return function(ctx)
                       panel = out.panel and { x = out.panel.x, w = out.panel.w } or nil,
                       saving = ctx.saving() == true,
                       screen = env.screen }   -- the frame's corners need the screen's width (lib/chassis)
+        fact.pill_still = s.motion.reduced == true or s.motion.saver == "always"   -- D172: the record holds still
         fact.pill_on = pillmode
         if pillmode then
             -- the Pill and its moons, for the frame's chassis and the scene's content
@@ -169,14 +175,19 @@ return function(ctx)
         local p = type(s.pill) == "table" and s.pill or {}
         local off = {}
         for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
+        -- D185: do not disturb quiets the Pill too — a notice does not take it (it waits in the panel)
+        if fact.dnd_now then off.notify = true end
         -- D170: never tucked away while its own board is open
         return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = pill_view or p.face,
-                 shape = p.shape, detail = p.detail,
+                 shape = p.shape, detail = p.detail, hide = p.hide,
+                 -- D172: the record's diameter is the bar's height; never tucked away or gone while its
+                 -- own board is open
+                 disc = tonumber(s.bar.height) or 24,
                  autohide = p.autohide == true and not (pill_board and pill_board.open() == "board"), max_w = pill_room, face_text = pill_face_text }
     end
     function pill_update()
         local s = ctx.settings()
-        if s.bar.mode ~= "pill" then fact.pill_on = false; return end
+        if s.bar.mode ~= "pill" then fact.pill_on = false; fact.pill_swap = 0; pill_sig, pill_gst = nil, nil; return end
         local r = pillmod.compute(pst, pill_cfg(s), pill_ms)
         local v = r.view[r.main]
         fact.pill_kind = KIND[r.main] or 0
@@ -197,19 +208,52 @@ return function(ctx)
         end
         -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
         local p = type(s.pill) == "table" and s.pill or {}
+        -- D174: the pointer warmth (0: blind) and whether it pings at all, handed to the scene
+        fact.pill_warm = (tonumber(p.warmth) or 55) / 100
+        fact.pill_ping = p.ping ~= false
         local fi = 0
         if p.face ~= pill_face_was then pill_face_was = p.face; pill_view = nil end
         local shown = pill_view or p.face        -- D171: the view turned to, or the default
         for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
         fact.pill_detail = ({ icon = 0, brief = 1, full = 2 })[p.detail] or 1
-        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2 })[p.shape] or 0
+        -- D186: the board's look — the wash over the bar's plate, and the edge it wears
+        fact.pk_tint = ({ theme = 0, phosphor = 1, accent = 2 })[p.board_tint] or 0
+        fact.pk_edge = ({ theme = 0, hairline = 1, none = 2 })[p.board_edge] or 0
+        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2, record = 3 })[p.shape] or 0
         fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
+        -- D188: the saved face, which the editor marks (pill_face is the one showing: a turned view)
+        local si = 0
+        for i, f in ipairs(pillmod.FACES) do if f == p.face then si = i - 1 end end
+        fact.pill_face_saved = si
         fact.pill_hidden = r.hidden == true
-        local tall = fi == 1 and r.main == "idle" and not r.split and not r.hidden
+        fact.pill_vanish = r.vanish == true      -- D172: gone, 0 px wide; the scene keeps a seam
+        fact.pill_record = r.record == true      -- D172: the disc, its cover as the label
+        -- D187: one capsule, one height. BMO's face is a tile inside it now, not a taller Pill.
+        local tall = false
+        -- D181: when what it shows changes, the scene surges once — a ring out of the capsule and a
+        -- flash along its top — then settles. A first read does not: the Pill is where it already was.
+        local sig = pillmod.signature(r, fi)
+        local gst = pillmod.gesture(r, fi)     -- D184: the same reading, without its words
+        if pill_sig and (sig ~= pill_sig or gst ~= pill_gst) then
+            -- D184: the Pill itself changing surges whole; new words on the same face only ripple
+            if gst ~= pill_gst then
+                fact.pill_swap = 1
+                if fact.dnd_now then fact.pill_swap = 0.4 end   -- D185: quiet holds
+            else
+                fact.pill_swap = 0.55
+                if fact.dnd_now then fact.pill_swap = 0.3 end
+            end
+            pill_swap_seq = pill_swap_seq + 1
+            local seq = pill_swap_seq
+            after(240, function() if seq == pill_swap_seq then fact.pill_swap = 0 end end)
+        end
+        pill_sig, pill_gst = sig, gst
         local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
             or (pill_now.hidden == true) ~= (r.hidden == true) or tall ~= pill_tall
         pill_tall = tall
         pill_now = r
+        -- D172: the record's colours, read from the song's cover the first time it shows
+        if p.shape == "record" then tint_for(art_now) end
         if changed then relayout(true) end
     end
     -- looked at again while something timed is up or has just run out (a volume change showed on after
@@ -231,9 +275,23 @@ return function(ctx)
             pill_update()
         end
     end
+    -- D173: the Pill's half disc turns once when the workspace changes (fact.active_row, set by
+    -- mooi.luau) or the wheel turns its view; held a moment, then it settles (a newer turn wins).
+    local pill_turn_seq, ws_row_seen = 0, nil
+    local function pill_flare()
+        pill_turn_seq = pill_turn_seq + 1
+        local seq = pill_turn_seq
+        fact.pill_turn = 1
+        after(650, function() if seq == pill_turn_seq then fact.pill_turn = 0 end end)
+    end
     local face_beat = 0
     every(250, function()
         pill_ms = pill_ms + 250
+        local row = tonumber(fact.active_row)
+        if row and row ~= ws_row_seen then
+            if ws_row_seen then pill_flare() end     -- the first read is where we already are
+            ws_row_seen = row
+        end
         -- a pointer resting on it keeps it peeked (review M4)
         if pill_hovering then pillmod.note(pst, "peek", {}, pill_ms); pill_timed = true end
         -- D171: a turned view rests back to the default after pill.rest seconds (0: it stays)
@@ -241,7 +299,13 @@ return function(ctx)
         local open_board = pill_board and pill_board.open() == "board"
         -- the rest counts from when the pointer leaves and the board closes (review, re-graded)
         if pill_view and (pill_hovering or open_board) then pill_view_at = pill_ms end
-        if pill_view and rest > 0 and pill_ms - pill_view_at >= rest * 1000 and not pill_hovering and not open_board then
+        -- D175: the rest runs only while the Pill is idle — music, a notice or a recording takes the face
+        -- for as long as it lasts, and when it is over you find the view you left, the rest starting again
+        local pill_idle = not pill_now or pill_now.main == "idle"
+        if pill_view and pill_idle and not pill_idle_was then pill_view_at = pill_ms end
+        pill_idle_was = pill_idle
+        if pill_view and pill_idle and not pill_hovering and not open_board
+           and pillmod.view_hold(pill_view, pill_view_at, rest, pill_ms) == nil then
             pill_view = nil; pill_timed = true
         end
         if fact.pill_on and (pill_timed or pst.recording) then
@@ -274,6 +338,7 @@ return function(ctx)
             -- D171: the Alerts face's newest, at full detail
             text.pill_alert = ((n.app or "") ~= "" and (n.app .. " · ") or "") .. tostring(n.title or n.summary or "")
             fact.pill_alert_on = true
+            if not fact.dnd_now then pill_flare() end      -- D188: the edge flash says a notice came
             -- D170: BMO is surprised, then pleased: a letter
             if fact.pill_on and fact.pill_face == 1 and pill_api then
                 pill_api.react("surprised", 700)
@@ -320,6 +385,7 @@ return function(ctx)
             pill_view = pillmod.next_view(p.views, pill_view or p.face or "time", d)
             pill_view_at = pill_ms
             note("peek", {})
+            pill_flare()
         else
             pill_ws_step(d)
         end
@@ -339,6 +405,7 @@ return function(ctx)
     -- D169: pointed at, a hidden Pill comes back for a while
     on("pill_hover", function(v)
         pill_hovering = tonumber(v) == 1
+        if pill_board and pill_board.hover then pill_board.hover(pill_hovering) end     -- D188: the peek
         -- D170: BMO notices the pointer (and wakes up)
         if pill_hovering and fact.pill_on and fact.pill_face == 1 then pill_api.touch(); pill_api.react("curious", 900) end
         -- on, or on leaving: 4 s more from now
@@ -353,6 +420,7 @@ return function(ctx)
             pill_view = pillmod.next_view(p.views, pill_view or p.face or "time", d > 0 and -1 or 1)
             pill_view_at = pill_ms
             note("peek", {})
+            pill_flare()
         else
             -- review C1: audio.volume and brightness.level are absolute (0–1), so step from the current
             -- level; a brightness change steps brightness, music and volume step the volume, the rest
@@ -659,17 +727,57 @@ return function(ctx)
     local function cover(url)
         if url == art_url then return end
         art_url = url
-        if type(url) ~= "string" or url == "" then text.med_art = ""; fact.med_has_art = false; return end
+        if type(url) ~= "string" or url == "" then art_now = ""; text.med_art = ""; fact.med_has_art = false; tint_for(""); return end
         local path = coverart.path(url)
-        if path then text.med_art = path; fact.med_has_art = true; return end
+        if path then art_now = path; text.med_art = path; fact.med_has_art = true; tint_for(path); return end
         if coverart.remote(url) then
             -- two names in turn, so the image is a new file each time and not a cached one
             covers = covers + 1
             local dest = folder .. "/cover-" .. tostring(covers % 2) .. ".img"
             run("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(_, code)
-                if code == 0 and art_url == url then text.med_art = dest; fact.med_has_art = true end
+                if code == 0 and art_url == url then
+                    art_now = dest; text.med_art = dest; fact.med_has_art = true; tint_for(dest)
+                end
             end)
         end
+    end
+    -- D172: the record's colours — the song's own cover through Matugen (a dry run, mooi's own scheme,
+    -- as the player reads it), once per cover; until then the palette's phosphor, ember and trace.
+    local tints, tint_busy = {}, false
+    local function paint_tint(cols)
+        local r1, g1, b1 = pillmod.hex_rgb(cols and cols[1])
+        local r2, g2, b2 = pillmod.hex_rgb(cols and cols[2])
+        local r3, g3, b3 = pillmod.hex_rgb(cols and cols[3])
+        fact.pc1_r, fact.pc1_g, fact.pc1_b = r1 or 0.65, g1 or 0.95, b1 or 0.82
+        fact.pc2_r, fact.pc2_g, fact.pc2_b = r2 or 1.00, g2 or 0.57, b2 or 0.37
+        fact.pc3_r, fact.pc3_g, fact.pc3_b = r3 or 0.10, g3 or 0.14, b3 or 0.15
+    end
+    paint_tint(nil)
+    tint_for = function(cover_path)
+        local s = ctx.settings()
+        local record = s.bar.mode == "pill" and type(s.pill) == "table" and s.pill.shape == "record"
+        if not record or type(cover_path) ~= "string" or cover_path == "" then paint_tint(nil); return end
+        local have = tints[cover_path]
+        if have ~= nil then paint_tint(have or nil); return end
+        if tint_busy then return end
+        tint_busy = true
+        run("matugen", { "image", cover_path, "-m", "dark", "--dry-run", "-j", "hex", "--source-color-index", "0" }, function(out, code)
+            tint_busy = false
+            local cols = nil
+            if code == 0 then
+                local ok, t = pcall(json.decode, out or "")
+                if ok and type(t) == "table" and type(t.colors) == "table" then
+                    local function role(name)
+                        local v = t.colors[name]
+                        local side = type(v) == "table" and v.dark or nil
+                        return type(side) == "table" and side.color or nil
+                    end
+                    cols = { role("primary"), role("tertiary"), role("primary_container") }
+                end
+            end
+            tints[cover_path] = cols or false
+            if art_now == cover_path then paint_tint(cols) end
+        end)
     end
     -- ── the music island (D142): the song as the media service has it, its clock while the island is
     -- open, shuffle and repeat from playerctl ──

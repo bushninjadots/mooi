@@ -103,9 +103,13 @@ function M.pieces(geo, look, looks)
             -- D170: as tall as it says (BMO's face is taller than a module)
             local ph = (type(geo.pill) == "table" and tonumber(geo.pill.h)) or look.mod_h
             local shape = type(geo.pill) == "table" and geo.pill.shape or "attached"
-            if pw > 0 and shape == "dot" and slim then
-                -- D171: the dot — a small circle where the Pill rests, never joined
+            if pw > 0 and (shape == "dot" or shape == "record") and slim then
+                -- D171: the dot — a small circle where the Pill rests, never joined (a tucked record too)
                 add(px, look.top + (look.mod_h - pw) / 2, pw, pw, pw / 2, 0, false)
+            elseif pw > 0 and shape == "record" then
+                -- D187: the record is the same capsule — its plate is the capsule's, not a disc behind it
+                if look.band then add(px, -40, pw, foot + 40 + (ph - look.mod_h), look.mod_h / 2, 8, true)
+                else add(px, look.top, pw, ph, look.mod_h / 2, 0, false) end
             elseif pw > 0 and shape == "floating" then
                 -- D171: hovering under the band, never joined (a sliver when hidden)
                 if slim then add(px, look.top, pw, 6, 3, 0, false) else add(px, look.top, pw, ph, look.mod_h / 2, 0, false) end

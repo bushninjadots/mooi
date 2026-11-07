@@ -64,6 +64,9 @@ library Theme {
     // its size, and back in ~210 ms; the bar and the frame both run it, so body and content agree
     spring m.isl = 230, 26
     spring m.isl_out = 900, 60
+    // D188: the Pill becoming its board (and the board taking each room's size): looser than an
+    // island's, so it overshoots ~9 %, full size at ~0.3 s, settled by ~0.7 s (measured) — ZenoShell's elastic open, on a spring
+    spring m.morph = 26, 6
     spring m.expand = 1102, 66      // 200 ms · surface.expand
     spring m.collapse = 1722, 83    // 160 ms · surface.collapse
     spring m.confirm = 765, 55      // 240 ms · state.confirm feedback

@@ -1,6 +1,7 @@
 # The Pill, round two: views, many pills, motion, the stash
 
-Date: 2026-11-07 · Status: drafted from the owner's requests (2026-11-07), awaiting review · Decision: D171
+Date: 2026-11-07 · Status: stage 1 built (D171); stage 2's first slice built (D172: hiding, the record) ·
+Decisions: D171, D172
 Builds on: D168 (the Pill), D169 (faces, hiding, nodes), D170 (the board)
 
 ## 1. What the owner asked for
@@ -33,6 +34,23 @@ customisable.
 - Up to **three pills**: the centre one, and optional left and right ones (`pill.extra`), each with its
   own views, default, detail, pads and hiding. A left pill for music and a right one for the system,
   say.
+- *Revision (2026-11-07, the owner):* pills should be **placeable wherever the owner wants**, not only
+  left · centre · right. Planned as `pill.slots` — each slot an anchor (`left`, `centre`, `right`) or an x
+  across the screen, validated and clamped so a pill never leaves the screen (plans/2026-11-07-pill-many.md,
+  task 2).
+- *Revision (2026-11-07, the owner):* the Pill should **feel the pointer** — a warmth behind the capsule
+  that brightens as it comes near, the dot leaning slightly toward it, and a half-disc turn (with the
+  glow) when the workspace changes or its view is turned. Built as D173: `shell/ui/pill.plm` reads
+  `pointer`, `shell/bar.luau`'s `pill_flare` holds `fact.pill_turn`; reduced motion stops the turn.
+- *Revision (2026-11-07, the owner):* the board's first card should be **customisable** — its own mix of
+  diagnostics, music art and controls, an activity panel, a profile — "like my personal space", with its
+  own background and borders. Planned as the desk (`pill.desk`, `lib/deskgrid`, `mooi desk`):
+  plans/2026-11-07-pill-many.md, task 2b.
+- *Revision (2026-11-07, the owner):* the Pill's **settings page** should show its shapes in its states,
+  its effects and what reacts, with a clear selected state. Built as D174: a stage drawn at twice the
+  size from the window's own facts, a card per shape and per resting form (a check on the chosen one),
+  and two appended settings — `pill.warmth` and `pill.ping` — with `ui/pillpreview.plm` doing the
+  drawing.
 - Each pill **when idle** (`hide`): `stay`, `tuck` (a dot or a sliver — today's hiding), or `vanish`
   (gone; its edge of the band shows a faint seam). It comes back when **pointed at** (its seam or dot),
   **called** (a key per pill, `mooi pill left|centre|right`), or when **something relevant** happens to
@@ -50,6 +68,10 @@ customisable.
   — each part dims in sequence along its trace, a last pulse runs home.
 - **BMO**: a **game over** (8-bit blink and "GAME OVER") when a recording or a timer ends, and a
   **power-down** — eyes narrowing to a line, then off — when his pill tucks away.
+- *Revision (2026-11-07, the owner):* the Pill should **move and morph organically** — "like Venom does".
+  Planned as `pill.shape = morph`: the silhouette drawn from a few control points on springs, flowing
+  between the capsule, a blob and the disc as its state changes, one spring per point (plans/2026-11-07-
+  pill-many.md, task 3).
 - Every motion is on the material's springs, respects reduced motion (`motion.reduced`, the saver), and
   nothing animates while the Pill is idle except BMO's blink.
 

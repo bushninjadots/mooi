@@ -32,21 +32,61 @@ M.SCHEMA = {
     { path = "pill.sides", kind = "enum", values = { "show", "hide" }, default = "show" },
     { path = "pill.multi", kind = "enum", values = { "satellites", "split", "nodes" }, default = "satellites" },   -- nodes: D169
     -- D169: what the Pill shows when nothing is happening, and whether it tucks away then
-    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications" }, default = "time" },   -- D170: module faces
+    -- D185: every face the board's picker offers, or the one it wrote was refused (`visualiser` was:
+    -- the board could save a face the config then fell back from, so the Pill kept the time)
+    { path = "pill.face", kind = "enum", values = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" }, default = "time" },   -- D170: module faces
     -- D170: the board's pads (lib/pillpads: any bar module) and its music visualiser
     { path = "pill.pads", kind = "ids", max = 8, allowed = barlayout.ORDER,
       default = { "volume", "brightness", "network", "bluetooth", "notifications", "clock", "battery", "nexus" } },
     { path = "pill.viz", kind = "enum", values = { "halo", "river" }, default = "halo" },
     -- D171: the Pill's shape (joined to the band, hovering under it, or a dot until wanted), the views the
     -- wheel turns through, how much each shows, and how long a turned view stays before the default returns
-    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot" }, default = "attached" },
+    -- D172: `record` is the Pill as a turning disc, the song's cover its label
+    { path = "pill.shape", kind = "enum", values = { "attached", "floating", "dot", "record" }, default = "attached" },
     { path = "pill.views", kind = "ids", max = 16,
       allowed = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications", "visualiser" },
       default = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" } },
     { path = "pill.detail", kind = "enum", values = { "icon", "brief", "full" }, default = "brief" },
     { path = "pill.rest", kind = "integer", default = 10, min = 0, max = 60 },
+    -- D169: the old hiding switch; D172 replaced it with the three-way choice below, and it stays here
+    -- so a file that has it still reads (a true one becomes pill.hide = tuck when no choice is set)
     { path = "pill.autohide", kind = "boolean", default = false },
+    -- D172: what the Pill does when it is idle — stay, tuck (a sliver, or its dot) or vanish
+    { path = "pill.hide", kind = "enum", values = { "stay", "tuck", "vanish" }, default = "stay" },
+    -- D174: how much the Pill feels the pointer (its warmth and the dot's lean; 0 is blind), and whether
+    -- it pings — a half disc and a glow once — when the workspace (or the wheel's view) changes
+    { path = "pill.warmth", kind = "integer", default = 55, min = 0, max = 100 },
+    { path = "pill.ping", kind = "boolean", default = true },
+    -- D175: the desk — the board's first card: which tiles it holds (lib/deskgrid places them), and its
+    -- own surface and edge. Appended, so no code moved.
+    { path = "pill.desk_clock", kind = "boolean", default = true },
+    { path = "pill.desk_playing", kind = "boolean", default = true },
+    { path = "pill.desk_diagnostics", kind = "boolean", default = true },
+    { path = "pill.desk_calendar", kind = "boolean", default = true },
+    { path = "pill.desk_surface", kind = "enum", values = { "plate", "glass", "tether" }, default = "plate" },
+    { path = "pill.desk_border", kind = "enum", values = { "hairline", "cut", "none" }, default = "hairline" },
+    -- D176: the desk as the workspace viewer instead of the tiles: each workspace's windows, live, the
+    -- wheel turns them, hover chooses, a press goes (lib/deskprev, shell/pillboard.luau)
+    { path = "pill.desk_workspaces", kind = "boolean", default = false },
+    -- D177: the desk's visual customisation — each tile's size, the form it takes (the owner's opened
+    -- vial), the tint it is drawn in and the glow it carries
+    { path = "pill.desk_clock_size", kind = "enum", values = { "small", "wide", "off" }, default = "small" },
+    { path = "pill.desk_playing_size", kind = "enum", values = { "small", "wide", "off" }, default = "small" },
+    { path = "pill.desk_diagnostics_size", kind = "enum", values = { "small", "wide", "off" }, default = "small" },
+    { path = "pill.desk_calendar_size", kind = "enum", values = { "small", "wide", "off" }, default = "small" },
+    { path = "pill.desk_form", kind = "enum", values = { "cards", "vial" }, default = "cards" },
+    { path = "pill.desk_tint", kind = "enum", values = { "wallpaper", "accent", "mono" }, default = "wallpaper" },
+    { path = "pill.desk_glow", kind = "enum", values = { "none", "soft", "bright" }, default = "soft" },
+    -- D179: what a right press on the Pill does (the owner asked for the choice)
+    { path = "pill.right", kind = "enum", values = { "calendar", "board", "notes", "settings", "nothing" }, default = "calendar" },
+    -- D186: the board's own look. The plate under it is the bar's own material — its opacity, frost,
+    -- blur and radius are Bar & Frame's — so the two never disagree; these are the deviations: a wash
+    -- of light over it and the edge it wears. Appended, so no code moved.
+    { path = "pill.board_tint", kind = "enum", values = { "theme", "phosphor", "accent" }, default = "theme" },
+    { path = "pill.board_edge", kind = "enum", values = { "theme", "hairline", "none" }, default = "theme" },
     { path = "pill.moons", kind = "integer", default = 3, min = 1, max = 4 },
+    -- D188: resting on the Pill grows it into a small card (the peek); a press makes it the board
+    { path = "pill.peek", kind = "boolean", default = true },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
     { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },
       default = { "battery", "record", "notify", "music", "osd", "idle" } },
@@ -718,6 +758,19 @@ local function migrate(t)
                and k ~= "rows" and k ~= "profile" and k ~= "visualiser" and k ~= "bars"
                and k ~= "notches" and k ~= "sizes" and k ~= "canvas" then t.nexus[k] = nil end
         end
+    end
+    -- D172: hiding is a three-way choice; a file that only asked with the old switch keeps its answer
+    -- (the choice, written by a newer mooi, is never overridden by the switch left beside it)
+    if type(t.pill) == "table" and t.pill.hide == nil and t.pill.autohide == true then t.pill.hide = "tuck" end
+    -- D188: one control per desk tile — its size is Off · Small · Wide, so a tile switched off with the
+    -- old switch keeps being off; and the record shape is the attached capsule since D187, so it reads as that
+    if type(t.pill) == "table" then
+        for _, id in ipairs({ "clock", "playing", "diagnostics", "calendar" }) do
+            if t.pill["desk_" .. id] == false then
+                t.pill["desk_" .. id .. "_size"] = "off"; t.pill["desk_" .. id] = nil
+            end
+        end
+        if t.pill.shape == "record" then t.pill.shape = "attached" end
     end
     local b = t.bar
     if type(b) ~= "table" then return end
