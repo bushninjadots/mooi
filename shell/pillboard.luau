@@ -59,6 +59,11 @@ return function(ctx)
         end
         fact.pk_on = on
         fact.pk_viz = pill_settings().viz == "river" and 1 or 0
+        -- D171: which faces are in the wheel's views (the edit bin's dots)
+        local views = pill_settings().views
+        local on = {}
+        for _, id in ipairs(type(views) == "table" and views or pillmod.VIEWS_DEFAULT) do on[id] = true end
+        for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = on[id] == true end
     end
 
     -- Now's week strip and its date line
@@ -87,8 +92,49 @@ return function(ctx)
         fact.pk_sig_n = tonumber(count) or 0
     end
 
+    -- ── D171: the new rooms' data ──
+    -- Diagnostics: the machine, read once as the room opens
+    local function diagnostics()
+        -- through cat: the logic may run cat, not uname or uptime
+        run("cat", { "/proc/sys/kernel/osrelease" }, function(out) text.pk_dg_kernel = (tostring(out or ""):gsub("%s+$", "")) end)
+        run("cat", { "/proc/sys/kernel/hostname" }, function(out) text.pk_dg_host = (tostring(out or ""):gsub("%s+$", "")) end)
+        run("cat", { "/proc/uptime" }, function(out)
+            local s = math.floor(tonumber(tostring(out or ""):match("^(%d+)")) or 0)
+            local d, h, m = s // 86400, (s % 86400) // 3600, (s % 3600) // 60
+            text.pk_dg_up = d > 0 and string.format("%d d %d h", d, h) or string.format("%d h %d min", h, m)
+        end)
+    end
+    -- Wallpaper: a strip of six from the picker's index, moved by the wheel
+    local walls, wall_at = {}, 0
+    local function wall_strip()
+        for k = 0, 3 do
+            local it = walls[wall_at + k + 1]
+            text["pk_wp" .. k] = it and (it.thumb ~= "" and it.thumb or it.path) or ""
+            fact["pk_wph" .. k] = it ~= nil
+        end
+        fact.pk_wp_n, fact.pk_wp_at = #walls, wall_at
+    end
+    local function wall_read()
+        local ok, raw = pcall(function() return sys.ask("files.read", "walls-index.json") end)
+        local doc = raw
+        if ok and type(raw) == "string" then ok, doc = pcall(json.decode, raw) end
+        walls = {}
+        if ok and type(doc) == "table" and type(doc.items) == "table" then
+            for _, it in ipairs(doc.items) do
+                if type(it) == "table" and type(it.path) == "string" and it.kind ~= "video" then
+                    walls[#walls + 1] = { path = it.path, thumb = type(it.thumb) == "string" and it.thumb or "" }
+                end
+            end
+        end
+        wall_at = math.max(0, math.min(wall_at, #walls - 4))
+        wall_strip()
+    end
+
     local function room(r)
-        fact.pk_room = r
+        -- told to the islands' readers too (they follow fact:pk_room, not heard for the logic's write)
+        if ctx.roomed then ctx.roomed(r) else fact.pk_room = r end
+        if r == parts.room_index("diagnostics") then diagnostics() end
+        if r == parts.room_index("wallpaper") then wall_read() end
         if r == 0 then fact.pk_music = fact.mu_playing == true end
         if r == parts.room_index("signals") then signals() end
         publish()
@@ -145,8 +191,38 @@ return function(ctx)
         if P.bmo() then P.react("curious", 800); P.say(WORDS[id] or id) end
     end)
     on("pk_back", function() room(0) end)
+    -- D171: the Workspaces room switches; the Actions room's drop terminal; the Wallpaper strip
+    on("pk_ws", function(v)
+        local n = math.floor(tonumber(v) or 0)
+        if n >= 1 then run("hyprctl", { "dispatch", "workspace", tostring(n) }) end
+    end)
+    on("pk_term", function()
+        run("hyprctl", { "-j", "clients" }, function(out)
+            if tostring(out or ""):find('"class": "mooi-drop"', 1, true) then
+                run("hyprctl", { "dispatch", "closewindow", "class:mooi-drop" })
+            else
+                local s = ctx.settings()
+                local size = type(s.pill) == "table" and s.pill.term_size or nil
+                local w, h = 960, 420
+                if type(size) == "table" then w, h = tonumber(size[1]) or w, tonumber(size[2]) or h end
+                local x = math.max(8, math.floor((fact.pill_x or 900) + (fact.pill_w or 120) / 2 - w / 2))
+                run("hyprctl", { "dispatch", "exec", string.format("[float; size %d %d; move %d %d; pin] kitty --class mooi-drop", w, h, x, 54) })
+            end
+        end)
+        close()
+    end)
+    on("pk_wp_scroll", function(v)
+        local d = (tonumber(v) or 0) > 0 and -1 or 1
+        wall_at = math.max(0, math.min(wall_at + d, math.max(0, #walls - 4)))
+        wall_strip()
+    end)
+    on("pk_wp", function(v)
+        local it = walls[wall_at + (math.floor(tonumber(v) or -1)) + 1]
+        if it then run("mooi", { "wall", "apply", it.path }) end
+    end)
     -- the wheel over the board: the next room, or the one before, and round (the owner asked, 2026-11-07)
-    local NAMES = { [0] = "now", "the month", "sound", "display", "connections", "power", "resources", "weather", "signals" }
+    local NAMES = { [0] = "now", "the month", "sound", "display", "connections", "power", "resources", "weather", "signals",
+                    "music!", "actions", "diagnostics", "workspaces", "wallpaper" }
     on("pk_scroll", function(v)
         local d = (tonumber(v) or 0) > 0 and -1 or 1
         local r = ((fact.pk_room or 0) + d) % #parts.ROOMS
@@ -223,6 +299,21 @@ return function(ctx)
         pill_settings().face = f
         save()
     end)
+    -- D171: a face's toggle in the edit bin: in the wheel's views, or out
+    on("pk_view_toggle", function(v)
+        local f = pillmod.FACES[(math.floor(tonumber(v) or -1)) + 1]
+        if not f then return end
+        local p = pill_settings()
+        local list, found = {}, false
+        local src = type(p.views) == "table" and p.views or pillmod.VIEWS_DEFAULT
+        for _, id in ipairs(src) do if id == f then found = true else list[#list + 1] = id end end
+        if not found then list[#list + 1] = f end
+        p.views = list
+        save()
+        local on = {}
+        for _, id in ipairs(list) do on[id] = true end
+        for i, id in ipairs(pillmod.FACES) do fact["pk_vw" .. (i - 1)] = on[id] == true end
+    end)
     on("pk_viz", function()
         local p = pill_settings()
         p.viz = p.viz == "river" and "halo" or "river"
@@ -248,7 +339,8 @@ return function(ctx)
                 if P.bmo() then P.poke() else close() end
                 return
             end
-            local a = pillmod.press(main, pill_settings().face or "time", button, P.osd())
+            -- the face showing: a view the wheel turned to is what a press means, not the saved face
+            local a = pillmod.press(main, (P.face and P.face()) or pill_settings().face or "time", button, P.osd())
             if a.kind == "board" then open_board(a.room)
             elseif a.kind == "nexus" then emit_scene("open_nexus")
             elseif a.kind == "calendar" then set_open("calendar")
@@ -257,6 +349,16 @@ return function(ctx)
             elseif a.kind == "island" then set_open(a.island) end
         end,
         publish = publish,
+        -- Super twice (`mooi pill`): the board on the room of the view showing — never the Nexus — or,
+        -- open, closed (no poke) (review I4)
+        call = function(main)
+            P.touch()
+            if opened == "board" then close(); return end
+            local face = (P.face and P.face()) or pill_settings().face or "time"
+            if face == "nexus" then face = "time" end
+            local a = pillmod.press(main, face, "left", P.osd())
+            open_board(a.room)
+        end,
         open = function() return opened end,
     }
 end

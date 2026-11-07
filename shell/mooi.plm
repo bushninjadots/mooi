@@ -1175,6 +1175,39 @@ scene Mooi {
     event pk_back ->           // to the logic: back to Now
     event pk_go ->             // to the logic: room n
     event pk_scroll ->         // to the logic: the wheel over the board: the next room
+    event pk_ws ->             // to the logic (D171): go to workspace n
+    event pk_term ->           // to the logic: the drop terminal, out or away
+    event pk_wp_scroll ->      // to the logic: the wallpaper strip moves
+    event pk_wp ->             // to the logic: wear the wallpaper shown n-th
+    event pk_view_toggle ->    // to the logic: face n in the wheel's views, or out
+    fact pk_vw0 = false
+    fact pk_vw1 = false
+    fact pk_vw2 = false
+    fact pk_vw3 = false
+    fact pk_vw4 = false
+    fact pk_vw5 = false
+    fact pk_vw6 = false
+    fact pk_vw7 = false
+    fact pk_vw8 = false
+    fact pk_vw9 = false
+    fact pk_vw10 = false
+    text pk_dg_kernel = ""
+    text pk_dg_host = ""
+    text pk_dg_up = ""
+    text pk_wp0 = ""
+    text pk_wp1 = ""
+    text pk_wp2 = ""
+    text pk_wp3 = ""
+    text pk_wp4 = ""
+    text pk_wp5 = ""
+    fact pk_wph0 = false
+    fact pk_wph1 = false
+    fact pk_wph2 = false
+    fact pk_wph3 = false
+    fact pk_wph4 = false
+    fact pk_wph5 = false
+    fact pk_wp_n = 0
+    fact pk_wp_at = 0
     event pk_chip ->           // to the logic: a docked moon pressed
     event pk_key ->            // to the logic: 0 left · 1 right · 2 enter · 3 escape
     event pk_edit_cmd ->       // to the logic: 0 edit on/off · 10+i take pad i off · 20+i move it left · 30+i right
@@ -1185,6 +1218,14 @@ scene Mooi {
     event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
     event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
+    event pill_superwheel ->   // to the logic (D171): Super + wheel: a pill's view if pointed at, else the workspace
+    event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
+    fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
+    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot (pill.shape)
+    text pill_alert = ""       // D171: the newest signal, for the Alerts face at full detail
+    fact pill_alert_on = false // D171: there is one
+    prop pill_pulse = 0
+    spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)
     prop pk_flow = 0
     spin pk_flow by if(open == board, 400, 0)
     fact pill_nodes = false

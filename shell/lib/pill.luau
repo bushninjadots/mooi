@@ -16,8 +16,33 @@ local M = {
                -- D170: a module's face: its icon and a short reading (ui/pill.plm)
                weather = 160, resources = 150, media = 220, battery = 104, workspaces = 140, network = 170, notifications = 130 },
     -- D170: what the closed Pill may show when nothing is happening: three of its own, and module faces
-    FACES = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications" },
+    FACES = { "time", "bmo", "nexus", "weather", "resources", "media", "battery", "workspaces", "network", "notifications",
+              "visualiser" },     -- D171
+    -- D171: the views the wheel turns through when the owner has not chosen (pill.views), and the dot
+    VIEWS_DEFAULT = { "time", "workspaces", "notifications", "media", "weather", "resources", "bmo", "nexus" },
+    DOT = 14,
+    -- D171: detail full makes room for a second part (a date, hi/lo, memory, the artist…)
+    FACE_W_FULL = { time = 190, weather = 230, resources = 220, media = 300, battery = 170, workspaces = 190,
+                    network = 230, notifications = 260, visualiser = 170 },
 }
+M.FACE_W.visualiser = 110
+
+local function is_face(id)
+    for _, f in ipairs(M.FACES) do if f == id then return true end end
+    return false
+end
+
+-- D171: the next view along the owner's list (dir 1 or -1), round the end; an unknown current view → the
+-- list's first; unknown ids are skipped; nothing usable → the default list
+function M.next_view(views, current, dir)
+    local list = {}
+    for _, v in ipairs(type(views) == "table" and views or {}) do if is_face(v) then list[#list + 1] = v end end
+    if #list == 0 then list = M.VIEWS_DEFAULT end
+    local at = nil
+    for i, v in ipairs(list) do if v == current then at = i end end
+    if not at then return list[1] end
+    return list[(at - 1 + ((tonumber(dir) or 1) < 0 and -1 or 1)) % #list + 1]
+end
 
 function M.state()
     return { media = {}, battery = {}, recording = false, rec_since = 0, osd = nil, notify = nil, charge_at = nil, pin = nil,
@@ -93,6 +118,9 @@ local function width(v, cfg)
     if v.glyph == "idle" then
         -- D170: a module's face is its glyph and a short reading (the bar works it out: cfg.face_text)
         local builtin = cfg and (cfg.face == "time" or cfg.face == "bmo" or cfg.face == "nexus")
+        -- D171: the detail — icon is just the glyph (a module's face), full has room for a second part
+        if cfg and not builtin and cfg.detail == "icon" and M.FACE_W[cfg.face] then return 44 end
+        if cfg and cfg.detail == "full" and M.FACE_W_FULL[cfg.face] then return M.FACE_W_FULL[cfg.face] end
         if cfg and cfg.face and not builtin and cfg.face_text then
             return math.max(104, 44 + 7 * #tostring(cfg.face_text))
         end
@@ -131,8 +159,9 @@ function M.compute(st, cfg, now)
     local cap = tonumber(cfg.max_w)
     if cap and cap >= 120 and w > cap then w1 = math.floor(w1 * cap / w); w = cap end
     -- D169: idle and nothing beside it, with hiding on and not just pointed at: a sliver
-    local hidden = cfg.autohide == true and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
-    if hidden then w = M.SLIVER end
+    local dot = cfg.shape == "dot"       -- D171: the dot hides when idle by being one
+    local hidden = (cfg.autohide == true or dot) and main == "idle" and not split and not fresh(st.peek, M.PEEK_MS, now)
+    if hidden then w = dot and M.DOT or M.SLIVER end
     return { main = main, moons = moons, split = split, two_lines = main == "notify", width = w, w1 = w1, view = views, hidden = hidden }
 end
 
@@ -168,6 +197,8 @@ end
 -- "right"; osd: "vol" or "bri" (which change is showing). Left unfolds the board on the activity's room
 -- (the Nexus face's left is the Nexus button, while nothing is happening); right keeps the old jumps.
 local ROOM = { idle = "now", music = "now", record = "now", battery = "power", notify = "signals" }
+local FACE_ROOM = { weather = "weather", resources = "resources", media = "now", battery = "power", workspaces = "workspaces",
+                    network = "connections", notifications = "signals", visualiser = "visualiser" }
 function M.press(main, face, button, osd)
     main = main or "idle"
     local room = ROOM[main] or (main == "osd" and (osd == "bri" and "display" or "sound")) or "now"
@@ -181,6 +212,8 @@ function M.press(main, face, button, osd)
         return { kind = "board", room = room }
     end
     if face == "nexus" and main == "idle" then return { kind = "nexus" } end
+    -- D171: idle, the board opens on the room of the view the Pill shows
+    if main == "idle" then room = FACE_ROOM[face] or "now" end
     return { kind = "board", room = room }
 end
 
@@ -188,7 +221,8 @@ end
 -- the face's, and the weather Now shows. Returns a set of reader ids (resources, weather, bandwidth, keyboard).
 function M.needs(p)
     p = type(p) == "table" and p or {}
-    local out = { weather = true }
+    -- weather for Now; the processor and memory for the Resources view and room and Diagnostics (review I1)
+    local out = { weather = true, resources = true }
     local function want(id)
         if id == "resources" then out.resources = true
         elseif id == "bandwidth" or id == "network" then out.bandwidth = true

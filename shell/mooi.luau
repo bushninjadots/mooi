@@ -1645,7 +1645,13 @@ require("command")({
 -- and reading fact.open back gives the logic's last write, so whoever writes it says so here and
 -- everyone who follows it hears both (D170: the board opened by the logic got no plate from the frame)
 -- (one table: the main chunk is at Lua's 200-local limit)
-local opens = { listeners = {}, pl = "none" }
+local opens = { listeners = {}, pl = "none", rooms = {} }
+-- the board's room, changed by the logic (fact:pk_room is not heard for the logic's own writes either)
+function opens.listen_room(fn) opens.rooms[#opens.rooms + 1] = fn end
+function opens.by_room(r)
+    fact.pk_room = r
+    for _, fn in ipairs(opens.rooms) do fn(r) end
+end
 function opens.listen(fn) opens.listeners[#opens.listeners + 1] = fn end
 function opens.by_logic(v)
     fact.open = v
@@ -1657,6 +1663,7 @@ require("islands")({
     settings = function() return settings end,
     save = save_settings,
     listen_open = opens.listen,
+    listen_room = opens.listen_room,
 })
 
 -- ── The bar's own controls ─────────────────────────────────
@@ -2532,6 +2539,7 @@ bar.set_board(require("pillboard")({
     pill = bar.pill,
     loom = loom,
     opened = opens.by_logic,
+    roomed = opens.by_room,
     listen_open = opens.listen,
 }))
 

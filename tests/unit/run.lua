@@ -5015,7 +5015,7 @@ do
         local g = io.open("shell/signals.luau"); local sg = g:read("a"); g:close()
         assert(sg:find("on_signal = function(fn) pill_hook = fn end", 1, true), "Loom hands new signals on")
         local u = io.open("shell/ui/pill.plm"); local ui = u:read("a"); u:close()
-        assert(ui:find("from: px, if(pill_hidden, 0, fl.top)", 1, true), "hidden: the zone reaches the top")
+        assert(ui:find("if(pill_hidden, 0, fl.top)", 1, true), "hidden: the zone reaches the top")
         assert(ui:find("emit pill_hover(0)", 1, true) and ui:find("emit pill_hover(1)", 1, true), "entering and leaving reach the logic")
         assert(b:find('if pill_hovering then pillmod.note(pst, "peek"', 1, true), "a resting pointer keeps it open")
     end)
@@ -5032,7 +5032,7 @@ do
     test("the bar feeds the face, the hiding and the nodes", function()
         local f = io.open("shell/bar.luau"); local b = f:read("a"); f:close()
         assert(b:find('require("lib/pillface")', 1, true), "BMO's face")
-        assert(b:find("face = p.face", 1, true) and b:find("autohide = p.autohide", 1, true), "the settings reach compute")
+        assert(b:find("face = pill_view or p.face", 1, true) and b:find("autohide = p.autohide", 1, true), "the settings reach compute")
         assert(b:find("slim = pill_now ~= nil and pill_now.hidden == true", 1, true), "the chassis is told")
         -- a settings change reaches the bar as relayout(): the Pill's face and hiding are read again then
         assert(b:find("relayout = function() pill_update(); relayout() end", 1, true), "settings re-read the Pill")
@@ -5116,7 +5116,7 @@ do
         for _, id in ipairs(PP.DEFAULT) do assert(PP.get(id), id) end
     end)
     test("pill faces: the module faces, each with a width that fits its text", function()
-        eq(#P.FACES, 10); eq(P.FACES[1], "time"); eq(P.FACES[4], "weather")
+        eq(#P.FACES, 11, "D171 added the visualiser"); eq(P.FACES[1], "time"); eq(P.FACES[4], "weather")
         local st = P.state()
         local r = P.compute(st, { face = "weather", face_text = "11° partly cloudy" }, 0)
         eq(r.width, math.max(104, 44 + 7 * #"11° partly cloudy"))
@@ -5339,7 +5339,7 @@ do
         local b = board(S())
         b.api.press("left", "idle")
         b.h.pk_scroll(-1); eq(b.fact.pk_room, 1, "down: the next")
-        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 8, "up from Now: round to the last")
+        b.h.pk_scroll(1); b.h.pk_scroll(1); eq(b.fact.pk_room, 13, "up from Now: round to the last (D171: fourteen rooms)")
     end)
     test("the keyboard walks the pads and presses one", function()
         local b = board(S())
@@ -5459,12 +5459,280 @@ do
     end)
 end
 
+section("the Pill, round two: views, shapes, detail (D171)")
+do
+    local P = require("lib/pill")
+    local chassis = require("lib/chassis")
+    test("settings: the shape, the views, the detail, the rest", function()
+        local d = config.defaults()
+        eq(d.pill.shape, "attached"); eq(d.pill.detail, "brief"); eq(d.pill.rest, 10)
+        assert(#d.pill.views >= 6, "a default list of views")
+        local s, p = config.validate({ pill = { shape = "dot", views = { "nexus", "workspaces", "notifications" }, detail = "full", rest = 0 } })
+        eq(#p, 0); eq(s.pill.shape, "dot"); eq(s.pill.views[2], "workspaces"); eq(s.pill.detail, "full"); eq(s.pill.rest, 0)
+        local _, p2 = config.validate({ pill = { views = { "dragon" } } }); eq(#p2, 1)
+        local setters = require("lib/setters")
+        local seen = {}
+        for _, q in ipairs(setters.SETTERS) do seen[q] = true end
+        assert(seen["pill.shape"] and seen["pill.views"] and seen["pill.detail"] and seen["pill.rest"])
+    end)
+    test("pill.next_view: round the owner's list, either way; unknown or empty → the default list", function()
+        local v = { "nexus", "workspaces", "notifications" }
+        eq(P.next_view(v, "nexus", 1), "workspaces")
+        eq(P.next_view(v, "notifications", 1), "nexus")
+        eq(P.next_view(v, "nexus", -1), "notifications")
+        eq(P.next_view(v, "weather", 1), "nexus", "not in the list: its first")
+        eq(P.next_view({}, "time", 1), P.VIEWS_DEFAULT[2], "empty: the default list")
+        eq(P.next_view({ "dragon", "bmo" }, "bmo", 1), "bmo", "unknown ids are skipped")
+    end)
+    test("widths by detail: icon is just the icon, full makes room for more", function()
+        local st = P.state()
+        eq(P.compute(st, { face = "weather", detail = "icon" }, 0).width, 44)
+        eq(P.compute(st, { face = "time", detail = "icon" }, 0).width, 120, "time keeps its own form")
+        assert(P.compute(st, { face = "weather", detail = "full" }, 0).width > P.compute(st, { face = "weather", detail = "brief" }, 0).width)
+    end)
+    test("the dot: idle, the Pill is a 14 px dot (hiding implied); pointed at, it comes back", function()
+        local st = P.state()
+        local r = P.compute(st, { face = "time", shape = "dot" }, 0)
+        eq(r.hidden, true); eq(r.width, P.DOT)
+        P.note(st, "peek", {}, 100)
+        eq(P.compute(st, { face = "time", shape = "dot" }, 200).hidden, false)
+    end)
+    test("chassis: floating hovers under the band, never joined; the dot is a small circle", function()
+        local L = { mode = "pill", band = true, top = 8, mod_h = 24, radius = 7, screen_w = 1920, band_w = 2, frame_r = 14, reach = 16 }
+        local f = chassis.pieces({ islands = {}, pill = { x = 860, w = 120, shape = "floating" }, moons = {} }, L)[1]
+        eq(f.j, false); eq(f.y, 8); eq(f.h, 24)
+        local d = chassis.pieces({ islands = {}, pill = { x = 953, w = 14, slim = true, shape = "dot" }, moons = {} }, L)[1]
+        eq(d.w, 14); eq(d.h, 14); eq(d.r, 7); eq(d.j, false); eq(d.y, 8 + 5)
+        local a = chassis.pieces({ islands = {}, pill = { x = 860, w = 120, shape = "attached" }, moons = {} }, L)[1]
+        eq(a.j, true, "attached: hangs from the band as before")
+    end)
+end
+
+section("the Pill, round two: the bar turns its views (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("the wheel over an idle Pill turns its view; over music or a volume change it stays the volume", function()
+        local bar = read("shell/bar.luau")
+        local h = bar:match('on%("pill_scroll", function%(v%)(.-)\n    end%)')
+        assert(h, "the scroll handler")
+        assert(h:find('pill_view = pillmod.next_view(', 1, true), "idle: the next view")
+        assert(not h:find('"workspace", d > 0', 1, true), "idle no longer switches workspace")
+        assert(h:find('cur_vol + step', 1, true), "music and volume keep the volume")
+    end)
+    test("a turned view rests back to the default after pill.rest, not while pointed at or open", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if pill_view and rest > 0 and pill_ms - pill_view_at >= rest * 1000 and not pill_hovering", 1, true))
+        assert(bar:find("face = pill_view or p.face", 1, true), "the face shown is the turned view")
+        assert(bar:find("shape = p.shape", 1, true) and bar:find("detail = p.detail", 1, true))
+    end)
+    test("Super calls the Pill: it comes back; again within a moment, the board", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find('on("pill_call"', 1, true))
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("event pill_call ->", 1, true))
+        local sh = read("bin/mooi")
+        assert(sh:find('pill) exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "`mooi pill`")
+        local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
+        assert(hl:find('hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true }', 1, true), "Super alone, on release")
+    end)
+end
+
+section("the Pill, round two: faces (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("BMO is BMO: his teal body, a D-pad and buttons round the screen", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("color: #69c7bb", 1, true) and ui:find("color: #f1c94a", 1, true) and ui:find("color: #e9606f", 1, true))
+    end)
+    test("faces at three details; workspaces as dots, alerts with the newest, the visualiser", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("if(pill_detail < 0.5, px + pw / 2, px + 20)", 1, true), "icon: just the glyph, centred")
+        assert(ui:find("show: pill_face == 7 and wx < px + pw - 10", 1, true), "workspaces: a dot each, inside the Pill")
+        assert(ui:find("text pill_alert {", 1, true), "alerts: the newest at full")
+        assert(ui:find("show: pill_face == 10", 1, true), "the visualiser")
+        assert(ui:find("text clock.date", 1, true), "time at full: the date")
+    end)
+    test("the Nexus face shows only as the Nexus face; a new face drops the turned view", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("pill_face > 1.5 and pill_face < 2.5\n                NexusFace", 1, true))
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if p.face ~= pill_face_was then pill_face_was = p.face; pill_view = nil end", 1, true))
+    end)
+    test("the dot breathes, and has room round it to land on", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("let dotted = pill_hidden and pill_shape > 1.5", 1, true))
+        assert(ui:find("from: if(dotted, px - 10, px)", 1, true))
+        local plm = read("shell/mooi.plm")
+        assert(plm:find("spin pill_pulse by if(pill_hidden and pill_shape > 1.5, 140, 0)", 1, true), "only while it is a dot")
+    end)
+end
+
+section("the Pill, round two: the new rooms (D171)")
+do
+    local P = require("lib/pill")
+    local PP = require("lib/pillpads")
+    local function board(settings, files)
+        local handlers, ran = {}, {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end,
+            run = function(cmd, args, cb) ran[#ran + 1] = cmd .. " " .. table.concat(args or {}, " "); if cb then cb("", 0) end end,
+            sys = { ask = function(what, name) return files and files[name] or nil end, call = function() end },
+            json = { decode = function(t) return t end },
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return settings end, save = function() end, pill = P2,
+            opened = function(v) env.fact.open = v end })
+        return { api = api, h = handlers, fact = env.fact, text = env.text, ran = ran }
+    end
+    test("five new rooms, reached by the wheel; workspaces and wallpaper pads open theirs", function()
+        eq(#PP.ROOMS, 14)
+        for _, r in ipairs({ "visualiser", "actions", "diagnostics", "workspaces", "wallpaper" }) do assert(PP.room_index(r), r) end
+        eq(PP.get("workspaces").room, "workspaces"); eq(PP.get("wallpaper").room, "wallpaper")
+    end)
+    test("a press opens the board on the room of the view the Pill shows", function()
+        eq(P.press("idle", "workspaces", "left").room, "workspaces")
+        eq(P.press("idle", "notifications", "left").room, "signals")
+        eq(P.press("idle", "weather", "left").room, "weather")
+        eq(P.press("idle", "visualiser", "left").room, "visualiser")
+        eq(P.press("idle", "time", "left").room, "now")
+        eq(P.press("music", "weather", "left").room, "now", "something happening: its own room")
+    end)
+    test("a press means the view showing: turned to weather on the Nexus face, it opens the Weather room, not the Nexus", function()
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     face = function() return "weather" end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = { face = "nexus" } } end,
+            save = function() end, pill = P2, opened = function(v) env.fact.open = v end })
+        api.press("left", "idle")
+        eq(env.fact.open, "board"); eq(env.fact.pk_room, PP.room_index("weather"))
+    end)
+    test("workspaces: a press switches; actions: the drop terminal toggles", function()
+        local b = board({ pill = {} })
+        b.api.press("left", "idle")
+        b.h.pk_ws(3); assert(b.ran[#b.ran]:find("hyprctl dispatch workspace 3", 1, true))
+        b.h.pk_term(); assert(b.ran[#b.ran]:find("mooi-drop", 1, true), "the terminal, by its class")
+    end)
+    test("wallpaper: the strip moves with the wheel, a press wears it", function()
+        local items = {}
+        for i = 1, 20 do items[i] = { path = "/w/" .. i .. ".jpg", kind = "still", thumb = "/t/" .. i .. ".jpg" } end
+        local b = board({ pill = {} }, { ["walls-index.json"] = { items = items } })
+        b.api.press("left", "idle")
+        b.h.pk_go(PP.room_index("wallpaper"))
+        eq(b.text.pk_wp0, "/t/1.jpg")
+        b.h.pk_wp_scroll(-1); eq(b.text.pk_wp0, "/t/2.jpg", "on by one")
+        b.h.pk_wp(2); assert(b.ran[#b.ran]:find("mooi wall apply /w/4.jpg", 1, true), "the third shown is the fourth")
+    end)
+    test("the board tells the islands' readers its room (fact:pk_room is not heard for the logic's write)", function()
+        local told = {}
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = {} } end, save = function() end,
+            pill = P2, roomed = function(r) told[#told + 1] = r; env.fact.pk_room = r end })
+        api.press("left", "idle"); handlers.pk_go(6)
+        eq(told[#told], 6)
+        local f = io.open("shell/islands.luau"); local isl = f:read("a"); f:close()
+        assert(isl:find("ctx.listen_room(function() told() end)", 1, true))
+    end)
+    test("diagnostics: the machine read once as the room opens", function()
+        local b = board({ pill = {} })
+        b.api.press("left", "idle")
+        b.h.pk_go(PP.room_index("diagnostics"))
+        local any = false
+        for _, r in ipairs(b.ran) do if r:find("cat /proc/sys/kernel/osrelease", 1, true) then any = true end end
+        assert(any, "the kernel and host are read (through cat: the logic may not run uname)")
+    end)
+end
+
+section("the Pill, round two: choosing the views (D171)")
+do
+    test("edit: a face's toggle puts it in the wheel's views or takes it out, saved", function()
+        local st = { pill = { views = { "time", "weather" } } }
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return false end,
+                     touch = function() end, react = function() end, say = function() end, poke = function() end }
+        assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return st end, save = function() end, pill = P2 })
+        handlers.pk_view_toggle(7); eq(st.pill.views[3], "workspaces", "in")
+        handlers.pk_view_toggle(3); eq(#st.pill.views, 2, "weather out"); eq(st.pill.views[2], "workspaces")
+        handlers.pk_view_toggle(0); handlers.pk_view_toggle(7)
+        eq(#st.pill.views, 0); handlers.pk_view_toggle(99); eq(#st.pill.views, 0, "an unknown face does nothing")
+    end)
+    test("Settings: the shape, the detail and the rest", function()
+        local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
+        assert(plm:find('"Attached"', 1, true) and plm:find('"Floating"', 1, true) and plm:find('"Dot"', 1, true))
+        assert(plm:find('"Icon"', 1, true) and plm:find('"Full"', 1, true))
+        assert(plm:find("sv_pill_rest", 1, true))
+    end)
+end
+
 section("the theme watch (2026-11-07)")
 do
     test("a mode changed while Matugen runs is not taken as done: seen is what was read before the recolour", function()
         local f = io.open("bin/mooi"); local sh = f:read("a"); f:close()
         assert(sh:find("resync; seen=$now", 1, true), "seen is the key the extraction was for")
         assert(not sh:find("resync; seen=$(key)", 1, true), "not the key read again after it")
+    end)
+end
+
+section("the Pill: Super and the wheel (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    test("Super + wheel: on a pill it turns the views, anywhere else the workspace", function()
+        local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
+        assert(hl:find('hl.bind, "SUPER + mouse_down", hl.dsp.exec_cmd(mooi .. " wheel 1")', 1, true))
+        assert(hl:find('hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1")', 1, true))
+        local sh = read("bin/mooi")
+        assert(sh:find('wheel) "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}"', 1, true), "asks the bar")
+        assert(sh:find('|| hyprctl dispatch workspace "e$(', 1, true), "no bar: the workspace, as before")
+        local bar = read("shell/bar.luau")
+        local h = bar:match('on%("pill_superwheel", function%(v%)(.-)\n    end%)')
+        assert(h and h:find("if pill_hovering and fact.pill_on", 1, true), "on a pill")
+        assert(h:find('"dispatch", "workspace"', 1, true), "elsewhere")
+    end)
+end
+
+section("the Pill, round two: the review's fixes (D171)")
+do
+    local function read(path) local f = io.open(path); local t = f:read("a"); f:close(); return t end
+    local P = require("lib/pill")
+    test("review I1: in Pill mode the processor and memory are read (the Resources view, Diagnostics)", function()
+        eq(P.needs({ pads = {}, face = "time", views = { "time" } }).resources, true)
+    end)
+    test("review I2: workspaces by their own ids and places, not 1..count", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("for w in spaces", 1, true) and ui:find("w.active", 1, true), "the face's dots")
+        local b = read("shell/ui/pillboard.plm")
+        assert(b:find("for w in spaces", 1, true) and b:find("pk_ws, w.id", 1, true), "the room's tiles go to their id")
+    end)
+    test("review I3: the Alerts face's newest goes when the signals do", function()
+        local ui = read("shell/ui/pill.plm")
+        assert(ui:find("pill_alert_on and loom_count > 0.5", 1, true))
+    end)
+    test("review (re-graded): the rest counts from when the pointer leaves and the board closes, not from the scroll", function()
+        local bar = read("shell/bar.luau")
+        assert(bar:find("if pill_view and (pill_hovering or open_board) then pill_view_at = pill_ms end", 1, true))
+    end)
+    test("review I4: Super twice opens the board (never the Nexus), or closes it", function()
+        local handlers = {}
+        local env = setmetatable({ on = function(n, fn) handlers[n] = fn end, every = function() end, run = function() end,
+            fact = { open = "none", pk_room = 0, pill_on = true }, model = {}, text = {} }, { __index = _G })
+        local poked = 0
+        local P2 = { now = function() return { main = "idle", moons = {} } end, osd = function() return "vol" end, bmo = function() return true end,
+                     face = function() return "nexus" end, touch = function() end, react = function() end, say = function() end,
+                     poke = function() poked = poked + 1 end }
+        local api = assert(loadfile("shell/pillboard.luau", "t", env))()({ settings = function() return { pill = { face = "nexus" } } end,
+            save = function() end, pill = P2, opened = function(v) env.fact.open = v end })
+        api.call("idle"); eq(env.fact.open, "board", "the board, not the Nexus")
+        api.call("idle"); eq(env.fact.open, "none", "again: it closes (no poke)"); eq(poked, 0)
+        local bar = read("shell/bar.luau")
+        assert(bar:find("pill_board.call(pill_now and pill_now.main or \"idle\")", 1, true))
     end)
 end
 

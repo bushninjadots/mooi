@@ -4898,3 +4898,24 @@ G4); the summaries follow the commit messages._
   - Pleamar: a component's zones cannot be named from a `repeat` or an island's slot; each repeated
     control is its own small component.
 - Spec: docs/superpowers/specs/2026-11-07-pill-board-design.md.
+
+## D171 · 2026-11-07 · The Pill, round two, stage 1: views, shapes, detail
+
+- The wheel over the idle Pill turns it through the owner's views (`pill.views`): any module face,
+  BMO, Nexus, workspaces (dots), alerts (the newest at full), a visualiser. A turned view rests back
+  to the face after `pill.rest` s. Music and volume keep the wheel as the volume. A press opens the
+  board on the room of the view showing.
+- `pill.shape`: attached (joined to the band), floating (hovering under it), or a dot that breathes
+  until it is wanted — pointed at, the wheel, something happening, or Super. Super alone (on release)
+  runs `mooi pill`: the Pill comes back; twice quickly, its board.
+- `pill.detail`: icon, brief or full for every view.
+- With the BMO face the Pill is BMO: his teal body, D-pad and buttons round the screen.
+- Five new rooms: Visualiser, Actions (session, capture, keep awake, do not disturb, a drop terminal
+  `kitty --class mooi-drop` at a fixed size under the Pill), Diagnostics (about this computer),
+  Workspaces, Wallpaper (four from the picker's index; the wheel moves them).
+- The edit bin chooses the wheel's views (a dot under each face).
+- Found on the way: the board's room changes and its opens are now announced to the frame and the
+  islands' readers (`opens.by_logic`, `opens.by_room`): `on("fact:X")` is not heard for the logic's
+  own writes, so rooms opened on the board had no data and a closed board kept its plate. The theme
+  watch lost a mode changed while Matugen ran (it took the settings read after the recolour as done).
+- Spec: docs/superpowers/specs/2026-11-07-pill-round-two-design.md (stage 1 of 4).

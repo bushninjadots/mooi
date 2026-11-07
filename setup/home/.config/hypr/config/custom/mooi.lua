@@ -64,6 +64,13 @@ if cfg.standalone == true or not archeclipse then
     for _, k in ipairs({ "SUPER + SUPER_L", "SUPER + ALT_L", "SUPER + m", "SUPER + period", "SUPER + SHIFT + n" }) do
         pcall(hl.unbind, k)                          -- toggle bar, media panel, emoji, notes: ArchEclipse's alone
     end
+    -- D171: Super alone, on release (never after Super+a key): the Pill comes back; twice, its board
+    pcall(hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true })
+    -- D171: Super + wheel asks the bar: over a pill it turns the views, elsewhere the workspace
+    pcall(hl.unbind, "SUPER + mouse_down")
+    pcall(hl.unbind, "SUPER + mouse_up")
+    pcall(hl.bind, "SUPER + mouse_down", hl.dsp.exec_cmd(mooi .. " wheel 1"))
+    pcall(hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1"))
     bound[#bound + 1] = "standalone"
 end
 

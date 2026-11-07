@@ -26,15 +26,15 @@ _Last updated 2026-11-06. History lives in [docs/CHANGELOG.md](docs/CHANGELOG.md
 | Scene compilation (all 13) | 2026-11-06 | `bin/mooi check`, exit 0 |
 | Generator determinism | 2026-11-06 | run on a `/tmp` copy, no diff |
 | The bar's chassis, styles and attach (every shape × outline × frame × swell; every style; Pill mode) | 2026-11-06 | `tests/chassis.sh`, 190 checks, 0 failed (D167, D168) |
-| The Pill and its board: states, moons, split, faces, hiding, nodes, the board's rooms, pads, edit, music | 2026-11-07 | `tests/pill.sh`, 40 checks, 0 failed (D168–D170); the press check retries once (a real click at the desk can close it, D170) |
+| The Pill and its board: states, moons, split, faces, hiding, nodes, the board's rooms, pads, edit, music | 2026-11-07 | `tests/pill.sh`, 47 checks, 0 failed (D168–D171); the press check retries once (a real click at the desk can close it, D170) |
 | Live session, pointer, multi-monitor, behavioural suites | 2026-11-01 or earlier | docs/TESTING.md; not re-run in the 2026-11-06 audit |
 | Performance | 2026-11-06 | music playing, swell on: bar 7.9 %, frame 9.3 % of a core, GPU ~60 % busy (same as before stage 1) |
 
 ## Open items
 
 1. The bar redesign (D164) is in stages: stage 1 (one chassis), Bar & Frame (styles, settings,
-   per-module looks, D167), the Pill (D168, D169) and its board (D170) are done; next the board's
-   second round (more views, scroll between them, the Pill as the stash), then stage 4 (modules and density) — docs/superpowers/specs/2026-11-06-bar-redesign-design.md. Density stays hidden in
+   per-module looks, D167), the Pill (D168, D169) and its board (D170) are done; round two's stage 1 (views, shapes, detail; D171) done; next stages 2–4
+   (many pills and motion, the look, the stash/terminal/Super layer), then stage 4 (modules and density) — docs/superpowers/specs/2026-11-06-bar-redesign-design.md. Density stays hidden in
    Settings until then.
 2. `shell/mooi.plm`, `mooi-settings.plm` and `mooi-frame.plm` remain large generated/monolithic
    files; the panel extraction is incremental (G8).

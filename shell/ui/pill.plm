@@ -123,30 +123,59 @@ library Pill {
             // nothing while it is hidden (a sliver the frame draws)
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face < 0.5
-                text clock.time { at: px + pw / 2 - 8, cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
-                text "· {ws.active, 0}" { at: px + pw / 2 + 26, cy; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.phos }
+                text clock.time { at: px + pw / 2 - 8 - if(pill_detail > 1.5, 30, 0), cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text "· {ws.active, 0}" { at: px + pw / 2 + 26 - if(pill_detail > 1.5, 30, 0), cy; anchor: center; size: 11; family: "Share Tech Mono"; color: fl.phos }
+                text clock.date { at: px + pw / 2 + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; width: 90; lines: 1; show: pill_detail > 1.5 }
             }
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 0.5 and pill_face < 1.5
-                BmoFace(px + 10, fl.top + (pill_h - 34) / 2)
+                // D171: BMO as BMO — his teal body round the screen, a little D-pad and two buttons
+                box { from: px + 3, fl.top + 1; size: 66, pill_h - 2; corner: 7; color: #69c7bb }
+                box { from: px + 3, fl.top + 1; size: 66, pill_h - 2; corner: 7; stroke: 1.2; color: #183d42; opacity: 0.6 }
+                box { from: px + 5, fl.top + 2.5; size: 62, 2; corner: 1; color: #ffffff; opacity: 0.25 }
+                box { at: px + 62, fl.top + 12; size: 8, 2.6; corner: 1; color: #f1c94a }
+                box { at: px + 62, fl.top + 12; size: 2.6, 8; corner: 1; color: #f1c94a }
+                ellipse { at: px + 61, fl.top + 24; radius: 2.2; color: #e9606f }
+                ellipse { at: px + 65.5, fl.top + 29; radius: 1.7; color: #5aa7e0 }
+                ellipse { at: px + 60, fl.top + 31.5; radius: 1.4; color: #7bd66a }
+                BmoFace(px + 6, fl.top + (pill_h - 34) / 2)
                 text pill_t1 { at: px + 68, fl.top + pill_h / 2; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: max(1, pw - 76); lines: 1 }
             }
             group {
-                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5
+                show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 1.5 and pill_face < 2.5
                 NexusFace(px, pw, cy)
             }
             // D170: a module's face — its icon and a short reading
             group {
                 show: pill_kind < 0.5 and not pill_split and not pill_hidden and pill_face > 2.5
-                let fk = pick(pill_face - 3, 6, 3, 2, 12, 0, 13, 8)
-                PkIcon(fk, px + 20, cy, 15, fl.phos)
-                text "{wx_temp, 0}° {lower(wx_word)}" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 3 }
-                text "CPU {round(res_cpu * 100), 0}% · {round(res_temp), 0}°C" { at: px + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 4 }
-                text pick(mu_has, "Nothing playing", mu_title) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 5 }
-                text pick(battery.present, "No battery", "{battery.percent, 0}%") { at: px + 34, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 6 }
-                text "WORKSPACE {ws.active, 0}" { at: px + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 7 }
-                text pick(network.online, "Offline", network.name) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 8 }
-                text "{loom_count, 0} signals" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: pw - 44; lines: 1; show: pill_face == 9 }
+                let fk = pick(pill_face - 3, 6, 3, 2, 12, 0, 13, 8, 2)
+                // D171: icon — just the glyph, centred; brief and full — the glyph and its words
+                PkIcon(fk, if(pill_detail < 0.5, px + pw / 2, px + 20), cy, 15, fl.phos)
+                group {
+                    show: pill_detail > 0.5
+                    let tw = pw - 44
+                    text pick(pill_detail > 1.5, "{wx_temp, 0}° {lower(wx_word)}", "{wx_temp, 0}° {lower(wx_word)} · {wx_city}") { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 3 }
+                    text pick(pill_detail > 1.5, "CPU {round(res_cpu * 100), 0}% · {round(res_temp), 0}°C", "CPU {round(res_cpu * 100), 0}% · MEM {round(res_mem * 100), 0}% · {round(res_temp), 0}°C") { at: px + 34, cy; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 4 }
+                    text pick(mu_has, "Nothing playing", mu_title) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 5 and pill_detail < 1.5 }
+                    text "{mu_title}{? · {mu_artist}}" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 5 and pill_detail > 1.5 and mu_has }
+                    text pick(battery.present, "No battery", "{battery.percent, 0}%") { at: px + 34, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 6 and pill_detail < 1.5 }
+                    text pick(battery.charging, "{battery.percent, 0}% · on battery", "{battery.percent, 0}% · charging") { at: px + 34, cy; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 6 and pill_detail > 1.5 and battery.present }
+                    // workspaces: a dot each, the one you are on lit (full: and its number)
+                    // by each workspace's own place and state, not 1..count (review I2)
+                    for w in spaces {
+                        let wx = px + 34 + w.index * 12
+                        ellipse { at: wx, cy; radius: if(w.active, 4, 2.6); color: if(w.active, fl.phos, if(w.windows > 0, fl.trace_lit, fl.trace)); show: pill_face == 7 and wx < px + pw - 10 }
+                    }
+                    text "{ws.active, 0}" { at: px + pw - 14, cy; anchor: right center; size: 11; family: "Share Tech Mono"; color: fl.phos; show: pill_face == 7 and pill_detail > 1.5 }
+                    text pick(network.online, "Offline", network.name) { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw - if(pill_detail > 1.5, 44, 0); lines: 1; show: pill_face == 8 }
+                    text "{network.strength, 0}%" { at: px + pw - 14, cy; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: pill_face == 8 and pill_detail > 1.5 and network.online }
+                    // signals: how many (full: the newest, its app and title)
+                    text "{loom_count, 0} signals" { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 9 and (pill_detail < 1.5 or not (pill_alert_on and loom_count > 0.5)) }
+                    text pill_alert { at: px + 34, cy; anchor: left center; size: 12; weight: 600; family: "Exo 2"; color: fl.engrave; width: tw; lines: 1; show: pill_face == 9 and pill_detail > 1.5 and pill_alert_on and loom_count > 0.5 }
+                    // the visualiser: the music's bands
+                    group { show: pill_face == 10
+                            viz.Spectrum(px + 34, cy - 8, pw - 48, 16, fl.phos, fl.ember) }
+                }
             }
             // anything else, whole
             group {
@@ -161,7 +190,16 @@ library Pill {
                 Half(px + pill_w1 + 8, pw - pill_w1 - 8, pill_glyph2, pill_s1, "", pill_val2)
             }
             // hidden with the frame on, the tab hangs in the top strip: the zone reaches the top (review M5)
-            zone box pillz { from: px, if(pill_hidden, 0, fl.top); size: pw, if(pill_hidden, fl.top + fl.mod_h, pill_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
+            // D171: the dot — a ring breathing out of it now and then, and room round it to land on
+            let dotted = pill_hidden and pill_shape > 1.5
+            let pf = pill_pulse / 360 - floor(pill_pulse / 360)
+            group {
+                show: dotted
+                glow: 6, (0.6 * (1 - pf)) * st_glow, fl.phos
+                ellipse { at: px + pw / 2, fl.cy; radius: 7 + 9 * pf; stroke: 1.4; color: fl.phos; opacity: 0.7 * (1 - pf) }
+                ellipse { at: px + pw / 2, fl.cy; radius: 3; color: fl.phos }
+            }
+            zone box pillz { from: if(dotted, px - 10, px), if(pill_hidden, 0, fl.top); size: if(dotted, pw + 20, pw), if(pill_hidden, fl.top + fl.mod_h, pill_h); cursor: pointer; role: button; label: "The Pill: open what it shows" }
             on press pillz { emit pill_press }
             // D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
             on press right pillz { emit pill_rpress }

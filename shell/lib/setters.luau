@@ -126,6 +126,8 @@ M.SETTERS = {
     "pill.face", "pill.autohide",
     -- D170: the board's pads and its music visualiser. Appended, so no code moved.
     "pill.pads", "pill.viz",
+    -- D171: the Pill's shape, views, detail and rest. Appended, so no code moved.
+    "pill.shape", "pill.views", "pill.detail", "pill.rest",
 }
 
 local function row_of(path)
