@@ -626,7 +626,10 @@ theme_watch() {
             # A link swapped is complete the moment it is seen; an image being written in
             # place is not, so only a link that points at a file still growing waits.
             [ -L "$wallpaper" ] || sleep 0.15
-            resync; seen=$(key)
+            # what was extracted is what was read before it: a change made while Matugen ran (dark
+            # pressed during a light extraction, 2026-11-07) is seen on the next wake and done too,
+            # where reading the key again after resync took it as done and kept the light palette
+            resync; seen=$now
         fi
         # the pace or reduced motion changed: a new live copy, and the keeper brings the scene back
         m=$(motion_key)

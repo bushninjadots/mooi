@@ -5459,5 +5459,14 @@ do
     end)
 end
 
+section("the theme watch (2026-11-07)")
+do
+    test("a mode changed while Matugen runs is not taken as done: seen is what was read before the recolour", function()
+        local f = io.open("bin/mooi"); local sh = f:read("a"); f:close()
+        assert(sh:find("resync; seen=$now", 1, true), "seen is the key the extraction was for")
+        assert(not sh:find("resync; seen=$(key)", 1, true), "not the key read again after it")
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
