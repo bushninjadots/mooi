@@ -203,78 +203,79 @@ def scene():
 
 
 SLOTS = 8          # Presence slots on the desk layer (phase 1)
-RING_N = 7         # hub labels (six groups and This window)
+HOLE_GROW = 40     # the edge draws the torn wallpaper this far round the hole
+
 
 def surface_layers():
-    """D208: the Reveal (an overlay, open only while revealing: the Aperture over the real wallpaper, the Pill
-    in it, the hub's groups round its rim, the second ring) and the desk layer (Presences, under the windows)."""
-    L = ["", "    // ── Surface (D208): the Reveal and the Presences ──",
-         'shader aperture = file "shaders/aperture.wgsl"'.join(["    ", ""]),
-         "    fact rv_on = false", "    fact rv_stage = 0", "    fact rv_x = 0", "    fact rv_y = 0", "    fact rv_n = 6",
-         "    fact rv_pick_g = 0", "    fact rv_pick_s = 0", "    fact rv_ring = 170",
-         "    text rv_wall = \"\"", "    image rv_img = from rv_wall, 0, 0", "    text rv_t1 = \"mooi\""]
-    L += [f"    text rv_g{i} = \"\"" for i in range(RING_N)]
-    L += [f"    text rv_s{j} = \"\"" for j in range(4)]
-    L += ["    spring sg.rv = 220, 24",
-          "    // before the hub it follows the pointer; from the hub on it stays where it began (the logic's rv_x, rv_y)",
-          "    prop rv_px = 0 ~sg.rv", "    follow rv_px = if(rv_stage >= 3, rv_x, cursor.x)",
-          "    prop rv_py = 0 ~sg.rv", "    follow rv_py = if(rv_stage >= 3, rv_y, cursor.y)",
-          "    prop rv_rad = 0 ~sg.rv", "    follow rv_rad = pick(min(rv_stage, 2), 0, 22, 120)",
-          "    prop rv_k = 0 ~sg.rv", "    follow rv_k = if(rv_stage >= 2, 1, if(rv_stage >= 1, 0.35, 0))",
-          "    event rv_down ->       // from `mooi reveal down`: Super went down",
-          "    event rv_up ->         // from `mooi reveal up`: Super came up",
-          "    event rv_esc ->        // Escape while revealing",
-          "    event rv_move ->       // x * 10000 + y: the pointer while revealing",
-          "    event rv_outside ->    // a press while revealing",
-          "    event pp_press ->      // a Presence pressed (its slot)",
-          "    event pp_rpress ->     // a Presence right-pressed: edit it",
-          "    event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next",
-          "    event pp_drag ->       // slot * 100000000 + x * 10000 + y while dragged in edit",
-          "    event pp_drop ->       // slot, let go after a drag",
-          "    event ed_undo ->", "    event ed_redo ->", "    event ed_done ->"]
+    """D209: the opening drawn at the wallpaper — `ground` (level background: the hole's dark ground, later the
+    hubs) and `edge` (level bottom, above the widgets: the torn rim and the warped wallpaper round it, no zones) —
+    and the desk layer (Presences, under the windows). Nothing at level top or overlay: never over a window."""
+    g = HOLE_GROW
+    L = ["", "    // ── Surface (D209): the opening's ground and edge, and the Presences ──",
+         '    shader aperture = file "shaders/aperture.wgsl"',
+         '    shader tear = file "shaders/tear.wgsl"',
+         '    shader ground = file "shaders/ground.wgsl"',
+         "    fact rv_on = false", "    fact rv_stage = 0",
+         "    fact sf_fx = 1         // the opening's look: 1 the Tear, 2 the Aperture",
+         "    text rv_wall = \"\"", "    image rv_img = from rv_wall, 0, 0",
+         "    event rv_down ->       // from `mooi reveal down`: Super went down",
+         "    event rv_up ->         // from `mooi reveal up`: Super came up",
+         "    event rv_esc ->        // Escape while revealing",
+         "    event rv_move ->       // x * 10000 + y: the pointer while revealing",
+         "    event rv_outside ->    // a press while revealing",
+         "    event pp_press ->      // a Presence pressed (its slot)",
+         "    event pp_rpress ->     // a Presence right-pressed: edit it",
+         "    event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next",
+         "    event pp_drag ->       // slot * 100000000 + x * 10000 + y while dragged in edit",
+         "    event pp_drop ->       // slot, let go after a drag",
+         "    event ed_undo ->", "    event ed_redo ->", "    event ed_done ->"]
     for k in range(SLOTS):
         L += [f"    fact p{k}_on = false", f"    fact p{k}_x = 0", f"    fact p{k}_y = 0", f"    fact p{k}_w = 220", f"    fact p{k}_h = 28",
               f"    fact p{k}_mode = 0", f"    fact p{k}_prog = 0", f"    fact p{k}_edit = false",
               f"    fact p{k}_r = 0.84", f"    fact p{k}_g = 0.89", f"    fact p{k}_b = 0.54",
               f"    text p{k}_t1 = \"\"", f"    text p{k}_t2 = \"\"", f"    text p{k}_icon = \"♫\""]
-    # the reveal surface
-    L += ["", "    surface reveal {", "        size: full, full", "        anchor: top", "        level: overlay", "        reserve: -1",
-          "        keyboard: exclusive while rv_on and rv_stage >= 3", "        rate: 60", "        open: rv_on",
-          "        // a press anywhere while revealing closes it (the hub is chosen by letting go of Super)",
-          "        // (review C1: nothing catches clicks or keys before the hub — a reveal begun by a Super shortcut never",
-          "        // steals from what that shortcut opened)",
-          "        zone box rvz { from: 0, 0; size: reveal.width, reveal.height; cursor: crosshair; role: button; label: \"Close the reveal\"; show: rv_stage >= 3 }",
-          "        on press rvz { emit rv_outside }",
-          "        on key Escape { emit rv_esc }",
+    # the ground: just above the wallpaper, under the widgets and the windows
+    L += ["", "    surface ground {", "        size: full, full", "        anchor: top", "        level: background", "        reserve: -1",
+          "        keyboard: none", "        rate: 60, 20 while calm", "        open: op_vis",
+          "        group {",
+          "            clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }",
+          "            // the subsurface's dark ground and its grid, fixed to the screen",
+          "            shader ground { at: op_x, op_y; size: op_w, op_h; corner: op_r; values: op_k, op_x, op_y }",
+          "            // below: what lives under the wallpaper (Task 6 fills this group)",
+          "            group {",
+          "                show: op_mode > 0",
+          "            }",
+          "        }",
+          "    }"]
+    # the edge: the torn wallpaper round the hole, above the widgets, under the windows; it catches nothing
+    clip = f"clip box {{ from: op_x - {g}, op_y - {g}; size: op_w + {g * 2}, op_h + {g * 2}; corner: op_r + {g} }}"
+    img = "image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }"
+    L += ["", "    surface edge {", "        size: full, full", "        anchor: top", "        level: bottom", "        reserve: -1",
+          "        keyboard: none", "        rate: 60", "        open: op_vis",
           "        // where the pointer is, told to the logic as it moves (every 6 px), while revealing",
           "        let rv_q = round(cursor.x / 6) * 100000 + round(cursor.y / 6)",
-          "        on change rv_q while rv_on { emit rv_move(round(cursor.x) * 10000 + round(cursor.y)) }",
-          "        // the Aperture: the real wallpaper, opened at the pointer into its subsurface",
+          "        on change rv_q while rv_on or op_vis { emit rv_move(round(cursor.x) * 10000 + round(cursor.y)) }",
+          "        on key Escape { emit rv_esc }",
+          "        // the Tear: the real wallpaper, torn open over the hole (the surface's own size: screen.height is the",
+          "        // scene's first surface's, the 40 px bar strip — found live, D208)",
+          "        // a group's shader sees its own box: the clip's, from its top left corner (found live) — so each is told",
+          "        // where that corner is on the screen (kept on it: the box does not reach past the surface)",
+          f"        let ed_ox = max(0, op_x - {g})",
+          f"        let ed_oy = max(0, op_y - {g})",
           "        group {",
-          "            clip box { from: rv_px - rv_rad - 30, rv_py - rv_rad - 30; size: (rv_rad + 30) * 2, (rv_rad + 30) * 2; corner: rv_rad + 30 }",
-          "            shader: aperture, rv_k, rv_px, rv_py, rv_rad",
-          "            // the surface's own size: screen.height is the scene's first surface's (the 40 px bar strip) — found live",
-          "            image rv_img { at: 0, 0; size: reveal.width, reveal.height; fit: cover }",
+          "            show: sf_fx < 1.5",
+          f"            {clip}",
+          "            shader: tear, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy",
+          f"            {img}",
           "        }",
-          "        // its lit rim",
+          "        // the Aperture, the other look: a lens round a round hole",
           "        group {",
-          "            glow: 14, 0.8, rgb(h0_r, h0_g, h0_b)",
-          "            ellipse { at: rv_px, rv_py; radius: max(1, rv_rad); stroke: 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: min(1, rv_k * 1.2) }",
+          "            show: sf_fx > 1.5",
+          f"            {clip}",
+          "            shader: aperture, op_k, op_x + op_w / 2 - ed_ox, op_y + op_h / 2 - ed_oy, min(op_w, op_h) / 2",
+          f"            {img}",
           "        }",
-          "        // the Pill at its centre",
-          "        group {",
-          "            show: rv_stage >= 2",
-          "            box { from: rv_px - 70, rv_py - 14; size: 140, 28; corner: 14; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }",
-          "            box { from: rv_px - 70, rv_py - 14; size: 140, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6 }",
-          "            text rv_t1 { at: rv_px, rv_py; anchor: center; size: 12; weight: 700; family: \"Exo 2\"; color: ink; width: 128; lines: 1 }",
-          "        }"]
-    for i in range(RING_N):
-        a = f"({i} * 360 / rv_n)"
-        L.append(f"        text rv_g{i} {{ at: rv_px + sin({a}) * rv_ring, rv_py - cos({a}) * rv_ring; anchor: center; size: if(rv_pick_g == {i + 1}, 15, 12); weight: 700; family: \"Exo 2\"; color: if(rv_pick_g == {i + 1}, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == {i + 1}, 0.95, 0.4); show: rv_stage >= 3 and {i} < rv_n }}")
-    for j in range(4):
-        a = f"((rv_pick_g - 1) * 360 / rv_n + {j} * 20.05)"
-        L.append(f"        text rv_s{j} {{ at: rv_px + sin({a}) * (rv_ring + 56), rv_py - cos({a}) * (rv_ring + 56); anchor: center; size: if(rv_pick_s == {j + 1}, 14, 11); weight: 600; family: \"Exo 2\"; color: if(rv_pick_s == {j + 1}, rgb(h0_r, h0_g, h0_b), muted); show: rv_stage >= 4 and rv_pick_g > 0 }}")
-    L += ["    }"]
+          "    }"]
     # the desk surface: Presences under the windows
     any_on = " or ".join(f"p{k}_on" for k in range(SLOTS))
     L += ["", "    surface desk {", "        size: full, full", "        anchor: top", "        level: bottom", "        reserve: -1",
