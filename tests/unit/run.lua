@@ -7581,11 +7581,30 @@ test("opening block: one text in every program", function()
     for _, p in ipairs({ "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
         assert(block(p) == ref, p .. " differs from mooi-surface.plm")
     end
-    for _, needle in ipairs({ "spring sg.op = 220, 24", "event op_a ->", "event sf_set ->", "cursor.x", "on op_c(v)", "let sf_below = sf_on" }) do
+    for _, needle in ipairs({ "spring sg.op = 220, 24", "event op_a ->", "event sf_set ->", "op_px - 90", "on op_c(v)", "let sf_below = sf_on" }) do
         assert(ref:find(needle, 1, true), "the block has " .. needle)
     end
-    assert(ref:find("op_mode == 1, cursor.x - 90", 1, true) and ref:find("180", 1, true), "follow: the 2 * 90 square on the pointer")
-    eq(require("lib/surface/opening").R, 90, "opening.R")
+    assert(ref:find("op_mode == 1, op_px - 90", 1, true) and ref:find("op_mode == 1, 180, op_aw", 1, true), "follow: the 2 * 90 square on the pointer")
+    assert(not ref:find("cursor", 1, true), "the block never names the pointer (it would start the cursor feed and the idle clock)")
+    assert(ref:find("if(sf_on, floor(op_tc / 1000), 0)", 1, true), "Surface off: mode 0, nothing moves")
+    for _, p in ipairs({ "shell/mooi-surface.plm", "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
+        local t = read(p)
+        local outside = t:gsub("// <gen:opening>.-// </gen:opening>", "")
+        assert(outside:find("op_px = ", 1, true) and outside:find("op_py = ", 1, true), p .. " defines op_px/op_py outside the block")
+    end
+    local op = require("lib/surface/opening")
+    eq(op.R, 90, "opening.R")
+    -- the block's decode arithmetic, mirrored, against pack
+    local function decode(a, b, c)
+        local mode = math.floor(c / 1000); local r = c - mode * 1000
+        local x = math.floor(a / 4096); local w = math.floor(b / 4096)
+        return mode, r, x, a - x * 4096, w, b - w * 4096
+    end
+    for _, h in ipairs({ { 0, 0, 0, 0, 0, 0 }, { 2, 10, 20, 300, 200, 24 }, { 3, 4095, 4095, 4095, 4095, 999 }, { 4, 0, 0, 1920, 1080, 0 } }) do
+        local a, b, c = op.pack({ mode = h[1] }, { x = h[2], y = h[3], w = h[4], h = h[5], r = h[6] })
+        local mode, r, x, y, w, hh = decode(a, b, c)
+        eq(mode, h[1], "mode"); eq(x, h[2], "x"); eq(y, h[3], "y"); eq(w, h[4], "w"); eq(hh, h[5], "h"); eq(r, h[6], "r")
+    end
     assert(read("tools/gen-opening.py"):find("R = 90", 1, true), "the generator writes 90 from one constant")
 end)
 

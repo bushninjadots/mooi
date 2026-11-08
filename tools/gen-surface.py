@@ -172,7 +172,8 @@ def scene():
         L += host_decls(k)
     for k in range(HOSTS):
         L += host_lets(k)
-    L += [""] + opening.text().rstrip("\n").split("\n")
+    L += ["", "    let op_px = cursor.x      // the pointer for the opening's follow mode (outside the generated block)", "    let op_py = cursor.y"]
+    L += opening.text().rstrip("\n").split("\n")
     L += ["", "    surface bar {", "        size: full, 40", "        anchor: top", "        level: top", "        reserve: -1",
           "        keyboard: none", "        rate: 60, 20 while calm",
           "        open: h0_on or h1_on or h2_on or h3_on      // no host, no surface (review I1)"]

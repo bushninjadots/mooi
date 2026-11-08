@@ -5,6 +5,20 @@ Holding Super opens the wallpaper. `mooi-surface` owns the opening and sends thr
 (`op_a`, `op_b`, `op_c`, see shell/lib/surface/opening.luau `pack`) to every program under the wallpaper
 (mooi-widgets, mooi-viz, BMO); each of them, and mooi-surface itself, turns them into the same sprung hole
 (op_x, op_y, op_w, op_h, op_r, op_k) with the identical text below, so the hole is the same shape everywhere.
+
+The block never names the pointer: the follow target reads `op_px`, `op_py` (the pointer, in the scene's own
+pixels), which each scene defines OUTSIDE the markers. Why (Pleamar src, compiler.rs:532): a scene that
+names `cursor` in any form, `cursor.x` or `desk.cursor.x` (mentions_part, compiler.rs:901), sets
+`wants_cursor`; that starts the compositor cursor feed at 30 Hz (platform/hyprland.rs:87, mod.rs:1199) and
+every pointer move counts as activity for `idle` rules (render.rs:1356). Qualifying the name does not help,
+and it cannot be switched off while the Surface is off, so only a scene that already reads the pointer may
+define op_px from it: mooi-surface (`cursor.x`) and mooi-widgets (`desk.cursor.x`, already named there). mooi-viz
+and BMO define them as plain facts (0) so Surface off is exactly main; whoever feeds follow mode there (Tasks
+8/9: emit, or a conscious `cursor` mention) writes them. The hole is in SCREEN coordinates (mooi-surface's
+surfaces use reserve: -1); a citizen whose surface starts lower (widgets, below the bar's reserve) adds its own
+offset to draw it: left to Task 8. With sf_on false nothing here moves: op_mode is 0, so every target is
+constant and the springs rest.
+
 Run: python3 tools/gen-opening.py   (rewrites the text between `// <gen:opening>` and `// </gen:opening>` in
 shell/mooi-widgets.plm, shell/mooi-viz.plm and shell/bmo/bmo.plm; shell/mooi-surface.plm gets the same block
 from tools/gen-surface.py, which calls block()).
@@ -39,12 +53,12 @@ def block():
         "    on op_c(v) { op_tc = v }",
         "    on sf_set(v) { sf_on = mod(v, 2) == 1; sf_bmo = floor(v / 2) == 1 }",
         "    spring sg.op = 220, 24",
-        "    let op_mode = floor(op_tc / 1000)",
-        "    let op_r0 = op_tc - op_mode * 1000",
+        "    let op_mode = if(sf_on, floor(op_tc / 1000), 0)",
+        "    let op_r0 = op_tc - floor(op_tc / 1000) * 1000",
         "    let op_ax = floor(op_ta / 4096)",
         "    let op_aw = floor(op_tb / 4096)",
-        f"    let op_tx = if(op_mode == 1, cursor.x - {R}, op_ax)",
-        f"    let op_ty = if(op_mode == 1, cursor.y - {R}, op_ta - op_ax * 4096)",
+        f"    let op_tx = if(op_mode == 1, op_px - {R}, op_ax)",
+        f"    let op_ty = if(op_mode == 1, op_py - {R}, op_ta - op_ax * 4096)",
         f"    let op_tw = if(op_mode == 1, {2 * R}, op_aw)",
         f"    let op_th = if(op_mode == 1, {2 * R}, op_tb - op_aw * 4096)",
         f"    let op_tr = if(op_mode == 1, {R}, op_r0)",

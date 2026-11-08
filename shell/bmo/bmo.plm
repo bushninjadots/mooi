@@ -361,6 +361,8 @@ scene Bmo {
         on press c { emit ui(code) }
     }
 
+    fact op_px = 0                 // the pointer for the opening's follow mode: fed, not read (a cursor mention would start the feed and the idle clock)
+    fact op_py = 0
     // <gen:opening>
     // The opening (D209): mooi-surface packs the hole into three numbers (lib/surface/opening `pack`);
     // every program turns them into the same sprung rectangle. mode = c / 1000: closed 0 · follow 1 · snapped 2 ·
@@ -380,12 +382,12 @@ scene Bmo {
     on op_c(v) { op_tc = v }
     on sf_set(v) { sf_on = mod(v, 2) == 1; sf_bmo = floor(v / 2) == 1 }
     spring sg.op = 220, 24
-    let op_mode = floor(op_tc / 1000)
-    let op_r0 = op_tc - op_mode * 1000
+    let op_mode = if(sf_on, floor(op_tc / 1000), 0)
+    let op_r0 = op_tc - floor(op_tc / 1000) * 1000
     let op_ax = floor(op_ta / 4096)
     let op_aw = floor(op_tb / 4096)
-    let op_tx = if(op_mode == 1, cursor.x - 90, op_ax)
-    let op_ty = if(op_mode == 1, cursor.y - 90, op_ta - op_ax * 4096)
+    let op_tx = if(op_mode == 1, op_px - 90, op_ax)
+    let op_ty = if(op_mode == 1, op_py - 90, op_ta - op_ax * 4096)
     let op_tw = if(op_mode == 1, 180, op_aw)
     let op_th = if(op_mode == 1, 180, op_tb - op_aw * 4096)
     let op_tr = if(op_mode == 1, 90, op_r0)
