@@ -189,9 +189,121 @@ def scene():
           "            let dz_in = dz.hover > 0.5",
           "            on change dz_in while dz_in { emit sg_hover(3) }",
           "            on change dz_in while not dz_in { emit sg_hover(2) }",
-          "        }", "    }", "}", ""]
+          "        }", "    }"]
+    L += surface_layers()
+    L += ["}", ""]
     return "\n".join(L)
 
+
+SLOTS = 8          # Presence slots on the desk layer (phase 1)
+RING_N = 7         # hub labels (six groups and This window)
+
+def surface_layers():
+    """D208: the Reveal (an overlay, open only while revealing: the Aperture over the real wallpaper, the Pill
+    in it, the hub's groups round its rim, the second ring) and the desk layer (Presences, under the windows)."""
+    L = ["", "    // ── Surface (D208): the Reveal and the Presences ──",
+         'shader aperture = file "shaders/aperture.wgsl"'.join(["    ", ""]),
+         "    fact rv_on = false", "    fact rv_stage = 0", "    fact rv_x = 0", "    fact rv_y = 0", "    fact rv_n = 6",
+         "    fact rv_pick_g = 0", "    fact rv_pick_s = 0", "    fact rv_ring = 170",
+         "    text rv_wall = \"\"", "    image rv_img = from rv_wall, 0, 0", "    text rv_t1 = \"mooi\""]
+    L += [f"    text rv_g{i} = \"\"" for i in range(RING_N)]
+    L += [f"    text rv_s{j} = \"\"" for j in range(4)]
+    L += ["    spring sg.rv = 220, 24",
+          "    // before the hub it follows the pointer; from the hub on it stays where it began (the logic's rv_x, rv_y)",
+          "    prop rv_px = 0 ~sg.rv", "    follow rv_px = if(rv_stage >= 3, rv_x, cursor.x)",
+          "    prop rv_py = 0 ~sg.rv", "    follow rv_py = if(rv_stage >= 3, rv_y, cursor.y)",
+          "    prop rv_rad = 0 ~sg.rv", "    follow rv_rad = pick(min(rv_stage, 2), 0, 22, 120)",
+          "    prop rv_k = 0 ~sg.rv", "    follow rv_k = if(rv_stage >= 2, 1, if(rv_stage >= 1, 0.35, 0))",
+          "    event rv_down ->       // from `mooi reveal down`: Super went down",
+          "    event rv_up ->         // from `mooi reveal up`: Super came up",
+          "    event rv_esc ->        // Escape while revealing",
+          "    event rv_outside ->    // a press while revealing",
+          "    event pp_press ->      // a Presence pressed (its slot)",
+          "    event pp_rpress ->     // a Presence right-pressed: edit it",
+          "    event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next",
+          "    event pp_drag ->       // slot * 100000000 + x * 10000 + y while dragged in edit",
+          "    event pp_drop ->       // slot, let go after a drag",
+          "    event ed_undo ->", "    event ed_redo ->", "    event ed_done ->"]
+    for k in range(SLOTS):
+        L += [f"    fact p{k}_on = false", f"    fact p{k}_x = 0", f"    fact p{k}_y = 0", f"    fact p{k}_w = 220", f"    fact p{k}_h = 28",
+              f"    fact p{k}_mode = 0", f"    fact p{k}_prog = 0", f"    fact p{k}_edit = false",
+              f"    fact p{k}_r = 0.84", f"    fact p{k}_g = 0.89", f"    fact p{k}_b = 0.54",
+              f"    text p{k}_t1 = \"\"", f"    text p{k}_t2 = \"\"", f"    text p{k}_icon = \"♫\""]
+    # the reveal surface
+    L += ["", "    surface reveal {", "        size: full, full", "        anchor: top", "        level: overlay", "        reserve: -1",
+          "        keyboard: exclusive while rv_on", "        rate: 60", "        open: rv_on",
+          "        // a press anywhere while revealing closes it (the hub is chosen by letting go of Super)",
+          "        zone box rvz { from: 0, 0; size: screen.width, screen.height; cursor: crosshair; role: button; label: \"Close the reveal\" }",
+          "        on press rvz { emit rv_outside }",
+          "        on key Escape { emit rv_esc }",
+          "        // the Aperture: the real wallpaper, opened at the pointer into its subsurface",
+          "        group {",
+          "            clip box { from: rv_px - rv_rad - 30, rv_py - rv_rad - 30; size: (rv_rad + 30) * 2, (rv_rad + 30) * 2; corner: rv_rad + 30 }",
+          "            shader: aperture, rv_k, rv_px, rv_py, rv_rad",
+          "            image rv_img { at: 0, 0; size: screen.width, screen.height; fit: cover }",
+          "        }",
+          "        // its lit rim",
+          "        group {",
+          "            glow: 14, 0.8, rgb(h0_r, h0_g, h0_b)",
+          "            ellipse { at: rv_px, rv_py; radius: max(1, rv_rad); stroke: 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: min(1, rv_k * 1.2) }",
+          "        }",
+          "        // the Pill at its centre",
+          "        group {",
+          "            show: rv_stage >= 2",
+          "            box { from: rv_px - 70, rv_py - 14; size: 140, 28; corner: 14; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }",
+          "            box { from: rv_px - 70, rv_py - 14; size: 140, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6 }",
+          "            text rv_t1 { at: rv_px, rv_py; anchor: center; size: 12; weight: 700; family: \"Exo 2\"; color: ink; width: 128; lines: 1 }",
+          "        }"]
+    for i in range(RING_N):
+        a = f"({i} * 360 / rv_n)"
+        L.append(f"        text rv_g{i} {{ at: rv_px + sin({a}) * rv_ring, rv_py - cos({a}) * rv_ring; anchor: center; size: if(rv_pick_g == {i + 1}, 15, 12); weight: 700; family: \"Exo 2\"; color: if(rv_pick_g == {i + 1}, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == {i + 1}, 0.95, 0.4); show: rv_stage >= 3 and {i} < rv_n }}")
+    for j in range(4):
+        a = f"((rv_pick_g - 1) * 360 / rv_n + {j} * 20.05)"
+        L.append(f"        text rv_s{j} {{ at: rv_px + sin({a}) * (rv_ring + 56), rv_py - cos({a}) * (rv_ring + 56); anchor: center; size: if(rv_pick_s == {j + 1}, 14, 11); weight: 600; family: \"Exo 2\"; color: if(rv_pick_s == {j + 1}, rgb(h0_r, h0_g, h0_b), muted); show: rv_stage >= 4 and rv_pick_g > 0 }}")
+    L += ["    }"]
+    # the desk surface: Presences under the windows
+    any_on = " or ".join(f"p{k}_on" for k in range(SLOTS))
+    L += ["", "    surface desk {", "        size: full, full", "        anchor: top", "        level: bottom", "        reserve: -1",
+          "        keyboard: none", "        rate: 60, 20 while calm", f"        open: {any_on}"]
+    for k in range(SLOTS):
+        i2 = "            "
+        col = f"rgb(p{k}_r, p{k}_g, p{k}_b)"
+        L += [f"        group {{", f"{i2}show: p{k}_on",
+              f"{i2}let p{k}_near = if(sqrt(pow(cursor.x - (p{k}_x + p{k}_w / 2), 2) + pow(cursor.y - (p{k}_y + p{k}_h / 2), 2)) < 160, 1, 0)",
+              f"{i2}let p{k}_show = min(2, p{k}_mode + p{k}_near)    // coming near wakes it a step",
+              f"{i2}// ghost: its mark, one line, a hairline of progress",
+              f"{i2}text p{k}_icon {{ at: p{k}_x + 10, p{k}_y + 14; anchor: center; size: 14; color: {col} }}",
+              f"{i2}text p{k}_t1 {{ at: p{k}_x + 24, p{k}_y + 14; anchor: left center; size: if(p{k}_show > 0.5, 15, 12); weight: 700; family: \"Exo 2\"; color: ink; width: max(20, p{k}_w - 30); lines: 1 }}",
+              f"{i2}box {{ from: p{k}_x + 24, p{k}_y + 26; size: max(1, (p{k}_w - 30) * clamp(p{k}_prog, 0, 1)), 1.4; color: {col}; opacity: 0.8 }}",
+              f"{i2}// embedded and full: the second line",
+              f"{i2}text p{k}_t2 {{ at: p{k}_x + 24, p{k}_y + 42; anchor: left center; size: 12; family: \"Share Tech Mono\"; color: muted; width: max(20, p{k}_w - 30); lines: 1; show: p{k}_show > 0.5 }}",
+              f"{i2}// full: the controls",
+              f"{i2}group {{", f"{i2}    show: p{k}_show > 1.5"]
+        for n, (glyph, label) in enumerate([("‹", "Previous"), ("▶", "Play or pause"), ("›", "Next")], start=1):
+            L += [f"{i2}    zone box pc{k}_{n} {{ from: p{k}_x + 24 + {(n - 1) * 34}, p{k}_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: \"{label}\" }}",
+                  f"{i2}    box {{ from: p{k}_x + 24 + {(n - 1) * 34}, p{k}_y + 56; size: 28, 28; corner: 14; stroke: 1; color: {col}; opacity: 0.4 + 0.6 * pc{k}_{n}.hover }}",
+                  f"{i2}    text \"{glyph}\" {{ at: p{k}_x + 38 + {(n - 1) * 34}, p{k}_y + 70; anchor: center; size: 14; weight: 700; family: \"Exo 2\"; color: ink }}",
+                  f"{i2}    on press pc{k}_{n} {{ emit pp_ctl({k * 10 + n}) }}"]
+        L += [f"{i2}}}",
+              f"{i2}// the whole Presence: a press, a right press (edit), and in edit a drag",
+              f"{i2}zone box pz{k} {{ from: p{k}_x, p{k}_y; size: p{k}_w, if(p{k}_show > 1.5, 52, p{k}_h); cursor: if(p{k}_edit, grab, pointer); role: button; label: \"A Presence\" }}",
+              f"{i2}on press pz{k} {{ emit pp_press({k}) }}",
+              f"{i2}on press right pz{k} {{ emit pp_rpress({k}) }}",
+              f"{i2}on drag pz{k} while p{k}_edit {{ emit pp_drag({k * 100000000} + round(pointer.x) * 10000 + round(pointer.y)) }}",
+              f"{i2}on release pz{k} while p{k}_edit {{ emit pp_drop({k}) }}",
+              f"{i2}// edit: a dashed outline and its strip — undo, redo, done",
+              f"{i2}group {{", f"{i2}    show: p{k}_edit",
+              f"{i2}    box {{ from: p{k}_x - 4, p{k}_y - 4; size: p{k}_w + 8, p{k}_h + 8; corner: 6; stroke: 1.2; color: {col}; opacity: 0.8 }}"]
+        for n, (glyph, ev) in enumerate([("↶", "ed_undo"), ("↷", "ed_redo"), ("Done", "ed_done")]):
+            w = 44 if glyph == "Done" else 26
+            x = f"p{k}_x + {n * 32}"
+            L += [f"{i2}    zone box ed{k}_{n} {{ from: {x}, p{k}_y - 34; size: {w}, 24; corner: 4; cursor: pointer; role: button; label: \"{ev}\" }}",
+                  f"{i2}    box {{ from: {x}, p{k}_y - 34; size: {w}, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }}",
+                  f"{i2}    text \"{glyph}\" {{ at: {x} + {w / 2}, p{k}_y - 22; anchor: center; size: 12; weight: 700; family: \"Exo 2\"; color: ink }}",
+                  f"{i2}    on press ed{k}_{n} {{ emit {ev} }}"]
+        L += [f"{i2}}}", "        }"]
+    L += ["    }"]
+    return L
 
 if __name__ == "__main__":
     OUT.write_text(scene())

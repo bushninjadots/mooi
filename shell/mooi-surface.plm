@@ -4617,4 +4617,616 @@ scene Sigil {
             on change dz_in while not dz_in { emit sg_hover(2) }
         }
     }
+
+    // ── Surface (D208): the Reveal and the Presences ──
+    shader aperture = file "shaders/aperture.wgsl"
+    fact rv_on = false
+    fact rv_stage = 0
+    fact rv_x = 0
+    fact rv_y = 0
+    fact rv_n = 6
+    fact rv_pick_g = 0
+    fact rv_pick_s = 0
+    fact rv_ring = 170
+    text rv_wall = ""
+    image rv_img = from rv_wall, 0, 0
+    text rv_t1 = "mooi"
+    text rv_g0 = ""
+    text rv_g1 = ""
+    text rv_g2 = ""
+    text rv_g3 = ""
+    text rv_g4 = ""
+    text rv_g5 = ""
+    text rv_g6 = ""
+    text rv_s0 = ""
+    text rv_s1 = ""
+    text rv_s2 = ""
+    text rv_s3 = ""
+    spring sg.rv = 220, 24
+    // before the hub it follows the pointer; from the hub on it stays where it began (the logic's rv_x, rv_y)
+    prop rv_px = 0 ~sg.rv
+    follow rv_px = if(rv_stage >= 3, rv_x, cursor.x)
+    prop rv_py = 0 ~sg.rv
+    follow rv_py = if(rv_stage >= 3, rv_y, cursor.y)
+    prop rv_rad = 0 ~sg.rv
+    follow rv_rad = pick(min(rv_stage, 2), 0, 22, 120)
+    prop rv_k = 0 ~sg.rv
+    follow rv_k = if(rv_stage >= 2, 1, if(rv_stage >= 1, 0.35, 0))
+    event rv_down ->       // from `mooi reveal down`: Super went down
+    event rv_up ->         // from `mooi reveal up`: Super came up
+    event rv_esc ->        // Escape while revealing
+    event rv_outside ->    // a press while revealing
+    event pp_press ->      // a Presence pressed (its slot)
+    event pp_rpress ->     // a Presence right-pressed: edit it
+    event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next
+    event pp_drag ->       // slot * 100000000 + x * 10000 + y while dragged in edit
+    event pp_drop ->       // slot, let go after a drag
+    event ed_undo ->
+    event ed_redo ->
+    event ed_done ->
+    fact p0_on = false
+    fact p0_x = 0
+    fact p0_y = 0
+    fact p0_w = 220
+    fact p0_h = 28
+    fact p0_mode = 0
+    fact p0_prog = 0
+    fact p0_edit = false
+    fact p0_r = 0.84
+    fact p0_g = 0.89
+    fact p0_b = 0.54
+    text p0_t1 = ""
+    text p0_t2 = ""
+    text p0_icon = "♫"
+    fact p1_on = false
+    fact p1_x = 0
+    fact p1_y = 0
+    fact p1_w = 220
+    fact p1_h = 28
+    fact p1_mode = 0
+    fact p1_prog = 0
+    fact p1_edit = false
+    fact p1_r = 0.84
+    fact p1_g = 0.89
+    fact p1_b = 0.54
+    text p1_t1 = ""
+    text p1_t2 = ""
+    text p1_icon = "♫"
+    fact p2_on = false
+    fact p2_x = 0
+    fact p2_y = 0
+    fact p2_w = 220
+    fact p2_h = 28
+    fact p2_mode = 0
+    fact p2_prog = 0
+    fact p2_edit = false
+    fact p2_r = 0.84
+    fact p2_g = 0.89
+    fact p2_b = 0.54
+    text p2_t1 = ""
+    text p2_t2 = ""
+    text p2_icon = "♫"
+    fact p3_on = false
+    fact p3_x = 0
+    fact p3_y = 0
+    fact p3_w = 220
+    fact p3_h = 28
+    fact p3_mode = 0
+    fact p3_prog = 0
+    fact p3_edit = false
+    fact p3_r = 0.84
+    fact p3_g = 0.89
+    fact p3_b = 0.54
+    text p3_t1 = ""
+    text p3_t2 = ""
+    text p3_icon = "♫"
+    fact p4_on = false
+    fact p4_x = 0
+    fact p4_y = 0
+    fact p4_w = 220
+    fact p4_h = 28
+    fact p4_mode = 0
+    fact p4_prog = 0
+    fact p4_edit = false
+    fact p4_r = 0.84
+    fact p4_g = 0.89
+    fact p4_b = 0.54
+    text p4_t1 = ""
+    text p4_t2 = ""
+    text p4_icon = "♫"
+    fact p5_on = false
+    fact p5_x = 0
+    fact p5_y = 0
+    fact p5_w = 220
+    fact p5_h = 28
+    fact p5_mode = 0
+    fact p5_prog = 0
+    fact p5_edit = false
+    fact p5_r = 0.84
+    fact p5_g = 0.89
+    fact p5_b = 0.54
+    text p5_t1 = ""
+    text p5_t2 = ""
+    text p5_icon = "♫"
+    fact p6_on = false
+    fact p6_x = 0
+    fact p6_y = 0
+    fact p6_w = 220
+    fact p6_h = 28
+    fact p6_mode = 0
+    fact p6_prog = 0
+    fact p6_edit = false
+    fact p6_r = 0.84
+    fact p6_g = 0.89
+    fact p6_b = 0.54
+    text p6_t1 = ""
+    text p6_t2 = ""
+    text p6_icon = "♫"
+    fact p7_on = false
+    fact p7_x = 0
+    fact p7_y = 0
+    fact p7_w = 220
+    fact p7_h = 28
+    fact p7_mode = 0
+    fact p7_prog = 0
+    fact p7_edit = false
+    fact p7_r = 0.84
+    fact p7_g = 0.89
+    fact p7_b = 0.54
+    text p7_t1 = ""
+    text p7_t2 = ""
+    text p7_icon = "♫"
+
+    surface reveal {
+        size: full, full
+        anchor: top
+        level: overlay
+        reserve: -1
+        keyboard: exclusive while rv_on
+        rate: 60
+        open: rv_on
+        // a press anywhere while revealing closes it (the hub is chosen by letting go of Super)
+        zone box rvz { from: 0, 0; size: screen.width, screen.height; cursor: crosshair; role: button; label: "Close the reveal" }
+        on press rvz { emit rv_outside }
+        on key Escape { emit rv_esc }
+        // the Aperture: the real wallpaper, opened at the pointer into its subsurface
+        group {
+            clip box { from: rv_px - rv_rad - 30, rv_py - rv_rad - 30; size: (rv_rad + 30) * 2, (rv_rad + 30) * 2; corner: rv_rad + 30 }
+            shader: aperture, rv_k, rv_px, rv_py, rv_rad
+            image rv_img { at: 0, 0; size: screen.width, screen.height; fit: cover }
+        }
+        // its lit rim
+        group {
+            glow: 14, 0.8, rgb(h0_r, h0_g, h0_b)
+            ellipse { at: rv_px, rv_py; radius: max(1, rv_rad); stroke: 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: min(1, rv_k * 1.2) }
+        }
+        // the Pill at its centre
+        group {
+            show: rv_stage >= 2
+            box { from: rv_px - 70, rv_py - 14; size: 140, 28; corner: 14; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+            box { from: rv_px - 70, rv_py - 14; size: 140, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6 }
+            text rv_t1 { at: rv_px, rv_py; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink; width: 128; lines: 1 }
+        }
+        text rv_g0 { at: rv_px + sin((0 * 360 / rv_n)) * rv_ring, rv_py - cos((0 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 1, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 1, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 1, 0.95, 0.4); show: rv_stage >= 3 and 0 < rv_n }
+        text rv_g1 { at: rv_px + sin((1 * 360 / rv_n)) * rv_ring, rv_py - cos((1 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 2, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 2, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 2, 0.95, 0.4); show: rv_stage >= 3 and 1 < rv_n }
+        text rv_g2 { at: rv_px + sin((2 * 360 / rv_n)) * rv_ring, rv_py - cos((2 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 3, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 3, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 3, 0.95, 0.4); show: rv_stage >= 3 and 2 < rv_n }
+        text rv_g3 { at: rv_px + sin((3 * 360 / rv_n)) * rv_ring, rv_py - cos((3 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 4, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 4, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 4, 0.95, 0.4); show: rv_stage >= 3 and 3 < rv_n }
+        text rv_g4 { at: rv_px + sin((4 * 360 / rv_n)) * rv_ring, rv_py - cos((4 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 5, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 5, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 5, 0.95, 0.4); show: rv_stage >= 3 and 4 < rv_n }
+        text rv_g5 { at: rv_px + sin((5 * 360 / rv_n)) * rv_ring, rv_py - cos((5 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 6, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 6, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 6, 0.95, 0.4); show: rv_stage >= 3 and 5 < rv_n }
+        text rv_g6 { at: rv_px + sin((6 * 360 / rv_n)) * rv_ring, rv_py - cos((6 * 360 / rv_n)) * rv_ring; anchor: center; size: if(rv_pick_g == 7, 15, 12); weight: 700; family: "Exo 2"; color: if(rv_pick_g == 7, rgb(h0_r, h0_g, h0_b), ink); opacity: if(rv_pick_g == 0 or rv_pick_g == 7, 0.95, 0.4); show: rv_stage >= 3 and 6 < rv_n }
+        text rv_s0 { at: rv_px + sin(((rv_pick_g - 1) * 360 / rv_n + 0 * 20.05)) * (rv_ring + 56), rv_py - cos(((rv_pick_g - 1) * 360 / rv_n + 0 * 20.05)) * (rv_ring + 56); anchor: center; size: if(rv_pick_s == 1, 14, 11); weight: 600; family: "Exo 2"; color: if(rv_pick_s == 1, rgb(h0_r, h0_g, h0_b), muted); show: rv_stage >= 4 and rv_pick_g > 0 }
+        text rv_s1 { at: rv_px + sin(((rv_pick_g - 1) * 360 / rv_n + 1 * 20.05)) * (rv_ring + 56), rv_py - cos(((rv_pick_g - 1) * 360 / rv_n + 1 * 20.05)) * (rv_ring + 56); anchor: center; size: if(rv_pick_s == 2, 14, 11); weight: 600; family: "Exo 2"; color: if(rv_pick_s == 2, rgb(h0_r, h0_g, h0_b), muted); show: rv_stage >= 4 and rv_pick_g > 0 }
+        text rv_s2 { at: rv_px + sin(((rv_pick_g - 1) * 360 / rv_n + 2 * 20.05)) * (rv_ring + 56), rv_py - cos(((rv_pick_g - 1) * 360 / rv_n + 2 * 20.05)) * (rv_ring + 56); anchor: center; size: if(rv_pick_s == 3, 14, 11); weight: 600; family: "Exo 2"; color: if(rv_pick_s == 3, rgb(h0_r, h0_g, h0_b), muted); show: rv_stage >= 4 and rv_pick_g > 0 }
+        text rv_s3 { at: rv_px + sin(((rv_pick_g - 1) * 360 / rv_n + 3 * 20.05)) * (rv_ring + 56), rv_py - cos(((rv_pick_g - 1) * 360 / rv_n + 3 * 20.05)) * (rv_ring + 56); anchor: center; size: if(rv_pick_s == 4, 14, 11); weight: 600; family: "Exo 2"; color: if(rv_pick_s == 4, rgb(h0_r, h0_g, h0_b), muted); show: rv_stage >= 4 and rv_pick_g > 0 }
+    }
+
+    surface desk {
+        size: full, full
+        anchor: top
+        level: bottom
+        reserve: -1
+        keyboard: none
+        rate: 60, 20 while calm
+        open: p0_on or p1_on or p2_on or p3_on or p4_on or p5_on or p6_on or p7_on
+        group {
+            show: p0_on
+            let p0_near = if(sqrt(pow(cursor.x - (p0_x + p0_w / 2), 2) + pow(cursor.y - (p0_y + p0_h / 2), 2)) < 160, 1, 0)
+            let p0_show = min(2, p0_mode + p0_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p0_icon { at: p0_x + 10, p0_y + 14; anchor: center; size: 14; color: rgb(p0_r, p0_g, p0_b) }
+            text p0_t1 { at: p0_x + 24, p0_y + 14; anchor: left center; size: if(p0_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p0_w - 30); lines: 1 }
+            box { from: p0_x + 24, p0_y + 26; size: max(1, (p0_w - 30) * clamp(p0_prog, 0, 1)), 1.4; color: rgb(p0_r, p0_g, p0_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p0_t2 { at: p0_x + 24, p0_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p0_w - 30); lines: 1; show: p0_show > 0.5 }
+            // full: the controls
+            group {
+                show: p0_show > 1.5
+                zone box pc0_1 { from: p0_x + 24 + 0, p0_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p0_x + 24 + 0, p0_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p0_r, p0_g, p0_b); opacity: 0.4 + 0.6 * pc0_1.hover }
+                text "‹" { at: p0_x + 38 + 0, p0_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc0_1 { emit pp_ctl(1) }
+                zone box pc0_2 { from: p0_x + 24 + 34, p0_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p0_x + 24 + 34, p0_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p0_r, p0_g, p0_b); opacity: 0.4 + 0.6 * pc0_2.hover }
+                text "▶" { at: p0_x + 38 + 34, p0_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc0_2 { emit pp_ctl(2) }
+                zone box pc0_3 { from: p0_x + 24 + 68, p0_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p0_x + 24 + 68, p0_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p0_r, p0_g, p0_b); opacity: 0.4 + 0.6 * pc0_3.hover }
+                text "›" { at: p0_x + 38 + 68, p0_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc0_3 { emit pp_ctl(3) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz0 { from: p0_x, p0_y; size: p0_w, if(p0_show > 1.5, 52, p0_h); cursor: if(p0_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz0 { emit pp_press(0) }
+            on press right pz0 { emit pp_rpress(0) }
+            on drag pz0 while p0_edit { emit pp_drag(0 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz0 while p0_edit { emit pp_drop(0) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p0_edit
+                box { from: p0_x - 4, p0_y - 4; size: p0_w + 8, p0_h + 8; corner: 6; stroke: 1.2; color: rgb(p0_r, p0_g, p0_b); opacity: 0.8 }
+                zone box ed0_0 { from: p0_x + 0, p0_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p0_x + 0, p0_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p0_x + 0 + 13.0, p0_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed0_0 { emit ed_undo }
+                zone box ed0_1 { from: p0_x + 32, p0_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p0_x + 32, p0_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p0_x + 32 + 13.0, p0_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed0_1 { emit ed_redo }
+                zone box ed0_2 { from: p0_x + 64, p0_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p0_x + 64, p0_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p0_x + 64 + 22.0, p0_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed0_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p1_on
+            let p1_near = if(sqrt(pow(cursor.x - (p1_x + p1_w / 2), 2) + pow(cursor.y - (p1_y + p1_h / 2), 2)) < 160, 1, 0)
+            let p1_show = min(2, p1_mode + p1_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p1_icon { at: p1_x + 10, p1_y + 14; anchor: center; size: 14; color: rgb(p1_r, p1_g, p1_b) }
+            text p1_t1 { at: p1_x + 24, p1_y + 14; anchor: left center; size: if(p1_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p1_w - 30); lines: 1 }
+            box { from: p1_x + 24, p1_y + 26; size: max(1, (p1_w - 30) * clamp(p1_prog, 0, 1)), 1.4; color: rgb(p1_r, p1_g, p1_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p1_t2 { at: p1_x + 24, p1_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p1_w - 30); lines: 1; show: p1_show > 0.5 }
+            // full: the controls
+            group {
+                show: p1_show > 1.5
+                zone box pc1_1 { from: p1_x + 24 + 0, p1_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p1_x + 24 + 0, p1_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p1_r, p1_g, p1_b); opacity: 0.4 + 0.6 * pc1_1.hover }
+                text "‹" { at: p1_x + 38 + 0, p1_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc1_1 { emit pp_ctl(11) }
+                zone box pc1_2 { from: p1_x + 24 + 34, p1_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p1_x + 24 + 34, p1_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p1_r, p1_g, p1_b); opacity: 0.4 + 0.6 * pc1_2.hover }
+                text "▶" { at: p1_x + 38 + 34, p1_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc1_2 { emit pp_ctl(12) }
+                zone box pc1_3 { from: p1_x + 24 + 68, p1_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p1_x + 24 + 68, p1_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p1_r, p1_g, p1_b); opacity: 0.4 + 0.6 * pc1_3.hover }
+                text "›" { at: p1_x + 38 + 68, p1_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc1_3 { emit pp_ctl(13) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz1 { from: p1_x, p1_y; size: p1_w, if(p1_show > 1.5, 52, p1_h); cursor: if(p1_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz1 { emit pp_press(1) }
+            on press right pz1 { emit pp_rpress(1) }
+            on drag pz1 while p1_edit { emit pp_drag(100000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz1 while p1_edit { emit pp_drop(1) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p1_edit
+                box { from: p1_x - 4, p1_y - 4; size: p1_w + 8, p1_h + 8; corner: 6; stroke: 1.2; color: rgb(p1_r, p1_g, p1_b); opacity: 0.8 }
+                zone box ed1_0 { from: p1_x + 0, p1_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p1_x + 0, p1_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p1_x + 0 + 13.0, p1_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed1_0 { emit ed_undo }
+                zone box ed1_1 { from: p1_x + 32, p1_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p1_x + 32, p1_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p1_x + 32 + 13.0, p1_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed1_1 { emit ed_redo }
+                zone box ed1_2 { from: p1_x + 64, p1_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p1_x + 64, p1_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p1_x + 64 + 22.0, p1_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed1_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p2_on
+            let p2_near = if(sqrt(pow(cursor.x - (p2_x + p2_w / 2), 2) + pow(cursor.y - (p2_y + p2_h / 2), 2)) < 160, 1, 0)
+            let p2_show = min(2, p2_mode + p2_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p2_icon { at: p2_x + 10, p2_y + 14; anchor: center; size: 14; color: rgb(p2_r, p2_g, p2_b) }
+            text p2_t1 { at: p2_x + 24, p2_y + 14; anchor: left center; size: if(p2_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p2_w - 30); lines: 1 }
+            box { from: p2_x + 24, p2_y + 26; size: max(1, (p2_w - 30) * clamp(p2_prog, 0, 1)), 1.4; color: rgb(p2_r, p2_g, p2_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p2_t2 { at: p2_x + 24, p2_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p2_w - 30); lines: 1; show: p2_show > 0.5 }
+            // full: the controls
+            group {
+                show: p2_show > 1.5
+                zone box pc2_1 { from: p2_x + 24 + 0, p2_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p2_x + 24 + 0, p2_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p2_r, p2_g, p2_b); opacity: 0.4 + 0.6 * pc2_1.hover }
+                text "‹" { at: p2_x + 38 + 0, p2_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc2_1 { emit pp_ctl(21) }
+                zone box pc2_2 { from: p2_x + 24 + 34, p2_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p2_x + 24 + 34, p2_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p2_r, p2_g, p2_b); opacity: 0.4 + 0.6 * pc2_2.hover }
+                text "▶" { at: p2_x + 38 + 34, p2_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc2_2 { emit pp_ctl(22) }
+                zone box pc2_3 { from: p2_x + 24 + 68, p2_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p2_x + 24 + 68, p2_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p2_r, p2_g, p2_b); opacity: 0.4 + 0.6 * pc2_3.hover }
+                text "›" { at: p2_x + 38 + 68, p2_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc2_3 { emit pp_ctl(23) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz2 { from: p2_x, p2_y; size: p2_w, if(p2_show > 1.5, 52, p2_h); cursor: if(p2_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz2 { emit pp_press(2) }
+            on press right pz2 { emit pp_rpress(2) }
+            on drag pz2 while p2_edit { emit pp_drag(200000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz2 while p2_edit { emit pp_drop(2) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p2_edit
+                box { from: p2_x - 4, p2_y - 4; size: p2_w + 8, p2_h + 8; corner: 6; stroke: 1.2; color: rgb(p2_r, p2_g, p2_b); opacity: 0.8 }
+                zone box ed2_0 { from: p2_x + 0, p2_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p2_x + 0, p2_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p2_x + 0 + 13.0, p2_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed2_0 { emit ed_undo }
+                zone box ed2_1 { from: p2_x + 32, p2_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p2_x + 32, p2_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p2_x + 32 + 13.0, p2_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed2_1 { emit ed_redo }
+                zone box ed2_2 { from: p2_x + 64, p2_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p2_x + 64, p2_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p2_x + 64 + 22.0, p2_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed2_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p3_on
+            let p3_near = if(sqrt(pow(cursor.x - (p3_x + p3_w / 2), 2) + pow(cursor.y - (p3_y + p3_h / 2), 2)) < 160, 1, 0)
+            let p3_show = min(2, p3_mode + p3_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p3_icon { at: p3_x + 10, p3_y + 14; anchor: center; size: 14; color: rgb(p3_r, p3_g, p3_b) }
+            text p3_t1 { at: p3_x + 24, p3_y + 14; anchor: left center; size: if(p3_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p3_w - 30); lines: 1 }
+            box { from: p3_x + 24, p3_y + 26; size: max(1, (p3_w - 30) * clamp(p3_prog, 0, 1)), 1.4; color: rgb(p3_r, p3_g, p3_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p3_t2 { at: p3_x + 24, p3_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p3_w - 30); lines: 1; show: p3_show > 0.5 }
+            // full: the controls
+            group {
+                show: p3_show > 1.5
+                zone box pc3_1 { from: p3_x + 24 + 0, p3_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p3_x + 24 + 0, p3_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p3_r, p3_g, p3_b); opacity: 0.4 + 0.6 * pc3_1.hover }
+                text "‹" { at: p3_x + 38 + 0, p3_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc3_1 { emit pp_ctl(31) }
+                zone box pc3_2 { from: p3_x + 24 + 34, p3_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p3_x + 24 + 34, p3_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p3_r, p3_g, p3_b); opacity: 0.4 + 0.6 * pc3_2.hover }
+                text "▶" { at: p3_x + 38 + 34, p3_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc3_2 { emit pp_ctl(32) }
+                zone box pc3_3 { from: p3_x + 24 + 68, p3_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p3_x + 24 + 68, p3_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p3_r, p3_g, p3_b); opacity: 0.4 + 0.6 * pc3_3.hover }
+                text "›" { at: p3_x + 38 + 68, p3_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc3_3 { emit pp_ctl(33) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz3 { from: p3_x, p3_y; size: p3_w, if(p3_show > 1.5, 52, p3_h); cursor: if(p3_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz3 { emit pp_press(3) }
+            on press right pz3 { emit pp_rpress(3) }
+            on drag pz3 while p3_edit { emit pp_drag(300000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz3 while p3_edit { emit pp_drop(3) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p3_edit
+                box { from: p3_x - 4, p3_y - 4; size: p3_w + 8, p3_h + 8; corner: 6; stroke: 1.2; color: rgb(p3_r, p3_g, p3_b); opacity: 0.8 }
+                zone box ed3_0 { from: p3_x + 0, p3_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p3_x + 0, p3_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p3_x + 0 + 13.0, p3_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed3_0 { emit ed_undo }
+                zone box ed3_1 { from: p3_x + 32, p3_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p3_x + 32, p3_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p3_x + 32 + 13.0, p3_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed3_1 { emit ed_redo }
+                zone box ed3_2 { from: p3_x + 64, p3_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p3_x + 64, p3_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p3_x + 64 + 22.0, p3_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed3_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p4_on
+            let p4_near = if(sqrt(pow(cursor.x - (p4_x + p4_w / 2), 2) + pow(cursor.y - (p4_y + p4_h / 2), 2)) < 160, 1, 0)
+            let p4_show = min(2, p4_mode + p4_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p4_icon { at: p4_x + 10, p4_y + 14; anchor: center; size: 14; color: rgb(p4_r, p4_g, p4_b) }
+            text p4_t1 { at: p4_x + 24, p4_y + 14; anchor: left center; size: if(p4_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p4_w - 30); lines: 1 }
+            box { from: p4_x + 24, p4_y + 26; size: max(1, (p4_w - 30) * clamp(p4_prog, 0, 1)), 1.4; color: rgb(p4_r, p4_g, p4_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p4_t2 { at: p4_x + 24, p4_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p4_w - 30); lines: 1; show: p4_show > 0.5 }
+            // full: the controls
+            group {
+                show: p4_show > 1.5
+                zone box pc4_1 { from: p4_x + 24 + 0, p4_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p4_x + 24 + 0, p4_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p4_r, p4_g, p4_b); opacity: 0.4 + 0.6 * pc4_1.hover }
+                text "‹" { at: p4_x + 38 + 0, p4_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc4_1 { emit pp_ctl(41) }
+                zone box pc4_2 { from: p4_x + 24 + 34, p4_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p4_x + 24 + 34, p4_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p4_r, p4_g, p4_b); opacity: 0.4 + 0.6 * pc4_2.hover }
+                text "▶" { at: p4_x + 38 + 34, p4_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc4_2 { emit pp_ctl(42) }
+                zone box pc4_3 { from: p4_x + 24 + 68, p4_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p4_x + 24 + 68, p4_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p4_r, p4_g, p4_b); opacity: 0.4 + 0.6 * pc4_3.hover }
+                text "›" { at: p4_x + 38 + 68, p4_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc4_3 { emit pp_ctl(43) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz4 { from: p4_x, p4_y; size: p4_w, if(p4_show > 1.5, 52, p4_h); cursor: if(p4_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz4 { emit pp_press(4) }
+            on press right pz4 { emit pp_rpress(4) }
+            on drag pz4 while p4_edit { emit pp_drag(400000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz4 while p4_edit { emit pp_drop(4) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p4_edit
+                box { from: p4_x - 4, p4_y - 4; size: p4_w + 8, p4_h + 8; corner: 6; stroke: 1.2; color: rgb(p4_r, p4_g, p4_b); opacity: 0.8 }
+                zone box ed4_0 { from: p4_x + 0, p4_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p4_x + 0, p4_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p4_x + 0 + 13.0, p4_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed4_0 { emit ed_undo }
+                zone box ed4_1 { from: p4_x + 32, p4_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p4_x + 32, p4_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p4_x + 32 + 13.0, p4_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed4_1 { emit ed_redo }
+                zone box ed4_2 { from: p4_x + 64, p4_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p4_x + 64, p4_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p4_x + 64 + 22.0, p4_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed4_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p5_on
+            let p5_near = if(sqrt(pow(cursor.x - (p5_x + p5_w / 2), 2) + pow(cursor.y - (p5_y + p5_h / 2), 2)) < 160, 1, 0)
+            let p5_show = min(2, p5_mode + p5_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p5_icon { at: p5_x + 10, p5_y + 14; anchor: center; size: 14; color: rgb(p5_r, p5_g, p5_b) }
+            text p5_t1 { at: p5_x + 24, p5_y + 14; anchor: left center; size: if(p5_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p5_w - 30); lines: 1 }
+            box { from: p5_x + 24, p5_y + 26; size: max(1, (p5_w - 30) * clamp(p5_prog, 0, 1)), 1.4; color: rgb(p5_r, p5_g, p5_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p5_t2 { at: p5_x + 24, p5_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p5_w - 30); lines: 1; show: p5_show > 0.5 }
+            // full: the controls
+            group {
+                show: p5_show > 1.5
+                zone box pc5_1 { from: p5_x + 24 + 0, p5_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p5_x + 24 + 0, p5_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p5_r, p5_g, p5_b); opacity: 0.4 + 0.6 * pc5_1.hover }
+                text "‹" { at: p5_x + 38 + 0, p5_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc5_1 { emit pp_ctl(51) }
+                zone box pc5_2 { from: p5_x + 24 + 34, p5_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p5_x + 24 + 34, p5_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p5_r, p5_g, p5_b); opacity: 0.4 + 0.6 * pc5_2.hover }
+                text "▶" { at: p5_x + 38 + 34, p5_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc5_2 { emit pp_ctl(52) }
+                zone box pc5_3 { from: p5_x + 24 + 68, p5_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p5_x + 24 + 68, p5_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p5_r, p5_g, p5_b); opacity: 0.4 + 0.6 * pc5_3.hover }
+                text "›" { at: p5_x + 38 + 68, p5_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc5_3 { emit pp_ctl(53) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz5 { from: p5_x, p5_y; size: p5_w, if(p5_show > 1.5, 52, p5_h); cursor: if(p5_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz5 { emit pp_press(5) }
+            on press right pz5 { emit pp_rpress(5) }
+            on drag pz5 while p5_edit { emit pp_drag(500000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz5 while p5_edit { emit pp_drop(5) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p5_edit
+                box { from: p5_x - 4, p5_y - 4; size: p5_w + 8, p5_h + 8; corner: 6; stroke: 1.2; color: rgb(p5_r, p5_g, p5_b); opacity: 0.8 }
+                zone box ed5_0 { from: p5_x + 0, p5_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p5_x + 0, p5_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p5_x + 0 + 13.0, p5_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed5_0 { emit ed_undo }
+                zone box ed5_1 { from: p5_x + 32, p5_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p5_x + 32, p5_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p5_x + 32 + 13.0, p5_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed5_1 { emit ed_redo }
+                zone box ed5_2 { from: p5_x + 64, p5_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p5_x + 64, p5_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p5_x + 64 + 22.0, p5_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed5_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p6_on
+            let p6_near = if(sqrt(pow(cursor.x - (p6_x + p6_w / 2), 2) + pow(cursor.y - (p6_y + p6_h / 2), 2)) < 160, 1, 0)
+            let p6_show = min(2, p6_mode + p6_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p6_icon { at: p6_x + 10, p6_y + 14; anchor: center; size: 14; color: rgb(p6_r, p6_g, p6_b) }
+            text p6_t1 { at: p6_x + 24, p6_y + 14; anchor: left center; size: if(p6_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p6_w - 30); lines: 1 }
+            box { from: p6_x + 24, p6_y + 26; size: max(1, (p6_w - 30) * clamp(p6_prog, 0, 1)), 1.4; color: rgb(p6_r, p6_g, p6_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p6_t2 { at: p6_x + 24, p6_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p6_w - 30); lines: 1; show: p6_show > 0.5 }
+            // full: the controls
+            group {
+                show: p6_show > 1.5
+                zone box pc6_1 { from: p6_x + 24 + 0, p6_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p6_x + 24 + 0, p6_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p6_r, p6_g, p6_b); opacity: 0.4 + 0.6 * pc6_1.hover }
+                text "‹" { at: p6_x + 38 + 0, p6_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc6_1 { emit pp_ctl(61) }
+                zone box pc6_2 { from: p6_x + 24 + 34, p6_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p6_x + 24 + 34, p6_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p6_r, p6_g, p6_b); opacity: 0.4 + 0.6 * pc6_2.hover }
+                text "▶" { at: p6_x + 38 + 34, p6_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc6_2 { emit pp_ctl(62) }
+                zone box pc6_3 { from: p6_x + 24 + 68, p6_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p6_x + 24 + 68, p6_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p6_r, p6_g, p6_b); opacity: 0.4 + 0.6 * pc6_3.hover }
+                text "›" { at: p6_x + 38 + 68, p6_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc6_3 { emit pp_ctl(63) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz6 { from: p6_x, p6_y; size: p6_w, if(p6_show > 1.5, 52, p6_h); cursor: if(p6_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz6 { emit pp_press(6) }
+            on press right pz6 { emit pp_rpress(6) }
+            on drag pz6 while p6_edit { emit pp_drag(600000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz6 while p6_edit { emit pp_drop(6) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p6_edit
+                box { from: p6_x - 4, p6_y - 4; size: p6_w + 8, p6_h + 8; corner: 6; stroke: 1.2; color: rgb(p6_r, p6_g, p6_b); opacity: 0.8 }
+                zone box ed6_0 { from: p6_x + 0, p6_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p6_x + 0, p6_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p6_x + 0 + 13.0, p6_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed6_0 { emit ed_undo }
+                zone box ed6_1 { from: p6_x + 32, p6_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p6_x + 32, p6_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p6_x + 32 + 13.0, p6_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed6_1 { emit ed_redo }
+                zone box ed6_2 { from: p6_x + 64, p6_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p6_x + 64, p6_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p6_x + 64 + 22.0, p6_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed6_2 { emit ed_done }
+            }
+        }
+        group {
+            show: p7_on
+            let p7_near = if(sqrt(pow(cursor.x - (p7_x + p7_w / 2), 2) + pow(cursor.y - (p7_y + p7_h / 2), 2)) < 160, 1, 0)
+            let p7_show = min(2, p7_mode + p7_near)    // coming near wakes it a step
+            // ghost: its mark, one line, a hairline of progress
+            text p7_icon { at: p7_x + 10, p7_y + 14; anchor: center; size: 14; color: rgb(p7_r, p7_g, p7_b) }
+            text p7_t1 { at: p7_x + 24, p7_y + 14; anchor: left center; size: if(p7_show > 0.5, 15, 12); weight: 700; family: "Exo 2"; color: ink; width: max(20, p7_w - 30); lines: 1 }
+            box { from: p7_x + 24, p7_y + 26; size: max(1, (p7_w - 30) * clamp(p7_prog, 0, 1)), 1.4; color: rgb(p7_r, p7_g, p7_b); opacity: 0.8 }
+            // embedded and full: the second line
+            text p7_t2 { at: p7_x + 24, p7_y + 42; anchor: left center; size: 12; family: "Share Tech Mono"; color: muted; width: max(20, p7_w - 30); lines: 1; show: p7_show > 0.5 }
+            // full: the controls
+            group {
+                show: p7_show > 1.5
+                zone box pc7_1 { from: p7_x + 24 + 0, p7_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous" }
+                box { from: p7_x + 24 + 0, p7_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p7_r, p7_g, p7_b); opacity: 0.4 + 0.6 * pc7_1.hover }
+                text "‹" { at: p7_x + 38 + 0, p7_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc7_1 { emit pp_ctl(71) }
+                zone box pc7_2 { from: p7_x + 24 + 34, p7_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause" }
+                box { from: p7_x + 24 + 34, p7_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p7_r, p7_g, p7_b); opacity: 0.4 + 0.6 * pc7_2.hover }
+                text "▶" { at: p7_x + 38 + 34, p7_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc7_2 { emit pp_ctl(72) }
+                zone box pc7_3 { from: p7_x + 24 + 68, p7_y + 56; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next" }
+                box { from: p7_x + 24 + 68, p7_y + 56; size: 28, 28; corner: 14; stroke: 1; color: rgb(p7_r, p7_g, p7_b); opacity: 0.4 + 0.6 * pc7_3.hover }
+                text "›" { at: p7_x + 38 + 68, p7_y + 70; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: ink }
+                on press pc7_3 { emit pp_ctl(73) }
+            }
+            // the whole Presence: a press, a right press (edit), and in edit a drag
+            zone box pz7 { from: p7_x, p7_y; size: p7_w, if(p7_show > 1.5, 52, p7_h); cursor: if(p7_edit, grab, pointer); role: button; label: "A Presence" }
+            on press pz7 { emit pp_press(7) }
+            on press right pz7 { emit pp_rpress(7) }
+            on drag pz7 while p7_edit { emit pp_drag(700000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz7 while p7_edit { emit pp_drop(7) }
+            // edit: a dashed outline and its strip — undo, redo, done
+            group {
+                show: p7_edit
+                box { from: p7_x - 4, p7_y - 4; size: p7_w + 8, p7_h + 8; corner: 6; stroke: 1.2; color: rgb(p7_r, p7_g, p7_b); opacity: 0.8 }
+                zone box ed7_0 { from: p7_x + 0, p7_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_undo" }
+                box { from: p7_x + 0, p7_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↶" { at: p7_x + 0 + 13.0, p7_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed7_0 { emit ed_undo }
+                zone box ed7_1 { from: p7_x + 32, p7_y - 34; size: 26, 24; corner: 4; cursor: pointer; role: button; label: "ed_redo" }
+                box { from: p7_x + 32, p7_y - 34; size: 26, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "↷" { at: p7_x + 32 + 13.0, p7_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed7_1 { emit ed_redo }
+                zone box ed7_2 { from: p7_x + 64, p7_y - 34; size: 44, 24; corner: 4; cursor: pointer; role: button; label: "ed_done" }
+                box { from: p7_x + 64, p7_y - 34; size: 44, 24; corner: 4; color: rgb(pl_r, pl_g, pl_b); opacity: 0.9 }
+                text "Done" { at: p7_x + 64 + 22.0, p7_y - 22; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: ink }
+                on press ed7_2 { emit ed_done }
+            }
+        }
+    }
 }

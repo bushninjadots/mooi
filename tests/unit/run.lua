@@ -7488,5 +7488,18 @@ do
     end)
 end
 
+section("surface: scene (D208)")
+test("scene: the reveal overlay with the Aperture, the desk layer for Presences", function()
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    local plm = read("shell/mooi-surface.plm")
+    assert(plm:find("surface reveal {", 1, true) and plm:find("open: rv_on", 1, true), "the reveal, only while revealing")
+    assert(plm:find("shader: aperture", 1, true), "the Aperture is a shader over the wallpaper")
+    assert(plm:find("surface desk {", 1, true) and plm:find("level: bottom", 1, true), "Presences under the windows")
+    assert(plm:find("emit pp_drag(", 1, true) and plm:find("emit pp_drop(", 1, true), "moved by dragging")
+    assert(plm:find("on key Escape", 1, true), "Esc closes it")
+    assert(not plm:find("notification", 1, true))
+    assert(read("shell/shaders/aperture.wgsl"):find("fn shade(s: Shader) -> vec4<f32>", 1, true))
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
