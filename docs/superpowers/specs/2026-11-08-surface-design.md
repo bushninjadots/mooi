@@ -1,6 +1,8 @@
 # Surface: the living desktop surface — design
 
 > Status: design approved in conversation (2026-11-08), awaiting review of this written spec.
+> **Revised 2026-11-08 by `2026-11-08-subsurface-design.md`**: the reveal opens the wallpaper, not
+> through windows; §3 layer 2, §5 and §13 here are replaced there.
 > Builds on: the Sigil (D207, specs/2026-11-07-sigil-design.md), which becomes Surface's engine.
 > Absorbs, over its phases: the classic Pill, the Sigil's bar hosts, the desktop widgets (`mooi-widgets`).
 
