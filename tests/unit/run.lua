@@ -7391,5 +7391,59 @@ do
     end)
 end
 
+section("surface: presence (D208)")
+do
+    local PR = require("lib/surface/presence")
+    local SCR = { w = 1920, h = 1080 }
+    test("presence: new is a ghost pill where dropped", function()
+        local p = PR.new("music", 960, 540, SCR)
+        eq(p.source, "music"); eq(p.form, "pill"); eq(p.mode, "ghost"); eq(p.state, "persistent"); eq(p.workspace, "all")
+        local b = PR.screen_box(p, SCR)
+        assert(math.abs(b.x + b.w / 2 - 960) <= 1 and math.abs(b.y + b.h / 2 - 540) <= 1, "centred on the drop")
+        assert(type(p.id) == "string" and #p.id > 0)
+    end)
+    test("presence: save and load round-trip", function()
+        local a = PR.new("music", 300, 200, SCR); a.mode = "embedded"
+        local b = PR.new("clock", 1500, 900, SCR)
+        local list, problems = PR.load(PR.save({ a, b }), SCR)
+        eq(#problems, 0); eq(#list, 2); eq(list[1].mode, "embedded"); eq(list[2].source, "clock")
+        eq(list[1].id, a.id)
+    end)
+    test("presence: bad entries dropped, positions clamped", function()
+        local doc = { version = 1, presences = {
+            { id = "a", source = "kettle", fx = 0.5, fy = 0.5 },
+            { id = "b", source = "music", form = "blob", fx = 0.5, fy = 0.5 },
+            { id = "c", source = "music", fx = "x", fy = 0.5 },
+            { id = "d", source = "clock", fx = 1.7, fy = -3, w = 200, h = 40 } } }
+        local list, problems = PR.load(doc, SCR)
+        eq(#list, 1); eq(list[1].id, "d"); eq(#problems, 3)
+        local box = PR.screen_box(list[1], SCR)
+        assert(box.x >= 0 and box.x + box.w <= 1920 and box.y >= 0 and box.y + box.h <= 1080, "on the screen")
+        eq(#PR.load(nil, SCR), 0, "no file: nothing, no error")
+    end)
+    test("presence: a smaller screen clamps, never loses", function()
+        local p = PR.new("music", 1880, 1050, SCR)
+        local list = PR.load(PR.save({ p }), { w = 1280, h = 720 })
+        eq(#list, 1)
+        local b = PR.screen_box(list[1], { w = 1280, h = 720 })
+        assert(b.x >= 0 and b.x + b.w <= 1280 and b.y >= 0 and b.y + b.h <= 720)
+    end)
+    test("presence: a drop onto another is nudged clear", function()
+        local a = PR.new("music", 800, 500, SCR)
+        local b = PR.place({ a }, PR.new("clock", 805, 502, SCR), SCR)
+        local ba, bb = PR.screen_box(a, SCR), PR.screen_box(b, SCR)
+        local ox = math.max(0, math.min(ba.x + ba.w, bb.x + bb.w) - math.max(ba.x, bb.x))
+        local oy = math.max(0, math.min(ba.y + ba.h, bb.y + bb.h) - math.max(ba.y, bb.y))
+        eq(ox * oy, 0, "no overlap after the nudge")
+    end)
+    test("presence: undo and redo walk the edits, a new edit clears redo", function()
+        local u = PR.undo_stack()
+        u.push({ n = 1 }); u.push({ n = 2 }); u.push({ n = 3 })
+        eq(u.undo().n, 2); eq(u.undo().n, 1); eq(u.undo(), nil, "nothing before the first")
+        eq(u.redo().n, 2)
+        u.push({ n = 9 }); eq(u.redo(), nil, "a new edit clears redo")
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
