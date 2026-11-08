@@ -7491,6 +7491,82 @@ do
     end)
 end
 
+section("surface: opening (D209)")
+do
+    local OP = require("lib/surface/opening")
+    local A = { id = "a", x = 100, y = 100, w = 200, h = 100 }
+    local B = { id = "b", x = 400, y = 100, w = 50, h = 50 }
+    local boxes = { A, B }
+    local function same(h, x, y, w, hh, r, msg)
+        eq(h.x, x, msg); eq(h.y, y, msg); eq(h.w, w, msg); eq(h.h, hh, msg); eq(h.r, r, msg)
+    end
+    test("opening: closed until opened, healed back", function()
+        local st = OP.state()
+        eq(st.mode, 0)
+        OP.open(st)
+        eq(st.mode, 1); eq(st.k, 1)
+        OP.move(st, boxes, { x = 330, y = 150 })
+        OP.heal(st)
+        eq(st.mode, 0); eq(st.k, 0); eq(st.snap, nil); eq(st.step, 0)
+    end)
+    test("opening: snaps within 40 px, the nearest, back to follow when far", function()
+        local st = OP.state(); OP.open(st)
+        OP.move(st, boxes, { x = 330, y = 150 })
+        eq(st.mode, OP.MODES.snapped); eq(st.snap.id, "a")
+        OP.move(st, boxes, { x = 345, y = 150 })
+        eq(st.mode, OP.MODES.follow); eq(st.snap, nil)
+        OP.move(st, boxes, { x = 420, y = 120 })
+        eq(st.mode, OP.MODES.snapped); eq(st.snap.id, "b")
+    end)
+    test("opening: a tie goes to the smaller box", function()
+        local big = { id = "big", x = 0, y = 0, w = 100, h = 100 }
+        local small = { id = "small", x = 120, y = 0, w = 20, h = 20 }
+        eq(OP.near({ big, small }, { x = 110, y = 10 }).id, "small")
+        eq(OP.near({ small, big }, { x = 110, y = 10 }).id, "small")
+    end)
+    test("opening: the hole for each mode", function()
+        local scr = { w = 1920, h = 1080 }
+        local st = OP.state(); OP.open(st)
+        same(OP.hole(st, { x = 500, y = 400 }, scr), 410, 310, 180, 180, 90, "follow")
+        OP.move(st, boxes, { x = 330, y = 150 })
+        same(OP.hole(st, { x = 330, y = 150 }, scr), 84, 84, 232, 132, 18, "snapped")
+        OP.move(st, boxes, { x = 900, y = 900 })
+        eq(st.mode, OP.MODES.follow, "far from every box")
+        OP.move(st, boxes, { x = 330, y = 150 })
+        OP.widen(st, scr)
+        eq(st.mode, OP.MODES.section)
+        same(OP.hole(st, { x = 330, y = 150 }, scr), 0, 0, 768, 432, 18, "section clamped")
+        OP.move(st, boxes, { x = 900, y = 900 })
+        eq(st.mode, OP.MODES.section, "move leaves a section alone")
+        OP.widen(st, scr)
+        same(OP.hole(st, { x = 0, y = 0 }, scr), 0, 0, 1920, 1080, 0, "full")
+        OP.narrow(st, scr); eq(st.mode, OP.MODES.section)
+        OP.narrow(st, scr); eq(st.mode, OP.MODES.snapped); eq(st.snap.id, "a")
+    end)
+    test("opening: a section without a snap centres on the pointer, on screen", function()
+        local scr = { w = 1920, h = 1080 }
+        local st = OP.state(); OP.open(st); OP.widen(st, scr)
+        same(OP.hole(st, { x = 1900, y = 1070 }, scr), 1152, 648, 768, 432, 18)
+        OP.narrow(st, scr); eq(st.mode, OP.MODES.follow)
+    end)
+    test("opening: pack stays under 2^24 and round-trips", function()
+        local st = OP.state(); OP.open(st)
+        local scr = { w = 4000, h = 3000 }
+        OP.widen(st, scr); OP.widen(st, scr)
+        local h = OP.hole(st, { x = 0, y = 0 }, scr)
+        local a, b, c = OP.pack(st, h)
+        for _, v in ipairs({ a, b, c }) do eq(v >= 0 and v < 2 ^ 24, true) end
+        local u = OP.unpack(a, b, c)
+        eq(u.x, 0); eq(u.y, 0); eq(u.w, 4000); eq(u.h, 3000); eq(u.mode, 4); eq(u.r, 0)
+        local f = OP.state(); OP.open(f)
+        local a2, b2, c2 = OP.pack(f, OP.hole(f, { x = -50, y = 5000 }, scr))
+        for _, v in ipairs({ a2, b2, c2 }) do eq(v >= 0 and v < 2 ^ 24, true) end
+        local u2 = OP.unpack(a2, b2, c2)
+        eq(u2.x, 0); eq(u2.y, 4095); eq(u2.w, 180); eq(u2.h, 180); eq(u2.mode, 1); eq(u2.r, 90)
+    end)
+end
+
+
 section("surface: scene (D208)")
 test("scene: the reveal overlay with the Aperture, the desk layer for Presences", function()
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
