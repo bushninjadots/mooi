@@ -5206,7 +5206,7 @@ do
     end)
     test("the board is an island: drawn on popup_surface, its life, dismissed by a press outside and Escape", function()
         local plm = read("shell/mooi.plm")
-        assert(plm:find("| music | board = none", 1, true), "open can be board")
+        assert(plm:find("| board | bmo | herdr = none", 1, true), "open can be board")
         assert(plm:find("shown while open == board { rv.board: 1", 1, true), "its reveal")
         local popup = plm:find("surface popup_surface {", 1, true)
         local at = plm:find("        PillBoard()", 1, true)
@@ -7737,6 +7737,14 @@ test("the scene declares the bar face's facts", function()
     for _, f in ipairs({ "bm_charge", "bm_bond", "bm_mischief", "bm_grump", "bm_asleep", "bm_mood", "bm_hold" }) do
         assert(s:find("fact " .. f .. " ", 1, true) or s:find("fact " .. f .. "=", 1, true), f)
     end
+end)
+
+test("the BMO face is a real module, placeable in edit mode", function()
+    local s = slurp("shell/mooi.plm")
+    assert(s:find("zone box zbmo", 1, true) and s:find("BmoFace(", 1, true), "the face and its zone")
+    assert(s:find("follow xs_bmo = x_bmo", 1, true) and s:find("follow ws_bmo = w_bmo", 1, true), "springs")
+    assert(s:find("zone box ez_bmo", 1, true) and s:find("on press ez_bmo while bar_edit { ed_press = 33", 1, true), "edit code 33")
+    assert(s:find('"BMO"', 1, true) and s:find('"Herdr"', 1, true), "named on the shelf")
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

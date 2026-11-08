@@ -54,7 +54,7 @@ scene Mooi {
     text pw_state = ""
     text pw_time = ""
     text pw_rate = ""
-    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music | board = none
+    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music | board | bmo | herdr = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     // The spine (D100) is gone (D119): islands open under the bar only. `isl_shelf` stays false — the
     // island geometry still reads it, as the shelf it no longer has.
@@ -1440,6 +1440,23 @@ scene Mooi {
     fact bm_asleep = false
     fact bm_mood = 0
     fact bm_hold = false
+    event bmo_press ->          // to the logic: the face is pressed (a 450 ms hold charges)
+    event bmo_release ->        //   and released
+    event bmo_poke ->           //   a poke, a summon, a wheel step
+    event bmo_summon ->
+    event bmo_charge ->
+    event herdr_focus_blocked -> // to the logic: focus and raise the first blocked agent
+    event herdr_attach_blocked ->
+    // D210: Herdr's counts, server state and the first blocked brief
+    fact hd_up = false
+    fact hd_warn = 0
+    fact hd_blocked = 0
+    fact hd_working = 0
+    fact hd_idle = 0
+    fact hd_total = 0
+    fact hd_version = 0
+    fact hd_pulse = 0
+    text hd_brief = ""
     prop pb_hop = 0 ~m.morph
     follow pb_hop = pb_bump
     prop pb_type = 0 ~m.isl_out
@@ -3359,6 +3376,60 @@ scene Mooi {
             box { at: ws_github - 7, fl.cy - 7; size: 12, 9; corner: 2; color: fl.ember_fill }
         }
         on press zgh { emit open_github; side = none; mark_open = false; open = none }
+    }
+
+    // ── BMO (D209) ────────────────────────────────────────────
+    // His own screen in the bar: the Pill's face at the module's height, a charge line under it, eyes
+    // toward the pointer. A tap opens his island; a 450 ms hold charges (the logic decides).
+    group {
+        show: p_bmo
+        move: xs_bmo, 0
+        opacity: pv_bmo
+        let bm_lx = clamp((cursor.x - xs_bmo - ws_bmo / 2) / 90, -1, 1) * 9
+        let bm_ly = clamp((cursor.y - fl.top - fl.mod_h / 2) / 130, -1, 1) * 4
+        zone box zbmo { from: 0, fl.top; size: ws_bmo, fl.mod_h; cursor: pointer; role: toggle
+                        checked: open == bmo; label: "BMO — tap for him, hold to charge" }
+        Pill(ws_bmo, zbmo.hover)
+        BmoFace((ws_bmo - 33) / 2, fl.top + max(0, (fl.mod_h - 22.5) / 2), true, 0.66, bm_lx, bm_ly)
+        // charge under him: a quiet line that fills, and overcharge glows
+        box { from: 6, fl.top + fl.mod_h - 3.5; size: ws_bmo - 12, 2; corner: 1; color: fl.well }
+        box { from: 6, fl.top + fl.mod_h - 3.5; size: max(0, (ws_bmo - 12) * bm_charge), 2; corner: 1
+              color: if(bm_charge > 0.99, fl.flare, fl.phos) }
+        // asleep: a z (the face's own z is there too; this one is legible at this size)
+        text "z" { at: ws_bmo - 11, fl.top + 7; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: bm_asleep }
+        on press zbmo { emit bmo_press }
+        on release zbmo { emit bmo_release }
+        on release zbmo while bm_hold == false { isl_shelf = false; isl_cx = xs_bmo + ws_bmo / 2; open = bmo; side = none; mark_open = false }
+        on release zbmo while bm_hold == false and open == bmo { open = none }
+        on press right zbmo { emit bmo_summon }
+        on press middle zbmo { emit bmo_poke }
+        on scroll zbmo { emit bmo_charge(if(wheel > 0, 0.05, -0.05)) }
+    }
+
+    // ── Herdr (D210) ──────────────────────────────────────────
+    // Quiet until an agent is blocked; the logic sets hd_* (lib/herdrfeed). Its island is declared below.
+    group {
+        show: p_herdr
+        move: xs_herdr, 0
+        opacity: pv_herdr
+        zone box zhd { from: 0, fl.top; size: ws_herdr, fl.mod_h; cursor: pointer; role: toggle
+                       checked: open == herdr; label: "Herdr — coding agents" }
+        Pill(ws_herdr, zhd.hover)
+        // a small terminal mark, and the count when any wait
+        box { from: ws_herdr / 2 - 9, fl.cy - 6; size: 18, 12; corner: 2
+              stroke: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        line { from: ws_herdr / 2 - 5, fl.cy - 2; to: ws_herdr / 2 - 1, fl.cy + 1; width: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        line { from: ws_herdr / 2 - 1, fl.cy + 1; to: ws_herdr / 2 - 5, fl.cy + 4; width: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        line { from: ws_herdr / 2 + 1, fl.cy + 4; to: ws_herdr / 2 + 6, fl.cy + 4; width: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        group {
+            show: hd_blocked > 0
+            glow: 5, (70%) * st_glow, fl.ember
+            box { at: ws_herdr - 12, fl.top + 2; size: 10, 8; corner: 2; color: fl.ember_fill }
+            text "{hd_blocked}" { at: ws_herdr - 7, fl.top + 6; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+        }
+        on press zhd { open = if(open == herdr, none, herdr); isl_shelf = false; isl_cx = xs_herdr + ws_herdr / 2; side = none; mark_open = false }
+        on press middle zhd { emit herdr_focus_blocked }
+        on press right zhd { emit herdr_attach_blocked }
     }
 
     // ── Control Nexus (D65) ──────────────────────────────────
