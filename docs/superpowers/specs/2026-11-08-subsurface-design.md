@@ -206,6 +206,38 @@ Every citizen and Presence chooses how it meets the wallpaper (`meet`, per thing
 Woven words stay straight and readable (Pleamar cannot set text on a curve); high-contrast mode puts a solid
 plate under them.
 
+### 9a. Light through the skin
+
+The owner's idea (2026-11-08): what is below can **glow through** the wallpaper without opening it — "a
+visualiser throwing a glow or trace light, running along the wallpaper's contour lines like it's tracing it;
+a notification's light subtly pops out, non-obtrusively, even over a window in a logical place, pings or tears
+through, and the light connects to the main window and traces the border of the open app".
+
+- **Glow through:** a playing visualiser, the Music hub, or any thing with news casts a faint coloured glow on
+  the wallpaper over its place (a soft additive light, its colour from the album art or the thing's accent),
+  breathing with its activity. Off, subtle (default), or bright.
+- **Contour trace:** the visualiser's light runs **along the wallpaper's contours and strong lines** (the
+  subject's outline and edges from `wall-sense.json`, Surface §7): short bright traces that travel the lines
+  at a speed and brightness driven by the music, fading behind them like a comet tail. Drawn as straight steps
+  along the resampled polyline, a few traces at once, only on the visible parts of the wallpaper. Without a
+  `wall-sense.json` yet, it falls back to the glow alone.
+- **A notification's ping:** a small light **pings up** from the Notifications hub's place — a tiny tear of
+  light in the wallpaper, or, when windows cover that place, a small spark at the nearest logical spot that
+  is visible (the edge of the screen nearest the hub, never over the window's content). Then a thin line of
+  light **travels from it to the window of the app that sent it** (matched by the notification's app name to
+  a window in `hyprctl clients`; the focused window when none matches) and **traces that window's border**
+  once round, then fades. A click on the spark opens the notification in the hub. Urgent notifications keep
+  today's popup as well.
+- **Where it is drawn:** the glow and the contour traces on `mooi-surface`'s bottom-level surfaces (they are
+  part of the wallpaper); the ping, the travelling line and the border trace on a click-through `light`
+  surface at level overlay, mapped only while a light is travelling (no zones but the spark's, so every click
+  passes through).
+- **Calm:** at most one travelling light at a time (others queue, a burst becomes one ping with a count);
+  reduced motion shows the spark and the border lit at once, without travel; a setting turns each part off;
+  no light while a window is fullscreen.
+- **Cost:** a trace is a handful of short segments on springs and a glow is one blurred shape — each well
+  under the 1 ms budget, and nothing repaints when no light moves.
+
 ## 10. Effects (Tear and Aperture in this spec's phase 1; more in phase 5)
 
 An **effect** = an open/close motion on `k` + an edge drawing + a shader over the wallpaper patch around the
@@ -250,7 +282,8 @@ The Overview may paint the whole screen while it is open.
    heal; the hubs and components in `under`; `mooi-widgets` and BMO as citizens; click to use; drag out to a
    Presence and back; the keyboard path. The radial Hub and the overlay `reveal` surface removed.
 2. **The Overview.** Full open, arranged in place, the Nexus's cards as citizens.
-3. **Push up from below.** `meet`: woven, above, moves the wallpaper; notifications woven by default.
+3. **Push up from below.** `meet`: woven, above, moves the wallpaper; notifications woven by default; light
+   through the skin (§9a: glow, contour traces once wall-sense exists, the notification ping and border trace).
 4. **Peering and burying.** The two checks first (covered windows' pictures; Hyprland's move vs the opening).
 5. **More effects.** Membrane, Ripple, Fold, Dissolve, Glass, owner shaders, chains.
 
