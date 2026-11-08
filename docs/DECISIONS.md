@@ -5909,3 +5909,50 @@ G4); the summaries follow the commit messages._
   moved and undone); the reveal 0.75 ms and the Sigil with music 0.68 ms a frame. Settings and `surface.json`
   restored byte for byte.
 
+
+## D209 · 2026-11-08 · The Subsurface, phase 1: what lives below the wallpaper
+
+Replaces D208's reveal overlay and radial hub (spec: `docs/superpowers/specs/2026-11-08-subsurface-design.md`;
+plan: `docs/superpowers/plans/2026-11-08-subsurface-phase1.md`). Hold Super and the wallpaper itself opens
+under the pointer — no overlay, no ring. The hole follows, snaps to a place, widens to a section and the full
+screen with the wheel; letting go heals it, except full (Esc). The Hole is one packed triple sent by
+`mooi-surface` to every program under the wallpaper, each drawing the same sprung rectangle.
+
+What lives below: the hubs as **places**, not menus — Apps (the most launched first, twelve), Music (art,
+words, transport, a hairline), Wallpapers (the six newest thumbnails; a press wears one through the picker's
+own path), Settings (eight section marks), Notices (the four newest from the bar's feed, and its Clear) — and
+the components in one row: Wi-Fi, Bluetooth, volume, brightness, battery, power. Values and bars are live;
+the wheel steps volume and brightness by 5 %; Wi-Fi and Bluetooth toggle their radios; the power row asks
+twice for log out, restart and shut down. Hubs and components can be dragged out of the hole to become
+Presences (music, apps, network, bluetooth, volume, battery).
+
+Citizens: `mooi-widgets`, `mooi-viz` and BMO take part. A widget below the wallpaper is hidden until the
+opening shows and clipped to its hole; kept above (`above` in `widgets.json`, or edited, or in desk mode) it
+is whole again. A drag on its body while open either keeps it above where it was let go — wholly on screen and
+clear of the bar's reserve — or buries it when let go inside the hole. BMO's body and zones follow the same
+rule when he is at home (not over the windows, not on the bar, not walking). Settings: the opening's look
+(`surface.effect`: Tear or Aperture) and `surface.bmo_below`; both on the Surface card. Every citizen asks for
+the hole on load (`op_want`), and the keeper's `mooi reveal heal` tells them it is closed (`op_c 0`) when
+`mooi-surface` ends.
+
+Found live (Task 1, with the owner): **F1 no** — a click while holding Super never reaches a layer zone:
+Hyprland's `SUPER + mouse:272` window drag takes it. The opening therefore puts that bind down (`hl.unbind`)
+while it is open and restores it (`hl.bind`, the config's own Lua form) on heal, on load, and from
+`mooi reveal heal`; this is required, not optional. **F2 yes** — a background surface mapped after `mooi-desk`
+draws over the wallpaper, so `ground` stays at `background`. **F3 yes** — Super + wheel runs `mooi wheel N`
+whatever layer is under the pointer, so the wheel routes to the opening while it shows.
+
+Found while building: a `clip box` cannot be shown or hidden (`show: false` still clipped everything away), so
+a widget that is not below clips to the whole surface instead; the hole is in screen coordinates, so the
+citizen scenes subtract the bar's reserve; a `let` inside a group is not visible to that group's own `show`;
+`pleamar get` cannot read a `let` (`op_vis`), so the live checks use `op_k` and `op_tc`.
+
+Ships off by default (`surface.on = false`) until the owner tries the real Super key; the owner's own settings
+already switch it on. Unit 709 / 0, 15 scenes compile, gate ok. The live suite (`tests/surface.sh`) is
+rewritten for the opening and must run with this branch on the desk — deferred to the owner's session, as is
+the real-key roaming check. Screenshots: the hubs at full (`/tmp/opencode/below/below.png`, copy in
+`.show-your-work/below-1.png`) and the widgets off/closed/open
+(`.show-your-work/citizens-{off,closed,open}.png`).
+
+Not yet (phases 2–5, docs/TODO.md): the Overview, push-up and light through the skin, peering and burying,
+Membrane/Ripple/Fold/Dissolve/Glass.

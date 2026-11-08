@@ -3,6 +3,25 @@
 What the user has asked for and is not built yet, newest first. The long view is docs/VISION.md;
 what was done, and why, is docs/DECISIONS.md.
 
+## The Subsurface (D209, the spec's phases 2–5)
+
+- [x] **Phase 1, the opening**: the shared hole, the Tear and Aperture, follow/snap/section/full/heal, the
+      hubs and components below, widgets and BMO as citizens, click to use, drag out and back, the keyboard
+      path, the drag bind (`docs/plans/2026-11-08-subsurface-phase1.md`)
+- [ ] **Phase 2, the Overview**: scrolled fully open, the whole wallpaper peels back into one canvas — the
+      full-screen successor to the Nexus; everything at its place and awake, arranged there (move, resize,
+      snap, undo); the Nexus's deck and canvas cards move in
+- [ ] **Phase 3, push up from below**: `meet` per thing (woven); a song change, a notice or an event makes a
+      soft bulge in the wallpaper over its place, its words pressing up through the picture; light through
+      the skin (glow and contour traces, the notification ping and border trace) once wall-sense exists
+- [ ] **Phase 4, peering and burying**: hold Super over a window with another behind it — a live patch of the
+      window behind, widened by the wheel; drag a window into an opening (or Super+B) to bury it on
+      `special:mooi-buried` with a live tile; a click brings it back
+- [ ] **Phase 5, more effects**: Membrane, Ripple, Fold, Dissolve, Glass, the owner's own shaders, chains
+- [ ] **The owner's real-key session** (phase 1's open item): switch Surface on, hold Super, roam, snap a
+      widget and a hub, widen, click a hub item while holding, drag a widget out, let go; Super+Return and
+      Super+W must leave no opening; run `tests/surface.sh` with this branch on the desk
+
 ## Next: the spine and the Nexus drawer (the user's plan, 2026-10-28)
 
 - [x] The spine & shelves (D100) — the user likes it
