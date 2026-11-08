@@ -268,11 +268,11 @@ def surface_layers():
           "            shader: tear, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy",
           f"            {img}",
           "        }",
-          "        // the Aperture, the other look: a lens round a round hole",
+          "        // the Aperture, the other look: a lens and a lit rim round the same clear hole",
           "        group {",
           "            show: sf_fx > 1.5",
           f"            {clip}",
-          "            shader: aperture, op_k, op_x + op_w / 2 - ed_ox, op_y + op_h / 2 - ed_oy, min(op_w, op_h) / 2",
+          "            shader: aperture, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy",
           f"            {img}",
           "        }",
           "    }"]
