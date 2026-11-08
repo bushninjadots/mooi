@@ -58,7 +58,7 @@ M.SCHEMA = {
     { path = "sigil.pill", kind = "enum", values = { "classic", "sigil" }, default = "classic" },
     -- D208: Surface — hold Super and the wallpaper opens at the pointer (the Reveal); `delay` is how long Super
     -- is held before it begins (a quicker tap keeps Super's old meaning)
-    { path = "surface.on", kind = "boolean", default = true },
+    { path = "surface.on", kind = "boolean", default = false },   -- review C1: off until the owner tries the real key with it
     { path = "surface.delay", kind = "integer", default = 250, min = 150, max = 800 },
     { path = "sigil.temperament", kind = "enum", values = { "calm", "lively", "restless" }, default = "lively" },
     { path = "sigil.colour", kind = "enum", values = { "follow", "fixed" }, default = "follow" },

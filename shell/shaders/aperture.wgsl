@@ -8,7 +8,8 @@ fn shade(s: Shader) -> vec4<f32> {
     let d = s.pos - c;
     let dist = length(d);
     var push = vec2<f32>(0.0, 0.0);
-    if (dist > 0.5) { push = d / dist * 14.0 * k * exp(-pow((dist - r) / 22.0, 2.0)); }
+    let t = (dist - r) / 22.0;                      // t * t, not pow(): pow of a negative is undefined in WGSL
+    if (dist > 0.5) { push = d / dist * 14.0 * k * exp(-(t * t)); }
     let pic = inside(s, s.pos - push);
     let inner = smoothstep(r + 1.5, r - 1.5, dist);
     let g = dot(pic.rgb, vec3<f32>(0.3, 0.5, 0.2));
@@ -16,5 +17,5 @@ fn shade(s: Shader) -> vec4<f32> {
     let grid = step(0.93, fract(s.pos.x / 14.0)) + step(0.93, fract(s.pos.y / 14.0));
     sub = sub + vec3<f32>(0.6, 0.7, 0.35) * 0.05 * grid;
     let col = mix(pic.rgb, sub, inner * k);
-    return vec4<f32>(col, pic.a);
+    return vec4<f32>(col, max(pic.a, inner * k));   // with no picture the subsurface still shows
 }

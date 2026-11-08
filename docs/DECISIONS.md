@@ -5890,7 +5890,21 @@ G4); the summaries follow the commit messages._
   merge, because Hyprland runs `main`'s launcher and reloads its config by itself.
 - Not yet (later phases): fitted/woven wallpaper awareness, the widgets import, Membrane/Ripple/Fold, the aperture
   and bloom modes, personalities, arrangements, the full editor, Alt+Super editing (right press for now).
-- Checks: unit 683 / 0, 15 scenes compile, gate ok; live `tests/surface.sh` 35 / 0 (the Sigil's checks and the
+- **Review (fresh reviewer, opus):** with fixes. Critical: Hyprland never sends Super's release after a Super
+  shortcut, so a quick Super+A would still open the reveal a moment later over the launcher, take the keyboard
+  and eat its clicks. The real key path cannot be tried without the owner, so **Surface ships off**
+  (`surface.on = false`; the new bind is harmless off: Super's release is the old tap), and the reveal takes
+  the keyboard and catches clicks only from the hub stage on. Also fixed: a tap lost when Surface is off or when
+  Hyprland's down and up race (both are taps now); the workspace guard fired on any window coming or going
+  (only a change of workspace now) and the focus guard on title changes (only a change of app); the Aperture
+  was invisible without a picture; `surface.json` is backed up at every save and never overwritten when it
+  could not be read; no 20 Hz clock while idle; one palette watcher; no `pow()` of a negative in the shader.
+  Found while re-testing: the logic's file reader passed an empty "kind", which makes Pleamar answer nothing —
+  settings and `surface.json` read as empty (since D207 the Sigil had ignored the owner's temperament and
+  pointer); and the reveal's clock was a local declared below the function using it. Deferred minors are in
+  the merge's ledger (multi-monitor offsets, a live monitor change, the 8-slot limit's feedback, drag grab offset,
+  pp_drop on a plain press, the image kept in memory, Esc as Super+Escape, dead code).
+- Checks: unit 691 / 0, 15 scenes compile, gate ok; live `tests/surface.sh` 35 / 0 after the fixes (the Sigil's checks and the
   reveal: tap, hub, wallpaper, Esc, idle close, a Presence left, saved, remembered after a restart, edited,
   moved and undone); the reveal 0.75 ms and the Sigil with music 0.68 ms a frame. Settings and `surface.json`
   restored byte for byte.

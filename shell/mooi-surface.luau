@@ -21,8 +21,11 @@ local SLOT = { pill = 0, isl1 = 1, isl2 = 2, isl3 = 3 }
 local KIND = {}
 for i, k in ipairs(shapes.KINDS) do KIND[k] = i end
 
+-- (found live: passing an empty kind made Pleamar answer nothing, so settings.json and surface.json read as empty;
+-- the frame's reader always did it this way)
 local function read(name, kind)
-    local ok, v = pcall(sys.ask, "files.read", name, kind)
+    local ok, v
+    if kind then ok, v = pcall(sys.ask, "files.read", name, kind) else ok, v = pcall(sys.ask, "files.read", name) end
     if ok then return v end
 end
 
@@ -224,14 +227,19 @@ pcall(sys.watch, "bluetooth", function(v)
 end)
 pcall(sys.watch, "workspaces", function(w)
     if type(w) ~= "table" then return end
+    local was_active = S.r.workspaces and S.r.workspaces.active
     S.r.workspaces = { active = tonumber(w.active), count = type(w.list) == "table" and #w.list or nil }
-    if SF_guard then SF_guard("workspace") end      -- D208: a Super shortcut that changed workspace closes a reveal
+    -- D208: a Super shortcut that changed workspace closes a reveal (review I3: only a change of workspace —
+    -- the service also fires when windows come and go)
+    if was_active ~= nil and was_active ~= S.r.workspaces.active and SF_guard then SF_guard("workspace") end
     update()
 end)
 pcall(sys.watch, "window", function(w)
     if type(w) ~= "table" then return end
+    local was_class = S.r.windows and S.r.windows.class
     S.r.windows = { title = w.title, class = w.class }
-    if SF_guard then SF_guard("focus") end          -- D208: and so does one that moved the focus
+    -- D208: and so does one that moved the focus to another app (the service also fires on every title change)
+    if was_class ~= nil and was_class ~= w.class and SF_guard then SF_guard("focus") end
 end)
 pcall(sys.watch, "clock", function(c)
     if type(c) ~= "table" then return end
@@ -251,7 +259,7 @@ end
 pcall(sys.watch, "files:" .. HOSTS_FILE, hosts)
 pcall(sys.watch, "files:" .. FEED_FILE, function() feed(); update() end)
 pcall(sys.watch, "files:" .. NOTICES, function() notices(); update() end)
-pcall(sys.watch, "files:palette.json", function() S.pal = read("palette.json", "json"); update() end)
+pcall(sys.watch, "files:palette.json", function() S.pal = read("palette.json", "json"); update(); if SF_wall then SF_wall() end end)
 pcall(sys.watch, "files:settings.json", function() S.settings = config.parse(read("settings.json"), json.decode); S.drawn = {}; update() end)
 
 -- ── presses, hover, the wheel ──
@@ -313,7 +321,7 @@ end)
 
 -- ── Surface (D208): hold Super — the Reveal; Presences on the desk ──
 -- One table for all of it (the reveal's state, the Presences, undo, the screen and the pointer).
-local SF = { rv = reveal.state(), list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 },
+local SF = { rv = reveal.state(), list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
              ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "" }
 local SFILE = "surface.json"
 local ICON = { music = "♫", clock = "◷", calendar = "▦", weather = "☀", volume = "♪", notifications = "✉",
@@ -354,14 +362,24 @@ local function draw_presences()
     end
 end
 
+-- (review I6: the last good file is kept as surface.json.bak at every save, and a file that could not be read
+-- is never overwritten — a hand edit with a typo would otherwise be lost at the next move)
 local function save_presences(push)
+    if SF.broken then log("surface · surface.json could not be read; not overwriting it (fix it, or remove it)"); return end
     local doc = presence.save(SF.list)
+    local old = read(SFILE)
+    if type(old) == "string" and old ~= "" then pcall(sys.call, "files.write", "surface.json.bak", old) end
     pcall(sys.call, "files.write", SFILE, doc)
     if push then SF.undo.push(doc) end
 end
 
 local function load_presences()
-    local doc = read(SFILE, "json")
+    local raw = read(SFILE)
+    local doc = nil
+    if type(raw) == "string" and raw:match("%S") then
+        local ok, d = pcall(json.decode, raw)
+        if ok and type(d) == "table" then doc = d else SF.broken = true; log("surface · surface.json could not be read") end
+    end
     local list, problems = presence.load(doc, SF.scr)
     for _, p in ipairs(problems) do log("surface · " .. p) end
     SF.list = list
@@ -403,18 +421,20 @@ local function close_reveal()
 end
 
 local function tick()
+    SF.clock = SF.clock + 50
     reveal.tick(SF.rv, S.now_ms(), SF.ptr)
     if not SF.rv.down_at then close_reveal(); return end
     show_reveal()
 end
 
 -- a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
-local clock_ms = 0
-every(50, function() clock_ms = clock_ms + 50 end)
-S.now_ms = function() return clock_ms end
+-- (review I7: it advances only inside the reveal's own tick — nothing runs while idle)
+S.now_ms = function() return SF.clock end
+local function surface_on() return type(S.settings.surface) == "table" and S.settings.surface.on == true end
+local function tap() run("pleamar", { "--say", "mooi", "emit pill_call" }) end      -- today's Super tap
 
 on("rv_down", function()
-    if type(S.settings.surface) == "table" and S.settings.surface.on == false then return end
+    if not surface_on() then return end
     reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
     reveal.down(SF.rv, S.now_ms())
     -- where the pointer is now (the scene tells us as it moves once the overlay is open)
@@ -429,12 +449,9 @@ on("rv_move", function(v)
     SF.ptr = { x = v // 10000, y = v % 10000 }
 end)
 on("rv_up", function()
+    if not surface_on() then tap(); return end       -- review I1: off, Super's release is the old tap
     local res = reveal.up(SF.rv, S.now_ms())
-    if res == "tap" then
-        close_reveal()
-        run("pleamar", { "--say", "mooi", "emit pill_call" })      -- today's Super tap, unchanged
-        return
-    end
+    if res == "tap" then close_reveal(); tap(); return end
     if res == "release" then
         local out = reveal.release(SF.rv, SF.ptr)
         if out.kind == "open" then press_source(out.source, SF.ptr.x)
@@ -505,7 +522,8 @@ every(1000, function() if #SF.list > 0 then draw_presences() end end)
 -- the screen and the wallpaper (the Aperture draws the real picture)
 local function wallpaper()
     local home = sys.ask("env", "HOME") or ""
-    run("readlink", { "-f", home .. "/.cache/current_wallpaper" }, function(out)
+    -- -e: nothing for a missing picture (review I5), so the Aperture draws its plain subsurface
+    run("readlink", { "-e", home .. "/.cache/current_wallpaper" }, function(out)
         local path = tostring(out or ""):gsub("%s+$", "")
         if path ~= "" then text.rv_wall = path end
     end)
@@ -520,7 +538,7 @@ run("hyprctl", { "-j", "monitors" }, function(out)
     load_presences()
 end)
 wallpaper()
-pcall(sys.watch, "files:palette.json", wallpaper)
+SF_wall = wallpaper       -- the palette watcher above calls it: one watcher per file (review M7)
 
 feed(); notices(); hosts()
 log("surface · up")

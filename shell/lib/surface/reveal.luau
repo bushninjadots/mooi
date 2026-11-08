@@ -78,12 +78,12 @@ function M.tick(st, now, p)
 end
 
 -- Super let go: "tap" (before the delay: today's Super tap), "release" (a reveal was open), or nil.
+-- (review I2: an up whose down never arrived — Hyprland runs the two as separate processes, which can race —
+-- and a release before any stage, at whatever age, are both taps)
 function M.up(st, now)
-    if not st.down_at then return nil end
-    if st.stage == 0 and now - st.down_at < M.DELAY then close(st); return "tap" end
-    if st.stage > 0 then return "release" end
-    close(st)
-    return nil
+    if not st.down_at then return "tap" end
+    if st.stage == 0 then close(st); return "tap" end
+    return "release"
 end
 
 -- What letting go at p does: cancel (nothing picked), open (a source picked inside its ring), or leave (a

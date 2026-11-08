@@ -4783,11 +4783,13 @@ scene Sigil {
         anchor: top
         level: overlay
         reserve: -1
-        keyboard: exclusive while rv_on
+        keyboard: exclusive while rv_on and rv_stage >= 3
         rate: 60
         open: rv_on
         // a press anywhere while revealing closes it (the hub is chosen by letting go of Super)
-        zone box rvz { from: 0, 0; size: reveal.width, reveal.height; cursor: crosshair; role: button; label: "Close the reveal" }
+        // (review C1: nothing catches clicks or keys before the hub — a reveal begun by a Super shortcut never
+        // steals from what that shortcut opened)
+        zone box rvz { from: 0, 0; size: reveal.width, reveal.height; cursor: crosshair; role: button; label: "Close the reveal"; show: rv_stage >= 3 }
         on press rvz { emit rv_outside }
         on key Escape { emit rv_esc }
         // where the pointer is, told to the logic as it moves (every 6 px), while revealing
