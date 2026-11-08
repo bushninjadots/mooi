@@ -387,31 +387,11 @@ local function load_presences()
     draw_presences()
 end
 
--- the reveal's facts: its stage, anchor, the hub's labels, what is picked, the Pill's words
+-- the reveal's facts: whether it is showing, and its stage
 local function show_reveal()
     local st = SF.rv
     fact.rv_on = st.stage >= 1
     fact.rv_stage = st.stage
-    if st.ax then fact.rv_x, fact.rv_y = st.ax, st.ay end
-    local gs = reveal.groups(st)
-    fact.rv_n = #gs
-    for i = 1, 7 do text["rv_g" .. (i - 1)] = gs[i] and string.upper(gs[i]) or "" end
-    local pk = st.ax and reveal.pick(st, SF.ptr) or {}
-    fact.rv_pick_g = pk.group or 0
-    local list = pk.group and reveal.SOURCES[gs[pk.group]] or {}
-    local si = 0
-    for j = 1, 4 do
-        text["rv_s" .. (j - 1)] = list[j] or ""
-        if pk.source and list[j] == pk.source then si = j end
-    end
-    fact.rv_pick_s = si
-    local words = "mooi"
-    if pk.source then
-        local e = sources.get(pk.source)
-        local w = e and e.compact(S.r[pk.source]) or {}
-        words = (ICON[pk.source] or "") .. "  " .. ((w.t1 and w.t1 ~= "—") and w.t1 or pk.source)
-    elseif pk.group then words = gs[pk.group] end
-    text.rv_t1 = words
 end
 
 local function close_reveal()
@@ -452,16 +432,6 @@ on("rv_up", function()
     if not surface_on() then tap(); return end       -- review I1: off, Super's release is the old tap
     local res = reveal.up(SF.rv, S.now_ms())
     if res == "tap" then close_reveal(); tap(); return end
-    if res == "release" then
-        local out = reveal.release(SF.rv, SF.ptr)
-        if out.kind == "open" then press_source(out.source, SF.ptr.x)
-        elseif out.kind == "leave" then
-            local p = presence.place(SF.list, presence.new(out.source, out.x, out.y, SF.scr), SF.scr)
-            if #SF.list < 8 then SF.list[#SF.list + 1] = p end
-            save_presences(true)
-            draw_presences()
-        end
-    end
     close_reveal()
 end)
 -- the safeguards: a Super shortcut never sends Super's "up", so these close any reveal
