@@ -15,6 +15,7 @@ L="${XDG_STATE_HOME:-$HOME/.local/state}/mooi/mooi.log"
 t=$(mktemp -d)
 cp "$F" "$t/restore.json"
 SJ="$D/surface.json"; [ -f "$SJ" ] && cp "$SJ" "$t/surface.json"
+WJ="$D/widgets.json"; [ -f "$WJ" ] && cp "$WJ" "$t/widgets.json"
 : > "$t/players"
 for p in $(playerctl -l 2>/dev/null); do printf '%s %s\n' "$p" "$(playerctl -p "$p" status 2>/dev/null || echo none)" >> "$t/players"; done
 vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }')
@@ -22,6 +23,7 @@ muted=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -c MUTED)
 restore() {
     cp "$t/restore.json" "$F"
     if [ -f "$t/surface.json" ]; then cp "$t/surface.json" "$SJ"; else rm -f "$SJ"; fi
+    if [ -f "$t/widgets.json" ]; then cp "$t/widgets.json" "$WJ"; else rm -f "$WJ"; fi
     wpctl set-volume @DEFAULT_AUDIO_SINK@ "$vol"
     [ "$muted" = 1 ] && wpctl set-mute @DEFAULT_AUDIO_SINK@ 1
     while read -r p s; do
@@ -40,6 +42,7 @@ sg()  { timeout 3 pleamar --say mooi-surface "get $1" 2>/dev/null; }
 bar() { timeout 3 pleamar --say mooi "get $1" 2>/dev/null; }
 set_() { jq "$1" "$t/restore.json" > "$F.tmp" && mv "$F.tmp" "$F"; sleep "${2:-3}"; }
 pid() { for p in $(pgrep -x pleamar); do tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q 'mooi-surface\.plm' && echo "$p"; done; }
+wpid() { for p in $(pgrep -x pleamar); do tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q 'mooi-widgets\.plm' && echo "$p"; done; }
 shot() { [ -n "${SHOTS:-}" ] && grim -g "$2" "$SHOTS/$1.png"; }
 within() { awk -v v="$1" -v a="$2" -v b="$3" 'BEGIN { exit !(v >= a - 0.5 && v <= b + 0.5) }'; }
 
@@ -123,43 +126,103 @@ if [ "$after" -gt "$before" ]; then ok "mooi gave up after five quick ends"; els
 is "the bar knows it is down" "$(bar surface_up)" false
 shot fallback "$((px - 120)),0 $((pw + 240))x50"
 
-echo "Surface (D208): hold Super — the reveal"
-set_ '.surface.on=true' 1
+echo "Surface (D209): hold Super — the opening"
+set_ '.bar.mode="notch" | .sigil.pill="classic" | .surface.on=true | .surface.effect="tear" | .surface.bmo_below=true' 1
 "$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6     # the crash loop above left it given up
 sf() { timeout 3 pleamar --say mooi-surface "$@" 2>/dev/null; }
+wd() { timeout 3 pleamar --say mooi-widgets "$@" 2>/dev/null; }
+kopen() { awk -v v="$1" 'BEGIN { exit !(v > 0.2) }'; }
+kclosed() { awk -v v="$1" 'BEGIN { exit !(v < 0.02) }'; }
 pos=$(hyprctl cursorpos | tr -d ' '); cx=${pos%,*}; cy=${pos#*,}
-sf "emit rv_down" >/dev/null; sleep 0.1; sf "emit rv_up" >/dev/null; sleep 0.3
-is "a quick tap opens nothing" "$(sg rv_on)" false
+sf "emit rv_down" >/dev/null; sleep 0.1; sf "emit rv_up" >/dev/null; sleep 0.4
+if kclosed "$(sf 'get op_k')"; then ok "a quick tap opens nothing"; else bad "a quick tap opens nothing"; fi
 sf "emit rv_down" >/dev/null; sleep 1.2
-is "held: the hub is up" "$(sg rv_stage)" 3
-is "the Aperture has the wallpaper" "$(sg rv_wall)" "$(readlink -f "$HOME/.cache/current_wallpaper")"
-shot reveal-hub "$((cx - 260)),$((cy - 260)) 520x520"
-timeout 30 pleamar --report mooi-surface --seconds 4 --out "$t/report-rv.txt" >/dev/null 2>&1
-cpr=$(awk -F'|' '/^\| compose/ { c = $3 } /^\| paint/ { p = $3 } END { printf "%.3f", c + p }' "$t/report-rv.txt")
-if awk -v v="$cpr" 'BEGIN { exit !(v > 0 && v < 1.0) }'; then ok "the reveal under 1 ms ($cpr ms)"; else bad "the reveal under 1 ms ($cpr ms)"; fi
-sf "emit rv_esc" >/dev/null; sleep 0.4
-is "Esc closes it" "$(sg rv_on)" false
-sf "emit rv_down" >/dev/null; sleep 1.0; sleep 6.5
-is "left alone, it closes itself" "$(sg rv_on)" false
+if kopen "$(sf 'get op_k')"; then ok "held: the opening is up"; else bad "held: the opening is up ($(sf 'get op_k'))"; fi
+if kopen "$(wd 'get op_k')"; then ok "the widgets opened with it"; else bad "the widgets opened with it ($(wd 'get op_k'))"; fi
+if grep -q "level: top\|level: overlay" "$root/shell/mooi-surface.plm"; then bad "no surface over the windows"; else ok "no surface over the windows"; fi
+lev() { hyprctl layers -j 2>/dev/null | jq -r --arg p "$1" '[.[] | .levels | to_entries[] | .key as $l | .value[] | select((.pid|tostring) == $p) | $l] | unique | join(",")' 2>/dev/null; }
+p=$(pid)
+lvs=$(lev "$p")
+case ",$lvs," in *,2,*|*,3,*) bad "the opening's layers are background/bottom only ($lvs)";; *) ok "the opening's layers are background/bottom only ($lvs)";; esac
+shot opening-follow "$((cx - 260)),$((cy - 260)) 520x520"
 
-echo "Surface: a Presence left behind, remembered, moved and undone"
-rm -f "$SJ"; "$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6
+# the clock widget (slot 0 by the desk's own list): its centre in screen coordinates
+i=0; wx=80; wy=68; ww=440; wh=192
+while [ $i -lt 12 ]; do
+    kk=$(jq -r ".widgets[$i].kind // empty" "$WJ" 2>/dev/null)
+    if [ "$kk" = clock ]; then
+        wx=$(jq -r ".widgets[$i].x" "$WJ"); wy=$(jq -r ".widgets[$i].y" "$WJ")
+        ww=$(jq -r ".widgets[$i].w" "$WJ"); wh=$(jq -r ".widgets[$i].h" "$WJ"); break
+    fi
+    i=$((i + 1))
+done
+bh=$(wd 'get wall_bar'); [ -n "$bh" ] || bh=31
+sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.8
+is "snapped to the clock" "$(sf 'get op_tc')" 2018
+is "the widgets' hole is the same" "$(wd 'get op_tc')" 2018
+shot opening-snapped "$((wx - 80)),$((wy + bh - 80)) $((ww + 160))x$((wh + 160))"
+sf "emit op_wheel 1" >/dev/null; sleep 0.5
+is "the wheel: a section" "$(sf 'get op_tc')" 3018
+sf "emit op_wheel 1" >/dev/null; sleep 0.5
+is "the wheel again: full" "$(sf 'get op_tc')" 4000
+shot opening-full "0,0 1920x1080"
+sf "emit rv_up" >/dev/null; sleep 0.8
+if kopen "$(sf 'get op_k')"; then ok "full stays when Super comes up"; else bad "full stays when Super comes up"; fi
+sf "emit rv_esc" >/dev/null; sleep 0.8
+if kclosed "$(sf 'get op_k')"; then ok "Esc heals it"; else bad "Esc heals it ($(sf 'get op_k'))"; fi
+lvs=$(lev "$p")
+case ",$lvs," in *,0,*) bad "closed: no ground behind the wallpaper ($lvs)";; *) ok "closed: no ground behind the wallpaper ($lvs)";; esac
+
+echo "Surface: a widget kept above, and buried again"
 sf "emit rv_down" >/dev/null; sleep 1.2
-sf "emit rv_move $((cx * 10000 + cy - 260))" >/dev/null; sleep 0.6
-is "up past the ring: Time, Clock" "$(sg rv_pick_s)" 1
-sf "emit rv_up" >/dev/null; sleep 1
-is "let go out there: a Presence" "$(sg p0_on)" true
-is "saved" "$(jq -r '.presences[0].source' "$SJ" 2>/dev/null)" clock
-"$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6
-is "remembered after a restart" "$(sg p0_on)" true
-x0=$(sg p0_x)
-sf "emit pp_rpress 0" >/dev/null; sleep 0.3
-is "a right press edits it" "$(sg p0_edit)" true
-sf "emit pp_drag $((0 * 100000000 + 1200 * 10000 + 700))" >/dev/null; sf "emit pp_drop 0" >/dev/null; sleep 0.5
-x1=$(sg p0_x); if [ "$x1" != "$x0" ]; then ok "dragged ($x0 → $x1)"; else bad "dragged ($x0 → $x1)"; fi
-sf "emit ed_undo" >/dev/null; sleep 0.5
-is "undo puts it back" "$(sg p0_x)" "$x0"
-sf "emit ed_done" >/dev/null
+sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.5
+timeout 3 pleamar --say mooi-widgets "emit wg_keep $((wx + ww / 2 + 600))" >/dev/null 2>&1
+timeout 3 pleamar --say mooi-widgets "emit wg_keep_y $((wy + wh / 2 + 240))" >/dev/null 2>&1; sleep 0.8
+is "kept above" "$(jq -r '.widgets[0].above // false' "$WJ" 2>/dev/null)" true
+timeout 3 pleamar --say mooi-widgets "emit wg_bury 0" >/dev/null 2>&1; sleep 0.8
+is "buried again" "$(jq -r '.widgets[0].above // false' "$WJ" 2>/dev/null)" false
+sf "emit rv_esc" >/dev/null; sleep 0.5
+
+echo "Surface: a Presence from the Music hub"
+rm -f "$SJ"; sf "emit rv_down" >/dev/null; sleep 1.2
+# snap to the hub farthest from the real pointer (the drop reads the real pointer, never moved)
+best=0; bx=960; by=540
+for k in 1 2 3 4 5; do
+    hx=$(sf "get hb${k}_x"); hy=$(sf "get hb${k}_y"); hw=$(sf "get hb${k}_w"); hh=$(sf "get hb${k}_h")
+    [ -n "$hx" ] || continue
+    d=$(( (hx + hw / 2 - cx) * (hx + hw / 2 - cx) + (hy + hh / 2 - cy) * (hy + hh / 2 - cy) ))
+    if [ "$d" -gt "$best" ]; then best=$d; bx=$((hx + hw / 2)); by=$((hy + hh / 2)); fi
+done
+sf "emit rv_move $((bx * 10000 + by))" >/dev/null; sleep 0.5
+timeout 3 pleamar --say mooi-surface "emit sb_drag 200" >/dev/null 2>&1
+timeout 3 pleamar --say mooi-surface "emit sb_drop 200" >/dev/null 2>&1; sleep 0.8
+is "a Presence from the Music hub" "$(jq -r '.presences[-1].source // empty' "$SJ" 2>/dev/null)" music
+sf "emit rv_esc" >/dev/null; sleep 0.5
+
+echo "Surface: a citizen restarted while open, and one left without it"
+sf "emit rv_down" >/dev/null; sleep 1.2
+sf "emit rv_move $((bx * 10000 + by))" >/dev/null; sleep 0.5
+wp=$(wpid); [ -n "$wp" ] && kill "$wp" 2>/dev/null
+sleep 3
+is "the restarted widgets found the hole" "$(wd 'get op_tc')" "$(sf 'get op_tc')"
+sf "emit rv_esc" >/dev/null; sleep 0.5
+sf "emit rv_down" >/dev/null; sleep 1.2
+p=$(pid); [ -n "$p" ] && kill "$p" 2>/dev/null
+sleep 1
+if kclosed "$(wd 'get op_k')"; then ok "the widgets stand down within a second"; else bad "the widgets stand down within a second ($(wd 'get op_k'))"; fi
+sleep 5
+is "the keeper's new surface told them Surface is on" "$(wd 'get sf_on')" true
+
+echo "Surface: the budget"
+sf "emit rv_down" >/dev/null; sleep 1.2
+timeout 30 pleamar --report mooi-surface --seconds 4 --out "$t/report-surface.txt" >/dev/null 2>&1
+cps=$(awk -F'|' '/^\| compose/ { c = $3 } /^\| paint/ { p = $3 } END { printf "%.3f", c + p }' "$t/report-surface.txt")
+if awk -v v="$cps" 'BEGIN { exit !(v > 0 && v < 1.0) }'; then ok "mooi-surface under 1 ms ($cps ms)"; else bad "mooi-surface under 1 ms ($cps ms)"; fi
+timeout 30 pleamar --report mooi-widgets --seconds 4 --out "$t/report-widgets.txt" >/dev/null 2>&1
+cpw=$(awk -F'|' '/^\| compose/ { c = $3 } /^\| paint/ { p = $3 } END { printf "%.3f", c + p }' "$t/report-widgets.txt")
+if awk -v v="$cpw" 'BEGIN { exit !(v > 0 && v < 1.0) }'; then ok "mooi-widgets under 1 ms ($cpw ms)"; else bad "mooi-widgets under 1 ms ($cpw ms)"; fi
+[ -n "${SHOTS:-}" ] && cp "$t"/report-*.txt "$SHOTS/" 2>/dev/null
+sf "emit rv_esc" >/dev/null
 
 echo
 echo "$n checks, $fail failed"
