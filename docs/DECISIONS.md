@@ -5861,3 +5861,37 @@ G4); the summaries follow the commit messages._
   with the one failure a real notice outranking music (correct; the check now waits it out, re-run alone:
   ok). Compose + paint with music: 0.74 and 0.86 ms (budget 1 ms). Settings restored byte for byte each run.
 
+## D208 · 2026-11-08 · Surface, phase 1: hold Super and the wallpaper opens
+
+- The owner's bigger idea (docs/superpowers/specs/2026-11-08-surface-design.md): the wallpaper is the surface
+  and the interface lives within it — Reveal → Explore → Manipulate → Select → Leave → Revisit. The Sigil was
+  not trashed: it is Surface's engine. Owner choices: the widgets are imported (later phase), every Presence
+  wallpaper-aware (fitted, optionally woven), the bar stays and works with it, Aperture the default effect.
+- A spike first: the wallpaper drawn by the program and rippled around the pointer by a group shader costs
+  ~0.1 ms a frame (the whole screen 0.3 ms); a shader reading a capture of what is behind (`behind()`) drew
+  nothing here. So effects work on the wallpaper image mooi draws itself.
+- Built (plans/2026-11-08-surface-phase1.md): the Sigil renamed into **`mooi-surface`** (`lib/surface`,
+  `tools/gen-surface.py`), running whenever `surface.on` (default on). **Hold Super** (`surface.delay`, 250 ms):
+  a faint touch, then the **Aperture** opens through the windows — the real wallpaper, its subsurface darkened
+  with a fine grid inside a lit rim (`shell/shaders/aperture.wgsl`) — with the Pill (`mooi`) in it and the
+  groups round its rim (`lib/surface/reveal.luau`: stages, picking by angle and distance, release outcomes);
+  moving toward a group opens its sources, resting on one expands it; letting go opens it, or — dragged past
+  the ring — **leaves it on the desktop as a Presence** (`lib/surface/presence.luau`: memory in `surface.json`,
+  positions as fractions of the screen, clamped back on screen, nudged off others, undo/redo). Presences live
+  under the windows (a `desk` layer at level bottom), wake a step when the pointer comes near (ghost →
+  embedded → full: music's controls), and a right press edits one: drag to move, ↶ ↷, Done.
+- A quick Super tap keeps its old meaning (`pill_call`); `mooi reveal up` falls back to it when Surface is not
+  running. A Super shortcut never sends Super's release, so a reveal also closes on a workspace change, a
+  change of focused app, Esc, a press, or 6 s left alone.
+- Found live and fixed (each with a failing test first): `surface.json` was never written (the scene lacked
+  `files.write`); the wallpaper was drawn 40 px tall (`screen.height` in this scene is its first surface's, the
+  bar strip — the reveal uses its own `reveal.height`); reveals closed at random (the window service fires on
+  every title change — only a change of app counts as focus). The live Hyprland bind is changed only after the
+  merge, because Hyprland runs `main`'s launcher and reloads its config by itself.
+- Not yet (later phases): fitted/woven wallpaper awareness, the widgets import, Membrane/Ripple/Fold, the aperture
+  and bloom modes, personalities, arrangements, the full editor, Alt+Super editing (right press for now).
+- Checks: unit 683 / 0, 15 scenes compile, gate ok; live `tests/surface.sh` 35 / 0 (the Sigil's checks and the
+  reveal: tap, hub, wallpaper, Esc, idle close, a Presence left, saved, remembered after a restart, edited,
+  moved and undone); the reveal 0.75 ms and the Sigil with music 0.68 ms a frame. Settings and `surface.json`
+  restored byte for byte.
+

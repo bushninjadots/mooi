@@ -14,12 +14,14 @@ F="$D/settings.json"
 L="${XDG_STATE_HOME:-$HOME/.local/state}/mooi/mooi.log"
 t=$(mktemp -d)
 cp "$F" "$t/restore.json"
+SJ="$D/surface.json"; [ -f "$SJ" ] && cp "$SJ" "$t/surface.json"
 : > "$t/players"
 for p in $(playerctl -l 2>/dev/null); do printf '%s %s\n' "$p" "$(playerctl -p "$p" status 2>/dev/null || echo none)" >> "$t/players"; done
 vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }')
 muted=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -c MUTED)
 restore() {
     cp "$t/restore.json" "$F"
+    if [ -f "$t/surface.json" ]; then cp "$t/surface.json" "$SJ"; else rm -f "$SJ"; fi
     wpctl set-volume @DEFAULT_AUDIO_SINK@ "$vol"
     [ "$muted" = 1 ] && wpctl set-mute @DEFAULT_AUDIO_SINK@ 1
     while read -r p s; do
@@ -41,8 +43,8 @@ pid() { for p in $(pgrep -x pleamar); do tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev
 shot() { [ -n "${SHOTS:-}" ] && grim -g "$2" "$SHOTS/$1.png"; }
 within() { awk -v v="$1" -v a="$2" -v b="$3" 'BEGIN { exit !(v >= a - 0.5 && v <= b + 0.5) }'; }
 
-echo "classic mode, no Sigil module: nothing runs"
-set_ '.bar.mode="pill" | .sigil.pill="classic"' 4
+echo "classic mode, no Sigil module, Surface off: nothing runs"
+set_ '.bar.mode="pill" | .sigil.pill="classic" | .surface.on=false' 4
 is "mooi-surface is not running" "$(pid)" ""
 
 echo "the Sigil in the Pill"
@@ -77,8 +79,9 @@ is "left: compact again" "$(sg h0_form)" 1
 d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v < 0.02) }'; then ok "the display's surface closes"; else bad "the display's surface closes ($d)"; fi
 
 echo "an island host beside the Pill"
-right=$(jq -c '.bar.right + ["sigil"]' "$t/restore.json")
-set_ ".bar.mode=\"pill\" | .pill.sides=\"show\" | .sigil.pill=\"sigil\" | .sigil.rest=\"clock\" | .bar.right=$right" 5
+right='["sigil"]'     # alone on the right: a full bar would drop it (the owner's layout is not the test's)
+# all three lists set: a module placed twice (the owner's own lists may hold `sigil`) makes mooi use the default layout
+set_ ".bar.mode=\"pill\" | .pill.sides=\"show\" | .sigil.pill=\"sigil\" | .sigil.rest=\"clock\" | .bar.left=[\"workspaces\"] | .bar.center=[] | .bar.right=$right" 5
 is "the island has a host" "$(sg h1_on)" true
 a=$(sg h0_src); b=$(sg h1_src)
 if [ -n "$a" ] && [ "$a" != "$b" ]; then ok "it shows something else ($a / $b)"; else bad "it shows something else ($a / $b)"; fi
@@ -119,6 +122,44 @@ after=$(grep -c "surface · gave up" "$L" 2>/dev/null); after=${after:-0}
 if [ "$after" -gt "$before" ]; then ok "mooi gave up after five quick ends"; else bad "mooi gave up after five quick ends"; fi
 is "the bar knows it is down" "$(bar surface_up)" false
 shot fallback "$((px - 120)),0 $((pw + 240))x50"
+
+echo "Surface (D208): hold Super — the reveal"
+set_ '.surface.on=true' 1
+"$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6     # the crash loop above left it given up
+sf() { timeout 3 pleamar --say mooi-surface "$@" 2>/dev/null; }
+pos=$(hyprctl cursorpos | tr -d ' '); cx=${pos%,*}; cy=${pos#*,}
+sf "emit rv_down" >/dev/null; sleep 0.1; sf "emit rv_up" >/dev/null; sleep 0.3
+is "a quick tap opens nothing" "$(sg rv_on)" false
+sf "emit rv_down" >/dev/null; sleep 1.2
+is "held: the hub is up" "$(sg rv_stage)" 3
+is "the Aperture has the wallpaper" "$(sg rv_wall)" "$(readlink -f "$HOME/.cache/current_wallpaper")"
+shot reveal-hub "$((cx - 260)),$((cy - 260)) 520x520"
+timeout 30 pleamar --report mooi-surface --seconds 4 --out "$t/report-rv.txt" >/dev/null 2>&1
+cpr=$(awk -F'|' '/^\| compose/ { c = $3 } /^\| paint/ { p = $3 } END { printf "%.3f", c + p }' "$t/report-rv.txt")
+if awk -v v="$cpr" 'BEGIN { exit !(v > 0 && v < 1.0) }'; then ok "the reveal under 1 ms ($cpr ms)"; else bad "the reveal under 1 ms ($cpr ms)"; fi
+sf "emit rv_esc" >/dev/null; sleep 0.4
+is "Esc closes it" "$(sg rv_on)" false
+sf "emit rv_down" >/dev/null; sleep 1.0; sleep 6.5
+is "left alone, it closes itself" "$(sg rv_on)" false
+
+echo "Surface: a Presence left behind, remembered, moved and undone"
+rm -f "$SJ"; "$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6
+sf "emit rv_down" >/dev/null; sleep 1.2
+sf "emit rv_move $((cx * 10000 + cy - 260))" >/dev/null; sleep 0.6
+is "up past the ring: Time, Clock" "$(sg rv_pick_s)" 1
+sf "emit rv_up" >/dev/null; sleep 1
+is "let go out there: a Presence" "$(sg p0_on)" true
+is "saved" "$(jq -r '.presences[0].source' "$SJ" 2>/dev/null)" clock
+"$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6
+is "remembered after a restart" "$(sg p0_on)" true
+x0=$(sg p0_x)
+sf "emit pp_rpress 0" >/dev/null; sleep 0.3
+is "a right press edits it" "$(sg p0_edit)" true
+sf "emit pp_drag $((0 * 100000000 + 1200 * 10000 + 700))" >/dev/null; sf "emit pp_drop 0" >/dev/null; sleep 0.5
+x1=$(sg p0_x); if [ "$x1" != "$x0" ]; then ok "dragged ($x0 → $x1)"; else bad "dragged ($x0 → $x1)"; fi
+sf "emit ed_undo" >/dev/null; sleep 0.5
+is "undo puts it back" "$(sg p0_x)" "$x0"
+sf "emit ed_done" >/dev/null
 
 echo
 echo "$n checks, $fail failed"

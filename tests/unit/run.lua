@@ -7517,6 +7517,9 @@ test("logic: hold Super — the reveal, Presences left and moved, the safeguards
     end
     assert(l:find('"surface.json"', 1, true), "Presences are saved")
     assert(l:find('SF_guard("workspace")', 1, true) and l:find('SF_guard("focus")', 1, true), "a shortcut never leaves it open")
+    -- found live: the window service also fires when a title changes (a terminal's, constantly); only a change of
+    -- app is a change of focus
+    assert(l:find("if was_class ~= nil and was_class ~= w.class and SF_guard then SF_guard(\"focus\") end", 1, true), "a title change keeps the reveal")
     assert(l:find('"emit pill_call"', 1, true), "a tap is still today's Super tap")
     local m = read("bin/mooi")
     assert(m:find("    reveal)", 1, true) and m:find('"emit rv_down"', 1, true) and m:find('"emit rv_up"', 1, true))
