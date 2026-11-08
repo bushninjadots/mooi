@@ -11,7 +11,7 @@ local function clean(v)
 end
 
 function M.new()
-    return { version = 1, turns = {}, busy = false, stream = "", at = 0 }
+    return { version = 1, turns = {}, busy = false, stream = "", at = 0, session = nil }
 end
 
 function M.normalise(doc, now)
@@ -20,6 +20,7 @@ function M.normalise(doc, now)
     out.busy = doc.busy == true
     out.stream = clean(doc.stream)
     out.at = tonumber(doc.at) or tonumber(now) or 0
+    out.session = type(doc.session) == "string" and doc.session or nil
     if type(doc.turns) == "table" then
         for _, turn in ipairs(doc.turns) do
             if type(turn) == "table" and (turn.role == "user" or turn.role == "bmo" or turn.role == "system") then

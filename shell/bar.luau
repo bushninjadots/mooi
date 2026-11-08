@@ -20,6 +20,8 @@ local chassis_look = require("lib/chassis").look
 local bmostate = require("lib/bmostate")           -- D209: the one shared BMO
 local bmochat = require("lib/bmochat")
 local brain = require("bmo/brain")
+local claude = require("lib/claude")
+local bmoact = require("lib/bmoact")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -42,7 +44,8 @@ return function(ctx)
     local bmo_fx = { bump = 0, say = 0, face = nil }
     local bm_react_face = nil
     -- D209: the bar owns the one BMO. The desktop, Pill and Sigil read this state; the bar writes it.
-    local bm = { st = bmostate.new(os.time()), chat = bmochat.new(), sent = nil, press_at = nil, hold = false }
+    local bm = { st = bmostate.new(os.time()), chat = bmochat.new(), sent = nil, press_at = nil, hold = false,
+                 asking = nil, live = "", session = nil }
     local function bm_now() return os.time() end
     local function bm_load()
         local ok, doc = pcall(sys.ask, "files.read", "bmo-shared.json")
@@ -1545,6 +1548,68 @@ return function(ctx)
             if bm_show then bm_show() end
         end)
     end
+    on("bmo_chat", function()
+        if bm.asking then return end
+        local q = tostring(text.bm_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if q == "" then return end
+        text.bm_q = ""
+        local now = bm_now()
+        bmochat.add(bm.chat, "user", q, now)
+        bm.chat.busy, bm.chat.stream = true, ""
+        bm.live = ""
+        text.bm_line = "thinking…"
+        bm_save(true)
+        local opts = { persona = "bmo", session = bm.chat.session,
+                       model = type(ctx.settings().claude) == "table" and ctx.settings().claude.model ~= "default"
+                               and ctx.settings().claude.model or nil }
+        local args = claude.args(q, opts)
+        local cmd = { "-C", folder, "claude" }
+        for _, a in ipairs(args) do cmd[#cmd + 1] = a end
+        local done, failed
+        local mine
+        mine = spawn("env", cmd, function(line)
+            if bm.asking ~= mine then return end
+            local r = claude.read(line, json.decode)
+            if not r then return end
+            if r.delta then
+                bm.live = bm.live .. r.delta
+                bm.chat.stream = bm.live
+                text.bm_line = bm.live
+            elseif r.done then
+                done = true
+                local said = r.text ~= "" and r.text or bm.live
+                bm.chat.session = r.session or bm.chat.session
+                local words, action = bmoact.parse(said, json.decode)
+                if action then
+                    local ok, tier = bmoact.check(action, home)
+                    if ok and tier ~= "change" then
+                        local cmd, args = bmoact.command(action)
+                        if cmd then pcall(run, cmd, args) end
+                    end
+                end
+                if words ~= "" then said = words end
+                if said ~= "" then
+                    bmochat.add(bm.chat, "bmo", said, bm_now())
+                    bm_apply("say", { text = said })
+                    text.bm_line = said
+                end
+            elseif r.error then
+                failed = r.error
+            end
+        end, function(_, code)
+            if bm.asking ~= mine then return end
+            bm.asking = nil
+            bm.chat.busy, bm.chat.stream = false, ""
+            if not done then
+                local why = failed or (code == 127 and "Claude Code is not installed" or "Claude did not answer")
+                bmochat.add(bm.chat, "system", why, bm_now())
+                text.bm_line = "I couldn't reach my brain. " .. why
+            end
+            bm_save(true); bm_publish()
+            if bm_show then bm_show() end
+        end)
+        bm.asking = mine
+    end)
     on("bmo_quick", function(v)
         local s = ctx.settings()
         local c = s.companion or {}
