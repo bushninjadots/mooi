@@ -72,6 +72,12 @@ return function(ctx)
         fact.bm_mischief, fact.bm_grump = v.mischief, v.grump
         fact.bm_asleep = v.asleep
         for i, m in ipairs(brain.MOODS or {}) do if m == v.mood then fact.bm_mood = i - 1 end end
+        text.bm_line, text.bm_mood_t = v.say, v.mood
+        local c = ctx.settings().companion or {}
+        fact.companion_eyes = c.eyes ~= false
+        fact.companion_music = c.music ~= false
+        fact.companion_cheek = ({ Off = 0, Tease = 1, Flirty = 2, Unfiltered = 3 })[c.cheek] or 1
+        fact.companion_hands = ({ Off = 0, Look = 1, Balanced = 2, Trusted = 3 })[c.hands] or 2
     end
     local bm_show = nil        -- face_show, once it exists
     bm_load()
@@ -1529,6 +1535,33 @@ return function(ctx)
     end)
     on("bmo_say", function(v)
         if type(v) == "string" and v ~= "" then bm_apply("say", { text = v }) end
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    for _, e in ipairs({ "pet", "play", "nap", "wake" }) do
+        on("bmo_" .. e, function()
+            bm_apply(e, {})
+            bm_publish()
+            if bm_show then bm_show() end
+        end)
+    end
+    on("bmo_quick", function(v)
+        local s = ctx.settings()
+        local c = s.companion or {}
+        local n = math.floor(tonumber(v) or 0)
+        if n == 1 then c.eyes = c.eyes == false
+        elseif n == 2 then c.music = c.music == false
+        elseif n == 3 then
+            local order, at = { "Off", "Tease", "Flirty", "Unfiltered" }, 1
+            for i, x in ipairs(order) do if x == c.cheek then at = i end end
+            c.cheek = order[at % #order + 1]
+        elseif n == 4 then
+            local order, at = { "Off", "Look", "Balanced", "Trusted" }, 2
+            for i, x in ipairs(order) do if x == c.hands then at = i end end
+            c.hands = order[at % #order + 1]
+        end
+        s.companion = c
+        ctx.save()
         bm_publish()
         if bm_show then bm_show() end
     end)

@@ -1457,6 +1457,19 @@ scene Mooi {
     fact hd_version = 0
     fact hd_pulse = 0
     text hd_brief = ""
+    text bm_line = ""
+    text bm_mood_t = "happy"
+    text bm_q = ""
+    fact companion_eyes = true
+    fact companion_music = true
+    fact companion_cheek = 1
+    fact companion_hands = 2
+    event bmo_pet ->             // to the logic: island care and chat
+    event bmo_play ->
+    event bmo_nap ->
+    event bmo_wake ->
+    event bmo_quick ->
+    event bmo_chat ->
     prop pb_hop = 0 ~m.morph
     follow pb_hop = pb_bump
     prop pb_type = 0 ~m.isl_out
@@ -1558,6 +1571,8 @@ scene Mooi {
     prop rv.power = 0 ~m.enter
     prop rv.music = 0 ~m.enter
     prop rv.board = 0 ~m.enter
+    prop rv.bmo = 0 ~m.enter
+    prop rv.herdr = 0 ~m.enter
     // the music island's record (D142): it turns while the song plays and the island is open
     prop mu_spd = 0 ~600ms
     follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)
@@ -1613,6 +1628,14 @@ scene Mooi {
     layer life.weather {
         shown while open == weather { rv.weather: 1 ~m.isl after 30ms }
         gone                        { rv.weather: 0 ~m.exit }
+    }
+    layer life.bmo {
+        shown while open == bmo { rv.bmo: 1 ~m.isl after 30ms }
+        gone                    { rv.bmo: 0 ~m.exit }
+    }
+    layer life.herdr {
+        shown while open == herdr { rv.herdr: 1 ~m.isl after 30ms }
+        gone                      { rv.herdr: 0 ~m.exit }
     }
     layer life.sound {
         shown while open == sound { rv.sound: 1 ~m.isl after 30ms }
@@ -4697,6 +4720,74 @@ scene Mooi {
                     IsleBtn(16, 326, 100, "Refresh", if(wxi_busy, 1, 0), wxref.hover)
                     on press wxref { emit wx_refresh }
                     text "open-meteo.com" { at: 324, 338; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
+                }
+            }
+        }
+
+        // ── bmo_island (D209): the pet's landing — care, stats, quick settings and chat ──
+        group {
+            move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - 440 - 20), st_res + 6)
+            let bi_x = if(isl_shelf, screen.width - 56 - 360, clamp(isl_cx - 180, 8, screen.width - 368))
+            group {
+                show: rv.bmo > 0.03
+                move: bi_x, 0
+                IslandFrame(rv.bmo, 360, 430, tx: if(isl_shelf, -1, isl_cx - bi_x), ox: bi_x, oy: st_res + 6, want: open == bmo, busy: open != none) {
+                    zone box keep_bmo { from: 0, 0; size: 360, 430; role: region; agent: hidden }
+                    IsleHead(360, "BMO", "{round(bm_charge * 100), 0}% · {bm_mood_t}")
+                    BmoFace(20, 44, true, 1.25, clamp((cursor.x - bi_x - 80) / 100, -1, 1) * 9,
+                            clamp((cursor.y - st_res - 100) / 120, -1, 1) * 4)
+                    text "CHARGE {round(bm_charge * 100), 0}%" { at: 100, 54; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                    text "BOND {round(bm_bond * 100), 0}% · MISCHIEF {round(bm_mischief * 100), 0}% · GRUMP {round(bm_grump * 100), 0}%" {
+                        at: 100, 72; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 244; lines: 1 }
+                    text pick(bm_asleep, "zzz · he is dozing", "tap him, feed him, or just say hello") {
+                        at: 100, 90; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: 240; lines: 1 }
+                    IsleGauge(20, 120, 320, "charge", "{round(bm_charge * 100), 0}%", bm_charge, bm_charge < 0.15)
+                    IsleGauge(20, 150, 320, "bond", "{round(bm_bond * 100), 0}%", bm_bond, false)
+                    IsleGauge(20, 180, 320, "grump", "{round(bm_grump * 100), 0}%", bm_grump, bm_grump > 0.6)
+                    group {
+                        zone box bpet { from: 20, 218; size: 60, 26; cursor: pointer; role: button; label: "Pet BMO" }
+                        zone box bplay { from: 88, 218; size: 60, 26; cursor: pointer; role: button; label: "Play with BMO" }
+                        zone box bnap { from: 156, 218; size: 60, 26; cursor: pointer; role: button; label: "Put BMO to bed" }
+                        zone box bwake { from: 224, 218; size: 60, 26; cursor: pointer; role: button; label: "Wake BMO" }
+                        zone box bcharge { from: 292, 218; size: 48, 26; cursor: pointer; role: button; label: "Charge BMO" }
+                        IsleBtn(20, 218, 60, "Pet", 0, bpet.hover)
+                        IsleBtn(88, 218, 60, "Play", 0, bplay.hover)
+                        IsleBtn(156, 218, 60, "Nap", 0, bnap.hover)
+                        IsleBtn(224, 218, 60, "Wake", 0, bwake.hover)
+                        IsleBtn(292, 218, 48, "+", 0, bcharge.hover)
+                    }
+                    on press bpet { emit bmo_pet }
+                    on press bplay { emit bmo_play }
+                    on press bnap { emit bmo_nap }
+                    on press bwake { emit bmo_wake }
+                    on press bcharge { emit bmo_charge(0.1) }
+                    IsleRule(360, 256)
+                    text "QUICK" { at: 20, 272; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                    let q_eye = if(companion_eyes, 1, 0)
+                    let q_music = if(companion_music, 1, 0)
+                    zone box qeyes { from: 20, 284; size: 62, 22; cursor: pointer; role: toggle; checked: q_eye > 0.5; label: "Eyes follow the pointer" }
+                    zone box qmusic { from: 90, 284; size: 62, 22; cursor: pointer; role: toggle; checked: q_music > 0.5; label: "Dance to music" }
+                    zone box qcheek { from: 160, 284; size: 78, 22; cursor: pointer; role: button; label: "Cheek level" }
+                    zone box qhands { from: 246, 284; size: 94, 22; cursor: pointer; role: button; label: "Hands level" }
+                    IsleBtn(20, 284, 62, "Eyes", q_eye, qeyes.hover, 22)
+                    IsleBtn(90, 284, 62, "Music", q_music, qmusic.hover, 22)
+                    IsleBtn(160, 284, 78, "Cheek", 0, qcheek.hover, 22)
+                    IsleBtn(246, 284, 94, "Hands", 0, qhands.hover, 22)
+                    text pick(companion_cheek, "OFF", "TEASE", "FLIRTY", "UNFILTERED") { at: 199, 312; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                    text pick(companion_hands, "OFF", "LOOK", "BALANCED", "TRUSTED") { at: 293, 312; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                    on press qeyes { emit bmo_quick(1) }
+                    on press qmusic { emit bmo_quick(2) }
+                    on press qcheek { emit bmo_quick(3) }
+                    on press qhands { emit bmo_quick(4) }
+                    IsleRule(360, 316)
+                    text bm_line { at: 20, 334; anchor: left center; size: 12; family: "Exo 2"; color: fl.phos; width: 320; lines: 2 }
+                    box { from: 20, 360; size: 320, 28; corner: 5; color: fl.well }
+                    box { from: 20, 360; size: 320, 28; corner: 5; stroke: 1; color: fl.trace }
+                    zone box bchatf { from: 20, 360; size: 320, 28; cursor: text; role: region; label: "Talk to BMO" }
+                    input bm_q { at: 28, 367; width: 300; size: 11; family: "Exo 2"; color: fl.phos; placeholder: "say something to BMO…"; label: "Talk to BMO" }
+                    on press bchatf { focus bm_q }
+                    on submit bm_q { emit bmo_chat }
+                    text "ENTER TO SEND" { at: 332, 396; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; opacity: 0.7 }
                 }
             }
         }

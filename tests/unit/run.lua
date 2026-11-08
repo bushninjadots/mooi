@@ -7747,5 +7747,15 @@ test("the BMO face is a real module, placeable in edit mode", function()
     assert(s:find('"BMO"', 1, true) and s:find('"Herdr"', 1, true), "named on the shelf")
 end)
 
+test("BMO's island is a landing with care, quick settings and chat", function()
+    local s = slurp("shell/mooi.plm")
+    assert(s:find("layer life.bmo", 1, true) and s:find("shown while open == bmo", 1, true), "its life")
+    assert(s:find("IslandFrame(rv.bmo, 360, 430", 1, true), "the plate")
+    for _, z in ipairs({ "bpet", "bplay", "bnap", "bwake", "bcharge", "qeyes", "qmusic", "qcheek", "qhands" }) do
+        assert(s:find("zone box " .. z, 1, true), z)
+    end
+    assert(s:find("input bm_q", 1, true) and s:find("on submit bm_q { emit bmo_chat }", 1, true), "chat")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
