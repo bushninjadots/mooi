@@ -288,3 +288,15 @@ If F1 is **no**, Task 7's "drag bind" step is required; if yes, it is skipped. I
 - [ ] **Step 2:** Run the full gate: `bin/mooi check`, `lua5.4 tests/unit/run.lua | tail -2`, `tests/surface.sh` — all green; then `setup/capture.sh` (required before every mooi commit; it refuses personal data).
 - [ ] **Step 3:** Commit `docs: the subsurface phase 1 (D209)` and push to `origin main` after the owner has seen the screenshots.
 - [ ] **Step 4:** With the owner: switch Surface on, hold Super over the desktop, roam, snap onto a widget and a hub, scroll to widen, click a hub item while holding, drag a widget out, let go; then Super+Return and Super+W to confirm no opening lingers. Record the outcome in D209.
+
+## Findings (Task 1, 2026-11-08, with the owner)
+
+- **F1 — no.** A click while holding Super never reaches a layer zone at `background` or `bottom`: Hyprland's
+  `SUPER + mouse:272` (window drag, `bind.lua`) takes it. → Task 7's drag-bind step is **required**.
+- **F2 — yes.** A `level: background` surface mapped after `mooi-desk` draws above the wallpaper (the probe's box
+  showed over it). → `ground` stays at `background`. (Probe gotcha: a scene's first surface with
+  `size: full, full` came out 1920×84 — give such scenes a stub first surface or explicit sizes.)
+- **F3 — yes.** Super + wheel runs `mooi wheel N` (the bar switched workspace), whatever layer is under the
+  pointer. → Task 7 routes `mooi wheel` to `mooi-surface` while an opening is open.
+- Tooling: a scene started from Claude's sandboxed shell is killed when the command ends; start probes through
+  Hyprland: `hyprctl dispatch "hl.dsp.exec_cmd(\"…\")"`.
