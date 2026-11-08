@@ -163,6 +163,11 @@ M.SETTERS = {
     "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
     -- D208: Surface. Appended.
     "surface.on", "surface.delay",
+    -- D209: BMO's eyes, tone, hands and what he notices. Appended.
+    "companion.eyes", "companion.cheek", "companion.hands", "companion.react.herdr", "companion.react.browser",
+    -- D210: Herdr. Appended.
+    "herdr.path", "herdr.poll", "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines",
+    "herdr.focus_on_open",
 }
 
 local function row_of(path)

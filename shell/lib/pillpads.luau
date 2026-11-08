@@ -63,6 +63,9 @@ local PARTS = {
     updates       = { act = "run_updates", closes = true },
     claude        = { act = "open_claude", closes = true },
     github        = { act = "open_github", closes = true },
+    -- D209/D210: their own faces and islands, not rooms; the acts open them from the board
+    bmo           = { act = "open_bmo", closes = true },
+    herdr         = { act = "open_herdr", closes = true },
 }
 
 local INDEX = {}

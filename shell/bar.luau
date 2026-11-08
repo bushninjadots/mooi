@@ -1250,7 +1250,7 @@ return function(ctx)
         bluetooth = "Bluetooth", clock = "Clock", caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot",
         clipboard = "Clipboard", power = "Session", actions = "Win actions", overview = "Overview", core = "Search",
         focus = "Focus", settings = "Settings", notes = "Quick notes", wallpaper = "Wallpaper", updates = "Updates",
-        nexus = "Nexus", claude = "Claude", github = "GitHub", sigil = "Sigil" }
+        nexus = "Nexus", claude = "Claude", github = "GitHub", sigil = "Sigil", bmo = "BMO", herdr = "Herdr" }
     local editing = nil      -- the layout a drag plans from: as edit mode found it, then as last dropped
     local previewed = nil    -- the last preview shown, so a pointer that moves within one place costs nothing
     local original = nil     -- the layout as edit mode found it, for Escape

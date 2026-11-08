@@ -7119,7 +7119,8 @@ test("sigil settings: setters appended, the module placeable", function()
     local at = {}; for i, v in ipairs(S) do at[v] = i end
     assert(at["sigil.rest"] and at["sigil.rest"] - at["sigil.pill"] == 6, "the seven sigil setters, appended together")
     local bl = require("lib/barlayout")
-    eq(bl.ORDER[#bl.ORDER], "sigil"); eq(bl.width("sigil", { screen = 1920 }), 180)
+    eq(bl.ORDER[#bl.ORDER - 2], "sigil"); eq(bl.ORDER[#bl.ORDER - 1], "bmo"); eq(bl.ORDER[#bl.ORDER], "herdr")
+    eq(bl.width("sigil", { screen = 1920 }), 180)
 end)
 test("sigil settings: the page has its fold", function()
     local f = io.open("shell/mooi-settings.plm"); local t = f:read("a"); f:close()
@@ -7175,7 +7176,8 @@ do
     end)
     test("sources: every bar module is in wave 1, later, or explicitly not a source", function()
         local skip = { tray = true, keyboard = true, bandwidth = true, caffeine = true, actions = true, core = true,
-                       focus = true, updates = true, claude = true, github = true, brightness = true, sigil = true }
+                       focus = true, updates = true, claude = true, github = true, brightness = true, sigil = true,
+                       bmo = true, herdr = true }
         local later = " " .. table.concat(SRC.LATER, " ") .. " "
         for _, m in ipairs(BL.ORDER) do
             local s = SRC.for_module(m)
@@ -7678,6 +7680,45 @@ test("a broken snapshot is a warning, not a crash", function()
     local s = herdrfeed.snapshot("nope")
     assert(herdrfeed.warn({ running = true, compatible = true }, s) ~= nil, "warned")
     eq(herdrfeed.warn({ running = true, compatible = true }, { agents = {} }), nil, "healthy")
+end)
+
+section("bmo and herdr: settings and registry (D209/D210)")
+test("the two modules sit after the Sigil, on the shelf", function()
+    local bl = require("lib/barlayout")
+    eq(bl.ORDER[#bl.ORDER - 1], "bmo"); eq(bl.ORDER[#bl.ORDER], "herdr")
+    eq(bl.width("bmo", { screen = 1920 }), 64); eq(bl.width("herdr", { screen = 1920 }), 56)
+    eq(bl.INDEX.bmo, 33); eq(bl.INDEX.herdr, 34)
+    for _, id in ipairs(bl.DEFAULT.left) do assert(id ~= "bmo" and id ~= "herdr") end
+    for _, id in ipairs(bl.DEFAULT.right) do assert(id ~= "bmo" and id ~= "herdr") end
+end)
+test("companion and herdr settings have defaults", function()
+    local d = config.defaults()
+    eq(d.companion.eyes, true); eq(d.companion.cheek, "Tease"); eq(d.companion.hands, "Balanced")
+    eq(d.companion.react.herdr, true); eq(d.companion.react.browser, true)
+    eq(d.herdr.path, "herdr"); eq(d.herdr.poll, 3); eq(d.herdr.show_idle, false)
+    eq(d.herdr.show_done, false); eq(d.herdr.brief, true); eq(d.herdr.brief_lines, 4)
+    eq(d.herdr.focus_on_open, false)
+end)
+test("the new settings are appended, in one block", function()
+    local S = require("lib/setters").SETTERS
+    local at = {}; for i, v in ipairs(S) do at[v] = i end
+    assert(at["herdr.focus_on_open"] == #S, "the last new key ends the list")
+    assert(at["companion.eyes"] and at["companion.eyes"] + 4 == at["companion.react.browser"], "companion block")
+    assert(at["herdr.path"] and at["herdr.path"] + 6 == at["herdr.focus_on_open"], "herdr block")
+end)
+test("the settings window has a Herdr page and the new BMO rows", function()
+    local f = io.open("shell/mooi-settings.plm"); local t = f:read("a"); f:close()
+    assert(t:find('"Herdr"', 1, true), "the page")
+    assert(t:find("sv_herdr_poll", 1, true) and t:find("sv_herdr_brief", 1, true))
+    assert(t:find("sv_companion_cheek", 1, true) and t:find("sv_companion_hands", 1, true))
+end)
+test("both modules are placeable and keep the default row within 1920", function()
+    local bl = require("lib/barlayout")
+    local ok, why = bl.check_list({ "bmo", "herdr" }, {})
+    assert(ok, why)
+    local out = barlayout.layout({ left = barlayout.DEFAULT.left, center = barlayout.DEFAULT.center,
+        right = barlayout.DEFAULT.right, mode = "islands" }, ctx())
+    eq(out.overflow, false, "the default row still fits")
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))
