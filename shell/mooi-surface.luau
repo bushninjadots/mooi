@@ -236,7 +236,7 @@ pcall(sys.watch, "battery", function(b)
 end)
 pcall(sys.watch, "network", function(n)
     if type(n) ~= "table" then return end
-    S.r.network = { online = n.online == true, name = n.name, strength = tonumber(n.strength) }
+    S.r.network = { online = n.online == true, wifi = n.wifi ~= false, name = n.name, strength = tonumber(n.strength) }
     if draw_below then draw_below() end
 end)
 pcall(sys.watch, "bluetooth", function(v)
@@ -402,7 +402,7 @@ local function press_code(v)
     if v >= 901 and v <= 906 then
         local k = v - 900
         if k == 1 then
-            run("nmcli", { "radio", "wifi", (S.r.network and S.r.network.online) and "off" or "on" })
+            run("nmcli", { "radio", "wifi", (S.r.network and S.r.network.wifi) and "off" or "on" })
         elseif k == 2 then
             run("bluetoothctl", { "power", (S.r.bluetooth and S.r.bluetooth.powered) and "off" or "on" })
         elseif k == 6 then
@@ -586,8 +586,8 @@ draw_below = function()
     fact.nt_n = count
     -- the components
     local net = S.r.network
-    fact.cp1_on, fact.cp1_lit = true, net ~= nil and net.online == true
-    text.cp1_val = net and (net.online and tostring(net.name or "on") or "off") or "off"
+    fact.cp1_on, fact.cp1_lit = true, net ~= nil and net.wifi == true
+    text.cp1_val = net and (not net.wifi and "off" or (net.online and tostring(net.name or "on") or "on")) or "off"
     local bt = S.r.bluetooth
     fact.cp2_on, fact.cp2_lit = true, bt ~= nil and bt.powered == true
     text.cp2_val = bt and (((bt.connected or 0) > 0 and tostring(bt.connected)) or (bt.powered and "on" or "off")) or "off"
@@ -654,7 +654,8 @@ local function show_reveal()
     local st = SF.rv
     fact.rv_on = st.stage >= 1
     fact.rv_stage = st.stage
-    fact.sf_firm = reveal.firm(st)
+    -- a full opening let go with Super keeps the keyboard: Esc is how it is dismissed
+    fact.sf_firm = reveal.firm(st) or (SF.op.mode == opening.MODES.full and SF.opened == true)
 end
 
 local function close_reveal()
@@ -666,7 +667,7 @@ end
 local function heal_opening()
     if SF.op.mode == opening.MODES.closed then return end
     opening.heal(SF.op)
-    SF.opened, SF.sent = false, nil
+    SF.opened, SF.sent, SF.dragging = false, nil, nil
     drag_restore()
     broadcast()
 end
@@ -697,7 +698,7 @@ on("rv_down", function()
     if not surface_on() then return end
     reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
     reveal.down(SF.rv, S.now_ms())
-    SF.opened = false
+    SF.opened, SF.dragging = false, nil
     -- where the pointer is now (the scene tells us as it moves once the overlay is open)
     run("hyprctl", { "cursorpos" }, function(out)
         local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
@@ -711,7 +712,8 @@ end)
 on("rv_move", function(v)
     v = math.floor(tonumber(v) or 0)
     SF.ptr = { x = v // 10000, y = v % 10000 }
-    if SF.op.mode > 0 then
+    -- while a drag is under way the hole stays where it was: a following hole would always contain the drop
+    if SF.op.mode > 0 and not SF.dragging then
         opening.move(SF.op, boxes(), SF.ptr)
         broadcast()
     end
@@ -771,10 +773,21 @@ end)
 -- a hub or a component dragged out of the opening becomes a Presence, unless it is let go inside the hole
 local DRAG_SOURCE = { [100] = "apps", [200] = "music", [901] = "network", [902] = "bluetooth",
                       [903] = "volume", [905] = "battery" }
-on("sb_drag", function(v) SF.dragging = math.floor(tonumber(v) or 0) end)
-on("sb_drop", function(v)
-    local src = DRAG_SOURCE[math.floor(tonumber(v) or 0)]
+on("sb_drag", function(v)
+    SF.dragging = math.floor(tonumber(v) or 0)
+    -- freeze the hole at the press (a following hole would always contain the drop); snapped is the fixed mode
+    if SF.op.mode > 0 and SF.op.mode ~= opening.MODES.snapped then
+        local h = opening.hole(SF.op, SF.ptr, SF.scr)
+        SF.op.mode = opening.MODES.snapped
+        SF.op.snap = { x = h.x + opening.MARGIN, y = h.y + opening.MARGIN,
+                       w = h.w - 2 * opening.MARGIN, h = h.h - 2 * opening.MARGIN }
+        broadcast()
+    end
+end)on("sb_drop", function(v)
+    local code = math.floor(tonumber(v) or 0)
     SF.dragging = nil
+    if code == -1 then return end          -- a widget drag: it keeps or buries itself (wg_keep / wg_bury)
+    local src = DRAG_SOURCE[code]
     if not src or SF.op.mode == opening.MODES.closed then return end
     run("hyprctl", { "cursorpos" }, function(out)
         local sx, sy = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")

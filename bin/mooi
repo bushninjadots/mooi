@@ -1544,7 +1544,8 @@ case "$cmd" in
     # Super + wheel (D171): the bar decides — on a pill it turns the views, elsewhere the workspace;
     # with no bar to ask, the workspace as Hyprland did
     wheel) # D209: while the opening shows, the wheel widens and narrows it; otherwise the bar decides
-        if [ "$("$pleamar" --say mooi-surface "get op_vis" 2>/dev/null)" = "true" ]; then
+        wtc=$("$pleamar" --say mooi-surface "get op_tc" 2>/dev/null)
+        if [ -n "$wtc" ] && [ "$wtc" -ge 1000 ] 2>/dev/null; then
             "$pleamar" --say mooi-surface "emit op_wheel ${1:-1}" >/dev/null 2>&1
         else
             "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}" >/dev/null 2>&1 \

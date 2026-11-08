@@ -485,8 +485,8 @@ scene Viz {
     fact st_glow = 1             // the theme's finish (lib/style)
     fact hold = true             // the widgets draw them (editing, desk mode, or not yet told)
 
-    fact op_px = 0                 // the pointer for the opening's follow mode: fed, not read (a cursor mention would start the feed and the idle clock)
-    fact op_py = 0
+    let op_px = cursor.x           // the pointer for the opening's follow mode (surface = screen here)
+    let op_py = cursor.y
     // <gen:opening>
     // The opening (D209): mooi-surface packs the hole into three numbers (lib/surface/opening `pack`);
     // every program turns them into the same sprung rectangle. mode = c / 1000: closed 0 · follow 1 · snapped 2 ·

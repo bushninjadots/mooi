@@ -1004,6 +1004,8 @@ scene Widgets {
     event wg_pick ->             // a widget chosen: its slot
     event wg_drag ->             // carried: slot · 65536 + x / 8 · 256 + y / 8
     event wg_drop ->             // let go: its slot
+    event sb_drag ->             // D209: to mooi-surface, a drag while the opening shows (freeze its hole)
+    event sb_drop ->             // and let go (-1: a widget keeps or buries itself)
     event wg_keep ->             // D209: a below widget let go outside the hole: slot · 4096 + x
     event wg_keep_y ->           // its y, the same packing
     event wg_bury ->             // an above widget let go inside the open hole: its slot
@@ -1020,7 +1022,7 @@ scene Widgets {
     event wg_room ->             // to the logic: the room under the bar, width · 4096 + height
 
     let op_px = desk.cursor.x      // the pointer for the opening's follow mode (outside the generated block)
-    let op_py = desk.cursor.y
+    let op_py = desk.cursor.y + wall_bar      // screen coordinates: the hole is the surface's, + the bar's reserve
     // <gen:opening>
     // The opening (D209): mooi-surface packs the hole into three numbers (lib/surface/opening `pack`);
     // every program turns them into the same sprung rectangle. mode = c / 1000: closed 0 · follow 1 · snapped 2 ·
@@ -1133,10 +1135,10 @@ scene Widgets {
             let acc = pick(wg_style, if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(nl_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or nl_above or editing or wg_desk or op_vis) and nl_on and (editing or wg_dkp > 0.01 or nl_st < 1.5)
+            show: (not sf_on or nl_above or editing or wg_desk or op_vis or nt_ed > -1.5) and nl_on and (editing or wg_dkp > 0.01 or nl_st < 1.5)
             opacity: nl_base + (1 - nl_base) * wg_dkp
             move: if((wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel)), wg_dx, 0) + nl_dx * wg_dkp, if((wg_dk == nl_k or (wg_dk >= 0 and wg_dksel and nl_sel)), wg_dy, 0) + nl_dy * wg_dkp
-            let nl_clip = sf_on and not nl_above and not editing and not wg_desk
+            let nl_clip = sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5
             clip box { from: if(nl_clip, op_x, 0), if(nl_clip, op_y - wall_bar, 0); size: if(nl_clip, op_w, desk.width), if(nl_clip, op_h, desk.height); corner: if(nl_clip, op_r, 0) }
             wg.NotesList(if(wg_rk == nl_k, wg_sx, nl_x), if(wg_rk == nl_k, wg_sy, nl_y), if(wg_rk == nl_k, wg_sw, nl_w), if(wg_rk == nl_k, wg_sh, nl_h), if(wg_rk == nl_k, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn)
             box { from: nl_x, nl_y; size: nl_w, nl_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - nl_near) }
@@ -1399,18 +1401,22 @@ scene Widgets {
                     wg_dk = k; wg_dx = drag.dx; wg_dy = drag.dy
                     emit wg_drag(k * 65536 + clamp(round((w.x + drag.dx) / 8), 0, 255) * 256 + clamp(round((w.y + drag.dy) / 8), 0, 255))
                 }
+                // D209: a drag while the opening shows freezes its hole so the drop can land outside
+                on drag mv while wg_hold == 100 + k and not w.locked and op_vis and not editing { emit sb_drag(-1) }
                 // the offset stays until the logic has put it where it settles (no flash back)
                 // D209: let go outside the hole → kept above, where it was let go; inside → back below
                 on release mv while wg_hold == 100 + k and op_vis and not w.above and not editing and (cursor.x < op_x or cursor.x > op_x + op_w or cursor.y < op_y or cursor.y > op_y + op_h) {
                     wg_hold = 0
                     emit wg_keep(k * 4096 + round(cursor.x))
                     emit wg_keep_y(k * 4096 + round(cursor.y))
+                    emit sb_drop(-1)
                 }
                 on release mv while wg_hold == 100 + k and op_vis and w.above and not editing and cursor.x >= op_x and cursor.x <= op_x + op_w and cursor.y >= op_y and cursor.y <= op_y + op_h {
                     wg_hold = 0
                     emit wg_bury(k)
+                    emit sb_drop(-1)
                 }
-                on release mv while wg_hold == 100 + k and op_vis { wg_hold = 0 }
+                on release mv while wg_hold == 100 + k and op_vis { wg_hold = 0; emit sb_drop(-1) }
                 on release mv while wg_hold == 100 + k and wg_dk == k { emit wg_drop(k) }
                 // eight handles on the chosen one: corners and edge middles (a record keeps its shape: corners only)
                 group {

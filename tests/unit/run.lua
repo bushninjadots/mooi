@@ -6161,7 +6161,7 @@ do
         assert(hl:find('hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1")', 1, true))
         local sh = read("bin/mooi")
         -- D209: while the opening shows the wheel widens and narrows it; otherwise the bar is asked
-        assert(sh:find('if [ "$("$pleamar" --say mooi-surface "get op_vis" 2>/dev/null)" = "true" ]; then', 1, true), "the opening first")
+        assert(sh:find('wtc=$("$pleamar" --say mooi-surface "get op_tc" 2>/dev/null)', 1, true) and sh:find('[ "$wtc" -ge 1000 ]', 1, true), "the opening first (a let cannot be read; op_tc is a fact)")
         assert(sh:find('"emit op_wheel ${1:-1}"', 1, true), "widens or narrows while open")
         assert(sh:find('"emit pill_superwheel ${1:-1}"', 1, true), "else asks the bar")
         assert(sh:find('|| hyprctl dispatch "hl.dsp.focus({ workspace', 1, true), "no bar: the workspace (Hyprland's Lua form)")
@@ -7825,8 +7825,9 @@ do
         -- the lanes drawn outside the loop (notes, GitHub, weather, system, calendar, launcher) and the held
         -- visualisers are gated too
         assert(plm:find("fact nl_above = false", 1, true), "a lane's above")
-        assert(plm:find("show: (not sf_on or nl_above or editing or wg_desk or op_vis) and nl_on", 1, true), "the lanes' gate")
+        assert(plm:find("show: (not sf_on or nl_above or editing or wg_desk or op_vis or nt_ed > -1.5) and nl_on", 1, true), "the lanes' gate; the notes editor stays whole")
         assert(plm:find("show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on", 1, true), "a held visualiser's gate")
+        assert(plm:find("let nl_clip = sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5", 1, true), "an edited notes lane is unclipped")
         for _, e in ipairs({ "wg_keep", "wg_keep_y", "wg_bury" }) do assert(plm:find("event " .. e .. " ->", 1, true), e) end
         assert(plm:find("emit wg_keep(", 1, true) and plm:find("emit wg_keep_y(", 1, true) and plm:find("emit wg_bury(", 1, true), "the drop tells the logic")
         assert(read("shell/mooi-widgets.luau"):find('"emit op_want"', 1, true), "widgets ask for the hole")
@@ -7896,6 +7897,10 @@ test("logic: the opening live — follow, snap, widen, heal, the keyboard path",
     assert(plm:find("emit rv_move(", 1, true), "the scene tells the logic where the pointer is while revealing")
     assert(plm:find("keyboard: exclusive while op_vis and sf_firm", 1, true), "the keyboard only once firm")
     assert(plm:find("fact sf_firm", 1, true), "its fact")
+    assert(l:find("reveal.firm(st) or (SF.op.mode == opening.MODES.full and SF.opened == true)", 1, true), "a full opening keeps the keyboard after release")
+    assert(l:find("and not SF.dragging", 1, true) and l:find("SF.op.mode = opening.MODES.snapped", 1, true), "a drag freezes the hole")
+    assert(l:find("S.r.network.wifi", 1, true) and l:find("net.wifi", 1, true), "the Wi-Fi radio, not the connection")
+    assert(read("shell/mooi.luau"):find('"emit sf_set 0"', 1, true), "Surface off brings the citizens back")
     for _, k in ipairs({ "Tab", "Shift+Tab", "Return", "Page_Up", "Page_Down" }) do
         assert(plm:find("on key " .. k .. " { emit op_", 1, true), k .. " is the opening's")
     end

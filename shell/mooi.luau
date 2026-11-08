@@ -2236,6 +2236,8 @@ function surface_sync()
     if not SURFACE.wanted() then
         SURFACE.tries, SURFACE.gave_up = 0, false
         if SURFACE.win then SURFACE.win = nil; fact.surface_up = false; run("pleamar", { "--say", "mooi-surface", "quit" }) end
+        -- D209: with Surface off the citizens must come back; the surface that would tell them is gone
+        for _, c in ipairs({ "mooi-widgets", "mooi-viz", "bmo" }) do run("pleamar", { "--say", c, "emit sf_set 0" }) end
         return
     end
     if SURFACE.win or SURFACE.gave_up then return end

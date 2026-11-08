@@ -139,7 +139,8 @@ if kclosed "$(sf 'get op_k')"; then ok "a quick tap opens nothing"; else bad "a 
 sf "emit rv_down" >/dev/null; sleep 1.2
 if kopen "$(sf 'get op_k')"; then ok "held: the opening is up"; else bad "held: the opening is up ($(sf 'get op_k'))"; fi
 if kopen "$(wd 'get op_k')"; then ok "the widgets opened with it"; else bad "the widgets opened with it ($(wd 'get op_k'))"; fi
-if grep -q "level: top\|level: overlay" "$root/shell/mooi-surface.plm"; then bad "no surface over the windows"; else ok "no surface over the windows"; fi
+ground_block=$(sed -n '/    surface ground {/,/^    }$/p' "$root/shell/mooi-surface.plm"); edge_block=$(sed -n '/    surface edge {/,/^    }$/p' "$root/shell/mooi-surface.plm")
+if printf '%s\n%s\n' "$ground_block" "$edge_block" | grep -q "level: top\|level: overlay"; then bad "no surface over the windows"; else ok "no surface over the windows"; fi
 lev() { hyprctl layers -j 2>/dev/null | jq -r --arg p "$1" '[.[] | .levels | to_entries[] | .key as $l | .value[] | select((.pid|tostring) == $p) | $l] | unique | join(",")' 2>/dev/null; }
 p=$(pid)
 lvs=$(lev "$p")

@@ -52,6 +52,9 @@ def lanes():
                     H=f"if({rz}, wg_sh, {p}_h)", U=f"if({rz}, wg_ru, {p}_u)", LAY=f"{p}_lay", PLATE=f"{p}_plate",
                     HZ=f"{p}_hz", TN=f"{p}_tn")
         along = f"(wg_dk == {p}_k or (wg_dk >= 0 and wg_dksel and {p}_sel))"
+        # the notes lane carries its own text field: while it is being edited it is whole and unclipped
+        edit = " or nt_ed > -1.5" if p == "nl" else ""
+        clip_edit = " and nt_ed < -1.5" if p == "nl" else ""
         out.append(f"""        // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
         let {p}_near = clamp(1 - max(max(0, max({p}_x - desk.cursor.x, desk.cursor.x - {p}_x - {p}_w)), max(0, max({p}_y - desk.cursor.y, desk.cursor.y - {p}_y - {p}_h))) / 220, 0, 1)
         let {p}_wake = {p}_near > 0.7
@@ -62,10 +65,10 @@ def lanes():
             let acc = {ACC.format(p=p)}
             z: if({p}_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or {p}_above or editing or wg_desk or op_vis) and {p}_on and (editing or wg_dkp > 0.01 or {p}_st < 1.5)
+            show: (not sf_on or {p}_above or editing or wg_desk or op_vis{edit}) and {p}_on and (editing or wg_dkp > 0.01 or {p}_st < 1.5)
             opacity: {p}_base + (1 - {p}_base) * wg_dkp
             move: if({along}, wg_dx, 0) + {p}_dx * wg_dkp, if({along}, wg_dy, 0) + {p}_dy * wg_dkp
-            let {p}_clip = sf_on and not {p}_above and not editing and not wg_desk
+            let {p}_clip = sf_on and not {p}_above and not editing and not wg_desk{clip_edit}
             clip box {{ from: if({p}_clip, op_x, 0), if({p}_clip, op_y - wall_bar, 0); size: if({p}_clip, op_w, desk.width), if({p}_clip, op_h, desk.height); corner: if({p}_clip, op_r, 0) }}
             {call.format(**args)}
             box {{ from: {p}_x, {p}_y; size: {p}_w, {p}_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - {p}_near) }}
