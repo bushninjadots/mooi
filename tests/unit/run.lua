@@ -7731,6 +7731,8 @@ test("the bar owns the shared BMO and the desktop only reports its body", functi
     local d = slurp("shell/bmo/bmo.luau")
     assert(d:find('"bmo-shared.json"', 1, true) and d:find('"bmo-body.json"', 1, true), "desktop bridge")
     assert(d:find("sys.watch, \"files:bmo-shared.json\"", 1, true), "it follows the bar")
+    assert(not d:find("emit nt_bmo_q", 1, true), "the old second chat is retired")
+    assert(d:find('"bmo-cmd.json"', 1, true) and d:find('kind = "chat"', 1, true), "it asks the bar")
 end)
 test("the scene declares the bar face's facts", function()
     local s = slurp("shell/mooi.plm")

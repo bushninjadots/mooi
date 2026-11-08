@@ -84,6 +84,7 @@ return function(ctx)
         fact.companion_hands = ({ Off = 0, Look = 1, Balanced = 2, Trusted = 3 })[c.hands] or 2
     end
     local bm_show = nil        -- face_show, once it exists
+    local bm_chat_ask = nil    -- the chat runner, once it exists
     bm_load()
     bm_publish()
     bm_react_face = function(face, ms)
@@ -224,6 +225,12 @@ return function(ctx)
         local ok, cmd = pcall(sys.ask, "files.read", "bmo-cmd.json")
         if not ok or type(cmd) ~= "table" or type(cmd.id) ~= "string" then return end
         if cmd.id == bm.st.last_cmd then return end
+        if cmd.kind == "chat" then
+            bm.st.last_cmd = cmd.id
+            bm_save(true)
+            if bm_chat_ask then bm_chat_ask(cmd.arg and cmd.arg.text) end
+            return
+        end
         local applied = bm_apply(cmd.kind, cmd.arg, false)
         if applied then
             bm.st.last_cmd = cmd.id
@@ -1678,11 +1685,10 @@ return function(ctx)
             if bm_show then bm_show() end
         end)
     end
-    on("bmo_chat", function()
+    local function bm_chat(q)
         if bm.asking then return end
-        local q = tostring(text.bm_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        q = tostring(q or ""):gsub("^%s+", ""):gsub("%s+$", "")
         if q == "" then return end
-        text.bm_q = ""
         local now = bm_now()
         bmochat.add(bm.chat, "user", q, now)
         bm.chat.busy, bm.chat.stream = true, ""
@@ -1739,6 +1745,12 @@ return function(ctx)
             if bm_show then bm_show() end
         end)
         bm.asking = mine
+    end
+    bm_chat_ask = bm_chat
+    on("bmo_chat", function()
+        local q = text.bm_q
+        text.bm_q = ""
+        bm_chat(q)
     end)
     on("bmo_quick", function(v)
         local s = ctx.settings()

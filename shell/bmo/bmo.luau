@@ -267,6 +267,7 @@ end
 -- and what it is doing. If the bar is not there, he keeps his last face and waits.
 local shared_at = 0
 local shared_say = nil
+local shared_answer = nil
 local function shared(doc)
     if type(doc) ~= "table" then return end
     shared_at = os.time()
@@ -279,6 +280,7 @@ local function shared(doc)
     local s = type(doc.say) == "table" and doc.say or nil
     if s and (tonumber(s.until_at) or 0) > os.time() and type(s.text) == "string" and s.text ~= "" then
         if shared_say then shared_say(s.text, 4000) end
+        if shared_answer then shared_answer(s.text) end
     end
 end
 local shared_doc = read("bmo-shared.json")
@@ -973,6 +975,15 @@ local function show_talk(thinking)
     model.bc = rows
     fact.bc_empty = #talk == 0 and not thinking
 end
+local ask_n = 0
+shared_answer = function(words)
+    if fact.bc_busy or fact.tab == "chat" then
+        fact.bc_busy = false
+        talk[#talk + 1] = { who = 1, text = tostring(words or "") }
+        while #talk > 12 do table.remove(talk, 1) end
+        show_talk(false)
+    end
+end
 on("bmo_ask", function()
     local q = tostring(text.bmo_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
     text.bmo_q = ""
@@ -982,10 +993,14 @@ on("bmo_ask", function()
     fact.bc_busy = true
     show_talk(true)
     react("curious", 1800)
-    run("pleamar", { "--say", "mooi-notch", W.ask(q), "emit nt_bmo_q" }, function(_, code)
-        if code ~= 0 then
+    ask_n = ask_n + 1
+    pcall(sys.call, "files.write", "bmo-cmd.json",
+          { id = "bmo-chat-" .. tostring(mark) .. "-" .. tostring(ask_n), at = os.time(), kind = "chat", arg = { text = q } })
+    local mine = ask_n
+    after(45000, function()
+        if fact.bc_busy and ask_n == mine then
             fact.bc_busy = false
-            talk[#talk + 1] = { who = 1, text = "BMO can't reach Claude… is the side notch on? (Settings → Control Nexus)" }
+            talk[#talk + 1] = { who = 1, text = "BMO's bar is not answering… is mooi running?" }
             show_talk(false)
         end
     end)
