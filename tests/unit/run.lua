@@ -7569,6 +7569,26 @@ do
 end
 
 
+section("surface: the shared opening (D209)")
+test("opening block: one text in every program", function()
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    local function block(p)
+        local a = assert(read(p):match("// <gen:opening>\n(.-)    // </gen:opening>"), p .. " lacks the markers")
+        return a
+    end
+    local ref = block("shell/mooi-surface.plm")
+    assert(#ref > 0, "non-empty")
+    for _, p in ipairs({ "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
+        assert(block(p) == ref, p .. " differs from mooi-surface.plm")
+    end
+    for _, needle in ipairs({ "spring sg.op = 220, 24", "event op_a ->", "event sf_set ->", "cursor.x", "on op_c(v)", "let sf_below = sf_on" }) do
+        assert(ref:find(needle, 1, true), "the block has " .. needle)
+    end
+    assert(ref:find("op_mode == 1, cursor.x - 90", 1, true) and ref:find("180", 1, true), "follow: the 2 * 90 square on the pointer")
+    eq(require("lib/surface/opening").R, 90, "opening.R")
+    assert(read("tools/gen-opening.py"):find("R = 90", 1, true), "the generator writes 90 from one constant")
+end)
+
 section("surface: scene (D208)")
 test("scene: the reveal overlay with the Aperture, the desk layer for Presences", function()
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

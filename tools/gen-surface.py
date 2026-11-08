@@ -8,6 +8,11 @@ the pointer's push, and draws it as the Sigil body (three stroke passes and a pe
 shows a display: the line, the display's insides, the field). Run: python3 tools/gen-surface.py
 """
 from pathlib import Path
+import importlib.util
+
+_spec = importlib.util.spec_from_file_location("gen_opening", Path(__file__).resolve().parent / "gen-opening.py")
+opening = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(opening)
 
 N = 64
 HOSTS = 4
@@ -167,6 +172,7 @@ def scene():
         L += host_decls(k)
     for k in range(HOSTS):
         L += host_lets(k)
+    L += [""] + opening.text().rstrip("\n").split("\n")
     L += ["", "    surface bar {", "        size: full, 40", "        anchor: top", "        level: top", "        reserve: -1",
           "        keyboard: none", "        rate: 60, 20 while calm",
           "        open: h0_on or h1_on or h2_on or h3_on      // no host, no surface (review I1)"]

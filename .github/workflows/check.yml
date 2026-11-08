@@ -31,5 +31,6 @@ jobs:
         run: |
           python3 tools/gen-settings.py
           python3 tools/gen-frame.py
+          python3 tools/gen-opening.py
           python3 tools/gen-surface.py
           git diff --exit-code -- shell tools
