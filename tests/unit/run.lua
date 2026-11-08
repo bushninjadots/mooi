@@ -7809,6 +7809,44 @@ do
     end)
 end
 
+section("surface: citizens (D209)")
+do
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    test("citizens: widgets hide below and clip to the hole", function()
+        local plm = read("shell/mooi-widgets.plm")
+        assert(plm:find("// <gen:opening>", 1, true) and plm:find("let op_vis = sf_on and op_k > 0.01", 1, true), "the block")
+        local gate = "show: not sf_on or w.above or editing or wg_desk or op_vis"
+        assert(plm:find(gate, 1, true), "the widgets' gate")
+        -- a clip cannot be shown or hidden (found live: `show: false` still clipped everything away), so when
+        -- the widget is not below, its clip region is the whole surface
+        assert(plm:find("let clip_on = sf_on and not w.above and not editing and not wg_desk", 1, true), "when to clip")
+        assert(plm:find("clip box { from: if(clip_on, op_x, 0), if(clip_on, op_y - wall_bar, 0); size: if(clip_on, op_w, desk.width), if(clip_on, op_h, desk.height); corner: if(clip_on, op_r, 0) }", 1, true), "the hole's clip")
+        assert(plm:find("above: bool", 1, true), "widgets.json carries it")
+        -- the lanes drawn outside the loop (notes, GitHub, weather, system, calendar, launcher) and the held
+        -- visualisers are gated too
+        assert(plm:find("fact nl_above = false", 1, true), "a lane's above")
+        assert(plm:find("show: (not sf_on or nl_above or editing or wg_desk or op_vis) and nl_on", 1, true), "the lanes' gate")
+        assert(plm:find("show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on", 1, true), "a held visualiser's gate")
+        for _, e in ipairs({ "wg_keep", "wg_keep_y", "wg_bury" }) do assert(plm:find("event " .. e .. " ->", 1, true), e) end
+        assert(plm:find("emit wg_keep(", 1, true) and plm:find("emit wg_keep_y(", 1, true) and plm:find("emit wg_bury(", 1, true), "the drop tells the logic")
+        assert(read("shell/mooi-widgets.luau"):find('"emit op_want"', 1, true), "widgets ask for the hole")
+        assert(read("shell/mooi-viz.luau"):find('"emit op_want"', 1, true), "the visualisers too")
+        local viz = read("shell/mooi-viz.plm")
+        assert(viz:find("let clip_A = sf_on and not lA_above", 1, true) and viz:find("clip box { from: if(clip_A, op_x, 0), if(clip_A, op_y - sf_top, 0)", 1, true), "the lanes clip too")
+    end)
+    test("citizens: a widget dragged out is kept above, wholly on screen and under the bar", function()
+        local W = require("lib/widgets")
+        local w = { w = 440, h = 192 }
+        local c = W.keep_at(w, 1900, 1070, { w = 1920, h = 1080 }, 34)
+        eq(c.x, 1480); eq(c.y, 1080 - 34 - 192); eq(c.above, true)
+        local d = W.keep_at(w, -50, -50, { w = 1920, h = 1080 }, 34)
+        eq(d.x, 0); eq(d.y, 0); eq(d.above, true)
+        local doc = W.encode({ widgets = { { id = "a", kind = "clock", layout = "digital", mode = "normal",
+                                             x = 0, y = 0, w = 100, h = 100, above = true } } })
+        eq(doc.widgets[1].above, true, "widgets.json keeps it")
+    end)
+end
+
 section("surface: logic (D209)")
 test("logic: the opening live — follow, snap, widen, heal, the keyboard path", function()
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

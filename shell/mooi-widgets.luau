@@ -127,6 +127,7 @@ local function publish()
             vslot = -1, opa = w.opacity or 1, txt = tonumber(o.text) or 1, locked = w.locked == true,
             sel = is_sel(w.id),
             h24 = o.h24 ~= false, secs = o.seconds ~= false, viz = o.viz == true, pop = o.pop ~= false,
+            above = w.above == true,
             dx = 0, dy = 0, grp = 0,
             adapt = o.adapt ~= false, behind = false, tn = 0, hz = 0.32, ar = 0, ag = 0, ab = 0, over = false,
         }
@@ -201,6 +202,7 @@ local function publish()
             fact[f .. "ad"], fact[f .. "beh"] = r.adapt and wall ~= nil, r.behind
             fact[f .. "ar"], fact[f .. "ag"], fact[f .. "ab"] = r.ar, r.ag, r.ab
             fact[f .. "dx"], fact[f .. "dy"] = r.dx, r.dy
+            fact[f .. "above"] = r.above == true
             lane = lane + 1
         end
     end
@@ -220,6 +222,7 @@ local function publish()
     -- notes (one) and GitHub (two) are drawn as lanes too: their lists cannot sit inside the loop
     local function lane_facts(f, i, r)
         fact[f .. "on"], fact[f .. "k"] = true, i - 1
+        fact[f .. "above"] = r.above == true
         fact[f .. "x"], fact[f .. "y"], fact[f .. "w"], fact[f .. "h"], fact[f .. "u"] = r.x, r.y, r.w, r.h, r.u
         fact[f .. "lay"], fact[f .. "st"], fact[f .. "gh"], fact[f .. "opa"] = r.lay, r.st, r.gh, r.opa
         fact[f .. "beh"], fact[f .. "plate"], fact[f .. "sel"] = r.behind, r.plate, r.sel and not r.locked
@@ -268,12 +271,12 @@ end
 -- ── D155: the visualisers drawn by mooi-viz ──
 -- Where each one is and how it looks, sent whenever any of it changes (looked at every 400 ms: a
 -- string of what it would be told); `hold` while the widgets draw them themselves (editing, desk mode).
-local VIZ_KEYS = { "on", "x", "y", "w", "h", "u", "mode", "n", "gap", "glow", "ang", "lean", "peaks", "refl", "plate", "st", "gh",
+local VIZ_KEYS = { "on", "above", "x", "y", "w", "h", "u", "mode", "n", "gap", "glow", "ang", "lean", "peaks", "refl", "plate", "st", "gh",
                    "opa", "ad", "ar", "ag", "ab" }
 local viz_sent = nil
 local function viz_cmds()
     local hold = fact.editing or fact.wg_desk or (tonumber(fact.wg_dkp) or 0) > 0.01
-    local c = { "fact hold " .. tostring(hold), "fact viz_still " .. tostring(fact.viz_still == true),
+    local c = { "fact hold " .. tostring(hold), "fact sf_top " .. tostring(tonumber(fact.wall_bar) or 34), "fact viz_still " .. tostring(fact.viz_still == true),
                 "fact mood_glow " .. tostring(tonumber(fact.mood_glow) or 1), "fact mood_pace " .. tostring(tonumber(fact.mood_pace) or 1) }
     for k, L in ipairs({ "A", "B", "C" }) do
         local f = "l" .. L .. "_"
@@ -686,6 +689,35 @@ end)
 local function let_go()
     fact.wg_dk, fact.wg_dx, fact.wg_dy = -1, 0, 0
 end
+-- D209: dragged out of the opening and let go outside the hole — kept above, where it was let go
+local keep_at = nil
+on("wg_keep", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, x = v // 4096, v % 4096
+    keep_at = keep_at or {}
+    keep_at[k] = keep_at[k] or {}
+    keep_at[k].x = x
+end)
+on("wg_keep_y", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, y = v // 4096, v % 4096
+    local p = keep_at and keep_at[k]
+    if not p or not p.x then return end
+    keep_at[k] = nil
+    local w = doc.widgets[k + 1]
+    if not w then return end
+    local d = W.encode(doc)
+    d.widgets[k + 1] = W.keep_at(w, p.x, y, room, 0)
+    change(d, "")
+end)
+-- and let go inside the open hole: back below the wallpaper
+on("wg_bury", function(v)
+    local k = math.floor(tonumber(v) or 0)
+    if not doc.widgets[k + 1] then return end
+    local d = W.encode(doc)
+    d.widgets[k + 1].above = false
+    change(d, "")
+end)
 on("wg_drop", function(v)
     local k = math.floor(tonumber(v) or -1)
     local p = pending
@@ -1587,3 +1619,6 @@ end)
 every(400, function()
     if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; hush() end
 end)
+
+-- D209: the opening may already be up (and this program was restarted): ask for its hole
+run("pleamar", { "--say", "mooi-surface", "emit op_want" })

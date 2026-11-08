@@ -26,7 +26,7 @@ LANES = [
     ("ln", "wx.Launch({X}, {Y}, {W}, {H}, {U}, {LAY}, {PLATE}, ink, acc, {HZ}, {TN})"),
 ]
 
-FACTS = [("on", "false"), ("k", "0"), ("x", "0"), ("y", "0"), ("w", "10"), ("h", "10"), ("u", "1"), ("lay", "0"),
+FACTS = [("on", "false"), ("above", "false"), ("k", "0"), ("x", "0"), ("y", "0"), ("w", "10"), ("h", "10"), ("u", "1"), ("lay", "0"),
          ("st", "0"), ("gh", "false"), ("opa", "1"), ("beh", "false"), ("plate", "false"), ("sel", "false"),
          ("tn", "0"), ("hz", "0.32"), ("ad", "false"), ("ar", "0.6"), ("ag", "0.8"), ("ab", "0.7"), ("dx", "0"), ("dy", "0")]
 
@@ -61,9 +61,12 @@ def lanes():
             let ink = {INK.format(p=p)}
             let acc = {ACC.format(p=p)}
             z: if({p}_beh, 1, 3)
-            show: {p}_on and (editing or wg_dkp > 0.01 or {p}_st < 1.5)
+            // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
+            show: (not sf_on or {p}_above or editing or wg_desk or op_vis) and {p}_on and (editing or wg_dkp > 0.01 or {p}_st < 1.5)
             opacity: {p}_base + (1 - {p}_base) * wg_dkp
             move: if({along}, wg_dx, 0) + {p}_dx * wg_dkp, if({along}, wg_dy, 0) + {p}_dy * wg_dkp
+            let {p}_clip = sf_on and not {p}_above and not editing and not wg_desk
+            clip box {{ from: if({p}_clip, op_x, 0), if({p}_clip, op_y - wall_bar, 0); size: if({p}_clip, op_w, desk.width), if({p}_clip, op_h, desk.height); corner: if({p}_clip, op_r, 0) }}
             {call.format(**args)}
             box {{ from: {p}_x, {p}_y; size: {p}_w, {p}_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - {p}_near) }}
         }}""")

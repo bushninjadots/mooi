@@ -155,6 +155,17 @@ function M.clamp_rect(w, screen)
     return o
 end
 
+-- D209: a widget dragged out of the opening is kept above the wallpaper, wholly on the screen and
+-- with the bar's reserve's worth of room under it. x, y are the widget area's coordinates (its 0 is
+-- the bar's reserve down); above is set.
+function M.keep_at(w, x, y, scr, bar_h)
+    local o = copy(w)
+    o.x = clamp(math.floor((tonumber(x) or 0) + 0.5), 0, math.max(0, scr.w - o.w))
+    o.y = clamp(math.floor((tonumber(y) or 0) + 0.5), 0, math.max(0, scr.h - (bar_h or 0) - o.h))
+    o.above = true
+    return o
+end
+
 function M.scale(w)
     local L = M.LAYOUTS[M.layout_of(w)]
     if w.kind == "visualiser" then return w.w / L.def[1] end
@@ -285,6 +296,7 @@ local function clean(e, screen)
     w.options = options_for(kind, e.options)
     w.opacity = clamp(tonumber(e.opacity) or 1, 0.3, 1)
     w.locked = e.locked == true
+    w.above = e.above == true       -- D209: kept above the wallpaper
     local L = M.LAYOUTS[M.layout_of(w)]
     w.w, w.h = M.clamp_size(w, tonumber(e.w) or L.def[1], tonumber(e.h) or L.def[2])
     w.x, w.y = tonumber(e.x) or M.MARGIN, tonumber(e.y) or (screen.h - M.MARGIN - w.h)
@@ -329,7 +341,7 @@ function M.encode(doc)
     for i, w in ipairs(doc.widgets) do
         out.widgets[#out.widgets + 1] = { id = w.id, kind = w.kind, layout = w.layout, mode = w.mode,
             x = w.x, y = w.y, w = w.w, h = w.h, idle = w.idle, options = copy(w.options or {}),
-            z = i, opacity = w.opacity or 1, locked = w.locked == true, group = w.group }
+            z = i, opacity = w.opacity or 1, locked = w.locked == true, group = w.group, above = w.above == true }
     end
     return out
 end
