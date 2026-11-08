@@ -7126,7 +7126,7 @@ end)
 
 section("the sigil: shapes")
 do
-    local SH = require("lib/sigil/shapes")
+    local SH = require("lib/surface/shapes")
     test("shapes: every kind, every form, 64 points inside its box", function()
         for _, k in ipairs(SH.KINDS) do
             for _, form in ipairs({ "glyph", "compact", "display" }) do
@@ -7162,7 +7162,7 @@ end
 
 section("the sigil: sources")
 do
-    local SRC = require("lib/sigil/sources")
+    local SRC = require("lib/surface/sources")
     local BL = require("lib/barlayout")
     test("sources: wave 1 complete, each with glyph, display, compact, press and a group", function()
         for _, id in ipairs(SRC.WAVE1) do
@@ -7199,7 +7199,7 @@ end
 
 section("the sigil: palette")
 do
-    local PAL = require("lib/sigil/palette")
+    local PAL = require("lib/surface/palette")
     local base = { colours = { primary = "#fbba73", error = "#ffb4ab" } }
     local follow = { sigil = { colour = "follow" } }
     test("palette: base is the wallpaper's primary", function() local c = PAL.resolve("clock", { palette = base, settings = follow }); eq(c[1], 0xfb); eq(c[3], 0x73) end)
@@ -7213,7 +7213,7 @@ do
 end
 section("the sigil: bodies")
 do
-    local BOD = require("lib/sigil/bodies")
+    local BOD = require("lib/surface/bodies")
     test("bodies: temperaments, and reduced motion stills them", function()
         eq(BOD.temperament("calm", false).wobble, 1); eq(BOD.temperament("restless", false).batches, 6)
         local r = BOD.temperament("restless", true); eq(r.wobble, 0); eq(r.breath, 0); eq(r.batches, 1); eq(r.lag_ms, 0)
@@ -7224,7 +7224,7 @@ end
 
 section("the sigil: director")
 do
-    local DIR = require("lib/sigil/director")
+    local DIR = require("lib/surface/director")
     local H = { { id = "pill", kind = "pill", rest = "clock", h = 24 }, { id = "isl1", kind = "island", rest = "clock", h = 24 } }
     test("director: nothing happening, each host rests", function()
         local r = DIR.choose(H, { feed_at = 0 }, 1000)
@@ -7264,7 +7264,7 @@ end
 
 section("the sigil: hosts")
 do
-    local HO = require("lib/sigil/hosts")
+    local HO = require("lib/surface/hosts")
     local cfg = function(pill, mode) local d = config.defaults(); d.sigil.pill = pill; d.bar.mode = mode; return d end
     local LOOK = { top = 6, mod_h = 24 }
     test("hosts: classic mode and no module, no hosts", function() eq(#HO.build(cfg("classic", "pill"), { x = {} }, { x = 870, w = 180 }, LOOK, 1920), 0) end)
@@ -7296,20 +7296,20 @@ section("the sigil: running")
 test("mooi: sigil respawn gives up after five and the bar falls back", function()
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
     local m = read("shell/mooi.luau")
-    assert(m:find("function sigil_sync()", 1, true), "spawned like the frame")
-    assert(m:find('on("sigil_ready"', 1, true), "it says when it is up")
-    assert(m:find("sigil · gave up after five quick ends", 1, true))
-    assert(read("bin/mooi"):find("mooi-sigil.plm:the Sigil", 1, true), "compiled with the others")
+    assert(m:find("function surface_sync()", 1, true), "spawned like the frame")
+    assert(m:find('on("surface_ready"', 1, true), "it says when it is up")
+    assert(m:find("surface · gave up after five quick ends", 1, true))
+    assert(read("bin/mooi"):find("mooi-surface.plm:Surface", 1, true), "compiled with the others")
     -- found live: without the link it read its files from an empty folder of its own and drew nothing
-    assert(read("bin/mooi"):match("for prog in [^\n]*mooi%-sigil"), "shares mooi's data folder")
-    assert(read("shell/ui/pill.plm"):find("sigil_mode and not sigil_up", 1, true), "the plain clock")
-    -- found live: an undeclared event from another program is dropped, so sigil_up never came on
-    assert(read("shell/mooi.plm"):find("event sigil_ready ->", 1, true), "the bar hears that it is up")
+    assert(read("bin/mooi"):match("for prog in [^\n]*mooi%-surface"), "shares mooi's data folder")
+    assert(read("shell/ui/pill.plm"):find("sigil_mode and not surface_up", 1, true), "the plain clock")
+    -- found live: an undeclared event from another program is dropped, so surface_up never came on
+    assert(read("shell/mooi.plm"):find("event surface_ready ->", 1, true), "the bar hears that it is up")
 end)
 
 section("the sigil: scene")
 test("scene: generated, four hosts, 64 sprung points each, two surfaces", function()
-    local f = io.open("shell/mooi-sigil.plm"); local t = f:read("a"); f:close()
+    local f = io.open("shell/mooi-surface.plm"); local t = f:read("a"); f:close()
     assert(t:find("follow h3_x63 = h3_tx63", 1, true), "the last host's last point follows its target")
     assert(t:find("spring sg.pt = 260, 20", 1, true))
     assert(t:find("surface bar {", 1, true) and t:find("surface drop {", 1, true))
@@ -7318,27 +7318,27 @@ test("scene: generated, four hosts, 64 sprung points each, two surfaces", functi
 end)
 
 test("scene: the display stands on a plate, not over the windows", function()
-    local f = io.open("shell/mooi-sigil.plm"); local t = f:read("a"); f:close()
+    local f = io.open("shell/mooi-surface.plm"); local t = f:read("a"); f:close()
     assert(t:find("// the display's plate", 1, true) and t:find("fact pl_r", 1, true))
 end)
 section("the sigil: logic")
 test("logic: requires the five modules, reads the feeds, never the notification service", function()
-    local f = io.open("shell/mooi-sigil.luau"); local t = f:read("a"); f:close()
-    for _, m in ipairs({ "lib/sigil/sources", "lib/sigil/shapes", "lib/sigil/director", "lib/sigil/palette", "lib/sigil/bodies" }) do
+    local f = io.open("shell/mooi-surface.luau"); local t = f:read("a"); f:close()
+    for _, m in ipairs({ "lib/surface/sources", "lib/surface/shapes", "lib/surface/director", "lib/surface/palette", "lib/surface/bodies" }) do
         assert(t:find('require("' .. m .. '")', 1, true), m)
     end
     assert(t:find("sigil-hosts.json", 1, true) and t:find("nexus-feed.json", 1, true))
     assert(not t:find('sys.watch("notification', 1, true))
-    assert(t:find('"emit sigil_ready"', 1, true))
+    assert(t:find('"emit surface_ready"', 1, true))
 end)
 test("logic: the display's layout keeps its words beside the line, inside the box", function()
-    package.loaded["lib/sigil/layout"] = nil
-    local LY = require("lib/sigil/layout")
+    package.loaded["lib/surface/layout"] = nil
+    local LY = require("lib/surface/layout")
     local D = LY.display_box({ x = 870, y = 6, w = 180, h = 24 }, 1920)
     eq(D.w, 600); eq(D.h, 220); eq(D.x, 660); eq(D.y, 40)
     local edge = LY.display_box({ x = 1800, y = 6, w = 180, h = 24 }, 1920)
     eq(edge.x, 1920 - 608, "never past the screen's edge")
-    for _, kind in ipairs(require("lib/sigil/shapes").KINDS) do
+    for _, kind in ipairs(require("lib/surface/shapes").KINDS) do
         local line, tx, ty = LY.display(kind, D)
         assert(line.x >= D.x and line.x + line.w <= D.x + D.w, kind .. " line in the box")
         assert(tx >= D.x and tx < D.x + D.w and ty >= D.y and ty < D.y + D.h, kind .. " words in the box")
@@ -7361,7 +7361,7 @@ do
         local m = read("shell/mooi.luau")
         assert(m:find('"sigil-hosts.json"', 1, true), "wanted() reads the bar's own hosts")
         assert(m:find('sys.watch, "files:sigil-hosts.json"', 1, true), "and follows them")
-        local plm = read("shell/mooi-sigil.plm")
+        local plm = read("shell/mooi-surface.plm")
         assert(plm:find("open: h0_on or h1_on or h2_on or h3_on", 1, true), "no host, no surface")
         assert(plm:find("spin ph by if((h0_on or h1_on or h2_on or h3_on) and", 1, true), "no host, nothing turns")
     end)
@@ -7373,7 +7373,7 @@ do
         assert(b:find("resources = sig.res_ok and {", 1, true), "no resources before they are read")
     end)
     test("review I3: the first notice after a clean start takes the Pill", function()
-        local DIR = require("lib/sigil/director")
+        local DIR = require("lib/surface/director")
         local seen, n = DIR.notice_step(nil, nil, 0)
         eq(seen, 0, "an empty feed still sets the mark"); eq(n, nil)
         seen, n = DIR.notice_step(seen, 1794072791, 5000)

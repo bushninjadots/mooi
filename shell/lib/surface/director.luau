@@ -4,7 +4,7 @@
 -- wave-1 source no other host shows. Two hosts never show the same source. Sources read from the bar's feed
 -- are skipped when the feed is stale (a dead feed would show yesterday's weather).
 
-local sources = require("lib/sigil/sources")
+local sources = require("lib/surface/sources")
 
 local M = { NOTICE_MS = 6000, VOLUME_MS = 2000, STALE_MS = 30000, LOW = 15, GLYPH_H = 18 }
 local FEED = { weather = true, resources = true }

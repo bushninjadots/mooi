@@ -355,7 +355,7 @@ sys.watch("files:" .. FILE, function()
     if bmo_sync then bmo_sync() end
     if notch_sync then notch_sync() end
     if frame_sync then frame_sync() end
-    if sigil_sync then sigil_sync() end
+    if surface_sync then surface_sync() end
     if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()
@@ -2217,45 +2217,45 @@ on("chassis_ready", function() if frame_win then fact.chassis_up = true end end)
 -- is up the bar's pieces stand on nothing. The notch and BMO follow soon after, one at a time, so
 -- the programs do not all start together.
 after(50, frame_sync)
--- The Sigil (D207, shell/mooi-sigil.plm): a program of its own, run while it has somewhere to live — the
+-- The Sigil (D207, shell/mooi-surface.plm): a program of its own, run while it has somewhere to live — the
 -- Pill in Pill mode with sigil.pill = sigil, or a `sigil` module on the bar. Respawned like the frame; after
 -- five quick ends it stays down and the bar draws a plain clock in the Pill's place (ui/pill.plm). The main
 -- chunk is at Lua's 200 locals, so its state is one global table.
-SIGIL = { win = nil, tries = 0, gave_up = false }
+SURFACE = { win = nil, tries = 0, gave_up = false }
 -- wanted exactly when the bar placed a host for it (review I1: reading the settings' lists ran it with
 -- none — a `sigil` in the Pill's ignored centre list or a hidden side group)
-function SIGIL.wanted()
+function SURFACE.wanted()
     local ok, h = pcall(sys.ask, "files.read", "sigil-hosts.json", "json")
     return ok and type(h) == "table" and type(h.hosts) == "table" and #h.hosts > 0
 end
-function sigil_sync()
+function surface_sync()
     local b = settings.bar or {}
     fact.sigil_mode = b.mode == "pill" and type(settings.sigil) == "table" and settings.sigil.pill == "sigil"
-    if not SIGIL.wanted() then
-        SIGIL.tries, SIGIL.gave_up = 0, false
-        if SIGIL.win then SIGIL.win = nil; fact.sigil_up = false; run("pleamar", { "--say", "mooi-sigil", "quit" }) end
+    if not SURFACE.wanted() then
+        SURFACE.tries, SURFACE.gave_up = 0, false
+        if SURFACE.win then SURFACE.win = nil; fact.surface_up = false; run("pleamar", { "--say", "mooi-surface", "quit" }) end
         return
     end
-    if SIGIL.win or SIGIL.gave_up then return end
+    if SURFACE.win or SURFACE.gave_up then return end
     local mine
     local started = os.time()
     local said = {}
-    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-sigil.plm", "--no-hud", "--stall", "0" }, function(line)
+    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-surface.plm", "--no-hud", "--stall", "0" }, function(line)
         if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
     end, function(_, code)
-        if SIGIL.win ~= mine then return end
-        SIGIL.win = nil
-        fact.sigil_up = false
-        if os.time() - started < 5 then SIGIL.tries = SIGIL.tries + 1 else SIGIL.tries = 0 end
-        if code ~= 0 then log("sigil · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
-        if SIGIL.tries < 5 then after(1000 * (SIGIL.tries + 1), sigil_sync)
-        else SIGIL.gave_up = true; log("sigil · gave up after five quick ends") end
+        if SURFACE.win ~= mine then return end
+        SURFACE.win = nil
+        fact.surface_up = false
+        if os.time() - started < 5 then SURFACE.tries = SURFACE.tries + 1 else SURFACE.tries = 0 end
+        if code ~= 0 then log("surface · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        if SURFACE.tries < 5 then after(1000 * (SURFACE.tries + 1), surface_sync)
+        else SURFACE.gave_up = true; log("surface · gave up after five quick ends") end
     end, { errors = true })
-    SIGIL.win = mine
+    SURFACE.win = mine
 end
-on("sigil_ready", function() if SIGIL.win then fact.sigil_up = true end end)
-pcall(sys.watch, "files:sigil-hosts.json", function() sigil_sync() end)
-after(400, sigil_sync)
+on("surface_ready", function() if SURFACE.win then fact.surface_up = true end end)
+pcall(sys.watch, "files:sigil-hosts.json", function() surface_sync() end)
+after(400, surface_sync)
 -- Where the notch's nub is on the screen (it writes notch-state.json when it places it): the stash's
 -- edge strip, overlay and over the same edge, leaves that band alone so pointing at the nub opens it.
 function notch_cut()

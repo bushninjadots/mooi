@@ -540,7 +540,7 @@ scene Mooi {
     fact m_github = true
     fact fi_github = 0
     fact g_github = false
-    // D207: the Sigil's island — the bar keeps its place; mooi-sigil draws in it, on its own surface
+    // D207: the Sigil's island — the bar keeps its place; mooi-surface draws in it, on its own surface
     fact x_sigil = 0
     fact p_sigil = false
     fact w_sigil = 0
@@ -1316,7 +1316,7 @@ scene Mooi {
     event pk_etab ->           // D188: to the logic: the editor's tab — 0 pads · 1 face
     event pk_sig_clear ->      // to the logic: clear the signals
     event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
-    event sigil_ready ->       // from mooi-sigil (D207): it has drawn its hosts; the bar's stand-in clock goes
+    event surface_ready ->       // from mooi-surface (D207): it has drawn its hosts; the bar's stand-in clock goes
     event pill_xpress ->       // to the logic (D205): the second (2) or third (3) pill pressed
     event pill_xscroll ->      // to the logic (D205): its wheel, k · 2 (+ 1 when turning back)
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
@@ -1337,7 +1337,7 @@ scene Mooi {
     fact pill3_face = 0
     // D207: the Sigil draws the Pill (sigil.pill = sigil), and whether its program is up; down, a plain clock
     fact sigil_mode = false
-    fact sigil_up = false
+    fact surface_up = false
     fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot · 3 morph (D204) (pill.shape)
     text pill_alert = ""       // D171: the newest signal, for the Alerts face at full detail
     fact pill_alert_on = false // D171: there is one

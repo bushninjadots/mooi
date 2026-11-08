@@ -54,7 +54,7 @@ M.SCHEMA = {
     { path = "pill.three_at", kind = "integer", default = 0, min = 0, max = 100 },
     -- D207: the Sigil — one living line in place of the Pill (docs/superpowers/specs/2026-11-07-sigil-design.md).
     -- `pill` chooses which draws in Pill mode (classic until the owner switches); `rest` is a wave-1 source
-    -- (lib/sigil/sources.WAVE1, the same list: a unit test keeps them equal).
+    -- (lib/surface/sources.WAVE1, the same list: a unit test keeps them equal).
     { path = "sigil.pill", kind = "enum", values = { "classic", "sigil" }, default = "classic" },
     { path = "sigil.temperament", kind = "enum", values = { "calm", "lively", "restless" }, default = "lively" },
     { path = "sigil.colour", kind = "enum", values = { "follow", "fixed" }, default = "follow" },

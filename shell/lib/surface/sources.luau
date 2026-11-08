@@ -1,5 +1,5 @@
 -- The Sigil's sources (D207): what every module can become. Pure. A source is one entry: its group (the
--- pointer ring's), its glyph and display kinds (lib/sigil/shapes), how urgent its events are, its compact
+-- pointer ring's), its glyph and display kinds (lib/surface/shapes), how urgent its events are, its compact
 -- words from a reading (nil reading → a dash: a dead feed shows as such), and what a press opens. In this
 -- phase a press opens the module's existing panel; detail views built from the parts come later (plan,
 -- "Phasing").

@@ -15,7 +15,7 @@ local weathershare = require("lib/weathershare")
 local updates = require("lib/updates")
 local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
-local sigilhosts = require("lib/sigil/hosts")   -- D207: where the Sigil may live
+local sigilhosts = require("lib/surface/hosts")   -- D207: where the Sigil may live
 local chassis_look = require("lib/chassis").look
 
 return function(ctx)
@@ -149,7 +149,7 @@ return function(ctx)
                       screen = env.screen }   -- the frame's corners need the screen's width (lib/chassis)
         fact.pill_still = s.motion.reduced == true or s.motion.saver == "always"   -- D172: the record holds still
         -- D207: with sigil.pill = sigil the classic Pill is not drawn; its place stays (the frame's plate is the
-        -- line's socket), 180 wide, no moons, and mooi-sigil draws in it
+        -- line's socket), 180 wide, no moons, and mooi-surface draws in it
         sig.classic_off = pillmode and type(s.sigil) == "table" and s.sigil.pill == "sigil"
         fact.pill_on = pillmode and not sig.classic_off
         sig.pill = nil
@@ -927,7 +927,7 @@ return function(ctx)
             if code == 0 then fact.med_loop = tostring(out):match("Track") and 2 or (tostring(out):match("Playlist") and 1 or 0) end
         end)
     end
-    -- D207: what only the bar reads, for mooi-sigil (sigil-feed.json): once a second while it has a host,
+    -- D207: what only the bar reads, for mooi-surface (sigil-feed.json): once a second while it has a host,
     -- written only when it changed. `at` is the wall clock in ms, so the Sigil can tell a dead feed.
     every(1000, function()
         if sig.n == 0 then return end

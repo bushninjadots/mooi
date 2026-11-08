@@ -296,7 +296,7 @@ library Pill {
         // D207: the Sigil draws here, from its own program; while that program is down, a plain clock keeps the
         // place so the bar is never bare
         group {
-            show: sigil_mode and not sigil_up
+            show: sigil_mode and not surface_up
             text clock.time { at: pill_x + pill_w / 2, fl.cy; anchor: center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave }
         }
         group {

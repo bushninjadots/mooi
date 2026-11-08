@@ -1,6 +1,6 @@
 #!/bin/sh
 # The Sigil live (D207): on the running mooi, sigil.pill = sigil, then it is asked what it shows
-# (`pleamar --say mooi-sigil get …`): nothing running in classic mode, the Pill host drawn and the bar's
+# (`pleamar --say mooi-surface get …`): nothing running in classic mode, the Pill host drawn and the bar's
 # classic Pill off, each resting source, the display on hover and gone after, an island host beside the Pill
 # showing something else, music and the cover's colour, a crash loop and the bar's stand-in clock, and the
 # frame budget with music playing (SHOTS=dir keeps screenshots). Restores settings.json byte for byte, the
@@ -34,21 +34,21 @@ fail=0; n=0
 ok()  { n=$((n + 1)); echo "  ok    $1"; }
 bad() { n=$((n + 1)); fail=$((fail + 1)); echo "  FAIL  $1"; }
 is()  { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 ('$2', expected '$3')"; fi }
-sg()  { timeout 3 pleamar --say mooi-sigil "get $1" 2>/dev/null; }
+sg()  { timeout 3 pleamar --say mooi-surface "get $1" 2>/dev/null; }
 bar() { timeout 3 pleamar --say mooi "get $1" 2>/dev/null; }
 set_() { jq "$1" "$t/restore.json" > "$F.tmp" && mv "$F.tmp" "$F"; sleep "${2:-3}"; }
-pid() { for p in $(pgrep -x pleamar); do tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q 'mooi-sigil\.plm' && echo "$p"; done; }
+pid() { for p in $(pgrep -x pleamar); do tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q 'mooi-surface\.plm' && echo "$p"; done; }
 shot() { [ -n "${SHOTS:-}" ] && grim -g "$2" "$SHOTS/$1.png"; }
 within() { awk -v v="$1" -v a="$2" -v b="$3" 'BEGIN { exit !(v >= a - 0.5 && v <= b + 0.5) }'; }
 
 echo "classic mode, no Sigil module: nothing runs"
 set_ '.bar.mode="pill" | .sigil.pill="classic"' 4
-is "mooi-sigil is not running" "$(pid)" ""
+is "mooi-surface is not running" "$(pid)" ""
 
 echo "the Sigil in the Pill"
 set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 5
 is "it has a host" "$(sg h0_on)" true
-is "the bar heard it is up" "$(bar sigil_up)" true
+is "the bar heard it is up" "$(bar surface_up)" true
 is "the classic Pill steps aside" "$(bar pill_on)" false
 px=$(bar pill_x); pw=$(bar pill_w)
 for i in 0 31 63; do
@@ -68,11 +68,11 @@ done
 
 echo "the display, on hover"
 set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 3
-timeout 3 pleamar --say mooi-sigil "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
+timeout 3 pleamar --say mooi-surface "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
 is "hovered: the display" "$(sg h0_form)" 2
 d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v > 0.5) }'; then ok "the display's surface is open"; else bad "the display's surface is open ($d)"; fi
 shot display-clock "$((px - 260)),0 $((pw + 520))x290"
-timeout 3 pleamar --say mooi-sigil "emit sg_hover 0" >/dev/null 2>&1; sleep 1.5
+timeout 3 pleamar --say mooi-surface "emit sg_hover 0" >/dev/null 2>&1; sleep 1.5
 is "left: compact again" "$(sg h0_form)" 1
 d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v < 0.02) }'; then ok "the display's surface closes"; else bad "the display's surface closes ($d)"; fi
 
@@ -92,11 +92,11 @@ if playerctl status >/dev/null 2>&1; then
     is "playing: music" "$(sg h0_src)" 4
     r=$(sg h0_r); c=$(bar pc1_r)
     if awk -v a="$r" -v b="$c" 'BEGIN { exit !(a - b < 0.04 && b - a < 0.04) }'; then ok "the cover's colour ($r ≈ $c)"; else bad "the cover's colour ($r vs $c)"; fi
-    timeout 3 pleamar --say mooi-sigil "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
+    timeout 3 pleamar --say mooi-surface "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
     shot display-music "$((px - 260)),0 $((pw + 520))x290"
-    timeout 3 pleamar --say mooi-sigil "emit sg_hover 0" >/dev/null 2>&1; sleep 1
+    timeout 3 pleamar --say mooi-surface "emit sg_hover 0" >/dev/null 2>&1; sleep 1
     echo "the budget, with music playing"
-    timeout 30 pleamar --report mooi-sigil --seconds 8 --out "$t/report.txt" >/dev/null 2>&1
+    timeout 30 pleamar --report mooi-surface --seconds 8 --out "$t/report.txt" >/dev/null 2>&1
     cp=$(awk -F'|' '/^\| compose/ { c = $3 } /^\| paint/ { p = $3 } END { printf "%.3f", c + p }' "$t/report.txt")
     if awk -v v="$cp" 'BEGIN { exit !(v > 0 && v < 1.0) }'; then ok "compose + paint under 1 ms ($cp ms)"; else bad "compose + paint under 1 ms ($cp ms)"; fi
     [ -n "${SHOTS:-}" ] && cp "$t/report.txt" "$SHOTS/report.txt"
@@ -106,7 +106,7 @@ else
 fi
 
 echo "a crash loop: the bar's clock stands in"
-before=$(grep -c "sigil · gave up" "$L" 2>/dev/null); before=${before:-0}
+before=$(grep -c "surface · gave up" "$L" 2>/dev/null); before=${before:-0}
 k=0
 while [ $k -lt 6 ]; do
     p=$(pid); [ -n "$p" ] && kill -9 "$p" 2>/dev/null
@@ -115,9 +115,9 @@ while [ $k -lt 6 ]; do
     while [ -z "$(pid)" ] && [ $w -lt 16 ]; do sleep 0.5; w=$((w + 1)); done
 done
 sleep 7
-after=$(grep -c "sigil · gave up" "$L" 2>/dev/null); after=${after:-0}
+after=$(grep -c "surface · gave up" "$L" 2>/dev/null); after=${after:-0}
 if [ "$after" -gt "$before" ]; then ok "mooi gave up after five quick ends"; else bad "mooi gave up after five quick ends"; fi
-is "the bar knows it is down" "$(bar sigil_up)" false
+is "the bar knows it is down" "$(bar surface_up)" false
 shot fallback "$((px - 120)),0 $((pw + 240))x50"
 
 echo
