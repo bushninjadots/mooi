@@ -1129,5 +1129,7 @@ measure(function()
     schedule()
 end)
 
--- D209: the opening may already be up (and this program was restarted): ask for its hole
+-- D209: the opening may already be up (and this program was restarted): ask for its hole; ask again
+-- once the scene is surely listening, since the first ask can outrun the scene's own start
 run("pleamar", { "--say", "mooi-surface", "emit op_want" })
+after(500, function() run("pleamar", { "--say", "mooi-surface", "emit op_want" }) end)

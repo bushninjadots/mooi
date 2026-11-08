@@ -164,6 +164,10 @@ M.SETTERS = {
     -- D208: Surface. Appended.
     "surface.on", "surface.delay",
     "surface.effect", "surface.bmo_below",
+    "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius",
+    "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels",
+    "surface.glow", "surface.ping", "surface.layout", "surface.components", "surface.bmo_side",
+    "surface.overview", "surface.power_confirm", "surface.widget_style",
 }
 
 local function row_of(path)

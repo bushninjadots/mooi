@@ -9,6 +9,10 @@ M.HUBS = { "apps", "music", "walls", "settings", "notes" }
 M.COMPONENTS = { "wifi", "bt", "volume", "bright", "battery", "power" }
 M.SIZES = { apps = { 360, 220 }, music = { 320, 140 }, walls = { 360, 120 }, settings = { 300, 140 }, notes = { 320, 220 } }
 M.BMO = { 160, 196 }
+M.LAYOUTS = { "arc", "row", "grid", "calm" }
+M.SIDES = { "right", "centre", "left" }
+M.BMO_SIDES = { "left", "right" }
+M.DEFAULT_LAYOUT = "arc"
 
 local function round(v) return math.floor(v + 0.5) end
 local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
@@ -23,30 +27,78 @@ end
 -- The first arrangement: the hubs centred along an arc through the middle third (their centres 0.36·h at
 -- the ends, 0.30·h in the middle, evenly across 0.12·w … 0.88·w); the components in one row ending 32 px from
 -- the right and 96 px from the bottom; BMO's home low on the left.
-function M.defaults(scr)
+-- `opts` picks where the hubs sit (`layout`: arc, row, grid, calm), which side the components'
+-- row ends on (`components`: right, centre, left) and which side BMO's home is on (`bmo`: left, right).
+-- The arc is D209's and is what no options means, so a file with no settings reads exactly as before.
+function M.defaults(scr, opts)
+    opts = type(opts) == "table" and opts or {}
     local W, H = scr.w, scr.h
     local out = {}
     local n = #M.HUBS
-    for i, id in ipairs(M.HUBS) do
-        local w, h = size_of(id)
-        local f = (i - 1) / (n - 1)
-        local t = 2 * f - 1
-        local cx, cy = W * (0.12 + 0.76 * f), H * (0.30 + 0.06 * t * t)
-        out[id] = { x = round(cx - w / 2), y = round(cy - h / 2), w = w, h = h }
+    local layout = opts.layout
+    if layout ~= "row" and layout ~= "grid" and layout ~= "calm" then layout = M.DEFAULT_LAYOUT end
+    if layout == "row" then
+        -- one straight row, every hub centred in it, gaps of 32 px
+        local total, gap = 0, 32
+        for _, id in ipairs(M.HUBS) do local w = size_of(id); total = total + w end
+        total = total + gap * (n - 1)
+        local x = (W - total) / 2
+        for _, id in ipairs(M.HUBS) do
+            local w, h = size_of(id)
+            out[id] = { x = round(x), y = round(H * 0.34 - h / 2), w = w, h = h }
+            x = x + w + gap
+        end
+    elseif layout == "grid" then
+        -- three columns by two rows: Apps, Music, Wallpapers above; Settings and Notices below
+        local col = { 0.18, 0.50, 0.82 }
+        local row = { 0.24, 0.44 }
+        local at = { apps = { 1, 1 }, music = { 2, 1 }, walls = { 3, 1 }, settings = { 1, 2 }, notes = { 2, 2 } }
+        for _, id in ipairs(M.HUBS) do
+            local w, h = size_of(id)
+            local c, r = at[id][1], at[id][2]
+            out[id] = { x = round(W * col[c] - w / 2), y = round(H * row[r] - h / 2), w = w, h = h }
+        end
+    elseif layout == "calm" then
+        -- low and out of the wallpaper's way: a gentle row in the lower band
+        local total, gap = 0, 24
+        for _, id in ipairs(M.HUBS) do local w = size_of(id); total = total + w end
+        total = total + gap * (n - 1)
+        local x = (W - total) / 2
+        for i, id in ipairs(M.HUBS) do
+            local w, h = size_of(id)
+            local t = (i - 1) / (n - 1) * 2 - 1
+            out[id] = { x = round(x), y = round(H * (0.60 + 0.012 * t * t) - h / 2), w = w, h = h }
+            x = x + w + gap
+        end
+    else
+        -- the arc: centres 0.36·h at the ends, 0.30·h in the middle, evenly across 0.12·w … 0.88·w
+        for i, id in ipairs(M.HUBS) do
+            local w, h = size_of(id)
+            local f = (i - 1) / (n - 1)
+            local t = 2 * f - 1
+            local cx, cy = W * (0.12 + 0.76 * f), H * (0.30 + 0.06 * t * t)
+            out[id] = { x = round(cx - w / 2), y = round(cy - h / 2), w = w, h = h }
+        end
     end
     local c, g = M.COMPONENT, M.GAP
-    local x0 = W - M.RIGHT - (#M.COMPONENTS * c + (#M.COMPONENTS - 1) * g)
+    local row_w = #M.COMPONENTS * c + (#M.COMPONENTS - 1) * g
+    local side = opts.components
+    local x0
+    if side == "left" then x0 = M.RIGHT
+    elseif side == "centre" then x0 = round((W - row_w) / 2)
+    else x0 = W - M.RIGHT - row_w end
     for i, id in ipairs(M.COMPONENTS) do
         out[id] = { x = x0 + (i - 1) * (c + g), y = H - M.BOTTOM - c, w = c, h = c }
     end
-    out.bmo = { x = round(0.06 * W), y = H - 300, w = M.BMO[1], h = M.BMO[2] }
+    local bmo_x = opts.bmo == "right" and round(W - 0.06 * W - M.BMO[1]) or round(0.06 * W)
+    out.bmo = { x = bmo_x, y = H - 300, w = M.BMO[1], h = M.BMO[2] }
     return out
 end
 
 -- A saved arrangement: each place kept where it was left, wholly on this screen; a place it lacks (or one
 -- that is not a number) from the defaults; an id that is not ours dropped. Sizes are ours, never the file's.
-function M.merge(saved, scr)
-    local out = M.defaults(scr)
+function M.merge(saved, scr, opts)
+    local out = M.defaults(scr, opts)
     if type(saved) ~= "table" then return out end
     for id, d in pairs(out) do
         local s = saved[id]

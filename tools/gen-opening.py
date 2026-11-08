@@ -54,7 +54,7 @@ def block():
         "    on op_b(v) { op_tb = v }",
         "    on op_c(v) { op_tc = v }",
         "    on sf_set(v) { sf_on = mod(v, 2) == 1; sf_bmo = floor(v / 2) == 1 }",
-        "    spring sg.op = 220, 24",
+        "    spring sg.op = 380, 34",
         "    let op_mode = if(sf_on, floor(op_tc / 1000), 0)",
         "    let op_r0 = op_tc - floor(op_tc / 1000) * 1000",
         "    let op_ax = floor(op_ta / 4096)",

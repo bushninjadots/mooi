@@ -1620,5 +1620,7 @@ every(400, function()
     if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; hush() end
 end)
 
--- D209: the opening may already be up (and this program was restarted): ask for its hole
+-- D209: the opening may already be up (and this program was restarted): ask for its hole; ask again
+-- once the scene is surely listening, since the first ask can outrun the scene's own start
 run("pleamar", { "--say", "mooi-surface", "emit op_want" })
+after(500, function() run("pleamar", { "--say", "mooi-surface", "emit op_want" }) end)

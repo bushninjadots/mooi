@@ -7554,6 +7554,21 @@ do
         same(OP.hole(st, { x = 1900, y = 1070 }, scr), 1152, 648, 768, 432, 18)
         OP.narrow(st, scr); eq(st.mode, OP.MODES.follow)
     end)
+    test("opening: a section opened by the wheel stays where it was put", function()
+        local scr = { w = 1920, h = 1080 }
+        local st = OP.state(); OP.open(st)
+        OP.move(st, { { id = "apps", x = 50, y = 279, w = 360, h = 220 } }, { x = 60, y = 300 })
+        OP.widen(st, scr, { x = 60, y = 300 })
+        eq(st.mode, OP.MODES.section)
+        local a = OP.hole(st, { x = 60, y = 300 }, scr)
+        local b = OP.hole(st, { x = 1800, y = 1000 }, scr)
+        eq(a.x, b.x, "the pointer moving does not move the section")
+        eq(a.y, b.y, "nor down")
+        eq(a.w, 768, "a section is 40 % of the screen")
+        OP.narrow(st, scr)
+        eq(st.mode, OP.MODES.snapped, "back to the thing it was over")
+        eq(st.at, nil, "and the next section follows again")
+    end)
     test("opening: pack stays under 2^24 and round-trips", function()
         local st = OP.state(); OP.open(st)
         local scr = { w = 4000, h = 3000 }
@@ -7592,7 +7607,7 @@ test("opening block: one text in every program", function()
     for _, p in ipairs({ "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
         assert(block(p) == ref, p .. " differs from mooi-surface.plm")
     end
-    for _, needle in ipairs({ "spring sg.op = 220, 24", "event op_a ->", "event sf_set ->", "op_px - 90", "on op_c(v)", "let sf_below = sf_on" }) do
+    for _, needle in ipairs({ "spring sg.op = 380, 34", "event op_a ->", "event sf_set ->", "op_px - 90", "on op_c(v)", "let sf_below = sf_on" }) do
         assert(ref:find(needle, 1, true), "the block has " .. needle)
     end
     assert(ref:find("op_mode == 1, op_px - 90", 1, true) and ref:find("op_mode == 1, 180, op_aw", 1, true), "follow: the 2 * 90 square on the pointer")
@@ -7641,8 +7656,10 @@ test("scene: the opening at the wallpaper, never over windows", function()
     assert(ground:find("// below:", 1, true), "the group Task 6 fills")
     assert(edge:find("level: bottom", 1, true), "the rim above the widgets")
     assert(not edge:find("zone", 1, true), "the edge catches nothing")
-    assert(edge:find("shader: tear, op_k, op_x, op_y, op_w, op_h, op_r", 1, true), "the Tear over the wallpaper")
-    assert(edge:find("shader: aperture, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy", 1, true), "the Aperture, the other look, on the same hole")
+    for i, e in ipairs({ "tear", "aperture", "membrane", "ripple", "fold", "dissolve", "glass", "glow" }) do
+        assert(edge:find("shader: " .. e .. ", op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0", 1, true), e .. " over the wallpaper")
+        assert(edge:find("show: sf_fx > " .. (i - 0.5) .. " and sf_fx < " .. (i + 0.5), 1, true), e .. " is one of the looks")
+    end
     assert(ground:find("rate: 60, 20 while calm", 1, true), "the ground rests when calm")
     assert(plm:find("fact sf_fx = 1", 1, true), "the Tear by default")
     -- found live (D208): screen.height is the first surface's (the 40 px bar strip); the wallpaper uses edge's
@@ -7702,6 +7719,39 @@ do
         local function cy(id) return P[id].y + P[id].h / 2 end
         eq(cy("walls") < cy("apps") and cy("walls") < cy("notes"), true, "the arc rises to the middle")
     end)
+    test("below: each layout puts every hub on screen and apart, and the sides move the row and BMO", function()
+        for _, layout in ipairs(BL.LAYOUTS) do
+            local P = BL.defaults(scr, { layout = layout })
+            for _, id in ipairs(BL.HUBS) do
+                local p = assert(P[id], layout .. " " .. id)
+                on_screen(p, layout .. " " .. id)
+                eq(p.w, BL.SIZES[id][1], layout .. " " .. id .. " w")
+            end
+            for i, a in ipairs(BL.HUBS) do
+                for j = i + 1, #BL.HUBS do
+                    local b = BL.HUBS[j]
+                    eq(overlap(P[a], P[b]), false, layout .. ": " .. a .. " and " .. b .. " apart")
+                end
+            end
+            -- the components' row follows its side, and BMO's home its own
+            local first, last = P[BL.COMPONENTS[1]], P[BL.COMPONENTS[#BL.COMPONENTS]]
+            eq(first.x, 1492, layout .. ": components right by default")
+            eq(last.x + 56, 1888, layout .. ": components row ends 32 px from the right")
+            eq(P.bmo.x, 115, layout .. ": BMO left")
+            local C = BL.defaults(scr, { components = "centre", bmo = "right" })
+            eq(C[BL.COMPONENTS[1]].x, (1920 - 396) / 2, "the row centred")
+            eq(C.bmo.x + C.bmo.w, 1920 - 115, "BMO right, mirrored")
+        end
+        -- the row is one line; the grid is two; calm is low
+        local function cy(p) return p.y + p.h / 2 end
+        local R = BL.defaults(scr, { layout = "row" })
+        for _, id in ipairs(BL.HUBS) do eq(cy(R[id]), cy(R.apps), "row: " .. id .. " on the line") end
+        local G = BL.defaults(scr, { layout = "grid" })
+        eq(cy(G.music), cy(G.apps)); eq(cy(G.walls), cy(G.apps)); eq(cy(G.settings), cy(G.notes))
+        eq(cy(G.settings) > cy(G.apps), true, "grid: a second row")
+        local C = BL.defaults(scr, { layout = "calm" })
+        eq(cy(C.apps) > 0.5 * scr.h, true, "calm: in the lower band")
+    end)
     test("below: saved places kept and clamped, unknown dropped, missing filled", function()
         local P = BL.merge({ apps = { x = 1900, y = 500 }, bogus = { x = 1, y = 1 }, settings = { x = 100, y = 120 },
                              notes = { x = "x", y = 3 } }, scr)
@@ -7712,6 +7762,9 @@ do
         eq(P.music.x, D.music.x, "missing from defaults"); eq(P.music.y, D.music.y)
         eq(P.notes.x, D.notes.x, "a place that is not a number: the default")
         eq(BL.merge(nil, scr).walls.x, D.walls.x, "no saved places at all")
+        local R = BL.merge({ apps = { x = 1900, y = 500 } }, scr, { layout = "row" })
+        eq(R.apps.x, 1920 - 360, "a saved place is still clamped over the chosen layout")
+        eq(R.music.x, BL.defaults(scr, { layout = "row" }).music.x, "the unplaced hubs from that layout")
         local s = BL.save(P)
         eq(s.apps.x, 1560); eq(s.apps.y, 500); eq(s.bogus, nil)
     end)
@@ -7806,6 +7859,50 @@ do
         assert(l:find('{ "wall", "apply", ', 1, true), "a wallpaper worn as the picker does")
         assert(l:find("fact.pw_arm", 1, true), "the power row arms first")
         eq(require("lib/surface/presence").VERSION, 1, "surface.json's version unchanged")
+    end)
+end
+
+section("surface: settings and looks (D210)")
+do
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    local paths = { "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius",
+                    "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid",
+                    "surface.labels", "surface.glow", "surface.ping", "surface.layout", "surface.components",
+                    "surface.bmo_side", "surface.overview", "surface.power_confirm", "surface.widget_style" }
+    test("settings: every Surface setting is in the config, the setters and the page", function()
+        local cfg, set, page = read("shell/lib/config.luau"), read("shell/lib/setters.luau"), read("shell/mooi-settings.plm")
+        for _, p in ipairs(paths) do
+            assert(cfg:find('path = "' .. p .. '"', 1, true), p .. " in config")
+            assert(set:find('"' .. p .. '"', 1, true), p .. " in setters")
+        end
+        assert(cfg:find('surface.effect', 1, true) and cfg:find('membrane', 1, true) and cfg:find('glow', 1, true), "eight effects")
+        assert(page:find("The Subsurface", 1, true), "its own page")
+        for _, ev in ipairs({ "surface_edit", "surface_reset", "surface_above", "surface_below" }) do
+            assert(page:find(ev, 1, true), ev .. " on the page")
+        end
+    end)
+    test("settings: the logic applies the look, the wallpaper, the places and the ping", function()
+        local l = read("shell/mooi-surface.luau")
+        for _, s in ipairs({ "fact.sf_param = pc * 1000", "fact.sf_fx = fx", "opening.CORNER =", "reveal.OPEN_MS =",
+                             "below_opts = function", "apply_layout = function", "below.merge(doc and doc.places, SF.scr, below_opts())",
+                             "on(\"sf_edit\"", "on(\"sf_reset\"", "SF.edit_places", "SF.drag_place",
+                             "p.x = math.max(0, math.min(SF.scr.w - p.w", "surface.power_confirm == false",
+                             "fact.sf_ping = SF.ping", "if SF.op.mode == opening.MODES.follow then",
+                             "SF.clock - SF.ship_at < 100" }) do
+            assert(l:find(s, 1, true), s)
+        end
+        assert(l:find('run("pleamar", { "--say", cname, "emit op_a " .. a, "emit op_b " .. b, "emit op_c " .. c })', 1, true), "one process per citizen")
+    end)
+    test("settings: the scene carries the wallpaper, the eight effects and the aura", function()
+        local plm = read("shell/mooi-surface.plm")
+        assert(plm:find("image sf_cover = from rv_wall", 1, true) and plm:find("image sf_contain = from rv_wall", 1, true), "the wallpaper")
+        assert(plm:find("shader: ground, op_k, op_x, op_y, sf_dim, sf_grid, sf_tint", 1, true), "the ground reads it")
+        assert(plm:find("shader aura {", 1, true) and plm:find("sf_glow + sf_ping", 1, true), "the light through the skin")
+        assert(plm:find("show: op_mode == 4 and sf_ovm > 0.5", 1, true), "the Overview's rim")
+        assert(plm:find("show: sf_labels > 0.5", 1, true), "labels can go")
+        assert(plm:find("event sf_edit ->", 1, true) and plm:find("event sf_reset ->", 1, true), "its two events")
+        assert(read("shell/mooi-viz.plm"):find("open: (not sf_on or op_vis", 1, true), "the visualiser rests hidden")
+        assert(read("shell/lib/widgets.luau"):find("function M.set_all", 1, true), "all widgets above or below")
     end)
 end
 
@@ -7943,8 +8040,8 @@ do
         -- D209: the subsurface is ground's own (it draws without any picture); the Aperture's rim still shows
         -- without one, and its hole is clear
         local w = read("shell/shaders/aperture.wgsl")
-        assert(w:find("max(pic.a, rim) * (1.0 - hole)", 1, true)); assert(not w:find("pow(", 1, true))
-        assert(read("shell/shaders/ground.wgsl"):find("return vec4<f32>(sub, clamp(s.a.x, 0.0, 1.0))", 1, true))
+        assert(w:find("max(pic.a, rimline) * (1.0 - hole)", 1, true)); assert(not w:find("pow(", 1, true))
+        assert(read("shell/shaders/ground.wgsl"):find("return vec4<f32>(col, k)", 1, true))
         assert(read("shell/mooi-surface.luau"):find('run("readlink", { "-e"', 1, true), "a missing wallpaper is no path")
     end)
     test("review I6: surface.json is backed up on save and never overwritten when it could not be read", function()

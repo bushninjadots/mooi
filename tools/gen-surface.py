@@ -94,7 +94,7 @@ def below_group(base="            "):
         return [f'{c}// hub {k}: {label}',
                 f"{c}box {{ from: hb{k}_x, hb{k}_y; size: hb{k}_w, hb{k}_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }}",
                 f"{c}box {{ from: hb{k}_x + 0.5, hb{k}_y + 0.5; size: hb{k}_w - 1, hb{k}_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }}",
-                f'{c}text "{label}" {{ at: hb{k}_x + 16, hb{k}_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }}']
+                f'{c}text "{label}" {{ at: hb{k}_x + 16, hb{k}_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }}']
 
     # the whole place: dragged out to make a Presence, let go to bury it
     def place_zone(k, label):
@@ -387,18 +387,30 @@ def surface_layers():
     hubs) and `edge` (level bottom, above the widgets: the torn rim and the warped wallpaper round it, no zones) —
     and the desk layer (Presences, under the windows). Nothing at level top or overlay: never over a window."""
     g = HOLE_GROW
-    L = ["", "    // ── Surface (D209): the opening's ground and edge, and the Presences ──",
-         '    shader aperture = file "shaders/aperture.wgsl"',
-         '    shader tear = file "shaders/tear.wgsl"',
-         '    shader ground = file "shaders/ground.wgsl"',
-         "    fact rv_on = false", "    fact rv_stage = 0", "    fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours",
-         "    fact sf_fx = 1         // the opening's look: 1 the Tear, 2 the Aperture",
-         "    text rv_wall = \"\"", "    image rv_img = from rv_wall, 0, 0",
+    effects = ["tear", "aperture", "membrane", "ripple", "fold", "dissolve", "glass", "glow"]
+    L = ["", "    // ── Surface (D209): the opening's ground and edge, and the Presences ──"]
+    for e in effects:
+        L += [f'    shader {e} = file "shaders/{e}.wgsl"']
+    L += ['    shader ground = file "shaders/ground.wgsl"',
+          '    shader aura = file "shaders/aura.wgsl"',
+          "    fact rv_on = false", "    fact rv_stage = 0", "    fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours",
+          "    fact sf_fx = 1         // the opening's look: 1 tear · 2 aperture · 3 membrane · 4 ripple · 5 fold · 6 dissolve · 7 glass · 8 glow",
+          "    fact sf_int = 0.85     // the effect's strength",
+          "    fact sf_edge = 0.5     // the lip's width",
+          "    fact sf_col = 0        // the rim's colour: 0 accent · 1 plain · 2 warm",
+          "    fact sf_param = 85500  // intensity, edge and colour in one value for the shaders",
+          "    fact sf_wall = true", "    fact sf_dim = 0.35", "    fact sf_tint = 0.18", "    fact sf_fit = 0",
+          "    fact sf_grid = 0.45", "    fact sf_labels = true", "    fact sf_glow = 1", "    fact sf_ping = 0",
+          "    fact sf_ovm = 16", "    fact sf_power_confirm = true", "    fact sf_edit = false",
+          "    text rv_wall = \"\"", "    image rv_img = from rv_wall, 0, 0",
+          "    image sf_cover = from rv_wall, 0, 0", "    image sf_contain = from rv_wall, 0, 0",
          "    event rv_down ->       // from `mooi reveal down`: Super went down",
          "    event rv_up ->         // from `mooi reveal up`: Super came up",
          "    event rv_esc ->        // Escape while revealing",
          "    event rv_move ->       // x * 10000 + y: the pointer while revealing",
          "    event rv_outside ->    // a press while revealing",
+         "    event sf_edit ->       // the settings page: move the places, let go to keep them",
+         "    event sf_reset ->      // the settings page: put every place back to the layout's",
          "    event pp_press ->      // a Presence pressed (its slot)",
          "    event pp_rpress ->     // a Presence right-pressed: edit it",
          "    event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next",
@@ -415,10 +427,21 @@ def surface_layers():
           "        keyboard: none", "        rate: 60, 20 while calm", "        open: op_vis",
           "        group {",
           "            clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }",
-          "            // the subsurface's dark ground and its grid, fixed to the screen",
-          "            shader ground { at: op_x, op_y; size: op_w, op_h; corner: op_r; values: op_k, op_x, op_y }"]
+          "            // the wallpaper the opening is cut into: the real one, fitted, with a tint, then the ground's",
+          "            // own skin over it (a group's shader sees what the group holds, so the hubs stay above it)",
+          "            group {",
+          "                clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }",
+          "                image sf_cover { at: 0, 0; size: ground.width, ground.height; fit: cover; show: sf_wall and sf_fit < 0.5 }",
+          "                image sf_contain { at: 0, 0; size: ground.width, ground.height; fit: contain; show: sf_wall and sf_fit > 0.5 }",
+          "                box { from: op_x, op_y; size: op_w, op_h; color: rgb(0.62, 0.84, 0.74); opacity: sf_tint * 0.16; show: sf_wall }",
+          "                shader: ground, op_k, op_x, op_y, sf_dim, sf_grid, sf_tint",
+          "            }",
+          "            // light through the skin: a soft glow at Music and the Notices while the opening is open",
+          "            shader aura { at: op_x, op_y; size: op_w, op_h; values: op_k, op_x, op_y, hb2_x, hb2_y, hb5_x, hb5_y, sf_glow + sf_ping * 1.5; colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: op_vis and sf_glow > 0.5 }"]
     L += below_group()
-    L += ["        }",
+    L += ["            // the Overview's thin lit margin: the wallpaper's edge, pulled back",
+          "            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.32; show: op_mode == 4 and sf_ovm > 0.5 }",
+          "        }",
           "    }"]
     # the edge: the torn wallpaper round the hole, above the widgets, under the windows; it catches nothing
     clip = f"clip box {{ from: op_x - {g}, op_y - {g}; size: op_w + {g * 2}, op_h + {g * 2}; corner: op_r + {g} }}"
@@ -435,26 +458,19 @@ def surface_layers():
           "        on key Return { emit op_key(2) }",
           "        on key Page_Up { emit op_wheel(1) }",
           "        on key Page_Down { emit op_wheel(-1) }",
-          "        // the Tear: the real wallpaper, torn open over the hole (the surface's own size: screen.height is the",
-          "        // scene's first surface's, the 40 px bar strip — found live, D208)",
-          "        // a group's shader sees its own box: the clip's, from its top left corner (found live) — so each is told",
-          "        // where that corner is on the screen (kept on it: the box does not reach past the surface)",
-          f"        let ed_ox = max(0, op_x - {g})",
-          f"        let ed_oy = max(0, op_y - {g})",
-          "        group {",
-          "            show: sf_fx < 1.5",
-          f"            {clip}",
-          "            shader: tear, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy",
-          f"            {img}",
-          "        }",
-          "        // the Aperture, the other look: a lens and a lit rim round the same clear hole",
-          "        group {",
-          "            show: sf_fx > 1.5",
-          f"            {clip}",
-          "            shader: aperture, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy",
-          f"            {img}",
-          "        }",
-          "    }"]
+          "        // the eight looks: the real wallpaper, cut open over the hole (the surface's own size: screen.height",
+          "        // is the scene's first surface's, the 40 px bar strip — found live, D208)",
+          "        // a group's shader sees its own box: the clip's, from its top left corner — each derives the screen",
+          "        // origin from op_x/op_y in its own file, so all eight values are free for shape and strength",
+          "        // (the intensity, edge and colour arrive packed in sf_param: see the shaders)"]
+    for i, e in enumerate(effects, start=1):
+        L += ["        group {",
+              f"            show: sf_fx > {i - 0.5} and sf_fx < {i + 0.5}",
+              f"            {clip}",
+              f"            shader: {e}, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0",
+              f"            {img}",
+              "        }"]
+    L += ["    }"]
     # the desk surface: Presences under the windows
     any_on = " or ".join(f"p{k}_on" for k in range(SLOTS))
     L += ["", "    surface desk {", "        size: full, full", "        anchor: top", "        level: bottom", "        reserve: -1",

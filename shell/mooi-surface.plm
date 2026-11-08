@@ -3209,7 +3209,7 @@ scene Sigil {
     on op_b(v) { op_tb = v }
     on op_c(v) { op_tc = v }
     on sf_set(v) { sf_on = mod(v, 2) == 1; sf_bmo = floor(v / 2) == 1 }
-    spring sg.op = 220, 24
+    spring sg.op = 380, 34
     let op_mode = if(sf_on, floor(op_tc / 1000), 0)
     let op_r0 = op_tc - floor(op_tc / 1000) * 1000
     let op_ax = floor(op_ta / 4096)
@@ -4841,20 +4841,46 @@ scene Sigil {
     }
 
     // ── Surface (D209): the opening's ground and edge, and the Presences ──
-    shader aperture = file "shaders/aperture.wgsl"
     shader tear = file "shaders/tear.wgsl"
+    shader aperture = file "shaders/aperture.wgsl"
+    shader membrane = file "shaders/membrane.wgsl"
+    shader ripple = file "shaders/ripple.wgsl"
+    shader fold = file "shaders/fold.wgsl"
+    shader dissolve = file "shaders/dissolve.wgsl"
+    shader glass = file "shaders/glass.wgsl"
+    shader glow = file "shaders/glow.wgsl"
     shader ground = file "shaders/ground.wgsl"
+    shader aura = file "shaders/aura.wgsl"
     fact rv_on = false
     fact rv_stage = 0
     fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours
-    fact sf_fx = 1         // the opening's look: 1 the Tear, 2 the Aperture
+    fact sf_fx = 1         // the opening's look: 1 tear · 2 aperture · 3 membrane · 4 ripple · 5 fold · 6 dissolve · 7 glass · 8 glow
+    fact sf_int = 0.85     // the effect's strength
+    fact sf_edge = 0.5     // the lip's width
+    fact sf_col = 0        // the rim's colour: 0 accent · 1 plain · 2 warm
+    fact sf_param = 85500  // intensity, edge and colour in one value for the shaders
+    fact sf_wall = true
+    fact sf_dim = 0.35
+    fact sf_tint = 0.18
+    fact sf_fit = 0
+    fact sf_grid = 0.45
+    fact sf_labels = true
+    fact sf_glow = 1
+    fact sf_ping = 0
+    fact sf_ovm = 16
+    fact sf_power_confirm = true
+    fact sf_edit = false
     text rv_wall = ""
     image rv_img = from rv_wall, 0, 0
+    image sf_cover = from rv_wall, 0, 0
+    image sf_contain = from rv_wall, 0, 0
     event rv_down ->       // from `mooi reveal down`: Super went down
     event rv_up ->         // from `mooi reveal up`: Super came up
     event rv_esc ->        // Escape while revealing
     event rv_move ->       // x * 10000 + y: the pointer while revealing
     event rv_outside ->    // a press while revealing
+    event sf_edit ->       // the settings page: move the places, let go to keep them
+    event sf_reset ->      // the settings page: put every place back to the layout's
     event pp_press ->      // a Presence pressed (its slot)
     event pp_rpress ->     // a Presence right-pressed: edit it
     event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next
@@ -4986,15 +5012,24 @@ scene Sigil {
         open: op_vis
         group {
             clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }
-            // the subsurface's dark ground and its grid, fixed to the screen
-            shader ground { at: op_x, op_y; size: op_w, op_h; corner: op_r; values: op_k, op_x, op_y }
+            // the wallpaper the opening is cut into: the real one, fitted, with a tint, then the ground's
+            // own skin over it (a group's shader sees what the group holds, so the hubs stay above it)
+            group {
+                clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }
+                image sf_cover { at: 0, 0; size: ground.width, ground.height; fit: cover; show: sf_wall and sf_fit < 0.5 }
+                image sf_contain { at: 0, 0; size: ground.width, ground.height; fit: contain; show: sf_wall and sf_fit > 0.5 }
+                box { from: op_x, op_y; size: op_w, op_h; color: rgb(0.62, 0.84, 0.74); opacity: sf_tint * 0.16; show: sf_wall }
+                shader: ground, op_k, op_x, op_y, sf_dim, sf_grid, sf_tint
+            }
+            // light through the skin: a soft glow at Music and the Notices while the opening is open
+            shader aura { at: op_x, op_y; size: op_w, op_h; values: op_k, op_x, op_y, hb2_x, hb2_y, hb5_x, hb5_y, sf_glow + sf_ping * 1.5; colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: op_vis and sf_glow > 0.5 }
             // below: what lives under the wallpaper (D209) — the hubs, the components, BMO's home
             group {
                 show: op_mode > 0
                 // hub 1: APPS
                 box { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
                 box { from: hb1_x + 0.5, hb1_y + 0.5; size: hb1_w - 1, hb1_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "APPS" { at: hb1_x + 16, hb1_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }
+                text "APPS" { at: hb1_x + 16, hb1_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
                 zone box hbz1_0 { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; cursor: grab; role: button; label: "Apps"; show: op_vis and op_mode > 0 }
                 on drag hbz1_0 { emit sb_drag(100) }
                 on release hbz1_0 { emit sb_drop(100) }
@@ -5073,7 +5108,7 @@ scene Sigil {
                 // hub 2: MUSIC
                 box { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
                 box { from: hb2_x + 0.5, hb2_y + 0.5; size: hb2_w - 1, hb2_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "MUSIC" { at: hb2_x + 16, hb2_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }
+                text "MUSIC" { at: hb2_x + 16, hb2_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
                 zone box hbz2_0 { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; cursor: grab; role: button; label: "Music"; show: op_vis and op_mode > 0 }
                 on drag hbz2_0 { emit sb_drag(200) }
                 on release hbz2_0 { emit sb_drop(200) }
@@ -5099,7 +5134,7 @@ scene Sigil {
                 // hub 3: WALLPAPERS
                 box { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
                 box { from: hb3_x + 0.5, hb3_y + 0.5; size: hb3_w - 1, hb3_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "WALLPAPERS" { at: hb3_x + 16, hb3_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }
+                text "WALLPAPERS" { at: hb3_x + 16, hb3_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
                 zone box hbz3_0 { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; cursor: grab; role: button; label: "Wallpapers"; show: op_vis and op_mode > 0 }
                 on drag hbz3_0 { emit sb_drag(300) }
                 on release hbz3_0 { emit sb_drop(300) }
@@ -5130,7 +5165,7 @@ scene Sigil {
                 // hub 4: SETTINGS
                 box { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
                 box { from: hb4_x + 0.5, hb4_y + 0.5; size: hb4_w - 1, hb4_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "SETTINGS" { at: hb4_x + 16, hb4_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }
+                text "SETTINGS" { at: hb4_x + 16, hb4_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
                 zone box hbz4_0 { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; cursor: grab; role: button; label: "Settings"; show: op_vis and op_mode > 0 }
                 on drag hbz4_0 { emit sb_drag(400) }
                 on release hbz4_0 { emit sb_drop(400) }
@@ -5169,7 +5204,7 @@ scene Sigil {
                 // hub 5: NOTICES
                 box { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
                 box { from: hb5_x + 0.5, hb5_y + 0.5; size: hb5_w - 1, hb5_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "NOTICES" { at: hb5_x + 16, hb5_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }
+                text "NOTICES" { at: hb5_x + 16, hb5_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
                 zone box hbz5_0 { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; cursor: grab; role: button; label: "Notices"; show: op_vis and op_mode > 0 }
                 on drag hbz5_0 { emit sb_drag(500) }
                 on release hbz5_0 { emit sb_drop(500) }
@@ -5276,6 +5311,8 @@ scene Sigil {
                     on press pwz5 { emit sb_press(955) }
                 }
             }
+            // the Overview's thin lit margin: the wallpaper's edge, pulled back
+            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.32; show: op_mode == 4 and sf_ovm > 0.5 }
         }
     }
 
@@ -5297,23 +5334,57 @@ scene Sigil {
         on key Return { emit op_key(2) }
         on key Page_Up { emit op_wheel(1) }
         on key Page_Down { emit op_wheel(-1) }
-        // the Tear: the real wallpaper, torn open over the hole (the surface's own size: screen.height is the
-        // scene's first surface's, the 40 px bar strip — found live, D208)
-        // a group's shader sees its own box: the clip's, from its top left corner (found live) — so each is told
-        // where that corner is on the screen (kept on it: the box does not reach past the surface)
-        let ed_ox = max(0, op_x - 40)
-        let ed_oy = max(0, op_y - 40)
+        // the eight looks: the real wallpaper, cut open over the hole (the surface's own size: screen.height
+        // is the scene's first surface's, the 40 px bar strip — found live, D208)
+        // a group's shader sees its own box: the clip's, from its top left corner — each derives the screen
+        // origin from op_x/op_y in its own file, so all eight values are free for shape and strength
+        // (the intensity, edge and colour arrive packed in sf_param: see the shaders)
         group {
-            show: sf_fx < 1.5
+            show: sf_fx > 0.5 and sf_fx < 1.5
             clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
-            shader: tear, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy
+            shader: tear, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
             image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
         }
-        // the Aperture, the other look: a lens and a lit rim round the same clear hole
         group {
-            show: sf_fx > 1.5
+            show: sf_fx > 1.5 and sf_fx < 2.5
             clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
-            shader: aperture, op_k, op_x, op_y, op_w, op_h, op_r, ed_ox, ed_oy
+            shader: aperture, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
+            image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
+        }
+        group {
+            show: sf_fx > 2.5 and sf_fx < 3.5
+            clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
+            shader: membrane, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
+            image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
+        }
+        group {
+            show: sf_fx > 3.5 and sf_fx < 4.5
+            clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
+            shader: ripple, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
+            image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
+        }
+        group {
+            show: sf_fx > 4.5 and sf_fx < 5.5
+            clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
+            shader: fold, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
+            image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
+        }
+        group {
+            show: sf_fx > 5.5 and sf_fx < 6.5
+            clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
+            shader: dissolve, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
+            image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
+        }
+        group {
+            show: sf_fx > 6.5 and sf_fx < 7.5
+            clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
+            shader: glass, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
+            image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
+        }
+        group {
+            show: sf_fx > 7.5 and sf_fx < 8.5
+            clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
+            shader: glow, op_k, op_x, op_y, op_w, op_h, op_r, sf_param, 0
             image rv_img { at: 0, 0; size: edge.width, edge.height; fit: cover }
         }
     }

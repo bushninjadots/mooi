@@ -7,11 +7,11 @@ local M = { R = 90, SNAP = 40, MARGIN = 16, SECTION = 0.4, CORNER = 18 }
 M.MODES = { closed = 0, follow = 1, snapped = 2, section = 3, full = 4 }
 local MD = M.MODES
 
-function M.state() return { mode = MD.closed, k = 0, snap = nil, step = 0 } end
+function M.state() return { mode = MD.closed, k = 0, snap = nil, step = 0, at = nil } end
 
-function M.open(st) st.mode, st.k = MD.follow, 1 end
+function M.open(st) st.mode, st.k, st.at = MD.follow, 1, nil end
 
-function M.heal(st) st.mode, st.k, st.snap, st.step = MD.closed, 0, nil, 0 end
+function M.heal(st) st.mode, st.k, st.snap, st.step, st.at = MD.closed, 0, nil, 0, nil end
 
 -- distance from p to a box's edge; 0 anywhere inside it
 local function edge(b, p)
@@ -38,12 +38,20 @@ function M.move(st, boxes, p)
     st.mode = b and MD.snapped or MD.follow
 end
 
-function M.widen(st, scr)
-    if st.mode == MD.follow or st.mode == MD.snapped then st.mode = MD.section
-    elseif st.mode == MD.section then st.mode = MD.full end
+-- `p` (the pointer at the moment the wheel turned) freezes a section where it opened: the hole no longer
+-- follows the pointer, so a section that is not moving sends nothing to the programs under the wallpaper.
+function M.widen(st, scr, p)
+    if st.mode == MD.follow or st.mode == MD.snapped then
+        st.mode = MD.section
+        st.at = p and { x = st.snap and st.snap.x + st.snap.w / 2 or p.x,
+                        y = st.snap and st.snap.y + st.snap.h / 2 or p.y } or nil
+    elseif st.mode == MD.section then
+        st.mode, st.at = MD.full, nil
+    end
 end
 
 function M.narrow(st, scr)
+    st.at = nil
     if st.mode == MD.full then st.mode = MD.section
     elseif st.mode == MD.section then st.mode = st.snap and MD.snapped or MD.follow end
 end
@@ -58,8 +66,8 @@ function M.hole(st, p, scr)
     end
     if st.mode == MD.section then
         local w, h = M.SECTION * scr.w, M.SECTION * scr.h
-        local cx = st.snap and st.snap.x + st.snap.w / 2 or p.x
-        local cy = st.snap and st.snap.y + st.snap.h / 2 or p.y
+        local cx = st.at and st.at.x or (st.snap and st.snap.x + st.snap.w / 2 or p.x)
+        local cy = st.at and st.at.y or (st.snap and st.snap.y + st.snap.h / 2 or p.y)
         return { x = clamp(cx - w / 2, 0, scr.w - w), y = clamp(cy - h / 2, 0, scr.h - h), w = w, h = h, r = M.CORNER }
     end
     return { x = p.x - M.R, y = p.y - M.R, w = 2 * M.R, h = 2 * M.R, r = M.R }

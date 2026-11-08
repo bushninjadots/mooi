@@ -507,7 +507,7 @@ scene Viz {
     on op_b(v) { op_tb = v }
     on op_c(v) { op_tc = v }
     on sf_set(v) { sf_on = mod(v, 2) == 1; sf_bmo = floor(v / 2) == 1 }
-    spring sg.op = 220, 24
+    spring sg.op = 380, 34
     let op_mode = if(sf_on, floor(op_tc / 1000), 0)
     let op_r0 = op_tc - floor(op_tc / 1000) * 1000
     let op_ax = floor(op_ta / 4096)
@@ -539,6 +539,7 @@ scene Viz {
         level: bottom
         keyboard: none
         rate: 30, 4 while not np_playing or hold
+        open: (not sf_on or op_vis or lA_above or lB_above or lC_above) and (lA_on or lB_on or lC_on)
 
         group {
             show: (not sf_on or lA_above or op_vis) and lA_on and not hold and lA_st < 1.5

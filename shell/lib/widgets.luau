@@ -694,6 +694,14 @@ function M.set_look(doc, key, value)
     return d
 end
 
+-- D210: one field on every widget at once — above the wallpaper, below it, plated. The Subsurface's
+-- settings page uses it so the owner can take the whole desktop back with one press.
+function M.set_all(doc, key, value)
+    local d = copy(doc)
+    for _, w in ipairs(d.widgets) do w[key] = value end
+    return d
+end
+
 -- ── Groups (D141): widgets chosen, carried and faded as one ──
 -- The chosen ones made a group (a new id); any group they were in is left. A group of one is none.
 function M.group(doc, ids)

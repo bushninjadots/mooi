@@ -150,5 +150,7 @@ end)
 -- the widgets tell this where everything is as soon as it is up
 run("pleamar", { "--say", "mooi-widgets", "emit wg_viz_hello" }, function() end)
 
--- D209: the opening may already be up (and this program was restarted): ask for its hole
+-- D209: the opening may already be up (and this program was restarted): ask for its hole; ask again
+-- once the scene is surely listening, since the first ask can outrun the scene's own start
 run("pleamar", { "--say", "mooi-surface", "emit op_want" }, function() end)
+after(500, function() run("pleamar", { "--say", "mooi-surface", "emit op_want" }, function() end) end)

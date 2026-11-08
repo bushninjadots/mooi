@@ -2255,6 +2255,11 @@ function surface_sync()
         if SURFACE.win ~= mine then return end
         SURFACE.win = nil
         fact.surface_up = false
+        -- a surface that ends takes the opening with it: stand the programs under the wallpaper down at
+        -- once, rather than leaving them clipped to a hole that is no longer there until it is restarted
+        for _, c in ipairs({ "mooi-widgets", "mooi-viz", "bmo" }) do
+            run("pleamar", { "--say", c, "emit op_c 0" })
+        end
         -- D209: the window drag bind is put down while the opening is open; a surface that ends never heals
         run("mooi", { "reveal", "heal" })
         if os.time() - started < 5 then SURFACE.tries = SURFACE.tries + 1 else SURFACE.tries = 0 end

@@ -17,7 +17,15 @@ what was done, and why, is docs/DECISIONS.md.
 - [ ] **Phase 4, peering and burying**: hold Super over a window with another behind it — a live patch of the
       window behind, widened by the wheel; drag a window into an opening (or Super+B) to bury it on
       `special:mooi-buried` with a live tile; a click brings it back
-- [ ] **Phase 5, more effects**: Membrane, Ripple, Fold, Dissolve, Glass, the owner's own shaders, chains
+- [x] **D210, the Subsurface's own settings and looks**: its own Settings page (hold, eight effects, intensity,
+      edge, colour, speed, corner; wallpaper show/dim/tint/fit/grid/labels; glow and ping; layout, component
+      and BMO sides, Overview margin; edit/reset places; widget style and above/below; power confirm), the
+      wallpaper drawn under the opening, and the lag fix (one process per citizen, a 100 ms follow throttle,
+      a frozen section, the visualiser's open gate)
+- [x] **Phase 5's effect list (D210)**: Membrane, Ripple, Fold, Dissolve, Glass, Glow, with intensity, edge
+      width and colour
+- [ ] **Phase 5, the owner's own shaders and chains**: a folder for owner WGSL, and effects that chain (D210
+      ships the eight the spec names)
 - [ ] **The owner's real-key session** (phase 1's open item): switch Surface on, hold Super, roam, snap a
       widget and a hub, widen, click a hub item while holding, drag a widget out, let go; Super+Return and
       Super+W must leave no opening; run `tests/surface.sh` with this branch on the desk

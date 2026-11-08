@@ -280,11 +280,13 @@ on("key_up", function(name) if MODS[name] then held[MODS[name]] = nil end end)
 -- A strength dragged step by step would recompile the pipeline on every step, so the tint waits
 -- for the hand to settle: one write 350 ms after the last step, and nothing while it is moving.
 local tint_drag = 0
+local apply_widget_style   -- D210: set below, once widgets.json's writer is in scope
 on("set_value", function(n)
     local path = setters.apply(settings, n)
     if not path then return end
     save()
     paint()
+    if path == "surface.widget_style" and apply_widget_style then apply_widget_style(settings.surface.widget_style) end
     -- kitty's own screen shader is a file kitty reads, not a fact the bar wears: the shell writes it
     -- and asks kitty to reload (`mooi kitty-shaders`), so a change lands in windows already open
     if path == "desktop.kitty_shader_tint" then
@@ -729,6 +731,25 @@ local function write_widgets(d)
     pcall(sys.call, "files.write", W.FILE, W.encode(d))
     show_widgets(d)
 end
+apply_widget_style = function(style)
+    local d = wdoc()
+    write_widgets(W.set_look(d, "style", style))
+end
+-- D210: the Subsurface's page — its look is read from settings.json by mooi-surface; the widget
+-- buttons write widgets.json, which mooi-widgets watches and reloads.
+on("surface_above", function()
+    write_widgets(W.set_all(wdoc(), "above", true))
+end)
+on("surface_below", function()
+    write_widgets(W.set_all(wdoc(), "above", false))
+end)
+on("surface_edit", function()
+    run("pleamar", { "--say", "mooi-surface", "emit sf_edit 1" })
+    run("pleamar", { "--say", "mooi-settings", "quit" })
+end)
+on("surface_reset", function()
+    run("pleamar", { "--say", "mooi-surface", "emit sf_reset" })
+end)
 show_widgets()
 pcall(sys.watch, "files:" .. W.FILE, function() show_widgets() end)
 on("sw_choice", function(v)

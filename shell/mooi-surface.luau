@@ -53,6 +53,9 @@ local S = {
 local draw_below
 local save_presences
 local ship_set
+local below_opts
+local apply_layout
+local SF
 
 -- ── the readings, from the services and the feeds ──
 local function feed()
@@ -76,7 +79,12 @@ local function notices()
     S.r.notifications = { count = tonumber(n.count) or 0, title = first and first.title or "", app = first and first.app or "" }
     local fresh
     S.notice_seen, fresh = director.notice_step(S.notice_seen, first and first.time, S.now)
-    if fresh then S.notice = fresh end
+    if fresh then
+        S.notice = fresh
+        -- D210: the notification's ping — a light at the notices hub while the opening is open
+        fact.sf_ping = 1
+        SF.ping = 1
+    end
 end
 
 -- ── what each host shows, and its points ──
@@ -132,8 +140,32 @@ update = function()
     fact.ink_r, fact.ink_g, fact.ink_b = rgb01(cols.on_surface, 0.93, 0.88, 0.84)
     fact.mut_r, fact.mut_g, fact.mut_b = rgb01(cols.on_surface_variant, 0.55, 0.56, 0.52)
     fact.pl_r, fact.pl_g, fact.pl_b = rgb01(cols.surface_container, 0.09, 0.10, 0.09)
-    -- D209: the opening's look (1 the Tear, 2 the Aperture)
-    fact.sf_fx = (type(s.surface) == "table" and s.surface.effect == "aperture") and 2 or 1
+    -- D210: the opening's look, its wallpaper and the places below (one settings page, every fact here)
+    local su = type(s.surface) == "table" and s.surface or {}
+    local function num(v, d) return tonumber(v) or d end
+    local function pct(v, d) return math.max(0, math.min(1, num(v, d) / 100)) end
+    local order = { "tear", "aperture", "membrane", "ripple", "fold", "dissolve", "glass", "glow" }
+    local fx = 1
+    for i, e in ipairs(order) do if su.effect == e then fx = i end end
+    fact.sf_fx = fx
+    local pc = math.floor(math.max(20, math.min(100, num(su.intensity, 85))) + 0.5)
+    local ec = math.floor(math.max(20, math.min(100, num(su.edge, 50))) + 0.5)
+    local ci = su.colour == "plain" and 1 or (su.colour == "warm" and 2 or 0)
+    fact.sf_param = pc * 1000 + ec * 10 + ci
+    fact.sf_int, fact.sf_edge, fact.sf_col = pc / 100, ec / 100, ci
+    fact.sf_wall = su.wall ~= false
+    fact.sf_dim = pct(su.dim, 35)
+    fact.sf_tint = pct(su.tint, 18)
+    fact.sf_fit = su.fit == "contain" and 1 or 0
+    fact.sf_grid = pct(su.grid, 45)
+    fact.sf_labels = su.labels ~= false
+    fact.sf_glow = su.glow == "off" and 0 or (su.glow == "bright" and 2 or 1)
+    if su.ping == false then fact.sf_ping = 0 end
+    fact.sf_ovm = math.floor(math.max(0, math.min(40, num(su.overview, 16))) + 0.5)
+    fact.sf_power_confirm = su.power_confirm ~= false
+    opening.CORNER = math.floor(math.max(8, math.min(40, num(su.radius, 18))) + 0.5)
+    reveal.OPEN_MS = math.floor(math.max(100, math.min(600, num(su.speed, 220))) + 0.5)
+    if apply_layout then apply_layout() end
 
     local state = { music = S.r.music, notice = S.notice, battery = S.r.battery, volume_at = S.volume_at,
                     feed_at = S.feed_at, hover = S.hover, open = S.open }
@@ -388,7 +420,8 @@ local function press_code(v)
     -- the power row: lock and sleep go at once, the other three ask again within 3 s
     if v >= 951 and v <= 955 then
         local n = v - 950
-        if n >= 3 and not S.power_arm then
+        local confirm = not (type(S.settings.surface) == "table" and S.settings.surface.power_confirm == false)
+        if n >= 3 and confirm and not S.power_arm then
             S.power_arm = true
             fact.pw_arm = true
             after(3000, function() S.power_arm = false; fact.pw_arm = false end)
@@ -450,9 +483,10 @@ end)
 
 -- ── Surface (D208): hold Super — the Reveal; Presences on the desk ──
 -- One table for all of it (the reveal's state, the Presences, undo, the screen and the pointer).
-local SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dragging = nil,
-             list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
-             ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "" }
+SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dragging = nil,
+       list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
+       ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "",
+       edit_places = false, drag_place = nil, layout_sig = nil, ready = false, ping = 0 }
 local SFILE = "surface.json"
 local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }
 local BAR_H = 34
@@ -507,6 +541,28 @@ save_presences = function(push)
     if push then SF.undo.push(doc) end
 end
 
+below_opts = function()
+    local su = type(S.settings.surface) == "table" and S.settings.surface or {}
+    return { layout = su.layout, components = su.components, bmo = su.bmo_side }
+end
+
+local function layout_sig()
+    local o = below_opts()
+    return table.concat({ o.layout or "arc", o.components or "right", o.bmo or "left" }, "|")
+end
+
+-- picked in Settings → The Subsurface: a new shape (arc/row/grid/calm, the components' side, BMO's side)
+-- puts everything back on its new place. Saved places are for the old shape; keeping them would hide things.
+apply_layout = function()
+    if not SF or not SF.ready then return end
+    local sig = layout_sig()
+    if SF.layout_sig == sig then return end
+    SF.layout_sig = sig
+    S.places = below.defaults(SF.scr, below_opts())
+    draw_below()
+    save_presences(false)
+end
+
 local function load_presences()
     local raw = read(SFILE)
     local doc = nil
@@ -517,9 +573,11 @@ local function load_presences()
     local list, problems = presence.load(doc, SF.scr)
     for _, p in ipairs(problems) do log("surface · " .. p) end
     SF.list = list
-    S.places = below.merge(doc and doc.places, SF.scr)
+    S.places = below.merge(doc and doc.places, SF.scr, below_opts())
     S.app_counts = type(doc) == "table" and type(doc.usage) == "table" and doc.usage or {}
     SF.undo.push(presence.save(list))
+    SF.layout_sig = layout_sig()
+    SF.ready = true
     draw_presences()
     draw_below()
 end
@@ -620,15 +678,23 @@ local function current()
     return opening.pack(SF.op, opening.hole(SF.op, SF.ptr, SF.scr))
 end
 local function ship(a, b, c)
+    -- one pleamar per program, not three: on a follow move this used to start nine processes per pointer step
     for _, cname in ipairs(CITIZENS) do
-        run("pleamar", { "--say", cname, "emit op_a " .. a })
-        run("pleamar", { "--say", cname, "emit op_b " .. b })
-        run("pleamar", { "--say", cname, "emit op_c " .. c })
+        run("pleamar", { "--say", cname, "emit op_a " .. a, "emit op_b " .. b, "emit op_c " .. c })
     end
 end
 local function broadcast()
     local a, b, c = current()
     fact.op_ta, fact.op_tb, fact.op_tc = a, b, c
+    -- In follow mode the hole moves every 6 px; sending there was the lag — a process per citizen per step.
+    -- The programs still need the patch (a widget under it must show), so it is sent at most every 100 ms.
+    -- A snap, section or full is exact and immediate, and ships once because it stops moving.
+    if SF.op.mode == opening.MODES.follow then
+        if SF.ship_at and SF.clock - SF.ship_at < 100 then return end
+        SF.ship_at = SF.clock
+        if opening.changed(SF.sent, a, b, c) then SF.sent = { a = a, b = b, c = c }; ship(a, b, c) end
+        return
+    end
     if opening.changed(SF.sent, a, b, c) then
         SF.sent = { a = a, b = b, c = c }
         ship(a, b, c)
@@ -678,6 +744,15 @@ S.now_ms = function() return SF.clock end
 
 local function tick()
     SF.clock = SF.clock + 50
+    -- the notification ping fades in about a second while the opening is up
+    local ping_on = not (type(S.settings.surface) == "table" and S.settings.surface.ping == false)
+    if ping_on then
+        SF.ping = SF.ping * 0.90
+        if SF.ping < 0.02 then SF.ping = 0 end
+    else
+        SF.ping = 0
+    end
+    fact.sf_ping = SF.ping
     reveal.tick(SF.rv, S.now_ms(), SF.ptr)
     if not SF.rv.down_at then
         close_reveal()
@@ -712,6 +787,15 @@ end)
 on("rv_move", function(v)
     v = math.floor(tonumber(v) or 0)
     SF.ptr = { x = v // 10000, y = v % 10000 }
+    -- Edit places: the dragged hub/component follows the pointer, centred, and stays on the screen.
+    if SF.edit_places and SF.dragging and SF.drag_place then
+        local p = S.places[SF.drag_place]
+        if p then
+            p.x = math.max(0, math.min(SF.scr.w - p.w, SF.ptr.x - p.w // 2))
+            p.y = math.max(0, math.min(SF.scr.h - p.h, SF.ptr.y - p.h // 2))
+            draw_below()
+        end
+    end
     -- while a drag is under way the hole stays where it was: a following hole would always contain the drop
     if SF.op.mode > 0 and not SF.dragging then
         opening.move(SF.op, boxes(), SF.ptr)
@@ -730,7 +814,11 @@ end)
 -- the wheel widens and narrows; the bar routes Super + wheel here while the opening shows
 on("op_wheel", function(v)
     if SF.op.mode == opening.MODES.closed then return end
-    if (tonumber(v) or 0) > 0 then opening.widen(SF.op, SF.scr) else opening.narrow(SF.op, SF.scr) end
+    if (tonumber(v) or 0) > 0 then
+        opening.widen(SF.op, SF.scr, SF.ptr) -- a snapped section stays on the thing; a bare one on the pointer
+    else
+        opening.narrow(SF.op, SF.scr)
+    end
     broadcast()
 end)
 
@@ -773,8 +861,29 @@ end)
 -- a hub or a component dragged out of the opening becomes a Presence, unless it is let go inside the hole
 local DRAG_SOURCE = { [100] = "apps", [200] = "music", [901] = "network", [902] = "bluetooth",
                       [903] = "volume", [905] = "battery" }
+-- Edit places: a hub's plate (k*100) or a component (900+k) is the thing whose place moves.
+local function place_for(code)
+    if code >= 100 and code <= 500 and code % 100 == 0 then return below.HUBS[code // 100] end
+    if code >= 901 and code <= 906 then return below.COMPONENTS[code - 900] end
+end
+on("sf_edit", function(v)
+    SF.edit_places = (tonumber(v) or 0) > 0
+    if not SF.edit_places then
+        SF.dragging, SF.drag_place = nil, nil
+        draw_below()
+        save_presences(false)
+    end
+end)
+on("sf_reset", function()
+    S.places = below.defaults(SF.scr, below_opts())
+    SF.layout_sig = layout_sig()
+    SF.dragging, SF.drag_place = nil, nil
+    draw_below()
+    save_presences(false)
+end)
 on("sb_drag", function(v)
     SF.dragging = math.floor(tonumber(v) or 0)
+    if SF.edit_places then SF.drag_place = place_for(SF.dragging) else SF.drag_place = nil end
     -- freeze the hole at the press (a following hole would always contain the drop); snapped is the fixed mode
     if SF.op.mode > 0 and SF.op.mode ~= opening.MODES.snapped then
         local h = opening.hole(SF.op, SF.ptr, SF.scr)
@@ -786,6 +895,12 @@ on("sb_drag", function(v)
 end)on("sb_drop", function(v)
     local code = math.floor(tonumber(v) or 0)
     SF.dragging = nil
+    if SF.edit_places then
+        -- the place was moved live by rv_move; keep it and make no Presence
+        if SF.drag_place then save_presences(false); draw_below() end
+        SF.drag_place = nil
+        return
+    end
     if code == -1 then return end          -- a widget drag: it keeps or buries itself (wg_keep / wg_bury)
     local src = DRAG_SOURCE[code]
     if not src or SF.op.mode == opening.MODES.closed then return end

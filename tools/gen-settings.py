@@ -158,6 +158,12 @@ SETTERS = [
     # D208: Surface. Appended.
     "surface.on", "surface.delay",
     "surface.effect", "surface.bmo_below",
+    # D210: the Subsurface's own page — the opening, the wallpaper under it, the light, the layout, the
+    # widgets and the power row. Appended after D208 so no earlier control's number moves.
+    "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius",
+    "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels",
+    "surface.glow", "surface.ping", "surface.layout", "surface.components", "surface.bmo_side",
+    "surface.overview", "surface.power_confirm", "surface.widget_style",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -379,12 +385,6 @@ SECTIONS = [
         ("choice", "At rest", "What it shows when nothing is happening", "sigil.rest", "sv_sigil_rest", [("Clock", 0), ("Song", 3), ("Weather", 2), ("Machine", 8), ("Battery", 9), ("Spaces", 6), ("BMO", 12)]),
         ("choice", "Your pointer", "Near it, the line moves away, leans toward it, or ignores it", "sigil.pointer", "sv_sigil_pointer", ["Pushes", "Draws", "Ignores"]),
         ("toggle", "The field", "A field of points behind its displays, warmed by your pointer", "sigil.field", "sv_sigil_field"),
-        # D208: Surface — the Reveal
-        ("card", "Surface"),
-        ("toggle", "Hold Super to reveal", "The wallpaper opens at your pointer: groups round its rim, things to open or drag out and leave on the desktop", "surface.on", "sv_surface_on"),
-        ("slider", "Hold for", "How long Super is held before it opens (a quicker tap keeps Super's old meaning)", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
-        ("choice", "Opening effect", "The Tear: the wallpaper torn open; the Aperture: a lens and a lit rim round the hole", "surface.effect", "sv_surface_effect", ["Tear", "Aperture"]),
-        ("toggle", "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", "surface.bmo_below", "sv_surface_bmo_below"),
         # D205: a second and a third pill, each a face at rest and a place of its own (the rest of the
         # faces — BMO, the Nexus, network, signals, the visualiser — are there by the file, pill.two/three)
         ("card", "More pills"),
@@ -756,6 +756,44 @@ SECTIONS = [
         ("toggle", "Loom", "Connections between windows that do something: hop along them, see them as threads", "loom.loom", "sv_loom_loom"),
         ("choice", "Threads", "When the threads show: a few seconds when the focused window has connections, always, or only while linking", "loom.threads", "sv_loom_threads", [("When relevant", 0), ("Always", 1), ("Hidden", 2)], "sv_loom_loom > 0.5"),
         ("note", "true", "KEYS (SETTINGS → KEYS): SUPER+ALT+A ADD · ] [ NEXT, PREVIOUS · F FOLD · U OPEN ALL · R TAKE OUT · K MAKE A CUBE · J JOIN THE CUBE · N LINK (SHIFT: A WORKFLOW) · H HOP ALONG A LINK. A STRIP: PRESS PULLS, DRAG REORDERS, WHEEL STEPS. A CUBE: PRESS FOLDS OR UNFOLDS, WHEEL TURNS, MIDDLE OPENS ONE SIDE"),
+    ]),
+    # D210: the Subsurface's own page, appended last so no page's place moves. Every part of the opening
+    # that is a choice has a home here, beside the gesture itself.
+    ("The Subsurface", "The Subsurface", "Hold Super on the wallpaper: the hubs, the components and the widgets under it, and every part of the opening's look", "SHELL", [
+        ("card", "The opening"),
+        ("toggle", "Hold Super to reveal", "The wallpaper opens at your pointer; a quick tap keeps Super's old meaning", "surface.on", "sv_surface_on"),
+        ("slider", "Hold for", "How long Super is held before it opens", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
+        ("choice", "Effect", "How the wallpaper gives way: torn, a lens, a soft membrane, ripples, folded paper, dissolving, glass or a glow", "surface.effect", "sv_surface_effect", ["Tear", "Aperture", "Membrane", "Ripple", "Fold", "Dissolve", "Glass", "Glow"]),
+        ("slider", "Intensity", "How strongly the effect shows: the lip, the halo, the shadow", "surface.intensity", 20, 100, "{sv_surface_intensity + 20, 0} %"),
+        ("slider", "Edge width", "How wide the opened edge is: thin and sharp or broad and soft", "surface.edge", 20, 100, "{sv_surface_edge + 20, 0} %"),
+        ("choice", "Edge colour", "The accent's colour, plain light, or warm ember", "surface.colour", "sv_surface_colour", ["Accent", "Plain", "Warm"]),
+        ("slider", "Open speed", "How quickly the hole springs open and heals", "surface.speed", 100, 600, "{sv_surface_speed + 100, 0} ms"),
+        ("slider", "Corner", "How round the hole's corner is", "surface.radius", 8, 40, "{sv_surface_radius + 8, 0} px"),
+        ("card", "The wallpaper under it"),
+        ("toggle", "Show the wallpaper", "The hole shows your wallpaper dimmed under the grid, not a flat plate", "surface.wall", "sv_surface_wall"),
+        ("slider", "Dim", "How far the wallpaper is pushed back under the opening", "surface.dim", 0, 80, "{sv_surface_dim, 0} %", "sv_surface_wall > 0.5"),
+        ("slider", "Tint", "How much of the accent is laid over it", "surface.tint", 0, 100, "{sv_surface_tint, 0} %", "sv_surface_wall > 0.5"),
+        ("choice", "Fit", "Cover fills the screen; contain shows the whole picture", "surface.fit", "sv_surface_fit", ["Cover", "Contain"], "sv_surface_wall > 0.5"),
+        ("slider", "Grid", "The faint measured grid over the wallpaper", "surface.grid", 0, 100, "{sv_surface_grid, 0} %"),
+        ("toggle", "Names", "The hubs' names under them", "surface.labels", "sv_surface_labels"),
+        ("card", "Light through the skin"),
+        ("choice", "Glow", "What plays under the wallpaper: nothing, a subtle breath, or a bright one", "surface.glow", "sv_surface_glow", ["Off", "Subtle", "Bright"]),
+        ("toggle", "A notice pings", "A new notice sends a spark through the opening", "surface.ping", "sv_surface_ping", "sv_surface_glow > 0.5"),
+        ("card", "Where things sit"),
+        ("choice", "Hubs", "The arc, one straight row, a grid, or low and calm", "surface.layout", "sv_surface_layout", ["Arc", "Row", "Grid", "Calm"]),
+        ("choice", "Components", "Which side the Wi-Fi, sound, light, battery and power row ends on", "surface.components", "sv_surface_components", ["Right", "Centre", "Left"]),
+        ("choice", "BMO's home", "Which bottom corner he comes out of", "surface.bmo_side", "sv_surface_bmo_side", ["Left", "Right"]),
+        ("slider", "Overview margin", "The lit wallpaper rim round the full opening", "surface.overview", 0, 40, "{sv_surface_overview, 0} px"),
+        ("button", "Move the places", "Drag the hubs and the components where you want them; let go to keep it", "Edit places", "surface_edit", 0),
+        ("button", "Put them back", "Forget the places you moved and use the layout above", "Reset places", "surface_reset", 0),
+        ("card", "The widgets below"),
+        ("choice", "Their look", "Adaptive, Phosphor, Ink, Chrome or Paper; the desktop and the opening share it", "surface.widget_style", "sv_surface_widget_style", ["Adaptive", "Phosphor", "Ink", "Chrome", "Paper"]),
+        ("button", "Keep them on the desktop", "Mark every widget above the wallpaper, so it stays visible while the opening is shut", "Keep above", "surface_above", 0),
+        ("button", "Put them below", "Mark every widget under the wallpaper, so it only shows inside the opening", "Put below", "surface_below", 0),
+        ("card", "BMO and the power row"),
+        ("toggle", "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", "surface.bmo_below", "sv_surface_bmo_below"),
+        ("toggle", "Ask before log out, restart and shut down", "Those three need a second press within three seconds", "surface.power_confirm", "sv_surface_power_confirm"),
+        ("note", "true", "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG OUT TO LEAVE A THING ON THE DESKTOP · ESC HEALS"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
@@ -1428,6 +1466,10 @@ def main():
     follow set_scroll_s = clamp(set_scroll, 0, @MAXS@)
     event set_value ->        // to the logic: one setting to one value (lib/setters)
     event set_action ->       // to the logic: 1 the bar's edit mode
+    event surface_edit ->     // to the logic (D210): move the hubs and components in the opening
+    event surface_reset ->    // to the logic (D210): forget the moved places
+    event surface_above ->    // to the logic (D210): every widget above the wallpaper
+    event surface_below ->    // to the logic (D210): every widget under it
     event set_pick            // a section chosen
     text set_query = ""       // what search looks for
     fact searching = false    // there is something to look for
