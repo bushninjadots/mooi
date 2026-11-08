@@ -15,6 +15,8 @@ local bodies = require("lib/surface/bodies")
 local layout = require("lib/surface/layout")
 local presence = require("lib/surface/presence")   -- D208
 local reveal = require("lib/surface/reveal")
+local below = require("lib/surface/below")          -- D209
+local coverart = require("lib/cover")
 
 local HOSTS_FILE, FEED_FILE, NOTICES = "sigil-hosts.json", "sigil-feed.json", "nexus-feed.json"
 local SLOT = { pill = 0, isl1 = 1, isl2 = 2, isl3 = 3 }
@@ -42,7 +44,13 @@ local S = {
     want = {},
     choice = {},           -- per host id: the director's choice
     ready = false,
+    -- D209: what lives below the wallpaper
+    places = {}, apps = {}, app_counts = {}, walls = {}, note_items = {},
+    power_open = false, power_arm = false,
 }
+
+local draw_below
+local save_presences
 
 -- ── the readings, from the services and the feeds ──
 local function feed()
@@ -58,8 +66,11 @@ end
 
 local function notices()
     local n = read(NOTICES, "json")
-    if type(n) ~= "table" then return end
-    local first = type(n.items) == "table" and n.items[1] or nil
+    if type(n) ~= "table" then S.note_items = {}; if draw_below then draw_below() end; return end
+    local items = type(n.items) == "table" and n.items or {}
+    S.note_items = {}
+    for i = 1, math.min(4, #items) do S.note_items[i] = items[i] end
+    local first = items[1]
     S.r.notifications = { count = tonumber(n.count) or 0, title = first and first.title or "", app = first and first.app or "" }
     local fresh
     S.notice_seen, fresh = director.notice_step(S.notice_seen, first and first.time, S.now)
@@ -199,7 +210,9 @@ pcall(sys.watch, "media", function(m)
     if type(m) ~= "table" then return end
     S.r.music = { title = m.title or "", artist = m.artist or "", playing = m.playing == true }
     S.r.music_pos = { pos = tonumber(m.position) or 0, len = tonumber(m.length) or 0 }   -- D208: Presences
+    S.r.music_art = coverart.path(m.art)                                                -- D209: the Music hub
     if SF_media then SF_media() end
+    if draw_below then draw_below() end
     update()
 end)
 pcall(sys.watch, "audio", function(a)
@@ -208,22 +221,33 @@ pcall(sys.watch, "audio", function(a)
     if v and S.volume_was and math.abs(v - S.volume_was) > 0.004 then S.volume_at = S.now end
     S.volume_was = v
     S.r.volume = { volume = v, muted = a.muted == true }
+    if draw_below then draw_below() end
     update()
 end)
 pcall(sys.watch, "battery", function(b)
-    if type(b) ~= "table" or b.present == false then S.r.battery = nil; return end
+    if type(b) ~= "table" or b.present == false then S.r.battery = nil; if draw_below then draw_below() end; return end
     S.r.battery = { percent = tonumber(b.percent), charging = b.charging == true }
+    if draw_below then draw_below() end
     update()
 end)
 pcall(sys.watch, "network", function(n)
     if type(n) ~= "table" then return end
     S.r.network = { online = n.online == true, name = n.name, strength = tonumber(n.strength) }
+    if draw_below then draw_below() end
 end)
 pcall(sys.watch, "bluetooth", function(v)
     if type(v) ~= "table" then return end
     local n, name = 0, nil
     for _, d in ipairs(v.devices or {}) do if d.connected then n = n + 1; name = name or d.name end end
     S.r.bluetooth = { powered = v.powered == true, connected = n, name = name }
+    if draw_below then draw_below() end
+end)
+pcall(sys.watch, "brightness", function(b)
+    if type(b) ~= "table" or b.present == false then S.r.bright = nil; if draw_below then draw_below() end; return end
+    local lv = tonumber(b.level)
+    if lv and lv > 1 then lv = lv / 100 end
+    S.r.bright = { level = lv }
+    if draw_below then draw_below() end
 end)
 pcall(sys.watch, "workspaces", function(w)
     if type(w) ~= "table" then return end
@@ -261,6 +285,17 @@ pcall(sys.watch, "files:" .. FEED_FILE, function() feed(); update() end)
 pcall(sys.watch, "files:" .. NOTICES, function() notices(); update() end)
 pcall(sys.watch, "files:palette.json", function() S.pal = read("palette.json", "json"); update(); if SF_wall then SF_wall() end end)
 pcall(sys.watch, "files:settings.json", function() S.settings = config.parse(read("settings.json"), json.decode); S.drawn = {}; update() end)
+-- D209: the Apps hub's list and the Wallpapers hub's index
+pcall(sys.watch, "apps", function(list)
+    if type(list) == "table" and type(list.list) == "table" then list = list.list end
+    S.apps = type(list) == "table" and list or {}
+    if draw_below then draw_below() end
+end)
+local function walls_file()
+    S.walls = below.walls(read("walls-index.json", "json"), 6)
+    if draw_below then draw_below() end
+end
+pcall(sys.watch, "files:walls-index.json", walls_file)
 
 -- ── presses, hover, the wheel ──
 local function host_of(k)
@@ -319,6 +354,83 @@ on("sg_wheel", function(v)
     end
 end)
 
+-- ── D209: what lives below — the hubs' presses and the components' wheel ──
+local function power_go(n)
+    if n == 1 then run("mooi", { "lock" })
+    elseif n == 2 then run("systemctl", { "suspend" })
+    elseif n == 3 then run("hyprctl", { "eval", "hl.dispatch(hl.dsp.exit())" })
+    elseif n == 4 then run("systemctl", { "reboot" })
+    elseif n == 5 then run("systemctl", { "poweroff" }) end
+end
+local function power_close()
+    S.power_open, S.power_arm = false, false
+    fact.pw_open, fact.pw_arm = false, false
+end
+
+on("sb_press", function(v)
+    v = math.floor(tonumber(v) or 0)
+    -- the power row: lock and sleep go at once, the other three ask again within 3 s
+    if v >= 951 and v <= 955 then
+        local n = v - 950
+        if n >= 3 and not S.power_arm then
+            S.power_arm = true
+            fact.pw_arm = true
+            after(3000, function() S.power_arm = false; fact.pw_arm = false end)
+            return
+        end
+        power_close()
+        power_go(n)
+        return
+    end
+    -- a component (900 + k)
+    if v >= 901 and v <= 906 then
+        local k = v - 900
+        if k == 1 then
+            run("nmcli", { "radio", "wifi", (S.r.network and S.r.network.online) and "off" or "on" })
+        elseif k == 2 then
+            run("bluetoothctl", { "power", (S.r.bluetooth and S.r.bluetooth.powered) and "off" or "on" })
+        elseif k == 6 then
+            S.power_open = not S.power_open
+            S.power_arm = false
+            fact.pw_open, fact.pw_arm = S.power_open, false
+        end
+        return
+    end
+    -- the hubs: hub * 100 + item
+    local hub, item = v // 100, v % 100
+    if hub == 1 then
+        local a = S.app_rows and S.app_rows[item]
+        if not a then return end
+        S.app_counts[a.id] = (S.app_counts[a.id] or 0) + 1
+        pcall(sys.call, "apps.launch", a.exec)
+        if save_presences then save_presences(false) end
+        draw_below()
+    elseif hub == 2 then
+        local act = ({ [1] = "previous", [2] = "toggle", [3] = "next" })[item]
+        if act then pcall(sys.call, "media." .. act) end
+    elseif hub == 3 then
+        local w = S.walls[item]
+        if w then run("mooi", { "wall", "apply", w.path }) end
+    elseif hub == 4 then
+        run("pleamar", { "--say", "mooi", "emit open_settings" })
+    elseif v == 590 then
+        run("pleamar", { "--say", "mooi", "emit note_clear" })
+    elseif hub == 5 then
+        if S.note_items[item] then run("mooi", { "nexus" }) end
+    end
+end)
+on("sb_wheel", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k, d = v // 10, (v % 10 == 1) and 1 or -1
+    if k == 3 then
+        local cur = S.r.volume and S.r.volume.volume
+        if cur then pcall(sys.call, "audio.volume", math.max(0, math.min(1, cur + 0.05 * d))) end
+    elseif k == 4 then
+        local cur = S.r.bright and S.r.bright.level
+        if cur then pcall(sys.call, "brightness.level", math.max(0.01, math.min(1, cur + 0.05 * d))) end
+    end
+end)
+
 -- ── Surface (D208): hold Super — the Reveal; Presences on the desk ──
 -- One table for all of it (the reveal's state, the Presences, undo, the screen and the pointer).
 local SF = { rv = reveal.state(), list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
@@ -364,9 +476,11 @@ end
 
 -- (review I6: the last good file is kept as surface.json.bak at every save, and a file that could not be read
 -- is never overwritten — a hand edit with a typo would otherwise be lost at the next move)
-local function save_presences(push)
+save_presences = function(push)
     if SF.broken then log("surface · surface.json could not be read; not overwriting it (fix it, or remove it)"); return end
     local doc = presence.save(SF.list)
+    doc.places = below.save(S.places)
+    doc.usage = S.app_counts
     local old = read(SFILE)
     if type(old) == "string" and old ~= "" then pcall(sys.call, "files.write", "surface.json.bak", old) end
     pcall(sys.call, "files.write", SFILE, doc)
@@ -383,8 +497,94 @@ local function load_presences()
     local list, problems = presence.load(doc, SF.scr)
     for _, p in ipairs(problems) do log("surface · " .. p) end
     SF.list = list
+    S.places = below.merge(doc and doc.places, SF.scr)
+    S.app_counts = type(doc) == "table" and type(doc.usage) == "table" and doc.usage or {}
     SF.undo.push(presence.save(list))
     draw_presences()
+    draw_below()
+end
+
+-- D209: write the places and everything the hubs show
+draw_below = function()
+    local P = S.places
+    for k, id in ipairs(below.HUBS) do
+        local p = P[id]
+        if p then
+            fact["hb" .. k .. "_x"], fact["hb" .. k .. "_y"] = p.x, p.y
+            fact["hb" .. k .. "_w"], fact["hb" .. k .. "_h"] = p.w, p.h
+        end
+    end
+    for k, id in ipairs(below.COMPONENTS) do
+        local p = P[id]
+        if p then fact["cp" .. k .. "_x"], fact["cp" .. k .. "_y"] = p.x, p.y end
+    end
+    -- the apps: the most launched first, twelve at most
+    S.app_rows = below.apps(S.apps, S.app_counts, 12)
+    for n = 1, 12 do
+        local a = S.app_rows[n]
+        fact["ab" .. n .. "_on"] = a ~= nil
+        if a then
+            local name = tostring(a.name or "")
+            local letter = name ~= "" and name or tostring(a.id or "?")
+            text["ab" .. n .. "_name"] = name
+            text["ab" .. n .. "_letter"] = string.upper(string.sub(letter, 1, 1))
+            local icon = type(a.icon) == "string" and a.icon or ""
+            text["ab" .. n .. "_path"] = icon
+            fact["ab" .. n .. "_iconed"] = icon ~= ""
+        else
+            text["ab" .. n .. "_name"], text["ab" .. n .. "_letter"], text["ab" .. n .. "_path"] = "", "", ""
+            fact["ab" .. n .. "_iconed"] = false
+        end
+    end
+    -- the music
+    local m = S.r.music
+    text.mu_t1, text.mu_t2 = m and tostring(m.title or "") or "", m and tostring(m.artist or "") or ""
+    text.mu_art = S.r.music_art or ""
+    fact.mu_on = (S.r.music_art or "") ~= ""
+    fact.mu_playing = m ~= nil and m.playing == true
+    local pos = S.r.music_pos
+    fact.mu_prog = (pos and pos.len > 0) and math.max(0, math.min(1, pos.pos / pos.len)) or 0
+    -- the wallpapers: the six newest thumbnails
+    for n = 1, 6 do
+        local w = S.walls[n]
+        fact["wl" .. n .. "_on"] = w ~= nil
+        text["wl" .. n .. "_thumb"] = w and w.thumb or ""
+    end
+    -- the notices: the four newest from the bar's feed
+    local count = 0
+    for n = 1, 4 do
+        local it = S.note_items[n]
+        fact["nt" .. n .. "_on"] = it ~= nil
+        if it then
+            count = count + 1
+            text["nt" .. n .. "_t1"] = tostring(it.title or it.summary or "")
+            text["nt" .. n .. "_t2"] = tostring(it.app or "")
+        else
+            text["nt" .. n .. "_t1"], text["nt" .. n .. "_t2"] = "", ""
+        end
+    end
+    fact.nt_n = count
+    -- the components
+    local net = S.r.network
+    fact.cp1_on, fact.cp1_lit = true, net ~= nil and net.online == true
+    text.cp1_val = net and (net.online and tostring(net.name or "on") or "off") or "off"
+    local bt = S.r.bluetooth
+    fact.cp2_on, fact.cp2_lit = true, bt ~= nil and bt.powered == true
+    text.cp2_val = bt and (((bt.connected or 0) > 0 and tostring(bt.connected)) or (bt.powered and "on" or "off")) or "off"
+    local vol = S.r.volume and S.r.volume.volume
+    fact.cp3_on, fact.cp3_lit, fact.cp3_frac = true, vol ~= nil, vol or 0
+    text.cp3_val = vol and tostring(math.floor(vol * 100 + 0.5)) or ""
+    local bri = S.r.bright and S.r.bright.level
+    fact.cp4_on, fact.cp4_lit, fact.cp4_frac = true, bri ~= nil, bri or 0
+    text.cp4_val = bri and tostring(math.floor(bri * 100 + 0.5)) or ""
+    local bat = S.r.battery
+    local pct = bat and bat.percent
+    fact.cp5_on, fact.cp5_lit = bat ~= nil, bat ~= nil
+    fact.cp5_frac = pct and math.max(0, math.min(1, pct / 100)) or 0
+    text.cp5_val = pct and (tostring(math.floor(pct + 0.5)) .. "%") or ""
+    fact.cp6_on, fact.cp6_lit = true, true
+    text.cp6_val = ""
+    fact.pw_open, fact.pw_arm = S.power_open, S.power_arm
 end
 
 -- the reveal's facts: whether it is showing, and its stage
@@ -511,4 +711,6 @@ wallpaper()
 SF_wall = wallpaper       -- the palette watcher above calls it: one watcher per file (review M7)
 
 feed(); notices(); hosts()
+walls_file()
+draw_below()
 log("surface · up")

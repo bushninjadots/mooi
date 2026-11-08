@@ -9,6 +9,7 @@ shows a display: the line, the display's insides, the field). Run: python3 tools
 """
 from pathlib import Path
 import importlib.util
+import math
 
 _spec = importlib.util.spec_from_file_location("gen_opening", Path(__file__).resolve().parent / "gen-opening.py")
 opening = importlib.util.module_from_spec(_spec)
@@ -20,6 +21,180 @@ OUT = Path(__file__).resolve().parent.parent / "shell" / "mooi-surface.plm"
 # lib/surface/shapes.KINDS, 1-based in the scene's h{k}_kind
 KINDS = ["clock", "wave", "disc", "ring", "card", "strip", "ribbon", "horizon", "spaces", "dots", "bars", "face"]
 K = {k: i + 1 for i, k in enumerate(KINDS)}
+
+# ── D209: what lives below the wallpaper ──
+# The places are lib/surface/below.luau's defaults at 1920×1080 (the unit test holds the two together): the hubs
+# on their arc, the components in their row, BMO's home.
+HUBS = [("apps", "Apps", 360, 220), ("music", "Music", 320, 140), ("walls", "Wallpapers", 360, 120),
+        ("settings", "Settings", 300, 140), ("notes", "Notices", 320, 220)]
+COMPONENTS = [("wifi", "Wi-Fi"), ("bt", "Bluetooth"), ("volume", "Volume"), ("bright", "Brightness"),
+              ("battery", "Battery"), ("power", "Power")]
+COMP, GAP, RIGHT, BOTTOM = 56, 12, 32, 96
+BMO = (160, 196)
+APP_N, WALL_N, NOTE_N = 12, 6, 4
+SETTINGS = ["Bar & Frame", "Wallpapers", "Widgets", "Theme", "Islands", "Notch", "Sound", "The Sigil"]
+POWER = [("Lock", 951), ("Sleep", 952), ("Log out", 953), ("Restart", 954), ("Shut down", 955)]
+GLYPH = {"wifi": "≋", "bt": "ᛒ", "volume": "♪", "bright": "☀", "battery": "▭", "power": "⏻"}
+
+
+def below_defaults(w, h):
+    out = {}
+    n = len(HUBS)
+    for i, (id, _, bw, bh) in enumerate(HUBS):
+        f = i / (n - 1)
+        t = 2 * f - 1
+        out[id] = (int(math.floor(w * (0.12 + 0.76 * f) - bw / 2 + 0.5)),
+                   int(math.floor(h * (0.30 + 0.06 * t * t) - bh / 2 + 0.5)), bw, bh)
+    x0 = w - RIGHT - (len(COMPONENTS) * COMP + (len(COMPONENTS) - 1) * GAP)
+    for i, (id, _) in enumerate(COMPONENTS):
+        out[id] = (x0 + i * (COMP + GAP), h - BOTTOM - COMP, COMP, COMP)
+    out["bmo"] = (int(math.floor(0.06 * w + 0.5)), h - 300, BMO[0], BMO[1])
+    return out
+
+
+def below_decls():
+    """The facts, words and pictures the logic writes; declared before the surfaces that draw them."""
+    P = below_defaults(1920, 1080)
+    L = ["", "    // ── the subsurface (D209): the hubs, the components, the places the logic writes ──",
+         "    event sb_press ->     // a hub mark or a component (hub * 100 + item, 900 + component)",
+         "    event sb_drag ->      // a place being dragged out (its code)",
+         "    event sb_drop ->      // and let go",
+         "    event sb_wheel ->     // a component's wheel (component * 10 + up)"]
+    for k, (id, _, bw, bh) in enumerate(HUBS, start=1):
+        x, y, _, _ = P[id]
+        L += [f"    fact hb{k}_x = {x}", f"    fact hb{k}_y = {y}", f"    fact hb{k}_w = {bw}", f"    fact hb{k}_h = {bh}"]
+    for k, (id, _) in enumerate(COMPONENTS, start=1):
+        x, y, _, _ = P[id]
+        L += [f"    fact cp{k}_x = {x}", f"    fact cp{k}_y = {y}", f"    fact cp{k}_on = true",
+              f"    fact cp{k}_lit = false", f"    fact cp{k}_frac = 0", f'    text cp{k}_val = ""']
+    L += ["    fact pw_open = false", "    fact pw_arm = false"]
+    for n in range(1, APP_N + 1):
+        L += [f"    fact ab{n}_on = false", f"    fact ab{n}_iconed = false",
+              f'    text ab{n}_name = ""', f'    text ab{n}_letter = ""', f'    text ab{n}_path = ""',
+              f"    image ab{n}_img = from ab{n}_path, 32, 32"]
+    L += ["    fact mu_on = false", "    fact mu_playing = false", "    fact mu_prog = 0",
+          '    text mu_t1 = ""', '    text mu_t2 = ""', '    text mu_art = ""', "    image mu_img = from mu_art, 64, 64"]
+    for n in range(1, WALL_N + 1):
+        L += [f"    fact wl{n}_on = false", f'    text wl{n}_thumb = ""', f"    image wl{n}_img = from wl{n}_thumb, 48, 40"]
+    for n in range(1, NOTE_N + 1):
+        L += [f"    fact nt{n}_on = false", f'    text nt{n}_t1 = ""', f'    text nt{n}_t2 = ""']
+    L += ["    fact nt_n = 0"]
+    return L
+
+
+def below_group(base="            "):
+    """The opening's content: the hubs as places (each draggable as a whole), the app marks, the music, the
+    wallpapers, the settings marks, the notices, the components and the power row. Every zone is live only
+    while the opening shows (`op_vis`); nothing here is time-driven — the logic writes every value."""
+    c = base + "    "
+    L = [f"{base}// below: what lives under the wallpaper (D209) — the hubs, the components, BMO's home",
+         f"{base}group {{", f"{c}show: op_mode > 0"]
+
+    def plate(k, label):
+        return [f'{c}// hub {k}: {label}',
+                f"{c}box {{ from: hb{k}_x, hb{k}_y; size: hb{k}_w, hb{k}_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }}",
+                f"{c}box {{ from: hb{k}_x + 0.5, hb{k}_y + 0.5; size: hb{k}_w - 1, hb{k}_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }}",
+                f'{c}text "{label}" {{ at: hb{k}_x + 16, hb{k}_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted }}']
+
+    # the whole place: dragged out to make a Presence, let go to bury it
+    def place_zone(k, label):
+        return [f'{c}zone box hbz{k}_0 {{ from: hb{k}_x, hb{k}_y; size: hb{k}_w, hb{k}_h; corner: 18; cursor: grab; role: button; label: "{label}"; show: op_vis and op_mode > 0 }}',
+                f"{c}on drag hbz{k}_0 {{ emit sb_drag({k * 100}) }}",
+                f"{c}on release hbz{k}_0 {{ emit sb_drop({k * 100}) }}"]
+
+    # 1 · Apps: four by three marks, the most launched first (the logic chooses them)
+    L += plate(1, "APPS") + place_zone(1, "Apps")
+    for n in range(1, APP_N + 1):
+        col, row = (n - 1) % 4, (n - 1) // 4
+        mx, my = f"hb1_x + {18 + col * 81}", f"hb1_y + {40 + row * 56}"
+        L += [f'{c}zone box hbz1_{n} {{ from: {mx}, {my}; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App {n}"; show: op_vis and op_mode > 0 and ab{n}_on }}',
+              f"{c}box {{ from: {mx}, {my}; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab{n}_on }}",
+              f"{c}text ab{n}_letter {{ at: {mx} + 15, {my} + 15; anchor: center; align: center; size: 12; weight: 700; family: \"Exo 2\"; color: ink; show: op_vis and ab{n}_on and not ab{n}_iconed }}",
+              f"{c}image ab{n}_img {{ at: {mx}, {my}; size: 30, 30; fit: cover; show: op_vis and ab{n}_on and ab{n}_iconed }}",
+              f"{c}text ab{n}_name {{ at: {mx} + 15, {my} + 42; anchor: center; align: center; size: 9; family: \"Exo 2\"; color: muted; width: 76; lines: 1; show: op_vis and ab{n}_on }}",
+              f"{c}on press hbz1_{n} {{ emit sb_press({100 + n}) }}"]
+
+    # 2 · Music: art, the two words, the controls, a hairline of progress
+    L += plate(2, "MUSIC") + place_zone(2, "Music")
+    L += [f"{c}box {{ from: hb2_x + 18, hb2_y + 40; size: 64, 64; corner: 10; color: rgb(0.13, 0.14, 0.12); opacity: 0.9 }}",
+          f"{c}image mu_img {{ at: hb2_x + 18, hb2_y + 40; size: 64, 64; fit: cover; show: op_vis and mu_on }}",
+          f'{c}text "♫" {{ at: hb2_x + 50, hb2_y + 72; anchor: center; align: center; size: 22; color: muted; show: op_vis and not mu_on }}',
+          f"{c}text mu_t1 {{ at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: \"Exo 2\"; color: ink; width: 208; lines: 1 }}",
+          f"{c}text mu_t2 {{ at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: muted; width: 208; lines: 1 }}"]
+    for n, (glyph, label, code) in enumerate([("‹", "Previous", 201), ("", "Play or pause", 202), ("›", "Next", 203)], start=1):
+        bx = f"hb2_x + {92 + (n - 1) * 34}"
+        L += [f'{c}zone box hbz2_{n} {{ from: {bx}, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "{label}"; show: op_vis and op_mode > 0 }}',
+              f"{c}box {{ from: {bx}, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_{n}.hover }}",
+              f"{c}on press hbz2_{n} {{ emit sb_press({code}) }}"]
+        if n == 2:
+            L += [f'{c}text "▶" {{ at: {bx} + 14, hb2_y + 102; anchor: center; align: center; size: 14; weight: 700; family: "Exo 2"; color: ink; show: op_vis and not mu_playing }}',
+                  f'{c}text "❚❚" {{ at: {bx} + 14, hb2_y + 102; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and mu_playing }}']
+        else:
+            L += [f'{c}text "{glyph}" {{ at: {bx} + 14, hb2_y + 102; anchor: center; align: center; size: 16; weight: 700; family: "Exo 2"; color: ink }}']
+    L += [f"{c}box {{ from: hb2_x + 18, hb2_y + 120; size: max(1, (hb2_w - 36) * clamp(mu_prog, 0, 1)), 1.4; color: rgb(h0_r, h0_g, h0_b); opacity: 0.8 }}"]
+
+    # 3 · Wallpapers: the six newest thumbnails; a press wears one
+    L += plate(3, "WALLPAPERS") + place_zone(3, "Wallpapers")
+    for n in range(1, WALL_N + 1):
+        tx = f"hb3_x + {16 + (n - 1) * 56}"
+        L += [f'{c}zone box hbz3_{n} {{ from: {tx}, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper {n}"; show: op_vis and op_mode > 0 and wl{n}_on }}',
+              f"{c}box {{ from: {tx}, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl{n}_on }}",
+              f"{c}image wl{n}_img {{ at: {tx}, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl{n}_on }}",
+              f"{c}on press hbz3_{n} {{ emit sb_press({300 + n}) }}"]
+
+    # 4 · Settings: eight marks; a press opens the settings window
+    L += plate(4, "SETTINGS") + place_zone(4, "Settings")
+    for n, label in enumerate(SETTINGS, start=1):
+        col, row = (n - 1) % 2, (n - 1) // 2
+        sx, sy = f"hb4_x + {14 + col * 138}", f"hb4_y + {36 + row * 24}"
+        L += [f'{c}zone box hbz4_{n} {{ from: {sx}, {sy}; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "{label}"; show: op_vis and op_mode > 0 }}',
+              f"{c}box {{ from: {sx}, {sy}; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_{n}.hover; show: op_vis }}",
+              f'{c}text "{label}" {{ at: {sx} + 7, {sy} + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }}',
+              f"{c}on press hbz4_{n} {{ emit sb_press({400 + n}) }}"]
+
+    # 5 · Notices: four from the bar's feed, and its own Clear
+    L += plate(5, "NOTICES") + place_zone(5, "Notices")
+    for n in range(1, NOTE_N + 1):
+        ny = f"hb5_y + {34 + (n - 1) * 38}"
+        L += [f'{c}zone box hbz5_{n} {{ from: hb5_x + 10, {ny}; size: 300, 34; corner: 8; cursor: pointer; role: button; label: "Notice {n}"; show: op_vis and op_mode > 0 and nt{n}_on }}',
+              f"{c}text nt{n}_t1 {{ at: hb5_x + 18, {ny} + 10; anchor: left center; size: 10; weight: 700; family: \"Exo 2\"; color: ink; width: 280; lines: 1; show: op_vis and nt{n}_on }}",
+              f"{c}text nt{n}_t2 {{ at: hb5_x + 18, {ny} + 24; anchor: left center; size: 9; family: \"Share Tech Mono\"; color: muted; width: 280; lines: 1; show: op_vis and nt{n}_on }}",
+              f"{c}on press hbz5_{n} {{ emit sb_press({500 + n}) }}"]
+    L += [f'{c}zone box hbz5_clear {{ from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_vis and op_mode > 0 and nt_n > 0 }}',
+          f"{c}box {{ from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }}",
+          f'{c}text "CLEAR" {{ at: hb5_x + 276, hb5_y + 201; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }}',
+          f"{c}on press hbz5_clear {{ emit sb_press(590) }}"]
+
+    # the components: one row, each a small plate with its word and value
+    for k, (id, label) in enumerate(COMPONENTS, start=1):
+        L += [f'{c}// component {k}: {label}',
+              f'{c}zone box cpz{k} {{ from: cp{k}_x, cp{k}_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "{label}"; show: op_vis and op_mode > 0 and cp{k}_on }}',
+              f"{c}box {{ from: cp{k}_x, cp{k}_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp{k}_on }}",
+              f"{c}box {{ from: cp{k}_x + 0.5, cp{k}_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp{k}_lit; show: op_vis and cp{k}_on }}",
+              f'{c}text "{GLYPH[id]}" {{ at: cp{k}_x + 28, cp{k}_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp{k}_lit, ink, muted); show: op_vis and cp{k}_on }}',
+              f"{c}text cp{k}_val {{ at: cp{k}_x + 28, cp{k}_y + 40; anchor: center; align: center; size: 8; family: \"Share Tech Mono\"; color: muted; width: 50; lines: 1; show: op_vis and cp{k}_on }}",
+              f"{c}on press cpz{k} {{ emit sb_press({900 + k}) }}",
+              f"{c}on drag cpz{k} {{ emit sb_drag({900 + k}) }}"]
+        if id in ("volume", "bright", "battery"):
+            L += [f"{c}box {{ from: cp{k}_x + 10, cp{k}_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: op_vis and cp{k}_on }}",
+                  f"{c}box {{ from: cp{k}_x + 10, cp{k}_y + 46; size: max(1, 36 * clamp(cp{k}_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: op_vis and cp{k}_on }}"]
+        if id in ("volume", "bright"):
+            L += [f"{c}on scroll cpz{k} {{ emit sb_wheel({k * 10} + if(wheel > 0, 1, 0)) }}"]
+
+    # the power row: five ways out, the last three armed by a second press
+    L += [f"{c}// power: five ways out, the last three ask twice",
+          f"{c}group {{", f"{c}    show: op_vis and pw_open",
+          f"{c}    box {{ from: cp6_x - 208, cp6_y - 202; size: 200, 194; corner: 14; color: rgb(0.07, 0.08, 0.07); opacity: 0.97 }}",
+          f"{c}    box {{ from: cp6_x - 207.5, cp6_y - 201.5; size: 199, 193; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.3 }}"]
+    for n, (label, code) in enumerate(POWER, start=1):
+        py = f"cp6_y - 194 + {(n - 1) * 36}"
+        col = "if(pw_arm, #ff9b8a, ink)" if n >= 3 else "ink"
+        L += [f'{c}    zone box pwz{n} {{ from: cp6_x - 200, {py}; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "{label}"; show: op_vis and pw_open }}',
+              f"{c}    box {{ from: cp6_x - 200, {py}; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8; show: op_vis and pw_open }}",
+              f'{c}    text "{label}" {{ at: cp6_x - 186, {py} + 16; anchor: left center; size: 10; family: "Exo 2"; color: {col}; show: op_vis and pw_open }}',
+              f"{c}    on press pwz{n} {{ emit sb_press({code}) }}"]
+    L += [f"{c}}}", f"{base}}}"]
+    return L
 
 
 def host_decls(k):
@@ -145,8 +320,8 @@ def scene():
          "",
          "scene Sigil {",
          "    permissions {",
-         '        run: "pleamar", "mooi", "hyprctl", "readlink"',
-         '        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "bluetooth", "workspaces", "window", "clock"',
+         '        run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl"',
+         '        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock"',
          "    }",
          "    service audio.level as lv { level: number }",
          "    spring sg.pt = 260, 20",
@@ -174,6 +349,7 @@ def scene():
         L += host_lets(k)
     L += ["", "    let op_px = cursor.x      // the pointer for the opening's follow mode (outside the generated block)", "    let op_py = cursor.y"]
     L += opening.text().rstrip("\n").split("\n")
+    L += below_decls()
     L += ["", "    surface bar {", "        size: full, 40", "        anchor: top", "        level: top", "        reserve: -1",
           "        keyboard: none", "        rate: 60, 20 while calm",
           "        open: h0_on or h1_on or h2_on or h3_on      // no host, no surface (review I1)"]
@@ -240,12 +416,9 @@ def surface_layers():
           "        group {",
           "            clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }",
           "            // the subsurface's dark ground and its grid, fixed to the screen",
-          "            shader ground { at: op_x, op_y; size: op_w, op_h; corner: op_r; values: op_k, op_x, op_y }",
-          "            // below: what lives under the wallpaper (Task 6 fills this group)",
-          "            group {",
-          "                show: op_mode > 0",
-          "            }",
-          "        }",
+          "            shader ground { at: op_x, op_y; size: op_w, op_h; corner: op_r; values: op_k, op_x, op_y }"]
+    L += below_group()
+    L += ["        }",
           "    }"]
     # the edge: the torn wallpaper round the hole, above the widgets, under the windows; it catches nothing
     clip = f"clip box {{ from: op_x - {g}, op_y - {g}; size: op_w + {g * 2}, op_h + {g * 2}; corner: op_r + {g} }}"

@@ -7651,6 +7651,152 @@ test("scene: the opening at the wallpaper, never over windows", function()
     assert(ap:find("* (1.0 - hole)", 1, true) and not ap:find("pow(", 1, true), "the Aperture's hole is clear: ground and the hubs show")
 end)
 
+section("surface: below (D209)")
+do
+    local BL = require("lib/surface/below")
+    local scr = { w = 1920, h = 1080 }
+    local function overlap(a, b)
+        return math.min(a.x + a.w, b.x + b.w) > math.max(a.x, b.x) and math.min(a.y + a.h, b.y + b.h) > math.max(a.y, b.y)
+    end
+    local function on_screen(p, what)
+        eq(p.x >= 0 and p.y >= 0 and p.x + p.w <= scr.w and p.y + p.h <= scr.h, true, what .. " fully on screen")
+    end
+    test("below: default places are on screen and apart", function()
+        local P = BL.defaults(scr)
+        for _, id in ipairs(BL.HUBS) do
+            local p = assert(P[id], id)
+            on_screen(p, id)
+            eq(p.w, BL.SIZES[id][1], id .. " w"); eq(p.h, BL.SIZES[id][2], id .. " h")
+        end
+        for i, a in ipairs(BL.HUBS) do
+            for j = i + 1, #BL.HUBS do
+                local b = BL.HUBS[j]
+                eq(overlap(P[a], P[b]), false, a .. " and " .. b .. " apart")
+            end
+        end
+        local y = P[BL.COMPONENTS[1]].y
+        for i, id in ipairs(BL.COMPONENTS) do
+            local p = assert(P[id], id)
+            on_screen(p, id)
+            eq(p.y, y, id .. " in the one row"); eq(p.w, 56); eq(p.h, 56)
+            if i > 1 then eq(p.x - (P[BL.COMPONENTS[i - 1]].x + 56), 12, id .. " 12 px after the one before") end
+        end
+        local last = P[BL.COMPONENTS[#BL.COMPONENTS]]
+        eq(last.x + last.w, 1920 - 32, "the row ends 32 px from the right")
+        eq(last.y + last.h, 1080 - 96, "and 96 px from the bottom")
+        on_screen(P.bmo, "bmo")
+        eq(P.bmo.w, 160); eq(P.bmo.h, 196); eq(P.bmo.y, 1080 - 300)
+        -- the arc: the middle hub higher than the ends
+        local function cy(id) return P[id].y + P[id].h / 2 end
+        eq(cy("walls") < cy("apps") and cy("walls") < cy("notes"), true, "the arc rises to the middle")
+    end)
+    test("below: saved places kept and clamped, unknown dropped, missing filled", function()
+        local P = BL.merge({ apps = { x = 1900, y = 500 }, bogus = { x = 1, y = 1 }, settings = { x = 100, y = 120 },
+                             notes = { x = "x", y = 3 } }, scr)
+        eq(P.apps.x, 1920 - 360, "clamped onto the screen"); eq(P.apps.y, 500); eq(P.apps.w, 360)
+        eq(P.settings.x, 100, "kept"); eq(P.settings.y, 120)
+        eq(P.bogus, nil, "unknown dropped")
+        local D = BL.defaults(scr)
+        eq(P.music.x, D.music.x, "missing from defaults"); eq(P.music.y, D.music.y)
+        eq(P.notes.x, D.notes.x, "a place that is not a number: the default")
+        eq(BL.merge(nil, scr).walls.x, D.walls.x, "no saved places at all")
+        local s = BL.save(P)
+        eq(s.apps.x, 1560); eq(s.apps.y, 500); eq(s.bogus, nil)
+    end)
+    test("below: boxes include widgets below the bar, skip kept-above ones", function()
+        local P = BL.defaults(scr)
+        local widgets = { { id = "clk-1", x = 80, y = 68, w = 440, h = 192 }, { id = "n", x = 0, y = 0, w = 10, h = 10, above = true } }
+        local B = BL.boxes(P, widgets, 34)
+        local by = {}
+        for _, b in ipairs(B) do by[b.id] = b end
+        eq(by["w:clk-1"] ~= nil, true, "the widget is a box")
+        eq(by["w:clk-1"].y, 102, "below the bar"); eq(by["w:clk-1"].x, 80); eq(by["w:clk-1"].w, 440); eq(by["w:clk-1"].h, 192)
+        eq(by["w:n"], nil, "kept above: not under the wallpaper")
+        for _, id in ipairs(BL.HUBS) do eq(by[id].x, P[id].x, id) end
+        for _, id in ipairs(BL.COMPONENTS) do eq(by[id] ~= nil, true, id) end
+        eq(by.bmo ~= nil, true, "BMO's home")
+        local near = require("lib/surface/opening").near(B, { x = P.apps.x + 10, y = P.apps.y + 10 })
+        eq(near.id, "apps", "opening.near reads them")
+        eq(#BL.boxes(P, nil, 34), #BL.HUBS + #BL.COMPONENTS + 1, "no widgets file")
+    end)
+    test("below: the apps hub — most launched first, else the service's order; twelve at most", function()
+        local list = {}
+        for i = 1, 20 do list[i] = { name = "A" .. i, exec = "a" .. i, icon = "i" .. i, id = "app" .. i } end
+        local got = BL.apps(list, { app5 = 3, app9 = 7 }, 12)
+        eq(#got, 12); eq(got[1].id, "app9"); eq(got[2].id, "app5"); eq(got[3].id, "app1"); eq(got[4].id, "app2")
+        eq(#BL.apps(nil, nil, 12), 0)
+    end)
+    test("below: the six newest wallpapers with a thumbnail", function()
+        local doc = { items = {} }
+        for i = 1, 9 do doc.items[i] = { path = "/w/" .. i .. ".jpg", mtime = i * 10, thumb = "/t/" .. i .. ".jpg" } end
+        doc.items[10] = { path = "/w/x.jpg", mtime = 999 }          -- no thumbnail: skipped
+        local got = BL.walls(doc, 6)
+        eq(#got, 6); eq(got[1].path, "/w/9.jpg"); eq(got[1].thumb, "/t/9.jpg"); eq(got[6].path, "/w/4.jpg")
+        eq(#BL.walls(nil, 6), 0)
+    end)
+    test("scene: the hubs and components live in ground's below group, every zone live only in the hole", function()
+        local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+        local plm = read("shell/mooi-surface.plm")
+        local function block(name)
+            local a = plm:find("    surface " .. name .. " {", 1, true); assert(a, name .. " surface")
+            local b = plm:find("\n    }\n", a, true); assert(b, name .. " closes")
+            return plm:sub(a, b)
+        end
+        local ground, edge = block("ground"), block("edge")
+        local below = assert(ground:match("// below:.*"), "the below group")
+        for k = 1, #BL.HUBS do
+            for _, f in ipairs({ "x", "y", "w", "h" }) do assert(plm:find("fact hb" .. k .. "_" .. f .. " = ", 1, true), "hub " .. k .. " " .. f) end
+            assert(below:find("zone box hbz" .. k .. "_0 ", 1, true), "hub " .. k .. "'s place, dragged")
+            assert(below:find("on drag hbz" .. k .. "_0 { emit sb_drag(" .. k * 100 .. ") }", 1, true), "hub " .. k .. " told while dragged")
+            assert(below:find("on release hbz" .. k .. "_0 { emit sb_drop(" .. k * 100 .. ") }", 1, true), "and let go")
+        end
+        for k = 1, #BL.COMPONENTS do
+            assert(plm:find("fact cp" .. k .. "_x = ", 1, true) and plm:find("fact cp" .. k .. "_y = ", 1, true), "component " .. k)
+            assert(below:find("zone box cpz" .. k .. " ", 1, true), "component " .. k .. " zone")
+            assert(below:find("on press cpz" .. k .. " { emit sb_press(" .. (900 + k) .. ") }", 1, true), "component " .. k .. " pressed")
+            assert(below:find("on drag cpz" .. k .. " { emit sb_drag(" .. (900 + k) .. ") }", 1, true), "component " .. k .. " dragged")
+        end
+        for n = 1, 12 do assert(below:find("on press hbz1_" .. n .. " { emit sb_press(" .. (100 + n) .. ") }", 1, true), "app mark " .. n) end
+        assert(below:find("on scroll cpz3 {", 1, true) and below:find("on scroll cpz4 {", 1, true), "the wheel over volume and brightness")
+        for _, e in ipairs({ "sb_press", "sb_drag", "sb_drop", "sb_wheel" }) do assert(plm:find("event " .. e .. " ->", 1, true), e .. " declared") end
+        -- every zone below is in ground and only live while the opening shows
+        local zones = 0
+        for line in below:gmatch("[^\n]+") do
+            if line:find("zone box", 1, true) then
+                zones = zones + 1
+                assert(line:find("show: op_vis and ", 1, true), "a zone only while the opening shows: " .. line)
+            end
+        end
+        assert(zones >= 5 + 12 + 6, "the zones: " .. zones)
+        assert(not edge:find("zone", 1, true), "none on the edge")
+        assert(not below:find("curve", 1, true), "straight steps only")
+        assert(not below:find("time", 1, true) and not below:find("spin ", 1, true), "nothing time-driven below")
+        assert(not plm:find("notification", 1, true), "the notices come from the feed, never the service")
+        local P = BL.defaults(scr)
+        for k, id in ipairs(BL.HUBS) do
+            eq(plm:match("fact hb" .. k .. "_x = (%-?%d+)"), tostring(P[id].x), id .. "'s first place: lib/surface/below's at 1920×1080")
+            eq(plm:match("fact hb" .. k .. "_y = (%-?%d+)"), tostring(P[id].y), id .. " y")
+        end
+        for k, id in ipairs(BL.COMPONENTS) do eq(plm:match("fact cp" .. k .. "_x = (%-?%d+)"), tostring(P[id].x), id .. " x") end
+        for _, s in ipairs({ '"apps"', '"apps.launch"', '"network.*"', '"bluetooth.*"', '"brightness"', '"brightness.*"' }) do
+            assert(plm:match('services: [^\n]*' .. s:gsub("%.", "%%."):gsub("%*", "%%*")), "may use " .. s)
+        end
+    end)
+    test("logic: places saved with the Presences, the hubs fed, the presses answered", function()
+        local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find('require("lib/surface/below")', 1, true))
+        assert(l:find("doc.places = below.save(", 1, true), "places in surface.json")
+        assert(l:find("below.merge(", 1, true), "read back, kept on the screen")
+        for _, e in ipairs({ "sb_press", "sb_wheel" }) do assert(l:find('on("' .. e .. '"', 1, true), e .. " handled") end
+        assert(l:find('sys.watch, "apps"', 1, true) and l:find('sys.watch, "files:walls-index.json"', 1, true), "the apps and the wallpapers watched")
+        assert(l:find('"emit note_clear"', 1, true), "Clear: the bar's own path")
+        assert(l:find('{ "wall", "apply", ', 1, true), "a wallpaper worn as the picker does")
+        assert(l:find("fact.pw_arm", 1, true), "the power row arms first")
+        eq(require("lib/surface/presence").VERSION, 1, "surface.json's version unchanged")
+    end)
+end
+
 section("surface: logic (D208)")
 test("logic: hold Super — the reveal, Presences left and moved, the safeguards, the binding", function()
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
