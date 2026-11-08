@@ -1496,6 +1496,13 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     pill) exec "$pleamar" --say "$name" "emit pill_call" ;;
+    reveal) # D208: Super went down / came up (Hyprland's binds) — Surface's Reveal; without it a release is
+        # today's Super tap
+        case "${1:-}" in
+            down) "$pleamar" --say mooi-surface "emit rv_down" >/dev/null 2>&1 || : ;;
+            up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;
+            *) echo "usage: mooi reveal down|up" >&2; exit 2 ;;
+        esac ;;
     # D194: Loom / Fold. The mode is a setting (the bar's keeper follows it); `off` always works: it
     # writes Native and asks the bar to bring every parked window back.
     loom)

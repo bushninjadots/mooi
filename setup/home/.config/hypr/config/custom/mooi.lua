@@ -65,7 +65,10 @@ if cfg.standalone == true or not archeclipse then
         pcall(hl.unbind, k)                          -- toggle bar, media panel, emoji, notes: ArchEclipse's alone
     end
     -- D171: Super alone, on release (never after Super+a key): the Pill comes back; twice, its board
-    pcall(hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true })
+    -- D208: Super's press begins Surface's Reveal (after a hold); its release ends it — or, quick, is the tap
+    -- above (`mooi reveal up` falls back to `mooi pill` when Surface is not running)
+    pcall(hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " reveal down"))
+    pcall(hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " reveal up"), { release = true })
     -- D171: Super + wheel asks the bar: over a pill it turns the views, elsewhere the workspace
     pcall(hl.unbind, "SUPER + mouse_down")
     pcall(hl.unbind, "SUPER + mouse_up")

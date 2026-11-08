@@ -155,6 +155,8 @@ SETTERS = [
     "pill.two", "pill.two_at", "pill.three", "pill.three_at",
     # D207: the Sigil. Appended.
     "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
+    # D208: Surface. Appended.
+    "surface.on", "surface.delay",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -376,6 +378,10 @@ SECTIONS = [
         ("choice", "At rest", "What it shows when nothing is happening", "sigil.rest", "sv_sigil_rest", [("Clock", 0), ("Song", 3), ("Weather", 2), ("Machine", 8), ("Battery", 9), ("Spaces", 6), ("BMO", 12)]),
         ("choice", "Your pointer", "Near it, the line moves away, leans toward it, or ignores it", "sigil.pointer", "sv_sigil_pointer", ["Pushes", "Draws", "Ignores"]),
         ("toggle", "The field", "A field of points behind its displays, warmed by your pointer", "sigil.field", "sv_sigil_field"),
+        # D208: Surface — the Reveal
+        ("card", "Surface"),
+        ("toggle", "Hold Super to reveal", "The wallpaper opens at your pointer: groups round its rim, things to open or drag out and leave on the desktop", "surface.on", "sv_surface_on"),
+        ("slider", "Hold for", "How long Super is held before it opens (a quicker tap keeps Super's old meaning)", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
         # D205: a second and a third pill, each a face at rest and a place of its own (the rest of the
         # faces — BMO, the Nexus, network, signals, the visualiser — are there by the file, pill.two/three)
         ("card", "More pills"),

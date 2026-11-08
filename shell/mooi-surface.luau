@@ -13,6 +13,8 @@ local director = require("lib/surface/director")
 local palette = require("lib/surface/palette")
 local bodies = require("lib/surface/bodies")
 local layout = require("lib/surface/layout")
+local presence = require("lib/surface/presence")   -- D208
+local reveal = require("lib/surface/reveal")
 
 local HOSTS_FILE, FEED_FILE, NOTICES = "sigil-hosts.json", "sigil-feed.json", "nexus-feed.json"
 local SLOT = { pill = 0, isl1 = 1, isl2 = 2, isl3 = 3 }
@@ -193,6 +195,8 @@ every(1000, function() update() end)
 pcall(sys.watch, "media", function(m)
     if type(m) ~= "table" then return end
     S.r.music = { title = m.title or "", artist = m.artist or "", playing = m.playing == true }
+    S.r.music_pos = { pos = tonumber(m.position) or 0, len = tonumber(m.length) or 0 }   -- D208: Presences
+    if SF_media then SF_media() end
     update()
 end)
 pcall(sys.watch, "audio", function(a)
@@ -221,11 +225,13 @@ end)
 pcall(sys.watch, "workspaces", function(w)
     if type(w) ~= "table" then return end
     S.r.workspaces = { active = tonumber(w.active), count = type(w.list) == "table" and #w.list or nil }
+    if SF_guard then SF_guard("workspace") end      -- D208: a Super shortcut that changed workspace closes a reveal
     update()
 end)
 pcall(sys.watch, "window", function(w)
     if type(w) ~= "table" then return end
     S.r.windows = { title = w.title, class = w.class }
+    if SF_guard then SF_guard("focus") end          -- D208: and so does one that moved the focus
 end)
 pcall(sys.watch, "clock", function(c)
     if type(c) ~= "table" then return end
@@ -304,6 +310,217 @@ on("sg_wheel", function(v)
         run("hyprctl", { "dispatch", hypr.go_workspace(math.max(1, a - d)) })
     end
 end)
+
+-- ── Surface (D208): hold Super — the Reveal; Presences on the desk ──
+-- One table for all of it (the reveal's state, the Presences, undo, the screen and the pointer).
+local SF = { rv = reveal.state(), list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 },
+             ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "" }
+local SFILE = "surface.json"
+local ICON = { music = "♫", clock = "◷", calendar = "▦", weather = "☀", volume = "♪", notifications = "✉",
+               workspaces = "▣", windows = "▢", resources = "▤", battery = "▮", network = "◉", bluetooth = "ᛒ", bmo = "☺" }
+
+local function press_source(src, cx)
+    local entry = sources.get(src)
+    if not entry then return end
+    local p = entry.press
+    if p.kind == "island" then run("pleamar", { "--say", "mooi", "fact isl_cx " .. tostring(math.floor(cx or S.screen / 2)), "fact open " .. p.target })
+    elseif p.kind == "nexus" then run("mooi", { "nexus" })
+    elseif p.kind == "overview" then run("mooi", { "overview" })
+    elseif p.kind == "bmo" then run("mooi", { "bmo", "joke" }) end
+end
+
+-- the Presences, drawn into the desk layer's slots (eight in phase 1)
+local function draw_presences()
+    for k = 0, 7 do
+        local p = SF.list[k + 1]
+        if p then
+            local size = presence.SIZE[p.mode] or presence.SIZE.ghost
+            local b = presence.screen_box({ fx = p.fx, fy = p.fy, w = size[1], h = size[2] }, SF.scr)
+            fact["p" .. k .. "_on"] = true
+            fact["p" .. k .. "_x"], fact["p" .. k .. "_y"], fact["p" .. k .. "_w"], fact["p" .. k .. "_h"] = b.x, b.y, b.w, b.h
+            fact["p" .. k .. "_mode"] = (p.mode == "full" and 2) or (p.mode == "embedded" and 1) or 0
+            fact["p" .. k .. "_edit"] = SF.edit == k
+            local entry = sources.get(p.source)
+            local words = entry and entry.compact(S.r[p.source]) or { t1 = p.source, t2 = "" }
+            text["p" .. k .. "_t1"], text["p" .. k .. "_t2"] = words.t1 or "", words.t2 or ""
+            text["p" .. k .. "_icon"] = ICON[p.source] or "•"
+            local m = S.r.music_pos
+            fact["p" .. k .. "_prog"] = (p.source == "music" and m and m.len > 0) and (m.pos / m.len) or 0
+            local col = palette.resolve(p.source, { palette = S.pal, cover = S.feed.cover, settings = S.settings })
+            fact["p" .. k .. "_r"], fact["p" .. k .. "_g"], fact["p" .. k .. "_b"] = col[1] / 255, col[2] / 255, col[3] / 255
+        else
+            fact["p" .. k .. "_on"] = false
+        end
+    end
+end
+
+local function save_presences(push)
+    local doc = presence.save(SF.list)
+    pcall(sys.call, "files.write", SFILE, doc)
+    if push then SF.undo.push(doc) end
+end
+
+local function load_presences()
+    local doc = read(SFILE, "json")
+    local list, problems = presence.load(doc, SF.scr)
+    for _, p in ipairs(problems) do log("surface · " .. p) end
+    SF.list = list
+    SF.undo.push(presence.save(list))
+    draw_presences()
+end
+
+-- the reveal's facts: its stage, anchor, the hub's labels, what is picked, the Pill's words
+local function show_reveal()
+    local st = SF.rv
+    fact.rv_on = st.stage >= 1
+    fact.rv_stage = st.stage
+    if st.ax then fact.rv_x, fact.rv_y = st.ax, st.ay end
+    local gs = reveal.groups(st)
+    fact.rv_n = #gs
+    for i = 1, 7 do text["rv_g" .. (i - 1)] = gs[i] and string.upper(gs[i]) or "" end
+    local pk = st.ax and reveal.pick(st, SF.ptr) or {}
+    fact.rv_pick_g = pk.group or 0
+    local list = pk.group and reveal.SOURCES[gs[pk.group]] or {}
+    local si = 0
+    for j = 1, 4 do
+        text["rv_s" .. (j - 1)] = list[j] or ""
+        if pk.source and list[j] == pk.source then si = j end
+    end
+    fact.rv_pick_s = si
+    local words = "mooi"
+    if pk.source then
+        local e = sources.get(pk.source)
+        local w = e and e.compact(S.r[pk.source]) or {}
+        words = (ICON[pk.source] or "") .. "  " .. ((w.t1 and w.t1 ~= "—") and w.t1 or pk.source)
+    elseif pk.group then words = gs[pk.group] end
+    text.rv_t1 = words
+end
+
+local function close_reveal()
+    reveal.finish(SF.rv)
+    if SF.ticking then cancel(SF.ticking); SF.ticking = nil end
+    show_reveal()
+end
+
+local function tick()
+    reveal.tick(SF.rv, S.now_ms(), SF.ptr)
+    if not SF.rv.down_at then close_reveal(); return end
+    show_reveal()
+end
+
+-- a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
+local clock_ms = 0
+every(50, function() clock_ms = clock_ms + 50 end)
+S.now_ms = function() return clock_ms end
+
+on("rv_down", function()
+    if type(S.settings.surface) == "table" and S.settings.surface.on == false then return end
+    reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
+    reveal.down(SF.rv, S.now_ms())
+    -- where the pointer is now (the scene tells us as it moves once the overlay is open)
+    run("hyprctl", { "cursorpos" }, function(out)
+        local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
+        if x then SF.ptr = { x = tonumber(x), y = tonumber(y) } end
+    end)
+    if not SF.ticking then SF.ticking = every(50, tick) end
+end)
+on("rv_move", function(v)
+    v = math.floor(tonumber(v) or 0)
+    SF.ptr = { x = v // 10000, y = v % 10000 }
+end)
+on("rv_up", function()
+    local res = reveal.up(SF.rv, S.now_ms())
+    if res == "tap" then
+        close_reveal()
+        run("pleamar", { "--say", "mooi", "emit pill_call" })      -- today's Super tap, unchanged
+        return
+    end
+    if res == "release" then
+        local out = reveal.release(SF.rv, SF.ptr)
+        if out.kind == "open" then press_source(out.source, SF.ptr.x)
+        elseif out.kind == "leave" then
+            local p = presence.place(SF.list, presence.new(out.source, out.x, out.y, SF.scr), SF.scr)
+            if #SF.list < 8 then SF.list[#SF.list + 1] = p end
+            save_presences(true)
+            draw_presences()
+        end
+    end
+    close_reveal()
+end)
+-- the safeguards: a Super shortcut never sends Super's "up", so these close any reveal
+local function guard(event) if SF.rv.down_at and reveal.close_on(event) then close_reveal() end end
+on("rv_esc", function() guard("escape") end)
+on("rv_outside", function() guard("outside") end)
+-- (the workspaces and window watchers above call SF_guard: one watcher per service)
+SF_guard = guard
+
+-- Presences: press, the controls, edit (right press), drag, undo
+on("pp_press", function(v)
+    local p = SF.list[math.floor(tonumber(v) or -1) + 1]
+    if p and SF.edit == nil then
+        local size = presence.SIZE[p.mode] or presence.SIZE.ghost
+        press_source(p.source, p.fx * SF.scr.w)
+        draw_presences()
+    end
+end)
+on("pp_ctl", function(v)
+    v = math.floor(tonumber(v) or 0)
+    pcall(sys.call, ({ [1] = "media.previous", [2] = "media.toggle", [3] = "media.next" })[v % 10])
+end)
+on("pp_rpress", function(v)
+    local k = math.floor(tonumber(v) or -1)
+    SF.edit = (SF.edit == k) and nil or k
+    draw_presences()
+end)
+on("pp_drag", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k = v // 100000000
+    local p = SF.list[k + 1]
+    if not p or SF.edit ~= k then return end
+    local x, y = (v % 100000000) // 10000, v % 10000
+    p.fx, p.fy = x / SF.scr.w, y / SF.scr.h
+    draw_presences()
+end)
+on("pp_drop", function(v)
+    local p = SF.list[math.floor(tonumber(v) or -1) + 1]
+    if not p then return end
+    presence.place(SF.list, p, SF.scr)
+    save_presences(true)
+    draw_presences()
+end)
+local function restore(doc)
+    if not doc then return end
+    SF.list = presence.load(doc, SF.scr)
+    save_presences(false)
+    draw_presences()
+end
+on("ed_undo", function() restore(SF.undo.undo()) end)
+on("ed_redo", function() restore(SF.undo.redo()) end)
+on("ed_done", function() SF.edit = nil; draw_presences() end)
+
+-- (the media watcher above keeps music's place in the song for the Presences: SF_media)
+SF_media = function() draw_presences() end
+every(1000, function() if #SF.list > 0 then draw_presences() end end)
+
+-- the screen and the wallpaper (the Aperture draws the real picture)
+local function wallpaper()
+    local home = sys.ask("env", "HOME") or ""
+    run("readlink", { "-f", home .. "/.cache/current_wallpaper" }, function(out)
+        local path = tostring(out or ""):gsub("%s+$", "")
+        if path ~= "" then text.rv_wall = path end
+    end)
+end
+run("hyprctl", { "-j", "monitors" }, function(out)
+    local ok, mons = pcall(json.decode, out or "")
+    if ok and type(mons) == "table" then
+        for _, m in ipairs(mons) do
+            if m.focused then SF.scr = { w = tonumber(m.width) / (tonumber(m.scale) or 1), h = tonumber(m.height) / (tonumber(m.scale) or 1) } end
+        end
+    end
+    load_presences()
+end)
+wallpaper()
+pcall(sys.watch, "files:palette.json", wallpaper)
 
 feed(); notices(); hosts()
 log("surface · up")

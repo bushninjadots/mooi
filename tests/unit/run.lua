@@ -5612,7 +5612,9 @@ do
         local sh = read("bin/mooi")
         assert(sh:find('pill) exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "`mooi pill`")
         local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
-        assert(hl:find('hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " pill"), { release = true }', 1, true), "Super alone, on release")
+        -- D208: Super's release goes through Surface (`mooi reveal up`), which keeps a quick tap as `pill_call`
+        assert(hl:find('hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " reveal up"), { release = true }', 1, true), "Super alone, on release")
+        assert(sh:find('up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "without Surface, still the Pill")
     end)
 end
 
@@ -7114,7 +7116,8 @@ test("sigil settings: bad values fall back, good ones stand", function()
 end)
 test("sigil settings: setters appended, the module placeable", function()
     local S = require("lib/setters").SETTERS
-    eq(S[#S], "sigil.rest"); eq(S[#S - 6], "sigil.pill")
+    local at = {}; for i, v in ipairs(S) do at[v] = i end
+    assert(at["sigil.rest"] and at["sigil.rest"] - at["sigil.pill"] == 6, "the seven sigil setters, appended together")
     local bl = require("lib/barlayout")
     eq(bl.ORDER[#bl.ORDER], "sigil"); eq(bl.width("sigil", { screen = 1920 }), 180)
 end)
@@ -7494,11 +7497,37 @@ test("scene: the reveal overlay with the Aperture, the desk layer for Presences"
     local plm = read("shell/mooi-surface.plm")
     assert(plm:find("surface reveal {", 1, true) and plm:find("open: rv_on", 1, true), "the reveal, only while revealing")
     assert(plm:find("shader: aperture", 1, true), "the Aperture is a shader over the wallpaper")
+    -- found live: screen.height is the first surface's (the 40 px bar strip); the wallpaper must use the reveal's
+    assert(plm:find("image rv_img { at: 0, 0; size: reveal.width, reveal.height", 1, true), "the wallpaper at the reveal's own size")
+    assert(not plm:find("size: screen.width, screen.height", 1, true), "never screen.height in this scene")
     assert(plm:find("surface desk {", 1, true) and plm:find("level: bottom", 1, true), "Presences under the windows")
     assert(plm:find("emit pp_drag(", 1, true) and plm:find("emit pp_drop(", 1, true), "moved by dragging")
     assert(plm:find("on key Escape", 1, true), "Esc closes it")
     assert(not plm:find("notification", 1, true))
     assert(read("shell/shaders/aperture.wgsl"):find("fn shade(s: Shader) -> vec4<f32>", 1, true))
+end)
+
+section("surface: logic (D208)")
+test("logic: hold Super — the reveal, Presences left and moved, the safeguards, the binding", function()
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    local l = read("shell/mooi-surface.luau")
+    assert(l:find('require("lib/surface/presence")', 1, true) and l:find('require("lib/surface/reveal")', 1, true))
+    for _, e in ipairs({ "rv_down", "rv_up", "rv_move", "rv_esc", "rv_outside", "pp_drop", "pp_drag", "ed_undo" }) do
+        assert(l:find('on("' .. e .. '"', 1, true), e .. " handled")
+    end
+    assert(l:find('"surface.json"', 1, true), "Presences are saved")
+    assert(l:find('SF_guard("workspace")', 1, true) and l:find('SF_guard("focus")', 1, true), "a shortcut never leaves it open")
+    assert(l:find('"emit pill_call"', 1, true), "a tap is still today's Super tap")
+    local m = read("bin/mooi")
+    assert(m:find("    reveal)", 1, true) and m:find('"emit rv_down"', 1, true) and m:find('"emit rv_up"', 1, true))
+    local plm = read("shell/mooi-surface.plm")
+    assert(plm:find("emit rv_move(", 1, true), "the scene tells the logic where the pointer is while revealing")
+    -- found live: without the permission surface.json was silently never written
+    assert(plm:match('services: [^\n]*"files.write"'), "it may write surface.json")
+    local cfg = require("lib/config").defaults()
+    eq(cfg.surface.on, true); eq(cfg.surface.delay, 250)
+    local h = read("setup/home/.config/hypr/config/custom/mooi.lua")
+    assert(h:find('mooi .. " reveal down"', 1, true) and h:find('mooi .. " reveal up"', 1, true), "Super's press and release")
 end)
 
 print(string.format("\n%d tests, %d failed", count, failures))

@@ -161,6 +161,8 @@ M.SETTERS = {
     "pill.two", "pill.two_at", "pill.three", "pill.three_at",
     -- D207: the Sigil. Appended.
     "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
+    -- D208: Surface. Appended.
+    "surface.on", "surface.delay",
 }
 
 local function row_of(path)

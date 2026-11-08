@@ -2225,6 +2225,8 @@ SURFACE = { win = nil, tries = 0, gave_up = false }
 -- wanted exactly when the bar placed a host for it (review I1: reading the settings' lists ran it with
 -- none — a `sigil` in the Pill's ignored centre list or a hidden side group)
 function SURFACE.wanted()
+    -- D208: always while Surface is on (hold Super to reveal; Presences on the desk)
+    if type(settings.surface) == "table" and settings.surface.on ~= false then return true end
     local ok, h = pcall(sys.ask, "files.read", "sigil-hosts.json", "json")
     return ok and type(h) == "table" and type(h.hosts) == "table" and #h.hosts > 0
 end

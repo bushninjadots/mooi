@@ -56,6 +56,10 @@ M.SCHEMA = {
     -- `pill` chooses which draws in Pill mode (classic until the owner switches); `rest` is a wave-1 source
     -- (lib/surface/sources.WAVE1, the same list: a unit test keeps them equal).
     { path = "sigil.pill", kind = "enum", values = { "classic", "sigil" }, default = "classic" },
+    -- D208: Surface — hold Super and the wallpaper opens at the pointer (the Reveal); `delay` is how long Super
+    -- is held before it begins (a quicker tap keeps Super's old meaning)
+    { path = "surface.on", kind = "boolean", default = true },
+    { path = "surface.delay", kind = "integer", default = 250, min = 150, max = 800 },
     { path = "sigil.temperament", kind = "enum", values = { "calm", "lively", "restless" }, default = "lively" },
     { path = "sigil.colour", kind = "enum", values = { "follow", "fixed" }, default = "follow" },
     { path = "sigil.fixed", kind = "colour", default = "#d6e38a" },
