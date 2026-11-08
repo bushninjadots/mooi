@@ -7899,6 +7899,7 @@ test("logic: the opening live — follow, snap, widen, heal, the keyboard path",
     assert(plm:find("fact sf_firm", 1, true), "its fact")
     assert(l:find("reveal.firm(st) or (SF.op.mode == opening.MODES.full and SF.opened == true)", 1, true), "a full opening keeps the keyboard after release")
     assert(l:find("and not SF.dragging", 1, true) and l:find("SF.op.mode = opening.MODES.snapped", 1, true), "a drag freezes the hole")
+    assert(read("shell/mooi.luau"):find("if not desk_win then after(800, surface_sync); return end", 1, true), "the surface waits for the wallpaper's layer")
     assert(l:find("S.r.network.wifi", 1, true) and l:find("net.wifi", 1, true), "the Wi-Fi radio, not the connection")
     assert(read("shell/mooi.luau"):find('"emit sf_set 0"', 1, true), "Surface off brings the citizens back")
     for _, k in ipairs({ "Tab", "Shift+Tab", "Return", "Page_Up", "Page_Down" }) do

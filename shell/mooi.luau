@@ -2018,6 +2018,8 @@ function desk_sync()
     end, function(_, code)
         if desk_win ~= mine then return end
         desk_win = nil
+        -- D209: a desk that comes back maps over the opening's ground; restart the surface behind it
+        run("pleamar", { "--say", "mooi-surface", "quit" })
         if os.time() - started < 5 then desk_tries = desk_tries + 1 else desk_tries = 0 end
         if code ~= 0 then log("desk · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
         if desk_tries < 5 then after(1000 * (desk_tries + 1), desk_sync) end
@@ -2241,6 +2243,9 @@ function surface_sync()
         return
     end
     if SURFACE.win or SURFACE.gave_up then return end
+    -- D209 live: the ground is at level background and its layer must map after the wallpaper's (mooi-desk),
+    -- or the wallpaper covers it. The desk starts at 1.5 s; wait for it.
+    if not desk_win then after(800, surface_sync); return end
     local mine
     local started = os.time()
     local said = {}
@@ -2261,7 +2266,9 @@ function surface_sync()
 end
 on("surface_ready", function() if SURFACE.win then fact.surface_up = true end end)
 pcall(sys.watch, "files:sigil-hosts.json", function() surface_sync() end)
-after(400, surface_sync)
+-- D209 live: the opening's ground is at level background, so its layer must map AFTER mooi-desk's
+-- wallpaper (map order is the level's order; the probe had the opposite). The desk starts at 1.5 s.
+after(2500, surface_sync)
 -- Where the notch's nub is on the screen (it writes notch-state.json when it places it): the stash's
 -- edge strip, overlay and over the same edge, leaves that band alone so pointing at the nub opens it.
 function notch_cut()
