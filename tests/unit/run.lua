@@ -7445,5 +7445,48 @@ do
     end)
 end
 
+section("surface: reveal (D208)")
+do
+    local RV = require("lib/surface/reveal")
+    local P = { x = 800, y = 500 }
+    test("reveal: a tap is a tap, a hold opens in stages", function()
+        local st = RV.state()
+        RV.down(st, 0); RV.tick(st, 100, P)
+        eq(st.stage, 0, "not yet"); eq(RV.up(st, 120), "tap")
+        st = RV.state(); RV.down(st, 0)
+        RV.tick(st, RV.DELAY + 10, P); eq(st.stage, 1, "the touch")
+        RV.tick(st, RV.DELAY + RV.OPEN_MS + 10, P); eq(st.stage, 2, "open")
+        RV.tick(st, RV.DELAY + RV.OPEN_MS + 200, P); eq(st.stage, 3, "the hub")
+        eq(st.ax, 800); eq(st.ay, 500, "anchored where the hub began")
+        eq(RV.up(st, 2000), "release")
+    end)
+    test("reveal: the hub picks by angle, the second ring by distance", function()
+        local st = RV.state(); RV.down(st, 0); RV.tick(st, 2000, P)
+        eq(RV.pick(st, { x = 805, y = 500 }).group, nil, "in the middle: nothing")
+        local up = RV.pick(st, { x = 800, y = 500 - 80 })
+        eq(RV.GROUPS[up.group], "time", "straight up is the first group")
+        local far = RV.pick(st, { x = 800, y = 500 - (RV.RING + 30) })
+        eq(far.source, "clock", "past the ring: the group's first source")
+        st.over_window = true
+        local n = 0; for _ in pairs(RV.groups(st)) do n = n + 1 end
+        eq(n, #RV.GROUPS + 1, "over a window: This window joins")
+    end)
+    test("reveal: release cancels, opens or leaves", function()
+        local st = RV.state(); RV.down(st, 0); RV.tick(st, 2000, P)
+        eq(RV.release(st, { x = 802, y = 499 }).kind, "cancel")
+        local o = RV.release(st, { x = 800, y = 500 - (RV.RING + 30) })
+        eq(o.kind, "open"); eq(o.source, "clock")
+        local l = RV.release(st, { x = 800, y = 500 - (RV.RING + 80) })
+        eq(l.kind, "leave"); eq(l.source, "clock"); eq(l.y, 500 - (RV.RING + 80))
+    end)
+    test("reveal: a reveal never outlives its safeguards", function()
+        for _, e in ipairs({ "workspace", "focus", "escape", "outside", "idle" }) do eq(RV.close_on(e), true, e) end
+        eq(RV.close_on("pointer"), false)
+        local st = RV.state(); RV.down(st, 0); RV.tick(st, 1000, P)
+        RV.tick(st, 1000 + RV.IDLE_MS + 10, P)
+        eq(st.stage, 0, "idle with the pointer still: it closes itself")
+    end)
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
