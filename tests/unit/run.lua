@@ -7640,5 +7640,45 @@ test("chat keeps the last 24 turns and refuses empty or unknown roles", function
     eq(#chat.turns, 24, "role refused")
 end)
 
+section("herdrfeed")
+local herdrfeed = require("lib/herdrfeed")
+test("status reads the server block and names every problem", function()
+    local up = herdrfeed.status({ server = { running = true, compatible = true, version = "0.9.5", socket = "/tmp/h.sock" } })
+    eq(up.running, true, "running"); eq(up.version, "0.9.5", "version"); eq(#up.problems, 0, "quiet")
+    local bad = herdrfeed.status({ server = { running = false, compatible = false, restart_needed = true } })
+    eq(bad.running, false, "down"); eq(#bad.problems, 3, "three problems")
+end)
+test("snapshot unwraps the CLI envelope and drops rows with no pane", function()
+    local doc = { result = { snapshot = { agents = {
+        { pane_id = "w1:p1", agent = "claude", agent_status = "blocked", terminal_title_stripped = "Fix tests", cwd = "/p", workspace_id = "w1", state_change_seq = 9 },
+        { agent = "nobody" },
+    }, focused_pane_id = "w1:p1" } } }
+    local s = herdrfeed.snapshot(doc)
+    eq(#s.agents, 1, "one agent"); eq(s.agents[1].terminal_title, "Fix tests", "title"); eq(s.focused, "w1:p1", "focus")
+end)
+test("groups put blocked first and derive elapsed from seen", function()
+    local agents = {
+        { pane_id = "w1:p1", agent_status = "working", cwd = "/a" },
+        { pane_id = "w1:p2", agent_status = "blocked", cwd = "/b" },
+        { pane_id = "w1:p3", agent_status = "idle", cwd = "/c" },
+    }
+    local seen = { ["w1:p2:blocked"] = 100, ["w1:p1:working"] = 90 }
+    local g = herdrfeed.group(agents, 160, seen, { ["w1:p2"] = { branch = "main" } }, { show_idle = true })
+    eq(g.attention[1].pane_id, "w1:p2", "blocked first"); eq(g.attention[1].elapsed, 60, "elapsed")
+    eq(g.attention[1].branch, "main", "branch"); eq(g.working[1].elapsed, 70, "working elapsed")
+end)
+test("brief takes the last meaningful line, strips ansi and secrets, and truncates", function()
+    local b = herdrfeed.brief("title", "first\n\27[31mworking\27[0m on it\n", 40)
+    eq(b, "working on it", "last line clean")
+    local sec = herdrfeed.brief("t", "token ghp_abcdef123", 40)
+    eq(sec:find("ghp_", 1, true), nil, "secret gone")
+    assert(#herdrfeed.brief("t", string.rep("x", 200), 30) <= 30, "truncated")
+end)
+test("a broken snapshot is a warning, not a crash", function()
+    local s = herdrfeed.snapshot("nope")
+    assert(herdrfeed.warn({ running = true, compatible = true }, s) ~= nil, "warned")
+    eq(herdrfeed.warn({ running = true, compatible = true }, { agents = {} }), nil, "healthy")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
