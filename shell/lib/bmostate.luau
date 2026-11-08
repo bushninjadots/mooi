@@ -42,13 +42,11 @@ function M.new(now)
     now = num(now, 0)
     return {
         version = 1, rev = 0, at = now,
-        charge = 0.6, bond = 0.2, mischief = 0.3, grump = 0.05,
-        mood = "happy", asleep = false, nap = false, charging = false,
+        charge = 0.6, bond = 0.2, mischief = 0.3, grump = 0.05,        mood = "happy", asleep = false, nap = false, charging = false,
         reaction = { face = nil, until_at = 0 },
         say = { text = "", until_at = 0 },
-        last = {}, pokes = {}, recent = {},
-        mood_at = now, touched = now, chat_at = now,
-    }
+        last = {}, pokes = {}, recent = {}, last_cmd = nil,
+        mood_at = now, touched = now, chat_at = now,    }
 end
 
 -- Whatever the file held, this is a usable BMO. A broken document is a fresh one, not an error.
@@ -58,6 +56,7 @@ function M.normalise(doc, now)
     local st = M.new(now)
     st.rev = math.max(0, math.floor(num(doc.rev, 0)))
     st.at = num(doc.at, now)
+    st.last_cmd = type(doc.last_cmd) == "string" and doc.last_cmd or nil
     st.charge = clamp(doc.charge, 0, 1, 0.6)
     st.bond = clamp(doc.bond, 0, 1, 0.2)
     st.mischief = clamp(doc.mischief, 0, 1, 0.3)

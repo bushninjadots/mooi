@@ -547,6 +547,19 @@ scene Mooi {
     fact m_sigil = true
     fact fi_sigil = 0
     fact g_sigil = false
+    // D209/D210: BMO's face and Herdr's agents, both on the shelf by default
+    fact x_bmo = 0
+    fact p_bmo = false
+    fact w_bmo = 0
+    fact m_bmo = true
+    fact fi_bmo = 0
+    fact g_bmo = false
+    fact x_herdr = 0
+    fact p_herdr = false
+    fact w_herdr = 0
+    fact m_herdr = true
+    fact fi_herdr = 0
+    fact g_herdr = false
     fact gh_unread = 0           // what waits on GitHub (the notch reads it)
     fact upd_n = 0               // system updates waiting (bar.luau, lib/updates)
     fact upd_busy = false        // looking
@@ -1419,6 +1432,14 @@ scene Mooi {
     fact pb_say_n = 0
     fact pb_mark = 0
     fact pb_talk = false         // D196: he has a line showing
+    // D209: the same one BMO, for the bar module and the island (the logic owns these)
+    fact bm_charge = 0.6
+    fact bm_bond = 0.2
+    fact bm_mischief = 0.3
+    fact bm_grump = 0.05
+    fact bm_asleep = false
+    fact bm_mood = 0
+    fact bm_hold = false
     prop pb_hop = 0 ~m.morph
     follow pb_hop = pb_bump
     prop pb_type = 0 ~m.isl_out
@@ -1893,6 +1914,21 @@ scene Mooi {
     prop pv_sigil = 0 ~m.enter
     follow pv_sigil = p_sigil
     on change p_sigil while p_sigil { xs_sigil: x_sigil ~1ms; ws_sigil: w_sigil ~1ms }
+    // D209/D210
+    prop xs_bmo = 0 ~fl.flow
+    follow xs_bmo = x_bmo
+    prop ws_bmo = 0 ~fl.flow
+    follow ws_bmo = w_bmo
+    prop pv_bmo = 0 ~m.enter
+    follow pv_bmo = p_bmo
+    on change p_bmo while p_bmo { xs_bmo: x_bmo ~1ms; ws_bmo: w_bmo ~1ms }
+    prop xs_herdr = 0 ~fl.flow
+    follow xs_herdr = x_herdr
+    prop ws_herdr = 0 ~fl.flow
+    follow ws_herdr = w_herdr
+    prop pv_herdr = 0 ~m.enter
+    follow pv_herdr = p_herdr
+    on change p_herdr while p_herdr { xs_herdr: x_herdr ~1ms; ws_herdr: w_herdr ~1ms }
     prop upd_pulse = 0
     spin upd_pulse by if(upd_busy, 1400, 0)
     let vv = round(audio.volume * 100)

@@ -7721,5 +7721,23 @@ test("both modules are placeable and keep the default row within 1920", function
     eq(out.overflow, false, "the default row still fits")
 end)
 
+section("bmo shared logic")
+local function slurp(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+test("the bar owns the shared BMO and the desktop only reports its body", function()
+    local b = slurp("shell/bar.luau")
+    assert(b:find('"bmo-shared.json"', 1, true) and b:find('"bmo-cmd.json"', 1, true), "the shared files")
+    assert(b:find('on("bmo_press"', 1, true) and b:find('on("bmo_release"', 1, true), "the hold")
+    assert(b:find("bmostate.tick", 1, true) and b:find("bm_publish", 1, true), "the tick and facts")
+    local d = slurp("shell/bmo/bmo.luau")
+    assert(d:find('"bmo-shared.json"', 1, true) and d:find('"bmo-body.json"', 1, true), "desktop bridge")
+    assert(d:find("sys.watch, \"files:bmo-shared.json\"", 1, true), "it follows the bar")
+end)
+test("the scene declares the bar face's facts", function()
+    local s = slurp("shell/mooi.plm")
+    for _, f in ipairs({ "bm_charge", "bm_bond", "bm_mischief", "bm_grump", "bm_asleep", "bm_mood", "bm_hold" }) do
+        assert(s:find("fact " .. f .. " ", 1, true) or s:find("fact " .. f .. "=", 1, true), f)
+    end
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

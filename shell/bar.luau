@@ -17,6 +17,9 @@ local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
 local sigilhosts = require("lib/surface/hosts")   -- D207: where the Sigil may live
 local chassis_look = require("lib/chassis").look
+local bmostate = require("lib/bmostate")           -- D209: the one shared BMO
+local bmochat = require("lib/bmochat")
+local brain = require("bmo/brain")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -37,7 +40,60 @@ return function(ctx)
     -- D196: BMO as the Pill — a hop each time his face changes, a fresh typewriter for each new line,
     -- and a small reaction: one table (the counters the scene's springs follow)
     local bmo_fx = { bump = 0, say = 0, face = nil }
+    local bm_react_face = nil
+    -- D209: the bar owns the one BMO. The desktop, Pill and Sigil read this state; the bar writes it.
+    local bm = { st = bmostate.new(os.time()), chat = bmochat.new(), sent = nil, press_at = nil, hold = false }
+    local function bm_now() return os.time() end
+    local function bm_load()
+        local ok, doc = pcall(sys.ask, "files.read", "bmo-shared.json")
+        if ok and type(doc) == "table" then bm.st = bmostate.normalise(doc, bm_now()) end
+        local okc, cdoc = pcall(sys.ask, "files.read", "bmo-chat.json")
+        if okc and type(cdoc) == "table" then bm.chat = bmochat.normalise(cdoc, bm_now()) end
+    end
+    local function bm_save(force)
+        local doc = bm.st
+        doc.at = bm_now()
+        local enc = json.encode(doc)
+        if force or enc ~= bm.sent then
+            bm.sent = enc
+            pcall(sys.call, "files.write", "bmo-shared.json", doc)
+            pcall(sys.call, "files.write", "bmo-chat.json", bm.chat)
+        end
+    end
+    local function bm_view() return bmostate.view(bm.st, bm_now(), pst.media.playing == true and pst.media.title ~= "") end
+    local function bm_apply(kind, arg, save)
+        local ok, why = bmostate.apply(bm.st, { kind = kind, arg = arg or {} }, bm_now())
+        if ok and save ~= false then bm_save(true) end
+        return ok, why
+    end
+    local function bm_publish()
+        local v = bm_view()
+        fact.bm_charge, fact.bm_bond = v.charge, v.bond
+        fact.bm_mischief, fact.bm_grump = v.mischief, v.grump
+        fact.bm_asleep = v.asleep
+        for i, m in ipairs(brain.MOODS or {}) do if m == v.mood then fact.bm_mood = i - 1 end end
+    end
+    local bm_show = nil        -- face_show, once it exists
+    bm_load()
+    bm_publish()
+    bm_react_face = function(face, ms)
+        bm_apply("react", { face = face, ms = ms })
+        bm_publish()
+        if bm_show then bm_show() end
+    end
+    pcall(sys.watch, "files:bmo-cmd.json", function()
+        local ok, cmd = pcall(sys.ask, "files.read", "bmo-cmd.json")
+        if not ok or type(cmd) ~= "table" or type(cmd.id) ~= "string" then return end
+        if cmd.id == bm.st.last_cmd then return end
+        local applied = bm_apply(cmd.kind, cmd.arg, false)
+        if applied then
+            bm.st.last_cmd = cmd.id
+            bm_save(true); bm_publish()
+            if bm_show then bm_show() end
+        end
+    end)
     local function bmo_react(face, ms)
+        if bm_react_face then bm_react_face(face, ms) end
         if fact.pill_on and fact.pill_face == 1 then
             pillface.react(face_st, face, pill_ms, ms)
             if bmo_fx.show then bmo_fx.show() end      -- face_show, set once it exists (below)
@@ -352,7 +408,7 @@ return function(ctx)
     -- D169: BMO's face — his expression's numbers for the scene, and his line, which widens the Pill
     local function face_show()
         local music = pst.media.playing == true and pst.media.title ~= ""
-        local v = pillface.view(face_st, pill_ms, music)
+        local v = bmostate.view(bm.st, bm_now(), music)
         local f = pillface.numbers(v.face)
         if v.face ~= bmo_fx.face then
             bmo_fx.face = v.face
@@ -372,6 +428,7 @@ return function(ctx)
             pill_update()
         end
     end
+    bm_show = face_show
     bmo_fx.show = face_show
     -- D173: the Pill's half disc turns once when the workspace changes (fact.active_row, set by
     -- mooi.luau) or the wheel turns its view; held a moment, then it settles (a newer turn wins).
@@ -1436,6 +1493,56 @@ return function(ctx)
         relayout(); shelf()
     end)
 
+    -- ── BMO's bar face (D209) ───────────────────────────────────
+    -- Short press is the island's (the scene opens it); a 450 ms hold charges. The bar owns the state,
+    -- so the scene only reads it and emits intent events.
+    on("bmo_press", function()
+        bm.press_at, bm.hold = os.time(), false
+        fact.bm_hold = false
+        after(450, function()
+            if not bm.press_at then return end
+            bm.hold = true
+            fact.bm_hold = true
+            bm_apply("charge_start", {})
+            bm_publish()
+            if bm_show then bm_show() end
+        end)
+    end)
+    on("bmo_release", function()
+        if bm.press_at and bm.hold then bm_apply("charge_stop", {}) end
+        bm.press_at, bm.hold = nil, false
+        fact.bm_hold = false
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    for _, e in ipairs({ "poke", "pet", "play", "nap", "wake" }) do
+        on("bmo_" .. e, function()
+            bm_apply(e, {})
+            bm_publish()
+            if bm_show then bm_show() end
+        end)
+    end
+    on("bmo_charge", function(v)
+        bm_apply("charge_step", { delta = math.max(-1, math.min(1, tonumber(v) or 0.05)) })
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    on("bmo_say", function(v)
+        if type(v) == "string" and v ~= "" then bm_apply("say", { text = v }) end
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    every(2000, function()
+        local c = ctx.settings().companion or {}
+        bmostate.tick(bm.st, bm_now(), { hour = tonumber(os.date("%H")) or 12, talk = c.talk,
+                                         music = pst.media.playing == true }, math.random(), math.random())
+        bm_save()
+        bm_publish()
+        if placed.bmo or (fact.pill_on and fact.pill_face == 1) then
+            if bm_show then bm_show() end
+        end
+    end)
+
     measure()
     relayout()
     -- a settings change arrives as relayout(): the Pill reads its face, hiding and order again first
@@ -1453,13 +1560,11 @@ return function(ctx)
         end,
         osd = function() return pst.osd and pst.osd.kind or "vol" end,
         bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,
-        react = function(face, ms) pillface.react(face_st, face, pill_ms, ms); face_show() end,
-        say = function(line) pillface.say(face_st, line, pill_ms, talk()); face_show() end,
-        poke = function() pillface.poke(face_st, pill_ms, math.random(), talk()); face_show() end,
+        react = function(face, ms) bm_apply("react", { face = face, ms = ms }); face_show() end,
+        say = function(line) bm_apply("say", { text = line }); face_show() end,
+        poke = function() bm_apply("poke", { r = math.random() }); face_show() end,
         touch = function()
-            if pillface.touch(face_st, pill_ms) then
-                pillface.react(face_st, "surprised", pill_ms, 900); pillface.say(face_st, "oh! hi", pill_ms, talk())
-            end
+            if bm.st.asleep then bm_apply("wake", {}) else bm_apply("pet", {}) end
             face_show()
         end,
     }

@@ -262,6 +262,36 @@ local function react(face, ms)
     after(ms, function() if react_token == mine then reaction = ""; show_face() end end)
 end
 
+-- ── One shared BMO (D209) ────────────────────────────────────
+-- The bar owns the pet. This body reads the shared mood/charge/reaction and writes only where it is
+-- and what it is doing. If the bar is not there, he keeps his last face and waits.
+local shared_at = 0
+local shared_say = nil
+local function shared(doc)
+    if type(doc) ~= "table" then return end
+    shared_at = os.time()
+    if B.is_mood(doc.mood) then set_mood(doc.mood) end
+    energy = clamp(tonumber(doc.charge) or energy, 0, 1)
+    local r = type(doc.reaction) == "table" and doc.reaction or nil
+    if r and B.FACES[r.face] and (tonumber(r.until_at) or 0) > os.time() then
+        react(r.face, math.max(250, ((tonumber(r.until_at) or 0) - os.time()) * 1000))
+    end
+    local s = type(doc.say) == "table" and doc.say or nil
+    if s and (tonumber(s.until_at) or 0) > os.time() and type(s.text) == "string" and s.text ~= "" then
+        if shared_say then shared_say(s.text, 4000) end
+    end
+end
+local shared_doc = read("bmo-shared.json")
+if shared_doc then shared(shared_doc) end
+pcall(sys.watch, "files:bmo-shared.json", function() shared(read("bmo-shared.json")) end)
+local body_sent
+every(1000, function()
+    local body = { running = not spare, ready = fact.ready == true, x = x, y = y, activity = activity,
+                   panel = fact.panel == true, tab = fact.tab or "", at = os.time(), shared_at = shared_at }
+    local enc = json.encode(body)
+    if enc ~= body_sent then body_sent = enc; pcall(sys.call, "files.write", "bmo-body.json", body) end
+end)
+
 local function move(name)
     if cfg.motion == "still" then return end
     play(name)
@@ -288,7 +318,7 @@ local function say(t, ms, important)
     end
     return true
 end
--- A line from one of his pools (brain.luau LINES), at his talk level, not one he said lately.
+shared_say = say
 local said_lately = {}
 local function chat(pool, important, ms)
     local line = B.chatter(pool, cfg.talk, important, said_lately, math.random())
