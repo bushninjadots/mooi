@@ -163,6 +163,7 @@ M.SETTERS = {
     "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
     -- D208: Surface. Appended.
     "surface.on", "surface.delay",
+    "surface.effect", "surface.bmo_below",
 }
 
 local function row_of(path)

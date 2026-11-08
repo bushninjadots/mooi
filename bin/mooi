@@ -1504,6 +1504,8 @@ case "$cmd" in
             heal) # the keeper's path when mooi-surface ends: heal it if it still answers, and always put the
                   # window drag bind back (Task 1: it is put down while the opening is open)
                   "$pleamar" --say mooi-surface "emit rv_esc" >/dev/null 2>&1 || :
+                  # a citizen whose surface is gone treats the opening as closed
+                  for c in mooi-widgets mooi-viz bmo; do "$pleamar" --say "$c" "emit op_c 0" >/dev/null 2>&1 || :; done
                   hyprctl eval 'hl.unbind("SUPER + mouse:272")' >/dev/null 2>&1
                   hyprctl eval 'hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })' >/dev/null 2>&1
                   ;;

@@ -157,6 +157,7 @@ SETTERS = [
     "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
     # D208: Surface. Appended.
     "surface.on", "surface.delay",
+    "surface.effect", "surface.bmo_below",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -382,6 +383,8 @@ SECTIONS = [
         ("card", "Surface"),
         ("toggle", "Hold Super to reveal", "The wallpaper opens at your pointer: groups round its rim, things to open or drag out and leave on the desktop", "surface.on", "sv_surface_on"),
         ("slider", "Hold for", "How long Super is held before it opens (a quicker tap keeps Super's old meaning)", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
+        ("choice", "Opening effect", "The Tear: the wallpaper torn open; the Aperture: a lens and a lit rim round the hole", "surface.effect", "sv_surface_effect", ["Tear", "Aperture"]),
+        ("toggle", "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", "surface.bmo_below", "sv_surface_bmo_below"),
         # D205: a second and a third pill, each a face at rest and a place of its own (the rest of the
         # faces — BMO, the Nexus, network, signals, the visualiser — are there by the file, pill.two/three)
         ("card", "More pills"),

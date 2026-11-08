@@ -60,6 +60,9 @@ M.SCHEMA = {
     -- is held before it begins (a quicker tap keeps Super's old meaning)
     { path = "surface.on", kind = "boolean", default = false },   -- review C1: off until the owner tries the real key with it
     { path = "surface.delay", kind = "integer", default = 250, min = 150, max = 800 },
+    -- D209: how the wallpaper opens (the Tear or the Aperture), and whether BMO lives under it
+    { path = "surface.effect", kind = "enum", values = { "tear", "aperture" }, default = "tear" },
+    { path = "surface.bmo_below", kind = "boolean", default = true },
     { path = "sigil.temperament", kind = "enum", values = { "calm", "lively", "restless" }, default = "lively" },
     { path = "sigil.colour", kind = "enum", values = { "follow", "fixed" }, default = "follow" },
     { path = "sigil.fixed", kind = "colour", default = "#d6e38a" },

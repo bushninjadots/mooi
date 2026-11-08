@@ -132,6 +132,8 @@ update = function()
     fact.ink_r, fact.ink_g, fact.ink_b = rgb01(cols.on_surface, 0.93, 0.88, 0.84)
     fact.mut_r, fact.mut_g, fact.mut_b = rgb01(cols.on_surface_variant, 0.55, 0.56, 0.52)
     fact.pl_r, fact.pl_g, fact.pl_b = rgb01(cols.surface_container, 0.09, 0.10, 0.09)
+    -- D209: the opening's look (1 the Tear, 2 the Aperture)
+    fact.sf_fx = (type(s.surface) == "table" and s.surface.effect == "aperture") and 2 or 1
 
     local state = { music = S.r.music, notice = S.notice, battery = S.r.battery, volume_at = S.volume_at,
                     feed_at = S.feed_at, hover = S.hover, open = S.open }

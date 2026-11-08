@@ -1128,3 +1128,6 @@ measure(function()
     if not spare then fact.ready = true end
     schedule()
 end)
+
+-- D209: the opening may already be up (and this program was restarted): ask for its hole
+run("pleamar", { "--say", "mooi-surface", "emit op_want" })
