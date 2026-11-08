@@ -5956,3 +5956,16 @@ the real-key roaming check. Screenshots: the hubs at full (`/tmp/opencode/below/
 
 Not yet (phases 2–5, docs/TODO.md): the Overview, push-up and light through the skin, peering and burying,
 Membrane/Ripple/Fold/Dissolve/Glass.
+
+**Review (fresh reviewer, whole branch).** Every finding above one grade was fixed with a test first: the
+wheel's route read a `let` (`op_vis`), which Pleamar's `get` cannot answer, so a Super+wheel switched the
+workspace and healed the opening — it reads `op_tc` now; a full opening let go with Super lost `firm` and
+therefore the keyboard, so Esc could not dismiss it and the drag bind stayed down — a full opening keeps the
+keyboard; a drag froze nothing and a follow hole always contains the pointer, so a drop could never land
+outside — a drag now snaps the hole at the press and stops it following (widgets say so with `sb_drag -1`);
+the citizens' follow hole was in surface coordinates (widgets now add the bar's reserve; BMO and mooi-viz
+read the cursor); the notes editor's lane stays whole and unclipped while `nt_ed`; the Wi-Fi component
+toggles the radio from the service's `wifi`, not the connection; Surface off tells the citizens even when
+the surface itself is gone; and the live suite's layer check reads only the `ground` and `edge` blocks.
+Deferred: BMO's home is a snap region at the bottom left while his body sits bottom right (phase 2's
+Overview is where a real home belongs), and the minors in the plan's ledger.
