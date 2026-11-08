@@ -7784,5 +7784,16 @@ test("safe do actions become commands, unsafe URLs do not", function()
     eq(bmoact.command({ kind = "open_url", url = "file:///etc/passwd" }), nil)
 end)
 
+test("Herdr is a module with an island of agent rows and actions", function()
+    local s = slurp("shell/mooi.plm")
+    assert(s:find("zone box zhd", 1, true) and s:find("zone box ez_herdr", 1, true), "module and edit zone")
+    assert(s:find("on press ez_herdr while bar_edit { ed_press = 34", 1, true), "edit code 34")
+    assert(s:find("layer life.herdr", 1, true) and s:find("IslandFrame(rv.herdr, 420, 360", 1, true), "the island")
+    for _, z in ipairs({ "hdfocus", "hdattach", "hdrefresh" }) do assert(s:find("zone box " .. z, 1, true), z) end
+    local b = slurp("shell/bar.luau")
+    assert(b:find('"api", "snapshot"', 1, true) and b:find("herdrfeed.group", 1, true), "the poller")
+    assert(b:find('"agent", "focus"', 1, true) and b:find('"agent", "attach"', 1, true), "the actions")
+end)
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)

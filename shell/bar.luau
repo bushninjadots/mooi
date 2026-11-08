@@ -22,6 +22,7 @@ local bmochat = require("lib/bmochat")
 local brain = require("bmo/brain")
 local claude = require("lib/claude")
 local bmoact = require("lib/bmoact")
+local herdrfeed = require("lib/herdrfeed")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -90,6 +91,135 @@ return function(ctx)
         bm_publish()
         if bm_show then bm_show() end
     end
+    -- D210: Herdr, read on a timer. The bar owns the rows and the seen map; the island only draws.
+    local hd = { agents = {}, seen = {}, briefs = {}, rows = {}, head = "", brief = "", up = false, warn = nil }
+    local function hd_path()
+        local h = ctx.settings().herdr
+        return type(h) == "table" and type(h.path) == "string" and h.path ~= "" and h.path or "herdr"
+    end
+    local function hd_row(a)
+        local dot = a.status == "blocked" and "!" or a.status == "working" and "*" or "."
+        local mins = a.elapsed and math.floor(a.elapsed / 60) or 0
+        local project = tostring(a.cwd or ""):gsub("/+$", ""):match("([^/]+)$") or "?"
+        return string.format("%s %-8s %-12s %-7s %s", dot, tostring(a.agent or "agent"),
+                             project:sub(1, 12), a.status or "?", mins > 0 and (mins .. "m") or "")
+            .. (a.brief and a.brief ~= "" and ("  " .. a.brief) or "")
+    end
+    local function hd_show()
+        local lines = {}
+        for i, a in ipairs(hd.agents) do
+            if i > 7 then break end
+            lines[#lines + 1] = hd_row(a)
+        end
+        text.hd_rows = table.concat(lines, "\n")
+        text.hd_head = hd.up and ("HERDR " .. tostring(hd.version or "") .. " · " .. #hd.agents .. " agents")
+                       or (hd.warn or "HERDR IS NOT RUNNING")
+        text.hd_brief = hd.brief
+    end
+    local function hd_apply(doc)
+        local snap = herdrfeed.snapshot(doc)
+        local h = ctx.settings().herdr or {}
+        local groups = herdrfeed.group(snap.agents, bm_now(), hd.seen, {}, { show_idle = h.show_idle == true,
+                                                                           show_done = h.show_done == true })
+        local list = {}
+        for _, key in ipairs({ "attention", "working", "idle", "done" }) do
+            for _, a in ipairs(groups[key] or {}) do
+                local k = tostring(a.pane_id or "") .. ":" .. tostring(a.agent_status or "")
+                if a.pane_id and not hd.seen[k] then hd.seen[k] = bm_now() end
+                a.status, a.elapsed = a.agent_status or key, a.elapsed or nil
+                a.brief = hd.briefs[a.pane_id] or a.terminal_title or ""
+                list[#list + 1] = a
+            end
+        end
+        hd.agents = list
+        hd.blocked = #(groups.attention or {})
+        hd.working = #(groups.working or {})
+        hd.idle = #(groups.idle or {}) + #(groups.done or {})
+        hd.up = true
+        hd.warn = herdrfeed.warn({ running = true, compatible = true }, snap)
+        fact.hd_up = true
+        fact.hd_warn = hd.warn and 1 or 0
+        fact.hd_blocked, fact.hd_working, fact.hd_idle = hd.blocked, hd.working, hd.idle
+        fact.hd_total = #list
+        if hd.blocked > 0 then fact.hd_pulse = fact.hd_pulse + 1 end
+        local first = (groups.attention or {})[1]
+        if first and h.brief ~= false and (bm_now() - (hd.brief_at or 0) > 8) then
+            hd.brief_at = bm_now()
+            run(hd_path(), { "agent", "read", first.pane_id, "--lines", tostring(h.brief_lines or 4), "--format", "text" },
+                function(out)
+                    hd.briefs[first.pane_id] = herdrfeed.brief(first.terminal_title or "", out, 120)
+                    hd.brief = hd.briefs[first.pane_id]
+                    for _, a in ipairs(hd.agents) do if a.pane_id == first.pane_id then a.brief = hd.brief end end
+                    hd_show()
+                end)
+        end
+        hd_show()
+        -- BMO notices a blocked agent (throttled by the state's own say window)
+        if hd.blocked > 0 and (bm_now() - (hd.told or 0) > 20) then
+            hd.told = bm_now()
+            bm_apply("herdr_blocked", { r = math.random(), pane = first and first.pane_id })
+            bm_publish()
+            if bm_show then bm_show() end
+        end
+    end
+    local function hd_poll()
+        run(hd_path(), { "status", "--json" }, function(out, code)
+            local ok, doc = pcall(json.decode, out or "")
+            if code ~= 0 or not ok or type(doc) ~= "table" then
+                hd.up, hd.warn = false, "HERDR IS NOT RUNNING"
+                fact.hd_up = false; fact.hd_warn = 1; hd_show(); return
+            end
+            local st = herdrfeed.status(doc)
+            hd.up, hd.warn, hd.version = st.running, herdrfeed.warn(st, nil), st.version
+        end)
+        run(hd_path(), { "api", "snapshot" }, function(out, code)
+            if code ~= 0 then
+                hd.up, hd.warn = false, "HERDR IS NOT RUNNING"
+                fact.hd_up = false; fact.hd_warn = 1; hd_show(); return
+            end
+            local ok, doc = pcall(json.decode, out or "")
+            if not ok or type(doc) ~= "table" then
+                hd.warn = "HERDR SAID SOMETHING UNREADABLE"
+                fact.hd_warn = 1; hd_show(); return
+            end
+            hd_apply(doc)
+        end)
+    end
+    local function hd_find(pane)
+        for _, a in ipairs(hd.agents) do if a.pane_id == pane then return a end end
+    end
+    local function hd_focus(pane)
+        local a = hd_find(pane)
+        if not a then return end
+        run(hd_path(), { "agent", "focus", pane })
+        -- raise the terminal if Hyprland knows it; otherwise open a terminal attached
+        run("hyprctl", { "-j", "clients" }, function(out)
+            local ok, list = pcall(json.decode, out or "")
+            local want = tostring(a.terminal_title or "")
+            local hit
+            if ok and type(list) == "table" then
+                for _, c in ipairs(list) do
+                    local t = tostring(c.title or "")
+                    if want ~= "" and (t == want or t:find(want, 1, true)) then hit = c; break end
+                end
+            end
+            if hit then pcall(run, "hyprctl", { "dispatch", "focuswindow", "address:" .. tostring(hit.address) })
+            else pcall(run, "kitty", { "-e", hd_path(), "agent", "attach", pane }) end
+        end)
+    end
+    local function hd_attach(pane)
+        if pane then pcall(run, "kitty", { "-e", hd_path(), "agent", "attach", pane }) end
+    end
+    local function hd_blocked_pane()
+        for _, a in ipairs(hd.agents) do if a.status == "blocked" then return a.pane_id end end
+    end
+    on("herdr_focus_blocked", function() local p = hd_blocked_pane(); if p then hd_focus(p) end end)
+    on("herdr_attach_blocked", function() local p = hd_blocked_pane(); if p then hd_attach(p) end end)
+    on("herdr_focus", function(v) if v then hd_focus(tostring(v)) end end)
+    on("herdr_attach", function(v) if v then hd_attach(tostring(v)) end end)
+    on("herdr_refresh", function() hd_poll() end)
+    hd_show()
+    every(5000, function() hd_poll() end)
     pcall(sys.watch, "files:bmo-cmd.json", function()
         local ok, cmd = pcall(sys.ask, "files.read", "bmo-cmd.json")
         if not ok or type(cmd) ~= "table" or type(cmd.id) ~= "string" then return end

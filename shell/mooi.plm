@@ -23,7 +23,7 @@ import "ui/edgetab.plm" as edge
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol", "notify-send"
+        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "mv", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol", "notify-send", "herdr", "rg", "fd", "claude", "env"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*"
     }
 
@@ -1447,6 +1447,9 @@ scene Mooi {
     event bmo_charge ->
     event herdr_focus_blocked -> // to the logic: focus and raise the first blocked agent
     event herdr_attach_blocked ->
+    event herdr_focus ->         // to the logic: a pane id from the island
+    event herdr_attach ->
+    event herdr_refresh ->
     // D210: Herdr's counts, server state and the first blocked brief
     fact hd_up = false
     fact hd_warn = 0
@@ -1457,6 +1460,8 @@ scene Mooi {
     fact hd_version = 0
     fact hd_pulse = 0
     text hd_brief = ""
+    text hd_rows = ""
+    text hd_head = ""
     text bm_line = ""
     text bm_mood_t = "happy"
     text bm_q = ""
@@ -4788,6 +4793,35 @@ scene Mooi {
                     on press bchatf { focus bm_q }
                     on submit bm_q { emit bmo_chat }
                     text "ENTER TO SEND" { at: 332, 396; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; opacity: 0.7 }
+                }
+            }
+        }
+
+        // ── herdr_island (D210): what every agent is doing, and which one waits ──
+        group {
+            move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - 370 - 20), st_res + 6)
+            let hi_x = if(isl_shelf, screen.width - 56 - 420, clamp(isl_cx - 210, 8, screen.width - 428))
+            group {
+                show: rv.herdr > 0.03
+                move: hi_x, 0
+                IslandFrame(rv.herdr, 420, 360, tx: if(isl_shelf, -1, isl_cx - hi_x), ox: hi_x, oy: st_res + 6, want: open == herdr, busy: open != none) {
+                    zone box keep_herdr { from: 0, 0; size: 420, 360; role: region; agent: hidden }
+                    IsleHead(420, "Herdr", hd_head)
+                    text "!" { at: 22, 46; anchor: left center; size: 20; weight: 800; family: "Share Tech Mono"; color: fl.ember; show: hd_blocked > 0 }
+                    text "NEEDS ATTENTION" { at: 40, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: hd_blocked > 0 }
+                    text "NO AGENT NEEDS YOU" { at: 20, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.muted; show: hd_blocked < 1 }
+                    text hd_rows { at: 20, 70; anchor: left top; size: 11; family: "JetBrains Mono"; color: fl.phos; width: 380; lines: 9 }
+                    text hd_brief { at: 20, 244; anchor: left top; size: 11; family: "Exo 2"; color: fl.engrave; width: 380; lines: 3 }
+                    IsleRule(420, 298)
+                    zone box hdfocus { from: 20, 312; size: 120, 26; cursor: pointer; role: button; label: "Focus the first blocked agent" }
+                    zone box hdattach { from: 148, 312; size: 120, 26; cursor: pointer; role: button; label: "Attach to the first blocked agent" }
+                    zone box hdrefresh { from: 276, 312; size: 124, 26; cursor: pointer; role: button; label: "Check again" }
+                    IsleBtn(20, 312, 120, "Focus", 0, hdfocus.hover)
+                    IsleBtn(148, 312, 120, "Attach", 0, hdattach.hover)
+                    IsleBtn(276, 312, 124, "Refresh", 0, hdrefresh.hover)
+                    on press hdfocus { emit herdr_focus_blocked }
+                    on press hdattach { emit herdr_attach_blocked }
+                    on press hdrefresh { emit herdr_refresh }
                 }
             }
         }
