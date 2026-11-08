@@ -206,7 +206,7 @@ Every citizen and Presence chooses how it meets the wallpaper (`meet`, per thing
 Woven words stay straight and readable (Pleamar cannot set text on a curve); high-contrast mode puts a solid
 plate under them.
 
-## 10. Effects (Tear and Aperture in phase 1; more in phase 5)
+## 10. Effects (Tear and Aperture in this spec's phase 1; more in phase 5)
 
 An **effect** = an open/close motion on `k` + an edge drawing + a shader over the wallpaper patch around the
 hole (the wallpaper image `mooi-surface` draws itself; Surface §2's spike: ~0.1 ms for a 420 px patch).
