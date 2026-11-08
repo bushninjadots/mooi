@@ -3431,7 +3431,7 @@ scene Mooi {
         on release zbmo while bm_hold == false and open == bmo { open = none }
         on press right zbmo { emit bmo_summon }
         on press middle zbmo { emit bmo_poke }
-        on scroll zbmo { emit bmo_charge(if(wheel > 0, 0.05, -0.05)) }
+        on scroll zbmo while wheel != 0 { emit bmo_charge(if(wheel > 0, 0.05, -0.05)) }
     }
 
     // ── Herdr (D210) ──────────────────────────────────────────

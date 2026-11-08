@@ -94,6 +94,10 @@ return function(ctx)
     end
     -- D210: Herdr, read on a timer. The bar owns the rows and the seen map; the island only draws.
     local hd = { agents = {}, seen = {}, briefs = {}, rows = {}, head = "", brief = "", up = false, warn = nil }
+    do
+        local ok, seen = pcall(sys.ask, "files.read", "herdr-seen.json")
+        if ok and type(seen) == "table" then hd.seen = seen end
+    end
     local function hd_path()
         local h = ctx.settings().herdr
         return type(h) == "table" and type(h.path) == "string" and h.path ~= "" and h.path or "herdr"
@@ -123,16 +127,18 @@ return function(ctx)
         local groups = herdrfeed.group(snap.agents, bm_now(), hd.seen, {}, { show_idle = h.show_idle == true,
                                                                            show_done = h.show_done == true })
         local list = {}
+        local seen_changed = false
         for _, key in ipairs({ "attention", "working", "idle", "done" }) do
             for _, a in ipairs(groups[key] or {}) do
                 local k = tostring(a.pane_id or "") .. ":" .. tostring(a.agent_status or "")
-                if a.pane_id and not hd.seen[k] then hd.seen[k] = bm_now() end
+                if a.pane_id and not hd.seen[k] then hd.seen[k] = bm_now(); seen_changed = true end
                 a.status, a.elapsed = a.agent_status or key, a.elapsed or nil
                 a.brief = hd.briefs[a.pane_id] or a.terminal_title or ""
                 list[#list + 1] = a
             end
         end
         hd.agents = list
+        if seen_changed then pcall(sys.call, "files.write", "herdr-seen.json", hd.seen) end
         hd.blocked = #(groups.attention or {})
         hd.working = #(groups.working or {})
         hd.idle = #(groups.idle or {}) + #(groups.done or {})
