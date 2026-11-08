@@ -3198,6 +3198,8 @@ scene Sigil {
     event op_c ->          // mode * 1000 + r
     event sf_set ->        // the Surface: bit 0 on, bit 1 BMO lives below
     event op_want ->       // to mooi-surface: what a program under the wallpaper asks for
+    event op_key ->        // the keyboard: 1 next · -1 before · 2 press what is snapped
+    event op_wheel ->      // the wheel while the opening shows: 1 widen · -1 narrow
     fact op_ta = 0
     fact op_tb = 0
     fact op_tc = 0
@@ -4844,6 +4846,7 @@ scene Sigil {
     shader ground = file "shaders/ground.wgsl"
     fact rv_on = false
     fact rv_stage = 0
+    fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours
     fact sf_fx = 1         // the opening's look: 1 the Tear, 2 the Aperture
     text rv_wall = ""
     image rv_img = from rv_wall, 0, 0
@@ -5281,13 +5284,19 @@ scene Sigil {
         anchor: top
         level: bottom
         reserve: -1
-        keyboard: none
+        keyboard: exclusive while op_vis and sf_firm
         rate: 60
         open: op_vis
         // where the pointer is, told to the logic as it moves (every 6 px), while revealing
         let rv_q = round(cursor.x / 6) * 100000 + round(cursor.y / 6)
         on change rv_q while rv_on or op_vis { emit rv_move(round(cursor.x) * 10000 + round(cursor.y)) }
+        // the keyboard, once the opening is firm: walk the places, press, widen, heal
         on key Escape { emit rv_esc }
+        on key Tab { emit op_key(1) }
+        on key Shift+Tab { emit op_key(-1) }
+        on key Return { emit op_key(2) }
+        on key Page_Up { emit op_wheel(1) }
+        on key Page_Down { emit op_wheel(-1) }
         // the Tear: the real wallpaper, torn open over the hole (the surface's own size: screen.height is the
         // scene's first surface's, the 40 px bar strip — found live, D208)
         // a group's shader sees its own box: the clip's, from its top left corner (found live) — so each is told

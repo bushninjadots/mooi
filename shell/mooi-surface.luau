@@ -16,6 +16,7 @@ local layout = require("lib/surface/layout")
 local presence = require("lib/surface/presence")   -- D208
 local reveal = require("lib/surface/reveal")
 local below = require("lib/surface/below")          -- D209
+local opening = require("lib/surface/opening")
 local coverart = require("lib/cover")
 
 local HOSTS_FILE, FEED_FILE, NOTICES = "sigil-hosts.json", "sigil-feed.json", "nexus-feed.json"
@@ -45,12 +46,13 @@ local S = {
     choice = {},           -- per host id: the director's choice
     ready = false,
     -- D209: what lives below the wallpaper
-    places = {}, apps = {}, app_counts = {}, walls = {}, note_items = {},
+    places = {}, apps = {}, app_counts = {}, walls = {}, note_items = {}, widget_list = {},
     power_open = false, power_arm = false,
 }
 
 local draw_below
 local save_presences
+local ship_set
 
 -- ── the readings, from the services and the feeds ──
 local function feed()
@@ -284,7 +286,12 @@ pcall(sys.watch, "files:" .. HOSTS_FILE, hosts)
 pcall(sys.watch, "files:" .. FEED_FILE, function() feed(); update() end)
 pcall(sys.watch, "files:" .. NOTICES, function() notices(); update() end)
 pcall(sys.watch, "files:palette.json", function() S.pal = read("palette.json", "json"); update(); if SF_wall then SF_wall() end end)
-pcall(sys.watch, "files:settings.json", function() S.settings = config.parse(read("settings.json"), json.decode); S.drawn = {}; update() end)
+pcall(sys.watch, "files:settings.json", function()
+    S.settings = config.parse(read("settings.json"), json.decode)
+    S.drawn = {}
+    update()
+    if ship_set then ship_set() end
+end)
 -- D209: the Apps hub's list and the Wallpapers hub's index
 pcall(sys.watch, "apps", function(list)
     if type(list) == "table" and type(list.list) == "table" then list = list.list end
@@ -296,6 +303,13 @@ local function walls_file()
     if draw_below then draw_below() end
 end
 pcall(sys.watch, "files:walls-index.json", walls_file)
+-- the boxes the opening snaps to include the widgets living under the wallpaper (Task 8 keeps them in step)
+local function widgets_file()
+    local w = read("widgets.json", "json")
+    S.widget_list = type(w) == "table" and type(w.widgets) == "table" and w.widgets or {}
+end
+pcall(sys.watch, "files:widgets.json", widgets_file)
+widgets_file()
 
 -- ── presses, hover, the wheel ──
 local function host_of(k)
@@ -367,7 +381,7 @@ local function power_close()
     fact.pw_open, fact.pw_arm = false, false
 end
 
-on("sb_press", function(v)
+local function press_code(v)
     v = math.floor(tonumber(v) or 0)
     -- the power row: lock and sleep go at once, the other three ask again within 3 s
     if v >= 951 and v <= 955 then
@@ -418,7 +432,8 @@ on("sb_press", function(v)
     elseif hub == 5 then
         if S.note_items[item] then run("mooi", { "nexus" }) end
     end
-end)
+end
+on("sb_press", press_code)
 on("sb_wheel", function(v)
     v = math.floor(tonumber(v) or 0)
     local k, d = v // 10, (v % 10 == 1) and 1 or -1
@@ -433,9 +448,12 @@ end)
 
 -- ── Surface (D208): hold Super — the Reveal; Presences on the desk ──
 -- One table for all of it (the reveal's state, the Presences, undo, the screen and the pointer).
-local SF = { rv = reveal.state(), list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
+local SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dragging = nil,
+             list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
              ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "" }
 local SFILE = "surface.json"
+local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }
+local BAR_H = 34
 local ICON = { music = "♫", clock = "◷", calendar = "▦", weather = "☀", volume = "♪", notifications = "✉",
                workspaces = "▣", windows = "▢", resources = "▤", battery = "▮", network = "◉", bluetooth = "ᛒ", bmo = "☺" }
 
@@ -587,11 +605,54 @@ draw_below = function()
     fact.pw_open, fact.pw_arm = S.power_open, S.power_arm
 end
 
--- the reveal's facts: whether it is showing, and its stage
+-- ── the opening (D209): what mooi-surface owns and every program under the wallpaper mirrors ──
+local function surface_on() return type(S.settings.surface) == "table" and S.settings.surface.on == true end
+local function tap() run("pleamar", { "--say", "mooi", "emit pill_call" }) end      -- today's Super tap
+
+local function boxes()
+    return below.boxes(S.places, S.widget_list, BAR_H)
+end
+
+-- three packed numbers (lib/surface/opening `pack`), and the programs that mirror the hole
+local function current()
+    return opening.pack(SF.op, opening.hole(SF.op, SF.ptr, SF.scr))
+end
+local function ship(a, b, c)
+    for _, cname in ipairs(CITIZENS) do
+        run("pleamar", { "--say", cname, "emit op_a " .. a })
+        run("pleamar", { "--say", cname, "emit op_b " .. b })
+        run("pleamar", { "--say", cname, "emit op_c " .. c })
+    end
+end
+local function broadcast()
+    local a, b, c = current()
+    fact.op_ta, fact.op_tb, fact.op_tc = a, b, c
+    if opening.changed(SF.sent, a, b, c) then
+        SF.sent = { a = a, b = b, c = c }
+        ship(a, b, c)
+    end
+end
+
+ship_set = function()
+    local bmo = not (type(S.settings.surface) == "table" and S.settings.surface.bmo_below == false)
+    local on = surface_on()
+    fact.sf_on, fact.sf_bmo = on, bmo       -- our own scene's copy of the same two bits
+    local v = (on and 1 or 0) + (bmo and 2 or 0)
+    for _, cname in ipairs(CITIZENS) do run("pleamar", { "--say", cname, "emit sf_set " .. v }) end
+end
+
+-- Task 1 found live: Hyprland's SUPER + drag never reaches a layer zone, so the drag bind is put down while
+-- the opening is open and put back the moment it heals (and on load, and when the bar restarts this program).
+local UNBIND = 'hl.unbind("SUPER + mouse:272")'
+local BIND = 'hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })'
+local function drag_down() run("hyprctl", { "eval", UNBIND }) end
+local function drag_restore() run("hyprctl", { "eval", UNBIND }); run("hyprctl", { "eval", BIND }) end
+
 local function show_reveal()
     local st = SF.rv
     fact.rv_on = st.stage >= 1
     fact.rv_stage = st.stage
+    fact.sf_firm = reveal.firm(st)
 end
 
 local function close_reveal()
@@ -600,46 +661,150 @@ local function close_reveal()
     show_reveal()
 end
 
-local function tick()
-    SF.clock = SF.clock + 50
-    reveal.tick(SF.rv, S.now_ms(), SF.ptr)
-    if not SF.rv.down_at then close_reveal(); return end
-    show_reveal()
+local function heal_opening()
+    if SF.op.mode == opening.MODES.closed then return end
+    opening.heal(SF.op)
+    SF.opened, SF.sent = false, nil
+    drag_restore()
+    broadcast()
 end
 
 -- a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
 -- (review I7: it advances only inside the reveal's own tick — nothing runs while idle)
 S.now_ms = function() return SF.clock end
-local function surface_on() return type(S.settings.surface) == "table" and S.settings.surface.on == true end
-local function tap() run("pleamar", { "--say", "mooi", "emit pill_call" }) end      -- today's Super tap
+
+local function tick()
+    SF.clock = SF.clock + 50
+    reveal.tick(SF.rv, S.now_ms(), SF.ptr)
+    if not SF.rv.down_at then
+        close_reveal()
+        if SF.op.mode ~= opening.MODES.full then heal_opening() end
+        return
+    end
+    show_reveal()
+    if SF.rv.stage == 2 and not SF.opened then
+        SF.opened = true
+        opening.open(SF.op)
+        opening.move(SF.op, boxes(), SF.ptr)
+        drag_down()
+        broadcast()
+    end
+end
 
 on("rv_down", function()
     if not surface_on() then return end
     reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
     reveal.down(SF.rv, S.now_ms())
+    SF.opened = false
     -- where the pointer is now (the scene tells us as it moves once the overlay is open)
     run("hyprctl", { "cursorpos" }, function(out)
         local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
-        if x then SF.ptr = { x = tonumber(x), y = tonumber(y) } end
+        if x then
+            SF.ptr = { x = tonumber(x), y = tonumber(y) }
+            if SF.op.mode > 0 then opening.move(SF.op, boxes(), SF.ptr); broadcast() end
+        end
     end)
     if not SF.ticking then SF.ticking = every(50, tick) end
 end)
 on("rv_move", function(v)
     v = math.floor(tonumber(v) or 0)
     SF.ptr = { x = v // 10000, y = v % 10000 }
+    if SF.op.mode > 0 then
+        opening.move(SF.op, boxes(), SF.ptr)
+        broadcast()
+    end
 end)
 on("rv_up", function()
     if not surface_on() then tap(); return end       -- review I1: off, Super's release is the old tap
     local res = reveal.up(SF.rv, S.now_ms())
     if res == "tap" then close_reveal(); tap(); return end
     close_reveal()
+    -- full stays until Escape (or `mooi reveal heal`); every other mode heals on release
+    if SF.op.mode ~= opening.MODES.full then heal_opening() end
 end)
--- the safeguards: a Super shortcut never sends Super's "up", so these close any reveal
-local function guard(event) if SF.rv.down_at and reveal.close_on(event) then close_reveal() end end
-on("rv_esc", function() guard("escape") end)
+
+-- the wheel widens and narrows; the bar routes Super + wheel here while the opening shows
+on("op_wheel", function(v)
+    if SF.op.mode == opening.MODES.closed then return end
+    if (tonumber(v) or 0) > 0 then opening.widen(SF.op, SF.scr) else opening.narrow(SF.op, SF.scr) end
+    broadcast()
+end)
+
+-- a program under the wallpaper just came up: send it the hole and the Surface's bits
+on("op_want", function()
+    local a, b, c = current()
+    SF.sent = { a = a, b = b, c = c }
+    ship(a, b, c)
+    ship_set()
+end)
+
+-- the keyboard's walk: the places in reading order, snapped one by one; Return presses what is snapped
+local KEY_PRESS = { apps = 101, music = 201, walls = 301, settings = 401, notes = 501,
+                    wifi = 901, bt = 902, volume = 903, bright = 904, battery = 905, power = 906 }
+on("op_key", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 2 then
+        if SF.op.snap then
+            local code = KEY_PRESS[SF.op.snap.id]
+            if code then press_code(code) end
+        end
+        return
+    end
+    local list = boxes()
+    if #list == 0 then return end
+    table.sort(list, function(p, q)
+        if math.abs(p.y - q.y) > 24 then return p.y < q.y end
+        return p.x < q.x
+    end)
+    local at = 0
+    if SF.op.snap then
+        for i, b in ipairs(list) do if b.id == SF.op.snap.id then at = i end end
+    end
+    at = (at + (v > 0 and 1 or -1) - 1) % #list + 1
+    SF.op.mode = opening.MODES.snapped
+    SF.op.snap = list[at]
+    broadcast()
+end)
+
+-- a hub or a component dragged out of the opening becomes a Presence, unless it is let go inside the hole
+local DRAG_SOURCE = { [100] = "apps", [200] = "music", [901] = "network", [902] = "bluetooth",
+                      [903] = "volume", [905] = "battery" }
+on("sb_drag", function(v) SF.dragging = math.floor(tonumber(v) or 0) end)
+on("sb_drop", function(v)
+    local src = DRAG_SOURCE[math.floor(tonumber(v) or 0)]
+    SF.dragging = nil
+    if not src or SF.op.mode == opening.MODES.closed then return end
+    run("hyprctl", { "cursorpos" }, function(out)
+        local sx, sy = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
+        if not sx then return end
+        local x, y = tonumber(sx), tonumber(sy)
+        local hole = opening.hole(SF.op, SF.ptr, SF.scr)
+        if x >= hole.x and x <= hole.x + hole.w and y >= hole.y and y <= hole.y + hole.h then return end
+        if #SF.list >= 8 then return end
+        SF.list[#SF.list + 1] = presence.new(src, x, y, SF.scr)
+        save_presences(true)
+        draw_presences()
+    end)
+end)
+
+-- the safeguards: a Super shortcut never sends Super's "up", so these close any reveal and heal the opening
+local function guard(event)
+    if SF.rv.down_at and reveal.close_on(event) then
+        close_reveal()
+        heal_opening()
+    end
+end
+on("rv_esc", function()
+    guard("escape")
+    if SF.op.mode ~= opening.MODES.closed then heal_opening() end
+end)
 on("rv_outside", function() guard("outside") end)
 -- (the workspaces and window watchers above call SF_guard: one watcher per service)
 SF_guard = guard
+
+-- on load the bind is ours to leave as we found it; and tell the citizens where the Surface stands
+drag_restore()
+ship_set()
 
 -- Presences: press, the controls, edit (right press), drag, undo
 on("pp_press", function(v)

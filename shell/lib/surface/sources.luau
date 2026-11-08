@@ -58,6 +58,10 @@ local E = {
                       return { t1 = str(r.name), t2 = string.format("%d connected", r.connected) } end },
     bmo = { group = "bmo", glyph = "face", display = "face", press = { kind = "bmo" },
             compact = function(r) if not r then return DASH end return { t1 = str(r.say ~= "" and r.say or "BMO"), t2 = "" } end },
+    -- D209: an app mark dragged out of the Apps hub; its words are the app's name until it is bound to a live
+    -- reading (phase 2)
+    apps = { group = "work", glyph = "card", display = "card", press = { kind = "overview" },
+             compact = function(r) return { t1 = r and str(r.name) or "Apps", t2 = "" } end },
 }
 
 local INDEX = {}

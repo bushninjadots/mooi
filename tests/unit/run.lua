@@ -6160,7 +6160,10 @@ do
         assert(hl:find('hl.bind, "SUPER + mouse_down", hl.dsp.exec_cmd(mooi .. " wheel 1")', 1, true))
         assert(hl:find('hl.bind, "SUPER + mouse_up", hl.dsp.exec_cmd(mooi .. " wheel -1")', 1, true))
         local sh = read("bin/mooi")
-        assert(sh:find('wheel) "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}"', 1, true), "asks the bar")
+        -- D209: while the opening shows the wheel widens and narrows it; otherwise the bar is asked
+        assert(sh:find('if [ "$("$pleamar" --say mooi-surface "get op_vis" 2>/dev/null)" = "true" ]; then', 1, true), "the opening first")
+        assert(sh:find('"emit op_wheel ${1:-1}"', 1, true), "widens or narrows while open")
+        assert(sh:find('"emit pill_superwheel ${1:-1}"', 1, true), "else asks the bar")
         assert(sh:find('|| hyprctl dispatch "hl.dsp.focus({ workspace', 1, true), "no bar: the workspace (Hyprland's Lua form)")
         local bar = read("shell/bar.luau")
         local h = bar:match('on%("pill_superwheel", function%(v%)(.-)\n    end%)')
@@ -7566,6 +7569,14 @@ do
         local u2 = OP.unpack(a2, b2, c2)
         eq(u2.x, 0); eq(u2.y, 4095); eq(u2.w, 180); eq(u2.h, 180); eq(u2.mode, 1); eq(u2.r, 90)
     end)
+    test("opening: a follow move sends nothing to the citizens", function()
+        local follow = { a = 100, b = 200, c = 1090 }
+        eq(OP.changed(follow, 140, 240, 1090), false, "only a and b moved, in follow mode")
+        eq(OP.changed(follow, 100, 200, 1090), false, "nothing moved")
+        eq(OP.changed(follow, 140, 240, 2018), true, "the mode changed")
+        eq(OP.changed({ a = 1, b = 2, c = 2018 }, 3, 4, 2018), true, "the snapped box moved")
+        eq(OP.changed(nil, 1, 2, 1090), true, "the first send")
+    end)
 end
 
 
@@ -7622,8 +7633,9 @@ test("scene: the opening at the wallpaper, never over windows", function()
     for _, b in ipairs({ ground, edge }) do
         assert(not b:find("level: overlay", 1, true) and not b:find("level: top", 1, true), "never over windows")
         assert(b:find("open: op_vis", 1, true), "open only while the opening shows")
-        assert(b:find("keyboard: none", 1, true), "no keyboard (Task 7 adds the firm-gated one)")
     end
+    assert(ground:find("keyboard: none", 1, true), "the ground takes no keyboard")
+    assert(edge:find("keyboard: exclusive while op_vis and sf_firm", 1, true), "the edge's, only once firm (Task 7)")
     assert(ground:find("level: background", 1, true), "the ground just above the wallpaper")
     assert(ground:find("clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }", 1, true), "clipped to the hole")
     assert(ground:find("// below:", 1, true), "the group Task 6 fills")
@@ -7797,24 +7809,38 @@ do
     end)
 end
 
-section("surface: logic (D208)")
-test("logic: hold Super — the reveal, Presences left and moved, the safeguards, the binding", function()
+section("surface: logic (D209)")
+test("logic: the opening live — follow, snap, widen, heal, the keyboard path", function()
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
     local l = read("shell/mooi-surface.luau")
     assert(l:find('require("lib/surface/presence")', 1, true) and l:find('require("lib/surface/reveal")', 1, true))
-    for _, e in ipairs({ "rv_down", "rv_up", "rv_move", "rv_esc", "rv_outside", "pp_drop", "pp_drag", "ed_undo" }) do
+    assert(l:find('require("lib/surface/opening")', 1, true), "the opening is shared")
+    for _, e in ipairs({ "rv_down", "rv_up", "rv_move", "rv_esc", "rv_outside", "op_wheel", "op_want", "op_key",
+                         "sb_press", "sb_drop", "pp_drop", "pp_drag", "ed_undo" }) do
         assert(l:find('on("' .. e .. '"', 1, true), e .. " handled")
     end
+    assert(l:find('local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }', 1, true), "the programs under the wallpaper")
+    assert(l:find('"emit op_a "', 1, true) and l:find('"emit sf_set "', 1, true), "the opening and the Surface's bits reach them")
     assert(l:find('"surface.json"', 1, true), "Presences are saved")
     assert(l:find('SF_guard("workspace")', 1, true) and l:find('SF_guard("focus")', 1, true), "a shortcut never leaves it open")
     -- found live: the window service also fires when a title changes (a terminal's, constantly); only a change of
     -- app is a change of focus
     assert(l:find("if was_class ~= nil and was_class ~= w.class and SF_guard then SF_guard(\"focus\") end", 1, true), "a title change keeps the reveal")
     assert(l:find('"emit pill_call"', 1, true), "a tap is still today's Super tap")
+    -- found live (Task 1, F1 = no): Super + click never reached a layer zone, so the drag bind is put down while
+    -- the opening is open and put back on heal, on load, and when the keeper restarts the surface
+    assert(l:find('hl.unbind("SUPER + mouse:272")', 1, true), "the drag bind is put down")
+    assert(l:find('hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })', 1, true), "and put back")
     local m = read("bin/mooi")
     assert(m:find("    reveal)", 1, true) and m:find('"emit rv_down"', 1, true) and m:find('"emit rv_up"', 1, true))
+    assert(m:find("heal)", 1, true) and m:find('"emit op_wheel ', 1, true), "heal and the wheel's route")
     local plm = read("shell/mooi-surface.plm")
     assert(plm:find("emit rv_move(", 1, true), "the scene tells the logic where the pointer is while revealing")
+    assert(plm:find("keyboard: exclusive while op_vis and sf_firm", 1, true), "the keyboard only once firm")
+    assert(plm:find("fact sf_firm", 1, true), "its fact")
+    for _, k in ipairs({ "Tab", "Shift+Tab", "Return", "Page_Up", "Page_Down" }) do
+        assert(plm:find("on key " .. k .. " { emit op_", 1, true), k .. " is the opening's")
+    end
     -- found live: without the permission surface.json was silently never written
     assert(plm:match('services: [^\n]*"files.write"'), "it may write surface.json")
     local cfg = require("lib/config").defaults()
@@ -7838,10 +7864,11 @@ do
         assert(l:find("local function tap()", 1, true), "one tap path")
         assert(l:find("if not surface_on() then tap(); return end", 1, true), "off: Super's release is the old tap")
         local plm = read("shell/mooi-surface.plm")
-        -- D209: the overlay that grabbed keys and clicks is gone; the edge takes neither (Task 7 gates the keyboard)
+        -- D209: the overlay that grabbed keys and clicks is gone; the edge's keyboard is the opening's own,
+        -- only once the opening is firm, and it still catches no clicks
         local a = plm:find("    surface edge {", 1, true); assert(a, "the edge")
         local e = plm:sub(a, plm:find("\n    }\n", a, true))
-        assert(e:find("keyboard: none", 1, true), "no keyboard grab")
+        assert(e:find("keyboard: exclusive while op_vis and sf_firm", 1, true), "the keyboard only once firm")
         assert(not e:find("zone", 1, true), "no click-catching")
     end)
     test("review I3: a workspace guard only for a change of workspace", function()

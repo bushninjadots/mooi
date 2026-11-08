@@ -2248,6 +2248,8 @@ function surface_sync()
         if SURFACE.win ~= mine then return end
         SURFACE.win = nil
         fact.surface_up = false
+        -- D209: the window drag bind is put down while the opening is open; a surface that ends never heals
+        run("mooi", { "reveal", "heal" })
         if os.time() - started < 5 then SURFACE.tries = SURFACE.tries + 1 else SURFACE.tries = 0 end
         if code ~= 0 then log("surface · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
         if SURFACE.tries < 5 then after(1000 * (SURFACE.tries + 1), surface_sync)

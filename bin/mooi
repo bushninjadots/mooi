@@ -1501,7 +1501,13 @@ case "$cmd" in
         case "${1:-}" in
             down) "$pleamar" --say mooi-surface "emit rv_down" >/dev/null 2>&1 || : ;;
             up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;
-            *) echo "usage: mooi reveal down|up" >&2; exit 2 ;;
+            heal) # the keeper's path when mooi-surface ends: heal it if it still answers, and always put the
+                  # window drag bind back (Task 1: it is put down while the opening is open)
+                  "$pleamar" --say mooi-surface "emit rv_esc" >/dev/null 2>&1 || :
+                  hyprctl eval 'hl.unbind("SUPER + mouse:272")' >/dev/null 2>&1
+                  hyprctl eval 'hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })' >/dev/null 2>&1
+                  ;;
+            *) echo "usage: mooi reveal down|up|heal" >&2; exit 2 ;;
         esac ;;
     # D194: Loom / Fold. The mode is a setting (the bar's keeper follows it); `off` always works: it
     # writes Native and asks the bar to bring every parked window back.
@@ -1535,8 +1541,13 @@ case "$cmd" in
         esac ;;
     # Super + wheel (D171): the bar decides — on a pill it turns the views, elsewhere the workspace;
     # with no bar to ask, the workspace as Hyprland did
-    wheel) "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}" >/dev/null 2>&1 \
-               || hyprctl dispatch "hl.dsp.focus({ workspace = \"e$( [ "${1:-1}" -lt 0 ] && echo - || echo + )1\" })" >/dev/null ;;
+    wheel) # D209: while the opening shows, the wheel widens and narrows it; otherwise the bar decides
+        if [ "$("$pleamar" --say mooi-surface "get op_vis" 2>/dev/null)" = "true" ]; then
+            "$pleamar" --say mooi-surface "emit op_wheel ${1:-1}" >/dev/null 2>&1
+        else
+            "$pleamar" --say "$name" "emit pill_superwheel ${1:-1}" >/dev/null 2>&1 \
+               || hyprctl dispatch "hl.dsp.focus({ workspace = \"e$( [ "${1:-1}" -lt 0 ] && echo - || echo + )1\" })" >/dev/null
+        fi ;;
     settings) exec "$pleamar" --say "$name" "emit open_settings" ;;
     wallpaper|walls) # the wallpaper picker (D145): mooi-walls, the strip and the colour orbit
         running || { echo "mooi is not running; start it first" >&2; exit 1; }

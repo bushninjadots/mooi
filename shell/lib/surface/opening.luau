@@ -77,4 +77,14 @@ function M.unpack(a, b, c)
     return { x = a // 4096, y = a % 4096, w = b // 4096, h = b % 4096, mode = c // 1000, r = c % 1000 }
 end
 
+-- Whether the packed triple has to reach the programs under the wallpaper: the first send, any change of mode
+-- or rim, and — outside follow mode — any move of the hole. In follow mode only the pointer moved and the
+-- programs already follow it themselves, so a is not sent.
+function M.changed(prev, a, b, c)
+    if not prev then return true end
+    if prev.c ~= c then return true end
+    if c // 1000 == MD.follow then return false end
+    return prev.a ~= a or prev.b ~= b
+end
+
 return M

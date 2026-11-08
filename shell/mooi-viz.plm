@@ -492,6 +492,8 @@ scene Viz {
     event op_c ->          // mode * 1000 + r
     event sf_set ->        // the Surface: bit 0 on, bit 1 BMO lives below
     event op_want ->       // to mooi-surface: what a program under the wallpaper asks for
+    event op_key ->        // the keyboard: 1 next · -1 before · 2 press what is snapped
+    event op_wheel ->      // the wheel while the opening shows: 1 widen · -1 narrow
     fact op_ta = 0
     fact op_tb = 0
     fact op_tc = 0
