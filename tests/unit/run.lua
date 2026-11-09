@@ -8539,6 +8539,54 @@ do
     end)
 end
 
+section("music in the picture: the decisions (D223)")
+do
+    local mu = require("lib/surface/music")
+    test("pack: sixteen bands in six numbers a shader reads whole (three bytes each, under 2^24)", function()
+        local b = {}
+        for i = 1, 16 do b[i] = (i - 1) / 15 end
+        local p = mu.pack(b)
+        eq(#p, 6)
+        eq(p[1], 0 * 65536 + 17 * 256 + 34, "0, 1/15, 2/15 → 0, 17, 34")
+        eq(p[6], 255 * 65536, "the sixteenth, alone")
+        for i = 1, 6 do assert(p[i] < 2 ^ 24) end
+        eq(mu.pack({})[1], 0, "no bands: silence")
+        eq(mu.pack({ 2, -1 })[1], 255 * 65536, "clamped")
+    end)
+    test("bands16: thirty-two bands to sixteen, pairwise", function()
+        local b = {}
+        for i = 1, 32 do b[i] = (i % 2 == 0) and 1 or 0 end
+        local r = mu.bands16(b)
+        eq(#r, 16); eq(r[1], 0.5); eq(r[16], 0.5)
+    end)
+    test("read: the places kept valid — the edge by default, four areas, two colours, the subject", function()
+        local m = mu.read(nil)
+        eq(m.edge, true); eq(m.edge_at, 100); eq(#m.areas, 0); eq(#m.colours, 0); eq(m.subject, false)
+        local r = mu.read({ edge = false, edge_at = 150, subject = true,
+            areas = { { x = 10, y = 10, w = 200, h = 100 }, { x = 1, y = 1, w = 5, h = 5 }, "junk" },
+            colours = { "#ff8800", "nope", "#00ffaa", "#123456" } })
+        eq(r.edge, false); eq(r.edge_at, 100, "clamped"); eq(r.subject, true)
+        eq(#r.areas, 1, "a speck and junk dropped"); eq(#r.colours, 2, "two at most, the bad one dropped")
+        eq(r.colours[1], "#ff8800")
+    end)
+    test("add_area / add_colour: the newest kept, the oldest let go past the limit", function()
+        local m = mu.read(nil)
+        for i = 1, 5 do m = mu.add_area(m, { x = i * 10, y = 0, w = 100, h = 60 }) end
+        eq(#m.areas, 4); eq(m.areas[1].x, 20, "the first let go")
+        m = mu.add_area(m, { x = 0, y = 0, w = 10, h = 10 }); eq(#m.areas, 4, "too small: not added")
+        m = mu.add_colour(m, "#111111"); m = mu.add_colour(m, "#222222"); m = mu.add_colour(m, "#111111")
+        eq(#m.colours, 2); eq(m.colours[2], "#111111", "picked again: the newest")
+        m = mu.add_colour(m, "#333333"); eq(m.colours[1], "#111111"); eq(m.colours[2], "#333333")
+    end)
+    test("hex and the edge's band", function()
+        eq(mu.hex("#ff8800"), 0xff8800); eq(mu.hex("bad"), 0)
+        local e = mu.edge_rect({ w = 1920, h = 1080 }, 100, 25)
+        eq(e.x, 0); eq(e.w, 1920); eq(e.h, 270); eq(e.y, 810)
+        local f = mu.edge_rect({ w = 1920, h = 1080 }, 50, 25)
+        eq(f.y, 270, "a line across the middle: bars rise above it")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
