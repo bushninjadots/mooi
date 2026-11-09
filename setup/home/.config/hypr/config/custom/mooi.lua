@@ -61,6 +61,9 @@ if cfg.standalone == true or not archeclipse then
     end
     pcall(hl.unbind, "SUPER + Escape")               -- the power menu mooi's own session button opens
     pcall(hl.bind, "SUPER + Escape", hl.dsp.exec_cmd("wlogout -b 5 -p layer-shell"))
+    -- D224: bury the focused window under the wallpaper (the Subsurface; Super+B stays the browser's)
+    pcall(hl.unbind, "SUPER + ALT + B")
+    pcall(hl.bind, "SUPER + ALT + B", hl.dsp.exec_cmd(mooi .. " bury"))
     for _, k in ipairs({ "SUPER + SUPER_L", "SUPER + ALT_L", "SUPER + m", "SUPER + period", "SUPER + SHIFT + n" }) do
         pcall(hl.unbind, k)                          -- toggle bar, media panel, emoji, notes: ArchEclipse's alone
     end

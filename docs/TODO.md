@@ -34,7 +34,7 @@ what was done, and why, is docs/DECISIONS.md.
       soft bulge in the wallpaper over its place, its words pressing up through the picture; light through
       the skin (glow and contour traces, the notification ping and border trace) once wall-sense exists
 - [x] **D219, Live wallpaper**: its own page; round the widgets or the whole picture; Ripple, Breathe, Flow, Light sweep
-- [ ] **Phase 4, peering and burying**: hold Super over a window with another behind it — a live patch of the
+- [x] **D224, Phase 4, peering and burying**: hold Super over a window with another behind it — a live patch of the
       window behind, widened by the wheel; drag a window into an opening (or Super+B) to bury it on
       `special:mooi-buried` with a live tile; a click brings it back
 - [x] **D210, the Subsurface's own settings and looks**: its own Settings page (hold, eight effects, intensity,

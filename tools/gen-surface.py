@@ -171,7 +171,7 @@ def scene():
          "scene Sigil {",
          "    permissions {",
          '        run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl", "playerctl"',
-         '        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock", "capture"',
+         '        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock", "capture", "thumbnails", "thumbnails.*"',
          "    }",
          "    service audio.level as lv { level: number }",
          "    spring sg.pt = 260, 20",
@@ -286,6 +286,7 @@ def surface_layers():
           "            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }",
           "            text \"THE SUBSURFACE\" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 44; anchor: left center; size: 11; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
           "            text \"the widgets are in edit mode: drag, resize, undo  /  type to find an app  /  Esc to close\" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 26; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }"]
+    L += tiles_ground()
     L += music_overview()
     L += ["            // the Overview's close, over the canvas at its top right (undo is the widgets' own, in edit mode)",
           "            box { from: op_x + op_w - sf_ovm - 92, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 }",
@@ -347,6 +348,7 @@ def surface_layers():
               "        }"]
     L += ["    }"]
     L += push_layers()
+    L += peer_layer()
     return L
 
 
@@ -371,6 +373,58 @@ def live_groups(img):
 
 
 B6 = "mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5"
+TILES = 8
+
+
+def phase4_decls():
+    """D224 (the Subsurface's phase 4): the peek — the window behind, live, in a round patch of the one in front —
+    and the buried windows' tiles under the wallpaper."""
+    L = ["    // ── phase 4 (D224): peering and burying ──",
+         "    fact pr_on = false     // a peek: Super held over a window with another behind it",
+         "    fact pr_x = 0", "    fact pr_y = 0", "    fact pr_r = 110",
+         "    fact pr_bx = 0", "    fact pr_by = 0", "    fact pr_bw = 1", "    fact pr_bh = 1",
+         '    text pr_pic = ""', "    image pr_img = from pr_pic, 0, 0",
+         "    prop pr_rs = 0 ~sg.op", "    follow pr_rs = if(pr_on, pr_r, 0)",
+         "    event bury ->         // Super+Alt+B: the focused window under the wallpaper",
+         "    event bt_go ->        // a buried window's tile pressed: it comes back"]
+    for i in range(1, TILES + 1):
+        L += [f"    fact bt{i} = false", f"    fact bt{i}x = 0", f"    fact bt{i}y = 0", f"    fact bt{i}w = 240", f"    fact bt{i}h = 150",
+              f'    text bt{i}_pic = ""', f"    image bt{i}_img = from bt{i}_pic, 0, 0", f'    text bt{i}_name = ""']
+    return L
+
+
+def tiles_ground():
+    """D224: the buried windows' tiles — their last picture, their app and title — under the wallpaper, seen in the
+    opening; a press brings the window back."""
+    L = ["            // D224: buried windows, each a tile where it was buried; a press brings it back"]
+    for i in range(1, TILES + 1):
+        x, y, w, h = f"bt{i}x", f"bt{i}y", f"bt{i}w", f"bt{i}h"
+        L += [f"            group {{ show: op_vis and bt{i} and not sf_mu",
+              f"                group {{ glow: 18, 0.5, #000000",
+              f"                    box {{ from: {x}, {y}; size: {w}, {h}; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 }} }}",
+              f"                group {{ clip box {{ from: {x} + 6, {y} + 6; size: {w} - 12, {h} - 34; corner: 6 }}",
+              f"                    image bt{i}_img {{ at: {x} + 6, {y} + 6; size: {w} - 12, {h} - 34; fit: cover }} }}",
+              f"                text bt{i}_name {{ at: {x} + 10, {y} + {h} - 14; anchor: left center; size: 10; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.86, 0.9, 0.88); width: {w} - 20; lines: 1 }}",
+              f"                box {{ from: {x} + 0.5, {y} + 0.5; size: {w} - 1, {h} - 1; corner: 10; stroke: 1; color: {ACCENT}; opacity: 0.5 }}",
+              f"                zone box bt_z{i} {{ from: {x}, {y}; size: {w}, {h}; corner: 10; cursor: pointer; role: button; label: \"Bring this window back\"; show: op_live and bt{i} }}",
+              f"                on press bt_z{i} {{ emit bt_go({i}) }}",
+              "            }"]
+    return L
+
+
+def peer_layer():
+    """D224: the peek — over the windows (level overlay), catching nothing: the window behind, live and where it is,
+    inside a round patch at the pointer, with the opening's lit lip. The wheel widens it."""
+    return ["", "    surface peer {", "        size: full, full", "        anchor: top", "        level: overlay", "        reserve: -1",
+            "        keyboard: none", "        rate: 60, 20 while calm", "        open: pr_on or pr_rs > 1",
+            "        group {",
+            "            clip box { from: pr_x - pr_rs, pr_y - pr_rs; size: pr_rs * 2, pr_rs * 2; corner: pr_rs }",
+            "            box { from: pr_x - pr_rs, pr_y - pr_rs; size: pr_rs * 2, pr_rs * 2; color: rgb(0.03, 0.04, 0.035) }",
+            "            image pr_img { at: pr_bx, pr_by; size: pr_bw, pr_bh }",
+            "        }",
+            f"        group {{ glow: 18, 0.9, {ACCENT}",
+            f"            ellipse {{ at: pr_x, pr_y; radius: max(1, pr_rs); stroke: 2; color: {ACCENT}; opacity: 0.9 }} }}",
+            "    }"]
 
 
 def music_decls():
@@ -486,7 +540,7 @@ def push_layers():
           "    fact sk_nx = -9999", "    fact sk_ny = -9999", "    fact sk_nn = false   // Notices, holding news",
           "    // Live wallpaper (D219): each effect's patch (or the screen), its widget's box, its packed numbers",
           "    fact lw_on = false", "    fact lw_whole = false", "    fact lw_speed = 100", "    fact lw_boost = 0",
-          ] + music_decls() + [
+          ] + music_decls() + phase4_decls() + [
           ] + [f"    fact lw_{k}{f} = {v}" for k in LIVE_FX for f, v in (("", "false"), ("_x", "-9999"), ("_y", "-9999"), ("_w", "1"), ("_h", "1"),
                                                                     ("_bx", "-9999"), ("_by", "-9999"), ("_bw", "1"), ("_bh", "1"), ("_p", "0"), ("_s", "0"))] + [
           "    fact sk_swt = 0      // the hour's sweep: where its band is going (0 … 1)",

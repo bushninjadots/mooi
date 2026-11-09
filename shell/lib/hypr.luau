@@ -56,6 +56,9 @@ function M.dispatch(action, address, opts)
         local p = opts.park
         if type(p) ~= "string" or not string.match(p, "^loom%-s%d+$") then return nil, "invalid park" end
         return string.format('hl.dsp.window.move({ workspace = "special:%s", follow = false, %s })', p, w)
+    -- D224: burying — the window to the hidden workspace the Subsurface keeps, leaving a tile under the wallpaper
+    elseif action == "bury" then
+        return string.format('hl.dsp.window.move({ workspace = "special:mooi-buried", follow = false, %s })', w)
     elseif action == "close" then
         return 'hl.dsp.window.close({ ' .. w .. ' })'
     -- The shutter's (D35), each checked on Hyprland 0.56.2 against a window read back:

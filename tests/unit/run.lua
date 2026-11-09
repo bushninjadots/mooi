@@ -8702,6 +8702,38 @@ do
     end)
 end
 
+section("phase 4: peering and burying — wired (D224)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local function block(plm, name)
+        local a = plm:find("    surface " .. name .. " {", 1, true); assert(a, name)
+        return plm:sub(a, plm:find("\n    }\n", a, true))
+    end
+    test("Super+Alt+B buries the focused window (Super+B stays the browser's)", function()
+        local hypr = require("lib/hypr")
+        eq(hypr.dispatch("bury", "0xab"), 'hl.dsp.window.move({ workspace = "special:mooi-buried", follow = false, window = "address:0xab" })')
+        assert(read("setup/home/.config/hypr/config/custom/mooi.lua"):find('pcall(hl.bind, "SUPER + ALT + B", hl.dsp.exec_cmd(mooi .. " bury"))', 1, true))
+        assert(read("bin/mooi"):find('bury) # D224', 1, true))
+    end)
+    test("the peek: an overlay of its own, the window behind live inside a round patch, catching nothing", function()
+        local plm = read("shell/mooi-surface.plm")
+        local p = block(plm, "peer")
+        assert(p:find("level: overlay", 1, true) and p:find("open: pr_on", 1, true) and p:find("keyboard: none", 1, true))
+        assert(not p:find("zone", 1, true), "every click goes through")
+        assert(p:find("image pr_img { at: pr_bx, pr_by; size: pr_bw, pr_bh }", 1, true), "the window behind, where it is")
+        assert(plm:find('"thumbnails", "thumbnails.*"', 1, true))
+    end)
+    test("the tiles: under the wallpaper, seen in the opening, a press brings the window back", function()
+        local g = block(read("shell/mooi-surface.plm"), "ground")
+        for i = 1, 8 do assert(g:find("on press bt_z" .. i .. " { emit bt_go(" .. i .. ") }", 1, true), "tile " .. i) end
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find('on("bury"', 1, true) and l:find('on("bt_go"', 1, true))
+        assert(l:find("local front, behind = peer.peer(SF.clients, SF.ws, { x = SF.mox or 0, y = SF.moy or 0 }, SF.ptr)", 1, true), "who is behind, as the pointer moves")
+        assert(l:find('pcall(sys.call, "thumbnails.live", { id })', 1, true) and l:find('pcall(sys.call, "thumbnails.live")', 1, true), "live only while peeking")
+        assert(l:find("S.buried = peer.prune(S.buried, clients)", 1, true), "a closed window takes its tile")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

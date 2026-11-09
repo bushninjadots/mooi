@@ -17,6 +17,7 @@ local reveal = require("lib/surface/reveal")
 local below = require("lib/surface/below")          -- D209
 local opening = require("lib/surface/opening")
 local music = require("lib/surface/music")      -- D223: Music in the picture's places
+local peer = require("lib/surface/peer")        -- D224: peering and burying
 
 local HOSTS_FILE, FEED_FILE, NOTICES = "sigil-hosts.json", "sigil-feed.json", "nexus-feed.json"
 local SLOT = { pill = 0, isl1 = 1, isl2 = 2, isl3 = 3 }
@@ -52,6 +53,7 @@ local S = {
 local ship_set
 local SF
 local SK                   -- D217: push up from below (lib/surface/light), once the opening exists
+local peek_update, end_peek, read_clients   -- D224: the peek, as the pointer moves while Super is held
 
 -- ── the readings, from the services and the feeds ──
 local function feed()
@@ -419,7 +421,7 @@ surface_file = function()
     if not ok or type(d) ~= "table" then SF.broken = true; log("surface · surface.json could not be read; not overwriting it"); return end
     if d.presences == nil and d.places == nil and d.usage == nil then return end
     pcall(sys.call, "files.write", "surface.json.bak", raw)
-    pcall(sys.call, "files.write", SFILE, { version = 3, monitor = SF.monitor, music = S.music })
+    pcall(sys.call, "files.write", SFILE, { version = 3, monitor = SF.monitor, music = S.music, buried = S.buried })
     log("surface · the Presences are widgets now; surface.json keeps only its monitor")
 end
 
@@ -429,7 +431,10 @@ local function tap() run("pleamar", { "--say", "mooi", "emit pill_call" }) end  
 
 local function bmo_below() return not (type(S.settings.surface) == "table" and S.settings.surface.bmo_below == false) end
 local function boxes()
-    return below.boxes(nil, S.widget_list, bar_h(), bmo_below() and S.bmo_box or nil)
+    local list = below.boxes(nil, S.widget_list, bar_h(), bmo_below() and S.bmo_box or nil)
+    -- D224: a buried window's tile is a thing to hug too
+    for _, t in ipairs(S.buried or {}) do list[#list + 1] = { id = "t:" .. t.address, x = t.x, y = t.y, w = t.w, h = t.h } end
+    return list
 end
 
 -- what the opening hugs, as the scene's sf_snap: BMO 20, a widget 30, none 0
@@ -523,6 +528,7 @@ local function close_reveal()
 end
 
 local function heal_opening()
+    if end_peek then end_peek() end
     if SF.op.mode == opening.MODES.closed then return end
     if SF.mu then SF.mu = false; fact.sf_mu = false; widgets_say("emit wg_quiet 0") end
     opening.heal(SF.op)
@@ -549,6 +555,7 @@ local function poll_pointer()
             opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)
             broadcast()
         end
+        if peek_update then peek_update() end
     end)
 end
 
@@ -571,6 +578,7 @@ local function tick()
     end
     show_reveal()
     if SF.clock % 100 == 0 then poll_pointer() end
+    if SF.clock % 500 == 0 and read_clients then read_clients() end
     if SF.rv.stage == 2 and not SF.opened then
         SF.opened = true
         opening.open(SF.op)
@@ -590,6 +598,7 @@ on("rv_down", function()
     reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
     reveal.down(SF.rv, SF.clock)
     SF.opened, SF.dragging = false, nil
+    if read_clients then read_clients() end
     -- where the pointer is now (the scene tells us as it moves once the opening is open)
     run("hyprctl", { "cursorpos" }, function(out)
         local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
@@ -626,6 +635,12 @@ end)
 
 -- the wheel widens and narrows; the bar routes Super + wheel here while the opening shows
 on("op_wheel", function(v)
+    -- D224: while peeking, the wheel widens (or narrows) the patch
+    if SF.peek then
+        SF.pr_r = math.max(60, math.min(700, (SF.pr_r or 110) * (((tonumber(v) or 0) > 0) and 1.35 or 1 / 1.35)))
+        fact.pr_r = SF.pr_r
+        return
+    end
     if SF.op.mode == opening.MODES.closed then return end
     if (tonumber(v) or 0) > 0 then
         opening.widen(SF.op, SF.scr, SF.ptr) -- a snapped section stays on the thing; a bare one on the pointer
@@ -775,6 +790,7 @@ local function load_music()
     local raw = read(SFILE)
     local ok, d = pcall(json.decode, type(raw) == "string" and raw or "")
     S.music = music.read(ok and type(d) == "table" and d.music or nil)
+    S.buried = peer.read(ok and type(d) == "table" and d.buried or nil)     -- D224
 end
 local function save_music()
     if SF.broken then return end
@@ -784,6 +800,7 @@ local function save_music()
     d = ok and type(d) == "table" and d or { version = 3 }
     d.monitor = d.monitor or SF.monitor
     d.music = S.music
+    d.buried = S.buried                    -- D224: the buried windows' tiles
     pcall(sys.call, "files.write", SFILE, d)
     if SK then SK.refresh() end
 end
@@ -838,6 +855,107 @@ on("mu_clear", function()
     save_music()
 end)
 
+-- ── D224: peering and burying (the Subsurface spec §8) ──
+-- the windows' live pictures (the thumbnails service lists them; nothing is copied until asked)
+S.thumbs = {}
+local function thumb_pic(id)
+    for _, t in ipairs(S.thumbs) do if t.id == id then return tostring(t.picture or "") end end
+    return ""
+end
+local function show_tiles()
+    for i = 1, peer.MAX do
+        local t = S.buried[i]
+        fact["bt" .. i] = t ~= nil
+        if t then
+            fact["bt" .. i .. "x"], fact["bt" .. i .. "y"], fact["bt" .. i .. "w"], fact["bt" .. i .. "h"] = t.x, t.y, t.w, t.h
+            text["bt" .. i .. "_name"] = (t.class ~= "" and (t.class .. " · ") or "") .. t.title
+            text["bt" .. i .. "_pic"] = thumb_pic(peer.thumb_for(S.thumbs, t))
+        end
+    end
+end
+-- the buried windows' pictures are copied (as files, when they change); the peek's one live
+local function want_tiles()
+    local ids = {}
+    for _, t in ipairs(S.buried) do local id = peer.thumb_for(S.thumbs, t); if id then ids[#ids + 1] = id end end
+    pcall(sys.call, "thumbnails.want", ids)
+end
+pcall(sys.watch, "thumbnails", function(t)
+    if type(t) ~= "table" then return end
+    S.thumbs = type(t.list) == "table" and t.list or {}
+    show_tiles()
+    if SF.peek_id then text.pr_pic = thumb_pic(SF.peek_id) end
+end)
+-- the windows of the workspace shown, while Super is held (every half second), and the tiles of closed windows let go
+read_clients = function()
+    run("hyprctl", { "-j", "clients" }, function(out)
+        local ok, clients = pcall(json.decode, out or "")
+        if not ok or type(clients) ~= "table" then return end
+        SF.clients = clients
+        SF.ws = S.r.workspaces and S.r.workspaces.active
+        local n = #S.buried
+        S.buried = peer.prune(S.buried, clients)
+        if #S.buried ~= n then save_music(); show_tiles(); want_tiles() end
+    end)
+end
+-- the peek: over a window with another behind it, the one behind live in a round patch at the pointer
+peek_update = function()
+    if not SF.opened or not SF.clients then return end
+    local front, behind = peer.peer(SF.clients, SF.ws, { x = SF.mox or 0, y = SF.moy or 0 }, SF.ptr)
+    if not behind then end_peek(); return end
+    if SF.peek ~= behind.address then
+        SF.peek = behind.address
+        local id = peer.thumb_for(S.thumbs, behind)
+        SF.peek_id = id
+        if id then pcall(sys.call, "thumbnails.live", { id }) end
+        text.pr_pic = thumb_pic(id)
+        fact.pr_bx, fact.pr_by, fact.pr_bw, fact.pr_bh = behind.x, behind.y, behind.w, behind.h
+        fact.pr_r = SF.pr_r or 110
+    end
+    fact.pr_x, fact.pr_y = SF.ptr.x, SF.ptr.y
+    fact.pr_on = true
+end
+end_peek = function()
+    if not SF.peek then return end
+    SF.peek, SF.peek_id, SF.pr_r = nil, nil, nil
+    fact.pr_on = false
+    pcall(sys.call, "thumbnails.live")
+end
+-- Super+Alt+B: the focused window under the wallpaper, its tile where the pointer is
+on("bury", function()
+    if not surface_on() then return end
+    run("hyprctl", { "-j", "activewindow" }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        if not ok or type(c) ~= "table" or type(c.address) ~= "string" then return end
+        if type(c.workspace) == "table" and tostring(c.workspace.name or ""):match("^special") then return end
+        run("hyprctl", { "cursorpos" }, function(cp)
+            local x, y = tostring(cp or ""):match("(%-?%d+),%s*(%-?%d+)")
+            local p = { x = (tonumber(x) or SF.scr.w / 2) - (SF.mox or 0), y = (tonumber(y) or SF.scr.h / 2) - (SF.moy or 0) }
+            S.buried = peer.bury(S.buried, c, p, SF.scr)
+            want_tiles()                       -- its picture copied while it still shows
+            after(300, function()
+                local cmd = hypr.dispatch("bury", c.address)
+                if cmd then run("hyprctl", { "dispatch", cmd }) end
+                save_music(); show_tiles()
+                log("surface · buried " .. tostring(c.class) .. " under the wallpaper")
+            end)
+        end)
+    end)
+end)
+-- a tile pressed: its window back on the workspace shown, focused; the tile gone
+on("bt_go", function(v)
+    local i = math.floor(tonumber(v) or 0)
+    local t = S.buried[i]
+    if not t then return end
+    local ws = S.r.workspaces and S.r.workspaces.active or 1
+    local back = hypr.dispatch("bring", t.address, { workspace = ws })
+    local focus = hypr.dispatch("focus", t.address)
+    if back then run("hyprctl", { "dispatch", back }, function() if focus then run("hyprctl", { "dispatch", focus }) end end) end
+    table.remove(S.buried, i)
+    save_music(); show_tiles(); want_tiles()
+    close_reveal()
+    heal_opening()
+end)
+
 -- D217: push up from below — the glow, the moving wallpaper, the bulge and words, the notice's light
 SK = require("lib/surface/light")({
     music = function() return S.music end,
@@ -850,6 +968,7 @@ SK = require("lib/surface/light")({
 })
 if S.r.music then SK.song(S.r.music) end
 cut_now()
+show_tiles()
 
 feed(); notices(); hosts()
 widgets_file()

@@ -7,7 +7,7 @@ language 0.9
 scene Sigil {
     permissions {
         run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl", "playerctl"
-        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock", "capture"
+        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock", "capture", "thumbnails", "thumbnails.*"
     }
     service audio.level as lv { level: number }
     spring sg.pt = 260, 20
@@ -4757,6 +4757,87 @@ scene Sigil {
             box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }
             text "THE SUBSURFACE" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 44; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
             text "the widgets are in edit mode: drag, resize, undo  /  type to find an app  /  Esc to close" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 26; anchor: left center; size: 10; family: "Share Tech Mono"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }
+            // D224: buried windows, each a tile where it was buried; a press brings it back
+            group { show: op_vis and bt1 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt1x, bt1y; size: bt1w, bt1h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt1x + 6, bt1y + 6; size: bt1w - 12, bt1h - 34; corner: 6 }
+                    image bt1_img { at: bt1x + 6, bt1y + 6; size: bt1w - 12, bt1h - 34; fit: cover } }
+                text bt1_name { at: bt1x + 10, bt1y + bt1h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt1w - 20; lines: 1 }
+                box { from: bt1x + 0.5, bt1y + 0.5; size: bt1w - 1, bt1h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z1 { from: bt1x, bt1y; size: bt1w, bt1h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt1 }
+                on press bt_z1 { emit bt_go(1) }
+            }
+            group { show: op_vis and bt2 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt2x, bt2y; size: bt2w, bt2h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt2x + 6, bt2y + 6; size: bt2w - 12, bt2h - 34; corner: 6 }
+                    image bt2_img { at: bt2x + 6, bt2y + 6; size: bt2w - 12, bt2h - 34; fit: cover } }
+                text bt2_name { at: bt2x + 10, bt2y + bt2h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt2w - 20; lines: 1 }
+                box { from: bt2x + 0.5, bt2y + 0.5; size: bt2w - 1, bt2h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z2 { from: bt2x, bt2y; size: bt2w, bt2h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt2 }
+                on press bt_z2 { emit bt_go(2) }
+            }
+            group { show: op_vis and bt3 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt3x, bt3y; size: bt3w, bt3h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt3x + 6, bt3y + 6; size: bt3w - 12, bt3h - 34; corner: 6 }
+                    image bt3_img { at: bt3x + 6, bt3y + 6; size: bt3w - 12, bt3h - 34; fit: cover } }
+                text bt3_name { at: bt3x + 10, bt3y + bt3h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt3w - 20; lines: 1 }
+                box { from: bt3x + 0.5, bt3y + 0.5; size: bt3w - 1, bt3h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z3 { from: bt3x, bt3y; size: bt3w, bt3h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt3 }
+                on press bt_z3 { emit bt_go(3) }
+            }
+            group { show: op_vis and bt4 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt4x, bt4y; size: bt4w, bt4h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt4x + 6, bt4y + 6; size: bt4w - 12, bt4h - 34; corner: 6 }
+                    image bt4_img { at: bt4x + 6, bt4y + 6; size: bt4w - 12, bt4h - 34; fit: cover } }
+                text bt4_name { at: bt4x + 10, bt4y + bt4h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt4w - 20; lines: 1 }
+                box { from: bt4x + 0.5, bt4y + 0.5; size: bt4w - 1, bt4h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z4 { from: bt4x, bt4y; size: bt4w, bt4h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt4 }
+                on press bt_z4 { emit bt_go(4) }
+            }
+            group { show: op_vis and bt5 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt5x, bt5y; size: bt5w, bt5h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt5x + 6, bt5y + 6; size: bt5w - 12, bt5h - 34; corner: 6 }
+                    image bt5_img { at: bt5x + 6, bt5y + 6; size: bt5w - 12, bt5h - 34; fit: cover } }
+                text bt5_name { at: bt5x + 10, bt5y + bt5h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt5w - 20; lines: 1 }
+                box { from: bt5x + 0.5, bt5y + 0.5; size: bt5w - 1, bt5h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z5 { from: bt5x, bt5y; size: bt5w, bt5h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt5 }
+                on press bt_z5 { emit bt_go(5) }
+            }
+            group { show: op_vis and bt6 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt6x, bt6y; size: bt6w, bt6h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt6x + 6, bt6y + 6; size: bt6w - 12, bt6h - 34; corner: 6 }
+                    image bt6_img { at: bt6x + 6, bt6y + 6; size: bt6w - 12, bt6h - 34; fit: cover } }
+                text bt6_name { at: bt6x + 10, bt6y + bt6h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt6w - 20; lines: 1 }
+                box { from: bt6x + 0.5, bt6y + 0.5; size: bt6w - 1, bt6h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z6 { from: bt6x, bt6y; size: bt6w, bt6h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt6 }
+                on press bt_z6 { emit bt_go(6) }
+            }
+            group { show: op_vis and bt7 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt7x, bt7y; size: bt7w, bt7h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt7x + 6, bt7y + 6; size: bt7w - 12, bt7h - 34; corner: 6 }
+                    image bt7_img { at: bt7x + 6, bt7y + 6; size: bt7w - 12, bt7h - 34; fit: cover } }
+                text bt7_name { at: bt7x + 10, bt7y + bt7h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt7w - 20; lines: 1 }
+                box { from: bt7x + 0.5, bt7y + 0.5; size: bt7w - 1, bt7h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z7 { from: bt7x, bt7y; size: bt7w, bt7h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt7 }
+                on press bt_z7 { emit bt_go(7) }
+            }
+            group { show: op_vis and bt8 and not sf_mu
+                group { glow: 18, 0.5, #000000
+                    box { from: bt8x, bt8y; size: bt8w, bt8h; corner: 10; color: rgb(0.05, 0.06, 0.07); opacity: 0.94 } }
+                group { clip box { from: bt8x + 6, bt8y + 6; size: bt8w - 12, bt8h - 34; corner: 6 }
+                    image bt8_img { at: bt8x + 6, bt8y + 6; size: bt8w - 12, bt8h - 34; fit: cover } }
+                text bt8_name { at: bt8x + 10, bt8y + bt8h - 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88); width: bt8w - 20; lines: 1 }
+                box { from: bt8x + 0.5, bt8y + 0.5; size: bt8w - 1, bt8h - 1; corner: 10; stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.5 }
+                zone box bt_z8 { from: bt8x, bt8y; size: bt8w, bt8h; corner: 10; cursor: pointer; role: button; label: "Bring this window back"; show: op_live and bt8 }
+                on press bt_z8 { emit bt_go(8) }
+            }
             // D223: the Overview's Music mode — the whole picture at full light, and where the music grows from
             box { from: op_x + op_w - sf_ovm - 184, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 and not sf_mu }
             text "MUSIC" { at: op_x + op_w - sf_ovm - 144, op_y + sf_ovm + 121; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 and not sf_mu }
@@ -5084,6 +5165,85 @@ scene Sigil {
     event mu_edge ->      // the edge line moved to this y
     event mu_tog ->       // 1 the edge on/off · 2 the subject on/off
     event mu_clear ->     // every area and colour let go
+    // ── phase 4 (D224): peering and burying ──
+    fact pr_on = false     // a peek: Super held over a window with another behind it
+    fact pr_x = 0
+    fact pr_y = 0
+    fact pr_r = 110
+    fact pr_bx = 0
+    fact pr_by = 0
+    fact pr_bw = 1
+    fact pr_bh = 1
+    text pr_pic = ""
+    image pr_img = from pr_pic, 0, 0
+    prop pr_rs = 0 ~sg.op
+    follow pr_rs = if(pr_on, pr_r, 0)
+    event bury ->         // Super+Alt+B: the focused window under the wallpaper
+    event bt_go ->        // a buried window's tile pressed: it comes back
+    fact bt1 = false
+    fact bt1x = 0
+    fact bt1y = 0
+    fact bt1w = 240
+    fact bt1h = 150
+    text bt1_pic = ""
+    image bt1_img = from bt1_pic, 0, 0
+    text bt1_name = ""
+    fact bt2 = false
+    fact bt2x = 0
+    fact bt2y = 0
+    fact bt2w = 240
+    fact bt2h = 150
+    text bt2_pic = ""
+    image bt2_img = from bt2_pic, 0, 0
+    text bt2_name = ""
+    fact bt3 = false
+    fact bt3x = 0
+    fact bt3y = 0
+    fact bt3w = 240
+    fact bt3h = 150
+    text bt3_pic = ""
+    image bt3_img = from bt3_pic, 0, 0
+    text bt3_name = ""
+    fact bt4 = false
+    fact bt4x = 0
+    fact bt4y = 0
+    fact bt4w = 240
+    fact bt4h = 150
+    text bt4_pic = ""
+    image bt4_img = from bt4_pic, 0, 0
+    text bt4_name = ""
+    fact bt5 = false
+    fact bt5x = 0
+    fact bt5y = 0
+    fact bt5w = 240
+    fact bt5h = 150
+    text bt5_pic = ""
+    image bt5_img = from bt5_pic, 0, 0
+    text bt5_name = ""
+    fact bt6 = false
+    fact bt6x = 0
+    fact bt6y = 0
+    fact bt6w = 240
+    fact bt6h = 150
+    text bt6_pic = ""
+    image bt6_img = from bt6_pic, 0, 0
+    text bt6_name = ""
+    fact bt7 = false
+    fact bt7x = 0
+    fact bt7y = 0
+    fact bt7w = 240
+    fact bt7h = 150
+    text bt7_pic = ""
+    image bt7_img = from bt7_pic, 0, 0
+    text bt7_name = ""
+    fact bt8 = false
+    fact bt8x = 0
+    fact bt8y = 0
+    fact bt8w = 240
+    fact bt8h = 150
+    text bt8_pic = ""
+    image bt8_img = from bt8_pic, 0, 0
+    text bt8_name = ""
     fact lw_ripple = false
     fact lw_ripple_x = -9999
     fact lw_ripple_y = -9999
@@ -5309,5 +5469,22 @@ scene Sigil {
         text "{lt_n}" { at: lt_sx + 12, lt_sy - 10; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: rgb(0.95, 0.62, 0.38); opacity: lt_s; show: lt_n > 1.5 }
         zone box lt_z { from: lt_sx - 14, lt_sy - 14; size: 28, 28; cursor: pointer; role: button; label: "Open the notices"; show: lt_s > 0.2 }
         on press lt_z { emit lt_go }
+    }
+
+    surface peer {
+        size: full, full
+        anchor: top
+        level: overlay
+        reserve: -1
+        keyboard: none
+        rate: 60, 20 while calm
+        open: pr_on or pr_rs > 1
+        group {
+            clip box { from: pr_x - pr_rs, pr_y - pr_rs; size: pr_rs * 2, pr_rs * 2; corner: pr_rs }
+            box { from: pr_x - pr_rs, pr_y - pr_rs; size: pr_rs * 2, pr_rs * 2; color: rgb(0.03, 0.04, 0.035) }
+            image pr_img { at: pr_bx, pr_by; size: pr_bw, pr_bh }
+        }
+        group { glow: 18, 0.9, rgb(0.62, 0.84, 0.74)
+            ellipse { at: pr_x, pr_y; radius: max(1, pr_rs); stroke: 2; color: rgb(0.62, 0.84, 0.74); opacity: 0.9 } }
     }
 }

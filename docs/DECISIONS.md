@@ -6464,3 +6464,27 @@ tips, falling back into it; every colour is the picture's own.
 the real wallpaper: the colour pass moves ≈ 15 900 pixels and nothing outside its places changes; the bars over a black
 part of the picture showed only their tips, so their bodies are now faintly lit. Not yet seen live with music.
 
+## D224 · 2026-11-09 · Peering and burying (the Subsurface's phase 4)
+
+The spec's §8. Its two checks first, with the owner's leave, on an empty workspace:
+- *Does a fully covered window's picture stay live?* Two kitty windows, the back one printing the time ten times a
+  second, a floating one over it covering it whole; a probe asked Pleamar for the back one live
+  (`thumbnails.live`): new frames ≈ ten a second, never stale. **Yes** — Hyprland keeps copying covered windows.
+- *Do Hyprland's window drag and the opening coexist?* Already answered by D209: Super+drag never reaches a layer
+  surface, so mooi puts the drag bind down while the opening is open. **No** — so, as the spec says, burying ships
+  by key alone.
+
+**Peering.** While Super is held (the opening open), over a window with another behind it under the pointer (the
+stacking as the spec reads it: fullscreen over its workspace, floating over tiled, the focused over the rest:
+`lib/surface/peer`), a round patch opens in the front window showing the window behind, live and where it really is,
+with the opening's lit lip — a `peer` surface over the windows that catches nothing. The wheel widens or narrows it.
+With nothing behind, nothing opens. Hyprland's window list is read every half second while Super is held.
+
+**Burying.** **Super+Alt+B** (the owner's choice; Super+B stays the browser's) sends the focused window to
+`special:mooi-buried` and leaves a tile — its last picture, app and title — under the wallpaper where the pointer is
+(eight at most, one per window, kept in surface.json `buried`). The opening hugs tiles like widgets; a press on one
+brings its window back to the workspace shown, focused, and the tile goes. A buried window that closes takes its tile
+with it. The bind is in mooi's Hyprland file (`config/custom/mooi.lua`, live and in setup) and `mooi bury`.
+
+**Verified.** Unit 811 / 0; 15 scenes compile; `bin/mooi check` green. Not yet tried live.
+

@@ -1496,6 +1496,8 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     pill) exec "$pleamar" --say "$name" "emit pill_call" ;;
+    bury) # D224: Super+Alt+B — the focused window buried under the wallpaper, a tile left where the pointer is
+        "$pleamar" --say mooi-surface "emit bury" >/dev/null 2>&1 || : ;;
     reveal) # D208: Super went down / came up (Hyprland's binds) — Surface's Reveal; without it a release is
         # today's Super tap
         case "${1:-}" in
