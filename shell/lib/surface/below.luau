@@ -9,7 +9,7 @@ M.HUBS = { "apps", "music", "walls", "settings", "notes" }
 M.COMPONENTS = { "wifi", "bt", "volume", "bright", "battery", "power" }
 M.SIZES = { apps = { 360, 220 }, music = { 320, 140 }, walls = { 360, 120 }, settings = { 300, 140 }, notes = { 320, 220 } }
 -- how small a hub may be shaped before its contents stop fitting; components are fixed
-M.MIN = { apps = { 240, 160 }, music = { 240, 120 }, walls = { 240, 100 }, settings = { 220, 120 }, notes = { 240, 160 } }
+M.MIN = { apps = { 300, 200 }, music = { 260, 130 }, walls = { 300, 110 }, settings = { 260, 130 }, notes = { 280, 200 } }
 M.BMO = { 160, 196 }
 M.LAYOUTS = { "arc", "row", "grid", "calm" }
 M.SIDES = { "right", "centre", "left" }

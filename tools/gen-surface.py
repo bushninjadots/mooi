@@ -107,14 +107,16 @@ def below_group(base="            "):
 
     # 1 · Apps: four by three marks, the most launched first (the logic chooses them)
     L += plate(1, "APPS") + place_zone(1, "Apps")
+    cw, ch = "(hb1_w - 36) / 4", "(hb1_h - 56) / 3"
     for n in range(1, APP_N + 1):
         col, row = (n - 1) % 4, (n - 1) // 4
-        mx, my = f"hb1_x + {18 + col * 81}", f"hb1_y + {40 + row * 56}"
-        L += [f'{c}zone box hbz1_{n} {{ from: {mx}, {my}; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App {n}"; show: op_vis and op_mode > 0 and ab{n}_on }}',
-              f"{c}box {{ from: {mx}, {my}; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab{n}_on }}",
-              f"{c}text ab{n}_letter {{ at: {mx} + 15, {my} + 15; anchor: center; align: center; size: 12; weight: 700; family: \"Exo 2\"; color: ink; show: op_vis and ab{n}_on and not ab{n}_iconed }}",
-              f"{c}image ab{n}_img {{ at: {mx}, {my}; size: 30, 30; fit: cover; show: op_vis and ab{n}_on and ab{n}_iconed }}",
-              f"{c}text ab{n}_name {{ at: {mx} + 15, {my} + 42; anchor: center; align: center; size: 9; family: \"Exo 2\"; color: muted; width: 76; lines: 1; show: op_vis and ab{n}_on }}",
+        mx, my = f"hb1_x + 18 + {col} * {cw}", f"hb1_y + 40 + {row} * {ch}"
+        ix = f"{mx} + ({cw} - 30) / 2"
+        L += [f'{c}zone box hbz1_{n} {{ from: {mx}, {my}; size: {cw} - 4, {ch} - 4; corner: 10; cursor: pointer; role: button; label: "App {n}"; show: op_vis and op_mode > 0 and ab{n}_on }}',
+              f"{c}box {{ from: {ix}, {my}; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab{n}_on }}",
+              f"{c}text ab{n}_letter {{ at: {ix} + 15, {my} + 15; anchor: center; align: center; size: 12; weight: 700; family: \"Exo 2\"; color: ink; show: op_vis and ab{n}_on and not ab{n}_iconed }}",
+              f"{c}image ab{n}_img {{ at: {ix}, {my}; size: 30, 30; fit: cover; show: op_vis and ab{n}_on and ab{n}_iconed }}",
+              f"{c}text ab{n}_name {{ at: {mx} + {cw} / 2, {my} + {ch} - 10; anchor: center; align: center; size: 9; family: \"Exo 2\"; color: muted; width: {cw} - 4; lines: 1; show: op_vis and ab{n}_on }}",
               f"{c}on press hbz1_{n} {{ emit sb_press({100 + n}) }}"]
 
     # 2 · Music: art, the two words, the controls, a hairline of progress
@@ -122,8 +124,8 @@ def below_group(base="            "):
     L += [f"{c}box {{ from: hb2_x + 18, hb2_y + 40; size: 64, 64; corner: 10; color: rgb(0.13, 0.14, 0.12); opacity: 0.9 }}",
           f"{c}image mu_img {{ at: hb2_x + 18, hb2_y + 40; size: 64, 64; fit: cover; show: op_vis and mu_on }}",
           f'{c}text "♫" {{ at: hb2_x + 50, hb2_y + 72; anchor: center; align: center; size: 22; color: muted; show: op_vis and not mu_on }}',
-          f"{c}text mu_t1 {{ at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: \"Exo 2\"; color: ink; width: 208; lines: 1 }}",
-          f"{c}text mu_t2 {{ at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: muted; width: 208; lines: 1 }}"]
+          f"{c}text mu_t1 {{ at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: \"Exo 2\"; color: ink; width: max(80, hb2_w - 106); lines: 1 }}",
+          f"{c}text mu_t2 {{ at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: muted; width: max(80, hb2_w - 106); lines: 1 }}"]
     for n, (glyph, label, code) in enumerate([("‹", "Previous", 201), ("", "Play or pause", 202), ("›", "Next", 203)], start=1):
         bx = f"hb2_x + {92 + (n - 1) * 34}"
         L += [f'{c}zone box hbz2_{n} {{ from: {bx}, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "{label}"; show: op_vis and op_mode > 0 }}',
@@ -138,34 +140,37 @@ def below_group(base="            "):
 
     # 3 · Wallpapers: the six newest thumbnails; a press wears one
     L += plate(3, "WALLPAPERS") + place_zone(3, "Wallpapers")
+    cell, tw, th = "(hb3_w - 32) / 6", "min(48, (hb3_w - 32) / 6 - 6)", "min(40, hb3_h - 52)"
     for n in range(1, WALL_N + 1):
-        tx = f"hb3_x + {16 + (n - 1) * 56}"
-        L += [f'{c}zone box hbz3_{n} {{ from: {tx}, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper {n}"; show: op_vis and op_mode > 0 and wl{n}_on }}',
-              f"{c}box {{ from: {tx}, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl{n}_on }}",
-              f"{c}image wl{n}_img {{ at: {tx}, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl{n}_on }}",
+        tx = f"hb3_x + 16 + {n - 1} * {cell}"
+        L += [f'{c}zone box hbz3_{n} {{ from: {tx}, hb3_y + 42; size: {tw}, {th}; corner: 6; cursor: pointer; role: button; label: "Wallpaper {n}"; show: op_vis and op_mode > 0 and wl{n}_on }}',
+              f"{c}box {{ from: {tx}, hb3_y + 42; size: {tw}, {th}; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl{n}_on }}",
+              f"{c}image wl{n}_img {{ at: {tx}, hb3_y + 42; size: {tw}, {th}; fit: cover; show: op_vis and wl{n}_on }}",
               f"{c}on press hbz3_{n} {{ emit sb_press({300 + n}) }}"]
 
     # 4 · Settings: eight marks; a press opens the settings window
     L += plate(4, "SETTINGS") + place_zone(4, "Settings")
+    cw, rh = "(hb4_w - 40) / 2", "(hb4_h - 40) / 4"
     for n, label in enumerate(SETTINGS, start=1):
         col, row = (n - 1) % 2, (n - 1) // 2
-        sx, sy = f"hb4_x + {14 + col * 138}", f"hb4_y + {36 + row * 24}"
-        L += [f'{c}zone box hbz4_{n} {{ from: {sx}, {sy}; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "{label}"; show: op_vis and op_mode > 0 }}',
-              f"{c}box {{ from: {sx}, {sy}; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_{n}.hover; show: op_vis }}",
-              f'{c}text "{label}" {{ at: {sx} + 7, {sy} + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }}',
+        sx, sy = f"hb4_x + 14 + {col} * ({cw} + 12)", f"hb4_y + 36 + {row} * {rh}"
+        L += [f'{c}zone box hbz4_{n} {{ from: {sx}, {sy}; size: {cw}, max(18, {rh} - 2); corner: 6; cursor: pointer; role: button; label: "{label}"; show: op_vis and op_mode > 0 }}',
+              f"{c}box {{ from: {sx}, {sy}; size: {cw}, max(18, {rh} - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_{n}.hover; show: op_vis }}",
+              f'{c}text "{label}" {{ at: {sx} + 7, {sy} + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: {cw} - 14; lines: 1 }}',
               f"{c}on press hbz4_{n} {{ emit sb_press({400 + n}) }}"]
 
     # 5 · Notices: four from the bar's feed, and its own Clear
     L += plate(5, "NOTICES") + place_zone(5, "Notices")
+    rh = "(hb5_h - 64) / 4"
     for n in range(1, NOTE_N + 1):
-        ny = f"hb5_y + {34 + (n - 1) * 38}"
-        L += [f'{c}zone box hbz5_{n} {{ from: hb5_x + 10, {ny}; size: 300, 34; corner: 8; cursor: pointer; role: button; label: "Notice {n}"; show: op_vis and op_mode > 0 and nt{n}_on }}',
-              f"{c}text nt{n}_t1 {{ at: hb5_x + 18, {ny} + 10; anchor: left center; size: 10; weight: 700; family: \"Exo 2\"; color: ink; width: 280; lines: 1; show: op_vis and nt{n}_on }}",
-              f"{c}text nt{n}_t2 {{ at: hb5_x + 18, {ny} + 24; anchor: left center; size: 9; family: \"Share Tech Mono\"; color: muted; width: 280; lines: 1; show: op_vis and nt{n}_on }}",
+        ny = f"hb5_y + 34 + {n - 1} * {rh}"
+        L += [f'{c}zone box hbz5_{n} {{ from: hb5_x + 10, {ny}; size: hb5_w - 20, max(28, {rh} - 4); corner: 8; cursor: pointer; role: button; label: "Notice {n}"; show: op_vis and op_mode > 0 and nt{n}_on }}',
+              f"{c}text nt{n}_t1 {{ at: hb5_x + 18, {ny} + 10; anchor: left center; size: 10; weight: 700; family: \"Exo 2\"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt{n}_on }}",
+              f"{c}text nt{n}_t2 {{ at: hb5_x + 18, {ny} + 24; anchor: left center; size: 9; family: \"Share Tech Mono\"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt{n}_on }}",
               f"{c}on press hbz5_{n} {{ emit sb_press({500 + n}) }}"]
-    L += [f'{c}zone box hbz5_clear {{ from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_vis and op_mode > 0 and nt_n > 0 }}',
-          f"{c}box {{ from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }}",
-          f'{c}text "CLEAR" {{ at: hb5_x + 276, hb5_y + 201; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }}',
+    L += [f'{c}zone box hbz5_clear {{ from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_vis and op_mode > 0 and nt_n > 0 }}',
+          f"{c}box {{ from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }}",
+          f'{c}text "CLEAR" {{ at: hb5_x + hb5_w - 44, hb5_y + hb5_h - 19; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }}',
           f"{c}on press hbz5_clear {{ emit sb_press(590) }}"]
 
     # D212: the shape handles — a hub's size is shaped by its bottom-right corner, only in the Overview,

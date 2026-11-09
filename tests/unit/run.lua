@@ -7999,6 +7999,28 @@ do
     end)
 end
 
+section("surface: reflow (D213)")
+do
+    local BL = require("lib/surface/below")
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    test("reflow: a hub's inside follows its shape", function()
+        local plm = read("shell/mooi-surface.plm")
+        for _, s in ipairs({ "(hb1_w - 36) / 4", "(hb1_h - 56) / 3", "max(80, hb2_w - 106)",
+                             "(hb3_w - 32) / 6", "min(48,", "(hb4_w - 40) / 2", "(hb4_h - 40) / 4",
+                             "(hb5_h - 64) / 4", "hb5_x + hb5_w - 72" }) do
+            assert(plm:find(s, 1, true), s)
+        end
+    end)
+    test("reflow: the minimum shapes keep the words readable", function()
+        eq(BL.MIN.apps[1], 300, "apps wide enough for four marks")
+        eq(BL.MIN.apps[2], 200, "apps tall enough for three rows")
+        eq(BL.MIN.music[1], 260, "music wide enough for its words")
+        eq(BL.MIN.walls[2], 110, "wallpapers tall enough for a thumb")
+        eq(BL.MIN.settings[1], 260, "settings wide enough for two columns")
+        eq(BL.MIN.notes[1], 280, "notices wide enough for a line")
+    end)
+end
+
 section("surface: citizens (D209)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

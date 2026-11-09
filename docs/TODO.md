@@ -15,8 +15,11 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] **Phase 2b-i, the Overview's shapes (D212)**: a hub's bottom-right corner is a shape handle; dragging
       it resizes the place on the eight-pixel grid, clamped to a readable minimum and the screen, with its
       size read out and saved in `surface.json`; Undo restores the old size, Reset the designed one
-- [ ] **Phase 2b-ii, the Nexus and the interiors**: move the Nexus deck and canvas cards in as citizens (the
-      full-screen successor to the Nexus), and let a hub's contents reflow when its shape changes
+- [x] **Phase 2b-ii-a, the hubs reflow (D213)**: each hub's inside divides its current shape — the app
+      grid, music words, wallpaper strip, settings marks and notice rows — with raised readable minimums
+- [ ] **Phase 2b-ii-b, the Nexus as a citizen**: move the Nexus deck and canvas cards into the Overview
+      (the full-screen successor to the Nexus); the Nexus is a separate scene whose drawer needs a
+      place/snapshot design first
 - [ ] **Phase 3, push up from below**: `meet` per thing (woven); a song change, a notice or an event makes a
       soft bulge in the wallpaper over its place, its words pressing up through the picture; light through
       the skin (glow and contour traces, the notification ping and border trace) once wall-sense exists

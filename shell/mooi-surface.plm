@@ -5052,77 +5052,77 @@ scene Sigil {
                 zone box hbz1_0 { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; cursor: grab; role: button; label: "Apps"; show: op_vis and op_mode > 0 }
                 on drag hbz1_0 { emit sb_drag(100) }
                 on release hbz1_0 { emit sb_drop(100) }
-                zone box hbz1_1 { from: hb1_x + 18, hb1_y + 40; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 1"; show: op_vis and op_mode > 0 and ab1_on }
-                box { from: hb1_x + 18, hb1_y + 40; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab1_on }
-                text ab1_letter { at: hb1_x + 18 + 15, hb1_y + 40 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab1_on and not ab1_iconed }
-                image ab1_img { at: hb1_x + 18, hb1_y + 40; size: 30, 30; fit: cover; show: op_vis and ab1_on and ab1_iconed }
-                text ab1_name { at: hb1_x + 18 + 15, hb1_y + 40 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab1_on }
+                zone box hbz1_1 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 1"; show: op_vis and op_mode > 0 and ab1_on }
+                box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab1_on }
+                text ab1_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab1_on and not ab1_iconed }
+                image ab1_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab1_on and ab1_iconed }
+                text ab1_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab1_on }
                 on press hbz1_1 { emit sb_press(101) }
-                zone box hbz1_2 { from: hb1_x + 99, hb1_y + 40; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 2"; show: op_vis and op_mode > 0 and ab2_on }
-                box { from: hb1_x + 99, hb1_y + 40; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab2_on }
-                text ab2_letter { at: hb1_x + 99 + 15, hb1_y + 40 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab2_on and not ab2_iconed }
-                image ab2_img { at: hb1_x + 99, hb1_y + 40; size: 30, 30; fit: cover; show: op_vis and ab2_on and ab2_iconed }
-                text ab2_name { at: hb1_x + 99 + 15, hb1_y + 40 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab2_on }
+                zone box hbz1_2 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 2"; show: op_vis and op_mode > 0 and ab2_on }
+                box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab2_on }
+                text ab2_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab2_on and not ab2_iconed }
+                image ab2_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab2_on and ab2_iconed }
+                text ab2_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab2_on }
                 on press hbz1_2 { emit sb_press(102) }
-                zone box hbz1_3 { from: hb1_x + 180, hb1_y + 40; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 3"; show: op_vis and op_mode > 0 and ab3_on }
-                box { from: hb1_x + 180, hb1_y + 40; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab3_on }
-                text ab3_letter { at: hb1_x + 180 + 15, hb1_y + 40 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab3_on and not ab3_iconed }
-                image ab3_img { at: hb1_x + 180, hb1_y + 40; size: 30, 30; fit: cover; show: op_vis and ab3_on and ab3_iconed }
-                text ab3_name { at: hb1_x + 180 + 15, hb1_y + 40 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab3_on }
+                zone box hbz1_3 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 3"; show: op_vis and op_mode > 0 and ab3_on }
+                box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab3_on }
+                text ab3_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab3_on and not ab3_iconed }
+                image ab3_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab3_on and ab3_iconed }
+                text ab3_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab3_on }
                 on press hbz1_3 { emit sb_press(103) }
-                zone box hbz1_4 { from: hb1_x + 261, hb1_y + 40; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 4"; show: op_vis and op_mode > 0 and ab4_on }
-                box { from: hb1_x + 261, hb1_y + 40; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab4_on }
-                text ab4_letter { at: hb1_x + 261 + 15, hb1_y + 40 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab4_on and not ab4_iconed }
-                image ab4_img { at: hb1_x + 261, hb1_y + 40; size: 30, 30; fit: cover; show: op_vis and ab4_on and ab4_iconed }
-                text ab4_name { at: hb1_x + 261 + 15, hb1_y + 40 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab4_on }
+                zone box hbz1_4 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 4"; show: op_vis and op_mode > 0 and ab4_on }
+                box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab4_on }
+                text ab4_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab4_on and not ab4_iconed }
+                image ab4_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab4_on and ab4_iconed }
+                text ab4_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab4_on }
                 on press hbz1_4 { emit sb_press(104) }
-                zone box hbz1_5 { from: hb1_x + 18, hb1_y + 96; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 5"; show: op_vis and op_mode > 0 and ab5_on }
-                box { from: hb1_x + 18, hb1_y + 96; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab5_on }
-                text ab5_letter { at: hb1_x + 18 + 15, hb1_y + 96 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab5_on and not ab5_iconed }
-                image ab5_img { at: hb1_x + 18, hb1_y + 96; size: 30, 30; fit: cover; show: op_vis and ab5_on and ab5_iconed }
-                text ab5_name { at: hb1_x + 18 + 15, hb1_y + 96 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab5_on }
+                zone box hbz1_5 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 5"; show: op_vis and op_mode > 0 and ab5_on }
+                box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab5_on }
+                text ab5_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab5_on and not ab5_iconed }
+                image ab5_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab5_on and ab5_iconed }
+                text ab5_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab5_on }
                 on press hbz1_5 { emit sb_press(105) }
-                zone box hbz1_6 { from: hb1_x + 99, hb1_y + 96; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 6"; show: op_vis and op_mode > 0 and ab6_on }
-                box { from: hb1_x + 99, hb1_y + 96; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab6_on }
-                text ab6_letter { at: hb1_x + 99 + 15, hb1_y + 96 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab6_on and not ab6_iconed }
-                image ab6_img { at: hb1_x + 99, hb1_y + 96; size: 30, 30; fit: cover; show: op_vis and ab6_on and ab6_iconed }
-                text ab6_name { at: hb1_x + 99 + 15, hb1_y + 96 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab6_on }
+                zone box hbz1_6 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 6"; show: op_vis and op_mode > 0 and ab6_on }
+                box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab6_on }
+                text ab6_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab6_on and not ab6_iconed }
+                image ab6_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab6_on and ab6_iconed }
+                text ab6_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab6_on }
                 on press hbz1_6 { emit sb_press(106) }
-                zone box hbz1_7 { from: hb1_x + 180, hb1_y + 96; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 7"; show: op_vis and op_mode > 0 and ab7_on }
-                box { from: hb1_x + 180, hb1_y + 96; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab7_on }
-                text ab7_letter { at: hb1_x + 180 + 15, hb1_y + 96 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab7_on and not ab7_iconed }
-                image ab7_img { at: hb1_x + 180, hb1_y + 96; size: 30, 30; fit: cover; show: op_vis and ab7_on and ab7_iconed }
-                text ab7_name { at: hb1_x + 180 + 15, hb1_y + 96 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab7_on }
+                zone box hbz1_7 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 7"; show: op_vis and op_mode > 0 and ab7_on }
+                box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab7_on }
+                text ab7_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab7_on and not ab7_iconed }
+                image ab7_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab7_on and ab7_iconed }
+                text ab7_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab7_on }
                 on press hbz1_7 { emit sb_press(107) }
-                zone box hbz1_8 { from: hb1_x + 261, hb1_y + 96; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 8"; show: op_vis and op_mode > 0 and ab8_on }
-                box { from: hb1_x + 261, hb1_y + 96; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab8_on }
-                text ab8_letter { at: hb1_x + 261 + 15, hb1_y + 96 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab8_on and not ab8_iconed }
-                image ab8_img { at: hb1_x + 261, hb1_y + 96; size: 30, 30; fit: cover; show: op_vis and ab8_on and ab8_iconed }
-                text ab8_name { at: hb1_x + 261 + 15, hb1_y + 96 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab8_on }
+                zone box hbz1_8 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 8"; show: op_vis and op_mode > 0 and ab8_on }
+                box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab8_on }
+                text ab8_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab8_on and not ab8_iconed }
+                image ab8_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab8_on and ab8_iconed }
+                text ab8_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab8_on }
                 on press hbz1_8 { emit sb_press(108) }
-                zone box hbz1_9 { from: hb1_x + 18, hb1_y + 152; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 9"; show: op_vis and op_mode > 0 and ab9_on }
-                box { from: hb1_x + 18, hb1_y + 152; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab9_on }
-                text ab9_letter { at: hb1_x + 18 + 15, hb1_y + 152 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab9_on and not ab9_iconed }
-                image ab9_img { at: hb1_x + 18, hb1_y + 152; size: 30, 30; fit: cover; show: op_vis and ab9_on and ab9_iconed }
-                text ab9_name { at: hb1_x + 18 + 15, hb1_y + 152 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab9_on }
+                zone box hbz1_9 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 9"; show: op_vis and op_mode > 0 and ab9_on }
+                box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab9_on }
+                text ab9_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab9_on and not ab9_iconed }
+                image ab9_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab9_on and ab9_iconed }
+                text ab9_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab9_on }
                 on press hbz1_9 { emit sb_press(109) }
-                zone box hbz1_10 { from: hb1_x + 99, hb1_y + 152; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 10"; show: op_vis and op_mode > 0 and ab10_on }
-                box { from: hb1_x + 99, hb1_y + 152; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab10_on }
-                text ab10_letter { at: hb1_x + 99 + 15, hb1_y + 152 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab10_on and not ab10_iconed }
-                image ab10_img { at: hb1_x + 99, hb1_y + 152; size: 30, 30; fit: cover; show: op_vis and ab10_on and ab10_iconed }
-                text ab10_name { at: hb1_x + 99 + 15, hb1_y + 152 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab10_on }
+                zone box hbz1_10 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 10"; show: op_vis and op_mode > 0 and ab10_on }
+                box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab10_on }
+                text ab10_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab10_on and not ab10_iconed }
+                image ab10_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab10_on and ab10_iconed }
+                text ab10_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab10_on }
                 on press hbz1_10 { emit sb_press(110) }
-                zone box hbz1_11 { from: hb1_x + 180, hb1_y + 152; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 11"; show: op_vis and op_mode > 0 and ab11_on }
-                box { from: hb1_x + 180, hb1_y + 152; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab11_on }
-                text ab11_letter { at: hb1_x + 180 + 15, hb1_y + 152 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab11_on and not ab11_iconed }
-                image ab11_img { at: hb1_x + 180, hb1_y + 152; size: 30, 30; fit: cover; show: op_vis and ab11_on and ab11_iconed }
-                text ab11_name { at: hb1_x + 180 + 15, hb1_y + 152 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab11_on }
+                zone box hbz1_11 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 11"; show: op_vis and op_mode > 0 and ab11_on }
+                box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab11_on }
+                text ab11_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab11_on and not ab11_iconed }
+                image ab11_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab11_on and ab11_iconed }
+                text ab11_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab11_on }
                 on press hbz1_11 { emit sb_press(111) }
-                zone box hbz1_12 { from: hb1_x + 261, hb1_y + 152; size: 78, 52; corner: 10; cursor: pointer; role: button; label: "App 12"; show: op_vis and op_mode > 0 and ab12_on }
-                box { from: hb1_x + 261, hb1_y + 152; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab12_on }
-                text ab12_letter { at: hb1_x + 261 + 15, hb1_y + 152 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab12_on and not ab12_iconed }
-                image ab12_img { at: hb1_x + 261, hb1_y + 152; size: 30, 30; fit: cover; show: op_vis and ab12_on and ab12_iconed }
-                text ab12_name { at: hb1_x + 261 + 15, hb1_y + 152 + 42; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: 76; lines: 1; show: op_vis and ab12_on }
+                zone box hbz1_12 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 12"; show: op_vis and op_mode > 0 and ab12_on }
+                box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab12_on }
+                text ab12_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab12_on and not ab12_iconed }
+                image ab12_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab12_on and ab12_iconed }
+                text ab12_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab12_on }
                 on press hbz1_12 { emit sb_press(112) }
                 // hub 2: MUSIC
                 box { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
@@ -5134,8 +5134,8 @@ scene Sigil {
                 box { from: hb2_x + 18, hb2_y + 40; size: 64, 64; corner: 10; color: rgb(0.13, 0.14, 0.12); opacity: 0.9 }
                 image mu_img { at: hb2_x + 18, hb2_y + 40; size: 64, 64; fit: cover; show: op_vis and mu_on }
                 text "♫" { at: hb2_x + 50, hb2_y + 72; anchor: center; align: center; size: 22; color: muted; show: op_vis and not mu_on }
-                text mu_t1 { at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: ink; width: 208; lines: 1 }
-                text mu_t2 { at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: "Share Tech Mono"; color: muted; width: 208; lines: 1 }
+                text mu_t1 { at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: ink; width: max(80, hb2_w - 106); lines: 1 }
+                text mu_t2 { at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: "Share Tech Mono"; color: muted; width: max(80, hb2_w - 106); lines: 1 }
                 zone box hbz2_1 { from: hb2_x + 92, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous"; show: op_vis and op_mode > 0 }
                 box { from: hb2_x + 92, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_1.hover }
                 on press hbz2_1 { emit sb_press(201) }
@@ -5157,29 +5157,29 @@ scene Sigil {
                 zone box hbz3_0 { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; cursor: grab; role: button; label: "Wallpapers"; show: op_vis and op_mode > 0 }
                 on drag hbz3_0 { emit sb_drag(300) }
                 on release hbz3_0 { emit sb_drop(300) }
-                zone box hbz3_1 { from: hb3_x + 16, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper 1"; show: op_vis and op_mode > 0 and wl1_on }
-                box { from: hb3_x + 16, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl1_on }
-                image wl1_img { at: hb3_x + 16, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl1_on }
+                zone box hbz3_1 { from: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 1"; show: op_vis and op_mode > 0 and wl1_on }
+                box { from: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl1_on }
+                image wl1_img { at: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl1_on }
                 on press hbz3_1 { emit sb_press(301) }
-                zone box hbz3_2 { from: hb3_x + 72, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper 2"; show: op_vis and op_mode > 0 and wl2_on }
-                box { from: hb3_x + 72, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl2_on }
-                image wl2_img { at: hb3_x + 72, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl2_on }
+                zone box hbz3_2 { from: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 2"; show: op_vis and op_mode > 0 and wl2_on }
+                box { from: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl2_on }
+                image wl2_img { at: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl2_on }
                 on press hbz3_2 { emit sb_press(302) }
-                zone box hbz3_3 { from: hb3_x + 128, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper 3"; show: op_vis and op_mode > 0 and wl3_on }
-                box { from: hb3_x + 128, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl3_on }
-                image wl3_img { at: hb3_x + 128, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl3_on }
+                zone box hbz3_3 { from: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 3"; show: op_vis and op_mode > 0 and wl3_on }
+                box { from: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl3_on }
+                image wl3_img { at: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl3_on }
                 on press hbz3_3 { emit sb_press(303) }
-                zone box hbz3_4 { from: hb3_x + 184, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper 4"; show: op_vis and op_mode > 0 and wl4_on }
-                box { from: hb3_x + 184, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl4_on }
-                image wl4_img { at: hb3_x + 184, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl4_on }
+                zone box hbz3_4 { from: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 4"; show: op_vis and op_mode > 0 and wl4_on }
+                box { from: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl4_on }
+                image wl4_img { at: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl4_on }
                 on press hbz3_4 { emit sb_press(304) }
-                zone box hbz3_5 { from: hb3_x + 240, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper 5"; show: op_vis and op_mode > 0 and wl5_on }
-                box { from: hb3_x + 240, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl5_on }
-                image wl5_img { at: hb3_x + 240, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl5_on }
+                zone box hbz3_5 { from: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 5"; show: op_vis and op_mode > 0 and wl5_on }
+                box { from: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl5_on }
+                image wl5_img { at: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl5_on }
                 on press hbz3_5 { emit sb_press(305) }
-                zone box hbz3_6 { from: hb3_x + 296, hb3_y + 42; size: 48, 40; corner: 6; cursor: pointer; role: button; label: "Wallpaper 6"; show: op_vis and op_mode > 0 and wl6_on }
-                box { from: hb3_x + 296, hb3_y + 42; size: 48, 40; corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl6_on }
-                image wl6_img { at: hb3_x + 296, hb3_y + 42; size: 48, 40; fit: cover; show: op_vis and wl6_on }
+                zone box hbz3_6 { from: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 6"; show: op_vis and op_mode > 0 and wl6_on }
+                box { from: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl6_on }
+                image wl6_img { at: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl6_on }
                 on press hbz3_6 { emit sb_press(306) }
                 // hub 4: SETTINGS
                 box { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
@@ -5188,37 +5188,37 @@ scene Sigil {
                 zone box hbz4_0 { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; cursor: grab; role: button; label: "Settings"; show: op_vis and op_mode > 0 }
                 on drag hbz4_0 { emit sb_drag(400) }
                 on release hbz4_0 { emit sb_drop(400) }
-                zone box hbz4_1 { from: hb4_x + 14, hb4_y + 36; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Bar & Frame"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14, hb4_y + 36; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_1.hover; show: op_vis }
-                text "Bar & Frame" { at: hb4_x + 14 + 7, hb4_y + 36 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_1 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Bar & Frame"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_1.hover; show: op_vis }
+                text "Bar & Frame" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 0 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_1 { emit sb_press(401) }
-                zone box hbz4_2 { from: hb4_x + 152, hb4_y + 36; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Wallpapers"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 152, hb4_y + 36; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_2.hover; show: op_vis }
-                text "Wallpapers" { at: hb4_x + 152 + 7, hb4_y + 36 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_2 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Wallpapers"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_2.hover; show: op_vis }
+                text "Wallpapers" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 0 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_2 { emit sb_press(402) }
-                zone box hbz4_3 { from: hb4_x + 14, hb4_y + 60; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Widgets"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14, hb4_y + 60; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_3.hover; show: op_vis }
-                text "Widgets" { at: hb4_x + 14 + 7, hb4_y + 60 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_3 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Widgets"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_3.hover; show: op_vis }
+                text "Widgets" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 1 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_3 { emit sb_press(403) }
-                zone box hbz4_4 { from: hb4_x + 152, hb4_y + 60; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Theme"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 152, hb4_y + 60; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_4.hover; show: op_vis }
-                text "Theme" { at: hb4_x + 152 + 7, hb4_y + 60 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_4 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Theme"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_4.hover; show: op_vis }
+                text "Theme" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 1 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_4 { emit sb_press(404) }
-                zone box hbz4_5 { from: hb4_x + 14, hb4_y + 84; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Islands"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14, hb4_y + 84; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_5.hover; show: op_vis }
-                text "Islands" { at: hb4_x + 14 + 7, hb4_y + 84 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_5 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Islands"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_5.hover; show: op_vis }
+                text "Islands" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 2 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_5 { emit sb_press(405) }
-                zone box hbz4_6 { from: hb4_x + 152, hb4_y + 84; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Notch"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 152, hb4_y + 84; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_6.hover; show: op_vis }
-                text "Notch" { at: hb4_x + 152 + 7, hb4_y + 84 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_6 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Notch"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_6.hover; show: op_vis }
+                text "Notch" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 2 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_6 { emit sb_press(406) }
-                zone box hbz4_7 { from: hb4_x + 14, hb4_y + 108; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "Sound"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14, hb4_y + 108; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_7.hover; show: op_vis }
-                text "Sound" { at: hb4_x + 14 + 7, hb4_y + 108 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_7 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Sound"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_7.hover; show: op_vis }
+                text "Sound" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 3 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_7 { emit sb_press(407) }
-                zone box hbz4_8 { from: hb4_x + 152, hb4_y + 108; size: 132, 22; corner: 6; cursor: pointer; role: button; label: "The Sigil"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 152, hb4_y + 108; size: 132, 22; corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_8.hover; show: op_vis }
-                text "The Sigil" { at: hb4_x + 152 + 7, hb4_y + 108 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: 118; lines: 1 }
+                zone box hbz4_8 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "The Sigil"; show: op_vis and op_mode > 0 }
+                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_8.hover; show: op_vis }
+                text "The Sigil" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 3 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
                 on press hbz4_8 { emit sb_press(408) }
                 // hub 5: NOTICES
                 box { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
@@ -5227,25 +5227,25 @@ scene Sigil {
                 zone box hbz5_0 { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; cursor: grab; role: button; label: "Notices"; show: op_vis and op_mode > 0 }
                 on drag hbz5_0 { emit sb_drag(500) }
                 on release hbz5_0 { emit sb_drop(500) }
-                zone box hbz5_1 { from: hb5_x + 10, hb5_y + 34; size: 300, 34; corner: 8; cursor: pointer; role: button; label: "Notice 1"; show: op_vis and op_mode > 0 and nt1_on }
-                text nt1_t1 { at: hb5_x + 18, hb5_y + 34 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: 280; lines: 1; show: op_vis and nt1_on }
-                text nt1_t2 { at: hb5_x + 18, hb5_y + 34 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: 280; lines: 1; show: op_vis and nt1_on }
+                zone box hbz5_1 { from: hb5_x + 10, hb5_y + 34 + 0 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 1"; show: op_vis and op_mode > 0 and nt1_on }
+                text nt1_t1 { at: hb5_x + 18, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt1_on }
+                text nt1_t2 { at: hb5_x + 18, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt1_on }
                 on press hbz5_1 { emit sb_press(501) }
-                zone box hbz5_2 { from: hb5_x + 10, hb5_y + 72; size: 300, 34; corner: 8; cursor: pointer; role: button; label: "Notice 2"; show: op_vis and op_mode > 0 and nt2_on }
-                text nt2_t1 { at: hb5_x + 18, hb5_y + 72 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: 280; lines: 1; show: op_vis and nt2_on }
-                text nt2_t2 { at: hb5_x + 18, hb5_y + 72 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: 280; lines: 1; show: op_vis and nt2_on }
+                zone box hbz5_2 { from: hb5_x + 10, hb5_y + 34 + 1 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 2"; show: op_vis and op_mode > 0 and nt2_on }
+                text nt2_t1 { at: hb5_x + 18, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt2_on }
+                text nt2_t2 { at: hb5_x + 18, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt2_on }
                 on press hbz5_2 { emit sb_press(502) }
-                zone box hbz5_3 { from: hb5_x + 10, hb5_y + 110; size: 300, 34; corner: 8; cursor: pointer; role: button; label: "Notice 3"; show: op_vis and op_mode > 0 and nt3_on }
-                text nt3_t1 { at: hb5_x + 18, hb5_y + 110 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: 280; lines: 1; show: op_vis and nt3_on }
-                text nt3_t2 { at: hb5_x + 18, hb5_y + 110 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: 280; lines: 1; show: op_vis and nt3_on }
+                zone box hbz5_3 { from: hb5_x + 10, hb5_y + 34 + 2 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 3"; show: op_vis and op_mode > 0 and nt3_on }
+                text nt3_t1 { at: hb5_x + 18, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt3_on }
+                text nt3_t2 { at: hb5_x + 18, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt3_on }
                 on press hbz5_3 { emit sb_press(503) }
-                zone box hbz5_4 { from: hb5_x + 10, hb5_y + 148; size: 300, 34; corner: 8; cursor: pointer; role: button; label: "Notice 4"; show: op_vis and op_mode > 0 and nt4_on }
-                text nt4_t1 { at: hb5_x + 18, hb5_y + 148 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: 280; lines: 1; show: op_vis and nt4_on }
-                text nt4_t2 { at: hb5_x + 18, hb5_y + 148 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: 280; lines: 1; show: op_vis and nt4_on }
+                zone box hbz5_4 { from: hb5_x + 10, hb5_y + 34 + 3 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 4"; show: op_vis and op_mode > 0 and nt4_on }
+                text nt4_t1 { at: hb5_x + 18, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt4_on }
+                text nt4_t2 { at: hb5_x + 18, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt4_on }
                 on press hbz5_4 { emit sb_press(504) }
-                zone box hbz5_clear { from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_vis and op_mode > 0 and nt_n > 0 }
-                box { from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }
-                text "CLEAR" { at: hb5_x + 276, hb5_y + 201; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }
+                zone box hbz5_clear { from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_vis and op_mode > 0 and nt_n > 0 }
+                box { from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }
+                text "CLEAR" { at: hb5_x + hb5_w - 44, hb5_y + hb5_h - 19; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }
                 on press hbz5_clear { emit sb_press(590) }
                 // hub 1's shape handle
                 box { from: hb1_x + hb1_w - 16, hb1_y + hb1_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }

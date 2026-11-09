@@ -6088,3 +6088,30 @@ resize path and size undo in the logic; 749 tests, 0 failed. The live suite is 4
 Apps `360×220` shaped to `752×320` from its corner, saved, then Undo returned `360×220`; the canvas title,
 hint and UNDO/RESET/CLOSE now sit below the bar rather than under it. Screenshots
 `.show-your-work/d212-overview.png` and `d212-resize.png`. Ships behind `surface.on`; nothing pushed.
+
+## D213 — the hubs reflow (phase 2b-ii, the interiors)
+
+**The decision.** A hub's contents now follow its shape instead of sitting in a fixed top-left layout.
+The app marks divide the plate into a four-by-three grid of cells; music's words take the width left of
+the artwork; the wallpaper strip divides the width into six; the settings marks share the width in two
+columns and the height in four rows; the notice rows divide the height and their words take the width;
+Clear sits at the plate's bottom-right. Growing a hub spreads its contents into the new space, and the
+minimum shapes were raised so the reflowed words stay readable (`below.MIN`: Apps 300×200, Music 260×130,
+Wallpapers 300×110, Settings 260×130, Notices 280×200).
+
+**Why the minimums moved.** D212's smaller minimums were chosen for a fixed layout. Once the cells divide
+the plate, a 240 px Apps hub would give each of four marks 51 px and each of three rows 35 px — narrower
+than a two-word app name and shorter than an icon. The new minimums are the smallest sizes at which the
+reflowed contents still read; the designed sizes remain the defaults, and existing saved places without
+a size read exactly as before.
+
+**What stays fixed.** The components and BMO are still 56×56 and 160×196; they are controls and a
+character, not canvases. The hub's title, its drag zone and its shape handle remain anchored to the plate.
+The Nexus deck and its cards are still the remaining half of phase 2b-ii: the Nexus is a separate
+1,572-line scene and its deck is a drawer, not a set of places, so moving it in needs its own snapshot
+and place design rather than a generator edit.
+
+**Verified.** New unit tests assert the reflow expressions in the generated scene and the raised minimum
+shapes; 751 tests, 0 failed; 15 scenes compile. The live suite is 42 checks, 0 failed. Live: Apps shaped
+to 800×320, its twelve marks spread across four wider cells and three taller rows, saved and screenshot
+`.show-your-work/d213-reflow.png`. Ships behind `surface.on`; nothing pushed.
