@@ -30,7 +30,7 @@ FACTS = [("on", "false"), ("above", "false"), ("k", "0"), ("x", "0"), ("y", "0")
          ("st", "0"), ("gh", "false"), ("opa", "1"), ("beh", "false"), ("plate", "false"), ("sel", "false"),
          ("tn", "0"), ("hz", "0.32"), ("ad", "false"), ("ar", "0.6"), ("ag", "0.8"), ("ab", "0.7"), ("dx", "0"), ("dy", "0")]
 
-PO = ", ".join(f"po{i}" for i in range(12))
+PO = ", ".join(f"po{i}" for i in range(16))
 
 # The look shared with the loop (mooi-widgets.plm writes the same for the widgets in it).
 INK = "pick(wg_style, if({p}_ad, if({p}_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)"

@@ -251,7 +251,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 12 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool; viz: bool; dx: number; dy: number; grp: number; pop: bool; above: bool }
+    model wg max 16 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool; viz: bool; dx: number; dy: number; grp: number; pop: bool; above: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -614,6 +614,30 @@ scene Widgets {
     fact op11 = 1
     prop po11 = 1 ~wg.fade
     follow po11 = op11
+    fact hl12 = 0
+    prop ph12 = 0 ~wg.hand
+    follow ph12 = hl12
+    fact op12 = 1
+    prop po12 = 1 ~wg.fade
+    follow po12 = op12
+    fact hl13 = 0
+    prop ph13 = 0 ~wg.hand
+    follow ph13 = hl13
+    fact op13 = 1
+    prop po13 = 1 ~wg.fade
+    follow po13 = op13
+    fact hl14 = 0
+    prop ph14 = 0 ~wg.hand
+    follow ph14 = hl14
+    fact op14 = 1
+    prop po14 = 1 ~wg.fade
+    follow po14 = op14
+    fact hl15 = 0
+    prop ph15 = 0 ~wg.hand
+    follow ph15 = hl15
+    fact op15 = 1
+    prop po15 = 1 ~wg.fade
+    follow po15 = op15
     prop wg_ambs = 0 ~wg.fade
     follow wg_ambs = if(wg_amb and not editing and not wg_desk, 1, 0)
     prop wg_dkp = 0 ~wg.fade
@@ -1137,7 +1161,7 @@ scene Widgets {
         let nl_near = clamp(1 - max(max(0, max(nl_x - desk.cursor.x, desk.cursor.x - nl_x - nl_w)), max(0, max(nl_y - desk.cursor.y, desk.cursor.y - nl_y - nl_h))) / 220, 0, 1)
         let nl_wake = nl_near > 0.7
         on change nl_wake while nl_wake and wg_amb and nl_on { wg_amb = false }
-        let nl_base = if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * nl_opa * (1 - 0.85 * wg_ambs * (1 - nl_near))
+        let nl_base = if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * nl_opa * (1 - 0.85 * wg_ambs * (1 - nl_near))
         group {
             let ink = pick(wg_style, if(nl_ad, if(nl_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1155,7 +1179,7 @@ scene Widgets {
         let g1_near = clamp(1 - max(max(0, max(g1_x - desk.cursor.x, desk.cursor.x - g1_x - g1_w)), max(0, max(g1_y - desk.cursor.y, desk.cursor.y - g1_y - g1_h))) / 220, 0, 1)
         let g1_wake = g1_near > 0.7
         on change g1_wake while g1_wake and wg_amb and g1_on { wg_amb = false }
-        let g1_base = if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g1_opa * (1 - 0.85 * wg_ambs * (1 - g1_near))
+        let g1_base = if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * g1_opa * (1 - 0.85 * wg_ambs * (1 - g1_near))
         group {
             let ink = pick(wg_style, if(g1_ad, if(g1_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1173,7 +1197,7 @@ scene Widgets {
         let g2_near = clamp(1 - max(max(0, max(g2_x - desk.cursor.x, desk.cursor.x - g2_x - g2_w)), max(0, max(g2_y - desk.cursor.y, desk.cursor.y - g2_y - g2_h))) / 220, 0, 1)
         let g2_wake = g2_near > 0.7
         on change g2_wake while g2_wake and wg_amb and g2_on { wg_amb = false }
-        let g2_base = if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * g2_opa * (1 - 0.85 * wg_ambs * (1 - g2_near))
+        let g2_base = if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * g2_opa * (1 - 0.85 * wg_ambs * (1 - g2_near))
         group {
             let ink = pick(wg_style, if(g2_ad, if(g2_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1191,7 +1215,7 @@ scene Widgets {
         let wh_near = clamp(1 - max(max(0, max(wh_x - desk.cursor.x, desk.cursor.x - wh_x - wh_w)), max(0, max(wh_y - desk.cursor.y, desk.cursor.y - wh_y - wh_h))) / 220, 0, 1)
         let wh_wake = wh_near > 0.7
         on change wh_wake while wh_wake and wg_amb and wh_on { wg_amb = false }
-        let wh_base = if(editing, if(wh_gh, 0.4, 1), if(viz_still, if(wh_st < 0.5, 1, 0.35), pick(wh_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * wh_opa * (1 - 0.85 * wg_ambs * (1 - wh_near))
+        let wh_base = if(editing, if(wh_gh, 0.4, 1), if(viz_still, if(wh_st < 0.5, 1, 0.35), pick(wh_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * wh_opa * (1 - 0.85 * wg_ambs * (1 - wh_near))
         group {
             let ink = pick(wg_style, if(wh_ad, if(wh_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(wh_ad, rgb(wh_ar, wh_ag, wh_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1209,7 +1233,7 @@ scene Widgets {
         let sp_near = clamp(1 - max(max(0, max(sp_x - desk.cursor.x, desk.cursor.x - sp_x - sp_w)), max(0, max(sp_y - desk.cursor.y, desk.cursor.y - sp_y - sp_h))) / 220, 0, 1)
         let sp_wake = sp_near > 0.7
         on change sp_wake while sp_wake and wg_amb and sp_on { wg_amb = false }
-        let sp_base = if(editing, if(sp_gh, 0.4, 1), if(viz_still, if(sp_st < 0.5, 1, 0.35), pick(sp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * sp_opa * (1 - 0.85 * wg_ambs * (1 - sp_near))
+        let sp_base = if(editing, if(sp_gh, 0.4, 1), if(viz_still, if(sp_st < 0.5, 1, 0.35), pick(sp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * sp_opa * (1 - 0.85 * wg_ambs * (1 - sp_near))
         group {
             let ink = pick(wg_style, if(sp_ad, if(sp_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(sp_ad, rgb(sp_ar, sp_ag, sp_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1227,7 +1251,7 @@ scene Widgets {
         let cd_near = clamp(1 - max(max(0, max(cd_x - desk.cursor.x, desk.cursor.x - cd_x - cd_w)), max(0, max(cd_y - desk.cursor.y, desk.cursor.y - cd_y - cd_h))) / 220, 0, 1)
         let cd_wake = cd_near > 0.7
         on change cd_wake while cd_wake and wg_amb and cd_on { wg_amb = false }
-        let cd_base = if(editing, if(cd_gh, 0.4, 1), if(viz_still, if(cd_st < 0.5, 1, 0.35), pick(cd_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * cd_opa * (1 - 0.85 * wg_ambs * (1 - cd_near))
+        let cd_base = if(editing, if(cd_gh, 0.4, 1), if(viz_still, if(cd_st < 0.5, 1, 0.35), pick(cd_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * cd_opa * (1 - 0.85 * wg_ambs * (1 - cd_near))
         group {
             let ink = pick(wg_style, if(cd_ad, if(cd_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(cd_ad, rgb(cd_ar, cd_ag, cd_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1245,7 +1269,7 @@ scene Widgets {
         let ln_near = clamp(1 - max(max(0, max(ln_x - desk.cursor.x, desk.cursor.x - ln_x - ln_w)), max(0, max(ln_y - desk.cursor.y, desk.cursor.y - ln_y - ln_h))) / 220, 0, 1)
         let ln_wake = ln_near > 0.7
         on change ln_wake while ln_wake and wg_amb and ln_on { wg_amb = false }
-        let ln_base = if(editing, if(ln_gh, 0.4, 1), if(viz_still, if(ln_st < 0.5, 1, 0.35), pick(ln_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * ln_opa * (1 - 0.85 * wg_ambs * (1 - ln_near))
+        let ln_base = if(editing, if(ln_gh, 0.4, 1), if(viz_still, if(ln_st < 0.5, 1, 0.35), pick(ln_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * ln_opa * (1 - 0.85 * wg_ambs * (1 - ln_near))
         group {
             let ink = pick(wg_style, if(ln_ad, if(ln_tn > 0.5, #15181c, #eef1f4), fl.engrave), #dcffe9, #16191c, #f2f5f8, #2b2722)
             let acc = pick(wg_style, if(ln_ad, rgb(ln_ar, ln_ag, ln_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
@@ -1265,7 +1289,7 @@ scene Widgets {
         group {
             z: if(lA_beh, 1, 3)
             show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on and (editing or wg_dkp > 0.01 or (lA_st < 1.5 and not viz_ext))
-            opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lA_opa
+            opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * lA_opa
             move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0) + lA_dx * wg_dkp, if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0) + lA_dy * wg_dkp
             // the look and its plate turn about the widget's centre, which a turn never moves
             let lA_clip = sf_on and not lA_above and not editing and not wg_desk
@@ -1278,7 +1302,7 @@ scene Widgets {
         group {
             z: if(lB_beh, 1, 3)
             show: (not sf_on or lB_above or editing or wg_desk or op_vis) and lB_on and (editing or wg_dkp > 0.01 or (lB_st < 1.5 and not viz_ext))
-            opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lB_opa
+            opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * lB_opa
             move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0) + lB_dx * wg_dkp, if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0) + lB_dy * wg_dkp
             let lB_clip = sf_on and not lB_above and not editing and not wg_desk
             clip box { from: if(lB_clip, op_x, 0), if(lB_clip, op_y - wall_bar, 0); size: if(lB_clip, op_w, desk.width), if(lB_clip, op_h, desk.height); corner: if(lB_clip, op_r, 0) }
@@ -1290,7 +1314,7 @@ scene Widgets {
         group {
             z: if(lC_beh, 1, 3)
             show: (not sf_on or lC_above or editing or wg_desk or op_vis) and lC_on and (editing or wg_dkp > 0.01 or (lC_st < 1.5 and not viz_ext))
-            opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11))) * lC_opa
+            opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * lC_opa
             move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0) + lC_dx * wg_dkp, if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0) + lC_dy * wg_dkp
             let lC_clip = sf_on and not lC_above and not editing and not wg_desk
             clip box { from: if(lC_clip, op_x, 0), if(lC_clip, op_y - wall_bar, 0); size: if(lC_clip, op_w, desk.width), if(lC_clip, op_h, desk.height); corner: if(lC_clip, op_r, 0) }
@@ -1310,8 +1334,8 @@ scene Widgets {
             let ww = if(rz, wg_sw, w.w)
             let wh = if(rz, wg_sh, w.h)
             let wu = if(rz, wg_ru, w.u)
-            let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7, ph8, ph9, ph10, ph11), 0)
-            let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11)), 0.9 * hv * if(w.st < 1.5, 1, 0))
+            let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7, ph8, ph9, ph10, ph11, ph12, ph13, ph14, ph15), 0)
+            let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)), 0.9 * hv * if(w.st < 1.5, 1, 0))
             // only a widget that shows music can be pointed at (a hidden one, or the visualiser, never)
             let over = w.kind < 0.5 and (w.st < 1.5 or editing) and desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
             on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }

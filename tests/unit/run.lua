@@ -3861,11 +3861,11 @@ test("set_layout keeps place, takes the new default size", function()
     local d = W.set_layout(W.defaults(1920, 1080), "np-1", "record", S)
     eq(d.widgets[1].x, 64, "x kept"); eq(d.widgets[1].w, 280, "record w"); eq(d.widgets[1].y + d.widgets[1].h <= 1080, true, "on screen")
 end)
-test("duplicate ids are renumbered; more than 12 are dropped", function()
+test("duplicate ids are renumbered; more than W.MAX are dropped", function()
     local list = {}
-    for i = 1, 14 do list[i] = { id = "np-1", kind = "nowplaying", layout = "sleeve", x = 0, y = 40, w = 288, h = 104 } end
+    for i = 1, W.MAX + 2 do list[i] = { id = "np-1", kind = "nowplaying", layout = "sleeve", x = 0, y = 40, w = 288, h = 104 } end
     local d = W.parse("", decode_table({ version = 1, widgets = list }), S)
-    eq(#d.widgets, 12, "cap"); eq(d.widgets[2].id ~= d.widgets[1].id, true, "unique")
+    eq(#d.widgets, W.MAX, "cap"); eq(d.widgets[2].id ~= d.widgets[1].id, true, "unique")
 end)
 test("idle_state follows the rule", function()
     eq(W.idle_state({ idle = "rest" }, true), "shown", "playing")
@@ -8318,6 +8318,43 @@ do
         for _, s in ipairs({ "mooi-surface.plm", "mooi-viz.plm", "mooi-widgets.plm", "bmo/bmo.plm" }) do
             assert(m:find('SURFACE.args(shell_dir() .. "/' .. s .. '")', 1, true), s)
         end
+    end)
+end
+
+section("widgets below: the kinds (D215)")
+do
+    local W = require("lib/widgets")
+    local scr = { w = 1920, h = 1080, top = 34 }
+    local function empty() return { version = W.VERSION, widgets = {} } end
+    test("kinds: four new single kinds with their layouts and sizes", function()
+        eq(W.MAX, 16, "sixteen widgets")
+        for kind, lay in pairs({ notices = "stack", wallpapers = "strip", settings = "pages", controls = "row" }) do
+            local d, id = W.add(empty(), kind, scr)
+            assert(id, kind .. " added")
+            local w = d.widgets[1]
+            eq(w.layout, lay, kind .. " layout")
+            local _, id2 = W.add(d, kind, scr)
+            eq(id2, nil, kind .. ": one only")
+        end
+        eq(W.LAYOUTS.stack.def[1], 360); eq(W.LAYOUTS.stack.def[2], 260); eq(W.LAYOUTS.stack.min[1], 280)
+        eq(W.LAYOUTS.strip.def[1], 420); eq(W.LAYOUTS.strip.min[2], 110)
+        eq(W.LAYOUTS.pages.def[2], 170); eq(W.LAYOUTS.row.def[1], 452); eq(W.LAYOUTS.ccolumn.def[2], 452)
+        eq(W.KIND_NUM.notices, 12); eq(W.KIND_NUM.controls, 15)
+        eq(W.ADD_ORDER[16], "controls")
+    end)
+    test("kinds: Launch has a grid; options clamp; the doc keeps its flags", function()
+        local d, id = W.add(empty(), "launch", scr)
+        d = W.set_layout(d, id, "grid", scr)
+        eq(d.widgets[1].layout, "grid")
+        local n, nid = W.add(empty(), "notices", scr)
+        n = W.set_option(n, nid, "nrows", 99)
+        eq(n.widgets[1].options.nrows, 6, "rows at most six")
+        eq(W.OPTIONS.controls.power_confirm, true); eq(W.OPTIONS.controls.wifi, true)
+        local raw = { version = 2, widgets = {}, below_seeded = true, migrated_presences = true, launch_counts = { kitty = 3 } }
+        local p = W.parse("x", function() return raw end, scr)
+        eq(p.below_seeded, true); eq(p.migrated_presences, true); eq(p.launch_counts.kitty, 3)
+        local e = W.encode(p)
+        eq(e.below_seeded, true); eq(e.migrated_presences, true); eq(e.launch_counts.kitty, 3)
     end)
 end
 

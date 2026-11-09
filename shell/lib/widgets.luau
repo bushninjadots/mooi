@@ -8,7 +8,7 @@ local M = {}
 
 M.VERSION = 2
 M.GRID = 8
-M.MAX = 12               -- twelve widgets (D141: seven more kinds)
+M.MAX = 16               -- sixteen widgets (D215: the subsurface's four kinds beside the twelve)
 M.MAX_VIZ = 3             -- the scene draws three visualiser lanes (D138)
 M.FILE = "widgets.json"
 M.MARGIN = 64
@@ -42,6 +42,13 @@ M.LAYOUTS = {
     polaroid = { min = { 180, 210 }, def = { 260, 300 }, max = { 700, 810 }, aspect = true },
     shelf    = { min = { 200, 64 }, def = { 480, 84 }, max = { 1600, 160 } },
     column   = { min = { 64, 200 }, def = { 84, 440 }, max = { 160, 1000 } },
+    -- D215: what lives below the wallpaper — Launch's grid, the notices, the wallpapers, the settings, the controls
+    grid     = { min = { 300, 200 }, def = { 360, 240 }, max = { 1200, 800 } },
+    stack    = { min = { 280, 200 }, def = { 360, 260 }, max = { 900, 700 } },
+    strip    = { min = { 300, 110 }, def = { 420, 140 }, max = { 1400, 320 } },
+    pages    = { min = { 260, 130 }, def = { 320, 170 }, max = { 800, 420 } },
+    row      = { min = { 420, 72 }, def = { 452, 80 }, max = { 900, 140 } },
+    ccolumn  = { min = { 72, 420 }, def = { 80, 452 }, max = { 140, 900 } },
 }
 -- each kind's layouts, in order (the first is a new one's)
 M.KIND_LAYOUTS = {
@@ -55,16 +62,23 @@ M.KIND_LAYOUTS = {
     timer = { "ring", "slab" },
     claude = { "ticker", "quote" },
     photo = { "frame", "polaroid" },
-    launch = { "shelf", "column" },
+    launch = { "shelf", "column", "grid" },
+    notices = { "stack" },
+    wallpapers = { "strip" },
+    settings = { "pages" },
+    controls = { "row", "ccolumn" },
 }
 -- how many of a kind the scene can draw (the rest by M.MAX)
-M.KIND_MAX = { visualiser = 3, notes = 1, github = 2, weather = 1, system = 1, calendar = 1, timer = 1, claude = 1, photo = 1, launch = 1 }
+M.KIND_MAX = { visualiser = 3, notes = 1, github = 2, weather = 1, system = 1, calendar = 1, timer = 1, claude = 1, photo = 1, launch = 1,
+               notices = 1, wallpapers = 1, settings = 1, controls = 1 }
 -- the kinds that follow the music (the idle rule is theirs; the rest are always shown, and rest with ambient)
 M.MUSIC = { nowplaying = true, visualiser = true }
 -- each kind's number in the scene (model wg.kind)
 M.KIND_NUM = { nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4, weather = 5, system = 6, calendar = 7,
-               timer = 8, claude = 9, photo = 10, launch = 11 }
-M.ADD_ORDER = { "nowplaying", "visualiser", "clock", "notes", "github", "weather", "system", "calendar", "timer", "claude", "photo", "launch" }
+               timer = 8, claude = 9, photo = 10, launch = 11,
+               notices = 12, wallpapers = 13, settings = 14, controls = 15 }
+M.ADD_ORDER = { "nowplaying", "visualiser", "clock", "notes", "github", "weather", "system", "calendar", "timer", "claude", "photo", "launch",
+               "notices", "wallpapers", "settings", "controls" }
 M.NP_LAYOUTS = { "sleeve", "lyricstage", "record" }
 M.KINDS = {}
 for k in pairs(M.KIND_NUM) do M.KINDS[k] = true end
@@ -93,6 +107,11 @@ M.OPTIONS = {
     claude = { plate = false, adapt = true, behind = false },
     photo = { folder = "~/Pictures", every = 10, pop = true, plate = false, adapt = true, behind = false },
     launch = { apps = "kitty,zen,code,nautilus,spotify", plate = false, adapt = true, behind = false },
+    notices = { nrows = 4, plate = false, adapt = true, behind = false },
+    wallpapers = { plate = false, adapt = true, behind = false },
+    settings = { plate = false, adapt = true, behind = false },
+    controls = { wifi = true, bt = true, volume = true, bright = true, battery = true, power = true,
+                 power_confirm = true, plate = false, adapt = true, behind = false },
 }
 -- the look of them all (widgets.json, beside the list): a style, the ambient rest, shadows
 M.STYLES = { "adaptive", "phosphor", "ink", "chrome", "paper" }
@@ -103,6 +122,7 @@ M.OPTION_RANGES = {
     minutes = { 1, 180, true }, every = { 1, 120, true }, bars = { 16, 128, true }, gap = { 0, 0.6 }, smooth = { 0, 1 }, text = { 0.8, 1.4 }, glow = { 0, 1 }, rows = { 3, 20, true },
     angle = { -180, 180 },
     lean = { -40, 40 },
+    nrows = { 3, 6, true },
 }
 -- the text options: a GitHub repository is owner/name
 function M.option_string(key, v)
@@ -121,7 +141,8 @@ local function option_number(key, v, d)
     return n
 end
 local PREFIX = { nowplaying = "np", visualiser = "viz", clock = "clk", notes = "nts", github = "gh", weather = "wx",
-                 system = "sys", calendar = "cal", timer = "tmr", claude = "cl", photo = "ph", launch = "ln" }
+                 system = "sys", calendar = "cal", timer = "tmr", claude = "cl", photo = "ph", launch = "ln",
+                 notices = "nc", wallpapers = "wp", settings = "pg", controls = "ct" }
 
 local function grid(v) return math.floor(v / M.GRID + 0.5) * M.GRID end
 local function clamp(v, lo, hi) if v < lo then return lo end; if hi and v > hi then return hi end; return v end
@@ -319,6 +340,13 @@ function M.parse(raw, decode, screen)
     doc.style = M.STYLE_INDEX[t.style] and t.style or "adaptive"
     doc.ambient = t.ambient ~= false
     doc.shadows = t.shadows == true
+    -- D215: the subsurface's once-only steps, and Launch's grid counts
+    doc.below_seeded = t.below_seeded == true
+    doc.migrated_presences = t.migrated_presences == true
+    doc.launch_counts = {}
+    for k, v in pairs(type(t.launch_counts) == "table" and t.launch_counts or {}) do
+        if type(k) == "string" and #k < 200 and tonumber(v) then doc.launch_counts[k] = math.floor(tonumber(v)) end
+    end
     local seen = {}
     for _, e in ipairs(type(t.widgets) == "table" and t.widgets or {}) do
         local w, why = clean(e, screen)
@@ -337,7 +365,8 @@ end
 
 function M.encode(doc)
     local out = { version = M.VERSION, widgets = {}, style = doc.style or "adaptive", ambient = doc.ambient ~= false,
-                  shadows = doc.shadows == true }
+                  shadows = doc.shadows == true, below_seeded = doc.below_seeded == true,
+                  migrated_presences = doc.migrated_presences == true, launch_counts = copy(doc.launch_counts or {}) }
     for i, w in ipairs(doc.widgets) do
         out.widgets[#out.widgets + 1] = { id = w.id, kind = w.kind, layout = w.layout, mode = w.mode,
             x = w.x, y = w.y, w = w.w, h = w.h, idle = w.idle, options = copy(w.options or {}),
