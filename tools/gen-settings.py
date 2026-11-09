@@ -172,6 +172,12 @@ SETTERS = [
     "herdr.focus_on_open",
     # D217: push up from below. Appended.
     "surface.push", "surface.trace",
+    # D219: Live wallpaper. Appended.
+    "live.on", "live.where", "live.speed",
+    "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend",
+    "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend",
+    "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend",
+    "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -818,6 +824,35 @@ SECTIONS = [
         ("slider", "Lines", "How many lines the brief reads", "herdr.brief_lines", 2, 8, "{sv_herdr_brief_lines, 0}", "sv_herdr_brief == 1"),
         ("slider", "Check every", "Seconds between snapshots while the island or module is visible", "herdr.poll", 2, 10, "{sv_herdr_poll, 0} s"),
         ("note", "true", "CLICK FOCUSES AN AGENT AND RAISES ITS WINDOW · RIGHT CLICK ATTACHES IN A TERMINAL"),
+    ]),
+    # D219: Live wallpaper, appended last so no page's place moves.
+    ("Live wallpaper", "Live wallpaper", "The wallpaper comes alive: round the widgets below or all of it, with the music, the hour, or on its own", "DESKTOP", [
+        ("card", "Live wallpaper"),
+        ("toggle", "Live wallpaper", "The picture itself moves: ripples, a breath, a drift, a sweep of light. Works with the Subsurface off", "live.on", "sv_live_on"),
+        ("choice", "Where", "Round the widgets below that move the wallpaper (the Visualiser, the Clock), or the whole picture — which rests while windows cover it", "live.where", "sv_live_where", ["Round the widgets", "The whole picture"], "sv_live_on > 0.5"),
+        ("slider", "Speed", "How fast everything moves", "live.speed", 50, 200, "{sv_live_speed + 50, 0} %", "sv_live_on > 0.5"),
+        ("button", "See it now", "Every effect that is on plays for a few seconds, music or not", "Try it", "live_try", 0),
+        ("card", "Ripple"),
+        ("toggle", "Ripple", "Rings run through the picture with the music's beat", "live.ripple.on", "sv_live_ripple_on", "sv_live_on > 0.5"),
+        ("slider", "Strength", "How far it bends or lights the picture", "live.ripple.strength", 0, 100, "{sv_live_ripple_strength, 0} %", "sv_live_on > 0.5 and sv_live_ripple_on > 0.5"),
+        ("slider", "Size", "How far it reaches and how wide its pattern is", "live.ripple.size", 0, 100, "{sv_live_ripple_size, 0} %", "sv_live_on > 0.5 and sv_live_ripple_on > 0.5"),
+        ("slider", "Blend", "How softly it melts into the still picture", "live.ripple.blend", 0, 100, "{sv_live_ripple_blend, 0} %", "sv_live_on > 0.5 and sv_live_ripple_on > 0.5"),
+        ("card", "Breathe"),
+        ("toggle", "Breathe", "The picture swells and settles with the music's level", "live.breathe.on", "sv_live_breathe_on", "sv_live_on > 0.5"),
+        ("slider", "Strength", "How far it bends or lights the picture", "live.breathe.strength", 0, 100, "{sv_live_breathe_strength, 0} %", "sv_live_on > 0.5 and sv_live_breathe_on > 0.5"),
+        ("slider", "Size", "How far it reaches and how wide its pattern is", "live.breathe.size", 0, 100, "{sv_live_breathe_size, 0} %", "sv_live_on > 0.5 and sv_live_breathe_on > 0.5"),
+        ("slider", "Blend", "How softly it melts into the still picture", "live.breathe.blend", 0, 100, "{sv_live_breathe_blend, 0} %", "sv_live_on > 0.5 and sv_live_breathe_on > 0.5"),
+        ("card", "Flow"),
+        ("toggle", "Flow", "A slow drift under the picture, alive with no music", "live.flow.on", "sv_live_flow_on", "sv_live_on > 0.5"),
+        ("slider", "Strength", "How far it bends or lights the picture", "live.flow.strength", 0, 100, "{sv_live_flow_strength, 0} %", "sv_live_on > 0.5 and sv_live_flow_on > 0.5"),
+        ("slider", "Size", "How far it reaches and how wide its pattern is", "live.flow.size", 0, 100, "{sv_live_flow_size, 0} %", "sv_live_on > 0.5 and sv_live_flow_on > 0.5"),
+        ("slider", "Blend", "How softly it melts into the still picture", "live.flow.blend", 0, 100, "{sv_live_flow_blend, 0} %", "sv_live_on > 0.5 and sv_live_flow_on > 0.5"),
+        ("card", "Light sweep"),
+        ("toggle", "Light sweep", "A band of light crosses the picture when the hour turns", "live.sweep.on", "sv_live_sweep_on", "sv_live_on > 0.5"),
+        ("slider", "Strength", "How far it bends or lights the picture", "live.sweep.strength", 0, 100, "{sv_live_sweep_strength, 0} %", "sv_live_on > 0.5 and sv_live_sweep_on > 0.5"),
+        ("slider", "Size", "How far it reaches and how wide its pattern is", "live.sweep.size", 0, 100, "{sv_live_sweep_size, 0} %", "sv_live_on > 0.5 and sv_live_sweep_on > 0.5"),
+        ("slider", "Blend", "How softly it melts into the still picture", "live.sweep.blend", 0, 100, "{sv_live_sweep_blend, 0} %", "sv_live_on > 0.5 and sv_live_sweep_on > 0.5"),
+        ("note", "true", "IT RESTS WHILE A WINDOW IS FULLSCREEN, WHILE THE OPENING SHOWS, AND — THE WHOLE PICTURE — WHILE WINDOWS COVER IT"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
@@ -1491,6 +1526,7 @@ def main():
     event set_value ->        // to the logic: one setting to one value (lib/setters)
     event set_action ->       // to the logic: 1 the bar's edit mode
     event surface_arrange ->  // to the logic (D215): lay every widget below out again
+    event live_try ->         // to the logic (D219): play every Live wallpaper effect that is on, now
     event surface_above ->    // to the logic (D210): every widget above the wallpaper
     event surface_below ->    // to the logic (D210): every widget under it
     event set_pick            // a section chosen

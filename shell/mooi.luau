@@ -2255,6 +2255,8 @@ after(50, frame_sync)
 function SURFACE.wanted()
     -- D208: always while Surface is on (hold Super to reveal; Presences on the desk)
     if type(settings.surface) == "table" and settings.surface.on ~= false then return true end
+    -- D219: Live wallpaper is drawn by mooi-surface too, the Subsurface on or off
+    if type(settings.live) ~= "table" or settings.live.on ~= false then return true end
     local ok, h = pcall(sys.ask, "files.read", "sigil-hosts.json", "json")
     return ok and type(h) == "table" and type(h.hosts) == "table" and #h.hosts > 0
 end

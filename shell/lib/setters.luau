@@ -341,6 +341,12 @@ M.SETTERS = {
     "herdr.focus_on_open",
     -- D217: push up from below. Appended.
     "surface.push", "surface.trace",
+    -- D219: Live wallpaper. Appended.
+    "live.on", "live.where", "live.speed",
+    "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend",
+    "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend",
+    "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend",
+    "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend",
 }
 
 local function row_of(path)

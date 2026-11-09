@@ -305,6 +305,26 @@ local rows = {
     { title = "What it is doing", desc = "The window title plus the last lines of output, cached for 8 seconds", tab = 22, page = "Herdr", y = 342 },
     { title = "Lines", desc = "How many lines the brief reads", tab = 22, page = "Herdr", y = 402 },
     { title = "Check every", desc = "Seconds between snapshots while the island or module is visible", tab = 22, page = "Herdr", y = 462 },
+    { title = "Live wallpaper", desc = "The picture itself moves: ripples, a breath, a drift, a sweep of light. Works with the Subsurface off", tab = 23, page = "Live wallpaper", y = 156 },
+    { title = "Where", desc = "Round the widgets below that move the wallpaper (the Visualiser, the Clock), or the whole picture — which rests while windows cover it", tab = 23, page = "Live wallpaper", y = 216 },
+    { title = "Speed", desc = "How fast everything moves", tab = 23, page = "Live wallpaper", y = 276 },
+    { title = "See it now", desc = "Every effect that is on plays for a few seconds, music or not", tab = 23, page = "Live wallpaper", y = 336 },
+    { title = "Ripple", desc = "Rings run through the picture with the music's beat", tab = 23, page = "Live wallpaper", y = 462 },
+    { title = "Strength", desc = "How far it bends or lights the picture", tab = 23, page = "Live wallpaper", y = 522 },
+    { title = "Size", desc = "How far it reaches and how wide its pattern is", tab = 23, page = "Live wallpaper", y = 582 },
+    { title = "Blend", desc = "How softly it melts into the still picture", tab = 23, page = "Live wallpaper", y = 642 },
+    { title = "Breathe", desc = "The picture swells and settles with the music's level", tab = 23, page = "Live wallpaper", y = 768 },
+    { title = "Strength", desc = "How far it bends or lights the picture", tab = 23, page = "Live wallpaper", y = 828 },
+    { title = "Size", desc = "How far it reaches and how wide its pattern is", tab = 23, page = "Live wallpaper", y = 888 },
+    { title = "Blend", desc = "How softly it melts into the still picture", tab = 23, page = "Live wallpaper", y = 948 },
+    { title = "Flow", desc = "A slow drift under the picture, alive with no music", tab = 23, page = "Live wallpaper", y = 1074 },
+    { title = "Strength", desc = "How far it bends or lights the picture", tab = 23, page = "Live wallpaper", y = 1134 },
+    { title = "Size", desc = "How far it reaches and how wide its pattern is", tab = 23, page = "Live wallpaper", y = 1194 },
+    { title = "Blend", desc = "How softly it melts into the still picture", tab = 23, page = "Live wallpaper", y = 1254 },
+    { title = "Light sweep", desc = "A band of light crosses the picture when the hour turns", tab = 23, page = "Live wallpaper", y = 1380 },
+    { title = "Strength", desc = "How far it bends or lights the picture", tab = 23, page = "Live wallpaper", y = 1440 },
+    { title = "Size", desc = "How far it reaches and how wide its pattern is", tab = 23, page = "Live wallpaper", y = 1500 },
+    { title = "Blend", desc = "How softly it melts into the still picture", tab = 23, page = "Live wallpaper", y = 1560 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -330,6 +350,7 @@ rows.resets = {
     [20] = { "loom.mode", "loom.fold", "loom.accordions", "loom.cubes", "loom.edge", "loom.loom", "loom.threads" },
     [21] = { "surface.on", "surface.delay", "surface.effect", "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius", "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels", "surface.glow", "surface.ping", "surface.trace", "surface.push", "surface.layout", "surface.overview", "surface.widget_style", "surface.bmo_below" },
     [22] = { "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines", "herdr.poll" },
+    [23] = { "live.on", "live.where", "live.speed", "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend", "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend", "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend", "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"

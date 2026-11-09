@@ -178,4 +178,52 @@ function M.hour(prev, now)
     return a ~= nil and b ~= nil and a ~= b
 end
 
+-- ── Live wallpaper (D219): its own feature, its own page ──
+M.LIVE_FX = { "ripple", "breathe", "flow", "sweep" }
+M.LIVE_MODE = { ripple = 1, breathe = 2, flow = 3, sweep = 4 }
+M.LIVE_DEFAULT = {
+    ripple = { on = true, strength = 60, size = 50, blend = 50 },
+    breathe = { on = true, strength = 40, size = 50, blend = 60 },
+    flow = { on = false, strength = 30, size = 50, blend = 70 },
+    sweep = { on = true, strength = 60, size = 50, blend = 50 },
+}
+local function pct(v, d) local n = tonumber(v); if not n then return d end; return math.max(0, math.min(100, math.floor(n + 0.5))) end
+
+-- the settings, read whole and clamped (whatever settings.json holds)
+function M.live(settings)
+    local l = type(settings) == "table" and type(settings.live) == "table" and settings.live or {}
+    local out = { on = l.on ~= false, where = (l.where == "whole") and "whole" or "widgets",
+                  speed = math.max(50, math.min(200, math.floor((tonumber(l.speed) or 100) + 0.5))), fx = {} }
+    for _, k in ipairs(M.LIVE_FX) do
+        local d, e = M.LIVE_DEFAULT[k], type(l[k]) == "table" and l[k] or {}
+        local on = d.on
+        if type(e.on) == "boolean" then on = e.on end
+        out.fx[k] = { on = on, strength = pct(e.strength, d.strength), size = pct(e.size, d.size), blend = pct(e.blend, d.blend) }
+    end
+    return out
+end
+
+-- one effect for its shader: kind · 1e6 + strength · 1e4 + size · 100 + blend, each 0 … 99 (under 2^24)
+function M.pack(mode, strength, size, blend)
+    local function c(v) return math.max(0, math.min(99, math.floor((tonumber(v) or 0) + 0.5))) end
+    return mode * 1000000 + c(strength) * 10000 + c(size) * 100 + c(blend)
+end
+
+-- how much of the screen the windows hide (sampled on a 48 × 27 grid: overlaps counted once)
+function M.covered_share(rects, scr)
+    local W, H = tonumber(scr and scr.w) or 1920, tonumber(scr and scr.h) or 1080
+    if type(rects) ~= "table" or #rects == 0 then return 0 end
+    local n, hit = 0, 0
+    for i = 0, 47 do
+        for j = 0, 26 do
+            n = n + 1
+            if M.covered({ x = (i + 0.5) * W / 48, y = (j + 0.5) * H / 27 }, rects) then hit = hit + 1 end
+        end
+    end
+    return hit / n
+end
+
+-- how far round a widget an effect's patch reaches (px), by its size
+function M.reach(size) return 20 + (tonumber(size) or 50) * 2.8 end
+
 return M

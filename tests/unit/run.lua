@@ -8369,6 +8369,57 @@ do
     end)
 end
 
+section("live wallpaper: the decisions (D219)")
+do
+    local skin = require("lib/surface/skin")
+    test("live: the settings read whole and clamped; the four effects with their defaults", function()
+        local L = skin.live({})
+        eq(L.on, true); eq(L.where, "widgets"); eq(L.speed, 100)
+        eq(L.fx.ripple.on, true); eq(L.fx.ripple.strength, 60); eq(L.fx.breathe.strength, 40)
+        eq(L.fx.flow.on, false); eq(L.fx.sweep.on, true); eq(L.fx.flow.blend, 70)
+        local M = skin.live({ live = { on = false, where = "whole", speed = 999, ripple = { strength = -5, size = 101 }, sweep = { on = false } } })
+        eq(M.on, false); eq(M.where, "whole"); eq(M.speed, 200)
+        eq(M.fx.ripple.strength, 0); eq(M.fx.ripple.size, 100); eq(M.fx.sweep.on, false)
+        eq(skin.live({ live = { where = "sideways" } }).where, "widgets", "an unknown place: the default")
+        eq(skin.live(nil).on, true)
+    end)
+    test("pack: an effect's kind, strength, size and blend in one number a shader can read whole", function()
+        eq(skin.pack(1, 60, 50, 50), 1605050)
+        eq(skin.pack(4, 100, 100, 100), 4999999, "100 is read as 99")
+        eq(skin.pack(2, 0, 0, 0), 2000000)
+        assert(skin.pack(4, 100, 100, 100) < 2 ^ 24, "under float32's whole numbers")
+    end)
+    test("covered: how much of the screen the windows hide", function()
+        local scr = { w = 1920, h = 1080 }
+        eq(skin.covered_share({}, scr), 0)
+        eq(skin.covered_share({ { x = 0, y = 0, w = 1920, h = 1080 } }, scr), 1)
+        local half = skin.covered_share({ { x = 0, y = 0, w = 960, h = 1080 } }, scr)
+        assert(half > 0.45 and half < 0.55, "half: " .. half)
+        local two = skin.covered_share({ { x = 0, y = 0, w = 960, h = 1080 }, { x = 900, y = 0, w = 1020, h = 1080 } }, scr)
+        eq(two, 1, "overlapping windows are not counted twice")
+    end)
+    test("reach: how far round a widget an effect's patch goes, by its size", function()
+        eq(skin.reach(0), 20); eq(skin.reach(50), 160); eq(skin.reach(100), 300)
+    end)
+end
+
+section("live wallpaper: its own page (D219)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("settings: a page of its own — on, where, speed, Try it, and each effect's strength, size and blend", function()
+        local d = require("lib/config").defaults().live
+        eq(d.on, true); eq(d.where, "widgets"); eq(d.speed, 100); eq(d.flow.on, false); eq(d.ripple.strength, 60)
+        local g = read("tools/gen-settings.py")
+        assert(g:find('("Live wallpaper", "Live wallpaper",', 1, true), "its page")
+        for _, k in ipairs({ "ripple", "breathe", "flow", "sweep" }) do
+            for _, f in ipairs({ "on", "strength", "size", "blend" }) do assert(g:find('"live.' .. k .. '.' .. f .. '"', 1, true), k .. "." .. f) end
+        end
+        assert(g:find('"Try it", "live_try", 0', 1, true))
+        assert(read("shell/mooi-settings.luau"):find('"emit lw_try"', 1, true), "Try it reaches mooi-surface")
+        assert(read("shell/mooi.luau"):find("settings.live.on ~= false then return true end", 1, true), "it runs with the Subsurface off")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
@@ -8544,7 +8595,9 @@ test("the new settings are appended, in one block", function()
     local S = require("lib/setters").SETTERS
     local at = {}; for i, v in ipairs(S) do at[v] = i end
     -- (D217's two follow it: the push and the light's travel)
-    assert(at["herdr.focus_on_open"] == #S - 2 and at["surface.push"] == #S - 1 and at["surface.trace"] == #S, "the last new keys end the list")
+    -- (D217's two follow it, then D219's nineteen: Live wallpaper)
+    assert(at["surface.push"] == at["herdr.focus_on_open"] + 1 and at["surface.trace"] == at["herdr.focus_on_open"] + 2, "D217 after herdr")
+    assert(at["live.on"] == at["surface.trace"] + 1 and at["live.sweep.blend"] == #S, "D219 ends the list")
     assert(at["companion.eyes"] and at["companion.eyes"] + 4 == at["companion.react.browser"], "companion block")
     assert(at["herdr.path"] and at["herdr.path"] + 6 == at["herdr.focus_on_open"], "herdr block")
 end)
