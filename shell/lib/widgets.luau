@@ -277,7 +277,8 @@ local function options_for(kind, given)
     given = type(given) == "table" and given or {}
     for k, d in pairs(M.OPTIONS[kind]) do
         local v = given[k]
-        if type(d) == "boolean" then out[k] = (type(v) == "boolean") and v or d
+        -- (D218: not `and v or d`, which read every switch saved off as its default)
+        if type(d) == "boolean" then if type(v) == "boolean" then out[k] = v else out[k] = d end
         elseif type(d) == "string" then out[k] = M.option_string(k, v) or d
         else out[k] = option_number(k, v, d) end
     end

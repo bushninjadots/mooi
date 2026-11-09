@@ -3186,9 +3186,6 @@ scene Sigil {
     let h3_p63 = push * max(0, 40 - h3_d63) / 40 * 6 / h3_d63
     let h3_X63 = h3_wx63 + (h3_wx63 - cursor.x) * h3_p63
     let h3_Y63 = h3_wy63 + (h3_wy63 - cursor.y) * h3_p63
-
-    let op_px = cursor.x      // the pointer for the opening's follow mode (outside the generated block)
-    let op_py = cursor.y
     // <gen:opening>
     // The opening (D209): mooi-surface packs the hole into three numbers (lib/surface/opening `pack`);
     // every program turns them into the same sprung rectangle. mode = c / 1000: closed 0 · follow 1 · snapped 2 ·
@@ -3217,11 +3214,13 @@ scene Sigil {
     let op_r0 = op_r1 - if(op_faint, 500, 0)
     let op_ax = floor(op_ta / 4096)
     let op_aw = floor(op_tb / 4096)
-    let op_tx = if(op_mode == 1, op_px - 90, op_ax)
-    let op_ty = if(op_mode == 1, op_py - 90, op_ta - op_ax * 4096)
-    let op_tw = if(op_mode == 1, 180, op_aw)
-    let op_th = if(op_mode == 1, 180, op_tb - op_aw * 4096)
-    let op_tr = if(op_mode == 1, 90, op_r0)
+    // D218: every mode, follow too, draws the hole mooi-surface sends: it reads the pointer from Hyprland
+    // while Super is held (a scene's own pointer reading stands still while it is over anything else)
+    let op_tx = op_ax
+    let op_ty = op_ta - op_ax * 4096
+    let op_tw = op_aw
+    let op_th = op_tb - op_aw * 4096
+    let op_tr = op_r0
     prop op_x = 0 ~sg.op
     follow op_x = op_tx
     prop op_y = 0 ~sg.op

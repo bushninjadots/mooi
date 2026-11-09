@@ -6,8 +6,9 @@ Holding Super opens the wallpaper. `mooi-surface` owns the opening and sends thr
 (mooi-widgets, mooi-viz, BMO); each of them, and mooi-surface itself, turns them into the same sprung hole
 (op_x, op_y, op_w, op_h, op_r, op_k) with the identical text below, so the hole is the same shape everywhere.
 
-The block never names the pointer: the follow target reads `op_px`, `op_py` (the pointer, in the scene's own
-pixels), which each scene defines OUTSIDE the markers. Why (Pleamar src, compiler.rs:532): a scene that
+The block never names the pointer. (D218: nor do the scenes for the opening's sake any more — every mode draws
+the hole mooi-surface sends, which reads the pointer from Hyprland while Super is held; the notes below are why
+naming it was costly.) Why (Pleamar src, compiler.rs:532): a scene that
 names `cursor` in any form, `cursor.x` or `desk.cursor.x` (mentions_part, compiler.rs:901), sets
 `wants_cursor`; that starts the compositor cursor feed at 30 Hz (platform/hyprland.rs:87, mod.rs:1199) and
 every pointer move counts as activity for `idle` rules (render.rs:1356). Qualifying the name does not help,
@@ -64,11 +65,13 @@ def block():
         "    let op_r0 = op_r1 - if(op_faint, 500, 0)",
         "    let op_ax = floor(op_ta / 4096)",
         "    let op_aw = floor(op_tb / 4096)",
-        f"    let op_tx = if(op_mode == 1, op_px - {R}, op_ax)",
-        f"    let op_ty = if(op_mode == 1, op_py - {R}, op_ta - op_ax * 4096)",
-        f"    let op_tw = if(op_mode == 1, {2 * R}, op_aw)",
-        f"    let op_th = if(op_mode == 1, {2 * R}, op_tb - op_aw * 4096)",
-        f"    let op_tr = if(op_mode == 1, {R}, op_r0)",
+        "    // D218: every mode, follow too, draws the hole mooi-surface sends: it reads the pointer from Hyprland",
+        "    // while Super is held (a scene's own pointer reading stands still while it is over anything else)",
+        "    let op_tx = op_ax",
+        "    let op_ty = op_ta - op_ax * 4096",
+        "    let op_tw = op_aw",
+        "    let op_th = op_tb - op_aw * 4096",
+        "    let op_tr = op_r0",
         "    prop op_x = 0 ~sg.op",
         "    follow op_x = op_tx",
         "    prop op_y = 0 ~sg.op",

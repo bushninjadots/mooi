@@ -7483,6 +7483,21 @@ do
         OP.move(st, boxes, { x = 420, y = 120 })
         eq(st.mode, OP.MODES.snapped); eq(st.snap.id, "b")
     end)
+    test("D218: with a clock, a widget is hugged only once the pointer rests on it; leaving lets go at once", function()
+        local st = OP.state(); OP.open(st)
+        OP.move(st, boxes, { x = 200, y = 150 }, 0, 1000)
+        eq(st.mode, OP.MODES.follow, "passing over: the hole follows")
+        OP.move(st, boxes, { x = 210, y = 150 }, 0, 1000 + OP.DWELL - 1)
+        eq(st.mode, OP.MODES.follow, "not yet")
+        OP.move(st, boxes, { x = 212, y = 150 }, 0, 1000 + OP.DWELL)
+        eq(st.mode, OP.MODES.snapped, "rested: it hugs the widget"); eq(st.snap.id, "a")
+        OP.move(st, boxes, { x = 700, y = 600 }, 0, 1400)
+        eq(st.mode, OP.MODES.follow, "away: at once"); eq(st.snap, nil)
+        OP.move(st, boxes, { x = 420, y = 120 }, 0, 1500)
+        eq(st.mode, OP.MODES.follow, "another widget waits its own rest")
+        OP.move(st, boxes, { x = 200, y = 150 }, 0, 1500 + OP.DWELL)
+        eq(st.mode, OP.MODES.follow, "a different widget starts the wait again")
+    end)
     test("opening: a tie goes to the smaller box", function()
         local big = { id = "big", x = 0, y = 0, w = 100, h = 100 }
         local small = { id = "small", x = 120, y = 0, w = 20, h = 20 }
@@ -7544,9 +7559,10 @@ do
         local u2 = OP.unpack(a2, b2, c2)
         eq(u2.x, 0); eq(u2.y, 4095); eq(u2.w, 180); eq(u2.h, 180); eq(u2.mode, 1); eq(u2.r, 90)
     end)
-    test("opening: a follow move sends nothing to the citizens", function()
+    test("opening: what reaches the citizens (D218: a follow move too)", function()
         local follow = { a = 100, b = 200, c = 1090 }
-        eq(OP.changed(follow, 140, 240, 1090), false, "only a and b moved, in follow mode")
+        -- D218: the programs no longer read their own (stale) cursor: a follow move is sent too
+        eq(OP.changed(follow, 140, 240, 1090), true, "the hole moved, in follow mode")
         eq(OP.changed(follow, 100, 200, 1090), false, "nothing moved")
         eq(OP.changed(follow, 140, 240, 2018), true, "the mode changed")
         eq(OP.changed({ a = 1, b = 2, c = 2018 }, 3, 4, 2018), true, "the snapped box moved")
@@ -7567,17 +7583,18 @@ test("opening block: one text in every program", function()
     for _, p in ipairs({ "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
         assert(block(p) == ref, p .. " differs from mooi-surface.plm")
     end
-    for _, needle in ipairs({ "spring sg.op = 380, 34", "event op_a ->", "event sf_set ->", "op_px - 90", "on op_c(v)", "let op_faint = op_r1 > 499.5",
+    for _, needle in ipairs({ "spring sg.op = 380, 34", "event op_a ->", "event sf_set ->", "let op_tx = op_ax", "on op_c(v)", "let op_faint = op_r1 > 499.5",
                             "follow op_k = if(op_mode > 0, if(op_faint, 0.45, 1), 0)", "let op_live = op_vis and not op_faint" }) do
         assert(ref:find(needle, 1, true), "the block has " .. needle)
     end
-    assert(ref:find("op_mode == 1, op_px - 90", 1, true) and ref:find("op_mode == 1, 180, op_aw", 1, true), "follow: the 2 * 90 square on the pointer")
+    -- D218: every mode draws the hole mooi-surface sends (it reads the pointer from Hyprland while Super is held)
+    assert(ref:find("let op_tw = op_aw", 1, true) and not ref:find("op_px", 1, true), "follow: the hole as sent, never the scene's own cursor")
     assert(not ref:find("cursor", 1, true), "the block never names the pointer (it would start the cursor feed and the idle clock)")
     assert(ref:find("if(sf_on, floor(op_tc / 1000), 0)", 1, true), "Surface off: mode 0, nothing moves")
     for _, p in ipairs({ "shell/mooi-surface.plm", "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
         local t = read(p)
         local outside = t:gsub("// <gen:opening>.-// </gen:opening>", "")
-        assert(outside:find("op_px = ", 1, true) and outside:find("op_py = ", 1, true), p .. " defines op_px/op_py outside the block")
+        assert(not outside:find("op_px", 1, true), p .. ": no cursor of its own for the opening (D218)")
     end
     local op = require("lib/surface/opening")
     eq(op.R, 90, "opening.R")
@@ -7829,7 +7846,7 @@ do
     test("opening: the logic sends the hole once per change, with no throttle that could drop one", function()
         local l = read("shell/mooi-surface.luau")
         assert(not l:find("SF.ship_at", 1, true), "the 100 ms throttle is gone")
-        assert(l:find("opening.move(SF.op, boxes(), SF.ptr, bar_h())", 1, true), "the bar's strip is passed")
+        assert(l:find("opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)", 1, true), "the bar's strip (and, D218, the clock) is passed")
         assert(l:find("if SF.op.faint and reveal.firm(SF.rv) then", 1, true), "firm opens it all the way")
         assert(l:find('fact.sf_snap = code', 1, true) and l:find('"emit op_wake"', 1, true), "the snapped thing rises; BMO wakes")
         assert(l:find("if not on and SF.op.mode ~= opening.MODES.closed then", 1, true), "Surface off heals at once")
@@ -8320,6 +8337,35 @@ do
         assert(a and b and b > a, "after the last slot")
         assert(g:find('"surface.push", "sv_surface_push"', 1, true) and g:find('"surface.trace", "sv_surface_trace"', 1, true))
         assert(not g:find('"surface.ping", "sv_surface_ping", "sv_surface_glow > 0.5"', 1, true), "the ping no longer waits on the glow")
+    end)
+end
+
+section("the opening follows the pointer (D218)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("mooi-surface reads the pointer from Hyprland while Super is held, a tenth of a second apart, one at a time", function()
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find("local function poll_pointer()", 1, true))
+        assert(l:find("if SF.dragging then return end", 1, true), "a drag freezes the hole")
+        assert(l:find("if SF.polling and SF.clock - SF.poll_at < 500 then return end", 1, true), "never two at once (a lost one given up)")
+        assert(l:find("if SF.clock % 100 == 0 then poll_pointer() end", 1, true), "every 100 ms of the reveal's tick")
+        assert(l:find("opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)", 1, true), "with the clock: resting hugs, passing follows")
+        assert(l:find("SF.mox, SF.moy", 1, true), "the monitor's origin taken off")
+    end)
+end
+
+section("widgets: a switch turned off stays off (D218)")
+do
+    local W = require("lib/widgets")
+    test("an option whose default is on, saved off, is read back off", function()
+        local t = { version = 2, widgets = {
+            { id = "ct-1", kind = "controls", layout = "row", x = 10, y = 10, w = 452, h = 80, options = { power_confirm = false, wifi = false } },
+            { id = "np-1", kind = "nowplaying", layout = "sleeve", x = 10, y = 200, w = 432, h = 152, options = { lyrics = false } } } }
+        local doc = W.parse("x", decode_table(t), { w = 1920, h = 1080 })
+        local ct, np
+        for _, w in ipairs(doc.widgets) do if w.kind == "controls" then ct = w elseif w.kind == "nowplaying" then np = w end end
+        eq(ct.options.power_confirm, false, "power asks once"); eq(ct.options.wifi, false, "wi-fi hidden")
+        eq(ct.options.bt, true, "the rest keep their default"); eq(np.options.lyrics, false, "no lyric line")
     end)
 end
 

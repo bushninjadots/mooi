@@ -7,7 +7,9 @@
 -- harm; `away` — the pointer is over the bar, where there is no opening (the bar answers as today), so the
 -- programs under the wallpaper are told it is closed until the pointer comes back down.
 
-local M = { R = 90, SNAP = 40, MARGIN = 16, SECTION = 0.4, CORNER = 18, FAINT = 0.45 }
+-- DWELL (D218): how long the pointer rests on a widget before the hole hugs it, so a sweep across the widgets
+-- is followed rather than caught by each one in turn
+local M = { R = 90, SNAP = 40, MARGIN = 16, SECTION = 0.4, CORNER = 18, FAINT = 0.45, DWELL = 260 }
 M.MODES = { closed = 0, follow = 1, snapped = 2, section = 3, full = 4 }
 local MD = M.MODES
 
@@ -42,14 +44,22 @@ end
 
 -- `bar_h`: the bar's strip at the top of the screen; a follow or snapped opening goes away while the pointer
 -- is in it (a section and the Overview stay where they are — they do not follow).
-function M.move(st, boxes, p, bar_h)
+-- `now` (ms, D218): with a clock, a widget not yet hugged is hugged only once the pointer has rested near it for
+-- DWELL; without one (the keyboard's walk, the old callers) at once.
+function M.move(st, boxes, p, bar_h, now)
     if st.mode ~= MD.follow and st.mode ~= MD.snapped then return end
     if bar_h and p.y < bar_h then
-        st.snap, st.mode, st.away = nil, MD.follow, true
+        st.snap, st.mode, st.away, st.cand = nil, MD.follow, true, nil
         return
     end
     st.away = false
-    local b = M.near(boxes, p)
+    local near = M.near(boxes, p)
+    local b = near
+    if near and now and not (st.snap and st.snap.id == near.id) then
+        if not (st.cand and st.cand.id == near.id) then st.cand, st.cand_at = near, now end
+        if now - st.cand_at < M.DWELL then b = nil end
+    end
+    if not near then st.cand = nil end
     st.snap = b
     st.mode = b and MD.snapped or MD.follow
     if b then st.faint = false end
@@ -113,12 +123,12 @@ function M.unpack(a, b, c)
 end
 
 -- Whether the packed triple has to reach the programs under the wallpaper: the first send, any change of mode
--- or rim, and — outside follow mode — any move of the hole. In follow mode only the pointer moved and the
--- programs already follow it themselves, so a is not sent.
+-- or rim, any move of the hole. (D218: in follow mode too — the programs used to follow their own cursor, which
+-- stands still while the pointer is over a window or any surface but theirs; mooi-surface reads the pointer from
+-- Hyprland now and sends the hole.)
 function M.changed(prev, a, b, c)
     if not prev then return true end
     if prev.c ~= c then return true end
-    if c // 1000 == MD.follow then return false end
     return prev.a ~= a or prev.b ~= b
 end
 

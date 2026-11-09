@@ -528,6 +528,25 @@ end
 
 -- SF.clock: a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
 -- (review I7: it advances only inside the reveal's own tick — nothing runs while idle)
+-- D218: the pointer, read from Hyprland while Super is held — the scenes' own readings stand still while it is
+-- over a window or any surface but theirs, so the hole is moved from here and sent (opening.changed). One read at
+-- a time (a read that never answers is given up after half a second); a drag freezes the hole.
+local function poll_pointer()
+    if SF.dragging then return end
+    if SF.polling and SF.clock - SF.poll_at < 500 then return end
+    SF.polling, SF.poll_at = true, SF.clock
+    run("hyprctl", { "cursorpos" }, function(out)
+        SF.polling = nil
+        local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
+        if not x then return end
+        SF.ptr = { x = tonumber(x) - (SF.mox or 0), y = tonumber(y) - (SF.moy or 0) }
+        if SF.op.mode > 0 and not SF.dragging then
+            opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)
+            broadcast()
+        end
+    end)
+end
+
 local function tick()
     SF.clock = SF.clock + 50
     -- the notification ping fades in about a second while the opening is up
@@ -546,10 +565,11 @@ local function tick()
         return
     end
     show_reveal()
+    if SF.clock % 100 == 0 then poll_pointer() end
     if SF.rv.stage == 2 and not SF.opened then
         SF.opened = true
         opening.open(SF.op)
-        opening.move(SF.op, boxes(), SF.ptr, bar_h())
+        opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)
         drag_down()
         broadcast()
     end
@@ -569,8 +589,8 @@ on("rv_down", function()
     run("hyprctl", { "cursorpos" }, function(out)
         local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
         if x then
-            SF.ptr = { x = tonumber(x), y = tonumber(y) }
-            if SF.op.mode > 0 then opening.move(SF.op, boxes(), SF.ptr, bar_h()); broadcast() end
+            SF.ptr = { x = tonumber(x) - (SF.mox or 0), y = tonumber(y) - (SF.moy or 0) }
+            if SF.op.mode > 0 then opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock); broadcast() end
         end
     end)
     if not SF.ticking then SF.ticking = every(50, tick) end
@@ -580,7 +600,7 @@ on("rv_move", function(v)
     SF.ptr = { x = v // 10000, y = v % 10000 }
     -- while a drag is under way the hole stays where it was: a following hole would always contain the drop
     if SF.op.mode > 0 and not SF.dragging then
-        opening.move(SF.op, boxes(), SF.ptr, bar_h())
+        opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)
         broadcast()
     end
 end)
@@ -736,6 +756,7 @@ run("hyprctl", { "-j", "monitors" }, function(out)
             if m.focused then
                 SF.scr = { w = tonumber(m.width) / (tonumber(m.scale) or 1), h = tonumber(m.height) / (tonumber(m.scale) or 1) }
                 SF.monitor = type(m.name) == "string" and m.name or nil
+                SF.mox, SF.moy = tonumber(m.x) or 0, tonumber(m.y) or 0
             end
         end
     end

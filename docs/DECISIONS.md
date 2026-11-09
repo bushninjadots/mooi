@@ -6328,3 +6328,32 @@ the spark with its count; the bulge measured (on against off: ≈ 14 000 pixels 
 the patch's edge band at most 1 — no seam). Not yet seen: any of it live on the desk (it needs this build running
 with the Surface on).
 
+## D218 · 2026-11-09 · The opening follows the pointer; a switch turned off stays off
+
+The owner, after trying D217 live: "holding super the effect of showing things behind doesn't follow and only
+selects widgets I hover over to see through and its shape".
+
+**Why it did not follow.** In follow mode every program drew the hole round its *own* reading of the pointer
+(`cursor.x` of its own surface). A layer surface only hears the pointer while the pointer is over it, so over a
+window, or over any surface but that program's, the reading stands still; the hole moved only when the logic
+snapped it to a widget (which it sends). mooi-viz and BMO had no reading at all.
+
+**Now** mooi-surface reads the pointer from Hyprland (`hyprctl cursorpos`, minus the monitor's origin) every
+100 ms while Super is held — one read at a time, a lost one given up after 500 ms, none during a drag — and sends
+the hole in every mode (`opening.changed` no longer skips follow moves); the shared opening block draws only what
+is sent, and the scenes' own pointer readings for it are gone (which also spares mooi-viz the compositor's cursor
+feed).
+
+**Hugging waits for a rest.** With a clock, `opening.move` hugs a widget only once the pointer has rested near it
+for 260 ms (`opening.DWELL`); passing over widgets, the round hole follows; leaving lets go at once. The keyboard's
+walk snaps at once, as before.
+
+**A switch turned off stays off.** `lib/widgets` read every boolean option saved `false` back as its default
+(`(type(v) == "boolean") and v or d`): "power asks twice", the lyric line, progress, the controls shown, … all came
+back on whenever widgets.json was read again. Fixed, tested.
+
+**Why no lights were seen (not a bug):** Now Playing was set to `still`, there was no Notices widget, nothing was
+playing, and the `skin` surface lies under the windows by design. Only the notice's light is drawn over windows.
+
+**Verified.** Unit 775 / 0; 15 scenes compile; `bin/mooi check` green. The follow itself needs the owner's Super key.
+
