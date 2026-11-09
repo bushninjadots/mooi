@@ -6808,5 +6808,11 @@ test("Herdr is a module with an island of agent rows and actions", function()
     assert(b:find('"agent", "focus"', 1, true) and b:find('"agent", "attach"', 1, true), "the actions")
 end)
 
+-- the node's helpers' own tests (D230), kept apart: tests/unit/node_helpers.lua, given the harness's section, test, eq
+do
+    local chunk = loadfile("tests/unit/node_helpers.lua")
+    if chunk then chunk(section, test, eq) end
+end
+
 print(string.format("\n%d tests, %d failed", count, failures))
 os.exit(failures == 0 and 0 or 1)
