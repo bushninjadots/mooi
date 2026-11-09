@@ -7479,7 +7479,7 @@ do
         local plm = read("shell/mooi-surface.plm")
         local sk = block(plm, "skin")
         assert(sk:find("level: bottom", 1, true) and sk:find("keyboard: none", 1, true))
-        assert(sk:find("open: not op_vis and (lw_on or (sf_on and (sk_on or pu_on)))", 1, true), "nothing while the opening shows")
+        assert(sk:find("open: not op_vis and (lw_on or nf_on or (sf_on and (sk_on or pu_on)))", 1, true), "nothing while the opening shows (D226: the node's ripple too)")
         assert(not sk:find("zone", 1, true), "it catches nothing")
         assert(sk:find("shader: bulge, pu_b,", 1, true) and sk:find("text pu_words", 1, true), "the bulge and its words")
         -- (D219: the moving wallpaper and the hour's sweep are Live wallpaper's, one pass per effect)
@@ -8040,6 +8040,18 @@ do
         assert(m:find('    node) # D226', 1, true))
         assert(m:find('"$pleamar" --say mooi-node "emit nd_cmd $n" >/dev/null 2>&1 && exit 0', 1, true))
         assert(m:find('pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;', 1, true), "Super wakes the node first")
+    end)
+end
+
+section("the node and the wallpaper (D226)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("a notice at the node ripples the wallpaper under it, a moment, never under reduced motion", function()
+        local n = read("shell/mooi-node.luau")
+        assert(n:find('"emit nd_fx " .. tostring(cx)', 1, true) and n:find("if cfg().wallpaper ~= false then", 1, true))
+        local s = read("shell/mooi-surface.luau")
+        assert(s:find('on("nd_fx"', 1, true) and s:find("if reduced then return end", 1, true))
+        assert(read("shell/mooi-surface.plm"):find("show: nf_on and nf_k > 0.01", 1, true))
     end)
 end
 

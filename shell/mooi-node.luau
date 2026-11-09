@@ -264,7 +264,10 @@ local function notices_now()
     if stamp and stamp ~= N.notice_seen and N.notice_seen ~= nil and on_for("notices") then
         ST.push(N.st, "notice", now())
         -- the wallpaper answers with a small ripple at the node (mooi-surface, D226)
-        if cfg().wallpaper ~= false then run("pleamar", { "--say", "mooi-surface", "emit nd_fx 1" }, function() end) end
+        if cfg().wallpaper ~= false then
+            local cx = math.floor((fact.nd_tx or 0) + (fact.nd_tw or 22) / 2 + 0.5)
+            run("pleamar", { "--say", "mooi-surface", "emit nd_fx " .. tostring(cx) }, function() end)
+        end
     end
     N.notice_seen = stamp or ""
     render()

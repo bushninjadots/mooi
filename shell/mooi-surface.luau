@@ -715,6 +715,18 @@ on("bt_go", function(v)
     heal_opening()
 end)
 
+-- D226: the node (the Pill) had news: the wallpaper ripples under it for a moment (Live wallpaper's ripple)
+on("nd_fx", function(v)
+    local reduced = type(S.settings.motion) == "table" and S.settings.motion.reduced == true
+    if reduced then return end
+    fact.nf_x = math.floor(tonumber(v) or 960)
+    fact.nf_on, fact.nf_t = true, 1
+    SF.nf = (SF.nf or 0) + 1
+    local mine = SF.nf
+    after(700, function() if SF.nf == mine then fact.nf_t = 0 end end)
+    after(1500, function() if SF.nf == mine then fact.nf_on = false end end)
+end)
+
 -- D217: push up from below — the glow, the moving wallpaper, the bulge and words, the notice's light
 SK = require("lib/surface/light")({
     music = function() return S.music end,
