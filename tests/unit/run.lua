@@ -8067,6 +8067,14 @@ do
         for _, h in ipairs({ "BF.audio(a)", "BF.battery(b)", "BF.apps(apps_now)", "BF.notices(f)", "BF.refresh()" }) do assert(l:find(h, 1, true), h) end
         assert(l:find('notices = "nc_", wallpapers = "wp_", settings = "pg_", controls = "ct_"', 1, true), "the lanes are lit")
     end)
+    test("overview: the widgets' edit keys reach them while the opening holds the keyboard", function()
+        local plm = read("shell/mooi-surface.plm")
+        for code, k in pairs({ [11] = "Ctrl+z", [12] = "Ctrl+Shift+z", [9] = "Delete", [1] = "Left", [4] = "Down", [8] = "Shift+Down", [10] = "Ctrl+d", [13] = "Ctrl+a" }) do
+            assert(plm:find("on key " .. k .. " while op_mode == 4 { emit op_wkey(" .. code .. ") }", 1, true), k)
+        end
+        assert(plm:find("event op_wkey ->", 1, true))
+        assert(read("shell/mooi-surface.luau"):find('widgets_say("emit wg_key " ..', 1, true), "sent on as the widgets' own keys")
+    end)
     test("feed: one watcher per service, the presses do what the spec says", function()
         local f = read("shell/lib/wbelow_feed.luau")
         for _, s in ipairs({ '"audio"', '"battery"', '"apps"', '"files:nexus-feed.json"' }) do

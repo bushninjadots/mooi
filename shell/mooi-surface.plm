@@ -3243,6 +3243,7 @@ scene Sigil {
     event op_bx ->        // from BMO: where he stands, x * 4096 + y
     event op_bs ->        // ... and how big he is, w * 4096 + h
     event op_wbar ->      // from mooi-widgets: how far below the screen's top its surface starts
+    event op_wkey ->      // an edit key in the Overview, sent on to mooi-widgets as its own (wg_key)
     event sb_drag ->      // from mooi-widgets: a widget is being dragged in the opening (-1)
     event sb_drop ->      // ... and let go
     fact sf_snap = 0      // what the opening hugs: BMO 20, a widget 30, none 0
@@ -4820,6 +4821,19 @@ scene Sigil {
         on key x while op_mode == 4 { emit op_type(120) }
         on key y while op_mode == 4 { emit op_type(121) }
         on key z while op_mode == 4 { emit op_type(122) }
+        on key Left while op_mode == 4 { emit op_wkey(1) }
+        on key Right while op_mode == 4 { emit op_wkey(2) }
+        on key Up while op_mode == 4 { emit op_wkey(3) }
+        on key Down while op_mode == 4 { emit op_wkey(4) }
+        on key Shift+Left while op_mode == 4 { emit op_wkey(5) }
+        on key Shift+Right while op_mode == 4 { emit op_wkey(6) }
+        on key Shift+Up while op_mode == 4 { emit op_wkey(7) }
+        on key Shift+Down while op_mode == 4 { emit op_wkey(8) }
+        on key Delete while op_mode == 4 { emit op_wkey(9) }
+        on key Ctrl+d while op_mode == 4 { emit op_wkey(10) }
+        on key Ctrl+z while op_mode == 4 { emit op_wkey(11) }
+        on key Ctrl+Shift+z while op_mode == 4 { emit op_wkey(12) }
+        on key Ctrl+a while op_mode == 4 { emit op_wkey(13) }
         on key space while op_mode == 4 { emit op_type(32) }
         on key BackSpace while op_mode == 4 { emit op_type(8) }
         // the eight looks: the real wallpaper, cut open over the hole (the surface's own size: screen.height

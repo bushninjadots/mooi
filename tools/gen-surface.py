@@ -38,6 +38,7 @@ def below_decls():
             "    event op_bx ->        // from BMO: where he stands, x * 4096 + y",
             "    event op_bs ->        // ... and how big he is, w * 4096 + h",
             "    event op_wbar ->      // from mooi-widgets: how far below the screen's top its surface starts",
+            "    event op_wkey ->      // an edit key in the Overview, sent on to mooi-widgets as its own (wg_key)",
             "    event sb_drag ->      // from mooi-widgets: a widget is being dragged in the opening (-1)",
             "    event sb_drop ->      // ... and let go",
             "    fact sf_snap = 0      // what the opening hugs: BMO 20, a widget 30, none 0",
@@ -318,6 +319,10 @@ def surface_layers():
           "        // typing into Launch's grid while the Overview is open: letters, a space, a rub-out"]
     for ch in TYPED:
         L += [f"        on key {ch} while op_mode == 4 {{ emit op_type({ord(ch)}) }}"]
+    # the widgets' edit keys (mooi-widgets.plm `wg_key`): the opening holds the keyboard in the Overview
+    WKEYS = [("Left", 1), ("Right", 2), ("Up", 3), ("Down", 4), ("Shift+Left", 5), ("Shift+Right", 6), ("Shift+Up", 7),
+             ("Shift+Down", 8), ("Delete", 9), ("Ctrl+d", 10), ("Ctrl+z", 11), ("Ctrl+Shift+z", 12), ("Ctrl+a", 13)]
+    L += [f"        on key {k} while op_mode == 4 {{ emit op_wkey({c}) }}" for k, c in WKEYS]
     L += ["        on key space while op_mode == 4 { emit op_type(32) }",
           "        on key BackSpace while op_mode == 4 { emit op_type(8) }",
           "        // the eight looks: the real wallpaper, cut open over the hole (the surface's own size: screen.height",

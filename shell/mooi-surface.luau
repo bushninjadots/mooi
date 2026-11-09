@@ -652,6 +652,12 @@ on("op_type", function(v)
     widgets_say("emit ln_type " .. tostring(math.floor(tonumber(v) or 0)))
 end)
 
+-- the widgets' edit keys while the Overview is open: the edge holds the keyboard, so they are sent on
+on("op_wkey", function(v)
+    if SF.op.mode ~= opening.MODES.full then return end
+    widgets_say("emit wg_key " .. tostring(math.floor(tonumber(v) or 0)))
+end)
+
 -- a widget dragged in the opening (mooi-widgets says sb_drag -1): the hole is frozen at the press, so a drop
 -- can land outside it — kept above — or inside — buried
 on("sb_drag", function()
