@@ -6597,3 +6597,28 @@ growing.
 
 **Verified.** Unit 599 / 0 (four new D228 tests); the node's scene compiles; `bin/mooi check` green. Not yet seen
 live.
+
+## D229 · 2026-11-10 · The Pill studio
+
+The owner asked for the node to be customisable, with an editor that offers a great deal and makes each node its
+own. Settings keeps what the node *does* (on, the pointer, where, what it may grow) and gains one button, **Open
+the studio**; how it *looks* moves to the studio (`mooi node studio`), on the node itself.
+
+**The look** (`lib/node/look`, kept in `node-look.json`): 25 values on four pages: **Shape** (seed: line, dot,
+ring, twin or bar; its width and height; roundness; character; distance from the top), **Surface** (texture: solid,
+hollow, segmented, scan or dotted; fill; outline; glow; its colour and its glow's colour, from the palette),
+**Motion** (speed × bounce, nine springs; growth, three; stagger; breathing; how much it moves with the music) and
+**Parts** (the media's visualiser: bars, wave, dots or none; a square or round cover; 1–5 notice cards; 0–6
+satellites as pills, dots or ticks; the search's dim; the orbit's width). The four personalities are now presets
+of the look (the Settings personality seeds it once, before the studio has saved anything). **Shuffle** makes a
+look of its own, held to stay legible; three slots keep looks you have made.
+
+**The studio**: the desktop steps back; the real node, not a copy, stands on a stage and is shown as each of its
+states (or a tour of them, or the next one when it is pressed); a deck below holds the pages (sliders to drag,
+choices as chips, the presets as cards that draw their own seeds, the saved looks). The keyboard works throughout:
+↑↓ moves between rows, ←→ changes a value, Tab goes to the next page, Esc closes. Changes are written 300 ms after
+they stop; a hand edit of the file is applied at once.
+
+**Removed:** `lib/node/motion` (its springs are the look's), the Settings rows Personality and Motion.
+
+**Verified.** Unit 606 / 0; scenes compile; `bin/mooi check` green.

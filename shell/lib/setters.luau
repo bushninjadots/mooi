@@ -292,7 +292,7 @@ M.SETTERS = {
     -- D223: Music in the picture. Appended.
     "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height",
     -- D226: the node (the Dynamic Pill). Appended.
-    "node.on", "node.personality", "node.motion", "node.pointer", "node.anchor", "node.media", "node.notices",
+    "node.on", "node.pointer", "node.anchor", "node.media", "node.notices",
     "node.workspaces", "node.volume", "node.system", "node.satellites", "node.wallpaper",
     "keys.node_launch", "keys.node_universe",
 }

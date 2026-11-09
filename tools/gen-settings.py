@@ -155,7 +155,7 @@ SETTERS = [
     # D223: Music in the picture. Appended.
     "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height",
     # D226: the node (the Dynamic Pill). Appended.
-    "node.on", "node.personality", "node.motion", "node.pointer", "node.anchor", "node.media", "node.notices",
+    "node.on", "node.pointer", "node.anchor", "node.media", "node.notices",
     "node.workspaces", "node.volume", "node.system", "node.satellites", "node.wallpaper",
     "keys.node_launch", "keys.node_universe",
 ]
@@ -347,8 +347,7 @@ SECTIONS = [
         ("card", "The Pill"),
         ("note", "sv_bar_mode != 3", "CHOOSE SHAPE → PILL ABOVE: THE PILL IS A LIVING NODE AT THE TOP OF THE SCREEN"),
         ("toggle", "The node", "A tiny seed at the top that grows what is happening — the music, a notice, the workspaces, search — and folds back", "node.on", "sv_node_on"),
-        ("choice", "Personality", "How it moves and looks: soft and elastic, fast and restrained, precise, or fragmented", "node.personality", "sv_node_personality", ["Organic", "Minimal", "Technical", "Cyber"]),
-        ("choice", "Motion", "How lively its changes are", "node.motion", "sv_node_motion", ["Calm", "Normal", "Lively"]),
+        ("button", "Its look", "The studio: its seed, its surface, how it moves, its parts — four characters to start from, a shuffle, three looks of your own", "Open the studio", "nd_settings_studio", 1),
         ("choice", "Your pointer", "How readily it unfolds when the pointer rests on it", "node.pointer", "sv_node_pointer", ["Off", "Low", "Normal", "High"]),
         ("choice", "Where", "Where it sits at the top of the screen", "node.anchor", "sv_node_anchor", ["Left", "Centre", "Right"]),
         ("choice", "Side groups", "The left and right groups as islands beside it, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
@@ -1466,6 +1465,7 @@ def main():
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
+    event nd_settings_studio -> // to the logic: open the Pill's studio (this window goes)
     text pw_text = ""
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
     text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)

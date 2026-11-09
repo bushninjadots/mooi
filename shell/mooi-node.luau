@@ -1,14 +1,15 @@
 -- The Dynamic Pill as a living node (D226; docs/superpowers/specs/2026-11-09-dynamic-pill-node-design.md). The
 -- logic: what is happening (the services, Signal Loom's feed, the bar's feed), what the node is now
--- (lib/node/state), where its body and parts go (lib/node/geometry, satellites, universe), how it answers the
--- pointer (lib/node/interaction) — written as facts for shell/mooi-node.plm (tools/gen-node.py) to spring and draw.
+-- (lib/node/state), where its body and parts go (lib/node/geometry, satellites), how it looks (lib/node/look, set
+-- in its studio, D229), how it answers the pointer (lib/node/interaction) — written as facts for
+-- shell/mooi-node.plm (tools/gen-node.py) to spring and draw.
 -- Event-driven: one timer for the next thing that ends, none at rest.
 
 local config = require("lib/config")
 local ferro = require("lib/ferro")
 local ST = require("lib/node/state")
 local G = require("lib/node/geometry")
-local MO = require("lib/node/motion")
+local LK = require("lib/node/look")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
@@ -37,6 +38,26 @@ N = {
 
 local function cfg() local n = N.settings.node; return type(n) == "table" and n or {} end
 local function on_for(kind) return cfg()[kind] ~= false end
+
+-- ── its look (lib/node/look): node-look.json, or — before the studio ever saved one — the personality chosen in
+-- Settings before D229 ──
+local function look_now() return LK.normalise(read(LK.FILE, "json"), cfg().personality) end
+N.look = look_now()
+local function apply_look()
+    for k, v in pairs(LK.facts(N.look)) do fact[k] = v end
+end
+apply_look()
+-- written a moment after the last change (a slider dragged writes once, when it rests)
+local save_gen = 0
+local function save_look()
+    save_gen = save_gen + 1
+    local g = save_gen
+    after(300, function()
+        if g ~= save_gen then return end
+        N.saving = true
+        pcall(sys.call, "files.write", LK.FILE, json.encode(N.look))
+    end)
+end
 
 -- the clock: a counter of our own in 50 ms steps (the way mooi-surface keeps its reveal's); it only draws when
 -- something is due — the next event's end, or the pointer's next decision — so at rest nothing is done
@@ -71,7 +92,6 @@ every(50, function()
     if N.due and MS >= N.due then N.due = nil; render() end
 end)
 
-local function personality() return cfg().personality or "organic" end
 
 local function set_body(b, overshoot)
     local o = overshoot or 0
@@ -88,16 +108,18 @@ local function show_media(b)
 end
 
 local function show_notices(b)
-    local cards = G.cards(b, math.min(3, #N.notices), N.scr)
+    local list = N.notice_list or N.notices
+    local cards = G.cards(b, math.min(N.look.cards, #list), N.scr)
     local rows = {}
     for i, c in ipairs(cards) do
-        local n = N.notices[i]
+        local n = list[i]
         local a1 = type(n.actions) == "table" and n.actions[1] or nil
         rows[i] = { x = c.x, y = c.y, w = c.w, h = c.h, app = tostring(n.app or ""), title = tostring(n.title or ""),
                     act = type(a1) == "string" and a1 or "", hasact = type(a1) == "string" and a1 ~= "" }
     end
     model.nc = rows
-    fact.nd_more = math.max(0, #N.notices - #rows)
+    fact.nd_ncn = #rows
+    fact.nd_more = math.max(0, #list - #rows)
 end
 
 local function show_rail(b)
@@ -177,30 +199,54 @@ local function show_satellites(b, kind)
                                battery = N.bat, charging = N.charging, online = N.online })
     local rows = {}
     for i, s in ipairs(SAT.layout(list, b)) do
+        if i > N.look.satellites then break end
         rows[i] = { x = s.x, y = s.y, w = s.w, h = s.h, label = s.label, kind = SAT_KIND[s.kind] or 0 }
     end
     model.sa = rows
 end
 
+-- the studio (D229): what the node is shown as on its stage (the eighth chip tours them all), and what it shows
+-- when nothing real is there to show
+local PREVIEW = { "rest", "media", "notice", "volume", "workspaces", "system", "launcher" }
+local SAMPLE_NOTICES = {
+    { app = "MOOI", title = "A notice grows out of the node", actions = { "Open" } },
+    { app = "CALENDAR", title = "Stand-up in ten minutes" },
+    { app = "MAIL", title = "Three new messages", actions = { "Read" } },
+    { app = "DOWNLOADS", title = "wallpaper-pack.zip is done" },
+    { app = "SYSTEM", title = "Updates are ready" },
+    { app = "MUSIC", title = "Added to your library" },
+}
+N.studio = { open = false, tab = 0, row = 0, pv = 0, tour = 1 }
+local function studio_kind()
+    local pv = N.studio.pv
+    if pv == #PREVIEW then return PREVIEW[N.studio.tour] end
+    return PREVIEW[pv + 1] or "rest"
+end
+
 render = function()
     local t = now()
-    local pers = personality()
-    fact.nd_np = MO.index(pers)
+    local look = N.look
     fact.nd_breath = not (type(N.settings.motion) == "table" and N.settings.motion.reduced == true)
-    local kind, reacting = ST.current(N.st, t, { playing = N.media.playing and on_for("media"), near = N.near })
-    local anchor = cfg().anchor or "centre"
+    local studio = N.studio.open
+    local kind, reacting
+    if studio then kind, reacting = studio_kind(), false
+    else kind, reacting = ST.current(N.st, t, { playing = N.media.playing and on_for("media"), near = N.near }) end
+    -- on the studio's stage: in the middle, a little way down
+    local shape = LK.shape(look)
+    if studio then shape.top = 96 end
+    local anchor = studio and "centre" or (cfg().anchor or "centre")
     local data = { n = #N.ws.list }
-    local b = G.body(kind, N.scr, anchor, pers, data)
+    local b = G.body(kind, N.scr, anchor, shape, data)
     -- leaning toward where the pointer came in from
-    if N.near and kind ~= "rest" and kind ~= "universe" then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
+    if N.near and not studio and kind ~= "rest" and kind ~= "universe" then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
     if kind == "universe" then
-        local c = G.body("universe", N.scr, "centre", pers, data)
+        local c = G.body("universe", N.scr, "centre", shape, data)
         b = { x = N.scr.w / 2 - c.w / 2, y = N.scr.h / 2 - c.h / 2, w = c.w, h = c.h, r = c.r }
     end
     -- a reaction: the seed stretches toward what is coming before it unfolds
     if reacting then
-        local seed = G.body("rest", N.scr, anchor, pers, data)
-        b = { x = seed.x - 20, y = seed.y, w = seed.w + 40, h = math.max(seed.h, 8), r = 4 }
+        local seed = G.body("rest", N.scr, anchor, shape, data)
+        b = { x = seed.x - 20, y = seed.y, w = seed.w + 40, h = math.max(seed.h, 8), r = math.min(4, seed.r + 1) }
     end
     local changed = kind ~= N.kind
     N.kind = kind
@@ -208,23 +254,27 @@ render = function()
     if changed then
         N.gn = (N.gn or 0) + 1
         fact.nd_gn = N.gn
-        if pers == "cyber" then
+        if look.style == "cyber" then
             fact.nd_gl = 1
             after(140, function() fact.nd_gl = 0 end)
         end
     end
     fact.nd_kind = KIND[kind] or 0
-    fact.nd_kb = kind == "launcher" or kind == "universe"
-    set_body(b, changed and MO.overshoot(pers, cfg().motion or "normal") or 0)
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe"
+    set_body(b, changed and LK.overshoot(look) or 0)
     if kind == "media" then show_media(b) end
-    if kind == "notice" then show_notices(b) end
+    if kind == "notice" then
+        N.notice_list = (studio and #N.notices == 0) and SAMPLE_NOTICES or nil
+        show_notices(b)
+    end
     if kind == "workspaces" then show_rail(b) end
     if kind == "system" then show_system(b) end
     if kind == "launcher" then show_launcher(b) end
     if kind == "universe" then show_universe() end
     if kind == "volume" then
-        fact.nd_vol = N.vol or 0
-        text.nd_vlabel = "VOLUME " .. math.floor((N.vol or 0) * 100 + 0.5) .. "%"
+        local v = N.vol or (studio and 0.6) or 0
+        fact.nd_vol = v
+        text.nd_vlabel = "VOLUME " .. math.floor(v * 100 + 0.5) .. "%"
     end
     show_satellites(b, kind)
     if reacting then N.pointer_due = math.min(N.pointer_due or math.huge, now() + ST.REACT_MS + 10) end
@@ -328,6 +378,7 @@ N.pointer_step = function()
     if N.near ~= was then render() else schedule() end
 end
 on("nd_hover", function(v)
+    if N.studio.open then return end
     v = math.floor(tonumber(v) or 0)
     local b = { x = fact.nd_tx or 0, y = fact.nd_ty or 0, w = fact.nd_tw or 22, h = fact.nd_th or 6 }
     N.pointer = v > 0 and { x = v - 1, y = b.y + b.h / 2 } or nil
@@ -342,6 +393,7 @@ local function toggle_hold(kind)
     end
 end
 on("nd_press", function()
+    if N.studio.open then if N.studio_press then N.studio_press() end; return end
     local k = N.kind
     if k == "launcher" or k == "universe" then return end
     if k == "system" then ST.release(N.st, "system")
@@ -413,6 +465,7 @@ end)
 -- ── the keyboard, while the node holds it ──
 on("nd_key", function(v)
     v = math.floor(tonumber(v) or 0)
+    if N.studio.open then if N.studio_key then N.studio_key(v) end; return end
     if N.kind == "launcher" then
         if v == 27 then ST.release(N.st, "launcher")
         elseif v == 38 then N.sel = math.max(0, N.sel - 1)
@@ -437,9 +490,182 @@ on("nd_lr", function(v)
     render()
 end)
 
--- ── `mooi node …`: Super wakes it; the launcher; the universe ──
+-- ── the studio (D229): `mooi node studio` — the node on a stage, and a deck of what it may look like ──
+local PRESET_DESC = {
+    organic = "Soft and elastic: it breathes, and leans into the music",
+    minimal = "A point. Fast, restrained, next to no glow",
+    technical = "Ruled and precise: ticks, brackets, square corners",
+    cyber = "Quick and broken: segments, an ember glow, a glitch on every change",
+}
+local function title(s) s = tostring(s or ""); return (s:gsub("^%l", string.upper)) end
+local function slot_label(x)
+    if not x then return "Empty: save the look you are wearing here" end
+    return title(x.preset) .. (x.custom and ", made your own" or "") .. "  ·  " .. title(x.seed) .. " seed  ·  "
+        .. title(x.texture) .. "  ·  " .. tostring(x.glow) .. "% glow"
+end
+local function studio_rows()
+    local st = N.studio
+    local tab = LK.TABS[st.tab + 1]
+    fact.nd_tab = st.tab
+    if st.tab == 0 then
+        model.sk = {}
+        local ps = {}
+        for i, name in ipairs(LK.PRESETS) do
+            local p = LK.preset(name)
+            local sh = LK.shape(p)
+            ps[i] = { name = title(name), desc = PRESET_DESC[name], on = N.look.preset == name and not N.look.custom,
+                      sw = sh.seed_w, sh = sh.seed_h, sr = sh.round, seed = LK.facts(p).nd_seed }
+        end
+        model.ps = ps
+        local sl = {}
+        for i = 1, LK.SLOTS do
+            local x = N.look.slots[i]
+            sl[i] = { label = slot_label(x or nil), full = x and true or false }
+        end
+        model.sl = sl
+    else
+        model.sk = LK.rows(N.look, tab)
+    end
+    st.row = math.max(0, math.min(st.row, math.max(0, #(LK.SCHEMA[tab] or {}) - 1)))
+    fact.nd_kr = st.tab == 0 and -1 or st.row
+    fact.nd_pv = st.pv
+    text.nd_lookname = string.upper(N.look.preset) .. (N.look.custom and " · MADE YOURS" or "")
+end
+-- the look moved: the scene told, the file written (a moment later), the deck and the node redrawn
+local function look_changed()
+    apply_look()
+    save_look()
+    studio_rows()
+    render()
+end
+local function prepare_preview()
+    if studio_kind() == "launcher" then N.q, N.sel = "", 0; text.nd_q = ""; search() end
+end
+local function open_studio()
+    for _, k in ipairs({ "system", "launcher", "universe" }) do ST.release(N.st, k) end
+    pcall(math.randomseed, os.time())
+    N.studio.open = true
+    fact.nd_studio = true
+    studio_rows()
+    render()
+end
+local function close_studio()
+    N.studio.open = false
+    fact.nd_studio = false
+    render()
+end
+local function wear(t)
+    local slots = N.look.slots
+    N.look = LK.normalise(t)
+    N.look.slots = slots
+end
+local function row_key(row)
+    local r = (LK.SCHEMA[LK.TABS[N.studio.tab + 1]] or {})[row + 1]
+    return r and r.key
+end
+on("nd_tab", function(v)
+    N.studio.tab = math.max(0, math.min(#LK.TABS - 1, math.floor(tonumber(v) or 0)))
+    N.studio.row = 0
+    studio_rows()
+end)
+on("nd_sk", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local row = v // 1000
+    local key = row_key(row)
+    if not key then return end
+    N.studio.row = row
+    if LK.set_frac(N.look, key, (v % 1000) / 1000) then look_changed() end
+end)
+on("nd_so", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local row, j = v // 10, v % 10
+    local key = row_key(row)
+    if not key then return end
+    N.studio.row = row
+    if LK.set_choice(N.look, key, j + 1) then look_changed() end
+end)
+on("nd_pv", function(v)
+    N.studio.pv = math.max(0, math.min(#PREVIEW, math.floor(tonumber(v) or 0)))
+    N.studio.tour = 1
+    prepare_preview()
+    studio_rows()
+    render()
+end)
+on("nd_ps", function(v)
+    local name = LK.PRESETS[math.floor(tonumber(v) or 0) + 1]
+    if not name then return end
+    wear(LK.preset(name))
+    look_changed()
+end)
+on("nd_slot", function(v)
+    v = math.floor(tonumber(v) or -1)
+    local k, what = v // 10 + 1, v % 10
+    if k < 1 or k > LK.SLOTS then return end
+    if what == 0 then
+        local c = {}
+        for key, x in pairs(N.look) do if key ~= "slots" then c[key] = x end end
+        N.look.slots[k] = c
+    elseif what == 1 and N.look.slots[k] then wear(N.look.slots[k])
+    elseif what == 9 then N.look.slots[k] = false
+    else return end
+    look_changed()
+end)
+on("nd_stc", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 1 then N.look = LK.shuffle(math.random, N.look.slots); look_changed()
+    elseif v == 2 then close_studio()
+    elseif v == 3 then wear(LK.preset(N.look.preset)); look_changed() end
+end)
+-- pressing the node on the stage: the next state
+N.studio_press = function()
+    N.studio.pv = (N.studio.pv + 1) % #PREVIEW
+    prepare_preview()
+    studio_rows()
+    render()
+end
+-- the keyboard: Esc done · Tab the next page · ↑↓ a row · ←→ change it (on Presets: the next preset)
+N.studio_key = function(v)
+    local st = N.studio
+    if v == 27 or (v == 13 and st.tab == 0) then close_studio(); return end
+    if v == 9 then st.tab = (st.tab + 1) % #LK.TABS; st.row = 0; studio_rows(); return end
+    if st.tab == 0 then
+        if v == 37 or v == 39 then
+            local i = LK.index_of(LK.PRESETS, N.look.preset) or 1
+            i = (i - 1 + (v == 39 and 1 or -1)) % #LK.PRESETS + 1
+            wear(LK.preset(LK.PRESETS[i]))
+            look_changed()
+        end
+        return
+    end
+    if v == 38 then st.row = st.row - 1; studio_rows()
+    elseif v == 40 then st.row = st.row + 1; studio_rows()
+    elseif v == 37 or v == 39 or v == 13 then
+        local key = row_key(st.row)
+        if key and LK.nudge(N.look, key, v == 37 and -1 or 1) then look_changed() end
+    end
+end
+-- the tour: every state in turn
+every(2200, function()
+    local st = N.studio
+    if not st.open or st.pv ~= #PREVIEW then return end
+    st.tour = st.tour % #PREVIEW + 1
+    prepare_preview()
+    render()
+end)
+-- a hand edit of node-look.json (not this program's own write) is worn at once
+pcall(sys.watch, "files:" .. LK.FILE, function()
+    if N.saving then N.saving = false; return end
+    local slots = N.look.slots
+    N.look = look_now()
+    apply_look()
+    if N.studio.open then studio_rows() end
+    render()
+end)
+
+-- ── `mooi node …`: Super wakes it; the launcher; the universe; the studio ──
 on("nd_cmd", function(v)
     v = math.floor(tonumber(v) or 0)
+    if N.studio.open and v ~= 4 then close_studio(); return end
     if v == 1 then
         -- Super: the music if it plays, else what you last held, else the system for a moment
         if N.kind ~= "rest" then for _, k in ipairs({ "system", "launcher", "universe" }) do ST.release(N.st, k) end
@@ -450,6 +676,8 @@ on("nd_cmd", function(v)
         if ST.held(N.st, "launcher") then ST.release(N.st, "launcher"); render() else open_launcher() end
     elseif v == 3 then
         if ST.held(N.st, "universe") then ST.release(N.st, "universe"); render() else open_universe() end
+    elseif v == 4 then
+        if N.studio.open then close_studio() else open_studio() end
     end
 end)
 

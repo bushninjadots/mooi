@@ -815,6 +815,11 @@ end)
 key_state()
 after(300, show_folders)
 
+-- D229: the Pill's look is set in its studio, on the node itself
+on("nd_settings_studio", function()
+    run("mooi", { "node", "studio" })
+    run("pleamar", { "--say", "mooi-settings", "quit" })
+end)
 on("wl_settings_open", function()
     run("mooi", { "walls" })
     run("pleamar", { "--say", "mooi-settings", "quit" })
