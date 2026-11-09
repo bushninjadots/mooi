@@ -65,16 +65,8 @@ local function pill_rows(s)
         fact["pon" .. n] = id ~= nil and not off[id]
     end
 end
--- D194: Loom / Fold's status line, from the mode and what the keeper last wrote (loom-state.json)
-local function loom_status(s)
-    local lm = require("lib/loommode")
-    local ok, h = pcall(sys.ask, "files.read", "loom-state.json", "json")
-    local mode = type(s.loom) == "table" and s.loom.mode or "native"
-    text.lf_status = lm.status_line(mode, ok and h or nil)
-end
 local function publish(s)
     pcall(pill_rows, s)
-    pcall(loom_status, s)
     local P = setters.position
     fact.ws_style = P("bar.workspaces", s.bar.workspaces)
     fact.bar_frame = P("bar.frame", s.bar.frame)
@@ -862,11 +854,6 @@ on("pill_board_edit", function()
     run("pleamar", { "--say", "mooi", "emit pill_edit_open" })
     run("pleamar", { "--say", "mooi-settings", "quit" })
 end)
--- D194: Start again after a recovery — the bar's keeper clears it and starts the program
-on("lf_act", function(v)
-    if math.floor(tonumber(v) or 0) == 1 then run("mooi", { "loom", "restart" }) end
-end)
-pcall(sys.watch, "files:loom-state.json", function() pcall(loom_status, settings) end)
 on("wg_settings_edit", function()
     run("mooi", { "widgets", "edit" })
     run("pleamar", { "--say", "mooi-settings", "quit" })

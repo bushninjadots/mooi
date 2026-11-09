@@ -1337,8 +1337,6 @@ scene Mooi {
     event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
     event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
     event pill_superwheel ->   // to the logic (D171): Super + wheel: a pill's view if pointed at, else the workspace
-    event loom_restart ->      // to the logic (D194): Loom / Fold, started again after a recovery (`mooi loom restart`)
-    event loom_unpark ->       // to the logic (D194): every parked window back (`mooi loom unpark`)
     event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
     fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
     // D205: the second and third pills — shown, where, and the face each shows (pill.FACES' place)

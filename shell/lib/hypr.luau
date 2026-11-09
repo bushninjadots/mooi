@@ -50,12 +50,6 @@ function M.dispatch(action, address, opts)
         end
         return string.format('hl.dsp.window.move({ workspace = %d, follow = %s, %s })',
             ws, (action == "move" and opts.follow) and "true" or "false", w)
-    -- D194: Loom / Fold parks a structure's windows on its own special workspace (`special:loom-s3`),
-    -- off every workspace, still running; `move` with `follow = false` brings one back
-    elseif action == "park" then
-        local p = opts.park
-        if type(p) ~= "string" or not string.match(p, "^loom%-s%d+$") then return nil, "invalid park" end
-        return string.format('hl.dsp.window.move({ workspace = "special:%s", follow = false, %s })', p, w)
     -- D224: burying — the window to the hidden workspace the Subsurface keeps, leaving a tile under the wallpaper
     elseif action == "bury" then
         return string.format('hl.dsp.window.move({ workspace = "special:mooi-buried", follow = false, %s })', w)

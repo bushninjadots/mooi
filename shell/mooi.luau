@@ -1833,7 +1833,7 @@ function sync_desktop()
     applied.keys, applied.look, applied.managed, applied.claims = ksig, look, look ~= nil, claims
 end
 -- D197: once now it exists — at start the settings and the palette were applied before it was defined, so
--- their calls skipped it, and a key added in a new version (Loom / Fold's) reached Hyprland only after the
+-- their calls skipped it, and a key added in a new version reached Hyprland only after the
 -- next settings change. It reloads Hyprland only when the keys really differ from what it bound.
 if bar_palette then sync_desktop() end
 -- ── The settings window ─────────────────────────────────────
@@ -2645,16 +2645,6 @@ bar.set_board(require("pillboard")({
     roomed = opens.by_room,
     listen_open = opens.listen,
 }))
-
--- ── Loom / Fold's keeper (D194, shell/loomkeeper.luau): starts the program in Hybrid and Loom / Fold mode,
--- brings parked windows back whenever it ends. Kept in `opens` (no new local: the main chunk is full).
-opens.loom = require("loomkeeper")({
-    settings = function() return settings end,
-    shell_dir = shell_dir,
-    log = log,
-    decode = decode,
-    safe_mode = safe_mode,
-})
 
 -- ── The Mechanical Shutter: a window's controls, unfolding from its edge (shell/shutter.luau) ──
 require("shutter")({

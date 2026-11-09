@@ -15,9 +15,6 @@
 #                          Advanced and the Nexus's rail); windows stay open, mooi's own close
 #   mooi window | system   toggle the window island (Super+Alt+W) or the system island
 #   mooi pill              call the Pill (Super alone): it comes back; twice quickly, its board (D171)
-#   mooi loom [status|mode native|hybrid|loomfold|off|restart|unpark|add|next|prev|fold|open|remove|cube|join|link|flow|hop|unlink]
-#                          Loom / Fold (D194): its mode, and the way back — `off` is Native mooi with
-#                          every parked window returned, whatever state it is in
 #   mooi wheel 1|-1        Super + wheel: a pill's next view when the pointer is on one, else the workspace
 #   mooi mode [light|dark|auto]  day or night for the whole desktop; no word turns to the other one (Super+Alt+T)
 #   mooi overview          every workspace zoomed out (Super+Tab)
@@ -979,7 +976,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-loom mooi-surface; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         if [ -e "$link" ]; then
@@ -1040,7 +1037,6 @@ mooi-widgets.plm:the desktop widgets
 mooi-walls.plm:the wallpaper picker
 mooi-viz.plm:the visualisers
 mooi-lock.plm:the lock screen
-mooi-loom.plm:Loom / Fold
 mooi-surface.plm:Surface
 bmo/bmo.plm:BMO"
 snapshot() {
@@ -1512,36 +1508,6 @@ case "$cmd" in
                   hyprctl eval 'hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })' >/dev/null 2>&1
                   ;;
             *) echo "usage: mooi reveal down|up|heal" >&2; exit 2 ;;
-        esac ;;
-    # D194: Loom / Fold. The mode is a setting (the bar's keeper follows it); `off` always works: it
-    # writes Native and asks the bar to bring every parked window back.
-    loom)
-        command -v jq >/dev/null 2>&1 || { echo "mooi loom: jq is needed" >&2; exit 1; }
-        loom_set() {
-            [ -f "$settings" ] || { echo "mooi loom: no settings.json yet" >&2; return 1; }
-            jq --arg m "$1" '.loom = ((.loom // {}) + {mode: $m})' "$settings" > "$settings.mooi-tmp" \
-                && mv "$settings.mooi-tmp" "$settings"
-        }
-        case "${1:-status}" in
-            status)
-                echo "mode: $(jq -r '.loom.mode // "native"' "$settings" 2>/dev/null || echo native)"
-                if [ -f "$folder/loom-state.json" ]; then
-                    jq -r '"running: \(.running) · recovery: \(.recovery) · structures: \(.structures) · objects: \(.objects) · parked: \(.parked)"' \
-                        "$folder/loom-state.json" 2>/dev/null
-                else echo "running: false (never started)"; fi ;;
-            mode)
-                case "${2:-}" in native | hybrid | loomfold) loom_set "$2" && echo "loom mode: $2" ;;
-                    *) echo "mooi loom mode native|hybrid|loomfold" >&2; exit 2 ;; esac ;;
-            off) loom_set native; "$pleamar" --say "$name" "emit loom_unpark" >/dev/null 2>&1 || :; echo "loom mode: native" ;;
-            restart) exec "$pleamar" --say "$name" "emit loom_restart" ;;
-            unpark) exec "$pleamar" --say "$name" "emit loom_unpark" ;;
-            # D195: the Accordion's commands go to the Loom / Fold program; not running, nothing to do
-            add | next | prev | fold | open | remove | push | cube | join | link | flow | hop | unlink)
-                case "$1" in add) n=10 ;; next) n=11 ;; prev) n=12 ;; fold) n=13 ;; open) n=14 ;; remove) n=15 ;; push) n=16 ;;
-                    cube) n=20 ;; join) n=21 ;; link) n=30 ;; flow) n=31 ;; hop) n=32 ;; unlink) n=33 ;; esac
-                "$pleamar" --say mooi-loom "emit loom_cmd $n" >/dev/null 2>&1 \
-                    || echo "mooi loom: Loom / Fold is not running (Settings → Loom / Fold → Mode)" >&2 ;;
-            *) echo "mooi loom [status|mode native|hybrid|loomfold|off|restart|unpark|add|next|prev|fold|open|remove|cube|join|link|flow|hop|unlink]" >&2; exit 2 ;;
         esac ;;
     # Super + wheel (D171): the bar decides — on a pill it turns the views, elsewhere the workspace;
     # with no bar to ask, the workspace as Hyprland did

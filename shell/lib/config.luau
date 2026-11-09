@@ -144,20 +144,6 @@ M.SCHEMA = {
     { path = "pill.row_core", kind = "ids", max = 6, allowed = { "spaces", "clock", "chip", "media", "bandwidth", "controls", "weather", "resources", "battery", "brightness", "volume", "network", "date" }, default = { "media", "bandwidth", "controls", "clock" } },
     { path = "pill.row_detail", kind = "ids", max = 6, allowed = { "spaces", "clock", "chip", "media", "bandwidth", "controls", "weather", "resources", "battery", "brightness", "volume", "network", "date" },
       default = { "weather", "resources", "battery", "brightness", "volume", "network" } },
-    -- D194: Loom / Fold (docs/superpowers/specs/2026-11-07-loom-fold-design.md): the operating mode, and
-    -- Hybrid's feature switches (lib/loommode decides what is on; only built features are offered).
-    -- Native runs nothing of it; switching keeps every structure saved in loom.json.
-    { path = "loom.mode", kind = "enum", values = { "native", "hybrid", "loomfold" }, default = "native" },
-    { path = "loom.fold", kind = "boolean", default = true },
-    { path = "loom.accordions", kind = "boolean", default = true },
-    { path = "loom.cubes", kind = "boolean", default = true },
-    { path = "loom.loom", kind = "boolean", default = true },
-    { path = "loom.transform", kind = "boolean", default = true },
-    -- D195: the screen edge the Accordions' strips stand on
-    { path = "loom.edge", kind = "enum", values = { "right", "left" }, default = "right" },
-    -- D200: when Loom's threads show — a few seconds when the focused window has connections, always, or
-    -- only while a link is being made
-    { path = "loom.threads", kind = "enum", values = { "relevant", "always", "hidden" }, default = "relevant" },
     { path = "pill.off", kind = "ids", max = 6, default = {}, allowed = { "battery", "record", "notify", "music", "osd", "idle" } },
     { path = "pill.order", kind = "ids", max = 6, allowed = { "battery", "record", "notify", "music", "osd", "idle" },
       default = { "battery", "record", "notify", "music", "osd", "idle" } },
@@ -470,22 +456,6 @@ M.SCHEMA = {
     { path = "atlas.spring_edges", kind = "boolean", default = true },
     { path = "keys.mode", kind = "key", default = "SUPER + ALT + T" },
     { path = "keys.overview", kind = "key", default = "SUPER + ALT + O" },
-    -- D195: Loom / Fold's Accordion keys (free of every other mooi key; O is the Overview's, so "open
-    -- all" is U, unfold)
-    { path = "keys.loom_add", kind = "key", default = "SUPER + ALT + A" },
-    { path = "keys.loom_next", kind = "key", default = "SUPER + ALT + bracketright" },
-    { path = "keys.loom_prev", kind = "key", default = "SUPER + ALT + bracketleft" },
-    { path = "keys.loom_fold", kind = "key", default = "SUPER + ALT + F" },
-    { path = "keys.loom_open", kind = "key", default = "SUPER + ALT + U" },
-    { path = "keys.loom_remove", kind = "key", default = "SUPER + ALT + R" },
-    -- D197: the Cube's keys (both free)
-    { path = "keys.loom_cube", kind = "key", default = "SUPER + ALT + K" },
-    { path = "keys.loom_join", kind = "key", default = "SUPER + ALT + J" },
-    -- D200: Loom's keys (free)
-    { path = "keys.loom_link", kind = "key", default = "SUPER + ALT + N" },
-    { path = "keys.loom_flow", kind = "key", default = "SUPER + ALT + SHIFT + N" },
-    { path = "keys.loom_hop", kind = "key", default = "SUPER + ALT + H" },
-    { path = "keys.loom_unlink", kind = "key", default = "SUPER + ALT + SHIFT + H" },
     { path = "shutter.enabled", kind = "boolean", default = true },
     { path = "shutter.pointer", kind = "boolean", default = true },
     { path = "shutter.edge", kind = "enum", values = { "auto", "left", "inside" }, default = "auto" },

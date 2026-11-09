@@ -6488,3 +6488,23 @@ with it. The bind is in mooi's Hyprland file (`config/custom/mooi.lua`, live and
 
 **Verified.** Unit 811 / 0; 15 scenes compile; `bin/mooi check` green. Not yet tried live.
 
+## D225 · 2026-11-09 · Loom / Fold removed (the Dynamic Pill's stage 1)
+
+The owner's brief for a new Dynamic Pill (a "living spatial interface node") opens with: Fold and Cube are
+discontinued — remove all of them, leave no shims. In mooi they were Loom / Fold (D194–D200): Fold's Accordions and
+Cubes and Loom's connections between windows. Asked, the owner chose to remove **the whole of Loom / Fold**.
+
+**Removed:** the `mooi-loom` program (scene and logic), the bar's keeper (`loomkeeper.luau`), the model, modes,
+parking, Accordion, Cube and links libraries (`lib/loom*.luau`), the strip and cube drawings, `lib/hypr`'s `park`
+action, the twelve Accordion / Cube / Loom keys, the eight `loom.*` settings and their setter slots, Settings →
+Loom / Fold (the pages after it moved up one: the Subsurface is page 20 now, and the Settings widget's link with
+it), `mooi loom`, the bar's `loom_restart` / `loom_unpark`, and their tests (Loom / Fold's section; the Pill's own
+D198/D199 tests kept). ≈ 3 800 lines.
+
+**Kept:** Signal Loom (D50), mooi's notifications, which shares only the word.
+
+**Left alone:** a `loom` section in settings.json and `loom.json` / `loom-state.json` in the files folder (the owner's
+data; nothing reads them now). The Loom / Fold design spec stays in `docs/superpowers/specs` as history.
+
+**Verified.** Unit 788 / 0; 15 scenes compile (14 programs now, plus BMO); `bin/mooi check` green.
+

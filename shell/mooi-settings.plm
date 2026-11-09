@@ -939,44 +939,6 @@ scene Mooi {
     fact df_pill_board_edge = 0
     fact sv_pill_peek = 0
     fact df_pill_peek = 0
-    fact sv_loom_mode = 0
-    fact df_loom_mode = 0
-    fact sv_loom_fold = 0
-    fact df_loom_fold = 0
-    fact sv_loom_accordions = 0
-    fact df_loom_accordions = 0
-    fact sv_loom_edge = 0
-    fact df_loom_edge = 0
-    fact sv_keys_loom_add = 0
-    fact df_keys_loom_add = 0
-    fact sv_keys_loom_next = 0
-    fact df_keys_loom_next = 0
-    fact sv_keys_loom_prev = 0
-    fact df_keys_loom_prev = 0
-    fact sv_keys_loom_fold = 0
-    fact df_keys_loom_fold = 0
-    fact sv_keys_loom_open = 0
-    fact df_keys_loom_open = 0
-    fact sv_keys_loom_remove = 0
-    fact df_keys_loom_remove = 0
-    fact sv_loom_cubes = 0
-    fact df_loom_cubes = 0
-    fact sv_keys_loom_cube = 0
-    fact df_keys_loom_cube = 0
-    fact sv_keys_loom_join = 0
-    fact df_keys_loom_join = 0
-    fact sv_loom_loom = 0
-    fact df_loom_loom = 0
-    fact sv_loom_threads = 0
-    fact df_loom_threads = 0
-    fact sv_keys_loom_link = 0
-    fact df_keys_loom_link = 0
-    fact sv_keys_loom_flow = 0
-    fact df_keys_loom_flow = 0
-    fact sv_keys_loom_hop = 0
-    fact df_keys_loom_hop = 0
-    fact sv_keys_loom_unlink = 0
-    fact df_keys_loom_unlink = 0
     fact sv_pill_two = 0
     fact df_pill_two = 0
     fact sv_pill_two_at = 0
@@ -1148,30 +1110,6 @@ scene Mooi {
     text key_clash_edit = ""
     text key_lock = ""
     text key_clash_lock = ""
-    text key_loom_add = ""
-    text key_clash_loom_add = ""
-    text key_loom_next = ""
-    text key_clash_loom_next = ""
-    text key_loom_prev = ""
-    text key_clash_loom_prev = ""
-    text key_loom_fold = ""
-    text key_clash_loom_fold = ""
-    text key_loom_open = ""
-    text key_clash_loom_open = ""
-    text key_loom_remove = ""
-    text key_clash_loom_remove = ""
-    text key_loom_cube = ""
-    text key_clash_loom_cube = ""
-    text key_loom_join = ""
-    text key_clash_loom_join = ""
-    text key_loom_link = ""
-    text key_clash_loom_link = ""
-    text key_loom_flow = ""
-    text key_clash_loom_flow = ""
-    text key_loom_hop = ""
-    text key_clash_loom_hop = ""
-    text key_loom_unlink = ""
-    text key_clash_loom_unlink = ""
     text key_stop = ""
     text key_clash_stop = ""
     fact sp0_r = 0.5
@@ -1259,7 +1197,7 @@ scene Mooi {
     prop set_navs_s = 0 ~m.reflow
     follow set_navs_s = set_navs
     prop set_scroll_s = 0 ~m.reflow
-    follow set_scroll_s = clamp(set_scroll, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 66 + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 270, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 202, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 1500 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + 28 + 22 + 24 - screen.height)))
+    follow set_scroll_s = clamp(set_scroll, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 66 + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 270, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 202, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 780 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + 28 + 22 + 24 - screen.height)))
     event set_value ->        // to the logic: one setting to one value (lib/setters)
     event set_action ->       // to the logic: 1 the bar's edit mode
     event surface_arrange ->  // to the logic (D215): lay every widget below out again
@@ -1352,8 +1290,6 @@ scene Mooi {
     event pill_board_edit ->  // to the logic (D170): the Pill's board, open in edit (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
-    text lf_status = ""       // D194: Loom / Fold's status line (lib/loommode.status_line)
-    event lf_act ->           // to the logic (D194): 1 start Loom / Fold again after a recovery
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
     text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)
     fact lk_wp_on = false     // there is one to show
@@ -2314,8 +2250,8 @@ scene Mooi {
     follow gy_15_c0 = 112
     prop gy_15_1 = 156 ~m.reflow
     follow gy_15_1 = 112 + 44
-    prop gc_15_0 = 1552 ~m.reflow
-    follow gc_15_0 = 52 + 1500
+    prop gc_15_0 = 832 ~m.reflow
+    follow gc_15_0 = 52 + 780
     prop gy_16_c0 = 112 ~m.reflow
     follow gy_16_c0 = 112
     prop gy_16_1 = 156 ~m.reflow
@@ -2436,202 +2372,168 @@ scene Mooi {
     follow gy_20_3 = 112 + 44 + 60 + 60
     prop gy_20_4 = 336 ~m.reflow
     follow gy_20_4 = 112 + 44 + 60 + 60 + 60
-    prop gc_20_0 = 260 ~m.reflow
-    follow gc_20_0 = 52 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0)
-    prop gy_20_c1 = 386 ~m.reflow
-    follow gy_20_c1 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22
-    prop gy_20_6 = 430 ~m.reflow
-    follow gy_20_6 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44
-    prop gy_20_7 = 490 ~m.reflow
-    follow gy_20_7 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60
-    prop gy_20_8 = 550 ~m.reflow
-    follow gy_20_8 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60
-    prop gy_20_9 = 578 ~m.reflow
-    follow gy_20_9 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0)
-    prop gy_20_10 = 638 ~m.reflow
-    follow gy_20_10 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60
-    prop gy_20_11 = 666 ~m.reflow
-    follow gy_20_11 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0)
-    prop gy_20_12 = 726 ~m.reflow
-    follow gy_20_12 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60
-    prop gy_20_13 = 786 ~m.reflow
-    follow gy_20_13 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60
-    prop gy_20_14 = 846 ~m.reflow
-    follow gy_20_14 = 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0)
-    prop gc_20_1 = 496 ~m.reflow
-    follow gc_20_1 = 52 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28
+    prop gy_20_5 = 396 ~m.reflow
+    follow gy_20_5 = 112 + 44 + 60 + 60 + 60 + 60
+    prop gy_20_6 = 456 ~m.reflow
+    follow gy_20_6 = 112 + 44 + 60 + 60 + 60 + 60 + 60
+    prop gy_20_7 = 516 ~m.reflow
+    follow gy_20_7 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60
+    prop gy_20_8 = 576 ~m.reflow
+    follow gy_20_8 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60
+    prop gc_20_0 = 532 ~m.reflow
+    follow gc_20_0 = 52 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60
+    prop gy_20_c1 = 658 ~m.reflow
+    follow gy_20_c1 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22
+    prop gy_20_10 = 702 ~m.reflow
+    follow gy_20_10 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gy_20_11 = 762 ~m.reflow
+    follow gy_20_11 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_20_12 = 822 ~m.reflow
+    follow gy_20_12 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0)
+    prop gy_20_13 = 882 ~m.reflow
+    follow gy_20_13 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0)
+    prop gy_20_14 = 942 ~m.reflow
+    follow gy_20_14 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0)
+    prop gy_20_15 = 1002 ~m.reflow
+    follow gy_20_15 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60
+    prop gc_20_1 = 412 ~m.reflow
+    follow gc_20_1 = 52 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60
+    prop gy_20_c2 = 1084 ~m.reflow
+    follow gy_20_c2 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22
+    prop gy_20_17 = 1128 ~m.reflow
+    follow gy_20_17 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44
+    prop gy_20_18 = 1188 ~m.reflow
+    follow gy_20_18 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60
+    prop gy_20_19 = 1248 ~m.reflow
+    follow gy_20_19 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60
+    prop gy_20_20 = 1308 ~m.reflow
+    follow gy_20_20 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60
+    prop gc_20_2 = 292 ~m.reflow
+    follow gc_20_2 = 52 + 60 + 60 + 60 + 60
+    prop gy_20_c3 = 1390 ~m.reflow
+    follow gy_20_c3 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22
+    prop gy_20_22 = 1434 ~m.reflow
+    follow gy_20_22 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44
+    prop gy_20_23 = 1494 ~m.reflow
+    follow gy_20_23 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_20_24 = 1554 ~m.reflow
+    follow gy_20_24 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60
+    prop gc_20_3 = 232 ~m.reflow
+    follow gc_20_3 = 52 + 60 + 60 + 60
+    prop gy_20_c4 = 1636 ~m.reflow
+    follow gy_20_c4 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22
+    prop gy_20_26 = 1680 ~m.reflow
+    follow gy_20_26 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44
+    prop gy_20_27 = 1740 ~m.reflow
+    follow gy_20_27 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gy_20_28 = 1800 ~m.reflow
+    follow gy_20_28 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60
+    prop gc_20_4 = 232 ~m.reflow
+    follow gc_20_4 = 52 + 60 + 60 + 60
+    prop gy_20_c5 = 1882 ~m.reflow
+    follow gy_20_c5 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22
+    prop gy_20_30 = 1926 ~m.reflow
+    follow gy_20_30 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44
+    prop gy_20_31 = 1986 ~m.reflow
+    follow gy_20_31 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60
+    prop gc_20_5 = 140 ~m.reflow
+    follow gc_20_5 = 52 + 60 + 28
     prop gy_21_c0 = 112 ~m.reflow
     follow gy_21_c0 = 112
     prop gy_21_1 = 156 ~m.reflow
     follow gy_21_1 = 112 + 44
     prop gy_21_2 = 216 ~m.reflow
     follow gy_21_2 = 112 + 44 + 60
-    prop gy_21_3 = 276 ~m.reflow
-    follow gy_21_3 = 112 + 44 + 60 + 60
-    prop gy_21_4 = 336 ~m.reflow
-    follow gy_21_4 = 112 + 44 + 60 + 60 + 60
-    prop gy_21_5 = 396 ~m.reflow
-    follow gy_21_5 = 112 + 44 + 60 + 60 + 60 + 60
-    prop gy_21_6 = 456 ~m.reflow
-    follow gy_21_6 = 112 + 44 + 60 + 60 + 60 + 60 + 60
-    prop gy_21_7 = 516 ~m.reflow
-    follow gy_21_7 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60
-    prop gy_21_8 = 576 ~m.reflow
-    follow gy_21_8 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60
-    prop gc_21_0 = 532 ~m.reflow
-    follow gc_21_0 = 52 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60
-    prop gy_21_c1 = 658 ~m.reflow
-    follow gy_21_c1 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22
-    prop gy_21_10 = 702 ~m.reflow
-    follow gy_21_10 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44
-    prop gy_21_11 = 762 ~m.reflow
-    follow gy_21_11 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60
-    prop gy_21_12 = 822 ~m.reflow
-    follow gy_21_12 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0)
-    prop gy_21_13 = 882 ~m.reflow
-    follow gy_21_13 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0)
-    prop gy_21_14 = 942 ~m.reflow
-    follow gy_21_14 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0)
-    prop gy_21_15 = 1002 ~m.reflow
-    follow gy_21_15 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60
-    prop gc_21_1 = 412 ~m.reflow
-    follow gc_21_1 = 52 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60
-    prop gy_21_c2 = 1084 ~m.reflow
-    follow gy_21_c2 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22
-    prop gy_21_17 = 1128 ~m.reflow
-    follow gy_21_17 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44
-    prop gy_21_18 = 1188 ~m.reflow
-    follow gy_21_18 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60
-    prop gy_21_19 = 1248 ~m.reflow
-    follow gy_21_19 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60
-    prop gy_21_20 = 1308 ~m.reflow
-    follow gy_21_20 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60
-    prop gc_21_2 = 292 ~m.reflow
-    follow gc_21_2 = 52 + 60 + 60 + 60 + 60
-    prop gy_21_c3 = 1390 ~m.reflow
-    follow gy_21_c3 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22
-    prop gy_21_22 = 1434 ~m.reflow
-    follow gy_21_22 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44
-    prop gy_21_23 = 1494 ~m.reflow
-    follow gy_21_23 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60
-    prop gy_21_24 = 1554 ~m.reflow
-    follow gy_21_24 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60
-    prop gc_21_3 = 232 ~m.reflow
-    follow gc_21_3 = 52 + 60 + 60 + 60
-    prop gy_21_c4 = 1636 ~m.reflow
-    follow gy_21_c4 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22
-    prop gy_21_26 = 1680 ~m.reflow
-    follow gy_21_26 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44
-    prop gy_21_27 = 1740 ~m.reflow
-    follow gy_21_27 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60
-    prop gy_21_28 = 1800 ~m.reflow
-    follow gy_21_28 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60
-    prop gc_21_4 = 232 ~m.reflow
-    follow gc_21_4 = 52 + 60 + 60 + 60
-    prop gy_21_c5 = 1882 ~m.reflow
-    follow gy_21_c5 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22
-    prop gy_21_30 = 1926 ~m.reflow
-    follow gy_21_30 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44
-    prop gy_21_31 = 1986 ~m.reflow
-    follow gy_21_31 = 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60
-    prop gc_21_5 = 140 ~m.reflow
-    follow gc_21_5 = 52 + 60 + 28
+    prop gc_21_0 = 172 ~m.reflow
+    follow gc_21_0 = 52 + 60 + 60
+    prop gy_21_c1 = 298 ~m.reflow
+    follow gy_21_c1 = 112 + 44 + 60 + 60 + 22
+    prop gy_21_4 = 342 ~m.reflow
+    follow gy_21_4 = 112 + 44 + 60 + 60 + 22 + 44
+    prop gy_21_5 = 402 ~m.reflow
+    follow gy_21_5 = 112 + 44 + 60 + 60 + 22 + 44 + 60
+    prop gy_21_6 = 462 ~m.reflow
+    follow gy_21_6 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0)
+    prop gy_21_7 = 522 ~m.reflow
+    follow gy_21_7 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60
+    prop gc_21_1 = 260 ~m.reflow
+    follow gc_21_1 = 52 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60 + 28
     prop gy_22_c0 = 112 ~m.reflow
     follow gy_22_c0 = 112
     prop gy_22_1 = 156 ~m.reflow
     follow gy_22_1 = 112 + 44
     prop gy_22_2 = 216 ~m.reflow
     follow gy_22_2 = 112 + 44 + 60
-    prop gc_22_0 = 172 ~m.reflow
-    follow gc_22_0 = 52 + 60 + 60
-    prop gy_22_c1 = 298 ~m.reflow
-    follow gy_22_c1 = 112 + 44 + 60 + 60 + 22
-    prop gy_22_4 = 342 ~m.reflow
-    follow gy_22_4 = 112 + 44 + 60 + 60 + 22 + 44
-    prop gy_22_5 = 402 ~m.reflow
-    follow gy_22_5 = 112 + 44 + 60 + 60 + 22 + 44 + 60
+    prop gy_22_3 = 276 ~m.reflow
+    follow gy_22_3 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0)
+    prop gy_22_4 = 336 ~m.reflow
+    follow gy_22_4 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0)
+    prop gc_22_0 = 292 ~m.reflow
+    follow gc_22_0 = 52 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60
+    prop gy_22_c1 = 418 ~m.reflow
+    follow gy_22_c1 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22
     prop gy_22_6 = 462 ~m.reflow
-    follow gy_22_6 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0)
+    follow gy_22_6 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44
     prop gy_22_7 = 522 ~m.reflow
-    follow gy_22_7 = 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60
-    prop gc_22_1 = 260 ~m.reflow
-    follow gc_22_1 = 52 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60 + 28
-    prop gy_23_c0 = 112 ~m.reflow
-    follow gy_23_c0 = 112
-    prop gy_23_1 = 156 ~m.reflow
-    follow gy_23_1 = 112 + 44
-    prop gy_23_2 = 216 ~m.reflow
-    follow gy_23_2 = 112 + 44 + 60
-    prop gy_23_3 = 276 ~m.reflow
-    follow gy_23_3 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0)
-    prop gy_23_4 = 336 ~m.reflow
-    follow gy_23_4 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0)
-    prop gc_23_0 = 292 ~m.reflow
-    follow gc_23_0 = 52 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60
-    prop gy_23_c1 = 418 ~m.reflow
-    follow gy_23_c1 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22
-    prop gy_23_6 = 462 ~m.reflow
-    follow gy_23_6 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44
-    prop gy_23_7 = 522 ~m.reflow
-    follow gy_23_7 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60
-    prop gy_23_8 = 582 ~m.reflow
-    follow gy_23_8 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0)
-    prop gy_23_9 = 642 ~m.reflow
-    follow gy_23_9 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0)
-    prop gc_23_1 = 292 ~m.reflow
-    follow gc_23_1 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0)
-    prop gy_23_c2 = 724 ~m.reflow
-    follow gy_23_c2 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22
-    prop gy_23_11 = 768 ~m.reflow
-    follow gy_23_11 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44
-    prop gy_23_12 = 828 ~m.reflow
-    follow gy_23_12 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60
-    prop gy_23_13 = 888 ~m.reflow
-    follow gy_23_13 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0)
-    prop gy_23_14 = 948 ~m.reflow
-    follow gy_23_14 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0)
-    prop gc_23_2 = 292 ~m.reflow
-    follow gc_23_2 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0)
-    prop gy_23_c3 = 1030 ~m.reflow
-    follow gy_23_c3 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22
-    prop gy_23_16 = 1074 ~m.reflow
-    follow gy_23_16 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44
-    prop gy_23_17 = 1134 ~m.reflow
-    follow gy_23_17 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60
-    prop gy_23_18 = 1194 ~m.reflow
-    follow gy_23_18 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0)
-    prop gy_23_19 = 1254 ~m.reflow
-    follow gy_23_19 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0)
-    prop gc_23_3 = 292 ~m.reflow
-    follow gc_23_3 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0)
-    prop gy_23_c4 = 1336 ~m.reflow
-    follow gy_23_c4 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22
-    prop gy_23_21 = 1380 ~m.reflow
-    follow gy_23_21 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44
-    prop gy_23_22 = 1440 ~m.reflow
-    follow gy_23_22 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60
-    prop gy_23_23 = 1500 ~m.reflow
-    follow gy_23_23 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0)
-    prop gy_23_24 = 1560 ~m.reflow
-    follow gy_23_24 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0)
-    prop gc_23_4 = 292 ~m.reflow
-    follow gc_23_4 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0)
-    prop gy_23_c5 = 1642 ~m.reflow
-    follow gy_23_c5 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22
-    prop gy_23_26 = 1686 ~m.reflow
-    follow gy_23_26 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44
-    prop gy_23_27 = 1746 ~m.reflow
-    follow gy_23_27 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60
-    prop gy_23_28 = 1806 ~m.reflow
-    follow gy_23_28 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
-    prop gy_23_29 = 1866 ~m.reflow
-    follow gy_23_29 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
-    prop gy_23_30 = 1926 ~m.reflow
-    follow gy_23_30 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
-    prop gy_23_31 = 1986 ~m.reflow
-    follow gy_23_31 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
-    prop gc_23_5 = 380 ~m.reflow
-    follow gc_23_5 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + 28
+    follow gy_22_7 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60
+    prop gy_22_8 = 582 ~m.reflow
+    follow gy_22_8 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0)
+    prop gy_22_9 = 642 ~m.reflow
+    follow gy_22_9 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0)
+    prop gc_22_1 = 292 ~m.reflow
+    follow gc_22_1 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0)
+    prop gy_22_c2 = 724 ~m.reflow
+    follow gy_22_c2 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22
+    prop gy_22_11 = 768 ~m.reflow
+    follow gy_22_11 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44
+    prop gy_22_12 = 828 ~m.reflow
+    follow gy_22_12 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60
+    prop gy_22_13 = 888 ~m.reflow
+    follow gy_22_13 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0)
+    prop gy_22_14 = 948 ~m.reflow
+    follow gy_22_14 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0)
+    prop gc_22_2 = 292 ~m.reflow
+    follow gc_22_2 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0)
+    prop gy_22_c3 = 1030 ~m.reflow
+    follow gy_22_c3 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22
+    prop gy_22_16 = 1074 ~m.reflow
+    follow gy_22_16 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44
+    prop gy_22_17 = 1134 ~m.reflow
+    follow gy_22_17 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60
+    prop gy_22_18 = 1194 ~m.reflow
+    follow gy_22_18 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0)
+    prop gy_22_19 = 1254 ~m.reflow
+    follow gy_22_19 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0)
+    prop gc_22_3 = 292 ~m.reflow
+    follow gc_22_3 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0)
+    prop gy_22_c4 = 1336 ~m.reflow
+    follow gy_22_c4 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22
+    prop gy_22_21 = 1380 ~m.reflow
+    follow gy_22_21 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44
+    prop gy_22_22 = 1440 ~m.reflow
+    follow gy_22_22 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60
+    prop gy_22_23 = 1500 ~m.reflow
+    follow gy_22_23 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0)
+    prop gy_22_24 = 1560 ~m.reflow
+    follow gy_22_24 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0)
+    prop gc_22_4 = 292 ~m.reflow
+    follow gc_22_4 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0)
+    prop gy_22_c5 = 1642 ~m.reflow
+    follow gy_22_c5 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22
+    prop gy_22_26 = 1686 ~m.reflow
+    follow gy_22_26 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44
+    prop gy_22_27 = 1746 ~m.reflow
+    follow gy_22_27 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60
+    prop gy_22_28 = 1806 ~m.reflow
+    follow gy_22_28 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
+    prop gy_22_29 = 1866 ~m.reflow
+    follow gy_22_29 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
+    prop gy_22_30 = 1926 ~m.reflow
+    follow gy_22_30 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
+    prop gy_22_31 = 1986 ~m.reflow
+    follow gy_22_31 = 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0)
+    prop gc_22_5 = 380 ~m.reflow
+    follow gc_22_5 = 52 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + 28
     // A page chosen slides in: it starts a little low and clear, and settles.
     prop pg = 1
     layer page_in {
@@ -2663,7 +2565,7 @@ scene Mooi {
         on press set_find { focus set_query }
         // the pages, scrolled by the wheel when they do not fit above the edit button
         zone box set_rail { from: 0, 124; size: 232, screen.height - 200 }
-        on scroll set_rail { set_navs = clamp(set_navs - wheel * 44, 0, max(0, 795 - (screen.height - 76))) }
+        on scroll set_rail { set_navs = clamp(set_navs - wheel * 44, 0, max(0, 773 - (screen.height - 76))) }
         group {
             clip box { from: 0, 124 + set_navs_s; size: 232, screen.height - 200 }
             move: 0, 0 - set_navs_s
@@ -2692,19 +2594,18 @@ scene Mooi {
             SNav(615, "Advanced", set_tab == 18, 18, set_pick)
             SNavGroup(640, "SHELL")
             SNav(658, "Nexus", set_tab == 19, 19, set_pick)
-            SNav(680, "Loom / Fold", set_tab == 20, 20, set_pick)
-            SNav(702, "The Subsurface", set_tab == 21, 21, set_pick)
-            SNavGroup(727, "DESKTOP")
-            SNav(745, "Herdr", set_tab == 22, 22, set_pick)
-            SNav(767, "Live wallpaper", set_tab == 23, 23, set_pick)
+            SNav(680, "The Subsurface", set_tab == 20, 20, set_pick)
+            SNavGroup(705, "DESKTOP")
+            SNav(723, "Herdr", set_tab == 21, 21, set_pick)
+            SNav(745, "Live wallpaper", set_tab == 22, 22, set_pick)
         }
-        box { from: 14, screen.height - 77; size: 204, 1; color: fl.trace_dim; show: 795 > screen.height - 76 }
+        box { from: 14, screen.height - 77; size: 204, 1; color: fl.trace_dim; show: 773 > screen.height - 76 }
         SButton(16, screen.height - 64, 200, "Edit on the bar", set_action, 1, bar_edit)
         text "CHANGES APPLY AT ONCE" { at: 18, screen.height - 18; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.trace }
 
         // The page: its cards and rows (scrolled by the wheel), sliding in when it is chosen.
         zone box set_body { from: 233, 96; size: screen.width - 233, screen.height - 96 }
-        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 66 + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 270, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 202, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 1500 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + if(sv_loom_mode > 0.5, 28, 0) + 22 + 44 + 60 + 60 + if(sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + if(sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5, 28, 0) + 60 + 60 + if(sv_loom_loom > 0.5, 60, 0) + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + 28 + 22 + 24 - screen.height))) }
+        on scroll set_body { set_scroll = clamp(set_scroll - wheel * 48, 0, pick(set_tab, max(0, 112 + 44 + 60 + if(sv_theme_preset > 5.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 22 + 44 + 60 + if(sv_theme_mode == 2, 60, 0) + if(sv_theme_mode == 2, 60, 0) + 22 + 44 + 60 + if(sv_look_corners != 3, 60, 0) + 22 + 44 + 60 + 60 + if(theme_wallpaper, 60, 0) + if(theme_wallpaper, 142, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + if(sv_bar_bg == 9, 228, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + if(sv_bar_bg > 0.5 and sv_bar_bg != 9, 60, 0) + 22 + 44 + 28 + 60 + 60 + 60 + 60 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(saving, 28, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_bar_style > 4.5, 28, 0) + 60 + 22 + 66 + if(fd_3_0, 44, 0) + if(fd_3_0, 60, 0) + if((fd_3_0) and (sv_bar_edge > 0.5), 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 60, 0) + if(fd_3_0, 22, 0) + 66 + if(fd_3_1, 44, 0) + if(fd_3_1, 60, 0) + if((fd_3_1) and (bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 1.5), 60, 0) + if((fd_3_1) and (bar_surface > 0.5 and bar_surface < 2.5), 60, 0) + if((fd_3_1) and (bar_surface < 2.5 or bar_surface > 3.5), 60, 0) + if(fd_3_1, 60, 0) + if(fd_3_1, 22, 0) + 66 + if((not frame_on or not dk_manage) and (fd_3_2), 44, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (not frame_on), 28, 0) + if(((not frame_on or not dk_manage) and (fd_3_2)) and (frame_on and not dk_manage), 28, 0) + if((not frame_on or not dk_manage) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (not bar_full and not st_notch), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + if((frame_on) and (fd_3_2), 44, 0) + if((frame_on) and (fd_3_2), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if(((frame_on) and (fd_3_2)) and (frame_music), 60, 0) + if((frame_on) and (fd_3_2), 22, 0) + 66 + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if((fd_3_3) and (not st_notch), 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + if(fd_3_3, 44, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 60, 0) + if(fd_3_3, 22, 0) + 66 + if(fd_3_4, 666 + lay_zh + 48, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (ws_style < 0.5 and not bar_full and not st_notch), 60, 0) + if((fd_3_4) and (ws_style < 2.5), 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 22, 0) + if(fd_3_4, 44, 0) + if(fd_3_4, 60, 0) + if(fd_3_4, 60, 0) + if((fd_3_4) and (media_mode != 2), 60, 0) + if(fd_3_4, 22, 0) + 66 + if(fd_3_5, 44, 0) + if((fd_3_5) and (sv_bar_mode != 3), 28, 0) + if(fd_3_5, 194, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 124, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + if(fd_3_5, 44, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 60, 0) + if(fd_3_5, 22, 0) + 66 + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 270, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 202, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + if(fd_3_6, 44, 0) + if(fd_3_6, 28, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 60, 0) + if(fd_3_6, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(not dk_manage, 28, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_shadow > 1.5), 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if((dk_manage) and (sv_desktop_blur != 1), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0), 60, 0) + if((dk_manage) and (sv_desktop_ws_style != 0 and sv_desktop_ws_feel != 2), 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 44 + 60 + 60 + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + if(sv_desktop_fx_light == 6, 62, 0) + 22 + 44 + 60 + if(sv_desktop_window_fx != 0, 60, 0) + if(sv_desktop_window_fx != 0, 60, 0) + 22 + 44 + 60 + if(sv_desktop_ws_fx != 0, 60, 0) + 22 + 44 + 60 + 60 + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 1, 60, 0) + if(sv_desktop_kitty_shader == 7, 60, 0) + 22 + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if((dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3), 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + if(not dk_manage, 28, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + if(dk_manage, 44, 0) + if(dk_manage, 60, 0) + if(dk_manage, 60, 0) + if(dk_manage, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + 22 + if(sv_shutter_enabled == 1, 44, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 60, 0) + if(sv_shutter_enabled == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_atlas_hot_corner != 0, 60, 0) + 22 + 44 + 60 + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + if(sv_atlas_overview == 0, 60, 0) + 60 + 22 + 44 + 60 + if(previews, 60, 0) + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, dp_list.count) * 60) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + (56 + wf_list.count * 46) + 22 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_walls_auto == 1, 60, 0) + if(sv_walls_auto == 1, 60, 0) + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 72 + 22 + 44 + 60 + if(sv_desk_on == 1, 60, 0) + if(sv_desk_on == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + if(sv_widgets_on == 1, 44, 0) + if(sv_widgets_on == 1, (96 + sw_list.count * 96), 0) + if(sv_widgets_on == 1, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1 and sv_companion_place == 0, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 44 + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + if(sv_companion_bmo == 1, 60, 0) + 22 + 24 - screen.height), max(0, 112 + 44 + (12 + max(1, snd_out.count) * 44) + 22 + 44 + (12 + max(1, snd_in.count) * 44) + 22 + 44 + if(snd_apps.count < 1, 28, 0) + (8 + snd_apps.count * 52) + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(not pw_ppd, 28, 0) + 22 + if(pw_ppd, 44, 0) + if(pw_ppd, 60, 0) + if(pw_ppd, 22, 0) + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 180 + 60 + 60 + 60 + 28 + 22 + 44 + 60 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 780 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + if(sv_notifications_dnd == 3, 60, 0) + if(sv_notifications_dnd == 3, 60, 0) + 60 + 22 + 44 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 58 + 28 + 22 + 44 + 244 + 22 + 24 - screen.height), max(0, 112 + 44 + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 60, 0) + if(sv_nexus_mode == 0, 28, 0) + 22 + 44 + 60 + if(sv_notch_on == 1, 28, 0) + 22 + 44 + 60 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + if(sv_surface_wall > 0.5, 60, 0) + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 60 + 60 + 22 + 44 + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + 60 + 22 + 44 + 60 + if(sv_herdr_brief == 1, 60, 0) + 60 + 28 + 22 + 24 - screen.height), max(0, 112 + 44 + 60 + if(sv_live_on > 0.5, 60, 0) + if(sv_live_on > 0.5, 60, 0) + 60 + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_ripple_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_breathe_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_flow_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_sweep_on > 0.5, 60, 0) + 22 + 44 + 60 + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + if(sv_live_on > 0.5 and sv_live_music_on > 0.5, 60, 0) + 28 + 22 + 24 - screen.height))) }
         group {
             // the clip is in the moved group's own coordinates: it is carried back down by the scroll,
             // or it rises with the rows and a scrolled section showed only its top (fixed 2026-10-20)
@@ -3864,59 +3765,59 @@ scene Mooi {
                     move: 0, gy_3_78 - 6102
                     SRow(6102, "In the Pill", "The classic Pill, or the Sigil: one living line that becomes what is happening", true, "", 550, false)
                     STrack(874, 6118, 264)
-                    SChoice(874, 6118, 132, "Classic", sv_sigil_pill == 0, set_value, 487000)
-                    SChoice(1006, 6118, 132, "Sigil", sv_sigil_pill == 1, set_value, 487001)
-                    SRevert(844, 6132, sv_sigil_pill != df_sigil_pill, set_value, 487000 + df_sigil_pill)
+                    SChoice(874, 6118, 132, "Classic", sv_sigil_pill == 0, set_value, 468000)
+                    SChoice(1006, 6118, 132, "Sigil", sv_sigil_pill == 1, set_value, 468001)
+                    SRevert(844, 6132, sv_sigil_pill != df_sigil_pill, set_value, 468000 + df_sigil_pill)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_79 - 6162
                     SRow(6162, "Temperament", "How much it moves: settled, alive, or restless", true, "", 418, true)
                     STrack(742, 6178, 396)
-                    SChoice(742, 6178, 132, "Calm", sv_sigil_temperament == 0, set_value, 488000)
-                    SChoice(874, 6178, 132, "Lively", sv_sigil_temperament == 1, set_value, 488001)
-                    SChoice(1006, 6178, 132, "Restless", sv_sigil_temperament == 2, set_value, 488002)
-                    SRevert(712, 6192, sv_sigil_temperament != df_sigil_temperament, set_value, 488000 + df_sigil_temperament)
+                    SChoice(742, 6178, 132, "Calm", sv_sigil_temperament == 0, set_value, 469000)
+                    SChoice(874, 6178, 132, "Lively", sv_sigil_temperament == 1, set_value, 469001)
+                    SChoice(1006, 6178, 132, "Restless", sv_sigil_temperament == 2, set_value, 469002)
+                    SRevert(712, 6192, sv_sigil_temperament != df_sigil_temperament, set_value, 469000 + df_sigil_temperament)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_80 - 6222
                     SRow(6222, "Colour", "The wallpaper's, the song's and the warnings' colours, or one of your own", true, "", 550, true)
                     STrack(874, 6238, 264)
-                    SChoice(874, 6238, 132, "Follow", sv_sigil_colour == 0, set_value, 489000)
-                    SChoice(1006, 6238, 132, "Fixed", sv_sigil_colour == 1, set_value, 489001)
-                    SRevert(844, 6252, sv_sigil_colour != df_sigil_colour, set_value, 489000 + df_sigil_colour)
+                    SChoice(874, 6238, 132, "Follow", sv_sigil_colour == 0, set_value, 470000)
+                    SChoice(1006, 6238, 132, "Fixed", sv_sigil_colour == 1, set_value, 470001)
+                    SRevert(844, 6252, sv_sigil_colour != df_sigil_colour, set_value, 470000 + df_sigil_colour)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_81 - 6282
                     SRow(6282, "At rest", "What it shows when nothing is happening", true, "", 324, true)
                     STrack(648, 6298, 490)
-                    SChoice(648, 6298, 70, "Clock", sv_sigil_rest == 0, set_value, 493000)
-                    SChoice(718, 6298, 70, "Song", sv_sigil_rest == 3, set_value, 493003)
-                    SChoice(788, 6298, 70, "Weather", sv_sigil_rest == 2, set_value, 493002)
-                    SChoice(858, 6298, 70, "Machine", sv_sigil_rest == 8, set_value, 493008)
-                    SChoice(928, 6298, 70, "Battery", sv_sigil_rest == 9, set_value, 493009)
-                    SChoice(998, 6298, 70, "Spaces", sv_sigil_rest == 6, set_value, 493006)
-                    SChoice(1068, 6298, 70, "BMO", sv_sigil_rest == 12, set_value, 493012)
-                    SRevert(618, 6312, sv_sigil_rest != df_sigil_rest, set_value, 493000 + df_sigil_rest)
+                    SChoice(648, 6298, 70, "Clock", sv_sigil_rest == 0, set_value, 474000)
+                    SChoice(718, 6298, 70, "Song", sv_sigil_rest == 3, set_value, 474003)
+                    SChoice(788, 6298, 70, "Weather", sv_sigil_rest == 2, set_value, 474002)
+                    SChoice(858, 6298, 70, "Machine", sv_sigil_rest == 8, set_value, 474008)
+                    SChoice(928, 6298, 70, "Battery", sv_sigil_rest == 9, set_value, 474009)
+                    SChoice(998, 6298, 70, "Spaces", sv_sigil_rest == 6, set_value, 474006)
+                    SChoice(1068, 6298, 70, "BMO", sv_sigil_rest == 12, set_value, 474012)
+                    SRevert(618, 6312, sv_sigil_rest != df_sigil_rest, set_value, 474000 + df_sigil_rest)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_82 - 6342
                     SRow(6342, "Your pointer", "Near it, the line moves away, leans toward it, or ignores it", true, "", 418, true)
                     STrack(742, 6358, 396)
-                    SChoice(742, 6358, 132, "Pushes", sv_sigil_pointer == 0, set_value, 492000)
-                    SChoice(874, 6358, 132, "Draws", sv_sigil_pointer == 1, set_value, 492001)
-                    SChoice(1006, 6358, 132, "Ignores", sv_sigil_pointer == 2, set_value, 492002)
-                    SRevert(712, 6372, sv_sigil_pointer != df_sigil_pointer, set_value, 492000 + df_sigil_pointer)
+                    SChoice(742, 6358, 132, "Pushes", sv_sigil_pointer == 0, set_value, 473000)
+                    SChoice(874, 6358, 132, "Draws", sv_sigil_pointer == 1, set_value, 473001)
+                    SChoice(1006, 6358, 132, "Ignores", sv_sigil_pointer == 2, set_value, 473002)
+                    SRevert(712, 6372, sv_sigil_pointer != df_sigil_pointer, set_value, 473000 + df_sigil_pointer)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_83 - 6402
                     SRow(6402, "The field", "A field of points behind its displays, warmed by your pointer", true, "", 768, true)
-                    SToggle(1092, 6420, sv_sigil_field, set_value, 491, "sigil.field")
-                    SRevert(1062, 6432, sv_sigil_field != df_sigil_field, set_value, 491000 + df_sigil_field)
+                    SToggle(1092, 6420, sv_sigil_field, set_value, 472, "sigil.field")
+                    SRevert(1062, 6432, sv_sigil_field != df_sigil_field, set_value, 472000 + df_sigil_field)
                 }
                 group {
                     show: fd_3_6
@@ -3928,42 +3829,42 @@ scene Mooi {
                     move: 0, gy_3_85 - 6528
                     SRow(6528, "Second pill", "A capsule of its own showing one thing; a press opens its room, the wheel turns its view", true, "", 324, false)
                     STrack(648, 6544, 490)
-                    SChoice(648, 6544, 70, "Off", sv_pill_two == 0, set_value, 483000)
-                    SChoice(718, 6544, 70, "Time", sv_pill_two == 1, set_value, 483001)
-                    SChoice(788, 6544, 70, "Song", sv_pill_two == 6, set_value, 483006)
-                    SChoice(858, 6544, 70, "Weather", sv_pill_two == 4, set_value, 483004)
-                    SChoice(928, 6544, 70, "Machine", sv_pill_two == 5, set_value, 483005)
-                    SChoice(998, 6544, 70, "Battery", sv_pill_two == 7, set_value, 483007)
-                    SChoice(1068, 6544, 70, "Spaces", sv_pill_two == 8, set_value, 483008)
-                    SRevert(618, 6558, sv_pill_two != df_pill_two, set_value, 483000 + df_pill_two)
+                    SChoice(648, 6544, 70, "Off", sv_pill_two == 0, set_value, 464000)
+                    SChoice(718, 6544, 70, "Time", sv_pill_two == 1, set_value, 464001)
+                    SChoice(788, 6544, 70, "Song", sv_pill_two == 6, set_value, 464006)
+                    SChoice(858, 6544, 70, "Weather", sv_pill_two == 4, set_value, 464004)
+                    SChoice(928, 6544, 70, "Machine", sv_pill_two == 5, set_value, 464005)
+                    SChoice(998, 6544, 70, "Battery", sv_pill_two == 7, set_value, 464007)
+                    SChoice(1068, 6544, 70, "Spaces", sv_pill_two == 8, set_value, 464008)
+                    SRevert(618, 6558, sv_pill_two != df_pill_two, set_value, 464000 + df_pill_two)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_86 - 6588
                     SRow(6588, "Where", "Across the screen (0: beside the Pill, on its left); it never covers anything", true, "", 404, true)
-                    SSlider(728, 6604, 330, sv_pill_two_at, 100, set_value, 484, "Where", pick(sv_pill_two_at > 0, "BESIDE THE PILL", "{sv_pill_two_at, 0}%"), true)
-                    SRevert(698, 6618, sv_pill_two_at != df_pill_two_at, set_value, 484000 + df_pill_two_at)
+                    SSlider(728, 6604, 330, sv_pill_two_at, 100, set_value, 465, "Where", pick(sv_pill_two_at > 0, "BESIDE THE PILL", "{sv_pill_two_at, 0}%"), true)
+                    SRevert(698, 6618, sv_pill_two_at != df_pill_two_at, set_value, 465000 + df_pill_two_at)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_87 - 6648
                     SRow(6648, "Third pill", "Another, on the Pill's right unless you place it", true, "", 324, true)
                     STrack(648, 6664, 490)
-                    SChoice(648, 6664, 70, "Off", sv_pill_three == 0, set_value, 485000)
-                    SChoice(718, 6664, 70, "Time", sv_pill_three == 1, set_value, 485001)
-                    SChoice(788, 6664, 70, "Song", sv_pill_three == 6, set_value, 485006)
-                    SChoice(858, 6664, 70, "Weather", sv_pill_three == 4, set_value, 485004)
-                    SChoice(928, 6664, 70, "Machine", sv_pill_three == 5, set_value, 485005)
-                    SChoice(998, 6664, 70, "Battery", sv_pill_three == 7, set_value, 485007)
-                    SChoice(1068, 6664, 70, "Spaces", sv_pill_three == 8, set_value, 485008)
-                    SRevert(618, 6678, sv_pill_three != df_pill_three, set_value, 485000 + df_pill_three)
+                    SChoice(648, 6664, 70, "Off", sv_pill_three == 0, set_value, 466000)
+                    SChoice(718, 6664, 70, "Time", sv_pill_three == 1, set_value, 466001)
+                    SChoice(788, 6664, 70, "Song", sv_pill_three == 6, set_value, 466006)
+                    SChoice(858, 6664, 70, "Weather", sv_pill_three == 4, set_value, 466004)
+                    SChoice(928, 6664, 70, "Machine", sv_pill_three == 5, set_value, 466005)
+                    SChoice(998, 6664, 70, "Battery", sv_pill_three == 7, set_value, 466007)
+                    SChoice(1068, 6664, 70, "Spaces", sv_pill_three == 8, set_value, 466008)
+                    SRevert(618, 6678, sv_pill_three != df_pill_three, set_value, 466000 + df_pill_three)
                 }
                 group {
                     show: fd_3_6
                     move: 0, gy_3_88 - 6708
                     SRow(6708, "Where", "Across the screen (0: beside the Pill, on its right)", true, "", 404, true)
-                    SSlider(728, 6724, 330, sv_pill_three_at, 100, set_value, 486, "Where", pick(sv_pill_three_at > 0, "BESIDE THE PILL", "{sv_pill_three_at, 0}%"), true)
-                    SRevert(698, 6738, sv_pill_three_at != df_pill_three_at, set_value, 486000 + df_pill_three_at)
+                    SSlider(728, 6724, 330, sv_pill_three_at, 100, set_value, 467, "Where", pick(sv_pill_three_at > 0, "BESIDE THE PILL", "{sv_pill_three_at, 0}%"), true)
+                    SRevert(698, 6738, sv_pill_three_at != df_pill_three_at, set_value, 467000 + df_pill_three_at)
                 }
                 group {
                     show: fd_3_6
@@ -5466,44 +5367,44 @@ scene Mooi {
                     show: sv_companion_bmo == 1
                     move: 0, gy_11_21 - 1374
                     SRow(1374, "Follow the pointer", "His eyes track you across the bar", true, "", 768, false)
-                    SToggle(1092, 1392, sv_companion_eyes, set_value, 517, "companion.eyes")
-                    SRevert(1062, 1404, sv_companion_eyes != df_companion_eyes, set_value, 517000 + df_companion_eyes)
+                    SToggle(1092, 1392, sv_companion_eyes, set_value, 498, "companion.eyes")
+                    SRevert(1062, 1404, sv_companion_eyes != df_companion_eyes, set_value, 498000 + df_companion_eyes)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_11_22 - 1434
                     SRow(1434, "Cheek", "How far his tone goes: teasing, flirty, or unfiltered. Never explicit", true, "", 374, true)
                     STrack(698, 1450, 440)
-                    SChoice(698, 1450, 110, "Off", sv_companion_cheek == 0, set_value, 518000)
-                    SChoice(808, 1450, 110, "Tease", sv_companion_cheek == 1, set_value, 518001)
-                    SChoice(918, 1450, 110, "Flirty", sv_companion_cheek == 2, set_value, 518002)
-                    SChoice(1028, 1450, 110, "Unfiltered", sv_companion_cheek == 3, set_value, 518003)
-                    SRevert(668, 1464, sv_companion_cheek != df_companion_cheek, set_value, 518000 + df_companion_cheek)
+                    SChoice(698, 1450, 110, "Off", sv_companion_cheek == 0, set_value, 499000)
+                    SChoice(808, 1450, 110, "Tease", sv_companion_cheek == 1, set_value, 499001)
+                    SChoice(918, 1450, 110, "Flirty", sv_companion_cheek == 2, set_value, 499002)
+                    SChoice(1028, 1450, 110, "Unfiltered", sv_companion_cheek == 3, set_value, 499003)
+                    SRevert(668, 1464, sv_companion_cheek != df_companion_cheek, set_value, 499000 + df_companion_cheek)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_11_23 - 1494
                     SRow(1494, "Hands", "What he may do without asking: look, balanced, or trusted. Changes still ask", true, "", 374, true)
                     STrack(698, 1510, 440)
-                    SChoice(698, 1510, 110, "Off", sv_companion_hands == 0, set_value, 519000)
-                    SChoice(808, 1510, 110, "Look", sv_companion_hands == 1, set_value, 519001)
-                    SChoice(918, 1510, 110, "Balanced", sv_companion_hands == 2, set_value, 519002)
-                    SChoice(1028, 1510, 110, "Trusted", sv_companion_hands == 3, set_value, 519003)
-                    SRevert(668, 1524, sv_companion_hands != df_companion_hands, set_value, 519000 + df_companion_hands)
+                    SChoice(698, 1510, 110, "Off", sv_companion_hands == 0, set_value, 500000)
+                    SChoice(808, 1510, 110, "Look", sv_companion_hands == 1, set_value, 500001)
+                    SChoice(918, 1510, 110, "Balanced", sv_companion_hands == 2, set_value, 500002)
+                    SChoice(1028, 1510, 110, "Trusted", sv_companion_hands == 3, set_value, 500003)
+                    SRevert(668, 1524, sv_companion_hands != df_companion_hands, set_value, 500000 + df_companion_hands)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_11_24 - 1554
                     SRow(1554, "Herdr agents", "A face when a coding agent needs you", true, "", 768, true)
-                    SToggle(1092, 1572, sv_companion_react_herdr, set_value, 520, "companion.react.herdr")
-                    SRevert(1062, 1584, sv_companion_react_herdr != df_companion_react_herdr, set_value, 520000 + df_companion_react_herdr)
+                    SToggle(1092, 1572, sv_companion_react_herdr, set_value, 501, "companion.react.herdr")
+                    SRevert(1062, 1584, sv_companion_react_herdr != df_companion_react_herdr, set_value, 501000 + df_companion_react_herdr)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_11_25 - 1614
                     SRow(1614, "What you are reading", "A curious look when the browser's title changes", true, "", 768, true)
-                    SToggle(1092, 1632, sv_companion_react_browser, set_value, 521, "companion.react.browser")
-                    SRevert(1062, 1644, sv_companion_react_browser != df_companion_react_browser, set_value, 521000 + df_companion_react_browser)
+                    SToggle(1092, 1632, sv_companion_react_browser, set_value, 502, "companion.react.browser")
+                    SRevert(1062, 1644, sv_companion_react_browser != df_companion_react_browser, set_value, 502000 + df_companion_react_browser)
                 }
             }
             group {
@@ -5749,58 +5650,10 @@ scene Mooi {
                     SKeys(700, 832, pick(capturing == 11, key_lock, cap_text), capturing == 11)
                     SButton(1042, 831, 96, pick(capturing == 11, "Change", "Cancel"), key_change, 11, capturing == 11)
                     text key_clash_lock { at: 700, 868; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(876, "Accordion: add", "The focused window joins your Accordion (Loom / Fold, Hybrid or full mode)", true, "", 330, true)
-                    SKeys(700, 892, pick(capturing == 12, key_loom_add, cap_text), capturing == 12)
+                    SRow(876, "Stop mooi", "Back to ArchEclipse", true, "", 330, true)
+                    SKeys(700, 892, pick(capturing == 12, key_stop, cap_text), capturing == 12)
                     SButton(1042, 891, 96, pick(capturing == 12, "Change", "Cancel"), key_change, 12, capturing == 12)
-                    text key_clash_loom_add { at: 700, 928; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(936, "Accordion: next", "The next layer out; the one you were using goes back in", true, "", 330, true)
-                    SKeys(700, 952, pick(capturing == 13, key_loom_next, cap_text), capturing == 13)
-                    SButton(1042, 951, 96, pick(capturing == 13, "Change", "Cancel"), key_change, 13, capturing == 13)
-                    text key_clash_loom_next { at: 700, 988; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(996, "Accordion: previous", "The previous layer out", true, "", 330, true)
-                    SKeys(700, 1012, pick(capturing == 14, key_loom_prev, cap_text), capturing == 14)
-                    SButton(1042, 1011, 96, pick(capturing == 14, "Change", "Cancel"), key_change, 14, capturing == 14)
-                    text key_clash_loom_prev { at: 700, 1048; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1056, "Accordion: fold", "Every layer back in, or the last one out again", true, "", 330, true)
-                    SKeys(700, 1072, pick(capturing == 15, key_loom_fold, cap_text), capturing == 15)
-                    SButton(1042, 1071, 96, pick(capturing == 15, "Change", "Cancel"), key_change, 15, capturing == 15)
-                    text key_clash_loom_fold { at: 700, 1108; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1116, "Accordion: open all", "Every layer out on this workspace, tiled", true, "", 330, true)
-                    SKeys(700, 1132, pick(capturing == 16, key_loom_open, cap_text), capturing == 16)
-                    SButton(1042, 1131, 96, pick(capturing == 16, "Change", "Cancel"), key_change, 16, capturing == 16)
-                    text key_clash_loom_open { at: 700, 1168; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1176, "Accordion: take out", "The focused window leaves its Accordion and stays", true, "", 330, true)
-                    SKeys(700, 1192, pick(capturing == 17, key_loom_remove, cap_text), capturing == 17)
-                    SButton(1042, 1191, 96, pick(capturing == 17, "Change", "Cancel"), key_change, 17, capturing == 17)
-                    text key_clash_loom_remove { at: 700, 1228; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1236, "Make a Cube", "Every window on this workspace folded into one Cube (the focused one on its front)", true, "", 330, true)
-                    SKeys(700, 1252, pick(capturing == 18, key_loom_cube, cap_text), capturing == 18)
-                    SButton(1042, 1251, 96, pick(capturing == 18, "Change", "Cancel"), key_change, 18, capturing == 18)
-                    text key_clash_loom_cube { at: 700, 1288; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1296, "Join the Cube", "The focused window joins the last Cube's facing side", true, "", 330, true)
-                    SKeys(700, 1312, pick(capturing == 19, key_loom_join, cap_text), capturing == 19)
-                    SButton(1042, 1311, 96, pick(capturing == 19, "Change", "Cancel"), key_change, 19, capturing == 19)
-                    text key_clash_loom_join { at: 700, 1348; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1356, "Link windows", "Press on one window, then on another: they are connected", true, "", 330, true)
-                    SKeys(700, 1372, pick(capturing == 20, key_loom_link, cap_text), capturing == 20)
-                    SButton(1042, 1371, 96, pick(capturing == 20, "Change", "Cancel"), key_change, 20, capturing == 20)
-                    text key_clash_loom_link { at: 700, 1408; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1416, "Link as a workflow", "The same, as a step: hopping goes forward along it first", true, "", 330, true)
-                    SKeys(700, 1432, pick(capturing == 21, key_loom_flow, cap_text), capturing == 21)
-                    SButton(1042, 1431, 96, pick(capturing == 21, "Change", "Cancel"), key_change, 21, capturing == 21)
-                    text key_clash_loom_flow { at: 700, 1468; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1476, "Hop along a link", "To the next window connected to this one, wherever it is", true, "", 330, true)
-                    SKeys(700, 1492, pick(capturing == 22, key_loom_hop, cap_text), capturing == 22)
-                    SButton(1042, 1491, 96, pick(capturing == 22, "Change", "Cancel"), key_change, 22, capturing == 22)
-                    text key_clash_loom_hop { at: 700, 1528; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1536, "Unlink the window", "Every connection of the focused window let go", true, "", 330, true)
-                    SKeys(700, 1552, pick(capturing == 23, key_loom_unlink, cap_text), capturing == 23)
-                    SButton(1042, 1551, 96, pick(capturing == 23, "Change", "Cancel"), key_change, 23, capturing == 23)
-                    text key_clash_loom_unlink { at: 700, 1588; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1596, "Stop mooi", "Back to ArchEclipse", true, "", 330, true)
-                    SKeys(700, 1612, pick(capturing == 24, key_stop, cap_text), capturing == 24)
-                    SButton(1042, 1611, 96, pick(capturing == 24, "Change", "Cancel"), key_change, 24, capturing == 24)
-                    text key_clash_stop { at: 700, 1648; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    text key_clash_stop { at: 700, 928; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {
@@ -6125,101 +5978,234 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_20_c0 - 112
-                    SCard(112, gc_20_0, "Mode")
+                    SCard(112, gc_20_0, "The opening")
                 }
                 group {
                     show: true
                     move: 0, gy_20_1 - 156
-                    SRow(156, "Mode", "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", true, "", 418, false)
-                    STrack(742, 172, 396)
-                    SChoice(742, 172, 132, "Native", sv_loom_mode == 0, set_value, 464000)
-                    SChoice(874, 172, 132, "Hybrid", sv_loom_mode == 1, set_value, 464001)
-                    SChoice(1006, 172, 132, "Loom / Fold", sv_loom_mode == 2, set_value, 464002)
-                    SRevert(712, 186, sv_loom_mode != df_loom_mode, set_value, 464000 + df_loom_mode)
+                    SRow(156, "Hold Super to reveal", "The wallpaper opens at your pointer; a quick tap keeps Super's old meaning", true, "", 768, false)
+                    SToggle(1092, 174, sv_surface_on, set_value, 475, "surface.on")
+                    SRevert(1062, 186, sv_surface_on != df_surface_on, set_value, 475000 + df_surface_on)
                 }
                 group {
                     show: true
                     move: 0, gy_20_2 - 216
-                    SRow(216, "Status", "What Loom / Fold is doing now", true, "", 360, true)
-                    text lf_status { at: 1138, 246; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
+                    SRow(216, "Hold for", "How long Super is held before it opens", true, "", 404, true)
+                    SSlider(728, 232, 330, sv_surface_delay, 650, set_value, 476, "Hold for", "{sv_surface_delay + 150, 0} ms", true)
+                    SRevert(698, 246, sv_surface_delay != df_surface_delay, set_value, 476000 + df_surface_delay)
                 }
                 group {
                     show: true
                     move: 0, gy_20_3 - 276
-                    SRow(276, "Start again", "After it stopped on repeated failures (your windows were brought back)", true, "", 400, true)
-                    SButton(958, 291, 180, "Start again", lf_act, 1)
+                    SRow(276, "Effect", "How the wallpaper gives way: torn, a lens, a soft membrane, ripples, folded paper, dissolving, glass or a glow", true, "", 254, true)
+                    STrack(578, 292, 560)
+                    SChoice(578, 292, 70, "Tear", sv_surface_effect == 0, set_value, 477000)
+                    SChoice(648, 292, 70, "Aperture", sv_surface_effect == 1, set_value, 477001)
+                    SChoice(718, 292, 70, "Membrane", sv_surface_effect == 2, set_value, 477002)
+                    SChoice(788, 292, 70, "Ripple", sv_surface_effect == 3, set_value, 477003)
+                    SChoice(858, 292, 70, "Fold", sv_surface_effect == 4, set_value, 477004)
+                    SChoice(928, 292, 70, "Dissolve", sv_surface_effect == 5, set_value, 477005)
+                    SChoice(998, 292, 70, "Glass", sv_surface_effect == 6, set_value, 477006)
+                    SChoice(1068, 292, 70, "Glow", sv_surface_effect == 7, set_value, 477007)
+                    SRevert(548, 306, sv_surface_effect != df_surface_effect, set_value, 477000 + df_surface_effect)
                 }
                 group {
-                    show: sv_loom_mode > 0.5
+                    show: true
                     move: 0, gy_20_4 - 336
-                    text "EXPERIMENTAL · WHAT IS BUILT: ACCORDIONS, CUBES AND LOOM'S CONNECTIONS. TRANSFORMATIONS COME NEXT" { at: 274, 350; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    SRow(336, "Intensity", "How strongly the effect shows: the lip, the halo, the shadow", true, "", 404, true)
+                    SSlider(728, 352, 330, sv_surface_intensity, 80, set_value, 479, "Intensity", "{sv_surface_intensity + 20, 0} %", true)
+                    SRevert(698, 366, sv_surface_intensity != df_surface_intensity, set_value, 479000 + df_surface_intensity)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_c1 - 386
-                    SCard(386, gc_20_1, "Features")
+                    move: 0, gy_20_5 - 396
+                    SRow(396, "Edge width", "How wide the opened edge is: thin and sharp or broad and soft", true, "", 404, true)
+                    SSlider(728, 412, 330, sv_surface_edge, 80, set_value, 480, "Edge width", "{sv_surface_edge + 20, 0} %", true)
+                    SRevert(698, 426, sv_surface_edge != df_surface_edge, set_value, 480000 + df_surface_edge)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_6 - 430
-                    SRow(430, "Fold", "Structures your windows fold into. In Loom / Fold mode every built feature is on; these are Hybrid's", true, "", 768, false)
-                    SToggle(1092, 448, sv_loom_fold, set_value, 465, "loom.fold")
-                    SRevert(1062, 460, sv_loom_fold != df_loom_fold, set_value, 465000 + df_loom_fold)
+                    move: 0, gy_20_6 - 456
+                    SRow(456, "Edge colour", "The accent's colour, plain light, or warm ember", true, "", 418, true)
+                    STrack(742, 472, 396)
+                    SChoice(742, 472, 132, "Accent", sv_surface_colour == 0, set_value, 481000)
+                    SChoice(874, 472, 132, "Plain", sv_surface_colour == 1, set_value, 481001)
+                    SChoice(1006, 472, 132, "Warm", sv_surface_colour == 2, set_value, 481002)
+                    SRevert(712, 486, sv_surface_colour != df_surface_colour, set_value, 481000 + df_surface_colour)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_7 - 490
-                    SRow(490, "Accordions", "Windows as thin layers on a screen edge: pull the one you need, the rest wait. Needs Fold", true, "", 768, true)
-                    SToggle(1092, 508, sv_loom_accordions, set_value, 466, "loom.accordions")
-                    SRevert(1062, 520, sv_loom_accordions != df_loom_accordions, set_value, 466000 + df_loom_accordions)
-                }
-                group {
-                    show: sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5
-                    move: 0, gy_20_8 - 550
-                    text "ACCORDIONS NEED FOLD — TURN FOLD ON FIRST" { at: 274, 564; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    move: 0, gy_20_7 - 516
+                    SRow(516, "Open speed", "How quickly the hole springs open and heals", true, "", 404, true)
+                    SSlider(728, 532, 330, sv_surface_speed, 500, set_value, 482, "Open speed", "{sv_surface_speed + 100, 0} ms", true)
+                    SRevert(698, 546, sv_surface_speed != df_surface_speed, set_value, 482000 + df_surface_speed)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_9 - 578
-                    SRow(578, "Cubes", "A whole workspace folded into one small solid and unfolded back where it was. Needs Fold", true, "", 768, true)
-                    SToggle(1092, 596, sv_loom_cubes, set_value, 474, "loom.cubes")
-                    SRevert(1062, 608, sv_loom_cubes != df_loom_cubes, set_value, 474000 + df_loom_cubes)
-                }
-                group {
-                    show: sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5
-                    move: 0, gy_20_10 - 638
-                    text "CUBES NEED FOLD — TURN FOLD ON FIRST" { at: 274, 652; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    move: 0, gy_20_8 - 576
+                    SRow(576, "Corner", "How round the hole's corner is", true, "", 404, true)
+                    SSlider(728, 592, 330, sv_surface_radius, 32, set_value, 483, "Corner", "{sv_surface_radius + 8, 0} px", true)
+                    SRevert(698, 606, sv_surface_radius != df_surface_radius, set_value, 483000 + df_surface_radius)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_11 - 666
-                    SRow(666, "Edge", "The screen edge the Accordions' strips and the docked Cubes stand on", true, "", 550, true)
-                    STrack(874, 682, 264)
-                    SChoice(874, 682, 132, "Right", sv_loom_edge == 0, set_value, 467000)
-                    SChoice(1006, 682, 132, "Left", sv_loom_edge == 1, set_value, 467001)
-                    SRevert(844, 696, sv_loom_edge != df_loom_edge, set_value, 467000 + df_loom_edge)
+                    move: 0, gy_20_c1 - 658
+                    SCard(658, gc_20_1, "The wallpaper under it")
                 }
                 group {
                     show: true
-                    move: 0, gy_20_12 - 726
-                    SRow(726, "Loom", "Connections between windows that do something: hop along them, see them as threads", true, "", 768, true)
-                    SToggle(1092, 744, sv_loom_loom, set_value, 477, "loom.loom")
-                    SRevert(1062, 756, sv_loom_loom != df_loom_loom, set_value, 477000 + df_loom_loom)
+                    move: 0, gy_20_10 - 702
+                    SRow(702, "Show the wallpaper", "The hole shows your wallpaper dimmed under the grid, not a flat plate", true, "", 768, false)
+                    SToggle(1092, 720, sv_surface_wall, set_value, 484, "surface.wall")
+                    SRevert(1062, 732, sv_surface_wall != df_surface_wall, set_value, 484000 + df_surface_wall)
                 }
                 group {
-                    show: sv_loom_loom > 0.5
-                    move: 0, gy_20_13 - 786
-                    SRow(786, "Threads", "When the threads show: a few seconds when the focused window has connections, always, or only while linking", true, "", 418, true)
-                    STrack(742, 802, 396)
-                    SChoice(742, 802, 132, "When relevant", sv_loom_threads == 0, set_value, 478000)
-                    SChoice(874, 802, 132, "Always", sv_loom_threads == 1, set_value, 478001)
-                    SChoice(1006, 802, 132, "Hidden", sv_loom_threads == 2, set_value, 478002)
-                    SRevert(712, 816, sv_loom_threads != df_loom_threads, set_value, 478000 + df_loom_threads)
+                    show: sv_surface_wall > 0.5
+                    move: 0, gy_20_11 - 762
+                    SRow(762, "Dim", "How far the wallpaper is pushed back under the opening", true, "", 404, true)
+                    SSlider(728, 778, 330, sv_surface_dim, 80, set_value, 485, "Dim", "{sv_surface_dim, 0} %", true)
+                    SRevert(698, 792, sv_surface_dim != df_surface_dim, set_value, 485000 + df_surface_dim)
+                }
+                group {
+                    show: sv_surface_wall > 0.5
+                    move: 0, gy_20_12 - 822
+                    SRow(822, "Tint", "How much of the accent is laid over it", true, "", 404, true)
+                    SSlider(728, 838, 330, sv_surface_tint, 100, set_value, 486, "Tint", "{sv_surface_tint, 0} %", true)
+                    SRevert(698, 852, sv_surface_tint != df_surface_tint, set_value, 486000 + df_surface_tint)
+                }
+                group {
+                    show: sv_surface_wall > 0.5
+                    move: 0, gy_20_13 - 882
+                    SRow(882, "Fit", "Cover fills the screen; contain shows the whole picture", true, "", 550, true)
+                    STrack(874, 898, 264)
+                    SChoice(874, 898, 132, "Cover", sv_surface_fit == 0, set_value, 487000)
+                    SChoice(1006, 898, 132, "Contain", sv_surface_fit == 1, set_value, 487001)
+                    SRevert(844, 912, sv_surface_fit != df_surface_fit, set_value, 487000 + df_surface_fit)
                 }
                 group {
                     show: true
-                    move: 0, gy_20_14 - 846
-                    text "KEYS (SETTINGS → KEYS): SUPER+ALT+A ADD · ] [ NEXT, PREVIOUS · F FOLD · U OPEN ALL · R TAKE OUT · K MAKE A CUBE · J JOIN THE CUBE · N LINK (SHIFT: A WORKFLOW) · H HOP ALONG A LINK. A STRIP: PRESS PULLS, DRAG REORDERS, WHEEL STEPS. A CUBE: PRESS FOLDS OR UNFOLDS, WHEEL TURNS, MIDDLE OPENS ONE SIDE" { at: 274, 860; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    move: 0, gy_20_14 - 942
+                    SRow(942, "Grid", "The faint measured grid over the wallpaper", true, "", 404, true)
+                    SSlider(728, 958, 330, sv_surface_grid, 100, set_value, 488, "Grid", "{sv_surface_grid, 0} %", true)
+                    SRevert(698, 972, sv_surface_grid != df_surface_grid, set_value, 488000 + df_surface_grid)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_15 - 1002
+                    SRow(1002, "Names", "The Overview's title and hints", true, "", 768, true)
+                    SToggle(1092, 1020, sv_surface_labels, set_value, 489, "surface.labels")
+                    SRevert(1062, 1032, sv_surface_labels != df_surface_labels, set_value, 489000 + df_surface_labels)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_c2 - 1084
+                    SCard(1084, gc_20_2, "Light through the skin")
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_17 - 1128
+                    SRow(1128, "Glow", "What plays under the wallpaper: nothing, a subtle breath, or a bright one", true, "", 418, false)
+                    STrack(742, 1144, 396)
+                    SChoice(742, 1144, 132, "Off", sv_surface_glow == 0, set_value, 490000)
+                    SChoice(874, 1144, 132, "Subtle", sv_surface_glow == 1, set_value, 490001)
+                    SChoice(1006, 1144, 132, "Bright", sv_surface_glow == 2, set_value, 490002)
+                    SRevert(712, 1158, sv_surface_glow != df_surface_glow, set_value, 490000 + df_surface_glow)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_18 - 1188
+                    SRow(1188, "A notice pings", "A new notice lights a spark where the notices live, even over a window", true, "", 768, true)
+                    SToggle(1092, 1206, sv_surface_ping, set_value, 491, "surface.ping")
+                    SRevert(1062, 1218, sv_surface_ping != df_surface_ping, set_value, 491000 + df_surface_ping)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_19 - 1248
+                    SRow(1248, "The light travels", "From the spark to the window of the app that sent it, and once round its border", true, "", 768, true)
+                    SToggle(1092, 1266, sv_surface_trace, set_value, 511, "surface.trace")
+                    SRevert(1062, 1278, sv_surface_trace != df_surface_trace, set_value, 511000 + df_surface_trace)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_20 - 1308
+                    SRow(1308, "Push up from below", "A new song or notice bulges the wallpaper where it lives, and its words press up through it", true, "", 768, true)
+                    SToggle(1092, 1326, sv_surface_push, set_value, 510, "surface.push")
+                    SRevert(1062, 1338, sv_surface_push != df_surface_push, set_value, 510000 + df_surface_push)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_c3 - 1390
+                    SCard(1390, gc_20_3, "Where things sit")
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_22 - 1434
+                    SRow(1434, "Arrangement", "How the widgets below are laid out: an arc, centred rows, a grid, or low and calm", true, "", 374, false)
+                    STrack(698, 1450, 440)
+                    SChoice(698, 1450, 110, "Arc", sv_surface_layout == 0, set_value, 492000)
+                    SChoice(808, 1450, 110, "Row", sv_surface_layout == 1, set_value, 492001)
+                    SChoice(918, 1450, 110, "Grid", sv_surface_layout == 2, set_value, 492002)
+                    SChoice(1028, 1450, 110, "Calm", sv_surface_layout == 3, set_value, 492003)
+                    SRevert(668, 1464, sv_surface_layout != df_surface_layout, set_value, 492000 + df_surface_layout)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_23 - 1494
+                    SRow(1494, "Lay them out", "Every widget under the wallpaper placed again by the arrangement above (undo in the Overview puts them back)", true, "", 400, true)
+                    SButton(958, 1509, 180, "Re-arrange", surface_arrange, 0)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_24 - 1554
+                    SRow(1554, "Overview margin", "The lit wallpaper rim round the full opening, where the widgets are arranged", true, "", 404, true)
+                    SSlider(728, 1570, 330, sv_surface_overview, 40, set_value, 495, "Overview margin", "{sv_surface_overview, 0} px", true)
+                    SRevert(698, 1584, sv_surface_overview != df_surface_overview, set_value, 495000 + df_surface_overview)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_c4 - 1636
+                    SCard(1636, gc_20_4, "The widgets below")
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_26 - 1680
+                    SRow(1680, "Their look", "Adaptive, Phosphor, Ink, Chrome or Paper; the desktop and the opening share it", true, "", 344, false)
+                    STrack(668, 1696, 470)
+                    SChoice(668, 1696, 94, "Adaptive", sv_surface_widget_style == 0, set_value, 497000)
+                    SChoice(762, 1696, 94, "Phosphor", sv_surface_widget_style == 1, set_value, 497001)
+                    SChoice(856, 1696, 94, "Ink", sv_surface_widget_style == 2, set_value, 497002)
+                    SChoice(950, 1696, 94, "Chrome", sv_surface_widget_style == 3, set_value, 497003)
+                    SChoice(1044, 1696, 94, "Paper", sv_surface_widget_style == 4, set_value, 497004)
+                    SRevert(638, 1710, sv_surface_widget_style != df_surface_widget_style, set_value, 497000 + df_surface_widget_style)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_27 - 1740
+                    SRow(1740, "Keep them on the desktop", "Mark every widget above the wallpaper, so it stays visible while the opening is shut", true, "", 400, true)
+                    SButton(958, 1755, 180, "Keep above", surface_above, 0)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_28 - 1800
+                    SRow(1800, "Put them below", "Mark every widget under the wallpaper, so it only shows inside the opening", true, "", 400, true)
+                    SButton(958, 1815, 180, "Put below", surface_below, 0)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_c5 - 1882
+                    SCard(1882, gc_20_5, "BMO")
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_30 - 1926
+                    SRow(1926, "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", true, "", 768, false)
+                    SToggle(1092, 1944, sv_surface_bmo_below, set_value, 478, "surface.bmo_below")
+                    SRevert(1062, 1956, sv_surface_bmo_below != df_surface_bmo_below, set_value, 478000 + df_surface_bmo_below)
+                }
+                group {
+                    show: true
+                    move: 0, gy_20_31 - 1986
+                    text "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG A WIDGET OUT TO KEEP IT ON THE DESKTOP · ESC HEALS" { at: 274, 2000; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {
@@ -6227,234 +6213,52 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_21_c0 - 112
-                    SCard(112, gc_21_0, "The opening")
+                    SCard(112, gc_21_0, "Agents")
                 }
                 group {
                     show: true
                     move: 0, gy_21_1 - 156
-                    SRow(156, "Hold Super to reveal", "The wallpaper opens at your pointer; a quick tap keeps Super's old meaning", true, "", 768, false)
-                    SToggle(1092, 174, sv_surface_on, set_value, 494, "surface.on")
-                    SRevert(1062, 186, sv_surface_on != df_surface_on, set_value, 494000 + df_surface_on)
+                    SRow(156, "Show idle agents", "Idle agents stay in the island instead of being hidden", true, "", 768, false)
+                    SToggle(1092, 174, sv_herdr_show_idle, set_value, 505, "herdr.show_idle")
+                    SRevert(1062, 186, sv_herdr_show_idle != df_herdr_show_idle, set_value, 505000 + df_herdr_show_idle)
                 }
                 group {
                     show: true
                     move: 0, gy_21_2 - 216
-                    SRow(216, "Hold for", "How long Super is held before it opens", true, "", 404, true)
-                    SSlider(728, 232, 330, sv_surface_delay, 650, set_value, 495, "Hold for", "{sv_surface_delay + 150, 0} ms", true)
-                    SRevert(698, 246, sv_surface_delay != df_surface_delay, set_value, 495000 + df_surface_delay)
+                    SRow(216, "Show finished agents", "Agents that finished stay in the island instead of being hidden", true, "", 768, true)
+                    SToggle(1092, 234, sv_herdr_show_done, set_value, 506, "herdr.show_done")
+                    SRevert(1062, 246, sv_herdr_show_done != df_herdr_show_done, set_value, 506000 + df_herdr_show_done)
                 }
                 group {
                     show: true
-                    move: 0, gy_21_3 - 276
-                    SRow(276, "Effect", "How the wallpaper gives way: torn, a lens, a soft membrane, ripples, folded paper, dissolving, glass or a glow", true, "", 254, true)
-                    STrack(578, 292, 560)
-                    SChoice(578, 292, 70, "Tear", sv_surface_effect == 0, set_value, 496000)
-                    SChoice(648, 292, 70, "Aperture", sv_surface_effect == 1, set_value, 496001)
-                    SChoice(718, 292, 70, "Membrane", sv_surface_effect == 2, set_value, 496002)
-                    SChoice(788, 292, 70, "Ripple", sv_surface_effect == 3, set_value, 496003)
-                    SChoice(858, 292, 70, "Fold", sv_surface_effect == 4, set_value, 496004)
-                    SChoice(928, 292, 70, "Dissolve", sv_surface_effect == 5, set_value, 496005)
-                    SChoice(998, 292, 70, "Glass", sv_surface_effect == 6, set_value, 496006)
-                    SChoice(1068, 292, 70, "Glow", sv_surface_effect == 7, set_value, 496007)
-                    SRevert(548, 306, sv_surface_effect != df_surface_effect, set_value, 496000 + df_surface_effect)
+                    move: 0, gy_21_c1 - 298
+                    SCard(298, gc_21_1, "Briefs")
                 }
                 group {
                     show: true
-                    move: 0, gy_21_4 - 336
-                    SRow(336, "Intensity", "How strongly the effect shows: the lip, the halo, the shadow", true, "", 404, true)
-                    SSlider(728, 352, 330, sv_surface_intensity, 80, set_value, 498, "Intensity", "{sv_surface_intensity + 20, 0} %", true)
-                    SRevert(698, 366, sv_surface_intensity != df_surface_intensity, set_value, 498000 + df_surface_intensity)
+                    move: 0, gy_21_4 - 342
+                    SRow(342, "What it is doing", "The window title plus the last lines of output, cached for 8 seconds", true, "", 768, false)
+                    SToggle(1092, 360, sv_herdr_brief, set_value, 507, "herdr.brief")
+                    SRevert(1062, 372, sv_herdr_brief != df_herdr_brief, set_value, 507000 + df_herdr_brief)
+                }
+                group {
+                    show: sv_herdr_brief == 1
+                    move: 0, gy_21_5 - 402
+                    SRow(402, "Lines", "How many lines the brief reads", true, "", 404, true)
+                    SSlider(728, 418, 330, sv_herdr_brief_lines, 6, set_value, 508, "Lines", "{sv_herdr_brief_lines, 0}", true)
+                    SRevert(698, 432, sv_herdr_brief_lines != df_herdr_brief_lines, set_value, 508000 + df_herdr_brief_lines)
                 }
                 group {
                     show: true
-                    move: 0, gy_21_5 - 396
-                    SRow(396, "Edge width", "How wide the opened edge is: thin and sharp or broad and soft", true, "", 404, true)
-                    SSlider(728, 412, 330, sv_surface_edge, 80, set_value, 499, "Edge width", "{sv_surface_edge + 20, 0} %", true)
-                    SRevert(698, 426, sv_surface_edge != df_surface_edge, set_value, 499000 + df_surface_edge)
+                    move: 0, gy_21_6 - 462
+                    SRow(462, "Check every", "Seconds between snapshots while the island or module is visible", true, "", 404, true)
+                    SSlider(728, 478, 330, sv_herdr_poll, 8, set_value, 504, "Check every", "{sv_herdr_poll, 0} s", true)
+                    SRevert(698, 492, sv_herdr_poll != df_herdr_poll, set_value, 504000 + df_herdr_poll)
                 }
                 group {
                     show: true
-                    move: 0, gy_21_6 - 456
-                    SRow(456, "Edge colour", "The accent's colour, plain light, or warm ember", true, "", 418, true)
-                    STrack(742, 472, 396)
-                    SChoice(742, 472, 132, "Accent", sv_surface_colour == 0, set_value, 500000)
-                    SChoice(874, 472, 132, "Plain", sv_surface_colour == 1, set_value, 500001)
-                    SChoice(1006, 472, 132, "Warm", sv_surface_colour == 2, set_value, 500002)
-                    SRevert(712, 486, sv_surface_colour != df_surface_colour, set_value, 500000 + df_surface_colour)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_7 - 516
-                    SRow(516, "Open speed", "How quickly the hole springs open and heals", true, "", 404, true)
-                    SSlider(728, 532, 330, sv_surface_speed, 500, set_value, 501, "Open speed", "{sv_surface_speed + 100, 0} ms", true)
-                    SRevert(698, 546, sv_surface_speed != df_surface_speed, set_value, 501000 + df_surface_speed)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_8 - 576
-                    SRow(576, "Corner", "How round the hole's corner is", true, "", 404, true)
-                    SSlider(728, 592, 330, sv_surface_radius, 32, set_value, 502, "Corner", "{sv_surface_radius + 8, 0} px", true)
-                    SRevert(698, 606, sv_surface_radius != df_surface_radius, set_value, 502000 + df_surface_radius)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_c1 - 658
-                    SCard(658, gc_21_1, "The wallpaper under it")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_10 - 702
-                    SRow(702, "Show the wallpaper", "The hole shows your wallpaper dimmed under the grid, not a flat plate", true, "", 768, false)
-                    SToggle(1092, 720, sv_surface_wall, set_value, 503, "surface.wall")
-                    SRevert(1062, 732, sv_surface_wall != df_surface_wall, set_value, 503000 + df_surface_wall)
-                }
-                group {
-                    show: sv_surface_wall > 0.5
-                    move: 0, gy_21_11 - 762
-                    SRow(762, "Dim", "How far the wallpaper is pushed back under the opening", true, "", 404, true)
-                    SSlider(728, 778, 330, sv_surface_dim, 80, set_value, 504, "Dim", "{sv_surface_dim, 0} %", true)
-                    SRevert(698, 792, sv_surface_dim != df_surface_dim, set_value, 504000 + df_surface_dim)
-                }
-                group {
-                    show: sv_surface_wall > 0.5
-                    move: 0, gy_21_12 - 822
-                    SRow(822, "Tint", "How much of the accent is laid over it", true, "", 404, true)
-                    SSlider(728, 838, 330, sv_surface_tint, 100, set_value, 505, "Tint", "{sv_surface_tint, 0} %", true)
-                    SRevert(698, 852, sv_surface_tint != df_surface_tint, set_value, 505000 + df_surface_tint)
-                }
-                group {
-                    show: sv_surface_wall > 0.5
-                    move: 0, gy_21_13 - 882
-                    SRow(882, "Fit", "Cover fills the screen; contain shows the whole picture", true, "", 550, true)
-                    STrack(874, 898, 264)
-                    SChoice(874, 898, 132, "Cover", sv_surface_fit == 0, set_value, 506000)
-                    SChoice(1006, 898, 132, "Contain", sv_surface_fit == 1, set_value, 506001)
-                    SRevert(844, 912, sv_surface_fit != df_surface_fit, set_value, 506000 + df_surface_fit)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_14 - 942
-                    SRow(942, "Grid", "The faint measured grid over the wallpaper", true, "", 404, true)
-                    SSlider(728, 958, 330, sv_surface_grid, 100, set_value, 507, "Grid", "{sv_surface_grid, 0} %", true)
-                    SRevert(698, 972, sv_surface_grid != df_surface_grid, set_value, 507000 + df_surface_grid)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_15 - 1002
-                    SRow(1002, "Names", "The Overview's title and hints", true, "", 768, true)
-                    SToggle(1092, 1020, sv_surface_labels, set_value, 508, "surface.labels")
-                    SRevert(1062, 1032, sv_surface_labels != df_surface_labels, set_value, 508000 + df_surface_labels)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_c2 - 1084
-                    SCard(1084, gc_21_2, "Light through the skin")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_17 - 1128
-                    SRow(1128, "Glow", "What plays under the wallpaper: nothing, a subtle breath, or a bright one", true, "", 418, false)
-                    STrack(742, 1144, 396)
-                    SChoice(742, 1144, 132, "Off", sv_surface_glow == 0, set_value, 509000)
-                    SChoice(874, 1144, 132, "Subtle", sv_surface_glow == 1, set_value, 509001)
-                    SChoice(1006, 1144, 132, "Bright", sv_surface_glow == 2, set_value, 509002)
-                    SRevert(712, 1158, sv_surface_glow != df_surface_glow, set_value, 509000 + df_surface_glow)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_18 - 1188
-                    SRow(1188, "A notice pings", "A new notice lights a spark where the notices live, even over a window", true, "", 768, true)
-                    SToggle(1092, 1206, sv_surface_ping, set_value, 510, "surface.ping")
-                    SRevert(1062, 1218, sv_surface_ping != df_surface_ping, set_value, 510000 + df_surface_ping)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_19 - 1248
-                    SRow(1248, "The light travels", "From the spark to the window of the app that sent it, and once round its border", true, "", 768, true)
-                    SToggle(1092, 1266, sv_surface_trace, set_value, 530, "surface.trace")
-                    SRevert(1062, 1278, sv_surface_trace != df_surface_trace, set_value, 530000 + df_surface_trace)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_20 - 1308
-                    SRow(1308, "Push up from below", "A new song or notice bulges the wallpaper where it lives, and its words press up through it", true, "", 768, true)
-                    SToggle(1092, 1326, sv_surface_push, set_value, 529, "surface.push")
-                    SRevert(1062, 1338, sv_surface_push != df_surface_push, set_value, 529000 + df_surface_push)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_c3 - 1390
-                    SCard(1390, gc_21_3, "Where things sit")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_22 - 1434
-                    SRow(1434, "Arrangement", "How the widgets below are laid out: an arc, centred rows, a grid, or low and calm", true, "", 374, false)
-                    STrack(698, 1450, 440)
-                    SChoice(698, 1450, 110, "Arc", sv_surface_layout == 0, set_value, 511000)
-                    SChoice(808, 1450, 110, "Row", sv_surface_layout == 1, set_value, 511001)
-                    SChoice(918, 1450, 110, "Grid", sv_surface_layout == 2, set_value, 511002)
-                    SChoice(1028, 1450, 110, "Calm", sv_surface_layout == 3, set_value, 511003)
-                    SRevert(668, 1464, sv_surface_layout != df_surface_layout, set_value, 511000 + df_surface_layout)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_23 - 1494
-                    SRow(1494, "Lay them out", "Every widget under the wallpaper placed again by the arrangement above (undo in the Overview puts them back)", true, "", 400, true)
-                    SButton(958, 1509, 180, "Re-arrange", surface_arrange, 0)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_24 - 1554
-                    SRow(1554, "Overview margin", "The lit wallpaper rim round the full opening, where the widgets are arranged", true, "", 404, true)
-                    SSlider(728, 1570, 330, sv_surface_overview, 40, set_value, 514, "Overview margin", "{sv_surface_overview, 0} px", true)
-                    SRevert(698, 1584, sv_surface_overview != df_surface_overview, set_value, 514000 + df_surface_overview)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_c4 - 1636
-                    SCard(1636, gc_21_4, "The widgets below")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_26 - 1680
-                    SRow(1680, "Their look", "Adaptive, Phosphor, Ink, Chrome or Paper; the desktop and the opening share it", true, "", 344, false)
-                    STrack(668, 1696, 470)
-                    SChoice(668, 1696, 94, "Adaptive", sv_surface_widget_style == 0, set_value, 516000)
-                    SChoice(762, 1696, 94, "Phosphor", sv_surface_widget_style == 1, set_value, 516001)
-                    SChoice(856, 1696, 94, "Ink", sv_surface_widget_style == 2, set_value, 516002)
-                    SChoice(950, 1696, 94, "Chrome", sv_surface_widget_style == 3, set_value, 516003)
-                    SChoice(1044, 1696, 94, "Paper", sv_surface_widget_style == 4, set_value, 516004)
-                    SRevert(638, 1710, sv_surface_widget_style != df_surface_widget_style, set_value, 516000 + df_surface_widget_style)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_27 - 1740
-                    SRow(1740, "Keep them on the desktop", "Mark every widget above the wallpaper, so it stays visible while the opening is shut", true, "", 400, true)
-                    SButton(958, 1755, 180, "Keep above", surface_above, 0)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_28 - 1800
-                    SRow(1800, "Put them below", "Mark every widget under the wallpaper, so it only shows inside the opening", true, "", 400, true)
-                    SButton(958, 1815, 180, "Put below", surface_below, 0)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_c5 - 1882
-                    SCard(1882, gc_21_5, "BMO")
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_30 - 1926
-                    SRow(1926, "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", true, "", 768, false)
-                    SToggle(1092, 1944, sv_surface_bmo_below, set_value, 497, "surface.bmo_below")
-                    SRevert(1062, 1956, sv_surface_bmo_below != df_surface_bmo_below, set_value, 497000 + df_surface_bmo_below)
-                }
-                group {
-                    show: true
-                    move: 0, gy_21_31 - 1986
-                    text "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG A WIDGET OUT TO KEEP IT ON THE DESKTOP · ESC HEALS" { at: 274, 2000; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    move: 0, gy_21_7 - 522
+                    text "CLICK FOCUSES AN AGENT AND RAISES ITS WINDOW · RIGHT CLICK ATTACHES IN A TERMINAL" { at: 274, 536; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {
@@ -6462,265 +6266,212 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_22_c0 - 112
-                    SCard(112, gc_22_0, "Agents")
+                    SCard(112, gc_22_0, "Live wallpaper")
                 }
                 group {
                     show: true
                     move: 0, gy_22_1 - 156
-                    SRow(156, "Show idle agents", "Idle agents stay in the island instead of being hidden", true, "", 768, false)
-                    SToggle(1092, 174, sv_herdr_show_idle, set_value, 524, "herdr.show_idle")
-                    SRevert(1062, 186, sv_herdr_show_idle != df_herdr_show_idle, set_value, 524000 + df_herdr_show_idle)
-                }
-                group {
-                    show: true
-                    move: 0, gy_22_2 - 216
-                    SRow(216, "Show finished agents", "Agents that finished stay in the island instead of being hidden", true, "", 768, true)
-                    SToggle(1092, 234, sv_herdr_show_done, set_value, 525, "herdr.show_done")
-                    SRevert(1062, 246, sv_herdr_show_done != df_herdr_show_done, set_value, 525000 + df_herdr_show_done)
-                }
-                group {
-                    show: true
-                    move: 0, gy_22_c1 - 298
-                    SCard(298, gc_22_1, "Briefs")
-                }
-                group {
-                    show: true
-                    move: 0, gy_22_4 - 342
-                    SRow(342, "What it is doing", "The window title plus the last lines of output, cached for 8 seconds", true, "", 768, false)
-                    SToggle(1092, 360, sv_herdr_brief, set_value, 526, "herdr.brief")
-                    SRevert(1062, 372, sv_herdr_brief != df_herdr_brief, set_value, 526000 + df_herdr_brief)
-                }
-                group {
-                    show: sv_herdr_brief == 1
-                    move: 0, gy_22_5 - 402
-                    SRow(402, "Lines", "How many lines the brief reads", true, "", 404, true)
-                    SSlider(728, 418, 330, sv_herdr_brief_lines, 6, set_value, 527, "Lines", "{sv_herdr_brief_lines, 0}", true)
-                    SRevert(698, 432, sv_herdr_brief_lines != df_herdr_brief_lines, set_value, 527000 + df_herdr_brief_lines)
-                }
-                group {
-                    show: true
-                    move: 0, gy_22_6 - 462
-                    SRow(462, "Check every", "Seconds between snapshots while the island or module is visible", true, "", 404, true)
-                    SSlider(728, 478, 330, sv_herdr_poll, 8, set_value, 523, "Check every", "{sv_herdr_poll, 0} s", true)
-                    SRevert(698, 492, sv_herdr_poll != df_herdr_poll, set_value, 523000 + df_herdr_poll)
-                }
-                group {
-                    show: true
-                    move: 0, gy_22_7 - 522
-                    text "CLICK FOCUSES AN AGENT AND RAISES ITS WINDOW · RIGHT CLICK ATTACHES IN A TERMINAL" { at: 274, 536; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                }
-            }
-            group {
-                show: set_tab == 23
-                group {
-                    show: true
-                    move: 0, gy_23_c0 - 112
-                    SCard(112, gc_23_0, "Live wallpaper")
-                }
-                group {
-                    show: true
-                    move: 0, gy_23_1 - 156
                     SRow(156, "Live wallpaper", "The picture itself moves: ripples, a breath, a drift, a sweep of light. Works with the Subsurface off", true, "", 768, false)
-                    SToggle(1092, 174, sv_live_on, set_value, 531, "live.on")
-                    SRevert(1062, 186, sv_live_on != df_live_on, set_value, 531000 + df_live_on)
+                    SToggle(1092, 174, sv_live_on, set_value, 512, "live.on")
+                    SRevert(1062, 186, sv_live_on != df_live_on, set_value, 512000 + df_live_on)
                 }
                 group {
                     show: sv_live_on > 0.5
-                    move: 0, gy_23_2 - 216
+                    move: 0, gy_22_2 - 216
                     SRow(216, "Where", "Round the widgets below that move the wallpaper (the Visualiser, the Clock), or the whole picture — which rests while windows cover it", true, "", 550, true)
                     STrack(874, 232, 264)
-                    SChoice(874, 232, 132, "Round the widgets", sv_live_where == 0, set_value, 532000)
-                    SChoice(1006, 232, 132, "The whole picture", sv_live_where == 1, set_value, 532001)
-                    SRevert(844, 246, sv_live_where != df_live_where, set_value, 532000 + df_live_where)
+                    SChoice(874, 232, 132, "Round the widgets", sv_live_where == 0, set_value, 513000)
+                    SChoice(1006, 232, 132, "The whole picture", sv_live_where == 1, set_value, 513001)
+                    SRevert(844, 246, sv_live_where != df_live_where, set_value, 513000 + df_live_where)
                 }
                 group {
                     show: sv_live_on > 0.5
-                    move: 0, gy_23_3 - 276
+                    move: 0, gy_22_3 - 276
                     SRow(276, "Speed", "How fast everything moves", true, "", 404, true)
-                    SSlider(728, 292, 330, sv_live_speed, 150, set_value, 533, "Speed", "{sv_live_speed + 50, 0} %", true)
-                    SRevert(698, 306, sv_live_speed != df_live_speed, set_value, 533000 + df_live_speed)
+                    SSlider(728, 292, 330, sv_live_speed, 150, set_value, 514, "Speed", "{sv_live_speed + 50, 0} %", true)
+                    SRevert(698, 306, sv_live_speed != df_live_speed, set_value, 514000 + df_live_speed)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_4 - 336
+                    move: 0, gy_22_4 - 336
                     SRow(336, "See it now", "Every effect that is on plays for a few seconds, music or not", true, "", 400, true)
                     SButton(958, 351, 180, "Try it", live_try, 0)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_c1 - 418
-                    SCard(418, gc_23_1, "Ripple")
+                    move: 0, gy_22_c1 - 418
+                    SCard(418, gc_22_1, "Ripple")
                 }
                 group {
                     show: true
-                    move: 0, gy_23_6 - 462
+                    move: 0, gy_22_6 - 462
                     SRow(462, "Ripple", "Rings run through the picture with the music's beat", true, "", 768, false)
-                    SToggle(1092, 480, sv_live_ripple_on, set_value, 534, "live.ripple.on")
-                    SRevert(1062, 492, sv_live_ripple_on != df_live_ripple_on, set_value, 534000 + df_live_ripple_on)
+                    SToggle(1092, 480, sv_live_ripple_on, set_value, 515, "live.ripple.on")
+                    SRevert(1062, 492, sv_live_ripple_on != df_live_ripple_on, set_value, 515000 + df_live_ripple_on)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_ripple_on > 0.5
-                    move: 0, gy_23_7 - 522
+                    move: 0, gy_22_7 - 522
                     SRow(522, "Strength", "How far it bends or lights the picture", true, "", 404, true)
-                    SSlider(728, 538, 330, sv_live_ripple_strength, 100, set_value, 535, "Strength", "{sv_live_ripple_strength, 0} %", true)
-                    SRevert(698, 552, sv_live_ripple_strength != df_live_ripple_strength, set_value, 535000 + df_live_ripple_strength)
+                    SSlider(728, 538, 330, sv_live_ripple_strength, 100, set_value, 516, "Strength", "{sv_live_ripple_strength, 0} %", true)
+                    SRevert(698, 552, sv_live_ripple_strength != df_live_ripple_strength, set_value, 516000 + df_live_ripple_strength)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_ripple_on > 0.5
-                    move: 0, gy_23_8 - 582
+                    move: 0, gy_22_8 - 582
                     SRow(582, "Size", "How far it reaches and how wide its pattern is", true, "", 404, true)
-                    SSlider(728, 598, 330, sv_live_ripple_size, 100, set_value, 536, "Size", "{sv_live_ripple_size, 0} %", true)
-                    SRevert(698, 612, sv_live_ripple_size != df_live_ripple_size, set_value, 536000 + df_live_ripple_size)
+                    SSlider(728, 598, 330, sv_live_ripple_size, 100, set_value, 517, "Size", "{sv_live_ripple_size, 0} %", true)
+                    SRevert(698, 612, sv_live_ripple_size != df_live_ripple_size, set_value, 517000 + df_live_ripple_size)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_ripple_on > 0.5
-                    move: 0, gy_23_9 - 642
+                    move: 0, gy_22_9 - 642
                     SRow(642, "Blend", "How softly it melts into the still picture", true, "", 404, true)
-                    SSlider(728, 658, 330, sv_live_ripple_blend, 100, set_value, 537, "Blend", "{sv_live_ripple_blend, 0} %", true)
-                    SRevert(698, 672, sv_live_ripple_blend != df_live_ripple_blend, set_value, 537000 + df_live_ripple_blend)
+                    SSlider(728, 658, 330, sv_live_ripple_blend, 100, set_value, 518, "Blend", "{sv_live_ripple_blend, 0} %", true)
+                    SRevert(698, 672, sv_live_ripple_blend != df_live_ripple_blend, set_value, 518000 + df_live_ripple_blend)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_c2 - 724
-                    SCard(724, gc_23_2, "Breathe")
+                    move: 0, gy_22_c2 - 724
+                    SCard(724, gc_22_2, "Breathe")
                 }
                 group {
                     show: true
-                    move: 0, gy_23_11 - 768
+                    move: 0, gy_22_11 - 768
                     SRow(768, "Breathe", "The picture swells and settles with the music's level", true, "", 768, false)
-                    SToggle(1092, 786, sv_live_breathe_on, set_value, 538, "live.breathe.on")
-                    SRevert(1062, 798, sv_live_breathe_on != df_live_breathe_on, set_value, 538000 + df_live_breathe_on)
+                    SToggle(1092, 786, sv_live_breathe_on, set_value, 519, "live.breathe.on")
+                    SRevert(1062, 798, sv_live_breathe_on != df_live_breathe_on, set_value, 519000 + df_live_breathe_on)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_breathe_on > 0.5
-                    move: 0, gy_23_12 - 828
+                    move: 0, gy_22_12 - 828
                     SRow(828, "Strength", "How far it bends or lights the picture", true, "", 404, true)
-                    SSlider(728, 844, 330, sv_live_breathe_strength, 100, set_value, 539, "Strength", "{sv_live_breathe_strength, 0} %", true)
-                    SRevert(698, 858, sv_live_breathe_strength != df_live_breathe_strength, set_value, 539000 + df_live_breathe_strength)
+                    SSlider(728, 844, 330, sv_live_breathe_strength, 100, set_value, 520, "Strength", "{sv_live_breathe_strength, 0} %", true)
+                    SRevert(698, 858, sv_live_breathe_strength != df_live_breathe_strength, set_value, 520000 + df_live_breathe_strength)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_breathe_on > 0.5
-                    move: 0, gy_23_13 - 888
+                    move: 0, gy_22_13 - 888
                     SRow(888, "Size", "How far it reaches and how wide its pattern is", true, "", 404, true)
-                    SSlider(728, 904, 330, sv_live_breathe_size, 100, set_value, 540, "Size", "{sv_live_breathe_size, 0} %", true)
-                    SRevert(698, 918, sv_live_breathe_size != df_live_breathe_size, set_value, 540000 + df_live_breathe_size)
+                    SSlider(728, 904, 330, sv_live_breathe_size, 100, set_value, 521, "Size", "{sv_live_breathe_size, 0} %", true)
+                    SRevert(698, 918, sv_live_breathe_size != df_live_breathe_size, set_value, 521000 + df_live_breathe_size)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_breathe_on > 0.5
-                    move: 0, gy_23_14 - 948
+                    move: 0, gy_22_14 - 948
                     SRow(948, "Blend", "How softly it melts into the still picture", true, "", 404, true)
-                    SSlider(728, 964, 330, sv_live_breathe_blend, 100, set_value, 541, "Blend", "{sv_live_breathe_blend, 0} %", true)
-                    SRevert(698, 978, sv_live_breathe_blend != df_live_breathe_blend, set_value, 541000 + df_live_breathe_blend)
+                    SSlider(728, 964, 330, sv_live_breathe_blend, 100, set_value, 522, "Blend", "{sv_live_breathe_blend, 0} %", true)
+                    SRevert(698, 978, sv_live_breathe_blend != df_live_breathe_blend, set_value, 522000 + df_live_breathe_blend)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_c3 - 1030
-                    SCard(1030, gc_23_3, "Flow")
+                    move: 0, gy_22_c3 - 1030
+                    SCard(1030, gc_22_3, "Flow")
                 }
                 group {
                     show: true
-                    move: 0, gy_23_16 - 1074
+                    move: 0, gy_22_16 - 1074
                     SRow(1074, "Flow", "A slow drift under the picture, alive with no music", true, "", 768, false)
-                    SToggle(1092, 1092, sv_live_flow_on, set_value, 542, "live.flow.on")
-                    SRevert(1062, 1104, sv_live_flow_on != df_live_flow_on, set_value, 542000 + df_live_flow_on)
+                    SToggle(1092, 1092, sv_live_flow_on, set_value, 523, "live.flow.on")
+                    SRevert(1062, 1104, sv_live_flow_on != df_live_flow_on, set_value, 523000 + df_live_flow_on)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_flow_on > 0.5
-                    move: 0, gy_23_17 - 1134
+                    move: 0, gy_22_17 - 1134
                     SRow(1134, "Strength", "How far it bends or lights the picture", true, "", 404, true)
-                    SSlider(728, 1150, 330, sv_live_flow_strength, 100, set_value, 543, "Strength", "{sv_live_flow_strength, 0} %", true)
-                    SRevert(698, 1164, sv_live_flow_strength != df_live_flow_strength, set_value, 543000 + df_live_flow_strength)
+                    SSlider(728, 1150, 330, sv_live_flow_strength, 100, set_value, 524, "Strength", "{sv_live_flow_strength, 0} %", true)
+                    SRevert(698, 1164, sv_live_flow_strength != df_live_flow_strength, set_value, 524000 + df_live_flow_strength)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_flow_on > 0.5
-                    move: 0, gy_23_18 - 1194
+                    move: 0, gy_22_18 - 1194
                     SRow(1194, "Size", "How far it reaches and how wide its pattern is", true, "", 404, true)
-                    SSlider(728, 1210, 330, sv_live_flow_size, 100, set_value, 544, "Size", "{sv_live_flow_size, 0} %", true)
-                    SRevert(698, 1224, sv_live_flow_size != df_live_flow_size, set_value, 544000 + df_live_flow_size)
+                    SSlider(728, 1210, 330, sv_live_flow_size, 100, set_value, 525, "Size", "{sv_live_flow_size, 0} %", true)
+                    SRevert(698, 1224, sv_live_flow_size != df_live_flow_size, set_value, 525000 + df_live_flow_size)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_flow_on > 0.5
-                    move: 0, gy_23_19 - 1254
+                    move: 0, gy_22_19 - 1254
                     SRow(1254, "Blend", "How softly it melts into the still picture", true, "", 404, true)
-                    SSlider(728, 1270, 330, sv_live_flow_blend, 100, set_value, 545, "Blend", "{sv_live_flow_blend, 0} %", true)
-                    SRevert(698, 1284, sv_live_flow_blend != df_live_flow_blend, set_value, 545000 + df_live_flow_blend)
+                    SSlider(728, 1270, 330, sv_live_flow_blend, 100, set_value, 526, "Blend", "{sv_live_flow_blend, 0} %", true)
+                    SRevert(698, 1284, sv_live_flow_blend != df_live_flow_blend, set_value, 526000 + df_live_flow_blend)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_c4 - 1336
-                    SCard(1336, gc_23_4, "Light sweep")
+                    move: 0, gy_22_c4 - 1336
+                    SCard(1336, gc_22_4, "Light sweep")
                 }
                 group {
                     show: true
-                    move: 0, gy_23_21 - 1380
+                    move: 0, gy_22_21 - 1380
                     SRow(1380, "Light sweep", "A band of light crosses the picture when the hour turns", true, "", 768, false)
-                    SToggle(1092, 1398, sv_live_sweep_on, set_value, 546, "live.sweep.on")
-                    SRevert(1062, 1410, sv_live_sweep_on != df_live_sweep_on, set_value, 546000 + df_live_sweep_on)
+                    SToggle(1092, 1398, sv_live_sweep_on, set_value, 527, "live.sweep.on")
+                    SRevert(1062, 1410, sv_live_sweep_on != df_live_sweep_on, set_value, 527000 + df_live_sweep_on)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_sweep_on > 0.5
-                    move: 0, gy_23_22 - 1440
+                    move: 0, gy_22_22 - 1440
                     SRow(1440, "Strength", "How far it bends or lights the picture", true, "", 404, true)
-                    SSlider(728, 1456, 330, sv_live_sweep_strength, 100, set_value, 547, "Strength", "{sv_live_sweep_strength, 0} %", true)
-                    SRevert(698, 1470, sv_live_sweep_strength != df_live_sweep_strength, set_value, 547000 + df_live_sweep_strength)
+                    SSlider(728, 1456, 330, sv_live_sweep_strength, 100, set_value, 528, "Strength", "{sv_live_sweep_strength, 0} %", true)
+                    SRevert(698, 1470, sv_live_sweep_strength != df_live_sweep_strength, set_value, 528000 + df_live_sweep_strength)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_sweep_on > 0.5
-                    move: 0, gy_23_23 - 1500
+                    move: 0, gy_22_23 - 1500
                     SRow(1500, "Size", "How far it reaches and how wide its pattern is", true, "", 404, true)
-                    SSlider(728, 1516, 330, sv_live_sweep_size, 100, set_value, 548, "Size", "{sv_live_sweep_size, 0} %", true)
-                    SRevert(698, 1530, sv_live_sweep_size != df_live_sweep_size, set_value, 548000 + df_live_sweep_size)
+                    SSlider(728, 1516, 330, sv_live_sweep_size, 100, set_value, 529, "Size", "{sv_live_sweep_size, 0} %", true)
+                    SRevert(698, 1530, sv_live_sweep_size != df_live_sweep_size, set_value, 529000 + df_live_sweep_size)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_sweep_on > 0.5
-                    move: 0, gy_23_24 - 1560
+                    move: 0, gy_22_24 - 1560
                     SRow(1560, "Blend", "How softly it melts into the still picture", true, "", 404, true)
-                    SSlider(728, 1576, 330, sv_live_sweep_blend, 100, set_value, 549, "Blend", "{sv_live_sweep_blend, 0} %", true)
-                    SRevert(698, 1590, sv_live_sweep_blend != df_live_sweep_blend, set_value, 549000 + df_live_sweep_blend)
+                    SSlider(728, 1576, 330, sv_live_sweep_blend, 100, set_value, 530, "Blend", "{sv_live_sweep_blend, 0} %", true)
+                    SRevert(698, 1590, sv_live_sweep_blend != df_live_sweep_blend, set_value, 530000 + df_live_sweep_blend)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_c5 - 1642
-                    SCard(1642, gc_23_5, "Music in the picture")
+                    move: 0, gy_22_c5 - 1642
+                    SCard(1642, gc_22_5, "Music in the picture")
                 }
                 group {
                     show: true
-                    move: 0, gy_23_26 - 1686
+                    move: 0, gy_22_26 - 1686
                     SRow(1686, "Music in the picture", "Strips of the wallpaper are pulled up out of it by the music, in its own colours. Where it grows from: the Overview's MUSIC button (an edge line, areas you draw, colours you pick, the subject)", true, "", 768, false)
-                    SToggle(1092, 1704, sv_live_music_on, set_value, 550, "live.music.on")
-                    SRevert(1062, 1716, sv_live_music_on != df_live_music_on, set_value, 550000 + df_live_music_on)
+                    SToggle(1092, 1704, sv_live_music_on, set_value, 531, "live.music.on")
+                    SRevert(1062, 1716, sv_live_music_on != df_live_music_on, set_value, 531000 + df_live_music_on)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_music_on > 0.5
-                    move: 0, gy_23_27 - 1746
+                    move: 0, gy_22_27 - 1746
                     SRow(1746, "Strength", "How high the music pulls the picture", true, "", 404, true)
-                    SSlider(728, 1762, 330, sv_live_music_strength, 100, set_value, 551, "Strength", "{sv_live_music_strength, 0} %", true)
-                    SRevert(698, 1776, sv_live_music_strength != df_live_music_strength, set_value, 551000 + df_live_music_strength)
+                    SSlider(728, 1762, 330, sv_live_music_strength, 100, set_value, 532, "Strength", "{sv_live_music_strength, 0} %", true)
+                    SRevert(698, 1776, sv_live_music_strength != df_live_music_strength, set_value, 532000 + df_live_music_strength)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_music_on > 0.5
-                    move: 0, gy_23_28 - 1806
+                    move: 0, gy_22_28 - 1806
                     SRow(1806, "Size", "How wide each strip is", true, "", 404, true)
-                    SSlider(728, 1822, 330, sv_live_music_size, 100, set_value, 552, "Size", "{sv_live_music_size, 0} %", true)
-                    SRevert(698, 1836, sv_live_music_size != df_live_music_size, set_value, 552000 + df_live_music_size)
+                    SSlider(728, 1822, 330, sv_live_music_size, 100, set_value, 533, "Size", "{sv_live_music_size, 0} %", true)
+                    SRevert(698, 1836, sv_live_music_size != df_live_music_size, set_value, 533000 + df_live_music_size)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_music_on > 0.5
-                    move: 0, gy_23_29 - 1866
+                    move: 0, gy_22_29 - 1866
                     SRow(1866, "Blend", "How softly the strips melt back into the picture", true, "", 404, true)
-                    SSlider(728, 1882, 330, sv_live_music_blend, 100, set_value, 553, "Blend", "{sv_live_music_blend, 0} %", true)
-                    SRevert(698, 1896, sv_live_music_blend != df_live_music_blend, set_value, 553000 + df_live_music_blend)
+                    SSlider(728, 1882, 330, sv_live_music_blend, 100, set_value, 534, "Blend", "{sv_live_music_blend, 0} %", true)
+                    SRevert(698, 1896, sv_live_music_blend != df_live_music_blend, set_value, 534000 + df_live_music_blend)
                 }
                 group {
                     show: sv_live_on > 0.5 and sv_live_music_on > 0.5
-                    move: 0, gy_23_30 - 1926
+                    move: 0, gy_22_30 - 1926
                     SRow(1926, "Height", "How tall the strips may grow from the edge line, of the screen", true, "", 404, true)
-                    SSlider(728, 1942, 330, sv_live_music_height, 75, set_value, 554, "Height", "{sv_live_music_height + 5, 0} %", true)
-                    SRevert(698, 1956, sv_live_music_height != df_live_music_height, set_value, 554000 + df_live_music_height)
+                    SSlider(728, 1942, 330, sv_live_music_height, 75, set_value, 535, "Height", "{sv_live_music_height + 5, 0} %", true)
+                    SRevert(698, 1956, sv_live_music_height != df_live_music_height, set_value, 535000 + df_live_music_height)
                 }
                 group {
                     show: true
-                    move: 0, gy_23_31 - 1986
+                    move: 0, gy_22_31 - 1986
                     text "IT RESTS WHILE A WINDOW IS FULLSCREEN, WHILE THE OPENING SHOWS, AND — THE WHOLE PICTURE — WHILE WINDOWS COVER IT" { at: 274, 2000; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
@@ -6735,8 +6486,8 @@ scene Mooi {
         }
         // The header, over the scrolled rows: the page's name, what it is for, and its Reset.
         box { from: 233, 0; size: screen.width - 233, 96; color: mix(fl.ground, fl.steel_900, 0.6) }
-        text pick(set_tab, "Quick settings", "Theme & colour", "Motion & effects", "Bar & Frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Wallpapers", "Widgets", "BMO", "Sound", "Power", "Lock screen", "Keys", "System", "Signal Loom", "Advanced", "Control Nexus", "Loom / Fold", "The Subsurface", "Herdr", "Live wallpaper") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
-        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "Everything about the bar and the frame round the screen: four choices here, every detail folded below", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "mooi draws the wallpaper: pictures, animated ones and videos. Pick them in the picker (Super+W) or the notch", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "When the screen locks by itself, and the picture it wears", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log", "The deck from the bar's mark, its cards and notches, the side notch, and Claude", "Experimental: connect and fold your windows into structures, alongside mooi or as the whole desktop", "Hold Super on the wallpaper: the widgets that live under it, and every part of the opening's look", "Coding agents in the bar: what each is doing, and which one is waiting on you. Needs herdr", "The wallpaper comes alive: round the widgets below or all of it, with the music, the hour, or on its own") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
+        text pick(set_tab, "Quick settings", "Theme & colour", "Motion & effects", "Bar & Frame", "Windows", "Input", "Window shutter", "Overview", "Displays", "Wallpapers", "Widgets", "BMO", "Sound", "Power", "Lock screen", "Keys", "System", "Signal Loom", "Advanced", "Control Nexus", "The Subsurface", "Herdr", "Live wallpaper") { at: 256, 40; anchor: left center; size: 26; weight: 600; family: "Exo 2"; color: fl.phos }
+        text pick(set_tab, "The few choices that change the most; every other page holds the rest", "One palette for everything mooi draws: the bar, its islands and panels, your window borders", "How fast things move, what glows, and what goes quiet to save the battery", "Everything about the bar and the frame round the screen: four choices here, every detail folded below", "Hyprland's windows, styled by mooi so they match. A slider's lowest step keeps your own", "How the touchpad and the mouse scroll. A speed's lowest step keeps your own", "A window's controls unfolding from its edge: Super+Alt+D, or Super+Alt+right-click on a window", "Super+Tab: every workspace at once — search it, move windows between them, save and restore setups", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "mooi draws the wallpaper: pictures, animated ones and videos. Pick them in the picker (Super+W) or the notch", "Music, clocks, notes, GitHub, weather, a focus timer and more on your desktop. Place them in edit mode", "Your desktop companion: his size, his home, his look and what he notices (his own panel sets these too)", "Where sound plays and where it listens, and each app's own volume", "The battery, and how hard the machine works", "When the screen locks by itself, and the picture it wears", "mooi's keyboard shortcuts. Press Change, then the new keys", "Notifications, the islands and comfort", "How notifications arrive, join up and unfold; Reset puts them back as they came", "What mooi is doing, where it keeps things, and its log", "The deck from the bar's mark, its cards and notches, the side notch, and Claude", "Hold Super on the wallpaper: the widgets that live under it, and every part of the opening's look", "Coding agents in the bar: what each is doing, and which one is waiting on you. Needs herdr", "The wallpaper comes alive: round the widgets below or all of it, with the music, the hour, or on its own") { at: 256, 70; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; width: 700; lines: 1 }
         box { from: 233, 95; size: screen.width - 233, 1; color: fl.trace_dim }
         group {
             show: not searching

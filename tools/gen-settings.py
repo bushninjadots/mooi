@@ -141,16 +141,6 @@ SETTERS = [
     "pill.board_tint", "pill.board_edge",
     # D188: the peek. Appended, so no code moved.
     "pill.peek",
-    # D194: Loom / Fold's operating mode. Appended, so no code moved.
-    "loom.mode",
-    # D195: Fold, Accordions, and the edge the strips stand on. Appended.
-    "loom.fold", "loom.accordions", "loom.edge",
-    # D195: the Accordion keys. Appended.
-    "keys.loom_add", "keys.loom_next", "keys.loom_prev", "keys.loom_fold", "keys.loom_open", "keys.loom_remove",
-    # D197: Cubes, and their two keys. Appended.
-    "loom.cubes", "keys.loom_cube", "keys.loom_join",
-    # D200: Loom, its threads, and its four keys. Appended.
-    "loom.loom", "loom.threads", "keys.loom_link", "keys.loom_flow", "keys.loom_hop", "keys.loom_unlink",
     # D205: a second and a third pill — each a face, and where it sits. Appended.
     "pill.two", "pill.two_at", "pill.three", "pill.three_at",
     # D207: the Sigil. Appended.
@@ -213,18 +203,6 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
         ("lock", "Lock screen", "mooi's own lock at once; the session also locks itself after the minutes in Settings → Lock"),
-        ("loom_add", "Accordion: add", "The focused window joins your Accordion (Loom / Fold, Hybrid or full mode)"),
-        ("loom_next", "Accordion: next", "The next layer out; the one you were using goes back in"),
-        ("loom_prev", "Accordion: previous", "The previous layer out"),
-        ("loom_fold", "Accordion: fold", "Every layer back in, or the last one out again"),
-        ("loom_open", "Accordion: open all", "Every layer out on this workspace, tiled"),
-        ("loom_remove", "Accordion: take out", "The focused window leaves its Accordion and stays"),
-        ("loom_cube", "Make a Cube", "Every window on this workspace folded into one Cube (the focused one on its front)"),
-        ("loom_join", "Join the Cube", "The focused window joins the last Cube's facing side"),
-        ("loom_link", "Link windows", "Press on one window, then on another: they are connected"),
-        ("loom_flow", "Link as a workflow", "The same, as a step: hopping goes forward along it first"),
-        ("loom_hop", "Hop along a link", "To the next window connected to this one, wherever it is"),
-        ("loom_unlink", "Unlink the window", "Every connection of the focused window let go"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -759,26 +737,6 @@ SECTIONS = [
         ("choice", "Model", "Which Claude answers in the notch and as BMO (through Claude Code, signed in as you)", "claude.model", "sv_claude_model", ["Default", "Haiku", "Sonnet", "Opus"]),
         ("toggle", "Free models when Claude can't", "If Claude doesn't answer, ask a free model through opencode instead. It sends your question and the last few turns to a third party", "claude.free_fallback", "sv_claude_free_fallback"),
         ("note", "true", "IT CAN TALK, NOT ACT: NO TOOLS, NO FILES. BMO'S CHAT IS IN HIS PANEL"),
-    ]),
-    # D194: Loom / Fold, appended last so no page's place moves. Only what is built is offered (spec §7):
-    # Phase 1 is the mode, its status and the way back.
-    ("Loom / Fold", "Loom / Fold", "Experimental: connect and fold your windows into structures, alongside mooi or as the whole desktop", "SHELL", [
-        ("card", "Mode"),
-        ("choice", "Mode", "Native is mooi as it is; Hybrid adds the Loom / Fold features you turn on; Loom / Fold is the whole spatial experience. Switching back keeps everything", "loom.mode", "sv_loom_mode", [("Native", 0), ("Hybrid", 1), ("Loom / Fold", 2)]),
-        ("info", "Status", "What Loom / Fold is doing now", "lf_status"),
-        ("button", "Start again", "After it stopped on repeated failures (your windows were brought back)", "Start again", "lf_act", 1),
-        ("note", "sv_loom_mode > 0.5", "EXPERIMENTAL · WHAT IS BUILT: ACCORDIONS, CUBES AND LOOM'S CONNECTIONS. TRANSFORMATIONS COME NEXT"),
-        # D195: the features built so far, Hybrid's switches (Loom / Fold mode turns every built one on)
-        ("card", "Features"),
-        ("toggle", "Fold", "Structures your windows fold into. In Loom / Fold mode every built feature is on; these are Hybrid's", "loom.fold", "sv_loom_fold"),
-        ("toggle", "Accordions", "Windows as thin layers on a screen edge: pull the one you need, the rest wait. Needs Fold", "loom.accordions", "sv_loom_accordions"),
-        ("note", "sv_loom_fold < 0.5 and sv_loom_accordions > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5", "ACCORDIONS NEED FOLD — TURN FOLD ON FIRST"),
-        ("toggle", "Cubes", "A whole workspace folded into one small solid and unfolded back where it was. Needs Fold", "loom.cubes", "sv_loom_cubes"),
-        ("note", "sv_loom_fold < 0.5 and sv_loom_cubes > 0.5 and sv_loom_mode > 0.5 and sv_loom_mode < 1.5", "CUBES NEED FOLD — TURN FOLD ON FIRST"),
-        ("choice", "Edge", "The screen edge the Accordions' strips and the docked Cubes stand on", "loom.edge", "sv_loom_edge", [("Right", 0), ("Left", 1)]),
-        ("toggle", "Loom", "Connections between windows that do something: hop along them, see them as threads", "loom.loom", "sv_loom_loom"),
-        ("choice", "Threads", "When the threads show: a few seconds when the focused window has connections, always, or only while linking", "loom.threads", "sv_loom_threads", [("When relevant", 0), ("Always", 1), ("Hidden", 2)], "sv_loom_loom > 0.5"),
-        ("note", "true", "KEYS (SETTINGS → KEYS): SUPER+ALT+A ADD · ] [ NEXT, PREVIOUS · F FOLD · U OPEN ALL · R TAKE OUT · K MAKE A CUBE · J JOIN THE CUBE · N LINK (SHIFT: A WORKFLOW) · H HOP ALONG A LINK. A STRIP: PRESS PULLS, DRAG REORDERS, WHEEL STEPS. A CUBE: PRESS FOLDS OR UNFOLDS, WHEEL TURNS, MIDDLE OPENS ONE SIDE"),
     ]),
     # D210: the Subsurface's own page, appended last so no page's place moves. Every part of the opening
     # that is a choice has a home here, beside the gesture itself.
@@ -1623,8 +1581,6 @@ def main():
     event pill_board_edit ->  // to the logic (D170): the Pill's board, open in edit (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
-    text lf_status = ""       // D194: Loom / Fold's status line (lib/loommode.status_line)
-    event lf_act ->           // to the logic (D194): 1 start Loom / Fold again after a recovery
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
     text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)
     fact lk_wp_on = false     // there is one to show

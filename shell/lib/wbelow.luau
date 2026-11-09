@@ -22,7 +22,7 @@ M.MIGRATE = { music = "nowplaying", clock = "clock", calendar = "calendar", weat
 
 -- the Settings widget's marks: the word, and the page's tab in mooi-settings (lib/settings_index's `tab`)
 M.SETTINGS = { { "Theme & colour", 1 }, { "Bar & Frame", 3 }, { "Wallpapers", 9 }, { "Widgets", 10 },
-               { "Sound", 12 }, { "Power", 13 }, { "BMO", 11 }, { "The Subsurface", 21 } }
+               { "Sound", 12 }, { "Power", 13 }, { "BMO", 11 }, { "The Subsurface", 20 } }
 
 local function room(screen) return { w = screen.w, h = screen.h - (screen.top or 0) } end
 
