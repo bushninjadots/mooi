@@ -212,21 +212,18 @@ timeout 3 pleamar --say mooi-widgets "emit wg_bury 0" >/dev/null 2>&1; sleep 0.8
 is "buried again" "$(jq -r '.widgets[0].above // false' "$WJ" 2>/dev/null)" false
 sf "emit rv_esc" >/dev/null; sleep 0.5
 
-echo "Surface: a Presence from the Music hub"
-rm -f "$SJ"; sf "emit rv_down" >/dev/null; sleep 1.2
-# snap to the hub farthest from the real pointer (the drop reads the real pointer, never moved)
-best=0; bx=960; by=540
-for k in 1 2 3 4 5; do
-    hx=$(sf "get hb${k}_x"); hy=$(sf "get hb${k}_y"); hw=$(sf "get hb${k}_w"); hh=$(sf "get hb${k}_h")
-    [ -n "$hx" ] || continue
-    d=$(( (hx + hw / 2 - cx) * (hx + hw / 2 - cx) + (hy + hh / 2 - cy) * (hy + hh / 2 - cy) ))
-    if [ "$d" -gt "$best" ]; then best=$d; bx=$((hx + hw / 2)); by=$((hy + hh / 2)); fi
+echo "Surface: the widgets below (D215) — the default set, and the Overview is their edit mode"
+is "the default set was placed once" "$(jq -r '.below_seeded // false' "$WJ" 2>/dev/null)" true
+for k in notices wallpapers settings controls; do
+    is "a $k widget lives below" "$(jq -r --arg k "$k" '[.widgets[] | select(.kind == $k)] | length > 0' "$WJ" 2>/dev/null)" true
 done
-sf "emit rv_move $((bx * 10000 + by))" >/dev/null; sleep 0.5
-timeout 3 pleamar --say mooi-surface "emit sb_drag 200" >/dev/null 2>&1
-timeout 3 pleamar --say mooi-surface "emit sb_drop 200" >/dev/null 2>&1; sleep 0.8
-is "a Presence from the Music hub" "$(jq -r '.presences[-1].source // empty' "$SJ" 2>/dev/null)" music
-sf "emit rv_esc" >/dev/null; sleep 0.5
+sf "emit rv_down" >/dev/null; sleep 1.2
+sf "emit op_wheel 1" >/dev/null; sleep 0.4; sf "emit op_wheel 1" >/dev/null; sleep 0.8
+is "the Overview: the widgets are in edit mode" "$(wd 'get editing')" true
+sf "emit rv_esc" >/dev/null; sleep 0.8
+is "healed: edit mode left" "$(wd 'get editing')" false
+# a spot for the restart checks below: the screen's middle
+bx=960; by=540
 
 echo "Surface: a citizen restarted while open, and one left without it"
 sf "emit rv_down" >/dev/null; sleep 1.2

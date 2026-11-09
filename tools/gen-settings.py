@@ -772,7 +772,7 @@ SECTIONS = [
     ]),
     # D210: the Subsurface's own page, appended last so no page's place moves. Every part of the opening
     # that is a choice has a home here, beside the gesture itself.
-    ("The Subsurface", "The Subsurface", "Hold Super on the wallpaper: the hubs, the components and the widgets under it, and every part of the opening's look", "SHELL", [
+    ("The Subsurface", "The Subsurface", "Hold Super on the wallpaper: the widgets that live under it, and every part of the opening's look", "SHELL", [
         ("card", "The opening"),
         ("toggle", "Hold Super to reveal", "The wallpaper opens at your pointer; a quick tap keeps Super's old meaning", "surface.on", "sv_surface_on"),
         ("slider", "Hold for", "How long Super is held before it opens", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
@@ -788,24 +788,21 @@ SECTIONS = [
         ("slider", "Tint", "How much of the accent is laid over it", "surface.tint", 0, 100, "{sv_surface_tint, 0} %", "sv_surface_wall > 0.5"),
         ("choice", "Fit", "Cover fills the screen; contain shows the whole picture", "surface.fit", "sv_surface_fit", ["Cover", "Contain"], "sv_surface_wall > 0.5"),
         ("slider", "Grid", "The faint measured grid over the wallpaper", "surface.grid", 0, 100, "{sv_surface_grid, 0} %"),
-        ("toggle", "Names", "The hubs' names under them", "surface.labels", "sv_surface_labels"),
+        ("toggle", "Names", "The Overview's title and hints", "surface.labels", "sv_surface_labels"),
         ("card", "Light through the skin"),
         ("choice", "Glow", "What plays under the wallpaper: nothing, a subtle breath, or a bright one", "surface.glow", "sv_surface_glow", ["Off", "Subtle", "Bright"]),
         ("toggle", "A notice pings", "A new notice sends a spark through the opening", "surface.ping", "sv_surface_ping", "sv_surface_glow > 0.5"),
         ("card", "Where things sit"),
-        ("choice", "Hubs", "The arc, one straight row, a grid, or low and calm", "surface.layout", "sv_surface_layout", ["Arc", "Row", "Grid", "Calm"]),
-        ("choice", "Components", "Which side the Wi-Fi, sound, light, battery and power row ends on", "surface.components", "sv_surface_components", ["Right", "Centre", "Left"]),
-        ("slider", "Overview margin", "The lit wallpaper rim round the full opening", "surface.overview", 0, 40, "{sv_surface_overview, 0} px"),
-        ("button", "Move the places", "Drag the hubs and the components where you want them; let go to keep it", "Edit places", "surface_edit", 0),
-        ("button", "Put them back", "Forget the places you moved and use the layout above", "Reset places", "surface_reset", 0),
+        ("choice", "Arrangement", "How the widgets below are laid out: an arc, centred rows, a grid, or low and calm", "surface.layout", "sv_surface_layout", ["Arc", "Row", "Grid", "Calm"]),
+        ("button", "Lay them out", "Every widget under the wallpaper placed again by the arrangement above (undo in the Overview puts them back)", "Re-arrange", "surface_arrange", 0),
+        ("slider", "Overview margin", "The lit wallpaper rim round the full opening, where the widgets are arranged", "surface.overview", 0, 40, "{sv_surface_overview, 0} px"),
         ("card", "The widgets below"),
         ("choice", "Their look", "Adaptive, Phosphor, Ink, Chrome or Paper; the desktop and the opening share it", "surface.widget_style", "sv_surface_widget_style", ["Adaptive", "Phosphor", "Ink", "Chrome", "Paper"]),
         ("button", "Keep them on the desktop", "Mark every widget above the wallpaper, so it stays visible while the opening is shut", "Keep above", "surface_above", 0),
         ("button", "Put them below", "Mark every widget under the wallpaper, so it only shows inside the opening", "Put below", "surface_below", 0),
-        ("card", "BMO and the power row"),
+        ("card", "BMO"),
         ("toggle", "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", "surface.bmo_below", "sv_surface_bmo_below"),
-        ("toggle", "Ask before log out, restart and shut down", "Those three need a second press within three seconds", "surface.power_confirm", "sv_surface_power_confirm"),
-        ("note", "true", "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG OUT TO LEAVE A THING ON THE DESKTOP · ESC HEALS"),
+        ("note", "true", "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG A WIDGET OUT TO KEEP IT ON THE DESKTOP · ESC HEALS"),
     ]),
     # D210: Herdr, appended last so no page's place moves.
     ("Herdr", "Herdr", "Coding agents in the bar: what each is doing, and which one is waiting on you. Needs herdr", "DESKTOP", [
@@ -1489,8 +1486,7 @@ def main():
     follow set_scroll_s = clamp(set_scroll, 0, @MAXS@)
     event set_value ->        // to the logic: one setting to one value (lib/setters)
     event set_action ->       // to the logic: 1 the bar's edit mode
-    event surface_edit ->     // to the logic (D210): move the hubs and components in the opening
-    event surface_reset ->    // to the logic (D210): forget the moved places
+    event surface_arrange ->  // to the logic (D215): lay every widget below out again
     event surface_above ->    // to the logic (D210): every widget above the wallpaper
     event surface_below ->    // to the logic (D210): every widget under it
     event set_pick            // a section chosen

@@ -79,10 +79,12 @@ M.SCHEMA = {
     { path = "surface.glow", kind = "enum", values = { "off", "subtle", "bright" }, default = "subtle" },
     { path = "surface.ping", kind = "boolean", default = true },
     { path = "surface.layout", kind = "enum", values = { "arc", "row", "grid", "calm" }, default = "arc" },
+    -- retired (D215): the widgets below replaced the components; kept so a saved value stays valid and no setter code moves
     { path = "surface.components", kind = "enum", values = { "right", "centre", "left" }, default = "right" },
     -- retired (D214): BMO is snapped to where he stands; kept so a saved value stays valid and no setter code moves
     { path = "surface.bmo_side", kind = "enum", values = { "left", "right" }, default = "left" },
     { path = "surface.overview", kind = "integer", default = 16, min = 0, max = 40 },
+    -- retired (D215): the widgets below replaced the components; kept so a saved value stays valid and no setter code moves
     { path = "surface.power_confirm", kind = "boolean", default = true },
     { path = "surface.widget_style", kind = "enum", values = { "adaptive", "phosphor", "ink", "chrome", "paper" }, default = "adaptive" },
     { path = "sigil.temperament", kind = "enum", values = { "calm", "lively", "restless" }, default = "lively" },
