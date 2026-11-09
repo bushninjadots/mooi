@@ -8439,6 +8439,28 @@ do
     end)
 end
 
+section("the opening shows what lives below awake; the Overview edits (D220)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("inside the opening a widget below is awake: never at its rest (hidden or faded), never dimmed by the ambient rest", function()
+        local plm = read("shell/mooi-widgets.plm")
+        assert(plm:find("let opn = sf_on and op_vis and not w.above and not editing and not wg_desk", 1, true), "the loop")
+        assert(plm:find("show: editing or wg_dkp > 0.01 or ((w.st < 1.5 or opn) and fo > 0.01)", 1, true), "shown though at rest")
+        for _, p in ipairs({ "nl", "wh", "ln", "nc", "ct" }) do
+            assert(plm:find("let " .. p .. "_opn = sf_on and op_vis and not " .. p .. "_above and not editing and not wg_desk", 1, true), p)
+        end
+        for _, L in ipairs({ "lA", "lB", "lC" }) do
+            assert(plm:find("let " .. L .. "_opn = sf_on and op_vis and not " .. L .. "_above and not editing and not wg_desk", 1, true), L)
+        end
+    end)
+    test("in the Overview (edit mode under an opening) a widget is moved like anywhere else", function()
+        local plm = read("shell/mooi-widgets.plm")
+        assert(plm:find("on drag mv while wg_hold == 100 + k and not w.locked and (not op_vis or editing) {", 1, true))
+        assert(plm:find("on release mv while wg_hold == 100 + k and op_vis and not editing { wg_hold = 0; emit sb_drop(-1) }", 1, true),
+               "the release that ends a below-drag leaves an edit drag alone")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

@@ -1343,7 +1343,9 @@ scene Widgets {
         let nl_near = clamp(1 - max(max(0, max(nl_x - desk.cursor.x, desk.cursor.x - nl_x - nl_w)), max(0, max(nl_y - desk.cursor.y, desk.cursor.y - nl_y - nl_h))) / 220, 0, 1)
         let nl_wake = nl_near > 0.7
         on change nl_wake while nl_wake and wg_amb and nl_on { wg_amb = false }
-        let nl_base = if(editing, if(nl_gh, 0.4, 1), if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * nl_opa * (1 - 0.85 * wg_ambs * (1 - nl_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let nl_opn = sf_on and op_vis and not nl_above and not editing and not wg_desk
+        let nl_base = if(editing, if(nl_gh, 0.4, 1), if(nl_opn, 1, if(viz_still, if(nl_st < 0.5, 1, 0.35), pick(nl_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * nl_opa * if(nl_opn, 1, 1 - 0.85 * wg_ambs * (1 - nl_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let nl_rs = if(sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5, pick(nl_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1352,7 +1354,7 @@ scene Widgets {
             let acc = pick(wg_style, if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(nl_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or nl_above or editing or wg_desk or op_vis or nt_ed > -1.5) and nl_on and (editing or wg_dkp > 0.01 or nl_st < 1.5)
+            show: (not sf_on or nl_above or editing or wg_desk or op_vis or nt_ed > -1.5) and nl_on and (editing or wg_dkp > 0.01 or nl_opn or nl_st < 1.5)
             let nl_clip = sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5
             opacity: (nl_base + (1 - nl_base) * wg_dkp) * (0.72 + 0.28 * nl_rs)
             pivot: if(wg_rk == nl_k, wg_sx, nl_x) + if(wg_rk == nl_k, wg_sw, nl_w) / 2, if(wg_rk == nl_k, wg_sy, nl_y) + if(wg_rk == nl_k, wg_sh, nl_h) / 2
@@ -1368,7 +1370,9 @@ scene Widgets {
         let g1_near = clamp(1 - max(max(0, max(g1_x - desk.cursor.x, desk.cursor.x - g1_x - g1_w)), max(0, max(g1_y - desk.cursor.y, desk.cursor.y - g1_y - g1_h))) / 220, 0, 1)
         let g1_wake = g1_near > 0.7
         on change g1_wake while g1_wake and wg_amb and g1_on { wg_amb = false }
-        let g1_base = if(editing, if(g1_gh, 0.4, 1), if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * g1_opa * (1 - 0.85 * wg_ambs * (1 - g1_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let g1_opn = sf_on and op_vis and not g1_above and not editing and not wg_desk
+        let g1_base = if(editing, if(g1_gh, 0.4, 1), if(g1_opn, 1, if(viz_still, if(g1_st < 0.5, 1, 0.35), pick(g1_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * g1_opa * if(g1_opn, 1, 1 - 0.85 * wg_ambs * (1 - g1_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let g1_rs = if(sf_on and not g1_above and not editing and not wg_desk, pick(g1_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1377,7 +1381,7 @@ scene Widgets {
             let acc = pick(wg_style, if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(g1_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or g1_above or editing or wg_desk or op_vis) and g1_on and (editing or wg_dkp > 0.01 or g1_st < 1.5)
+            show: (not sf_on or g1_above or editing or wg_desk or op_vis) and g1_on and (editing or wg_dkp > 0.01 or g1_opn or g1_st < 1.5)
             let g1_clip = sf_on and not g1_above and not editing and not wg_desk
             opacity: (g1_base + (1 - g1_base) * wg_dkp) * (0.72 + 0.28 * g1_rs)
             pivot: if(wg_rk == g1_k, wg_sx, g1_x) + if(wg_rk == g1_k, wg_sw, g1_w) / 2, if(wg_rk == g1_k, wg_sy, g1_y) + if(wg_rk == g1_k, wg_sh, g1_h) / 2
@@ -1393,7 +1397,9 @@ scene Widgets {
         let g2_near = clamp(1 - max(max(0, max(g2_x - desk.cursor.x, desk.cursor.x - g2_x - g2_w)), max(0, max(g2_y - desk.cursor.y, desk.cursor.y - g2_y - g2_h))) / 220, 0, 1)
         let g2_wake = g2_near > 0.7
         on change g2_wake while g2_wake and wg_amb and g2_on { wg_amb = false }
-        let g2_base = if(editing, if(g2_gh, 0.4, 1), if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * g2_opa * (1 - 0.85 * wg_ambs * (1 - g2_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let g2_opn = sf_on and op_vis and not g2_above and not editing and not wg_desk
+        let g2_base = if(editing, if(g2_gh, 0.4, 1), if(g2_opn, 1, if(viz_still, if(g2_st < 0.5, 1, 0.35), pick(g2_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * g2_opa * if(g2_opn, 1, 1 - 0.85 * wg_ambs * (1 - g2_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let g2_rs = if(sf_on and not g2_above and not editing and not wg_desk, pick(g2_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1402,7 +1408,7 @@ scene Widgets {
             let acc = pick(wg_style, if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(g2_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or g2_above or editing or wg_desk or op_vis) and g2_on and (editing or wg_dkp > 0.01 or g2_st < 1.5)
+            show: (not sf_on or g2_above or editing or wg_desk or op_vis) and g2_on and (editing or wg_dkp > 0.01 or g2_opn or g2_st < 1.5)
             let g2_clip = sf_on and not g2_above and not editing and not wg_desk
             opacity: (g2_base + (1 - g2_base) * wg_dkp) * (0.72 + 0.28 * g2_rs)
             pivot: if(wg_rk == g2_k, wg_sx, g2_x) + if(wg_rk == g2_k, wg_sw, g2_w) / 2, if(wg_rk == g2_k, wg_sy, g2_y) + if(wg_rk == g2_k, wg_sh, g2_h) / 2
@@ -1418,7 +1424,9 @@ scene Widgets {
         let wh_near = clamp(1 - max(max(0, max(wh_x - desk.cursor.x, desk.cursor.x - wh_x - wh_w)), max(0, max(wh_y - desk.cursor.y, desk.cursor.y - wh_y - wh_h))) / 220, 0, 1)
         let wh_wake = wh_near > 0.7
         on change wh_wake while wh_wake and wg_amb and wh_on { wg_amb = false }
-        let wh_base = if(editing, if(wh_gh, 0.4, 1), if(viz_still, if(wh_st < 0.5, 1, 0.35), pick(wh_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * wh_opa * (1 - 0.85 * wg_ambs * (1 - wh_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let wh_opn = sf_on and op_vis and not wh_above and not editing and not wg_desk
+        let wh_base = if(editing, if(wh_gh, 0.4, 1), if(wh_opn, 1, if(viz_still, if(wh_st < 0.5, 1, 0.35), pick(wh_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * wh_opa * if(wh_opn, 1, 1 - 0.85 * wg_ambs * (1 - wh_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let wh_rs = if(sf_on and not wh_above and not editing and not wg_desk, pick(wh_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1427,7 +1435,7 @@ scene Widgets {
             let acc = pick(wg_style, if(wh_ad, rgb(wh_ar, wh_ag, wh_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(wh_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or wh_above or editing or wg_desk or op_vis) and wh_on and (editing or wg_dkp > 0.01 or wh_st < 1.5)
+            show: (not sf_on or wh_above or editing or wg_desk or op_vis) and wh_on and (editing or wg_dkp > 0.01 or wh_opn or wh_st < 1.5)
             let wh_clip = sf_on and not wh_above and not editing and not wg_desk
             opacity: (wh_base + (1 - wh_base) * wg_dkp) * (0.72 + 0.28 * wh_rs)
             pivot: if(wg_rk == wh_k, wg_sx, wh_x) + if(wg_rk == wh_k, wg_sw, wh_w) / 2, if(wg_rk == wh_k, wg_sy, wh_y) + if(wg_rk == wh_k, wg_sh, wh_h) / 2
@@ -1443,7 +1451,9 @@ scene Widgets {
         let sp_near = clamp(1 - max(max(0, max(sp_x - desk.cursor.x, desk.cursor.x - sp_x - sp_w)), max(0, max(sp_y - desk.cursor.y, desk.cursor.y - sp_y - sp_h))) / 220, 0, 1)
         let sp_wake = sp_near > 0.7
         on change sp_wake while sp_wake and wg_amb and sp_on { wg_amb = false }
-        let sp_base = if(editing, if(sp_gh, 0.4, 1), if(viz_still, if(sp_st < 0.5, 1, 0.35), pick(sp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * sp_opa * (1 - 0.85 * wg_ambs * (1 - sp_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let sp_opn = sf_on and op_vis and not sp_above and not editing and not wg_desk
+        let sp_base = if(editing, if(sp_gh, 0.4, 1), if(sp_opn, 1, if(viz_still, if(sp_st < 0.5, 1, 0.35), pick(sp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * sp_opa * if(sp_opn, 1, 1 - 0.85 * wg_ambs * (1 - sp_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let sp_rs = if(sf_on and not sp_above and not editing and not wg_desk, pick(sp_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1452,7 +1462,7 @@ scene Widgets {
             let acc = pick(wg_style, if(sp_ad, rgb(sp_ar, sp_ag, sp_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(sp_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or sp_above or editing or wg_desk or op_vis) and sp_on and (editing or wg_dkp > 0.01 or sp_st < 1.5)
+            show: (not sf_on or sp_above or editing or wg_desk or op_vis) and sp_on and (editing or wg_dkp > 0.01 or sp_opn or sp_st < 1.5)
             let sp_clip = sf_on and not sp_above and not editing and not wg_desk
             opacity: (sp_base + (1 - sp_base) * wg_dkp) * (0.72 + 0.28 * sp_rs)
             pivot: if(wg_rk == sp_k, wg_sx, sp_x) + if(wg_rk == sp_k, wg_sw, sp_w) / 2, if(wg_rk == sp_k, wg_sy, sp_y) + if(wg_rk == sp_k, wg_sh, sp_h) / 2
@@ -1468,7 +1478,9 @@ scene Widgets {
         let cd_near = clamp(1 - max(max(0, max(cd_x - desk.cursor.x, desk.cursor.x - cd_x - cd_w)), max(0, max(cd_y - desk.cursor.y, desk.cursor.y - cd_y - cd_h))) / 220, 0, 1)
         let cd_wake = cd_near > 0.7
         on change cd_wake while cd_wake and wg_amb and cd_on { wg_amb = false }
-        let cd_base = if(editing, if(cd_gh, 0.4, 1), if(viz_still, if(cd_st < 0.5, 1, 0.35), pick(cd_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * cd_opa * (1 - 0.85 * wg_ambs * (1 - cd_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let cd_opn = sf_on and op_vis and not cd_above and not editing and not wg_desk
+        let cd_base = if(editing, if(cd_gh, 0.4, 1), if(cd_opn, 1, if(viz_still, if(cd_st < 0.5, 1, 0.35), pick(cd_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * cd_opa * if(cd_opn, 1, 1 - 0.85 * wg_ambs * (1 - cd_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let cd_rs = if(sf_on and not cd_above and not editing and not wg_desk, pick(cd_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1477,7 +1489,7 @@ scene Widgets {
             let acc = pick(wg_style, if(cd_ad, rgb(cd_ar, cd_ag, cd_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(cd_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or cd_above or editing or wg_desk or op_vis) and cd_on and (editing or wg_dkp > 0.01 or cd_st < 1.5)
+            show: (not sf_on or cd_above or editing or wg_desk or op_vis) and cd_on and (editing or wg_dkp > 0.01 or cd_opn or cd_st < 1.5)
             let cd_clip = sf_on and not cd_above and not editing and not wg_desk
             opacity: (cd_base + (1 - cd_base) * wg_dkp) * (0.72 + 0.28 * cd_rs)
             pivot: if(wg_rk == cd_k, wg_sx, cd_x) + if(wg_rk == cd_k, wg_sw, cd_w) / 2, if(wg_rk == cd_k, wg_sy, cd_y) + if(wg_rk == cd_k, wg_sh, cd_h) / 2
@@ -1493,7 +1505,9 @@ scene Widgets {
         let ln_near = clamp(1 - max(max(0, max(ln_x - desk.cursor.x, desk.cursor.x - ln_x - ln_w)), max(0, max(ln_y - desk.cursor.y, desk.cursor.y - ln_y - ln_h))) / 220, 0, 1)
         let ln_wake = ln_near > 0.7
         on change ln_wake while ln_wake and wg_amb and ln_on { wg_amb = false }
-        let ln_base = if(editing, if(ln_gh, 0.4, 1), if(viz_still, if(ln_st < 0.5, 1, 0.35), pick(ln_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * ln_opa * (1 - 0.85 * wg_ambs * (1 - ln_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let ln_opn = sf_on and op_vis and not ln_above and not editing and not wg_desk
+        let ln_base = if(editing, if(ln_gh, 0.4, 1), if(ln_opn, 1, if(viz_still, if(ln_st < 0.5, 1, 0.35), pick(ln_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * ln_opa * if(ln_opn, 1, 1 - 0.85 * wg_ambs * (1 - ln_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let ln_rs = if(sf_on and not ln_above and not editing and not wg_desk, pick(ln_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1502,7 +1516,7 @@ scene Widgets {
             let acc = pick(wg_style, if(ln_ad, rgb(ln_ar, ln_ag, ln_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(ln_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or ln_above or editing or wg_desk or op_vis) and ln_on and (editing or wg_dkp > 0.01 or ln_st < 1.5)
+            show: (not sf_on or ln_above or editing or wg_desk or op_vis) and ln_on and (editing or wg_dkp > 0.01 or ln_opn or ln_st < 1.5)
             let ln_clip = sf_on and not ln_above and not editing and not wg_desk
             opacity: (ln_base + (1 - ln_base) * wg_dkp) * (0.72 + 0.28 * ln_rs)
             pivot: if(wg_rk == ln_k, wg_sx, ln_x) + if(wg_rk == ln_k, wg_sw, ln_w) / 2, if(wg_rk == ln_k, wg_sy, ln_y) + if(wg_rk == ln_k, wg_sh, ln_h) / 2
@@ -1521,7 +1535,9 @@ scene Widgets {
         let nc_near = clamp(1 - max(max(0, max(nc_x - desk.cursor.x, desk.cursor.x - nc_x - nc_w)), max(0, max(nc_y - desk.cursor.y, desk.cursor.y - nc_y - nc_h))) / 220, 0, 1)
         let nc_wake = nc_near > 0.7
         on change nc_wake while nc_wake and wg_amb and nc_on { wg_amb = false }
-        let nc_base = if(editing, if(nc_gh, 0.4, 1), if(viz_still, if(nc_st < 0.5, 1, 0.35), pick(nc_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * nc_opa * (1 - 0.85 * wg_ambs * (1 - nc_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let nc_opn = sf_on and op_vis and not nc_above and not editing and not wg_desk
+        let nc_base = if(editing, if(nc_gh, 0.4, 1), if(nc_opn, 1, if(viz_still, if(nc_st < 0.5, 1, 0.35), pick(nc_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * nc_opa * if(nc_opn, 1, 1 - 0.85 * wg_ambs * (1 - nc_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let nc_rs = if(sf_on and not nc_above and not editing and not wg_desk, pick(nc_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1530,7 +1546,7 @@ scene Widgets {
             let acc = pick(wg_style, if(nc_ad, rgb(nc_ar, nc_ag, nc_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(nc_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or nc_above or editing or wg_desk or op_vis) and nc_on and (editing or wg_dkp > 0.01 or nc_st < 1.5)
+            show: (not sf_on or nc_above or editing or wg_desk or op_vis) and nc_on and (editing or wg_dkp > 0.01 or nc_opn or nc_st < 1.5)
             let nc_clip = sf_on and not nc_above and not editing and not wg_desk
             opacity: (nc_base + (1 - nc_base) * wg_dkp) * (0.72 + 0.28 * nc_rs)
             pivot: if(wg_rk == nc_k, wg_sx, nc_x) + if(wg_rk == nc_k, wg_sw, nc_w) / 2, if(wg_rk == nc_k, wg_sy, nc_y) + if(wg_rk == nc_k, wg_sh, nc_h) / 2
@@ -1546,7 +1562,9 @@ scene Widgets {
         let wp_near = clamp(1 - max(max(0, max(wp_x - desk.cursor.x, desk.cursor.x - wp_x - wp_w)), max(0, max(wp_y - desk.cursor.y, desk.cursor.y - wp_y - wp_h))) / 220, 0, 1)
         let wp_wake = wp_near > 0.7
         on change wp_wake while wp_wake and wg_amb and wp_on { wg_amb = false }
-        let wp_base = if(editing, if(wp_gh, 0.4, 1), if(viz_still, if(wp_st < 0.5, 1, 0.35), pick(wp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * wp_opa * (1 - 0.85 * wg_ambs * (1 - wp_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let wp_opn = sf_on and op_vis and not wp_above and not editing and not wg_desk
+        let wp_base = if(editing, if(wp_gh, 0.4, 1), if(wp_opn, 1, if(viz_still, if(wp_st < 0.5, 1, 0.35), pick(wp_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * wp_opa * if(wp_opn, 1, 1 - 0.85 * wg_ambs * (1 - wp_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let wp_rs = if(sf_on and not wp_above and not editing and not wg_desk, pick(wp_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1555,7 +1573,7 @@ scene Widgets {
             let acc = pick(wg_style, if(wp_ad, rgb(wp_ar, wp_ag, wp_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(wp_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or wp_above or editing or wg_desk or op_vis) and wp_on and (editing or wg_dkp > 0.01 or wp_st < 1.5)
+            show: (not sf_on or wp_above or editing or wg_desk or op_vis) and wp_on and (editing or wg_dkp > 0.01 or wp_opn or wp_st < 1.5)
             let wp_clip = sf_on and not wp_above and not editing and not wg_desk
             opacity: (wp_base + (1 - wp_base) * wg_dkp) * (0.72 + 0.28 * wp_rs)
             pivot: if(wg_rk == wp_k, wg_sx, wp_x) + if(wg_rk == wp_k, wg_sw, wp_w) / 2, if(wg_rk == wp_k, wg_sy, wp_y) + if(wg_rk == wp_k, wg_sh, wp_h) / 2
@@ -1571,7 +1589,9 @@ scene Widgets {
         let pg_near = clamp(1 - max(max(0, max(pg_x - desk.cursor.x, desk.cursor.x - pg_x - pg_w)), max(0, max(pg_y - desk.cursor.y, desk.cursor.y - pg_y - pg_h))) / 220, 0, 1)
         let pg_wake = pg_near > 0.7
         on change pg_wake while pg_wake and wg_amb and pg_on { wg_amb = false }
-        let pg_base = if(editing, if(pg_gh, 0.4, 1), if(viz_still, if(pg_st < 0.5, 1, 0.35), pick(pg_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * pg_opa * (1 - 0.85 * wg_ambs * (1 - pg_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let pg_opn = sf_on and op_vis and not pg_above and not editing and not wg_desk
+        let pg_base = if(editing, if(pg_gh, 0.4, 1), if(pg_opn, 1, if(viz_still, if(pg_st < 0.5, 1, 0.35), pick(pg_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * pg_opa * if(pg_opn, 1, 1 - 0.85 * wg_ambs * (1 - pg_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let pg_rs = if(sf_on and not pg_above and not editing and not wg_desk, pick(pg_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1580,7 +1600,7 @@ scene Widgets {
             let acc = pick(wg_style, if(pg_ad, rgb(pg_ar, pg_ag, pg_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(pg_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or pg_above or editing or wg_desk or op_vis) and pg_on and (editing or wg_dkp > 0.01 or pg_st < 1.5)
+            show: (not sf_on or pg_above or editing or wg_desk or op_vis) and pg_on and (editing or wg_dkp > 0.01 or pg_opn or pg_st < 1.5)
             let pg_clip = sf_on and not pg_above and not editing and not wg_desk
             opacity: (pg_base + (1 - pg_base) * wg_dkp) * (0.72 + 0.28 * pg_rs)
             pivot: if(wg_rk == pg_k, wg_sx, pg_x) + if(wg_rk == pg_k, wg_sw, pg_w) / 2, if(wg_rk == pg_k, wg_sy, pg_y) + if(wg_rk == pg_k, wg_sh, pg_h) / 2
@@ -1596,7 +1616,9 @@ scene Widgets {
         let ct_near = clamp(1 - max(max(0, max(ct_x - desk.cursor.x, desk.cursor.x - ct_x - ct_w)), max(0, max(ct_y - desk.cursor.y, desk.cursor.y - ct_y - ct_h))) / 220, 0, 1)
         let ct_wake = ct_near > 0.7
         on change ct_wake while ct_wake and wg_amb and ct_on { wg_amb = false }
-        let ct_base = if(editing, if(ct_gh, 0.4, 1), if(viz_still, if(ct_st < 0.5, 1, 0.35), pick(ct_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * ct_opa * (1 - 0.85 * wg_ambs * (1 - ct_near))
+        // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+        let ct_opn = sf_on and op_vis and not ct_above and not editing and not wg_desk
+        let ct_base = if(editing, if(ct_gh, 0.4, 1), if(ct_opn, 1, if(viz_still, if(ct_st < 0.5, 1, 0.35), pick(ct_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * ct_opa * if(ct_opn, 1, 1 - 0.85 * wg_ambs * (1 - ct_near))
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it (outside the
         // group: a group's own settings cannot read its lets)
         let ct_rs = if(sf_on and not ct_above and not editing and not wg_desk, pick(ct_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1605,7 +1627,7 @@ scene Widgets {
             let acc = pick(wg_style, if(ct_ad, rgb(ct_ar, ct_ag, ct_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(ct_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or ct_above or editing or wg_desk or op_vis) and ct_on and (editing or wg_dkp > 0.01 or ct_st < 1.5)
+            show: (not sf_on or ct_above or editing or wg_desk or op_vis) and ct_on and (editing or wg_dkp > 0.01 or ct_opn or ct_st < 1.5)
             let ct_clip = sf_on and not ct_above and not editing and not wg_desk
             opacity: (ct_base + (1 - ct_base) * wg_dkp) * (0.72 + 0.28 * ct_rs)
             pivot: if(wg_rk == ct_k, wg_sx, ct_x) + if(wg_rk == ct_k, wg_sw, ct_w) / 2, if(wg_rk == ct_k, wg_sy, ct_y) + if(wg_rk == ct_k, wg_sh, ct_h) / 2
@@ -1622,10 +1644,12 @@ scene Widgets {
         // the visualisers, a lane each, under the other widgets
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it
         let lA_rs = if(sf_on and not lA_above and not editing and not wg_desk, pick(lA_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
+        // D220: below the wallpaper, inside the opening, it is awake
+        let lA_opn = sf_on and op_vis and not lA_above and not editing and not wg_desk
         group {
             z: if(lA_beh, 1, 3)
-            show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on and (editing or wg_dkp > 0.01 or (lA_st < 1.5 and not viz_ext))
-            opacity: if(editing, if(lA_gh, 0.4, 1), if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * lA_opa * (0.72 + 0.28 * lA_rs)
+            show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on and (editing or wg_dkp > 0.01 or lA_opn or (lA_st < 1.5 and not viz_ext))
+            opacity: if(editing, if(lA_gh, 0.4, 1), if(lA_opn, 1, if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * lA_opa * (0.72 + 0.28 * lA_rs)
             move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0) + lA_dx * wg_dkp, if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0) + lA_dy * wg_dkp
             scale: 0.96 + 0.04 * lA_rs
             let lA_clip = sf_on and not lA_above and not editing and not wg_desk
@@ -1640,10 +1664,12 @@ scene Widgets {
         }
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it
         let lB_rs = if(sf_on and not lB_above and not editing and not wg_desk, pick(lB_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
+        // D220: below the wallpaper, inside the opening, it is awake
+        let lB_opn = sf_on and op_vis and not lB_above and not editing and not wg_desk
         group {
             z: if(lB_beh, 1, 3)
-            show: (not sf_on or lB_above or editing or wg_desk or op_vis) and lB_on and (editing or wg_dkp > 0.01 or (lB_st < 1.5 and not viz_ext))
-            opacity: if(editing, if(lB_gh, 0.4, 1), if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * lB_opa * (0.72 + 0.28 * lB_rs)
+            show: (not sf_on or lB_above or editing or wg_desk or op_vis) and lB_on and (editing or wg_dkp > 0.01 or lB_opn or (lB_st < 1.5 and not viz_ext))
+            opacity: if(editing, if(lB_gh, 0.4, 1), if(lB_opn, 1, if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * lB_opa * (0.72 + 0.28 * lB_rs)
             move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0) + lB_dx * wg_dkp, if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0) + lB_dy * wg_dkp
             scale: 0.96 + 0.04 * lB_rs
             let lB_clip = sf_on and not lB_above and not editing and not wg_desk
@@ -1657,10 +1683,12 @@ scene Widgets {
         }
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it
         let lC_rs = if(sf_on and not lC_above and not editing and not wg_desk, pick(lC_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
+        // D220: below the wallpaper, inside the opening, it is awake
+        let lC_opn = sf_on and op_vis and not lC_above and not editing and not wg_desk
         group {
             z: if(lC_beh, 1, 3)
-            show: (not sf_on or lC_above or editing or wg_desk or op_vis) and lC_on and (editing or wg_dkp > 0.01 or (lC_st < 1.5 and not viz_ext))
-            opacity: if(editing, if(lC_gh, 0.4, 1), if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15))) * lC_opa * (0.72 + 0.28 * lC_rs)
+            show: (not sf_on or lC_above or editing or wg_desk or op_vis) and lC_on and (editing or wg_dkp > 0.01 or lC_opn or (lC_st < 1.5 and not viz_ext))
+            opacity: if(editing, if(lC_gh, 0.4, 1), if(lC_opn, 1, if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * lC_opa * (0.72 + 0.28 * lC_rs)
             move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0) + lC_dx * wg_dkp, if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0) + lC_dy * wg_dkp
             scale: 0.96 + 0.04 * lC_rs
             let lC_clip = sf_on and not lC_above and not editing and not wg_desk
@@ -1684,7 +1712,9 @@ scene Widgets {
             let wh = if(rz, wg_sh, w.h)
             let wu = if(rz, wg_ru, w.u)
             let hv = if(w.kind < 0.5 and not editing, pick(k, ph0, ph1, ph2, ph3, ph4, ph5, ph6, ph7, ph8, ph9, ph10, ph11, ph12, ph13, ph14, ph15), 0)
-            let fo = max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)), 0.9 * hv * if(w.st < 1.5, 1, 0))
+            // D220: below the wallpaper, inside the opening, it is awake — never at its rest, never dimmed
+            let opn = sf_on and op_vis and not w.above and not editing and not wg_desk
+            let fo = max(max(if(viz_still, w.op, pick(k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)), 0.9 * hv * if(w.st < 1.5, 1, 0)), if(opn, 1, 0))
             // only a widget that shows music can be pointed at (a hidden one, or the visualiser, never)
             let over = w.kind < 0.5 and (w.st < 1.5 or editing) and desk.cursor.x >= w.x and desk.cursor.x <= w.x + w.w and desk.cursor.y >= w.y and desk.cursor.y <= w.y + w.h
             on change over { emit wg_hov(k * 10 + if(over, 1, 0)) }
@@ -1699,7 +1729,7 @@ scene Widgets {
             let near = clamp(1 - max(max(0, max(w.x - desk.cursor.x, desk.cursor.x - w.x - w.w)), max(0, max(w.y - desk.cursor.y, desk.cursor.y - w.y - w.h))) / 220, 0, 1)
             let wake = near > 0.7
             on change wake while wake and wg_amb { wg_amb = false }
-            let seen = if(editing, if(w.gh, 0.4, 1), fo) * w.opa * (1 - 0.85 * wg_ambs * (1 - near))
+            let seen = if(editing, if(w.gh, 0.4, 1), fo) * w.opa * if(opn, 1, 1 - 0.85 * wg_ambs * (1 - near))
             // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it
             let rs = if(sf_on and not w.above and not editing and not wg_desk, pick(k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
             // D209: below the wallpaper the widget is only there while the opening shows, and only
@@ -1716,7 +1746,7 @@ scene Widgets {
                 opacity: (seen + (1 - seen) * wg_dkp) * (0.72 + 0.28 * rs)
                 pivot: wx + ww / 2, wy + wh / 2
                 scale: 0.96 + 0.04 * rs
-                show: editing or wg_dkp > 0.01 or (w.st < 1.5 and fo > 0.01)
+                show: editing or wg_dkp > 0.01 or ((w.st < 1.5 or opn) and fo > 0.01)
                 // desk mode carries it to its place in the gathering
                 move: ox + w.dx * wg_dkp, oy + w.dy * wg_dkp
                 group { show: w.kind < 0.5 and w.lay < 0.5
@@ -1784,7 +1814,8 @@ scene Widgets {
                 zone box mv { from: w.x, w.y; size: w.w, w.h; cursor: if(w.locked, pointer, grab); role: button; label: "Choose or move this widget" }
                 on press mv { wg_hold = 100 + k; emit wg_sel(k * 10) }
                 on press right mv { wg_hold = 0; emit wg_sel(k * 10 + 1) }
-                on drag mv while wg_hold == 100 + k and not w.locked and not op_vis {
+                // (D220: in the Overview — edit mode under an opening — it moves like anywhere else)
+                on drag mv while wg_hold == 100 + k and not w.locked and (not op_vis or editing) {
                     wg_dk = k; wg_dx = drag.dx; wg_dy = drag.dy
                     emit wg_drag(k * 65536 + clamp(round((w.x + drag.dx) / 8), 0, 255) * 256 + clamp(round((w.y + drag.dy) / 8), 0, 255))
                 }
@@ -1803,7 +1834,7 @@ scene Widgets {
                     emit wg_bury(k)
                     emit sb_drop(-1)
                 }
-                on release mv while wg_hold == 100 + k and op_vis { wg_hold = 0; emit sb_drop(-1) }
+                on release mv while wg_hold == 100 + k and op_vis and not editing { wg_hold = 0; emit sb_drop(-1) }
                 on release mv while wg_hold == 100 + k and wg_dk == k { emit wg_drop(k) }
                 // eight handles on the chosen one: corners and edge middles (a record keeps its shape: corners only)
                 group {

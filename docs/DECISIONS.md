@@ -6382,3 +6382,21 @@ workspace changes at most once a second). D217's two fixed "moves" patches are r
 over the real wallpaper and measured against the still picture (Ripple ≈ 30 600 pixels changed, Breathe ≈ 9 800,
 Flow ≈ 24 200, the sweep ≈ 82 600). Not yet seen live.
 
+## D220 · 2026-11-09 · Below, awake in the opening; the Overview edits
+
+The owner, trying it: the music player under the wallpaper showed "just a glow — it should be the actual player and
+use its controls"; and in the Overview "I can't move the widgets, like the editor I open from the Nexus".
+
+- **Awake in the opening.** A widget below that was at its rest (Now Playing hides while nothing plays; others fade,
+  and the ambient rest dims them all) stayed so inside the opening, which then showed only the light where it lives.
+  Inside the opening a widget below is now awake: shown, whole, undimmed — in the loop, every lane and the three
+  visualiser lanes (`opn`). Its controls answer as they do on the desktop.
+- **The Overview moves widgets.** The move in edit mode was guarded by "no opening shows" (`not op_vis`, D209, so a
+  drag in the opening could keep a widget above or bury it); the Overview is edit mode under an opening, so nothing
+  moved. Edit mode now moves them under an opening too, and the release that ends a below-drag leaves an edit drag
+  alone.
+- (Also seen: the desktop was still running D217's snapshot — D218's follow and D219's page were not loaded until
+  `mooi refresh`.)
+
+**Verified.** Unit 783 / 0; 15 scenes compile; `bin/mooi check` green.
+
