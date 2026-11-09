@@ -17,6 +17,12 @@ local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
 local sigilhosts = require("lib/surface/hosts")   -- D207: where the Sigil may live
 local chassis_look = require("lib/chassis").look
+local bmostate = require("lib/bmostate")           -- D209: the one shared BMO
+local bmochat = require("lib/bmochat")
+local brain = require("bmo/brain")
+local claude = require("lib/claude")
+local bmoact = require("lib/bmoact")
+local herdrfeed = require("lib/herdrfeed")
 
 return function(ctx)
     local home = sys.ask("env", "HOME") or ""
@@ -37,7 +43,209 @@ return function(ctx)
     -- D196: BMO as the Pill — a hop each time his face changes, a fresh typewriter for each new line,
     -- and a small reaction: one table (the counters the scene's springs follow)
     local bmo_fx = { bump = 0, say = 0, face = nil }
+    local bm_react_face = nil
+    -- D209: the bar owns the one BMO. The desktop, Pill and Sigil read this state; the bar writes it.
+    local bm = { st = bmostate.new(os.time()), chat = bmochat.new(), sent = nil, press_at = nil, hold = false,
+                 asking = nil, live = "", session = nil }
+    local function bm_now() return os.time() end
+    local function bm_load()
+        local ok, doc = pcall(sys.ask, "files.read", "bmo-shared.json")
+        if ok and type(doc) == "table" then bm.st = bmostate.normalise(doc, bm_now()) end
+        local okc, cdoc = pcall(sys.ask, "files.read", "bmo-chat.json")
+        if okc and type(cdoc) == "table" then bm.chat = bmochat.normalise(cdoc, bm_now()) end
+    end
+    local function bm_save(force)
+        local doc = bm.st
+        doc.at = bm_now()
+        local enc = json.encode(doc)
+        if force or enc ~= bm.sent then
+            bm.sent = enc
+            pcall(sys.call, "files.write", "bmo-shared.json", doc)
+            pcall(sys.call, "files.write", "bmo-chat.json", bm.chat)
+        end
+    end
+    local function bm_view() return bmostate.view(bm.st, bm_now(), pst.media.playing == true and pst.media.title ~= "") end
+    local function bm_apply(kind, arg, save)
+        local ok, why = bmostate.apply(bm.st, { kind = kind, arg = arg or {} }, bm_now())
+        if ok and save ~= false then bm_save(true) end
+        return ok, why
+    end
+    local function bm_publish()
+        local v = bm_view()
+        fact.bm_charge, fact.bm_bond = v.charge, v.bond
+        fact.bm_mischief, fact.bm_grump = v.mischief, v.grump
+        fact.bm_asleep = v.asleep
+        for i, m in ipairs(brain.MOODS or {}) do if m == v.mood then fact.bm_mood = i - 1 end end
+        text.bm_line, text.bm_mood_t = v.say, v.mood
+        local c = ctx.settings().companion or {}
+        fact.companion_eyes = c.eyes ~= false
+        fact.companion_music = c.music ~= false
+        fact.companion_cheek = ({ Off = 0, Tease = 1, Flirty = 2, Unfiltered = 3 })[c.cheek] or 1
+        fact.companion_hands = ({ Off = 0, Look = 1, Balanced = 2, Trusted = 3 })[c.hands] or 2
+    end
+    local bm_show = nil        -- face_show, once it exists
+    local bm_chat_ask = nil    -- the chat runner, once it exists
+    bm_load()
+    bm_publish()
+    bm_react_face = function(face, ms)
+        bm_apply("react", { face = face, ms = ms })
+        bm_publish()
+        if bm_show then bm_show() end
+    end
+    -- D210: Herdr, read on a timer. The bar owns the rows and the seen map; the island only draws.
+    local hd = { agents = {}, seen = {}, briefs = {}, rows = {}, head = "", brief = "", up = false, warn = nil }
+    do
+        local ok, seen = pcall(sys.ask, "files.read", "herdr-seen.json")
+        if ok and type(seen) == "table" then hd.seen = seen end
+    end
+    local function hd_path()
+        local h = ctx.settings().herdr
+        return type(h) == "table" and type(h.path) == "string" and h.path ~= "" and h.path or "herdr"
+    end
+    local function hd_row(a)
+        local dot = a.status == "blocked" and "!" or a.status == "working" and "*" or "."
+        local mins = a.elapsed and math.floor(a.elapsed / 60) or 0
+        local project = tostring(a.cwd or ""):gsub("/+$", ""):match("([^/]+)$") or "?"
+        return string.format("%s %-8s %-12s %-7s %s", dot, tostring(a.agent or "agent"),
+                             project:sub(1, 12), a.status or "?", mins > 0 and (mins .. "m") or "")
+            .. (a.brief and a.brief ~= "" and ("  " .. a.brief) or "")
+    end
+    local function hd_show()
+        local lines = {}
+        for i, a in ipairs(hd.agents) do
+            if i > 7 then break end
+            lines[#lines + 1] = hd_row(a)
+        end
+        text.hd_rows = table.concat(lines, "\n")
+        text.hd_head = hd.up and ("HERDR " .. tostring(hd.version or "") .. " · " .. #hd.agents .. " agents")
+                       or (hd.warn or "HERDR IS NOT RUNNING")
+        text.hd_brief = hd.brief
+    end
+    local function hd_apply(doc)
+        local snap = herdrfeed.snapshot(doc)
+        local h = ctx.settings().herdr or {}
+        local groups = herdrfeed.group(snap.agents, bm_now(), hd.seen, {}, { show_idle = h.show_idle == true,
+                                                                           show_done = h.show_done == true })
+        local list = {}
+        local seen_changed = false
+        for _, key in ipairs({ "attention", "working", "idle", "done" }) do
+            for _, a in ipairs(groups[key] or {}) do
+                local k = tostring(a.pane_id or "") .. ":" .. tostring(a.agent_status or "")
+                if a.pane_id and not hd.seen[k] then hd.seen[k] = bm_now(); seen_changed = true end
+                a.status, a.elapsed = a.agent_status or key, a.elapsed or nil
+                a.brief = hd.briefs[a.pane_id] or a.terminal_title or ""
+                list[#list + 1] = a
+            end
+        end
+        hd.agents = list
+        if seen_changed then pcall(sys.call, "files.write", "herdr-seen.json", hd.seen) end
+        hd.blocked = #(groups.attention or {})
+        hd.working = #(groups.working or {})
+        hd.idle = #(groups.idle or {}) + #(groups.done or {})
+        hd.up = true
+        hd.warn = herdrfeed.warn({ running = true, compatible = true }, snap)
+        fact.hd_up = true
+        fact.hd_warn = hd.warn and 1 or 0
+        fact.hd_blocked, fact.hd_working, fact.hd_idle = hd.blocked, hd.working, hd.idle
+        fact.hd_total = #list
+        if hd.blocked > 0 then fact.hd_pulse = fact.hd_pulse + 1 end
+        local first = (groups.attention or {})[1]
+        if first and h.brief ~= false and (bm_now() - (hd.brief_at or 0) > 8) then
+            hd.brief_at = bm_now()
+            run(hd_path(), { "agent", "read", first.pane_id, "--lines", tostring(h.brief_lines or 4), "--format", "text" },
+                function(out)
+                    hd.briefs[first.pane_id] = herdrfeed.brief(first.terminal_title or "", out, 120)
+                    hd.brief = hd.briefs[first.pane_id]
+                    for _, a in ipairs(hd.agents) do if a.pane_id == first.pane_id then a.brief = hd.brief end end
+                    hd_show()
+                end)
+        end
+        hd_show()
+        -- BMO notices a blocked agent (throttled by the state's own say window)
+        if hd.blocked > 0 and (bm_now() - (hd.told or 0) > 20) then
+            hd.told = bm_now()
+            bm_apply("herdr_blocked", { r = math.random(), pane = first and first.pane_id })
+            bm_publish()
+            if bm_show then bm_show() end
+        end
+    end
+    local function hd_poll()
+        run(hd_path(), { "status", "--json" }, function(out, code)
+            local ok, doc = pcall(json.decode, out or "")
+            if code ~= 0 or not ok or type(doc) ~= "table" then
+                hd.up, hd.warn = false, "HERDR IS NOT RUNNING"
+                fact.hd_up = false; fact.hd_warn = 1; hd_show(); return
+            end
+            local st = herdrfeed.status(doc)
+            hd.up, hd.warn, hd.version = st.running, herdrfeed.warn(st, nil), st.version
+        end)
+        run(hd_path(), { "api", "snapshot" }, function(out, code)
+            if code ~= 0 then
+                hd.up, hd.warn = false, "HERDR IS NOT RUNNING"
+                fact.hd_up = false; fact.hd_warn = 1; hd_show(); return
+            end
+            local ok, doc = pcall(json.decode, out or "")
+            if not ok or type(doc) ~= "table" then
+                hd.warn = "HERDR SAID SOMETHING UNREADABLE"
+                fact.hd_warn = 1; hd_show(); return
+            end
+            hd_apply(doc)
+        end)
+    end
+    local function hd_find(pane)
+        for _, a in ipairs(hd.agents) do if a.pane_id == pane then return a end end
+    end
+    local function hd_focus(pane)
+        local a = hd_find(pane)
+        if not a then return end
+        run(hd_path(), { "agent", "focus", pane })
+        -- raise the terminal if Hyprland knows it; otherwise open a terminal attached
+        run("hyprctl", { "-j", "clients" }, function(out)
+            local ok, list = pcall(json.decode, out or "")
+            local want = tostring(a.terminal_title or "")
+            local hit
+            if ok and type(list) == "table" then
+                for _, c in ipairs(list) do
+                    local t = tostring(c.title or "")
+                    if want ~= "" and (t == want or t:find(want, 1, true)) then hit = c; break end
+                end
+            end
+            if hit then pcall(run, "hyprctl", { "dispatch", "focuswindow", "address:" .. tostring(hit.address) })
+            else pcall(run, "kitty", { "-e", hd_path(), "agent", "attach", pane }) end
+        end)
+    end
+    local function hd_attach(pane)
+        if pane then pcall(run, "kitty", { "-e", hd_path(), "agent", "attach", pane }) end
+    end
+    local function hd_blocked_pane()
+        for _, a in ipairs(hd.agents) do if a.status == "blocked" then return a.pane_id end end
+    end
+    on("herdr_focus_blocked", function() local p = hd_blocked_pane(); if p then hd_focus(p) end end)
+    on("herdr_attach_blocked", function() local p = hd_blocked_pane(); if p then hd_attach(p) end end)
+    on("herdr_focus", function(v) if v then hd_focus(tostring(v)) end end)
+    on("herdr_attach", function(v) if v then hd_attach(tostring(v)) end end)
+    on("herdr_refresh", function() hd_poll() end)
+    hd_show()
+    every(5000, function() hd_poll() end)
+    pcall(sys.watch, "files:bmo-cmd.json", function()
+        local ok, cmd = pcall(sys.ask, "files.read", "bmo-cmd.json")
+        if not ok or type(cmd) ~= "table" or type(cmd.id) ~= "string" then return end
+        if cmd.id == bm.st.last_cmd then return end
+        if cmd.kind == "chat" then
+            bm.st.last_cmd = cmd.id
+            bm_save(true)
+            if bm_chat_ask then bm_chat_ask(cmd.arg and cmd.arg.text) end
+            return
+        end
+        local applied = bm_apply(cmd.kind, cmd.arg, false)
+        if applied then
+            bm.st.last_cmd = cmd.id
+            bm_save(true); bm_publish()
+            if bm_show then bm_show() end
+        end
+    end)
     local function bmo_react(face, ms)
+        if bm_react_face then bm_react_face(face, ms) end
         if fact.pill_on and fact.pill_face == 1 then
             pillface.react(face_st, face, pill_ms, ms)
             if bmo_fx.show then bmo_fx.show() end      -- face_show, set once it exists (below)
@@ -352,7 +560,7 @@ return function(ctx)
     -- D169: BMO's face — his expression's numbers for the scene, and his line, which widens the Pill
     local function face_show()
         local music = pst.media.playing == true and pst.media.title ~= ""
-        local v = pillface.view(face_st, pill_ms, music)
+        local v = bmostate.view(bm.st, bm_now(), music)
         local f = pillface.numbers(v.face)
         if v.face ~= bmo_fx.face then
             bmo_fx.face = v.face
@@ -372,6 +580,7 @@ return function(ctx)
             pill_update()
         end
     end
+    bm_show = face_show
     bmo_fx.show = face_show
     -- D173: the Pill's half disc turns once when the workspace changes (fact.active_row, set by
     -- mooi.luau) or the wheel turns its view; held a moment, then it settles (a newer turn wins).
@@ -1250,7 +1459,7 @@ return function(ctx)
         bluetooth = "Bluetooth", clock = "Clock", caffeine = "Keep awake", recorder = "Recorder", screenshot = "Screenshot",
         clipboard = "Clipboard", power = "Session", actions = "Win actions", overview = "Overview", core = "Search",
         focus = "Focus", settings = "Settings", notes = "Quick notes", wallpaper = "Wallpaper", updates = "Updates",
-        nexus = "Nexus", claude = "Claude", github = "GitHub", sigil = "Sigil" }
+        nexus = "Nexus", claude = "Claude", github = "GitHub", sigil = "Sigil", bmo = "BMO", herdr = "Herdr" }
     local editing = nil      -- the layout a drag plans from: as edit mode found it, then as last dropped
     local previewed = nil    -- the last preview shown, so a pointer that moves within one place costs nothing
     local original = nil     -- the layout as edit mode found it, for Escape
@@ -1436,6 +1645,150 @@ return function(ctx)
         relayout(); shelf()
     end)
 
+    -- ── BMO's bar face (D209) ───────────────────────────────────
+    -- Short press is the island's (the scene opens it); a 450 ms hold charges. The bar owns the state,
+    -- so the scene only reads it and emits intent events.
+    on("bmo_press", function()
+        bm.press_at, bm.hold = os.time(), false
+        fact.bm_hold = false
+        after(450, function()
+            if not bm.press_at then return end
+            bm.hold = true
+            fact.bm_hold = true
+            bm_apply("charge_start", {})
+            bm_publish()
+            if bm_show then bm_show() end
+        end)
+    end)
+    on("bmo_release", function()
+        if bm.press_at and bm.hold then bm_apply("charge_stop", {}) end
+        bm.press_at, bm.hold = nil, false
+        fact.bm_hold = false
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    for _, e in ipairs({ "poke", "pet", "play", "nap", "wake" }) do
+        on("bmo_" .. e, function()
+            bm_apply(e, {})
+            bm_publish()
+            if bm_show then bm_show() end
+        end)
+    end
+    on("bmo_charge", function(v)
+        bm_apply("charge_step", { delta = math.max(-1, math.min(1, tonumber(v) or 0.05)) })
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    on("bmo_say", function(v)
+        if type(v) == "string" and v ~= "" then bm_apply("say", { text = v }) end
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    for _, e in ipairs({ "pet", "play", "nap", "wake" }) do
+        on("bmo_" .. e, function()
+            bm_apply(e, {})
+            bm_publish()
+            if bm_show then bm_show() end
+        end)
+    end
+    local function bm_chat(q)
+        if bm.asking then return end
+        q = tostring(q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if q == "" then return end
+        local now = bm_now()
+        bmochat.add(bm.chat, "user", q, now)
+        bm.chat.busy, bm.chat.stream = true, ""
+        bm.live = ""
+        text.bm_line = "thinking…"
+        bm_save(true)
+        local opts = { persona = "bmo", session = bm.chat.session,
+                       model = type(ctx.settings().claude) == "table" and ctx.settings().claude.model ~= "default"
+                               and ctx.settings().claude.model or nil }
+        local args = claude.args(q, opts)
+        local cmd = { "-C", folder, "claude" }
+        for _, a in ipairs(args) do cmd[#cmd + 1] = a end
+        local done, failed
+        local mine
+        mine = spawn("env", cmd, function(line)
+            if bm.asking ~= mine then return end
+            local r = claude.read(line, json.decode)
+            if not r then return end
+            if r.delta then
+                bm.live = bm.live .. r.delta
+                bm.chat.stream = bm.live
+                text.bm_line = bm.live
+            elseif r.done then
+                done = true
+                local said = r.text ~= "" and r.text or bm.live
+                bm.chat.session = r.session or bm.chat.session
+                local words, action = bmoact.parse(said, json.decode)
+                if action then
+                    local ok, tier = bmoact.check(action, home)
+                    if ok and tier ~= "change" then
+                        local cmd, args = bmoact.command(action)
+                        if cmd then pcall(run, cmd, args) end
+                    end
+                end
+                if words ~= "" then said = words end
+                if said ~= "" then
+                    bmochat.add(bm.chat, "bmo", said, bm_now())
+                    bm_apply("say", { text = said })
+                    text.bm_line = said
+                end
+            elseif r.error then
+                failed = r.error
+            end
+        end, function(_, code)
+            if bm.asking ~= mine then return end
+            bm.asking = nil
+            bm.chat.busy, bm.chat.stream = false, ""
+            if not done then
+                local why = failed or (code == 127 and "Claude Code is not installed" or "Claude did not answer")
+                bmochat.add(bm.chat, "system", why, bm_now())
+                text.bm_line = "I couldn't reach my brain. " .. why
+            end
+            bm_save(true); bm_publish()
+            if bm_show then bm_show() end
+        end)
+        bm.asking = mine
+    end
+    bm_chat_ask = bm_chat
+    on("bmo_chat", function()
+        local q = text.bm_q
+        text.bm_q = ""
+        bm_chat(q)
+    end)
+    on("bmo_quick", function(v)
+        local s = ctx.settings()
+        local c = s.companion or {}
+        local n = math.floor(tonumber(v) or 0)
+        if n == 1 then c.eyes = c.eyes == false
+        elseif n == 2 then c.music = c.music == false
+        elseif n == 3 then
+            local order, at = { "Off", "Tease", "Flirty", "Unfiltered" }, 1
+            for i, x in ipairs(order) do if x == c.cheek then at = i end end
+            c.cheek = order[at % #order + 1]
+        elseif n == 4 then
+            local order, at = { "Off", "Look", "Balanced", "Trusted" }, 2
+            for i, x in ipairs(order) do if x == c.hands then at = i end end
+            c.hands = order[at % #order + 1]
+        end
+        s.companion = c
+        ctx.save()
+        bm_publish()
+        if bm_show then bm_show() end
+    end)
+    every(2000, function()
+        local c = ctx.settings().companion or {}
+        bmostate.tick(bm.st, bm_now(), { hour = tonumber(os.date("%H")) or 12, talk = c.talk,
+                                         music = pst.media.playing == true }, math.random(), math.random())
+        bm_save()
+        bm_publish()
+        if placed.bmo or (fact.pill_on and fact.pill_face == 1) then
+            if bm_show then bm_show() end
+        end
+    end)
+
     measure()
     relayout()
     -- a settings change arrives as relayout(): the Pill reads its face, hiding and order again first
@@ -1453,13 +1806,11 @@ return function(ctx)
         end,
         osd = function() return pst.osd and pst.osd.kind or "vol" end,
         bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,
-        react = function(face, ms) pillface.react(face_st, face, pill_ms, ms); face_show() end,
-        say = function(line) pillface.say(face_st, line, pill_ms, talk()); face_show() end,
-        poke = function() pillface.poke(face_st, pill_ms, math.random(), talk()); face_show() end,
+        react = function(face, ms) bm_apply("react", { face = face, ms = ms }); face_show() end,
+        say = function(line) bm_apply("say", { text = line }); face_show() end,
+        poke = function() bm_apply("poke", { r = math.random() }); face_show() end,
         touch = function()
-            if pillface.touch(face_st, pill_ms) then
-                pillface.react(face_st, "surprised", pill_ms, 900); pillface.say(face_st, "oh! hi", pill_ms, talk())
-            end
+            if bm.st.asleep then bm_apply("wake", {}) else bm_apply("pet", {}) end
             face_show()
         end,
     }

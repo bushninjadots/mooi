@@ -49,18 +49,18 @@ library Pill {
 
     // BMO's face on his own small screen (D169), 48 × 22 at (fx, fy): bmo/brain's numbers at 0.42 of
     // the desktop BMO's face, eyes pulled toward the pointer (pb_lx, pb_ly), the blink (pb_open).
-    component BmoFace(fx: number, fy: number, framed: bool = true) {
+    component BmoFace(fx: number, fy: number, framed: bool = true, s: number = 1, ex: number = pb_lx, ey: number = pb_ly) {
         // D170: the desktop BMO's own face (bmo/bmo.plm's screen) at 50 × 34: drawn in its 96 × 66 units and
         // scaled, so every expression is the same drawing — eyes with their shine, ^ when happy-shut, brows,
         // a mouth of two curves that opens into a D or an O, the tongue, the blush. Singing, his mouth opens
-        // on the bass and his head bobs.
-        size: 50, 34
+        // on the bass and his head bobs. `s` scales it for the bar module (D209).
+        size: 50 * s, 34 * s
         let ink = #183d42
         let glass = #b8f5df
         let bass = clamp((lv0 + lv1 + lv2) / 3, 0, 1)
         let mo = if(pb_sing, 0.15 + 0.85 * bass, pbm_o)
-        let lx = pb_lx
-        let ly = pb_ly
+        let lx = ex
+        let ly = ey
         let shut = min(1, pb_lidf + 1 - pb_open)
         let eh = pbe_h
         let ew = pbe_w
@@ -73,7 +73,7 @@ library Pill {
         group {
             move: fx, fy - if(pb_sing, bass * 1.5, 0)
             pivot: 0, 0
-            scale: 50 / 96
+            scale: (50 / 96) * s
             // D196: framed, his own screen; unframed, the face alone (drawn on the capsule's glass, BmoScreen)
             box { from: 0, 0; size: 96, 66; corner: 9; color: ink; show: framed }
             box { from: 2, 2; size: 92, 62; corner: 7; color: glass; show: framed }

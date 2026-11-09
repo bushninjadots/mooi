@@ -228,6 +228,11 @@ local rows = {
     { title = "Battery", desc = "Hungry when it runs low, glad on the charger", tab = 11, page = "BMO", y = 1128 },
     { title = "Focus timer", desc = "Focused while a block runs, a cheer when it ends", tab = 11, page = "BMO", y = 1188 },
     { title = "Time of day", desc = "Good morning once a day, a yawn late at night", tab = 11, page = "BMO", y = 1248 },
+    { title = "Follow the pointer", desc = "His eyes track you across the bar", tab = 11, page = "BMO", y = 1374 },
+    { title = "Cheek", desc = "How far his tone goes: teasing, flirty, or unfiltered. Never explicit", tab = 11, page = "BMO", y = 1434 },
+    { title = "Hands", desc = "What he may do without asking: look, balanced, or trusted. Changes still ask", tab = 11, page = "BMO", y = 1494 },
+    { title = "Herdr agents", desc = "A face when a coding agent needs you", tab = 11, page = "BMO", y = 1554 },
+    { title = "What you are reading", desc = "A curious look when the browser's title changes", tab = 11, page = "BMO", y = 1614 },
     { title = "Battery saver", desc = "Glow, aberration, the frame's music and the visualizer off", tab = 13, page = "Power", y = 216 },
     { title = "Profile", desc = "power-profiles-daemon's: quieter and cooler, or faster", tab = 13, page = "Power", y = 370 },
     { title = "Lock after", desc = "Minutes without typing or pointing before mooi's lock screen takes the session", tab = 14, page = "Lock screen", y = 156 },
@@ -297,6 +302,11 @@ local rows = {
     { title = "Put them below", desc = "Mark every widget under the wallpaper, so it only shows inside the opening", tab = 21, page = "The Subsurface", y = 1860 },
     { title = "BMO lives below", desc = "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", tab = 21, page = "The Subsurface", y = 1986 },
     { title = "Ask before log out, restart and shut down", desc = "Those three need a second press within three seconds", tab = 21, page = "The Subsurface", y = 2046 },
+    { title = "Show idle agents", desc = "Idle agents stay in the island instead of being hidden", tab = 22, page = "Herdr", y = 156 },
+    { title = "Show finished agents", desc = "Agents that finished stay in the island instead of being hidden", tab = 22, page = "Herdr", y = 216 },
+    { title = "What it is doing", desc = "The window title plus the last lines of output, cached for 8 seconds", tab = 22, page = "Herdr", y = 342 },
+    { title = "Lines", desc = "How many lines the brief reads", tab = 22, page = "Herdr", y = 402 },
+    { title = "Check every", desc = "Seconds between snapshots while the island or module is visible", tab = 22, page = "Herdr", y = 462 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -310,7 +320,7 @@ rows.resets = {
     [8] = {  },
     [9] = { "walls.view", "walls.source", "walls.veil", "walls.slant", "walls.cards", "walls.dots", "walls.swell", "desk.transition", "walls.speed", "walls.auto", "walls.auto_every", "walls.auto_from", "walls.auto_fullscreen", "wallhaven.categories", "wallhaven.purity", "wallhaven.sorting", "wallhaven.range", "wallhaven.atleast", "wallhaven.ratio", "desk.on", "desk.parallax", "desk.strength" },
     [10] = { "widgets.on", "widgets.depth", "widgets.mood" },
-    [11] = { "companion.bmo", "companion.size", "companion.place", "companion.above", "companion.variant", "companion.wander", "companion.motion", "companion.talk", "companion.throw", "companion.locked", "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces", "companion.react.battery", "companion.react.focus", "companion.react.time" },
+    [11] = { "companion.bmo", "companion.size", "companion.place", "companion.above", "companion.variant", "companion.wander", "companion.motion", "companion.talk", "companion.throw", "companion.locked", "companion.music", "companion.clock", "companion.react.notes", "companion.react.spaces", "companion.react.battery", "companion.react.focus", "companion.react.time", "companion.eyes", "companion.cheek", "companion.hands", "companion.react.herdr", "companion.react.browser" },
     [12] = {  },
     [13] = { "motion.saver", "power.profile" },
     [14] = { "lock.idle", "lock.blur", "lock.dim", "lock.banner", "lock.avatar" },
@@ -321,6 +331,7 @@ rows.resets = {
     [19] = { "nexus.edge", "nexus.rows", "nexus.profile", "nexus.notches", "notch.on", "claude.model", "claude.free_fallback" },
     [20] = { "loom.mode", "loom.fold", "loom.accordions", "loom.cubes", "loom.edge", "loom.loom", "loom.threads" },
     [21] = { "surface.on", "surface.delay", "surface.effect", "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius", "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels", "surface.glow", "surface.ping", "surface.layout", "surface.components", "surface.bmo_side", "surface.overview", "surface.widget_style", "surface.bmo_below", "surface.power_confirm" },
+    [22] = { "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines", "herdr.poll" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"

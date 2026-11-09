@@ -90,6 +90,9 @@ M.MODULES = {
     github = { width = 32 },
     -- D207: the Sigil hosted in an island — the living line at the bar's height
     sigil = { width = 180 },
+    -- D209/D210: BMO's face, and Herdr's agents. Both start on the shelf.
+    bmo = { width = 64 },
+    herdr = { width = 56, needs = "herdr" },
 }
 
 -- In the order the scene declares their facts, and the bar menu lists them.
@@ -99,6 +102,8 @@ M.ORDER = {
     "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
     "notes", "wallpaper", "nexus", "updates", "claude", "github",
     "sigil",   -- D207
+    "bmo",     -- D209
+    "herdr",   -- D210
 }
 
 M.DEFAULT = {

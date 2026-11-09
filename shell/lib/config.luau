@@ -535,6 +535,21 @@ M.SCHEMA = {
     { path = "companion.react.battery", kind = "boolean", default = true },
     { path = "companion.react.focus", kind = "boolean", default = true },
     { path = "companion.react.time", kind = "boolean", default = true },
+    -- D209: how the shared BMO sees and behaves. `eyes` follows the pointer; `cheek` is a bounded
+    -- tone (Off/Tease/Flirty/Unfiltered), never explicit; `hands` gates what he may do unasked.
+    { path = "companion.eyes", kind = "boolean", default = true },
+    { path = "companion.cheek", kind = "enum", values = { "Off", "Tease", "Flirty", "Unfiltered" }, default = "Tease" },
+    { path = "companion.hands", kind = "enum", values = { "Off", "Look", "Balanced", "Trusted" }, default = "Balanced" },
+    { path = "companion.react.herdr", kind = "boolean", default = true },
+    { path = "companion.react.browser", kind = "boolean", default = true },
+    -- D210: Herdr's agents in the bar. `poll` is seconds between snapshots (2–10).
+    { path = "herdr.path", kind = "string", default = "herdr" },
+    { path = "herdr.poll", kind = "integer", default = 3, min = 2, max = 10 },
+    { path = "herdr.show_idle", kind = "boolean", default = false },
+    { path = "herdr.show_done", kind = "boolean", default = false },
+    { path = "herdr.brief", kind = "boolean", default = true },
+    { path = "herdr.brief_lines", kind = "integer", default = 4, min = 2, max = 8 },
+    { path = "herdr.focus_on_open", kind = "boolean", default = false },
     { path = "look.corners", kind = "enum", values = { "chamfer", "bevel", "round", "square" }, default = "chamfer" },
     { path = "look.corner_size", kind = "integer", default = 12, min = 0, max = 24 },
     { path = "theme.light_at", kind = "integer", default = 7, min = 0, max = 23 },

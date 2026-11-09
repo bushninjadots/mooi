@@ -23,7 +23,7 @@ import "ui/edgetab.plm" as edge
 //    shown is what they report back, never what was asked for.
 scene Mooi {
     permissions {
-        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol", "notify-send"
+        run: "hyprctl", "playerctl", "matugen", "powerprofilesctl", "ps", "kill", "readlink", "git", "xdg-open", "kitty", "pleamar", "cat", "sensors", "curl", "cava", "systemd-inhibit", "wf-recorder", "slurp", "grim", "wl-copy", "wl-paste", "cliphist", "mooi", "wlogout", "date", "mkdir", "cp", "mv", "rm", "ffmpeg", "ffprobe", "checkupdates", "paru", "yay", "flatpak", "df", "find", "btop", "nvtop", "hyprsunset", "upower", "pavucontrol", "notify-send", "herdr", "rg", "fd", "claude", "env"
         services: "workspaces", "workspaces.focus", "window", "apps", "clock", "clock.seconds", "files", "files.write", "env", "audio", "audio.*", "brightness", "brightness.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "media", "media.*", "apps.launch", "thumbnails", "thumbnails.want", "tray", "tray.*", "notifications", "notifications.*"
     }
 
@@ -54,7 +54,7 @@ scene Mooi {
     text pw_state = ""
     text pw_time = ""
     text pw_rate = ""
-    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music | board = none
+    fact open: none | window | system | command | shutter | overview | stats | calendar | weather | sound | display | power | music | board | bmo | herdr = none
     fact isl_cx = 0              // the middle of the module that opened the island showing (D97)
     // The spine (D100) is gone (D119): islands open under the bar only. `isl_shelf` stays false — the
     // island geometry still reads it, as the shelf it no longer has.
@@ -547,6 +547,19 @@ scene Mooi {
     fact m_sigil = true
     fact fi_sigil = 0
     fact g_sigil = false
+    // D209/D210: BMO's face and Herdr's agents, both on the shelf by default
+    fact x_bmo = 0
+    fact p_bmo = false
+    fact w_bmo = 0
+    fact m_bmo = true
+    fact fi_bmo = 0
+    fact g_bmo = false
+    fact x_herdr = 0
+    fact p_herdr = false
+    fact w_herdr = 0
+    fact m_herdr = true
+    fact fi_herdr = 0
+    fact g_herdr = false
     fact gh_unread = 0           // what waits on GitHub (the notch reads it)
     fact upd_n = 0               // system updates waiting (bar.luau, lib/updates)
     fact upd_busy = false        // looking
@@ -1419,6 +1432,49 @@ scene Mooi {
     fact pb_say_n = 0
     fact pb_mark = 0
     fact pb_talk = false         // D196: he has a line showing
+    // D209: the same one BMO, for the bar module and the island (the logic owns these)
+    fact bm_charge = 0.6
+    fact bm_bond = 0.2
+    fact bm_mischief = 0.3
+    fact bm_grump = 0.05
+    fact bm_asleep = false
+    fact bm_mood = 0
+    fact bm_hold = false
+    event bmo_press ->          // to the logic: the face is pressed (a 450 ms hold charges)
+    event bmo_release ->        //   and released
+    event bmo_poke ->           //   a poke, a summon, a wheel step
+    event bmo_summon ->
+    event bmo_charge ->
+    event herdr_focus_blocked -> // to the logic: focus and raise the first blocked agent
+    event herdr_attach_blocked ->
+    event herdr_focus ->         // to the logic: a pane id from the island
+    event herdr_attach ->
+    event herdr_refresh ->
+    // D210: Herdr's counts, server state and the first blocked brief
+    fact hd_up = false
+    fact hd_warn = 0
+    fact hd_blocked = 0
+    fact hd_working = 0
+    fact hd_idle = 0
+    fact hd_total = 0
+    fact hd_version = 0
+    fact hd_pulse = 0
+    text hd_brief = ""
+    text hd_rows = ""
+    text hd_head = ""
+    text bm_line = ""
+    text bm_mood_t = "happy"
+    text bm_q = ""
+    fact companion_eyes = true
+    fact companion_music = true
+    fact companion_cheek = 1
+    fact companion_hands = 2
+    event bmo_pet ->             // to the logic: island care and chat
+    event bmo_play ->
+    event bmo_nap ->
+    event bmo_wake ->
+    event bmo_quick ->
+    event bmo_chat ->
     prop pb_hop = 0 ~m.morph
     follow pb_hop = pb_bump
     prop pb_type = 0 ~m.isl_out
@@ -1520,6 +1576,8 @@ scene Mooi {
     prop rv.power = 0 ~m.enter
     prop rv.music = 0 ~m.enter
     prop rv.board = 0 ~m.enter
+    prop rv.bmo = 0 ~m.enter
+    prop rv.herdr = 0 ~m.enter
     // the music island's record (D142): it turns while the song plays and the island is open
     prop mu_spd = 0 ~600ms
     follow mu_spd = if(mu_playing and (open == music or (open == board and pk_room < 0.5 and pk_music)), 120, 0)
@@ -1575,6 +1633,14 @@ scene Mooi {
     layer life.weather {
         shown while open == weather { rv.weather: 1 ~m.isl after 30ms }
         gone                        { rv.weather: 0 ~m.exit }
+    }
+    layer life.bmo {
+        shown while open == bmo { rv.bmo: 1 ~m.isl after 30ms }
+        gone                    { rv.bmo: 0 ~m.exit }
+    }
+    layer life.herdr {
+        shown while open == herdr { rv.herdr: 1 ~m.isl after 30ms }
+        gone                      { rv.herdr: 0 ~m.exit }
     }
     layer life.sound {
         shown while open == sound { rv.sound: 1 ~m.isl after 30ms }
@@ -1893,6 +1959,21 @@ scene Mooi {
     prop pv_sigil = 0 ~m.enter
     follow pv_sigil = p_sigil
     on change p_sigil while p_sigil { xs_sigil: x_sigil ~1ms; ws_sigil: w_sigil ~1ms }
+    // D209/D210
+    prop xs_bmo = 0 ~fl.flow
+    follow xs_bmo = x_bmo
+    prop ws_bmo = 0 ~fl.flow
+    follow ws_bmo = w_bmo
+    prop pv_bmo = 0 ~m.enter
+    follow pv_bmo = p_bmo
+    on change p_bmo while p_bmo { xs_bmo: x_bmo ~1ms; ws_bmo: w_bmo ~1ms }
+    prop xs_herdr = 0 ~fl.flow
+    follow xs_herdr = x_herdr
+    prop ws_herdr = 0 ~fl.flow
+    follow ws_herdr = w_herdr
+    prop pv_herdr = 0 ~m.enter
+    follow pv_herdr = p_herdr
+    on change p_herdr while p_herdr { xs_herdr: x_herdr ~1ms; ws_herdr: w_herdr ~1ms }
     prop upd_pulse = 0
     spin upd_pulse by if(upd_busy, 1400, 0)
     let vv = round(audio.volume * 100)
@@ -3325,6 +3406,60 @@ scene Mooi {
         on press zgh { emit open_github; side = none; mark_open = false; open = none }
     }
 
+    // ── BMO (D209) ────────────────────────────────────────────
+    // His own screen in the bar: the Pill's face at the module's height, a charge line under it, eyes
+    // toward the pointer. A tap opens his island; a 450 ms hold charges (the logic decides).
+    group {
+        show: p_bmo
+        move: xs_bmo, 0
+        opacity: pv_bmo
+        let bm_lx = clamp((cursor.x - xs_bmo - ws_bmo / 2) / 90, -1, 1) * 9
+        let bm_ly = clamp((cursor.y - fl.top - fl.mod_h / 2) / 130, -1, 1) * 4
+        zone box zbmo { from: 0, fl.top; size: ws_bmo, fl.mod_h; cursor: pointer; role: toggle
+                        checked: open == bmo; label: "BMO — tap for him, hold to charge" }
+        Pill(ws_bmo, zbmo.hover)
+        BmoFace((ws_bmo - 33) / 2, fl.top + max(0, (fl.mod_h - 22.5) / 2), true, 0.66, bm_lx, bm_ly)
+        // charge under him: a quiet line that fills, and overcharge glows
+        box { from: 6, fl.top + fl.mod_h - 3.5; size: ws_bmo - 12, 2; corner: 1; color: fl.well }
+        box { from: 6, fl.top + fl.mod_h - 3.5; size: max(0, (ws_bmo - 12) * bm_charge), 2; corner: 1
+              color: if(bm_charge > 0.99, fl.flare, fl.phos) }
+        // asleep: a z (the face's own z is there too; this one is legible at this size)
+        text "z" { at: ws_bmo - 11, fl.top + 7; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.muted; show: bm_asleep }
+        on press zbmo { emit bmo_press }
+        on release zbmo { emit bmo_release }
+        on release zbmo while bm_hold == false { isl_shelf = false; isl_cx = xs_bmo + ws_bmo / 2; open = bmo; side = none; mark_open = false }
+        on release zbmo while bm_hold == false and open == bmo { open = none }
+        on press right zbmo { emit bmo_summon }
+        on press middle zbmo { emit bmo_poke }
+        on scroll zbmo while wheel != 0 { emit bmo_charge(if(wheel > 0, 0.05, -0.05)) }
+    }
+
+    // ── Herdr (D210) ──────────────────────────────────────────
+    // Quiet until an agent is blocked; the logic sets hd_* (lib/herdrfeed). Its island is declared below.
+    group {
+        show: p_herdr
+        move: xs_herdr, 0
+        opacity: pv_herdr
+        zone box zhd { from: 0, fl.top; size: ws_herdr, fl.mod_h; cursor: pointer; role: toggle
+                       checked: open == herdr; label: "Herdr — coding agents" }
+        Pill(ws_herdr, zhd.hover)
+        // a small terminal mark, and the count when any wait
+        box { from: ws_herdr / 2 - 9, fl.cy - 6; size: 18, 12; corner: 2
+              stroke: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        line { from: ws_herdr / 2 - 5, fl.cy - 2; to: ws_herdr / 2 - 1, fl.cy + 1; width: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        line { from: ws_herdr / 2 - 1, fl.cy + 1; to: ws_herdr / 2 - 5, fl.cy + 4; width: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        line { from: ws_herdr / 2 + 1, fl.cy + 4; to: ws_herdr / 2 + 6, fl.cy + 4; width: 1.2; color: mix(fl.trace_lit, fl.phos, zhd.hover) }
+        group {
+            show: hd_blocked > 0
+            glow: 5, (70%) * st_glow, fl.ember
+            box { at: ws_herdr - 12, fl.top + 2; size: 10, 8; corner: 2; color: fl.ember_fill }
+            text "{hd_blocked}" { at: ws_herdr - 7, fl.top + 6; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ink }
+        }
+        on press zhd { open = if(open == herdr, none, herdr); isl_shelf = false; isl_cx = xs_herdr + ws_herdr / 2; side = none; mark_open = false }
+        on press middle zhd { emit herdr_focus_blocked }
+        on press right zhd { emit herdr_attach_blocked }
+    }
+
     // ── Control Nexus (D65) ──────────────────────────────────
     // The system command centre's door: the Arch mark. A press opens the Nexus program (a
     // full-screen overlay of its own); the same press again, Escape there or an outside press
@@ -3920,18 +4055,42 @@ scene Mooi {
     on drag ez_sigil while ed_press == 32 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 32; ed_sel = -1 }
     on release ez_sigil while ed_drag == 32 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
     on release ez_sigil while ed_drag < 0 and ed_press == 32 { ed_sel = if(ed_sel == 32, -1, 32); ed_press = -1 }
+    group {
+        show: bar_edit and p_bmo
+        zone box ez_bmo { from: xs_bmo, fl.top; size: ws_bmo, fl.mod_h; cursor: grab; role: button; label: "Move BMO" }
+        box { from: xs_bmo + 1, fl.top + 1; size: ws_bmo - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 33 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 33, 0.6, if(ed_sel == 33, 0.4, 0.2 * ez_bmo.hover)) }
+        box { from: xs_bmo + 1, fl.top + 1; size: ws_bmo - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 33, 2, 1.2)
+              color: if(ed_sel == 33 or ed_drag == 33, fl.flare, mix(fl.trace_lit, fl.flare, ez_bmo.hover)); opacity: if(ed_drag >= 0 and ed_drag != 33, 0.45, 0.85) }
+    }
+    on press ez_bmo while bar_edit { ed_press = 33; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_bmo while ed_press == 33 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 33; ed_sel = -1 }
+    on release ez_bmo while ed_drag == 33 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_bmo while ed_drag < 0 and ed_press == 33 { ed_sel = if(ed_sel == 33, -1, 33); ed_press = -1 }
+    group {
+        show: bar_edit and p_herdr
+        zone box ez_herdr { from: xs_herdr, fl.top; size: ws_herdr, fl.mod_h; cursor: grab; role: button; label: "Move Herdr" }
+        box { from: xs_herdr + 1, fl.top + 1; size: ws_herdr - 2, fl.mod_h - 2; corner: 5; color: if(ed_drag == 34 and ed_merge, fl.ember_fill, fl.well)
+              opacity: if(ed_drag == 34, 0.6, if(ed_sel == 34, 0.4, 0.2 * ez_herdr.hover)) }
+        box { from: xs_herdr + 1, fl.top + 1; size: ws_herdr - 2, fl.mod_h - 2; corner: 5; stroke: if(ed_sel == 34, 2, 1.2)
+              color: if(ed_sel == 34 or ed_drag == 34, fl.flare, mix(fl.trace_lit, fl.flare, ez_herdr.hover)); opacity: if(ed_drag >= 0 and ed_drag != 34, 0.45, 0.85) }
+    }
+    on press ez_herdr while bar_edit { ed_press = 34; ed_px = pointer.x; ed_x = pointer.x; ed_y = pointer.y }
+    on drag ez_herdr while ed_press == 34 and ed_drag < 0 and abs(pointer.x - ed_px) > 5 { ed_drag = 34; ed_sel = -1 }
+    on release ez_herdr while ed_drag == 34 { emit edit_drop(ed_drag * 100000 + round(clamp(ed_x, 0, 49999)) + if(ed_y > st_res + 4, 50000, 0)); ed_drag = -1; ed_press = -1 }
+    on release ez_herdr while ed_drag < 0 and ed_press == 34 { ed_sel = if(ed_sel == 34, -1, 34); ed_press = -1 }
     // The ghost's word: what letting go now will do.
-    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub", "Sigil") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
+    text pick(max(ed_drag, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub", "Sigil", "BMO", "Herdr") { at: ed_x, ed_y - 4; anchor: center; size: 12; weight: 700; family: "Exo 2"; color: fl.ink; show: ed_drag >= 0 }
     text pick(if(ed_y > st_res + 4, 2, if(ed_merge, 1, 0)), "MOVE HERE", "JOIN THIS GROUP", "HIDE") { at: ed_x, ed_y + 8; anchor: center; size: 10; family: "Share Tech Mono"; color: fl.ink; show: ed_drag >= 0 }
     // The inspector, under the chosen module: what it is, its outline, and what can be done with it.
-    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates, xs_claude, xs_github, xs_sigil) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates, ws_claude, ws_github, ws_sigil) / 2 - 170, 12, screen.width - 352)
-    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates, fi_claude, fi_github, fi_sigil)
-    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates, g_claude, g_github, g_sigil)
+    let ed_ix = clamp(pick(max(ed_sel, 0), xs_workspaces, xs_window, xs_media, xs_resources, xs_bandwidth, xs_keyboard, xs_weather, xs_tray, xs_notifications, xs_mic, xs_volume, xs_brightness, xs_battery, xs_network, xs_bluetooth, xs_clock, xs_caffeine, xs_recorder, xs_screenshot, xs_clipboard, xs_power, xs_actions, xs_overview, xs_core, xs_focus, xs_settings, xs_notes, xs_wallpaper, xs_nexus, xs_updates, xs_claude, xs_github, xs_sigil, xs_bmo, xs_herdr) + pick(max(ed_sel, 0), ws_workspaces, ws_window, ws_media, ws_resources, ws_bandwidth, ws_keyboard, ws_weather, ws_tray, ws_notifications, ws_mic, ws_volume, ws_brightness, ws_battery, ws_network, ws_bluetooth, ws_clock, ws_caffeine, ws_recorder, ws_screenshot, ws_clipboard, ws_power, ws_actions, ws_overview, ws_core, ws_focus, ws_settings, ws_notes, ws_wallpaper, ws_nexus, ws_updates, ws_claude, ws_github, ws_sigil, ws_bmo, ws_herdr) / 2 - 170, 12, screen.width - 352)
+    let ed_fi = pick(max(ed_sel, 0), fi_workspaces, fi_window, fi_media, fi_resources, fi_bandwidth, fi_keyboard, fi_weather, fi_tray, fi_notifications, fi_mic, fi_volume, fi_brightness, fi_battery, fi_network, fi_bluetooth, fi_clock, fi_caffeine, fi_recorder, fi_screenshot, fi_clipboard, fi_power, fi_actions, fi_overview, fi_core, fi_focus, fi_settings, fi_notes, fi_wallpaper, fi_nexus, fi_updates, fi_claude, fi_github, fi_sigil, fi_bmo, fi_herdr)
+    let ed_g = pick(max(ed_sel, 0), g_workspaces, g_window, g_media, g_resources, g_bandwidth, g_keyboard, g_weather, g_tray, g_notifications, g_mic, g_volume, g_brightness, g_battery, g_network, g_bluetooth, g_clock, g_caffeine, g_recorder, g_screenshot, g_clipboard, g_power, g_actions, g_overview, g_core, g_focus, g_settings, g_notes, g_wallpaper, g_nexus, g_updates, g_claude, g_github, g_sigil, g_bmo, g_herdr)
     group {
         show: bar_edit and ed_sel >= 0 and ed_drag < 0
         move: ed_ix, st_res + 92
         FlPlate(340, 128) {
-            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub", "Sigil") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
+            text pick(max(ed_sel, 0), "Workspaces", "Window title", "Media player", "Resources", "Bandwidth", "Keyboard layout", "Weather", "Tray", "Notifications", "Microphone", "Volume", "Brightness", "Battery", "Network", "Bluetooth", "Clock", "Keep awake", "Screen recorder", "Screenshot", "Clipboard", "Session", "Window actions", "Overview", "Search", "Focus timer", "Settings", "Quick notes", "Wallpapers", "Control Nexus", "System updates", "Claude", "GitHub", "Sigil", "BMO", "Herdr") { at: 14, 18; anchor: left center; size: 14; weight: 600; family: "Exo 2"; color: fl.phos }
             text pick(ed_g, "ON ITS OWN", "IN A GROUP") { at: 326, 18; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.ember }
             text "OUTLINE" { at: 14, 46; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
             SChoice(80, 32, 64, "Default", ed_fi == 0, set_value, (200 + ed_sel) * 1000 + 0)
@@ -4566,6 +4725,103 @@ scene Mooi {
                     IsleBtn(16, 326, 100, "Refresh", if(wxi_busy, 1, 0), wxref.hover)
                     on press wxref { emit wx_refresh }
                     text "open-meteo.com" { at: 324, 338; anchor: right center; size: 10; family: "Share Tech Mono"; color: if(isl_style > 0.5, fg.secondary, fl.muted); opacity: 0.7 }
+                }
+            }
+        }
+
+        // ── bmo_island (D209): the pet's landing — care, stats, quick settings and chat ──
+        group {
+            move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - 440 - 20), st_res + 6)
+            let bi_x = if(isl_shelf, screen.width - 56 - 360, clamp(isl_cx - 180, 8, screen.width - 368))
+            group {
+                show: rv.bmo > 0.03
+                move: bi_x, 0
+                IslandFrame(rv.bmo, 360, 430, tx: if(isl_shelf, -1, isl_cx - bi_x), ox: bi_x, oy: st_res + 6, want: open == bmo, busy: open != none) {
+                    zone box keep_bmo { from: 0, 0; size: 360, 430; role: region; agent: hidden }
+                    IsleHead(360, "BMO", "{round(bm_charge * 100), 0}% · {bm_mood_t}")
+                    BmoFace(20, 44, true, 1.25, clamp((cursor.x - bi_x - 80) / 100, -1, 1) * 9,
+                            clamp((cursor.y - st_res - 100) / 120, -1, 1) * 4)
+                    text "CHARGE {round(bm_charge * 100), 0}%" { at: 100, 54; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                    text "BOND {round(bm_bond * 100), 0}% · MISCHIEF {round(bm_mischief * 100), 0}% · GRUMP {round(bm_grump * 100), 0}%" {
+                        at: 100, 72; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 244; lines: 1 }
+                    text pick(bm_asleep, "zzz · he is dozing", "tap him, feed him, or just say hello") {
+                        at: 100, 90; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: 240; lines: 1 }
+                    IsleGauge(20, 120, 320, "charge", "{round(bm_charge * 100), 0}%", bm_charge, bm_charge < 0.15)
+                    IsleGauge(20, 150, 320, "bond", "{round(bm_bond * 100), 0}%", bm_bond, false)
+                    IsleGauge(20, 180, 320, "grump", "{round(bm_grump * 100), 0}%", bm_grump, bm_grump > 0.6)
+                    group {
+                        zone box bpet { from: 20, 218; size: 60, 26; cursor: pointer; role: button; label: "Pet BMO" }
+                        zone box bplay { from: 88, 218; size: 60, 26; cursor: pointer; role: button; label: "Play with BMO" }
+                        zone box bnap { from: 156, 218; size: 60, 26; cursor: pointer; role: button; label: "Put BMO to bed" }
+                        zone box bwake { from: 224, 218; size: 60, 26; cursor: pointer; role: button; label: "Wake BMO" }
+                        zone box bcharge { from: 292, 218; size: 48, 26; cursor: pointer; role: button; label: "Charge BMO" }
+                        IsleBtn(20, 218, 60, "Pet", 0, bpet.hover)
+                        IsleBtn(88, 218, 60, "Play", 0, bplay.hover)
+                        IsleBtn(156, 218, 60, "Nap", 0, bnap.hover)
+                        IsleBtn(224, 218, 60, "Wake", 0, bwake.hover)
+                        IsleBtn(292, 218, 48, "+", 0, bcharge.hover)
+                    }
+                    on press bpet { emit bmo_pet }
+                    on press bplay { emit bmo_play }
+                    on press bnap { emit bmo_nap }
+                    on press bwake { emit bmo_wake }
+                    on press bcharge { emit bmo_charge(0.1) }
+                    IsleRule(360, 256)
+                    text "QUICK" { at: 20, 272; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                    let q_eye = if(companion_eyes, 1, 0)
+                    let q_music = if(companion_music, 1, 0)
+                    zone box qeyes { from: 20, 284; size: 62, 22; cursor: pointer; role: toggle; checked: q_eye > 0.5; label: "Eyes follow the pointer" }
+                    zone box qmusic { from: 90, 284; size: 62, 22; cursor: pointer; role: toggle; checked: q_music > 0.5; label: "Dance to music" }
+                    zone box qcheek { from: 160, 284; size: 78, 22; cursor: pointer; role: button; label: "Cheek level" }
+                    zone box qhands { from: 246, 284; size: 94, 22; cursor: pointer; role: button; label: "Hands level" }
+                    IsleBtn(20, 284, 62, "Eyes", q_eye, qeyes.hover, 22)
+                    IsleBtn(90, 284, 62, "Music", q_music, qmusic.hover, 22)
+                    IsleBtn(160, 284, 78, "Cheek", 0, qcheek.hover, 22)
+                    IsleBtn(246, 284, 94, "Hands", 0, qhands.hover, 22)
+                    text pick(companion_cheek, "OFF", "TEASE", "FLIRTY", "UNFILTERED") { at: 199, 312; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                    text pick(companion_hands, "OFF", "LOOK", "BALANCED", "TRUSTED") { at: 293, 312; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.ember }
+                    on press qeyes { emit bmo_quick(1) }
+                    on press qmusic { emit bmo_quick(2) }
+                    on press qcheek { emit bmo_quick(3) }
+                    on press qhands { emit bmo_quick(4) }
+                    IsleRule(360, 316)
+                    text bm_line { at: 20, 334; anchor: left center; size: 12; family: "Exo 2"; color: fl.phos; width: 320; lines: 2 }
+                    box { from: 20, 360; size: 320, 28; corner: 5; color: fl.well }
+                    box { from: 20, 360; size: 320, 28; corner: 5; stroke: 1; color: fl.trace }
+                    zone box bchatf { from: 20, 360; size: 320, 28; cursor: text; role: region; label: "Talk to BMO" }
+                    input bm_q { at: 28, 367; width: 300; size: 11; family: "Exo 2"; color: fl.phos; placeholder: "say something to BMO…"; label: "Talk to BMO" }
+                    on press bchatf { focus bm_q }
+                    on submit bm_q { emit bmo_chat }
+                    text "ENTER TO SEND" { at: 332, 396; anchor: right center; size: 9; family: "Share Tech Mono"; color: fl.muted; opacity: 0.7 }
+                }
+            }
+        }
+
+        // ── herdr_island (D210): what every agent is doing, and which one waits ──
+        group {
+            move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - 370 - 20), st_res + 6)
+            let hi_x = if(isl_shelf, screen.width - 56 - 420, clamp(isl_cx - 210, 8, screen.width - 428))
+            group {
+                show: rv.herdr > 0.03
+                move: hi_x, 0
+                IslandFrame(rv.herdr, 420, 360, tx: if(isl_shelf, -1, isl_cx - hi_x), ox: hi_x, oy: st_res + 6, want: open == herdr, busy: open != none) {
+                    zone box keep_herdr { from: 0, 0; size: 420, 360; role: region; agent: hidden }
+                    IsleHead(420, "Herdr", hd_head)
+                    text "!" { at: 22, 46; anchor: left center; size: 20; weight: 800; family: "Share Tech Mono"; color: fl.ember; show: hd_blocked > 0 }
+                    text "NEEDS ATTENTION" { at: 40, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: hd_blocked > 0 }
+                    text "NO AGENT NEEDS YOU" { at: 20, 46; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.muted; show: hd_blocked < 1 }
+                    text hd_rows { at: 20, 70; anchor: left top; size: 11; family: "JetBrains Mono"; color: fl.phos; width: 380; lines: 9 }
+                    text hd_brief { at: 20, 244; anchor: left top; size: 11; family: "Exo 2"; color: fl.engrave; width: 380; lines: 3 }
+                    IsleRule(420, 298)
+                    zone box hdfocus { from: 20, 312; size: 120, 26; cursor: pointer; role: button; label: "Focus the first blocked agent" }
+                    zone box hdattach { from: 148, 312; size: 120, 26; cursor: pointer; role: button; label: "Attach to the first blocked agent" }
+                    zone box hdrefresh { from: 276, 312; size: 124, 26; cursor: pointer; role: button; label: "Check again" }
+                    IsleBtn(20, 312, 120, "Focus", 0, hdfocus.hover)
+                    IsleBtn(148, 312, 120, "Attach", 0, hdattach.hover)
+                    IsleBtn(276, 312, 124, "Refresh", 0, hdrefresh.hover)
+                    on press hdfocus { emit herdr_focus_blocked }
+                    on press hdattach { emit herdr_attach_blocked }
+                    on press hdrefresh { emit herdr_refresh }
                 }
             }
         }

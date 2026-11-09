@@ -164,6 +164,11 @@ SETTERS = [
     "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels",
     "surface.glow", "surface.ping", "surface.layout", "surface.components", "surface.bmo_side",
     "surface.overview", "surface.power_confirm", "surface.widget_style",
+    # D209: BMO's eyes, tone, hands and what he notices. Appended.
+    "companion.eyes", "companion.cheek", "companion.hands", "companion.react.herdr", "companion.react.browser",
+    # D210: Herdr. Appended.
+    "herdr.path", "herdr.poll", "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines",
+    "herdr.focus_on_open",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -175,7 +180,7 @@ MODULES = ["workspaces", "window", "media", "resources", "bandwidth", "keyboard"
            "notifications", "mic", "volume", "brightness", "battery", "network", "bluetooth", "clock",
            "caffeine", "recorder", "screenshot", "clipboard", "power", "actions", "overview", "core", "focus", "settings",
            "notes", "wallpaper", "nexus", "updates", "claude", "github",
-           "sigil"]   # D207: lib/barlayout.ORDER's last
+           "sigil", "bmo", "herdr"]   # D207/D209/D210: lib/barlayout.ORDER's tail
 NAMES = {"workspaces": "Workspaces", "window": "Window title", "media": "Media player", "resources": "Resources",
          "bandwidth": "Bandwidth", "keyboard": "Keyboard layout", "weather": "Weather", "tray": "Tray",
          "notifications": "Notifications", "mic": "Microphone", "volume": "Volume", "brightness": "Brightness",
@@ -183,6 +188,7 @@ NAMES = {"workspaces": "Workspaces", "window": "Window title", "media": "Media p
          "caffeine": "Keep awake", "recorder": "Screen recorder", "screenshot": "Screenshot",
          "clipboard": "Clipboard", "power": "Session", "actions": "Window actions", "overview": "Overview", "core": "Search", "focus": "Focus timer", "settings": "Settings",
          "notes": "Quick notes", "wallpaper": "Wallpapers", "nexus": "Control Nexus", "updates": "System updates", "sigil": "Sigil",
+         "bmo": "BMO", "herdr": "Herdr",
          "claude": "Claude", "github": "GitHub"}
 KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("window", "Window actions", "Float, pin, fullscreen or close the focused window"),
@@ -635,6 +641,12 @@ SECTIONS = [
         ("toggle", "Battery", "Hungry when it runs low, glad on the charger", "companion.react.battery", "sv_companion_react_battery", [], "sv_companion_bmo == 1"),
         ("toggle", "Focus timer", "Focused while a block runs, a cheer when it ends", "companion.react.focus", "sv_companion_react_focus", [], "sv_companion_bmo == 1"),
         ("toggle", "Time of day", "Good morning once a day, a yawn late at night", "companion.react.time", "sv_companion_react_time", [], "sv_companion_bmo == 1"),
+        ("card", "His bar face"),
+        ("toggle", "Follow the pointer", "His eyes track you across the bar", "companion.eyes", "sv_companion_eyes", [], "sv_companion_bmo == 1"),
+        ("choice", "Cheek", "How far his tone goes: teasing, flirty, or unfiltered. Never explicit", "companion.cheek", "sv_companion_cheek", ["Off", "Tease", "Flirty", "Unfiltered"], "sv_companion_bmo == 1"),
+        ("choice", "Hands", "What he may do without asking: look, balanced, or trusted. Changes still ask", "companion.hands", "sv_companion_hands", ["Off", "Look", "Balanced", "Trusted"], "sv_companion_bmo == 1"),
+        ("toggle", "Herdr agents", "A face when a coding agent needs you", "companion.react.herdr", "sv_companion_react_herdr", [], "sv_companion_bmo == 1"),
+        ("toggle", "What you are reading", "A curious look when the browser's title changes", "companion.react.browser", "sv_companion_react_browser", [], "sv_companion_bmo == 1"),
     ]),
     ("Sound", "Sound", "Where sound plays and where it listens, and each app's own volume", "SYSTEM", [
         ("card", "Output"),
@@ -794,6 +806,17 @@ SECTIONS = [
         ("toggle", "BMO lives below", "He sits under the wallpaper and comes out when it opens; off: he stays on the desktop", "surface.bmo_below", "sv_surface_bmo_below"),
         ("toggle", "Ask before log out, restart and shut down", "Those three need a second press within three seconds", "surface.power_confirm", "sv_surface_power_confirm"),
         ("note", "true", "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG OUT TO LEAVE A THING ON THE DESKTOP · ESC HEALS"),
+    ]),
+    # D210: Herdr, appended last so no page's place moves.
+    ("Herdr", "Herdr", "Coding agents in the bar: what each is doing, and which one is waiting on you. Needs herdr", "DESKTOP", [
+        ("card", "Agents"),
+        ("toggle", "Show idle agents", "Idle agents stay in the island instead of being hidden", "herdr.show_idle", "sv_herdr_show_idle"),
+        ("toggle", "Show finished agents", "Agents that finished stay in the island instead of being hidden", "herdr.show_done", "sv_herdr_show_done"),
+        ("card", "Briefs"),
+        ("toggle", "What it is doing", "The window title plus the last lines of output, cached for 8 seconds", "herdr.brief", "sv_herdr_brief"),
+        ("slider", "Lines", "How many lines the brief reads", "herdr.brief_lines", 2, 8, "{sv_herdr_brief_lines, 0}", "sv_herdr_brief == 1"),
+        ("slider", "Check every", "Seconds between snapshots while the island or module is visible", "herdr.poll", 2, 10, "{sv_herdr_poll, 0} s"),
+        ("note", "true", "CLICK FOCUSES AN AGENT AND RAISES ITS WINDOW · RIGHT CLICK ATTACHES IN A TERMINAL"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
