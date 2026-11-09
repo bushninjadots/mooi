@@ -6115,3 +6115,95 @@ and place design rather than a generator edit.
 shapes; 751 tests, 0 failed; 15 scenes compile. The live suite is 42 checks, 0 failed. Live: Apps shaped
 to 800×320, its twelve marks spread across four wider cells and three taller rows, saved and screenshot
 `.show-your-work/d213-reflow.png`. Ships behind `surface.on`; nothing pushed.
+
+## D214 · 2026-11-09 · The Subsurface, audited against its spec
+
+The owner asked for a full audit of what had been built of the Subsurface (D209–D213) against
+`docs/superpowers/specs/2026-11-08-subsurface-design.md`, then for it to be made exactly what the spec agreed,
+removing and refactoring what had to go. What was found, and what each finding became:
+
+**The opening (§4).**
+- *Faint first stage, missing.* A fresh opening now opens faint (`opening.FAINT`, 0.45) and stays faint until
+  it snaps to a thing, the pointer has really moved (the reveal's `firm`), a key walks or the wheel turns. The
+  packed `op_c` carries it (`mode · 1000 + 500 while faint + rim`; the rim is now 0–499). While faint, nothing
+  below answers a press: every zone is gated by the block's new `op_live`, so a slow Super+key shortcut does no
+  harm, as the spec says.
+- *No opening over the bar, missing.* A follow opening whose pointer is in the bar's strip is `away`: the
+  programs under the wallpaper are told it is closed until the pointer comes back down. A section and the
+  Overview do not follow, so the bar does not close them. The strip is what mooi-widgets reports (`op_wbar`),
+  else the bar's own height — no more hard-coded 34 against a 30 px bar.
+- *The 100 ms follow throttle (D210) could only lose sends*: a follow move never sends anything
+  (`opening.changed`), so the throttle's one effect was to drop a change of mode that arrived within 100 ms.
+  Removed; a change is sent once, at once.
+- *Reduced motion, missing for every program of the subsurface.* Only the bar was started with Pleamar's
+  `--reduced-motion`; mooi-surface, mooi-widgets, mooi-viz and BMO now are too (`SURFACE.args`), so the opening
+  appears and heals at once.
+- *Surface switched off mid-opening* healed only at the 6 s idle close; it heals at once now.
+- Return on Music went back a song (201); it plays or pauses (202). Shift+Tab from nothing landed on the
+  second-to-last thing; it lands on the last. Tab in the Overview collapsed it into a snap; it now only moves
+  the focus, which every hub and component shows with a brighter rim.
+
+**Coming up (§6), missing.** Every hub and component is drawn at 96 % and faded while it lies below; the one the
+opening snaps to — and everything in a section or the Overview — rises on a spring (`sg.rise`) round its middle,
+with a depth shadow (a black `glow`) under its plate. `sf_snap` tells the scene what is snapped.
+
+**What lives below (§5).**
+- *Apps: typing filters it, missing.* Letters and a space typed while Apps is snapped or the Overview is open
+  filter the marks (`below.apps(…, q)`: names that start with it first, then the most launched); BackSpace rubs
+  out; Esc clears it before it heals; Return launches the first match. While Super is held, the compositor's own
+  Super shortcuts take the letters, so in practice this is the Overview's.
+- *Music: seek and its visualiser, missing.* A press on its line seeks there (`playerctl position`, as the bar's
+  player does); sixteen bars from the audio level sit right of the controls while it plays — inside the music
+  thing, by the standing rule.
+- *Settings: "a click opens mooi-settings at that page", not built — and three of its eight marks named pages
+  that no longer exist* (Islands, Notch, The Sigil). The marks are now Theme & colour, Bar & Frame, Wallpapers,
+  Widgets, Sound, Power, BMO and The Subsurface (`below.SETTINGS`, each with its tab), and a press opens the
+  window there (`open_settings_at`, which tells a just-started window its tab until it answers).
+- *Notices: "with their actions", missing.* The feed (`lib/nexusfeed`) now carries each notice's default and its
+  first two action labels (none while the signals are private). A row press is the notice's own default (or the
+  Nexus without one), its first action is a chip, a cross dismisses it; the bar's signals do it (`note_act`).
+  "Nothing new" says so when the hub is empty.
+- *BMO: his home was a phantom.* The snap region sat bottom-left while he stands bottom-right, and the BMO-side
+  setting moved only the region. BMO now reports his box where he stands (`op_bx`/`op_bs`, the spec's citizen
+  report) whenever he settles, and opening onto him wakes him and he waves (`op_wake`). The setting's control is
+  gone; its key and setter slot stay (retired) so a saved value stays valid and no setter code moves.
+- *Power:* one arm was shared by the three destructive rows; each now asks for itself and says "Press again to
+  restart".
+
+**Dragging (§4.5).**
+- *A component dragged out never became a Presence*: its zone emitted no drop. It does now — and a component
+  acts on release without a drag, so dragging Wi-Fi out no longer switches the radio.
+- *Dragging a Presence back into an opening buries it, missing.* While the opening shows, a Presence can be
+  carried; let go inside the hole it goes back below, outside it returns to where it was. A Presence's press now
+  acts on release without a drag.
+- Only things with a source can be Presences: Apps (which had none, so its Presence opened nothing) is out,
+  Notices (`notifications`) is in.
+
+**The map (§3).** `surface.json` keeps places as fractions of the screen (`fx`, `fy`) with their size and the
+monitor they were made on, so an arrangement survives a change of resolution; files from D209–D213 (pixels) read
+as before. The default places are clamped onto narrow screens.
+
+**Citizens (§6).** The spec's `lib/surface/citizen.luau` now exists: the hello (ask for the hole, ask again after
+500 ms, then report), the box packing and the hole's rule, unit-tested. mooi-widgets and mooi-viz use it; BMO's
+logic cannot require from `shell/lib`, so it writes the same two sends out, and a test holds them together.
+
+**Found by rendering it: the opening left trails.** Pleamar repaints only the boxes that changed, and a moving
+clip box does not count the part it has just left, so every move of the hole left its old rims and contents on
+the edge, the ground and every citizen (seen in a preview of main as well, so it predates D214). Each surface
+that clips to the hole now holds a near-invisible veil (≈ 1/255) that changes with the hole, so the whole surface
+repaints while the opening shows (`tools/gen-opening.py` `probe`, written into every citizen between
+`<gen:opening-probe>` markers); with the opening shut it is gone and the surface rests. The preview after the fix
+is clean.
+
+**Removed:** `rv_outside` (never emitted), `rv_stage`, `sf_below`, `S.now_ms`, the follow throttle, BMO's default
+place and side.
+
+**Not in this pass (the spec's later phases, unchanged in docs/TODO.md):** the Nexus's cards in the Overview,
+push up from below and the light through the skin beyond D210's glow and ping, peering and burying windows, the
+owner's own shaders and chains. And still the owner's real-key session.
+
+**Verified.** Unit 763 / 0 (12 new D214 tests; the D209–D213 tests that pinned the old behaviour updated to the
+spec's); 15 scenes compile; `tests/gate.sh` ok. Rendered on the desk through a logic-less copy of the scene at
+the overlay level: the snapped Music hub risen in a torn hole, the Overview with the real Settings pages, the
+notice chip and the per-row power arm, and the section before and after the repaint fix. The live suite
+(`tests/surface.sh`, which knows the faint code now) was not run: it needs this branch running on the desk.

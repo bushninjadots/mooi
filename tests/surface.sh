@@ -185,7 +185,8 @@ while [ $i -lt 12 ]; do
 done
 bh=$(wd 'get wall_bar'); [ -n "$bh" ] || bh=31
 sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.8
-if [ "$(sf 'get op_tc')" = 1090 ]; then sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.8; fi
+# a fresh opening is faint (D214: c carries 500) until it snaps or the pointer has moved
+case "$(sf 'get op_tc')" in 1090|1590) sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.8;; esac
 is "snapped to the clock" "$(sf 'get op_tc')" 2018
 is "the widgets' hole is the same" "$(wd 'get op_tc')" 2018
 shot opening-snapped "$((wx - 80)),$((wy + bh - 80)) $((ww + 160))x$((wh + 160))"

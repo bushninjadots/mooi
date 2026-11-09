@@ -47,7 +47,9 @@ local S = {
     ready = false,
     -- D209: what lives below the wallpaper
     places = {}, apps = {}, app_counts = {}, walls = {}, note_items = {}, widget_list = {},
-    power_open = false, power_arm = false,
+    power_open = false, power_arm = 0,
+    app_q = "",            -- D214: what has been typed into the Apps hub
+    bmo_box = nil,         -- D214: where BMO stands, as he reports it (op_bx / op_bs)
 }
 
 local draw_below
@@ -411,8 +413,8 @@ local function power_go(n)
     elseif n == 5 then run("systemctl", { "poweroff" }) end
 end
 local function power_close()
-    S.power_open, S.power_arm = false, false
-    fact.pw_open, fact.pw_arm = false, false
+    S.power_open, S.power_arm = false, 0
+    fact.pw_open, fact.pw_arm = false, 0
 end
 
 local function press_code(v)
@@ -421,10 +423,11 @@ local function press_code(v)
     if v >= 951 and v <= 955 then
         local n = v - 950
         local confirm = not (type(S.settings.surface) == "table" and S.settings.surface.power_confirm == false)
-        if n >= 3 and confirm and not S.power_arm then
-            S.power_arm = true
-            fact.pw_arm = true
-            after(3000, function() S.power_arm = false; fact.pw_arm = false end)
+        -- each of the three asks for itself: arming Restart does not arm Shut down
+        if n >= 3 and confirm and S.power_arm ~= n then
+            S.power_arm = n
+            fact.pw_arm = n
+            after(3000, function() if S.power_arm == n then S.power_arm = 0; fact.pw_arm = 0 end end)
             return
         end
         power_close()
@@ -440,8 +443,8 @@ local function press_code(v)
             run("bluetoothctl", { "power", (S.r.bluetooth and S.r.bluetooth.powered) and "off" or "on" })
         elseif k == 6 then
             S.power_open = not S.power_open
-            S.power_arm = false
-            fact.pw_open, fact.pw_arm = S.power_open, false
+            S.power_arm = 0
+            fact.pw_open, fact.pw_arm = S.power_open, 0
         end
         return
     end
@@ -461,14 +464,32 @@ local function press_code(v)
         local w = S.walls[item]
         if w then run("mooi", { "wall", "apply", w.path }) end
     elseif hub == 4 then
-        run("pleamar", { "--say", "mooi", "emit open_settings" })
+        -- the mark's own page (lib/surface/below SETTINGS), or the window as it was
+        local page = below.SETTINGS[item]
+        run("pleamar", { "--say", "mooi", "emit open_settings_at " .. tostring(page and page[2] or 0) })
     elseif v == 590 then
         run("pleamar", { "--say", "mooi", "emit note_clear" })
     elseif hub == 5 then
-        if S.note_items[item] then run("mooi", { "nexus" }) end
+        -- a notice row (1-4): its own default, or the Nexus; its first action (21-24); dismissed (41-44).
+        -- The bar's notices (shell/signals.luau `note_act`) are row * 10 + 0 default · 1 action · 9 dismiss.
+        local row, what = item, 0
+        if item > 40 then row, what = item - 40, 9 elseif item > 20 then row, what = item - 20, 1 end
+        local it = S.note_items[row]
+        if not it then return end
+        if what == 0 and not it.default then run("mooi", { "nexus" }); return end
+        run("pleamar", { "--say", "mooi", "emit note_act " .. tostring((row - 1) * 10 + what) })
     end
 end
 on("sb_press", press_code)
+-- the Music hub's line: a press seeks there (playerctl, as the bar's own player does)
+on("sb_seek", function(v)
+    local p, pos = S.places.music, S.r.music_pos
+    if not p or not pos or pos.len <= 0 then return end
+    local f = math.max(0, math.min(1, ((tonumber(v) or 0) - (p.x + 18)) / math.max(1, p.w - 36)))
+    run("playerctl", { "position", string.format("%.1f", f * pos.len) })
+    S.r.music_pos = { pos = f * pos.len, len = pos.len }
+    draw_below()
+end)
 on("sb_wheel", function(v)
     v = math.floor(tonumber(v) or 0)
     local k, d = v // 10, (v % 10 == 1) and 1 or -1
@@ -488,10 +509,16 @@ SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dr
        ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "",
        edit_places = false, drag_place = nil, drag_from = nil, place_undo = {},
        resizing = nil, resize_from = nil,
-       layout_sig = nil, ready = false, ping = 0 }
+       layout_sig = nil, ready = false, ping = 0,
+       wbar = nil, monitor = nil, pp_drag = nil, pp_from = nil, snap_code = 0 }
 local SFILE = "surface.json"
 local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }
-local BAR_H = 34
+-- the bar's strip: what mooi-widgets reports its surface starts below (op_wbar), else the bar's own settings
+local function bar_h()
+    if SF.wbar then return SF.wbar end
+    local b = type(S.settings.bar) == "table" and S.settings.bar or {}
+    return (tonumber(b.offset) or 0) + (tonumber(b.height) or 30)
+end
 local ICON = { music = "♫", clock = "◷", calendar = "▦", weather = "☀", volume = "♪", notifications = "✉",
                workspaces = "▣", windows = "▢", resources = "▤", battery = "▮", network = "◉", bluetooth = "ᛒ", bmo = "☺" }
 
@@ -535,7 +562,8 @@ end
 save_presences = function(push)
     if SF.broken then log("surface · surface.json could not be read; not overwriting it (fix it, or remove it)"); return end
     local doc = presence.save(SF.list)
-    doc.places = below.save(S.places)
+    doc.places = below.save(S.places, SF.scr)
+    doc.monitor = SF.monitor
     doc.usage = S.app_counts
     local old = read(SFILE)
     if type(old) == "string" and old ~= "" then pcall(sys.call, "files.write", "surface.json.bak", old) end
@@ -545,15 +573,15 @@ end
 
 below_opts = function()
     local su = type(S.settings.surface) == "table" and S.settings.surface or {}
-    return { layout = su.layout, components = su.components, bmo = su.bmo_side }
+    return { layout = su.layout, components = su.components }
 end
 
 local function layout_sig()
     local o = below_opts()
-    return table.concat({ o.layout or "arc", o.components or "right", o.bmo or "left" }, "|")
+    return table.concat({ o.layout or "arc", o.components or "right" }, "|")
 end
 
--- picked in Settings → The Subsurface: a new shape (arc/row/grid/calm, the components' side, BMO's side)
+-- picked in Settings → The Subsurface: a new shape (arc/row/grid/calm, the components' side)
 -- puts everything back on its new place. Saved places are for the old shape; keeping them would hide things.
 apply_layout = function()
     if not SF or not SF.ready then return end
@@ -599,8 +627,9 @@ draw_below = function()
         local p = P[id]
         if p then fact["cp" .. k .. "_x"], fact["cp" .. k .. "_y"] = p.x, p.y end
     end
-    -- the apps: the most launched first, twelve at most
-    S.app_rows = below.apps(S.apps, S.app_counts, 12)
+    -- the apps: the most launched first, twelve at most; only those that match what has been typed
+    S.app_rows = below.apps(S.apps, S.app_counts, 12, S.app_q)
+    text.ap_q = S.app_q ~= "" and ("· " .. S.app_q .. "_") or ""
     for n = 1, 12 do
         local a = S.app_rows[n]
         fact["ab" .. n .. "_on"] = a ~= nil
@@ -625,6 +654,7 @@ draw_below = function()
     fact.mu_playing = m ~= nil and m.playing == true
     local pos = S.r.music_pos
     fact.mu_prog = (pos and pos.len > 0) and math.max(0, math.min(1, pos.pos / pos.len)) or 0
+    fact.mu_len = pos and pos.len or 0
     -- the wallpapers: the six newest thumbnails
     for n = 1, 6 do
         local w = S.walls[n]
@@ -636,10 +666,13 @@ draw_below = function()
     for n = 1, 4 do
         local it = S.note_items[n]
         fact["nt" .. n .. "_on"] = it ~= nil
+        local a1 = it and type(it.actions) == "table" and it.actions[1]
+        fact["nt" .. n .. "_act"] = type(a1) == "string" and a1 ~= ""
+        text["nt" .. n .. "_a1"] = type(a1) == "string" and a1 or ""
         if it then
             count = count + 1
             text["nt" .. n .. "_t1"] = tostring(it.title or it.summary or "")
-            text["nt" .. n .. "_t2"] = tostring(it.app or "")
+            text["nt" .. n .. "_t2"] = tostring(it.app or "") .. ((it.ago and it.ago ~= "") and (" · " .. tostring(it.ago)) or "")
         else
             text["nt" .. n .. "_t1"], text["nt" .. n .. "_t2"] = "", ""
         end
@@ -672,8 +705,19 @@ end
 local function surface_on() return type(S.settings.surface) == "table" and S.settings.surface.on == true end
 local function tap() run("pleamar", { "--say", "mooi", "emit pill_call" }) end      -- today's Super tap
 
+local function bmo_below() return not (type(S.settings.surface) == "table" and S.settings.surface.bmo_below == false) end
 local function boxes()
-    return below.boxes(S.places, S.widget_list, BAR_H)
+    return below.boxes(S.places, S.widget_list, bar_h(), bmo_below() and S.bmo_box or nil)
+end
+
+-- what the opening hugs, as the scene's sf_snap: hub 1-5, component 11-16, BMO 20, a widget 30, none 0
+local function snap_code(b)
+    if not b then return 0 end
+    for k, id in ipairs(below.HUBS) do if id == b.id then return k end end
+    for k, id in ipairs(below.COMPONENTS) do if id == b.id then return 10 + k end end
+    if b.id == "bmo" then return 20 end
+    if type(b.id) == "string" and string.sub(b.id, 1, 2) == "w:" then return 30 end
+    return 0
 end
 
 -- three packed numbers (lib/surface/opening `pack`), and the programs that mirror the hole
@@ -686,30 +730,24 @@ local function ship(a, b, c)
         run("pleamar", { "--say", cname, "emit op_a " .. a, "emit op_b " .. b, "emit op_c " .. c })
     end
 end
+-- The programs follow the pointer themselves in follow mode, so a follow move sends nothing (opening.changed);
+-- a change of mode, of faintness or of the hole's rim — a snap, a section, the Overview, the bar — is sent at
+-- once, and once, because it then stops moving. (D210's 100 ms throttle could drop the one send that mattered.)
 local function broadcast()
     local a, b, c = current()
     fact.op_ta, fact.op_tb, fact.op_tc = a, b, c
-    -- In follow mode the hole moves every 6 px; sending there was the lag — a process per citizen per step.
-    -- The programs still need the patch (a widget under it must show), so it is sent at most every 100 ms.
-    -- A snap, section or full is exact and immediate, and ships once because it stops moving.
-    if SF.op.mode == opening.MODES.follow then
-        if SF.ship_at and SF.clock - SF.ship_at < 100 then return end
-        SF.ship_at = SF.clock
-        if opening.changed(SF.sent, a, b, c) then SF.sent = { a = a, b = b, c = c }; ship(a, b, c) end
-        return
+    local shown = opening.shown(SF.op)
+    local code = (shown == opening.MODES.snapped or shown == opening.MODES.full) and snap_code(SF.op.snap) or 0
+    if code ~= SF.snap_code then
+        SF.snap_code = code
+        fact.sf_snap = code
+        -- opening onto BMO wakes him (the spec §5)
+        if code == 20 then run("pleamar", { "--say", "bmo", "emit op_wake" }) end
     end
     if opening.changed(SF.sent, a, b, c) then
         SF.sent = { a = a, b = b, c = c }
         ship(a, b, c)
     end
-end
-
-ship_set = function()
-    local bmo = not (type(S.settings.surface) == "table" and S.settings.surface.bmo_below == false)
-    local on = surface_on()
-    fact.sf_on, fact.sf_bmo = on, bmo       -- our own scene's copy of the same two bits
-    local v = (on and 1 or 0) + (bmo and 2 or 0)
-    for _, cname in ipairs(CITIZENS) do run("pleamar", { "--say", cname, "emit sf_set " .. v }) end
 end
 
 -- Task 1 found live: Hyprland's SUPER + drag never reaches a layer zone, so the drag bind is put down while
@@ -719,10 +757,26 @@ local BIND = 'hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true 
 local function drag_down() run("hyprctl", { "eval", UNBIND }) end
 local function drag_restore() run("hyprctl", { "eval", UNBIND }); run("hyprctl", { "eval", BIND }) end
 
+ship_set = function()
+    local bmo = bmo_below()
+    local on = surface_on()
+    -- switched off while an opening shows: heal it now rather than at the idle close (review minor, D209)
+    if not on and SF.op.mode ~= opening.MODES.closed then
+        reveal.finish(SF.rv)
+        if SF.ticking then cancel(SF.ticking); SF.ticking = nil end
+        opening.heal(SF.op)
+        SF.opened, SF.dragging = false, nil
+        drag_restore()
+        broadcast()
+    end
+    fact.sf_on, fact.sf_bmo = on, bmo       -- our own scene's copy of the same two bits
+    local v = (on and 1 or 0) + (bmo and 2 or 0)
+    for _, cname in ipairs(CITIZENS) do run("pleamar", { "--say", cname, "emit sf_set " .. v }) end
+end
+
 local function show_reveal()
     local st = SF.rv
     fact.rv_on = st.stage >= 1
-    fact.rv_stage = st.stage
     -- a full opening let go with Super keeps the keyboard: Esc is how it is dismissed
     fact.sf_firm = reveal.firm(st) or (SF.op.mode == opening.MODES.full and SF.opened == true)
 end
@@ -737,15 +791,16 @@ local function heal_opening()
     if SF.op.mode == opening.MODES.closed then return end
     opening.heal(SF.op)
     SF.opened, SF.sent, SF.dragging = false, nil, nil
+    SF.pp_drag, SF.pp_from = nil, nil
+    if S.app_q ~= "" then S.app_q = ""; draw_below() end
     SF.resizing, SF.resize_from = nil, nil
     fact.sf_rsz = 0
     drag_restore()
     broadcast()
 end
 
--- a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
+-- SF.clock: a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
 -- (review I7: it advances only inside the reveal's own tick — nothing runs while idle)
-S.now_ms = function() return SF.clock end
 
 local function tick()
     SF.clock = SF.clock + 50
@@ -758,7 +813,7 @@ local function tick()
         SF.ping = 0
     end
     fact.sf_ping = SF.ping
-    reveal.tick(SF.rv, S.now_ms(), SF.ptr)
+    reveal.tick(SF.rv, SF.clock, SF.ptr)
     if not SF.rv.down_at then
         close_reveal()
         if SF.op.mode ~= opening.MODES.full then heal_opening() end
@@ -768,8 +823,13 @@ local function tick()
     if SF.rv.stage == 2 and not SF.opened then
         SF.opened = true
         opening.open(SF.op)
-        opening.move(SF.op, boxes(), SF.ptr)
+        opening.move(SF.op, boxes(), SF.ptr, bar_h())
         drag_down()
+        broadcast()
+    end
+    -- faint until it is firm (the pointer has really moved) or snapped: then it opens all the way
+    if SF.op.faint and reveal.firm(SF.rv) then
+        opening.firm(SF.op)
         broadcast()
     end
 end
@@ -777,14 +837,14 @@ end
 on("rv_down", function()
     if not surface_on() then return end
     reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
-    reveal.down(SF.rv, S.now_ms())
+    reveal.down(SF.rv, SF.clock)
     SF.opened, SF.dragging = false, nil
     -- where the pointer is now (the scene tells us as it moves once the overlay is open)
     run("hyprctl", { "cursorpos" }, function(out)
         local x, y = tostring(out or ""):match("(%-?%d+),%s*(%-?%d+)")
         if x then
             SF.ptr = { x = tonumber(x), y = tonumber(y) }
-            if SF.op.mode > 0 then opening.move(SF.op, boxes(), SF.ptr); broadcast() end
+            if SF.op.mode > 0 then opening.move(SF.op, boxes(), SF.ptr, bar_h()); broadcast() end
         end
     end)
     if not SF.ticking then SF.ticking = every(50, tick) end
@@ -817,14 +877,16 @@ on("rv_move", function(v)
         end
     end
     -- while a drag is under way the hole stays where it was: a following hole would always contain the drop
+    -- a Presence carried while the opening shows goes with the pointer (let go in the hole, it is buried)
+    if SF.pp_drag ~= nil then return end
     if SF.op.mode > 0 and not SF.dragging then
-        opening.move(SF.op, boxes(), SF.ptr)
+        opening.move(SF.op, boxes(), SF.ptr, bar_h())
         broadcast()
     end
 end)
 on("rv_up", function()
     if not surface_on() then tap(); return end       -- review I1: off, Super's release is the old tap
-    local res = reveal.up(SF.rv, S.now_ms())
+    local res = reveal.up(SF.rv, SF.clock)
     -- in the Overview a Super tap is its own close, not the bar's tap
     if res == "tap" and SF.op.mode == opening.MODES.full then
         close_reveal()
@@ -848,6 +910,21 @@ on("op_wheel", function(v)
     broadcast()
 end)
 
+-- the citizens' reports (the spec §6): BMO's box where he stands, the widgets' bar strip
+local bx_pending = nil
+on("op_bx", function(v) bx_pending = math.floor(tonumber(v) or 0) end)
+on("op_bs", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if not bx_pending then return end
+    local w, h = v // 4096, v % 4096
+    S.bmo_box = w > 0 and { x = bx_pending // 4096, y = bx_pending % 4096, w = w, h = h } or nil
+    bx_pending = nil
+end)
+on("op_wbar", function(v)
+    local n = tonumber(v)
+    if n and n >= 0 and n < 400 then SF.wbar = math.floor(n + 0.5) end
+end)
+
 -- a program under the wallpaper just came up: send it the hole and the Surface's bits
 on("op_want", function()
     local a, b, c = current()
@@ -857,10 +934,13 @@ on("op_want", function()
 end)
 
 -- the keyboard's walk: the places in reading order, snapped one by one; Return presses what is snapped
-local KEY_PRESS = { apps = 101, music = 201, walls = 301, settings = 401, notes = 501,
+-- (Return on a hub is its first thing: the first app — the first match once letters are typed —, play or
+-- pause, the newest wallpaper, the first page, the newest notice; on a component, its own press)
+local KEY_PRESS = { apps = 101, music = 202, walls = 301, settings = 401, notes = 501,
                     wifi = 901, bt = 902, volume = 903, bright = 904, battery = 905, power = 906 }
 on("op_key", function(v)
     v = math.floor(tonumber(v) or 0)
+    opening.firm(SF.op)
     if v == 2 then
         if SF.op.snap then
             local code = KEY_PRESS[SF.op.snap.id]
@@ -874,18 +954,32 @@ on("op_key", function(v)
         if math.abs(p.y - q.y) > 24 then return p.y < q.y end
         return p.x < q.x
     end)
-    local at = 0
+    local at
     if SF.op.snap then
         for i, b in ipairs(list) do if b.id == SF.op.snap.id then at = i end end
     end
-    at = (at + (v > 0 and 1 or -1) - 1) % #list + 1
-    SF.op.mode = opening.MODES.snapped
+    -- from nothing snapped, Tab goes to the first and Shift+Tab to the last (review minor: it landed on n-1)
+    if not at then at = v > 0 and 1 or #list
+    else at = (at + (v > 0 and 1 or -1) - 1) % #list + 1 end
+    -- the Overview stays the Overview: the walk only moves the focus there
+    if SF.op.mode ~= opening.MODES.full then SF.op.mode = opening.MODES.snapped end
+    SF.op.away = false
     SF.op.snap = list[at]
     broadcast()
 end)
 
--- a hub or a component dragged out of the opening becomes a Presence, unless it is let go inside the hole
-local DRAG_SOURCE = { [100] = "apps", [200] = "music", [901] = "network", [902] = "bluetooth",
+-- typing into the Apps hub (the spec §5): letters and a space add, 8 rubs one out; Esc clears it first
+on("op_type", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 8 then S.app_q = string.sub(S.app_q, 1, -2)
+    elseif v >= 32 and v < 127 and #S.app_q < 24 then S.app_q = S.app_q .. string.char(v) end
+    draw_below()
+end)
+
+-- a hub or a component dragged out of the opening becomes a Presence, unless it is let go inside the hole.
+-- Only what has a source (lib/surface/sources) can live on the wallpaper: a Presence of Apps would be a
+-- word that opens nothing.
+local DRAG_SOURCE = { [200] = "music", [500] = "notifications", [901] = "network", [902] = "bluetooth",
                       [903] = "volume", [905] = "battery" }
 -- Edit places: a hub's plate (k*100) or a component (900+k) is the thing whose place moves.
 local function place_for(code)
@@ -942,6 +1036,7 @@ on("sb_rsz_drop", function()
 end)
 on("sb_drag", function(v)
     SF.dragging = math.floor(tonumber(v) or 0)
+    opening.firm(SF.op)
     local arranging = SF.edit_places or SF.op.mode == opening.MODES.full
     if arranging then
         SF.drag_place = place_for(SF.dragging)
@@ -959,9 +1054,17 @@ on("sb_drag", function(v)
                        w = h.w - 2 * opening.MARGIN, h = h.h - 2 * opening.MARGIN }
         broadcast()
     end
-end)on("sb_drop", function(v)
+end)
+on("sb_drop", function(v)
     local code = math.floor(tonumber(v) or 0)
+    local dragged = SF.dragging ~= nil
     SF.dragging = nil
+    -- a component let go without a drag is a press (its zone says nothing on press, so a drag out does not
+    -- also switch the radio)
+    if not dragged then
+        if code >= 901 and code <= 906 and not SF.edit_places and SF.op.mode ~= opening.MODES.closed then press_code(code) end
+        return
+    end
     if SF.edit_places or SF.op.mode == opening.MODES.full then
         -- the place was moved live by rv_move; keep it, remember the one it came from, make no Presence
         if SF.drag_place and SF.drag_from then
@@ -1000,10 +1103,11 @@ local function guard(event)
     end
 end
 on("rv_esc", function()
+    -- Escape clears what has been typed first, then heals
+    if S.app_q ~= "" and SF.op.mode ~= opening.MODES.closed then S.app_q = ""; draw_below(); return end
     guard("escape")
     if SF.op.mode ~= opening.MODES.closed then heal_opening() end
 end)
-on("rv_outside", function() guard("outside") end)
 -- (the workspaces and window watchers above call SF_guard: one watcher per service)
 SF_guard = guard
 
@@ -1011,15 +1115,8 @@ SF_guard = guard
 drag_restore()
 ship_set()
 
--- Presences: press, the controls, edit (right press), drag, undo
-on("pp_press", function(v)
-    local p = SF.list[math.floor(tonumber(v) or -1) + 1]
-    if p and SF.edit == nil then
-        local size = presence.SIZE[p.mode] or presence.SIZE.ghost
-        press_source(p.source, p.fx * SF.scr.w)
-        draw_presences()
-    end
-end)
+-- Presences: press, the controls, edit (right press), drag, undo — and burial: a Presence carried while the
+-- opening shows and let go inside the hole goes back below the wallpaper (the spec §4.5)
 on("pp_ctl", function(v)
     v = math.floor(tonumber(v) or 0)
     pcall(sys.call, ({ [1] = "media.previous", [2] = "media.toggle", [3] = "media.next" })[v % 10])
@@ -1033,14 +1130,41 @@ on("pp_drag", function(v)
     v = math.floor(tonumber(v) or 0)
     local k = v // 100000000
     local p = SF.list[k + 1]
-    if not p or SF.edit ~= k then return end
+    local burying = SF.edit ~= k and SF.op.mode ~= opening.MODES.closed
+    if not p or (SF.edit ~= k and not burying) then return end
     local x, y = (v % 100000000) // 10000, v % 10000
+    if SF.pp_drag ~= k then
+        SF.pp_drag, SF.pp_from = k, { fx = p.fx, fy = p.fy }
+        if burying then opening.firm(SF.op); broadcast() end
+    end
+    SF.ptr = { x = x, y = y }
     p.fx, p.fy = x / SF.scr.w, y / SF.scr.h
     draw_presences()
 end)
 on("pp_drop", function(v)
-    local p = SF.list[math.floor(tonumber(v) or -1) + 1]
+    local k = math.floor(tonumber(v) or -1)
+    local p = SF.list[k + 1]
     if not p then return end
+    local carried, from = SF.pp_drag == k, SF.pp_from
+    SF.pp_drag, SF.pp_from = nil, nil
+    if not carried then
+        -- a press: what the Presence stands for opens (not while one is being edited)
+        if SF.edit == nil then press_source(p.source, p.fx * SF.scr.w) end
+        return
+    end
+    if SF.edit ~= k and SF.op.mode ~= opening.MODES.closed then
+        local hole = opening.hole(SF.op, SF.ptr, SF.scr)
+        local x, y = SF.ptr.x, SF.ptr.y
+        if x >= hole.x and x <= hole.x + hole.w and y >= hole.y and y <= hole.y + hole.h then
+            table.remove(SF.list, k + 1)
+            if SF.edit and SF.edit > k then SF.edit = SF.edit - 1 end
+        elseif from then
+            p.fx, p.fy = from.fx, from.fy       -- let go outside the hole: it stays where it was
+        end
+        save_presences(true)
+        draw_presences()
+        return
+    end
     presence.place(SF.list, p, SF.scr)
     save_presences(true)
     draw_presences()
@@ -1072,7 +1196,10 @@ run("hyprctl", { "-j", "monitors" }, function(out)
     local ok, mons = pcall(json.decode, out or "")
     if ok and type(mons) == "table" then
         for _, m in ipairs(mons) do
-            if m.focused then SF.scr = { w = tonumber(m.width) / (tonumber(m.scale) or 1), h = tonumber(m.height) / (tonumber(m.scale) or 1) } end
+            if m.focused then
+                SF.scr = { w = tonumber(m.width) / (tonumber(m.scale) or 1), h = tonumber(m.height) / (tonumber(m.scale) or 1) }
+                SF.monitor = type(m.name) == "string" and m.name or nil
+            end
         end
     end
     load_presences()

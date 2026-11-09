@@ -1929,7 +1929,23 @@ end
 on("fact:open", opens.pl_heard)
 opens.listen(opens.pl_heard)
 
-on("open_settings", function()
+-- D214: the Subsurface's Settings hub opens the window at one page (its tab in mooi-settings). A window that
+-- has just been started is not listening yet, so the page is told again until it answers (about 2 s at most).
+-- (globals, not locals: the main chunk is at Lua's 200 locals)
+function settings_tab(tab, tries)
+    run("pleamar", { "--say", "mooi-settings", "fact set_tab " .. tostring(tab), "fact set_scroll 0" }, function(_, code)
+        tries = (tries or 0) + 1
+        if code ~= 0 and tries < 14 then after(150, function() settings_tab(tab, tries) end) end
+    end)
+end
+on("open_settings_at", function(v)
+    local tab = math.floor(tonumber(v) or -1)
+    if tab < 0 then return end
+    if not settings_win then settings_open() end
+    settings_tab(tab)
+end)
+on("open_settings", function() settings_open() end)
+function settings_open()
     if settings_win then run("pleamar", { "--say", "mooi-settings", "quit" }); return end
     local mine
     local said = {}
@@ -1941,7 +1957,7 @@ on("open_settings", function()
     end, { errors = true })
     settings_win = mine
     fact.settings_open = true
-end)
+end
 
 -- The wallpaper picker (shell/mooi-walls.plm, D145): the strip and the colour orbit, a program of
 -- its own that runs only while it is open. The bar's wallpaper button, Super+W and `mooi walls`
@@ -2027,6 +2043,17 @@ function desk_sync()
     desk_win = mine
 end
 
+-- The Sigil and the Subsurface (shell/mooi-surface.plm): the keeper's state, below (surface_sync)
+SURFACE = { win = nil, tries = 0, gave_up = false }
+-- D214: the subsurface's programs (mooi-surface and its citizens) start with Pleamar's reduced motion when
+-- the owner asks for it (Settings → Motion), so the opening appears and heals at once (the spec §4)
+function SURFACE.args(scene)
+    local a = { "--scene", scene, "--no-hud", "--stall", "0" }
+    local m = type(settings.motion) == "table" and settings.motion or {}
+    if m.reduced == true then a[#a + 1] = "--reduced-motion" end
+    return a
+end
+
 -- The desktop widgets (shell/mooi-widgets.plm, D137): Now Playing and the visualiser on the bottom
 -- layer, kept running while widgets.on (on unless turned off). Started before the desk, whose cutout
 -- surface must stack over them; when they start again while the desk runs, the desk is asked to go
@@ -2068,7 +2095,7 @@ function viz_sync()
             local mine
             local started = os.time()
             local said = {}
-            mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-viz.plm", "--no-hud", "--stall", "0" }, function(line)
+            mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-viz.plm"), function(line)
                 if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
             end, function(_, code)
                 if viz_win ~= mine then return end
@@ -2137,7 +2164,7 @@ function widgets_start()
     if not want then return end
     local mine
     local said = {}
-    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-widgets.plm", "--no-hud", "--stall", "0" }, function(line)
+    mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-widgets.plm"), function(line)
         if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
     end, function(_, code)
         if widgets_win ~= mine then return end
@@ -2223,7 +2250,6 @@ after(50, frame_sync)
 -- Pill in Pill mode with sigil.pill = sigil, or a `sigil` module on the bar. Respawned like the frame; after
 -- five quick ends it stays down and the bar draws a plain clock in the Pill's place (ui/pill.plm). The main
 -- chunk is at Lua's 200 locals, so its state is one global table.
-SURFACE = { win = nil, tries = 0, gave_up = false }
 -- wanted exactly when the bar placed a host for it (review I1: reading the settings' lists ran it with
 -- none — a `sigil` in the Pill's ignored centre list or a hidden side group)
 function SURFACE.wanted()
@@ -2249,7 +2275,7 @@ function surface_sync()
     local mine
     local started = os.time()
     local said = {}
-    mine = spawn("pleamar", { "--scene", shell_dir() .. "/mooi-surface.plm", "--no-hud", "--stall", "0" }, function(line)
+    mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-surface.plm"), function(line)
         if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
     end, function(_, code)
         if SURFACE.win ~= mine then return end
@@ -2325,7 +2351,7 @@ function bmo_launch(gen)
     local mine
     local started = os.time()
     local said = {}
-    mine = spawn("pleamar", { "--scene", shell_dir() .. "/bmo/bmo.plm", "--no-hud", "--stall", "0" }, function(line)
+    mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/bmo/bmo.plm"), function(line)
         -- his errors are the shell's too: six of them, as they come (before, only an exit kept them)
         if #said < 6 and string.find(line, "error") then said[#said + 1] = line; log("bmo · " .. line) end
     end, function(_, code)

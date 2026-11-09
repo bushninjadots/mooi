@@ -2,16 +2,25 @@
 -- the target hole every program clips to. Modes: 0 closed · 1 follow (a round hole under the pointer) ·
 -- 2 snapped (the hole hugs the box the pointer is near) · 3 section (40 % of the screen each way) ·
 -- 4 full (the whole wallpaper). The wheel widens and narrows between them.
+-- Two flags ride with the mode (the spec §4): `faint` — a fresh opening stays faint until it snaps to a thing,
+-- the pointer has really moved (the reveal's `firm`) or the wheel turns, so a slow Super+key shortcut does no
+-- harm; `away` — the pointer is over the bar, where there is no opening (the bar answers as today), so the
+-- programs under the wallpaper are told it is closed until the pointer comes back down.
 
-local M = { R = 90, SNAP = 40, MARGIN = 16, SECTION = 0.4, CORNER = 18 }
+local M = { R = 90, SNAP = 40, MARGIN = 16, SECTION = 0.4, CORNER = 18, FAINT = 0.45 }
 M.MODES = { closed = 0, follow = 1, snapped = 2, section = 3, full = 4 }
 local MD = M.MODES
 
-function M.state() return { mode = MD.closed, k = 0, snap = nil, step = 0, at = nil } end
+function M.state() return { mode = MD.closed, k = 0, snap = nil, step = 0, at = nil, faint = false, away = false } end
 
-function M.open(st) st.mode, st.k, st.at = MD.follow, 1, nil end
+function M.open(st) st.mode, st.k, st.at, st.faint, st.away = MD.follow, 1, nil, true, false end
 
-function M.heal(st) st.mode, st.k, st.snap, st.step, st.at = MD.closed, 0, nil, 0, nil end
+function M.heal(st)
+    st.mode, st.k, st.snap, st.step, st.at, st.faint, st.away = MD.closed, 0, nil, 0, nil, false, false
+end
+
+-- the opening is firm: the reveal says the pointer has moved, a key walked to a thing, or a drag began
+function M.firm(st) st.faint = false end
 
 -- distance from p to a box's edge; 0 anywhere inside it
 local function edge(b, p)
@@ -31,16 +40,26 @@ function M.near(boxes, p)
     return best
 end
 
-function M.move(st, boxes, p)
+-- `bar_h`: the bar's strip at the top of the screen; a follow or snapped opening goes away while the pointer
+-- is in it (a section and the Overview stay where they are — they do not follow).
+function M.move(st, boxes, p, bar_h)
     if st.mode ~= MD.follow and st.mode ~= MD.snapped then return end
+    if bar_h and p.y < bar_h then
+        st.snap, st.mode, st.away = nil, MD.follow, true
+        return
+    end
+    st.away = false
     local b = M.near(boxes, p)
     st.snap = b
     st.mode = b and MD.snapped or MD.follow
+    if b then st.faint = false end
 end
 
 -- `p` (the pointer at the moment the wheel turned) freezes a section where it opened: the hole no longer
 -- follows the pointer, so a section that is not moving sends nothing to the programs under the wallpaper.
 function M.widen(st, scr, p)
+    st.faint = false
+    if st.away then return end
     if st.mode == MD.follow or st.mode == MD.snapped then
         st.mode = MD.section
         st.at = p and { x = st.snap and st.snap.x + st.snap.w / 2 or p.x,
@@ -73,16 +92,24 @@ function M.hole(st, p, scr)
     return { x = p.x - M.R, y = p.y - M.R, w = 2 * M.R, h = 2 * M.R, r = M.R }
 end
 
--- three integers under 2^24 (float32 carries them whole, D124); everything clamped to what 12 bits hold
+-- three integers under 2^24 (float32 carries them whole, D124); everything clamped to what 12 bits hold.
+-- c = mode * 1000 + (500 while faint) + rim (0 … 499); an opening that is away is sent as closed.
 local function c12(v) return math.floor(clamp(v, 0, 4095) + 0.5) end
 
+-- the mode the programs under the wallpaper are told (away is closed for them)
+function M.shown(st) return st.away and MD.closed or st.mode end
+
 function M.pack(st, hole)
-    local r = math.floor(clamp(hole.r, 0, 999) + 0.5)
-    return c12(hole.x) * 4096 + c12(hole.y), c12(hole.w) * 4096 + c12(hole.h), st.mode * 1000 + r
+    local r = math.floor(clamp(hole.r, 0, 499) + 0.5)
+    local mode = M.shown(st)
+    local faint = (st.faint and mode ~= MD.closed) and 500 or 0
+    return c12(hole.x) * 4096 + c12(hole.y), c12(hole.w) * 4096 + c12(hole.h), mode * 1000 + faint + r
 end
 
 function M.unpack(a, b, c)
-    return { x = a // 4096, y = a % 4096, w = b // 4096, h = b % 4096, mode = c // 1000, r = c % 1000 }
+    local rest = c % 1000
+    return { x = a // 4096, y = a % 4096, w = b // 4096, h = b % 4096, mode = c // 1000,
+             faint = rest >= 500, r = rest % 500 }
 end
 
 -- Whether the packed triple has to reach the programs under the wallpaper: the first send, any change of mode

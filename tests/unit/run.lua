@@ -7621,7 +7621,8 @@ test("opening block: one text in every program", function()
     for _, p in ipairs({ "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
         assert(block(p) == ref, p .. " differs from mooi-surface.plm")
     end
-    for _, needle in ipairs({ "spring sg.op = 380, 34", "event op_a ->", "event sf_set ->", "op_px - 90", "on op_c(v)", "let sf_below = sf_on" }) do
+    for _, needle in ipairs({ "spring sg.op = 380, 34", "event op_a ->", "event sf_set ->", "op_px - 90", "on op_c(v)", "let op_faint = op_r1 > 499.5",
+                            "follow op_k = if(op_mode > 0, if(op_faint, 0.45, 1), 0)", "let op_live = op_vis and not op_faint" }) do
         assert(ref:find(needle, 1, true), "the block has " .. needle)
     end
     assert(ref:find("op_mode == 1, op_px - 90", 1, true) and ref:find("op_mode == 1, 180, op_aw", 1, true), "follow: the 2 * 90 square on the pointer")
@@ -7640,7 +7641,7 @@ test("opening block: one text in every program", function()
         local x = math.floor(a / 4096); local w = math.floor(b / 4096)
         return mode, r, x, a - x * 4096, w, b - w * 4096
     end
-    for _, h in ipairs({ { 0, 0, 0, 0, 0, 0 }, { 2, 10, 20, 300, 200, 24 }, { 3, 4095, 4095, 4095, 4095, 999 }, { 4, 0, 0, 1920, 1080, 0 } }) do
+    for _, h in ipairs({ { 0, 0, 0, 0, 0, 0 }, { 2, 10, 20, 300, 200, 24 }, { 3, 4095, 4095, 4095, 4095, 499 }, { 4, 0, 0, 1920, 1080, 0 } }) do
         local a, b, c = op.pack({ mode = h[1] }, { x = h[2], y = h[3], w = h[4], h = h[5], r = h[6] })
         local mode, r, x, y, w, hh = decode(a, b, c)
         eq(mode, h[1], "mode"); eq(x, h[2], "x"); eq(y, h[3], "y"); eq(w, h[4], "w"); eq(hh, h[5], "h"); eq(r, h[6], "r")
@@ -7727,13 +7728,12 @@ do
         local last = P[BL.COMPONENTS[#BL.COMPONENTS]]
         eq(last.x + last.w, 1920 - 32, "the row ends 32 px from the right")
         eq(last.y + last.h, 1080 - 96, "and 96 px from the bottom")
-        on_screen(P.bmo, "bmo")
-        eq(P.bmo.w, 160); eq(P.bmo.h, 196); eq(P.bmo.y, 1080 - 300)
+        eq(P.bmo, nil, "BMO has no made-up home: he reports where he stands (D214)")
         -- the arc: the middle hub higher than the ends
         local function cy(id) return P[id].y + P[id].h / 2 end
         eq(cy("walls") < cy("apps") and cy("walls") < cy("notes"), true, "the arc rises to the middle")
     end)
-    test("below: each layout puts every hub on screen and apart, and the sides move the row and BMO", function()
+    test("below: each layout puts every hub on screen and apart, and the side moves the row", function()
         for _, layout in ipairs(BL.LAYOUTS) do
             local P = BL.defaults(scr, { layout = layout })
             for _, id in ipairs(BL.HUBS) do
@@ -7747,14 +7747,12 @@ do
                     eq(overlap(P[a], P[b]), false, layout .. ": " .. a .. " and " .. b .. " apart")
                 end
             end
-            -- the components' row follows its side, and BMO's home its own
+            -- the components' row follows its side
             local first, last = P[BL.COMPONENTS[1]], P[BL.COMPONENTS[#BL.COMPONENTS]]
             eq(first.x, 1492, layout .. ": components right by default")
             eq(last.x + 56, 1888, layout .. ": components row ends 32 px from the right")
-            eq(P.bmo.x, 115, layout .. ": BMO left")
-            local C = BL.defaults(scr, { components = "centre", bmo = "right" })
+            local C = BL.defaults(scr, { components = "centre" })
             eq(C[BL.COMPONENTS[1]].x, (1920 - 396) / 2, "the row centred")
-            eq(C.bmo.x + C.bmo.w, 1920 - 115, "BMO right, mirrored")
         end
         -- the row is one line; the grid is two; calm is low
         local function cy(p) return p.y + p.h / 2 end
@@ -7779,8 +7777,13 @@ do
         local R = BL.merge({ apps = { x = 1900, y = 500 } }, scr, { layout = "row" })
         eq(R.apps.x, 1920 - 360, "a saved place is still clamped over the chosen layout")
         eq(R.music.x, BL.defaults(scr, { layout = "row" }).music.x, "the unplaced hubs from that layout")
-        local s = BL.save(P)
-        eq(s.apps.x, 1560); eq(s.apps.y, 500); eq(s.bogus, nil)
+        -- D214: the file keeps fractions of the screen, so a change of resolution keeps the arrangement
+        local s = BL.save(P, scr)
+        eq(s.apps.fx, 0.8125); eq(s.apps.fy, 0.463); eq(s.apps.x, nil, "no pixels"); eq(s.bogus, nil)
+        local back = BL.merge(s, scr)
+        eq(back.apps.x, 1560, "read back"); eq(back.apps.y, 500)
+        local wide = BL.merge(s, { w = 2560, h = 1440 })
+        eq(wide.apps.x, 2080, "the same place on a larger screen"); eq(wide.apps.y, 667)
     end)
     test("below: boxes include widgets below the bar, skip kept-above ones", function()
         local P = BL.defaults(scr)
@@ -7793,10 +7796,15 @@ do
         eq(by["w:n"], nil, "kept above: not under the wallpaper")
         for _, id in ipairs(BL.HUBS) do eq(by[id].x, P[id].x, id) end
         for _, id in ipairs(BL.COMPONENTS) do eq(by[id] ~= nil, true, id) end
-        eq(by.bmo ~= nil, true, "BMO's home")
+        eq(by.bmo, nil, "no BMO until he says where he stands")
         local near = require("lib/surface/opening").near(B, { x = P.apps.x + 10, y = P.apps.y + 10 })
         eq(near.id, "apps", "opening.near reads them")
-        eq(#BL.boxes(P, nil, 34), #BL.HUBS + #BL.COMPONENTS + 1, "no widgets file")
+        eq(#BL.boxes(P, nil, 34), #BL.HUBS + #BL.COMPONENTS, "no widgets file")
+        local WB = BL.boxes(P, nil, 34, { x = 1700, y = 820, w = 160, h = 196 })
+        local bmo
+        for _, b in ipairs(WB) do if b.id == "bmo" then bmo = b end end
+        eq(bmo and bmo.x, 1700, "BMO where he stands"); eq(bmo.h, 196)
+        eq(#BL.boxes(P, nil, 34, { x = 1, y = 1, w = 0, h = 0 }), #BL.HUBS + #BL.COMPONENTS, "a width of 0: not below")
     end)
     test("below: the apps hub — most launched first, else the service's order; twelve at most", function()
         local list = {}
@@ -7832,8 +7840,10 @@ do
         for k = 1, #BL.COMPONENTS do
             assert(plm:find("fact cp" .. k .. "_x = ", 1, true) and plm:find("fact cp" .. k .. "_y = ", 1, true), "component " .. k)
             assert(below:find("zone box cpz" .. k .. " ", 1, true), "component " .. k .. " zone")
-            assert(below:find("on press cpz" .. k .. " { emit sb_press(" .. (900 + k) .. ") }", 1, true), "component " .. k .. " pressed")
+            -- D214: a component acts when it is let go without a drag (sb_drop), so a drag out does not also switch it
+            assert(not below:find("on press cpz" .. k .. " ", 1, true), "component " .. k .. " says nothing on press")
             assert(below:find("on drag cpz" .. k .. " { emit sb_drag(" .. (900 + k) .. ") }", 1, true), "component " .. k .. " dragged")
+            assert(below:find("on release cpz" .. k .. " { emit sb_drop(" .. (900 + k) .. ") }", 1, true), "component " .. k .. " let go")
         end
         for n = 1, 12 do assert(below:find("on press hbz1_" .. n .. " { emit sb_press(" .. (100 + n) .. ") }", 1, true), "app mark " .. n) end
         assert(below:find("on scroll cpz3 {", 1, true) and below:find("on scroll cpz4 {", 1, true), "the wheel over volume and brightness")
@@ -7843,7 +7853,7 @@ do
         for line in below:gmatch("[^\n]+") do
             if line:find("zone box", 1, true) then
                 zones = zones + 1
-                assert(line:find("show: op_vis and ", 1, true), "a zone only while the opening shows: " .. line)
+                assert(line:find("show: op_live", 1, true), "a zone only while the opening is firm: " .. line)
             end
         end
         assert(zones >= 5 + 12 + 6, "the zones: " .. zones)
@@ -7901,8 +7911,7 @@ do
                              "below_opts = function", "apply_layout = function", "below.merge(doc and doc.places, SF.scr, below_opts())",
                              "on(\"sf_edit\"", "on(\"sf_reset\"", "SF.edit_places", "SF.drag_place",
                              "p.x = math.max(0, math.min(SF.scr.w - p.w", "surface.power_confirm == false",
-                             "fact.sf_ping = SF.ping", "if SF.op.mode == opening.MODES.follow then",
-                             "SF.clock - SF.ship_at < 100" }) do
+                             "fact.sf_ping = SF.ping" }) do
             assert(l:find(s, 1, true), s)
         end
         assert(l:find('run("pleamar", { "--say", cname, "emit op_a " .. a, "emit op_b " .. b, "emit op_c " .. c })', 1, true), "one process per citizen")
@@ -7987,7 +7996,7 @@ do
         end
         assert(plm:find("text hb1_sz", 1, true), "the size inspector")
         assert(plm:find("event sb_rsz ->", 1, true) and plm:find("event sb_rsz_drop ->", 1, true), "its events")
-        assert(plm:find("show: op_vis and op_mode == 4", 1, true), "the handles live in the Overview")
+        assert(plm:find("show: op_mode == 4 }", 1, true) and plm:find("show: op_live and op_mode == 4 }", 1, true), "the handles live in the Overview")
     end)
     test("shapes: dragging a handle resizes the place, snaps, saves and undoes", function()
         local l = read("shell/mooi-surface.luau")
@@ -8042,8 +8051,8 @@ do
         assert(plm:find("let nl_clip = sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5", 1, true), "an edited notes lane is unclipped")
         for _, e in ipairs({ "wg_keep", "wg_keep_y", "wg_bury" }) do assert(plm:find("event " .. e .. " ->", 1, true), e) end
         assert(plm:find("emit wg_keep(", 1, true) and plm:find("emit wg_keep_y(", 1, true) and plm:find("emit wg_bury(", 1, true), "the drop tells the logic")
-        assert(read("shell/mooi-widgets.luau"):find('"emit op_want"', 1, true), "widgets ask for the hole")
-        assert(read("shell/mooi-viz.luau"):find('"emit op_want"', 1, true), "the visualisers too")
+        assert(read("shell/mooi-widgets.luau"):find("citizen.hello(run, after, report_bar)", 1, true), "widgets ask for the hole")
+        assert(read("shell/mooi-viz.luau"):find('require("lib/surface/citizen").hello(run, after)', 1, true), "the visualisers too")
         local viz = read("shell/mooi-viz.plm")
         assert(viz:find("let clip_A = sf_on and not lA_above", 1, true) and viz:find("clip box { from: if(clip_A, op_x, 0), if(clip_A, op_y - sf_top, 0)", 1, true), "the lanes clip too")
     end)
@@ -8086,7 +8095,7 @@ test("logic: the opening live — follow, snap, widen, heal, the keyboard path",
     local l = read("shell/mooi-surface.luau")
     assert(l:find('require("lib/surface/presence")', 1, true) and l:find('require("lib/surface/reveal")', 1, true))
     assert(l:find('require("lib/surface/opening")', 1, true), "the opening is shared")
-    for _, e in ipairs({ "rv_down", "rv_up", "rv_move", "rv_esc", "rv_outside", "op_wheel", "op_want", "op_key",
+    for _, e in ipairs({ "rv_down", "rv_up", "rv_move", "rv_esc", "op_wheel", "op_want", "op_key",
                          "sb_press", "sb_drop", "pp_drop", "pp_drag", "ed_undo" }) do
         assert(l:find('on("' .. e .. '"', 1, true), e .. " handled")
     end
@@ -8124,6 +8133,193 @@ test("logic: the opening live — follow, snap, widen, heal, the keyboard path",
     local h = read("setup/home/.config/hypr/config/custom/mooi.lua")
     assert(h:find('mooi .. " reveal down"', 1, true) and h:find('mooi .. " reveal up"', 1, true), "Super's press and release")
 end)
+
+section("surface: the spec, audited (D214)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local op = require("lib/surface/opening")
+    local BL = require("lib/surface/below")
+    local CZ = require("lib/surface/citizen")
+    local scr = { w = 1920, h = 1080 }
+
+    test("opening: a fresh opening is faint until it is firm, snapped or widened", function()
+        local st = op.state()
+        op.open(st)
+        eq(st.faint, true, "faint at first")
+        local _, _, c = op.pack(st, op.hole(st, { x = 500, y = 500 }, scr))
+        local u = op.unpack(0, 0, c)
+        eq(u.faint, true, "the programs are told"); eq(u.mode, 1); eq(u.r, 90, "the rim survives the flag")
+        op.firm(st)
+        _, _, c = op.pack(st, op.hole(st, { x = 500, y = 500 }, scr))
+        eq(op.unpack(0, 0, c).faint, false, "firm: all the way open")
+        local s2 = op.state(); op.open(s2)
+        op.move(s2, { { id = "apps", x = 480, y = 480, w = 100, h = 100 } }, { x = 500, y = 500 })
+        eq(s2.mode, op.MODES.snapped); eq(s2.faint, false, "snapping opens it")
+        local s3 = op.state(); op.open(s3); op.widen(s3, scr, { x = 500, y = 500 })
+        eq(s3.faint, false, "the wheel opens it"); eq(s3.mode, op.MODES.section)
+        op.heal(s3); eq(s3.faint, false); eq(s3.away, false)
+    end)
+    test("opening: no opening over the bar — it is told closed until the pointer comes down", function()
+        local st = op.state(); op.open(st); op.firm(st)
+        op.move(st, {}, { x = 400, y = 10 }, 34)
+        eq(st.away, true, "over the bar"); eq(op.shown(st), op.MODES.closed)
+        local _, _, c = op.pack(st, op.hole(st, { x = 400, y = 10 }, scr))
+        eq(c // 1000, 0, "sent as closed"); eq(op.unpack(0, 0, c).faint, false, "closed is never faint")
+        assert(op.changed({ a = 0, b = 0, c = 1090 }, 0, 0, c), "the change is sent")
+        op.move(st, {}, { x = 400, y = 300 }, 34)
+        eq(st.away, false); eq(op.shown(st), op.MODES.follow, "back down: open again")
+        -- a section and the Overview do not follow, so the bar does not close them
+        op.widen(st, scr, { x = 400, y = 300 })
+        op.move(st, {}, { x = 400, y = 5 }, 34)
+        eq(op.shown(st), op.MODES.section, "a section stays")
+        op.widen(st, scr, { x = 400, y = 300 })
+        eq(op.shown(st), op.MODES.full)
+    end)
+    test("opening: the logic sends the hole once per change, with no throttle that could drop one", function()
+        local l = read("shell/mooi-surface.luau")
+        assert(not l:find("SF.ship_at", 1, true), "the 100 ms throttle is gone")
+        assert(l:find("opening.move(SF.op, boxes(), SF.ptr, bar_h())", 1, true), "the bar's strip is passed")
+        assert(l:find("if SF.op.faint and reveal.firm(SF.rv) then", 1, true), "firm opens it all the way")
+        assert(l:find('fact.sf_snap = code', 1, true) and l:find('"emit op_wake"', 1, true), "the snapped thing rises; BMO wakes")
+        assert(l:find("if not on and SF.op.mode ~= opening.MODES.closed then", 1, true), "Surface off heals at once")
+    end)
+
+    test("repaint: every surface that clips to the hole repaints whole while it shows (found by rendering it)", function()
+        local veil = "box { from: 0, 0; size: 8192, 8192; color: #000000; opacity: 0.004 + 0.001 * fract((op_x + op_y + op_w + op_h) / 97); show: op_k > 0.001 }"
+        for _, f in ipairs({ "shell/mooi-widgets.plm", "shell/mooi-viz.plm", "shell/bmo/bmo.plm" }) do
+            local s = read(f)
+            assert(s:find("// <gen:opening-probe>", 1, true) and s:find(veil, 1, true), f)
+        end
+        local plm = read("shell/mooi-surface.plm")
+        local n = 0
+        for _ in plm:gmatch("fract%(%(op_x %+ op_y %+ op_w %+ op_h%) / 97%)") do n = n + 1 end
+        eq(n, 2, "the ground and the edge")
+    end)
+    test("citizen: one hello, boxes packed under 2^24, the hole's rule", function()
+        local a, b = CZ.pack_box({ x = 1700, y = 820, w = 160, h = 196 })
+        assert(a < 2 ^ 24 and b < 2 ^ 24, "float32 carries them whole")
+        local u = CZ.unpack_box(a, b)
+        eq(u.x, 1700); eq(u.y, 820); eq(u.w, 160); eq(u.h, 196)
+        eq(CZ.unpack_box(CZ.pack_box({ x = -5, y = 9000, w = 0 / 0, h = 3 })).y, 4095, "clamped")
+        eq(CZ.inside({ x = 0, y = 0, w = 100, h = 100 }, { x = 90, y = 90, w = 50, h = 50 }), true, "partly inside")
+        eq(CZ.inside({ x = 0, y = 0, w = 100, h = 100 }, { x = 100, y = 0, w = 50, h = 50 }), false, "touching is outside")
+        eq(CZ.inside({ x = 0, y = 0, w = 0, h = 0 }, { x = 0, y = 0, w = 5, h = 5 }), false, "a closed hole holds nothing")
+        local said, later, reported = {}, nil, 0
+        CZ.hello(function(_, args) said[#said + 1] = table.concat(args, " ") end, function(_, fn) later = fn end,
+                 function() reported = reported + 1 end)
+        eq(said[1], "--say mooi-surface emit op_want"); eq(reported, 1)
+        later(); eq(#said, 2, "asked again"); eq(reported, 2)
+        eq(table.concat(CZ.say("op_wbar", 33.6), " "), "--say mooi-surface emit op_wbar 34")
+        -- BMO writes the same two sends out (his logic cannot require shell/lib)
+        local bmo = read("shell/bmo/bmo.luau")
+        assert(bmo:find('"emit op_bx " .. (c12(x) * 4096 + c12(y))', 1, true) and bmo:find('"emit op_bs " .. (c12(w) * 4096 + c12(h))', 1, true), "BMO reports his box")
+        assert(bmo:find('on("op_wake"', 1, true) and read("shell/bmo/bmo.plm"):find("event op_wake ->", 1, true), "and wakes")
+        assert(read("shell/mooi-widgets.luau"):find('citizen.say("op_wbar"', 1, true), "the widgets report their strip")
+        local plm = read("shell/mooi-surface.plm")
+        for _, e in ipairs({ "op_bx", "op_bs", "op_wbar", "op_type", "sb_seek" }) do assert(plm:find("event " .. e .. " ->", 1, true), e .. " declared") end
+    end)
+
+    test("below: the Settings hub's marks are real pages, at their real tabs", function()
+        local idx = read("shell/lib/settings_index.luau")
+        for _, s in ipairs(BL.SETTINGS) do
+            local word, tab = s[1], s[2]
+            local page = word == "Wallpapers" and "Wallpapers" or word
+            if tab ~= 12 then   -- Sound has no indexed rows; its tab is the twelfth page
+                assert(idx:find("tab = " .. tab .. ", page = \"" .. page, 1, true), word .. " is page " .. tab)
+            end
+        end
+        local gen = read("tools/gen-surface.py")
+        for _, s in ipairs(BL.SETTINGS) do assert(gen:find('("' .. s[1] .. '", ' .. s[2] .. ')', 1, true), s[1] .. " in the generator too") end
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find('"emit open_settings_at "', 1, true), "a mark opens its page")
+        local m = read("shell/mooi.luau")
+        assert(m:find('on("open_settings_at"', 1, true) and m:find('"fact set_tab " .. tostring(tab)', 1, true), "the bar opens the window there")
+        assert(read("shell/mooi.plm"):find("event open_settings_at ->", 1, true))
+    end)
+    test("below: typing filters the Apps hub, names that start with it first", function()
+        local list = { { id = "a", name = "Kitty", exec = "kitty" }, { id = "b", name = "Firefox", exec = "firefox" },
+                       { id = "c", name = "Thunar files", exec = "thunar" }, { id = "d", name = "Files", exec = "nautilus" } }
+        local r = BL.apps(list, { c = 9 }, 12, "fi")
+        eq(#r, 3, "three have it"); eq(r[1].id, "b", "a name that starts with it first"); eq(r[2].id, "d")
+        eq(r[3].id, "c", "then the rest, the most launched first")
+        eq(#BL.apps(list, {}, 12, "zz"), 0, "none")
+        eq(#BL.apps(list, {}, 12, ""), 4, "nothing typed: all")
+        local plm = read("shell/mooi-surface.plm")
+        assert(plm:find("on key a while sf_snap == 1 or op_mode == 4 { emit op_type(97) }", 1, true), "letters while Apps is snapped or the Overview is open")
+        assert(plm:find("on key BackSpace while sf_snap == 1 or op_mode == 4 { emit op_type(8) }", 1, true), "a rub-out")
+        assert(plm:find("text ap_q {", 1, true), "what is typed is shown")
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find("below.apps(S.apps, S.app_counts, 12, S.app_q)", 1, true), "the hub reads it")
+        assert(l:find('if S.app_q ~= "" and SF.op.mode ~= opening.MODES.closed then S.app_q = ""', 1, true), "Esc clears it first")
+        assert(l:find("apps = 101, music = 202,", 1, true), "Return on Music plays or pauses (it went back a song)")
+    end)
+    test("below: defaults stay on a narrow screen; BMO has no made-up home", function()
+        local small = { w = 1366, h = 768 }
+        for _, layout in ipairs(BL.LAYOUTS) do
+            for id, p in pairs(BL.defaults(small, { layout = layout })) do
+                eq(p.x >= 0 and p.y >= 0 and p.x + p.w <= small.w and p.y + p.h <= small.h, true, layout .. " " .. id .. " on a 1366 screen")
+            end
+        end
+        eq(BL.defaults(scr).bmo, nil)
+        assert(not read("tools/gen-settings.py"):find('"sv_surface_bmo_side"', 1, true), "the BMO side control is gone")
+    end)
+
+    test("scene: what the opening snaps to comes up; zones wait until it is firm", function()
+        local plm = read("shell/mooi-surface.plm")
+        for k = 1, #BL.HUBS do
+            assert(plm:find("follow hb" .. k .. "_up = if(op_vis and (op_mode > 2 or sf_snap == " .. k .. "), 1, 0)", 1, true), "hub " .. k .. " rises")
+            assert(plm:find("pivot: hb" .. k .. "_x + hb" .. k .. "_w / 2, hb" .. k .. "_y + hb" .. k .. "_h / 2", 1, true), "round its middle")
+        end
+        for k = 1, #BL.COMPONENTS do assert(plm:find("follow cp" .. k .. "_up = if(op_vis and (op_mode > 2 or sf_snap == " .. (10 + k) .. ")", 1, true), "component " .. k) end
+        assert(plm:find("scale: 0.96 + 0.04 * hb1_up", 1, true), "from 96 %")
+        assert(plm:find("glow: 26, 0.55 * hb1_up, #000000", 1, true), "with a depth shadow")
+        assert(plm:find("spring sg.rise = ", 1, true), "on a spring, never a tween")
+        assert(plm:find("opacity: min(1, op_k)", 1, true), "faint while the opening is")
+        assert(not plm:find("rv_outside", 1, true) and not plm:find("rv_stage", 1, true), "the dead names are gone")
+        assert(plm:find("opacity: 0.28 + 0.2 * hb1_up + if(sf_snap == 1, 0.4, 0)", 1, true), "the keyboard's focus shows")
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find("if SF.op.mode ~= opening.MODES.full then SF.op.mode = opening.MODES.snapped end", 1, true), "Tab keeps the Overview")
+    end)
+    test("scene: Music seeks and has its own visualiser; Notices act; power asks row by row", function()
+        local plm = read("shell/mooi-surface.plm")
+        assert(plm:find("on press hbz2_seek { emit sb_seek(round(pointer.x)) }", 1, true), "a press on the line seeks")
+        assert(plm:find("show: mu_playing and hb2_w > 260", 1, true) and plm:find("22 * clamp(lv.level, 0, 1)", 1, true), "the bars, inside the music thing")
+        assert(plm:find('"playerctl"', 1, true), "seeking may run playerctl")
+        for n = 1, 4 do
+            assert(plm:find("on press hbz5_a" .. n .. " { emit sb_press(" .. (520 + n) .. ") }", 1, true), "notice " .. n .. "'s action")
+            assert(plm:find("on press hbz5_x" .. n .. " { emit sb_press(" .. (540 + n) .. ") }", 1, true), "notice " .. n .. " dismissed")
+        end
+        assert(plm:find("if(pw_arm == 4, #ff9b8a, ink)", 1, true) and plm:find("Press again to restart", 1, true), "each row asks for itself")
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find('"emit note_act " .. tostring((row - 1) * 10 + what)', 1, true), "the bar does what the notice offers")
+        assert(l:find("S.power_arm ~= n", 1, true), "arming one does not arm the others")
+        -- the feed carries the actions; signals acts on a row
+        local NF = require("lib/nexusfeed")
+        local f = NF.feed({ { app = "x", title = "t", time = 1, default = true, actions = { { key = "r", label = "Reply" }, { key = "m", label = "Mute" }, { key = "z", label = "Zap" } } } }, 2, false)
+        eq(f.items[1].default, true); eq(#f.items[1].actions, 2); eq(f.items[1].actions[1], "Reply")
+        eq(#NF.feed({ { app = "x", title = "t", time = 1, actions = { { key = "r", label = "Reply" } } } }, 2, true).items[1].actions, 0, "private: no labels")
+        local sg = read("shell/signals.luau")
+        assert(sg:find('on("note_act"', 1, true) and sg:find("if what == 9 then dismiss(n.id)", 1, true), "signals acts and dismisses")
+        assert(read("shell/mooi.plm"):find("event note_act ->", 1, true))
+    end)
+    test("logic: a Presence carried into an opening is buried; components act when let go", function()
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find("table.remove(SF.list, k + 1)", 1, true), "buried: no longer a Presence")
+        assert(l:find("p.fx, p.fy = from.fx, from.fy", 1, true), "let go outside the hole: back where it was")
+        assert(l:find("if SF.pp_drag ~= nil then return end", 1, true), "the hole stays while one is carried")
+        local plm = read("shell/mooi-surface.plm")
+        assert(plm:find("on drag pz0 while p0_edit or op_live {", 1, true) and plm:find("on release pz0 { emit pp_drop(0) }", 1, true), "the desk's zones")
+        assert(l:find("if code >= 901 and code <= 906 and not SF.edit_places", 1, true), "a component let go without a drag is a press")
+        assert(not l:find("[100] = \"apps\"", 1, true) and l:find('[500] = "notifications"', 1, true), "only things with a source become Presences")
+    end)
+    test("keeper: the subsurface's programs start with reduced motion when asked", function()
+        local m = read("shell/mooi.luau")
+        assert(m:find('if m.reduced == true then a[#a + 1] = "--reduced-motion" end', 1, true))
+        for _, s in ipairs({ "mooi-surface.plm", "mooi-viz.plm", "mooi-widgets.plm", "bmo/bmo.plm" }) do
+            assert(m:find('SURFACE.args(shell_dir() .. "/' .. s .. '")', 1, true), s)
+        end
+    end)
+end
 
 section("surface: review fixes (D208)")
 do

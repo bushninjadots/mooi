@@ -20,6 +20,8 @@ local forecast = require("lib/forecast")
 local calendar = require("lib/calendar")
 local DD = require("lib/deskdata")
 local apps_lib = require("lib/apps")
+local citizen = require("lib/surface/citizen")
+local report_bar   -- D214: below, beside the citizen's hello
 local DAYNAMES = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" }
 
 local function read(name, kind)
@@ -390,7 +392,9 @@ apply_wall = function()
     fact.mood_glow, fact.mood_pace = mood_now.glow, mood_now.pace
     fact.wall_depth = wall ~= nil and wall.depth and wl.depth and (wall.cutpath or "") ~= ""
     text.wall_cut = fact.wall_depth and wall.cutpath or ""
+    local bar_was = fact.wall_bar
     fact.wall_bar = wall and math.max(0, wall.h - room.h) or 34
+    if bar_was ~= fact.wall_bar and report_bar then report_bar() end
     -- the subject cells, for edit mode's shading
     local rows_s = {}
     if wall then
@@ -1620,7 +1624,7 @@ every(400, function()
     if viz_seq and not vizfeed.fresh(viz_at * 1000, os.time() * 1000) then viz_seq, viz_at = nil, 0; hush() end
 end)
 
--- D209: the opening may already be up (and this program was restarted): ask for its hole; ask again
--- once the scene is surely listening, since the first ask can outrun the scene's own start
-run("pleamar", { "--say", "mooi-surface", "emit op_want" })
-after(500, function() run("pleamar", { "--say", "mooi-surface", "emit op_want" }) end)
+-- D209/D214: a citizen of the subsurface (lib/surface/citizen): ask for the opening's hole, and tell
+-- mooi-surface how far below the screen's top this surface starts — its widget boxes are in these pixels
+report_bar = function() run("pleamar", citizen.say("op_wbar", tonumber(fact.wall_bar) or 34), function() end) end
+citizen.hello(run, after, report_bar)

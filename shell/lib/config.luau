@@ -80,6 +80,7 @@ M.SCHEMA = {
     { path = "surface.ping", kind = "boolean", default = true },
     { path = "surface.layout", kind = "enum", values = { "arc", "row", "grid", "calm" }, default = "arc" },
     { path = "surface.components", kind = "enum", values = { "right", "centre", "left" }, default = "right" },
+    -- retired (D214): BMO is snapped to where he stands; kept so a saved value stays valid and no setter code moves
     { path = "surface.bmo_side", kind = "enum", values = { "left", "right" }, default = "left" },
     { path = "surface.overview", kind = "integer", default = 16, min = 0, max = 40 },
     { path = "surface.power_confirm", kind = "boolean", default = true },

@@ -19,8 +19,17 @@ function M.feed(list, now, private)
     local items = {}
     for i = 1, math.min(5, #list) do
         local n = list[i]
+        -- D214: what the Subsurface's Notices hub can do with it — the app's own default, and its first two
+        -- actions by label (kept out, like the title, while the signals are private)
+        local acts = {}
+        if not private then
+            for _, a in ipairs(type(n.actions) == "table" and n.actions or {}) do
+                if #acts < 2 and type(a) == "table" and type(a.label) == "string" and a.label ~= "" then acts[#acts + 1] = a.label end
+            end
+        end
         items[i] = { app = tostring(n.app or ""), title = private and "" or tostring(n.title or ""),
-                     time = tonumber(n.time) or 0, ago = M.ago((tonumber(now) or 0) - (tonumber(n.time) or 0)) }
+                     time = tonumber(n.time) or 0, ago = M.ago((tonumber(now) or 0) - (tonumber(n.time) or 0)),
+                     actions = acts, default = n.default == true }
     end
     return { count = #list, items = items }
 end

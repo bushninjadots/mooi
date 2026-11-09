@@ -349,9 +349,21 @@ local function stop_walking()
     if activity == "walking" then set_activity("idle"); show_face() end
 end
 
+-- D214: a citizen of the subsurface reports where its things are (the Subsurface spec §6), so the opening
+-- snaps to BMO where he stands. The same packing as lib/surface/citizen `say_box` (a logic here cannot require
+-- from shell/lib): x * 4096 + y and w * 4096 + h; a width of 0 says he is not below (on the bar).
+local function report_box()
+    local w, h = bw(), bh()
+    if cfg.place == "bar" then w, h = 0, 0 end
+    local function c12(v) return math.floor(math.max(0, math.min(4095, v)) + 0.5) end
+    run("pleamar", { "--say", "mooi-surface", "emit op_bx " .. (c12(x) * 4096 + c12(y)),
+                     "emit op_bs " .. (c12(w) * 4096 + c12(h)) }, function() end)
+end
+
 local function save_position()
     state.x, state.y = math.floor(x + 0.5), math.floor(y + 0.5)
     save_state()
+    report_box()
 end
 
 local function walk(target)
@@ -850,6 +862,18 @@ on("hit_up", function()
     end)
 end)
 
+-- D214: the opening snapped onto him (mooi-surface): he wakes, and says hello as when the pointer comes
+on("op_wake", function()
+    if activity == "sleeping" then wake(false) end
+    touch()
+    local t = os.time()
+    if t - last_greet > 90 and cfg.motion ~= "still" then
+        last_greet = t
+        move("wave")
+        react("happy", 1200)
+    end
+end)
+
 on("hov", function(v)
     hovered = tonumber(v) == 1
     if not hovered or activity == "sleeping" then return end
@@ -923,6 +947,7 @@ local function go_home()
     play("land")
     state.x, state.y = -1, -1
     save_state()
+    report_box()
 end
 
 local last_wander = 2
@@ -1174,7 +1199,8 @@ measure(function()
     schedule()
 end)
 
--- D209: the opening may already be up (and this program was restarted): ask for its hole; ask again
--- once the scene is surely listening, since the first ask can outrun the scene's own start
+-- D209/D214: the opening may already be up (and this program was restarted): ask for its hole and say where
+-- he stands; again once the scene is surely listening, since the first ask can outrun the scene's own start
+-- (lib/surface/citizen `hello`, written out: see report_box)
 run("pleamar", { "--say", "mooi-surface", "emit op_want" })
-after(500, function() run("pleamar", { "--say", "mooi-surface", "emit op_want" }) end)
+after(500, function() run("pleamar", { "--say", "mooi-surface", "emit op_want" }); report_box() end)

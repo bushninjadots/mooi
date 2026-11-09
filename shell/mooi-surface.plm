@@ -6,7 +6,7 @@ language 0.9
 
 scene Sigil {
     permissions {
-        run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl"
+        run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl", "playerctl"
         services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock"
     }
     service audio.level as lv { level: number }
@@ -3193,9 +3193,10 @@ scene Sigil {
     // The opening (D209): mooi-surface packs the hole into three numbers (lib/surface/opening `pack`);
     // every program turns them into the same sprung rectangle. mode = c / 1000: closed 0 · follow 1 · snapped 2 ·
     // section 3 · full 4. Follow sends no a, b: the target is the square of side 2 * R on the pointer.
+    // A fresh opening is faint (c carries 500) until it is firm or snapped: drawn weaker, and no zone answers.
     event op_a ->          // x * 4096 + y
     event op_b ->          // w * 4096 + h
-    event op_c ->          // mode * 1000 + r
+    event op_c ->          // mode * 1000 + (500 while faint) + r
     event sf_set ->        // the Surface: bit 0 on, bit 1 BMO lives below
     event op_want ->       // to mooi-surface: what a program under the wallpaper asks for
     event op_key ->        // the keyboard: 1 next · -1 before · 2 press what is snapped
@@ -3211,7 +3212,9 @@ scene Sigil {
     on sf_set(v) { sf_on = mod(v, 2) == 1; sf_bmo = floor(v / 2) == 1 }
     spring sg.op = 380, 34
     let op_mode = if(sf_on, floor(op_tc / 1000), 0)
-    let op_r0 = op_tc - floor(op_tc / 1000) * 1000
+    let op_r1 = op_tc - floor(op_tc / 1000) * 1000
+    let op_faint = op_r1 > 499.5
+    let op_r0 = op_r1 - if(op_faint, 500, 0)
     let op_ax = floor(op_ta / 4096)
     let op_aw = floor(op_tb / 4096)
     let op_tx = if(op_mode == 1, op_px - 90, op_ax)
@@ -3230,9 +3233,9 @@ scene Sigil {
     prop op_r = 0 ~sg.op
     follow op_r = op_tr
     prop op_k = 0 ~sg.op
-    follow op_k = if(op_mode > 0, 1, 0)
+    follow op_k = if(op_mode > 0, if(op_faint, 0.45, 1), 0)
     let op_vis = sf_on and op_k > 0.01
-    let sf_below = sf_on
+    let op_live = op_vis and not op_faint     // what is below answers a press only once the opening is firm
     // </gen:opening>
 
     // ── the subsurface (D209): the hubs, the components, the places the logic writes ──
@@ -3242,6 +3245,36 @@ scene Sigil {
     event sb_wheel ->     // a component's wheel (component * 10 + up)
     event sb_rsz ->       // a hub's shape handle being dragged (its code)
     event sb_rsz_drop ->  // and let go
+    event sb_seek ->      // the Music hub's line pressed (the pointer's x)
+    event op_type ->      // a letter typed while the Apps hub is snapped (its code; 8 rubs one out)
+    event op_bx ->        // from BMO: where he stands, x * 4096 + y
+    event op_bs ->        // ... and how big he is, w * 4096 + h
+    event op_wbar ->      // from mooi-widgets: how far below the screen's top its surface starts
+    fact sf_snap = 0      // what the opening hugs: hub 1-5, component 11-16, BMO 20, a widget 30, none 0
+    spring sg.rise = 320, 26
+    text ap_q = ""        // what has been typed into the Apps hub
+    prop hb1_up = 0 ~sg.rise
+    prop hb2_up = 0 ~sg.rise
+    prop hb3_up = 0 ~sg.rise
+    prop hb4_up = 0 ~sg.rise
+    prop hb5_up = 0 ~sg.rise
+    follow hb1_up = if(op_vis and (op_mode > 2 or sf_snap == 1), 1, 0)
+    follow hb2_up = if(op_vis and (op_mode > 2 or sf_snap == 2), 1, 0)
+    follow hb3_up = if(op_vis and (op_mode > 2 or sf_snap == 3), 1, 0)
+    follow hb4_up = if(op_vis and (op_mode > 2 or sf_snap == 4), 1, 0)
+    follow hb5_up = if(op_vis and (op_mode > 2 or sf_snap == 5), 1, 0)
+    prop cp1_up = 0 ~sg.rise
+    prop cp2_up = 0 ~sg.rise
+    prop cp3_up = 0 ~sg.rise
+    prop cp4_up = 0 ~sg.rise
+    prop cp5_up = 0 ~sg.rise
+    prop cp6_up = 0 ~sg.rise
+    follow cp1_up = if(op_vis and (op_mode > 2 or sf_snap == 11), 1, 0)
+    follow cp2_up = if(op_vis and (op_mode > 2 or sf_snap == 12), 1, 0)
+    follow cp3_up = if(op_vis and (op_mode > 2 or sf_snap == 13), 1, 0)
+    follow cp4_up = if(op_vis and (op_mode > 2 or sf_snap == 14), 1, 0)
+    follow cp5_up = if(op_vis and (op_mode > 2 or sf_snap == 15), 1, 0)
+    follow cp6_up = if(op_vis and (op_mode > 2 or sf_snap == 16), 1, 0)
     fact hb1_x = 50
     fact hb1_y = 279
     fact hb1_w = 360
@@ -3304,7 +3337,7 @@ scene Sigil {
     fact cp6_frac = 0
     text cp6_val = ""
     fact pw_open = false
-    fact pw_arm = false
+    fact pw_arm = 0        // the power row asking again (its number), or none
     fact ab1_on = false
     fact ab1_iconed = false
     text ab1_name = ""
@@ -3380,6 +3413,7 @@ scene Sigil {
     fact mu_on = false
     fact mu_playing = false
     fact mu_prog = 0
+    fact mu_len = 0
     text mu_t1 = ""
     text mu_t2 = ""
     text mu_art = ""
@@ -3405,15 +3439,23 @@ scene Sigil {
     fact nt1_on = false
     text nt1_t1 = ""
     text nt1_t2 = ""
+    fact nt1_act = false
+    text nt1_a1 = ""
     fact nt2_on = false
     text nt2_t1 = ""
     text nt2_t2 = ""
+    fact nt2_act = false
+    text nt2_a1 = ""
     fact nt3_on = false
     text nt3_t1 = ""
     text nt3_t2 = ""
+    fact nt3_act = false
+    text nt3_a1 = ""
     fact nt4_on = false
     text nt4_t1 = ""
     text nt4_t2 = ""
+    fact nt4_act = false
+    text nt4_a1 = ""
     fact nt_n = 0
 
     surface bar {
@@ -4859,7 +4901,6 @@ scene Sigil {
     shader ground = file "shaders/ground.wgsl"
     shader aura = file "shaders/aura.wgsl"
     fact rv_on = false
-    fact rv_stage = 0
     fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours
     fact sf_fx = 1         // the opening's look: 1 tear · 2 aperture · 3 membrane · 4 ripple · 5 fold · 6 dissolve · 7 glass · 8 glow
     fact sf_int = 0.85     // the effect's strength
@@ -4886,15 +4927,13 @@ scene Sigil {
     event rv_up ->         // from `mooi reveal up`: Super came up
     event rv_esc ->        // Escape while revealing
     event rv_move ->       // x * 10000 + y: the pointer while revealing
-    event rv_outside ->    // a press while revealing
     event sf_edit ->       // the settings page: move the places, let go to keep them
     event sf_reset ->      // the settings page: put every place back to the layout's
     event sf_undo ->       // the Overview: put the last dragged place back
-    event pp_press ->      // a Presence pressed (its slot)
     event pp_rpress ->     // a Presence right-pressed: edit it
     event pp_ctl ->        // slot * 10 + 1 previous · 2 play/pause · 3 next
     event pp_drag ->       // slot * 100000000 + x * 10000 + y while dragged in edit
-    event pp_drop ->       // slot, let go after a drag
+    event pp_drop ->       // a Presence let go (its slot): a press if it was not dragged
     event ed_undo ->
     event ed_redo ->
     event ed_done ->
@@ -5019,6 +5058,9 @@ scene Sigil {
         keyboard: none
         rate: 60, 20 while calm
         open: op_vis
+        // the opening's repaint (D214): a moving clip leaves what it uncovered behind unless the whole
+        // surface is repainted; this veil changes with the hole, and is gone when the opening is
+        box { from: 0, 0; size: 8192, 8192; color: #000000; opacity: 0.004 + 0.001 * fract((op_x + op_y + op_w + op_h) / 97); show: op_k > 0.001 }
         group {
             clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }
             // the wallpaper the opening is cut into: the real one, fitted, with a tint, then the ground's
@@ -5042,322 +5084,444 @@ scene Sigil {
             box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
             text "THE SUBSURFACE" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 48; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
             text "drag to arrange  /  Esc to close" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 66; anchor: left center; size: 10; family: "Share Tech Mono"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }
-            // below: what lives under the wallpaper (D209) — the hubs, the components, BMO's home
+            // below: what lives under the wallpaper (D209) — the hubs and the components
             group {
                 show: op_mode > 0
-                // hub 1: APPS
-                box { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
-                box { from: hb1_x + 0.5, hb1_y + 0.5; size: hb1_w - 1, hb1_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "APPS" { at: hb1_x + 16, hb1_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
-                zone box hbz1_0 { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; cursor: grab; role: button; label: "Apps"; show: op_vis and op_mode > 0 }
-                on drag hbz1_0 { emit sb_drag(100) }
-                on release hbz1_0 { emit sb_drop(100) }
-                zone box hbz1_1 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 1"; show: op_vis and op_mode > 0 and ab1_on }
-                box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab1_on }
-                text ab1_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab1_on and not ab1_iconed }
-                image ab1_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab1_on and ab1_iconed }
-                text ab1_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab1_on }
-                on press hbz1_1 { emit sb_press(101) }
-                zone box hbz1_2 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 2"; show: op_vis and op_mode > 0 and ab2_on }
-                box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab2_on }
-                text ab2_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab2_on and not ab2_iconed }
-                image ab2_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab2_on and ab2_iconed }
-                text ab2_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab2_on }
-                on press hbz1_2 { emit sb_press(102) }
-                zone box hbz1_3 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 3"; show: op_vis and op_mode > 0 and ab3_on }
-                box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab3_on }
-                text ab3_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab3_on and not ab3_iconed }
-                image ab3_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab3_on and ab3_iconed }
-                text ab3_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab3_on }
-                on press hbz1_3 { emit sb_press(103) }
-                zone box hbz1_4 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 4"; show: op_vis and op_mode > 0 and ab4_on }
-                box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab4_on }
-                text ab4_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab4_on and not ab4_iconed }
-                image ab4_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab4_on and ab4_iconed }
-                text ab4_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab4_on }
-                on press hbz1_4 { emit sb_press(104) }
-                zone box hbz1_5 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 5"; show: op_vis and op_mode > 0 and ab5_on }
-                box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab5_on }
-                text ab5_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab5_on and not ab5_iconed }
-                image ab5_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab5_on and ab5_iconed }
-                text ab5_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab5_on }
-                on press hbz1_5 { emit sb_press(105) }
-                zone box hbz1_6 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 6"; show: op_vis and op_mode > 0 and ab6_on }
-                box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab6_on }
-                text ab6_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab6_on and not ab6_iconed }
-                image ab6_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab6_on and ab6_iconed }
-                text ab6_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab6_on }
-                on press hbz1_6 { emit sb_press(106) }
-                zone box hbz1_7 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 7"; show: op_vis and op_mode > 0 and ab7_on }
-                box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab7_on }
-                text ab7_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab7_on and not ab7_iconed }
-                image ab7_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab7_on and ab7_iconed }
-                text ab7_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab7_on }
-                on press hbz1_7 { emit sb_press(107) }
-                zone box hbz1_8 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 8"; show: op_vis and op_mode > 0 and ab8_on }
-                box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab8_on }
-                text ab8_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab8_on and not ab8_iconed }
-                image ab8_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab8_on and ab8_iconed }
-                text ab8_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab8_on }
-                on press hbz1_8 { emit sb_press(108) }
-                zone box hbz1_9 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 9"; show: op_vis and op_mode > 0 and ab9_on }
-                box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab9_on }
-                text ab9_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab9_on and not ab9_iconed }
-                image ab9_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab9_on and ab9_iconed }
-                text ab9_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab9_on }
-                on press hbz1_9 { emit sb_press(109) }
-                zone box hbz1_10 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 10"; show: op_vis and op_mode > 0 and ab10_on }
-                box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab10_on }
-                text ab10_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab10_on and not ab10_iconed }
-                image ab10_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab10_on and ab10_iconed }
-                text ab10_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab10_on }
-                on press hbz1_10 { emit sb_press(110) }
-                zone box hbz1_11 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 11"; show: op_vis and op_mode > 0 and ab11_on }
-                box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab11_on }
-                text ab11_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab11_on and not ab11_iconed }
-                image ab11_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab11_on and ab11_iconed }
-                text ab11_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab11_on }
-                on press hbz1_11 { emit sb_press(111) }
-                zone box hbz1_12 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 12"; show: op_vis and op_mode > 0 and ab12_on }
-                box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: op_vis and ab12_on }
-                text ab12_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and ab12_on and not ab12_iconed }
-                image ab12_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: op_vis and ab12_on and ab12_iconed }
-                text ab12_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: op_vis and ab12_on }
-                on press hbz1_12 { emit sb_press(112) }
-                // hub 2: MUSIC
-                box { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
-                box { from: hb2_x + 0.5, hb2_y + 0.5; size: hb2_w - 1, hb2_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "MUSIC" { at: hb2_x + 16, hb2_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
-                zone box hbz2_0 { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; cursor: grab; role: button; label: "Music"; show: op_vis and op_mode > 0 }
-                on drag hbz2_0 { emit sb_drag(200) }
-                on release hbz2_0 { emit sb_drop(200) }
-                box { from: hb2_x + 18, hb2_y + 40; size: 64, 64; corner: 10; color: rgb(0.13, 0.14, 0.12); opacity: 0.9 }
-                image mu_img { at: hb2_x + 18, hb2_y + 40; size: 64, 64; fit: cover; show: op_vis and mu_on }
-                text "♫" { at: hb2_x + 50, hb2_y + 72; anchor: center; align: center; size: 22; color: muted; show: op_vis and not mu_on }
-                text mu_t1 { at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: ink; width: max(80, hb2_w - 106); lines: 1 }
-                text mu_t2 { at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: "Share Tech Mono"; color: muted; width: max(80, hb2_w - 106); lines: 1 }
-                zone box hbz2_1 { from: hb2_x + 92, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous"; show: op_vis and op_mode > 0 }
-                box { from: hb2_x + 92, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_1.hover }
-                on press hbz2_1 { emit sb_press(201) }
-                text "‹" { at: hb2_x + 92 + 14, hb2_y + 102; anchor: center; align: center; size: 16; weight: 700; family: "Exo 2"; color: ink }
-                zone box hbz2_2 { from: hb2_x + 126, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause"; show: op_vis and op_mode > 0 }
-                box { from: hb2_x + 126, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_2.hover }
-                on press hbz2_2 { emit sb_press(202) }
-                text "▶" { at: hb2_x + 126 + 14, hb2_y + 102; anchor: center; align: center; size: 14; weight: 700; family: "Exo 2"; color: ink; show: op_vis and not mu_playing }
-                text "❚❚" { at: hb2_x + 126 + 14, hb2_y + 102; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: op_vis and mu_playing }
-                zone box hbz2_3 { from: hb2_x + 160, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next"; show: op_vis and op_mode > 0 }
-                box { from: hb2_x + 160, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_3.hover }
-                on press hbz2_3 { emit sb_press(203) }
-                text "›" { at: hb2_x + 160 + 14, hb2_y + 102; anchor: center; align: center; size: 16; weight: 700; family: "Exo 2"; color: ink }
-                box { from: hb2_x + 18, hb2_y + 120; size: max(1, (hb2_w - 36) * clamp(mu_prog, 0, 1)), 1.4; color: rgb(h0_r, h0_g, h0_b); opacity: 0.8 }
-                // hub 3: WALLPAPERS
-                box { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
-                box { from: hb3_x + 0.5, hb3_y + 0.5; size: hb3_w - 1, hb3_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "WALLPAPERS" { at: hb3_x + 16, hb3_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
-                zone box hbz3_0 { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; cursor: grab; role: button; label: "Wallpapers"; show: op_vis and op_mode > 0 }
-                on drag hbz3_0 { emit sb_drag(300) }
-                on release hbz3_0 { emit sb_drop(300) }
-                zone box hbz3_1 { from: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 1"; show: op_vis and op_mode > 0 and wl1_on }
-                box { from: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl1_on }
-                image wl1_img { at: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl1_on }
-                on press hbz3_1 { emit sb_press(301) }
-                zone box hbz3_2 { from: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 2"; show: op_vis and op_mode > 0 and wl2_on }
-                box { from: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl2_on }
-                image wl2_img { at: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl2_on }
-                on press hbz3_2 { emit sb_press(302) }
-                zone box hbz3_3 { from: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 3"; show: op_vis and op_mode > 0 and wl3_on }
-                box { from: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl3_on }
-                image wl3_img { at: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl3_on }
-                on press hbz3_3 { emit sb_press(303) }
-                zone box hbz3_4 { from: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 4"; show: op_vis and op_mode > 0 and wl4_on }
-                box { from: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl4_on }
-                image wl4_img { at: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl4_on }
-                on press hbz3_4 { emit sb_press(304) }
-                zone box hbz3_5 { from: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 5"; show: op_vis and op_mode > 0 and wl5_on }
-                box { from: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl5_on }
-                image wl5_img { at: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl5_on }
-                on press hbz3_5 { emit sb_press(305) }
-                zone box hbz3_6 { from: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 6"; show: op_vis and op_mode > 0 and wl6_on }
-                box { from: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: op_vis and wl6_on }
-                image wl6_img { at: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: op_vis and wl6_on }
-                on press hbz3_6 { emit sb_press(306) }
-                // hub 4: SETTINGS
-                box { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
-                box { from: hb4_x + 0.5, hb4_y + 0.5; size: hb4_w - 1, hb4_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "SETTINGS" { at: hb4_x + 16, hb4_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
-                zone box hbz4_0 { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; cursor: grab; role: button; label: "Settings"; show: op_vis and op_mode > 0 }
-                on drag hbz4_0 { emit sb_drag(400) }
-                on release hbz4_0 { emit sb_drop(400) }
-                zone box hbz4_1 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Bar & Frame"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_1.hover; show: op_vis }
-                text "Bar & Frame" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 0 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_1 { emit sb_press(401) }
-                zone box hbz4_2 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Wallpapers"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_2.hover; show: op_vis }
-                text "Wallpapers" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 0 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_2 { emit sb_press(402) }
-                zone box hbz4_3 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Widgets"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_3.hover; show: op_vis }
-                text "Widgets" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 1 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_3 { emit sb_press(403) }
-                zone box hbz4_4 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Theme"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_4.hover; show: op_vis }
-                text "Theme" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 1 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_4 { emit sb_press(404) }
-                zone box hbz4_5 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Islands"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_5.hover; show: op_vis }
-                text "Islands" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 2 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_5 { emit sb_press(405) }
-                zone box hbz4_6 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Notch"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_6.hover; show: op_vis }
-                text "Notch" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 2 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_6 { emit sb_press(406) }
-                zone box hbz4_7 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Sound"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_7.hover; show: op_vis }
-                text "Sound" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 3 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_7 { emit sb_press(407) }
-                zone box hbz4_8 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "The Sigil"; show: op_vis and op_mode > 0 }
-                box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_8.hover; show: op_vis }
-                text "The Sigil" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 3 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
-                on press hbz4_8 { emit sb_press(408) }
-                // hub 5: NOTICES
-                box { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 }
-                box { from: hb5_x + 0.5, hb5_y + 0.5; size: hb5_w - 1, hb5_h - 1; corner: 18; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 }
-                text "NOTICES" { at: hb5_x + 16, hb5_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
-                zone box hbz5_0 { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; cursor: grab; role: button; label: "Notices"; show: op_vis and op_mode > 0 }
-                on drag hbz5_0 { emit sb_drag(500) }
-                on release hbz5_0 { emit sb_drop(500) }
-                zone box hbz5_1 { from: hb5_x + 10, hb5_y + 34 + 0 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 1"; show: op_vis and op_mode > 0 and nt1_on }
-                text nt1_t1 { at: hb5_x + 18, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt1_on }
-                text nt1_t2 { at: hb5_x + 18, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt1_on }
-                on press hbz5_1 { emit sb_press(501) }
-                zone box hbz5_2 { from: hb5_x + 10, hb5_y + 34 + 1 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 2"; show: op_vis and op_mode > 0 and nt2_on }
-                text nt2_t1 { at: hb5_x + 18, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt2_on }
-                text nt2_t2 { at: hb5_x + 18, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt2_on }
-                on press hbz5_2 { emit sb_press(502) }
-                zone box hbz5_3 { from: hb5_x + 10, hb5_y + 34 + 2 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 3"; show: op_vis and op_mode > 0 and nt3_on }
-                text nt3_t1 { at: hb5_x + 18, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt3_on }
-                text nt3_t2 { at: hb5_x + 18, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt3_on }
-                on press hbz5_3 { emit sb_press(503) }
-                zone box hbz5_4 { from: hb5_x + 10, hb5_y + 34 + 3 * (hb5_h - 64) / 4; size: hb5_w - 20, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 4"; show: op_vis and op_mode > 0 and nt4_on }
-                text nt4_t1 { at: hb5_x + 18, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - 40; lines: 1; show: op_vis and nt4_on }
-                text nt4_t2 { at: hb5_x + 18, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - 40; lines: 1; show: op_vis and nt4_on }
-                on press hbz5_4 { emit sb_press(504) }
-                zone box hbz5_clear { from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_vis and op_mode > 0 and nt_n > 0 }
-                box { from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }
-                text "CLEAR" { at: hb5_x + hb5_w - 44, hb5_y + hb5_h - 19; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }
-                on press hbz5_clear { emit sb_press(590) }
+                opacity: min(1, op_k)
+                group {
+                    pivot: hb1_x + hb1_w / 2, hb1_y + hb1_h / 2
+                    scale: 0.96 + 0.04 * hb1_up
+                    opacity: 0.72 + 0.28 * hb1_up
+                    // hub 1: APPS
+                    group { glow: 26, 0.55 * hb1_up, #000000
+                        box { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 } }
+                    box { from: hb1_x + 0.5, hb1_y + 0.5; size: hb1_w - 1, hb1_h - 1; corner: 18; stroke: if(sf_snap == 1, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 + 0.2 * hb1_up + if(sf_snap == 1, 0.4, 0) }
+                    text "APPS" { at: hb1_x + 16, hb1_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
+                    zone box hbz1_0 { from: hb1_x, hb1_y; size: hb1_w, hb1_h; corner: 18; cursor: grab; role: button; label: "Apps"; show: op_live }
+                    on drag hbz1_0 { emit sb_drag(100) }
+                    on release hbz1_0 { emit sb_drop(100) }
+                    text ap_q { at: hb1_x + 64, hb1_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: ink; width: hb1_w - 80; lines: 1 }
+                    zone box hbz1_1 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 1"; show: op_live and ab1_on }
+                    box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab1_on }
+                    text ab1_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab1_on and not ab1_iconed }
+                    image ab1_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab1_on and ab1_iconed }
+                    text ab1_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab1_on }
+                    on press hbz1_1 { emit sb_press(101) }
+                    zone box hbz1_2 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 2"; show: op_live and ab2_on }
+                    box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab2_on }
+                    text ab2_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab2_on and not ab2_iconed }
+                    image ab2_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab2_on and ab2_iconed }
+                    text ab2_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab2_on }
+                    on press hbz1_2 { emit sb_press(102) }
+                    zone box hbz1_3 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 3"; show: op_live and ab3_on }
+                    box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab3_on }
+                    text ab3_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab3_on and not ab3_iconed }
+                    image ab3_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab3_on and ab3_iconed }
+                    text ab3_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab3_on }
+                    on press hbz1_3 { emit sb_press(103) }
+                    zone box hbz1_4 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 4"; show: op_live and ab4_on }
+                    box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab4_on }
+                    text ab4_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab4_on and not ab4_iconed }
+                    image ab4_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab4_on and ab4_iconed }
+                    text ab4_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 0 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab4_on }
+                    on press hbz1_4 { emit sb_press(104) }
+                    zone box hbz1_5 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 5"; show: op_live and ab5_on }
+                    box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab5_on }
+                    text ab5_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab5_on and not ab5_iconed }
+                    image ab5_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab5_on and ab5_iconed }
+                    text ab5_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab5_on }
+                    on press hbz1_5 { emit sb_press(105) }
+                    zone box hbz1_6 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 6"; show: op_live and ab6_on }
+                    box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab6_on }
+                    text ab6_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab6_on and not ab6_iconed }
+                    image ab6_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab6_on and ab6_iconed }
+                    text ab6_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab6_on }
+                    on press hbz1_6 { emit sb_press(106) }
+                    zone box hbz1_7 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 7"; show: op_live and ab7_on }
+                    box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab7_on }
+                    text ab7_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab7_on and not ab7_iconed }
+                    image ab7_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab7_on and ab7_iconed }
+                    text ab7_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab7_on }
+                    on press hbz1_7 { emit sb_press(107) }
+                    zone box hbz1_8 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 8"; show: op_live and ab8_on }
+                    box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab8_on }
+                    text ab8_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab8_on and not ab8_iconed }
+                    image ab8_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab8_on and ab8_iconed }
+                    text ab8_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 1 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab8_on }
+                    on press hbz1_8 { emit sb_press(108) }
+                    zone box hbz1_9 { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 9"; show: op_live and ab9_on }
+                    box { from: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab9_on }
+                    text ab9_letter { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab9_on and not ab9_iconed }
+                    image ab9_img { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab9_on and ab9_iconed }
+                    text ab9_name { at: hb1_x + 18 + 0 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab9_on }
+                    on press hbz1_9 { emit sb_press(109) }
+                    zone box hbz1_10 { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 10"; show: op_live and ab10_on }
+                    box { from: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab10_on }
+                    text ab10_letter { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab10_on and not ab10_iconed }
+                    image ab10_img { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab10_on and ab10_iconed }
+                    text ab10_name { at: hb1_x + 18 + 1 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab10_on }
+                    on press hbz1_10 { emit sb_press(110) }
+                    zone box hbz1_11 { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 11"; show: op_live and ab11_on }
+                    box { from: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab11_on }
+                    text ab11_letter { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab11_on and not ab11_iconed }
+                    image ab11_img { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab11_on and ab11_iconed }
+                    text ab11_name { at: hb1_x + 18 + 2 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab11_on }
+                    on press hbz1_11 { emit sb_press(111) }
+                    zone box hbz1_12 { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: (hb1_w - 36) / 4 - 4, (hb1_h - 56) / 3 - 4; corner: 10; cursor: pointer; role: button; label: "App 12"; show: op_live and ab12_on }
+                    box { from: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; corner: 8; color: rgb(0.14, 0.15, 0.13); opacity: 0.9; show: ab12_on }
+                    text ab12_letter { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2 + 15, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + 15; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: ab12_on and not ab12_iconed }
+                    image ab12_img { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + ((hb1_w - 36) / 4 - 30) / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3; size: 30, 30; fit: cover; show: ab12_on and ab12_iconed }
+                    text ab12_name { at: hb1_x + 18 + 3 * (hb1_w - 36) / 4 + (hb1_w - 36) / 4 / 2, hb1_y + 40 + 2 * (hb1_h - 56) / 3 + (hb1_h - 56) / 3 - 10; anchor: center; align: center; size: 9; family: "Exo 2"; color: muted; width: (hb1_w - 36) / 4 - 4; lines: 1; show: ab12_on }
+                    on press hbz1_12 { emit sb_press(112) }
+                }
+                group {
+                    pivot: hb2_x + hb2_w / 2, hb2_y + hb2_h / 2
+                    scale: 0.96 + 0.04 * hb2_up
+                    opacity: 0.72 + 0.28 * hb2_up
+                    // hub 2: MUSIC
+                    group { glow: 26, 0.55 * hb2_up, #000000
+                        box { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 } }
+                    box { from: hb2_x + 0.5, hb2_y + 0.5; size: hb2_w - 1, hb2_h - 1; corner: 18; stroke: if(sf_snap == 2, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 + 0.2 * hb2_up + if(sf_snap == 2, 0.4, 0) }
+                    text "MUSIC" { at: hb2_x + 16, hb2_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
+                    zone box hbz2_0 { from: hb2_x, hb2_y; size: hb2_w, hb2_h; corner: 18; cursor: grab; role: button; label: "Music"; show: op_live }
+                    on drag hbz2_0 { emit sb_drag(200) }
+                    on release hbz2_0 { emit sb_drop(200) }
+                    box { from: hb2_x + 18, hb2_y + 40; size: 64, 64; corner: 10; color: rgb(0.13, 0.14, 0.12); opacity: 0.9 }
+                    image mu_img { at: hb2_x + 18, hb2_y + 40; size: 64, 64; fit: cover; show: mu_on }
+                    text "♫" { at: hb2_x + 50, hb2_y + 72; anchor: center; align: center; size: 22; color: muted; show: not mu_on }
+                    text mu_t1 { at: hb2_x + 94, hb2_y + 50; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: ink; width: max(80, hb2_w - 106); lines: 1 }
+                    text mu_t2 { at: hb2_x + 94, hb2_y + 70; anchor: left center; size: 10; family: "Share Tech Mono"; color: muted; width: max(80, hb2_w - 106); lines: 1 }
+                    zone box hbz2_1 { from: hb2_x + 92, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Previous"; show: op_live }
+                    box { from: hb2_x + 92, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_1.hover }
+                    on press hbz2_1 { emit sb_press(201) }
+                    text "‹" { at: hb2_x + 92 + 14, hb2_y + 102; anchor: center; align: center; size: 16; weight: 700; family: "Exo 2"; color: ink }
+                    zone box hbz2_2 { from: hb2_x + 126, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause"; show: op_live }
+                    box { from: hb2_x + 126, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_2.hover }
+                    on press hbz2_2 { emit sb_press(202) }
+                    text "▶" { at: hb2_x + 126 + 14, hb2_y + 102; anchor: center; align: center; size: 14; weight: 700; family: "Exo 2"; color: ink; show: not mu_playing }
+                    text "❚❚" { at: hb2_x + 126 + 14, hb2_y + 102; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: ink; show: mu_playing }
+                    zone box hbz2_3 { from: hb2_x + 160, hb2_y + 88; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next"; show: op_live }
+                    box { from: hb2_x + 160, hb2_y + 88; size: 28, 28; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.35 + 0.5 * hbz2_3.hover }
+                    on press hbz2_3 { emit sb_press(203) }
+                    text "›" { at: hb2_x + 160 + 14, hb2_y + 102; anchor: center; align: center; size: 16; weight: 700; family: "Exo 2"; color: ink }
+                    group {
+                        show: mu_playing and hb2_w > 260
+                        box { from: hb2_x + 210 + 0 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(0.0 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(0.0 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 1 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(1.9 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(1.9 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 2 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(3.8 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(3.8 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 3 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(5.7 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(5.7 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 4 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(7.6 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(7.6 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 5 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(9.5 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(9.5 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 6 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(11.4 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(11.4 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 7 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(13.3 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(13.3 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 8 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(15.2 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(15.2 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 9 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(17.1 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(17.1 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 10 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(19.0 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(19.0 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 11 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(20.9 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(20.9 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 12 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(22.8 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(22.8 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 13 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(24.7 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(24.7 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 14 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(26.6 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(26.6 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                        box { from: hb2_x + 210 + 15 * max(0, hb2_w - 228) / 16, hb2_y + 116 - max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(28.5 + lv.level * 7)))); size: max(1, max(0, hb2_w - 228) / 16 - 2), max(1, 22 * clamp(lv.level, 0, 1) * (0.35 + 0.65 * abs(sin(28.5 + lv.level * 7)))); corner: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.7 }
+                    }
+                    box { from: hb2_x + 18, hb2_y + 120; size: max(1, hb2_w - 36), 1.4; color: muted; opacity: 0.18 }
+                    box { from: hb2_x + 18, hb2_y + 120; size: max(1, (hb2_w - 36) * clamp(mu_prog, 0, 1)), 1.4; color: rgb(h0_r, h0_g, h0_b); opacity: 0.8 }
+                    zone box hbz2_seek { from: hb2_x + 18, hb2_y + 113; size: max(1, hb2_w - 36), 14; cursor: pointer; role: slider; label: "Where the song is"; show: op_live and mu_len > 0 }
+                    on press hbz2_seek { emit sb_seek(round(pointer.x)) }
+                }
+                group {
+                    pivot: hb3_x + hb3_w / 2, hb3_y + hb3_h / 2
+                    scale: 0.96 + 0.04 * hb3_up
+                    opacity: 0.72 + 0.28 * hb3_up
+                    // hub 3: WALLPAPERS
+                    group { glow: 26, 0.55 * hb3_up, #000000
+                        box { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 } }
+                    box { from: hb3_x + 0.5, hb3_y + 0.5; size: hb3_w - 1, hb3_h - 1; corner: 18; stroke: if(sf_snap == 3, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 + 0.2 * hb3_up + if(sf_snap == 3, 0.4, 0) }
+                    text "WALLPAPERS" { at: hb3_x + 16, hb3_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
+                    zone box hbz3_0 { from: hb3_x, hb3_y; size: hb3_w, hb3_h; corner: 18; cursor: grab; role: button; label: "Wallpapers"; show: op_live }
+                    on drag hbz3_0 { emit sb_drag(300) }
+                    on release hbz3_0 { emit sb_drop(300) }
+                    zone box hbz3_1 { from: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 1"; show: op_live and wl1_on }
+                    box { from: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: wl1_on }
+                    image wl1_img { at: hb3_x + 16 + 0 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: wl1_on }
+                    on press hbz3_1 { emit sb_press(301) }
+                    zone box hbz3_2 { from: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 2"; show: op_live and wl2_on }
+                    box { from: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: wl2_on }
+                    image wl2_img { at: hb3_x + 16 + 1 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: wl2_on }
+                    on press hbz3_2 { emit sb_press(302) }
+                    zone box hbz3_3 { from: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 3"; show: op_live and wl3_on }
+                    box { from: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: wl3_on }
+                    image wl3_img { at: hb3_x + 16 + 2 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: wl3_on }
+                    on press hbz3_3 { emit sb_press(303) }
+                    zone box hbz3_4 { from: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 4"; show: op_live and wl4_on }
+                    box { from: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: wl4_on }
+                    image wl4_img { at: hb3_x + 16 + 3 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: wl4_on }
+                    on press hbz3_4 { emit sb_press(304) }
+                    zone box hbz3_5 { from: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 5"; show: op_live and wl5_on }
+                    box { from: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: wl5_on }
+                    image wl5_img { at: hb3_x + 16 + 4 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: wl5_on }
+                    on press hbz3_5 { emit sb_press(305) }
+                    zone box hbz3_6 { from: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; cursor: pointer; role: button; label: "Wallpaper 6"; show: op_live and wl6_on }
+                    box { from: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); corner: 6; color: rgb(0.12, 0.13, 0.11); opacity: 0.9; show: wl6_on }
+                    image wl6_img { at: hb3_x + 16 + 5 * (hb3_w - 32) / 6, hb3_y + 42; size: min(48, (hb3_w - 32) / 6 - 6), min(40, hb3_h - 52); fit: cover; show: wl6_on }
+                    on press hbz3_6 { emit sb_press(306) }
+                }
+                group {
+                    pivot: hb4_x + hb4_w / 2, hb4_y + hb4_h / 2
+                    scale: 0.96 + 0.04 * hb4_up
+                    opacity: 0.72 + 0.28 * hb4_up
+                    // hub 4: SETTINGS
+                    group { glow: 26, 0.55 * hb4_up, #000000
+                        box { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 } }
+                    box { from: hb4_x + 0.5, hb4_y + 0.5; size: hb4_w - 1, hb4_h - 1; corner: 18; stroke: if(sf_snap == 4, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 + 0.2 * hb4_up + if(sf_snap == 4, 0.4, 0) }
+                    text "SETTINGS" { at: hb4_x + 16, hb4_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
+                    zone box hbz4_0 { from: hb4_x, hb4_y; size: hb4_w, hb4_h; corner: 18; cursor: grab; role: button; label: "Settings"; show: op_live }
+                    on drag hbz4_0 { emit sb_drag(400) }
+                    on release hbz4_0 { emit sb_drop(400) }
+                    zone box hbz4_1 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Theme & colour"; show: op_live }
+                    box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_1.hover }
+                    text "Theme & colour" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 0 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_1 { emit sb_press(401) }
+                    zone box hbz4_2 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Bar & Frame"; show: op_live }
+                    box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 0 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_2.hover }
+                    text "Bar & Frame" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 0 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_2 { emit sb_press(402) }
+                    zone box hbz4_3 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Wallpapers"; show: op_live }
+                    box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_3.hover }
+                    text "Wallpapers" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 1 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_3 { emit sb_press(403) }
+                    zone box hbz4_4 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Widgets"; show: op_live }
+                    box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 1 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_4.hover }
+                    text "Widgets" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 1 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_4 { emit sb_press(404) }
+                    zone box hbz4_5 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Sound"; show: op_live }
+                    box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_5.hover }
+                    text "Sound" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 2 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_5 { emit sb_press(405) }
+                    zone box hbz4_6 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "Power"; show: op_live }
+                    box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 2 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_6.hover }
+                    text "Power" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 2 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_6 { emit sb_press(406) }
+                    zone box hbz4_7 { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "BMO"; show: op_live }
+                    box { from: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_7.hover }
+                    text "BMO" { at: hb4_x + 14 + 0 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 3 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_7 { emit sb_press(407) }
+                    zone box hbz4_8 { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; cursor: pointer; role: button; label: "The Subsurface"; show: op_live }
+                    box { from: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12), hb4_y + 36 + 3 * (hb4_h - 40) / 4; size: (hb4_w - 40) / 2, max(18, (hb4_h - 40) / 4 - 2); corner: 6; color: rgb(0.13, 0.14, 0.12); opacity: 0.5 + 0.4 * hbz4_8.hover }
+                    text "The Subsurface" { at: hb4_x + 14 + 1 * ((hb4_w - 40) / 2 + 12) + 7, hb4_y + 36 + 3 * (hb4_h - 40) / 4 + 11; anchor: left center; size: 9; family: "Exo 2"; color: ink; width: (hb4_w - 40) / 2 - 14; lines: 1 }
+                    on press hbz4_8 { emit sb_press(408) }
+                }
+                group {
+                    pivot: hb5_x + hb5_w / 2, hb5_y + hb5_h / 2
+                    scale: 0.96 + 0.04 * hb5_up
+                    opacity: 0.72 + 0.28 * hb5_up
+                    // hub 5: NOTICES
+                    group { glow: 26, 0.55 * hb5_up, #000000
+                        box { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; color: rgb(0.07, 0.08, 0.07); opacity: 0.94 } }
+                    box { from: hb5_x + 0.5, hb5_y + 0.5; size: hb5_w - 1, hb5_h - 1; corner: 18; stroke: if(sf_snap == 5, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.28 + 0.2 * hb5_up + if(sf_snap == 5, 0.4, 0) }
+                    text "NOTICES" { at: hb5_x + 16, hb5_y + 20; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: muted; show: sf_labels > 0.5 }
+                    zone box hbz5_0 { from: hb5_x, hb5_y; size: hb5_w, hb5_h; corner: 18; cursor: grab; role: button; label: "Notices"; show: op_live }
+                    on drag hbz5_0 { emit sb_drag(500) }
+                    on release hbz5_0 { emit sb_drop(500) }
+                    zone box hbz5_1 { from: hb5_x + 10, hb5_y + 34 + 0 * (hb5_h - 64) / 4; size: hb5_w - 120, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 1"; show: op_live and nt1_on }
+                    text nt1_t1 { at: hb5_x + 18, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - if(nt1_act, 132, 62); lines: 1; show: nt1_on }
+                    text nt1_t2 { at: hb5_x + 18, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - if(nt1_act, 132, 62); lines: 1; show: nt1_on }
+                    on press hbz5_1 { emit sb_press(501) }
+                    zone box hbz5_a1 { from: hb5_x + hb5_w - 104, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; cursor: pointer; role: button; label: "{nt1_a1}"; show: op_live and nt1_on and nt1_act }
+                    box { from: hb5_x + hb5_w - 104, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_a1.hover; show: nt1_on and nt1_act }
+                    text nt1_a1 { at: hb5_x + hb5_w - 104 + 31, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: ink; width: 56; lines: 1; show: nt1_on and nt1_act }
+                    on press hbz5_a1 { emit sb_press(521) }
+                    zone box hbz5_x1 { from: hb5_x + hb5_w - 34, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 4; size: 20, 20; corner: 10; cursor: pointer; role: button; label: "Dismiss notice 1"; show: op_live and nt1_on }
+                    text "×" { at: hb5_x + hb5_w - 34 + 10, hb5_y + 34 + 0 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 13; family: "Exo 2"; color: if(hbz5_x1.hover > 0.5, ink, muted); show: nt1_on }
+                    on press hbz5_x1 { emit sb_press(541) }
+                    zone box hbz5_2 { from: hb5_x + 10, hb5_y + 34 + 1 * (hb5_h - 64) / 4; size: hb5_w - 120, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 2"; show: op_live and nt2_on }
+                    text nt2_t1 { at: hb5_x + 18, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - if(nt2_act, 132, 62); lines: 1; show: nt2_on }
+                    text nt2_t2 { at: hb5_x + 18, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - if(nt2_act, 132, 62); lines: 1; show: nt2_on }
+                    on press hbz5_2 { emit sb_press(502) }
+                    zone box hbz5_a2 { from: hb5_x + hb5_w - 104, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; cursor: pointer; role: button; label: "{nt2_a1}"; show: op_live and nt2_on and nt2_act }
+                    box { from: hb5_x + hb5_w - 104, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_a2.hover; show: nt2_on and nt2_act }
+                    text nt2_a1 { at: hb5_x + hb5_w - 104 + 31, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: ink; width: 56; lines: 1; show: nt2_on and nt2_act }
+                    on press hbz5_a2 { emit sb_press(522) }
+                    zone box hbz5_x2 { from: hb5_x + hb5_w - 34, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 4; size: 20, 20; corner: 10; cursor: pointer; role: button; label: "Dismiss notice 2"; show: op_live and nt2_on }
+                    text "×" { at: hb5_x + hb5_w - 34 + 10, hb5_y + 34 + 1 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 13; family: "Exo 2"; color: if(hbz5_x2.hover > 0.5, ink, muted); show: nt2_on }
+                    on press hbz5_x2 { emit sb_press(542) }
+                    zone box hbz5_3 { from: hb5_x + 10, hb5_y + 34 + 2 * (hb5_h - 64) / 4; size: hb5_w - 120, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 3"; show: op_live and nt3_on }
+                    text nt3_t1 { at: hb5_x + 18, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - if(nt3_act, 132, 62); lines: 1; show: nt3_on }
+                    text nt3_t2 { at: hb5_x + 18, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - if(nt3_act, 132, 62); lines: 1; show: nt3_on }
+                    on press hbz5_3 { emit sb_press(503) }
+                    zone box hbz5_a3 { from: hb5_x + hb5_w - 104, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; cursor: pointer; role: button; label: "{nt3_a1}"; show: op_live and nt3_on and nt3_act }
+                    box { from: hb5_x + hb5_w - 104, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_a3.hover; show: nt3_on and nt3_act }
+                    text nt3_a1 { at: hb5_x + hb5_w - 104 + 31, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: ink; width: 56; lines: 1; show: nt3_on and nt3_act }
+                    on press hbz5_a3 { emit sb_press(523) }
+                    zone box hbz5_x3 { from: hb5_x + hb5_w - 34, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 4; size: 20, 20; corner: 10; cursor: pointer; role: button; label: "Dismiss notice 3"; show: op_live and nt3_on }
+                    text "×" { at: hb5_x + hb5_w - 34 + 10, hb5_y + 34 + 2 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 13; family: "Exo 2"; color: if(hbz5_x3.hover > 0.5, ink, muted); show: nt3_on }
+                    on press hbz5_x3 { emit sb_press(543) }
+                    zone box hbz5_4 { from: hb5_x + 10, hb5_y + 34 + 3 * (hb5_h - 64) / 4; size: hb5_w - 120, max(28, (hb5_h - 64) / 4 - 4); corner: 8; cursor: pointer; role: button; label: "Notice 4"; show: op_live and nt4_on }
+                    text nt4_t1 { at: hb5_x + 18, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 10; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: ink; width: hb5_w - if(nt4_act, 132, 62); lines: 1; show: nt4_on }
+                    text nt4_t2 { at: hb5_x + 18, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 24; anchor: left center; size: 9; family: "Share Tech Mono"; color: muted; width: hb5_w - if(nt4_act, 132, 62); lines: 1; show: nt4_on }
+                    on press hbz5_4 { emit sb_press(504) }
+                    zone box hbz5_a4 { from: hb5_x + hb5_w - 104, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; cursor: pointer; role: button; label: "{nt4_a1}"; show: op_live and nt4_on and nt4_act }
+                    box { from: hb5_x + hb5_w - 104, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 4; size: 62, 20; corner: 10; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_a4.hover; show: nt4_on and nt4_act }
+                    text nt4_a1 { at: hb5_x + hb5_w - 104 + 31, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: ink; width: 56; lines: 1; show: nt4_on and nt4_act }
+                    on press hbz5_a4 { emit sb_press(524) }
+                    zone box hbz5_x4 { from: hb5_x + hb5_w - 34, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 4; size: 20, 20; corner: 10; cursor: pointer; role: button; label: "Dismiss notice 4"; show: op_live and nt4_on }
+                    text "×" { at: hb5_x + hb5_w - 34 + 10, hb5_y + 34 + 3 * (hb5_h - 64) / 4 + 14; anchor: center; align: center; size: 13; family: "Exo 2"; color: if(hbz5_x4.hover > 0.5, ink, muted); show: nt4_on }
+                    on press hbz5_x4 { emit sb_press(544) }
+                    text "Nothing new" { at: hb5_x + 18, hb5_y + 48; anchor: left center; size: 10; family: "Exo 2"; color: muted; show: nt_n < 0.5 }
+                    zone box hbz5_clear { from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; cursor: pointer; role: button; label: "Clear the notices"; show: op_live and nt_n > 0 }
+                    box { from: hb5_x + hb5_w - 72, hb5_y + hb5_h - 30; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover; show: nt_n > 0 }
+                    text "CLEAR" { at: hb5_x + hb5_w - 44, hb5_y + hb5_h - 19; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted; show: nt_n > 0 }
+                    on press hbz5_clear { emit sb_press(590) }
+                }
                 // hub 1's shape handle
-                box { from: hb1_x + hb1_w - 16, hb1_y + hb1_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }
-                text hb1_sz { at: hb1_x + hb1_w - 24, hb1_y + hb1_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_vis and op_mode == 4 and sf_rsz > 0.5 and sf_rsz < 1.5 }
-                zone box hbr1 { from: hb1_x + hb1_w - 18, hb1_y + hb1_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Apps"; show: op_vis and op_mode == 4 }
+                box { from: hb1_x + hb1_w - 16, hb1_y + hb1_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_mode == 4 }
+                text hb1_sz { at: hb1_x + hb1_w - 24, hb1_y + hb1_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_mode == 4 and sf_rsz > 0.5 and sf_rsz < 1.5 }
+                zone box hbr1 { from: hb1_x + hb1_w - 18, hb1_y + hb1_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Apps"; show: op_live and op_mode == 4 }
                 on drag hbr1 { emit sb_rsz(100) }
                 on release hbr1 { emit sb_rsz_drop(100) }
                 // hub 2's shape handle
-                box { from: hb2_x + hb2_w - 16, hb2_y + hb2_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }
-                text hb2_sz { at: hb2_x + hb2_w - 24, hb2_y + hb2_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_vis and op_mode == 4 and sf_rsz > 1.5 and sf_rsz < 2.5 }
-                zone box hbr2 { from: hb2_x + hb2_w - 18, hb2_y + hb2_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Music"; show: op_vis and op_mode == 4 }
+                box { from: hb2_x + hb2_w - 16, hb2_y + hb2_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_mode == 4 }
+                text hb2_sz { at: hb2_x + hb2_w - 24, hb2_y + hb2_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_mode == 4 and sf_rsz > 1.5 and sf_rsz < 2.5 }
+                zone box hbr2 { from: hb2_x + hb2_w - 18, hb2_y + hb2_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Music"; show: op_live and op_mode == 4 }
                 on drag hbr2 { emit sb_rsz(200) }
                 on release hbr2 { emit sb_rsz_drop(200) }
                 // hub 3's shape handle
-                box { from: hb3_x + hb3_w - 16, hb3_y + hb3_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }
-                text hb3_sz { at: hb3_x + hb3_w - 24, hb3_y + hb3_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_vis and op_mode == 4 and sf_rsz > 2.5 and sf_rsz < 3.5 }
-                zone box hbr3 { from: hb3_x + hb3_w - 18, hb3_y + hb3_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Wallpapers"; show: op_vis and op_mode == 4 }
+                box { from: hb3_x + hb3_w - 16, hb3_y + hb3_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_mode == 4 }
+                text hb3_sz { at: hb3_x + hb3_w - 24, hb3_y + hb3_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_mode == 4 and sf_rsz > 2.5 and sf_rsz < 3.5 }
+                zone box hbr3 { from: hb3_x + hb3_w - 18, hb3_y + hb3_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Wallpapers"; show: op_live and op_mode == 4 }
                 on drag hbr3 { emit sb_rsz(300) }
                 on release hbr3 { emit sb_rsz_drop(300) }
                 // hub 4's shape handle
-                box { from: hb4_x + hb4_w - 16, hb4_y + hb4_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }
-                text hb4_sz { at: hb4_x + hb4_w - 24, hb4_y + hb4_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_vis and op_mode == 4 and sf_rsz > 3.5 and sf_rsz < 4.5 }
-                zone box hbr4 { from: hb4_x + hb4_w - 18, hb4_y + hb4_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Settings"; show: op_vis and op_mode == 4 }
+                box { from: hb4_x + hb4_w - 16, hb4_y + hb4_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_mode == 4 }
+                text hb4_sz { at: hb4_x + hb4_w - 24, hb4_y + hb4_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_mode == 4 and sf_rsz > 3.5 and sf_rsz < 4.5 }
+                zone box hbr4 { from: hb4_x + hb4_w - 18, hb4_y + hb4_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Settings"; show: op_live and op_mode == 4 }
                 on drag hbr4 { emit sb_rsz(400) }
                 on release hbr4 { emit sb_rsz_drop(400) }
                 // hub 5's shape handle
-                box { from: hb5_x + hb5_w - 16, hb5_y + hb5_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }
-                text hb5_sz { at: hb5_x + hb5_w - 24, hb5_y + hb5_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_vis and op_mode == 4 and sf_rsz > 4.5 and sf_rsz < 5.5 }
-                zone box hbr5 { from: hb5_x + hb5_w - 18, hb5_y + hb5_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Notices"; show: op_vis and op_mode == 4 }
+                box { from: hb5_x + hb5_w - 16, hb5_y + hb5_h - 16; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_mode == 4 }
+                text hb5_sz { at: hb5_x + hb5_w - 24, hb5_y + hb5_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_mode == 4 and sf_rsz > 4.5 and sf_rsz < 5.5 }
+                zone box hbr5 { from: hb5_x + hb5_w - 18, hb5_y + hb5_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize Notices"; show: op_live and op_mode == 4 }
                 on drag hbr5 { emit sb_rsz(500) }
                 on release hbr5 { emit sb_rsz_drop(500) }
-                // component 1: Wi-Fi
-                zone box cpz1 { from: cp1_x, cp1_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Wi-Fi"; show: op_vis and op_mode > 0 and cp1_on }
-                box { from: cp1_x, cp1_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp1_on }
-                box { from: cp1_x + 0.5, cp1_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp1_lit; show: op_vis and cp1_on }
-                text "≋" { at: cp1_x + 28, cp1_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp1_lit, ink, muted); show: op_vis and cp1_on }
-                text cp1_val { at: cp1_x + 28, cp1_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: op_vis and cp1_on }
-                on press cpz1 { emit sb_press(901) }
-                on drag cpz1 { emit sb_drag(901) }
-                // component 2: Bluetooth
-                zone box cpz2 { from: cp2_x, cp2_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Bluetooth"; show: op_vis and op_mode > 0 and cp2_on }
-                box { from: cp2_x, cp2_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp2_on }
-                box { from: cp2_x + 0.5, cp2_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp2_lit; show: op_vis and cp2_on }
-                text "ᛒ" { at: cp2_x + 28, cp2_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp2_lit, ink, muted); show: op_vis and cp2_on }
-                text cp2_val { at: cp2_x + 28, cp2_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: op_vis and cp2_on }
-                on press cpz2 { emit sb_press(902) }
-                on drag cpz2 { emit sb_drag(902) }
-                // component 3: Volume
-                zone box cpz3 { from: cp3_x, cp3_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Volume"; show: op_vis and op_mode > 0 and cp3_on }
-                box { from: cp3_x, cp3_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp3_on }
-                box { from: cp3_x + 0.5, cp3_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp3_lit; show: op_vis and cp3_on }
-                text "♪" { at: cp3_x + 28, cp3_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp3_lit, ink, muted); show: op_vis and cp3_on }
-                text cp3_val { at: cp3_x + 28, cp3_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: op_vis and cp3_on }
-                on press cpz3 { emit sb_press(903) }
-                on drag cpz3 { emit sb_drag(903) }
-                box { from: cp3_x + 10, cp3_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: op_vis and cp3_on }
-                box { from: cp3_x + 10, cp3_y + 46; size: max(1, 36 * clamp(cp3_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: op_vis and cp3_on }
-                on scroll cpz3 { emit sb_wheel(30 + if(wheel > 0, 1, 0)) }
-                // component 4: Brightness
-                zone box cpz4 { from: cp4_x, cp4_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Brightness"; show: op_vis and op_mode > 0 and cp4_on }
-                box { from: cp4_x, cp4_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp4_on }
-                box { from: cp4_x + 0.5, cp4_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp4_lit; show: op_vis and cp4_on }
-                text "☀" { at: cp4_x + 28, cp4_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp4_lit, ink, muted); show: op_vis and cp4_on }
-                text cp4_val { at: cp4_x + 28, cp4_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: op_vis and cp4_on }
-                on press cpz4 { emit sb_press(904) }
-                on drag cpz4 { emit sb_drag(904) }
-                box { from: cp4_x + 10, cp4_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: op_vis and cp4_on }
-                box { from: cp4_x + 10, cp4_y + 46; size: max(1, 36 * clamp(cp4_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: op_vis and cp4_on }
-                on scroll cpz4 { emit sb_wheel(40 + if(wheel > 0, 1, 0)) }
-                // component 5: Battery
-                zone box cpz5 { from: cp5_x, cp5_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Battery"; show: op_vis and op_mode > 0 and cp5_on }
-                box { from: cp5_x, cp5_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp5_on }
-                box { from: cp5_x + 0.5, cp5_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp5_lit; show: op_vis and cp5_on }
-                text "▭" { at: cp5_x + 28, cp5_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp5_lit, ink, muted); show: op_vis and cp5_on }
-                text cp5_val { at: cp5_x + 28, cp5_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: op_vis and cp5_on }
-                on press cpz5 { emit sb_press(905) }
-                on drag cpz5 { emit sb_drag(905) }
-                box { from: cp5_x + 10, cp5_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: op_vis and cp5_on }
-                box { from: cp5_x + 10, cp5_y + 46; size: max(1, 36 * clamp(cp5_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: op_vis and cp5_on }
-                // component 6: Power
-                zone box cpz6 { from: cp6_x, cp6_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Power"; show: op_vis and op_mode > 0 and cp6_on }
-                box { from: cp6_x, cp6_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: op_vis and cp6_on }
-                box { from: cp6_x + 0.5, cp6_y + 0.5; size: 55, 55; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp6_lit; show: op_vis and cp6_on }
-                text "⏻" { at: cp6_x + 28, cp6_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp6_lit, ink, muted); show: op_vis and cp6_on }
-                text cp6_val { at: cp6_x + 28, cp6_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: op_vis and cp6_on }
-                on press cpz6 { emit sb_press(906) }
-                on drag cpz6 { emit sb_drag(906) }
+                group {
+                    pivot: cp1_x + 28, cp1_y + 28
+                    scale: 0.96 + 0.04 * cp1_up
+                    opacity: 0.72 + 0.28 * cp1_up
+                    // component 1: Wi-Fi
+                    zone box cpz1 { from: cp1_x, cp1_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Wi-Fi"; show: op_live and cp1_on }
+                    group { glow: 18, 0.5 * cp1_up, #000000
+                        box { from: cp1_x, cp1_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: cp1_on } }
+                    box { from: cp1_x + 0.5, cp1_y + 0.5; size: 55, 55; corner: 14; stroke: if(sf_snap == 11, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp1_lit + if(sf_snap == 11, 0.4, 0); show: cp1_on }
+                    text "≋" { at: cp1_x + 28, cp1_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp1_lit, ink, muted); show: cp1_on }
+                    text cp1_val { at: cp1_x + 28, cp1_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: cp1_on }
+                    on drag cpz1 { emit sb_drag(901) }
+                    on release cpz1 { emit sb_drop(901) }
+                }
+                group {
+                    pivot: cp2_x + 28, cp2_y + 28
+                    scale: 0.96 + 0.04 * cp2_up
+                    opacity: 0.72 + 0.28 * cp2_up
+                    // component 2: Bluetooth
+                    zone box cpz2 { from: cp2_x, cp2_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Bluetooth"; show: op_live and cp2_on }
+                    group { glow: 18, 0.5 * cp2_up, #000000
+                        box { from: cp2_x, cp2_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: cp2_on } }
+                    box { from: cp2_x + 0.5, cp2_y + 0.5; size: 55, 55; corner: 14; stroke: if(sf_snap == 12, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp2_lit + if(sf_snap == 12, 0.4, 0); show: cp2_on }
+                    text "ᛒ" { at: cp2_x + 28, cp2_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp2_lit, ink, muted); show: cp2_on }
+                    text cp2_val { at: cp2_x + 28, cp2_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: cp2_on }
+                    on drag cpz2 { emit sb_drag(902) }
+                    on release cpz2 { emit sb_drop(902) }
+                }
+                group {
+                    pivot: cp3_x + 28, cp3_y + 28
+                    scale: 0.96 + 0.04 * cp3_up
+                    opacity: 0.72 + 0.28 * cp3_up
+                    // component 3: Volume
+                    zone box cpz3 { from: cp3_x, cp3_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Volume"; show: op_live and cp3_on }
+                    group { glow: 18, 0.5 * cp3_up, #000000
+                        box { from: cp3_x, cp3_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: cp3_on } }
+                    box { from: cp3_x + 0.5, cp3_y + 0.5; size: 55, 55; corner: 14; stroke: if(sf_snap == 13, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp3_lit + if(sf_snap == 13, 0.4, 0); show: cp3_on }
+                    text "♪" { at: cp3_x + 28, cp3_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp3_lit, ink, muted); show: cp3_on }
+                    text cp3_val { at: cp3_x + 28, cp3_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: cp3_on }
+                    on drag cpz3 { emit sb_drag(903) }
+                    on release cpz3 { emit sb_drop(903) }
+                    box { from: cp3_x + 10, cp3_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: cp3_on }
+                    box { from: cp3_x + 10, cp3_y + 46; size: max(1, 36 * clamp(cp3_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: cp3_on }
+                    on scroll cpz3 { emit sb_wheel(30 + if(wheel > 0, 1, 0)) }
+                }
+                group {
+                    pivot: cp4_x + 28, cp4_y + 28
+                    scale: 0.96 + 0.04 * cp4_up
+                    opacity: 0.72 + 0.28 * cp4_up
+                    // component 4: Brightness
+                    zone box cpz4 { from: cp4_x, cp4_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Brightness"; show: op_live and cp4_on }
+                    group { glow: 18, 0.5 * cp4_up, #000000
+                        box { from: cp4_x, cp4_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: cp4_on } }
+                    box { from: cp4_x + 0.5, cp4_y + 0.5; size: 55, 55; corner: 14; stroke: if(sf_snap == 14, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp4_lit + if(sf_snap == 14, 0.4, 0); show: cp4_on }
+                    text "☀" { at: cp4_x + 28, cp4_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp4_lit, ink, muted); show: cp4_on }
+                    text cp4_val { at: cp4_x + 28, cp4_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: cp4_on }
+                    on drag cpz4 { emit sb_drag(904) }
+                    on release cpz4 { emit sb_drop(904) }
+                    box { from: cp4_x + 10, cp4_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: cp4_on }
+                    box { from: cp4_x + 10, cp4_y + 46; size: max(1, 36 * clamp(cp4_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: cp4_on }
+                    on scroll cpz4 { emit sb_wheel(40 + if(wheel > 0, 1, 0)) }
+                }
+                group {
+                    pivot: cp5_x + 28, cp5_y + 28
+                    scale: 0.96 + 0.04 * cp5_up
+                    opacity: 0.72 + 0.28 * cp5_up
+                    // component 5: Battery
+                    zone box cpz5 { from: cp5_x, cp5_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Battery"; show: op_live and cp5_on }
+                    group { glow: 18, 0.5 * cp5_up, #000000
+                        box { from: cp5_x, cp5_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: cp5_on } }
+                    box { from: cp5_x + 0.5, cp5_y + 0.5; size: 55, 55; corner: 14; stroke: if(sf_snap == 15, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp5_lit + if(sf_snap == 15, 0.4, 0); show: cp5_on }
+                    text "▭" { at: cp5_x + 28, cp5_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp5_lit, ink, muted); show: cp5_on }
+                    text cp5_val { at: cp5_x + 28, cp5_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: cp5_on }
+                    on drag cpz5 { emit sb_drag(905) }
+                    on release cpz5 { emit sb_drop(905) }
+                    box { from: cp5_x + 10, cp5_y + 46; size: 36, 1.6; color: muted; opacity: 0.25; show: cp5_on }
+                    box { from: cp5_x + 10, cp5_y + 46; size: max(1, 36 * clamp(cp5_frac, 0, 1)), 1.6; color: rgb(h0_r, h0_g, h0_b); opacity: 0.9; show: cp5_on }
+                }
+                group {
+                    pivot: cp6_x + 28, cp6_y + 28
+                    scale: 0.96 + 0.04 * cp6_up
+                    opacity: 0.72 + 0.28 * cp6_up
+                    // component 6: Power
+                    zone box cpz6 { from: cp6_x, cp6_y; size: 56, 56; corner: 14; cursor: pointer; role: button; label: "Power"; show: op_live and cp6_on }
+                    group { glow: 18, 0.5 * cp6_up, #000000
+                        box { from: cp6_x, cp6_y; size: 56, 56; corner: 14; color: rgb(0.09, 0.10, 0.09); opacity: 0.94; show: cp6_on } }
+                    box { from: cp6_x + 0.5, cp6_y + 0.5; size: 55, 55; corner: 14; stroke: if(sf_snap == 16, 1.6, 1); color: rgb(h0_r, h0_g, h0_b); opacity: 0.22 + 0.3 * cp6_lit + if(sf_snap == 16, 0.4, 0); show: cp6_on }
+                    text "⏻" { at: cp6_x + 28, cp6_y + 22; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(cp6_lit, ink, muted); show: cp6_on }
+                    text cp6_val { at: cp6_x + 28, cp6_y + 40; anchor: center; align: center; size: 8; family: "Share Tech Mono"; color: muted; width: 50; lines: 1; show: cp6_on }
+                    on drag cpz6 { emit sb_drag(906) }
+                    on release cpz6 { emit sb_drop(906) }
+                }
                 // power: five ways out, the last three ask twice
                 group {
-                    show: op_vis and pw_open
+                    show: pw_open
                     box { from: cp6_x - 208, cp6_y - 202; size: 200, 194; corner: 14; color: rgb(0.07, 0.08, 0.07); opacity: 0.97 }
                     box { from: cp6_x - 207.5, cp6_y - 201.5; size: 199, 193; corner: 14; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.3 }
-                    zone box pwz1 { from: cp6_x - 200, cp6_y - 194 + 0; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Lock"; show: op_vis and pw_open }
-                    box { from: cp6_x - 200, cp6_y - 194 + 0; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8; show: op_vis and pw_open }
-                    text "Lock" { at: cp6_x - 186, cp6_y - 194 + 0 + 16; anchor: left center; size: 10; family: "Exo 2"; color: ink; show: op_vis and pw_open }
+                    zone box pwz1 { from: cp6_x - 200, cp6_y - 194 + 0; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Lock"; show: op_live and pw_open }
+                    box { from: cp6_x - 200, cp6_y - 194 + 0; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8 }
+                    text "Lock" { at: cp6_x - 186, cp6_y - 194 + 0 + 16; anchor: left center; size: 10; family: "Exo 2"; color: ink; show: pw_arm != 1 }
                     on press pwz1 { emit sb_press(951) }
-                    zone box pwz2 { from: cp6_x - 200, cp6_y - 194 + 36; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Sleep"; show: op_vis and pw_open }
-                    box { from: cp6_x - 200, cp6_y - 194 + 36; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8; show: op_vis and pw_open }
-                    text "Sleep" { at: cp6_x - 186, cp6_y - 194 + 36 + 16; anchor: left center; size: 10; family: "Exo 2"; color: ink; show: op_vis and pw_open }
+                    zone box pwz2 { from: cp6_x - 200, cp6_y - 194 + 36; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Sleep"; show: op_live and pw_open }
+                    box { from: cp6_x - 200, cp6_y - 194 + 36; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8 }
+                    text "Sleep" { at: cp6_x - 186, cp6_y - 194 + 36 + 16; anchor: left center; size: 10; family: "Exo 2"; color: ink; show: pw_arm != 2 }
                     on press pwz2 { emit sb_press(952) }
-                    zone box pwz3 { from: cp6_x - 200, cp6_y - 194 + 72; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Log out"; show: op_vis and pw_open }
-                    box { from: cp6_x - 200, cp6_y - 194 + 72; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8; show: op_vis and pw_open }
-                    text "Log out" { at: cp6_x - 186, cp6_y - 194 + 72 + 16; anchor: left center; size: 10; family: "Exo 2"; color: if(pw_arm, #ff9b8a, ink); show: op_vis and pw_open }
+                    zone box pwz3 { from: cp6_x - 200, cp6_y - 194 + 72; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Log out"; show: op_live and pw_open }
+                    box { from: cp6_x - 200, cp6_y - 194 + 72; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8 }
+                    text "Log out" { at: cp6_x - 186, cp6_y - 194 + 72 + 16; anchor: left center; size: 10; family: "Exo 2"; color: if(pw_arm == 3, #ff9b8a, ink); show: pw_arm != 3 }
                     on press pwz3 { emit sb_press(953) }
-                    zone box pwz4 { from: cp6_x - 200, cp6_y - 194 + 108; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Restart"; show: op_vis and pw_open }
-                    box { from: cp6_x - 200, cp6_y - 194 + 108; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8; show: op_vis and pw_open }
-                    text "Restart" { at: cp6_x - 186, cp6_y - 194 + 108 + 16; anchor: left center; size: 10; family: "Exo 2"; color: if(pw_arm, #ff9b8a, ink); show: op_vis and pw_open }
+                    text "Press again to log out" { at: cp6_x - 186, cp6_y - 194 + 72 + 16; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: if(pw_arm == 3, #ff9b8a, ink); show: pw_arm == 3 }
+                    zone box pwz4 { from: cp6_x - 200, cp6_y - 194 + 108; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Restart"; show: op_live and pw_open }
+                    box { from: cp6_x - 200, cp6_y - 194 + 108; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8 }
+                    text "Restart" { at: cp6_x - 186, cp6_y - 194 + 108 + 16; anchor: left center; size: 10; family: "Exo 2"; color: if(pw_arm == 4, #ff9b8a, ink); show: pw_arm != 4 }
                     on press pwz4 { emit sb_press(954) }
-                    zone box pwz5 { from: cp6_x - 200, cp6_y - 194 + 144; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Shut down"; show: op_vis and pw_open }
-                    box { from: cp6_x - 200, cp6_y - 194 + 144; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8; show: op_vis and pw_open }
-                    text "Shut down" { at: cp6_x - 186, cp6_y - 194 + 144 + 16; anchor: left center; size: 10; family: "Exo 2"; color: if(pw_arm, #ff9b8a, ink); show: op_vis and pw_open }
+                    text "Press again to restart" { at: cp6_x - 186, cp6_y - 194 + 108 + 16; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: if(pw_arm == 4, #ff9b8a, ink); show: pw_arm == 4 }
+                    zone box pwz5 { from: cp6_x - 200, cp6_y - 194 + 144; size: 184, 32; corner: 8; cursor: pointer; role: button; label: "Shut down"; show: op_live and pw_open }
+                    box { from: cp6_x - 200, cp6_y - 194 + 144; size: 184, 32; corner: 8; color: rgb(0.12, 0.13, 0.11); opacity: 0.8 }
+                    text "Shut down" { at: cp6_x - 186, cp6_y - 194 + 144 + 16; anchor: left center; size: 10; family: "Exo 2"; color: if(pw_arm == 5, #ff9b8a, ink); show: pw_arm != 5 }
                     on press pwz5 { emit sb_press(955) }
+                    text "Press again to shut down" { at: cp6_x - 186, cp6_y - 194 + 144 + 16; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: if(pw_arm == 5, #ff9b8a, ink); show: pw_arm == 5 }
                 }
             }
             // the Overview's three controls, over the canvas at its top right
@@ -5365,20 +5529,20 @@ scene Sigil {
             text "UNDO" { at: op_x + op_w - sf_ovm - 230 + 34, op_y + sf_ovm + 40 + 13; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
             text "RESET" { at: op_x + op_w - sf_ovm - 230 + 109, op_y + sf_ovm + 40 + 13; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
             text "CLOSE" { at: op_x + op_w - sf_ovm - 230 + 184, op_y + sf_ovm + 40 + 13; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
-            zone box ov_undo { from: op_x + op_w - sf_ovm - 230, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: "Undo the last place"; show: op_vis and op_mode == 4 }
+            zone box ov_undo { from: op_x + op_w - sf_ovm - 230, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: "Undo the last place"; show: op_live and op_mode == 4 }
             on press ov_undo { emit sf_undo }
-            zone box ov_reset { from: op_x + op_w - sf_ovm - 230 + 75, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: "Put every place back"; show: op_vis and op_mode == 4 }
+            zone box ov_reset { from: op_x + op_w - sf_ovm - 230 + 75, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: "Put every place back"; show: op_live and op_mode == 4 }
             on press ov_reset { emit sf_reset }
-            zone box ov_close { from: op_x + op_w - sf_ovm - 230 + 150, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: "Close the Overview"; show: op_vis and op_mode == 4 }
+            zone box ov_close { from: op_x + op_w - sf_ovm - 230 + 150, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: "Close the Overview"; show: op_live and op_mode == 4 }
             on press ov_close { emit rv_esc }
             // a press on the thin wallpaper margin closes it too
-            zone box ov_edge_t { from: op_x, op_y; size: op_w, max(1, sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_vis and op_mode == 4 and sf_ovm > 0.5 }
+            zone box ov_edge_t { from: op_x, op_y; size: op_w, max(1, sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_live and op_mode == 4 and sf_ovm > 0.5 }
             on press ov_edge_t { emit rv_esc }
-            zone box ov_edge_b { from: op_x, op_y + op_h - sf_ovm; size: op_w, max(1, sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_vis and op_mode == 4 and sf_ovm > 0.5 }
+            zone box ov_edge_b { from: op_x, op_y + op_h - sf_ovm; size: op_w, max(1, sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_live and op_mode == 4 and sf_ovm > 0.5 }
             on press ov_edge_b { emit rv_esc }
-            zone box ov_edge_l { from: op_x, op_y + sf_ovm; size: max(1, sf_ovm), max(0, op_h - 2 * sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_vis and op_mode == 4 and sf_ovm > 0.5 }
+            zone box ov_edge_l { from: op_x, op_y + sf_ovm; size: max(1, sf_ovm), max(0, op_h - 2 * sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_live and op_mode == 4 and sf_ovm > 0.5 }
             on press ov_edge_l { emit rv_esc }
-            zone box ov_edge_r { from: op_x + op_w - sf_ovm, op_y + sf_ovm; size: max(1, sf_ovm), max(0, op_h - 2 * sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_vis and op_mode == 4 and sf_ovm > 0.5 }
+            zone box ov_edge_r { from: op_x + op_w - sf_ovm, op_y + sf_ovm; size: max(1, sf_ovm), max(0, op_h - 2 * sf_ovm); cursor: pointer; role: button; label: "Close the Overview"; show: op_live and op_mode == 4 and sf_ovm > 0.5 }
             on press ov_edge_r { emit rv_esc }
             // the Overview's thin lit margin: the wallpaper's edge, pulled back
             box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); stroke: 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.32; show: op_vis and op_mode == 4 and sf_ovm > 0.5 }
@@ -5393,6 +5557,9 @@ scene Sigil {
         keyboard: exclusive while op_vis and sf_firm
         rate: 60
         open: op_vis
+        // the opening's repaint (D214): a moving clip leaves what it uncovered behind unless the whole
+        // surface is repainted; this veil changes with the hole, and is gone when the opening is
+        box { from: 0, 0; size: 8192, 8192; color: #000000; opacity: 0.004 + 0.001 * fract((op_x + op_y + op_w + op_h) / 97); show: op_k > 0.001 }
         // where the pointer is, told to the logic as it moves (every 6 px), while revealing
         let rv_q = round(cursor.x / 6) * 100000 + round(cursor.y / 6)
         on change rv_q while rv_on or op_vis { emit rv_move(round(cursor.x) * 10000 + round(cursor.y)) }
@@ -5403,6 +5570,35 @@ scene Sigil {
         on key Return { emit op_key(2) }
         on key Page_Up { emit op_wheel(1) }
         on key Page_Down { emit op_wheel(-1) }
+        // typing into the Apps hub, while it is snapped or the Overview is open: letters, a space, a rub-out
+        on key a while sf_snap == 1 or op_mode == 4 { emit op_type(97) }
+        on key b while sf_snap == 1 or op_mode == 4 { emit op_type(98) }
+        on key c while sf_snap == 1 or op_mode == 4 { emit op_type(99) }
+        on key d while sf_snap == 1 or op_mode == 4 { emit op_type(100) }
+        on key e while sf_snap == 1 or op_mode == 4 { emit op_type(101) }
+        on key f while sf_snap == 1 or op_mode == 4 { emit op_type(102) }
+        on key g while sf_snap == 1 or op_mode == 4 { emit op_type(103) }
+        on key h while sf_snap == 1 or op_mode == 4 { emit op_type(104) }
+        on key i while sf_snap == 1 or op_mode == 4 { emit op_type(105) }
+        on key j while sf_snap == 1 or op_mode == 4 { emit op_type(106) }
+        on key k while sf_snap == 1 or op_mode == 4 { emit op_type(107) }
+        on key l while sf_snap == 1 or op_mode == 4 { emit op_type(108) }
+        on key m while sf_snap == 1 or op_mode == 4 { emit op_type(109) }
+        on key n while sf_snap == 1 or op_mode == 4 { emit op_type(110) }
+        on key o while sf_snap == 1 or op_mode == 4 { emit op_type(111) }
+        on key p while sf_snap == 1 or op_mode == 4 { emit op_type(112) }
+        on key q while sf_snap == 1 or op_mode == 4 { emit op_type(113) }
+        on key r while sf_snap == 1 or op_mode == 4 { emit op_type(114) }
+        on key s while sf_snap == 1 or op_mode == 4 { emit op_type(115) }
+        on key t while sf_snap == 1 or op_mode == 4 { emit op_type(116) }
+        on key u while sf_snap == 1 or op_mode == 4 { emit op_type(117) }
+        on key v while sf_snap == 1 or op_mode == 4 { emit op_type(118) }
+        on key w while sf_snap == 1 or op_mode == 4 { emit op_type(119) }
+        on key x while sf_snap == 1 or op_mode == 4 { emit op_type(120) }
+        on key y while sf_snap == 1 or op_mode == 4 { emit op_type(121) }
+        on key z while sf_snap == 1 or op_mode == 4 { emit op_type(122) }
+        on key space while sf_snap == 1 or op_mode == 4 { emit op_type(32) }
+        on key BackSpace while sf_snap == 1 or op_mode == 4 { emit op_type(8) }
         // the eight looks: the real wallpaper, cut open over the hole (the surface's own size: screen.height
         // is the scene's first surface's, the 40 px bar strip — found live, D208)
         // a group's shader sees its own box: the clip's, from its top left corner — each derives the screen
@@ -5494,10 +5690,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz0 { from: p0_x, p0_y; size: p0_w, if(p0_show > 1.5, 52, p0_h); cursor: if(p0_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz0 { emit pp_press(0) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz0 { emit pp_rpress(0) }
-            on drag pz0 while p0_edit { emit pp_drag(0 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz0 while p0_edit { emit pp_drop(0) }
+            on drag pz0 while p0_edit or op_live { emit pp_drag(0 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz0 { emit pp_drop(0) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p0_edit
@@ -5544,10 +5740,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz1 { from: p1_x, p1_y; size: p1_w, if(p1_show > 1.5, 52, p1_h); cursor: if(p1_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz1 { emit pp_press(1) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz1 { emit pp_rpress(1) }
-            on drag pz1 while p1_edit { emit pp_drag(100000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz1 while p1_edit { emit pp_drop(1) }
+            on drag pz1 while p1_edit or op_live { emit pp_drag(100000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz1 { emit pp_drop(1) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p1_edit
@@ -5594,10 +5790,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz2 { from: p2_x, p2_y; size: p2_w, if(p2_show > 1.5, 52, p2_h); cursor: if(p2_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz2 { emit pp_press(2) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz2 { emit pp_rpress(2) }
-            on drag pz2 while p2_edit { emit pp_drag(200000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz2 while p2_edit { emit pp_drop(2) }
+            on drag pz2 while p2_edit or op_live { emit pp_drag(200000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz2 { emit pp_drop(2) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p2_edit
@@ -5644,10 +5840,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz3 { from: p3_x, p3_y; size: p3_w, if(p3_show > 1.5, 52, p3_h); cursor: if(p3_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz3 { emit pp_press(3) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz3 { emit pp_rpress(3) }
-            on drag pz3 while p3_edit { emit pp_drag(300000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz3 while p3_edit { emit pp_drop(3) }
+            on drag pz3 while p3_edit or op_live { emit pp_drag(300000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz3 { emit pp_drop(3) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p3_edit
@@ -5694,10 +5890,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz4 { from: p4_x, p4_y; size: p4_w, if(p4_show > 1.5, 52, p4_h); cursor: if(p4_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz4 { emit pp_press(4) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz4 { emit pp_rpress(4) }
-            on drag pz4 while p4_edit { emit pp_drag(400000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz4 while p4_edit { emit pp_drop(4) }
+            on drag pz4 while p4_edit or op_live { emit pp_drag(400000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz4 { emit pp_drop(4) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p4_edit
@@ -5744,10 +5940,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz5 { from: p5_x, p5_y; size: p5_w, if(p5_show > 1.5, 52, p5_h); cursor: if(p5_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz5 { emit pp_press(5) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz5 { emit pp_rpress(5) }
-            on drag pz5 while p5_edit { emit pp_drag(500000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz5 while p5_edit { emit pp_drop(5) }
+            on drag pz5 while p5_edit or op_live { emit pp_drag(500000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz5 { emit pp_drop(5) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p5_edit
@@ -5794,10 +5990,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz6 { from: p6_x, p6_y; size: p6_w, if(p6_show > 1.5, 52, p6_h); cursor: if(p6_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz6 { emit pp_press(6) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz6 { emit pp_rpress(6) }
-            on drag pz6 while p6_edit { emit pp_drag(600000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz6 while p6_edit { emit pp_drop(6) }
+            on drag pz6 while p6_edit or op_live { emit pp_drag(600000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz6 { emit pp_drop(6) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p6_edit
@@ -5844,10 +6040,10 @@ scene Sigil {
             }
             // the whole Presence: a press, a right press (edit), and in edit a drag
             zone box pz7 { from: p7_x, p7_y; size: p7_w, if(p7_show > 1.5, 52, p7_h); cursor: if(p7_edit, grab, pointer); role: button; label: "A Presence" }
-            on press pz7 { emit pp_press(7) }
+            // a press acts when it is let go without a drag; dragged in edit it moves, dragged into an opening it is buried
             on press right pz7 { emit pp_rpress(7) }
-            on drag pz7 while p7_edit { emit pp_drag(700000000 + round(pointer.x) * 10000 + round(pointer.y)) }
-            on release pz7 while p7_edit { emit pp_drop(7) }
+            on drag pz7 while p7_edit or op_live { emit pp_drag(700000000 + round(pointer.x) * 10000 + round(pointer.y)) }
+            on release pz7 { emit pp_drop(7) }
             // edit: a dashed outline and its strip — undo, redo, done
             group {
                 show: p7_edit

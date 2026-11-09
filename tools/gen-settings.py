@@ -162,6 +162,7 @@ SETTERS = [
     # widgets and the power row. Appended after D208 so no earlier control's number moves.
     "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius",
     "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels",
+    # (surface.bmo_side is retired, D214: BMO is snapped to where he stands; its slot stays so no code moves)
     "surface.glow", "surface.ping", "surface.layout", "surface.components", "surface.bmo_side",
     "surface.overview", "surface.power_confirm", "surface.widget_style",
     # D209: BMO's eyes, tone, hands and what he notices. Appended.
@@ -794,7 +795,6 @@ SECTIONS = [
         ("card", "Where things sit"),
         ("choice", "Hubs", "The arc, one straight row, a grid, or low and calm", "surface.layout", "sv_surface_layout", ["Arc", "Row", "Grid", "Calm"]),
         ("choice", "Components", "Which side the Wi-Fi, sound, light, battery and power row ends on", "surface.components", "sv_surface_components", ["Right", "Centre", "Left"]),
-        ("choice", "BMO's home", "Which bottom corner he comes out of", "surface.bmo_side", "sv_surface_bmo_side", ["Left", "Right"]),
         ("slider", "Overview margin", "The lit wallpaper rim round the full opening", "surface.overview", 0, 40, "{sv_surface_overview, 0} px"),
         ("button", "Move the places", "Drag the hubs and the components where you want them; let go to keep it", "Edit places", "surface_edit", 0),
         ("button", "Put them back", "Forget the places you moved and use the layout above", "Reset places", "surface_reset", 0),

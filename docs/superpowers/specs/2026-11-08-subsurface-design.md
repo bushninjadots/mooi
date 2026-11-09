@@ -1,6 +1,6 @@
 # The Subsurface: what lies under the wallpaper — design
 
-> Status: design approved in conversation (2026-11-08), awaiting review of this written spec.
+> Status: approved (2026-11-08). Phases 1 and 2a–2b-ii-a built (D209–D213) and audited against this text (D214).
 > Revises: `2026-11-08-surface-design.md` (Surface). This spec **replaces** its §3 layer 2 (the Reveal overlay),
 > §5 (the Reveal and its Hub ring) and §13 (phases); everything else there (the Presence model and memory, §4;
 > wallpaper awareness, §7; shaping, §8; the bar and the Sigil, §9; failure, §10; accessibility, §11) stands

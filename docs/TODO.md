@@ -17,6 +17,10 @@ what was done, and why, is docs/DECISIONS.md.
       size read out and saved in `surface.json`; Undo restores the old size, Reset the designed one
 - [x] **Phase 2b-ii-a, the hubs reflow (D213)**: each hub's inside divides its current shape — the app
       grid, music words, wallpaper strip, settings marks and notice rows — with raised readable minimums
+- [x] **D214, the audit against the spec**: faint first stage, no opening over the bar, coming up, Apps
+      typing, Music seek and visualiser, Settings at its page (real pages), Notices' actions, BMO where he
+      stands (and woken), per-row power arming, components and Presences dragged properly (and buried back),
+      fractional places, `lib/surface/citizen`, reduced motion for every program below, the repaint trails
 - [ ] **Phase 2b-ii-b, the Nexus as a citizen**: move the Nexus deck and canvas cards into the Overview
       (the full-screen successor to the Nexus); the Nexus is a separate scene whose drawer needs a
       place/snapshot design first

@@ -445,6 +445,20 @@ return function(ctx)
         save_muted()
         show_field()
     end)
+    -- D214: the Subsurface's Notices hub acts on one of the feed's rows (nexusfeed: list[1..5], newest
+    -- first): row * 10 + 0 its default · 1 its first action · 2 its second · 9 dismiss
+    on("note_act", function(v)
+        v = math.floor(tonumber(v) or -1)
+        local n = list[v // 10 + 1]
+        if v < 0 or not n then return end
+        local what = v % 10
+        if what == 9 then dismiss(n.id)
+        elseif what == 0 then if n.default then invoke(n, "default") end
+        else
+            local a = n.actions[what]
+            if a then invoke(n, a.key) end
+        end
+    end)
     on("note_clear", function()
         sys.call("notifications.clear"); pcall(sys.call, "notifications.clear_history")
         locals = {}
