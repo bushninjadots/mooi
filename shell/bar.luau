@@ -15,8 +15,6 @@ local weathershare = require("lib/weathershare")
 local updates = require("lib/updates")
 local vizfeed = require("lib/vizfeed")
 local coverart = require("lib/cover")
-local sigilhosts = require("lib/surface/hosts")   -- D207: where the Sigil may live
-local chassis_look = require("lib/chassis").look
 local bmostate = require("lib/bmostate")           -- D209: the one shared BMO
 local bmochat = require("lib/bmochat")
 local brain = require("bmo/brain")
@@ -257,7 +255,7 @@ return function(ctx)
     local pill_update        -- defined after relayout, which it calls when the Pill's size changes
     local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
     -- D207: the Sigil's side of the bar — what was last written, and whether the classic Pill steps aside
-    local sig = { hosts_sent = nil, feed_sent = nil, classic_off = false, n = 0, pill = nil }
+    local sig = { feed_sent = nil, classic_off = false, node = false }
     local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
     -- D205: the second and third pills — each its view turned by the wheel (nil: its face), where it sits
     local extras = { [2] = { key = "two" }, [3] = { key = "three" } }
@@ -294,6 +292,7 @@ return function(ctx)
         local pillmode = b.mode == "pill"
         -- D226: in Pill mode the node (mooi-node) is the Pill; the classic Pill and the Sigil stand down
         local node_on = pillmode and not (type(s.node) == "table" and s.node.on == false)
+        sig.node = node_on
         local sides = not (pillmode and type(s.pill) == "table" and s.pill.sides == "hide")
         local lists = pillmode and { left = sides and b.left or {}, center = {}, right = sides and b.right or {} } or b
         local out = barlayout.layout({ left = lists.left, center = lists.center, right = lists.right, show = show,
@@ -362,7 +361,6 @@ return function(ctx)
         -- line's socket), 180 wide, no moons, and mooi-surface draws in it
         sig.classic_off = pillmode and (node_on or (type(s.sigil) == "table" and s.sigil.pill == "sigil"))
         fact.pill_on = pillmode and not sig.classic_off
-        sig.pill = nil
         if pillmode then
             -- the Pill and its moons, for the frame's chassis and the scene's content
             local w = node_on and 0 or (sig.classic_off and 180 or (pill_now and pill_now.width or 160))
@@ -415,11 +413,6 @@ return function(ctx)
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
         -- D207: the Sigil's hosts, written when they change
-        if geo.pill and not node_on then sig.pill = { x = geo.pill.x, w = geo.pill.w } end
-        local hosts = sigilhosts.build(s, out, sig.pill, chassis_look(s), env.screen)
-        sig.n = #hosts
-        local henc = json.encode({ screen = env.screen, hosts = hosts })
-        if henc ~= sig.hosts_sent then sig.hosts_sent = henc; pcall(sys.call, "files.write", "sigil-hosts.json", { screen = env.screen, hosts = hosts }) end
         fact.px = out.panel and out.panel.x or 0
         fact.pw = out.panel and out.panel.w or 0
         -- the spacers and gaps, which edit mode shows (and can take out): `n` = 100 · side + entry
@@ -1141,10 +1134,8 @@ return function(ctx)
     -- D207: what only the bar reads, for mooi-surface (sigil-feed.json): once a second while it has a host,
     -- written only when it changed. `at` is the wall clock in ms, so the Sigil can tell a dead feed.
     every(1000, function()
-        -- (D226: the node — the Dynamic Pill — reads it too, while the bar is in Pill mode)
-        local node = type(ctx.settings) == "function" and ctx.settings() or nil
-        local node_on = type(node) == "table" and type(node.bar) == "table" and node.bar.mode == "pill"
-        if sig.n == 0 and not node_on then return end
+        -- (D226: the node — the Dynamic Pill — reads it, while it runs; the Sigil that first read it is gone)
+        if not sig.node then return end
         local function hex(r, g, b) return string.format("#%02x%02x%02x", math.floor((r or 0) * 255 + .5), math.floor((g or 0) * 255 + .5), math.floor((b or 0) * 255 + .5)) end
         local doc = {
             -- nothing before it was read: the Sigil shows a dash, not "0°" (review I2)
@@ -1218,10 +1209,10 @@ return function(ctx)
         local pill_on_bar = s.bar.mode == "pill"
         local need = pill_on_bar and pillmod.needs(s.pill) or {}
         -- D207: the Sigil may show them whenever it has a host (review I2: unfetched, they read 0)
-        if placed.resources or need.resources or sig.n > 0 then every_while("res", 2000, read_resources) else stop("res") end
+        if placed.resources or need.resources or sig.node then every_while("res", 2000, read_resources) else stop("res") end
         if placed.bandwidth or need.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
         if placed.keyboard or need.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
-        if placed.weather or need.weather or sig.n > 0 then every_while("wx", 600000, read_weather) else stop("wx") end
+        if placed.weather or need.weather or sig.node then every_while("wx", 600000, read_weather) else stop("wx") end
         local still = s.motion.reduced == true or s.motion.saver == "always"
         want_swell = s.frame.on and s.frame.music and not still
         -- The frame's music follows whatever is audible, not only what the media module knows

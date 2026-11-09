@@ -5509,7 +5509,7 @@ do
         eq(P.needs({ pads = { "keyboard" } }).keyboard, true)
         local bar = read("shell/bar.luau")
         assert(bar:find("local need = pill_on_bar and pillmod.needs(s.pill) or {}", 1, true), "readers() asks")
-        assert(bar:find("if placed.resources or need.resources or sig.n > 0 then", 1, true))
+        assert(bar:find("if placed.resources or need.resources or sig.node then", 1, true), "(D226: and while the node runs)")
     end)
     test("review I3: the Signals room keeps signals.private", function()
         local sig = read("shell/signals.luau")
@@ -6767,274 +6767,6 @@ test("settings window declares a row for every bar module", function()
     end
 end)
 
-section("the sigil: shapes")
-do
-    local SH = require("lib/surface/shapes")
-    test("shapes: every kind, every form, 64 points inside its box", function()
-        for _, k in ipairs(SH.KINDS) do
-            for _, form in ipairs({ "glyph", "compact", "display" }) do
-                local b = form == "display" and { x = 660, y = 40, w = 600, h = 220 } or { x = 900, y = 4, w = 180, h = 24 }
-                local p = SH.outline(k, b, form, 0, { values = { .2, .9, .1 }, n = 5, active = 2 })
-                eq(#p, 64, k .. " " .. form)
-                for _, q in ipairs(p) do
-                    assert(q[1] >= b.x - 0.5 and q[1] <= b.x + b.w + 0.5 and q[2] >= b.y - 0.5 and q[2] <= b.y + b.h + 0.5, k .. " " .. form .. " outside its box")
-                end
-            end
-        end
-    end)
-    test("shapes: every kind stays inside a 60 x 24 box", function()
-        for _, k in ipairs(SH.KINDS) do
-            for _, q in ipairs(SH.outline(k, { x = 0, y = 0, w = 60, h = 24 }, "compact", 0, {})) do
-                assert(q[1] >= -0.5 and q[1] <= 60.5 and q[2] >= -0.5 and q[2] <= 24.5, k)
-            end
-        end
-    end)
-    test("shapes: the disc starts at its bottom, so the line rolls out of it", function()
-        local p = SH.outline("disc", { x = 0, y = 0, w = 600, h = 220 }, "display", 0, {})
-        assert(p[1][2] > p[17][2], "the first point is the disc's lowest")
-        assert(p[64][1] > 400, "the line runs out to the right")
-    end)
-    test("shapes: front-first batches cover 1..64 in order", function()
-        local b = SH.batches(nil, nil, 4)
-        eq(#b, 4); eq(b[1][1], 1); eq(b[4][2], 64); eq(b[2][1], b[1][2] + 1)
-    end)
-    test("shapes: an unknown kind is the clock, never an error", function()
-        eq(#SH.outline("kettle", { x = 0, y = 0, w = 100, h = 24 }, "compact"), 64)
-    end)
-end
-
-section("the sigil: sources")
-do
-    local SRC = require("lib/surface/sources")
-    local BL = require("lib/barlayout")
-    test("sources: wave 1 complete, each with glyph, display, compact, press and a group", function()
-        for _, id in ipairs(SRC.WAVE1) do
-            local e = SRC.get(id); assert(e, id)
-            assert(e.glyph and e.display and e.compact and e.press and e.group, id)
-        end
-    end)
-    test("sources: every bar module is in wave 1, later, or explicitly not a source", function()
-        local skip = { tray = true, keyboard = true, bandwidth = true, caffeine = true, actions = true, core = true,
-                       focus = true, updates = true, claude = true, github = true, brightness = true, sigil = true,
-                       bmo = true, herdr = true }
-        local later = " " .. table.concat(SRC.LATER, " ") .. " "
-        for _, m in ipairs(BL.ORDER) do
-            local s = SRC.for_module(m)
-            assert(skip[m] or (s and (SRC.get(s) or later:find(" " .. s .. " ", 1, true))), m)
-        end
-    end)
-    test("sources: compact of a missing reading is a dash", function()
-        for _, id in ipairs(SRC.WAVE1) do eq(SRC.get(id).compact(nil).t1, "—", id) end
-    end)
-    test("sources: compact readings", function()
-        eq(SRC.get("volume").compact({ volume = 0.62 }).t1, "62%")
-        eq(SRC.get("battery").compact({ percent = 82, charging = false }).t1, "82%")
-        eq(SRC.get("music").compact({ title = "Renegade", artist = "(Hed) P.E." }).t1, "Renegade")
-    end)
-    test("sources: indexes are stable and 1-based", function()
-        eq(SRC.index("clock"), 1); eq(SRC.index("bmo"), #SRC.WAVE1); eq(SRC.index("kettle"), nil)
-    end)
-    test("sources: sigil.rest's choices are exactly wave 1 (pre-flight ruling)", function()
-        local row
-        for _, r in ipairs(require("lib/config").SCHEMA) do if r.path == "sigil.rest" then row = r end end
-        eq(table.concat(row.values, ","), table.concat(SRC.WAVE1, ","))
-    end)
-end
-
-section("the sigil: palette")
-do
-    local PAL = require("lib/surface/palette")
-    local base = { colours = { primary = "#fbba73", error = "#ffb4ab" } }
-    local follow = { sigil = { colour = "follow" } }
-    test("palette: base is the wallpaper's primary", function() local c = PAL.resolve("clock", { palette = base, settings = follow }); eq(c[1], 0xfb); eq(c[3], 0x73) end)
-    test("palette: music takes the cover", function() local c = PAL.resolve("music", { palette = base, cover = { "#ec78aa" }, settings = follow }); eq(c[1], 0xec) end)
-    test("palette: the cover is only music's", function() local c = PAL.resolve("clock", { palette = base, cover = { "#ec78aa" }, settings = follow }); eq(c[1], 0xfb) end)
-    test("palette: an event beats the cover", function() local c = PAL.resolve("music", { palette = base, cover = { "#ec78aa" }, event = "warning", settings = follow }); eq(c[1], 0xe3) end)
-    test("palette: an error is the palette's error", function() local c = PAL.resolve("clock", { palette = base, event = "error", settings = follow }); eq(c[1], 0xff); eq(c[2], 0xb4) end)
-    test("palette: fixed beats everything", function() local c = PAL.resolve("music", { palette = base, event = "error", settings = { sigil = { colour = "fixed", fixed = "#102030" } } }); eq(c[1], 0x10) end)
-    test("palette: no palette at all is the phosphor", function() local c = PAL.resolve("clock", { settings = follow }); eq(c[1], 0xd6) end)
-    test("palette: easing moves part of the way", function() local c = PAL.ease({ 0, 0, 0 }, { 100, 200, 50 }, 0.5); eq(c[1], 50); eq(c[2], 100) end)
-end
-section("the sigil: bodies")
-do
-    local BOD = require("lib/surface/bodies")
-    test("bodies: temperaments, and reduced motion stills them", function()
-        eq(BOD.temperament("calm", false).wobble, 1); eq(BOD.temperament("restless", false).batches, 6)
-        local r = BOD.temperament("restless", true); eq(r.wobble, 0); eq(r.breath, 0); eq(r.batches, 1); eq(r.lag_ms, 0)
-        eq(BOD.temperament("kettle", false).wobble, 2.5, "unknown is lively")
-        eq(BOD.pointer("push"), 1.6); eq(BOD.pointer("draw"), -1.0); eq(BOD.pointer("x"), 0)
-    end)
-end
-
-section("the sigil: director")
-do
-    local DIR = require("lib/surface/director")
-    local H = { { id = "pill", kind = "pill", rest = "clock", h = 24 }, { id = "isl1", kind = "island", rest = "clock", h = 24 } }
-    test("director: nothing happening, each host rests", function()
-        local r = DIR.choose(H, { feed_at = 0 }, 1000)
-        eq(r.pill.source, "clock"); eq(r.pill.form, "compact"); assert(r.isl1.source ~= "clock", "a different one")
-    end)
-    test("director: music leads in the Pill", function() eq(DIR.choose(H, { music = { playing = true, title = "x" }, feed_at = 0 }, 1000).pill.source, "music") end)
-    test("director: a fresh notice beats music, then music moves to the island", function()
-        local r = DIR.choose(H, { music = { playing = true, title = "x" }, notice = { at = 900 }, feed_at = 0 }, 1000)
-        eq(r.pill.source, "notifications"); eq(r.pill.event, "notable"); eq(r.isl1.source, "music")
-    end)
-    test("director: an old notice is over", function() eq(DIR.choose(H, { notice = { at = 0 }, feed_at = 0 }, 7000).pill.source, "clock") end)
-    test("director: two hosts never share a source", function()
-        local r = DIR.choose(H, { feed_at = 0 }, 1000); assert(r.pill.source ~= r.isl1.source)
-    end)
-    test("director: low battery is a warning; charging is not", function()
-        local r = DIR.choose(H, { battery = { percent = 9, charging = false }, feed_at = 0 }, 1000)
-        eq(r.pill.source, "battery"); eq(r.pill.event, "warning")
-        eq(DIR.choose(H, { battery = { percent = 9, charging = true }, feed_at = 0 }, 1000).pill.source, "clock")
-    end)
-    test("director: a volume change shows for two seconds", function()
-        eq(DIR.choose(H, { volume_at = 500, feed_at = 0 }, 1000).pill.source, "volume")
-        eq(DIR.choose(H, { volume_at = 500, feed_at = 0 }, 3000).pill.source, "clock")
-    end)
-    test("director: hovered Pill shows its display; an island never does", function()
-        eq(DIR.choose(H, { hover = { pill = true }, feed_at = 0 }, 1000).pill.form, "display")
-        eq(DIR.choose(H, { hover = { isl1 = true }, feed_at = 0 }, 1000).isl1.form, "compact")
-    end)
-    test("director: a short host shows the glyph (box height, pre-flight ruling)", function()
-        eq(DIR.choose({ { id = "isl1", kind = "island", rest = "clock", box = { h = 14 } } }, { feed_at = 0 }, 0).isl1.form, "glyph")
-    end)
-    test("director: stale feed sources are skipped", function()
-        local r = DIR.choose({ { id = "pill", kind = "pill", rest = "weather", h = 24 } }, { feed_at = 0 }, 60000)
-        assert(r.pill.source ~= "weather")
-    end)
-    test("director: no hosts, no choices", function() eq(next(DIR.choose({}, { feed_at = 0 }, 0)), nil) end)
-end
-
-section("the sigil: hosts")
-do
-    local HO = require("lib/surface/hosts")
-    local cfg = function(pill, mode) local d = config.defaults(); d.sigil.pill = pill; d.bar.mode = mode; return d end
-    local LOOK = { top = 6, mod_h = 24 }
-    test("hosts: classic mode and no module, no hosts", function() eq(#HO.build(cfg("classic", "pill"), { x = {} }, { x = 870, w = 180 }, LOOK, 1920), 0) end)
-    test("hosts: sigil in the Pill", function()
-        local h = HO.build(cfg("sigil", "pill"), { x = {} }, { x = 870, w = 180 }, LOOK, 1920)
-        eq(#h, 1); eq(h[1].id, "pill"); eq(h[1].kind, "pill"); eq(h[1].box.x, 870); eq(h[1].box.y, 6); eq(h[1].box.h, 24)
-        eq(h[1].room, 240); eq(h[1].max_form, "display"); eq(h[1].rest, "clock")
-    end)
-    test("hosts: sigil chosen but the bar is not in Pill mode, no Pill host", function()
-        eq(#HO.build(cfg("sigil", "islands"), { x = {} }, nil, LOOK, 1920), 0)
-    end)
-    test("hosts: an island module, at its place", function()
-        local h = HO.build(cfg("classic", "islands"), { x = { sigil = 400 } }, nil, LOOK, 1920)
-        eq(#h, 1); eq(h[1].id, "isl1"); eq(h[1].kind, "island"); eq(h[1].box.x, 400); eq(h[1].box.w, 180); eq(h[1].room, 0); eq(h[1].max_form, "compact")
-    end)
-    test("hosts: the Pill and an island together, the Pill first, never more than four", function()
-        local h = HO.build(cfg("sigil", "pill"), { x = { sigil = 100 } }, { x = 870, w = 180 }, LOOK, 1920)
-        assert(#h <= 4); eq(#h, 2); eq(h[1].id, "pill"); eq(h[2].id, "isl1")
-    end)
-    test("hosts: the bar writes them, and the feed, and turns the classic Pill off in sigil mode", function()
-        local f = io.open("shell/bar.luau"); local b = f:read("a"); f:close()
-        assert(b:find('"sigil-hosts.json"', 1, true) and b:find('"sigil-feed.json"', 1, true))
-        assert(b:find("sigilhosts.build(", 1, true), "built by the pure function")
-        assert(b:find("sig.classic_off", 1, true), "the classic Pill steps aside")
-    end)
-end
-
-section("the sigil: running")
-test("mooi: sigil respawn gives up after five and the bar falls back", function()
-    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
-    local m = read("shell/mooi.luau")
-    assert(m:find("function surface_sync()", 1, true), "spawned like the frame")
-    assert(m:find('on("surface_ready"', 1, true), "it says when it is up")
-    assert(m:find("surface · gave up after five quick ends", 1, true))
-    assert(read("bin/mooi"):find("mooi-surface.plm:Surface", 1, true), "compiled with the others")
-    -- found live: without the link it read its files from an empty folder of its own and drew nothing
-    assert(read("bin/mooi"):match("for prog in [^\n]*mooi%-surface"), "shares mooi's data folder")
-    assert(read("shell/ui/pill.plm"):find("sigil_mode and not surface_up", 1, true), "the plain clock")
-    -- found live: an undeclared event from another program is dropped, so surface_up never came on
-    assert(read("shell/mooi.plm"):find("event surface_ready ->", 1, true), "the bar hears that it is up")
-end)
-
-section("the sigil: scene")
-test("scene: generated, four hosts, 64 sprung points each, two surfaces", function()
-    local f = io.open("shell/mooi-surface.plm"); local t = f:read("a"); f:close()
-    assert(t:find("follow h3_x63 = h3_tx63", 1, true), "the last host's last point follows its target")
-    assert(t:find("spring sg.pt = 260, 20", 1, true))
-    assert(t:find("surface bar {", 1, true) and t:find("surface drop {", 1, true))
-    assert(t:find("rate: 60, 20 while calm", 1, true), "it rests")
-    assert(not t:find("notification", 1, true), "it never watches notifications (spec §3)")
-end)
-
-test("scene: the display stands on a plate, not over the windows", function()
-    local f = io.open("shell/mooi-surface.plm"); local t = f:read("a"); f:close()
-    assert(t:find("// the display's plate", 1, true) and t:find("fact pl_r", 1, true))
-end)
-section("the sigil: logic")
-test("logic: requires the five modules, reads the feeds, never the notification service", function()
-    local f = io.open("shell/mooi-surface.luau"); local t = f:read("a"); f:close()
-    for _, m in ipairs({ "lib/surface/sources", "lib/surface/shapes", "lib/surface/director", "lib/surface/palette", "lib/surface/bodies" }) do
-        assert(t:find('require("' .. m .. '")', 1, true), m)
-    end
-    assert(t:find("sigil-hosts.json", 1, true) and t:find("nexus-feed.json", 1, true))
-    assert(not t:find('sys.watch("notification', 1, true))
-    assert(t:find('"emit surface_ready"', 1, true))
-end)
-test("logic: the display's layout keeps its words beside the line, inside the box", function()
-    package.loaded["lib/surface/layout"] = nil
-    local LY = require("lib/surface/layout")
-    local D = LY.display_box({ x = 870, y = 6, w = 180, h = 24 }, 1920)
-    eq(D.w, 600); eq(D.h, 220); eq(D.x, 660); eq(D.y, 40)
-    local edge = LY.display_box({ x = 1800, y = 6, w = 180, h = 24 }, 1920)
-    eq(edge.x, 1920 - 608, "never past the screen's edge")
-    for _, kind in ipairs(require("lib/surface/shapes").KINDS) do
-        local line, tx, ty = LY.display(kind, D)
-        assert(line.x >= D.x and line.x + line.w <= D.x + D.w, kind .. " line in the box")
-        assert(tx >= D.x and tx < D.x + D.w and ty >= D.y and ty < D.y + D.h, kind .. " words in the box")
-    end
-    local c = LY.compact({ x = 400, y = 6, w = 180, h = 24 })
-    assert(c.x >= 400 and c.x + c.w <= 400 + 180 * 0.42, "the compact line keeps left of its words")
-    -- found live: a round glyph squeezed into the wide compact box read as a blob — round kinds get a square
-    for _, k in ipairs({ "clock", "disc", "ring", "face", "dots" }) do
-        local q = LY.compact({ x = 400, y = 6, w = 180, h = 24 }, k); eq(q.w, q.h, k .. " is square")
-    end
-    eq(LY.compact({ x = 400, y = 6, w = 180, h = 24 }, "ribbon").w > 24, true, "a long kind keeps its width")
-    -- the clock's hands tell the real time: 15:00 points the hour hand right (0 rad), 18:00 down (pi/2)
-    eq(LY.clock_angle(15, 0), 0); assert(math.abs(LY.clock_angle(18, 0) - math.pi / 2) < 1e-9)
-end)
-
-section("the sigil: review fixes")
-do
-    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
-    test("review I1: mooi runs the Sigil only when the bar placed a host (sigil-hosts.json), and an empty scene rests", function()
-        local m = read("shell/mooi.luau")
-        assert(m:find('"sigil-hosts.json"', 1, true), "wanted() reads the bar's own hosts")
-        assert(m:find('sys.watch, "files:sigil-hosts.json"', 1, true), "and follows them")
-        local plm = read("shell/mooi-surface.plm")
-        assert(plm:find("open: h0_on or h1_on or h2_on or h3_on", 1, true), "no host, no surface")
-        assert(plm:find("spin ph by if((h0_on or h1_on or h2_on or h3_on) and", 1, true), "no host, nothing turns")
-    end)
-    test("review I2: the bar fetches weather and resources while the Sigil has a host, and sends nothing unfetched", function()
-        local b = read("shell/bar.luau")
-        assert(b:find("if placed.resources or need.resources or sig.n > 0 then", 1, true))
-        assert(b:find("if placed.weather or need.weather or sig.n > 0 then", 1, true))
-        assert(b:find("weather = fact.wx_ok and {", 1, true), "no weather before it is fetched")
-        assert(b:find("resources = sig.res_ok and {", 1, true), "no resources before they are read")
-    end)
-    test("review I3: the first notice after a clean start takes the Pill", function()
-        local DIR = require("lib/surface/director")
-        local seen, n = DIR.notice_step(nil, nil, 0)
-        eq(seen, 0, "an empty feed still sets the mark"); eq(n, nil)
-        seen, n = DIR.notice_step(seen, 1794072791, 5000)
-        eq(seen, 1794072791); assert(n and n.at == 5000, "the first notice of the day is fresh")
-        local s2, n2 = DIR.notice_step(1794072791, 1794072791, 9000)
-        eq(s2, 1794072791); eq(n2, nil, "the same notice again is not")
-        local s3, n3 = DIR.notice_step(nil, 1794072791, 0)
-        eq(s3, 1794072791); eq(n3, nil, "the feed's first read only sets the mark")
-    end)
-    test("review I4: the Sigil island can be moved in edit mode like any module", function()
-        local plm = read("shell/mooi.plm")
-        assert(plm:find("zone box ez_sigil", 1, true), "its edit zone")
-        assert(plm:find("on press ez_sigil while bar_edit { ed_press = 32", 1, true), "code 32 (its place in barlayout.ORDER)")
-        assert(plm:find("follow xs_sigil = x_sigil", 1, true) and plm:find("follow ws_sigil = w_sigil", 1, true))
-    end)
-end
-
 section("surface: reveal (D208)")
 do
     local RV = require("lib/surface/reveal")
@@ -8044,7 +7776,7 @@ do
         end
         assert(g:find('"Try it", "live_try", 0', 1, true))
         assert(read("shell/mooi-settings.luau"):find('"emit lw_try"', 1, true), "Try it reaches mooi-surface")
-        assert(read("shell/mooi.luau"):find("settings.live.on ~= false then return true end", 1, true), "it runs with the Subsurface off")
+        assert(read("shell/mooi.luau"):find('return type(settings.live) ~= "table" or settings.live.on ~= false', 1, true), "it runs with the Subsurface off")
     end)
 end
 
@@ -8469,7 +8201,7 @@ do
         assert(b:find("sig.classic_off = pillmode and (node_on or (type(s.sigil) == \"table\" and s.sigil.pill == \"sigil\"))", 1, true))
         assert(b:find("local w = node_on and 0 or", 1, true), "no plate where the node stands")
         assert(b:find("local on = not node_on and type(face) == \"string\" and face ~= \"off\"", 1, true), "no extra pills")
-        assert(b:find("if geo.pill and not node_on then", 1, true), "no Sigil host in the node's place")
+        assert(not b:find("sigil-hosts.json", 1, true), "no Sigil hosts at all (the Sigil is gone)")
         local m = read("shell/mooi.luau")
         assert(m:find("function NODE.wanted()", 1, true) and m:find("function node_sync()", 1, true))
         assert(m:find('spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-node.plm")', 1, true), "started like the subsurface, reduced motion honoured")

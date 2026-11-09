@@ -2247,23 +2247,16 @@ on("chassis_ready", function() if frame_win then fact.chassis_up = true end end)
 -- is up the bar's pieces stand on nothing. The notch and BMO follow soon after, one at a time, so
 -- the programs do not all start together.
 after(50, frame_sync)
--- The Sigil (D207, shell/mooi-surface.plm): a program of its own, run while it has somewhere to live — the
--- Pill in Pill mode with sigil.pill = sigil, or a `sigil` module on the bar. Respawned like the frame; after
--- five quick ends it stays down and the bar draws a plain clock in the Pill's place (ui/pill.plm). The main
--- chunk is at Lua's 200 locals, so its state is one global table.
--- wanted exactly when the bar placed a host for it (review I1: reading the settings' lists ran it with
--- none — a `sigil` in the Pill's ignored centre list or a hidden side group)
+-- The Subsurface (shell/mooi-surface.plm, D209 onwards; D226: the Sigil it first drew gave way to the node).
+-- Respawned like the frame; after five quick ends it stays down. The main chunk is at Lua's 200 locals, so its
+-- state is one global table.
 function SURFACE.wanted()
     -- D208: always while Surface is on (hold Super to reveal; Presences on the desk)
     if type(settings.surface) == "table" and settings.surface.on ~= false then return true end
     -- D219: Live wallpaper is drawn by mooi-surface too, the Subsurface on or off
-    if type(settings.live) ~= "table" or settings.live.on ~= false then return true end
-    local ok, h = pcall(sys.ask, "files.read", "sigil-hosts.json", "json")
-    return ok and type(h) == "table" and type(h.hosts) == "table" and #h.hosts > 0
+    return type(settings.live) ~= "table" or settings.live.on ~= false
 end
 function surface_sync()
-    local b = settings.bar or {}
-    fact.sigil_mode = b.mode == "pill" and type(settings.sigil) == "table" and settings.sigil.pill == "sigil"
     if not SURFACE.wanted() then
         SURFACE.tries, SURFACE.gave_up = 0, false
         if SURFACE.win then SURFACE.win = nil; fact.surface_up = false; run("pleamar", { "--say", "mooi-surface", "quit" }) end
@@ -2299,7 +2292,6 @@ function surface_sync()
     SURFACE.win = mine
 end
 on("surface_ready", function() if SURFACE.win then fact.surface_up = true end end)
-pcall(sys.watch, "files:sigil-hosts.json", function() surface_sync() end)
 
 -- D226: the node — the Dynamic Pill — in Pill mode (shell/mooi-node.plm); started and kept as the subsurface is
 -- (five quick ends and it stays down), with Pleamar's reduced motion when asked

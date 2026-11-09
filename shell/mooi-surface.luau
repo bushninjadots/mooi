@@ -7,23 +7,13 @@
 
 local config = require("lib/config")
 local hypr = require("lib/hypr")
-local sources = require("lib/surface/sources")
-local shapes = require("lib/surface/shapes")
-local director = require("lib/surface/director")
-local palette = require("lib/surface/palette")
-local bodies = require("lib/surface/bodies")
-local layout = require("lib/surface/layout")
 local reveal = require("lib/surface/reveal")
 local below = require("lib/surface/below")          -- D209
 local opening = require("lib/surface/opening")
 local music = require("lib/surface/music")      -- D223: Music in the picture's places
 local peer = require("lib/surface/peer")        -- D224: peering and burying
 
-local HOSTS_FILE, FEED_FILE, NOTICES = "sigil-hosts.json", "sigil-feed.json", "nexus-feed.json"
-local SLOT = { pill = 0, isl1 = 1, isl2 = 2, isl3 = 3 }
-local KIND = {}
-for i, k in ipairs(shapes.KINDS) do KIND[k] = i end
-
+local NOTICES = "nexus-feed.json"
 -- (found live: passing an empty kind made Pleamar answer nothing, so settings.json and surface.json read as empty;
 -- the frame's reader always did it this way)
 local function read(name, kind)
@@ -34,17 +24,8 @@ end
 
 local S = {
     settings = config.parse(read("settings.json"), json.decode),
-    hosts = {}, screen = 1920, pal = read("palette.json", "json"),
-    feed = {}, feed_at = -1e9,
-    r = {},                -- readings by source id
-    notice = nil, notice_seen = nil, volume_at = nil, volume_was = nil,
-    hover = {}, hover_area = {}, open = {},
-    now = 0,               -- ms since the program began (the director's clock)
-    drawn = {},            -- per slot: the signature of what its targets were last written for
-    col = {},              -- per slot: the colour now (eased), and the colour wanted
-    want = {},
-    choice = {},           -- per host id: the director's choice
-    ready = false,
+    r = {},                -- the readings the push up and the light need (music, notices, workspaces, windows)
+    notice_seen = nil,
     -- D209/D215: what lives below the wallpaper is mooi-widgets'; this keeps their boxes for snapping
     widget_list = {},
     bmo_box = nil,         -- D214: where BMO stands, as he reports it (op_bx / op_bs)
@@ -56,28 +37,18 @@ local SK                   -- D217: push up from below (lib/surface/light), once
 local peek_update, end_peek, read_clients   -- D224: the peek, as the pointer moves while Super is held
 
 -- ── the readings, from the services and the feeds ──
-local function feed()
-    local f = read(FEED_FILE, "json")
-    if type(f) ~= "table" then return end
-    S.feed = f
-    if tonumber(f.at) then S.feed_at = S.now - math.max(0, os.time() * 1000 - f.at) end
-    local w = type(f.weather) == "table" and f.weather or {}
-    S.r.weather = w.temp ~= nil and { temp = w.temp, word = w.word, city = w.city } or nil
-    local res = type(f.resources) == "table" and f.resources or {}
-    S.r.resources = res.cpu ~= nil and { cpu = res.cpu, mem = res.mem, temp = res.temp } or nil
-end
-
 local function notices()
     local n = read(NOTICES, "json")
     if type(n) ~= "table" then return end
     local items = type(n.items) == "table" and n.items or {}
     local first = items[1]
     S.r.notifications = { count = tonumber(n.count) or 0, title = first and first.title or "", app = first and first.app or "" }
-    local fresh
-    S.notice_seen, fresh = director.notice_step(S.notice_seen, first and first.time, S.now)
+    -- a fresh notice: the newest one changed since the last reading (the first reading is not news)
+    local stamp = first and (tostring(first.time or "") .. "|" .. tostring(first.title or "")) or ""
+    local fresh = S.notice_seen ~= nil and stamp ~= "" and stamp ~= S.notice_seen
+    S.notice_seen = stamp
     if SK then SK.news(S.r.notifications.count) end
     if fresh then
-        S.notice = fresh
         if SK then SK.notice(first) end
         -- D210: the notification's ping — a light at the Notices widget while the opening is open
         fact.sf_ping = 1
@@ -85,60 +56,10 @@ local function notices()
     end
 end
 
--- ── what each host shows, and its points ──
+-- ── the opening's look (D210): every fact of Settings → The Subsurface (D226: the Sigil's hosts are gone) ──
 local update
-
-local function write_targets(k, pts, temper, sig)
-    S.drawn[k] = sig
-    local batches = shapes.batches(nil, nil, temper.batches)
-    for b, range in ipairs(batches) do
-        local function put()
-            if S.drawn[k] ~= sig then return end     -- something newer took the host meanwhile
-            for i = range[1], range[2] do
-                fact["h" .. k .. "_tx" .. (i - 1)], fact["h" .. k .. "_ty" .. (i - 1)] = pts[i][1], pts[i][2]
-            end
-        end
-        if b == 1 or temper.lag_ms <= 0 then put() else after(temper.lag_ms * (b - 1), put) end
-    end
-end
-
-local function opts_for(src)
-    if src == "workspaces" then
-        local w = S.r.workspaces or {}
-        return { n = math.max(1, math.min(10, tonumber(w.count) or 5)), active = tonumber(w.active) or 1 }
-    elseif src == "resources" then
-        local r = S.r.resources or {}
-        return { values = { r.cpu or 0, r.mem or 0, (r.temp or 0) / 100 } }
-    end
-    return {}
-end
-
-local function value_for(src, reading)
-    if src == "weather" then
-        local c = os.date("*t")
-        return math.max(0, math.min(1, ((c.hour + c.min / 60) - 7) / 12))   -- the day's place on the sun's arc
-    end
-    return reading and tonumber(reading.val) or 0
-end
-
 update = function()
     local s = S.settings
-    local sig = s.sigil or {}
-    local reduced = s.motion.reduced == true or s.motion.saver == "always"
-    local temper = bodies.temperament(sig.temperament, reduced)
-    fact.wob, fact.breath = temper.wobble, temper.breath
-    fact.push = bodies.pointer(sig.pointer)
-    fact.field_on = sig.field ~= false
-    local cols = type(S.pal) == "table" and type(S.pal.colours) == "table" and S.pal.colours or {}
-    local function rgb01(hex, dr, dg, db)
-        local r, g, b = tostring(hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
-        if not r then return dr, dg, db end
-        return tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255
-    end
-    fact.ink_r, fact.ink_g, fact.ink_b = rgb01(cols.on_surface, 0.93, 0.88, 0.84)
-    fact.mut_r, fact.mut_g, fact.mut_b = rgb01(cols.on_surface_variant, 0.55, 0.56, 0.52)
-    fact.pl_r, fact.pl_g, fact.pl_b = rgb01(cols.surface_container, 0.09, 0.10, 0.09)
-    -- D210: the opening's look, its wallpaper and the places below (one settings page, every fact here)
     local su = type(s.surface) == "table" and s.surface or {}
     local function num(v, d) return tonumber(v) or d end
     local function pct(v, d) return math.max(0, math.min(1, num(v, d) / 100)) end
@@ -162,80 +83,7 @@ update = function()
     fact.sf_ovm = math.floor(math.max(0, math.min(40, num(su.overview, 16))) + 0.5)
     opening.CORNER = math.floor(math.max(8, math.min(40, num(su.radius, 18))) + 0.5)
     reveal.OPEN_MS = math.floor(math.max(100, math.min(600, num(su.speed, 220))) + 0.5)
-
-    local state = { music = S.r.music, notice = S.notice, battery = S.r.battery, volume_at = S.volume_at,
-                    feed_at = S.feed_at, hover = S.hover, open = S.open }
-    local hosts = {}
-    for _, h in ipairs(S.hosts) do if SLOT[h.id] then hosts[#hosts + 1] = h end end
-    S.choice = director.choose(hosts, state, S.now)
-    local seen = {}
-    for _, h in ipairs(hosts) do
-        local k, c = SLOT[h.id], S.choice[h.id]
-        seen[k] = true
-        local entry = c and sources.get(c.source)
-        if entry then
-            local b = h.box
-            fact["h" .. k .. "_on"] = true
-            fact["h" .. k .. "_x"], fact["h" .. k .. "_y"], fact["h" .. k .. "_w"], fact["h" .. k .. "_h"] = b.x, b.y, b.w, b.h
-            local form = c.form
-            fact["h" .. k .. "_form"] = form == "glyph" and 0 or form == "display" and 2 or 1
-            fact["h" .. k .. "_src"] = sources.index(c.source) or 0
-            local kind = form == "display" and entry.display or entry.glyph
-            fact["h" .. k .. "_kind"] = KIND[kind] or 1
-            local reading = S.r[c.source]
-            local words = entry.compact(reading)
-            text["h" .. k .. "_t1"], text["h" .. k .. "_t2"] = words.t1 or "", words.t2 or ""
-            fact["h" .. k .. "_val"] = value_for(c.source, words)
-            fact["h" .. k .. "_rip"] = (c.source == "music" and S.r.music and S.r.music.playing and not reduced) and 1 or 0
-            -- the line's box for its form
-            local box
-            if form == "display" then
-                local D = layout.display_box(b, S.screen)
-                local tx, ty
-                box, tx, ty = layout.display(kind, D)
-                fact.d_x, fact.d_y, fact.d_w, fact.d_h, fact.d_tx, fact.d_ty = D.x, D.y, D.w, D.h, tx, ty
-            elseif form == "glyph" then box = layout.glyph(b)
-            else box = layout.compact(b, kind) end
-            fact["h" .. k .. "_cx"] = box.x + box.w + 10     -- the compact words follow the line
-            local opts = opts_for(c.source)
-            if kind == "clock" then local t = os.date("*t"); opts.angle = layout.clock_angle(t.hour, t.min) end
-            local sigkey = table.concat({ c.source, form, kind, box.x, box.y, box.w, box.h, opts.n or "", opts.active or "",
-                                          opts.values and table.concat(opts.values, ",") or "", opts.angle or "" }, "|")
-            if S.drawn[k] ~= sigkey then write_targets(k, shapes.outline(kind, box, form, os.time(), opts), temper, sigkey) end
-            -- its colour: the layers (lib/surface/palette), eased in the tick below
-            local col = palette.resolve(c.source, { palette = S.pal, cover = S.feed.cover, event = c.event, settings = s })
-            S.want[k] = { col[1] / 255, col[2] / 255, col[3] / 255 }
-            if not S.col[k] then S.col[k] = { S.want[k][1], S.want[k][2], S.want[k][3] } end
-        end
-    end
-    for k = 0, 3 do
-        if not seen[k] then fact["h" .. k .. "_on"] = false; S.drawn[k] = nil end
-    end
-    fact.calm = not (S.r.music and S.r.music.playing) and next(S.hover) == nil
-    if not S.ready and #hosts > 0 then
-        S.ready = true
-        run("pleamar", { "--say", "mooi", "emit surface_ready" })
-    end
 end
-
--- the clock the director reads, colours easing, and a fresh look when something times out
-every(250, function()
-    S.now = S.now + 250
-    for k, want in pairs(S.want) do
-        local cur = S.col[k]
-        if cur then
-            local moved = false
-            for i = 1, 3 do
-                local d = want[i] - cur[i]
-                if math.abs(d) > 0.004 then cur[i] = cur[i] + d * 0.35; moved = true else cur[i] = want[i] end
-            end
-            if moved or fact["h" .. k .. "_r"] ~= cur[1] then
-                fact["h" .. k .. "_r"], fact["h" .. k .. "_g"], fact["h" .. k .. "_b"] = cur[1], cur[2], cur[3]
-            end
-        end
-    end
-end)
-every(1000, function() update() end)
 
 -- ── the services ──
 pcall(sys.watch, "media", function(m)
@@ -243,29 +91,6 @@ pcall(sys.watch, "media", function(m)
     S.r.music = { title = m.title or "", artist = m.artist or "", playing = m.playing == true }
     update()
     if SK then SK.song(S.r.music) end
-end)
-pcall(sys.watch, "audio", function(a)
-    if type(a) ~= "table" then return end
-    local v = tonumber(a.volume)
-    if v and S.volume_was and math.abs(v - S.volume_was) > 0.004 then S.volume_at = S.now end
-    S.volume_was = v
-    S.r.volume = { volume = v, muted = a.muted == true }
-    update()
-end)
-pcall(sys.watch, "battery", function(b)
-    if type(b) ~= "table" or b.present == false then S.r.battery = nil; return end
-    S.r.battery = { percent = tonumber(b.percent), charging = b.charging == true }
-    update()
-end)
-pcall(sys.watch, "network", function(n)
-    if type(n) ~= "table" then return end
-    S.r.network = { online = n.online == true, wifi = n.wifi ~= false, name = n.name, strength = tonumber(n.strength) }
-end)
-pcall(sys.watch, "bluetooth", function(v)
-    if type(v) ~= "table" then return end
-    local n, name = 0, nil
-    for _, d in ipairs(v.devices or {}) do if d.connected then n = n + 1; name = name or d.name end end
-    S.r.bluetooth = { powered = v.powered == true, connected = n, name = name }
 end)
 pcall(sys.watch, "workspaces", function(w)
     if type(w) ~= "table" then return end
@@ -296,19 +121,10 @@ end)
 S.r.bmo = { say = "" }
 
 -- ── the files ──
-local function hosts()
-    local h = read(HOSTS_FILE, "json")
-    S.hosts = type(h) == "table" and type(h.hosts) == "table" and h.hosts or {}
-    S.screen = type(h) == "table" and tonumber(h.screen) or S.screen
-    update()
-end
-pcall(sys.watch, "files:" .. HOSTS_FILE, hosts)
-pcall(sys.watch, "files:" .. FEED_FILE, function() feed(); update() end)
 pcall(sys.watch, "files:" .. NOTICES, function() notices(); update() end)
-pcall(sys.watch, "files:palette.json", function() S.pal = read("palette.json", "json"); update(); if SF_wall then SF_wall() end end)
+pcall(sys.watch, "files:palette.json", function() if SF_wall then SF_wall() end end)
 pcall(sys.watch, "files:settings.json", function()
     S.settings = config.parse(read("settings.json"), json.decode)
-    S.drawn = {}
     update()
     if ship_set then ship_set() end
     if SK then SK.refresh() end
@@ -324,63 +140,6 @@ local function widgets_file()
 end
 pcall(sys.watch, "files:widgets.json", widgets_file)
 widgets_file()
-
--- ── presses, hover, the wheel ──
-local function host_of(k)
-    for id, slot in pairs(SLOT) do if slot == k then return id end end
-end
-on("sg_press", function(v)
-    local k = math.floor(tonumber(v) or -1)
-    local id = host_of(k)
-    local c = id and S.choice[id]
-    local entry = c and sources.get(c.source)
-    if not entry then return end
-    local p = entry.press
-    local h
-    for _, x in ipairs(S.hosts) do if x.id == id then h = x end end
-    local cx = h and (h.box.x + h.box.w / 2) or S.screen / 2
-    if p.kind == "island" then run("pleamar", { "--say", "mooi", "fact isl_cx " .. tostring(math.floor(cx)), "fact open " .. p.target })
-    elseif p.kind == "nexus" then run("mooi", { "nexus" })
-    elseif p.kind == "overview" then run("mooi", { "overview" })
-    elseif p.kind == "bmo" then run("mooi", { "bmo", "joke" }) end
-    S.open[id] = nil
-    update()
-end)
-on("sg_rpress", function()
-    run("pleamar", { "--say", "mooi", "emit open_settings" })
-end)
--- k * 4 + area * 2 + on: the Pill stays open while the pointer is over its bar zone or its display; leaving
--- both closes it a moment later (so the pointer can cross from one to the other)
-on("sg_hover", function(v)
-    v = math.floor(tonumber(v) or 0)
-    local k, area, on_ = v // 4, (v // 2) % 2, v % 2 == 1
-    local id = host_of(k)
-    if not id then return end
-    S.hover_area[id] = S.hover_area[id] or {}
-    S.hover_area[id][area] = on_
-    local any = S.hover_area[id][0] or S.hover_area[id][1]
-    if any then S.hover[id] = true; update()
-    else
-        after(300, function()
-            local a = S.hover_area[id] or {}
-            if not (a[0] or a[1]) then S.hover[id] = nil; update() end
-        end)
-    end
-end)
-on("sg_wheel", function(v)
-    v = math.floor(tonumber(v) or 0)
-    local id = host_of(v // 2)
-    local c = id and S.choice[id]
-    if not c then return end
-    local d = v % 2 == 1 and 1 or -1
-    if c.source == "volume" or c.source == "music" then
-        local vol = S.r.volume and S.r.volume.volume
-        if vol then pcall(sys.call, "audio.volume", math.max(0, math.min(1, vol + 0.05 * d))) end
-    elseif c.source == "workspaces" then
-        local a = S.r.workspaces and S.r.workspaces.active or 1
-        run("hyprctl", { "dispatch", hypr.go_workspace(math.max(1, a - d)) })
-    end
-end)
 
 -- ── Surface (D208, D209, D215): hold Super and the wallpaper opens; what lives below is mooi-widgets' ──
 -- One table for all of it (the reveal's state, the opening, the screen and the pointer).
@@ -537,7 +296,7 @@ local function heal_opening()
     broadcast()
 end
 
--- SF.clock: a millisecond clock of our own (S.now advances in 250 ms steps; the reveal needs finer)
+-- SF.clock: a millisecond clock of our own (the reveal needs it fine)
 -- (review I7: it advances only inside the reveal's own tick — nothing runs while idle)
 -- D218: the pointer, read from Hyprland while Super is held — the scenes' own readings stand still while it is
 -- over a window or any surface but theirs, so the hole is moved from here and sent (opening.changed). One read at
@@ -970,6 +729,6 @@ if S.r.music then SK.song(S.r.music) end
 cut_now()
 show_tiles()
 
-feed(); notices(); hosts()
+notices(); update()
 widgets_file()
 log("surface · up")
