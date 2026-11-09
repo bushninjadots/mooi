@@ -328,9 +328,29 @@ scene Node {
     fact nd_sel = 0
     model lr max 6 { x: number; y: number; w: number; h: number; name: text; icon: image 28, 28; iconed: bool; letter: text }
     // universe
-    model un max 12 { x: number; y: number; s: number; n: text; apps: text; front: bool; id: number }
+    model un max 12 { i: number; n: text; apps: text; id: number }
+    fact nd_un_n = 1      // how many workspaces orbit
+    fact nd_rott = 0      // where the orbit turns to (a running count: stepping never wraps back the long way)
+    prop nd_rot = 0 ~nd.p0
+    follow nd_rot = nd_rott
     prop nd_uf = 0 ~nd.p0
     follow nd_uf = if(nd_kind == 7, 1, 0)
+    // growth (D228): restarted by the logic on every change of shape, so what unfolds grows out of the body
+    // (a count the logic bumps; a spring chases it; the lag is how far from grown: a bump is an instant reset)
+    fact nd_gn = 0
+    spring nd.grow = 170, 19
+    prop nd_gp = 0 ~nd.grow
+    follow nd_gp = nd_gn
+    let nd_grow = clamp(1 - (nd_gn - nd_gp), 0, 1)
+    // cyber: a change glitches it for a moment
+    fact nd_gl = 0
+    prop nd_glf = 0 ~nd.p3
+    follow nd_glf = nd_gl
+    // the launcher's focus: what is round it steps back
+    prop nd_ld = 0 ~nd.p0
+    follow nd_ld = if(nd_kind == 6, 1, 0)
+    // notices beyond the three shown
+    fact nd_more = 0
     // satellites
     model sa max 6 { x: number; y: number; w: number; h: number; label: text; kind: number }
     prop nd_sf = 0 ~nd.p0
@@ -353,40 +373,70 @@ scene Node {
         level: top, overlay while nd_kind == 7
         reserve: 0
         keyboard: exclusive while nd_kb
-        rate: 60, 20 while nd_kind == 0
-        // the universe (Super+Tab): the desktop dims and the workspaces gather round the node
+        rate: 60, 20 while nd_kind == 0 and nd_grow > 0.99
+        // the launcher: what is round it steps back (a soft dim), the search line in focus
+        box { from: 0, 0; size: node.width, node.height; color: #000000; opacity: 0.28 * nd_ld; show: nd_ld > 0.01 }
+        // the universe (Super+Tab): the desktop dims and the workspaces orbit the node; stepping turns the orbit
         box { from: 0, 0; size: node.width, node.height; color: #000000; opacity: 0.62 * nd_uf; show: nd_uf > 0.01 }
         zone box nd_ubz { from: 0, 0; size: node.width, node.height; role: button; label: "Close the workspaces"; show: nd_kind == 7 }
         on press nd_ubz { emit nd_key(27) }
         on scroll nd_ubz { emit nd_key(if(wheel > 0, 37, 39)) }
+        // the orbit's ring, faint, round the node
+        ellipse { at: node.width / 2, node.height / 2; radius: 520 * nd_uf; scale: 1, 0.33; stroke: 1; color: fl.trace_lit; opacity: 0.25 * nd_uf; show: nd_uf > 0.01 }
         for u in un {
-            group { opacity: nd_uf; show: nd_uf > 0.01
-                let tw = 240 * u.s
-                let th = 140 * u.s
-                group { glow: 22, if(u.front, 0.7, 0.2), fl.phos
-                    box { from: u.x - tw / 2, u.y - th / 2; size: tw, th; corner: 12 * u.s; color: fl.hull; opacity: 0.94 } }
-                box { from: u.x - tw / 2, u.y - th / 2; size: tw, th; corner: 12 * u.s; stroke: if(u.front, 2, 1); color: if(u.front, fl.phos, fl.trace_lit) }
-                text u.n { at: u.x, u.y - th / 2 + 26 * u.s; anchor: center; align: center; size: 22 * u.s; weight: 700; family: "Share Tech Mono"; color: if(u.front, fl.phos, fl.engrave) }
-                text u.apps { at: u.x, u.y + 12 * u.s; anchor: center; align: center; size: 11 * u.s; family: "Exo 2"; color: fl.muted; width: tw - 20; lines: 2 }
-                zone box ut { from: u.x - tw / 2, u.y - th / 2; size: tw, th; corner: 12; cursor: pointer; role: button; label: "Workspace {u.n}"; show: nd_kind == 7 }
+            let ua = 90 + (u.i - nd_rot) * 360 / max(1, nd_un_n)
+            let ud = (sin(ua) + 1) / 2
+            let us = (0.55 + 0.45 * ud) * (0.6 + 0.4 * nd_uf)
+            let ux = node.width / 2 + cos(ua) * 520 * nd_uf
+            let uy = node.height / 2 + sin(ua) * 170 * nd_uf
+            let tw = 240 * us
+            let th = 140 * us
+            let front = ud > 0.97
+            group { opacity: nd_uf * (0.45 + 0.55 * ud); show: nd_uf > 0.01
+                group { glow: 22, if(front, 0.7, 0.15) * if(nd_np == 1 or nd_np == 2, 0.4, 1), fl.phos
+                    box { from: ux - tw / 2, uy - th / 2; size: tw, th; corner: if(nd_np == 2, 3, 12 * us); color: fl.hull; opacity: 0.94 } }
+                box { from: ux - tw / 2, uy - th / 2; size: tw, th; corner: if(nd_np == 2, 3, 12 * us); stroke: if(front, 2, 1); color: if(front, fl.phos, fl.trace_lit) }
+                text u.n { at: ux, uy - th / 2 + 26 * us; anchor: center; align: center; size: 22 * us; weight: 700; family: "Share Tech Mono"; color: if(front, fl.phos, fl.engrave) }
+                text u.apps { at: ux, uy + 12 * us; anchor: center; align: center; size: 11 * us; family: "Exo 2"; color: fl.muted; width: tw - 20; lines: 2 }
+                zone box ut { from: ux - tw / 2, uy - th / 2; size: tw, th; corner: 12; cursor: pointer; role: button; label: "Workspace {u.n}"; show: nd_kind == 7 }
                 on press ut { emit nd_un(u.id) }
             }
         }
-        // the body: one shape that is the seed, a capsule, a rail, a search line
-        group { glow: if(nd_kind == 0, 8, 14), if(nd_kind == 0, 0.35 + 0.25 * nd_br, 0.4), fl.phos
-            box { from: nb_x, nb_y + if(nd_kind == 0, (1 - nd_br) * 1, 0); size: nb_w, nb_h; corner: nb_r; color: if(nd_kind == 0, fl.phos, fl.hull); opacity: if(nd_kind == 0, 0.55 + 0.35 * nd_br, 0.95) } }
-        box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: if(nd_np == 3, 1.5, 1); color: fl.phos; opacity: if(nd_kind == 0, 0, 0.55) }
-        // cyber: the outline breaks into segments
+        // the body: one shape that is the seed, a capsule, a rail, a search line — its glow by personality
+        // (minimal and technical: none to speak of; organic: a soft one that breathes with the music; cyber: sharp)
+        let nd_glow = pick(nd_np, 0.45 + 0.25 * lv.level, 0.08, 0.05, 0.6)
+        let nd_sw = nb_w + if(nd_kind == 0 and nd_playing and nd_np != 2, lv.level * 16, 0)
+        let nd_sx = nb_x - (nd_sw - nb_w) / 2
+        let nd_sh = nb_h * if(nd_kind == 0 and nd_np == 0, 1 + 0.35 * nd_br, 1)
+        group { glow: if(nd_kind == 0, 8, 14), if(nd_kind == 0, 0.35 + 0.25 * nd_br, nd_glow), fl.phos
+            box { from: nd_sx, nb_y - (nd_sh - nb_h) / 2; size: nd_sw, nd_sh; corner: min(nb_r, nd_sh / 2); color: if(nd_kind == 0, fl.phos, fl.hull); opacity: if(nd_kind == 0, 0.55 + 0.35 * nd_br, 0.95) } }
+        box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: if(nd_np == 3, 1.5, if(nd_np == 1, 0.75, 1)); color: fl.phos; opacity: if(nd_kind == 0, 0, 0.55) }
+        // cyber: the outline breaks into segments, and a change glitches it (a shifted ghost in the counter-signal)
         box { from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, 2; color: fl.ground; show: nd_np == 3 and nd_kind > 0 }
         box { from: nb_x + nb_w * 0.7, nb_y + nb_h - 1; size: nb_w * 0.08, 2; color: fl.ground; show: nd_np == 3 and nd_kind > 0 }
-        // technical: ticks along the floor
+        box { from: nb_x + 4 * sin(nd_ph * 13), nb_y + 2 * cos(nd_ph * 7); size: nb_w, nb_h; corner: nb_r; stroke: 1; color: fl.ember; opacity: 0.7 * nd_glf; show: nd_np == 3 and nd_glf > 0.01 }
+        box { from: nb_x + nb_w * 0.15, nb_y + nb_h * 0.4 + 3 * sin(nd_ph * 17); size: nb_w * 0.5, 2; color: fl.ember; opacity: 0.8 * nd_glf; show: nd_np == 3 and nd_glf > 0.01 }
+        // technical: ticks along the floor and brackets at the corners
         repeat tk in 0..9 { box { from: nb_x + nb_w * (tk + 0.5) / 9, nb_y + nb_h - 3; size: 1, 3; color: fl.phos; opacity: 0.5; show: nd_np == 2 and nd_kind > 0 and nd_kind < 6 } }
+        group { show: nd_np == 2 and nd_kind > 0
+            box { from: nb_x - 4, nb_y - 4; size: 8, 1.5; color: fl.phos }
+            box { from: nb_x - 4, nb_y - 4; size: 1.5, 8; color: fl.phos }
+            box { from: nb_x + nb_w - 4, nb_y - 4; size: 8, 1.5; color: fl.phos }
+            box { from: nb_x + nb_w + 2.5, nb_y - 4; size: 1.5, 8; color: fl.phos }
+            box { from: nb_x - 4, nb_y + nb_h + 2.5; size: 8, 1.5; color: fl.phos }
+            box { from: nb_x - 4, nb_y + nb_h - 4; size: 1.5, 8; color: fl.phos }
+            box { from: nb_x + nb_w - 4, nb_y + nb_h + 2.5; size: 8, 1.5; color: fl.phos }
+            box { from: nb_x + nb_w + 2.5, nb_y + nb_h - 4; size: 1.5, 8; color: fl.phos }
+        }
         zone box nd_bz { from: nb_x - 16, nb_y - 8; size: nb_w + 32, nb_h + 16; corner: nb_r; cursor: pointer; role: button; label: "The Pill" }
         let nd_hv = nd_bz.hover
         on change nd_hv { emit nd_hover(if(nd_hv, 1 + round(pointer.x), 0)) }
         on press nd_bz { emit nd_press }
-        // media: a lateral capsule — the cover, the song, its controls, its progress, the music in its floor
+        // media: a lateral capsule — revealed by the body as it grows (its own clip), the music woven into its floor
         group { show: nd_kind == 1; opacity: nd_cf
+            clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
+            // the music, woven into the capsule: bars rising from its floor across its whole width, behind the words
+            repeat vb in 0..40 { box { from: nb_x + 8 + vb * (nb_w - 16) / 40, nb_y + nb_h - (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7; size: (nb_w - 16) / 40 * 0.55, (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7 + 1; color: fl.phos; opacity: 0.16 } }
             group { clip box { from: nb_x + 8, nb_y + 8; size: 48, 48; corner: if(nd_np == 2, 3, 10) }
                 box { from: nb_x + 8, nb_y + 8; size: 48, 48; color: fl.well }
                 image nd_cover { at: nb_x + 8, nb_y + 8; size: 48, 48; fit: cover; show: nd_arted } }
@@ -394,8 +444,6 @@ scene Node {
             text nd_artist { at: nb_x + 68, nb_y + 40; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: nb_w - 200; lines: 1 }
             box { from: nb_x + 68, nb_y + nb_h - 12; size: nb_w - 200, 2; corner: 1; color: fl.trace_dim }
             box { from: nb_x + 68, nb_y + nb_h - 12; size: (nb_w - 200) * nd_prog, 2; corner: 1; color: fl.phos }
-            // the music, woven into the capsule's floor
-            repeat vb in 0..24 { box { from: nb_x + 16 + vb * (nb_w - 32) / 24, nb_y + nb_h - 3 - (0.3 + 0.7 * abs(sin(vb * 47 + nd_vph))) * lv.level * 10; size: (nb_w - 32) / 24 * 0.5, (0.3 + 0.7 * abs(sin(vb * 47 + nd_vph))) * lv.level * 10 + 1; color: fl.phos; opacity: 0.35 } }
             text "⏮" { at: nb_x + nb_w - 118 + 0 + 14, nb_y + nb_h / 2; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nmc1.hover, fl.phos, fl.engrave) }
             zone box nmc1 { from: nb_x + nb_w - 118 + 0, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Back"; show: nd_kind == 1 }
             on press nmc1 { emit nd_media(1) }
@@ -406,84 +454,103 @@ scene Node {
             zone box nmc3 { from: nb_x + nb_w - 118 + 72, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next"; show: nd_kind == 1 }
             on press nmc3 { emit nd_media(3) }
         }
-        // notices: a stem drops from the node, the cards branch from it
-        group { show: nd_kind == 2; opacity: nd_cf
-            line { from: nb_x + nb_w / 2, nb_y + nb_h; to: nb_x + nb_w / 2, nb_y + nb_h + 22; width: 1.5; color: fl.phos }
+        // notices: a stem drops from the node, and the cards branch from it one after another (each grows out of
+        // the stem's foot: it slides down from it, opening as it comes)
+        group { show: nd_kind == 2
+            line { from: nb_x + nb_w / 2, nb_y + nb_h; to: nb_x + nb_w / 2, nb_y + nb_h + 22 * nd_grow; width: 1.5; color: fl.phos }
             for n in nc {
                 let row = n.index
-                line { from: nb_x + nb_w / 2, n.y - 8; to: n.x + n.w / 2, n.y; width: 1; color: fl.trace_lit; opacity: 0.6 }
-                group { glow: 16, 0.35, #000000
-                    box { from: n.x, n.y; size: n.w, n.h; corner: if(nd_np == 2, 4, 12); color: fl.hull; opacity: 0.96 } }
-                box { from: n.x, n.y; size: n.w, n.h; corner: if(nd_np == 2, 4, 12); stroke: 1; color: fl.trace_lit; opacity: 0.6 }
-                text n.app { at: n.x + 14, n.y + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos; width: n.w - 60; lines: 1 }
-                text n.title { at: n.x + 14, n.y + 37; anchor: left center; size: 12; family: "Exo 2"; color: fl.engrave; width: n.w - 120; lines: 1 }
-                zone box ncz { from: n.x, n.y; size: n.w, n.h; corner: 12; cursor: pointer; role: button; label: "{n.app}: {n.title}"; show: nd_kind == 2 }
+                let g = clamp(nd_grow * 1.8 - row * 0.32, 0, 1)
+                let rise = (n.y - nb_y - nb_h) * (1 - g)
+                group { opacity: g; move: 0, 0 - rise; pivot: n.x + n.w / 2, n.y; scale: 0.7 + 0.3 * g
+                    line { from: nb_x + nb_w / 2, n.y - 8; to: n.x + n.w / 2, n.y; width: 1; color: fl.trace_lit; opacity: 0.6 }
+                    group { glow: 16, 0.35, #000000
+                        box { from: n.x, n.y; size: n.w, n.h; corner: if(nd_np == 2, 4, 12); color: fl.hull; opacity: 0.96 } }
+                    box { from: n.x, n.y; size: n.w, n.h; corner: if(nd_np == 2, 4, 12); stroke: 1; color: fl.trace_lit; opacity: 0.6 }
+                    text n.app { at: n.x + 14, n.y + 16; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.phos; width: n.w - 60; lines: 1 }
+                    text n.title { at: n.x + 14, n.y + 37; anchor: left center; size: 12; family: "Exo 2"; color: fl.engrave; width: n.w - 120; lines: 1 }
+                    group { show: n.hasact
+                        box { from: n.x + n.w - 100, n.y + 27; size: 64, 20; corner: 10; stroke: 1; color: fl.phos }
+                        text n.act { at: n.x + n.w - 68, n.y + 37; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.phos; width: 58; lines: 1 } }
+                    text "×" { at: n.x + n.w - 18, n.y + 16; anchor: center; size: 14; family: "Exo 2"; color: fl.muted }
+                }
+                zone box ncz { from: n.x, n.y; size: n.w, n.h; corner: 12; cursor: pointer; role: button; label: "{n.app}: {n.title}"; show: nd_kind == 2 and g > 0.9 }
                 on press ncz { emit nd_nc(row * 10) }
-                group { show: n.hasact
-                    box { from: n.x + n.w - 100, n.y + 27; size: 64, 20; corner: 10; stroke: 1; color: fl.phos }
-                    text n.act { at: n.x + n.w - 68, n.y + 37; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.phos; width: 58; lines: 1 }
-                    zone box nca { from: n.x + n.w - 100, n.y + 27; size: 64, 20; cursor: pointer; role: button; label: "{n.act}"; show: nd_kind == 2 and n.hasact }
-                    on press nca { emit nd_nc(row * 10 + 1) } }
-                text "×" { at: n.x + n.w - 18, n.y + 16; anchor: center; size: 14; family: "Exo 2"; color: fl.muted }
-                zone box ncx { from: n.x + n.w - 30, n.y + 4; size: 24, 24; cursor: pointer; role: button; label: "Dismiss"; show: nd_kind == 2 }
+                zone box nca { from: n.x + n.w - 100, n.y + 27; size: 64, 20; cursor: pointer; role: button; label: "{n.act}"; show: nd_kind == 2 and n.hasact and g > 0.9 }
+                on press nca { emit nd_nc(row * 10 + 1) }
+                zone box ncx { from: n.x + n.w - 30, n.y + 4; size: 24, 24; cursor: pointer; role: button; label: "Dismiss"; show: nd_kind == 2 and g > 0.9 }
                 on press ncx { emit nd_nc(row * 10 + 9) }
             }
+            // more than fit: how many wait
+            text "+{nd_more, 0} MORE" { at: nb_x + nb_w / 2, nb_y + nb_h + 22 + 3 * 66 + 8; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted; opacity: nd_grow; show: nd_more > 0.5 }
         }
         // volume or brightness: the node becomes a gauge
         group { show: nd_kind == 3; opacity: nd_cf
             box { from: nb_x + 3, nb_y + 3; size: max(0, (nb_w - 6) * nd_vol), nb_h - 6; corner: max(0, nb_r - 3); color: fl.phos; opacity: 0.85 }
-            text nd_vlabel { at: nb_x + nb_w / 2, nb_y + nb_h + 12; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.engrave } }
-        // workspaces: a rail, the active one a bead that slides along it
+            text nd_vlabel { at: nb_x + nb_w / 2, nb_y + nb_h + 12; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.engrave; opacity: nd_grow } }
+        // workspaces: a rail drawn out from the middle, the active one a bead that slides along it
         group { show: nd_kind == 4; opacity: nd_cf
-            line { from: nb_x + 18, nb_y + nb_h / 2; to: nb_x + nb_w - 18, nb_y + nb_h / 2; width: 1; color: fl.trace_lit; opacity: 0.7 }
+            line { from: nb_x + nb_w / 2 - (nb_w / 2 - 18) * nd_grow, nb_y + nb_h / 2; to: nb_x + nb_w / 2 + (nb_w / 2 - 18) * nd_grow, nb_y + nb_h / 2; width: 1; color: fl.trace_lit; opacity: 0.7 }
             for r in rl {
-                ellipse { at: r.x, nb_y + nb_h / 2; radius: if(r.used, 3.5, 2); color: if(r.used, fl.engrave, fl.muted) }
-                text r.n { at: r.x, nb_y + nb_h / 2 - 1; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ground; show: r.on }
+                let rx = nb_x + nb_w / 2 + (r.x - nb_x - nb_w / 2) * nd_grow
+                ellipse { at: rx, nb_y + nb_h / 2; radius: if(r.used, 3.5, 2); color: if(r.used, fl.engrave, fl.muted) }
                 zone box rz { from: r.x - 20, nb_y; size: 40, nb_h; cursor: pointer; role: button; label: "Workspace {r.n}"; show: nd_kind == 4 }
                 on press rz { emit nd_ws(r.index) }
             }
-            group { glow: 12, 0.8, fl.phos
-                ellipse { at: nd_bead, nb_y + nb_h / 2; radius: 10; color: fl.phos } }
-            for r in rl { text r.n { at: r.x, nb_y + nb_h / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ground; show: r.on } }
+            group { glow: 12, 0.8 * nd_glow / 0.6, fl.phos
+                ellipse { at: nd_bead, nb_y + nb_h / 2; radius: 10 * nd_grow; color: fl.phos } }
+            for r in rl { text r.n { at: r.x, nb_y + nb_h / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.ground; show: r.on and nd_grow > 0.6 } }
         }
-        // system: a cluster round the node
-        group { show: nd_kind == 5; opacity: nd_cf
+        // system: spokes extend from the node and the readings ride out on them, one after another
+        group { show: nd_kind == 5
             for p in sy {
-                line { from: nb_x + nb_w / 2, nb_y + nb_h / 2; to: p.x, p.y; width: 1; color: fl.trace_lit; opacity: 0.7 }
-                box { from: p.x - 46, p.y - 14; size: 92, 28; corner: if(nd_np == 2, 3, 14); color: fl.hull; opacity: 0.95 }
-                box { from: p.x - 46, p.y - 14; size: 92, 28; corner: if(nd_np == 2, 3, 14); stroke: 1; color: if(p.hot, fl.ember, fl.phos); opacity: 0.8 }
-                text p.label { at: p.x - 38, p.y; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
-                text p.value { at: p.x + 38, p.y; anchor: right center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(p.hot, fl.ember, fl.engrave) }
+                let g = clamp(nd_grow * 1.6 - p.index * 0.2, 0, 1)
+                let px = nb_x + nb_w / 2 + (p.x - nb_x - nb_w / 2) * g
+                let py = nb_y + nb_h / 2 + (p.y - nb_y - nb_h / 2) * g
+                line { from: nb_x + nb_w / 2, nb_y + nb_h / 2; to: px, py; width: 1; color: fl.trace_lit; opacity: 0.7 }
+                group { opacity: g; pivot: px, py; scale: 0.5 + 0.5 * g
+                    box { from: px - 46, py - 14; size: 92, 28; corner: if(nd_np == 2, 3, 14); color: fl.hull; opacity: 0.95 }
+                    box { from: px - 46, py - 14; size: 92, 28; corner: if(nd_np == 2, 3, 14); stroke: 1; color: if(p.hot, fl.ember, fl.phos); opacity: 0.8 }
+                    text p.label { at: px - 38, py; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                    text p.value { at: px + 38, py; anchor: right center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(p.hot, fl.ember, fl.engrave) }
+                }
             }
             ellipse { at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: 5; color: fl.phos }
         }
-        // the launcher: the node widens into a search line, results grow under it
+        // the launcher: the node widens into a search line, the results drop out of it one after another
         group { show: nd_kind == 6; opacity: nd_cf
             text "›" { at: nb_x + 18, nb_y + nb_h / 2; anchor: center; size: 18; family: "Exo 2"; color: fl.phos }
             input nd_q { at: nb_x + 34, nb_y + nb_h / 2 - 9; width: nb_w - 50; size: 14; family: "Exo 2"; color: fl.engrave; selection: fl.well; placeholder: "search apps" }
-            for r in lr {
-                let i = r.index
+        }
+        for r in lr {
+            let i = r.index
+            let g = clamp(nd_grow * 1.8 - i * 0.18, 0, 1)
+            group { show: nd_kind == 6; opacity: g * nd_cf; move: 0, 0 - (r.y - nb_y - nb_h) * (1 - g)
                 box { from: r.x, r.y; size: r.w, r.h; corner: if(nd_np == 2, 4, 10); color: if(nd_sel == i, fl.hull_raised, fl.hull); opacity: 0.95 }
                 box { from: r.x, r.y; size: 3, r.h; color: fl.phos; show: nd_sel == i }
                 image r.icon { at: r.x + 12, r.y + 7; size: 28, 28; show: r.iconed }
                 text r.letter { at: r.x + 26, r.y + 21; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: fl.phos; show: not r.iconed }
                 text r.name { at: r.x + 52, r.y + 21; anchor: left center; size: 13; family: "Exo 2"; color: fl.engrave; width: r.w - 64; lines: 1 }
-                zone box lz { from: r.x, r.y; size: r.w, r.h; cursor: pointer; role: button; label: "Open {r.name}"; show: nd_kind == 6 }
-                on press lz { emit nd_lr(i) }
             }
+            zone box lz { from: r.x, r.y; size: r.w, r.h; cursor: pointer; role: button; label: "Open {r.name}"; show: nd_kind == 6 }
+            on press lz { emit nd_lr(i) }
         }
         on submit nd_q { emit nd_key(13) }
         on change nd_kb while nd_kb and nd_kind == 6 { focus nd_q }
-        // satellites: what deserves a place, on an arc under the seed
+        // satellites: they leave the seed for their place on the arc and come back into it; organic ones drift
         for s in sa {
-            group { opacity: nd_sf; show: nd_sf > 0.01
-                line { from: nb_x + nb_w / 2, nb_y + nb_h; to: s.x + s.w / 2, s.y; width: 1; color: fl.trace_lit; opacity: 0.35 }
-                box { from: s.x, s.y; size: s.w, s.h; corner: if(nd_np == 2, 3, s.h / 2); color: fl.hull; opacity: 0.92 }
-                box { from: s.x, s.y; size: s.w, s.h; corner: if(nd_np == 2, 3, s.h / 2); stroke: 1; color: if(s.kind == 2 or s.kind == 3 or s.kind == 4, fl.ember, fl.phos); opacity: 0.8 }
-                text s.label { at: s.x + s.w / 2, s.y + s.h / 2; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: s.w - 10; lines: 1 }
-                zone box saz { from: s.x, s.y; size: s.w, s.h; cursor: pointer; role: button; label: "{s.label}"; show: nd_kind == 0 }
-                on press saz { emit nd_sa(s.kind) }
+            let g = clamp(nd_sf * 1.5 - s.index * 0.15, 0, 1)
+            let drift = if(nd_np == 0, sin(nd_ph + s.index * 60) * 2, 0)
+            let sx = nb_x + nb_w / 2 - s.w / 2 + (s.x - (nb_x + nb_w / 2 - s.w / 2)) * g
+            let sy = nb_y + (s.y - nb_y) * g + drift
+            group { opacity: g; show: g > 0.01
+                line { from: nb_x + nb_w / 2, nb_y + nb_h; to: sx + s.w / 2, sy; width: 1; color: fl.trace_lit; opacity: 0.35 }
+                box { from: sx, sy; size: s.w, s.h; corner: if(nd_np == 2, 3, s.h / 2); color: fl.hull; opacity: 0.92 }
+                box { from: sx, sy; size: s.w, s.h; corner: if(nd_np == 2, 3, s.h / 2); stroke: 1; color: if(s.kind == 2 or s.kind == 3 or s.kind == 4, fl.ember, fl.phos); opacity: 0.8 }
+                text s.label { at: sx + s.w / 2, sy + s.h / 2; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: s.w - 10; lines: 1 }
             }
+            zone box saz { from: s.x, s.y; size: s.w, s.h; cursor: pointer; role: button; label: "{s.label}"; show: nd_kind == 0 and g > 0.9 }
+            on press saz { emit nd_sa(s.kind) }
         }
         // the keyboard, while the node holds it (the launcher, the universe)
         on key Escape while nd_kb { emit nd_key(27) }

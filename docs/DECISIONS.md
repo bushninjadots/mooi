@@ -6568,3 +6568,32 @@ Settings → Bar & Frame → The Pill), and `mooi pill` (the node's wake; with n
 
 **Verified.** Unit 596 / 0; 15 scenes compile; `bin/mooi check` green.
 
+
+## D228 · 2026-11-10 · The node grows, and has a character
+
+The first refinement pass on the node (D226), motion first: what unfolds now grows out of the body instead of
+appearing beside it, and the four personalities look like four things, not four spring settings.
+
+**Growth.** Each change of shape bumps a count (`nd_gn`); a spring (`nd.grow`, 170/19) chases it, and how far it lags
+is how far from grown the parts are (`nd_grow`). A bump is an instant reset, so a part never flashes in at full size.
+Every part takes its own stagger from it: notice cards slide down from the stem's foot one after another, the
+system's spokes extend from the node with their readings riding out on them, the launcher's results drop out of the
+search line, the workspace rail is drawn out from the middle, the volume label and the stem fade and grow in, and
+the satellites leave the seed for their places on the arc (organic ones drift a little).
+
+**Character.** Organic: a soft glow that breathes with the music, and a seed that squashes with its breath. Minimal:
+next to no glow, a hairline outline. Technical: ticks along the body's floor and brackets at its corners, square
+cards. Cyber: an outline broken into segments, and a change glitches it for 140 ms (a shifted ghost and a scan line
+in the counter-signal). The seed widens with the music while it plays (not in technical).
+
+**Universe.** The scene draws the orbit from each workspace's place in the ring and a sprung turn (`nd_rot`), so
+stepping turns the ring instead of jumping the tiles. The turn is a running count: past the last workspace it carries
+on round rather than spinning back the long way. A faint ring traces the orbit. `lib/node/universe` is gone; its
+layout is the scene's now.
+
+**Also.** The launcher dims what is round it (28 %); notices beyond the three shown say how many wait ("+N MORE");
+the media capsule's woven bars span its whole floor; the seed's surface drops to 20 fps only once it has finished
+growing.
+
+**Verified.** Unit 599 / 0 (four new D228 tests); the node's scene compiles; `bin/mooi check` green. Not yet seen
+live.

@@ -11,7 +11,6 @@ local G = require("lib/node/geometry")
 local MO = require("lib/node/motion")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
-local UNI = require("lib/node/universe")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7 }
@@ -98,6 +97,7 @@ local function show_notices(b)
                     act = type(a1) == "string" and a1 or "", hasact = type(a1) == "string" and a1 ~= "" }
     end
     model.nc = rows
+    fact.nd_more = math.max(0, #N.notices - #rows)
 end
 
 local function show_rail(b)
@@ -142,17 +142,31 @@ local function show_launcher(b)
     fact.nd_sel = N.sel
 end
 
+-- the orbit is drawn by the scene from each workspace's place in the ring and a sprung turn (nd_rot); the turn
+-- is a running count, so stepping past the last one carries on round instead of spinning back the long way
 local function show_universe()
-    local tiles = UNI.layout(N.ws.list, N.uni_at or N.ws.active, N.scr)
+    local list = N.ws.list
     local rows = {}
-    for _, t in ipairs(tiles) do
+    for i, w in ipairs(list) do
         local apps = {}
         for _, c in ipairs(N.clients) do
-            if type(c.workspace) == "table" and c.workspace.id == t.id and #apps < 4 then apps[#apps + 1] = tostring(c.class or "") end
+            if type(c.workspace) == "table" and c.workspace.id == w.id and #apps < 4 then apps[#apps + 1] = tostring(c.class or "") end
         end
-        rows[#rows + 1] = { x = t.x, y = t.y, s = t.s, n = tostring(t.id), apps = table.concat(apps, " · "), front = t.front, id = t.id }
+        rows[i] = { i = i - 1, n = tostring(w.id), apps = table.concat(apps, " · "), id = w.id }
     end
     model.un = rows
+    fact.nd_un_n = math.max(1, #list)
+    fact.nd_rott = N.rot or 0
+end
+local function ws_index(id)
+    for i, w in ipairs(N.ws.list) do if w.id == id then return i - 1 end end
+    return 0
+end
+local function turn(dir)
+    local n = #N.ws.list
+    if n == 0 then return end
+    N.rot = (N.rot or 0) + dir
+    N.uni_at = N.ws.list[(N.rot % n) + 1].id
 end
 
 local function show_satellites(b, kind)
@@ -190,6 +204,15 @@ render = function()
     end
     local changed = kind ~= N.kind
     N.kind = kind
+    -- a change of shape: what unfolds grows out of the body again (and a cyber node glitches on the way)
+    if changed then
+        N.gn = (N.gn or 0) + 1
+        fact.nd_gn = N.gn
+        if pers == "cyber" then
+            fact.nd_gl = 1
+            after(140, function() fact.nd_gl = 0 end)
+        end
+    end
     fact.nd_kind = KIND[kind] or 0
     fact.nd_kb = kind == "launcher" or kind == "universe"
     set_body(b, changed and MO.overshoot(pers, cfg().motion or "normal") or 0)
@@ -369,6 +392,7 @@ on("text:nd_q", function(v) N.q = tostring(v or ""); N.sel = 0; search(); render
 local function open_universe()
     for _, k in ipairs({ "system", "launcher" }) do ST.release(N.st, k) end
     N.uni_at = N.ws.active
+    N.rot = ws_index(N.ws.active)
     ST.hold(N.st, "universe")
     run("hyprctl", { "-j", "clients" }, function(out)
         local ok, c = pcall(json.decode, out or "")
@@ -400,8 +424,8 @@ on("nd_key", function(v)
         end
     elseif N.kind == "universe" then
         if v == 27 then ST.release(N.st, "universe")
-        elseif v == 37 or v == 38 then N.uni_at = UNI.step(N.ws.list, N.uni_at or N.ws.active, -1)
-        elseif v == 39 or v == 40 or v == 9 then N.uni_at = UNI.step(N.ws.list, N.uni_at or N.ws.active, 1)
+        elseif v == 37 or v == 38 then turn(-1)
+        elseif v == 39 or v == 40 or v == 9 then turn(1)
         elseif v == 13 then go_workspace(N.uni_at or N.ws.active); ST.release(N.st, "universe") end
     end
     render()

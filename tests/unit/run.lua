@@ -6253,7 +6253,6 @@ do
     local MO = require("lib/node/motion")
     local IX = require("lib/node/interaction")
     local SAT = require("lib/node/satellites")
-    local UNI = require("lib/node/universe")
     local scr = { w = 1920, h = 1080 }
     test("state: rest with nothing; the strongest live event wins; a held state over every event; each recombines on time", function()
         local st = ST.new()
@@ -6336,15 +6335,41 @@ do
         for i = 1, 9 do many[i] = { kind = "k" .. i, priority = i } end
         eq(#SAT.layout(many, { x = 900, y = 10, w = 120, h = 30 }), SAT.MAX)
     end)
-    test("universe: the workspaces round the node, the active one in front and largest; stepping goes round", function()
-        local ws = { { id = 1 }, { id = 2 }, { id = 3 }, { id = 4 }, { id = 5 } }
-        local t = UNI.layout(ws, 3, scr)
-        eq(#t, 5)
-        local act, other
-        for _, x in ipairs(t) do if x.id == 3 then act = x else other = other or x end end
-        assert(act.s > other.s and act.y > other.y, "in front, largest")
-        eq(UNI.step(ws, 3, 1), 4); eq(UNI.step(ws, 5, 1), 1); eq(UNI.step(ws, 1, -1), 5)
-        eq(#UNI.layout({}, 1, scr), 0)
+end
+
+section("the node grows, and has a character (D228)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("what unfolds grows out of the body: a bump of a count resets it, a spring regrows it, staggered part by part", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("let nd_grow = clamp(1 - (nd_gn - nd_gp), 0, 1)", 1, true))
+        assert(p:find("let g = clamp(nd_grow * 1.8 - row * 0.32, 0, 1)", 1, true), "notice cards one after another")
+        assert(p:find("let g = clamp(nd_grow * 1.6 - p.index * 0.2, 0, 1)", 1, true), "system spokes extend")
+        assert(p:find("let g = clamp(nd_grow * 1.8 - i * 0.18, 0, 1)", 1, true), "launcher rows drop out")
+        assert(p:find("let g = clamp(nd_sf * 1.5 - s.index * 0.15, 0, 1)", 1, true), "satellites leave the seed")
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("N.gn = (N.gn or 0) + 1", 1, true) and l:find("fact.nd_gn = N.gn", 1, true))
+    end)
+    test("personalities: cyber glitches on a change, technical has ticks and brackets, organic breathes, minimal has no glow", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("show: nd_np == 3 and nd_glf > 0.01", 1, true))
+        assert(p:find("show: nd_np == 2 and nd_kind > 0 and nd_kind < 6", 1, true))
+        assert(p:find("let nd_glow = pick(nd_np, 0.45 + 0.25 * lv.level, 0.08, 0.05, 0.6)", 1, true))
+        assert(p:find("let nd_sh = nb_h * if(nd_kind == 0 and nd_np == 0, 1 + 0.35 * nd_br, 1)", 1, true))
+        assert(read("shell/mooi-node.luau"):find('if pers == "cyber" then', 1, true))
+    end)
+    test("the universe turns on a spring by a running count: past the last it carries on round", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("let ua = 90 + (u.i - nd_rot) * 360 / max(1, nd_un_n)", 1, true))
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("N.uni_at = N.ws.list[(N.rot % n) + 1].id", 1, true))
+        eq(io.open("shell/lib/node/universe.luau"), nil, "its layout is the scene's now")
+    end)
+    test("the launcher dims what is round it; notices beyond three say how many wait", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("opacity: 0.28 * nd_ld; show: nd_ld > 0.01", 1, true))
+        assert(p:find('show: nd_more > 0.5', 1, true))
+        assert(read("shell/mooi-node.luau"):find("fact.nd_more = math.max(0, #N.notices - #rows)", 1, true))
     end)
 end
 
