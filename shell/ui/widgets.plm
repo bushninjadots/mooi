@@ -350,7 +350,7 @@ library Widgets {
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
         let ay = wy + if(vis, 100, if(np, 130, if(wg_sk == 4 or wg_sk == 11 or wg_sk == 2 or wg_sk == 12, 70, if(wg_sk == 10 or wg_sk == 15, 100, 40))))   // where, and the actions
-        let ph = if(wg_pcol, 30, ay + 102)
+        let ph = if(wg_pcol, 30, ay + 132)
         box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
         // the header: its title, the fold, and the handle that carries the panel
@@ -662,6 +662,9 @@ library Widgets {
             Chip(x + 12, y + ay + 54, 96, "ADAPT", wg_oad, base + if(wg_oad, 906, 905))
             Chip(x + 112, y + ay + 54, 96, "BEHIND", wg_obh, base + if(wg_obh, 908, 907))
             Chip(x + 212, y + ay + 54, 96, "CALM SPOT", false, base + 904)
+            // D222: an ordinary desktop widget, always shown — or below the wallpaper, seen in the opening
+            Chip(x + 12, y + ay + 84, 144, "ON THE DESKTOP", wg_oab, base + 947)
+            Chip(x + 164, y + ay + 84, 144, "BELOW THE WALLPAPER", not wg_oab, base + 946)
         }
     }
 

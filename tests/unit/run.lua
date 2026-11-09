@@ -8267,7 +8267,7 @@ do
         assert(l:find("su().push == false", 1, true) and l:find("su().trace ~= false", 1, true) and l:find("s.ping == false", 1, true))
         assert(l:find("if skin.fullscreen(clients, ws) or not may() then", 1, true), "no light over a fullscreen window")
         assert(not l:find("sys.watch", 1, true), "one watcher per service: it watches nothing itself")
-        assert(l:find("fact.lt_tt, fact.lt_bt = 0, win and 1 or 0", 1, true), "reduced motion: the border lit at once, no travel")
+        assert(l:find("fact.lt_tt, fact.lt_bt = 0, target and 1 or 0", 1, true), "reduced motion: the border lit at once, no travel")
         assert(l:find('on("lt_go", function() run("mooi", { "nexus" }', 1, true), "the spark opens the notices")
     end)
     test("mooi-surface hands its watchers' news to it", function()
@@ -8487,6 +8487,31 @@ do
         for _, L in ipairs({ "lA", "lB", "lC" }) do
             assert(plm:find("show: " .. L .. "_opn and not np_playing", 1, true), L)
         end
+    end)
+end
+
+section("every widget can be an ordinary desktop widget (D222)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local W = require("lib/widgets")
+    test("set_above: one widget on the desktop (always shown) or below the wallpaper, the rest untouched", function()
+        local doc = { widgets = { { id = "a", kind = "clock", above = false }, { id = "b", kind = "weather", above = false } } }
+        local d = W.set_above(doc, "a", true)
+        eq(d.widgets[1].above, true); eq(d.widgets[2].above, false); eq(doc.widgets[1].above, false, "a copy")
+        eq(W.set_above(d, "a", false).widgets[1].above, false)
+    end)
+    test("a notice's light always travels: with no window to reach, once round the screen's edge from the spark", function()
+        local l = read("shell/lib/surface/light.luau")
+        assert(l:find("local target = win or (su().trace ~= false and skin.frame(ctx.scr())) or nil", 1, true))
+        local f = require("lib/surface/skin").frame({ w = 1920, h = 1080 })
+        eq(f.x, 10); eq(f.y, 10); eq(f.w, 1900); eq(f.h, 1060)
+    end)
+    test("the editor offers both for every kind, and the logic carries them out", function()
+        local ui = read("shell/ui/widgets.plm")
+        assert(ui:find('"ON THE DESKTOP", wg_oab, base + 947', 1, true) and ui:find('"BELOW THE WALLPAPER", not wg_oab, base + 946', 1, true))
+        local l = read("shell/mooi-widgets.luau")
+        assert(l:find('elseif what == 9 and (val == 46 or val == 47) then d = W.set_above(doc, w.id, val == 47)', 1, true))
+        assert(l:find("fact.wg_oab = w.above == true", 1, true))
     end)
 end
 

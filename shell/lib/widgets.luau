@@ -734,6 +734,12 @@ function M.set_all(doc, key, value)
     return d
 end
 
+-- D222: one widget on the desktop (above the wallpaper: always shown, an ordinary widget) or below it (only in
+-- the opening). Set from its editor.
+function M.set_above(doc, id, on)
+    return change(doc, id, function(w) w.above = on == true end)
+end
+
 -- ── Groups (D141): widgets chosen, carried and faded as one ──
 -- The chosen ones made a group (a new id); any group they were in is left. A group of one is none.
 function M.group(doc, ids)

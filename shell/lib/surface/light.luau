@@ -140,24 +140,26 @@ return function(ctx)
                     local rects = skin.rects(clients, ws, mon)
                     local sp = skin.spark(box, rects, ctx.scr())
                     local win = su().trace ~= false and skin.window_for(item.app, clients, ws, mon, focused) or nil
+                    -- D222: no window to reach — the light runs once round the screen's edge instead
+                    local target = win or (su().trace ~= false and skin.frame(ctx.scr())) or nil
                     fact.lt_sx, fact.lt_sy = sp.x, sp.y
                     fact.lt_n = item.n or 1
-                    fact.lt_win = win ~= nil
-                    if win then
-                        local tp = skin.edge_point(sp, win)
+                    fact.lt_win = target ~= nil
+                    if target then
+                        local tp = skin.edge_point(sp, target)
                         fact.lt_tx, fact.lt_ty = tp.x, tp.y
-                        fact.lt_so = skin.side(tp, win)
-                        fact.lt_rx, fact.lt_ry, fact.lt_rw, fact.lt_rh = win.x, win.y, win.w, win.h
+                        fact.lt_so = skin.side(tp, target)
+                        fact.lt_rx, fact.lt_ry, fact.lt_rw, fact.lt_rh = target.x, target.y, target.w, target.h
                     else
                         fact.lt_tx, fact.lt_ty = sp.x, sp.y
                     end
                     fact.lt_on, fact.lt_st, fact.lt_kt = true, 1, 1
                     if reduced() then
                         -- reduced motion: the spark and the border lit at once, no travel
-                        fact.lt_tt, fact.lt_bt = 0, win and 1 or 0
+                        fact.lt_tt, fact.lt_bt = 0, target and 1 or 0
                     else
-                        after(LT_TRAVEL, function() if win then fact.lt_tt = 1 end end)
-                        after(LT_BORDER, function() if win then fact.lt_bt = 1 end end)
+                        after(LT_TRAVEL, function() if target then fact.lt_tt = 1 end end)
+                        after(LT_BORDER, function() if target then fact.lt_bt = 1 end end)
                     end
                     after(LT_FADE, function() fact.lt_kt = 0 end)
                     after(LT_SPARK, function() fact.lt_st = 0 end)

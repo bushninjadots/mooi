@@ -171,6 +171,12 @@ function M.side(p, r)
     return best - 1
 end
 
+-- D222: the screen's edge, where a notice's light travels when there is no window to reach (mooi's frame)
+function M.frame(scr)
+    local W, H = tonumber(scr and scr.w) or 1920, tonumber(scr and scr.h) or 1080
+    return { x = 10, y = 10, w = W - 20, h = H - 20 }
+end
+
 -- the clock's sweep: when the hour turns ("HH:MM")
 function M.hour(prev, now)
     if type(prev) ~= "string" or type(now) ~= "string" then return false end

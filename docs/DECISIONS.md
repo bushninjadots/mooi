@@ -6422,3 +6422,18 @@ grain; a visualiser below with no music drew nothing, so hugging it showed an em
 **Verified.** Unit 788 / 0; 15 scenes compile; `bin/mooi check` green; the depth and the resting visualiser photographed
 on the desk. Not yet re-photographed: the stronger lip and Try it after the recheck fix.
 
+## D222 · 2026-11-09 · Every widget can live on the desktop; the notice's light always travels
+
+The owner: "all widgets in the editor need options for being normal always-on onscreen widgets"; and "when a
+notification comes it just shows an orange light in the corner — only once has it moved across the screen".
+
+- **On the desktop, or below.** Every widget's editor has ON THE DESKTOP (an ordinary widget, always shown, above
+  the wallpaper) and BELOW THE WALLPAPER (seen in the opening) — `W.set_above`, codes 946/947. Before, one widget
+  could only be put above by dragging it out of the opening, or all of them at once from Settings.
+- **The light travels.** With no Notices widget the spark sits at the top right; it then travelled only to a window
+  (the sender's, or the focused one), so on an empty workspace it stayed a dot in the corner. With no window to
+  reach it now runs once round the screen's edge, along the frame, from the spark (`skin.frame`).
+
+**Verified.** Unit 791 / 0; 15 scenes compile; `bin/mooi check` green; the light's facts read live after a test
+notification (the cause: workspace 2 held no window).
+
