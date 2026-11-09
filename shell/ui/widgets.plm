@@ -349,7 +349,7 @@ library Widgets {
         let ns = if(vis, 8, if(np, 3, 2))
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
-        let ay = wy + if(vis, 70, if(np, 100, if(wg_sk == 4 or wg_sk == 11, 70, if(wg_sk == 10 or wg_sk == 15, 100, 40))))   // where, and the actions
+        let ay = wy + if(vis, 100, if(np, 130, if(wg_sk == 4 or wg_sk == 11 or wg_sk == 2 or wg_sk == 12, 70, if(wg_sk == 10 or wg_sk == 15, 100, 40))))   // where, and the actions
         let ph = if(wg_pcol, 30, ay + 102)
         box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
@@ -584,6 +584,17 @@ library Widgets {
                 Chip(x + 12, y + wy + 30, 144, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
                 Chip(x + 164, y + wy + 30, 144, "WHEEL VOLUME", wg_o6, base + 600 + if(wg_o6, 0, 1))
                 Chip(x + 12, y + wy + 60, 296, "VISUALISER IN IT", wg_oviz, base + if(wg_oviz, 922, 921))
+                // D217: how it meets the wallpaper while below — news pushes up through the picture
+                Chip(x + 12, y + wy + 90, 296, "PUSHES UP THROUGH THE PICTURE", wg_omeet, base + if(wg_omeet, 944, 945))
+            }
+            // D217: the clock sweeps a light over its place at the hour; the notices push up through the picture
+            group {
+                show: wg_sk == 2
+                Chip(x + 12, y + wy + 30, 296, "MOVES THE WALLPAPER", wg_omeet, base + if(wg_omeet, 944, 945))
+            }
+            group {
+                show: wg_sk == 12
+                Chip(x + 12, y + wy + 30, 296, "PUSHES UP THROUGH THE PICTURE", wg_omeet, base + if(wg_omeet, 944, 945))
             }
             // the D141 kinds: the plate for all; the timer's length, the photo's folder, the launcher's apps
             group {
@@ -639,6 +650,8 @@ library Widgets {
                 Chip(x + 112, y + wy, 96, "PEAKS", wg_o7, base + 700 + if(wg_o7, 0, 1))
                 Chip(x + 212, y + wy, 96, "REFLECTION", wg_o8, base + 800 + if(wg_o8, 0, 1))
                 Chip(x + 12, y + wy + 30, 296, "SQUARE · LEVEL", round(wg_oa) == 0 and round(wg_ol) == 0, base + 923)
+                // D217: a playing visualiser ripples the wallpaper round its place
+                Chip(x + 12, y + wy + 60, 296, "MOVES THE WALLPAPER", wg_omeet, base + if(wg_omeet, 944, 945))
             }
             // 5 · where it is, and what can be done to it
             text wg_readout { at: x + 12, y + ay + 8; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.engrave; width: 296; lines: 1 }

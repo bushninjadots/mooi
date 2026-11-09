@@ -619,6 +619,8 @@ local function panel()
     fact.wg_oc1, fact.wg_oc2, fact.wg_oc3 = o.wifi ~= false, o.bt ~= false, o.volume ~= false
     fact.wg_oc4, fact.wg_oc5, fact.wg_oc6 = o.bright ~= false, o.battery ~= false, o.power ~= false
     fact.wg_ocf = o.power_confirm ~= false
+    -- D217: how it meets the wallpaper while below (lib/surface/skin)
+    fact.wg_omeet = o.meet ~= "still"
     text.wg_folder, text.wg_apps = o.folder or "", o.apps or ""
     text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
     local L = W.LAYOUTS[W.layout_of(w)]
@@ -920,6 +922,8 @@ on("wg_opt", function(v)
         local key = ({ "wifi", "bt", "volume", "bright", "battery", "power" })[(val - 30) // 2 + 1]
         d = W.set_option(doc, w.id, key, (val - 30) % 2 == 0)
     elseif what == 9 and (val == 42 or val == 43) then d = W.set_option(doc, w.id, "power_confirm", val == 42)
+    -- D217: still (44), or its kind's way of meeting the wallpaper (45)
+    elseif what == 9 and (val == 44 or val == 45) then d = W.set_option(doc, w.id, "meet", val == 45 and W.OPTIONS[w.kind].meet or "still")
     elseif what == 9 and val == 23 then d = W.set_option(W.set_option(doc, w.id, "lean", 0), w.id, "angle", 0)
     elseif what == 9 and (val == 9 or val == 10) then d = W.set_option(doc, w.id, "h24", val == 9)
     elseif what == 9 and (val == 11 or val == 12) then d = W.set_option(doc, w.id, "seconds", val == 11)

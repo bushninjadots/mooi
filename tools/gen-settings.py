@@ -170,6 +170,8 @@ SETTERS = [
     # D210: Herdr. Appended.
     "herdr.path", "herdr.poll", "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines",
     "herdr.focus_on_open",
+    # D217: push up from below. Appended.
+    "surface.push", "surface.trace",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -791,7 +793,9 @@ SECTIONS = [
         ("toggle", "Names", "The Overview's title and hints", "surface.labels", "sv_surface_labels"),
         ("card", "Light through the skin"),
         ("choice", "Glow", "What plays under the wallpaper: nothing, a subtle breath, or a bright one", "surface.glow", "sv_surface_glow", ["Off", "Subtle", "Bright"]),
-        ("toggle", "A notice pings", "A new notice sends a spark through the opening", "surface.ping", "sv_surface_ping", "sv_surface_glow > 0.5"),
+        ("toggle", "A notice pings", "A new notice lights a spark where the notices live, even over a window", "surface.ping", "sv_surface_ping"),
+        ("toggle", "The light travels", "From the spark to the window of the app that sent it, and once round its border", "surface.trace", "sv_surface_trace", "sv_surface_ping > 0.5"),
+        ("toggle", "Push up from below", "A new song or notice bulges the wallpaper where it lives, and its words press up through it", "surface.push", "sv_surface_push"),
         ("card", "Where things sit"),
         ("choice", "Arrangement", "How the widgets below are laid out: an arc, centred rows, a grid, or low and calm", "surface.layout", "sv_surface_layout", ["Arc", "Row", "Grid", "Calm"]),
         ("button", "Lay them out", "Every widget under the wallpaper placed again by the arrangement above (undo in the Overview puts them back)", "Re-arrange", "surface_arrange", 0),

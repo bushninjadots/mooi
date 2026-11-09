@@ -1103,6 +1103,7 @@ scene Widgets {
     fact wg_oc5 = true
     fact wg_oc6 = true
     fact wg_ocf = true
+    fact wg_omeet = true   // D217: the chosen widget meets the wallpaper (pushes up, or moves it), not still
     text wg_folder = ""
     text wg_apps = ""
     fact wg_osec = true

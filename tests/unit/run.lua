@@ -8301,6 +8301,28 @@ do
     end)
 end
 
+section("push up from below: settings and the editor (D217)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("the editor: each kind that meets the wallpaper has its switch", function()
+        local ui = read("shell/ui/widgets.plm")
+        assert(ui:find('"PUSHES UP THROUGH THE PICTURE", wg_omeet, base + if(wg_omeet, 944, 945)', 1, true))
+        assert(ui:find('"MOVES THE WALLPAPER", wg_omeet, base + if(wg_omeet, 944, 945)', 1, true))
+        local l = read("shell/mooi-widgets.luau")
+        assert(l:find('W.set_option(doc, w.id, "meet", val == 45 and W.OPTIONS[w.kind].meet or "still")', 1, true))
+        assert(l:find('fact.wg_omeet = o.meet ~= "still"', 1, true))
+    end)
+    test("settings: push and trace rows, their slots appended", function()
+        local g = read("tools/gen-settings.py")
+        assert(g:find('"herdr.focus_on_open",\n    # D217: push up from below. Appended.\n    "surface.push", "surface.trace",', 1, false) or
+               g:find('"surface.push", "surface.trace",', 1, true), "appended")
+        local a = g:find('"herdr.focus_on_open",', 1, true); local b = g:find('"surface.push", "surface.trace",', 1, true)
+        assert(a and b and b > a, "after the last slot")
+        assert(g:find('"surface.push", "sv_surface_push"', 1, true) and g:find('"surface.trace", "sv_surface_trace"', 1, true))
+        assert(not g:find('"surface.ping", "sv_surface_ping", "sv_surface_glow > 0.5"', 1, true), "the ping no longer waits on the glow")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
@@ -8475,7 +8497,8 @@ end)
 test("the new settings are appended, in one block", function()
     local S = require("lib/setters").SETTERS
     local at = {}; for i, v in ipairs(S) do at[v] = i end
-    assert(at["herdr.focus_on_open"] == #S, "the last new key ends the list")
+    -- (D217's two follow it: the push and the light's travel)
+    assert(at["herdr.focus_on_open"] == #S - 2 and at["surface.push"] == #S - 1 and at["surface.trace"] == #S, "the last new keys end the list")
     assert(at["companion.eyes"] and at["companion.eyes"] + 4 == at["companion.react.browser"], "companion block")
     assert(at["herdr.path"] and at["herdr.path"] + 6 == at["herdr.focus_on_open"], "herdr block")
 end)

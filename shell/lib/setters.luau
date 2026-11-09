@@ -339,6 +339,8 @@ M.SETTERS = {
     "herdr.brief",
     "herdr.brief_lines",
     "herdr.focus_on_open",
+    -- D217: push up from below. Appended.
+    "surface.push", "surface.trace",
 }
 
 local function row_of(path)
