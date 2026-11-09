@@ -245,3 +245,96 @@ do
         eq(PV.changed(nil, false), nil, "not known and off: nothing")
     end)
 end
+
+section("the node's helpers (D230): the lyrics")
+do
+    local LY = require("lib/node/lyrics")
+
+    local lrc = table.concat({
+        "[ti:A Song]",
+        "[ar:Someone]",
+        "[00:01.50]First",
+        "[00:12.00][01:30.50]Chorus",
+        "[00:20]Third",
+        "[00:25.123]Fourth",
+        "",
+    }, "\n")
+
+    test("parse: every stamp form, several on a line, tags ignored, in time order", function()
+        local lines = LY.parse(lrc)
+        eq(#lines, 5, "four stamps and the chorus twice")
+        eq(lines[1].t, 1500); eq(lines[1].line, "First")
+        eq(lines[2].t, 12000); eq(lines[2].line, "Chorus")
+        eq(lines[3].t, 20000); eq(lines[3].line, "Third")
+        eq(lines[4].t, 25123); eq(lines[4].line, "Fourth", "three decimals are milliseconds")
+        eq(lines[5].t, 90500); eq(lines[5].line, "Chorus", "the second stamp of the line")
+        for i = 2, #lines do assert(lines[i].t >= lines[i - 1].t, "sorted") end
+    end)
+    test("parse: one or two decimals, an offset moving every line, and the file's order kept", function()
+        local one = LY.parse("[00:01.5]half")
+        eq(one[1].t, 1500)
+        eq(LY.parse("[00:01.05]hundredths")[1].t, 1050)
+        local early = LY.parse("[offset:+250]\n[00:01.00]first\n[00:02.00]second")
+        eq(early[1].t, 750, "positive: earlier"); eq(early[2].t, 1750)
+        local late = LY.parse("[offset:-500]\n[00:01.00]first")
+        eq(late[1].t, 1500, "negative: later")
+        local unordered = LY.parse("[00:05.00]b\n[00:01.00]a")
+        eq(unordered[1].line, "a"); eq(unordered[2].line, "b")
+        eq(#LY.parse("[00:03.00][00:04.00]same"), 2, "the same words twice")
+    end)
+    test("parse: a pause is an empty line; spaces are trimmed; CRLF and odd input are fine", function()
+        local lines = LY.parse("[00:05.00]\n[00:06.00]   spaced out   \r\n")
+        eq(#lines, 2)
+        eq(lines[1].t, 5000); eq(lines[1].line, "", "a pause kept")
+        eq(lines[2].line, "spaced out")
+        eq(#LY.parse(nil), 0); eq(#LY.parse(""), 0); eq(#LY.parse(42), 0)
+        eq(#LY.parse("no stamps at all\n[ar:Someone]\n[ti:Title]\n[offset:+10]"), 0)
+    end)
+    test("at: the last line at or before the moment, 0 before the first", function()
+        local lines = LY.parse(lrc)
+        eq(LY.at(lines, 0), 0)
+        eq(LY.at(lines, 1499), 0)
+        eq(LY.at(lines, 1500), 1, "on the stamp")
+        eq(LY.at(lines, 11999), 1)
+        eq(LY.at(lines, 12000), 2)
+        eq(LY.at(lines, 20000), 3)
+        eq(LY.at(lines, 999999), 5, "the last")
+        eq(LY.at(nil, 1000), 0); eq(LY.at({}, 1000), 0)
+        eq(LY.at({ { t = 0, line = "a" } }, nil), 1, "no moment: the start")
+    end)
+    test("window: the line before, the current and the one after, blank where there is none", function()
+        local lines = LY.parse(lrc)
+        local w = LY.window(lines, 12000, 1)
+        eq(w.prev, "First"); eq(w.cur, "Chorus"); eq(w.next, "Third")
+        local before = LY.window(lines, 0, 1)
+        eq(before.prev, ""); eq(before.cur, ""); eq(before.next, "First")
+        local last = LY.window(lines, 999999, 1)
+        eq(last.prev, "Fourth"); eq(last.cur, "Chorus"); eq(last.next, "")
+        local p = LY.window({ { t = 0, line = "" }, { t = 1000, line = "a" } }, 0, 1)
+        eq(p.cur, "", "a pause is still the current line"); eq(p.next, "a")
+        eq(LY.window(nil, 10, 1).cur, "")
+        eq(LY.window(lines, 12000, 9).cur, "Chorus", "the count does not change the three")
+    end)
+    test("query: the artist, the track and the seconds, everything unsafe escaped", function()
+        eq(LY.query("Sigur Rós", "Hoppípolla (Live)", 245),
+            "artist_name=Sigur%20R%C3%B3s&track_name=Hopp%C3%ADpolla%20%28Live%29&duration=245")
+        eq(LY.query("a-b_c.d~e", "x&y/z", 0), "artist_name=a-b_c.d~e&track_name=x%26y%2Fz&duration=0",
+            "the unreserved set stays as it is")
+        eq(LY.query(nil, nil, nil), "artist_name=&track_name=&duration=0")
+        eq(LY.query("", "", "245.9"), "artist_name=&track_name=&duration=245", "a whole second")
+        eq(LY.query("", "", -5), "artist_name=&track_name=&duration=0", "never negative")
+    end)
+    test("a whole file reads as the scene will use it: find the line, show its neighbours, ask for another", function()
+        local lines = LY.parse(table.concat({
+            "[offset:+100]",
+            "[00:10.00]I wake up",
+            "[00:14.00]",
+            "[00:18.50]and the day begins",
+        }, "\n"))
+        eq(#lines, 3)
+        eq(lines[1].t, 9900)
+        local w = LY.window(lines, 15000, 1)
+        eq(w.prev, "I wake up"); eq(w.cur, ""); eq(w.next, "and the day begins")
+        eq(LY.query("The Band", "Morning", 201):find("duration=201", 1, true) ~= nil, true)
+    end)
+end
