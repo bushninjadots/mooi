@@ -13,7 +13,7 @@ fn shade(s: Shader) -> vec4<f32> {
     // an ellipse a little wider than the widget, highest in its middle
     let q = (p - c) / (half + vec2<f32>(36.0, 36.0));
     let d2 = dot(q, q);
-    let bump = exp(-d2 * 2.2) * k * strength;
+    let bump = exp(-d2 * 3.2) * k * strength;
     // the picture swells toward the eye: sampled nearer the middle, as through a lens
     let pull = 1.0 - 0.10 * bump;
     let pic = inside(s, c + (p - c) * pull - origin);
@@ -21,6 +21,7 @@ fn shade(s: Shader) -> vec4<f32> {
     let dir = normalize(p - c + vec2<f32>(0.001, 0.001));
     let lit = dot(dir, vec2<f32>(-0.7071, -0.7071)) * bump * 0.16 + bump * 0.05;
     let col = clamp(pic.rgb * (1.0 + lit), vec3<f32>(0.0), vec3<f32>(1.0));
-    let alpha = smoothstep(0.0, 0.08, bump) * pic.a;
+    // faded out well inside the patch: its clip's edge is never seen
+    let alpha = smoothstep(0.03, 0.22, bump) * pic.a;
     return vec4<f32>(col, alpha);
 }
