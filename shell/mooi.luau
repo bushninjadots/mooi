@@ -1885,7 +1885,7 @@ end
 -- frame kept a body with nothing in it). Geometry comes with each opening; `pl_sync` sends the frame
 -- either that island (once per opening) or nothing.
 local CHASSIS = { window = true, system = true, stats = true, calendar = true, music = true, weather = true,
-                  sound = true, display = true, power = true, board = true }      -- board: the Pill unfolded (D170)
+                  sound = true, display = true, power = true, board = true, bmo = true, herdr = true }      -- board: the Pill unfolded (D170)
 -- `open` as the scene and the logic report it (opens.pl): reading fact.open back gives the logic's own
 -- last write, so a board the logic opened and the scene closed (a press outside, Escape) read as still
 -- open and the frame kept its plate up, empty (D170)
