@@ -173,3 +173,75 @@ do
         eq(#MX.set_mute(rows[3], true), 1, "Spotify's one stream")
     end)
 end
+
+section("the node's helpers (D230): the privacy watch")
+do
+    local PV = require("lib/node/privacy")
+
+    test("mic_users: the apps on the microphone, once each, monitors and meters and helpers left out", function()
+        local users = PV.mic_users({
+            { source = 3, properties = { ["application.name"] = "Firefox", ["application.process.binary"] = "firefox",
+                                         ["media.name"] = "Firefox" } },
+            { source = 3, properties = { ["application.name"] = "Firefox", ["application.process.binary"] = "firefox" } },
+            { source = 4, properties = { ["application.name"] = "Firefox", ["stream.monitor"] = "true" } },
+            { source = 5, properties = { ["application.name"] = "cava", ["application.process.binary"] = "cava" } },
+            { source = 6, properties = { ["application.name"] = "PulseAudio Volume Control",
+                                         ["application.process.binary"] = "pavucontrol" } },
+            { source = 7, properties = { ["application.name"] = "mooi", ["application.process.binary"] = "pleamar" } },
+            { source = 8, properties = { ["application.name"] = "OBS", ["application.process.binary"] = "obs",
+                                         ["media.name"] = "Speakers Peak Detect" } },
+            { source = 9, properties = { ["application.process.binary"] = "zoom" } },
+            { source = 10, properties = { ["media.name"] = "only the media" } },
+        })
+        eq(#users, 3, "Firefox, the binary fallback, and the nameless")
+        eq(users[1], "Firefox")
+        eq(users[2], "Unknown")
+        eq(users[3], "zoom", "no name: its binary")
+    end)
+    test("mic_users: names sort without case and odd input is empty, never an error", function()
+        local users = PV.mic_users({
+            { properties = { ["application.name"] = "zsh" } },
+            { properties = { ["application.name"] = "Audacious" } },
+            { properties = { ["application.name"] = "" } },
+            { properties = { ["application.name"] = "Firefox" } },
+        })
+        eq(#users, 4)
+        eq(users[1], "Audacious"); eq(users[2], "Firefox"); eq(users[3], "Unknown"); eq(users[4], "zsh")
+        eq(#PV.mic_users(nil), 0); eq(#PV.mic_users("junk"), 0); eq(#PV.mic_users({}), 0)
+        eq(#PV.mic_users({ "a string", 4, { properties = "not a table" }, { source = 2 } }), 1, "one nameless row")
+        eq(PV.mic_users({ { source = 2 } })[1], "Unknown")
+    end)
+    test("mic_users: monitor and peak-detect tests do not care about case, nor does the binary's name", function()
+        local users = PV.mic_users({
+            { properties = { ["application.name"] = "Discord", ["stream.monitor"] = "TRUE" } },
+            { properties = { ["application.name"] = "Discord", ["application.process.binary"] = "Discord",
+                             ["media.name"] = "microphone PEAK DETECT (source)" } },
+            { properties = { ["application.name"] = "CAVA", ["application.process.binary"] = "CAVA" } },
+            { properties = { ["application.name"] = "Real", ["application.process.binary"] = "discord" } },
+        })
+        eq(#users, 1); eq(users[1], "Real")
+    end)
+    test("camera_in_use: a /dev/video line with a process on it means open", function()
+        eq(PV.camera_in_use("/dev/video0:  1234 5678\n/dev/video1:  999\n"), true)
+        eq(PV.camera_in_use("/dev/video2: 4242"), true, "one line is enough")
+        eq(PV.camera_in_use("  /dev/video3:   77m  88\n"), true, "fuser's marks do not hide the pid")
+        eq(PV.camera_in_use("/dev/video0: 1234\n/dev/video1: 5678\n"), true, "either camera")
+    end)
+    test("camera_in_use: no pid, no camera; errors and nothing at all are not open", function()
+        eq(PV.camera_in_use(""), false); eq(PV.camera_in_use(nil), false)
+        eq(PV.camera_in_use("/dev/video0:\n/dev/video1: \n"), false, "listed but unused")
+        eq(PV.camera_in_use("/dev/video0: No such file or directory"), false, "no pid on the line")
+        eq(PV.camera_in_use("fuser: /dev/video2: No such file or directory\n"), false, "not a device line")
+        eq(PV.camera_in_use("Cannot stat /dev/video0: Permission denied"), false)
+        eq(PV.camera_in_use(42), false, "not text")
+    end)
+    test("changed: a yes that became a no says stopped, the other way started, and no change says nothing", function()
+        eq(PV.changed(false, true), "started")
+        eq(PV.changed(true, false), "stopped")
+        eq(PV.changed(true, true), nil)
+        eq(PV.changed(false, false), nil)
+        eq(PV.changed(nil, true), "started", "not known before: it started")
+        eq(PV.changed(nil, nil), nil)
+        eq(PV.changed(nil, false), nil, "not known and off: nothing")
+    end)
+end
